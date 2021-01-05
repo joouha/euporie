@@ -5,9 +5,10 @@ from __future__ import annotations
 import logging
 from functools import partial
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from prompt_toolkit.completion import PathCompleter
+from prompt_toolkit.enums import EditingMode
 from prompt_toolkit.filters import Condition, buffer_has_focus, has_completions
 from prompt_toolkit.formatted_text import (
     HTML,
@@ -54,7 +55,6 @@ if TYPE_CHECKING:
 
     from prompt_toolkit.buffer import Buffer
     from prompt_toolkit.completion import Completer
-    from prompt_toolkit.enums import EditingMode
     from prompt_toolkit.formatted_text import StyleAndTextTuples
     from prompt_toolkit.key_binding.key_processor import KeyPressEvent
     from prompt_toolkit.layout.containers import AnyContainer
@@ -73,6 +73,7 @@ class TuiApp(EuporieApp):
         super().__init__(
             full_screen=True,
             mouse_support=True,
+            editing_mode=self.get_edit_mode(),
             **kwargs,
         )
         # Ensure an opened tab is focused
@@ -232,17 +233,13 @@ class TuiApp(EuporieApp):
                             "Editing key bindings",
                             children=[
                                 SmartMenuItem(
-                                    "Emacs",
-                                    handler=lambda: self.set_edit_mode("emacs"),
+                                    choice.title(),
+                                    handler=partial(self.set_edit_mode, choice),
                                     toggler=Condition(
-                                        lambda: config.key_map == "emacs"
+                                        partial(lambda x: config.key_map == x, choice),
                                     ),
-                                ),
-                                SmartMenuItem(
-                                    "Vi",
-                                    handler=lambda: self.set_edit_mode("vi"),
-                                    toggler=Condition(lambda: config.key_map == "vi"),
-                                ),
+                                )
+                                for choice in config.choices("key_map")
                             ],
                         ),
                         MenuItem("-", disabled=True),
@@ -684,20 +681,26 @@ class TuiApp(EuporieApp):
         else:
             really_close()
 
-    def set_edit_mode(self, mode: "str") -> "None":
+    def set_edit_mode(self, mode: "EditingMode") -> "None":
         """Sets the keybindings for editing mode.
 
         Args:
-            mode: 'vi' or 'emacs'
+            mode: One of default, vi, or emacs
 
         """
         config.key_map = mode
         self.editing_mode = self.get_edit_mode()
+        log.debug("Editing mode set to: %s", self.editing_mode)
 
     def get_edit_mode(self) -> "EditingMode":
         """Returns the editing mode enum defined in the configuration."""
-        return {"emacs": EditingMode.EMACS, "vi": EditingMode.VI}.get(
-            str(config.key_map), EditingMode.EMACS
+        return cast(
+            EditingMode,
+            {
+                "micro": "MICRO",
+                "vi": EditingMode.VI,
+                "emacs": EditingMode.EMACS,
+            }.get(str(config.key_map), "micro"),
         )
 
     def tab_op(

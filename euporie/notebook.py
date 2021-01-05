@@ -243,6 +243,7 @@ class KernelNotebook(Notebook):
 
         """
         cell.clear_output()
+        self.dirty = True
         self.kernel.run(
             cell.json,
             output_cb=cell.on_output,

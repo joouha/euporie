@@ -293,7 +293,6 @@ class Cell:
         self.container = FloatContainer(
             content=HSplit(
                 [top_border, input_row, middle_line, output_row, bottom_border],
-                key_bindings=self.load_key_bindings(),
             ),
             floats=[
                 Float(
@@ -313,10 +312,6 @@ class Cell:
                 ),
             ],
         )
-
-    def load_key_bindings(self) -> "KeyBindingsBase":
-        """Loads the key bindings related to cells."""
-        return KeyBindingsInfo()
 
     def on_output(self) -> "None":
         """Runs when a message for this cell is recieved from the kernel."""
@@ -449,6 +444,9 @@ class Cell:
             rendered_outputs.append(to_container(Output(i, output_json, parent=self)))
         return rendered_outputs
 
+    def run_or_render(self):
+        ...
+
     def __pt_container__(self) -> "Container":
         """Returns the container which represents this cell."""
         return self.container
@@ -464,91 +462,51 @@ class InteractiveCell(Cell):
         self.obscured = Condition(lambda: self.nb.is_cell_obscured(self.index))
         self.stdin_event = asyncio.Event()
 
-    def load_key_bindings(self) -> "KeyBindingsBase":
-        """Loads the key bindings related to cells."""
-        kb = KeyBindingsInfo()
-
-        @kb.add(
-            "e", filter=~buffer_has_focus, group="Notebook", desc="Edit cell in $EDITOR"
+    async def edit_in_editor(self) -> "None":
+        """Edit the cell in $EDITOR."""
+        self.exit_edit_mode()
+        await self.input_box.buffer.open_in_editor(
+            validate_and_handle=config.run_after_external_edit
         )
-        async def edit_in_editor(event: "KeyPressEvent") -> "None":
-            await self.input_box.buffer.open_in_editor()
-            self.exit_edit_mode()
-            if config.run_after_external_edit:
-                self.run_or_render()
 
-        @kb.add(
-            "enter",
-            filter=~buffer_has_focus,
-            group="Notebook",
-            desc="Enter cell edit mode",
-        )
-        def enter_edit_mode(event: "KeyPressEvent") -> "None":
-            # self.container.modal = True
-            get_app().layout.focus(self.input_box)
-            self.rendered = False
-
-        @kb.add(
-            "escape",
-            "[",
-            "1",
-            "3",
-            ";",
-            "5",
-            "u",
-            key_str=("c-enter",),
-            group="Notebook",
-            desc="Run cell",
-        )
-        @kb.add("c-e", group="Notebook", desc="Run cell")
-        @kb.add("c-f20")
-        def run_or_render(event: "KeyPressEvent") -> "None":
-            self.run_or_render(advance=False)
-
-        @kb.add(
-            "escape",
-            "[",
-            "1",
-            "3",
-            ";",
-            "2",
-            "u",
-            key_str=("s-enter",),
-            group="Notebook",
-            desc="Run then select next cell",
-        )
-        @kb.add("c-r", group="Notebook", desc="Run then select next cell")
-        @kb.add("f21")
-        def run_then_next(event: "KeyPressEvent") -> "None":
-            self.run_or_render(advance=True)
-
-        return kb
+    def enter_edit_mode(self) -> "None":
+        """Set the cell to edit mode."""
+        # self.container.modal = True
+        get_app().layout.focus(self.input_box)
+        self.rendered = False
 
     def exit_edit_mode(self) -> "None":
         """Removes a cell from edit mode."""
-        self.input = self.input_box.text
-        self.nb.dirty = True
+        # self.input = self.input_box.text
+        # self.nb.dirty = True
         # Give focus back to selected cell (this might have changed e.g. if doing a run
         # then select the next cell)
         get_app().layout.focus(self.nb.cell.control)
 
-    def run_or_render(self, advance: "bool" = False) -> "None":
+    def run_or_render(
+        self,
+        buffer: "Optional[Buffer]" = None,
+        advance: "bool" = False,
+        insert: "bool" = False,
+    ) -> "None":
         """Run code cells, or render markdown cells, optionally advancing.
 
         Args:
             advance: If True, move to next cell. If True and at the last cell, create a
                 new cell at the end of the notebook.
+            insert: If True, add a new empty cell below the current cell and select it.
 
         """
         self.exit_edit_mode()
 
+        n_cells = len(self.nb.json["cells"])
+
+        # Insert a cell if we are at the last cell
+        if insert or self.nb.page.selected_index == (n_cells) - 1:
+            self.nb.add(self.index + 1)
+
         if advance:
-            # Insert a cell if we are at the last cell
-            n_cells = len(self.nb.json["cells"])
-            if self.nb.page.selected_index == (n_cells) - 1:
-                self.nb.add(self.index + 1)
-            else:
-                self.nb.page.selected_index += 1
+            self.nb.page.selected_index += 1
 
         if self.cell_type == "markdown":
             self.output_box.children = self.rendered_outputs
@@ -556,14 +514,14 @@ class InteractiveCell(Cell):
 
         elif self.cell_type == "code":
             self.state = "queued"
-            # Clear output early
-            self.clear_output()
             self.nb.run_cell(self)
+
+        return True
 
     def get_input(
         self,
         send: "Callable[[str], Any]",
-        prompt: "str" = "Please enter a valve:",
+        prompt: "str" = "Please enter a value:",
         password: "bool" = False,
     ) -> "None":
         """Prompts the user for input and sends the result to the kernel."""
@@ -621,6 +579,7 @@ class CellInputTextArea(TextArea):
             cell.nb.suggester, filter=cell.is_code & cell.autosuggest
         )
         kwargs["style"] = "class:cell-input"
+        kwargs["accept_handler"] = self.cell.run_or_render
 
         super().__init__(*args, **kwargs)
 
@@ -635,7 +594,6 @@ class CellInputTextArea(TextArea):
             AppendLineAutoSuggestion(),
             has_focus(self.buffer) & ~is_done,
         )
-        self.control.key_bindings = self.load_key_bindings()
 
         # Add configurable line numbers
         self.window.left_margins = [
@@ -646,202 +604,14 @@ class CellInputTextArea(TextArea):
         ]
         self.window.cursorline = has_focus(self)
 
+        # Check for non-shift-mode selection and change it to shift mode
+        # buffer.on_cursor_position_changed -> Event
+        #
+
     def text_changed(self, buf: "Buffer") -> "None":
         """Update cell json when the input buffer has been edited."""
         self.cell.input = buf.text
         self.cell.nb.dirty = True
-
-    def load_key_bindings(self) -> "KeyBindingsBase":
-        """Loads the key bindings related to cells."""
-        kb = KeyBindingsInfo()
-
-        @kb.add("escape", group="Notebook", desc="Exit cell edit mode")
-        @kb.add(
-            "escape", "escape", group="Notebook", desc="Exit cell edit mode quickly"
-        )
-        def exit_edit_mode(event: "KeyPressEvent") -> "None":
-            self.cell.exit_edit_mode()
-
-        @kb.add("c-f", group="Edit Mode", desc="Find")
-        def find(event: "KeyPressEvent") -> "None":
-            start_search(self.control)
-
-        @kb.add("c-g", group="Edit Mode", desc="Find Next")
-        def find_next(event: "KeyPressEvent") -> "None":
-            search_state = get_app().current_search_state
-            cursor_position = event.current_buffer.get_search_position(
-                search_state, include_current_position=False
-            )
-            event.current_buffer.cursor_position = cursor_position
-
-        @kb.add("c-z", group="Edit Mode", desc="Undo")
-        def undo(event: "KeyPressEvent") -> "None":
-            event.current_buffer.undo()
-
-        @kb.add("c-d", group="Edit Mode", desc="Duplicate line")
-        def duplicate_line(event: "KeyPressEvent") -> "None":
-            buffer = event.current_buffer
-            line = buffer.document.current_line
-            eol = buffer.document.get_end_of_line_position()
-            buffer.cursor_position += eol
-            buffer.newline()
-            buffer.insert_text(line)
-            buffer.cursor_position -= eol
-
-        def move(n: "int", exit_selection: "bool", event: "KeyPressEvent") -> "None":
-            buff = event.current_buffer
-            if exit_selection:
-                buff.exit_selection()
-            buff.cursor_position += n
-
-        @kb.add("enter")
-        def new_line(event: "KeyPressEvent") -> "None":
-            buffer = event.current_buffer
-            buffer.cut_selection()
-            pre = buffer.document.text_before_cursor
-            buffer.newline()
-            if pre.rstrip()[-1:] in (":", "(", "[", "{"):
-                dent_buffer(event)
-
-        def dent_buffer(event: "KeyPressEvent", un: "bool" = False) -> "None":
-            buffer = event.current_buffer
-            selection_state = buffer.selection_state
-            cursor_position = buffer.cursor_position
-            lines = buffer.document.lines
-
-            # Apply indentation to the selected range
-            from_, to = map(
-                lambda x: buffer.document.translate_index_to_position(x)[0],
-                buffer.document.selection_range(),
-            )
-            dent = unindent if un else indent
-            dent(buffer, from_, to + 1, count=event.arg)
-
-            # If there is a selection, indent it and adjust the selection range
-            if selection_state:
-                change = 4 * (un * -2 + 1)
-                # Count how many lines will be affected
-                line_count = 0
-                for i in range(from_, to + 1):
-                    if not un or lines[i][:1] == " ":
-                        line_count += 1
-                backwards = cursor_position < selection_state.original_cursor_position
-                if un and not line_count:
-                    buffer.cursor_position = cursor_position
-                else:
-                    buffer.cursor_position = max(
-                        0, cursor_position + change * (1 if backwards else line_count)
-                    )
-                    selection_state.original_cursor_position = max(
-                        0,
-                        selection_state.original_cursor_position
-                        + change * (line_count if backwards else 1),
-                    )
-
-            # Maintain the selection state before indentation
-            buffer.selection_state = selection_state
-
-        @kb.add(
-            "tab",
-            filter=cursor_in_leading_ws | has_selection,
-            group="Edit Mode",
-            desc="Indent",
-        )
-        def indent_buffer(event: "KeyPressEvent") -> "None":
-            dent_buffer(event)
-
-        @kb.add(
-            "s-tab",
-            filter=cursor_in_leading_ws | has_selection,
-            group="Edit Mode",
-            desc="Unindent",
-        )
-        def unindent_buffer(event: "KeyPressEvent") -> "None":
-            dent_buffer(event, un=True)
-
-        # @kb.add(
-        # "tab",
-        # filter=(~has_selection & ~has_completions),
-        # )
-        # def instab(event: "KeyPressEvent") -> "None":
-        # from prompt_toolkit.document import Document
-
-        # doc = event.current_buffer.document
-        # new_text = doc.text_before_cursor + "    " + doc.text_after_cursor
-        # event.current_buffer.document = Document(
-        # text=new_text, cursor_position=event.current_buffer.cursor_position + 4
-        # )
-
-        # @kb.add("s-tab", filter=cursor_in_leading_ws | (~has_selection & ~has_completions))
-        # def s_tab(event: "KeyPressEvent") -> "None":
-        # pass
-
-        @kb.add("home")
-        def bounce_home(event: "KeyPressEvent") -> "None":
-            buff = event.current_buffer
-            buff.cursor_position += buff.document.get_start_of_line_position(
-                after_whitespace=not cursor_in_leading_ws()
-                or buff.document.cursor_position_col == 0
-            )
-
-        @kb.add("escape", filter=has_completions, eager=True)
-        def cancel_completion(event: "KeyPressEvent") -> "None":
-            """Cancel a completion with the escape key."""
-            event.current_buffer.cancel_completion()
-
-        @kb.add("enter", filter=completion_is_selected)
-        def apply_completion(event: "KeyPressEvent") -> "None":
-            """Cancel a completion with the escape key."""
-            complete_state = event.current_buffer.complete_state
-            if complete_state:
-                if isinstance(complete_state.current_completion, Completion):
-                    event.current_buffer.apply_completion(
-                        complete_state.current_completion
-                    )
-
-        @kb.add("c-c", group="Edit Mode", desc="Copy")
-        def copy_selection(event: "KeyPressEvent") -> "None":
-            data = event.current_buffer.copy_selection()
-            get_app().clipboard.set_data(data)
-
-        @kb.add("c-x", eager=True, group="Edit Mode", desc="Cut")
-        def cut_selection(event: "KeyPressEvent") -> "None":
-            data = event.current_buffer.cut_selection()
-            get_app().clipboard.set_data(data)
-
-        @kb.add("c-v", group="Edit Mode", desc="Paste")
-        def paste_clipboard(event: "KeyPressEvent") -> "None":
-            event.current_buffer.paste_clipboard_data(get_app().clipboard.get_data())
-
-        @Condition
-        def suggesting() -> "bool":
-            app = get_app()
-            return (
-                app.current_buffer.suggestion is not None
-                and len(app.current_buffer.suggestion.text) > 0
-                and app.current_buffer.document.is_cursor_at_the_end_of_line
-            )
-
-        @kb.add("c-f", filter=suggesting)
-        @kb.add("c-e", filter=suggesting)
-        @kb.add("right", filter=suggesting)
-        def _accept(event: "KeyPressEvent") -> "None":
-            """Accept suggestion."""
-            b = event.current_buffer
-            suggestion = b.suggestion
-            if suggestion:
-                b.insert_text(suggestion.text)
-
-        @kb.add("escape", "f", filter=suggesting & emacs_mode)
-        def _fill(event: "KeyPressEvent") -> "None":
-            """Fill partial suggestion."""
-            b = event.current_buffer
-            suggestion = b.suggestion
-            if suggestion:
-                t = re.split(r"(\S+\s+)", suggestion.text)
-                b.insert_text(next(x for x in t if x))
-
-        return kb
 
 
 class CellStdinTextArea(TextArea):
@@ -909,17 +679,3 @@ def cursor_in_leading_ws() -> "bool":
     """Determine if the cursor of the current buffer is in leading whitespace."""
     before = get_app().current_buffer.document.current_line_before_cursor
     return (not before) or before.isspace()
-
-
-# The following allow you to move or down a line in a buffer by pressing left or right
-# when at the start or end of a line
-@register("backward-char")
-def backward_char(event: "KeyPressEvent") -> "None":
-    """Move back a character, or up a line."""
-    event.current_buffer.cursor_position -= event.arg
-
-
-@register("forward-char")
-def forward_char(event: "KeyPressEvent") -> "None":
-    """Move forward a character, or down a line."""
-    event.current_buffer.cursor_position += event.arg

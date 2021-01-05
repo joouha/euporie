@@ -173,14 +173,27 @@ CONFIG_PARAMS: "dict[str, dict]" = {
     "key_map": {
         "flags_": ["--key-map"],
         "type": str,
-        "choices": ["emacs", "vi"],
+        "choices": ["micro", "emacs", "vi"],
         "help": "Key-binding mode for text editing",
         "schema_": {
             "type": "string",
-            "default": "emacs",
+            "default": "micro",
         },
         "description_": """
             Key binding mode to use when editing cells.
+        """,
+    },
+    "tab_size": {
+        "flags_": ["--tab-size"],
+        "type": int,
+        "help": "Spaces per indentation level",
+        "schema_": {
+            "type": "integer",
+            "minimum": 1,
+            "default": 4,
+        },
+        "description_": """
+            The number of spaces to use per indentation level. Should be set to 4.
         """,
     },
     "run_after_external_edit": {

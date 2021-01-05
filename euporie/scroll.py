@@ -23,8 +23,8 @@ if TYPE_CHECKING:
     from typing import Callable, Dict, List, Optional, Sequence, Union
 
     from prompt_toolkit.formatted_text import AnyFormattedText, StyleAndTextTuples
-    from prompt_toolkit.key_binding import KeyBindings
     from prompt_toolkit.key_binding.key_processor import KeyPressEvent
+    from prompt_toolkit.keys import Keys
     from prompt_toolkit.layout.containers import AnyContainer, MagicContainer
     from prompt_toolkit.layout.dimension import AnyDimension
     from prompt_toolkit.layout.mouse_handlers import MouseHandler
@@ -64,7 +64,6 @@ class ScrollingContainer(Container):
         self.width = to_dimension(width).preferred
         self.style = style
         self.z_index = z_index
-        self.key_bindings = self.load_key_bindings()
         self._remaining_space_window = Window()
         self.last_selected_index: "int" = 0
         # Position of viewing window relative to selected child
@@ -86,10 +85,6 @@ class ScrollingContainer(Container):
         if not self.visible:
             self.visible = {0: to_container(self.get_child(0))}
         return list(map(to_container, self.visible.values()))
-
-    def get_key_bindings(self) -> "KeyBindings":
-        """Return the keybindings for the `ScrollingContainer`."""
-        return self.key_bindings
 
     def preferred_width(self, max_available_width: "int") -> "Dimension":
         """Do not provide a preferred width - grow to fill the avaliable space."""
@@ -289,96 +284,6 @@ class ScrollingContainer(Container):
             return self._children()
         else:
             return self._children
-
-    def load_key_bindings(self) -> "KeyBindings":
-        """Loads the keybindings for the `ScrollingContainer`."""
-        kb = KeyBindingsInfo()
-
-        @kb.add("[", group="Navigation", desc="Scroll up", filter=~buffer_has_focus)
-        @kb.add("<scroll-up>")
-        def su(event: "KeyPressEvent") -> None:
-            self.scroll(1)
-
-        @kb.add(
-            "{", group="Navigation", desc="Scroll up more", filter=~buffer_has_focus
-        )
-        def sum(event: "KeyPressEvent") -> None:
-            self.scroll(5)
-
-        @kb.add("]", group="Navigation", desc="Scroll down", filter=~buffer_has_focus)
-        def sd(event: "KeyPressEvent") -> None:
-            self.scroll(-1)
-
-        @kb.add(
-            "}", group="Navigation", desc="Scroll down more", filter=~buffer_has_focus
-        )
-        def sdm(event: "KeyPressEvent") -> None:
-            self.scroll(-5)
-
-        @kb.add(
-            "c-up",
-            group="Navigation",
-            desc="Go to first cell",
-            filter=~buffer_has_focus,
-        )
-        @kb.add(
-            "home",
-            group="Navigation",
-            desc="Go to first cell",
-            filter=~buffer_has_focus,
-        )
-        def first_child(event: "KeyPressEvent") -> None:
-            self.selected_index = 0
-
-        @kb.add(
-            "pageup", group="Navigation", desc="Go up 5 cells", filter=~buffer_has_focus
-        )
-        def prev_child5(event: "KeyPressEvent") -> None:
-            self.selected_index -= 5
-
-        @kb.add(
-            "up", group="Navigation", desc="Go up one cell", filter=~buffer_has_focus
-        )
-        @kb.add(
-            "k", group="Navigation", desc="Go up one cell", filter=~buffer_has_focus
-        )
-        def prev_child(event: "KeyPressEvent") -> None:
-            self.selected_index -= 1
-
-        @kb.add(
-            "down",
-            group="Navigation",
-            desc="Go down one cell",
-            filter=~buffer_has_focus,
-        )
-        @kb.add(
-            "j", group="Navigation", desc="Go down one cell", filter=~buffer_has_focus
-        )
-        def next_child(event: "KeyPressEvent") -> None:
-            self.selected_index += 1
-
-        @kb.add(
-            "pagedown",
-            group="Navigation",
-            desc="Go down 5 cells",
-            filter=~buffer_has_focus,
-        )
-        def next_child5(event: "KeyPressEvent") -> None:
-            self.selected_index += 5
-
-        @kb.add(
-            "c-down",
-            group="Navigation",
-            desc="Go to last cell",
-            filter=~buffer_has_focus,
-        )
-        @kb.add(
-            "end", group="Navigation", desc="Go to last cell", filter=~buffer_has_focus
-        )
-        def last_child(event: "KeyPressEvent") -> None:
-            self.selected_index = len(list(self.children))
-
-        return kb
 
     def get_child(self, index: "Optional[int]" = None) -> "AnyContainer":
         """Return a rendered instance of the child at the given index.

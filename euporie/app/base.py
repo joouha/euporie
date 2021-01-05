@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 
 from prompt_toolkit.application import Application, get_app_session
 from prompt_toolkit.filters import Condition, Filter
-from prompt_toolkit.key_binding import KeyPressEvent
+from prompt_toolkit.key_binding import DynamicKeyBindings, KeyPressEvent
 from prompt_toolkit.layout import Layout
 from prompt_toolkit.layout.containers import Window
 from prompt_toolkit.output import ColorDepth
@@ -28,7 +28,8 @@ from prompt_toolkit.styles import (
 from pygments.styles import get_style_by_name  # type: ignore
 
 from euporie.config import config
-from euporie.keys import KeyBindingsInfo
+from euporie.key_binding import load_key_bindings
+from euporie.key_binding.micro_state import MicroState
 from euporie.log import setup_logs
 from euporie.notebook import Notebook
 from euporie.style import color_series
@@ -86,7 +87,9 @@ class EuporieApp(Application):
         # Load the main app container
         self.layout = Layout(self.load_container())
         # Load key bindings
-        self.key_bindings = self.load_key_bindings()
+        self.key_bindings = load_key_bindings()
+        # Add state for micro key-bindings
+        self.micro_state = MicroState()
 
         pre_run = self.pre_run_callables[:]
         super().__init__(
@@ -156,10 +159,19 @@ class EuporieApp(Application):
                 if self.layout.has_focus(tab):
                     self._tab_idx = i
                     break
-            self._tab_idx = min(self._tab_idx, len(self.tabs) - 1)
+            self._tab_idx = max(0, min(self._tab_idx, len(self.tabs) - 1))
             return self.tabs[self._tab_idx]
         else:
             return None
+
+    @property
+    def tab_idx(self):
+        return self._tab_idx
+
+    @tab_idx.setter
+    def tab_idx(self, value):
+        self._tab_idx = value % len(self.tabs)
+        self.layout.focus(self.tabs[self._tab_idx])
 
     def close_tab(self, tab: "Optional[Tab]" = None) -> None:
         """Closes a notebook tab.
@@ -208,16 +220,6 @@ class EuporieApp(Application):
         if color_scheme is not None:
             config.color_scheme = color_scheme
         self.renderer.style = self._create_merged_style()
-
-    def load_key_bindings(self) -> "KeyBindingsInfo":
-        """Define application-wide keybindings."""
-        kb = KeyBindingsInfo()
-
-        @kb.add("c-q", group="Application", desc="Quit euporie")
-        def exit(event: "KeyPressEvent") -> None:
-            self.exit()
-
-        return kb
 
     def _create_merged_style(
         self, include_default_pygments_style: "Filter" = None
@@ -314,3 +316,15 @@ class EuporieApp(Application):
                 style_from_pygments_cls(get_style_by_name(config.syntax_theme)),
             ]
         )
+
+    @property
+    def notebook(self) -> "Optional[Notebook]":
+        """Return the currently active notebook."""
+        if isinstance(self.tab, Notebook):
+            return self.tab
+
+    @property
+    def cell(self) -> "Optional[Cell]":
+        """Return the currently active cell."""
+        if isinstance(self.tab, Notebook):
+            return self.tab.cell
