@@ -146,6 +146,8 @@ class CellInputTextArea(TextArea):
 
     def on_cursor_position_changed(self, buf: "Buffer") -> "None":
         """Respond to cursor movements."""
+        from euporie.notebook import TuiNotebook
+
         # Update contextual help
         if config.autoinspect and self.cell.is_code():
             self.cell.inspect()
@@ -153,6 +155,7 @@ class CellInputTextArea(TextArea):
             self.cell.nb.hide_pager()
 
         # Tell the scrolling container to scroll the cursor into view on the next render
+        assert isinstance(self.cell.nb, TuiNotebook)
         self.cell.nb.page.scroll_to_cursor = True
 
 

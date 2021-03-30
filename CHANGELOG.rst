@@ -19,6 +19,7 @@ Added
 Fixed
 =====
 
+- Ensure dumping notebooks works when stdin is not a TTY (this allows euporie to be used to preview notebooks in ranger)
 - Prevent exception when navigating to an empty cell in edit mode
 - Prevent wide tables from wrapping with :py:mod:`html2text` renderer
 

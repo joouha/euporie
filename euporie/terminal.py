@@ -111,9 +111,8 @@ class TerminalQuery:
         self.waiting = False
         self._value: "Optional[Any]" = None
         self.event = Event(self)
-        if (
-            self.output.stdout
-            and not self.output.stdout.isatty()
+        if self.output.stdout and (
+            not self.output.stdout.isatty()
             # Don't send escape codes if this is not a real TTY.
             # We create pseudo-ttys to get colored output, but don't want
             # any termianl queries to be sent
@@ -272,14 +271,16 @@ class ItermGraphicsStatus(TerminalQuery):
 
     default = False
     cache = True
+    cmd = "_"
 
     def __init__(self, output: "Output") -> "None":
         """Detect the iTerm graphics support based on environment variables."""
+        super().__init__(output)
         self._value = None
         if (
             os.environ.get("TERM_PROGRAM", "") in {"WezTerm", "iTerm.app"}
             or os.environ.get("MLTERM") is not None
-        ):
+        ) and self.cmd:
             self._value = True
 
 

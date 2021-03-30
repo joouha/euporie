@@ -12,6 +12,7 @@ from prompt_toolkit.application import Application
 from prompt_toolkit.enums import EditingMode
 from prompt_toolkit.filters import buffer_has_focus
 from prompt_toolkit.input.defaults import create_input
+from prompt_toolkit.input.vt100 import Vt100Input
 from prompt_toolkit.key_binding.bindings.basic import load_basic_bindings
 from prompt_toolkit.key_binding.bindings.cpr import load_cpr_bindings
 from prompt_toolkit.key_binding.bindings.emacs import (
@@ -44,7 +45,6 @@ from prompt_toolkit.styles import (
     merge_styles,
     style_from_pygments_cls,
 )
-from prompt_toolkit.utils import is_windows
 from pygments.styles import get_style_by_name  # type: ignore
 
 from euporie.config import config
@@ -68,7 +68,6 @@ if TYPE_CHECKING:
     from prompt_toolkit.filters import Filter
     from prompt_toolkit.formatted_text import AnyFormattedText
     from prompt_toolkit.input import Input
-    from prompt_toolkit.input.vt100 import Vt100Input
     from prompt_toolkit.layout.containers import AnyContainer, Float
     from prompt_toolkit.output import Output
 
@@ -119,10 +118,11 @@ class EuporieApp(Application):
             # input=self.input,
             input=self.load_input(),
             output=self.load_output(),
+            color_depth=config.color_depth,
             **kwargs,
         )
         # Use a custom vt100 parser to allow querying the terminal
-        self.using_vt100 = not is_windows()
+        self.using_vt100 = isinstance(self.input, Vt100Input)
         if self.using_vt100:
             self.input = cast("Vt100Input", self.input)
             self.input.vt100_parser = Vt100Parser(
@@ -136,8 +136,6 @@ class EuporieApp(Application):
         self.micro_state = MicroState()
         # Load the terminal information system
         self.term_info = TerminalInfo(self.input, self.output)
-        # Continue loading
-        self.pre_run_callables = [self.pre_run]
         # Floats at the app level
         self.floats: "list[Float]" = []
         # If a dialog is showing
@@ -146,50 +144,74 @@ class EuporieApp(Application):
         self.container_statuses: "ContainerStatusDict" = {}
         # Assign command palette variable
         self.command_palette: "Optional[CommandPalette]" = None
+        # Continue loading when the application has been launched
+        # and an event loop has been creeated
+        self.pre_run_callables = [self.pre_run]
 
     def pre_run(self, app: "Application" = None) -> "None":
         """Called during the 'pre-run' stage of application loading."""
+        # Load key bindings
+        self.load_key_bindings()
+        # Determine what color depth to use
+        self._color_depth = _COLOR_DEPTHS.get(
+            config.color_depth, self.term_info.depth_of_color.value
+        )
+        # Set the application's style, and update it when the terminal responds
+        self.update_style()
+        self.term_info.foreground_color.event += self.update_style
+        self.term_info.background_color.event += self.update_style
         # Blocks rendering, but allows input to be processed
         # The first line prevents the display being drawn, and the second line means
         # the key processor continues to process keys. We need this as we need to
         # wait for the results of terminal queries which come in as key events
+        # This prevents flicker when we update the styles based on terminal feedback
         self._is_running = False
         self.renderer._waiting_for_cpr_futures.append(asyncio.Future())
 
-        async def continue_loading() -> "None":
-            try:
-                # Load key bindings
-                self.load_key_bindings()
-                # Wait for the terminal query responses
-                if self.using_vt100:
-                    self.term_info.send_all()
-                    await asyncio.sleep(0.1)
-                # Load the colour depth of the renderer
-                self._color_depth = _COLOR_DEPTHS.get(
-                    config.color_depth, self.term_info.depth_of_color.value
-                )
-                # Set the application's style
-                self.update_style()
-                # Load the layout
-                self.layout = Layout(self.load_container())
-                # Open any files we need to
-                self.open_files()
-                # Run any additional steps
-                self.post_load()
-                # Resume rendering
-                self._is_running = True
-                self.renderer._waiting_for_cpr_futures.pop()
-                # Sending a repaint trigger
-                self.invalidate()
-            except Exception as exception:
-                log.critical(
-                    "An error occurred while trying to load the application",
-                    exc_info=True,
-                )
-                self.exit(exception=exception)
+        def terminal_ready() -> "None":
+            """Commands here depend on the result of terminal queries."""
+            # Load the layout
+            # We delay this until we have terminal responses to allow terminal graphics
+            # support to be detected first
+            self.layout = Layout(self.load_container())
+            # Open any files we need to
+            self.open_files()
+            # Run any additional steps
+            self.post_load()
+            # Resume rendering
+            self._is_running = True
+            self.renderer._waiting_for_cpr_futures.pop()
+            # Sending a repaint trigger
+            self.invalidate()
 
-        # Waits until the event loop is ready
-        self.create_background_task(continue_loading())
+        if self.input.closed:
+            # If we do not have an interactive input, just get on with loading the app:
+            # don't send terminal queries, as we will not get responses
+            terminal_ready()
+        else:
+            # Otherwise, we query the terminal and wait asynchronously to give it
+            # a chance to respond
+
+            async def await_terminal_feedback() -> "None":
+                try:
+                    # Send queries to the terminal if supported
+                    if self.using_vt100:
+                        self.term_info.send_all()
+                        # Give the terminal a chance to respond
+                        await asyncio.sleep(0.1)
+                    # Complete loading the application
+                    terminal_ready()
+                except Exception as exception:
+                    # Log exceptions, as this runs in the event loop and, exceptions may
+                    # get hidden from the user
+                    log.critical(
+                        "An error occurred while trying to load the application",
+                        exc_info=True,
+                    )
+                    self.exit(exception=exception)
+
+            # Waits until the event loop is ready
+            self.create_background_task(await_terminal_feedback())
 
     def load_input(self) -> "Input":
         """Creates the input for this application to use.
@@ -200,7 +222,13 @@ class EuporieApp(Application):
             A prompt-toolkit input instance
 
         """
-        return create_input(always_prefer_tty=True)
+        from prompt_toolkit.input.base import DummyInput
+
+        input_ = create_input(always_prefer_tty=True)
+        if stdin := getattr(input_, "stdin", None):
+            if not stdin.isatty():
+                input_ = DummyInput()
+        return input_
 
     def load_output(self) -> "Output":
         """Creates the output for this application to use.

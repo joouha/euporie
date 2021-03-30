@@ -154,13 +154,14 @@ class DumpApp(EuporieApp):
                     self.output_file = sys.stdout
 
             # Make the output look like a TTY if color-depth has meen configureed
-            self.output_file = cast(
-                "TextIO",
-                PseudoTTY(
-                    self.output_file,
-                    isatty=config.color_depth is not None,
-                ),
-            )
+            if not self.output_file.isatty() and config.color_depth is not None:
+                self.output_file = cast(
+                    "TextIO",
+                    PseudoTTY(
+                        self.output_file,
+                        isatty=True,
+                    ),
+                )
 
         # Ensure we do not receive the "Output is not a terminal" message
         Vt100_Output._fds_not_a_terminal.add(self.output_file.fileno())
