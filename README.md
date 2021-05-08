@@ -1,6 +1,6 @@
-<img src="https://user-images.githubusercontent.com/12154190/117550683-79526700-b039-11eb-8a83-1828c6ee8125.png" alt="screenshot 1" width="50%" align="right" />
+# euporie
 
-# Euporie
+<img src="https://user-images.githubusercontent.com/12154190/117550683-79526700-b039-11eb-8a83-1828c6ee8125.png" alt="screenshot 1" width="45%" align="right" />
 
 # About
 
@@ -29,6 +29,14 @@ pip install euporie[tables,images]
 <img src="https://user-images.githubusercontent.com/12154190/117550688-7bb4c100-b039-11eb-9419-a10c8c0f9b21.png" alt="screenshot 5" width="19%" />
 <img src="https://user-images.githubusercontent.com/12154190/117550689-7bb4c100-b039-11eb-9d90-44df4c0e0f03.png" alt="screenshot 6" width="19%" />
 </p>
+
+# Usage
+
+To open a notebook file, pass the file name as a command line parameter:
+
+```bash
+euporie ~/my-notebook.ipynb
+```
 
 # Features
 
@@ -159,6 +167,7 @@ Change the existing entry for `Return+Shift` to `Return+Shift+Ctrl` (or whatever
 - Add ability to dump formatted notebooks
 - Add command line argument parsing
 - Render outputs asynchronously in a separate thread
+- Upstream markdown tables in `rich`
 - Cell attachements
 - LaTeX
 - Widgets
