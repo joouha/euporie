@@ -103,6 +103,8 @@ If none of these commands are found in your `$PATH`, the plain text representati
 | Command                         | Key Binding                               |
 | ------------------------------- | ----------------------------------------- |
 | Quit                            | `Ctrl + q`                                |
+| Open notebook                   | `Ctrl + o`                                |
+| New notebook                    | `Ctrl + n`                                |
 | Close notebook                  | `Ctrl + w`                                |
 | Select next cell                | `Up`, `k`                                 |
 | Select previous cell            | `Down`, `j`                               |

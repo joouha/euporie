@@ -22,7 +22,14 @@ from prompt_toolkit.layout.layout import Layout
 from prompt_toolkit.layout.menus import CompletionsMenu
 from prompt_toolkit.styles import BaseStyle, Style, default_ui_style, merge_styles
 from prompt_toolkit.styles.pygments import style_from_pygments_cls
-from prompt_toolkit.widgets import Button, Dialog, MenuContainer, MenuItem
+from prompt_toolkit.widgets import (
+    Button,
+    Dialog,
+    Label,
+    MenuContainer,
+    MenuItem,
+    TextArea,
+)
 from pygments.styles import get_style_by_name
 
 from euporie import logo
@@ -162,8 +169,9 @@ class App(Application, TermAppMixin):
                     " File ",
                     children=[
                         MenuItem(
-                            "New", handler=lambda: self.open_file("Untitled.ipynb")
+                            "New", handler=lambda: self.ask_open_file(validate=False)
                         ),
+                        MenuItem("Open", handler=self.ask_open_file),
                         MenuItem("-", disabled=True),
                         MenuItem("Save", handler=lambda: self.file.save()),
                         MenuItem("Close", handler=self.close_file),
@@ -253,7 +261,11 @@ class App(Application, TermAppMixin):
 
         @kb.add("c-n")
         def new(event):
-            self.open_file("Untitled.ipynb")
+            self.ask_open_file(validate=False)
+
+        @kb.add("c-o")
+        def open(event):
+            self.ask_open_file()
 
         return kb
 
@@ -322,6 +334,33 @@ class App(Application, TermAppMixin):
         else:
             self.exit()
 
+    def ask_open_file(self, default="", validate=True, error=None):
+        def open_cb():
+            path = filepath.text
+            if not validate or Path(path).expanduser().exists():
+                self.open_file(filepath.text)
+            else:
+                self.ask_open_file(
+                    default=filepath.text, validate=validate, error="File not found"
+                )
+
+        filepath = TextArea(text=default, multiline=False)
+        self.dialog(
+            title="Select file",
+            body=HSplit(
+                [
+                    Label("Enter file name:"),
+                    filepath,
+                ]
+                + ([Label(error, style="red")] if error else [])
+            ),
+            buttons={
+                "OK": open_cb,
+                "Cancel": None,
+            },
+            to_focus=filepath,
+        )
+
     def open_file(self, path):
         path = Path(path).expanduser()
         open_paths = [x.path for x in self.files]
@@ -359,7 +398,7 @@ class App(Application, TermAppMixin):
             index = min(self.selected_index, len(self.files) - 1)
             return self.files[index]
 
-    def dialog(self, title, body, buttons):
+    def dialog(self, title, body, buttons, to_focus=None):
         def make_handler(cb):
             def inner():
                 self.root_container.floats.remove(dialog)
@@ -388,7 +427,9 @@ class App(Application, TermAppMixin):
         self.root_container.floats.append(
             dialog,
         )
-        self.layout.focus(button_widgets[0])
+        if to_focus is None:
+            to_focus = button_widgets[0]
+        self.layout.focus(to_focus)
 
     def about(self):
         self.dialog(
@@ -418,3 +459,4 @@ class App(Application, TermAppMixin):
         for path in sys.argv[1:]:
             app.open_file(path)
         app.run()
+        return app
