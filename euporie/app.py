@@ -95,7 +95,6 @@ class App(Application, TermAppMixin):
             "menu-bar": "fg:#ffffff bg:#222222",
             "menu-bar.item": "bg:#444444",
             "menu": "fg:#ffffff bg:#222222",
-            # "cell": "#4e4e4e",
             "cell-border": "fg:#4e4e4e",
             "cell-border-selected": "fg:#00afff",
             "cell-border-edit": "fg:#00ff00",
@@ -419,4 +418,3 @@ class App(Application, TermAppMixin):
         for path in sys.argv[1:]:
             app.open_file(path)
         app.run()
-        return app
