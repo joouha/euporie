@@ -1,0 +1,44 @@
+[tool.poetry]
+name = "euporie"
+version = "0.1.1"
+description = "Euporie is a text-based user interface for running and editing Jupyter notebooks"
+authors = ["Josiah Outram Halstead <josiah@halstead.email>"]
+license = "GPL-3.0-or-later"
+readme = "README.md"
+homepage = "https://github.com/joouha/euporie"
+keywords = ["jupyter", "ipython", "markdown", "terminal", "notebook"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Programming Language :: Python :: 3.8",
+    "Topic :: Scientific/Engineering",
+]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+rich = "^10.1.0"
+nbformat = "^5.1.3"
+img2unicode = {version = "^0.1a7", optional = true}
+prompt-toolkit = "^3.0.18"
+jupyter-client = "^6.2.0"
+timg = {version = "^1.1.5", optional = true}
+mtable = {version = "^0.1.10", optional = true}
+html5lib = {version = "^1.1", optional = true}
+Pillow = "^8.2.0"
+
+[tool.poetry.extras]
+tables = ["mtable", "html5lib"]
+images = ["timg"]
+
+[tool.poetry.dev-dependencies]
+pytest = "^5.2"
+isort = "^5.8.0"
+flake8 = "^3.9.1"
+black = "^21.5b0"
+
+[tool.poetry.scripts]
+euporie = 'euporie.app:App.launch'
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
