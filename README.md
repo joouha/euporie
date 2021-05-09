@@ -55,14 +55,14 @@ Euporie will attempt to render images in the best possible way it can. The follo
 
 - **Sixel**
 
-  If supported by your teminal, euporie can show graphical images in cell outputs
+  If supported by your terminal, euporie can show graphical images in cell outputs
   This requires one of the following:
 
   [`imagemagik`](https://www.imagemagick.org)
   [`timg`](https://github.com/adzierzanowski/timg)
   [`teimpy`](https://github.com/ar90n/teimpy)
 
-- **Kitty's terminal image protocal**
+- **Kitty's terminal image protocol**
 
   If your terminal supports [kitty's terminal graphics protocol](https://sw.kovidgoyal.net/kitty/graphics-protocol.html), euporie will use it to render images
 
@@ -170,7 +170,7 @@ Change the existing entry for `Return+Shift` to `Return+Shift+Ctrl` (or whatever
 - Add command line argument parsing
 - Render outputs asynchronously in a separate thread
 - Upstream markdown tables in `rich`
-- Cell attachements
+- Cell attachments
 - LaTeX
 - Widgets
 
