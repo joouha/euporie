@@ -150,7 +150,13 @@ class Cell:
 
         @self.kb.add("f21")
         def run_then_next(event):
-            self.nb.page.selected_index += 1
+            # Insert a cell if we are at the last cell
+            n_cells = len(self.nb.page.children)
+            if self.nb.page.selected_index == (n_cells) - 1:
+                offset = n_cells - self.nb.page.selected_index
+                self.nb.add(offset)
+            else:
+                self.nb.page.selected_index += 1
             run_or_render(event)
 
         @self.kb.add("c-f", filter=self.is_editing)
