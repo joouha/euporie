@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import os
 
-__version__ = "0.1.2"
+__version__ = "0.1.3"
 
 if os.name == "nt":
     logo = "⚈"

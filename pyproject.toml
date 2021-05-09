@@ -20,15 +20,16 @@ rich = "^10.1.0"
 nbformat = "^5.1.3"
 img2unicode = {version = "^0.1a7", optional = true}
 prompt-toolkit = "^3.0.18"
-jupyter-client = "^6.2.0"
 timg = {version = "^1.1.5", optional = true}
 mtable = {version = "^0.1.10", optional = true}
 html5lib = {version = "^1.1", optional = true}
 Pillow = "^8.2.0"
+jupyter-client = "7.0.0a"
 
 [tool.poetry.extras]
-tables = ["mtable", "html5lib"]
-images = ["timg"]
+html-mtable = ["mtable", "html5lib"]
+images-timg = ["timg"]
+images-img2unicode = ["img2unicode"]
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"

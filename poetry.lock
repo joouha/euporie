@@ -257,7 +257,7 @@ format_nongpl = ["idna", "jsonpointer (>1.13)", "webcolors", "rfc3986-validator 
 
 [[package]]
 name = "jupyter-client"
-version = "6.2.0"
+version = "7.0.0a0"
 description = "Jupyter protocol implementation and client libraries"
 category = "main"
 optional = false
@@ -813,13 +813,14 @@ optional = true
 python-versions = "*"
 
 [extras]
-images = ["timg"]
-tables = ["mtable", "html5lib"]
+html-mtable = ["mtable", "html5lib"]
+images-img2unicode = ["img2unicode"]
+images-timg = ["timg"]
 
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "e16c190551f17f476228488f5bcbba60947bb9cdebca9b22fa6ad707c56882cd"
+content-hash = "3d16a2391efeb716046444c76d304e00e49d79c72961da7d80a034029d641985"
 
 [metadata.files]
 appdirs = [
@@ -976,8 +977,8 @@ jsonschema = [
     {file = "jsonschema-3.2.0.tar.gz", hash = "sha256:c8a85b28d377cc7737e46e2d9f2b4f44ee3c0e1deac6bf46ddefc7187d30797a"},
 ]
 jupyter-client = [
-    {file = "jupyter_client-6.2.0-py3-none-any.whl", hash = "sha256:9715152067e3f7ea3b56f341c9a0f9715c8c7cc316ee0eb13c3c84f5ca0065f5"},
-    {file = "jupyter_client-6.2.0.tar.gz", hash = "sha256:e2ab61d79fbf8b56734a4c2499f19830fbd7f6fefb3e87868ef0545cb3c17eb9"},
+    {file = "jupyter_client-7.0.0a0-py3-none-any.whl", hash = "sha256:77d1aa3e50b5f950c4a0821054ab164c20c5c63111311b256b067095224f62e3"},
+    {file = "jupyter_client-7.0.0a0.tar.gz", hash = "sha256:af89716b4342c5172931548bdc3699a6fda0e65e108d13d6adedbe8a559358f9"},
 ]
 jupyter-core = [
     {file = "jupyter_core-4.7.1-py3-none-any.whl", hash = "sha256:8c6c0cac5c1b563622ad49321d5ec47017bd18b94facb381c6973a0486395f8e"},

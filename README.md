@@ -17,7 +17,7 @@ pip install euporie
 If you are using Windows, you may wish to install some optional python dependencies to render images and HTML tables:
 
 ```bash
-pip install euporie[tables,images]
+pip install euporie[html-mtable,images-timg]
 ```
 
 # Screenshots
