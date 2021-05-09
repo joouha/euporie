@@ -135,8 +135,9 @@ class Cell:
             # give focus back to selected cell (this might have changed!)
             get_app().layout.focus(self.nb.cell.control)
 
-        @self.kb.add("c-space")
+        @self.kb.add("escape", "[", "1", "3", ";", "5", "u")
         @self.kb.add("c-f20")
+        @self.kb.add("c-space")
         def run_or_render(event):
             self.input = self.input_box.text
             self.nb.dirty = True
@@ -148,6 +149,7 @@ class Cell:
                 self.state = "queued"
                 self.run()
 
+        @self.kb.add("escape", "[", "1", "3", ";", "2", "u")
         @self.kb.add("f21")
         def run_then_next(event):
             # Insert a cell if we are at the last cell

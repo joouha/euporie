@@ -127,7 +127,7 @@ If none of these commands are found in your `$PATH`, the plain text representati
 
 > \* There is a slight delay detecting an escape key-event. To exit edit mode quickly, double-press the escape key.
 >
-> \*\* These entries require key remapping in your terminal in order to work - see below).
+> \*\* These entries require your temnial to support CSI-u mode. If your terminal does not support this, it may be possible to work around this by remapping the keys in your terminal emulator - see below).
 
 When in edit mode, emacs style key-bindings apply.
 
