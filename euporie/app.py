@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import sys
+from functools import partial
 from pathlib import Path
 
 from prompt_toolkit.application import Application
@@ -30,7 +31,7 @@ from prompt_toolkit.widgets import (
     MenuItem,
     TextArea,
 )
-from pygments.styles import get_style_by_name
+from pygments.styles import get_all_styles, get_style_by_name
 
 from euporie import logo
 from euporie.config import config
@@ -96,6 +97,9 @@ class App(Application, TermAppMixin):
             dim_bg = "default"
 
         style_dict = {
+            # The default style is merged at this point so full styles can be
+            # overridden. For example, this allows us to switch off the underline
+            #  status of cursor-line.
             **dict(default_ui_style().style_rules),
             "logo": "fg:#ff0000",
             "background": "fg:#444444",
@@ -120,12 +124,18 @@ class App(Application, TermAppMixin):
             "hr": "fg:#666666",
         }
 
+        # Using a dynamic style has serious performance issues, so instead we update
+        # the style on the renderer directly when it changes in `self.update_style`
         return merge_styles(
             [
-                style_from_pygments_cls(get_style_by_name(config.pygments_style)),
                 Style.from_dict(style_dict),
+                style_from_pygments_cls(get_style_by_name(config.pygments_style)),
             ]
         )
+
+    def update_style(self, pygments_style):
+        config.pygments_style = pygments_style
+        self.renderer.style = self._create_merged_style()
 
     def layout(self):
 
@@ -196,6 +206,20 @@ class App(Application, TermAppMixin):
                         MenuItem(
                             "Change Kernel...",
                             handler=lambda: self.file.change_kernel(),
+                        ),
+                    ],
+                ),
+                MenuItem(
+                    " Settings ",
+                    children=[
+                        MenuItem(
+                            "Syntax Theme",
+                            children=[
+                                MenuItem(
+                                    style, handler=partial(self.update_style, style)
+                                )
+                                for style in sorted(get_all_styles())
+                            ],
                         ),
                     ],
                 ),

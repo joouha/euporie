@@ -1,17 +1,18 @@
 # -*- coding: utf-8 -*-
-from collections import namedtuple
 
-defaults = {
+CONFIG_DEFAULTS = {
     "max_notebook_width": 120,
     "show_background": True,
     "background_character": "·",
-    "pygments_style": "native",
+    "pygments_style": "default",
     "editing_mode": "emacs",
 }
 
-Config = namedtuple(
-    "config", **dict(zip(["field_names", "defaults"], zip(*defaults.items())))
-)
+
+class Config:
+    def __init__(self):
+        for key, value in CONFIG_DEFAULTS.items():
+            setattr(self, key, value)
 
 
 config = Config()
