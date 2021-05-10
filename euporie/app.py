@@ -459,4 +459,3 @@ class App(Application, TermAppMixin):
         for path in sys.argv[1:]:
             app.open_file(path)
         app.run()
-        return app
