@@ -184,6 +184,61 @@ class html_mtable_py(RichRendererMixin, HTMLRenderer, PythonRenderMixin):
         )
 
 
+class html_fallback_py(HTMLRenderer):
+    """
+    This uses stdlib to strip html tags.
+
+    This is the last resort for rendering HTML.
+    """
+
+    stripper = None
+
+    def validate(self):
+        return True
+
+    def load(self):
+        from html.parser import HTMLParser
+
+        if self.stripper is None:
+
+            class HTMLStripper(HTMLParser):
+                """Very basic HTML parser which strips style and script tags."""
+
+                def __init__(self):
+                    super().__init__()
+                    self.reset()
+                    self.strict = False
+                    self.convert_charrefs = True
+                    self.text = io.StringIO()
+                    self.skip = False
+
+                def handle_starttag(self, tag, attrs):
+                    if tag in ("script", "style"):
+                        self.skip = True
+
+                def handle_endtag(self, tag):
+                    if tag in ("script", "style"):
+                        self.skip = False
+
+                def handle_data(self, d):
+                    if not self.skip:
+                        self.text.write(d)
+
+                def get_data(self):
+                    return self.text.getvalue()
+
+            self.stripper = HTMLStripper()
+
+    def process(self, data):
+        import re
+
+        self.stripper.feed(data)
+        data = self.stripper.get_data()
+        data = "\n".join([x.strip() for x in data.strip().split("\n")])
+        data = re.sub("\n\n\n+", "\n\n", data)
+        return data
+
+
 class ImageRenderer(DataRenderer):
     def __init__(self, *args, image=None, **kwargs):
         self.image = image
