@@ -182,13 +182,74 @@ class Cell:
         if self.nb.kc:
             # Execute input and wait for responses in kernel thread
             asyncio.run_coroutine_threadsafe(
-                self.nb.kc._async_execute_interactive(
+                # self.nb.kc._async_execute_interactive(
+                self._async_execute_interactive(
                     code=self.input,
                     allow_stdin=False,
                     output_hook=self.ran,
                 ),
                 self.nb.kernel_loop,
             )
+
+    async def _async_execute_interactive(
+        self, code, allow_stdin=False, output_hook=None
+    ):
+        from queue import Empty
+
+        import zmq.asyncio
+
+        if not self.nb.kc.iopub_channel.is_alive():
+            raise RuntimeError("IOPub channel must be running to receive output")
+
+        msg_id = self.nb.kc.execute(
+            code,
+            allow_stdin=False,
+        )
+        stdin_hook = self.nb.kc._stdin_hook_default
+
+        timeout_ms = None
+
+        poller = zmq.Poller()
+        iopub_socket = self.nb.kc.iopub_channel.socket
+        poller.register(iopub_socket, zmq.POLLIN)
+        stdin_socket = None
+
+        # wait for output and redisplay it
+        while True:
+            events = dict(poller.poll(timeout_ms))
+            if not events:
+                raise TimeoutError("Timeout waiting for output")
+            if stdin_socket in events:
+                req = self.nb.kc.stdin_channel.get_msg(timeout=0)
+                stdin_hook(req)
+                continue
+            if iopub_socket not in events:
+                continue
+
+            msg = self.nb.kc.iopub_channel.get_msg(timeout=0)
+
+            if msg["parent_header"].get("msg_id") != msg_id:
+                # not from my request
+                continue
+            output_hook(msg)
+
+            # stop on idle
+            if (
+                msg["header"]["msg_type"] == "status"
+                and msg["content"]["execution_state"] == "idle"
+            ):
+                break
+
+        # output is done, get the reply
+        while True:
+            try:
+                reply = self.nb.kc.get_shell_msg(timeout=None)
+            except Empty as e:
+                raise TimeoutError("Timeout waiting for reply") from e
+            if reply["parent_header"].get("msg_id") != msg_id:
+                # not my reply, someone may have forgotten to retrieve theirs
+                continue
+            return reply
 
     def ran(self, msg):
         msg_type = msg.get("header", {}).get("msg_type")

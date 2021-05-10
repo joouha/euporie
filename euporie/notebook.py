@@ -109,7 +109,8 @@ class Notebook:
         # Create a kernel manager for this notebook
         self.km = KernelManager(kernel_name=self.kernel_name)
         try:
-            await self.km._async_start_kernel()
+            # await self.km._async_start_kernel()
+            self.km.start_kernel()
         except Exception as e:
             get_app().dialog("Error Starting Kernel", Label(e.__repr__()), {"OK": None})
             self.kc = None
