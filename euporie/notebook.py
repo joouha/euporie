@@ -39,7 +39,8 @@ class KernelCompleter(Completer):
                 code=document.text,
                 cursor_pos=document.cursor_position,
             )
-            msg = await self.nb.kc._async_get_shell_msg()
+            # msg = await self.nb.kc._async_get_shell_msg()
+            msg = self.nb.kc.get_shell_msg()
             if msg["parent_header"].get("msg_id") == msg_id:
                 # run_in_terminal(lambda: print(msg))
                 content = msg.get("content", {})
