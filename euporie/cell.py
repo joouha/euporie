@@ -117,8 +117,7 @@ class Cell:
         async def edit_in_editor(event):
             self.editing = True
             await self.input_box.buffer.open_in_editor()
-            self.nb.dirty = True
-            self.editing = False
+            exit_edit_mode(event)
 
         @kb.add(
             "enter",
@@ -159,8 +158,6 @@ class Cell:
         @kb.add("c-r", group="Notebook", desc="Run cell")
         @kb.add("c-f20")
         def run_or_render(event):
-            self.input = self.input_box.text
-            self.nb.dirty = True
             exit_edit_mode(event)
             if self.cell_type == "markdown":
                 self.output_box.children = self.rendered_outputs
