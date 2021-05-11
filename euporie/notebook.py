@@ -217,7 +217,7 @@ class Notebook:
             self.cell.set_cell_type("markdown")
             self.cell.clear_output()
 
-        @kb.add("m", group="Notebook", desc="Change cell to code")
+        @kb.add("y", group="Notebook", desc="Change cell to code")
         def to_code(event):
             self.cell.set_cell_type("code")
 
