@@ -5,7 +5,6 @@ from typing import Callable, Dict, List, Optional, Sequence, Union
 from prompt_toolkit.application.current import get_app
 from prompt_toolkit.data_structures import Point
 from prompt_toolkit.filters import FilterOrBool, to_filter
-from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.layout.containers import Container, Window, to_container
 from prompt_toolkit.layout.dimension import AnyDimension, Dimension, to_dimension
 from prompt_toolkit.layout.mouse_handlers import MouseHandler, MouseHandlers
@@ -15,6 +14,7 @@ from prompt_toolkit.utils import to_str
 
 from euporie.box import Border
 from euporie.config import config
+from euporie.keys import KeyBindingsInfo
 
 DrawingPosition = namedtuple(
     "DrawingPosition",
@@ -46,8 +46,7 @@ class ScrollingContainer(Container):
         self.z_index = z_index
         self.style = style
 
-        self.kb = KeyBindings()
-        self.load_key_bindings()
+        self.key_bindings = self.load_key_bindings()
 
         self._remaining_space_window = Window()
 
@@ -319,48 +318,52 @@ class ScrollingContainer(Container):
         return map(to_container, [x[1] for x in sorted(self.child_cache.items())])
 
     def get_key_bindings(self):
-        return self.kb
+        return self.key_bindings
 
     # End of container methods
 
     def load_key_bindings(self):
-        @self.kb.add("[")
-        @self.kb.add("<scroll-up>")
+        kb = KeyBindingsInfo()
+
+        @kb.add("[", group="Navigation", desc="Scroll up")
+        @kb.add("<scroll-up>")
         def su(event):
             self.scroll_up()
 
-        @self.kb.add("]")
-        @self.kb.add("<scroll-down>")
+        @kb.add("]", group="Navigation", desc="Scroll down")
+        @kb.add("<scroll-down>")
         def sd(event):
             self.scroll_down()
 
-        @self.kb.add("c-up")
-        @self.kb.add("home")
+        @kb.add("c-up", group="Navigation", desc="Go to first cell")
+        @kb.add("home", group="Navigation", desc="Go to first cell")
         def first_child(event=None):
             self.selected_index = 0
 
-        @self.kb.add("pageup")
+        @kb.add("pageup", group="Navigation", desc="Go up 5 cells")
         def prev_child5(event=None):
             self.selected_index -= 5
 
-        @self.kb.add("up")
-        @self.kb.add("k")
+        @kb.add("up", group="Navigation", desc="Go up one cell")
+        @kb.add("k", group="Navigation", desc="Go up one cell")
         def prev_child(event=None):
             self.selected_index -= 1
 
-        @self.kb.add("down")
-        @self.kb.add("j")
+        @kb.add("down", group="Navigation", desc="Go down one cell")
+        @kb.add("j", group="Navigation", desc="Go down one cell")
         def next_child(event=None):
             self.selected_index += 1
 
-        @self.kb.add("pagedown")
+        @kb.add("pagedown", group="Navigation", desc="Go down 5 cells")
         def next_child5(event=None):
             self.selected_index += 5
 
-        @self.kb.add("c-down")
-        @self.kb.add("end")
+        @kb.add("c-down", group="Navigation", desc="Go to last cell")
+        @kb.add("end", group="Navigation", desc="Go to last cell")
         def last_child(event=None):
             self.selected_index = len(self.children)
+
+        return kb
 
     def get_child(self, index=None):
         if index is None:

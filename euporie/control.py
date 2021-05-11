@@ -4,7 +4,7 @@ from prompt_toolkit.layout.controls import UIContent, UIControl
 
 from euporie.render import HTMLRenderer, ImageRenderer, RichRenderer, SVGRenderer
 
-from .ansi import ANSI
+from .text import ANSI
 
 
 class Control(UIControl):

@@ -11,17 +11,16 @@ from jupyter_client.kernelspec import KernelSpecManager
 from prompt_toolkit.application.current import get_app
 from prompt_toolkit.completion.base import CompleteEvent, Completer, Completion
 from prompt_toolkit.document import Document
-from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.layout.containers import Container, HSplit, Window
 from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.layout.dimension import LayoutDimension as D
 from prompt_toolkit.layout.margins import NumberedMargin
 from prompt_toolkit.widgets import Box, Label, RadioList
 
+from euporie.cell import Cell
 from euporie.config import config
-
-from .cell import Cell
-from .scroll import ScrollingContainer
+from euporie.keys import KeyBindingsInfo
+from euporie.scroll import ScrollingContainer
 
 
 class KernelCompleter(Completer):
@@ -77,7 +76,7 @@ class Notebook:
             max_content_width=D(preferred=config.max_notebook_width),
         )
         self.container = Box(self.page, padding=0, padding_left=1)
-        self.container.container.key_bindings = self.keybindings()
+        self.container.container.key_bindings = self.load_key_bindings()
 
         self.clipboard = []
 
@@ -182,52 +181,52 @@ class Notebook:
             for i, cell_json in enumerate(self.json["cells"])
         ]
 
-    def keybindings(self):
-        kb = KeyBindings()
+    def load_key_bindings(self):
+        kb = KeyBindingsInfo()
 
-        @kb.add("c-s")
+        @kb.add("c-s", group="Application", desc="Save current file")
         def save(event):
             self.save()
 
-        @kb.add("a")
+        @kb.add("a", group="Notebook", desc="Add new cell above")
         def add_above(event):
             self.add(0)
 
-        @kb.add("b")
+        @kb.add("b", group="Notebook", desc="Add new cell below")
         def add_below(event):
             self.add(1)
 
-        @kb.add("d", "d")
+        @kb.add("d", "d", group="Notebook", desc="Delete current cell")
         def delete(event):
             self.delete()
 
-        @kb.add("x")
+        @kb.add("x", group="Notebook", desc="Cut current cell")
         def cut(event):
             self.cut()
 
-        @kb.add("c")
+        @kb.add("c", group="Notebook", desc="Copy current cell")
         def copy(event):
             self.copy()
 
-        @kb.add("v")
+        @kb.add("v", group="Notebook", desc="Paste copied cell")
         def paste(event):
             self.paste()
 
-        @kb.add("m")
+        @kb.add("m", group="Notebook", desc="Change cell to markdown")
         def to_markdown(event):
             self.cell.set_cell_type("markdown")
             self.cell.clear_output()
 
-        @kb.add("y")
+        @kb.add("m", group="Notebook", desc="Change cell to code")
         def to_code(event):
             self.cell.set_cell_type("code")
 
-        @kb.add("r")
+        @kb.add("r", group="Notebook", desc="Change cell to raw")
         def to_raw(event):
             self.cell.set_cell_type("raw")
             self.cell.clear_output()
 
-        @kb.add("l")
+        @kb.add("l", group="Notebook", desc="Toggle line numbers")
         def line_nos(event):
             self.line_numbers = not self.line_numbers
             for cell in self.page.child_cache.values():

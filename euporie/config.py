@@ -6,6 +6,7 @@ CONFIG_DEFAULTS = {
     "background_character": "·",
     "pygments_style": "default",
     "editing_mode": "emacs",
+    "show_line_numbers": True,
 }
 
 

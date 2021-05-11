@@ -6,9 +6,9 @@ from pathlib import Path
 from prompt_toolkit.application import Application
 from prompt_toolkit.enums import EditingMode
 from prompt_toolkit.filters import Condition, Filter
-from prompt_toolkit.key_binding import KeyBindings
+from prompt_toolkit.formatted_text import fragment_list_to_text
 from prompt_toolkit.key_binding.bindings.focus import focus_next, focus_previous
-from prompt_toolkit.layout.containers import (
+from prompt_toolkit.layout import (
     ConditionalContainer,
     Float,
     FloatContainer,
@@ -35,8 +35,10 @@ from pygments.styles import get_all_styles, get_style_by_name
 
 from euporie import logo
 from euporie.config import config
+from euporie.keys import KeyBindingsInfo
 from euporie.notebook import Notebook
 from euporie.term import TermAppMixin
+from euporie.text import FormatTextProcessor
 
 
 class App(Application, TermAppMixin):
@@ -52,11 +54,13 @@ class App(Application, TermAppMixin):
 
         self.file_open = Condition(lambda: self.files)
 
+        self.key_binding_details = []
+
         super().__init__(
             layout=self.layout(),
             enable_page_navigation_bindings=True,
             mouse_support=True,
-            key_bindings=self.keybindings(),
+            key_bindings=self.load_key_bindings(),
             full_screen=True,
             style=None,
             editing_mode=self.edit_mode,
@@ -226,7 +230,8 @@ class App(Application, TermAppMixin):
                 MenuItem(
                     " Help ",
                     children=[
-                        MenuItem("About", handler=self.about),
+                        MenuItem("Keyboard Shortcuts", handler=self.help_keys),
+                        MenuItem("About", handler=self.help_about),
                     ],
                 ),
             ],
@@ -265,31 +270,42 @@ class App(Application, TermAppMixin):
         # Focus status_bar_text so notebook is selected on tab
         return Layout(self.root_container, focused_element=status_bar_text)
 
-    def keybindings(self):
-        kb = KeyBindings()
+    def register_key_binding(self, kb, scope, desc, *keys, **kwargs):
+        self.key_binding_details.append((scope, desc, keys))
+        return kb.add(*keys, **kwargs)
+
+    def load_key_bindings(self):
+        kb = KeyBindingsInfo()
 
         in_edit_mode = Condition(
             lambda: self.file and self.file.cell and self.file.cell.is_editing()
         )
 
-        kb.add("tab", filter=~in_edit_mode)(focus_next)
-        kb.add("s-tab", filter=~in_edit_mode)(focus_previous)
-
-        @kb.add("c-q")
-        def exit(event):
-            self.try_to_exit()
-
-        @kb.add("c-w")
-        def close(event):
-            self.close_file(self.file)
-
-        @kb.add("c-n")
+        @kb.add("c-n", group="Application", desc="Create a new notebook file")
         def new(event):
             self.ask_open_file(validate=False)
 
-        @kb.add("c-o")
+        @kb.add("c-o", group="Application", desc="Open file")
         def open(event):
             self.ask_open_file()
+
+        @kb.add("c-w", group="Application", desc="Close the current file")
+        def close(event):
+            self.close_file(self.file)
+
+        @kb.add("c-q", group="Application", desc="Quit euporie")
+        def exit(event):
+            self.try_to_exit()
+
+        kb.add(
+            "tab", filter=~in_edit_mode, group="Navigation", desc="Focus next element"
+        )(focus_next)
+        kb.add(
+            "s-tab",
+            filter=~in_edit_mode,
+            group="Navigation",
+            desc="Focus previous element",
+        )(focus_previous)
 
         return kb
 
@@ -455,17 +471,66 @@ class App(Application, TermAppMixin):
             to_focus = button_widgets[0]
         self.layout.focus(to_focus)
 
-    def about(self):
+    def help_keys(self):
+
+        key_details = {
+            group: {
+                " / ".join(
+                    [
+                        " ".join(
+                            (
+                                part.replace("c-", "ctrl-").replace("s-", "shift-")
+                                for part in key
+                            )
+                        )
+                        for key in keys
+                    ]
+                ): desc
+                for desc, keys in info.items()
+            }
+            for group, info in KeyBindingsInfo.details.items()
+        }
+        max_key_len = (
+            max([len(key) for group in key_details.values() for key in group]) + 1
+        )
+
+        fragment_list = []
+        for group, item in key_details.items():
+            fragment_list.append(("", " " * (max(0, max_key_len - len(group)))))
+            fragment_list.append(("bold underline", f"{group}\n"))
+            for key, desc in item.items():
+                fragment_list.append(("bold", key.rjust(max_key_len)))
+                fragment_list.append(("", f"  {desc}\n"))
+            fragment_list.append(("", "\n"))
+        fragment_list.pop()
+
+        plain_text = fragment_list_to_text(fragment_list)
+        body = TextArea(
+            text=plain_text,
+            multiline=True,
+            focusable=True,
+            wrap_lines=False,
+            input_processors=[FormatTextProcessor()],
+            width=max([len(line) for line in plain_text.split("\n")]) + 2,
+            scrollbar=True,
+        )
+        body.control.formatted_text = fragment_list
+
+        self.dialog(
+            title="Keyboard Shortcuts",
+            body=body,
+            buttons={"OK": None},
+        )
+
+    def help_about(self):
         self.dialog(
             title="About",
             body=Window(
                 FormattedTextControl(
                     [
                         ("class:logo", logo),
-                        (
-                            "bold",
-                            "euporie\n\n",
-                        ),
+                        ("", " "),
+                        ("bold", "euporie\n\n"),
                         ("", "A command line editor for Jupyter notebooks\n"),
                         ("class:hr", "─" * 43 + "\n\n"),
                         ("", "Created by Josiah Outram Halstead\n"),

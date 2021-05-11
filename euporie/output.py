@@ -7,9 +7,9 @@ from prompt_toolkit.widgets import Label, TextArea
 from rich.markdown import Markdown
 
 from euporie import mdtable  # noqa F401
-from euporie.ansi import ANSI
 from euporie.config import config
 from euporie.control import HTMLControl, ImageControl, RichControl, SVGControl
+from euporie.text import ANSI
 
 BLING_SCORES = {
     "image/*": 0,

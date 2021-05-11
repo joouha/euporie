@@ -6,7 +6,6 @@ import nbformat
 from prompt_toolkit.application.current import get_app
 from prompt_toolkit.filters import Condition
 from prompt_toolkit.formatted_text.base import StyleAndTextTuples
-from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.layout.containers import (
     ConditionalContainer,
     Container,
@@ -24,6 +23,7 @@ from prompt_toolkit.widgets import Label, SearchToolbar, TextArea
 from pygments.lexers import get_lexer_by_name
 
 from euporie.box import Border
+from euporie.keys import KeyBindingsInfo
 from euporie.output import Output
 
 
@@ -62,7 +62,6 @@ class Cell:
         self.nb = notebook
         self.rendered = True
         self.editing = False
-        self.kb = KeyBindings()
         self._drawing_position = None
 
         self.state = "idle"
@@ -108,25 +107,35 @@ class Cell:
         )
 
         self.load()
-        self.load_keybindings()
 
-    def load_keybindings(self):
-        @self.kb.add("e", filter=~self.is_editing)
+    def load_key_bindings(self):
+        kb = KeyBindingsInfo()
+
+        @kb.add(
+            "e", filter=~self.is_editing, group="Notebook", desc="Edit cell in $EDITOR"
+        )
         async def edit_in_editor(event):
             self.editing = True
             await self.input_box.buffer.open_in_editor()
             self.nb.dirty = True
             self.editing = False
 
-        @self.kb.add("enter", filter=~self.is_editing)
+        @kb.add(
+            "enter",
+            filter=~self.is_editing,
+            group="Notebook",
+            desc="Enter cell edit mode",
+        )
         def enter_edit_mode(event):
             self.editing = True
             self.container.modal = True
             get_app().layout.focus(self.input_box)
             self.rendered = False
 
-        @self.kb.add("escape", "escape")  # , eager=True)
-        @self.kb.add("escape")  # , eager=True)
+        @kb.add("escape", group="Notebook", desc="Exit cell edit mode")
+        @kb.add(
+            "escape", "escape", group="Notebook", desc="Exit cell edit mode quickly"
+        )
         def exit_edit_mode(event):
             self.editing = False
             self.input = self.input_box.text
@@ -135,9 +144,20 @@ class Cell:
             # give focus back to selected cell (this might have changed!)
             get_app().layout.focus(self.nb.cell.control)
 
-        @self.kb.add("escape", "[", "1", "3", ";", "5", "u")
-        @self.kb.add("c-f20")
-        @self.kb.add("c-space")
+        @kb.add(
+            "escape",
+            "[",
+            "1",
+            "3",
+            ";",
+            "5",
+            "u",
+            key_str=("c-enter",),
+            group="Notebook",
+            desc="Run cell",
+        )
+        @kb.add("c-r", group="Notebook", desc="Run cell")
+        @kb.add("c-f20")
         def run_or_render(event):
             self.input = self.input_box.text
             self.nb.dirty = True
@@ -149,8 +169,19 @@ class Cell:
                 self.state = "queued"
                 self.run()
 
-        @self.kb.add("escape", "[", "1", "3", ";", "2", "u")
-        @self.kb.add("f21")
+        @kb.add(
+            "escape",
+            "[",
+            "1",
+            "3",
+            ";",
+            "2",
+            "u",
+            key_str=("s-enter",),
+            group="Notebook",
+            desc="Run then select next cell",
+        )
+        @kb.add("f21")
         def run_then_next(event):
             # Insert a cell if we are at the last cell
             n_cells = len(self.nb.page.children)
@@ -161,11 +192,11 @@ class Cell:
                 self.nb.page.selected_index += 1
             run_or_render(event)
 
-        @self.kb.add("c-f", filter=self.is_editing)
+        @kb.add("c-f", filter=self.is_editing, group="Edit Mode", desc="Find")
         def find(event):
             start_search(self.input_box.control)
 
-        @self.kb.add("c-g", filter=self.is_editing)
+        @kb.add("c-g", filter=self.is_editing, group="Edit Mode", desc="Find Next")
         def find_next(event):
             search_state = get_app().current_search_state
             cursor_position = self.input_box.buffer.get_search_position(
@@ -173,9 +204,11 @@ class Cell:
             )
             self.input_box.buffer.cursor_position = cursor_position
 
-        @self.kb.add("c-z", filter=self.is_editing)
+        @kb.add("c-z", filter=self.is_editing, group="Edit Mode", desc="Undo")
         def undo(event):
             self.input_box.buffer.undo()
+
+        return kb
 
     def run(self):
         self.clear_output()
@@ -420,7 +453,7 @@ class Cell:
         self.container = FloatContainer(
             content=HSplit(
                 [top_border, input_row, middle_line, output_row, bottom_border],
-                key_bindings=self.kb,
+                key_bindings=self.load_key_bindings(),
             ),
             floats=[
                 Float(

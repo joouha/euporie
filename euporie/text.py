@@ -2,6 +2,35 @@
 from typing import Generator
 
 from prompt_toolkit.formatted_text import ANSI as PTANSI
+from prompt_toolkit.formatted_text import to_formatted_text
+from prompt_toolkit.layout.processors import Processor, Transformation
+
+
+class FormatTextProcessor(Processor):
+    def apply_transformation(self, transformation_input):
+        if not hasattr(self, "formatted_lines"):
+            self.formatted_lines = to_formatted_lines(
+                transformation_input.buffer_control.formatted_text
+            )
+        lineno = transformation_input.lineno
+        max_lineno = len(self.formatted_lines) - 1
+        if lineno > max_lineno:
+            lineno = max_lineno
+        line = self.formatted_lines[lineno]
+        return Transformation(to_formatted_text(line))
+
+
+def to_formatted_lines(fragments):
+    lines = [[]]
+    for fragment in fragments:
+        style, text, *extra = fragment
+        while text:
+            start, line, text = text.partition("\n")
+            lines[-1].append((style, start, *extra))
+            if line == "\n":
+                lines.append([])
+    lines.pop()
+    return lines
 
 
 class ANSI(PTANSI):
