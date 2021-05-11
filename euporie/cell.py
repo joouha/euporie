@@ -294,8 +294,11 @@ class Cell:
         elif msg_type in ("stream", "error", "display_data", "execute_result"):
             self.json["outputs"].append(nbformat.v4.output_from_msg(msg))
 
-        # Redraw cell with new outputs / prompt
-        self.load()
+        # Update the outputs in the visible instance of this cell
+        visible_cell = self.nb.get_cell_by_id(self.id)
+        if visible_cell:
+            visible_cell.output_box.children = visible_cell.rendered_outputs
+
         # Tell the app that the display needs updating
         get_app().invalidate()
 
@@ -474,6 +477,10 @@ class Cell:
                 return "class:frame.border,cell-border-selected"
         else:
             return "class:frame.border,cell-border"
+
+    @property
+    def id(self):
+        return self.json.get("id")
 
     @property
     def language(self):

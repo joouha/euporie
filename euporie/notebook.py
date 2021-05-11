@@ -4,6 +4,7 @@ import copy
 import threading
 from functools import partial
 from pathlib import Path
+from typing import Optional
 
 import nbformat
 from jupyter_client import KernelManager
@@ -180,6 +181,14 @@ class Notebook:
             partial(Cell, i, cell_json, self)
             for i, cell_json in enumerate(self.json["cells"])
         ]
+
+    def get_cell_by_id(self, cell_id) -> Optional[Cell]:
+        for cell in self.page.child_cache.values():
+            if cell.id == cell_id:
+                break
+        else:
+            return
+        return cell
 
     def load_key_bindings(self):
         kb = KeyBindingsInfo()
