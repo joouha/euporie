@@ -63,20 +63,16 @@ class App(Application, TermAppMixin):
             key_bindings=self.load_key_bindings(),
             full_screen=True,
             style=None,
-            editing_mode=self.edit_mode,
+            editing_mode=config.editing_mode,
             *args,
             **kwargs,
         )
 
-    @property
-    def edit_mode(self):
-        if config.editing_mode == "emacs":
-            return EditingMode.EMACS
-        elif config.editing_mode == "vi":
-            return EditingMode.VI
-        else:
-            # Set default to emacs. Sorry.
-            return EditingMode.EMACS
+    def set_edit_mode(self, mode):
+        config.editing_mode = mode
+        self.editing_mode = {"emacs": EditingMode.EMACS, "vi": EditingMode.VI}.get(
+            mode, EditingMode.EMACS
+        )
 
     def _create_merged_style(
         self, include_default_pygments_style: Filter = None
@@ -106,7 +102,7 @@ class App(Application, TermAppMixin):
             #  status of cursor-line.
             **dict(default_ui_style().style_rules),
             "logo": "fg:#ff0000",
-            "background": "fg:#444444",
+            "background": "fg:#888888",
             "menu-bar": "fg:#ffffff bg:#222222",
             "menu-bar.item": "bg:#444444",
             "menu": "fg:#ffffff bg:#222222",
@@ -224,6 +220,21 @@ class App(Application, TermAppMixin):
                                 )
                                 for style in sorted(get_all_styles())
                             ],
+                        ),
+                        MenuItem(
+                            "Editing Key Bindings",
+                            children=[
+                                MenuItem(
+                                    "Emacs", handler=lambda: self.set_edit_mode("emacs")
+                                ),
+                                MenuItem(
+                                    "Vi", handler=lambda: self.set_edit_mode("vi")
+                                ),
+                            ],
+                        ),
+                        MenuItem(
+                            "Toggle Background",
+                            handler=lambda: config.toggle("background"),
                         ),
                     ],
                 ),

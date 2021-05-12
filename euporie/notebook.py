@@ -61,7 +61,7 @@ class Notebook:
 
         self.dirty = False
         self.kernel_status = "starting"
-        self.line_numbers = True
+        self.line_numbers = config.show_line_numbers
 
         self.path = Path(path).expanduser()
         if self.path.exists():

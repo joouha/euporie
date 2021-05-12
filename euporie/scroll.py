@@ -132,15 +132,24 @@ class ScrollingContainer(Container):
                 )
 
         # Draw background if there is space
-        if config.show_background:
+        if config.background:
             dot = Char(config.background_character, "class:background")
             for y in range(ypos, ypos + self.content_height + 1):
-                for x in range(write_position.xpos, xpos - 2):
-                    if (x + y) % 2 == 0:
-                        screen.data_buffer[y][x] = dot
-                for x in range(xpos + self.content_width + 2, write_position.width - 1):
-                    if (x + y) % 2 == 0:
-                        screen.data_buffer[y][x] = dot
+                for xrange in (
+                    (write_position.xpos, xpos - 2),
+                    (xpos + self.content_width + 2, write_position.width - 1),
+                ):
+                    for x in range(*xrange):
+                        if (
+                            (config.background == 1 and (x + y) % 2 == 0)
+                            or (config.background == 2 and (x + 2 * y) % 4 == 0)
+                            or (config.background == 3 and (x + y) % 3 == 0)
+                            or (
+                                config.background == 4
+                                and ((x + y % 2 * 3) % 6) % 4 == 0
+                            )
+                        ):
+                            screen.data_buffer[y][x] = dot
 
         # Draw child panes.
         for drawing in self.to_draw:
