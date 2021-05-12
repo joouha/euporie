@@ -29,7 +29,6 @@ def to_formatted_lines(fragments):
             lines[-1].append((style, start, *extra))
             if line == "\n":
                 lines.append([])
-    lines.pop()
     return lines
 
 

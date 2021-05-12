@@ -522,7 +522,7 @@ class App(Application, TermAppMixin):
 
         plain_text = fragment_list_to_text(fragment_list)
         body = TextArea(
-            text=plain_text,
+            text=plain_text.strip(),
             multiline=True,
             focusable=True,
             wrap_lines=False,
