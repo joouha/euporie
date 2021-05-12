@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import logging
 import sys
 from functools import partial
 from pathlib import Path
@@ -39,6 +40,8 @@ from euporie.keys import KeyBindingsInfo
 from euporie.notebook import Notebook
 from euporie.term import TermAppMixin
 from euporie.text import FormatTextProcessor
+
+log = logging.getLogger(__name__)
 
 
 class App(Application, TermAppMixin):
@@ -414,8 +417,10 @@ class App(Application, TermAppMixin):
 
     def open_file(self, path):
         path = Path(path).expanduser()
+        log.info(f"Opening file {path}")
         open_paths = [x.path for x in self.files]
         if path in open_paths:
+            log.info(f"File {path} already open, activating")
             self.active_notebook = open_paths.index(path)
         else:
             self.open_paths.append(path)
