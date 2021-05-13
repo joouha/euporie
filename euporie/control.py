@@ -62,10 +62,6 @@ class RichControl(Control):
     renderer = RichRenderer
 
 
-class SVGControl(Control):
-    renderer = SVGRenderer
-
-
 class HTMLControl(Control):
     renderer = HTMLRenderer
 
@@ -87,3 +83,7 @@ class ImageControl(Control):
             )
 
         return self._content_cache.get((cell_obscured, width), get_content)
+
+
+class SVGControl(ImageControl):
+    renderer = SVGRenderer
