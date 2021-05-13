@@ -100,30 +100,46 @@ If none of these commands are found in your `$PATH`, the plain text representati
 
 ## Key Bindings
 
-| Command                         | Key Binding                               |
-| ------------------------------- | ----------------------------------------- |
-| Quit                            | `Ctrl + q`                                |
-| Open notebook                   | `Ctrl + o`                                |
-| New notebook                    | `Ctrl + n`                                |
-| Close notebook                  | `Ctrl + w`                                |
-| Select next cell                | `Up`, `k`                                 |
-| Select previous cell            | `Down`, `j`                               |
-| Page up (move up 5 cells)       | `Pgup`                                    |
-| Page down (move down 5 cells)   | `PgDown`                                  |
-| Scroll up                       | `[`                                       |
-| Scroll down                     | `]`                                       |
-| Enter edit mode                 | `Enter`                                   |
-| Exit edit mode                  | `Esc`\*, `Esc, Esc`                       |
-| Edit cell in `$EDITOR`          | `e`                                       |
-| Run cell                        | `Ctrl + Enter`\*\*, `Ctrl + Space`, `F20` |
-| Run cell and select next cell   | `Shift + Enter`\*\*, `F21`                |
-| Insert cell above selected cell | `a`                                       |
-| Insert cell below selected cell | `b`                                       |
-| Toggle line numbers             | `l`                                       |
-| Copy cell                       | `c`                                       |
-| Cut cell                        | `x`                                       |
-| Paste cell                      | `v`                                       |
-| Delete cell                     | `dd`                                      |
+|             Key Binding | Command                     |
+| ----------------------: | :-------------------------- |
+|         **Application** |                             |
+|                `ctrl-n` | Create a new notebook file  |
+|                `ctrl-o` | Open file                   |
+|                `ctrl-w` | Close the current file      |
+|                `ctrl-q` | Quit euporie                |
+|                `ctrl-s` | Save current file           |
+|          **Navigation** |                             |
+|                   `tab` | Focus next element          |
+|             `shift-tab` | Focus previous element      |
+|                     `[` | Scroll up                   |
+|                     `]` | Scroll down                 |
+|      `ctrl-up` / `home` | Go to first cell            |
+|                `pageup` | Go up 5 cells               |
+|              `up` / `k` | Go up one cell              |
+|            `down` / `j` | Go down one cell            |
+|              `pagedown` | Go down 5 cells             |
+|     `ctrl-down` / `end` | Go to last cell             |
+|            **Notebook** |                             |
+|                     `a` | Add new cell above          |
+|                     `b` | Add new cell below          |
+|                   `d d` | Delete current cell         |
+|                     `x` | Cut current cell            |
+|                     `c` | Copy current cell           |
+|                     `v` | Paste copied cell           |
+|                     `m` | Change cell to markdown     |
+|                     `y` | Change cell to code         |
+|                     `r` | Change cell to raw          |
+|                     `l` | Toggle line numbers         |
+|                     `e` | Edit cell in $EDITOR        |
+|                 `enter` | Enter cell edit mode        |
+|                `escape` | Exit cell edit mode         |
+|         `escape escape` | Exit cell edit mode quickly |
+| `ctrl-enter` / `ctrl-r` | Run cell                    |
+|           `shift-enter` | Run then select next cell   |
+|           **Edit Mode** |                             |
+|                `ctrl-f` | Find                        |
+|                `ctrl-g` | Find Next                   |
+|                `ctrl-z` | Undo                        |
 
 > \* There is a slight delay detecting an escape key-event. To exit edit mode quickly, double-press the escape key.
 >
@@ -165,7 +181,6 @@ Change the existing entry for `Return+Shift` to `Return+Shift+Ctrl` (or whatever
 
 # Roadmap
 
-- [x] Add a configuration file to expose configurable settings
 - Add ability to dump formatted notebooks
 - Add command line argument parsing
 - Render outputs asynchronously in a separate thread

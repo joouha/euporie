@@ -37,6 +37,7 @@ pytest = "^5.2"
 isort = "^5.8.0"
 flake8 = "^3.9.1"
 black = "^21.5b0"
+poetry-publish = "^0.4.1"
 
 [tool.poetry.scripts]
 euporie = 'euporie.app:App.launch'
