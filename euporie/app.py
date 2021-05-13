@@ -66,15 +66,19 @@ class App(Application, TermAppMixin):
             key_bindings=self.load_key_bindings(),
             full_screen=True,
             style=None,
-            editing_mode=config.editing_mode,
+            editing_mode=self.get_edit_mode,
             *args,
             **kwargs,
         )
 
     def set_edit_mode(self, mode):
         config.editing_mode = mode
-        self.editing_mode = {"emacs": EditingMode.EMACS, "vi": EditingMode.VI}.get(
-            mode, EditingMode.EMACS
+        self.editing_mode = self.get_edit_mode
+
+    @property
+    def get_edit_mode(self):
+        return {"emacs": EditingMode.EMACS, "vi": EditingMode.VI}.get(
+            config.editing_mode, EditingMode.EMACS
         )
 
     def _create_merged_style(
