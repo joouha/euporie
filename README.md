@@ -165,7 +165,7 @@ Change the existing entry for `Return+Shift` to `Return+Shift+Ctrl` (or whatever
 
 # Roadmap
 
-- Add a configuration file to expose configurable settings
+- [x] Add a configuration file to expose configurable settings
 - Add ability to dump formatted notebooks
 - Add command line argument parsing
 - Render outputs asynchronously in a separate thread

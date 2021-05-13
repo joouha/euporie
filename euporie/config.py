@@ -107,7 +107,7 @@ class Config:
                         super().__setattr__("valid", False)
                     else:
                         return json_data
-        log.warning("The configuration file was not loaded")
+            log.warning("The configuration file was not loaded")
         return {}
 
     def set(self, attr, value):
