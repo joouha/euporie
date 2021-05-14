@@ -415,16 +415,16 @@ class Cell:
             name = msg.get("content", {}).get("name")
             outputs = {
                 output.get("name"): output
-                for output in self.json["outputs"]
+                for output in self.outputs
                 if output.get("name")
             }
             if name in outputs:
                 outputs[name].text += msg.get("content", {}).get("text", "")
             else:
-                self.json["outputs"].append(nbformat.v4.output_from_msg(msg))
+                self.add_output(nbformat.v4.output_from_msg(msg))
 
-        elif msg_type in ("stream", "error", "display_data", "execute_result"):
-            self.json["outputs"].append(nbformat.v4.output_from_msg(msg))
+        elif msg_type in ("error", "display_data", "execute_result"):
+            self.add_output(nbformat.v4.output_from_msg(msg))
 
         # Update the outputs in the visible instance of this cell
         visible_cell = self.nb.get_cell_by_id(self.id)
@@ -677,6 +677,10 @@ class Cell:
             ]
         else:
             return self.json.get("outputs", [])
+
+    def add_output(self, output):
+        self.json.setdefault("outputs", []).append(output)
+        self.output_box.children = self.rendered_outputs
 
     @property
     def rendered_outputs(self):
