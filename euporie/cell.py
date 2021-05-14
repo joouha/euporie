@@ -222,6 +222,16 @@ class Cell:
             buffer.insert_text(line)
             buffer.cursor_position -= eol
 
+        @kb.add("home", filter=self.is_editing)
+        def smart_home(event):
+            buffer = event.current_buffer
+            buffer.cursor_position += buffer.document.get_start_of_line_position(
+                after_whitespace=buffer.document.get_start_of_line_position(
+                    after_whitespace=True
+                )
+                != 0
+            )
+
         @kb.add("enter", filter=self.is_editing)
         def new_line(event):
             buffer = event.current_buffer
