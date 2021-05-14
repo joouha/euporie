@@ -212,6 +212,16 @@ class Cell:
         def undo(event):
             self.input_box.buffer.undo()
 
+        @kb.add("c-d", filter=self.is_editing, group="Edit Mode", desc="Duplicate line")
+        def duplicate_line(event):
+            buffer = event.current_buffer
+            line = buffer.document.current_line
+            eol = buffer.document.get_end_of_line_position()
+            buffer.cursor_position += eol
+            buffer.newline()
+            buffer.insert_text(line)
+            buffer.cursor_position -= eol
+
         @kb.add("enter", filter=self.is_editing)
         def new_line(event):
             buffer = event.current_buffer
@@ -289,17 +299,19 @@ class Cell:
                 event.current_buffer.complete_state.current_completion
             )
 
-        @kb.add("c-c", filter=self.is_editing)
+        @kb.add("c-c", filter=self.is_editing, group="Edit Mode", desc="Copy")
         def copy_selection(event):
             data = event.current_buffer.copy_selection()
             get_app().clipboard.set_data(data)
 
-        @kb.add("c-x", filter=self.is_editing, eager=True)
+        @kb.add(
+            "c-x", filter=self.is_editing, eager=True, group="Edit Mode", desc="Cut"
+        )
         def cut_selection(event):
             data = event.current_buffer.cut_selection()
             get_app().clipboard.set_data(data)
 
-        @kb.add("c-v", filter=self.is_editing)
+        @kb.add("c-v", filter=self.is_editing, group="Edit Mode", desc="Paste")
         def paste_clipboard(event):
             event.current_buffer.paste_clipboard_data(get_app().clipboard.get_data())
 
