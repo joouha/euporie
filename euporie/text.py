@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import re
 from typing import Generator
 
 from prompt_toolkit.formatted_text import ANSI as PTANSI
@@ -36,6 +37,13 @@ class ANSI(PTANSI):
     """
     Converts ANSI text into formatted text, preserving all control sequences.
     """
+
+    def __init__(self, value: str) -> None:
+
+        # Remove anything before a carriage return
+        value = re.sub("^.*\\r", "", value)
+
+        super().__init__(value)
 
     def _parse_corot(self) -> Generator[None, str, None]:
         """

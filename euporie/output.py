@@ -1,12 +1,11 @@
 # -*- coding: utf-8 -*-
 from pathlib import PurePath
 
-from prompt_toolkit.layout import Container, Window
+from prompt_toolkit.layout import Container, Window, to_container
 from prompt_toolkit.layout.controls import FormattedTextControl
-from prompt_toolkit.widgets import Label, TextArea
+from prompt_toolkit.widgets import Label
 from rich.markdown import Markdown
 
-from euporie import mdtable  # noqa F401
 from euporie.config import config
 from euporie.control import HTMLControl, ImageControl, RichControl, SVGControl
 from euporie.text import ANSI
@@ -85,9 +84,8 @@ class Output:
                 break
 
             if mime_path.match("text/stderr"):
-                self.content = TextArea(
-                    datum.rstrip(), wrap_lines=True, style="bg:darkred"
-                )
+                control = FormattedTextControl(ANSI(datum.rstrip()))
+                self.content = Window(control, wrap_lines=True, style="fg:red")
                 break
 
             if mime_path.match("text/*"):
@@ -98,7 +96,7 @@ class Output:
 
         else:
             datum = sorted(self.data.items(), key=bling)[-1][1]
-            self.content = Label(ANSI(str(datum).rstrip()))
+            self.content = Label(str(datum).rstrip())
 
     @property
     def data(self):
@@ -115,22 +113,22 @@ class Output:
         return self.json.get("metadata", {})
 
     def get_key_bindings(self, *args, **kwargs):
-        return self.content.get_key_bindings(*args, **kwargs)
+        return to_container(self.content).get_key_bindings(*args, **kwargs)
 
     def get_children(self, *args, **kwargs):
-        return self.content.get_children(*args, **kwargs)
+        return to_container(self.content).get_children(*args, **kwargs)
 
     def preferred_width(self, *args, **kwargs):
-        return self.content.preferred_width(*args, **kwargs)
+        return to_container(self.content).preferred_width(*args, **kwargs)
 
     def preferred_height(self, *args, **kwargs):
-        return self.content.preferred_height(*args, **kwargs)
+        return to_container(self.content).preferred_height(*args, **kwargs)
 
     def write_to_screen(self, *args, **kwargs):
-        return self.content.write_to_screen(*args, **kwargs)
+        return to_container(self.content).write_to_screen(*args, **kwargs)
 
     def reset(self, *args, **kwargs):
-        return self.content.reset(*args, **kwargs)
+        return to_container(self.content).reset(*args, **kwargs)
 
     def __pt_container__(self) -> Container:
-        return self.content
+        return to_container(self.content)

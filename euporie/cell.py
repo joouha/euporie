@@ -387,7 +387,19 @@ class Cell:
             self.nb.kernel_status = self.state
 
         elif msg_type == "execute_input":
-            self.json["execution_count"] = msg.get("content", {}).get("execution_count")
+            self.execution_count = msg.get("content", {}).get("execution_count")
+
+        elif msg_type == "stream":
+            name = msg.get("content", {}).get("name")
+            outputs = {
+                output.get("name"): output
+                for output in self.json["outputs"]
+                if output.get("name")
+            }
+            if name in outputs:
+                outputs[name].text += msg.get("content", {}).get("text", "")
+            else:
+                self.json["outputs"].append(nbformat.v4.output_from_msg(msg))
 
         elif msg_type in ("stream", "error", "display_data", "execute_result"):
             self.json["outputs"].append(nbformat.v4.output_from_msg(msg))
