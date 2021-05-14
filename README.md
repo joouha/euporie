@@ -140,6 +140,12 @@ If none of these commands are found in your `$PATH`, the plain text representati
 |                `ctrl-f` | Find                        |
 |                `ctrl-g` | Find Next                   |
 |                `ctrl-z` | Undo                        |
+|                `ctrl-d` | Duplicate line              |
+|                   `tab` | Indent                      |
+|             `shift-tab` | Unindent                    |
+|                `ctrl-c` | Copy                        |
+|                `ctrl-x` | Cut                         |
+|                `ctrl-v` | Paste                       |
 
 > \* There is a slight delay detecting an escape key-event. To exit edit mode quickly, double-press the escape key.
 >
