@@ -4,7 +4,8 @@ from functools import partial
 
 import nbformat
 from prompt_toolkit.application.current import get_app
-from prompt_toolkit.filters import Condition
+from prompt_toolkit.buffer import indent, unindent
+from prompt_toolkit.filters import Condition, has_completions, has_selection
 from prompt_toolkit.formatted_text.base import StyleAndTextTuples
 from prompt_toolkit.layout.containers import (
     ConditionalContainer,
@@ -25,6 +26,12 @@ from pygments.lexers import get_lexer_by_name
 from euporie.box import Border
 from euporie.keys import KeyBindingsInfo
 from euporie.output import Output
+
+
+@Condition
+def cursor_in_leading_ws():
+    before = get_app().current_buffer.document.current_line_before_cursor
+    return (not before) or before.isspace()
 
 
 class ClickArea:
@@ -204,6 +211,97 @@ class Cell:
         @kb.add("c-z", filter=self.is_editing, group="Edit Mode", desc="Undo")
         def undo(event):
             self.input_box.buffer.undo()
+
+        @kb.add("enter", filter=self.is_editing)
+        def new_line(event):
+            buffer = event.current_buffer
+            buffer.cut_selection()
+            pre = buffer.document.text_before_cursor
+            buffer.newline()
+            if pre.rstrip()[-1:] in (":", "(", "["):
+                dent_buffer(event)
+
+        def dent_buffer(event, un=False):
+            buffer = event.current_buffer
+            selection_state = buffer.selection_state
+            cursor_position = buffer.cursor_position
+            lines = buffer.document.lines
+
+            # Apply indentation to the selected range
+            from_, to = map(
+                lambda x: buffer.document.translate_index_to_position(x)[0],
+                buffer.document.selection_range(),
+            )
+            dent = unindent if un else indent
+            dent(buffer, from_, to + 1, count=event.arg)
+
+            # If there is a selection, indent it and adjust the selection range
+            if selection_state:
+                change = 4 * (un * -2 + 1)
+                # Count how many lines will be affected
+                line_count = 0
+                for i in range(from_, to + 1):
+                    if not un or lines[i][:1] == " ":
+                        line_count += 1
+                backwards = cursor_position < selection_state.original_cursor_position
+                if un and not line_count:
+                    buffer.cursor_position = cursor_position
+                else:
+                    buffer.cursor_position = max(
+                        0, cursor_position + change * (1 if backwards else line_count)
+                    )
+                    selection_state.original_cursor_position = max(
+                        0,
+                        selection_state.original_cursor_position
+                        + change * (line_count if backwards else 1),
+                    )
+
+            # Maintain the selection state before indentation
+            buffer.selection_state = selection_state
+
+        @kb.add(
+            "tab",
+            filter=self.is_editing & (cursor_in_leading_ws | has_selection),
+            group="Edit Mode",
+            desc="Indent",
+        )
+        def indent_buffer(event):
+            dent_buffer(event)
+
+        @kb.add(
+            "s-tab",
+            filter=self.is_editing & (cursor_in_leading_ws | has_selection),
+            group="Edit Mode",
+            desc="Unindent",
+        )
+        def unindent_buffer(event):
+            dent_buffer(event, un=True)
+
+        @kb.add("escape", filter=has_completions, eager=True)
+        def cancel_completion(event):
+            """Cancel a completion with the escape key."""
+            event.current_buffer.cancel_completion()
+
+        @kb.add("enter", filter=has_completions)
+        def apply_completion(event):
+            """Cancel a completion with the escape key."""
+            event.current_buffer.apply_completion(
+                event.current_buffer.complete_state.current_completion
+            )
+
+        @kb.add("c-c", filter=self.is_editing)
+        def copy_selection(event):
+            data = event.current_buffer.copy_selection()
+            get_app().clipboard.set_data(data)
+
+        @kb.add("c-x", filter=self.is_editing, eager=True)
+        def cut_selection(event):
+            data = event.current_buffer.cut_selection()
+            get_app().clipboard.set_data(data)
+
+        @kb.add("c-v", filter=self.is_editing)
+        def paste_clipboard(event):
+            event.current_buffer.paste_clipboard_data(get_app().clipboard.get_data())
 
         return kb
 
