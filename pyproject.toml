@@ -38,9 +38,20 @@ isort = "^5.8.0"
 flake8 = "^3.9.1"
 black = "^21.5b0"
 poetry-publish = "^0.4.1"
+flake8-black = "^0.2.1"
+flake8-bugbear = "^21.4.3"
+flake8-bandit = "^2.1.2"
+flake8-annotations = "^2.6.2"
+flake8-docstrings = "^1.6.0"
+mypy = "^0.812"
+flake8-isort = "^4.0.0"
 
 [tool.poetry.scripts]
 euporie = 'euporie.app:App.launch'
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
