@@ -6,6 +6,7 @@ from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.widgets import Label
 from rich.markdown import Markdown
 
+from euporie import mdtable  # noqa E401
 from euporie.config import config
 from euporie.control import HTMLControl, ImageControl, RichControl, SVGControl
 from euporie.text import ANSI
