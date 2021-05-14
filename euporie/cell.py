@@ -20,7 +20,7 @@ from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.lexers import DynamicLexer, PygmentsLexer
 from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
 from prompt_toolkit.search import start_search
-from prompt_toolkit.widgets import Label, SearchToolbar, TextArea
+from prompt_toolkit.widgets import SearchToolbar, TextArea
 from pygments.lexers import get_lexer_by_name
 
 from euporie.box import Border
@@ -449,7 +449,7 @@ class Cell:
                 self.control,
                 ConditionalContainer(
                     content=fill(
-                        char=Border.HORIZONTAL, width=len(self.prompt), height=1
+                        char=Border.HORIZONTAL, width=lambda: len(self.prompt), height=1
                     ),
                     filter=self.show_prompt,
                 ),
@@ -467,9 +467,11 @@ class Cell:
                 [
                     fill(width=1, char=Border.VERTICAL),
                     ConditionalContainer(
-                        content=Label(
-                            self.prompt,
-                            width=len(self.prompt),
+                        content=Window(
+                            FormattedTextControl(
+                                lambda: self.prompt,
+                            ),
+                            width=lambda: len(self.prompt),
                             style="class:cell-input-prompt",
                         ),
                         filter=self.show_prompt,
@@ -489,7 +491,9 @@ class Cell:
                 [
                     fill(width=1, height=1, char=Border.SPLIT_LEFT),
                     ConditionalContainer(
-                        content=fill(char=Border.HORIZONTAL, width=len(self.prompt)),
+                        content=fill(
+                            char=Border.HORIZONTAL, width=lambda: len(self.prompt)
+                        ),
                         filter=self.show_prompt,
                     ),
                     ConditionalContainer(
@@ -508,9 +512,11 @@ class Cell:
                 [
                     fill(width=1, char=Border.VERTICAL),
                     ConditionalContainer(
-                        content=Label(
-                            self.prompt,
-                            width=len(self.prompt),
+                        content=Window(
+                            FormattedTextControl(
+                                lambda: self.prompt,
+                            ),
+                            width=lambda: len(self.prompt),
                             style="class:cell-output-prompt",
                         ),
                         filter=self.show_prompt,
@@ -535,7 +541,9 @@ class Cell:
             [
                 fill(width=1, height=1, char=Border.BOTTOM_LEFT),
                 ConditionalContainer(
-                    content=fill(char=Border.HORIZONTAL, width=len(self.prompt)),
+                    content=fill(
+                        char=Border.HORIZONTAL, width=lambda: len(self.prompt)
+                    ),
                     filter=self.show_prompt,
                 ),
                 ConditionalContainer(
@@ -600,12 +608,20 @@ class Cell:
         if self.state in ("busy", "queued"):
             prompt = "*"
         else:
-            prompt = self.json.get("execution_count", "")
+            prompt = self.execution_count
         if prompt is None:
             prompt = " "
         if prompt:
             prompt = f"[{prompt}]"
         return prompt
+
+    @property
+    def execution_count(self):
+        return self.json.get("execution_count", " ")
+
+    @execution_count.setter
+    def execution_count(self, value):
+        self.json["execution_count"] = value
 
     @property
     def input(self):
