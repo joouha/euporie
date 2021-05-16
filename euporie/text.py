@@ -40,8 +40,11 @@ class ANSI(PTANSI):
 
     def __init__(self, value: str) -> None:
 
-        # Remove anything before a carriage return
-        value = re.sub("^.*\\r", "", value)
+        # Replace windows style newlines
+        value = value.replace("\r\n", "\n")
+        # Remove anything before a carriage return if there is something after it to
+        # emulate a carriage return in the output
+        value = re.sub("^.*\\r(?!\\n)", "", value)
 
         super().__init__(value)
 
