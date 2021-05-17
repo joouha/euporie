@@ -240,6 +240,12 @@ class App(Application, TermAppMixin):
                             ],
                         ),
                         MenuItem(
+                            "Toggle run after external edit",
+                            handler=lambda: config.toggle(
+                                "execute_after_external_edit"
+                            ),
+                        ),
+                        MenuItem(
                             "Toggle Background",
                             handler=lambda: config.toggle("background"),
                         ),

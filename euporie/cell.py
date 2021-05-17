@@ -24,6 +24,7 @@ from prompt_toolkit.widgets import SearchToolbar, TextArea
 from pygments.lexers import get_lexer_by_name
 
 from euporie.box import Border
+from euporie.config import config
 from euporie.keys import KeyBindingsInfo
 from euporie.output import Output
 
@@ -125,6 +126,8 @@ class Cell:
             self.editing = True
             await self.input_box.buffer.open_in_editor()
             exit_edit_mode(event)
+            if config.execute_after_external_edit:
+                run_or_render(event)
 
         @kb.add(
             "enter",

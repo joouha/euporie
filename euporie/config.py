@@ -52,6 +52,11 @@ CONFIG_SCHEMA = {
             "type": "boolean",
             "default": True,
         },
+        "execute_after_external_edit": {
+            "description": "Whether to execute a cell immediately after editing in $EDITOR",
+            "type": "boolean",
+            "default": False,
+        },
     },
 }
 
