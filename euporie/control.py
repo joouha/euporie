@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """Defines custom controls which re-render on resize."""
-from typing import Dict, Optional, Type
+from typing import Any, Dict, Optional, Type
 
 from prompt_toolkit.cache import SimpleCache
 from prompt_toolkit.layout.controls import GetLinePrefixCallable, UIContent, UIControl
@@ -24,7 +24,7 @@ class Control(UIControl):
 
     renderer: Type[DataRenderer]
 
-    def __init__(self, data: str, render_args: Optional[Dict] = None) -> None:
+    def __init__(self, data: "Any", render_args: "Optional[Dict]" = None) -> "None":
         """Initalize the control.
 
         Args:
@@ -37,8 +37,7 @@ class Control(UIControl):
         self.render_args = render_args
 
         self.renderer_instance = self.renderer.select()
-        self.rendered_lines: Optional[list] = None
-
+        self.rendered_lines: "list" = []
         self._format_cache: SimpleCache = SimpleCache(maxsize=20)
         self._content_cache: SimpleCache = SimpleCache(maxsize=20)
 
@@ -50,7 +49,7 @@ class Control(UIControl):
         get_line_prefix: Optional[GetLinePrefixCallable],
     ) -> int:
         """Returns the number of lines in the rendered content."""
-        if self.rendered_lines is None:
+        if not self.rendered_lines:
             self.rendered_lines = self._format_cache.get(
                 (width, max_available_height),
                 lambda: self.render(width, max_available_height),
