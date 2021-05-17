@@ -37,6 +37,7 @@ from pygments.styles import get_all_styles, get_style_by_name
 from euporie import logo
 from euporie.config import config
 from euporie.keys import KeyBindingsInfo
+from euporie.menu import SmartMenuItem
 from euporie.notebook import Notebook
 from euporie.term import TermAppMixin
 from euporie.text import FormatTextProcessor
@@ -55,7 +56,7 @@ class App(Application, TermAppMixin):
 
         self.ttimeoutlen = 0.1
 
-        self.file_open = Condition(lambda: self.files)
+        self.file_open = Condition(lambda: bool(self.files))
 
         self.key_binding_details = []
 
@@ -190,8 +191,14 @@ class App(Application, TermAppMixin):
                         ),
                         MenuItem("Open", handler=self.ask_open_file),
                         MenuItem("-", disabled=True),
-                        MenuItem("Save", handler=lambda: self.file.save()),
-                        MenuItem("Close", handler=self.close_file),
+                        SmartMenuItem(
+                            "Save",
+                            handler=lambda: self.file.save(),
+                            disabler=~self.file_open,
+                        ),
+                        SmartMenuItem(
+                            "Close", handler=self.close_file, disabler=~self.file_open
+                        ),
                         MenuItem("-", disabled=True),
                         MenuItem("Exit", handler=self.try_to_exit),
                     ],
@@ -199,9 +206,9 @@ class App(Application, TermAppMixin):
                 MenuItem(
                     " Edit ",
                     children=[
-                        MenuItem("Cut", handler=lambda: self.file.cut()),
-                        MenuItem("Copy", handler=lambda: self.file.copy()),
-                        MenuItem("Paste", handler=lambda: self.file.paste()),
+                        MenuItem("Cut Cell", handler=lambda: self.file.cut()),
+                        MenuItem("Copy Cell", handler=lambda: self.file.copy()),
+                        MenuItem("Paste Cell", handler=lambda: self.file.paste()),
                     ],
                 ),
                 MenuItem(
@@ -222,8 +229,14 @@ class App(Application, TermAppMixin):
                         MenuItem(
                             "Syntax Theme",
                             children=[
-                                MenuItem(
-                                    style, handler=partial(self.update_style, style)
+                                SmartMenuItem(
+                                    style,
+                                    handler=partial(self.update_style, style),
+                                    toggler=Condition(
+                                        partial(
+                                            lambda x: config.pygments_style == x, style
+                                        )
+                                    ),
                                 )
                                 for style in sorted(get_all_styles())
                             ],
@@ -231,22 +244,33 @@ class App(Application, TermAppMixin):
                         MenuItem(
                             "Editing Key Bindings",
                             children=[
-                                MenuItem(
-                                    "Emacs", handler=lambda: self.set_edit_mode("emacs")
+                                SmartMenuItem(
+                                    "Emacs",
+                                    handler=lambda: self.set_edit_mode("emacs"),
+                                    toggler=Condition(
+                                        lambda: config.editing_mode == "emacs"
+                                    ),
                                 ),
-                                MenuItem(
-                                    "Vi", handler=lambda: self.set_edit_mode("vi")
+                                SmartMenuItem(
+                                    "Vi",
+                                    handler=lambda: self.set_edit_mode("vi"),
+                                    toggler=Condition(
+                                        lambda: config.editing_mode == "vi"
+                                    ),
                                 ),
                             ],
                         ),
-                        MenuItem(
+                        SmartMenuItem(
                             "Toggle run after external edit",
+                            toggler=Condition(
+                                lambda: config.execute_after_external_edit
+                            ),
                             handler=lambda: config.toggle(
                                 "execute_after_external_edit"
                             ),
                         ),
                         MenuItem(
-                            "Toggle Background",
+                            "Switch Background Pattern",
                             handler=lambda: config.toggle("background"),
                         ),
                     ],
