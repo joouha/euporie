@@ -165,7 +165,7 @@ class TermAppMixin:
             params = result.get("csi_params", "")
             params = QueryResponsePatterns.sixel.findall(params)
             params = [int(x) for x in params]
-            if len(params) <= 3:
+            if len(params) >= 3:
                 Pi, Ps, Pv = params[:3]
                 if Ps == 0:
                     return True
