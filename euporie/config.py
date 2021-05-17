@@ -141,6 +141,10 @@ class Config:
         for key, value in self.json_data.items():
             super().__setattr__(key, value)
 
+    def __getattr__(self, name):
+        """Defined to prevent mypy attemptint to type check dynamic attributes."""
+        return super().__getattr__(name)
+
     def __setattr__(self, name, value):
         if self.valid:
             json_data = self.json_data
