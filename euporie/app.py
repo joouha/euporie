@@ -1,8 +1,12 @@
 # -*- coding: utf-8 -*-
+"""Contains the main Application class which runs euporie."""
+from __future__ import annotations
+
 import logging
 import sys
 from functools import partial
 from pathlib import Path
+from typing import TYPE_CHECKING, Any, Callable, Mapping, Optional, Union
 
 from prompt_toolkit.application import Application
 from prompt_toolkit.enums import EditingMode
@@ -17,6 +21,7 @@ from prompt_toolkit.layout import (
     VSplit,
     Window,
     WindowAlign,
+    to_container,
 )
 from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.layout.dimension import LayoutDimension as D
@@ -32,7 +37,7 @@ from prompt_toolkit.widgets import (
     MenuItem,
     TextArea,
 )
-from pygments.styles import get_all_styles, get_style_by_name
+from pygments.styles import get_all_styles, get_style_by_name  # type: ignore
 
 from euporie import logo
 from euporie.config import config
@@ -42,14 +47,30 @@ from euporie.notebook import Notebook
 from euporie.term import TermAppMixin
 from euporie.text import FormatTextProcessor
 
+if TYPE_CHECKING:
+    from prompt_toolkit.formatted_text import AnyFormattedText
+    from prompt_toolkit.key_binding import KeyBindings
+    from prompt_toolkit.key_binding.key_processor import KeyPressEvent
+    from prompt_toolkit.layout.containers import AnyContainer
+
 log = logging.getLogger(__name__)
 
 
 class App(Application, TermAppMixin):
-    def __init__(self, *args, **kwargs):
+    """The main euporie application class.
 
-        self.open_paths = []
-        self.files = []
+    This subclasses the `prompt_toolkit.application.Application` class, so application
+    wide methods can be easily added.
+    """
+
+    def __init__(self) -> "None":
+        """Instantiates euporie specific application variables.
+
+        After euporie specific application variables are instantiated, the application
+        instance is initiated.
+        """
+        self.open_paths: "list[Path]" = []
+        self.files: "list[Notebook]" = []
         self.last_selected_index: int = 0
 
         self.include_default_pygments_style = False
@@ -58,26 +79,28 @@ class App(Application, TermAppMixin):
 
         self.file_open = Condition(lambda: bool(self.files))
 
-        self.key_binding_details = []
-
         super().__init__(
-            layout=self.layout(),
+            layout=self.build_layout(),
             enable_page_navigation_bindings=True,
             mouse_support=True,
             key_bindings=self.load_key_bindings(),
             full_screen=True,
             style=None,
-            editing_mode=self.get_edit_mode,
-            *args,
-            **kwargs,
+            editing_mode=self.get_edit_mode(),
         )
 
-    def set_edit_mode(self, mode):
-        config.editing_mode = mode
-        self.editing_mode = self.get_edit_mode
+    def set_edit_mode(self, mode: "str") -> "None":
+        """Sets the keybindings for editing mode.
 
-    @property
-    def get_edit_mode(self):
+        Args:
+            mode: 'vi' or 'emacs'
+
+        """
+        config.editing_mode = mode
+        self.editing_mode = self.get_edit_mode()
+
+    def get_edit_mode(self) -> "EditingMode":
+        """Returns the editing mode enum defined in the configuration."""
         return {"emacs": EditingMode.EMACS, "vi": EditingMode.VI}.get(
             config.editing_mode, EditingMode.EMACS
         )
@@ -141,12 +164,13 @@ class App(Application, TermAppMixin):
             ]
         )
 
-    def update_style(self, pygments_style):
+    def update_style(self, pygments_style: "str") -> "None":
+        """Updates the application's style when the syntax theme is changed."""
         config.pygments_style = pygments_style
         self.renderer.style = self._create_merged_style()
 
-    def layout(self):
-
+    def build_layout(self) -> "Layout":
+        """Builds the main application layout."""
         kernel_status_repr = {
             "starting": "◍",
             "idle": "○",
@@ -154,16 +178,19 @@ class App(Application, TermAppMixin):
             "error": "☹",
         }
 
-        def get_statusbar_text():
-            kernel_status = kernel_status_repr.get(self.file.kernel_status, "◌")
-            selected_cell = self.file.page.selected_index + 1
-            dirt = "*" if self.file.dirty else ""
+        def get_statusbar_text() -> "list[tuple[str, str]]":
+            """Generates the formatted text for the statusbar."""
+            file = self.file
+            assert isinstance(file, Notebook)
+            kernel_status = kernel_status_repr.get(file.kernel_status, "◌")
+            selected_cell = file.page.selected_index + 1
+            dirt = "*" if file.dirty else ""
             return [
                 ("class:menu-bar.item", f" Cell {selected_cell} "),
                 ("", " "),
-                ("class:menu-bar.item bold", f" {dirt}{self.file.path.name} "),
+                ("class:menu-bar.item bold", f" {dirt}{file.path.name} "),
                 ("", " "),
-                ("class:menu-bar.item", f" {self.file.kernel_name} {kernel_status} "),
+                ("class:menu-bar.item", f" {file.kernel_name} {kernel_status} "),
             ]
 
         status_bar_text = FormattedTextControl(
@@ -193,7 +220,7 @@ class App(Application, TermAppMixin):
                         MenuItem("-", disabled=True),
                         SmartMenuItem(
                             "Save",
-                            handler=lambda: self.file.save(),
+                            handler=lambda: self.file_op("save"),
                             disabler=~self.file_open,
                         ),
                         SmartMenuItem(
@@ -206,20 +233,33 @@ class App(Application, TermAppMixin):
                 MenuItem(
                     " Edit ",
                     children=[
-                        MenuItem("Cut Cell", handler=lambda: self.file.cut()),
-                        MenuItem("Copy Cell", handler=lambda: self.file.copy()),
-                        MenuItem("Paste Cell", handler=lambda: self.file.paste()),
+                        SmartMenuItem(
+                            "Cut Cell",
+                            handler=lambda: self.file_op("cut"),
+                            disabler=~self.file_open,
+                        ),
+                        SmartMenuItem(
+                            "Copy Cell",
+                            handler=lambda: self.file_op("copy"),
+                            disabler=~self.file_open,
+                        ),
+                        SmartMenuItem(
+                            "Paste Cell",
+                            handler=lambda: self.file_op("paste"),
+                            disabler=~self.file_open,
+                        ),
                     ],
                 ),
                 MenuItem(
                     " Kernel ",
                     children=[
                         MenuItem(
-                            "Restart Kernel", handler=lambda: self.file.restart_kernel()
+                            "Restart Kernel",
+                            handler=lambda: self.file_op("restart_kernel"),
                         ),
                         MenuItem(
                             "Change Kernel...",
-                            handler=lambda: self.file.change_kernel(),
+                            handler=lambda: self.file_op("change_kernel"),
                         ),
                     ],
                 ),
@@ -293,6 +333,7 @@ class App(Application, TermAppMixin):
         )
 
         # Add logo and status bar into menubar
+        assert isinstance(self.body_container.container.content, HSplit)
         self.body_container.container.content.children = [
             VSplit(
                 [
@@ -318,31 +359,28 @@ class App(Application, TermAppMixin):
         # Focus status_bar_text so notebook is selected on tab
         return Layout(self.root_container, focused_element=status_bar_text)
 
-    def register_key_binding(self, kb, scope, desc, *keys, **kwargs):
-        self.key_binding_details.append((scope, desc, keys))
-        return kb.add(*keys, **kwargs)
-
-    def load_key_bindings(self):
+    def load_key_bindings(self) -> "KeyBindings":
+        """Define application-wide keybindings."""
         kb = KeyBindingsInfo()
 
         in_edit_mode = Condition(
-            lambda: self.file and self.file.cell and self.file.cell.is_editing()
+            lambda: bool(self.file and self.file.cell and self.file.cell.is_editing())
         )
 
         @kb.add("c-n", group="Application", desc="Create a new notebook file")
-        def new(event):
+        def new(event: "KeyPressEvent") -> None:
             self.ask_open_file(validate=False)
 
         @kb.add("c-o", group="Application", desc="Open file")
-        def open(event):
+        def open(event: "KeyPressEvent") -> None:
             self.ask_open_file()
 
         @kb.add("c-w", group="Application", desc="Close the current file")
-        def close(event):
+        def close(event: "KeyPressEvent") -> None:
             self.close_file(self.file)
 
         @kb.add("c-q", group="Application", desc="Quit euporie")
-        def exit(event):
+        def exit(event: "KeyPressEvent") -> None:
             self.try_to_exit()
 
         kb.add(
@@ -358,58 +396,51 @@ class App(Application, TermAppMixin):
         return kb
 
     @property
-    def selected_index(self):
+    def selected_index(self) -> "int":
+        """Returns the index of the selected file."""
         # Detect if focused file has changed
         # Find index of selected child
+        index = 0
         for i, file in enumerate(self.files):
             if self.layout.has_focus(file):
+                index = i
                 break
         else:
-            i = self.last_selected_index
+            index = self.last_selected_index
         # This will perform change the position when the new child is selected
-        self.last_selected_index = i
+        self.last_selected_index = index
         return self.last_selected_index
 
-    @selected_index.setter
-    def selected_index(self, new_index):
-        # Only update the selected file if it was not selected before
-        if new_index != self.last_selected_index:
-            # Ensure selected index is a valid child
-            new_index = min(max(new_index, 0), len(self.files) - 1)
-            self.select_notebook(new_index)
-
-            # Focus new child if not already focused
-            child = self.get_child(new_index)
-            if not self.layout.has_focus(child):
-                self.layout.focus(child)
-
-            # Track which child was selected
-            self.last_selected_index = new_index
-
-    def try_to_exit(self):
-        """
-        Check for unsaved files before closing.
+    def try_to_exit(self) -> "None":
+        """Check for unsaved files before closing.
 
         Creates a chain of close file commands, where the callback for each triggers
         the closure of the next. The closing process can be cancelled anywhere along
         the chain.
         """
-
         if self.files:
 
-            def final_cb():
+            def final_cb() -> "None":
                 """Really exit after the last file in the chain is closed."""
                 self.cleanup_closed_file(self.files[0])
                 self.exit()
 
-            def create_cb(close_file, cleanup_file, cb):
+            def create_cb(
+                close_file: "Notebook", cleanup_file: "Notebook", cb: "Callable"
+            ) -> "Callable":
                 """Generate a file close chaining callbacks.
 
                 Cleans up after the previously closed file, and requests to close the
                 next file in the chain.
+
+                Args:
+                    close_file: The file to close
+                    cleanup_file: The previously closed file to cleanup
+                    cb: The callback to call when work is complete
+
                 """
 
-                def inner():
+                def inner() -> None:
                     self.cleanup_closed_file(cleanup_file)
                     close_file.close(cb=cb)
 
@@ -422,8 +453,22 @@ class App(Application, TermAppMixin):
         else:
             self.exit()
 
-    def ask_open_file(self, default="", validate=True, error=None):
-        def open_cb():
+    def ask_open_file(
+        self,
+        default: "str" = "",
+        validate: "bool" = True,
+        error: "Optional[str]" = None,
+    ) -> None:
+        """Display a dialog asking for file name input.
+
+        Args:
+            default: The default filename to display in the text entry box
+            validate: Whether to disallow files which do not exist
+            error: An optional error message to display below the file name
+
+        """
+
+        def _open_cb() -> None:
             path = filepath.text
             if not validate or Path(path).expanduser().exists():
                 self.open_file(filepath.text)
@@ -433,23 +478,29 @@ class App(Application, TermAppMixin):
                 )
 
         filepath = TextArea(text=default, multiline=False)
+        body_contents: "list[AnyContainer]" = [
+            Label("Enter file name:"),
+            filepath,
+        ]
+        if error:
+            body_contents.append(to_container(Label(error, style="red")))
         self.dialog(
             title="Select file",
-            body=HSplit(
-                [
-                    Label("Enter file name:"),
-                    filepath,
-                ]
-                + ([Label(error, style="red")] if error else [])
-            ),
+            body=HSplit(body_contents),
             buttons={
-                "OK": open_cb,
+                "OK": _open_cb,
                 "Cancel": None,
             },
             to_focus=filepath,
         )
 
-    def open_file(self, path):
+    def open_file(self, path: "Union[str, Path]") -> None:
+        """Opens a notebook file.
+
+        Args:
+            path: The file path of the notebook file to open
+
+        """
         path = Path(path).expanduser()
         log.info(f"Opening file {path}")
         open_paths = [x.path for x in self.files]
@@ -461,36 +512,106 @@ class App(Application, TermAppMixin):
             self.files.append(Notebook(path))
             self.active_notebook_index = len(self.files)
 
+        assert isinstance(self.body_container.body, HSplit)
         self.body_container.body.children[0] = VSplit(self.files)
 
-    def close_file(self, file=None):
+    def file_op(
+        self,
+        operation: "str",
+        file: "Optional[Notebook]" = None,
+        args: "Optional[list[Any]]" = None,
+        kwargs: "Optional[Mapping[str, Any]]" = None,
+    ) -> None:
+        """Call a function from the a file object.
+
+        Args:
+            operation: The name of the function to attempt to call.
+            file: The instance of the file to close. If `None`, the currently
+            selectedd file will be closed.
+            args: List of parameter arguments to pass to the function
+            kwargs: Mapping of keyword arguments to pass to the function
+
+        """
+        if args is None:
+            args = []
+        if kwargs is None:
+            kwargs = {}
         if file is None:
             file = self.file
-        if file:
-            self.file.close(lambda: self.cleanup_closed_file(file))
+        if file and hasattr(file, operation):
+            func = getattr(self.file, operation)
+            if callable(func):
+                func(*args)
 
-    def cleanup_closed_file(self, file):
+    def close_file(self, file: "Optional[Notebook]" = None) -> None:
+        """Closes a notebook file.
+
+        Args:
+            file: The instance of the file to close. If `None`, the currently
+            selectedd file will be closed.
+
+        """
+        if file is None:
+            file = self.file
+        if file is not None:
+            self.file_op(
+                "close",
+                file=file,
+                kwargs={"cb": lambda: self.cleanup_closed_file(file)},
+            )
+
+    def cleanup_closed_file(self, file: "Notebook") -> None:
+        """Remove a file container from the current instance of the app.
+
+        Args:
+            file: The closed instance of the file container
+
+        """
         # Remove file
         self.files.remove(file)
         # Update body container to reflect new file list
+        assert isinstance(self.body_container.body, HSplit)
         self.body_container.body.children[0] = VSplit(self.files)
         # Focus another file if one exists
         if self.files:
-            self.file.page.focus()
+            self.file_op("focus")
         # If a file is not open, the status bar is not shown, so focus the logo, so
         # pressing tab focuses the menu
         else:
             self.layout.focus(self.logo)
 
     @property
-    def file(self):
+    def file(self) -> "Optional[Notebook]":
+        """Return the currently selected file container object."""
         if self.files:
             index = min(self.selected_index, len(self.files) - 1)
             return self.files[index]
+        else:
+            return None
 
-    def dialog(self, title, body, buttons, to_focus=None):
-        def make_handler(cb):
-            def inner():
+    def dialog(
+        self,
+        title: "AnyFormattedText",
+        body: "AnyContainer",
+        buttons: "dict[str, Optional[Callable]]",
+        to_focus: "Optional[AnyContainer]" = None,
+    ) -> None:
+        """Display a modal dialog above the application.
+
+        Returns focus to the previously selected control when closed.
+
+        Args:
+            title: The title of the dialog. Can be formatted text.
+            body: The container to use as the main body of the dialog.
+            buttons: A dictionary mapping text to display as dialog buttons to
+                callbacks to run when the button is clicked. If the callback is
+                `None`, the dialog will be closed without running a callback.
+            to_focus: The control to focus when the dialog is displayed.
+
+        """
+
+        def _make_handler(cb: "Optional[Callable]") -> "Callable":
+            def inner() -> "None":
                 self.root_container.floats.remove(dialog)
                 self.layout.focus(focused)
                 if cb:
@@ -501,7 +622,7 @@ class App(Application, TermAppMixin):
         focused = self.layout.current_control
 
         button_widgets = [
-            Button(text, make_handler(cb), left_symbol="[", right_symbol="]")
+            Button(text, _make_handler(cb), left_symbol="[", right_symbol="]")
             for text, cb in buttons.items()
         ]
 
@@ -521,8 +642,8 @@ class App(Application, TermAppMixin):
             to_focus = button_widgets[0]
         self.layout.focus(to_focus)
 
-    def help_keys(self):
-
+    def help_keys(self) -> None:
+        """Displays details of registered key-bindings in a dialog."""
         key_details = {
             group: {
                 " / ".join(
@@ -544,7 +665,7 @@ class App(Application, TermAppMixin):
             max([len(key) for group in key_details.values() for key in group]) + 1
         )
 
-        fragment_list = []
+        fragment_list: "list[Union[tuple[str, str], tuple[str, str, Callable]]]" = []
         for group, item in key_details.items():
             fragment_list.append(("", " " * (max(0, max_key_len - len(group)))))
             fragment_list.append(("bold underline", f"{group}\n"))
@@ -560,11 +681,10 @@ class App(Application, TermAppMixin):
             multiline=True,
             focusable=True,
             wrap_lines=False,
-            input_processors=[FormatTextProcessor()],
+            input_processors=[FormatTextProcessor(fragment_list)],
             width=max([len(line) for line in plain_text.split("\n")]) + 2,
             scrollbar=True,
         )
-        body.control.formatted_text = fragment_list
 
         self.dialog(
             title="Keyboard Shortcuts",
@@ -572,7 +692,8 @@ class App(Application, TermAppMixin):
             buttons={"OK": None},
         )
 
-    def help_about(self):
+    def help_about(self) -> None:
+        """Displays an about dialog."""
         self.dialog(
             title="About",
             body=Window(
@@ -593,7 +714,8 @@ class App(Application, TermAppMixin):
         )
 
     @classmethod
-    def launch(cls):
+    def launch(cls) -> None:
+        """Launches the app, opening any command line arguments as files."""
         app = cls()
         for path in sys.argv[1:]:
             app.open_file(path)
