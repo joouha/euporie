@@ -116,7 +116,7 @@ class Output:
                 break
 
             if mime_path.match("text/x-python-traceback"):
-                control = FormattedTextControl(ANSI(datum))
+                control = FormattedTextControl(ANSI(datum.rstrip()))
                 self.content = Window(control)
                 break
 
@@ -127,7 +127,7 @@ class Output:
 
             if mime_path.match("text/*"):
                 # Use formatted text so ansi colour codes are displayed as colours
-                control = FormattedTextControl(ANSI(datum))
+                control = FormattedTextControl(ANSI(datum.rstrip()))
                 self.content = Window(control, wrap_lines=True)
                 break
 
