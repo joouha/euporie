@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
-from prompt_toolkit.widgets import base
+"""Define box border constants."""
 
 
 class Border:
-    "Box drawing characters. (Thin)"
+    """Box drawing characters, includeing characters for splits."""
+
     HORIZONTAL = "─"
     VERTICAL = "│"
     TOP_LEFT = "╭"
@@ -15,6 +16,3 @@ class Border:
     SPLIT_LEFT = "├"
     SPLIT_RIGHT = "┤"
     CROSS = "┼"
-
-
-base.Border = Border
