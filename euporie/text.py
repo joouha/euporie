@@ -8,11 +8,13 @@ from prompt_toolkit.layout.processors import Processor, Transformation
 
 
 class FormatTextProcessor(Processor):
+    def __init__(self, formatted_text):
+        self.formatted_text = formatted_text
+        super().__init__()
+
     def apply_transformation(self, transformation_input):
         if not hasattr(self, "formatted_lines"):
-            self.formatted_lines = to_formatted_lines(
-                transformation_input.buffer_control.formatted_text
-            )
+            self.formatted_lines = to_formatted_lines(self.formatted_text)
         lineno = transformation_input.lineno
         max_lineno = len(self.formatted_lines) - 1
         if lineno > max_lineno:
