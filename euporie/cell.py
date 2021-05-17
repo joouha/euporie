@@ -472,6 +472,7 @@ class Cell:
             style="class:cell-input",
         )
         self.input_box.window.cursorline = self.is_editing
+        self.input_box.buffer.tempfile_suffix = ".py"
 
         self.output_box = HSplit(
             self.rendered_outputs,
