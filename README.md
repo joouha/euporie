@@ -8,13 +8,17 @@ Euporie is a text-based user interface for running and editing Jupyter notebooks
 
 # Install
 
-Euporie is on pypi, so can be installed using pip:
+Euporie is on pypi, so can be installed using `pip` or [`pipx`](https://pipxproject.github.io/pipx/):
 
 ```bash
+# install inside a virtualenv
 pip install euporie
+
+# install globally
+pipx install euporie
 ```
 
-If you are using Windows, you may wish to install some optional python dependencies to render images and HTML tables:
+You may wish to install some optional python dependencies to render images and HTML tables (but [see below](#image-support)):
 
 ```bash
 pip install euporie[html-mtable,images-timg]
@@ -100,52 +104,52 @@ If none of these commands are found in your `$PATH`, the plain text representati
 
 ## Key Bindings
 
-|             Key Binding | Command                     |
-| ----------------------: | :-------------------------- |
-|         **Application** |                             |
-|                `ctrl-n` | Create a new notebook file  |
-|                `ctrl-o` | Open file                   |
-|                `ctrl-w` | Close the current file      |
-|                `ctrl-q` | Quit euporie                |
-|                `ctrl-s` | Save current file           |
-|          **Navigation** |                             |
-|                   `tab` | Focus next element          |
-|             `shift-tab` | Focus previous element      |
-|                     `[` | Scroll up                   |
-|                     `]` | Scroll down                 |
-|      `ctrl-up` / `home` | Go to first cell            |
-|                `pageup` | Go up 5 cells               |
-|              `up` / `k` | Go up one cell              |
-|            `down` / `j` | Go down one cell            |
-|              `pagedown` | Go down 5 cells             |
-|     `ctrl-down` / `end` | Go to last cell             |
-|            **Notebook** |                             |
-|                     `a` | Add new cell above          |
-|                     `b` | Add new cell below          |
-|                   `d d` | Delete current cell         |
-|                     `x` | Cut current cell            |
-|                     `c` | Copy current cell           |
-|                     `v` | Paste copied cell           |
-|                     `m` | Change cell to markdown     |
-|                     `y` | Change cell to code         |
-|                     `r` | Change cell to raw          |
-|                     `l` | Toggle line numbers         |
-|                     `e` | Edit cell in $EDITOR        |
-|                 `enter` | Enter cell edit mode        |
-|                `escape` | Exit cell edit mode         |
-|         `escape escape` | Exit cell edit mode quickly |
-| `ctrl-enter` / `ctrl-r` | Run cell                    |
-|           `shift-enter` | Run then select next cell   |
-|           **Edit Mode** |                             |
-|                `ctrl-f` | Find                        |
-|                `ctrl-g` | Find Next                   |
-|                `ctrl-z` | Undo                        |
-|                `ctrl-d` | Duplicate line              |
-|                   `tab` | Indent                      |
-|             `shift-tab` | Unindent                    |
-|                `ctrl-c` | Copy                        |
-|                `ctrl-x` | Cut                         |
-|                `ctrl-v` | Paste                       |
+|             Key Binding | Command                       |
+| ----------------------: | :---------------------------- |
+|         **Application** |                               |
+|                `ctrl-n` | Create a new notebook file    |
+|                `ctrl-o` | Open file                     |
+|                `ctrl-w` | Close the current file        |
+|                `ctrl-q` | Quit euporie                  |
+|                `ctrl-s` | Save current file             |
+|          **Navigation** |                               |
+|                   `tab` | Focus next element            |
+|             `shift-tab` | Focus previous element        |
+|                     `[` | Scroll up                     |
+|                     `]` | Scroll down                   |
+|      `ctrl-up` / `home` | Go to first cell              |
+|                `pageup` | Go up 5 cells                 |
+|              `up` / `k` | Go up one cell                |
+|            `down` / `j` | Go down one cell              |
+|              `pagedown` | Go down 5 cells               |
+|     `ctrl-down` / `end` | Go to last cell               |
+|            **Notebook** |                               |
+|                     `a` | Add new cell above            |
+|                     `b` | Add new cell below            |
+|                   `d d` | Delete current cell           |
+|                     `x` | Cut current cell              |
+|                     `c` | Copy current cell             |
+|                     `v` | Paste copied cell             |
+|                     `m` | Change cell to markdown       |
+|                     `y` | Change cell to code           |
+|                     `r` | Change cell to raw            |
+|                     `l` | Toggle line numbers           |
+|                     `e` | Edit cell in $EDITOR          |
+|                 `enter` | Enter cell edit mode          |
+|                `escape` | Exit cell edit mode\*         |
+|         `escape escape` | Exit cell edit mode quickly   |
+| `ctrl-enter` / `ctrl-r` | Run cell\*\*                  |
+|           `shift-enter` | Run then select next cell\*\* |
+|           **Edit Mode** |                               |
+|                `ctrl-f` | Find                          |
+|                `ctrl-g` | Find Next                     |
+|                `ctrl-z` | Undo                          |
+|                `ctrl-d` | Duplicate line                |
+|                   `tab` | Indent                        |
+|             `shift-tab` | Unindent                      |
+|                `ctrl-c` | Copy                          |
+|                `ctrl-x` | Cut                           |
+|                `ctrl-v` | Paste                         |
 
 > \* There is a slight delay detecting an escape key-event. To exit edit mode quickly, double-press the escape key.
 >
