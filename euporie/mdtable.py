@@ -1,12 +1,27 @@
 # -*- coding: utf-8 -*-
-from typing import Any
+"""Adds markdown table support to rich.markdown.
+
+Currently every table cell is treated as a paragraph, which makes the table take the
+full width of the display.
+
+TODO - fix this.
+"""
+from typing import TYPE_CHECKING
 
 import rich.markdown
-from rich.console import Console, ConsoleOptions, RenderResult
+from rich.console import Console, ConsoleOptions, JustifyMethod, RenderResult
 from rich.table import Table as RichTable
 
 from euporie.config import config
-from euporie.libs.commonmark_extensions.tables import ParserWithTables
+from euporie.libs.commonmark_extensions.tables import ParserWithTables  # type: ignore
+
+if TYPE_CHECKING:
+    from commonmark.node import Node  # type: ignore
+
+    from euporie.libs.commonmark_extensions.tables import (
+        Table as CETable,  # type: ignore
+    )
+
 
 rich.markdown.Parser = ParserWithTables
 
@@ -18,25 +33,40 @@ class Table(rich.markdown.MarkdownElement):
     new_line = False
 
     @classmethod
-    def create(cls, markdown: rich.markdown.Markdown, table: Any) -> "Table":
+    def create(cls, markdown: "rich.markdown.Markdown", table: "CETable") -> "Table":
+        """Instantiates and returns a rich markdown table."""
         return cls(table)
 
-    def __init__(self, contents) -> None:
+    def __init__(self, contents: "CETable") -> None:
+        """Sets the contents for this markdown table.
+
+        Args:
+            contents: A `commonmark_extensions.tables.Table` instance.
+
+        """
         self.contents = contents.table
         self.column_properties = contents.column_properties
-        self.elements = []
 
     def __rich_console__(
-        self, console: Console, options: ConsoleOptions
+        self, console: "Console", options: "ConsoleOptions"
     ) -> RenderResult:
+        """Render the table instance.
 
+        Args:
+            console: The `rich.console.Console` instance to use to render this table.
+            options: The console options to use.
+
+        """
         table = RichTable()
 
-        def node_to_text(node, justify=None):
+        def node_to_text(
+            node: "Node",
+            justify: "JustifyMethod" = None,
+        ) -> "rich.markdown.Markdown":
             """Create a rich markdown object, then add the parsed node to it."""
             node_md = rich.markdown.Markdown(
                 "",
-                code_theme=config.pygments_style,
+                code_theme=str(config.pygments_style),
                 justify=justify,
             )
             node_md.parsed = node
