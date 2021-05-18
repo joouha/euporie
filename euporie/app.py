@@ -102,7 +102,7 @@ class App(Application, TermAppMixin):
     def get_edit_mode(self) -> "EditingMode":
         """Returns the editing mode enum defined in the configuration."""
         return {"emacs": EditingMode.EMACS, "vi": EditingMode.VI}.get(
-            config.editing_mode, EditingMode.EMACS
+            str(config.editing_mode), EditingMode.EMACS
         )
 
     def _create_merged_style(
@@ -307,7 +307,7 @@ class App(Application, TermAppMixin):
                         SmartMenuItem(
                             "Run cell after external edit",
                             toggler=Condition(
-                                lambda: config.execute_after_external_edit
+                                lambda: bool(config.execute_after_external_edit)
                             ),
                             handler=lambda: config.toggle(
                                 "execute_after_external_edit"

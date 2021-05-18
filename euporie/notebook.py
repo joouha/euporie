@@ -216,6 +216,7 @@ class Notebook:
     def get_cell_by_id(self, cell_id: "str") -> "Optional[Cell]":
         """Returns a reference to the `Cell` container with a given cell id."""
         for cell in self.page.child_cache.values():
+            assert isinstance(cell, Cell)
             if cell.id == cell_id:
                 break
         else:
@@ -272,6 +273,7 @@ class Notebook:
         def line_nos(event: "KeyPressEvent") -> "None":
             self.line_numbers = not self.line_numbers
             for cell in self.page.child_cache.values():
+                assert isinstance(cell, Cell)
                 cell.input_box.window.left_margins = (
                     [NumberedMargin()] if self.line_numbers else []
                 )
@@ -281,7 +283,9 @@ class Notebook:
     @property
     def cell(self) -> "Cell":
         """Returns the currently selected `Cell` in this `Notebook`."""
-        return self.page.get_child()
+        cell = self.page.get_child()
+        assert isinstance(cell, Cell)
+        return cell
 
     def add(self, offset: "int") -> "None":
         """Creates a new cell at a given offset from the currently selected cell.
