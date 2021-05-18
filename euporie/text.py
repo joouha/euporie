@@ -1,47 +1,83 @@
 # -*- coding: utf-8 -*-
+"""Contains dpdated ANSI parsing and Formatted Text processing."""
 import re
-from typing import Generator
+from typing import Generator, cast
 
 from prompt_toolkit.formatted_text import ANSI as PTANSI
-from prompt_toolkit.formatted_text import to_formatted_text
-from prompt_toolkit.layout.processors import Processor, Transformation
+from prompt_toolkit.formatted_text import (
+    AnyFormattedText,
+    FormattedText,
+    to_formatted_text,
+)
+from prompt_toolkit.formatted_text.base import OneStyleAndTextTuple
+from prompt_toolkit.layout.processors import (
+    Processor,
+    Transformation,
+    TransformationInput,
+)
 
 
 class FormatTextProcessor(Processor):
-    def __init__(self, formatted_text):
+    """Applies formatted text to a TextArea."""
+
+    def __init__(self, formatted_text: "AnyFormattedText"):
+        """Initiate the processor.
+
+        Args:
+            formatted_text: The text in a buffer but with formatting applied.
+
+        """
         self.formatted_text = formatted_text
         super().__init__()
 
-    def apply_transformation(self, transformation_input):
+    def apply_transformation(
+        self, transformation_input: "TransformationInput"
+    ) -> "Transformation":
+        """Apply text formatting to a line in a buffer."""
         if not hasattr(self, "formatted_lines"):
-            self.formatted_lines = to_formatted_lines(self.formatted_text)
+            self.formatted_lines = self.to_formatted_lines(self.formatted_text)
         lineno = transformation_input.lineno
         max_lineno = len(self.formatted_lines) - 1
         if lineno > max_lineno:
             lineno = max_lineno
         line = self.formatted_lines[lineno]
-        return Transformation(to_formatted_text(line))
+        return Transformation(line)
 
+    @staticmethod
+    def to_formatted_lines(
+        fragments: "AnyFormattedText",
+    ) -> "list[FormattedText]":
+        """Split formatted text into a list of lines of formatted text.
 
-def to_formatted_lines(fragments):
-    lines = [[]]
-    for fragment in fragments:
-        style, text, *extra = fragment
-        while text:
-            start, line, text = text.partition("\n")
-            lines[-1].append((style, start, *extra))
-            if line == "\n":
-                lines.append([])
-    return lines
+        Args:
+            fragments: A `FormattedText` object.
+
+        """
+        lines: "list[FormattedText]" = [FormattedText([])]
+        for fragment in to_formatted_text(fragments):
+            style, text, *extra = fragment
+            while text:
+                start, line, text = text.partition("\n")
+                style_text_tuple = (style, start, *extra)
+                style_text_tuple = cast("OneStyleAndTextTuple", style_text_tuple)
+                lines[-1].append(style_text_tuple)
+                if line == "\n":
+                    lines.append(FormattedText())
+        return lines
 
 
 class ANSI(PTANSI):
-    """
-    Converts ANSI text into formatted text, preserving all control sequences.
-    """
+    """Converts ANSI text into formatted text, preserving all control sequences."""
 
-    def __init__(self, value: str) -> None:
+    def __init__(self, value: "str") -> None:
+        """Initiate the ANSI processor instance.
 
+        This replaces carriage returns to emulate terminal output.
+
+        Args:
+            value: The ANSI string to process.
+
+        """
         # Replace windows style newlines
         value = value.replace("\r\n", "\n")
         # Remove anything before a carriage return if there is something after it to
@@ -51,8 +87,7 @@ class ANSI(PTANSI):
         super().__init__(value)
 
     def _parse_corot(self) -> Generator[None, str, None]:
-        """
-        Coroutine that parses the ANSI escape sequences.
+        """Coroutine that parses the ANSI escape sequences.
 
         This is modified version of the ANSI parser from prompt_toolkit retains
         all CSI escape sequences.
