@@ -1,18 +1,19 @@
 # -*- coding: utf-8 -*-
+"""Contains the main class for a notebook file."""
 import asyncio
 import copy
 import threading
 from functools import partial
 from pathlib import Path
-from typing import Optional
+from typing import TYPE_CHECKING, AsyncGenerator, Callable, Iterable, Optional, cast
 
-import nbformat
-from jupyter_client import KernelManager
-from jupyter_client.kernelspec import KernelSpecManager
+import nbformat  # type: ignore
+from jupyter_client import KernelClient, KernelManager  # type: ignore
+from jupyter_client.kernelspec import KernelSpecManager  # type: ignore
 from prompt_toolkit.application.current import get_app
 from prompt_toolkit.completion.base import CompleteEvent, Completer, Completion
 from prompt_toolkit.document import Document
-from prompt_toolkit.layout.containers import Container, HSplit, Window
+from prompt_toolkit.layout.containers import HSplit, Window
 from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.layout.dimension import LayoutDimension as D
 from prompt_toolkit.layout.margins import NumberedMargin
@@ -23,17 +24,36 @@ from euporie.config import config
 from euporie.keys import KeyBindingsInfo
 from euporie.scroll import ScrollingContainer
 
+if TYPE_CHECKING:
+    from prompt_toolkit.key_binding import KeyBindings
+    from prompt_toolkit.key_binding.key_processor import KeyPressEvent
+
+    from euporie.app import App
+
 
 class KernelCompleter(Completer):
-    def __init__(self, nb):
+    """A prompt_toolkit completer which provides completions from a Jupyter kernel."""
+
+    def __init__(self, nb: "Notebook"):
+        """Instantiate the completer for a given notebook.
+
+        Args:
+            nb: A `Notebook` instance
+
+        """
         self.nb = nb
 
-    def get_completions(self):
-        pass
+    def get_completions(
+        self, document: "Document", complete_event: "CompleteEvent"
+    ) -> "Iterable[Completion]":
+        """Does nothing as completions are retrieved asynchronously."""
+        while False:
+            yield
 
     async def get_completions_async(
         self, document: Document, complete_event: CompleteEvent
-    ):
+    ) -> "AsyncGenerator[Completion, None]":
+        """An asynchronous generator of `Completions`, as returned by the kernel."""
         if self.nb.kc:
             msg_id = self.nb.kc.complete(
                 code=document.text,
@@ -52,12 +72,12 @@ class KernelCompleter(Completer):
 
 
 class Notebook:
-    def __init__(self, path):
+    """The main notebook container class."""
 
+    def __init__(self, path: "Path"):
+        """Instantiate a Notebook container, using a notebook at a given path."""
         self.char_px_y = 32
         self.char_px_x = 15
-
-        self.output_cache = {}
 
         self.dirty = False
         self.kernel_status = "starting"
@@ -74,17 +94,18 @@ class Notebook:
 
         self.page = ScrollingContainer(
             children=self.cell_renderers,
-            max_content_width=D(preferred=config.max_notebook_width),
+            max_content_width=D(preferred=int(config.max_notebook_width)),
         )
         self.container = Box(self.page, padding=0, padding_left=1)
         self.container.container.key_bindings = self.load_key_bindings()
 
-        self.clipboard = []
+        self.clipboard: "list[Cell]" = []
 
         self.completer = KernelCompleter(self)
-        self.km = self.kc = None
+        self.km: "Optional[KernelManager]" = None
+        self.kc: "Optional[KernelClient]" = None
 
-        def setup_loop():
+        def setup_loop() -> None:
             """Set up a thread with an event loop to listen for kernel responses."""
             # Create and set kernel loop
             self.kernel_loop = asyncio.new_event_loop()
@@ -101,19 +122,19 @@ class Notebook:
         self.kernel_thread = threading.Thread(target=setup_loop)
         self.kernel_thread.start()
 
-    async def start_kernel(self):
-
+    async def start_kernel(self) -> None:
+        """Starts a Juypter kernel, creating a `KernelManager`."""
         if not self.kernel_name:
             self.change_kernel()
             return
-
         # Create a kernel manager for this notebook
         self.km = KernelManager(kernel_name=self.kernel_name)
         try:
             # await self.km._async_start_kernel()
             self.km.start_kernel()
         except Exception as e:
-            get_app().dialog("Error Starting Kernel", Label(e.__repr__()), {"OK": None})
+            app = cast("App", get_app())
+            app.dialog("Error Starting Kernel", Label(e.__repr__()), {"OK": None})
             self.kc = None
             self.kernel_status = "error"
         else:
@@ -122,23 +143,31 @@ class Notebook:
             self.kernel_status = "idle"
         get_app().invalidate()
 
-    def restart_kernel(self):
-        async def restart():
+    def restart_kernel(self) -> "None":
+        """Restarts the current `Notebook`'s kernel.
+
+        This is performed asynchronously in the notebook's kernel thread.
+        """
+
+        async def _restart() -> "None":
             if self.km:
                 await self.km._async_shutdown_kernel()
             await self.start_kernel()
 
         asyncio.run_coroutine_threadsafe(
-            restart(),
+            _restart(),
             self.kernel_loop,
         )
 
     @property
-    def kernel_name(self):
+    def kernel_name(self) -> "str":
+        """Return the name of the kernel defined in the notebook JSON."""
         return self.json.get("metadata", {}).get("kernelspec", {}).get("name")
 
-    def change_kernel(self):
-        def change_kernel_cb():
+    def change_kernel(self) -> None:
+        """Displays a dialog for the user to select a new kernel."""
+
+        def _change_kernel_cb() -> None:
             name = options.current_value
             spec = kernel_specs.get(name, {}).get("spec", {})
             self.json.setdefault("metadata", {})["kernelspec"] = {
@@ -161,7 +190,8 @@ class Notebook:
                 for kernel_name, kernel_spec in kernel_specs.items()
             ]
         )
-        get_app().dialog(
+        app = cast("App", get_app())
+        app.dialog(
             title="Select Kernel",
             body=HSplit(
                 [
@@ -170,73 +200,76 @@ class Notebook:
                 ]
             ),
             buttons={
-                "Select": change_kernel_cb,
+                "Select": _change_kernel_cb,
                 "Cancel": None,
             },
         )
 
     @property
-    def cell_renderers(self):
+    def cell_renderers(self) -> "list[Callable]":
+        """Return a list of `Cell` generator functions for the notebooks' cells."""
         return [
             partial(Cell, i, cell_json, self)
             for i, cell_json in enumerate(self.json["cells"])
         ]
 
-    def get_cell_by_id(self, cell_id) -> Optional[Cell]:
+    def get_cell_by_id(self, cell_id: "str") -> "Optional[Cell]":
+        """Returns a reference to the `Cell` container with a given cell id."""
         for cell in self.page.child_cache.values():
             if cell.id == cell_id:
                 break
         else:
-            return
+            return None
         return cell
 
-    def load_key_bindings(self):
+    def load_key_bindings(self) -> "KeyBindings":
+        """Load the key bindings associate with a `Notebook` container."""
         kb = KeyBindingsInfo()
 
         @kb.add("c-s", group="Application", desc="Save current file")
-        def save(event):
+        def save(event: "KeyPressEvent") -> "None":
             self.save()
 
         @kb.add("a", group="Notebook", desc="Add new cell above")
-        def add_above(event):
+        def add_above(event: "KeyPressEvent") -> "None":
             self.add(0)
 
         @kb.add("b", group="Notebook", desc="Add new cell below")
-        def add_below(event):
+        def add_below(event: "KeyPressEvent") -> "None":
             self.add(1)
 
         @kb.add("d", "d", group="Notebook", desc="Delete current cell")
-        def delete(event):
+        def delete(event: "KeyPressEvent") -> "None":
             self.delete()
 
         @kb.add("x", group="Notebook", desc="Cut current cell")
-        def cut(event):
+        def cut(event: "KeyPressEvent") -> "None":
             self.cut()
 
         @kb.add("c", group="Notebook", desc="Copy current cell")
-        def copy(event):
+        def copy(event: "KeyPressEvent") -> "None":
             self.copy()
 
         @kb.add("v", group="Notebook", desc="Paste copied cell")
-        def paste(event):
+        def paste(event: "KeyPressEvent") -> "None":
             self.paste()
 
         @kb.add("m", group="Notebook", desc="Change cell to markdown")
-        def to_markdown(event):
+        def to_markdown(event: "KeyPressEvent") -> "None":
             self.cell.set_cell_type("markdown")
             self.cell.clear_output()
 
         @kb.add("y", group="Notebook", desc="Change cell to code")
-        def to_code(event):
+        def to_code(event: "KeyPressEvent") -> "None":
             self.cell.set_cell_type("code")
 
         @kb.add("r", group="Notebook", desc="Change cell to raw")
-        def to_raw(event):
+        def to_raw(event: "KeyPressEvent") -> "None":
             self.cell.set_cell_type("raw")
             self.cell.clear_output()
 
         @kb.add("l", group="Notebook", desc="Toggle line numbers")
-        def line_nos(event):
+        def line_nos(event: "KeyPressEvent") -> "None":
             self.line_numbers = not self.line_numbers
             for cell in self.page.child_cache.values():
                 cell.input_box.window.left_margins = (
@@ -246,10 +279,18 @@ class Notebook:
         return kb
 
     @property
-    def cell(self):
+    def cell(self) -> "Cell":
+        """Returns the currently selected `Cell` in this `Notebook`."""
         return self.page.get_child()
 
-    def add(self, offset):
+    def add(self, offset: "int") -> "None":
+        """Creates a new cell at a given offset from the currently selected cell.
+
+        Args:
+            offset: How many cells above (negative) or below (positive) the current
+                cell the new cell should be placed.
+
+        """
         index = self.page.selected_index + offset
         self.json["cells"].insert(
             index,
@@ -258,25 +299,29 @@ class Notebook:
         self.dirty = True
         self.refresh(index=index)
 
-    def cut(self, index=None):
+    def cut(self, index: "Optional[int]" = None) -> "None":
+        """Remove a cell from the notebook and add it to the `Notebook`'s clipboard."""
         if index is None:
             index = self.page.selected_index
         self.copy(index)
         self.delete(index)
 
-    def copy(self, index=None):
+    def copy(self, index: "Optional[int]" = None) -> "None":
+        """Add a copy of this cell to the `Notebook`'s clipboard."""
         if index is None:
             index = self.page.selected_index
         self.clipboard = copy.deepcopy(self.json["cells"][index : index + 1])
 
-    def paste(self, index=None):
+    def paste(self, index: "Optional[int]" = None) -> "None":
+        """Append the contents of the `Notebook`'s clipboard below the current cell."""
         if index is None:
             index = self.page.selected_index
         self.json["cells"][index + 1 : index + 1] = copy.deepcopy(self.clipboard)
         self.dirty = True
         self.refresh(index + 1)
 
-    def delete(self, index=None):
+    def delete(self, index: "Optional[int]" = None) -> "None":
+        """Delete a cell from the notebook."""
         if len(self.json["cells"]) > 1:
             if index is None:
                 index = self.page.selected_index
@@ -284,25 +329,39 @@ class Notebook:
             self.dirty = True
             self.refresh()
 
-    def refresh(self, index=None):
+    def refresh(self, index: "Optional[int]" = None) -> "None":
+        """Refresh the rendered contents of this notebook."""
         if index is None:
             index = self.page.selected_index
         self.page.children = self.cell_renderers
         self.page.reset()
         self.page._set_selected_index(index, force=True)
 
-    def save(self):
+    def save(self) -> "None":
+        """Write the notebook's JSON to the current notebook's file."""
         self.json = nbformat.from_dict(self.json)
         nbformat.write(nb=self.json, fp=self.path)
         self.dirty = False
 
-    def close(self, cb):
+    def close(self, cb: "Optional[Callable]") -> "None":
+        """Check if the user want to save an unsaved notebook, then close the file.
+
+        Args:
+            cb: A callback to run if after closing the notebook.
+
+        """
         if self.dirty:
             self.unsaved(cb)
         else:
             self.really_close(cb)
 
-    def really_close(self, cb):
+    def really_close(self, cb: "Optional[Callable]") -> "None":
+        """Shutdown the kernel and close the notebook.
+
+        Args:
+            cb: A callback to run if after closing the notebook.
+
+        """
         # Tell the kernel to shutdown
         if self.kc is not None:
             self.kc.shutdown()
@@ -311,16 +370,23 @@ class Notebook:
         # Close the kernel monitoring thread
         self.kernel_thread.join()
         # Tell the app we've closed
-        cb()
+        if cb is not None:
+            cb()
 
-    def unsaved(self, cb):
-        app = get_app()
+    def unsaved(self, cb: "Optional[Callable]") -> "None":
+        """Display a dialog prompting the user to save unsaved changes.
 
-        def yes_cb():
+        Args:
+            cb: A callback to run if after closing the notebook.
+
+        """
+        app = cast("App", get_app())
+
+        def yes_cb() -> None:
             self.save()
             self.really_close(cb)
 
-        def no_cb():
+        def no_cb() -> None:
             self.really_close(cb)
 
         app.dialog(
@@ -342,5 +408,6 @@ class Notebook:
             },
         )
 
-    def __pt_container__(self) -> Container:
+    def __pt_container__(self) -> "Box":
+        """Return the main `Notebook` container object."""
         return self.container
