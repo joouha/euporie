@@ -1,8 +1,12 @@
 # -*- coding: utf-8 -*-
+"""Contains classes related to querying terminal feautres."""
 import array
 import re
 import sys
 from functools import lru_cache
+from typing import Optional
+
+from prompt_toolkit.output import Output
 
 CONTROL_RE = re.compile(
     r"""
@@ -37,6 +41,8 @@ CONTROL_RE = re.compile(
 
 
 class QueryCodes:
+    """Container for terminal query strings."""
+
     device = "\x1b[>0c"
     pixel_dimensions = "\x1b[14t"
     background_color = "\x1b]11;?\x1b\\"
@@ -48,6 +54,8 @@ class QueryCodes:
 
 
 class QueryResponsePatterns:
+    """Container for terminal query response patterns."""
+
     device = re.compile(r"\x1b\[\>(\d;?)+c")
     background_color = re.compile(
         "11;rgb:(?P<r>[0-9A-Fa-f]{2,4})/(?P<g>[0-9A-Fa-f]{2,4})/(?P<b>[0-9A-Fa-f]{2,4})"
@@ -58,9 +66,13 @@ class QueryResponsePatterns:
 
 
 class TermAppMixin:
-    @property
+    """Mixin for `euporie.app.App` which provides terminal feature properties."""
+
+    output: "Output"
+
+    @property  # type: ignore
     @lru_cache
-    def _have_termios_tty_fcntl(self):
+    def _have_termios_tty_fcntl(self) -> "bool":
         try:
             import fcntl  # noqa F401
             import termios  # noqa F401
@@ -70,10 +82,11 @@ class TermAppMixin:
         else:
             return True
 
-    def _query_term(self, query_code):
-        """
-        We use a Secondary Device Attribute request as our deliminator to locate the
-        query response string
+    def _query_term(self, query_code: "str") -> "Optional[dict[str,str]]":
+        """Query the terminal and parse the response.
+
+        A Secondary Device Attribute request is used as the deliminator to locate the
+        query response string.
         """
         if self._have_termios_tty_fcntl:
             import termios
@@ -116,8 +129,10 @@ class TermAppMixin:
             # Parse result
             if match := CONTROL_RE.search(output):
                 return match.groupdict()
+        return None
 
-    def tiocgwnsz(self):
+    def _tiocgwnsz(self) -> "tuple[int, int, int, int]":
+        """Get the size and pixel dimensions of the terminal with `termios`."""
         output = array.array("H", [0, 0, 0, 0])
         if self._have_termios_tty_fcntl:
             import fcntl
@@ -128,29 +143,40 @@ class TermAppMixin:
         return rows, cols, xpixels, ypixels
 
     @property
-    def bg_color(self):
+    def bg_color(self) -> "Optional[str]":
+        """Get the background colour of the terminal as a hex colour code."""
         if result := self._query_term(QueryCodes.background_color):
             if oscs := result.get("osc_string"):
                 if match := QueryResponsePatterns.background_color.match(oscs):
                     if colors := match.groupdict():
                         if len(colors) >= 3:
-                            r, g, b = colors.get("r"), colors.get("g"), colors.get("b")
+                            r, g, b = (
+                                colors.get("r", "00"),
+                                colors.get("g", "00"),
+                                colors.get("b", "00"),
+                            )
                             return f"#{r[:2]}{g[:2]}{b[:2]}"
+        return None
 
     @property
-    def term_size_px(self):
-        *_, px, py = self.tiocgwnsz()
+    def term_size_px(self) -> "tuple[int, int]":
+        """Get the pixel dimensions of the terminal."""
+        *_, px, py = self._tiocgwnsz()
         # If unsuccessful, try requesting info with escape code method
         if px == 0:
             if result := self._query_term(QueryCodes.pixel_dimensions):
                 params = result.get("csi_params", "")
                 if match := QueryResponsePatterns.pixel_dimensions.match(params):
                     if values := match.groupdict():
-                        px, py = int(values.get("x")), int(values.get("y"))
+                        if (x := values.get("x") is not None) and (
+                            y := values.get("y") is not None
+                        ):
+                            px, py = int(x), int(y)
         return px, py
 
     @property
-    def char_size_px(self):
+    def char_size_px(self) -> "tuple[int, int]":
+        """Get the pixel size of a single terminal character block."""
         px, py = self.term_size_px
         rows, cols = self.output.get_size()
         # If we can't get the pixel size, just guess wildly
@@ -158,22 +184,24 @@ class TermAppMixin:
             return 10, 22
         return px // cols, py // rows
 
-    @property
+    @property  # type: ignore
     @lru_cache
-    def has_sixel_graphics(self):
+    def has_sixel_graphics(self) -> "bool":
+        """Determine if the terminal supports sixel graphics."""
         if result := self._query_term(QueryCodes.sixel):
-            params = result.get("csi_params", "")
-            params = QueryResponsePatterns.sixel.findall(params)
-            params = [int(x) for x in params]
+            param_str = result.get("csi_params", "")
+            matches = QueryResponsePatterns.sixel.findall(param_str)
+            params = [int(x) for x in matches]
             if len(params) >= 3:
                 Pi, Ps, Pv = params[:3]
                 if Ps == 0:
                     return True
         return False
 
-    @property
+    @property  # type: ignore
     @lru_cache
-    def has_kitty_graphics(self):
+    def has_kitty_graphics(self) -> "bool":
+        """Determine if the terminal supports the kitty graphics protocal."""
         if result := self._query_term(QueryCodes.kitty):
             apc_string = result.get("apc_string", "")
             if apc_string.startswith("G"):
