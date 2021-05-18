@@ -108,8 +108,8 @@ class Output:
                 control = RichControl(
                     Markdown(
                         datum,
-                        code_theme=config.pygments_style,
-                        inline_code_theme=config.pygments_style,
+                        code_theme=str(config.pygments_style),
+                        inline_code_theme=str(config.pygments_style),
                     )
                 )
                 self.content = Window(control)
