@@ -1,35 +1,45 @@
 # -*- coding: utf-8 -*-
-from typing import Callable, Optional, Union
+"""Defines KeyBindings wrapper which keeps track of key binding descriptions."""
+from typing import TYPE_CHECKING, Any, Callable, Optional, Union, cast
 
-from prompt_toolkit.filters import FilterOrBool
-from prompt_toolkit.key_binding import KeyBindings, KeyPressEvent
+from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.keys import Keys
+
+if TYPE_CHECKING:
+    from prompt_toolkit.key_binding.key_bindings import T
 
 
 class KeyBindingsInfo(KeyBindings):
-    details = {}
+    """Wraps `prompt_toolkit.key_binding.KeyBinding` recording helpful deatils.
+
+    Each key binding can be given a group and a description, which can be used to
+    display a help message about which key bindings are available to the user.
+    """
+
+    details: "dict[str, dict[str, dict[tuple[Union[Keys, str]], None]]]" = {}
 
     def add(
         self,
-        *keys: Union[Keys, str],
-        filter: FilterOrBool = True,
-        eager: FilterOrBool = False,
-        is_global: FilterOrBool = False,
-        save_before: Callable[["KeyPressEvent"], bool] = (lambda e: True),
-        record_in_macro: FilterOrBool = True,
-        key_str: Optional[str] = None,
-        group: Optional[str] = "None",
-        desc: Optional[str] = None,
-    ):
+        *keys: "Union[Keys, str]",
+        key_str: "Optional[tuple[str]]" = None,
+        group: "str" = "None",
+        desc: "Optional[str]" = None,
+        **kwargs: "Any",
+    ) -> "Callable[[T], T]":
+        """Decorator for adding a key bindings.
+
+        As per `prompt_toolkit.key_binding.KeyBinding`, with additional arguments.
+
+        Args:
+            *keys: Keys to pass to `prompt_toolkit.key_binding.KeyBinding.add`.
+            key_str: A string which can be user to over-ride the bound key sequence in
+                the binding's description.
+            group: The name of the group to which this key binding belongs.
+            desc: A description of what this key-binding does.
+            **kwargs: Key word arguments to pass to prompt_toolkit.key_binding.KeyBinding.add`.
+
+        """
         if desc is not None:
-            self.details.setdefault(group, {}).setdefault(desc, {})[
-                key_str or keys
-            ] = None
-        return super().add(
-            *keys,
-            filter=filter,
-            eager=eager,
-            is_global=is_global,
-            save_before=save_before,
-            record_in_macro=record_in_macro,
-        )
+            key = cast("tuple[Union[Keys, str]]", key_str or keys)
+            self.details.setdefault(group, {}).setdefault(desc, {})[key] = None
+        return super().add(*keys, **kwargs)
