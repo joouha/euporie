@@ -70,7 +70,6 @@ class Cell:
         self.nb = notebook
         self.rendered = True
         self.editing = False
-        self._drawing_position = None
 
         self.state = "idle"
 
@@ -100,16 +99,7 @@ class Cell:
         self.is_editing = Condition(lambda: self.editing)
         self.show_prompt = Condition(lambda: self.cell_type == "code")
         self.is_focused = Condition(lambda: self.focused)
-        self.obscured = Condition(
-            lambda: (
-                self._drawing_position is None
-                or (
-                    self._drawing_position.top < 0
-                    or self._drawing_position.parent_height
-                    < self._drawing_position.top + self._drawing_position.height
-                )
-            )
-        )
+        self.obscured = Condition(lambda: self.nb.page.is_child_obscured(self.index))
         self.show_input_line_numbers = Condition(
             lambda: self.nb.line_numbers and self.json.get("cell_type") == "code"
         )
