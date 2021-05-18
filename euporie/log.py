@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
+"""Initiate logging for euporie."""
 import logging
+from typing import IO, cast
 
 from prompt_toolkit.patch_stdout import StdoutProxy
 from rich.console import Console
 from rich.logging import RichHandler
 
-log_stdout = StdoutProxy(raw=True)
+log_stdout = cast("IO[str]", StdoutProxy(raw=True))
 
 handlers = [
     # logging.StreamHandler(log_stdout),
