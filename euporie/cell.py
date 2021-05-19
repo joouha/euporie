@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
+"""Defines a cell object with input are and rich outputs, and related objects."""
 import asyncio
 from functools import partial
+from typing import TYPE_CHECKING, Any, Callable, Literal
 
-import nbformat
+import nbformat  # type: ignore
 from prompt_toolkit.application.current import get_app
-from prompt_toolkit.buffer import indent, unindent
+from prompt_toolkit.buffer import Completion, indent, unindent
 from prompt_toolkit.filters import Condition, has_completions, has_selection
 from prompt_toolkit.formatted_text.base import StyleAndTextTuples
 from prompt_toolkit.layout.containers import (
@@ -15,22 +17,31 @@ from prompt_toolkit.layout.containers import (
     HSplit,
     VSplit,
     Window,
+    to_container,
 )
 from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.lexers import DynamicLexer, PygmentsLexer
 from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
 from prompt_toolkit.search import start_search
 from prompt_toolkit.widgets import SearchToolbar, TextArea
-from pygments.lexers import get_lexer_by_name
+from pygments.lexers import get_lexer_by_name  # type: ignore
 
 from euporie.box import Border
 from euporie.config import config
 from euporie.keys import KeyBindingsInfo
 from euporie.output import Output
 
+if TYPE_CHECKING:
+    from prompt_toolkit.key_binding import KeyBindings
+    from prompt_toolkit.key_binding.key_processor import KeyPressEvent
+    from prompt_toolkit.layout.layout import FocusableElement
+
+    from euporie.notebook import Notebook
+
 
 @Condition
-def cursor_in_leading_ws():
+def cursor_in_leading_ws() -> "bool":
+    """Determine if the cursor of the current buffer is in leading whitespace."""
     before = get_app().current_buffer.document.current_line_before_cursor
     return (not before) or before.isspace()
 
@@ -41,7 +52,13 @@ class ClickArea:
     Designed to be used as an overlay for clickable widgets in a FloatContainer.
     """
 
-    def __init__(self, target):
+    def __init__(self, target: "FocusableElement"):
+        """Initiate a click area overlay element, which focuses another element when clicked.
+
+        Args:
+            target: The element to focus on click.
+
+        """
         self.target = target
         self.window = Window(
             FormattedTextControl(
@@ -52,19 +69,26 @@ class ClickArea:
             dont_extend_height=False,
         )
 
-    def _get_text_fragments(self) -> StyleAndTextTuples:
+    def _get_text_fragments(self) -> "StyleAndTextTuples":
         def handler(mouse_event: MouseEvent) -> None:
             if mouse_event.event_type == MouseEventType.MOUSE_UP:
                 get_app().layout.focus(self.target)
 
         return [("class:cell-clickarea", "", handler)]
 
-    def __pt_container__(self) -> Container:
+    def __pt_container__(self) -> "Container":
+        """Return the `ClickArea`'s window with a blank `FormattedTextControl`."""
         return self.window
 
 
 class Cell:
-    def __init__(self, index, json, notebook):
+    """A notebook cell element.
+
+    Contains a transparent clickable overlay, which is not displayed when the cell is focused.
+    """
+
+    def __init__(self, index: "int", json: "dict", notebook: "Notebook"):
+        """Initiate the cell element."""
         self.index = index
         self.json = json
         self.nb = notebook
@@ -81,7 +105,7 @@ class Cell:
         self.control = Window(ft, width=1, height=0, style=self.border_style)
 
         self.show_input = Condition(
-            lambda: (
+            lambda: bool(
                 (self.json.get("cell_type") != "markdown")
                 | ((self.json.get("cell_type") == "markdown") & ~self.rendered)
             )
@@ -93,7 +117,7 @@ class Cell:
             )
         )
         self.scroll_input = Condition(
-            lambda: (self.json.get("cell_type") == "markdown") & ~self.rendered
+            lambda: bool((self.json.get("cell_type") == "markdown") & ~self.rendered)
         )
         self.wrap_input = Condition(lambda: self.json.get("cell_type") == "markdown")
         self.is_editing = Condition(lambda: self.editing)
@@ -101,18 +125,23 @@ class Cell:
         self.is_focused = Condition(lambda: self.focused)
         self.obscured = Condition(lambda: self.nb.page.is_child_obscured(self.index))
         self.show_input_line_numbers = Condition(
-            lambda: self.nb.line_numbers and self.json.get("cell_type") == "code"
+            lambda: bool(self.nb.line_numbers and self.json.get("cell_type") == "code")
         )
+
+        self.input_box: TextArea
+        self.container: FloatContainer
+        self.output_box: HSplit
 
         self.load()
 
-    def load_key_bindings(self):
+    def load_key_bindings(self) -> "KeyBindings":
+        """Loads the key bindings related to cells."""
         kb = KeyBindingsInfo()
 
         @kb.add(
             "e", filter=~self.is_editing, group="Notebook", desc="Edit cell in $EDITOR"
         )
-        async def edit_in_editor(event):
+        async def edit_in_editor(event: "KeyPressEvent") -> "None":
             self.editing = True
             await self.input_box.buffer.open_in_editor()
             exit_edit_mode(event)
@@ -125,7 +154,7 @@ class Cell:
             group="Notebook",
             desc="Enter cell edit mode",
         )
-        def enter_edit_mode(event):
+        def enter_edit_mode(event: "KeyPressEvent") -> "None":
             self.editing = True
             self.container.modal = True
             get_app().layout.focus(self.input_box)
@@ -135,7 +164,7 @@ class Cell:
         @kb.add(
             "escape", "escape", group="Notebook", desc="Exit cell edit mode quickly"
         )
-        def exit_edit_mode(event):
+        def exit_edit_mode(event: "KeyPressEvent") -> "None":
             self.editing = False
             self.input = self.input_box.text
             self.nb.dirty = True
@@ -157,7 +186,7 @@ class Cell:
         )
         @kb.add("c-e", group="Notebook", desc="Run cell")
         @kb.add("c-f20")
-        def run_or_render(event):
+        def run_or_render(event: "KeyPressEvent") -> "None":
             exit_edit_mode(event)
             if self.cell_type == "markdown":
                 self.output_box.children = self.rendered_outputs
@@ -180,7 +209,7 @@ class Cell:
         )
         @kb.add("c-r", group="Notebook", desc="Run then select next cell")
         @kb.add("f21")
-        def run_then_next(event):
+        def run_then_next(event: "KeyPressEvent") -> "None":
             # Insert a cell if we are at the last cell
             n_cells = len(self.nb.page.children)
             if self.nb.page.selected_index == (n_cells) - 1:
@@ -191,11 +220,11 @@ class Cell:
             run_or_render(event)
 
         @kb.add("c-f", filter=self.is_editing, group="Edit Mode", desc="Find")
-        def find(event):
+        def find(event: "KeyPressEvent") -> "None":
             start_search(self.input_box.control)
 
         @kb.add("c-g", filter=self.is_editing, group="Edit Mode", desc="Find Next")
-        def find_next(event):
+        def find_next(event: "KeyPressEvent") -> "None":
             search_state = get_app().current_search_state
             cursor_position = self.input_box.buffer.get_search_position(
                 search_state, include_current_position=False
@@ -203,11 +232,11 @@ class Cell:
             self.input_box.buffer.cursor_position = cursor_position
 
         @kb.add("c-z", filter=self.is_editing, group="Edit Mode", desc="Undo")
-        def undo(event):
+        def undo(event: "KeyPressEvent") -> "None":
             self.input_box.buffer.undo()
 
         @kb.add("c-d", filter=self.is_editing, group="Edit Mode", desc="Duplicate line")
-        def duplicate_line(event):
+        def duplicate_line(event: "KeyPressEvent") -> "None":
             buffer = event.current_buffer
             line = buffer.document.current_line
             eol = buffer.document.get_end_of_line_position()
@@ -217,7 +246,7 @@ class Cell:
             buffer.cursor_position -= eol
 
         @kb.add("home", filter=self.is_editing)
-        def smart_home(event):
+        def smart_home(event: "KeyPressEvent") -> "None":
             buffer = event.current_buffer
             buffer.cursor_position += buffer.document.get_start_of_line_position(
                 after_whitespace=buffer.document.get_start_of_line_position(
@@ -227,7 +256,7 @@ class Cell:
             )
 
         @kb.add("enter", filter=self.is_editing)
-        def new_line(event):
+        def new_line(event: "KeyPressEvent") -> "None":
             buffer = event.current_buffer
             buffer.cut_selection()
             pre = buffer.document.text_before_cursor
@@ -235,7 +264,7 @@ class Cell:
             if pre.rstrip()[-1:] in (":", "(", "["):
                 dent_buffer(event)
 
-        def dent_buffer(event, un=False):
+        def dent_buffer(event: "KeyPressEvent", un: "bool" = False) -> "None":
             buffer = event.current_buffer
             selection_state = buffer.selection_state
             cursor_position = buffer.cursor_position
@@ -279,7 +308,7 @@ class Cell:
             group="Edit Mode",
             desc="Indent",
         )
-        def indent_buffer(event):
+        def indent_buffer(event: "KeyPressEvent") -> "None":
             dent_buffer(event)
 
         @kb.add(
@@ -288,40 +317,42 @@ class Cell:
             group="Edit Mode",
             desc="Unindent",
         )
-        def unindent_buffer(event):
+        def unindent_buffer(event: "KeyPressEvent") -> "None":
             dent_buffer(event, un=True)
 
         @kb.add("escape", filter=has_completions, eager=True)
-        def cancel_completion(event):
+        def cancel_completion(event: "KeyPressEvent") -> "None":
             """Cancel a completion with the escape key."""
             event.current_buffer.cancel_completion()
 
         @kb.add("enter", filter=has_completions)
-        def apply_completion(event):
+        def apply_completion(event: "KeyPressEvent") -> "None":
             """Cancel a completion with the escape key."""
-            event.current_buffer.apply_completion(
-                event.current_buffer.complete_state.current_completion
-            )
+            complete_state = event.current_buffer.complete_state
+            if complete_state:
+                assert isinstance(complete_state.current_completion, Completion)
+                event.current_buffer.apply_completion(complete_state.current_completion)
 
         @kb.add("c-c", filter=self.is_editing, group="Edit Mode", desc="Copy")
-        def copy_selection(event):
+        def copy_selection(event: "KeyPressEvent") -> "None":
             data = event.current_buffer.copy_selection()
             get_app().clipboard.set_data(data)
 
         @kb.add(
             "c-x", filter=self.is_editing, eager=True, group="Edit Mode", desc="Cut"
         )
-        def cut_selection(event):
+        def cut_selection(event: "KeyPressEvent") -> "None":
             data = event.current_buffer.cut_selection()
             get_app().clipboard.set_data(data)
 
         @kb.add("c-v", filter=self.is_editing, group="Edit Mode", desc="Paste")
-        def paste_clipboard(event):
+        def paste_clipboard(event: "KeyPressEvent") -> "None":
             event.current_buffer.paste_clipboard_data(get_app().clipboard.get_data())
 
         return kb
 
-    def run(self):
+    def run(self) -> "None":
+        """Run the contents of a code cell in the kernel."""
         self.clear_output()
         if self.nb.kc:
             # Execute input and wait for responses in kernel thread
@@ -336,12 +367,16 @@ class Cell:
             )
 
     async def _async_execute_interactive(
-        self, code, allow_stdin=False, output_hook=None
-    ):
+        self,
+        code: "str",
+        output_hook: "Callable[[dict[str, Any]], None]",
+        allow_stdin: "bool" = False,
+    ) -> "dict[str, Any]":
         from queue import Empty
 
         import zmq.asyncio
 
+        assert self.nb.kc is not None
         if not self.nb.kc.iopub_channel.is_alive():
             raise RuntimeError("IOPub channel must be running to receive output")
 
@@ -395,7 +430,8 @@ class Cell:
                 continue
             return reply
 
-    def ran(self, msg):
+    def ran(self, msg: "dict[str, Any]") -> "None":
+        """Callback which runs when a message for this cell is recieved from the kernel."""
         msg_type = msg.get("header", {}).get("msg_type")
 
         if msg_type == "status":
@@ -413,7 +449,7 @@ class Cell:
                 if output.get("name")
             }
             if name in outputs:
-                outputs[name].text += msg.get("content", {}).get("text", "")
+                outputs[name]["text"] += msg.get("content", {}).get("text", "")
             else:
                 self.add_output(nbformat.v4.output_from_msg(msg))
 
@@ -428,17 +464,20 @@ class Cell:
         # Tell the app that the display needs updating
         get_app().invalidate()
 
-    def set_cell_type(self, cell_type):
+    def set_cell_type(self, cell_type: "Literal['markdown','code','raw']") -> "None":
+        """Convert the cell to a different cell type.
+
+        Args:
+            cell_type: The desired cell type.
+
+        """
         if cell_type == "code":
             self.json.setdefault("execution_count", None)
         self.json["cell_type"] = cell_type
         self.load()
 
-    def mouse_click(self):
-        get_app().layout.focus(self.control)
-
-    def load(self):
-
+    def load(self) -> "None":
+        """Generates the main container used to represent a notebook cell."""
         fill = partial(Window, style=self.border_style)
 
         self.search_control = SearchToolbar()
@@ -604,7 +643,8 @@ class Cell:
             ],
         )
 
-    def border_style(self):
+    def border_style(self) -> "str":
+        """Determines the style of the cell borders, based on the cell state."""
         if self.focused:
             if self.editing:
                 return "class:frame.border,cell-border-edit"
@@ -614,26 +654,31 @@ class Cell:
             return "class:frame.border,cell-border"
 
     @property
-    def id(self):
-        return self.json.get("id")
+    def id(self) -> "str":
+        """Returns the cell's ID as per the cell JSON."""
+        return self.json.get("id", "")
 
     @property
-    def language(self):
+    def language(self) -> "str":
+        """Returns the cell's code language."""
         if self.cell_type == "markdown":
             return "markdown"
         else:
             return self.nb.json.metadata.get("language_info", {}).get("name", "python")
 
     @property
-    def focused(self):
+    def focused(self) -> "bool":
+        """Determine if the cell currently has focus."""
         return get_app().layout.has_focus(self.container)
 
     @property
-    def cell_type(self):
+    def cell_type(self) -> "str":
+        """Determine the currrent cell type."""
         return self.json.get("cell_type", "code")
 
     @property
-    def prompt(self):
+    def prompt(self) -> "str":
+        """Determine what should be displayed in the prompt of the cell."""
         if self.state in ("busy", "queued"):
             prompt = "*"
         else:
@@ -645,27 +690,43 @@ class Cell:
         return prompt
 
     @property
-    def execution_count(self):
+    def execution_count(self) -> "str":
+        """Retrieve the execution count from the cell's JSON."""
         return self.json.get("execution_count", " ")
 
     @execution_count.setter
-    def execution_count(self, value):
-        self.json["execution_count"] = value
+    def execution_count(self, count: int) -> "None":
+        """Set the execution count in the cell's JSON.
+
+        Args:
+            count: The new execution count number.
+
+        """
+        self.json["execution_count"] = count
 
     @property
-    def input(self):
+    def input(self) -> "str":
+        """Fetch the cell's contents from the cell's JSON."""
         return self.json.get("source", "")
 
     @input.setter
-    def input(self, value):
+    def input(self, value: "str") -> "None":
+        """Set the cell's contents in the cell's JSON.
+
+        Args:
+            value: The new cell contents text.
+
+        """
         self.json["source"] = value
 
-    def clear_output(self):
+    def clear_output(self) -> "None":
+        """Remove all outputs from the cell."""
         self.json["outputs"] = []
         self.load()
 
     @property
-    def outputs(self):
+    def outputs(self) -> "list[dict[str, Any]]":
+        """Retrieve a list of cell outputs from the cell's JSON."""
         if self.cell_type == "markdown":
             return [
                 {"data": {"text/x-markdown": self.input}, "output_type": "markdown"}
@@ -673,16 +734,24 @@ class Cell:
         else:
             return self.json.get("outputs", [])
 
-    def add_output(self, output):
+    def add_output(self, output: "dict[str, Any]") -> "None":
+        """Append a new output to the cell's JSON.
+
+        Args:
+            output: The output JSON to add.
+
+        """
         self.json.setdefault("outputs", []).append(output)
         self.output_box.children = self.rendered_outputs
 
     @property
-    def rendered_outputs(self):
-        rendered_outputs = []
+    def rendered_outputs(self) -> "list[Container]":
+        """Generates a list of rendered outputs."""
+        rendered_outputs: "list[Container]" = []
         for i, output_json in enumerate(self.outputs):
-            rendered_outputs.append(Output(i, output_json, parent=self))
+            rendered_outputs.append(to_container(Output(i, output_json, parent=self)))
         return rendered_outputs
 
     def __pt_container__(self) -> "Container":
+        """Returns the container which represents this cell."""
         return self.container
