@@ -165,7 +165,7 @@ class Cell:
             group="Notebook",
             desc="Run cell",
         )
-        @kb.add("c-r", group="Notebook", desc="Run cell")
+        @kb.add("c-e", group="Notebook", desc="Run cell")
         @kb.add("c-f20")
         def run_or_render(event):
             exit_edit_mode(event)
@@ -188,6 +188,7 @@ class Cell:
             group="Notebook",
             desc="Run then select next cell",
         )
+        @kb.add("c-r", group="Notebook", desc="Run then select next cell")
         @kb.add("f21")
         def run_then_next(event):
             # Insert a cell if we are at the last cell
