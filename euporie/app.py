@@ -260,18 +260,18 @@ class App(Application, TermAppMixin):
                                 ),
                             ],
                         ),
+                        MenuItem(
+                            "Switch Background Pattern",
+                            handler=lambda: config.toggle("background"),
+                        ),
                         SmartMenuItem(
-                            "Toggle run after external edit",
+                            "Run cell after external edit",
                             toggler=Condition(
                                 lambda: config.execute_after_external_edit
                             ),
                             handler=lambda: config.toggle(
                                 "execute_after_external_edit"
                             ),
-                        ),
-                        MenuItem(
-                            "Switch Background Pattern",
-                            handler=lambda: config.toggle("background"),
                         ),
                     ],
                 ),
