@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 """Defines custom controls which re-render on resize."""
+from __future__ import annotations
+
 from typing import Any, Dict, Optional, Type
 
 from prompt_toolkit.cache import SimpleCache

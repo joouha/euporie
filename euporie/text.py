@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 """Contains dpdated ANSI parsing and Formatted Text processing."""
+from __future__ import annotations
+
 import re
 from typing import Generator, cast
 

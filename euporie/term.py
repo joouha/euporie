@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 """Contains classes related to querying terminal feautres."""
+from __future__ import annotations
+
 import array
 import re
 import sys

@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 """Defines KeyBindings wrapper which keeps track of key binding descriptions."""
+from __future__ import annotations
+
 from typing import TYPE_CHECKING, Any, Callable, Optional, Union, cast
 
 from prompt_toolkit.key_binding import KeyBindings

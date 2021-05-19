@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 """Defines a cell object with input are and rich outputs, and related objects."""
+from __future__ import annotations
+
 import asyncio
 from functools import partial
 from typing import TYPE_CHECKING, Any, Callable, Literal

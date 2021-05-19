@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 """Contains the `ScrollingContainer` class, which renders children on the fly."""
+from __future__ import annotations
+
 from collections import namedtuple
 from typing import TYPE_CHECKING, Callable, Dict, List, Optional, Sequence, Union, cast
 

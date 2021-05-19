@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 """Defines a smarter menu item."""
+from __future__ import annotations
+
 from typing import TYPE_CHECKING, Any, Callable, Optional, Sequence, Union
 
 from prompt_toolkit.widgets.menus import MenuItem
