@@ -3,14 +3,10 @@
 from __future__ import annotations
 
 from pathlib import PurePath
-from typing import TYPE_CHECKING, Any, Optional, Union
+from typing import TYPE_CHECKING, Any, Optional
 
-from prompt_toolkit.layout import Container, Window, to_container
-from prompt_toolkit.layout.controls import (
-    FormattedTextControl,
-    GetLinePrefixCallable,
-    UIControl,
-)
+from prompt_toolkit.layout import Window
+from prompt_toolkit.layout.controls import FormattedTextControl, UIControl
 from prompt_toolkit.widgets import Label
 from rich.markdown import Markdown
 
@@ -20,11 +16,7 @@ from euporie.control import HTMLControl, ImageControl, RichControl, SVGControl
 from euporie.text import ANSI
 
 if TYPE_CHECKING:
-    from prompt_toolkit.key_binding.key_bindings import KeyBindingsBase
     from prompt_toolkit.layout.containers import AnyContainer
-    from prompt_toolkit.layout.dimension import Dimension
-    from prompt_toolkit.layout.mouse_handlers import MouseHandlers
-    from prompt_toolkit.layout.screen import Screen, WritePosition
 
     from euporie.cell import Cell
 
@@ -50,10 +42,7 @@ def calculate_bling(item: tuple[str, str]) -> int:
 
 
 class Output:
-    """A prompt-toolkit compatible container for rendered cell outputs.
-
-    This is a Container / Control hyrid, as `Output.content` can be either.
-    """
+    """A prompt-toolkit compatible container for rendered cell outputs."""
 
     def __init__(
         self, index: "int", json: "dict[str, Any]", parent: "Optional[Cell]" = None
@@ -105,30 +94,34 @@ class Output:
                     continue  # Use plain text rendering instead
 
             if mime_path.match("text/x-markdown"):
-                control = RichControl(
-                    Markdown(
-                        datum,
-                        code_theme=str(config.pygments_style),
-                        inline_code_theme=str(config.pygments_style),
+                self.content = Window(
+                    RichControl(
+                        Markdown(
+                            datum,
+                            code_theme=str(config.pygments_style),
+                            inline_code_theme=str(config.pygments_style),
+                        )
                     )
                 )
-                self.content = Window(control)
                 break
 
             if mime_path.match("text/x-python-traceback"):
-                control = FormattedTextControl(ANSI(datum.rstrip()))
-                self.content = Window(control)
+                self.content = Window(FormattedTextControl(ANSI(datum.rstrip())))
                 break
 
             if mime_path.match("text/stderr"):
-                control = FormattedTextControl(ANSI(datum.rstrip()))
-                self.content = Window(control, wrap_lines=True, style="fg:red")
+                self.content = Window(
+                    FormattedTextControl(ANSI(datum.rstrip())),
+                    wrap_lines=True,
+                    style="fg:red",
+                )
                 break
 
             if mime_path.match("text/*"):
                 # Use formatted text so ansi colour codes are displayed as colours
-                control = FormattedTextControl(ANSI(datum.rstrip()))
-                self.content = Window(control, wrap_lines=True)
+                self.content = Window(
+                    FormattedTextControl(ANSI(datum.rstrip())), wrap_lines=True
+                )
                 break
 
         else:
@@ -152,56 +145,6 @@ class Output:
         else:
             return self.json.get("data", {})
 
-    def get_key_bindings(self) -> "Optional[KeyBindingsBase]":
-        """Wrap `get_key_bindings` method of `self.content`."""
-        return to_container(self.content).get_key_bindings()
-
-    def get_children(self) -> "list[Container]":
-        """Wrap `get_children` method of `self.content`."""
-        return to_container(self.content).get_children()
-
-    def preferred_width(
-        self, max_available_width: "Union[int]"
-    ) -> "Optional[Union[int, Dimension]]":
-        """Wrap `preferred_width` method of `self.content`."""
-        return to_container(self.content).preferred_width(max_available_width)
-
-    def preferred_height(
-        self,
-        width: "int",
-        max_available_height: "int",
-        wrap_lines: "Optional[bool]" = None,
-        get_line_prefix: "Optional[GetLinePrefixCallable]" = None,
-    ) -> "Union[int, Dimension]":
-        """Wrap `preferred_height` method of `self.content`.
-
-        Some argument processing is needed here to work with Controls and Containers.
-        """
-        args: "list[Any]" = [width, max_available_height]
-        if wrap_lines:
-            args.append(wrap_lines)
-        if get_line_prefix:
-            args.append(get_line_prefix)
-        return to_container(self.content).preferred_height(*args)
-
-    def write_to_screen(
-        self,
-        screen: "Screen",
-        mouse_handlers: "MouseHandlers",
-        write_position: "WritePosition",
-        parent_style: "str",
-        erase_bg: "bool",
-        z_index: "Optional[int]",
-    ) -> None:
-        """Wrap `write_to_screen` method of `self.content`."""
-        return to_container(self.content).write_to_screen(
-            screen, mouse_handlers, write_position, parent_style, erase_bg, z_index
-        )
-
-    def reset(self) -> None:
-        """Wrap `reset` method of `self.content`."""
-        return to_container(self.content).reset()
-
-    def __pt_container__(self) -> Container:
-        """Wrap `__pt_container__` method of `self.content`."""
-        return to_container(self.content)
+    def __pt_container__(self) -> "AnyContainer":
+        """Return the content of this output."""
+        return self.content
