@@ -43,11 +43,11 @@ class Control(UIControl):
 
     def preferred_height(
         self,
-        width: int,
-        max_available_height: int,
-        wrap_lines: bool,
+        width: "int",
+        max_available_height: "int",
+        wrap_lines: "bool",
         get_line_prefix: Optional[GetLinePrefixCallable],
-    ) -> int:
+    ) -> "int":
         """Returns the number of lines in the rendered content."""
         if not self.rendered_lines:
             self.rendered_lines = self._format_cache.get(
@@ -56,7 +56,7 @@ class Control(UIControl):
             )
         return len(self.rendered_lines)
 
-    def create_content(self, width: int, height: int) -> UIContent:
+    def create_content(self, width: "int", height: "int") -> UIContent:
         """Generates rendered output at a given size.
 
         Args:
@@ -81,13 +81,13 @@ class Control(UIControl):
 
         return self._content_cache.get((width,), get_content)
 
-    def render(self, width: int, height: int) -> str:
+    def render(self, width: "int", height: "int") -> "list[str]":
         """Calls the renderer."""
         result = self.renderer_instance.render(
             self.data, width=width, height=height, render_args=self.render_args
         )
-        result = result.rstrip().split("\n")
-        return result
+        rendered_lines = result.rstrip().split("\n")
+        return rendered_lines
 
 
 class RichControl(Control):
