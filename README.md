@@ -134,7 +134,7 @@ If none of these commands are found in your `$PATH`, the plain text representati
 |                      `y` | Change cell to code           |
 |                      `r` | Change cell to raw            |
 |                      `l` | Toggle line numbers           |
-|                      `e` | Edit cell in $EDITOR          |
+|                      `e` | Edit cell in \$EDITOR         |
 |                  `enter` | Enter cell edit mode          |
 |                 `escape` | Exit cell edit mode\*         |
 |          `escape escape` | Exit cell edit mode quickly   |
