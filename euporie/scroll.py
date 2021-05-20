@@ -411,6 +411,9 @@ class ScrollingContainer(Container):
         Args:
             index: The index of the child to return.
 
+        Returns:
+            A rendered instance of the child.
+
         """
         if index is None:
             index = self.last_selected_index
@@ -430,6 +433,9 @@ class ScrollingContainer(Container):
         Args:
             index: The index of the child for which to get the last known height.
             refresh: Whether to render an underendered child to calculate its height.
+
+        Returns:
+            The height of the child in rows.
 
         """
         if not refresh and (size := self.size_cache.get(index)):
@@ -451,6 +457,10 @@ class ScrollingContainer(Container):
 
         Args:
             write_position: Defines the space available for drawing children.
+
+        Returns:
+            A list of `DrawingPosition`, detailing the positions at which the children
+                should be drawn to the screen.
 
         """
         selected_index = self.selected_index
@@ -533,6 +543,9 @@ class ScrollingContainer(Container):
 
         Args:
             index: The index of the child of interest.
+
+        Returns:
+            True if the child is rendered and partially off-screen, otherwise False.=
 
         """
         drawing = {drawing.index: drawing for drawing in self.to_draw}.get(index)

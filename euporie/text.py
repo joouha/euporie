@@ -54,6 +54,9 @@ class FormatTextProcessor(Processor):
         Args:
             fragments: A `FormattedText` object.
 
+        Returns:
+            A list of lists of style and text tuples.
+
         """
         lines: "list[FormattedText]" = [FormattedText([])]
         for fragment in to_formatted_text(fragments):
@@ -93,6 +96,10 @@ class ANSI(PTANSI):
 
         This is modified version of the ANSI parser from prompt_toolkit retains
         all CSI escape sequences.
+
+        Yields:
+            Accepts characters from a string.
+
         """
         style = ""
         formatted_text = self._formatted_text

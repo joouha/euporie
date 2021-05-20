@@ -356,7 +356,7 @@ class Cell:
     def run(self) -> "None":
         """Run the contents of a code cell in the kernel."""
         self.clear_output()
-        if self.nb.kc:
+        if self.nb.kc and hasattr(self.nb, "kernel_loop"):
             # Execute input and wait for responses in kernel thread
             asyncio.run_coroutine_threadsafe(
                 # self.nb.kc._async_execute_interactive(
@@ -389,6 +389,9 @@ class Cell:
         stdin_hook = self.nb.kc._stdin_hook_default
 
         timeout_ms = None
+
+        assert hasattr(zmq, "Poller")
+        assert hasattr(zmq, "POLLIN")
 
         poller = zmq.Poller()
         iopub_socket = self.nb.kc.iopub_channel.socket

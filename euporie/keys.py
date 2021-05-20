@@ -38,7 +38,11 @@ class KeyBindingsInfo(KeyBindings):
                 the binding's description.
             group: The name of the group to which this key binding belongs.
             desc: A description of what this key-binding does.
-            **kwargs: Key word arguments to pass to prompt_toolkit.key_binding.KeyBinding.add`.
+            **kwargs: Key word arguments to pass to
+                `prompt_toolkit.key_binding.KeyBinding.add`.
+
+        Returns:
+            A decorator function.
 
         """
         if desc is not None:

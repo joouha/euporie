@@ -438,6 +438,10 @@ class App(Application, TermAppMixin):
                     cleanup_file: The previously closed file to cleanup
                     cb: The callback to call when work is complete
 
+                Returns:
+                    A callback function which cleans up `cleanup_file` and closes
+                        `close_file`.
+
                 """
 
                 def inner() -> None:
@@ -527,7 +531,7 @@ class App(Application, TermAppMixin):
         Args:
             operation: The name of the function to attempt to call.
             file: The instance of the file to close. If `None`, the currently
-            selectedd file will be closed.
+                selected file will be closed.
             args: List of parameter arguments to pass to the function
             kwargs: Mapping of keyword arguments to pass to the function
 
@@ -548,7 +552,7 @@ class App(Application, TermAppMixin):
 
         Args:
             file: The instance of the file to close. If `None`, the currently
-            selectedd file will be closed.
+                selected file will be closed.
 
         """
         if file is None:

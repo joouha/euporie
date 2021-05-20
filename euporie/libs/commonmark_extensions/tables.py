@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 # type: ignore
+# flake8: noqa
 # Mokey-patch the reMaybeSpecial regex to add our table symbol |.
 # This regex is apparently just an optimization so this should not
 # affect CommonMark parser instances that do not recognize tables.

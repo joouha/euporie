@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from pathlib import PurePath
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 from prompt_toolkit.layout import Window
 from prompt_toolkit.layout.controls import FormattedTextControl, UIControl
@@ -44,9 +44,7 @@ def calculate_bling(item: tuple[str, str]) -> int:
 class Output:
     """A prompt-toolkit compatible container for rendered cell outputs."""
 
-    def __init__(
-        self, index: "int", json: "dict[str, Any]", parent: "Optional[Cell]" = None
-    ):
+    def __init__(self, index: "int", json: "dict[str, Any]", parent: "Cell"):
         """Instantiate an Output container object.
 
         Args:
@@ -70,7 +68,11 @@ class Output:
             if mime_path.match("image/svg+xml"):
                 control = SVGControl(
                     datum,
-                    render_args=dict(cell=self.parent, output_index=index),
+                    render_args=dict(
+                        cell=self.parent,
+                        cell_index=self.parent.index,
+                        output_index=index,
+                    ),
                 )
                 if control.renderer:
                     self.content = Window(control)
@@ -79,7 +81,11 @@ class Output:
             if mime_path.match("image/*"):
                 control = ImageControl(
                     datum,
-                    render_args=dict(cell=self.parent, output_index=index),
+                    render_args=dict(
+                        cell=self.parent,
+                        cell_index=self.parent.index,
+                        output_index=index,
+                    ),
                 )
                 if control.renderer:
                     self.content = Window(control)
@@ -134,6 +140,10 @@ class Output:
 
         This generates similarly structured data objects for markdown cells and text
         output streams.
+
+        Returns:
+            JSON dictionary mapping mimes type to representaion data.
+
         """
         output_type = self.json.get("output_type", "unknown")
         if output_type == "stream":

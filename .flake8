@@ -6,4 +6,6 @@ max-complexity = 10
 application-import-names = euporie,tests
 import-order-style = google
 docstring-convention = google
+docstring_style = google
 per-file-ignores = tests/*:S101
+strictness = short

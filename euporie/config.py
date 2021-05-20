@@ -86,6 +86,10 @@ class Config:
         """Determine where the user's config file should be stored.
 
         TODO: Consider replacing this with https://github.com/ActiveState/appdirs
+
+        Returns:
+            The path at which the config file should be stored.
+
         """
         if self.win:
             path = (

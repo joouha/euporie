@@ -24,7 +24,7 @@ class Control(UIControl):
     `Control.renderer`, and is cached per output size.
     """
 
-    renderer: Type[DataRenderer]
+    renderer: "Type[DataRenderer]"
 
     def __init__(self, data: "Any", render_args: "Optional[Dict]" = None) -> "None":
         """Initalize the control.
@@ -58,12 +58,16 @@ class Control(UIControl):
             )
         return len(self.rendered_lines)
 
-    def create_content(self, width: "int", height: "int") -> UIContent:
+    def create_content(self, width: "int", height: "int") -> "UIContent":
         """Generates rendered output at a given size.
 
         Args:
             width: The desired output width
             height: The desired output height
+
+        Returns:
+            `UIContent` for the given output size.
+
         """
         self.rendered_lines = self._format_cache.get(
             (width,),
@@ -104,15 +108,13 @@ class HTMLControl(Control):
     renderer = HTMLRenderer
 
 
-class ImageControl(Control):
-    """Control for rendered images."""
+class BaseImageControl(Control):
+    """Base class for image controls."""
 
-    renderer: Type[DataRenderer] = ImageRenderer
-
-    def create_content(self, width: int, height: int) -> UIContent:
+    def create_content(self, width: "int", height: "int") -> "UIContent":
         """Additionally cache rendered content by cell obscurity status."""
         cell_obscured = self.render_args["cell"].obscured()
-        self.rendered_lines: list = self._format_cache.get(
+        self.rendered_lines: "list" = self._format_cache.get(
             (cell_obscured, width),
             lambda: self.render(width, height),
         )
@@ -126,7 +128,13 @@ class ImageControl(Control):
         return self._content_cache.get((cell_obscured, width), get_content)
 
 
-class SVGControl(ImageControl, Control):
+class ImageControl(BaseImageControl):
+    """Control for rendered raster images."""
+
+    renderer = ImageRenderer
+
+
+class SVGControl(BaseImageControl):
     """Class for rendered SVG iamges."""
 
     renderer = SVGRenderer

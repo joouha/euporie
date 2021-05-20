@@ -89,6 +89,13 @@ class TermAppMixin:
 
         A Secondary Device Attribute request is used as the deliminator to locate the
         query response string.
+
+        Args:
+            query_code: The ANSI escape sequence to send to the terminal.
+
+        Returns:
+            A parsed escape code response.
+
         """
         if self._have_termios_tty_fcntl:
             import termios

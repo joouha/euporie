@@ -45,6 +45,7 @@ flake8-annotations = "^2.6.2"
 flake8-docstrings = "^1.6.0"
 mypy = "^0.812"
 flake8-isort = "^4.0.0"
+darglint = "^1.8.0"
 
 [tool.poetry.scripts]
 euporie = 'euporie.app:App.launch'

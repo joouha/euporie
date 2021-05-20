@@ -1,12 +1,14 @@
 # -*- coding: utf-8 -*-
+"""Publishes a new releases of euporie."""
 from pathlib import Path
 
-from poetry_publish.publish import poetry_publish
+from poetry_publish.publish import poetry_publish  # type: ignore
 
 import euporie
 
 
-def publish():
+def publish() -> "None":
+    """Publishes a new releasse of euporie to pypi.org."""
     poetry_publish(
         package_root=Path(euporie.__file__).parent.parent,
         version=euporie.__version__,

@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+"""Generates a markdown table of key-bindings used in euporie."""
+from pathlib import Path
+
 from euporie.app import App
 from euporie.cell import Cell
 from euporie.keys import KeyBindingsInfo
@@ -6,7 +9,7 @@ from euporie.notebook import Notebook
 from euporie.scroll import ScrollingContainer
 
 app = App()
-nb = Notebook("none")
+nb = Notebook(Path("/this/file/does/not/exist.ipynb"))
 ScrollingContainer([])
 Cell(0, {}, nb)
 
