@@ -89,6 +89,9 @@ class App(Application, TermAppMixin):
             editing_mode=self.get_edit_mode(),
         )
 
+        # Ensure a file is focused if one has been opened
+        self.pre_run_callables = [lambda: self.file_op("focus")]
+
     def set_edit_mode(self, mode: "str") -> "None":
         """Sets the keybindings for editing mode.
 
@@ -356,8 +359,7 @@ class App(Application, TermAppMixin):
             ],
         )
 
-        # Focus status_bar_text so notebook is selected on tab
-        return Layout(self.root_container, focused_element=status_bar_text)
+        return Layout(self.root_container)
 
     def load_key_bindings(self) -> "KeyBindings":
         """Define application-wide keybindings."""
@@ -510,14 +512,15 @@ class App(Application, TermAppMixin):
         open_paths = [x.path for x in self.files]
         if path in open_paths:
             log.info(f"File {path} already open, activating")
-            self.active_notebook = open_paths.index(path)
+            file = self.files[open_paths.index(path)]
         else:
             self.open_paths.append(path)
-            self.files.append(Notebook(path))
-            self.active_notebook_index = len(self.files)
-
+            file = Notebook(path)
+            self.files.append(file)
         assert isinstance(self.body_container.body, HSplit)
         self.body_container.body.children[0] = VSplit(self.files)
+        # Focus newly opened file
+        file.focus()
 
     def file_op(
         self,

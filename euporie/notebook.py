@@ -94,18 +94,19 @@ class Notebook:
         if not self.json.setdefault("cells", []):
             self.json["cells"] = [nbformat.v4.new_code_cell()]
 
+        self.completer = KernelCompleter(self)
+        self.km: "Optional[KernelManager]" = None
+        self.kc: "Optional[KernelClient]" = None
+
+        self.clipboard: "list[Cell]" = []
+
         self.page = ScrollingContainer(
             children=self.cell_renderers,
             max_content_width=D(preferred=int(config.max_notebook_width)),
         )
+        self.focus = self.page.focus
         self.container = Box(self.page, padding=0, padding_left=1)
         self.container.container.key_bindings = self.load_key_bindings()
-
-        self.clipboard: "list[Cell]" = []
-
-        self.completer = KernelCompleter(self)
-        self.km: "Optional[KernelManager]" = None
-        self.kc: "Optional[KernelClient]" = None
 
         def setup_loop() -> None:
             """Set up a thread with an event loop to listen for kernel responses."""

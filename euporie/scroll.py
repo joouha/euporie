@@ -255,8 +255,7 @@ class ScrollingContainer(Container):
                     z_index,
                 )
 
-        # Fill empty space, and click to focus
-        ###
+        # TODO - Fill empty space, and click to focus
 
         # Draw floats before wrapping mouse handlers
         screen.draw_all_floats()
