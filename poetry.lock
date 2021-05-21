@@ -2,7 +2,7 @@
 name = "appdirs"
 version = "1.4.4"
 description = "A small Python module for determining appropriate platform-specific dirs, e.g. a \"user data dir\"."
-category = "dev"
+category = "main"
 optional = false
 python-versions = "*"
 
@@ -1309,7 +1309,7 @@ images-timg = ["timg"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "85417bf55a327bea1e106938339b6e025092422fa0b75752567ea1515c6aecc9"
+content-hash = "87351830e1f759152089b7d9be7a24934b0e58b036b7fdfd60464089643f4d1b"
 
 [metadata.files]
 appdirs = [
