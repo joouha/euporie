@@ -545,7 +545,7 @@ class App(Application, TermAppMixin):
         if file and hasattr(file, operation):
             func = getattr(self.file, operation)
             if callable(func):
-                func(*args)
+                func(*args, **kwargs)
 
     def close_file(self, file: "Optional[Notebook]" = None) -> None:
         """Closes a notebook file.
