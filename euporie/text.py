@@ -3,15 +3,10 @@
 from __future__ import annotations
 
 import re
-from typing import Generator, cast
+from typing import Generator
 
 from prompt_toolkit.formatted_text import ANSI as PTANSI
-from prompt_toolkit.formatted_text import (
-    AnyFormattedText,
-    FormattedText,
-    to_formatted_text,
-)
-from prompt_toolkit.formatted_text.base import OneStyleAndTextTuple
+from prompt_toolkit.formatted_text import AnyFormattedText, split_lines
 from prompt_toolkit.layout.processors import (
     Processor,
     Transformation,
@@ -37,38 +32,13 @@ class FormatTextProcessor(Processor):
     ) -> "Transformation":
         """Apply text formatting to a line in a buffer."""
         if not hasattr(self, "formatted_lines"):
-            self.formatted_lines = self.to_formatted_lines(self.formatted_text)
+            self.formatted_lines = list(split_lines(self.formatted_text))
         lineno = transformation_input.lineno
         max_lineno = len(self.formatted_lines) - 1
         if lineno > max_lineno:
             lineno = max_lineno
         line = self.formatted_lines[lineno]
         return Transformation(line)
-
-    @staticmethod
-    def to_formatted_lines(
-        fragments: "AnyFormattedText",
-    ) -> "list[FormattedText]":
-        """Split formatted text into a list of lines of formatted text.
-
-        Args:
-            fragments: A `FormattedText` object.
-
-        Returns:
-            A list of lists of style and text tuples.
-
-        """
-        lines: "list[FormattedText]" = [FormattedText([])]
-        for fragment in to_formatted_text(fragments):
-            style, text, *extra = fragment
-            while text:
-                start, line, text = text.partition("\n")
-                style_text_tuple = (style, start, *extra)
-                style_text_tuple = cast("OneStyleAndTextTuple", style_text_tuple)
-                lines[-1].append(style_text_tuple)
-                if line == "\n":
-                    lines.append(FormattedText())
-        return lines
 
 
 class ANSI(PTANSI):
@@ -142,6 +112,24 @@ class ANSI(PTANSI):
                         formatted_text.append(("[ZeroWidthEscape]", sequence))
                         # char = yield
                         continue
+
+                # Check for hyperlinks
+                elif char == "]":
+                    sequence += char
+                    char = yield
+                    if char == "8":
+                        sequence += char
+                        char = yield
+                        if char == ";":
+                            sequence += char
+                            char = yield
+                            while True:
+                                sequence += char
+                                if sequence[-2:] == "\x1b\\":
+                                    break
+                                char = yield
+                            formatted_text.append(("[ZeroWidthEscape]", sequence))
+                            continue
 
                 elif (char == "[" and sequence == "\x1b") or sequence == "\x9b":
                     if sequence == "\x1b":
