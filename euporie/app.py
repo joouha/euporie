@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, Any, Callable, Mapping, Optional, Union
 from prompt_toolkit.application import Application
 from prompt_toolkit.enums import EditingMode
 from prompt_toolkit.filters import Condition, Filter
-from prompt_toolkit.formatted_text import fragment_list_to_text
+from prompt_toolkit.formatted_text import fragment_list_to_text, to_formatted_text
 from prompt_toolkit.key_binding.bindings.focus import focus_next, focus_previous
 from prompt_toolkit.layout import (
     ConditionalContainer,
@@ -42,10 +42,11 @@ from pygments.styles import get_all_styles, get_style_by_name  # type: ignore
 from euporie import __version__, _app_name, logo
 from euporie.config import config
 from euporie.keys import KeyBindingsInfo
+from euporie.log import log_memory
 from euporie.menu import SmartMenuItem
 from euporie.notebook import Notebook
 from euporie.term import TermAppMixin
-from euporie.text import FormatTextProcessor
+from euporie.text import ANSI, FormatTextProcessor
 
 if TYPE_CHECKING:
     from prompt_toolkit.formatted_text import AnyFormattedText
@@ -322,6 +323,7 @@ class App(Application, TermAppMixin):
                     " Help ",
                     children=[
                         MenuItem("Keyboard Shortcuts", handler=self.help_keys),
+                        MenuItem("Logs", handler=self.help_logs),
                         MenuItem("About", handler=self.help_about),
                     ],
                 ),
@@ -667,6 +669,27 @@ class App(Application, TermAppMixin):
 
         self.dialog(
             title="Keyboard Shortcuts",
+            body=body,
+            buttons={"OK": None},
+        )
+
+    def help_logs(self) -> None:
+        """Displays a dialog with logs."""
+        log_memory.seek(0)
+        log_data = to_formatted_text(ANSI(log_memory.read()))
+        plain_log_data = fragment_list_to_text(log_data)
+
+        body = TextArea(
+            text=plain_log_data,
+            multiline=True,
+            focusable=True,
+            wrap_lines=False,
+            input_processors=[FormatTextProcessor(log_data)],
+            width=D(preferred=120),
+            scrollbar=True,
+        )
+        self.dialog(
+            title="Logs",
             body=body,
             buttons={"OK": None},
         )
