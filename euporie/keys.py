@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Callable, Optional, Union, cast
 
+from prompt_toolkit.formatted_text import FormattedText, to_formatted_text
 from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.keys import Keys
 
@@ -49,3 +50,47 @@ class KeyBindingsInfo(KeyBindings):
             key = cast("tuple[Union[Keys, str]]", key_str or keys)
             self.details.setdefault(group, {}).setdefault(desc, {})[key] = None
         return super().add(*keys, **kwargs)
+
+    @classmethod
+    def to_formatted_text(cls) -> "FormattedText":
+        """Format the current key binding descriptions as formatted text.
+
+        Returns:
+            Formatted text giving a description of the key-bindings in each group.
+
+        """
+        key_details = {
+            group: {
+                " / ".join(
+                    [
+                        " ".join(
+                            (
+                                part.replace("c-", "ctrl-").replace("s-", "shift-")
+                                for part in key
+                            )
+                        )
+                        for key in keys
+                    ]
+                ): desc
+                for desc, keys in info.items()
+            }
+            for group, info in cls.details.items()
+        }
+        max_key_len = (
+            max([len(key) for group in key_details.values() for key in group]) + 1
+        )
+
+        fragment_list: "list[Union[tuple[str, str], tuple[str, str, Callable]]]" = []
+        for group, item in key_details.items():
+            fragment_list.append(("", " " * (max(0, max_key_len - len(group)))))
+            fragment_list.append(("bold underline", f"{group}\n"))
+            for key, desc in item.items():
+                fragment_list.append(("bold", key.rjust(max_key_len)))
+                fragment_list.append(("", f"  {desc}"))
+                fragment_list.append(("", "\n"))
+            fragment_list.append(("", "\n"))
+        # Remove two newlines at the end
+        fragment_list.pop()
+        fragment_list.pop()
+
+        return to_formatted_text(fragment_list)

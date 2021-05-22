@@ -6,7 +6,7 @@ import re
 from typing import Generator
 
 from prompt_toolkit.formatted_text import ANSI as PTANSI
-from prompt_toolkit.formatted_text import AnyFormattedText, split_lines
+from prompt_toolkit.formatted_text import FormattedText, split_lines
 from prompt_toolkit.layout.processors import (
     Processor,
     Transformation,
@@ -17,7 +17,7 @@ from prompt_toolkit.layout.processors import (
 class FormatTextProcessor(Processor):
     """Applies formatted text to a TextArea."""
 
-    def __init__(self, formatted_text: "AnyFormattedText"):
+    def __init__(self, formatted_text: "FormattedText"):
         """Initiate the processor.
 
         Args:

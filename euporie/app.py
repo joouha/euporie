@@ -651,45 +651,17 @@ class App(Application, TermAppMixin):
 
     def help_keys(self) -> None:
         """Displays details of registered key-bindings in a dialog."""
-        key_details = {
-            group: {
-                " / ".join(
-                    [
-                        " ".join(
-                            (
-                                part.replace("c-", "ctrl-").replace("s-", "shift-")
-                                for part in key
-                            )
-                        )
-                        for key in keys
-                    ]
-                ): desc
-                for desc, keys in info.items()
-            }
-            for group, info in KeyBindingsInfo.details.items()
-        }
-        max_key_len = (
-            max([len(key) for group in key_details.values() for key in group]) + 1
-        )
-
-        fragment_list: "list[Union[tuple[str, str], tuple[str, str, Callable]]]" = []
-        for group, item in key_details.items():
-            fragment_list.append(("", " " * (max(0, max_key_len - len(group)))))
-            fragment_list.append(("bold underline", f"{group}\n"))
-            for key, desc in item.items():
-                fragment_list.append(("bold", key.rjust(max_key_len)))
-                fragment_list.append(("", f"  {desc}\n"))
-            fragment_list.append(("", "\n"))
-        fragment_list.pop()
-
-        plain_text = fragment_list_to_text(fragment_list)
+        key_details = KeyBindingsInfo.to_formatted_text()
+        plain_key_details = fragment_list_to_text(key_details)
         body = TextArea(
-            text=plain_text.strip(),
+            text=plain_key_details,
             multiline=True,
             focusable=True,
             wrap_lines=False,
-            input_processors=[FormatTextProcessor(fragment_list)],
-            width=max([len(line) for line in plain_text.split("\n")]) + 2,
+            input_processors=[FormatTextProcessor(key_details)],
+            width=D(
+                preferred=max([len(line) for line in plain_key_details.split("\n")]) + 2
+            ),
             scrollbar=True,
         )
 
