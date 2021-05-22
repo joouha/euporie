@@ -101,7 +101,7 @@ class DataRenderer(metaclass=ABCMeta):
     # TODO - make this asynchronous again
     def render(
         self,
-        data: "str",
+        data: "Any",
         width: "int",
         height: "int",
         render_args: "Optional[dict]" = None,

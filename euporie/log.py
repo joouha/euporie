@@ -53,7 +53,7 @@ LOGGING_CONFIG = {
     },
     "loggers": {
         "euporie": {
-            "handlers": ["memory", "screen"],
+            "handlers": ["memory"],
             "level": "DEBUG",
             "propagate": False,
         },

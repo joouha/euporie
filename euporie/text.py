@@ -3,15 +3,23 @@
 from __future__ import annotations
 
 import re
-from typing import Generator
+from typing import Any, Generator
 
 from prompt_toolkit.formatted_text import ANSI as PTANSI
-from prompt_toolkit.formatted_text import FormattedText, split_lines
+from prompt_toolkit.formatted_text import (
+    AnyFormattedText,
+    FormattedText,
+    fragment_list_to_text,
+    split_lines,
+    to_formatted_text,
+)
+from prompt_toolkit.layout.margins import ScrollbarMargin
 from prompt_toolkit.layout.processors import (
     Processor,
     Transformation,
     TransformationInput,
 )
+from prompt_toolkit.widgets import TextArea
 
 
 class FormatTextProcessor(Processor):
@@ -39,6 +47,41 @@ class FormatTextProcessor(Processor):
             lineno = max_lineno
         line = self.formatted_lines[lineno]
         return Transformation(line)
+
+
+class FormattedTextArea(TextArea):
+    """Applies formatted text to a TextArea."""
+
+    def __init__(
+        self, formatted_text: "AnyFormattedText", *args: "Any", **kwargs: "Any"
+    ):
+        """Initialise a `FormattedTextArea` instance.
+
+        Args:
+            formatted_text: A list of `(style, text)` tuples to display.
+            *args: Arguments to pass to `prompt_toolkit.widgets.TextArea`.
+            **kwargs: Key-word arguments to pass to `prompt_toolkit.widgets.TextArea`.
+
+        """
+        self.formatted_text = to_formatted_text(formatted_text)
+        input_processors = kwargs.pop("input_processors", [])
+        input_processors.append(FormatTextProcessor(self.formatted_text))
+        text = fragment_list_to_text(self.formatted_text)
+        kwargs.pop("text")
+
+        # The following is not type checked due to a currently open mypy bug
+        # https://github.com/python/mypy/issues/6799
+        super().__init__(
+            *args,
+            text=text,
+            input_processors=input_processors,
+            **kwargs,
+        )  # type: ignore
+
+        for margin in self.window.right_margins:
+            if isinstance(margin, ScrollbarMargin):
+                margin.up_arrow_symbol = "▲"
+                margin.down_arrow_symbol = "▼"
 
 
 class ANSI(PTANSI):
@@ -174,36 +217,3 @@ class ANSI(PTANSI):
                     continue
 
             formatted_text.append((style, sequence))
-
-
-# ===========================
-#  Original Copyright Notice
-# ===========================
-#
-# Copyright (c) 2014, Jonathan Slenders
-# All rights reserved.
-#
-# Redistribution and use in source and binary forms, with or without modification,
-# are permitted provided that the following conditions are met:
-#
-# * Redistributions of source code must retain the above copyright notice, this
-#   list of conditions and the following disclaimer.
-#
-# * Redistributions in binary form must reproduce the above copyright notice, this
-#   list of conditions and the following disclaimer in the documentation and/or
-#   other materials provided with the distribution.
-#
-# * Neither the name of the {organization} nor the names of its
-#   contributors may be used to endorse or promote products derived from
-#   this software without specific prior written permission.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR
-# ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
-# ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.

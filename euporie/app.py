@@ -11,7 +11,6 @@ from typing import TYPE_CHECKING, Any, Callable, Mapping, Optional, Union
 from prompt_toolkit.application import Application
 from prompt_toolkit.enums import EditingMode
 from prompt_toolkit.filters import Condition, Filter
-from prompt_toolkit.formatted_text import fragment_list_to_text, to_formatted_text
 from prompt_toolkit.key_binding.bindings.focus import focus_next, focus_previous
 from prompt_toolkit.layout import (
     ConditionalContainer,
@@ -29,27 +28,18 @@ from prompt_toolkit.layout.layout import Layout
 from prompt_toolkit.layout.menus import CompletionsMenu
 from prompt_toolkit.styles import BaseStyle, Style, default_ui_style, merge_styles
 from prompt_toolkit.styles.pygments import style_from_pygments_cls
-from prompt_toolkit.widgets import (
-    Button,
-    Dialog,
-    Label,
-    MenuContainer,
-    MenuItem,
-    TextArea,
-)
+from prompt_toolkit.widgets import Label, MenuContainer, MenuItem, TextArea
 from pygments.styles import get_all_styles, get_style_by_name  # type: ignore
 
-from euporie import __version__, _app_name, logo
+from euporie import logo
 from euporie.config import config
+from euporie.dialog import AppDialogMixin
 from euporie.keys import KeyBindingsInfo
-from euporie.log import log_memory
 from euporie.menu import SmartMenuItem
 from euporie.notebook import Notebook
-from euporie.term import TermAppMixin
-from euporie.text import ANSI, FormatTextProcessor
+from euporie.term import AppTermMixin
 
 if TYPE_CHECKING:
-    from prompt_toolkit.formatted_text import AnyFormattedText
     from prompt_toolkit.key_binding import KeyBindings
     from prompt_toolkit.key_binding.key_processor import KeyPressEvent
     from prompt_toolkit.layout.containers import AnyContainer
@@ -57,7 +47,7 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 
-class App(Application, TermAppMixin):
+class App(Application, AppDialogMixin, AppTermMixin):
     """The main euporie application class.
 
     This subclasses the `prompt_toolkit.application.Application` class, so application
@@ -151,9 +141,10 @@ class App(Application, TermAppMixin):
             "cell-output": "fg:default",
             "cell-input-prompt": "fg:darkblue",
             "cell-output-prompt": "fg:darkred",
-            "scrollbar.background": "bg:#444444",
-            "scrollbar.button": "bg:#aaaaaa",
+            "scrollbar.background": "fg:#aaaaaa bg:#444444",
+            "scrollbar.button": "fg:#444444 bg:#aaaaaa",
             "scrollbar.arrow": "fg: #aaaaaa bg:#444444",
+            "dialog.body scrollbar": "reverse",
             "dialog shadow": "bg:#888888",
             "dialog.body": "bg:#b0b0b0 #000000",
             "hr": "fg:#666666",
@@ -597,122 +588,6 @@ class App(Application, TermAppMixin):
             return self.files[index]
         else:
             return None
-
-    def dialog(
-        self,
-        title: "AnyFormattedText",
-        body: "AnyContainer",
-        buttons: "dict[str, Optional[Callable]]",
-        to_focus: "Optional[AnyContainer]" = None,
-    ) -> None:
-        """Display a modal dialog above the application.
-
-        Returns focus to the previously selected control when closed.
-
-        Args:
-            title: The title of the dialog. Can be formatted text.
-            body: The container to use as the main body of the dialog.
-            buttons: A dictionary mapping text to display as dialog buttons to
-                callbacks to run when the button is clicked. If the callback is
-                `None`, the dialog will be closed without running a callback.
-            to_focus: The control to focus when the dialog is displayed.
-
-        """
-
-        def _make_handler(cb: "Optional[Callable]") -> "Callable":
-            def inner() -> "None":
-                self.root_container.floats.remove(dialog)
-                self.layout.focus(focused)
-                if cb:
-                    cb()
-
-            return inner
-
-        focused = self.layout.current_control
-
-        button_widgets = [
-            Button(text, _make_handler(cb), left_symbol="[", right_symbol="]")
-            for text, cb in buttons.items()
-        ]
-
-        dialog = Float(
-            Dialog(
-                title=title,
-                body=body,
-                buttons=button_widgets,
-                modal=True,
-                with_background=True,
-            )
-        )
-        self.root_container.floats.append(
-            dialog,
-        )
-        if to_focus is None:
-            to_focus = button_widgets[0]
-        self.layout.focus(to_focus)
-
-    def help_keys(self) -> None:
-        """Displays details of registered key-bindings in a dialog."""
-        key_details = KeyBindingsInfo.to_formatted_text()
-        plain_key_details = fragment_list_to_text(key_details)
-        body = TextArea(
-            text=plain_key_details,
-            multiline=True,
-            focusable=True,
-            wrap_lines=False,
-            input_processors=[FormatTextProcessor(key_details)],
-            width=D(
-                preferred=max([len(line) for line in plain_key_details.split("\n")]) + 2
-            ),
-            scrollbar=True,
-        )
-
-        self.dialog(
-            title="Keyboard Shortcuts",
-            body=body,
-            buttons={"OK": None},
-        )
-
-    def help_logs(self) -> None:
-        """Displays a dialog with logs."""
-        log_memory.seek(0)
-        log_data = to_formatted_text(ANSI(log_memory.read()))
-        plain_log_data = fragment_list_to_text(log_data)
-
-        body = TextArea(
-            text=plain_log_data,
-            multiline=True,
-            focusable=True,
-            wrap_lines=False,
-            input_processors=[FormatTextProcessor(log_data)],
-            width=D(preferred=120),
-            scrollbar=True,
-        )
-        self.dialog(
-            title="Logs",
-            body=body,
-            buttons={"OK": None},
-        )
-
-    def help_about(self) -> None:
-        """Displays an about dialog."""
-        self.dialog(
-            title="About",
-            body=Window(
-                FormattedTextControl(
-                    [
-                        ("class:logo", logo),
-                        ("bold", f" {_app_name}"),
-                        ("", f"Version {__version__}\n\n".rjust(27, " ")),
-                        ("", "A TUI editor for Jupyter notebooks\n"),
-                        ("class:hr", "─" * 34 + "\n\n"),
-                        ("", "© 2021 Josiah Outram Halstead"),
-                    ]
-                ),
-                dont_extend_height=True,
-            ),
-            buttons={"OK": None},
-        )
 
     @classmethod
     def launch(cls) -> None:

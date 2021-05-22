@@ -67,7 +67,7 @@ class QueryResponsePatterns:
     kitty = "\x1b[_Gi=1;OK\x1b[\\"
 
 
-class TermAppMixin:
+class AppTermMixin:
     """Mixin for `euporie.app.App` which provides terminal feature properties."""
 
     output: "Output"
