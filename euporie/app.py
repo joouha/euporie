@@ -39,7 +39,7 @@ from prompt_toolkit.widgets import (
 )
 from pygments.styles import get_all_styles, get_style_by_name  # type: ignore
 
-from euporie import logo
+from euporie import __version__, _app_name, logo
 from euporie.config import config
 from euporie.keys import KeyBindingsInfo
 from euporie.menu import SmartMenuItem
@@ -707,12 +707,11 @@ class App(Application, TermAppMixin):
                 FormattedTextControl(
                     [
                         ("class:logo", logo),
-                        ("", " "),
-                        ("bold", "euporie\n\n"),
-                        ("", "A command line editor for Jupyter notebooks\n"),
-                        ("class:hr", "─" * 43 + "\n\n"),
-                        ("", "Created by Josiah Outram Halstead\n"),
-                        ("", "© 2021"),
+                        ("bold", f" {_app_name}"),
+                        ("", f"Version {__version__}\n\n".rjust(27, " ")),
+                        ("", "A TUI editor for Jupyter notebooks\n"),
+                        ("class:hr", "─" * 34 + "\n\n"),
+                        ("", "© 2021 Josiah Outram Halstead"),
                     ]
                 ),
                 dont_extend_height=True,
