@@ -57,7 +57,7 @@ class ANSI(PTANSI):
         value = value.replace("\r\n", "\n")
         # Remove anything before a carriage return if there is something after it to
         # emulate a carriage return in the output
-        value = re.sub("^.*\\r(?!\\n)", "", value)
+        value = re.sub("^.*\\r(?!\\n)", "", value, 0, re.MULTILINE)
 
         super().__init__(value)
 
@@ -89,6 +89,12 @@ class ANSI(PTANSI):
                         break
                     else:
                         sequence += char
+                continue
+
+            # Check for backspace
+            elif char == "\x08":
+                # TODO - remove last character from last non-ZeroWidthEscape fragment
+                formatted_text.pop()
                 continue
 
             elif char in ("\x1b", "\x9b"):

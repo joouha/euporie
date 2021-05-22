@@ -115,18 +115,18 @@ class Output:
                 self.content = Window(FormattedTextControl(ANSI(datum.rstrip())))
                 break
 
-            if mime_path.match("text/stderr"):
+            if mime_path.match("stream/std*"):
+                # Parse ansi for text streams
                 self.content = Window(
                     FormattedTextControl(ANSI(datum.rstrip())),
                     wrap_lines=True,
-                    style="fg:red",
+                    style="fg:red" if mime_path.name == "stderr" else "",
                 )
                 break
 
             if mime_path.match("text/*"):
-                # Use formatted text so ansi colour codes are displayed as colours
                 self.content = Window(
-                    FormattedTextControl(ANSI(datum.rstrip())), wrap_lines=True
+                    FormattedTextControl(datum.rstrip()), wrap_lines=True
                 )
                 break
 
@@ -147,7 +147,7 @@ class Output:
         """
         output_type = self.json.get("output_type", "unknown")
         if output_type == "stream":
-            return {f'text/{self.json.get("name")}': self.json.get("text", "")}
+            return {f'stream/{self.json.get("name")}': self.json.get("text", "")}
         elif output_type == "error":
             return {
                 "text/x-python-traceback": "\n".join(self.json.get("traceback", ""))
