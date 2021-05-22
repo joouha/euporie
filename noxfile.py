@@ -129,7 +129,7 @@ def mypy(session: "Session") -> "None":
     session.run("mypy", *args)
 
 
-@session(python=python_versions[0])
+@session(python=python_versions)
 def pytype(session: "Session") -> "None":
     """Type-check using pytype."""
     args = session.posargs or ["--disable=import-error", *locations]
