@@ -67,7 +67,7 @@ class FormattedTextArea(TextArea):
         input_processors = kwargs.pop("input_processors", [])
         input_processors.append(FormatTextProcessor(self.formatted_text))
         text = fragment_list_to_text(self.formatted_text)
-        kwargs.pop("text")
+        kwargs.pop("text", "")
 
         # The following is not type checked due to a currently open mypy bug
         # https://github.com/python/mypy/issues/6799
