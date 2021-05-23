@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable, Mapping, Optional, Union
 
 from prompt_toolkit.application import Application
+from prompt_toolkit.clipboard.pyperclip import PyperclipClipboard
 from prompt_toolkit.enums import EditingMode
 from prompt_toolkit.filters import Condition, Filter
 from prompt_toolkit.key_binding.bindings.focus import focus_next, focus_previous
@@ -78,6 +79,7 @@ class App(Application, AppDialogMixin, AppTermMixin):
             full_screen=True,
             style=None,
             editing_mode=self.get_edit_mode(),
+            clipboard=PyperclipClipboard(),
         )
 
         # Ensure a file is focused if one has been opened
