@@ -1066,21 +1066,22 @@ class svg_librsvg(PythonRenderMixin, SVGRenderer):
         """
         import cairosvg  # type: ignore
 
-        data_bytes = cairosvg.surface.PNGSurface.convert(data, write_to=None)
-        data = base64.b64encode(data_bytes).decode()
+        png_bytes = cairosvg.surface.PNGSurface.convert(data, write_to=None)
+        png_b64str = base64.b64encode(png_bytes).decode()
         return ImageRenderer.select().render(
-            data, self.width, self.height, self.render_args
+            png_b64str, self.width, self.height, self.render_args
         )
 
 
 class svg_imagemagik(SubprocessRenderMixin, SVGRenderer):
     """Renders SVGs using `imagemagik`."""
 
+    cmd = "convert"
+
     def load(self, data: "str") -> "None":
         """Sets the command to use for rendering."""
         super().load(data)
         self.args = [
-            "convert",
             "-",
             "PNG:-",
         ]
@@ -1095,10 +1096,10 @@ class svg_imagemagik(SubprocessRenderMixin, SVGRenderer):
             An string of ANSI escape sequences representing the input image.
 
         """
-        png_bytes = super().call_subproc(cast("bytes", data))
-        png_str = base64.b64encode(png_bytes).decode()
+        png_bytes = super().call_subproc(str(data).encode())
+        png_b64str = base64.b64encode(png_bytes).decode()
         return ImageRenderer.select().render(
-            png_str, self.width, self.height, self.render_args
+            png_b64str, self.width, self.height, self.render_args
         )
 
 
