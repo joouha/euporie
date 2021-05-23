@@ -147,7 +147,10 @@ class AppTermMixin:
             import fcntl
             import termios
 
-            fcntl.ioctl(1, termios.TIOCGWINSZ, output)
+            try:
+                fcntl.ioctl(1, termios.TIOCGWINSZ, output)
+            except Exception:  # noqa S110
+                pass
         rows, cols, xpixels, ypixels = output
         return rows, cols, xpixels, ypixels
 
