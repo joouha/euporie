@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-import sys
 from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable, Mapping, Optional, Union
@@ -81,6 +80,9 @@ class App(Application, AppDialogMixin, AppTermMixin):
             editing_mode=self.get_edit_mode(),
             clipboard=PyperclipClipboard(),
         )
+
+        for file in config.files:
+            self.open_file(file)
 
         # Ensure a file is focused if one has been opened
         self.pre_run_callables = [lambda: self.file_op("focus")]
@@ -595,6 +597,4 @@ class App(Application, AppDialogMixin, AppTermMixin):
     def launch(cls) -> None:
         """Launches the app, opening any command line arguments as files."""
         app = cls()
-        for path in sys.argv[1:]:
-            app.open_file(path)
         app.run()
