@@ -7,7 +7,15 @@ import copy
 import threading
 from functools import partial
 from pathlib import Path
-from typing import TYPE_CHECKING, AsyncGenerator, Callable, Iterable, Optional, cast
+from typing import (
+    TYPE_CHECKING,
+    AsyncGenerator,
+    Callable,
+    Iterable,
+    Optional,
+    Union,
+    cast,
+)
 
 import nbformat  # type: ignore
 from jupyter_client import KernelClient, KernelManager  # type: ignore
@@ -15,22 +23,43 @@ from jupyter_client.kernelspec import KernelSpecManager  # type: ignore
 from prompt_toolkit.application.current import get_app
 from prompt_toolkit.completion.base import CompleteEvent, Completer, Completion
 from prompt_toolkit.document import Document
-from prompt_toolkit.layout.containers import HSplit, Window
+from prompt_toolkit.layout.containers import AnyContainer, HSplit, Window
 from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.layout.dimension import LayoutDimension as D
 from prompt_toolkit.layout.margins import NumberedMargin
-from prompt_toolkit.widgets import Box, Label, RadioList
+from prompt_toolkit.widgets import Label, RadioList
 
 from euporie.cell import Cell
 from euporie.config import config
 from euporie.keys import KeyBindingsInfo
-from euporie.scroll import ScrollingContainer
+from euporie.scroll import PrintingContainer, ScrollingContainer
 
 if TYPE_CHECKING:
     from prompt_toolkit.key_binding import KeyBindings
     from prompt_toolkit.key_binding.key_processor import KeyPressEvent
 
     from euporie.app import App
+
+
+class File:
+    """Base class for file containers."""
+
+    def close(self, cb: "Optional[Callable]") -> "None":
+        """Function to close a file.
+
+        Args:
+            cb: A function to call when the file is closed.
+
+        """
+        pass
+
+    def focus(self) -> "None":
+        """Focuses the file."""
+        pass
+
+    def __pt_container__(self) -> "AnyContainer":
+        """Return the file container object."""
+        pass
 
 
 class KernelCompleter(Completer):
@@ -73,19 +102,25 @@ class KernelCompleter(Completer):
                     yield Completion(match, start_position=rel_start_position)
 
 
-class Notebook:
+class Notebook(File):
     """The main notebook container class."""
 
-    def __init__(self, path: "Path"):
+    page: "ScrollingContainer"
+
+    def __init__(
+        self,
+        path: "Path",
+        interactive: "bool" = True,
+        execute: "bool" = False,
+        scroll: "bool" = False,
+    ):
         """Instantiate a Notebook container, using a notebook at a given path."""
-        self.char_px_y = 32
-        self.char_px_x = 15
-
-        self.dirty = False
-        self.kernel_status = "starting"
-        self.line_numbers = config.show_line_numbers
-
         self.path = Path(path).expanduser()
+        self.interactive = interactive
+        self.execute = execute
+        self.scroll = scroll
+
+        # Open json file
         if self.path.exists():
             self.json = nbformat.read(self.path, as_version=4)
         else:
@@ -94,19 +129,32 @@ class Notebook:
         if not self.json.setdefault("cells", []):
             self.json["cells"] = [nbformat.v4.new_code_cell()]
 
+        self.clipboard: "list[Cell]" = []
+        self.dirty = False
+        self.kernel_status = "starting"
+        self.line_numbers = config.show_line_numbers
         self.completer = KernelCompleter(self)
         self.km: "Optional[KernelManager]" = None
         self.kc: "Optional[KernelClient]" = None
+        self.kernel_loop: "Optional[asyncio.AbstractEventLoop]" = None
 
-        self.clipboard: "list[Cell]" = []
+        self.container: "AnyContainer"
 
-        self.page = ScrollingContainer(
-            children=self.cell_renderers,
-            max_content_width=D(preferred=int(config.max_notebook_width)),
-        )
-        self.focus = self.page.focus
-        self.container = Box(self.page, padding=0, padding_left=1)
-        self.container.container.key_bindings = self.load_key_bindings()
+        if not self.scroll:
+            self.container = PrintingContainer(
+                self.cell_renderers,
+                width=config.max_notebook_width,
+            )
+
+        else:
+            self.page = ScrollingContainer(
+                children=self.cell_renderers,
+                max_content_width=D(preferred=int(config.max_notebook_width)),
+            )
+            # Wrap the scolling container in an hsplit and apply the keybindings
+            # TODO - refactor key-bindings
+            self.container = HSplit([self.page])
+            self.container.key_bindings = self.load_key_bindings()
 
         def setup_loop() -> None:
             """Set up a thread with an event loop to listen for kernel responses."""
@@ -122,8 +170,9 @@ class Notebook:
             self.kernel_loop.run_forever()
 
         # Run the kernel event loop in a new thread
-        self.kernel_thread = threading.Thread(target=setup_loop)
-        self.kernel_thread.start()
+        if self.interactive or self.execute:
+            self.kernel_thread = threading.Thread(target=setup_loop)
+            self.kernel_thread.start()
 
     async def start_kernel(self) -> None:
         """Starts a Juypter kernel, creating a `KernelManager`."""
@@ -157,6 +206,7 @@ class Notebook:
                 await self.km._async_shutdown_kernel()
             await self.start_kernel()
 
+        assert self.kernel_loop is not None
         asyncio.run_coroutine_threadsafe(
             _restart(),
             self.kernel_loop,
@@ -208,8 +258,13 @@ class Notebook:
             },
         )
 
+    def focus(self) -> "None":
+        """Focus the notebooks."""
+        if hasattr(self, "page"):
+            self.page.focus()
+
     @property
-    def cell_renderers(self) -> "list[Callable]":
+    def cell_renderers(self) -> "list[Union[Callable, AnyContainer]]":
         """Return a list of `Cell` generator functions for the notebooks' cells."""
         return [
             partial(Cell, i, cell_json, self)
@@ -289,6 +344,21 @@ class Notebook:
         cell = self.page.get_child()
         assert isinstance(cell, Cell)
         return cell
+
+    def is_cell_obscured(self, index: "int") -> "bool":
+        """Determine if a cell is partially visible.
+
+        Args:
+            index: The index of the child of interest.
+
+        Returns:
+            True if the child is rendered and partially off-screen, otherwise False.=
+
+        """
+        if self.scroll:
+            return self.page.is_child_obscured(index)
+        else:
+            return False
 
     def add(self, offset: "int") -> "None":
         """Creates a new cell at a given offset from the currently selected cell.
@@ -372,10 +442,13 @@ class Notebook:
         # Tell the kernel to shutdown
         if self.kc is not None:
             self.kc.shutdown()
-        # Tell the event loop in the kernel monitoring thread to shutdown
-        self.kernel_loop.call_soon_threadsafe(self.kernel_loop.stop)
-        # Close the kernel monitoring thread
-        self.kernel_thread.join()
+
+        if self.kernel_loop is not None:
+            # Tell the event loop in the kernel monitoring thread to shutdown
+            self.kernel_loop.call_soon_threadsafe(self.kernel_loop.stop)
+            # Close the kernel monitoring thread
+            self.kernel_thread.join()
+
         # Tell the app we've closed
         if cb is not None:
             cb()
@@ -415,6 +488,6 @@ class Notebook:
             },
         )
 
-    def __pt_container__(self) -> "Box":
+    def __pt_container__(self) -> "AnyContainer":
         """Return the main `Notebook` container object."""
         return self.container

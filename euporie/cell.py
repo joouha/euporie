@@ -125,7 +125,7 @@ class Cell:
         self.is_editing = Condition(lambda: self.editing)
         self.show_prompt = Condition(lambda: self.cell_type == "code")
         self.is_focused = Condition(lambda: self.focused)
-        self.obscured = Condition(lambda: self.nb.page.is_child_obscured(self.index))
+        self.obscured = Condition(lambda: self.nb.is_cell_obscured(self.index))
         self.show_input_line_numbers = Condition(
             lambda: bool(self.nb.line_numbers and self.json.get("cell_type") == "code")
         )
@@ -356,7 +356,7 @@ class Cell:
     def run(self) -> "None":
         """Run the contents of a code cell in the kernel."""
         self.clear_output()
-        if self.nb.kc and hasattr(self.nb, "kernel_loop"):
+        if self.nb.kc and self.nb.kernel_loop is not None:
             # Execute input and wait for responses in kernel thread
             asyncio.run_coroutine_threadsafe(
                 # self.nb.kc._async_execute_interactive(

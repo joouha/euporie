@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 import sys
 from asyncio import AbstractEventLoop
+from pathlib import Path
 from typing import Any, Callable, Optional
 
 from prompt_toolkit.formatted_text import (
@@ -13,12 +14,12 @@ from prompt_toolkit.formatted_text import (
     to_formatted_text,
 )
 from prompt_toolkit.layout import Float, HSplit, Layout, Window
-from prompt_toolkit.layout.containers import AnyContainer, FloatContainer
+from prompt_toolkit.layout.containers import AnyContainer, FloatContainer, to_container
 from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.layout.dimension import LayoutDimension as D
-from prompt_toolkit.widgets import Button, Dialog, Label
+from prompt_toolkit.widgets import Button, Dialog, Label, TextArea
 
-from euporie import __version__, _app_name, logo
+from euporie import __app_name__, __copyright__, __logo__, __strapline__, __version__
 from euporie.keys import KeyBindingsInfo
 from euporie.log import log_memory
 from euporie.text import ANSI, FormattedTextArea
@@ -26,11 +27,12 @@ from euporie.text import ANSI, FormattedTextArea
 log = logging.getLogger(__name__)
 
 
-class AppDialogMixin:
+class DialogMixin:
     """Provides dialogs for the main application."""
 
     root_container: "FloatContainer"
     layout: "Layout"
+    open_file: "Callable"
 
     def dialog(
         self,
@@ -85,6 +87,47 @@ class AppDialogMixin:
             to_focus = button_widgets[0]
         self.layout.focus(to_focus)
 
+    def ask_open_file(
+        self,
+        default: "str" = "",
+        validate: "bool" = True,
+        error: "Optional[str]" = None,
+    ) -> None:
+        """Display a dialog asking for file name input.
+
+        Args:
+            default: The default filename to display in the text entry box
+            validate: Whether to disallow files which do not exist
+            error: An optional error message to display below the file name
+
+        """
+        filepath = TextArea(text=default, multiline=False)
+
+        def _open_cb() -> None:
+            path = filepath.text
+            if not validate or Path(path).expanduser().exists():
+                self.open_file(filepath.text)
+            else:
+                self.ask_open_file(
+                    default=filepath.text, validate=validate, error="File not found"
+                )
+
+        body_contents: "list[AnyContainer]" = [
+            Label("Enter file name:"),
+            filepath,
+        ]
+        if error:
+            body_contents.append(to_container(Label(error, style="red")))
+        self.dialog(
+            title="Select file",
+            body=HSplit(body_contents),
+            buttons={
+                "OK": _open_cb,
+                "Cancel": None,
+            },
+            to_focus=filepath,
+        )
+
     def help_keys(self) -> None:
         """Displays details of registered key-bindings in a dialog."""
         key_details = KeyBindingsInfo.to_formatted_text()
@@ -132,12 +175,14 @@ class AppDialogMixin:
             body=Window(
                 FormattedTextControl(
                     [
-                        ("class:logo", logo),
-                        ("bold", f" {_app_name}"),
+                        ("class:logo", __logo__),
+                        ("", " "),
+                        ("bold", __app_name__),
                         ("", f"Version {__version__}\n\n".rjust(27, " ")),
-                        ("", "A TUI editor for Jupyter notebooks\n"),
+                        ("", __strapline__),
+                        ("", "\n"),
                         ("class:hr", "─" * 34 + "\n\n"),
-                        ("", "© 2021 Josiah Outram Halstead"),
+                        ("", __copyright__),
                     ]
                 ),
                 dont_extend_height=True,

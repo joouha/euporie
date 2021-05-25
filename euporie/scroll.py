@@ -14,7 +14,12 @@ from prompt_toolkit.layout.containers import (
     Window,
     to_container,
 )
-from prompt_toolkit.layout.dimension import AnyDimension, Dimension, to_dimension
+from prompt_toolkit.layout.dimension import (
+    AnyDimension,
+    Dimension,
+    max_layout_dimensions,
+    to_dimension,
+)
 from prompt_toolkit.layout.mouse_handlers import MouseHandler, MouseHandlers
 from prompt_toolkit.layout.screen import Char, Screen, WritePosition
 from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
@@ -47,7 +52,7 @@ class ScrollingContainer(Container):
 
     def __init__(
         self,
-        children: "list[Callable]",
+        children: "list[Union[Callable, AnyContainer]]",
         max_content_width: "AnyDimension" = None,
         height: "AnyDimension" = None,
         z_index: "Optional[int]" = None,
@@ -91,12 +96,10 @@ class ScrollingContainer(Container):
         return Dimension()
 
     def preferred_height(self, width: int, max_available_height: int) -> "Dimension":
-        """Return the preferred height only is one is provided."""
+        """Return the preferred height only if one is provided."""
         if self.height is not None:
             return to_dimension(self.height)
-        # Do not report preferred_height height to children so they don't complain
-        # about a lack of space
-        return Dimension()
+        return Dimension()  # min=max_available_height, max=max_available_height)
 
     def write_to_screen(
         self,
@@ -107,7 +110,7 @@ class ScrollingContainer(Container):
         erase_bg: "bool",
         z_index: "Optional[int]",
     ) -> None:
-        """Render the prompt to a `Screen` instance.
+        """Render the container to a `Screen` instance.
 
         Args:
             screen: The :class:`~prompt_toolkit.layout.screen.Screen` class to which
@@ -150,7 +153,7 @@ class ScrollingContainer(Container):
             self.show_border()
             and self.content_width + 4 + self.show_scroll <= self.available_width
         ):
-            for y in range(ypos, ypos + self.content_height + 1):
+            for y in range(ypos, ypos + self.content_height):
                 screen.data_buffer[y][xpos - 2] = Char(Border.VERTICAL)
                 screen.data_buffer[y][xpos + 1 + self.content_width] = Char(
                     Border.VERTICAL
@@ -159,7 +162,7 @@ class ScrollingContainer(Container):
         # Draw background if there is space
         if config.background:
             dot = Char(str(config.background_character), "class:background")
-            for y in range(ypos, ypos + self.content_height + 1):
+            for y in range(ypos, ypos + self.available_height):
                 for xrange in (
                     (write_position.xpos, xpos - 2),
                     (xpos + self.content_width + 2, write_position.width - 1),
@@ -405,7 +408,7 @@ class ScrollingContainer(Container):
     def get_child(self, index: "Optional[int]" = None) -> "AnyContainer":
         """Return a rendered instance of the child at the given index.
 
-        If not index is given, the currently selected child is returned.
+        If no index is given, the currently selected child is returned.
 
         Args:
             index: The index of the child to return.
@@ -418,7 +421,11 @@ class ScrollingContainer(Container):
             index = self.last_selected_index
         child = self.child_cache.get(index)
         if child is None and self.children:
-            child = self.children[index]()
+            container_or_generator = self.children[index]
+            if callable(container_or_generator):
+                child = container_or_generator()
+            else:
+                child = container_or_generator
             self.child_cache[index] = child
         assert child is not None
         return child
@@ -671,3 +678,116 @@ class ScrollingContainer(Container):
         app = get_app()
         if not app.layout.has_focus(child):
             app.layout.focus(child)
+
+
+class PrintingContainer(Container):
+    """A container which displays all it's children in a vertical list."""
+
+    def __init__(
+        self,
+        children: "list[Union[Callable, AnyContainer]]",
+        width: "AnyDimension" = None,
+    ):
+        """Initiate the container."""
+        self.width = width
+        self.renderers = children
+        self.rendered = False
+        self._children: "list[Container]" = []
+
+    def write_to_screen(
+        self,
+        screen: "Screen",
+        mouse_handlers: "MouseHandlers",
+        write_position: "WritePosition",
+        parent_style: "str",
+        erase_bg: "bool",
+        z_index: "Optional[int]",
+    ) -> "None":
+        """Render the container to a `Screen` instance.
+
+        All children are rendered vertically in sequence.
+
+        Args:
+            screen: The :class:`~prompt_toolkit.layout.screen.Screen` class to which
+                the output has to be written.
+            mouse_handlers: :class:`prompt_toolkit.layout.mouse_handlers.MouseHandlers`.
+            write_position: A :class:`prompt_toolkit.layout.screen.WritePosition` object
+                defining where this container should be drawn.
+            erase_bg: If true, the background will be erased prior to drawing.
+            parent_style: Style string to pass to the :class:`.Window` object. This will
+                be applied to all content of the windows. :class:`.VSplit` and
+                :class:`prompt_toolkit.layout.containers.HSplit` can use it to pass
+                their style down to the windows that they contain.
+            z_index: Used for propagating z_index from parent to child.
+
+        """
+        xpos = write_position.xpos
+        ypos = write_position.ypos
+
+        for child in self._all_children:
+            height = child.preferred_height(write_position.width, 99999).preferred
+            child.write_to_screen(
+                screen,
+                mouse_handlers,
+                WritePosition(xpos, ypos, write_position.width, height),
+                parent_style,
+                erase_bg,
+                z_index,
+            )
+            ypos += height
+
+    @property
+    def _all_children(self) -> "list[Container]":
+        """Calculates and returns a list of all child containers.
+
+        If some children are generator functions, children will be generated first.
+
+        Returns:
+            A list of child containers
+
+        """
+        if not self.rendered:
+            for renderer in self.renderers:
+                if callable(renderer):
+                    self._children.append(to_container(renderer()))
+                else:
+                    self._children.append(to_container(renderer))
+            self.rendered = True
+        return self._children
+
+    def get_children(self) -> "list[Container]":
+        """Returns a list of all child containers."""
+        return self._children
+
+    def preferred_height(self, width: int, max_available_height: int) -> "Dimension":
+        """Returns the preferred height, equal to the sum of the child heights."""
+        return Dimension(
+            min=1,
+            preferred=sum(
+                [
+                    c.preferred_height(width, max_available_height).preferred
+                    for c in self._all_children
+                ]
+            ),
+        )
+
+    def preferred_width(self, max_available_width: "int") -> "Dimension":
+        """Calculates and returns the desired width for this container."""
+        if self.width is not None:
+            dim = to_dimension(self.width).preferred
+            return Dimension(max=dim, preferred=dim)
+
+        if self._all_children:
+            dimensions = [
+                c.preferred_width(max_available_width) for c in self._all_children
+            ]
+            return max_layout_dimensions(dimensions)
+        else:
+            return Dimension()
+
+    def reset(self) -> "None":
+        """Reset the state of this container and all the children.
+
+        Does nothing as this container is used for dumping outpiu.
+        """
+        pass

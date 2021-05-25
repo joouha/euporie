@@ -630,16 +630,15 @@ class SixelMixerRenderer(ImageRenderer):
         # Move cursor back to top left of image's space
         output += f"\x1b[{self.height-1}A\x1b[{self.width}D"
         # Add sixels
-        # output += super().process(data)
-        sixel = self.sixel_renderer.render(
+        output += self.sixel_renderer.render(
             data,
             width=self.width,
             height=self.height,
             render_args=self.render_args,
         )
-        output += sixel
         # Restore cursor position
         output += "\x1b[u"
+
         return output
 
 

@@ -8,13 +8,16 @@ import logging
 import os
 from collections import ChainMap
 from pathlib import Path
-from typing import Any, Iterator, Union
+from typing import TYPE_CHECKING, Any, Iterator, Optional, Sequence, Union
 
 import jsonschema  # type: ignore
 from appdirs import user_config_dir  # type: ignore
 from pygments.styles import get_all_styles  # type: ignore
 
-from euporie import __version__, _app_name
+from euporie import __app_name__, __copyright__, __strapline__, __version__
+
+if TYPE_CHECKING:
+    from argparse import ArgumentParser, _ArgumentGroup
 
 log = logging.getLogger(__name__)
 
@@ -37,12 +40,42 @@ CONFIG_SCHEMA: "dict" = {
             "python_type": Path,
             "nargs": "*",
         },
+        "dump": {
+            "description": "Whether to print the rendered files to the terminal then exit",
+            "type": "boolean",
+            "python_type": bool,
+            "default": False,
+            "group": "run options",
+        },
+        "execute": {
+            "description": "Whether to execute the notebook when it is loaded",
+            "type": "boolean",
+            "python_type": bool,
+            "default": False,
+            "group": "run options",
+        },
+        "editing_mode": {
+            "description": "The key-binding style to use for text editing",
+            "type": "string",
+            "python_type": str,
+            "pattern": "(emacs|vi)",
+            "default": "emacs",
+            "group": "interactive mode options",
+        },
+        "execute_after_external_edit": {
+            "description": "Whether to execute a cell immediately after editing in $EDITOR",
+            "type": "boolean",
+            "python_type": bool,
+            "default": False,
+            "group": "interactive mode options",
+        },
         "max_notebook_width": {
             "description": "The maximum width of the notebook",
             "type": "integer",
             "python_type": int,
             "minimum": 1,
             "default": 120,
+            "group": "display options",
         },
         "background": {
             "description": "The background pattern to use",
@@ -51,6 +84,7 @@ CONFIG_SCHEMA: "dict" = {
             "minimum": 0,
             "maximum": 4,
             "default": 1,
+            "group": "display options",
         },
         "background_character": {
             "description": "The character to use to draw the background",
@@ -58,6 +92,14 @@ CONFIG_SCHEMA: "dict" = {
             "python_type": str,
             "maxLength": 1,
             "default": "·",
+            "group": "display options",
+        },
+        "show_line_numbers": {
+            "description": "Whether line numbers are shown by default",
+            "type": "boolean",
+            "python_type": bool,
+            "default": True,
+            "group": "display options",
         },
         "pygments_style": {
             "description": "The name of the pygments style for syntax highlighting",
@@ -65,28 +107,47 @@ CONFIG_SCHEMA: "dict" = {
             "python_type": str,
             "default": "default",
             "pattern": "(" + "|".join(get_all_styles()) + ")",
-        },
-        "editing_mode": {
-            "description": "The key-binding style to use for text editing",
-            "type": "string",
-            "python_type": str,
-            "pattern": "(emacs|vi)",
-            "default": "emacs",
-        },
-        "show_line_numbers": {
-            "description": "Whether line numbers are shown by default",
-            "type": "boolean",
-            "python_type": bool,
-            "default": True,
-        },
-        "execute_after_external_edit": {
-            "description": "Whether to execute a cell immediately after editing in $EDITOR",
-            "type": "boolean",
-            "python_type": bool,
-            "default": False,
+            "group": "display options",
         },
     },
 }
+
+
+class BooleanOptionalAction(argparse.Action):
+    """Action for boolean flags.
+
+    Included because `argparse.BooleanOptionalAction` is not present in `python<=3.9`.
+    """
+
+    def __init__(self, option_strings: "list[str]", *args: "Any", **kwargs: "Any"):
+        """Initate the Action, as per `argparse.BooleanOptionalAction`."""
+        _option_strings = list(option_strings)
+        for option_string in option_strings:
+            if option_string.startswith("--"):
+                _option_strings.append(f"--no-{option_string[2:]}")
+        kwargs["nargs"] = 0
+        super().__init__(_option_strings, *args, **kwargs)
+
+    def __call__(
+        self,
+        parser: "argparse.ArgumentParser",
+        namespace: "argparse.Namespace",
+        values: "Union[str, Sequence[Any], None]",
+        option_string: "Optional[str]" = None,
+    ) -> "None":
+        """Set the value to True or False depending on the flag provided."""
+        if option_string in self.option_strings:
+            assert isinstance(option_string, str)
+            setattr(namespace, self.dest, not option_string.startswith("--no-"))
+
+    def format_usage(self) -> "str":
+        """Formats the action string.
+
+        Returns:
+            The formatted string.
+
+        """
+        return " | ".join(self.option_strings)
 
 
 class Config:
@@ -109,7 +170,7 @@ class Config:
         self.env = {}
         self.args = {}
 
-        user_conf_dir = Path(user_config_dir(_app_name, appauthor=False))
+        user_conf_dir = Path(user_config_dir(__app_name__, appauthor=False))
         user_conf_dir.mkdir(exist_ok=True, parents=True)
         self.config_file_path = user_conf_dir / self.conf_file_name
         self.valid_user = True
@@ -128,20 +189,22 @@ class Config:
     def load_args(self) -> "None":
         """Attempts to load configuration settings from commandline flags."""
         parser = argparse.ArgumentParser(
-            description="A TUI editor for Jupyter notebooks",
-            epilog="euporie © 2021 Josiah Outram Halstead",
+            description=__strapline__,
+            epilog=__copyright__,
             allow_abbrev=True,
             formatter_class=argparse.MetavarTypeHelpFormatter,
         )
         parser.add_argument(
             "-V", "--version", action="version", version=f"%(prog)s {__version__}"
         )
+        groups: "dict[Union[str, None], Union[ArgumentParser, _ArgumentGroup]]" = {
+            None: parser
+        }
         for name, schema in CONFIG_SCHEMA.get("properties", {}).items():
             name = name.replace("_", "-")
             kwargs = {
                 # 'default': schema.get('default'),
                 "help": schema.get("description"),
-                "type": schema.get("python_type"),
             }
             if nargs := schema.get("nargs"):
                 kwargs["nargs"] = nargs
@@ -153,10 +216,18 @@ class Config:
                 and "maximum" in schema
             ):
                 kwargs["choices"] = range(schema["minimum"], schema["maximum"] + 1)
-            if kwargs["type"] is bool:
-                kwargs["action"] = argparse.BooleanOptionalAction
+
+            if (type_ := schema.get("python_type")) is bool:
+                kwargs["action"] = BooleanOptionalAction
+            else:
+                kwargs["type"] = type_
             prefix = "" if schema.get("positional") else "--"
-            parser.add_argument(f"{prefix}{name}", **kwargs)
+
+            group_name = schema.get("group")
+            if group_name not in groups:
+                groups[group_name] = parser.add_argument_group(group_name)
+            groups[group_name].add_argument(f"{prefix}{name}", **kwargs)
+
         for name, value in vars(parser.parse_args()).items():
             if value is not None:
                 json = {name: value}
@@ -170,7 +241,7 @@ class Config:
     def load_env(self) -> "None":
         """Attempt to load configuration settings from environment variables."""
         for name, schema in CONFIG_SCHEMA.get("properties", {}).items():
-            env = f"{_app_name.upper()}_{name.upper()}"
+            env = f"{__app_name__.upper()}_{name.upper()}"
             if env in os.environ:
                 python_type = schema.get("python_type", str)
                 try:
@@ -339,4 +410,7 @@ class Config:
                 )
 
 
-config = Config()
+# Do not actually load the config if type checking - it causes pytype to exit
+config: "Config"
+if not TYPE_CHECKING:
+    config = Config()
