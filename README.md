@@ -1,4 +1,4 @@
-# euporie
+<h1 align="center">euporie</h1>
 
 <img src="https://user-images.githubusercontent.com/12154190/117550683-79526700-b039-11eb-8a83-1828c6ee8125.png" alt="screenshot 1" width="45%" align="right" />
 
@@ -33,14 +33,6 @@ pip install euporie[html-mtable,images-timg]
 <img src="https://user-images.githubusercontent.com/12154190/117550688-7bb4c100-b039-11eb-9419-a10c8c0f9b21.png" alt="screenshot 5" width="19%" />
 <img src="https://user-images.githubusercontent.com/12154190/117550689-7bb4c100-b039-11eb-9d90-44df4c0e0f03.png" alt="screenshot 6" width="19%" />
 </p>
-
-# Usage
-
-To open a notebook file, pass the file name as a command line parameter:
-
-```bash
-euporie ~/my-notebook.ipynb
-```
 
 # Features
 
@@ -102,7 +94,52 @@ _Note: only HTML tables will be displayed if `mtable` is used_
 
 If none of these commands are found in your `$PATH`, the plain text representation will be used.
 
-## Key Bindings
+# Usage
+
+```
+usage: euporie [-h] [-V] [--dump | --no-dump] [--execute | --no-execute]
+               [--editing-mode {emacs,vi}]
+               [--execute-after-external-edit | --no-execute-after-external-edit]
+               [--max-notebook-width int] [--background {0,1,2,3,4}]
+               [--background-character str]
+               [--show-line-numbers | --no-show-line-numbers]
+               [--pygments-style]
+               [Path ...]
+
+positional arguments:
+  Path                  List of file names to open
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -V, --version         show program's version number and exit
+
+run options:
+  --dump, --no-dump     Whether to print the rendered files to the terminal
+                        then exit
+  --execute, --no-execute
+                        Whether to execute the notebook when it is loaded
+
+interactive mode options:
+  --editing-mode {emacs,vi}
+                        The key-binding style to use for text editing
+  --execute-after-external-edit, --no-execute-after-external-edit
+                        Whether to execute a cell immediately after editing in
+                        $EDITOR
+
+display options:
+  --max-notebook-width int
+                        The maximum width of the notebook
+  --background {0,1,2,3,4}
+                        The background pattern to use
+  --background-character str
+                        The character to use to draw the background
+  --show-line-numbers, --no-show-line-numbers
+                        Whether line numbers are shown by default
+  --pygments-style
+                        The name of the pygments style for syntax highlighting
+```
+
+# Key Bindings
 
 |              Key Binding | Command                       |
 | -----------------------: | :---------------------------- |
@@ -157,7 +194,7 @@ If none of these commands are found in your `$PATH`, the plain text representati
 
 When in edit mode, emacs style key-bindings apply.
 
-### Key Remapping
+## Key Remapping
 
 By default, VT100 terminal emulators do not distinguish between `Enter`, `Ctrl + Enter` & `Shift + Enter`. In order to work around this, it is possible to re-map these key bindings so they produce the escape code of another key. To replicate the `Ctrl + Enter` & `Shift + Enter` of Jupyter, you will need to remap the following shortcuts in your terminal:
 
@@ -166,7 +203,7 @@ By default, VT100 terminal emulators do not distinguish between `Enter`, `Ctrl +
 | `Ctrl + Enter`  | `Ctrl + F20` |
 | `Shift + Enter` | `F21`        |
 
-#### xterm
+### xterm
 
 Add the following to your `~/.Xresources`
 
@@ -176,7 +213,7 @@ Add the following to your `~/.Xresources`
     Shift <Key>Return: string("\033\[20;2~") \n\
 ```
 
-#### konsole
+### konsole
 
 In the menu, navigate to:
 
