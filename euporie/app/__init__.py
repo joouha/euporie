@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Any, Callable, Mapping, Optional, Union
 
 from prompt_toolkit.application import Application
 from prompt_toolkit.application.current import _current_app_session
-from prompt_toolkit.clipboard.pyperclip import PyperclipClipboard
+from prompt_toolkit.clipboard import DummyClipboard
 from prompt_toolkit.enums import EditingMode
 from prompt_toolkit.filters import Condition, Filter
 from prompt_toolkit.input import DummyInput
@@ -62,7 +62,8 @@ class App(TermMixin, Application):
         self.pre_run: "list[Callable]" = []
         # Create an empty layout - we will add a real container to it later
         self.layout = Layout(Window())
-
+        # Set clipboard
+        self.clipboard = DummyClipboard()
         # Conditions
         self.is_file_open = Condition(lambda: bool(self.files))
 
@@ -91,7 +92,6 @@ class App(TermMixin, Application):
                 full_screen=True,
                 style=None,
                 editing_mode=self.get_edit_mode(),
-                clipboard=PyperclipClipboard(),
             )
 
         # Create an output early so it can terminal attribute detection
@@ -113,6 +113,7 @@ class App(TermMixin, Application):
         super().__init__(
             layout=self.layout,
             output=self.output,
+            clipboard=self.clipboard,
             **kwargs,
         )
 

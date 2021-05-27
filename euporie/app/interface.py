@@ -6,6 +6,8 @@ import logging
 from functools import partial
 from typing import TYPE_CHECKING, Callable
 
+from prompt_toolkit.clipboard import Clipboard, InMemoryClipboard
+from prompt_toolkit.clipboard.pyperclip import PyperclipClipboard
 from prompt_toolkit.enums import EditingMode
 from prompt_toolkit.filters import Condition
 from prompt_toolkit.key_binding.bindings.focus import focus_next, focus_previous
@@ -25,6 +27,7 @@ from prompt_toolkit.layout.menus import CompletionsMenu
 from prompt_toolkit.output.defaults import create_output
 from prompt_toolkit.widgets import MenuContainer, MenuItem
 from pygments.styles import get_all_styles  # type: ignore
+from pyperclip import determine_clipboard  # type: ignore
 
 from euporie import __logo__
 from euporie.app.dialog import DialogMixin
@@ -62,6 +65,12 @@ class InterfaceMixin(DialogMixin):
         self.output = create_output()
         # Ensure a file is focused if one has been opened
         self.pre_run.append(lambda: self.file_op("focus"))
+        # Set clipboard to use pyperclip if possible
+        self.clipboard: "Clipboard"
+        if determine_clipboard()[0]:
+            self.clipboard = PyperclipClipboard()
+        else:
+            self.clipboard = InMemoryClipboard()
 
     def file_container(self) -> "AnyContainer":
         """Returns a container with all opened files.
