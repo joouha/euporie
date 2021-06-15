@@ -104,8 +104,8 @@ class Output:
                     RichControl(
                         Markdown(
                             datum,
-                            code_theme=str(config.pygments_style),
-                            inline_code_theme=str(config.pygments_style),
+                            code_theme=str(config.syntax_theme),
+                            inline_code_theme=str(config.syntax_theme),
                         )
                     )
                 )

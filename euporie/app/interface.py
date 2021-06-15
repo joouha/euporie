@@ -191,7 +191,7 @@ class InterfaceMixin(DialogMixin):
                                     handler=partial(self.update_style, style),
                                     toggler=Condition(
                                         partial(
-                                            lambda x: config.pygments_style == x, style
+                                            lambda x: config.syntax_theme == x, style
                                         )
                                     ),
                                 )
@@ -205,30 +205,26 @@ class InterfaceMixin(DialogMixin):
                                     "Emacs",
                                     handler=lambda: self.set_edit_mode("emacs"),
                                     toggler=Condition(
-                                        lambda: config.editing_mode == "emacs"
+                                        lambda: config.key_map == "emacs"
                                     ),
                                 ),
                                 SmartMenuItem(
                                     "Vi",
                                     handler=lambda: self.set_edit_mode("vi"),
-                                    toggler=Condition(
-                                        lambda: config.editing_mode == "vi"
-                                    ),
+                                    toggler=Condition(lambda: config.key_map == "vi"),
                                 ),
                             ],
                         ),
                         MenuItem(
                             "Switch Background Pattern",
-                            handler=lambda: config.toggle("background"),
+                            handler=lambda: config.toggle("background_pattern"),
                         ),
                         SmartMenuItem(
                             "Run cell after external edit",
                             toggler=Condition(
-                                lambda: bool(config.execute_after_external_edit)
+                                lambda: bool(config.run_after_external_edit)
                             ),
-                            handler=lambda: config.toggle(
-                                "execute_after_external_edit"
-                            ),
+                            handler=lambda: config.toggle("run_after_external_edit"),
                         ),
                     ],
                 ),
@@ -283,13 +279,13 @@ class InterfaceMixin(DialogMixin):
             mode: 'vi' or 'emacs'
 
         """
-        config.editing_mode = mode
+        config.key_map = mode
         self.editing_mode = self.get_edit_mode()
 
     def get_edit_mode(self) -> "EditingMode":
         """Returns the editing mode enum defined in the configuration."""
         return {"emacs": EditingMode.EMACS, "vi": EditingMode.VI}.get(
-            str(config.editing_mode), EditingMode.EMACS
+            str(config.key_map), EditingMode.EMACS
         )
 
     def load_key_bindings(self) -> "KeyBindings":

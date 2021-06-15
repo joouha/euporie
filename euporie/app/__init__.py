@@ -169,13 +169,13 @@ class App(TermMixin, Application):
             mode: 'vi' or 'emacs'
 
         """
-        config.editing_mode = mode
+        config.key_map = mode
         self.editing_mode = self.get_edit_mode()
 
     def get_edit_mode(self) -> "EditingMode":
         """Returns the editing mode enum defined in the configuration."""
         return {"emacs": EditingMode.EMACS, "vi": EditingMode.VI}.get(
-            str(config.editing_mode), EditingMode.EMACS
+            str(config.key_map), EditingMode.EMACS
         )
 
     def _create_merged_style(
@@ -234,13 +234,13 @@ class App(TermMixin, Application):
         return merge_styles(
             [
                 Style.from_dict(style_dict),
-                style_from_pygments_cls(get_style_by_name(config.pygments_style)),
+                style_from_pygments_cls(get_style_by_name(config.syntax_theme)),
             ]
         )
 
     def update_style(self, pygments_style: "str") -> "None":
         """Updates the application's style when the syntax theme is changed."""
-        config.pygments_style = pygments_style
+        config.syntax_theme = pygments_style
         self.renderer.style = self._create_merged_style()
 
     def open_file(self, path: "Union[str, Path]", read_only: "bool" = False) -> None:

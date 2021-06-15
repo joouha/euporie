@@ -68,7 +68,7 @@ class Table(rich.markdown.MarkdownElement):
             """Create a rich markdown object, then add the parsed node to it."""
             node_md = rich.markdown.Markdown(
                 "",
-                code_theme=str(config.pygments_style),
+                code_theme=str(config.syntax_theme),
                 justify=justify,
             )
             node_md.parsed = node

@@ -16,101 +16,28 @@ from pygments.styles import get_all_styles  # type: ignore
 
 from euporie import __app_name__, __copyright__, __strapline__, __version__
 
-if TYPE_CHECKING:
-    from argparse import ArgumentParser, _ArgumentGroup
-
 log = logging.getLogger(__name__)
 
-CONFIG_SCHEMA: "dict" = {
-    "title": "Euporie Configuration",
-    "description": "A configuration for euporie",
-    "type": "object",
-    "properties": {
-        "files": {
-            "description": "List of file names to open",
-            "type": "array",
-            "items": {
-                "file": {
-                    "description": "File path",
-                    "type": "string",
-                }
-            },
-            "default": [],
-            "positional": True,
-            "python_type": Path,
-            "nargs": "*",
-        },
-        "dump": {
-            "description": "Whether to print the rendered files to the terminal then exit",
-            "type": "boolean",
-            "python_type": bool,
-            "default": False,
-            "group": "run options",
-        },
-        "execute": {
-            "description": "Whether to execute the notebook when it is loaded",
-            "type": "boolean",
-            "python_type": bool,
-            "default": False,
-            "group": "run options",
-        },
-        "editing_mode": {
-            "description": "The key-binding style to use for text editing",
-            "type": "string",
-            "python_type": str,
-            "pattern": "(emacs|vi)",
-            "default": "emacs",
-            "group": "interactive mode options",
-        },
-        "execute_after_external_edit": {
-            "description": "Whether to execute a cell immediately after editing in $EDITOR",
-            "type": "boolean",
-            "python_type": bool,
-            "default": False,
-            "group": "interactive mode options",
-        },
-        "max_notebook_width": {
-            "description": "The maximum width of the notebook",
-            "type": "integer",
-            "python_type": int,
-            "minimum": 1,
-            "default": 120,
-            "group": "display options",
-        },
-        "background": {
-            "description": "The background pattern to use",
-            "type": "integer",
-            "python_type": int,
-            "minimum": 0,
-            "maximum": 4,
-            "default": 1,
-            "group": "display options",
-        },
-        "background_character": {
-            "description": "The character to use to draw the background",
-            "type": "string",
-            "python_type": str,
-            "maxLength": 1,
-            "default": "·",
-            "group": "display options",
-        },
-        "show_line_numbers": {
-            "description": "Whether line numbers are shown by default",
-            "type": "boolean",
-            "python_type": bool,
-            "default": True,
-            "group": "display options",
-        },
-        "pygments_style": {
-            "description": "The name of the pygments style for syntax highlighting",
-            "type": "string",
-            "python_type": str,
-            "default": "default",
-            "pattern": "(" + "|".join(get_all_styles()) + ")",
-            "group": "display options",
-        },
-    },
-}
+
+class JSONEncoderPlus(json.JSONEncoder):
+    """JSON encode class which encodes paths as strings."""
+
+    def default(self, o: "Any") -> "Union[bool, int, float, str, None]":
+        """Encode an object to JSON.
+
+        Args:
+            o: The object to encode
+
+        Returns:
+            The encoded object
+
+        """
+        if isinstance(o, Path):
+            return str(o)
+        return json.JSONEncoder.default(self, o)
+
+
+_json_encoder = JSONEncoderPlus()
 
 
 class BooleanOptionalAction(argparse.Action):
@@ -150,6 +77,204 @@ class BooleanOptionalAction(argparse.Action):
         return " | ".join(self.option_strings)
 
 
+CONFIG_PARAMS: "dict[str, dict]" = {
+    "version": {
+        "flags_": ["--verion", "-V"],
+        "action": "version",
+        "version": f"%(prog)s {__version__}",
+    },
+    "dump": {
+        "flags_": ["--dump"],
+        "action": BooleanOptionalAction,
+        "type": bool,
+        "help": "Output formatted file to display or file",
+        "schema_": {
+            "type": "boolean",
+            "default": False,
+        },
+        "description_": """
+            When set, the formatted output will be written to the the output file path
+            given by `dump_file` (standard output by default).
+        """,
+    },
+    "dump_file": {
+        "flags_": ["--dump-file"],
+        "nargs": "?",
+        "const": "-",
+        "type": Path,
+        "help": "Output path when dumping file",
+        "schema_": {
+            "type": "string",
+            "default": None,
+        },
+        "description_": """
+            When set to a file path, the formatted output will be written to the
+            given path. If no value is given (or the default "-" is passed) output
+            will be printed to standard output.
+        """,
+    },
+    "page": {
+        "flags_": ["--page"],
+        "action": BooleanOptionalAction,
+        "help": "Pass output to pager",
+        "type": bool,
+        "schema_": {
+            "type": "boolean",
+            "default": False,
+        },
+        "description_": """
+            Whether to pipe output to the system pager when using `--dump`.
+        """,
+    },
+    # "run": {
+    # "flags_": ["--run"],
+    # "action": BooleanOptionalAction,
+    # "help": "Run the notebook when loaded",
+    # "schema_": {
+    # "type": "boolean",
+    # "default": False,
+    # },
+    # "description_": """
+    # If set, notebooks will be run automatically when opened, or if dumping
+    # output, notebooks will be run before being output.
+    # """,
+    # },
+    "key_map": {
+        "flags_": ["--key-map"],
+        "type": str,
+        "choices": ["emacs", "vi"],
+        "help": "Key-binding mode for text editing",
+        "schema_": {
+            "type": "string",
+            "default": "emacs",
+        },
+        "description_": """
+            Key binding mode to use when editing cells.
+        """,
+    },
+    "run_after_external_edit": {
+        "flags_": ["--run-after-external-edit"],
+        "type": bool,
+        "help": "Run cells after editing externally",
+        "schema_": {
+            "type": "boolean",
+            "default": False,
+        },
+        "description_": """
+            Whether to execute a cell immediately after editing in `$EDITOR`.
+        """,
+    },
+    "max_notebook_width": {
+        "flags_": ["--max-notebook-width"],
+        "type": int,
+        "help": "Maximum width of notebooks",
+        "schema_": {
+            "type": "integer",
+            "minimum": 1,
+            "default": 120,
+        },
+        "description_": """
+            The maximum width at which to display a notebook.
+        """,
+    },
+    "background_pattern": {
+        "flags_": ["--background-pattern"],
+        "type": int,
+        "choices": range(5),
+        "help": "The background pattern to use",
+        "schema_": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 4,
+            "default": 1,
+        },
+        "description_": """
+            The background pattern to use when the notebook is narrower than the
+            availble width. Zero mean no pattern is used.
+        """,
+    },
+    "background_character": {
+        "flags_": ["--background-character"],
+        "type": str,
+        "help": "Character for background pattern",
+        "schema_": {
+            "type": "string",
+            "maxLength": 1,
+            "default": "·",
+        },
+        "description_": """
+            The character to use when drawing the background pattern.
+        """,
+    },
+    "line_numbers": {
+        "flags_": ["--line-numbers"],
+        "action": BooleanOptionalAction,
+        "type": bool,
+        "help": "Show or hide line numbers",
+        "schema_": {
+            "type": "boolean",
+            "default": True,
+        },
+        "description_": """
+            Whether line numbers are shown by default.
+        """,
+    },
+    "syntax_theme": {
+        "flags_": ["--syntax-theme"],
+        "type": str,
+        # Do not want to print all theme names in --help screen as it looks messy
+        # "choices": list(get_all_styles()),
+        "help": "Syntax higlighting theme",
+        "schema_": {
+            "type": "string",
+            "pattern": f"({'|'.join(get_all_styles())})",
+            "default": "default",
+        },
+        "description_": """
+            The name of the pygments style for syntax highlighting.
+        """,
+    },
+    "files": {
+        "flags_": ["files"],
+        "nargs": "*",
+        "default": [],
+        "type": Path,
+        "help": "List of file names to open",
+        "schema_": {
+            "type": "array",
+            "items": {
+                "file": {
+                    "description": "File path",
+                    "type": "string",
+                }
+            },
+        },
+        "description_": """
+        """,
+    },
+}
+
+CONFIG_SCHEMA: "dict" = {
+    "title": "Euporie Configuration",
+    "description": "A configuration for euporie",
+    "type": "object",
+    "properties": {
+        name: {
+            "description": param.get("help"),
+            **(
+                {"pattern": f"({'|'.join(choices)})"}
+                if (choices := param.get("choices")) and param.get("type") == str
+                else {}
+            ),
+            **({"default": default} if (default := param.get("default")) else {}),
+            **param["schema_"],
+        }
+        for name, param in CONFIG_PARAMS.items()
+        if param.get("schema_")
+    },
+}
+
+
 class Config:
     """A configuration object with configuration values available as attributes.
 
@@ -159,9 +284,8 @@ class Config:
 
     conf_file_name = "config.json"
     defaults = {
-        key: schema["default"]
-        for key, schema in CONFIG_SCHEMA["properties"].items()
-        if schema.get("default")
+        name: param.get("schema_", {}).get("default")
+        for name, param in CONFIG_PARAMS.items()
     }
 
     def __init__(self):
@@ -194,67 +318,45 @@ class Config:
             allow_abbrev=True,
             formatter_class=argparse.MetavarTypeHelpFormatter,
         )
-        parser.add_argument(
-            "-V", "--version", action="version", version=f"%(prog)s {__version__}"
-        )
-        groups: "dict[Union[str, None], Union[ArgumentParser, _ArgumentGroup]]" = {
-            None: parser
-        }
-        for name, schema in CONFIG_SCHEMA.get("properties", {}).items():
-            name = name.replace("_", "-")
-            kwargs = {
-                # 'default': schema.get('default'),
-                "help": schema.get("description"),
-            }
-            if nargs := schema.get("nargs"):
-                kwargs["nargs"] = nargs
-            if pattern := schema.get("pattern"):
-                kwargs["choices"] = pattern.strip("()").split("|")
-            elif (
-                schema.get("type") == "integer"
-                and "minimum" in schema
-                and "maximum" in schema
-            ):
-                kwargs["choices"] = range(schema["minimum"], schema["maximum"] + 1)
-
-            if (type_ := schema.get("python_type")) is bool:
-                kwargs["action"] = BooleanOptionalAction
-            else:
-                kwargs["type"] = type_
-            prefix = "" if schema.get("positional") else "--"
-
-            group_name = schema.get("group")
-            if group_name not in groups:
-                groups[group_name] = parser.add_argument_group(group_name)
-            groups[group_name].add_argument(f"{prefix}{name}", **kwargs)
-
+        for name, data in CONFIG_PARAMS.items():
+            parser.add_argument(
+                *data.get("flags_") or [name],
+                # Do not set defaults for command line arguments, as default values
+                # would override values set in the configuration file
+                **{
+                    key: value
+                    for key, value in data.items()
+                    if not key.endswith("_") and key != "default"
+                },
+            )
         for name, value in vars(parser.parse_args()).items():
             if value is not None:
-                json = {name: value}
+                # Convert to json and back to attain json types
+                json_data = json.loads(_json_encoder.encode({name: value}))
                 try:
-                    jsonschema.validate(instance=json, schema=CONFIG_SCHEMA)
+                    jsonschema.validate(instance=json_data, schema=CONFIG_SCHEMA)
                 except jsonschema.ValidationError as error:
-                    log.error(f"Error in command line parameter: `{name}`\n{error}")
+                    log.warning(f"Error in command line parameter `{name}`: {error}")
                 else:
                     self.args[name] = value
 
     def load_env(self) -> "None":
         """Attempt to load configuration settings from environment variables."""
-        for name, schema in CONFIG_SCHEMA.get("properties", {}).items():
+        for name, param in CONFIG_PARAMS.items():
             env = f"{__app_name__.upper()}_{name.upper()}"
             if env in os.environ:
-                python_type = schema.get("python_type", str)
+                type_ = param.get("type", str)
                 try:
-                    value = python_type(os.environ[env])
+                    value = type_(os.environ[env])
                 except (ValueError, TypeError):
                     log.warning(
                         f"Environment variable `{env}` not understood"
-                        f" - {schema.get('type')} expected"
+                        f" - `{type_.__name__}` expected"
                     )
                 else:
-                    json = {name: value}
+                    json_data = json.loads(_json_encoder.encode({name: value}))
                     try:
-                        jsonschema.validate(instance=json, schema=CONFIG_SCHEMA)
+                        jsonschema.validate(instance=json_data, schema=CONFIG_SCHEMA)
                     except jsonschema.ValidationError as error:
                         log.error(f"Error in environment variable: `{env}`\n{error}")
                     else:
@@ -278,7 +380,7 @@ class Config:
                     try:
                         jsonschema.validate(instance=json_data, schema=CONFIG_SCHEMA)
                     except jsonschema.ValidationError as error:
-                        log.error(
+                        log.warning(
                             f"Error in config file: {self.config_file_path}\n"
                             f"{error}"
                         )

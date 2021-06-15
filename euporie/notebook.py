@@ -132,7 +132,7 @@ class Notebook(File):
         self.clipboard: "list[Cell]" = []
         self.dirty = False
         self.kernel_status = "starting"
-        self.line_numbers = config.show_line_numbers
+        self.line_numbers = config.line_numbers
         self.completer = KernelCompleter(self)
         self.km: "Optional[KernelManager]" = None
         self.kc: "Optional[KernelClient]" = None

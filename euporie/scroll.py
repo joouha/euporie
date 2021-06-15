@@ -160,7 +160,7 @@ class ScrollingContainer(Container):
                 )
 
         # Draw background if there is space
-        if config.background:
+        if config.background_pattern:
             dot = Char(str(config.background_character), "class:background")
             for y in range(ypos, ypos + self.available_height):
                 for xrange in (
@@ -169,11 +169,11 @@ class ScrollingContainer(Container):
                 ):
                     for x in range(*xrange):
                         if (
-                            (config.background == 1 and (x + y) % 2 == 0)
-                            or (config.background == 2 and (x + 2 * y) % 4 == 0)
-                            or (config.background == 3 and (x + y) % 3 == 0)
+                            (config.background_pattern == 1 and (x + y) % 2 == 0)
+                            or (config.background_pattern == 2 and (x + 2 * y) % 4 == 0)
+                            or (config.background_pattern == 3 and (x + y) % 3 == 0)
                             or (
-                                config.background == 4
+                                config.background_pattern == 4
                                 and ((x + y % 2 * 3) % 6) % 4 == 0
                             )
                         ):
