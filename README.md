@@ -97,13 +97,11 @@ If none of these commands are found in your `$PATH`, the plain text representati
 # Usage
 
 ```
-usage: euporie [-h] [-V] [--dump | --no-dump] [--execute | --no-execute]
-               [--editing-mode {emacs,vi}]
-               [--execute-after-external-edit | --no-execute-after-external-edit]
-               [--max-notebook-width int] [--background {0,1,2,3,4}]
-               [--background-character str]
-               [--show-line-numbers | --no-show-line-numbers]
-               [--pygments-style]
+usage: euporie [-h] [--verion] [--dump | --no-dump] [--dump-file [Path]]
+               [--page | --no-page] [--key-map {emacs,vi}]
+               [--run-after-external-edit bool] [--max-notebook-width int]
+               [--background-pattern {0,1,2,3,4}] [--background-character str]
+               [--line-numbers | --no-line-numbers] [--syntax-theme str]
                [Path ...]
 
 positional arguments:
@@ -111,32 +109,22 @@ positional arguments:
 
 optional arguments:
   -h, --help            show this help message and exit
-  -V, --version         show program's version number and exit
-
-run options:
-  --dump, --no-dump     Whether to print the rendered files to the terminal
-                        then exit
-  --execute, --no-execute
-                        Whether to execute the notebook when it is loaded
-
-interactive mode options:
-  --editing-mode {emacs,vi}
-                        The key-binding style to use for text editing
-  --execute-after-external-edit, --no-execute-after-external-edit
-                        Whether to execute a cell immediately after editing in
-                        $EDITOR
-
-display options:
+  --verion, -V          show program's version number and exit
+  --dump, --no-dump     Output formatted file to display or file
+  --dump-file [Path]    Output path when dumping file
+  --page, --no-page     Pass output to pager
+  --key-map {emacs,vi}  Key-binding mode for text editing
+  --run-after-external-edit bool
+                        Run cells after editing externally
   --max-notebook-width int
-                        The maximum width of the notebook
-  --background {0,1,2,3,4}
+                        Maximum width of notebooks
+  --background-pattern {0,1,2,3,4}
                         The background pattern to use
   --background-character str
-                        The character to use to draw the background
-  --show-line-numbers, --no-show-line-numbers
-                        Whether line numbers are shown by default
-  --pygments-style
-                        The name of the pygments style for syntax highlighting
+                        Character for background pattern
+  --line-numbers, --no-line-numbers
+                        Show or hide line numbers
+  --syntax-theme str    Syntax higlighting theme
 ```
 
 # Key Bindings
