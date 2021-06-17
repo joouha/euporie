@@ -2,7 +2,7 @@
 """Instantiates the euporie package."""
 
 __app_name__ = "euporie"
-__version__ = "0.1.15"
+__version__ = "0.1.16"
 __logo__ = "⚈"
 __strapline__ = "A TUI editor for Jupyter notebooks"
 __author__ = "Josiah Outram Halstead"
