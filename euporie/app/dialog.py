@@ -58,7 +58,8 @@ class DialogMixin:
         def _make_handler(cb: "Optional[Callable]") -> "Callable":
             def inner() -> "None":
                 self.root_container.floats.remove(dialog)
-                self.layout.focus(focused)
+                if focused in self.layout.find_all_controls():
+                    self.layout.focus(focused)
                 if cb:
                     cb()
 

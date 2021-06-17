@@ -294,9 +294,7 @@ class InterfaceMixin(DialogMixin):
 
         @Condition
         def in_edit_mode() -> "bool":
-            assert isinstance(self.file, File)
-            file = self.file
-            if file:
+            if self.file is not None:
                 cell = getattr(self.file, "cell", False)
                 if cell:
                     if cell.is_editing():
