@@ -32,10 +32,10 @@ from pyperclip import determine_clipboard  # type: ignore
 from euporie import __logo__
 from euporie.app.dialog import DialogMixin
 from euporie.config import config
+from euporie.containers import ScrollingContainer
 from euporie.keys import KeyBindingsInfo
 from euporie.menu import SmartMenuItem
 from euporie.notebook import File, Notebook
-from euporie.scroll import ScrollingContainer
 
 if TYPE_CHECKING:
     from prompt_toolkit.key_binding import KeyBindings

@@ -31,8 +31,8 @@ from prompt_toolkit.widgets import Label, RadioList
 
 from euporie.cell import Cell
 from euporie.config import config
+from euporie.containers import PrintingContainer, ScrollingContainer
 from euporie.keys import KeyBindingsInfo
-from euporie.scroll import PrintingContainer, ScrollingContainer
 
 if TYPE_CHECKING:
     from prompt_toolkit.key_binding import KeyBindings

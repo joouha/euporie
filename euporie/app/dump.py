@@ -16,6 +16,7 @@ from prompt_toolkit.output.vt100 import Vt100_Output
 from prompt_toolkit.widgets import Box, HorizontalLine
 
 from euporie.config import config
+from euporie.containers import PrintingContainer
 
 if TYPE_CHECKING:
     from prompt_toolkit.layout.containers import AnyContainer
@@ -148,8 +149,6 @@ class DumpMixin:
 
     def layout_container(self) -> "AnyContainer":
         """Returns a container with all opened files."""
-        from euporie.scroll import PrintingContainer
-
         # Create a horizontal line that takes up the full width of the display
         hr = HorizontalLine()
         hr.window.width = self.output.get_size().columns
