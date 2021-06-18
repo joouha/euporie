@@ -48,7 +48,7 @@ class QueryCodes:
     device = "\x1b[>0c"
     pixel_dimensions = "\x1b[14t"
     background_color = "\x1b]11;?\x1b\\"
-    sixel = "\033[?1;1;0S"
+    sixel = "\x1b[c"
     # For some reason, konsole prints APC codes to the screen, so we clear the current
     # line and move the curor to the start after sending a kitty graphics query code,
     # which prevents breaking the display
@@ -227,10 +227,8 @@ class TermMixin:
             param_str = result.get("csi_params", "")
             matches = QueryResponsePatterns.sixel.findall(param_str)
             params = [int(x) for x in matches]
-            if len(params) >= 3:
-                Pi, Ps, Pv = params[:3]
-                if Ps == 0:
-                    return True
+            if 4 in params:
+                return True
         return False
 
     @property  # type: ignore
