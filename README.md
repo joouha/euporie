@@ -129,67 +129,56 @@ optional arguments:
 
 # Key Bindings
 
-|              Key Binding | Command                       |
-| -----------------------: | :---------------------------- |
-|          **Application** |                               |
-|                 `ctrl-n` | Create a new notebook file    |
-|                 `ctrl-o` | Open file                     |
-|                 `ctrl-w` | Close the current file        |
-|                 `ctrl-q` | Quit euporie                  |
-|                 `ctrl-s` | Save current file             |
-|           **Navigation** |                               |
-|                    `tab` | Focus next element            |
-|              `shift-tab` | Focus previous element        |
-|                      `[` | Scroll up                     |
-|                      `]` | Scroll down                   |
-|       `ctrl-up` / `home` | Go to first cell              |
-|                 `pageup` | Go up 5 cells                 |
-|               `up` / `k` | Go up one cell                |
-|             `down` / `j` | Go down one cell              |
-|               `pagedown` | Go down 5 cells               |
-|      `ctrl-down` / `end` | Go to last cell               |
-|             **Notebook** |                               |
-|                      `a` | Add new cell above            |
-|                      `b` | Add new cell below            |
-|                    `d d` | Delete current cell           |
-|                      `x` | Cut current cell              |
-|                      `c` | Copy current cell             |
-|                      `v` | Paste copied cell             |
-|                      `m` | Change cell to markdown       |
-|                      `y` | Change cell to code           |
-|                      `r` | Change cell to raw            |
-|                      `l` | Toggle line numbers           |
-|                      `e` | Edit cell in \$EDITOR         |
-|                  `enter` | Enter cell edit mode          |
-|                 `escape` | Exit cell edit mode\*         |
-|          `escape escape` | Exit cell edit mode quickly   |
-|  `ctrl-enter` / `ctrl-e` | Run cell\*\*                  |
-| `shift-enter` / `ctrl-r` | Run then select next cell\*\* |
-|            **Edit Mode** |                               |
-|                 `ctrl-f` | Find                          |
-|                 `ctrl-g` | Find Next                     |
-|                 `ctrl-z` | Undo                          |
-|                 `ctrl-d` | Duplicate line                |
-|                    `tab` | Indent                        |
-|              `shift-tab` | Unindent                      |
-|                 `ctrl-c` | Copy                          |
-|                 `ctrl-x` | Cut                           |
-|                 `ctrl-v` | Paste                         |
+|                                                                             Key Binding | Command                      |
+| ---------------------------------------------------------------------------------------:|:---------------------------- |
+|                                                                         **Application** |                              |
+|                                                 <kbd><kbd>Ctrl</kbd>+<kbd>n</kbd></kbd> | Create a new notebook file   |
+|                                                 <kbd><kbd>Ctrl</kbd>+<kbd>o</kbd></kbd> | Open file                    |
+|                                                 <kbd><kbd>Ctrl</kbd>+<kbd>w</kbd></kbd> | Close the current file       |
+|                                                 <kbd><kbd>Ctrl</kbd>+<kbd>q</kbd></kbd> | Quit euporie                 |
+|                                                                          **Navigation** |                              |
+|                                                                          <kbd>Tab</kbd> | Focus next element           |
+|                                              <kbd><kbd>Shift</kbd>+<kbd>Tab</kbd></kbd> | Focus previous element       |
+|                                                                            <kbd>[</kbd> | Scroll up                    |
+|                                                                            <kbd>]</kbd> | Scroll down                  |
+|                              <kbd><kbd>Ctrl</kbd>+<kbd>Up</kbd></kbd> / <kbd>Home</kbd> | Go to first cell             |
+|                                                                       <kbd>Pageup</kbd> | Go up 5 cells                |
+|                                                            <kbd>Up</kbd> / <kbd>k</kbd> | Go up one cell               |
+|                                                          <kbd>Down</kbd> / <kbd>j</kbd> | Go down one cell             |
+|                                                                     <kbd>Pagedown</kbd> | Go down 5 cells              |
+|                             <kbd><kbd>Ctrl</kbd>+<kbd>Down</kbd></kbd> / <kbd>End</kbd> | Go to last cell              |
+|                                                                            **Notebook** |                              |
+|                                                                            <kbd>e</kbd> | Edit cell in $EDITOR         |
+|                                                                        <kbd>Enter</kbd> | Enter cell edit mode         |
+|                                                                       <kbd>Escape</kbd> | Exit cell edit mode \*       |
+|                                                                <kbd>Escape Escape</kbd> | Exit cell edit mode quickly  |
+|   <kbd><kbd>Ctrl</kbd>+<kbd>Enter</kbd></kbd> / <kbd><kbd>Ctrl</kbd>+<kbd>e</kbd></kbd> | Run cell\*                   |
+|  <kbd><kbd>Shift</kbd>+<kbd>Enter</kbd></kbd> / <kbd><kbd>Ctrl</kbd>+<kbd>r</kbd></kbd> | Run then select next cell\*\*|
+|                                                                           **Edit Mode** |                              |
+|                                                 <kbd><kbd>Ctrl</kbd>+<kbd>f</kbd></kbd> | Find                         |
+|                                                 <kbd><kbd>Ctrl</kbd>+<kbd>g</kbd></kbd> | Find Next                    |
+|                                                 <kbd><kbd>Ctrl</kbd>+<kbd>z</kbd></kbd> | Undo                         |
+|                                                 <kbd><kbd>Ctrl</kbd>+<kbd>d</kbd></kbd> | Duplicate line               |
+|                                                                          <kbd>Tab</kbd> | Indent                       |
+|                                              <kbd><kbd>Shift</kbd>+<kbd>Tab</kbd></kbd> | Unindent                     |
+|                                                 <kbd><kbd>Ctrl</kbd>+<kbd>c</kbd></kbd> | Copy                         |
+|                                                 <kbd><kbd>Ctrl</kbd>+<kbd>x</kbd></kbd> | Cut                          |
+|                                                 <kbd><kbd>Ctrl</kbd>+<kbd>v</kbd></kbd> | Paste                        |
 
 > \* There is a slight delay detecting an escape key-event. To exit edit mode quickly, double-press the escape key.
 >
-> \*\* These entries require your terminal to support CSI-u mode. If your terminal does not support this, it may be possible to work around this by remapping the keys in your terminal emulator - see below).
+> \*\* <kbd><kbd>Shift</kbd>+<kbd>Enter</kbd></kbd> and <kbd><kbd>Ctrl</kbd>+<kbd>Enter</kbd></kbd> require your terminal to support CSI-u mode. If your terminal does not support this, it may be possible to work around this by remapping the keys in your terminal emulator - see below).
 
-When in edit mode, emacs style key-bindings apply.
+When in edit mode, emacs style key-bindings apply by default.
 
 ## Key Remapping
 
-By default, VT100 terminal emulators do not distinguish between `Enter`, `Ctrl + Enter` & `Shift + Enter`. In order to work around this, it is possible to re-map these key bindings so they produce the escape code of another key. To replicate the `Ctrl + Enter` & `Shift + Enter` of Jupyter, you will need to remap the following shortcuts in your terminal:
+By default, VT100 terminal emulators do not distinguish between <kbd>Enter</kbd>, <kbd><kbd>Ctrl</kbd>+<kbd>Enter</kbd></kbd> & <kbd><kbd>Shift</kbd>+<kbd>Enter</kbd></kbd>. In order to work around this, it is possible to re-map these key bindings so they produce the escape code of another key. To replicate the `Ctrl + Enter` & `Shift + Enter` of Jupyter, you will need to remap the following shortcuts in your terminal:
 
-| Key Combination | Output       |
-| --------------- | ------------ |
-| `Ctrl + Enter`  | `Ctrl + F20` |
-| `Shift + Enter` | `F21`        |
+|                              Key Combination | Output                                    |
+| -------------------------------------------- | ----------------------------------------- |
+| <kbd><kbd>Ctrl</kbd>+<kbd>Enter</kbd></kbd>  | <kbd><kbd>Ctrl</kbd>+<kbd>F20</kbd></kbd> |
+| <kbd><kbd>Shift</kbd>+<kbd>Enter</kbd></kbd> | <kbd>F21</kbd>                            |
 
 ### xterm
 

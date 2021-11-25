@@ -6,7 +6,7 @@ from euporie.app import App
 from euporie.cell import Cell
 from euporie.keys import KeyBindingsInfo
 from euporie.notebook import Notebook
-from euporie.scroll import ScrollingContainer
+from euporie.containers import ScrollingContainer
 
 app = App()
 nb = Notebook(Path("/this/file/does/not/exist.ipynb"))
@@ -15,19 +15,22 @@ Cell(0, {}, nb)
 
 key_details = {
     group: {
-        "`"
-        + "` / `".join(
+        "<kbd>"
+        + "</kbd> / <kbd>".join(
             [
                 " ".join(
                     (
-                        part.replace("c-", "ctrl-").replace("s-", "shift-")
+                        '+'.join([
+                            f'<kbd>{x.title() if len(x) > 1 else x}</kbd>'
+                            for x in part.replace("c-", "Ctrl-").replace("s-", "Shift-").split('-')
+                        ]) if len(part.split('-')) > 1 else (part.title() if len(part) > 1 else part)
                         for part in key
                     )
                 )
                 for key in keys
             ]
         )
-        + "`": desc
+        + "</kbd>": desc
         for desc, keys in info.items()
     }
     for group, info in KeyBindingsInfo.details.items()
