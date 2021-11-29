@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 from functools import partial
-from typing import TYPE_CHECKING, Any, Callable, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 import nbformat  # type: ignore
 from prompt_toolkit.application.current import get_app
@@ -39,6 +40,8 @@ if TYPE_CHECKING:
     from prompt_toolkit.layout.layout import FocusableElement
 
     from euporie.notebook import Notebook
+
+log = logging.getLogger(__name__)
 
 
 @Condition
@@ -76,7 +79,11 @@ class ClickArea:
             if mouse_event.event_type == MouseEventType.MOUSE_UP:
                 get_app().layout.focus(self.target)
 
-        return [("class:cell-clickarea", "", handler)]
+        return [
+            # Use a zero width space to avoid moving shifting the remaining line
+            # and set it to zero width with the [ZeroWidthEscape] style
+            ("class:cell-clickarea [ZeroWidthEscape]", "​", handler),
+        ]
 
     def __pt_container__(self) -> "Container":
         """Return the `ClickArea`'s window with a blank `FormattedTextControl`."""
