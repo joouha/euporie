@@ -866,6 +866,24 @@ class img_ansi_timg(Base64Mixin, SubprocessRenderMixin, AnsiImageRenderer):
         ]
 
 
+class img_ansi_chafa(Base64Mixin, SubprocessRenderMixin, AnsiImageRenderer):
+    """Render an image as ANSI text using the `chafa` command."""
+
+    cmd = "chafa"
+
+    def load(self, data: "str") -> "None":
+        """Sets the command to use for rendering."""
+        super().load(data)
+        app = cast("App", get_app())
+        self.bg_color = app.bg_color or "#FFFFFF"
+        self.args = [
+            f"--size={self.width}x{self.width}",
+            "--bg",
+            self.bg_color,
+            "-",
+        ]
+
+
 class img_ansi_catimg(Base64Mixin, SubprocessRenderMixin, AnsiImageRenderer):
     """Render an image as ANSI text using the `catimg` command."""
 

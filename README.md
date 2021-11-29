@@ -66,6 +66,7 @@ Euporie will attempt to render images in the best possible way it can. The follo
 
   This requires one of the following:
 
+  [`chafa`](https://hpjansson.org/chafa/)
   [`timg`](https://github.com/hzeller/timg)
   [`catimg`](https://github.com/posva/catimg)
   [`icat`](https://github.com/atextor/icat)
