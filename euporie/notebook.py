@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import copy
+import logging
 import threading
 from functools import partial
 from pathlib import Path
@@ -39,6 +40,8 @@ if TYPE_CHECKING:
     from prompt_toolkit.key_binding.key_processor import KeyPressEvent
 
     from euporie.app import App
+
+log = logging.getLogger(__name__)
 
 
 class File:
@@ -134,6 +137,7 @@ class Notebook(File):
         self.kernel_status = "starting"
         self.line_numbers = config.line_numbers
         self.completer = KernelCompleter(self)
+        self.kernel_id: "Optional[str]" = None
         self.km: "Optional[KernelManager]" = None
         self.kc: "Optional[KernelClient]" = None
         self.kernel_loop: "Optional[asyncio.AbstractEventLoop]" = None
@@ -166,7 +170,7 @@ class Notebook(File):
                 self.start_kernel(),
                 self.kernel_loop,
             )
-            # Now we wait
+            # Now we wait (the above task will run in the kernel loop)
             self.kernel_loop.run_forever()
 
         # Run the kernel event loop in a new thread
@@ -176,14 +180,15 @@ class Notebook(File):
 
     async def start_kernel(self) -> None:
         """Starts a Juypter kernel, creating a `KernelManager`."""
+        log.debug("Starting kernel")
+
         if not self.kernel_name:
             self.change_kernel()
             return
         # Create a kernel manager for this notebook
         self.km = KernelManager(kernel_name=self.kernel_name)
         try:
-            # await self.km._async_start_kernel()
-            self.km.start_kernel()
+            await self.km._async_start_kernel()
         except Exception as e:
             app = cast("App", get_app())
             app.dialog("Error Starting Kernel", Label(e.__repr__()), {"OK": None})
@@ -200,17 +205,27 @@ class Notebook(File):
 
         This is performed asynchronously in the notebook's kernel thread.
         """
-
-        async def _restart() -> "None":
-            if self.km:
-                await self.km._async_shutdown_kernel()
-            await self.start_kernel()
-
+        log.debug(f"Restarting kernel {self.km.kernel_id}")
         assert self.kernel_loop is not None
         asyncio.run_coroutine_threadsafe(
-            _restart(),
+            self.km._async_restart_kernel(),
             self.kernel_loop,
-        )
+        ).result()
+
+        log.debug(f"Kernel {self.km.kernel_id} restarted")
+
+    def interrupt_kernel(self) -> "None":
+        """Interupt the current `Notebook`'s kernel.
+
+        This is performed asynchronously in the notebook's kernel thread.
+        """
+        log.debug(f"Interrupting kernel {self.km.kernel_id}")
+        assert self.kernel_loop is not None
+        self.km.interrupt_kernel()
+        asyncio.run_coroutine_threadsafe(
+            self.km._async_interrupt_kernel(),
+            self.kernel_loop,
+        ).result()
 
     @property
     def kernel_name(self) -> "str":
@@ -228,6 +243,7 @@ class Notebook(File):
                 "language": spec["language"],
                 "name": name,
             }
+            self.km.kernel_name = name
             self.restart_kernel()
 
         if self.km:
@@ -289,11 +305,11 @@ class Notebook(File):
         def save(event: "KeyPressEvent") -> "None":
             self.save()
 
-        @kb.add("a", group="Notebook", desc="Add new cell above")
+        @kb.add("a", group="Notebook", desc="Add new cell above current")
         def add_above(event: "KeyPressEvent") -> "None":
             self.add(0)
 
-        @kb.add("b", group="Notebook", desc="Add new cell below")
+        @kb.add("b", group="Notebook", desc="Add new cell below current")
         def add_below(event: "KeyPressEvent") -> "None":
             self.add(1)
 
@@ -335,6 +351,14 @@ class Notebook(File):
                 cell.input_box.window.left_margins = (
                     [NumberedMargin()] if self.line_numbers else []
                 )
+
+        @kb.add("I", "I", group="Notebook", desc="Interrupt notebook kernel")
+        def interrupt(event: "KeyPressEvent") -> "None":
+            self.interrupt_kernel()
+
+        @kb.add("0", "0", group="Notebook", desc="Restart notebook kernel")
+        def restart(event: "KeyPressEvent") -> "None":
+            self.restart_kernel()
 
         return kb
 

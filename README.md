@@ -130,41 +130,53 @@ optional arguments:
 
 # Key Bindings
 
-|                                                                             Key Binding | Command                      |
-| ---------------------------------------------------------------------------------------:|:---------------------------- |
-|                                                                         **Application** |                              |
-|                                                 <kbd><kbd>Ctrl</kbd>+<kbd>n</kbd></kbd> | Create a new notebook file   |
-|                                                 <kbd><kbd>Ctrl</kbd>+<kbd>o</kbd></kbd> | Open file                    |
-|                                                 <kbd><kbd>Ctrl</kbd>+<kbd>w</kbd></kbd> | Close the current file       |
-|                                                 <kbd><kbd>Ctrl</kbd>+<kbd>q</kbd></kbd> | Quit euporie                 |
-|                                                                          **Navigation** |                              |
-|                                                                          <kbd>Tab</kbd> | Focus next element           |
-|                                              <kbd><kbd>Shift</kbd>+<kbd>Tab</kbd></kbd> | Focus previous element       |
-|                                                                            <kbd>[</kbd> | Scroll up                    |
-|                                                                            <kbd>]</kbd> | Scroll down                  |
-|                              <kbd><kbd>Ctrl</kbd>+<kbd>Up</kbd></kbd> / <kbd>Home</kbd> | Go to first cell             |
-|                                                                       <kbd>Pageup</kbd> | Go up 5 cells                |
-|                                                            <kbd>Up</kbd> / <kbd>k</kbd> | Go up one cell               |
-|                                                          <kbd>Down</kbd> / <kbd>j</kbd> | Go down one cell             |
-|                                                                     <kbd>Pagedown</kbd> | Go down 5 cells              |
-|                             <kbd><kbd>Ctrl</kbd>+<kbd>Down</kbd></kbd> / <kbd>End</kbd> | Go to last cell              |
-|                                                                            **Notebook** |                              |
-|                                                                            <kbd>e</kbd> | Edit cell in $EDITOR         |
-|                                                                        <kbd>Enter</kbd> | Enter cell edit mode         |
-|                                                                       <kbd>Escape</kbd> | Exit cell edit mode \*       |
-|                                                                <kbd>Escape Escape</kbd> | Exit cell edit mode quickly  |
-|   <kbd><kbd>Ctrl</kbd>+<kbd>Enter</kbd></kbd> / <kbd><kbd>Ctrl</kbd>+<kbd>e</kbd></kbd> | Run cell\*                   |
-|  <kbd><kbd>Shift</kbd>+<kbd>Enter</kbd></kbd> / <kbd><kbd>Ctrl</kbd>+<kbd>r</kbd></kbd> | Run then select next cell\*\*|
-|                                                                           **Edit Mode** |                              |
-|                                                 <kbd><kbd>Ctrl</kbd>+<kbd>f</kbd></kbd> | Find                         |
-|                                                 <kbd><kbd>Ctrl</kbd>+<kbd>g</kbd></kbd> | Find Next                    |
-|                                                 <kbd><kbd>Ctrl</kbd>+<kbd>z</kbd></kbd> | Undo                         |
-|                                                 <kbd><kbd>Ctrl</kbd>+<kbd>d</kbd></kbd> | Duplicate line               |
-|                                                                          <kbd>Tab</kbd> | Indent                       |
-|                                              <kbd><kbd>Shift</kbd>+<kbd>Tab</kbd></kbd> | Unindent                     |
-|                                                 <kbd><kbd>Ctrl</kbd>+<kbd>c</kbd></kbd> | Copy                         |
-|                                                 <kbd><kbd>Ctrl</kbd>+<kbd>x</kbd></kbd> | Cut                          |
-|                                                 <kbd><kbd>Ctrl</kbd>+<kbd>v</kbd></kbd> | Paste                        |
+|                                                                            Key Binding | Command                       |
+| -------------------------------------------------------------------------------------: | :---------------------------- |
+|                                                                        **Application** |                               |
+|                                                <kbd><kbd>Ctrl</kbd>+<kbd>n</kbd></kbd> | Create a new notebook file    |
+|                                                <kbd><kbd>Ctrl</kbd>+<kbd>o</kbd></kbd> | Open file                     |
+|                                                <kbd><kbd>Ctrl</kbd>+<kbd>w</kbd></kbd> | Close the current file        |
+|                                                <kbd><kbd>Ctrl</kbd>+<kbd>q</kbd></kbd> | Quit euporie                  |
+|                                                                         **Navigation** |                               |
+|                                                                         <kbd>Tab</kbd> | Focus next element            |
+|                                             <kbd><kbd>Shift</kbd>+<kbd>Tab</kbd></kbd> | Focus previous element        |
+|                                                                           <kbd>[</kbd> | Scroll up                     |
+|                                                                           <kbd>]</kbd> | Scroll down                   |
+|                             <kbd><kbd>Ctrl</kbd>+<kbd>Up</kbd></kbd> / <kbd>Home</kbd> | Go to first cell              |
+|                                                                      <kbd>Pageup</kbd> | Go up 5 cells                 |
+|                                                           <kbd>Up</kbd> / <kbd>k</kbd> | Go up one cell                |
+|                                                         <kbd>Down</kbd> / <kbd>j</kbd> | Go down one cell              |
+|                                                                    <kbd>Pagedown</kbd> | Go down 5 cells               |
+|                            <kbd><kbd>Ctrl</kbd>+<kbd>Down</kbd></kbd> / <kbd>End</kbd> | Go to last cell               |
+|                                                                           **Notebook** |                               |
+|                                                                           <kbd>a</kbd> | Add new cell above current    |
+|                                                                           <kbd>b</kbd> | Add new cell below current    |
+|                                                                         <kbd>d d</kbd> | Delete current cell           |
+|                                                                           <kbd>x</kbd> | Cut current cell              |
+|                                                                           <kbd>c</kbd> | Copy current cell             |
+|                                                                           <kbd>v</kbd> | Paste copied cell             |
+|                                                                           <kbd>m</kbd> | Change cell to markdown       |
+|                                                                           <kbd>y</kbd> | Change cell to code           |
+|                                                                           <kbd>r</kbd> | Change cell to raw            |
+|                                                                           <kbd>l</kbd> | Toggle line numbers           |
+|                                                                         <kbd>I I</kbd> | Interrupt notebook kernel     |
+|                                                                         <kbd>0 0</kbd> | Restart notebook kernel       |
+|                                                                           <kbd>e</kbd> | Edit cell in \$EDITOR         |
+|                                                                       <kbd>Enter</kbd> | Enter cell edit mode          |
+|                                                                      <kbd>Escape</kbd> | Exit cell edit mode \*        |
+|                                                               <kbd>Escape Escape</kbd> | Exit cell edit mode quickly   |
+|  <kbd><kbd>Ctrl</kbd>+<kbd>Enter</kbd></kbd> / <kbd><kbd>Ctrl</kbd>+<kbd>e</kbd></kbd> | Run cell\*                    |
+| <kbd><kbd>Shift</kbd>+<kbd>Enter</kbd></kbd> / <kbd><kbd>Ctrl</kbd>+<kbd>r</kbd></kbd> | Run then select next cell\*\* |
+|                                                                          **Edit Mode** |                               |
+|                                                <kbd><kbd>Ctrl</kbd>+<kbd>f</kbd></kbd> | Find                          |
+|                                                <kbd><kbd>Ctrl</kbd>+<kbd>g</kbd></kbd> | Find Next                     |
+|                                                <kbd><kbd>Ctrl</kbd>+<kbd>z</kbd></kbd> | Undo                          |
+|                                                <kbd><kbd>Ctrl</kbd>+<kbd>d</kbd></kbd> | Duplicate line                |
+|                                                                         <kbd>Tab</kbd> | Indent                        |
+|                                             <kbd><kbd>Shift</kbd>+<kbd>Tab</kbd></kbd> | Unindent                      |
+|                                                <kbd><kbd>Ctrl</kbd>+<kbd>c</kbd></kbd> | Copy                          |
+|                                                <kbd><kbd>Ctrl</kbd>+<kbd>x</kbd></kbd> | Cut                           |
+|                                                <kbd><kbd>Ctrl</kbd>+<kbd>v</kbd></kbd> | Paste                         |
 
 > \* There is a slight delay detecting an escape key-event. To exit edit mode quickly, double-press the escape key.
 >
@@ -176,7 +188,7 @@ When in edit mode, emacs style key-bindings apply by default.
 
 By default, VT100 terminal emulators do not distinguish between <kbd>Enter</kbd>, <kbd><kbd>Ctrl</kbd>+<kbd>Enter</kbd></kbd> & <kbd><kbd>Shift</kbd>+<kbd>Enter</kbd></kbd>. In order to work around this, it is possible to re-map these key bindings so they produce the escape code of another key. To replicate the `Ctrl + Enter` & `Shift + Enter` of Jupyter, you will need to remap the following shortcuts in your terminal:
 
-|                              Key Combination | Output                                    |
+| Key Combination                              | Output                                    |
 | -------------------------------------------- | ----------------------------------------- |
 | <kbd><kbd>Ctrl</kbd>+<kbd>Enter</kbd></kbd>  | <kbd><kbd>Ctrl</kbd>+<kbd>F20</kbd></kbd> |
 | <kbd><kbd>Shift</kbd>+<kbd>Enter</kbd></kbd> | <kbd>F21</kbd>                            |

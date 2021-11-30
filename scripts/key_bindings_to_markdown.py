@@ -4,12 +4,12 @@ from pathlib import Path
 
 from euporie.app import App
 from euporie.cell import Cell
+from euporie.containers import ScrollingContainer
 from euporie.keys import KeyBindingsInfo
 from euporie.notebook import Notebook
-from euporie.containers import ScrollingContainer
 
 app = App()
-nb = Notebook(Path("/this/file/does/not/exist.ipynb"))
+nb = Notebook(Path("/this/file/does/not/exist.ipynb"), scroll=True)
 ScrollingContainer([])
 Cell(0, {}, nb)
 
@@ -20,10 +20,16 @@ key_details = {
             [
                 " ".join(
                     (
-                        '+'.join([
-                            f'<kbd>{x.title() if len(x) > 1 else x}</kbd>'
-                            for x in part.replace("c-", "Ctrl-").replace("s-", "Shift-").split('-')
-                        ]) if len(part.split('-')) > 1 else (part.title() if len(part) > 1 else part)
+                        "+".join(
+                            [
+                                f"<kbd>{x.title() if len(x) > 1 else x}</kbd>"
+                                for x in part.replace("c-", "Ctrl-")
+                                .replace("s-", "Shift-")
+                                .split("-")
+                            ]
+                        )
+                        if len(part.split("-")) > 1
+                        else (part.title() if len(part) > 1 else part)
                         for part in key
                     )
                 )

@@ -167,16 +167,32 @@ class InterfaceMixin(DialogMixin):
                         ),
                     ],
                 ),
+                # MenuItem(
+                # " Run ",
+                # children=[
+                # MenuItem(
+                # "Restart Kernel",
+                # handler=lambda: self.file_op("restart_kernel"),
+                # ),
+                # ],
+                # ),
                 MenuItem(
                     " Kernel ",
                     children=[
-                        MenuItem(
+                        SmartMenuItem(
+                            "Interupt Kernel",
+                            handler=lambda: self.file_op("interrupt_kernel"),
+                            disabler=~self.is_file_open,
+                        ),
+                        SmartMenuItem(
                             "Restart Kernel",
                             handler=lambda: self.file_op("restart_kernel"),
+                            disabler=~self.is_file_open,
                         ),
-                        MenuItem(
+                        SmartMenuItem(
                             "Change Kernel...",
                             handler=lambda: self.file_op("change_kernel"),
+                            disabler=~self.is_file_open,
                         ),
                     ],
                 ),
