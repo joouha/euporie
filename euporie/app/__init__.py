@@ -200,13 +200,14 @@ class App(TermMixin, Application):
         else:
             dim_bg = "default"
 
+        log.debug(config.background_color)
         style_dict = {
             # The default style is merged at this point so full styles can be
             # overridden. For example, this allows us to switch off the underline
             #  status of cursor-line.
             **dict(default_ui_style().style_rules),
             "logo": "fg:#ff0000",
-            "background": "fg:#888888",
+            "background": f"fg:{config.background_color}",
             "menu-bar": "fg:#ffffff bg:#222222",
             "menu-bar.item": "bg:#444444",
             "menu": "fg:#ffffff bg:#222222",

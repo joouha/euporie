@@ -164,16 +164,17 @@ class ScrollingContainer(Container):
             dot = Char(str(config.background_character), "class:background")
             for y in range(ypos, ypos + self.available_height):
                 for xrange in (
-                    (write_position.xpos, xpos - 2),
-                    (xpos + self.content_width + 2, write_position.width - 1),
+                    (write_position.xpos - 1, xpos - 2),
+                    (xpos + self.content_width + 2, write_position.width - 0),
                 ):
                     for x in range(*xrange):
                         if (
-                            (config.background_pattern == 1 and (x + y) % 2 == 0)
-                            or (config.background_pattern == 2 and (x + 2 * y) % 4 == 0)
-                            or (config.background_pattern == 3 and (x + y) % 3 == 0)
+                            (config.background_pattern == 1)
+                            or (config.background_pattern == 2 and (x + y) % 2 == 0)
+                            or (config.background_pattern == 3 and (x + 2 * y) % 4 == 0)
+                            or (config.background_pattern == 4 and (x + y) % 3 == 0)
                             or (
-                                config.background_pattern == 4
+                                config.background_pattern == 5
                                 and ((x + y % 2 * 3) % 6) % 4 == 0
                             )
                         ):

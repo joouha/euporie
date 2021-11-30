@@ -178,15 +178,15 @@ CONFIG_PARAMS: "dict[str, dict]" = {
         """,
     },
     "background_pattern": {
-        "flags_": ["--background-pattern"],
+        "flags_": ["--background-pattern", "--bg-pattern"],
         "type": int,
-        "choices": range(5),
+        "choices": range(6),
         "help": "The background pattern to use",
         "schema_": {
             "type": "integer",
             "minimum": 0,
-            "maximum": 4,
-            "default": 1,
+            "maximum": 5,
+            "default": 2,
         },
         "description_": """
             The background pattern to use when the notebook is narrower than the
@@ -194,9 +194,10 @@ CONFIG_PARAMS: "dict[str, dict]" = {
         """,
     },
     "background_character": {
-        "flags_": ["--background-character"],
+        "flags_": ["--background-character", "--bg-char"],
         "type": str,
         "help": "Character for background pattern",
+        # "choices": "·⬤╳╱╲░▒▓▞╬",
         "schema_": {
             "type": "string",
             "maxLength": 1,
@@ -204,6 +205,19 @@ CONFIG_PARAMS: "dict[str, dict]" = {
         },
         "description_": """
             The character to use when drawing the background pattern.
+        """,
+    },
+    "background_color": {
+        "flags_": ["--background-color", "--bg-color"],
+        "type": str,
+        "help": "Color for background pattern",
+        "schema_": {
+            "type": "string",
+            "maxLength": 7,
+            "default": "#444",
+        },
+        "description_": """
+            The color to use for the background pattern.
         """,
     },
     "line_numbers": {
