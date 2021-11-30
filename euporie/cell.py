@@ -154,8 +154,8 @@ class Cell:
             self.editing = True
             await self.input_box.buffer.open_in_editor()
             exit_edit_mode(event)
-            if config.execute_after_external_edit:
-                run_or_render(event)
+            if config.run_after_external_edit:
+                self.run_or_render()
 
         @kb.add(
             "enter",
@@ -174,12 +174,7 @@ class Cell:
             "escape", "escape", group="Notebook", desc="Exit cell edit mode quickly"
         )
         def exit_edit_mode(event: "KeyPressEvent") -> "None":
-            self.editing = False
-            self.input = self.input_box.text
-            self.nb.dirty = True
-            self.container.modal = False
-            # give focus back to selected cell (this might have changed!)
-            get_app().layout.focus(self.nb.cell.control)
+            self.exit_edit_mode()
 
         @kb.add(
             "escape",
@@ -196,13 +191,7 @@ class Cell:
         @kb.add("c-e", group="Notebook", desc="Run cell")
         @kb.add("c-f20")
         def run_or_render(event: "KeyPressEvent") -> "None":
-            exit_edit_mode(event)
-            if self.cell_type == "markdown":
-                self.output_box.children = self.rendered_outputs
-                self.rendered = True
-            elif self.cell_type == "code":
-                self.state = "queued"
-                self.run()
+            self.run_or_render(advance=False)
 
         @kb.add(
             "escape",
@@ -219,14 +208,7 @@ class Cell:
         @kb.add("c-r", group="Notebook", desc="Run then select next cell")
         @kb.add("f21")
         def run_then_next(event: "KeyPressEvent") -> "None":
-            # Insert a cell if we are at the last cell
-            n_cells = len(self.nb.page.children)
-            if self.nb.page.selected_index == (n_cells) - 1:
-                offset = n_cells - self.nb.page.selected_index
-                self.nb.add(offset)
-            else:
-                self.nb.page.selected_index += 1
-            run_or_render(event)
+            self.run_or_render(advance=True)
 
         @kb.add("c-f", filter=self.is_editing, group="Edit Mode", desc="Find")
         def find(event: "KeyPressEvent") -> "None":
@@ -359,6 +341,40 @@ class Cell:
             event.current_buffer.paste_clipboard_data(get_app().clipboard.get_data())
 
         return kb
+
+    def exit_edit_mode(self) -> None:
+        """Removes a cell from edit mode."""
+        self.editing = False
+        self.input = self.input_box.text
+        self.nb.dirty = True
+        self.container.modal = False
+        # give focus back to selected cell (this might have changed!)
+        get_app().layout.focus(self.nb.cell.control)
+
+    def run_or_render(self, advance: "bool" = False) -> None:
+        """Run code cells, or render markdown cells, optionally advancing.
+
+        Args:
+            advance: If True, move to next cell. If True and at the last cell, create a
+                new cell at the end of the notebook.
+
+        """
+        if advance:
+            # Insert a cell if we are at the last cell
+            n_cells = len(self.nb.page.children)
+            if self.nb.page.selected_index == (n_cells) - 1:
+                offset = n_cells - self.nb.page.selected_index
+                self.nb.add(offset)
+            else:
+                self.nb.page.selected_index += 1
+
+        self.exit_edit_mode()
+        if self.cell_type == "markdown":
+            self.output_box.children = self.rendered_outputs
+            self.rendered = True
+        elif self.cell_type == "code":
+            self.state = "queued"
+            self.run()
 
     def run(self) -> "None":
         """Run the contents of a code cell in the kernel."""
