@@ -126,19 +126,19 @@ CONFIG_PARAMS: "dict[str, dict]" = {
             Whether to pipe output to the system pager when using `--dump`.
         """,
     },
-    # "run": {
-    # "flags_": ["--run"],
-    # "action": BooleanOptionalAction,
-    # "help": "Run the notebook when loaded",
-    # "schema_": {
-    # "type": "boolean",
-    # "default": False,
-    # },
-    # "description_": """
-    # If set, notebooks will be run automatically when opened, or if dumping
-    # output, notebooks will be run before being output.
-    # """,
-    # },
+    "run": {
+        "flags_": ["--run"],
+        "action": BooleanOptionalAction,
+        "help": "Run the notebook when loaded",
+        "schema_": {
+            "type": "boolean",
+            "default": False,
+        },
+        "description_": """
+        If set, notebooks will be run automatically when opened, or if dumping
+        output, notebooks will be run before being output.
+    """,
+    },
     "key_map": {
         "flags_": ["--key-map"],
         "type": str,
@@ -466,8 +466,8 @@ class Config:
         """
         try:
             del self.user[name]
-        except KeyError:
-            raise KeyError(f"Variable not found in the user config: {name!r}")
+        except KeyError as exc:
+            raise KeyError(f"Variable not found in the user config: {name!r}") from exc
         else:
             if self.valid_user:
                 with open(self.config_file_path, "w") as f:

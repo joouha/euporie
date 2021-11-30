@@ -55,12 +55,12 @@ class DialogMixin:
 
         """
 
-        def _make_handler(cb: "Optional[Callable]") -> "Callable":
+        def _make_handler(cb: "Optional[Callable]" = None) -> "Callable":
             def inner() -> "None":
                 self.root_container.floats.remove(dialog)
                 if focused in self.layout.find_all_controls():
                     self.layout.focus(focused)
-                if cb:
+                if callable(cb):
                     cb()
 
             return inner
@@ -81,6 +81,10 @@ class DialogMixin:
                 with_background=True,
             )
         )
+        # kb = KeyBindings()
+        # kb.add("escape")(_make_handler())
+        # dialog.content.key_bindings = kb
+
         self.root_container.floats.append(
             dialog,
         )

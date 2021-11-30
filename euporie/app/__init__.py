@@ -263,7 +263,7 @@ class App(TermMixin, Application):
             file = Notebook(
                 path,
                 interactive=not config.dump,
-                # execute=config.execute,
+                autorun=config.run,
                 scroll=not bool(config.dump),
             )
             self.files.append(file)

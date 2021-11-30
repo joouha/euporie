@@ -2,28 +2,14 @@
 """Contains the main class for a notebook file."""
 from __future__ import annotations
 
-import asyncio
 import copy
 import logging
-import threading
 from functools import partial
 from pathlib import Path
-from typing import (
-    TYPE_CHECKING,
-    AsyncGenerator,
-    Callable,
-    Iterable,
-    Optional,
-    Union,
-    cast,
-)
+from typing import TYPE_CHECKING, Callable, Optional, Union, cast
 
 import nbformat  # type: ignore
-from jupyter_client import KernelClient, KernelManager  # type: ignore
-from jupyter_client.kernelspec import KernelSpecManager  # type: ignore
 from prompt_toolkit.application.current import get_app
-from prompt_toolkit.completion.base import CompleteEvent, Completer, Completion
-from prompt_toolkit.document import Document
 from prompt_toolkit.layout.containers import AnyContainer, HSplit, Window
 from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.layout.dimension import LayoutDimension as D
@@ -31,8 +17,10 @@ from prompt_toolkit.layout.margins import NumberedMargin
 from prompt_toolkit.widgets import Label, RadioList
 
 from euporie.cell import Cell
+from euporie.completion import KernelCompleter
 from euporie.config import config
 from euporie.containers import PrintingContainer, ScrollingContainer
+from euporie.kernel import NotebookKernel
 from euporie.keys import KeyBindingsInfo
 
 if TYPE_CHECKING:
@@ -65,46 +53,6 @@ class File:
         pass
 
 
-class KernelCompleter(Completer):
-    """A prompt_toolkit completer which provides completions from a Jupyter kernel."""
-
-    def __init__(self, nb: "Notebook"):
-        """Instantiate the completer for a given notebook.
-
-        Args:
-            nb: A `Notebook` instance
-
-        """
-        self.nb = nb
-
-    def get_completions(
-        self, document: "Document", complete_event: "CompleteEvent"
-    ) -> "Iterable[Completion]":
-        """Does nothing as completions are retrieved asynchronously."""
-        while False:
-            yield
-
-    async def get_completions_async(
-        self, document: Document, complete_event: CompleteEvent
-    ) -> "AsyncGenerator[Completion, None]":
-        """An asynchronous generator of `Completions`, as returned by the kernel."""
-        if self.nb.kc:
-            msg_id = self.nb.kc.complete(
-                code=document.text,
-                cursor_pos=document.cursor_position,
-            )
-            # msg = await self.nb.kc._async_get_shell_msg()
-            msg = self.nb.kc.get_shell_msg()
-            if msg["parent_header"].get("msg_id") == msg_id:
-                # run_in_terminal(lambda: print(msg))
-                content = msg.get("content", {})
-                rel_start_position = (
-                    content.get("cursor_start", 0) - document.cursor_position
-                )
-                for match in content.get("matches", []):
-                    yield Completion(match, start_position=rel_start_position)
-
-
 class Notebook(File):
     """The main notebook container class."""
 
@@ -114,13 +62,14 @@ class Notebook(File):
         self,
         path: "Path",
         interactive: "bool" = True,
-        execute: "bool" = False,
+        autorun: "bool" = False,
         scroll: "bool" = False,
     ):
         """Instantiate a Notebook container, using a notebook at a given path."""
         self.path = Path(path).expanduser()
         self.interactive = interactive
-        self.execute = execute
+        self.autorun = autorun
+        self.inital_ran = False
         self.scroll = scroll
 
         # Open json file
@@ -134,16 +83,28 @@ class Notebook(File):
 
         self.clipboard: "list[Cell]" = []
         self.dirty = False
-        self.kernel_status = "starting"
         self.line_numbers = config.line_numbers
-        self.completer = KernelCompleter(self)
-        self.kernel_id: "Optional[str]" = None
-        self.km: "Optional[KernelManager]" = None
-        self.kc: "Optional[KernelClient]" = None
-        self.kernel_loop: "Optional[asyncio.AbstractEventLoop]" = None
 
         self.container: "AnyContainer"
 
+        # Set up kernel
+        self.kernel = NotebookKernel(self.kernel_name)
+        if self.interactive or self.autorun:
+            self.kernel.start(cb=self.run_all if self.autorun else None)
+
+        # This occurs if we are dumping the notebook and want to run all the cells
+        # before they are printed
+        if not self.interactive and self.autorun:
+            # Wait until the kernel is ready
+            self.kernel.wait()
+            # Run all of the cells
+            for cell_json in self.json["cells"]:
+                self.kernel.run(cell_json)
+
+        # Don't load the kernel completer if it won't be needed
+        self.completer = KernelCompleter(self.kernel) if self.interactive else None
+
+        # Set up container
         if not self.scroll:
             self.container = PrintingContainer(
                 self.cell_renderers,
@@ -160,72 +121,13 @@ class Notebook(File):
             self.container = HSplit([self.page])
             self.container.key_bindings = self.load_key_bindings()
 
-        def setup_loop() -> None:
-            """Set up a thread with an event loop to listen for kernel responses."""
-            # Create and set kernel loop
-            self.kernel_loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(self.kernel_loop)
-            # Start kernel
-            asyncio.run_coroutine_threadsafe(
-                self.start_kernel(),
-                self.kernel_loop,
-            )
-            # Now we wait (the above task will run in the kernel loop)
-            self.kernel_loop.run_forever()
-
-        # Run the kernel event loop in a new thread
-        if self.interactive or self.execute:
-            self.kernel_thread = threading.Thread(target=setup_loop)
-            self.kernel_thread.start()
-
-    async def start_kernel(self) -> None:
-        """Starts a Juypter kernel, creating a `KernelManager`."""
-        log.debug("Starting kernel")
-
-        if not self.kernel_name:
-            self.change_kernel()
-            return
-        # Create a kernel manager for this notebook
-        self.km = KernelManager(kernel_name=self.kernel_name)
-        try:
-            await self.km._async_start_kernel()
-        except Exception as e:
-            app = cast("App", get_app())
-            app.dialog("Error Starting Kernel", Label(e.__repr__()), {"OK": None})
-            self.kc = None
-            self.kernel_status = "error"
-        else:
-            self.kc = self.km.client()
-            self.kc.start_channels()
-            self.kernel_status = "idle"
-        get_app().invalidate()
-
     def restart_kernel(self) -> "None":
-        """Restarts the current `Notebook`'s kernel.
-
-        This is performed asynchronously in the notebook's kernel thread.
-        """
-        log.debug(f"Restarting kernel {self.km.kernel_id}")
-        assert self.kernel_loop is not None
-        asyncio.run_coroutine_threadsafe(
-            self.km._async_restart_kernel(),
-            self.kernel_loop,
-        ).result()
-
-        log.debug(f"Kernel {self.km.kernel_id} restarted")
+        """Restarts the current `Notebook`'s kernel."""
+        self.kernel.restart()
 
     def interrupt_kernel(self) -> "None":
-        """Interupt the current `Notebook`'s kernel.
-
-        This is performed asynchronously in the notebook's kernel thread.
-        """
-        log.debug(f"Interrupting kernel {self.km.kernel_id}")
-        assert self.kernel_loop is not None
-        self.km.interrupt_kernel()
-        asyncio.run_coroutine_threadsafe(
-            self.km._async_interrupt_kernel(),
-            self.kernel_loop,
-        ).result()
+        """Interrupt the current `Notebook`'s kernel."""
+        self.kernel.interrupt()
 
     @property
     def kernel_name(self) -> "str":
@@ -237,19 +139,9 @@ class Notebook(File):
 
         def _change_kernel_cb() -> None:
             name = options.current_value
-            spec = kernel_specs.get(name, {}).get("spec", {})
-            self.json.setdefault("metadata", {})["kernelspec"] = {
-                "display_name": spec["display_name"],
-                "language": spec["language"],
-                "name": name,
-            }
-            self.km.kernel_name = name
-            self.restart_kernel()
+            self.kernel.change(name, self.json.setdefault("metadata", {}))
 
-        if self.km:
-            kernel_specs = self.km.kernel_spec_manager.get_all_specs()
-        else:
-            kernel_specs = KernelSpecManager().get_all_specs()
+        kernel_specs = self.kernel.specs
         options = RadioList(
             [
                 (
@@ -376,13 +268,45 @@ class Notebook(File):
             index: The index of the child of interest.
 
         Returns:
-            True if the child is rendered and partially off-screen, otherwise False.=
+            True if the child is rendered and partially off-screen, otherwise False
 
         """
         if self.scroll:
             return self.page.is_child_obscured(index)
         else:
             return False
+
+    def run_cell(
+        self,
+        index: "Optional[int]" = None,
+        output_cb: "Optional[Callable]" = None,
+        cb: "Optional[Callable]" = None,
+    ) -> "None":
+        """Runs a cell.
+
+        Args:
+            index: The index of the cell to run. If ``None``, runs the currently
+                selected cell.
+            output_cb: An optional callback to run each time a response message is
+                recieved
+            cb: An optional callback to run when the cell has finished running
+
+        """
+        if index is None:
+            index = self.page.selected_index
+        cell_json = self.json["cells"][index]
+        # Ensure cell gets rendered if it is visible
+        if cb is None and index in self.page.child_cache:
+            cell = cast("Cell", self.page.child_cache[index])
+            cell.run_or_render()
+        else:
+            self.kernel.run(cell_json, output_cb=output_cb, cb=cb)
+
+    def run_all(self) -> None:
+        """Run all cells."""
+        log.debug("Running all cells")
+        for i in range(len(self.page.children)):
+            self.run_cell(i)
 
     def add(self, offset: "int") -> "None":
         """Creates a new cell at a given offset from the currently selected cell.
@@ -463,18 +387,10 @@ class Notebook(File):
             cb: A callback to run if after closing the notebook.
 
         """
-        # Tell the kernel to shutdown
-        if self.kc is not None:
-            self.kc.shutdown()
-
-        if self.kernel_loop is not None:
-            # Tell the event loop in the kernel monitoring thread to shutdown
-            self.kernel_loop.call_soon_threadsafe(self.kernel_loop.stop)
-            # Close the kernel monitoring thread
-            self.kernel_thread.join()
-
-        # Tell the app we've closed
-        if cb is not None:
+        if self.kernel:
+            self.kernel.stop()
+            self.kernel.shutdown()
+        if cb:
             cb()
 
     def unsaved(self, cb: "Optional[Callable]") -> "None":

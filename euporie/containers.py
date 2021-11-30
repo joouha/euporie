@@ -52,7 +52,7 @@ class ScrollingContainer(Container):
 
     def __init__(
         self,
-        children: "list[Union[Callable, AnyContainer]]",
+        children: "Sequence[Union[Callable, AnyContainer]]",
         max_content_width: "AnyDimension" = None,
         height: "AnyDimension" = None,
         z_index: "Optional[int]" = None,
@@ -60,7 +60,7 @@ class ScrollingContainer(Container):
         show_border: "FilterOrBool" = True,
     ):
         """Initiates the `ScrollingContainer`."""
-        self.children = children
+        self.children = list(children)
         if not isinstance(max_content_width, Dimension):
             max_content_width = Dimension(preferred=int(config.max_notebook_width))
         self.max_content_width = max_content_width
@@ -69,11 +69,8 @@ class ScrollingContainer(Container):
         self.style = style
 
         self.key_bindings = self.load_key_bindings()
-
         self._remaining_space_window = Window()
-
         self.show_border = to_filter(show_border)
-
         self.last_selected_index: "int" = 0
 
         # Position of viewing window relative to selected child
@@ -321,7 +318,9 @@ class ScrollingContainer(Container):
         # Wrap all the mouse handlers to add mouse scrolling
         mouse_handler_wrappers: Dict[MouseHandler, MouseHandler] = {}
 
-        def _wrap_mouse_handler(handler: "Callable") -> "Callable[[MouseEvent], None]":
+        def _wrap_mouse_handler(
+            handler: "Callable",
+        ) -> "Callable[[MouseEvent], object]":
             if handler not in mouse_handler_wrappers:
 
                 def wrapped_mouse_handler(mouse_event: MouseEvent) -> "None":

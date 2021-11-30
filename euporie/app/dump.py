@@ -35,10 +35,11 @@ def _patched_output_screen_diff(
     # from collections import defaultdict
     # args[2].zero_width_escapes = defaultdict(lambda: defaultdict(lambda: ""))
 
-    # Tell the renderer we have one additional column. This is to prevent the use of carriage
-    # returns and cursor movements to write the final character on lines.
+    # Tell the renderer we have one additional column. This is to prevent the use of
+    # carriage returns and cursor movements to write the final character on lines,
+    # which is something the prompt_toolkit does
     size = kwargs.pop("size")
-    kwargs["size"] = Size(99999, size.columns + 1)
+    kwargs["size"] = Size(9999999, size.columns + 1)
     return _original_output_screen_diff(*args, **kwargs)
 
 

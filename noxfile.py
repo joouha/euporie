@@ -9,7 +9,7 @@ import nox  # type: ignore
 from nox_poetry import Session, session  # type: ignore
 
 package = "euporie"
-python_versions = ["3.9", "3.8"]
+python_versions = ["3.10", "3.9", "3.8"]
 nox.options.sessions = "lint", "safety", "mypy", "pytype"
 locations = "euporie", "tests", "scripts"
 
@@ -129,7 +129,8 @@ def mypy(session: "Session") -> "None":
     session.run("mypy", *args)
 
 
-@session(python=python_versions)
+# Pytype does not support 3.10 yet
+@session(python=python_versions - ["3.10"])
 def pytype(session: "Session") -> "None":
     """Type-check using pytype."""
     args = session.posargs or locations

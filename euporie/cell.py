@@ -2,12 +2,10 @@
 """Defines a cell object with input are and rich outputs, and related objects."""
 from __future__ import annotations
 
-import asyncio
 import logging
 from functools import partial
 from typing import TYPE_CHECKING, Any, Literal
 
-import nbformat  # type: ignore
 from prompt_toolkit.application.current import get_app
 from prompt_toolkit.buffer import Completion, indent, unindent
 from prompt_toolkit.filters import Condition, has_completions, has_selection
@@ -374,48 +372,12 @@ class Cell:
             self.rendered = True
         elif self.cell_type == "code":
             self.state = "queued"
-            self.run()
+            # Clear output early
+            self.clear_output()
+            self.nb.run_cell(self.index, output_cb=self.on_output, cb=self.ran)
 
-    def run(self) -> "None":
-        """Run the contents of a code cell in the kernel."""
-        self.clear_output()
-        if self.nb.kc and self.nb.kernel_loop is not None:
-            # Execute input and wait for responses in kernel thread
-            asyncio.run_coroutine_threadsafe(
-                self.nb.kc._async_execute_interactive(
-                    code=self.input,
-                    allow_stdin=False,
-                    output_hook=self.ran,
-                ),
-                self.nb.kernel_loop,
-            )
-
-    def ran(self, msg: "dict[str, Any]") -> "None":
-        """Callback which runs when a message for this cell is recieved from the kernel."""
-        msg_type = msg.get("header", {}).get("msg_type")
-
-        if msg_type == "status":
-            self.state = msg.get("content", {}).get("execution_state")
-            self.nb.kernel_status = self.state
-
-        elif msg_type == "execute_input":
-            self.execution_count = msg.get("content", {}).get("execution_count")
-
-        elif msg_type == "stream":
-            name = msg.get("content", {}).get("name")
-            outputs = {
-                output.get("name"): output
-                for output in self.outputs
-                if output.get("name")
-            }
-            if name in outputs:
-                outputs[name]["text"] += msg.get("content", {}).get("text", "")
-            else:
-                self.add_output(nbformat.v4.output_from_msg(msg))
-
-        elif msg_type in ("error", "display_data", "execute_result"):
-            self.add_output(nbformat.v4.output_from_msg(msg))
-
+    def on_output(self) -> "None":
+        """Runs when a message for this cell is recieved from the kernel."""
         # Update the outputs in the visible instance of this cell
         visible_cell = self.nb.get_cell_by_id(self.id)
         if visible_cell:
@@ -423,6 +385,13 @@ class Cell:
 
         # Tell the app that the display needs updating
         get_app().invalidate()
+
+        self.output_box.children = self.rendered_outputs
+
+    def ran(self) -> "None":
+        """Callback which runs when the cell has finished running."""
+        # Update the outputs in the visible instance of this cell
+        self.state = "idle"
 
     def set_cell_type(self, cell_type: "Literal['markdown','code','raw']") -> "None":
         """Convert the cell to a different cell type.
@@ -434,7 +403,7 @@ class Cell:
         if cell_type == "code":
             self.json.setdefault("execution_count", None)
         self.json["cell_type"] = cell_type
-        self.load()
+        # self.load()
 
     def load(self) -> "None":
         """Generates the main container used to represent a notebook cell."""
@@ -682,7 +651,7 @@ class Cell:
     def clear_output(self) -> "None":
         """Remove all outputs from the cell."""
         self.json["outputs"] = []
-        self.load()
+        # self.load()
 
     @property
     def outputs(self) -> "list[dict[str, Any]]":
@@ -693,16 +662,6 @@ class Cell:
             ]
         else:
             return self.json.get("outputs", [])
-
-    def add_output(self, output: "dict[str, Any]") -> "None":
-        """Append a new output to the cell's JSON.
-
-        Args:
-            output: The output JSON to add.
-
-        """
-        self.json.setdefault("outputs", []).append(output)
-        self.output_box.children = self.rendered_outputs
 
     @property
     def rendered_outputs(self) -> "list[Container]":

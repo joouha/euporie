@@ -96,7 +96,7 @@ class InterfaceMixin(DialogMixin):
             """Generates the formatted text for the statusbar."""
             file = self.file
             assert isinstance(file, Notebook)
-            kernel_status = kernel_status_repr.get(file.kernel_status, "◌")
+            kernel_status = kernel_status_repr.get(file.kernel.status, "◌")
             assert isinstance(file.page, ScrollingContainer)
             selected_cell = file.page.selected_index + 1
             dirt = "*" if file.dirty else ""
@@ -167,15 +167,19 @@ class InterfaceMixin(DialogMixin):
                         ),
                     ],
                 ),
-                # MenuItem(
-                # " Run ",
-                # children=[
-                # MenuItem(
-                # "Restart Kernel",
-                # handler=lambda: self.file_op("restart_kernel"),
-                # ),
-                # ],
-                # ),
+                MenuItem(
+                    " Run ",
+                    children=[
+                        MenuItem(
+                            "Run Cell",
+                            handler=lambda: self.file_op("run_cell"),
+                        ),
+                        MenuItem(
+                            "Run All Cells",
+                            handler=lambda: self.file_op("run_all"),
+                        ),
+                    ],
+                ),
                 MenuItem(
                     " Kernel ",
                     children=[

@@ -80,7 +80,9 @@ def _have_termios_tty_fcntl() -> "bool":
 
 
 def _query_term(
-    query_code: "str", stdin: "IO[str]" = None, stdout: "IO[str]" = None
+    query_code: "str",
+    stdin: "Optional[IO[str]]" = None,
+    stdout: "Optional[IO[str]]" = None,
 ) -> "Optional[dict[str,str]]":
     """Query the terminal and parse the response.
 
