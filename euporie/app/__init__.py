@@ -54,6 +54,7 @@ class App(TermMixin, Application):
         self.open_paths: "list[Path]" = []
         self.files: "list[Notebook]" = []
         self.last_selected_index: int = 0
+        self.loop = None
         # self.file_container = VSplit([])
 
         # Application properties
@@ -200,7 +201,6 @@ class App(TermMixin, Application):
         else:
             dim_bg = "default"
 
-        log.debug(config.background_color)
         style_dict = {
             # The default style is merged at this point so full styles can be
             # overridden. For example, this allows us to switch off the underline

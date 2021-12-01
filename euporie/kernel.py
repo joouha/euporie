@@ -15,6 +15,7 @@ from jupyter_client import (  # type: ignore
     KernelClient,
     KernelManager,
 )
+from jupyter_client.kernelspec import NoSuchKernel  # type: ignore
 
 log = logging.getLogger(__name__)
 
@@ -22,9 +23,7 @@ log = logging.getLogger(__name__)
 class NotebookKernel:
     """Runs a notebook kernel asynchronously in it's own thread."""
 
-    kc: "KernelClient"
-
-    def __init__(self, name: "str" = "python3") -> None:
+    def __init__(self, name: "str") -> None:
         """Called when the ``NotebookKernel`` is initalized.
 
         Args:
@@ -36,8 +35,10 @@ class NotebookKernel:
         self.thread.daemon = True
         self.thread.start()
 
-        self.km = AsyncKernelManager(kernel_name=name or "python")
+        self.kc: "Optional[KernelClient]" = None
+        self.km = AsyncKernelManager(kernel_name=name)
         self.status = "stopped"
+        self.error = None
 
     @property
     def specs(self) -> "dict[str, dict]":
@@ -66,25 +67,42 @@ class NotebookKernel:
 
     async def _start(self, cb: "Optional[Callable]" = None) -> "None":
         """Start the kernel and set its status."""
-        await self.km.start_kernel()
-        self.kc = self.km.client()
-        self.kc.start_channels()
+        log.debug("Starting kernel")
+        self.status = "starting"
         try:
-            await self.kc.wait_for_ready(timeout=5)
-        except RuntimeError:
-            await self._stop()
-            self.status = "error"
+            await self.km.start_kernel()
+        except NoSuchKernel:
+            log.error("Kernel '%s' does not exist", self.km.kernel_name)
+            self.status = "missing"
         else:
-            self.status = "idle"
+            log.debug("Started kernel")
+
+        if self.km.has_kernel:
+            self.kc = self.km.client()
+            self.kc.start_channels()
+            log.debug("Waiting for kernel to become ready")
+            try:
+                await self.kc.wait_for_ready(timeout=5)
+            except RuntimeError as e:
+                await self._stop()
+                self.error = e
+                self.status = "error"
+            else:
+                log.debug("Kernel %s ready", self.km.kernel_id)
+                self.status = "idle"
+                self.error = None
 
         if callable(cb):
             cb()
 
     def wait(self) -> "None":
-        """Blocks until the kernel is ready."""
+        """Blocks the main thread until the kernel is ready.
+
+        This must be called after :py:func:`NotebookKernel.start`.
+        """
         import time
 
-        while self.status != "idle":
+        while self.status in ("stopped", "starting"):
             time.sleep(0.1)
 
     def run(
@@ -101,16 +119,19 @@ class NotebookKernel:
             cb: An optional callback to run when the cell has finished running
 
         """
-        future = asyncio.run_coroutine_threadsafe(
-            self._run(cell_json, output_cb),
-            self.loop,
-        )
+        if self.kc is None:
+            log.debug("Cannot run cell because kernel has not started")
+        else:
+            future = asyncio.run_coroutine_threadsafe(
+                self._run(cell_json, output_cb),
+                self.loop,
+            )
 
-        def _cb(_: "Future") -> "None":
-            if cb is not None:
-                cb()
+            def _cb(_: "Future") -> "None":
+                if cb is not None:
+                    cb()
 
-        future.add_done_callback(_cb)
+            future.add_done_callback(_cb)
 
     async def _run(self, cell_json: "dict", output_cb: "Optional[Callable]") -> "None":
         # Clear outputs late
@@ -156,49 +177,52 @@ class NotebookKernel:
 
     async def _complete(self, code: "str", cursor_pos: "int") -> "AsyncGenerator":
         """Request code completions from the kernel."""
-        msg_id = self.kc.complete(code, cursor_pos)
-        try:
-            msg = await self.kc._async_recv_reply(msg_id, channel="shell")
-        except TimeoutError:
-            log.debug("Time out waiting for completion '%s…'", code[:20])
-        else:
-            log.debug("Got for completion '%s…'", code[:20])
-            content = msg.get("content", {})
-            jupyter_types = content.get("metadata", {}).get(
-                "_jupyter_types_experimental"
-            )
-            if jupyter_types:
-                for match in jupyter_types:
-                    rel_start_position = match.get("start", 0) - cursor_pos
-                    completion_type = match.get("type")
-                    completion_type = (
-                        None if completion_type == "<unknown>" else completion_type
-                    )
-                    yield {
-                        "text": match.get("text"),
-                        "start_position": rel_start_position,
-                        "display_meta": completion_type,
-                    }
+        if self.kc:
+            msg_id = self.kc.complete(code, cursor_pos)
+            try:
+                msg = await self.kc._async_recv_reply(msg_id, channel="shell")
+            except TimeoutError:
+                log.debug("Time out waiting for completion '%s…'", code[:20])
             else:
-                rel_start_position = content.get("cursor_start", 0) - cursor_pos
-                for match in content.get("matches", []):
-                    yield {"text": match, "start_position": rel_start_position}
+                log.debug("Got for completion '%s…'", code[:20])
+                content = msg.get("content", {})
+                jupyter_types = content.get("metadata", {}).get(
+                    "_jupyter_types_experimental"
+                )
+                if jupyter_types:
+                    for match in jupyter_types:
+                        rel_start_position = match.get("start", 0) - cursor_pos
+                        completion_type = match.get("type")
+                        completion_type = (
+                            None if completion_type == "<unknown>" else completion_type
+                        )
+                        yield {
+                            "text": match.get("text"),
+                            "start_position": rel_start_position,
+                            "display_meta": completion_type,
+                        }
+                else:
+                    rel_start_position = content.get("cursor_start", 0) - cursor_pos
+                    for match in content.get("matches", []):
+                        yield {"text": match, "start_position": rel_start_position}
 
     async def _history(
         self, pattern: "str", n: "int" = 1
-    ) -> "list[tuple[int, int, str]]":
-        log.debug("Getting history for %s", pattern)
-        msg_id = self.kc.history(pattern=pattern, n=n, hist_access_type="search")
-        log.debug("Sent message %s", msg_id)
-        responses: "list[tuple[int, int, str]]" = []
-        log.debug("Awaiting response to message %s", msg_id)
-        try:
-            msg = await self.kc._async_recv_reply(msg_id)
-        except TimeoutError:
-            log.debug("Timed out waiting for history matching '%s'", pattern)
-        else:
-            responses += msg.get("content", {}).get("history", [])
-        return responses
+    ) -> "Optional[list[tuple[int, int, str]]]":
+        if self.kc:
+            log.debug("Getting history for %s", pattern)
+            msg_id = self.kc.history(pattern=pattern, n=n, hist_access_type="search")
+            log.debug("Sent message %s", msg_id)
+            responses: "list[tuple[int, int, str]]" = []
+            log.debug("Awaiting response to message %s", msg_id)
+            try:
+                msg = await self.kc._async_recv_reply(msg_id)
+            except TimeoutError:
+                log.debug("Timed out waiting for history matching '%s'", pattern)
+            else:
+                responses += msg.get("content", {}).get("history", [])
+            return responses
+        return None
 
     def interrupt(self) -> "None":
         """Interrupt the kernel.
@@ -207,8 +231,8 @@ class NotebookKernel:
         because otherwise we would have to wait for currently running tasks on the
         kernel's event loop to finish.
         """
-        log.debug("Interrupting kernel %s", self.km.kernel_id)
         if self.km.has_kernel:
+            log.debug("Interrupting kernel %s", self.km.kernel_id)
             KernelManager.interrupt_kernel(self.km)
 
     def change(self, name: "str", metadata_json: "dict") -> "None":
@@ -227,7 +251,10 @@ class NotebookKernel:
             "name": name,
         }
         self.km.kernel_name = name
-        self.restart()
+        if self.km.has_kernel:
+            self.restart()
+        else:
+            self.start()
 
     def restart(self) -> "None":
         """Restarts the current `Notebook`'s kernel."""
@@ -249,14 +276,17 @@ class NotebookKernel:
                 interrupted before it is stopped
 
         """
-        log.debug("Stopping kernel %s", self.km.kernel_id)
-        # This helps us leave a little earlier
-        if not wait:
-            self.interrupt()
-        asyncio.run_coroutine_threadsafe(
-            self._stop(cb),
-            self.loop,
-        )
+        if self.kc is None:
+            log.debug("Cannot stop kernel because it is not running")
+        else:
+            log.debug("Stopping kernel %s", self.km.kernel_id)
+            # This helps us leave a little earlier
+            if not wait:
+                self.interrupt()
+            asyncio.run_coroutine_threadsafe(
+                self._stop(cb),
+                self.loop,
+            )
 
     async def _stop(self, cb: "Optional[Callable]" = None) -> "None":
         """Stop the kernel."""

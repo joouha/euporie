@@ -88,11 +88,13 @@ class Notebook(File):
 
         self.container: "AnyContainer"
 
+        self.app = cast("App", get_app())
+
         # Set up kernel if we're going to need it
         self.kernel = None
         if self.interactive or self.autorun:
-            self.kernel = NotebookKernel(self.kernel_name)
-            self.kernel.start(cb=self.run_all if self.autorun else None)
+            self.kernel = NotebookKernel(str(self.kernel_name))
+            self.kernel.start(self.check_kernel if self.interactive else None)
 
         # This occurs if we are dumping the notebook and want to run all the cells
         # before they are printed
@@ -127,9 +129,30 @@ class Notebook(File):
             self.container = HSplit([self.page])
             self.container.key_bindings = self.load_key_bindings()
 
+    def check_kernel(self) -> "None":
+        """Checks if the kernel has started and prompts user if not."""
+        status = self.kernel.status
+        if status == "missing":
+            self.change_kernel(msg=f"Kernel '{self.kernel_name}' not installed")
+        elif status == "error":
+            self.app.dialog(
+                "Error Starting Kernel",
+                Label(self.kernel.error.__repr__()),
+                {"OK": None},
+            )
+        self.app.invalidate()
+
     def restart_kernel(self) -> "None":
         """Restarts the current `Notebook`'s kernel."""
-        self.kernel.restart()
+
+        def _do_restart() -> "None":
+            self.kernel.restart()
+
+        self.app.dialog(
+            "Restart",
+            Label("Are you sure you want to restart the kernel?"),
+            {"Yes": _do_restart, "No": None},
+        )
 
     def interrupt_kernel(self) -> "None":
         """Interrupt the current `Notebook`'s kernel."""
@@ -140,7 +163,7 @@ class Notebook(File):
         """Return the name of the kernel defined in the notebook JSON."""
         return self.json.get("metadata", {}).get("kernelspec", {}).get("name")
 
-    def change_kernel(self) -> None:
+    def change_kernel(self, msg: "Optional[str]" = None) -> None:
         """Displays a dialog for the user to select a new kernel."""
 
         def _change_kernel_cb() -> None:
@@ -157,12 +180,11 @@ class Notebook(File):
                 for kernel_name, kernel_spec in kernel_specs.items()
             ]
         )
-        app = cast("App", get_app())
-        app.dialog(
+        self.app.dialog(
             title="Select Kernel",
             body=HSplit(
                 [
-                    Label("Please select a kernel:"),
+                    Label((f"{msg}\n" if msg else "") + "Please select a kernel:\n"),
                     options,
                 ]
             ),
