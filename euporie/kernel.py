@@ -240,16 +240,19 @@ class NotebookKernel:
         await self.km.restart_kernel()
         log.debug("Kernel %s restarted", self.km.kernel_id)
 
-    def stop(self, cb: "Optional[Callable]" = None) -> "None":
+    def stop(self, cb: "Optional[Callable]" = None, wait: "bool" = False) -> "None":
         """Stops the current kernel.
 
         Args:
             cb: An optional callback to run when the kernel has stopped.
+            wait: If True, wait for the kernel to become idle, otherwise the kernel is
+                interrupted before it is stopped
 
         """
         log.debug("Stopping kernel %s", self.km.kernel_id)
         # This helps us leave a little earlier
-        self.interrupt()
+        if not wait:
+            self.interrupt()
         asyncio.run_coroutine_threadsafe(
             self._stop(cb),
             self.loop,

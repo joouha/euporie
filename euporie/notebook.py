@@ -88,9 +88,10 @@ class Notebook(File):
 
         self.container: "AnyContainer"
 
-        # Set up kernel
-        self.kernel = NotebookKernel(self.kernel_name)
+        # Set up kernel if we're going to need it
+        self.kernel = None
         if self.interactive or self.autorun:
+            self.kernel = NotebookKernel(self.kernel_name)
             self.kernel.start(cb=self.run_all if self.autorun else None)
 
         # This occurs if we are dumping the notebook and want to run all the cells
@@ -100,6 +101,9 @@ class Notebook(File):
             self.kernel.wait()
             # Run all of the cells
             for cell_json in self.json["cells"]:
+                # Clear outputs
+                cell_json["outputs"] = []
+                # Run the cell non-interactively
                 self.kernel.run(cell_json)
 
         # Don't load the kernel completer if it won't be needed
@@ -390,7 +394,11 @@ class Notebook(File):
 
         """
         if self.kernel:
-            self.kernel.stop()
+            # When closing a notebook in interactive mode we do not want to wait for
+            # the kernel to finish before closing it. If we have a kernel in
+            # non-interactive mode, we are doing a run and dump, so we want to wait for
+            # the kernel to finish everything before we close it
+            self.kernel.stop(wait=~self.interactive)
             self.kernel.shutdown()
         if cb:
             cb()
