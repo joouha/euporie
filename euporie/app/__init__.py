@@ -228,6 +228,18 @@ class App(TermMixin, Application):
             "dialog shadow": "bg:#888888",
             "dialog.body": "bg:#b0b0b0 #000000",
             "hr": "fg:#666666",
+            "completion-keyword": "fg:#d700af",
+            "completion-selected-keyword": "fg:#fff bg:#d700ff",
+            "completion-function": "fg:#005faf",
+            "completion-selected-function": "fg:#fff bg:#005fff",
+            "completion-class": "fg:#008700",
+            "completion-selected-class": "fg:#fff bg:#00af00",
+            "completion-statement": "fg:#5f0000",
+            "completion-selected-statement": "fg:#fff bg:#5f0000",
+            "completion-instance": "fg:#d75f00",
+            "completion-selected-instance": "fg:#fff bg:#d78700",
+            "completion-module": "fg:#d70000",
+            "completion-selected-module": "fg:#fff bg:#d70000",
         }
 
         # Using a dynamic style has serious performance issues, so instead we update

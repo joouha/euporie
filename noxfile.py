@@ -130,7 +130,7 @@ def mypy(session: "Session") -> "None":
 
 
 # Pytype does not support 3.10 yet
-@session(python=python_versions - ["3.10"])
+@session(python=["3.8", "3.9"])
 def pytype(session: "Session") -> "None":
     """Type-check using pytype."""
     args = session.posargs or locations

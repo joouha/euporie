@@ -164,6 +164,18 @@ CONFIG_PARAMS: "dict[str, dict]" = {
             Whether to execute a cell immediately after editing in `$EDITOR`.
         """,
     },
+    "autocomplete": {
+        "flags_": ["--autocomplete"],
+        "type": bool,
+        "help": "Provide completion suggestions automatically",
+        "schema_": {
+            "type": "boolean",
+            "default": False,
+        },
+        "description_": """
+            Whether to automatically suggestion completions while typing in code cells.
+        """,
+    },
     "max_notebook_width": {
         "flags_": ["--max-notebook-width"],
         "type": int,

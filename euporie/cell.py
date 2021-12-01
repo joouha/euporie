@@ -8,7 +8,12 @@ from typing import TYPE_CHECKING, Any, Literal
 
 from prompt_toolkit.application.current import get_app
 from prompt_toolkit.buffer import Completion, indent, unindent
-from prompt_toolkit.filters import Condition, has_completions, has_selection
+from prompt_toolkit.filters import (
+    Condition,
+    completion_is_selected,
+    has_completions,
+    has_selection,
+)
 from prompt_toolkit.formatted_text.base import StyleAndTextTuples
 from prompt_toolkit.layout.containers import (
     ConditionalContainer,
@@ -126,6 +131,7 @@ class Cell:
         self.scroll_input = Condition(
             lambda: bool((self.json.get("cell_type") == "markdown") & ~self.rendered)
         )
+        self.autocomplete = Condition(lambda: config.autocomplete)
         self.wrap_input = Condition(lambda: self.json.get("cell_type") == "markdown")
         self.is_editing = Condition(lambda: self.editing)
         self.show_prompt = Condition(lambda: self.cell_type == "code")
@@ -314,13 +320,15 @@ class Cell:
             """Cancel a completion with the escape key."""
             event.current_buffer.cancel_completion()
 
-        @kb.add("enter", filter=has_completions)
+        @kb.add("enter", filter=completion_is_selected)
         def apply_completion(event: "KeyPressEvent") -> "None":
             """Cancel a completion with the escape key."""
             complete_state = event.current_buffer.complete_state
             if complete_state:
-                assert isinstance(complete_state.current_completion, Completion)
-                event.current_buffer.apply_completion(complete_state.current_completion)
+                if isinstance(complete_state.current_completion, Completion):
+                    event.current_buffer.apply_completion(
+                        complete_state.current_completion
+                    )
 
         @kb.add("c-c", filter=self.is_editing, group="Edit Mode", desc="Copy")
         def copy_selection(event: "KeyPressEvent") -> "None":
@@ -430,7 +438,7 @@ class Cell:
             ),
             search_field=self.search_control,
             completer=self.nb.completer,
-            complete_while_typing=False,
+            complete_while_typing=self.autocomplete,
             style="class:cell-input",
         )
         self.input_box.window.cursorline = self.is_editing

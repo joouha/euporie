@@ -36,7 +36,7 @@ class NotebookKernel:
         self.thread.daemon = True
         self.thread.start()
 
-        self.km = AsyncKernelManager(kernel_name=name)
+        self.km = AsyncKernelManager(kernel_name=name or "python")
         self.status = "stopped"
 
     @property
@@ -157,11 +157,30 @@ class NotebookKernel:
         """Request code completions from the kernel."""
         msg_id = self.kc.complete(code, cursor_pos)
         msg = await self.kc.get_shell_msg()
-        if msg["parent_header"].get("msg_id") == msg_id:
+        if (
+            msg["parent_header"].get("msg_id") == msg_id
+            and msg.get("header", {}).get("msg_type") == "complete_reply"
+        ):
             content = msg.get("content", {})
-            rel_start_position = content.get("cursor_start", 0) - cursor_pos
-            for match in content.get("matches", []):
-                yield match, rel_start_position
+            jupyter_types = content.get("metadata", {}).get(
+                "_jupyter_types_experimental"
+            )
+            if jupyter_types:
+                for match in jupyter_types:
+                    rel_start_position = match.get("start", 0) - cursor_pos
+                    completion_type = match.get("type")
+                    completion_type = (
+                        None if completion_type == "<unknown>" else completion_type
+                    )
+                    yield {
+                        "text": match.get("text"),
+                        "start_position": rel_start_position,
+                        "display_meta": completion_type,
+                    }
+            else:
+                rel_start_position = content.get("cursor_start", 0) - cursor_pos
+                for match in content.get("matches", []):
+                    yield {"text": match, "start_position": rel_start_position}
 
     def interrupt(self) -> "None":
         """Interrupt the kernel.

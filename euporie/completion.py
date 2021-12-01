@@ -33,8 +33,13 @@ class KernelCompleter(Completer):
         self, document: Document, complete_event: CompleteEvent
     ) -> "AsyncGenerator[Completion, None]":
         """An asynchronous generator of `Completions`, as returned by the kernel."""
-        async for match, start_position in self.kernel._complete(
+        async for kwargs in self.kernel._complete(
             code=document.text,
             cursor_pos=document.cursor_position,
         ):
-            yield Completion(match, start_position)
+            if completion_type := kwargs.get("display_meta"):
+                kwargs["style"] = f"class:completion-{completion_type}"
+                kwargs[
+                    "selected_style"
+                ] = f"class:completion-selected-{completion_type}"
+            yield Completion(**kwargs)
