@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import re
 from functools import partial
 from typing import TYPE_CHECKING, Any, Literal
 
@@ -11,16 +12,14 @@ from prompt_toolkit.buffer import Completion, indent, unindent
 from prompt_toolkit.filters import (
     Condition,
     completion_is_selected,
+    emacs_mode,
     has_completions,
+    has_focus,
     has_selection,
+    is_done,
 )
 from prompt_toolkit.formatted_text.base import StyleAndTextTuples
-from prompt_toolkit.key_binding.bindings.auto_suggest import load_auto_suggest_bindings
 from prompt_toolkit.key_binding.bindings.named_commands import register
-from prompt_toolkit.key_binding.key_bindings import (
-    ConditionalKeyBindings,
-    merge_key_bindings,
-)
 from prompt_toolkit.layout.containers import (
     ConditionalContainer,
     Container,
@@ -32,6 +31,7 @@ from prompt_toolkit.layout.containers import (
     to_container,
 )
 from prompt_toolkit.layout.controls import FormattedTextControl
+from prompt_toolkit.layout.processors import ConditionalProcessor
 from prompt_toolkit.lexers import DynamicLexer, PygmentsLexer
 from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
 from prompt_toolkit.search import start_search
@@ -42,6 +42,7 @@ from euporie.box import Border
 from euporie.config import config
 from euporie.keys import KeyBindingsInfo
 from euporie.output import Output
+from euporie.suggest import AppendLineAutoSuggestion
 
 if TYPE_CHECKING:
     from prompt_toolkit.key_binding import KeyBindingsBase
@@ -349,12 +350,36 @@ class Cell:
         def paste_clipboard(event: "KeyPressEvent") -> "None":
             event.current_buffer.paste_clipboard_data(get_app().clipboard.get_data())
 
-        return merge_key_bindings(
-            [
-                kb,
-                ConditionalKeyBindings(load_auto_suggest_bindings(), self.is_editing),
-            ]
-        )
+        @Condition
+        def suggesting() -> "bool":
+            app = get_app()
+            return (
+                self.is_editing()
+                and app.current_buffer.suggestion is not None
+                and len(app.current_buffer.suggestion.text) > 0
+                and app.current_buffer.document.is_cursor_at_the_end_of_line
+            )
+
+        @kb.add("c-f", filter=suggesting)
+        @kb.add("c-e", filter=suggesting)
+        @kb.add("right", filter=suggesting)
+        def _accept(event: "KeyPressEvent") -> "None":
+            """Accept suggestion."""
+            b = event.current_buffer
+            suggestion = b.suggestion
+            if suggestion:
+                b.insert_text(suggestion.text)
+
+        @kb.add("escape", "f", filter=suggesting & emacs_mode)
+        def _fill(event: "KeyPressEvent") -> "None":
+            """Fill partial suggestion."""
+            b = event.current_buffer
+            suggestion = b.suggestion
+            if suggestion:
+                t = re.split(r"(\S+\s+)", suggestion.text)
+                b.insert_text(next(x for x in t if x))
+
+        return kb
 
     def exit_edit_mode(self) -> None:
         """Removes a cell from edit mode."""
@@ -398,6 +423,7 @@ class Cell:
         visible_cell = self.nb.get_cell_by_id(self.id)
         if visible_cell:
             visible_cell.output_box.children = visible_cell.rendered_outputs
+        log.debug("Updating output of %s (%s was run)", visible_cell, self)
 
         # Tell the app that the display needs updating
         get_app().invalidate()
@@ -449,6 +475,10 @@ class Cell:
             complete_while_typing=self.autocomplete,
             auto_suggest=self.nb.suggester,
             style="class:cell-input",
+        )
+        self.input_box.control.input_processors[0] = ConditionalProcessor(
+            AppendLineAutoSuggestion(),
+            has_focus(self.input_box.control.buffer) & ~is_done,
         )
         self.input_box.window.cursorline = self.is_editing
         self.input_box.buffer.tempfile_suffix = ".py"

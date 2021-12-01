@@ -8,6 +8,11 @@ from typing import Optional
 from prompt_toolkit.auto_suggest import AutoSuggest, Suggestion
 from prompt_toolkit.buffer import Buffer
 from prompt_toolkit.document import Document
+from prompt_toolkit.layout.processors import (
+    AppendAutoSuggestion,
+    Transformation,
+    TransformationInput,
+)
 
 from euporie.config import config
 from euporie.kernel import NotebookKernel
@@ -48,3 +53,20 @@ class KernelAutoSuggest(AutoSuggest):
                             log.debug("Suggesting %s", suggestion)
                             return Suggestion(suggestion)
         return None
+
+
+class AppendLineAutoSuggestion(AppendAutoSuggestion):
+    """Append the auto suggestion to the current line of the input."""
+
+    def apply_transformation(self, ti: "TransformationInput") -> "Transformation":
+        """Insert fragments at the end of the current line."""
+        if ti.lineno == ti.document.cursor_position_row:
+            buffer = ti.buffer_control.buffer
+
+            if buffer.suggestion and ti.document.is_cursor_at_the_end_of_line:
+                suggestion = buffer.suggestion.text
+            else:
+                suggestion = ""
+            return Transformation(fragments=ti.fragments + [(self.style, suggestion)])
+        else:
+            return Transformation(fragments=ti.fragments)
