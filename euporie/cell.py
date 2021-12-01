@@ -138,6 +138,7 @@ class Cell:
             lambda: bool((self.json.get("cell_type") == "markdown") & ~self.rendered)
         )
         self.autocomplete = Condition(lambda: config.autocomplete)
+        self.autosuggest = Condition(lambda: config.autosuggest)
         self.wrap_input = Condition(lambda: self.json.get("cell_type") == "markdown")
         self.is_editing = Condition(lambda: self.editing)
         self.show_prompt = Condition(lambda: self.cell_type == "code")

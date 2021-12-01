@@ -166,14 +166,28 @@ CONFIG_PARAMS: "dict[str, dict]" = {
     },
     "autocomplete": {
         "flags_": ["--autocomplete"],
+        "action": BooleanOptionalAction,
         "type": bool,
-        "help": "Provide completion suggestions automatically",
+        "help": "Provide completions suggestions automatically",
         "schema_": {
             "type": "boolean",
             "default": False,
         },
         "description_": """
             Whether to automatically suggestion completions while typing in code cells.
+        """,
+    },
+    "autosuggest": {
+        "flags_": ["--autosuggest"],
+        "action": BooleanOptionalAction,
+        "type": bool,
+        "help": "Provide line completion suggestions",
+        "schema_": {
+            "type": "boolean",
+            "default": True,
+        },
+        "description_": """
+            Whether to automatically suggestion line content while typing in code cells.
         """,
     },
     "max_notebook_width": {

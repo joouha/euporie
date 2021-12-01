@@ -247,9 +247,14 @@ class InterfaceMixin(DialogMixin):
                             handler=lambda: config.toggle("run_after_external_edit"),
                         ),
                         SmartMenuItem(
-                            "Autocomplete",
+                            "Auto-complete",
                             toggler=Condition(lambda: bool(config.autocomplete)),
                             handler=lambda: config.toggle("autocomplete"),
+                        ),
+                        SmartMenuItem(
+                            "Auto-suggest",
+                            toggler=Condition(lambda: bool(config.autosuggest)),
+                            handler=lambda: config.toggle("autosuggest"),
                         ),
                     ],
                 ),

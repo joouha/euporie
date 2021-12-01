@@ -9,6 +9,7 @@ from prompt_toolkit.auto_suggest import AutoSuggest, Suggestion
 from prompt_toolkit.buffer import Buffer
 from prompt_toolkit.document import Document
 
+from euporie.config import config
 from euporie.kernel import NotebookKernel
 
 log = logging.getLogger(__name__)
@@ -31,18 +32,19 @@ class KernelAutoSuggest(AutoSuggest):
         self, buff: "Buffer", document: "Document"
     ) -> Optional[Suggestion]:
         """Return suggestions based on matching kernel history."""
-        line = document.current_line
-        if line:
-            suggestions = await self.kernel._history(f"*{line}*")
-            log.debug("Suggestor got suggestions %s", suggestions)
-            if suggestions:
-                _, _, text = suggestions[0]
-                # Find matching line
-                for hist_line in text.split("\n"):
-                    hist_line = hist_line.strip()
-                    if hist_line.startswith(line):
-                        # Return from the match to end from the history line
-                        suggestion = hist_line[len(line) :]
-                        log.debug("Suggesting %s", suggestion)
-                        return Suggestion(suggestion)
+        if config.autosuggest:
+            line = document.current_line.strip()
+            if line:
+                suggestions = await self.kernel._history(f"*{line}*")
+                log.debug("Suggestor got suggestions %s", suggestions)
+                if suggestions:
+                    _, _, text = suggestions[0]
+                    # Find matching line
+                    for hist_line in text.split("\n"):
+                        hist_line = hist_line.strip()
+                        if hist_line.startswith(line):
+                            # Return from the match to end from the history line
+                            suggestion = hist_line[len(line) :]
+                            log.debug("Suggesting %s", suggestion)
+                            return Suggestion(suggestion)
         return None
