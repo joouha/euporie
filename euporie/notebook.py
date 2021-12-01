@@ -22,6 +22,7 @@ from euporie.config import config
 from euporie.containers import PrintingContainer, ScrollingContainer
 from euporie.kernel import NotebookKernel
 from euporie.keys import KeyBindingsInfo
+from euporie.suggest import KernelAutoSuggest
 
 if TYPE_CHECKING:
     from prompt_toolkit.key_binding import KeyBindings
@@ -103,6 +104,7 @@ class Notebook(File):
 
         # Don't load the kernel completer if it won't be needed
         self.completer = KernelCompleter(self.kernel) if self.interactive else None
+        self.suggester = KernelAutoSuggest(self.kernel) if self.interactive else None
 
         # Set up container
         if not self.scroll:

@@ -15,6 +15,12 @@ from prompt_toolkit.filters import (
     has_selection,
 )
 from prompt_toolkit.formatted_text.base import StyleAndTextTuples
+from prompt_toolkit.key_binding.bindings.auto_suggest import load_auto_suggest_bindings
+from prompt_toolkit.key_binding.bindings.named_commands import register
+from prompt_toolkit.key_binding.key_bindings import (
+    ConditionalKeyBindings,
+    merge_key_bindings,
+)
 from prompt_toolkit.layout.containers import (
     ConditionalContainer,
     Container,
@@ -38,7 +44,7 @@ from euporie.keys import KeyBindingsInfo
 from euporie.output import Output
 
 if TYPE_CHECKING:
-    from prompt_toolkit.key_binding import KeyBindings
+    from prompt_toolkit.key_binding import KeyBindingsBase
     from prompt_toolkit.key_binding.key_processor import KeyPressEvent
     from prompt_toolkit.layout.layout import FocusableElement
 
@@ -147,7 +153,7 @@ class Cell:
 
         self.load()
 
-    def load_key_bindings(self) -> "KeyBindings":
+    def load_key_bindings(self) -> "KeyBindingsBase":
         """Loads the key bindings related to cells."""
         kb = KeyBindingsInfo()
 
@@ -240,15 +246,11 @@ class Cell:
             buffer.insert_text(line)
             buffer.cursor_position -= eol
 
-        @kb.add("home", filter=self.is_editing)
-        def smart_home(event: "KeyPressEvent") -> "None":
-            buffer = event.current_buffer
-            buffer.cursor_position += buffer.document.get_start_of_line_position(
-                after_whitespace=buffer.document.get_start_of_line_position(
-                    after_whitespace=True
-                )
-                != 0
-            )
+        def move(n: "int", exit_selection: "bool", event: "KeyPressEvent") -> "None":
+            buff = event.current_buffer
+            if exit_selection:
+                buff.exit_selection()
+            buff.cursor_position += n
 
         @kb.add("enter", filter=self.is_editing)
         def new_line(event: "KeyPressEvent") -> "None":
@@ -346,7 +348,12 @@ class Cell:
         def paste_clipboard(event: "KeyPressEvent") -> "None":
             event.current_buffer.paste_clipboard_data(get_app().clipboard.get_data())
 
-        return kb
+        return merge_key_bindings(
+            [
+                kb,
+                ConditionalKeyBindings(load_auto_suggest_bindings(), self.is_editing),
+            ]
+        )
 
     def exit_edit_mode(self) -> None:
         """Removes a cell from edit mode."""
@@ -439,6 +446,7 @@ class Cell:
             search_field=self.search_control,
             completer=self.nb.completer,
             complete_while_typing=self.autocomplete,
+            auto_suggest=self.nb.suggester,
             style="class:cell-input",
         )
         self.input_box.window.cursorline = self.is_editing
@@ -682,3 +690,17 @@ class Cell:
     def __pt_container__(self) -> "Container":
         """Returns the container which represents this cell."""
         return self.container
+
+
+# The following allow you to move or down a line in a buffer by pressing left or right
+# when at the start or end of a line
+@register("backward-char")
+def backward_char(event: "KeyPressEvent") -> "None":
+    """Move back a character, or up a line."""
+    event.current_buffer.cursor_position -= event.arg
+
+
+@register("forward-char")
+def forward_char(event: "KeyPressEvent") -> "None":
+    """Move forward a character, or down a line."""
+    event.current_buffer.cursor_position += event.arg

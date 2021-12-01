@@ -119,6 +119,7 @@ class NotebookKernel:
             code=cell_json.get("source", ""),
             allow_stdin=False,
             output_hook=partial(self._on_output, cell_json, output_cb),
+            store_history=True,
         )
 
     def _on_output(
@@ -156,11 +157,12 @@ class NotebookKernel:
     async def _complete(self, code: "str", cursor_pos: "int") -> "AsyncGenerator":
         """Request code completions from the kernel."""
         msg_id = self.kc.complete(code, cursor_pos)
-        msg = await self.kc.get_shell_msg()
-        if (
-            msg["parent_header"].get("msg_id") == msg_id
-            and msg.get("header", {}).get("msg_type") == "complete_reply"
-        ):
+        try:
+            msg = await self.kc._async_recv_reply(msg_id, channel="shell")
+        except TimeoutError:
+            log.debug("Time out waiting for completion '%s…'", code[:20])
+        else:
+            log.debug("Got for completion '%s…'", code[:20])
             content = msg.get("content", {})
             jupyter_types = content.get("metadata", {}).get(
                 "_jupyter_types_experimental"
@@ -182,15 +184,30 @@ class NotebookKernel:
                 for match in content.get("matches", []):
                     yield {"text": match, "start_position": rel_start_position}
 
+    async def _history(
+        self, pattern: "str", n: "int" = 1
+    ) -> "list[tuple[int, int, str]]":
+        log.debug("Getting history for %s", pattern)
+        msg_id = self.kc.history(pattern=pattern, n=n, hist_access_type="search")
+        log.debug("Sent message %s", msg_id)
+        responses: "list[tuple[int, int, str]]" = []
+        log.debug("Awaiting response to message %s", msg_id)
+        try:
+            msg = await self.kc._async_recv_reply(msg_id)
+        except TimeoutError:
+            log.debug("Timed out waiting for history matching '%s'", pattern)
+        else:
+            responses += msg.get("content", {}).get("history", [])
+        return responses
+
     def interrupt(self) -> "None":
         """Interrupt the kernel.
 
         This is run synchronously rather than on the event loop in the kernel's thread,
         because otherwise we would have to wait for currently running tasks on the
         kernel's event loop to finish.
-
         """
-        log.debug(f"Interrupting kernel {self.km.kernel_id}")
+        log.debug("Interrupting kernel %s", self.km.kernel_id)
         if self.km.has_kernel:
             KernelManager.interrupt_kernel(self.km)
 
@@ -221,7 +238,7 @@ class NotebookKernel:
 
     async def _restart(self) -> "None":
         await self.km.restart_kernel()
-        log.debug(f"Kernel {self.km.kernel_id} restarted")
+        log.debug("Kernel %s restarted", self.km.kernel_id)
 
     def stop(self, cb: "Optional[Callable]" = None) -> "None":
         """Stops the current kernel.
@@ -230,7 +247,7 @@ class NotebookKernel:
             cb: An optional callback to run when the kernel has stopped.
 
         """
-        log.debug(f"Stopping kernel {self.km.kernel_id}")
+        log.debug("Stopping kernel %s", self.km.kernel_id)
         # This helps us leave a little earlier
         self.interrupt()
         asyncio.run_coroutine_threadsafe(
@@ -242,7 +259,7 @@ class NotebookKernel:
         """Stop the kernel."""
         self.kc.stop_channels()
         await self.km.shutdown_kernel()
-        log.debug(f"Kernel {self.km.kernel_id} shutdown")
+        log.debug("Kernel %s shutdown", self.km.kernel_id)
         if callable(cb):
             cb()
 
