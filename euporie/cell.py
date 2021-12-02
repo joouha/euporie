@@ -18,7 +18,7 @@ from prompt_toolkit.filters import (
     has_selection,
     is_done,
 )
-from prompt_toolkit.formatted_text.base import StyleAndTextTuples
+from prompt_toolkit.formatted_text import to_formatted_text
 from prompt_toolkit.key_binding.bindings.named_commands import register
 from prompt_toolkit.layout.containers import (
     ConditionalContainer,
@@ -45,6 +45,7 @@ from euporie.output import Output
 from euporie.suggest import AppendLineAutoSuggestion
 
 if TYPE_CHECKING:
+    from prompt_toolkit.formatted_text.base import MagicFormattedText, StyleAndTextTuples
     from prompt_toolkit.key_binding import KeyBindingsBase
     from prompt_toolkit.key_binding.key_processor import KeyPressEvent
     from prompt_toolkit.layout.layout import FocusableElement
@@ -67,13 +68,17 @@ class ClickArea:
     Designed to be used as an overlay for clickable widgets in a FloatContainer.
     """
 
-    def __init__(self, target: "FocusableElement"):
+    def __init__(
+        self, target: "FocusableElement", formatted_text: "MagicFormattedText"
+    ):
         """Initiate a click area overlay element, which focuses another element when clicked.
 
         Args:
             target: The element to focus on click.
+            formatted_text: The formatted text to display in the click overlay
 
         """
+        self.formatted_text = formatted_text
         self.target = target
         self.window = Window(
             FormattedTextControl(
@@ -89,11 +94,7 @@ class ClickArea:
             if mouse_event.event_type == MouseEventType.MOUSE_UP:
                 get_app().layout.focus(self.target)
 
-        return [
-            # Use a zero width space to avoid moving shifting the remaining line
-            # and set it to zero width with the [ZeroWidthEscape] style
-            ("class:cell-clickarea [ZeroWidthEscape]", "​", handler),
-        ]
+        return [(style, text, handler) for style, text, *_ in self.formatted_text]
 
     def __pt_container__(self) -> "Container":
         """Return the `ClickArea`'s window with a blank `FormattedTextControl`."""
@@ -115,13 +116,6 @@ class Cell:
         self.editing = False
 
         self.state = "idle"
-
-        ft = FormattedTextControl(
-            Border.TOP_LEFT,
-            focusable=True,
-            show_cursor=False,
-        )
-        self.control = Window(ft, width=1, height=0, style=self.border_style)
 
         self.show_input = Condition(
             lambda: bool(
@@ -449,6 +443,13 @@ class Cell:
 
     def load(self) -> "None":
         """Generates the main container used to represent a notebook cell."""
+        ft = FormattedTextControl(
+            Border.TOP_LEFT,
+            focusable=True,
+            show_cursor=False,
+        )
+        self.control = Window(ft, width=1, height=0, style=self.border_style)
+
         fill = partial(Window, style=self.border_style)
 
         self.search_control = SearchToolbar()
@@ -613,7 +614,14 @@ class Cell:
                     top=0,
                     bottom=0,
                     content=ConditionalContainer(
-                        ClickArea(self), filter=~self.is_focused
+                        ClickArea(
+                            self,
+                            to_formatted_text(
+                                Border.TOP_LEFT,
+                                style="class:frame.border,cell-border",
+                            ),
+                        ),
+                        filter=~self.is_focused,
                     ),
                 ),
             ],
