@@ -45,7 +45,7 @@ from euporie.output import Output
 from euporie.suggest import AppendLineAutoSuggestion
 
 if TYPE_CHECKING:
-    from prompt_toolkit.formatted_text.base import MagicFormattedText, StyleAndTextTuples
+    from prompt_toolkit.formatted_text.base import StyleAndTextTuples
     from prompt_toolkit.key_binding import KeyBindingsBase
     from prompt_toolkit.key_binding.key_processor import KeyPressEvent
     from prompt_toolkit.layout.layout import FocusableElement
@@ -69,7 +69,7 @@ class ClickArea:
     """
 
     def __init__(
-        self, target: "FocusableElement", formatted_text: "MagicFormattedText"
+        self, target: "FocusableElement", formatted_text: "StyleAndTextTuples"
     ):
         """Initiate a click area overlay element, which focuses another element when clicked.
 
@@ -477,6 +477,8 @@ class Cell:
             auto_suggest=self.nb.suggester,
             style="class:cell-input",
         )
+        if self.input_box.control.input_processors is None:
+            self.input_box.control.input_processors = []
         self.input_box.control.input_processors[0] = ConditionalProcessor(
             AppendLineAutoSuggestion(),
             has_focus(self.input_box.control.buffer) & ~is_done,

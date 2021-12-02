@@ -35,7 +35,8 @@ from euporie.config import config
 from euporie.containers import ScrollingContainer
 from euporie.keys import KeyBindingsInfo
 from euporie.menu import SmartMenuItem
-from euporie.notebook import File, Notebook
+from euporie.notebook import Notebook
+from euporie.tab import Tab
 
 if TYPE_CHECKING:
     from prompt_toolkit.key_binding import KeyBindings
@@ -49,13 +50,13 @@ class InterfaceMixin(DialogMixin):
     """Provides user interface."""
 
     pre_run: "list[Callable]"
-    file_op: "Callable"
-    files: "list[File]"
-    file: "AnyContainer"
-    is_file_open: "Condition"
-    close_file: "Callable"
+    tab_op: "Callable"
+    tabs: "list[Tab]"
+    tab: "AnyContainer"
+    is_tab_open: "Condition"
+    close_tab: "Callable"
     update_style: "Callable"
-    cleanup_closed_file: "Callable"
+    cleanup_closed_tab: "Callable"
     exit: "Callable"
     # output: "Optional[Output]"
 
@@ -63,8 +64,6 @@ class InterfaceMixin(DialogMixin):
         """Create an output and set pre-run commands."""
         # Create an output
         self.output = create_output()
-        # Ensure a file is focused if one has been opened
-        self.pre_run.append(lambda: self.file_op("focus"))
         # Set clipboard to use pyperclip if possible
         self.clipboard: "Clipboard"
         if determine_clipboard()[0]:
@@ -72,16 +71,16 @@ class InterfaceMixin(DialogMixin):
         else:
             self.clipboard = InMemoryClipboard()
 
-    def file_container(self) -> "AnyContainer":
-        """Returns a container with all opened files.
+    def tab_container(self) -> "AnyContainer":
+        """Returns a container with all opened tabs.
 
         A 1 column window is added to the left as padding.
 
         Returns:
-            A vertical split containing the opened file containers.
+            A vertical split containing the opened tab containers.
 
         """
-        return VSplit([Window(width=1), *self.files])
+        return VSplit([Window(width=1), *self.tabs])
 
     def layout_container(self) -> "AnyContainer":
         """Builds the main application layout."""
@@ -94,19 +93,22 @@ class InterfaceMixin(DialogMixin):
 
         def get_statusbar_text() -> "list[tuple[str, str]]":
             """Generates the formatted text for the statusbar."""
-            file = self.file
-            assert isinstance(file, Notebook)
-            kernel_status = kernel_status_repr.get(file.kernel.status, "◌")
-            assert isinstance(file.page, ScrollingContainer)
-            selected_cell = file.page.selected_index + 1
-            dirt = "*" if file.dirty else ""
-            return [
-                ("class:menu-bar.item", f" Cell {selected_cell} "),
-                ("", " "),
-                ("class:menu-bar.item bold", f" {dirt}{file.path.name} "),
-                ("", " "),
-                ("class:menu-bar.item", f" {file.kernel_name} {kernel_status} "),
-            ]
+            tab = self.tab
+            if isinstance(tab, Notebook):
+                assert tab.kernel is not None
+                kernel_status = kernel_status_repr.get(tab.kernel.status, "◌")
+                assert isinstance(tab.page, ScrollingContainer)
+                selected_cell = tab.page.selected_index + 1
+                dirt = "*" if tab.dirty else ""
+                return [
+                    ("class:menu-bar.item", f" Cell {selected_cell} "),
+                    ("", " "),
+                    ("class:menu-bar.item bold", f" {dirt}{tab.path.name} "),
+                    ("", " "),
+                    ("class:menu-bar.item", f" {tab.kernel_name} {kernel_status} "),
+                ]
+            else:
+                return []
 
         status_bar_text = FormattedTextControl(
             get_statusbar_text, focusable=True, show_cursor=False
@@ -119,11 +121,11 @@ class InterfaceMixin(DialogMixin):
                 dont_extend_width=True,
                 align=WindowAlign.RIGHT,
             ),
-            filter=self.is_file_open,
+            filter=self.is_tab_open,
         )
 
         self.body_container = MenuContainer(
-            body=DynamicContainer(self.file_container),
+            body=DynamicContainer(self.tab_container),
             menu_items=[
                 MenuItem(
                     " File ",
@@ -135,13 +137,13 @@ class InterfaceMixin(DialogMixin):
                         MenuItem("-", disabled=True),
                         SmartMenuItem(
                             "Save",
-                            handler=lambda: self.file_op("save"),
-                            disabler=~self.is_file_open,
+                            handler=lambda: self.tab_op("save"),
+                            disabler=~self.is_tab_open,
                         ),
                         SmartMenuItem(
                             "Close",
-                            handler=self.close_file,
-                            disabler=~self.is_file_open,
+                            handler=self.close_tab,
+                            disabler=~self.is_tab_open,
                         ),
                         MenuItem("-", disabled=True),
                         MenuItem("Exit", handler=self.try_to_exit),
@@ -152,18 +154,18 @@ class InterfaceMixin(DialogMixin):
                     children=[
                         SmartMenuItem(
                             "Cut Cell",
-                            handler=lambda: self.file_op("cut"),
-                            disabler=~self.is_file_open,
+                            handler=lambda: self.tab_op("cut"),
+                            disabler=~self.is_tab_open,
                         ),
                         SmartMenuItem(
                             "Copy Cell",
-                            handler=lambda: self.file_op("copy"),
-                            disabler=~self.is_file_open,
+                            handler=lambda: self.tab_op("copy"),
+                            disabler=~self.is_tab_open,
                         ),
                         SmartMenuItem(
                             "Paste Cell",
-                            handler=lambda: self.file_op("paste"),
-                            disabler=~self.is_file_open,
+                            handler=lambda: self.tab_op("paste"),
+                            disabler=~self.is_tab_open,
                         ),
                     ],
                 ),
@@ -172,11 +174,11 @@ class InterfaceMixin(DialogMixin):
                     children=[
                         MenuItem(
                             "Run Cell",
-                            handler=lambda: self.file_op("run_cell"),
+                            handler=lambda: self.tab_op("run_cell"),
                         ),
                         MenuItem(
                             "Run All Cells",
-                            handler=lambda: self.file_op("run_all"),
+                            handler=lambda: self.tab_op("run_all"),
                         ),
                     ],
                 ),
@@ -185,18 +187,18 @@ class InterfaceMixin(DialogMixin):
                     children=[
                         SmartMenuItem(
                             "Interupt Kernel",
-                            handler=lambda: self.file_op("interrupt_kernel"),
-                            disabler=~self.is_file_open,
+                            handler=lambda: self.tab_op("interrupt_kernel"),
+                            disabler=~self.is_tab_open,
                         ),
                         SmartMenuItem(
                             "Restart Kernel",
-                            handler=lambda: self.file_op("restart_kernel"),
-                            disabler=~self.is_file_open,
+                            handler=lambda: self.tab_op("restart_kernel"),
+                            disabler=~self.is_tab_open,
                         ),
                         SmartMenuItem(
                             "Change Kernel...",
-                            handler=lambda: self.file_op("change_kernel"),
-                            disabler=~self.is_file_open,
+                            handler=lambda: self.tab_op("change_kernel"),
+                            disabler=~self.is_tab_open,
                         ),
                     ],
                 ),
@@ -324,8 +326,8 @@ class InterfaceMixin(DialogMixin):
 
         @Condition
         def in_edit_mode() -> "bool":
-            if self.file is not None:
-                cell = getattr(self.file, "cell", False)
+            if self.tab is not None:
+                cell = getattr(self.tab, "cell", False)
                 if cell:
                     if cell.is_editing():
                         return True
@@ -339,9 +341,9 @@ class InterfaceMixin(DialogMixin):
         def open(event: "KeyPressEvent") -> None:
             self.ask_open_file()
 
-        @kb.add("c-w", group="Application", desc="Close the current file")
+        @kb.add("c-w", group="Application", desc="Close the current tab")
         def close(event: "KeyPressEvent") -> None:
-            self.close_file(self.file)
+            self.close_tab(self.tab)
 
         @kb.add("c-q", group="Application", desc="Quit euporie")
         def exit(event: "KeyPressEvent") -> None:
@@ -366,41 +368,41 @@ class InterfaceMixin(DialogMixin):
         the closure of the next. The closing process can be cancelled anywhere along
         the chain.
         """
-        if self.files:
+        if self.tabs:
 
             def final_cb() -> "None":
-                """Really exit after the last file in the chain is closed."""
-                self.cleanup_closed_file(self.files[0])
+                """Really exit after the last tab in the chain is closed."""
+                self.cleanup_closed_tab(self.tabs[0])
                 self.exit()
 
             def create_cb(
-                close_file: "File", cleanup_file: "File", cb: "Callable"
+                close_tab: "Tab", cleanup_tab: "Tab", cb: "Callable"
             ) -> "Callable":
-                """Generate a file close chaining callbacks.
+                """Generate a tab close chaining callbacks.
 
-                Cleans up after the previously closed file, and requests to close the
-                next file in the chain.
+                Cleans up after the previously closed tab, and requests to close the
+                next tab in the chain.
 
                 Args:
-                    close_file: The file to close
-                    cleanup_file: The previously closed file to cleanup
+                    close_tab: The tab to close
+                    cleanup_tab: The previously closed tab to cleanup
                     cb: The callback to call when work is complete
 
                 Returns:
-                    A callback function which cleans up `cleanup_file` and closes
-                        `close_file`.
+                    A callback function which cleans up `cleanup_tab` and closes
+                        `close_tab`.
 
                 """
 
                 def inner() -> None:
-                    self.cleanup_closed_file(cleanup_file)
-                    close_file.close(cb=cb)
+                    self.cleanup_closed_tab(cleanup_tab)
+                    close_tab.close(cb=cb)
 
                 return inner
 
             cb = final_cb
-            for close_file, cleanup_file in zip(self.files, self.files[1:]):
-                cb = create_cb(close_file, cleanup_file, cb)
-            self.files[-1].close(cb)
+            for close_tab, cleanup_tab in zip(self.tabs, self.tabs[1:]):
+                cb = create_cb(close_tab, cleanup_tab, cb)
+            self.tabs[-1].close(cb)
         else:
             self.exit()

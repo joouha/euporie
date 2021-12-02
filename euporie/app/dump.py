@@ -48,8 +48,8 @@ class DumpMixin:
 
     # Properties from `App` referred to here
     pre_run: "list[Callable]"
-    files: "list[AnyContainer]"
-    close_file: "Callable"
+    tabs: "list[AnyContainer]"
+    close_tab: "Callable"
     exit: "Callable"
     output: "Output"
     out_file: "IO[str]"
@@ -63,7 +63,7 @@ class DumpMixin:
             self.drawn = True
 
     def setup(self) -> "None":
-        """Patch the renderer and output to print files longer than the screen."""
+        """Patch the renderer and output to print tabs longer than the screen."""
         # Patch the renderer to extend the output height
         renderer._output_screen_diff = _patched_output_screen_diff
 
@@ -126,8 +126,8 @@ class DumpMixin:
     def post_dump(self) -> "None":
         """Close all files and exit the app immediately when dumping files."""
         # Close all the file immediately
-        for file in self.files:
-            self.close_file(file)
+        for tab in self.tabs:
+            self.close_tab(tab)
 
         # Queue exiting the application
         asyncio.get_event_loop().call_soon(self.pre_exit)
@@ -149,19 +149,19 @@ class DumpMixin:
         self.exit()
 
     def layout_container(self) -> "AnyContainer":
-        """Returns a container with all opened files."""
+        """Returns a container with all opened tabs."""
         # Create a horizontal line that takes up the full width of the display
         hr = HorizontalLine()
         hr.window.width = self.output.get_size().columns
 
-        # Add files, separated by horizontal lines
+        # Add tabs, separated by horizontal lines
         contents: "list[Union[Callable, AnyContainer]]" = []
-        for file in self.files:
-            # Wrap each file in a box so it does not expand beyond its maximum width
-            contents.append(Box(file))
+        for tab in self.tabs:
+            # Wrap each tab in a box so it does not expand beyond its maximum width
+            contents.append(Box(tab))
             contents.append(hr)
         # Remove the final horizontal line
-        if self.files:
+        if self.tabs:
             contents.pop()
         return Box(PrintingContainer(contents))
 

@@ -23,6 +23,7 @@ from euporie.containers import PrintingContainer, ScrollingContainer
 from euporie.kernel import NotebookKernel
 from euporie.keys import KeyBindingsInfo
 from euporie.suggest import KernelAutoSuggest
+from euporie.tab import Tab
 
 if TYPE_CHECKING:
     from prompt_toolkit.key_binding import KeyBindings
@@ -33,28 +34,7 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 
-class File:
-    """Base class for file containers."""
-
-    def close(self, cb: "Optional[Callable]") -> "None":
-        """Function to close a file.
-
-        Args:
-            cb: A function to call when the file is closed.
-
-        """
-        pass
-
-    def focus(self) -> "None":
-        """Focuses the file."""
-        pass
-
-    def __pt_container__(self) -> "AnyContainer":
-        """Return the file container object."""
-        pass
-
-
-class Notebook(File):
+class Notebook(Tab):
     """The main notebook container class."""
 
     page: "ScrollingContainer"
@@ -72,6 +52,8 @@ class Notebook(File):
         self.autorun = autorun
         self.inital_ran = False
         self.scroll = scroll
+        self.completer = None
+        self.suggester = None
 
         # Open json file
         if self.path.exists():
@@ -96,21 +78,22 @@ class Notebook(File):
             self.kernel = NotebookKernel(str(self.kernel_name))
             self.kernel.start(self.check_kernel if self.interactive else None)
 
-        # This occurs if we are dumping the notebook and want to run all the cells
-        # before they are printed
-        if not self.interactive and self.autorun:
-            # Wait until the kernel is ready
-            self.kernel.wait()
-            # Run all of the cells
-            for cell_json in self.json["cells"]:
-                # Clear outputs
-                cell_json["outputs"] = []
-                # Run the cell non-interactively
-                self.kernel.run(cell_json)
+            # This occurs if we are dumping the notebook and want to run all the cells
+            # before they are printed
+            if not self.interactive and self.autorun:
+                # Wait until the kernel is ready
+                self.kernel.wait()
+                # Run all of the cells
+                for cell_json in self.json["cells"]:
+                    # Clear outputs
+                    cell_json["outputs"] = []
+                    # Run the cell non-interactively
+                    self.kernel.run(cell_json)
 
-        # Don't load the kernel completer if it won't be needed
-        self.completer = KernelCompleter(self.kernel) if self.interactive else None
-        self.suggester = KernelAutoSuggest(self.kernel) if self.interactive else None
+            # Don't load the kernel completer if it won't be needed
+            if self.interactive:
+                self.completer = KernelCompleter(self.kernel)
+                self.suggester = KernelAutoSuggest(self.kernel)
 
         # Set up container
         if not self.scroll:
@@ -131,6 +114,7 @@ class Notebook(File):
 
     def check_kernel(self) -> "None":
         """Checks if the kernel has started and prompts user if not."""
+        assert self.kernel is not None
         status = self.kernel.status
         if status == "missing":
             self.change_kernel(msg=f"Kernel '{self.kernel_name}' not installed")
@@ -146,6 +130,7 @@ class Notebook(File):
         """Restarts the current `Notebook`'s kernel."""
 
         def _do_restart() -> "None":
+            assert self.kernel is not None
             self.kernel.restart()
 
         self.app.dialog(
@@ -156,6 +141,7 @@ class Notebook(File):
 
     def interrupt_kernel(self) -> "None":
         """Interrupt the current `Notebook`'s kernel."""
+        assert self.kernel is not None
         self.kernel.interrupt()
 
     @property
@@ -167,9 +153,11 @@ class Notebook(File):
         """Displays a dialog for the user to select a new kernel."""
 
         def _change_kernel_cb() -> None:
+            assert self.kernel is not None
             name = options.current_value
             self.kernel.change(name, self.json.setdefault("metadata", {}))
 
+        assert self.kernel is not None
         kernel_specs = self.kernel.specs
         options = RadioList(
             [
@@ -193,11 +181,6 @@ class Notebook(File):
                 "Cancel": None,
             },
         )
-
-    def focus(self) -> "None":
-        """Focus the notebooks."""
-        if hasattr(self, "page"):
-            self.page.focus()
 
     @property
     def cell_renderers(self) -> "list[Union[Callable, AnyContainer]]":
@@ -320,6 +303,7 @@ class Notebook(File):
             cb: An optional callback to run when the cell has finished running
 
         """
+        assert self.kernel is not None
         if index is None:
             index = self.page.selected_index
         cell_json = self.json["cells"][index]
@@ -420,7 +404,7 @@ class Notebook(File):
             # the kernel to finish before closing it. If we have a kernel in
             # non-interactive mode, we are doing a run and dump, so we want to wait for
             # the kernel to finish everything before we close it
-            self.kernel.stop(wait=~self.interactive)
+            self.kernel.stop(wait=not self.interactive)
             self.kernel.shutdown()
         if cb:
             cb()
@@ -434,11 +418,11 @@ class Notebook(File):
         """
         app = cast("App", get_app())
 
-        def yes_cb() -> None:
+        def yes_cb() -> "None":
             self.save()
             self.really_close(cb)
 
-        def no_cb() -> None:
+        def no_cb() -> "None":
             self.really_close(cb)
 
         app.dialog(
@@ -459,7 +443,3 @@ class Notebook(File):
                 "Cancel": None,
             },
         )
-
-    def __pt_container__(self) -> "AnyContainer":
-        """Return the main `Notebook` container object."""
-        return self.container

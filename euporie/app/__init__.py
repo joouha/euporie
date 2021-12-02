@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable, Mapping, Optional, Union
 
@@ -23,7 +24,9 @@ from euporie.app.dump import DumpMixin
 from euporie.app.interface import InterfaceMixin
 from euporie.app.term import TermMixin
 from euporie.config import config
+from euporie.log import setup_logs
 from euporie.notebook import Notebook
+from euporie.tab import Tab
 
 if TYPE_CHECKING:
     from prompt_toolkit.output.base import Output
@@ -50,12 +53,14 @@ class App(TermMixin, Application):
         After euporie specific application variables are instantiated, the application
         instance is initiated.
         """
+        setup_logs()
+
         # Attributes
         self.open_paths: "list[Path]" = []
-        self.files: "list[Notebook]" = []
+        self.tabs: "list[Tab]" = []
         self.last_selected_index: int = 0
         self.loop = None
-        # self.file_container = VSplit([])
+        # self.tab_container = VSplit([])
 
         # Application properties
         self.include_default_pygments_style = False
@@ -66,7 +71,7 @@ class App(TermMixin, Application):
         # Set clipboard
         self.clipboard = DummyClipboard()
         # Conditions
-        self.is_file_open = Condition(lambda: bool(self.files))
+        self.is_tab_open = Condition(lambda: bool(self.tabs))
 
         # Process config
         self.configure()
@@ -76,7 +81,7 @@ class App(TermMixin, Application):
         kwargs: "dict[str, Any]" = {}
 
         if config.dump:
-            # Add  methods for file dumping to this class
+            # Add  methods for tab dumping to this class
             self.mix_in_mixin(DumpMixin)
             # Configure the application
             kwargs.update(
@@ -84,7 +89,7 @@ class App(TermMixin, Application):
             )
 
         else:
-            # Add methods for file dumping to this class
+            # Add methods for tab dumping to this class
             self.mix_in_mixin(InterfaceMixin)
             # Configure the application
             kwargs.update(
@@ -95,16 +100,16 @@ class App(TermMixin, Application):
                 editing_mode=self.get_edit_mode(),
             )
 
+        # Open tabs early, as we need them befor the app is initiated if dumping
+        for file in config.files:
+            self.open_file(file)
+
         # Create an output early so it can terminal attribute detection
         self.setup()
 
         # Set this app as the currently ap in the current app session
         # This is necessary for calls to get_app in UI elements
         _current_app_session.get().app = self
-
-        # Open files
-        for file in config.files:
-            self.open_file(file)
 
         # Update the container in the layout
         self.layout.container = to_container(self.layout_container())
@@ -140,12 +145,12 @@ class App(TermMixin, Application):
 
     @property
     def selected_index(self) -> "int":
-        """Returns the index of the selected file."""
-        # Detect if focused file has changed
+        """Returns the index of the selected tab."""
+        # Detect if focused tab has changed
         # Find index of selected child
         index = 0
-        for i, file in enumerate(self.files):
-            if self.layout.has_focus(file):
+        for i, tab in enumerate(self.tabs):
+            if self.layout.has_focus(tab):
                 index = i
                 break
         else:
@@ -155,11 +160,11 @@ class App(TermMixin, Application):
         return self.last_selected_index
 
     @property
-    def file(self) -> "Optional[Notebook]":
-        """Return the currently selected file container object."""
-        if self.files:
-            index = min(self.selected_index, len(self.files) - 1)
-            return self.files[index]
+    def tab(self) -> "Optional[Tab]":
+        """Return the currently selected tab container object."""
+        if self.tabs:
+            index = min(self.selected_index, len(self.tabs) - 1)
+            return self.tabs[index]
         else:
             return None
 
@@ -266,34 +271,39 @@ class App(TermMixin, Application):
         """
         path = Path(path).expanduser()
         log.info(f"Opening file {path}")
-        open_paths = [x.path for x in self.files]
-        if path in open_paths:
-            log.info(f"File {path} already open, activating")
-            file = self.files[open_paths.index(path)]
+        for tab in self.tabs:
+            if isinstance(tab, Notebook):
+                if path == tab.path:
+                    log.info(f"File {path} already open, activating")
+                    break
         else:
-            self.open_paths.append(path)
-            file = Notebook(
+            tab = Notebook(
                 path,
                 interactive=not config.dump,
                 autorun=config.run,
                 scroll=not bool(config.dump),
             )
-            self.files.append(file)
-        file.focus()
+            self.tabs.append(tab)
 
-    def file_op(
+        # Try focusing this tab if it is focusable
+        try:
+            self.layout.focus(tab)
+        except ValueError:
+            pass
+
+    def tab_op(
         self,
         operation: "str",
-        file: "Optional[Notebook]" = None,
+        tab: "Optional[Tab]" = None,
         args: "Optional[list[Any]]" = None,
         kwargs: "Optional[Mapping[str, Any]]" = None,
     ) -> None:
-        """Call a function from the a file object.
+        """Call a function from the a tab object.
 
         Args:
             operation: The name of the function to attempt to call.
-            file: The instance of the file to close. If `None`, the currently
-                selected file will be closed.
+            tab: The instance of the tab to call. If `None`, the currently
+                selected tab will be used.
             args: List of parameter arguments to pass to the function
             kwargs: Mapping of keyword arguments to pass to the function
 
@@ -302,46 +312,42 @@ class App(TermMixin, Application):
             args = []
         if kwargs is None:
             kwargs = {}
-        if file is None:
-            file = self.file
-        if file and hasattr(file, operation):
-            func = getattr(self.file, operation)
+        if tab is None:
+            tab = self.tab
+        if tab and hasattr(tab, operation):
+            func = getattr(self.tab, operation)
             if callable(func):
                 func(*args, **kwargs)
 
-    def close_file(self, file: "Optional[Notebook]" = None) -> None:
-        """Closes a notebook file.
+    def close_tab(self, tab: "Optional[Tab]" = None) -> None:
+        """Closes a notebook tab.
 
         Args:
-            file: The instance of the file to close. If `None`, the currently
-                selected file will be closed.
+            tab: The instance of the tab to close. If `None`, the currently
+                selected tab will be closed.
 
         """
-        if file is None:
-            file = self.file
-        if file is not None:
-            self.file_op(
-                "close",
-                file=file,
-                kwargs={"cb": lambda: self.cleanup_closed_file(file)},
-            )
+        if tab is None:
+            tab = self.tab
+        if tab is not None:
+            tab.close(cb=partial(self.cleanup_closed_tab, tab))
 
-    def cleanup_closed_file(self, file: "Notebook") -> None:
-        """Remove a file container from the current instance of the app.
+    def cleanup_closed_tab(self, tab: "Tab") -> None:
+        """Remove a tab container from the current instance of the app.
 
         Args:
-            file: The closed instance of the file container
+            tab: The closed instance of the tab container
 
         """
-        # Remove file
-        self.files.remove(file)
-        # Update body container to reflect new file list
+        # Remove tab
+        self.tabs.remove(tab)
+        # Update body container to reflect new tab list
         # assert isinstance(self.body_container.body, HSplit)
-        # self.body_container.body.children[0] = VSplit(self.files)
-        # Focus another file if one exists
-        if self.files:
-            self.file_op("focus")
-        # If a file is not open, the status bar is not shown, so focus the logo, so
+        # self.body_container.body.children[0] = VSplit(self.tabs)
+        # Focus another tab if one exists
+        if self.tab:
+            self.layout.focus(self.tab)
+        # If a tab is not open, the status bar is not shown, so focus the logo, so
         # pressing tab focuses the menu
-        # else:
-        # self.layout.focus(self.logo)
+        else:
+            self.layout.focus_next()

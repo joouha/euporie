@@ -8,11 +8,7 @@ from asyncio import AbstractEventLoop
 from pathlib import Path
 from typing import Any, Callable, Optional
 
-from prompt_toolkit.formatted_text import (
-    AnyFormattedText,
-    fragment_list_to_text,
-    to_formatted_text,
-)
+from prompt_toolkit.formatted_text import AnyFormattedText, fragment_list_to_text
 from prompt_toolkit.layout import Float, HSplit, Layout, Window
 from prompt_toolkit.layout.containers import AnyContainer, FloatContainer, to_container
 from prompt_toolkit.layout.controls import FormattedTextControl
@@ -21,7 +17,8 @@ from prompt_toolkit.widgets import Button, Dialog, Label, TextArea
 
 from euporie import __app_name__, __copyright__, __logo__, __strapline__, __version__
 from euporie.keys import KeyBindingsInfo
-from euporie.log import log_memory
+from euporie.log import LogView
+from euporie.tab import Tab
 from euporie.text import ANSI, FormattedTextArea
 
 log = logging.getLogger(__name__)
@@ -33,6 +30,7 @@ class DialogMixin:
     root_container: "FloatContainer"
     layout: "Layout"
     open_file: "Callable"
+    tabs: "list[Tab]"
 
     def dialog(
         self,
@@ -156,22 +154,13 @@ class DialogMixin:
 
     def help_logs(self) -> None:
         """Displays a dialog with logs."""
-        log_memory.seek(0)
-        log_data = to_formatted_text(ANSI(log_memory.read()))
-
-        body = FormattedTextArea(
-            formatted_text=log_data,
-            multiline=True,
-            focusable=True,
-            wrap_lines=False,
-            width=D(preferred=120),
-            scrollbar=True,
-        )
-        self.dialog(
-            title="Logs",
-            body=body,
-            buttons={"OK": None},
-        )
+        for tab in self.tabs:
+            if isinstance(tab, LogView):
+                break
+        else:
+            tab = LogView()
+            self.tabs.append(tab)
+        self.layout.focus(tab)
 
     def help_about(self) -> None:
         """Displays an about dialog."""

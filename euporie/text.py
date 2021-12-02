@@ -7,14 +7,14 @@ from typing import Any, Generator
 
 from prompt_toolkit.formatted_text import ANSI as PTANSI
 from prompt_toolkit.formatted_text import (
-    AnyFormattedText,
-    FormattedText,
+    StyleAndTextTuples,
     fragment_list_to_text,
     split_lines,
     to_formatted_text,
 )
 from prompt_toolkit.layout.margins import ScrollbarMargin
 from prompt_toolkit.layout.processors import (
+    DynamicProcessor,
     Processor,
     Transformation,
     TransformationInput,
@@ -25,7 +25,7 @@ from prompt_toolkit.widgets import TextArea
 class FormatTextProcessor(Processor):
     """Applies formatted text to a TextArea."""
 
-    def __init__(self, formatted_text: "FormattedText"):
+    def __init__(self, formatted_text: "StyleAndTextTuples"):
         """Initiate the processor.
 
         Args:
@@ -53,7 +53,7 @@ class FormattedTextArea(TextArea):
     """Applies formatted text to a TextArea."""
 
     def __init__(
-        self, formatted_text: "AnyFormattedText", *args: "Any", **kwargs: "Any"
+        self, formatted_text: "StyleAndTextTuples", *args: "Any", **kwargs: "Any"
     ):
         """Initialise a `FormattedTextArea` instance.
 
@@ -63,17 +63,14 @@ class FormattedTextArea(TextArea):
             **kwargs: Key-word arguments to pass to `prompt_toolkit.widgets.TextArea`.
 
         """
-        self.formatted_text = to_formatted_text(formatted_text)
+        self._formatted_text: "StyleAndTextTuples" = []
         input_processors = kwargs.pop("input_processors", [])
-        input_processors.append(FormatTextProcessor(self.formatted_text))
-        text = fragment_list_to_text(self.formatted_text)
-        kwargs.pop("text", "")
+        input_processors.append(DynamicProcessor(self.get_processor))
 
         # The following is not type checked due to a currently open mypy bug
         # https://github.com/python/mypy/issues/6799
         super().__init__(
             *args,
-            text=text,
             input_processors=input_processors,
             **kwargs,
         )  # type: ignore
@@ -82,6 +79,21 @@ class FormattedTextArea(TextArea):
             if isinstance(margin, ScrollbarMargin):
                 margin.up_arrow_symbol = "▲"
                 margin.down_arrow_symbol = "▼"
+
+    def get_processor(self) -> "FormatTextProcessor":
+        """Generate a processor for the formatted text."""
+        return FormatTextProcessor(self.formatted_text)
+
+    @property
+    def formatted_text(self) -> "StyleAndTextTuples":
+        """The formatted text."""
+        return self._formatted_text
+
+    @formatted_text.setter
+    def formatted_text(self, value: "StyleAndTextTuples") -> None:
+        """Sets the formatted text."""
+        self._formatted_text = to_formatted_text(value)
+        self.text = fragment_list_to_text(value)
 
 
 class ANSI(PTANSI):

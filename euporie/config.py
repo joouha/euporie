@@ -83,6 +83,35 @@ CONFIG_PARAMS: "dict[str, dict]" = {
         "action": "version",
         "version": f"%(prog)s {__version__}",
     },
+    "log_file": {
+        "flags_": ["--log-file"],
+        "nargs": "?",
+        "const": "-",
+        "type": Path,
+        "help": "File path for logs",
+        "schema_": {
+            "type": "string",
+            "default": "-",
+        },
+        "description_": """
+            When set to a file path, the log output will be written to the
+            given path. If no value is given (or the default "-" is passed) output
+            will be printed to standard output.
+        """,
+    },
+    "debug": {
+        "flags_": ["--debug"],
+        "action": BooleanOptionalAction,
+        "type": bool,
+        "help": "Include debug output in logs",
+        "schema_": {
+            "type": "boolean",
+            "default": False,
+        },
+        "description_": """
+            When set, logging events at the debug level are emmitted.
+        """,
+    },
     "dump": {
         "flags_": ["--dump"],
         "action": BooleanOptionalAction,

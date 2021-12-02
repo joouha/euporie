@@ -2,6 +2,7 @@
 """Contains the `ScrollingContainer` class, which renders children on the fly."""
 from __future__ import annotations
 
+import logging
 from collections import namedtuple
 from typing import TYPE_CHECKING, Callable, Dict, List, Optional, Sequence, Union, cast
 
@@ -34,6 +35,8 @@ if TYPE_CHECKING:
     from prompt_toolkit.key_binding.key_processor import KeyPressEvent
 
     from euporie.app import App
+
+log = logging.getLogger(__name__)
 
 DrawingPosition = namedtuple(
     "DrawingPosition",
@@ -85,8 +88,12 @@ class ScrollingContainer(Container):
         """Reset the state of rendered children."""
         for c in self.get_children():
             c.reset()
-        self.child_cache = {}
-        self.size_cache = {}
+        # If a child is focused, do not remove it from the cache
+        self.child_cache = {
+            index: child
+            for index, child in self.child_cache.items()
+            if get_app().layout.has_focus(child)
+        }
 
     def preferred_width(self, max_available_width: "int") -> "Dimension":
         """Do not provide a preferred width - grow to fill the avaliable space."""
@@ -123,6 +130,8 @@ class ScrollingContainer(Container):
             z_index: Used for propagating z_index from parent to child.
 
         """
+        self.last_write_position = write_position
+
         self.available_width = write_position.width
         self.available_height = write_position.height
 
@@ -161,7 +170,7 @@ class ScrollingContainer(Container):
             dot = Char(str(config.background_character), "class:background")
             for y in range(ypos, ypos + self.available_height):
                 for xrange in (
-                    (write_position.xpos - 1, xpos - 2),
+                    (write_position.xpos, xpos - 2),
                     (xpos + self.content_width + 2, write_position.width - 0),
                 ):
                     for x in range(*xrange):
@@ -353,7 +362,14 @@ class ScrollingContainer(Container):
 
     def get_children(self) -> "List[Container]":
         """Return a list of the containers of the currently rendered children."""
-        return list(map(to_container, [x[1] for x in sorted(self.child_cache.items())]))
+        if self.child_cache:
+            return list(
+                map(to_container, [x[1] for x in sorted(self.child_cache.items())])
+            )
+        else:
+            # Return the first child if not are rendered yet
+            child = self.get_child(0)
+            return [to_container(child)]
 
     def get_key_bindings(self) -> "KeyBindings":
         """Return the keybindings for the `ScrollingContainer`."""

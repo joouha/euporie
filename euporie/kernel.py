@@ -38,7 +38,7 @@ class NotebookKernel:
         self.kc: "Optional[KernelClient]" = None
         self.km = AsyncKernelManager(kernel_name=name)
         self.status = "stopped"
-        self.error = None
+        self.error: "Optional[RuntimeError]" = None
 
     @property
     def specs(self) -> "dict[str, dict]":
@@ -136,12 +136,13 @@ class NotebookKernel:
     async def _run(self, cell_json: "dict", output_cb: "Optional[Callable]") -> "None":
         # Clear outputs late
         # cell_json["outputs"] = []
-        await self.kc.execute_interactive(
-            code=cell_json.get("source", ""),
-            allow_stdin=False,
-            output_hook=partial(self._on_output, cell_json, output_cb),
-            store_history=True,
-        )
+        if self.kc is not None:
+            await self.kc.execute_interactive(
+                code=cell_json.get("source", ""),
+                allow_stdin=False,
+                output_hook=partial(self._on_output, cell_json, output_cb),
+                store_history=True,
+            )
 
     def _on_output(
         self, cell_json: "dict", cb: "Optional[Callable]", msg: "dict"
@@ -290,7 +291,8 @@ class NotebookKernel:
 
     async def _stop(self, cb: "Optional[Callable]" = None) -> "None":
         """Stop the kernel."""
-        self.kc.stop_channels()
+        if self.kc is not None:
+            self.kc.stop_channels()
         await self.km.shutdown_kernel()
         log.debug("Kernel %s shutdown", self.km.kernel_id)
         if callable(cb):
