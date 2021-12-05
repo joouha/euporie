@@ -546,7 +546,7 @@ class ImageMixin(DataRendererMixin):
             orig_px, orig_py = self.image.size
             # Get the pixel size of one terminal block
             app = cast("App", get_app())
-            char_px, char_py = app.char_size_px
+            char_px, char_py = app.term.char_size_px
             # Scale image down if it is larger than available width
             pixels_per_col = orig_px / char_px
             # Only down-scale images
@@ -591,7 +591,7 @@ class SixelMixerRenderer(ImageRenderer):
 
         """
         return bool(
-            cast("App", get_app()).has_sixel_graphics
+            cast("App", get_app()).term.has_sixel_graphics
             and AnsiImageRenderer.select() is not None
             and SixelRenderer.select() is not None
         )
@@ -664,8 +664,8 @@ class img_sixel_imagemagik(SubprocessRenderMixin, SixelRenderer):
         super().load(data)
         if not hasattr(self, "px"):
             self.px = self.py = 0
-        app = cast("App", get_app())
-        self.bg_color = app.bg_color or "#FFFFFF"
+        term = cast("App", get_app()).term
+        self.bg_color = term.bg_color or "#FFFFFF"
         self.args = [
             "-",
             "-geometry",
@@ -718,7 +718,9 @@ class img_sixel_timg_py(PythonRenderMixin, SixelRenderer):
             self.image.mode == "P" and "transparency" in self.image.info
         ):
             alpha = self.image.convert("RGBA").getchannel("A")
-            bg = Image.new("RGBA", self.image.size, cast("App", get_app()).bg_color)
+            bg = Image.new(
+                "RGBA", self.image.size, cast("App", get_app()).term.bg_color
+            )
             bg.paste(self.image, mask=alpha)
             self.image = bg
         self.image = self.image.convert("P", palette=Image.ADAPTIVE, colors=16).convert(
@@ -755,7 +757,9 @@ class img_sixel_teimpy(PythonRenderMixin, SixelRenderer):
             self.image.mode == "P" and "transparency" in self.image.info
         ):
             alpha = self.image.convert("RGBA").getchannel("A")
-            bg = Image.new("RGBA", self.image.size, cast("App", get_app()).bg_color)
+            bg = Image.new(
+                "RGBA", self.image.size, cast("App", get_app()).term.bg_color
+            )
             bg.paste(self.image, mask=alpha)
             self.image = bg.convert("RGB")
         data = teimpy.get_drawer(teimpy.Mode.SIXEL).draw(np.asarray(self.image))
@@ -768,7 +772,7 @@ class img_kitty(ImageRenderer):
     @classmethod
     def validate(cls) -> "bool":
         """Determine if the terminal supports the kitty graphics protocol."""
-        return bool(cast("App", get_app()).has_kitty_graphics)
+        return bool(cast("App", get_app()).term.has_kitty_graphics)
 
     def process(self, data: "str") -> "Union[bytes, str]":
         """Convert a image to kitty graphics escape sequences which display the image.
@@ -854,7 +858,7 @@ class img_ansi_timg(Base64Mixin, SubprocessRenderMixin, AnsiImageRenderer):
         """Sets the command to use for rendering."""
         super().load(data)
         app = cast("App", get_app())
-        self.bg_color = app.bg_color or "#FFFFFF"
+        self.bg_color = app.term.bg_color or "#FFFFFF"
         self.args = [
             f"-g{self.width}x{self.width}",
             "--compress",
@@ -875,7 +879,7 @@ class img_ansi_chafa(Base64Mixin, SubprocessRenderMixin, AnsiImageRenderer):
         """Sets the command to use for rendering."""
         super().load(data)
         app = cast("App", get_app())
-        self.bg_color = app.bg_color or "#FFFFFF"
+        self.bg_color = app.term.bg_color or "#FFFFFF"
         self.args = [
             f"--size={self.width}x{self.width}",
             "--bg",
@@ -945,7 +949,7 @@ class img_ansi_timg_py(Base64Mixin, PythonRenderMixin, AnsiImageRenderer):
             self.image.mode == "P" and "transparency" in self.image.info
         ):
             alpha = self.image.convert("RGBA").getchannel("A")
-            bg_color = cast("App", get_app()).bg_color
+            bg_color = cast("App", get_app()).term.bg_color
             bg = Image.new("RGBA", self.image.size, bg_color)
             bg.paste(self.image, mask=alpha)
             self.image = bg

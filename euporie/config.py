@@ -86,12 +86,12 @@ CONFIG_PARAMS: "dict[str, dict]" = {
     "log_file": {
         "flags_": ["--log-file"],
         "nargs": "?",
-        "const": "-",
-        "type": Path,
+        "default": "",
+        "type": str,
         "help": "File path for logs",
         "schema_": {
             "type": "string",
-            "default": "-",
+            "default": "",
         },
         "description_": """
             When set to a file path, the log output will be written to the

@@ -172,10 +172,17 @@ def _tiocgwnsz() -> "tuple[int, int, int, int]":
     return rows, cols, xpixels, ypixels
 
 
-class TermMixin:
-    """Mixin for `euporie.app.App` which provides terminal feature properties."""
+class TerminalQuery:
+    """Provides terminal feature properties."""
 
-    output: "Output"
+    def __init__(self, output: "Output") -> "None":
+        """Run when initiating a new terminal query.
+
+        Args:
+            output: The prompt toolkit output to query
+
+        """
+        self.output = output
 
     @property
     def bg_color(self) -> "Optional[str]":

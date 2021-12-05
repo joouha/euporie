@@ -63,10 +63,8 @@ class FormattedTextArea(TextArea):
             **kwargs: Key-word arguments to pass to `prompt_toolkit.widgets.TextArea`.
 
         """
-        self._formatted_text: "StyleAndTextTuples" = []
         input_processors = kwargs.pop("input_processors", [])
         input_processors.append(DynamicProcessor(self.get_processor))
-
         # The following is not type checked due to a currently open mypy bug
         # https://github.com/python/mypy/issues/6799
         super().__init__(
@@ -74,7 +72,8 @@ class FormattedTextArea(TextArea):
             input_processors=input_processors,
             **kwargs,
         )  # type: ignore
-
+        # Set the formatted text to display
+        self.formatted_text: "StyleAndTextTuples" = formatted_text
         for margin in self.window.right_margins:
             if isinstance(margin, ScrollbarMargin):
                 margin.up_arrow_symbol = "▲"

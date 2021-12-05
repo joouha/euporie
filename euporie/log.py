@@ -6,6 +6,7 @@ import logging
 import logging.config
 from bisect import bisect_right
 from collections import deque
+from pathlib import Path
 from typing import IO, Callable, cast
 
 from prompt_toolkit.formatted_text import StyleAndTextTuples
@@ -49,14 +50,20 @@ def setup_logs() -> "None":
                     ),
                     "markup": False,
                 },
-                "file": {
-                    "level": "DEBUG" if config.debug else "ERROR",
-                    "class": "logging.FileHandler",
-                    "filename": "/dev/stdout"
-                    if config.log_file == "-"
-                    else config.log_file,
-                    "formatter": "plain_format",
-                },
+                **(
+                    {
+                        "file": {
+                            "level": "DEBUG" if config.debug else "ERROR",
+                            "class": "logging.FileHandler",
+                            "filename": "/dev/stdout"
+                            if config.log_file == "-"
+                            else config.log_file,
+                            "formatter": "plain_format",
+                        }
+                    }
+                    if config.log_file
+                    else {}
+                ),
                 "internal": {
                     "level": "DEBUG" if config.debug else "INFO",
                     "class": "euporie.log.QueueHandler",
@@ -65,10 +72,12 @@ def setup_logs() -> "None":
             },
             "loggers": {
                 "euporie": {
-                    "handlers": [
-                        "internal",
-                        "stdout" if config.log_file == "-" else "file",
-                    ],
+                    "handlers": ["internal"]
+                    + (
+                        []
+                        if not config.log_file
+                        else ["stdout" if config.log_file == "-" else "file"]
+                    ),
                     "level": "DEBUG" if config.debug else "INFO",
                     "propagate": False,
                 },
@@ -125,15 +134,7 @@ class QueueHandler(logging.Handler):
 class LogView(Tab):
     """A tab which allows you to view log entries."""
 
-    levels = [0, 10, 20, 30, 40, 50, 60]
-    level_colors = [
-        "grey",
-        "blue",
-        "green",
-        "yellow",
-        "red",
-        "red bold",
-    ]
+    path = Path(config.log_file)
 
     def __init__(self) -> "None":
         """Builds the tab's contents.
@@ -152,7 +153,8 @@ class LogView(Tab):
             line_numbers=True,
             search_field=self.search_field,
             focus_on_click=True,
-            wrap_lines=False,
+            wrap_lines=True,
+            dont_extend_width=False,
         )
         self.container = HSplit([self.text_area, self.search_field])
         # Add text to the textarea
@@ -185,15 +187,10 @@ class LogView(Tab):
         record.message = record.getMessage()
         msg = self.formatter.formatMessage(record)
         formatted_record: "StyleAndTextTuples" = [
-            ("#00875f", f"{date} "),
-            (
-                self.level_colors[
-                    max(0, bisect_right(self.levels, record.levelno) - 1)
-                ],
-                f"{record.levelname:>7} ",
-            ),
-            ("ansidefault", f"{msg} "),
-            ("fg:#888888 italic", f"{record.name}.{record.funcName}:{record.lineno} "),
+            ("class:log.date", f"{date} "),
+            (f"class:log.level.{record.levelname}", f"{record.levelname:>7} "),
+            ("class:log.msg", f"{msg} "),
+            ("class:log.ref", f"{record.name}.{record.funcName}:{record.lineno} "),
             ("", "\n"),
         ]
 

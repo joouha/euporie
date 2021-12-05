@@ -5,9 +5,10 @@ from __future__ import annotations
 import logging
 from typing import Optional
 
-from prompt_toolkit.auto_suggest import AutoSuggest, Suggestion
+from prompt_toolkit.auto_suggest import AutoSuggest, ConditionalAutoSuggest, Suggestion
 from prompt_toolkit.buffer import Buffer
 from prompt_toolkit.document import Document
+from prompt_toolkit.filters import Filter, to_filter
 from prompt_toolkit.layout.processors import (
     AppendAutoSuggestion,
     Transformation,
@@ -33,25 +34,41 @@ class KernelAutoSuggest(AutoSuggest):
         """Does nothing."""
         return None
 
-    async def get_suggestion_async(
-        self, buff: "Buffer", document: "Document"
-    ) -> Optional[Suggestion]:
+    async def get_suggestion_async(self, buff: "Buffer", document: "Document"):
         """Return suggestions based on matching kernel history."""
-        if config.autosuggest:
-            line = document.current_line.strip()
-            if line:
-                suggestions = await self.kernel._history(f"*{line}*")
-                log.debug("Suggestor got suggestions %s", suggestions)
-                if suggestions:
-                    _, _, text = suggestions[0]
-                    # Find matching line
-                    for hist_line in text.split("\n"):
-                        hist_line = hist_line.strip()
-                        if hist_line.startswith(line):
-                            # Return from the match to end from the history line
-                            suggestion = hist_line[len(line) :]
-                            log.debug("Suggesting %s", suggestion)
-                            return Suggestion(suggestion)
+        line = document.current_line.strip()
+        if line:
+            suggestions = await self.kernel.history_(f"*{line}*")
+            log.debug("Suggestor got suggestions %s", suggestions)
+            if suggestions:
+                _, _, text = suggestions[0]
+                # Find matching line
+                for hist_line in text.split("\n"):
+                    hist_line = hist_line.strip()
+                    if hist_line.startswith(line):
+                        # Return from the match to end from the history line
+                        suggestion = hist_line[len(line) :]
+                        log.debug("Suggesting %s", suggestion)
+                        return Suggestion(suggestion)
+        return None
+
+
+class ConditionalAutoSuggestAsync(ConditionalAutoSuggest):
+    """
+    Auto suggest that can be turned on and of according to a certain condition.
+    """
+
+    def __init__(self, auto_suggest: AutoSuggest, filter: Union[bool, Filter]) -> None:
+
+        self.auto_suggest = auto_suggest
+        self.filter = to_filter(filter)
+
+    async def get_suggestion_async(
+        self, buffer: "Buffer", document: Document
+    ) -> Optional[Suggestion]:
+        if self.filter():
+            return await self.auto_suggest.get_suggestion_async(buffer, document)
+
         return None
 
 

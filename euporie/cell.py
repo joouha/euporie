@@ -7,7 +7,9 @@ import re
 from functools import partial
 from typing import TYPE_CHECKING, Any, Literal
 
+import nbformat
 from prompt_toolkit.application.current import get_app
+from prompt_toolkit.auto_suggest import ConditionalAutoSuggest
 from prompt_toolkit.buffer import Completion, indent, unindent
 from prompt_toolkit.filters import (
     Condition,
@@ -19,6 +21,7 @@ from prompt_toolkit.filters import (
     is_done,
 )
 from prompt_toolkit.formatted_text import to_formatted_text
+from prompt_toolkit.key_binding.bindings.focus import focus_next, focus_previous
 from prompt_toolkit.key_binding.bindings.named_commands import register
 from prompt_toolkit.layout.containers import (
     ConditionalContainer,
@@ -32,7 +35,7 @@ from prompt_toolkit.layout.containers import (
 )
 from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.layout.processors import ConditionalProcessor
-from prompt_toolkit.lexers import DynamicLexer, PygmentsLexer
+from prompt_toolkit.lexers import DynamicLexer, PygmentsLexer, SimpleLexer
 from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
 from prompt_toolkit.search import start_search
 from prompt_toolkit.widgets import SearchToolbar, TextArea
@@ -42,7 +45,7 @@ from euporie.box import Border
 from euporie.config import config
 from euporie.keys import KeyBindingsInfo
 from euporie.output import Output
-from euporie.suggest import AppendLineAutoSuggestion
+from euporie.suggest import AppendLineAutoSuggestion, ConditionalAutoSuggestAsync
 
 if TYPE_CHECKING:
     from prompt_toolkit.formatted_text.base import StyleAndTextTuples
@@ -60,6 +63,14 @@ def cursor_in_leading_ws() -> "bool":
     """Determine if the cursor of the current buffer is in leading whitespace."""
     before = get_app().current_buffer.document.current_line_before_cursor
     return (not before) or before.isspace()
+
+
+def get_cell_id(cell_json: "dict"):
+    cell_id = cell_json.get("id", "")
+    # Assign a cell id if missing
+    if not cell_id:
+        cell_json["id"] = cell_id = nbformat.v4.new_code_cell().get("id")
+    return cell_id
 
 
 class ClickArea:
@@ -109,6 +120,8 @@ class Cell:
 
     def __init__(self, index: "int", json: "dict", notebook: "Notebook"):
         """Initiate the cell element."""
+        self.container = None
+
         self.index = index
         self.json = json
         self.nb = notebook
@@ -139,8 +152,9 @@ class Cell:
         self.show_prompt = Condition(lambda: self.cell_type == "code")
         self.is_focused = Condition(lambda: self.focused)
         self.obscured = Condition(lambda: self.nb.is_cell_obscured(self.index))
+        self.is_code = Condition(lambda: self.json.get("cell_type") == "code")
         self.show_input_line_numbers = Condition(
-            lambda: bool(self.nb.line_numbers and self.json.get("cell_type") == "code")
+            lambda: self.nb.line_numbers & self.is_code()
         )
 
         self.input_box: TextArea
@@ -161,7 +175,7 @@ class Cell:
             await self.input_box.buffer.open_in_editor()
             exit_edit_mode(event)
             if config.run_after_external_edit:
-                self.run_or_render()
+                await self.run_or_render()
 
         @kb.add(
             "enter",
@@ -313,6 +327,23 @@ class Cell:
         def unindent_buffer(event: "KeyPressEvent") -> "None":
             dent_buffer(event, un=True)
 
+        @kb.add(
+            "tab",
+            filter=self.is_editing & ~self.is_code & ~has_selection & ~has_completions,
+        )
+        def instab(event: "KeyPressEvent") -> "None":
+            from prompt_toolkit.document import Document
+
+            doc = event.current_buffer.document
+            new_text = doc.text_before_cursor + "    " + doc.text_after_cursor
+            event.current_buffer.document = Document(
+                text=new_text, cursor_position=event.current_buffer.cursor_position + 4
+            )
+
+        @kb.add("s-tab", filter=self.is_editing & ~has_selection & ~has_completions)
+        def s_tab(event: "KeyPressEvent") -> "None":
+            pass
+
         @kb.add("escape", filter=has_completions, eager=True)
         def cancel_completion(event: "KeyPressEvent") -> "None":
             """Cancel a completion with the escape key."""
@@ -394,7 +425,7 @@ class Cell:
         """
         if advance:
             # Insert a cell if we are at the last cell
-            n_cells = len(self.nb.page.children)
+            n_cells = len(self.nb.json["cells"])
             if self.nb.page.selected_index == (n_cells) - 1:
                 offset = n_cells - self.nb.page.selected_index
                 self.nb.add(offset)
@@ -409,7 +440,7 @@ class Cell:
             self.state = "queued"
             # Clear output early
             self.clear_output()
-            self.nb.run_cell(self.index, output_cb=self.on_output, cb=self.ran)
+            self.nb.run_cell(self)
 
     def on_output(self) -> "None":
         """Runs when a message for this cell is recieved from the kernel."""
@@ -417,16 +448,13 @@ class Cell:
         visible_cell = self.nb.get_cell_by_id(self.id)
         if visible_cell:
             visible_cell.output_box.children = visible_cell.rendered_outputs
-        log.debug("Updating output of %s (%s was run)", visible_cell, self)
-
+        # Set the outputs
+        self.output_box.children = self.rendered_outputs
         # Tell the app that the display needs updating
         get_app().invalidate()
 
-        self.output_box.children = self.rendered_outputs
-
-    def ran(self) -> "None":
+    def ran(self, cell_json: "dict" = None) -> "None":
         """Callback which runs when the cell has finished running."""
-        # Update the outputs in the visible instance of this cell
         self.state = "idle"
 
     def set_cell_type(self, cell_type: "Literal['markdown','code','raw']") -> "None":
@@ -439,7 +467,7 @@ class Cell:
         if cell_type == "code":
             self.json.setdefault("execution_count", None)
         self.json["cell_type"] = cell_type
-        # self.load()
+        self.output_box.children = self.rendered_outputs
 
     def load(self) -> "None":
         """Generates the main container used to represent a notebook cell."""
@@ -464,17 +492,21 @@ class Cell:
             read_only=~self.is_editing,
             focusable=self.is_editing,
             lexer=DynamicLexer(
-                lambda: PygmentsLexer(
-                    get_lexer_by_name(self.language).__class__,
-                    sync_from_start=False,
+                lambda: (
+                    PygmentsLexer(
+                        get_lexer_by_name(self.language).__class__,
+                        sync_from_start=False,
+                    )
+                    if self.cell_type != "raw"
+                    else SimpleLexer()
                 )
-                if self.cell_type != "raw"
-                else None
             ),
             search_field=self.search_control,
             completer=self.nb.completer,
-            complete_while_typing=self.autocomplete,
-            auto_suggest=self.nb.suggester,
+            complete_while_typing=self.autocomplete & self.is_code,
+            auto_suggest=ConditionalAutoSuggestAsync(
+                self.nb.suggester, filter=self.is_code & self.autosuggest
+            ),
             style="class:cell-input",
         )
         if self.input_box.control.input_processors is None:
@@ -642,15 +674,17 @@ class Cell:
     @property
     def id(self) -> "str":
         """Returns the cell's ID as per the cell JSON."""
-        return self.json.get("id", "")
+        return get_cell_id(self.json)
 
     @property
     def language(self) -> "str":
         """Returns the cell's code language."""
         if self.cell_type == "markdown":
             return "markdown"
-        else:
+        elif self.cell_type == "code":
             return self.nb.json.metadata.get("language_info", {}).get("name", "python")
+        else:
+            return "raw"
 
     @property
     def focused(self) -> "bool":
@@ -730,6 +764,8 @@ class Cell:
 
     def __pt_container__(self) -> "Container":
         """Returns the container which represents this cell."""
+        if not self.container:
+            self.load()
         return self.container
 
 

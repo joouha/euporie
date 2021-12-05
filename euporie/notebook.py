@@ -2,6 +2,7 @@
 """Contains the main class for a notebook file."""
 from __future__ import annotations
 
+import asyncio
 import copy
 import logging
 from functools import partial
@@ -10,18 +11,22 @@ from typing import TYPE_CHECKING, Callable, Optional, Union, cast
 
 import nbformat  # type: ignore
 from prompt_toolkit.application.current import get_app
-from prompt_toolkit.layout.containers import AnyContainer, HSplit, Window
+from prompt_toolkit.formatted_text import HTML
+from prompt_toolkit.layout.containers import AnyContainer, HSplit, VSplit, Window
 from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.layout.dimension import LayoutDimension as D
 from prompt_toolkit.layout.margins import NumberedMargin
-from prompt_toolkit.widgets import Label, RadioList
+from prompt_toolkit.mouse_events import MouseEventType
+from prompt_toolkit.widgets import Box, Label, RadioList
 
-from euporie.cell import Cell
+from euporie.box import Border, BorderLine, Pattern
+from euporie.cell import Cell, get_cell_id
 from euporie.completion import KernelCompleter
 from euporie.config import config
-from euporie.containers import PrintingContainer, ScrollingContainer
+from euporie.containers import PrintingContainer
 from euporie.kernel import NotebookKernel
 from euporie.keys import KeyBindingsInfo
+from euporie.scroll import ScrollBar, ScrollingContainer
 from euporie.suggest import KernelAutoSuggest
 from euporie.tab import Tab
 
@@ -33,11 +38,17 @@ if TYPE_CHECKING:
 
 log = logging.getLogger(__name__)
 
+KERNEL_STATUS_REPR = {
+    "stopped": "⨂",
+    "starting": "◍",
+    "idle": "○",
+    "busy": "●",
+    "error": "☹",
+}
+
 
 class Notebook(Tab):
     """The main notebook container class."""
-
-    page: "ScrollingContainer"
 
     def __init__(
         self,
@@ -45,15 +56,24 @@ class Notebook(Tab):
         interactive: "bool" = True,
         autorun: "bool" = False,
         scroll: "bool" = False,
+        app=None,
     ):
         """Instantiate a Notebook container, using a notebook at a given path."""
         self.path = Path(path).expanduser()
         self.interactive = interactive
         self.autorun = autorun
-        self.inital_ran = False
+        self.autoran = False
         self.scroll = scroll
         self.completer = None
         self.suggester = None
+
+        log.debug(
+            "Loading notebooks %s, interactive=%s, autorun=%s, scroll=%s",
+            self.path,
+            self.interactive,
+            self.autorun,
+            self.scroll,
+        )
 
         # Open json file
         if self.path.exists():
@@ -70,26 +90,19 @@ class Notebook(Tab):
 
         self.container: "AnyContainer"
 
-        self.app = cast("App", get_app())
+        self.app = app or cast("App", get_app())
+
+        self._rendered_cells = {}
 
         # Set up kernel if we're going to need it
         self.kernel = None
+
+        # Set up the kernel
         if self.interactive or self.autorun:
-            self.kernel = NotebookKernel(str(self.kernel_name))
-            self.kernel.start(self.check_kernel if self.interactive else None)
-
-            # This occurs if we are dumping the notebook and want to run all the cells
-            # before they are printed
-            if not self.interactive and self.autorun:
-                # Wait until the kernel is ready
-                self.kernel.wait()
-                # Run all of the cells
-                for cell_json in self.json["cells"]:
-                    # Clear outputs
-                    cell_json["outputs"] = []
-                    # Run the cell non-interactively
-                    self.kernel.run(cell_json)
-
+            self.kernel = NotebookKernel(
+                str(self.kernel_name), threaded=not self.interactive
+            )
+            self.kernel.start(cb=self.check_kernel, wait=not self.interactive)
             # Don't load the kernel completer if it won't be needed
             if self.interactive:
                 self.completer = KernelCompleter(self.kernel)
@@ -98,32 +111,53 @@ class Notebook(Tab):
         # Set up container
         if not self.scroll:
             self.container = PrintingContainer(
-                self.cell_renderers,
+                self.rendered_cells,
                 width=config.max_notebook_width,
             )
 
         else:
             self.page = ScrollingContainer(
-                children=self.cell_renderers,
-                max_content_width=D(preferred=int(config.max_notebook_width)),
+                self.rendered_cells, width=config.max_notebook_width
             )
             # Wrap the scolling container in an hsplit and apply the keybindings
-            # TODO - refactor key-bindings
-            self.container = HSplit([self.page])
-            self.container.key_bindings = self.load_key_bindings()
+            self.container = VSplit(
+                [
+                    VSplit(
+                        [
+                            Pattern(),
+                            BorderLine(width=1, collapse=True),
+                            BorderLine(char=" ", width=1, collapse=True),
+                            self.page,
+                            BorderLine(char=" ", width=1, collapse=True),
+                            BorderLine(width=1, collapse=True),
+                            Pattern(),
+                        ]
+                    ),
+                    Window(ScrollBar(self.page), width=1, style="class:scrollbar"),
+                ],
+                key_bindings=self.load_key_bindings(),
+            )
 
-    def check_kernel(self) -> "None":
+    def check_kernel(self, result=None) -> "None":
         """Checks if the kernel has started and prompts user if not."""
         assert self.kernel is not None
         status = self.kernel.status
-        if status == "missing":
-            self.change_kernel(msg=f"Kernel '{self.kernel_name}' not installed")
+        log.debug("Kernel status is '%s'", status)
+        if self.kernel.missing:
+            self.change_kernel(
+                msg=f"Kernel '{self.kernel_display_name}' not registered"
+            )
         elif status == "error":
             self.app.dialog(
                 "Error Starting Kernel",
                 Label(self.kernel.error.__repr__()),
                 {"OK": None},
             )
+        elif status == "idle" and self.autorun and not self.autoran:
+            self.autoran = True
+            log.debug("Notebook was set to autorun: running all cells")
+            self.run_all(wait=not self.interactive)
+
         self.app.invalidate()
 
     def restart_kernel(self) -> "None":
@@ -148,6 +182,13 @@ class Notebook(Tab):
     def kernel_name(self) -> "str":
         """Return the name of the kernel defined in the notebook JSON."""
         return self.json.get("metadata", {}).get("kernelspec", {}).get("name")
+
+    @property
+    def kernel_display_name(self) -> "str":
+        """Return the display name of the kernel defined in the notebook JSON."""
+        return (
+            self.json.get("metadata", {}).get("kernelspec", {}).get("display_name", "")
+        )
 
     def change_kernel(self, msg: "Optional[str]" = None) -> None:
         """Displays a dialog for the user to select a new kernel."""
@@ -182,18 +223,21 @@ class Notebook(Tab):
             },
         )
 
-    @property
-    def cell_renderers(self) -> "list[Union[Callable, AnyContainer]]":
+    def rendered_cells(self) -> "list[Cell]":
         """Return a list of `Cell` generator functions for the notebooks' cells."""
-        return [
-            partial(Cell, i, cell_json, self)
-            for i, cell_json in enumerate(self.json["cells"])
-        ]
+        cells = {}
+        for i, cell_json in enumerate(self.json.get("cells", [])):
+            cell_id = get_cell_id(cell_json)
+            if cell_id in self._rendered_cells:
+                cells[cell_id] = self._rendered_cells[cell_id]
+            else:
+                cells[cell_id] = Cell(i, cell_json, self)
+        self._rendered_cells = cells
+        return list(self._rendered_cells.values())
 
     def get_cell_by_id(self, cell_id: "str") -> "Optional[Cell]":
         """Returns a reference to the `Cell` container with a given cell id."""
-        for cell in self.page.child_cache.values():
-            assert isinstance(cell, Cell)
+        for cell in self._rendered_cells.values():
             if cell.id == cell_id:
                 break
         else:
@@ -203,6 +247,19 @@ class Notebook(Tab):
     def load_key_bindings(self) -> "KeyBindings":
         """Load the key bindings associate with a `Notebook` container."""
         kb = KeyBindingsInfo()
+
+        if config.debug:
+
+            @kb.add("?", group="Application", desc="Save current file")
+            def debug(event: "KeyPressEvent") -> "None":
+                log.debug(
+                    "Kernel Report:\n- Status: %s\n- ID: %s\n- Missing: %s\n- Events: %s",
+                    self.kernel.status,
+                    self.kernel.id,
+                    self.kernel.missing,
+                    self.kernel.events,
+                )
+                self.check_kernel()
 
         @kb.add("c-s", group="Application", desc="Save current file")
         def save(event: "KeyPressEvent") -> "None":
@@ -249,7 +306,7 @@ class Notebook(Tab):
         @kb.add("l", group="Notebook", desc="Toggle line numbers")
         def line_nos(event: "KeyPressEvent") -> "None":
             self.line_numbers = not self.line_numbers
-            for cell in self.page.child_cache.values():
+            for cell in self.rendered_cells:
                 assert isinstance(cell, Cell)
                 cell.input_box.window.left_margins = (
                     [NumberedMargin()] if self.line_numbers else []
@@ -287,38 +344,29 @@ class Notebook(Tab):
         else:
             return False
 
-    def run_cell(
-        self,
-        index: "Optional[int]" = None,
-        output_cb: "Optional[Callable]" = None,
-        cb: "Optional[Callable]" = None,
-    ) -> "None":
+    def run_cell(self, cell: "Cell", wait: "bool" = False) -> "None":
         """Runs a cell.
 
         Args:
-            index: The index of the cell to run. If ``None``, runs the currently
+            cell: The rendered cell to run. If ``None``, runs the currently
                 selected cell.
-            output_cb: An optional callback to run each time a response message is
-                recieved
-            cb: An optional callback to run when the cell has finished running
 
         """
-        assert self.kernel is not None
-        if index is None:
-            index = self.page.selected_index
-        cell_json = self.json["cells"][index]
-        # Ensure cell gets rendered if it is visible
-        if cb is None and index in self.page.child_cache:
-            cell = cast("Cell", self.page.child_cache[index])
-            cell.run_or_render()
-        else:
-            self.kernel.run(cell_json, output_cb=output_cb, cb=cb)
+        if self.kernel:
+            if cell is None:
+                cell = self.cell
+            cell.clear_output()
+            self.kernel.run(
+                cell.json, output_cb=cell.on_output, done_cb=cell.ran, wait=wait
+            )
 
-    def run_all(self) -> None:
+    def run_all(self, wait: "bool" = False) -> None:
         """Run all cells."""
-        log.debug("Running all cells")
-        for i in range(len(self.page.children)):
-            self.run_cell(i)
+        log.debug("Running all cells (wait=%s)", wait)
+        for cell in self.rendered_cells():
+            log.debug("Running cell %s", cell.id)
+            self.run_cell(cell, wait=wait)
+        log.debug("All cells run")
 
     def add(self, offset: "int") -> "None":
         """Creates a new cell at a given offset from the currently selected cell.
@@ -353,7 +401,11 @@ class Notebook(Tab):
         """Append the contents of the `Notebook`'s clipboard below the current cell."""
         if index is None:
             index = self.page.selected_index
-        self.json["cells"][index + 1 : index + 1] = copy.deepcopy(self.clipboard)
+        cell_jsons = copy.deepcopy(self.clipboard)
+        # Assign a new cell IDs
+        for cell_json in cell_jsons:
+            cell_json["id"] = nbformat.v4.new_code_cell().get("id")
+        self.json["cells"][index + 1 : index + 1] = cell_jsons
         self.dirty = True
         self.refresh(index + 1)
 
@@ -370,7 +422,7 @@ class Notebook(Tab):
         """Refresh the rendered contents of this notebook."""
         if index is None:
             index = self.page.selected_index
-        self.page.children = self.cell_renderers
+        # self.page.children = self.cell_renderers
         self.page.reset()
         self.page._set_selected_index(index, force=True)
 
@@ -399,6 +451,7 @@ class Notebook(Tab):
             cb: A callback to run if after closing the notebook.
 
         """
+        log.debug("Closing notebook '%s'", self.path.name)
         if self.kernel:
             # When closing a notebook in interactive mode we do not want to wait for
             # the kernel to finish before closing it. If we have a kernel in
@@ -443,3 +496,20 @@ class Notebook(Tab):
                 "Cancel": None,
             },
         )
+
+    def statusbar_fields(self):
+        """Generates the formatted text for the statusbar."""
+        return (
+            [
+                f"Cell {self.page.selected_index+1}",
+                "*" if self.dirty else "",
+            ],
+            [
+                ("", self.kernel_display_name, self._statusbar_kernel_handeler),
+                KERNEL_STATUS_REPR[self.kernel.status],
+            ],
+        )
+
+    def _statusbar_kernel_handeler(self, event):
+        if event.event_type == MouseEventType.MOUSE_UP:
+            self.change_kernel()

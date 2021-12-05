@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "euporie"
-version = "0.1.16"
+version = "0.2.0-dev"
 description = "Euporie is a text-based user interface for running and editing Jupyter notebooks"
 authors = ["Josiah Outram Halstead <josiah@halstead.email>"]
 license = "MIT"
@@ -51,7 +51,7 @@ darglint = "^1.8.0"
 nox-poetry = "^0.9.0"
 
 [tool.poetry.scripts]
-euporie = 'euporie.__main__:main'
+euporie = 'euporie.app:App.launch'
 
 [tool.isort]
 profile = "black"

@@ -68,6 +68,7 @@ def precommit(session: Session) -> None:
     args = session.posargs or ["run", "--all-files", "--show-diff-on-failure"]
     session.install(
         "black",
+        "isort",
         "darglint",
         "flake8",
         "flake8-bandit",
