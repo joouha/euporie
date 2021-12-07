@@ -3,22 +3,25 @@
 from __future__ import annotations
 
 import logging
-from typing import Optional
+from typing import TYPE_CHECKING
 
 from prompt_toolkit.auto_suggest import AutoSuggest, ConditionalAutoSuggest, Suggestion
-from prompt_toolkit.buffer import Buffer
-from prompt_toolkit.document import Document
-from prompt_toolkit.filters import Filter, to_filter
-from prompt_toolkit.layout.processors import (
-    AppendAutoSuggestion,
-    Transformation,
-    TransformationInput,
-)
+from prompt_toolkit.filters import to_filter
+from prompt_toolkit.layout.processors import AppendAutoSuggestion, Transformation
 
-from euporie.config import config
-from euporie.kernel import NotebookKernel
+if TYPE_CHECKING:
+    from typing import Optional, Union
+
+    from prompt_toolkit.buffer import Buffer
+    from prompt_toolkit.document import Document
+    from prompt_toolkit.filters import Filter
+    from prompt_toolkit.layout.processors import TransformationInput
+
+    from euporie.kernel import NotebookKernel
 
 log = logging.getLogger(__name__)
+
+__all__ = ["KernelAutoSuggest"]
 
 
 class KernelAutoSuggest(AutoSuggest):
@@ -29,12 +32,14 @@ class KernelAutoSuggest(AutoSuggest):
         self.kernel = kernel
 
     def get_suggestion(
-        self, buffer: "Buffer", document: Document
+        self, buffer: "Buffer", document: "Document"
     ) -> Optional[Suggestion]:
         """Does nothing."""
         return None
 
-    async def get_suggestion_async(self, buff: "Buffer", document: "Document"):
+    async def get_suggestion_async(
+        self, buff: "Buffer", document: "Document"
+    ) -> "Optional[Suggestion]":
         """Return suggestions based on matching kernel history."""
         line = document.current_line.strip()
         if line:
@@ -54,18 +59,25 @@ class KernelAutoSuggest(AutoSuggest):
 
 
 class ConditionalAutoSuggestAsync(ConditionalAutoSuggest):
-    """
-    Auto suggest that can be turned on and of according to a certain condition.
-    """
+    """Auto suggest that can be turned on and of according to a certain condition."""
 
-    def __init__(self, auto_suggest: AutoSuggest, filter: Union[bool, Filter]) -> None:
+    def __init__(
+        self, auto_suggest: "AutoSuggest", filter: "Union[bool, Filter]"
+    ) -> "None":
+        """An asyncronous conditional autosuggestion wrapper.
 
+        Args:
+            auto_suggest: The :class:`AutoSuggest` to use to retrieve suggestions
+            filter: The filter use to determine if autosuggestions should be retrieved
+
+        """
         self.auto_suggest = auto_suggest
         self.filter = to_filter(filter)
 
     async def get_suggestion_async(
-        self, buffer: "Buffer", document: Document
-    ) -> Optional[Suggestion]:
+        self, buffer: "Buffer", document: "Document"
+    ) -> "Optional[Suggestion]":
+        """Get suggestions asynchronously if the filter allows."""
         if self.filter():
             return await self.auto_suggest.get_suggestion_async(buffer, document)
 

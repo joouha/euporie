@@ -2,14 +2,19 @@
 """Defines KeyBindings wrapper which keeps track of key binding descriptions."""
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Callable, Optional, Union, cast
+from typing import TYPE_CHECKING, cast
 
-from prompt_toolkit.formatted_text import FormattedText, to_formatted_text
+from prompt_toolkit.formatted_text import to_formatted_text
 from prompt_toolkit.key_binding import KeyBindings
-from prompt_toolkit.keys import Keys
 
 if TYPE_CHECKING:
+    from typing import Any, Callable, Optional, Union
+
+    from prompt_toolkit.formatted_text import FormattedText
     from prompt_toolkit.key_binding.key_bindings import T
+    from prompt_toolkit.keys import Keys
+
+__all__ = ["KeyBindingsInfo"]
 
 
 class KeyBindingsInfo(KeyBindings):

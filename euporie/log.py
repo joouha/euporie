@@ -4,12 +4,10 @@ from __future__ import annotations
 
 import logging
 import logging.config
-from bisect import bisect_right
 from collections import deque
 from pathlib import Path
-from typing import IO, Callable, cast
+from typing import TYPE_CHECKING, cast
 
-from prompt_toolkit.formatted_text import StyleAndTextTuples
 from prompt_toolkit.layout.containers import HSplit
 from prompt_toolkit.patch_stdout import StdoutProxy
 from prompt_toolkit.widgets import SearchToolbar
@@ -18,6 +16,13 @@ from rich.console import Console
 from euporie.config import config
 from euporie.tab import Tab
 from euporie.text import FormattedTextArea
+
+if TYPE_CHECKING:
+    from typing import IO, Callable
+
+    from prompt_toolkit.formatted_text import StyleAndTextTuples
+
+__all__ = ["setup_logs", "QueueHandler", "LogView"]
 
 LOG_QUEUE: "deque" = deque(maxlen=1000)
 
@@ -134,7 +139,10 @@ class QueueHandler(logging.Handler):
 class LogView(Tab):
     """A tab which allows you to view log entries."""
 
-    path = Path(config.log_file)
+    @property
+    def path(self) -> "str":
+        """Returns the path of the log file (or the string ``Logs``)."""
+        return Path(config.log_file) or "Logs"
 
     def __init__(self) -> "None":
         """Builds the tab's contents.
@@ -170,7 +178,6 @@ class LogView(Tab):
             record: The log record to add
 
         """
-        # self.text_area.formatted_text = self.text_area.formatted_tetxt + self.render(record)
         self.text_area.formatted_text += self.render(record)
 
     def render(self, record: "logging.LogRecord") -> "StyleAndTextTuples":

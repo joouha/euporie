@@ -10,6 +10,8 @@ from typing import IO, Callable, Optional, cast
 
 from prompt_toolkit.output import Output
 
+__all__ = ["QueryCodes", "QueryResponsePatterns", "TerminalQuery"]
+
 CONTROL_RE = re.compile(
     r"""
 \x1b

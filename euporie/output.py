@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 from pathlib import PurePath
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from prompt_toolkit.layout import Window
-from prompt_toolkit.layout.controls import FormattedTextControl, UIControl
+from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.widgets import Label
 from rich.markdown import Markdown
 
@@ -16,9 +16,14 @@ from euporie.control import HTMLControl, ImageControl, RichControl, SVGControl
 from euporie.text import ANSI
 
 if TYPE_CHECKING:
+    from typing import Any
+
     from prompt_toolkit.layout.containers import AnyContainer
+    from prompt_toolkit.layout.controls import UIControl
 
     from euporie.cell import Cell
+
+__all__ = ["calculate_bling", "Output"]
 
 BLING_SCORES = {
     "image/*": 0,
@@ -58,7 +63,7 @@ class Output:
         self.style = ""
         self.content: AnyContainer
 
-        control: UIControl
+        control: "UIControl"
 
         # Sort data first so there is more bling first
         for mime, datum in sorted(self.data.items(), key=calculate_bling):

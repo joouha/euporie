@@ -3,39 +3,14 @@
 from __future__ import annotations
 
 import logging
-from collections import namedtuple
-from typing import TYPE_CHECKING, Callable, Dict, List, Optional, Sequence, Union, cast
+from typing import Callable, Optional, Union
 
-from prompt_toolkit.application.current import get_app
-from prompt_toolkit.data_structures import Point
-from prompt_toolkit.filters import FilterOrBool, to_filter
-from prompt_toolkit.layout.containers import (
-    AnyContainer,
-    Container,
-    Window,
-    to_container,
-)
-from prompt_toolkit.layout.dimension import (
-    AnyDimension,
-    Dimension,
-    max_layout_dimensions,
-    to_dimension,
-)
-from prompt_toolkit.layout.mouse_handlers import MouseHandler, MouseHandlers
-from prompt_toolkit.layout.screen import Char, Screen, WritePosition
-from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
-from prompt_toolkit.utils import to_str
+from prompt_toolkit.layout.containers import AnyContainer, Container, to_container
+from prompt_toolkit.layout.dimension import AnyDimension, Dimension, to_dimension
+from prompt_toolkit.layout.mouse_handlers import MouseHandlers
+from prompt_toolkit.layout.screen import Screen, WritePosition
 
-from euporie.box import Border
-from euporie.cell import Cell
-from euporie.config import config
-from euporie.keys import KeyBindingsInfo
-
-if TYPE_CHECKING:
-    from prompt_toolkit.key_binding import KeyBindings
-    from prompt_toolkit.key_binding.key_processor import KeyPressEvent
-
-    from euporie.app import App
+__all__ = ["PrintingContainer"]
 
 log = logging.getLogger(__name__)
 
@@ -97,6 +72,7 @@ class PrintingContainer(Container):
 
     @property
     def children(self) -> "list[AnyContainer]":
+        """Returns the container's children."""
         if callable(self._children):
             return self._children()
         else:

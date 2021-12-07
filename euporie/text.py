@@ -3,23 +3,25 @@
 from __future__ import annotations
 
 import re
-from typing import Any, Generator
+from typing import TYPE_CHECKING
 
 from prompt_toolkit.formatted_text import ANSI as PTANSI
 from prompt_toolkit.formatted_text import (
-    StyleAndTextTuples,
     fragment_list_to_text,
     split_lines,
     to_formatted_text,
 )
 from prompt_toolkit.layout.margins import ScrollbarMargin
-from prompt_toolkit.layout.processors import (
-    DynamicProcessor,
-    Processor,
-    Transformation,
-    TransformationInput,
-)
+from prompt_toolkit.layout.processors import DynamicProcessor, Processor
 from prompt_toolkit.widgets import TextArea
+
+if TYPE_CHECKING:
+    from typing import Any, Generator
+
+    from prompt_toolkit.formatted_text import StyleAndTextTuples
+    from prompt_toolkit.layout.processors import Transformation, TransformationInput
+
+__all__ = ["FormatTextProcessor", "FormattedTextArea", "ANSI"]
 
 
 class FormatTextProcessor(Processor):

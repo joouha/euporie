@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
+"""Concerns dumping output."""
 import asyncio
+import io
 import logging
 import os
 import sys
-from typing import cast
+from typing import TYPE_CHECKING
 
 from prompt_toolkit import renderer
 from prompt_toolkit.data_structures import Size
@@ -15,11 +17,20 @@ from euporie.app.base import BaseApp
 from euporie.config import config
 from euporie.containers import PrintingContainer
 
+if TYPE_CHECKING:
+    from typing import Any, Callable, Optional, Union
+
+    from prompt_toolkit.data_structures import Point
+    from prompt_toolkit.layout.container import AnyContainer
+
 log = logging.getLogger(__name__)
 
 
 class DumpApp(BaseApp):
-    def __init__(self, **kwargs):
+    """An application which dumps the layout to the output then exits."""
+
+    def __init__(self, **kwargs: "Any") -> "None":
+        """Create an app for dumping a prompt-toolkit layout."""
         super().__init__(
             full_screen=False,
             notebook_kwargs=dict(
@@ -50,8 +61,16 @@ class DumpApp(BaseApp):
 
         return PrintingContainer(contents)
 
-    def load_output(self):
-        """"""
+    def load_output(self) -> "AnyContainer":
+        """Loads the output.
+
+        Depending on the application configuration, will set the output to a file, to
+        stdout, or to a temporary file so the output can be displayed in a pager.
+
+        Returns:
+            A container for notebook output
+
+        """
         if config.page and sys.stdout.isatty():
             # Use a temporary file as display output if we are going to page the output
             from tempfile import TemporaryFile
@@ -83,7 +102,6 @@ class DumpApp(BaseApp):
                     )
                     self.output_file = sys.stdout
 
-        self.output_file = cast("TextIO", self.output_file)
         # Ensure we do not recieve the "Output is not a terminal" message
         Vt100_Output._fds_not_a_terminal.add(self.output_file.fileno())
         # Set environment variable to disable character position requests
@@ -102,7 +120,7 @@ class DumpApp(BaseApp):
             super()._redraw(render_as_done=True)
             self.rendered = True
 
-    def post_dump(self):
+    def post_dump(self) -> "None":
         """Close all files and exit the app."""
         log.debug("Gathering background tasks")
         asyncio.gather(*self.background_tasks)
@@ -113,7 +131,7 @@ class DumpApp(BaseApp):
 
         self.loop.call_soon(self.pre_exit)
 
-    def pre_exit(self):
+    def pre_exit(self) -> "None":
         """Close the app after dumping, optionally piping output to a pager."""
         # Display pager if needed
         if config.page:
@@ -130,7 +148,7 @@ class DumpApp(BaseApp):
 def _patched_output_screen_diff(
     *args: "Any", **kwargs: "Any"
 ) -> "tuple[Point, Optional[str]]":
-
+    """Function used to monkey-patch the renderer to extend the application height."""
     # Remove ZWE from screen
     # from collections import defaultdict
     # args[2].zero_width_escapes = defaultdict(lambda: defaultdict(lambda: ""))

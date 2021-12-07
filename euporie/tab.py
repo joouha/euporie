@@ -4,15 +4,21 @@ from __future__ import annotations
 
 import logging
 from abc import ABCMeta
-from pathlib import Path
-from typing import Callable, Optional
+from typing import TYPE_CHECKING
 
 from prompt_toolkit.application.current import get_app
-from prompt_toolkit.formatted_text import StyleAndTextTuples
-from prompt_toolkit.layout.containers import AnyContainer
 from prompt_toolkit.layout.dimension import Dimension, to_dimension
 
+if TYPE_CHECKING:
+    from pathlib import Path
+    from typing import Callable, Optional
+
+    from prompt_toolkit.formatted_text import AnyFormattedText
+    from prompt_toolkit.layout.containers import AnyContainer
+
 log = logging.getLogger(__name__)
+
+__all__ = ["Tab"]
 
 
 class Tab(metaclass=ABCMeta):
@@ -25,7 +31,7 @@ class Tab(metaclass=ABCMeta):
 
     def statusbar_fields(
         self,
-    ) -> "tuple[list[AnyFormattedText], list[AnyFormattedText])":
+    ) -> "tuple[list[AnyFormattedText], list[AnyFormattedText]]":
         """Returns a list of statusbar field values shown then this tab is active."""
         return ([], [])
 
@@ -43,8 +49,8 @@ class Tab(metaclass=ABCMeta):
         """Focuses the tab."""
         try:
             get_app().layout.focus(self.container)
-        except:
-            pass
+        except Exception:
+            log.debug("Could not focus %s", self)
 
     def __pt_container__(self) -> "AnyContainer":
         """Return the main container object."""

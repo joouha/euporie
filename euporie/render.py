@@ -12,7 +12,7 @@ from abc import ABCMeta, abstractmethod
 from importlib import import_module
 from math import ceil
 from shutil import which
-from typing import TYPE_CHECKING, Any, Optional, Type, Union, cast
+from typing import TYPE_CHECKING
 
 import rich
 from PIL import Image  # type: ignore
@@ -22,6 +22,7 @@ from euporie.box import Border
 
 if TYPE_CHECKING:
     from os import PathLike
+    from typing import Any, Optional, Type, Union, cast
 
     from euporie.app import App
     from euporie.cell import Cell

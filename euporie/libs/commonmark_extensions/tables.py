@@ -11,6 +11,8 @@ import commonmark
 import commonmark.blocks
 import commonmark.node
 
+__all__ = ["BlockStarts", "Table"]
+
 commonmark.blocks.reMaybeSpecial = re.compile(r"^[#`~*+_=<>0-9-|]")
 
 

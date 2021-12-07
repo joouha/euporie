@@ -5,10 +5,11 @@ from __future__ import annotations
 import logging
 from functools import partial
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable, Mapping, Optional, Union
+from typing import TYPE_CHECKING, Any, Optional, Union
 
 from prompt_toolkit.application import Application, get_app_session
 from prompt_toolkit.filters import Condition, Filter
+from prompt_toolkit.key_binding import KeyBindings, KeyPressEvent
 from prompt_toolkit.layout import Layout
 from prompt_toolkit.layout.containers import Window
 from prompt_toolkit.output.defaults import create_output
@@ -25,7 +26,12 @@ from euporie.config import config
 from euporie.keys import KeyBindingsInfo
 from euporie.log import setup_logs
 from euporie.notebook import Notebook
+from euporie.tab import Tab
 from euporie.term import TerminalQuery
+
+if TYPE_CHECKING:
+    from prompt_toolkit.layout.container import AnyContainer
+    from prompt_toolkit.output import Output
 
 log = logging.getLogger(__name__)
 
@@ -37,6 +43,7 @@ class BaseApp(Application):
     wide methods can be easily added.
     """
 
+    # This configures the logs for euporie
     setup_logs()
 
     def __init__(self, **kwargs: "Any") -> "None":
@@ -44,6 +51,10 @@ class BaseApp(Application):
 
         After euporie specific application variables are instantiated, the application
         instance is initiated.
+
+        Args:
+            **kwargs: The key-word arguments for the :py:class:`Application`
+
         """
         # Set app super early
         get_app_session().app = self
@@ -78,23 +89,36 @@ class BaseApp(Application):
         self.pre_run_callables = pre_run
 
     @classmethod
-    def launch(cls) -> None:
+    def launch(cls) -> "None":
         """Launches the app, opening any command line arguments as files."""
         app = cls()
         app.run()
 
     def load_container(self) -> "AnyContainer":
+        """Loads the root container for this application.
+
+        Returns:
+            The root container for this app
+
+        """
         return Window()
 
-    def load_output(self):
+    def load_output(self) -> "Output":
+        """Creates the output for this application to use.
+
+        Returns:
+            A prompt-toolkit output instance
+
+        """
         return create_output()
 
-    def open_files(self):
+    def open_files(self) -> "None":
+        """Opens the files defined in the configuration."""
         for file in config.files:
             self.open_file(file)
 
     def open_file(self, path: "Union[str, Path]", read_only: "bool" = False) -> None:
-        """Creates a tab for a file
+        """Creates a tab for a file.
 
         Args:
             path: The file path of the notebooknotebook file to open

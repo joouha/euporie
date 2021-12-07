@@ -2,13 +2,17 @@
 """Defines a smarter menu item."""
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Callable, Optional, Sequence, Union
+from typing import TYPE_CHECKING
 
 from prompt_toolkit.widgets.menus import MenuItem
 
 if TYPE_CHECKING:
+    from typing import Any, Callable, Optional, Sequence, Union
+
     from prompt_toolkit.filters import Filter
     from prompt_toolkit.keys import Keys
+
+__all__ = ["SmartMenuItem"]
 
 
 class SmartMenuItem(MenuItem):

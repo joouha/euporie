@@ -4,33 +4,34 @@ from __future__ import annotations
 
 import logging
 from collections import namedtuple
-from typing import TYPE_CHECKING, Callable, Dict, List, Optional, Sequence, Union, cast
+from typing import TYPE_CHECKING
 
 from prompt_toolkit.application.current import get_app
 from prompt_toolkit.data_structures import Point
-from prompt_toolkit.layout.containers import (
-    AnyContainer,
-    Container,
-    HSplit,
-    Window,
-    to_container,
-)
-from prompt_toolkit.layout.controls import FormattedTextControl, UIContent, UIControl
-from prompt_toolkit.layout.dimension import AnyDimension, Dimension
-from prompt_toolkit.layout.mouse_handlers import MouseHandler, MouseHandlers
+from prompt_toolkit.layout.containers import Container, Window, to_container
+from prompt_toolkit.layout.controls import UIContent, UIControl
+from prompt_toolkit.layout.dimension import Dimension
+from prompt_toolkit.layout.mouse_handlers import MouseHandlers
 from prompt_toolkit.layout.screen import Char, Screen, WritePosition
-from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
+from prompt_toolkit.mouse_events import MouseEvent
 from prompt_toolkit.utils import to_str
 
 from euporie.keys import KeyBindingsInfo
 
 if TYPE_CHECKING:
+    from typing import Callable, Dict, List, Optional, Sequence, Union
+
+    from prompt_toolkit.formatted_text import AnyFormattedText, FormattedText
     from prompt_toolkit.key_binding import KeyBindings
     from prompt_toolkit.key_binding.key_processor import KeyPressEvent
-
-    from euporie.app import App
+    from prompt_toolkit.layout.containers import AnyContainer
+    from prompt_toolkit.layout.dimension import AnyDimension
+    from prompt_toolkit.layout.mouse_handlers import MouseHandler
+    from prompt_toolkit.mouse_events import MouseEventType
 
 log = logging.getLogger(__name__)
+
+__all__ = ["DrawingPosition", "ScrollingContainer", "ScrollBar"]
 
 
 DrawingPosition = namedtuple(
@@ -228,14 +229,14 @@ class ScrollingContainer(Container):
         screen.draw_all_floats()
 
         # Wrap all the mouse handlers to add mouse scrolling
-        mouse_handler_wrappers: Dict[MouseHandler, MouseHandler] = {}
+        mouse_handler_wrappers: "Dict[MouseHandler, MouseHandler]" = {}
 
         def _wrap_mouse_handler(
             handler: "Callable",
         ) -> "Callable[[MouseEvent], object]":
             if handler not in mouse_handler_wrappers:
 
-                def wrapped_mouse_handler(mouse_event: MouseEvent) -> "None":
+                def wrapped_mouse_handler(mouse_event: "MouseEvent") -> "None":
                     if mouse_event.event_type == MouseEventType.SCROLL_DOWN:
                         self.scroll(-1)
                     elif mouse_event.event_type == MouseEventType.SCROLL_UP:
@@ -256,7 +257,8 @@ class ScrollingContainer(Container):
     # End of container methods
 
     @property
-    def children(self):
+    def children(self) -> "None":
+        """Return the current children of this contianer instance."""
         if callable(self._children):
             return self._children()
         else:
@@ -272,7 +274,7 @@ class ScrollingContainer(Container):
             self.scroll(-1)
 
         @kb.add("{", group="Navigation", desc="Scroll up more")
-        def su(event: "KeyPressEvent") -> None:
+        def sum(event: "KeyPressEvent") -> None:
             self.scroll(-5)
 
         @kb.add("]", group="Navigation", desc="Scroll down")
@@ -280,7 +282,7 @@ class ScrollingContainer(Container):
             self.scroll(1)
 
         @kb.add("}", group="Navigation", desc="Scroll down more")
-        def sd(event: "KeyPressEvent") -> None:
+        def sdm(event: "KeyPressEvent") -> None:
             self.scrol(5)
 
         @kb.add("c-up", group="Navigation", desc="Go to first cell")
@@ -503,8 +505,13 @@ class ScrollingContainer(Container):
         else:
             self.selected_child_position = new_top
 
-    def scroll(self, n=1) -> "None":
-        """Scrolls up 1 row."""
+    def scroll(self, n: "int" = 1) -> "None":
+        """Scrolls up or down a number of rows.
+
+        Args:
+            n: The number of rows to scroll, negative for up, positive for down
+
+        """
         for drawing in self.to_draw:
             if drawing.index == 0:
                 if n > 0 and drawing.top + n > 0:
@@ -570,28 +577,35 @@ class ScrollingContainer(Container):
 
 
 class ScrollBar(UIControl):
+    """A verical scrollbar for :py:class:`ScrollingContainer`."""
 
     arrows = "▲▼"
     eighths = "█▇▆▅▄▃▂▁"
 
-    def __init__(self, target):
-        """"""
+    def __init__(self, target: "ScrollingContainer") -> "None":
+        """Create a varical scrollbar for a :py:class:`ScrollingContainer` instance."""
         self.target = target
 
-    def preferred_width(self, max_available_width: int) -> Optional[int]:
+    def preferred_width(self, max_available_width: "int") -> "int":
+        """Return the preferred width of this scrollbar."""
         return 1
 
     def preferred_height(
         self,
-        width: int,
-        max_available_height: int,
-        wrap_lines: bool,
-        get_line_prefix: Optional[GetLinePrefixCallable],
-    ) -> Optional[int]:
+        width: "int",
+        max_available_height: "int",
+        wrap_lines: "bool",
+        get_line_prefix: "Optional[Callable[[int, int], AnyFormattedText]]",
+    ) -> "Optional[int]":
+        """Get the preferred height of the scrollbar: all of the height available."""
         return max_available_height
 
-    def create_content(self, width: int, height: int) -> "UIContent":
-        """Generate the content for this scrollbar
+    def create_content(self, width: "int", height: "int") -> "UIContent":
+        """Generate the content for this scrollbar.
+
+        Args:
+            width: The height available
+            height: The width available
 
         Returns:
             A :class:`UIContent` instance.
@@ -623,7 +637,16 @@ class ScrollBar(UIControl):
             show_cursor=False,
         )
 
-    def get_line(self, line):
+    def get_line(self, line: "int") -> "FormattedText":
+        """Get style-and-text tuples for a particular line number.
+
+        Args:
+            line: The desired line dumber
+
+        Returns:
+            A list of style-and-text tuples
+
+        """
         if line == 0:
             return [("class:scrollbar.arrow", self.arrows[0])]
         elif line == self.height - 1:
@@ -644,8 +667,8 @@ class ScrollBar(UIControl):
         else:
             return [("class:scrollbar.background", " ")]
 
-    def mouse_handler(self, mouse_event: MouseEvent) -> "NotImplementedOrNone":
-        """Handle mouse events"""
+    def mouse_handler(self, mouse_event: MouseEvent) -> "None":
+        """Handle mouse events."""
         if mouse_event.event_type == MouseEventType.MOUSE_DOWN:
             if mouse_event.position.y == 0:
                 self.target.scroll(1)
@@ -666,5 +689,6 @@ class ScrollBar(UIControl):
         elif mouse_event.event_type == MouseEventType.SCROLL_UP:
             self.target.scroll(n=1)
 
-    def __pt_container__(self):
+    def __pt_container__(self) -> "Container":
+        """Returns the container of the container."""
         return self.container

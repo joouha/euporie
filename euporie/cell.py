@@ -9,7 +9,6 @@ from typing import TYPE_CHECKING, Any, Literal
 
 import nbformat
 from prompt_toolkit.application.current import get_app
-from prompt_toolkit.auto_suggest import ConditionalAutoSuggest
 from prompt_toolkit.buffer import Completion, indent, unindent
 from prompt_toolkit.filters import (
     Condition,
@@ -21,7 +20,6 @@ from prompt_toolkit.filters import (
     is_done,
 )
 from prompt_toolkit.formatted_text import to_formatted_text
-from prompt_toolkit.key_binding.bindings.focus import focus_next, focus_previous
 from prompt_toolkit.key_binding.bindings.named_commands import register
 from prompt_toolkit.layout.containers import (
     ConditionalContainer,
@@ -55,6 +53,8 @@ if TYPE_CHECKING:
 
     from euporie.notebook import Notebook
 
+__all__ = ["get_cell_id", "ClickArea", "Cell", "backward_char", "forward_char"]
+
 log = logging.getLogger(__name__)
 
 
@@ -65,7 +65,19 @@ def cursor_in_leading_ws() -> "bool":
     return (not before) or before.isspace()
 
 
-def get_cell_id(cell_json: "dict"):
+def get_cell_id(cell_json: "dict") -> "str":
+    """Returns the cell ID field defined in a cell JSON object.
+
+    If no cell Id is defined (```:mod:`nbformat`<4.5``), then one is generated and
+    added to the cell.
+
+    Args:
+        cell_json: The cell's JSON object as a python dictionary
+
+    Returns:
+        The ID string
+
+    """
     cell_id = cell_json.get("id", "")
     # Assign a cell id if missing
     if not cell_id:

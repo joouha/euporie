@@ -2,24 +2,21 @@
 """Contains the main class for a notebook file."""
 from __future__ import annotations
 
-import asyncio
 import copy
 import logging
-from functools import partial
 from pathlib import Path
-from typing import TYPE_CHECKING, Callable, Optional, Union, cast
+from typing import TYPE_CHECKING
 
 import nbformat  # type: ignore
+from prompt_toolkit.application import Application
 from prompt_toolkit.application.current import get_app
-from prompt_toolkit.formatted_text import HTML
-from prompt_toolkit.layout.containers import AnyContainer, HSplit, VSplit, Window
+from prompt_toolkit.layout.containers import HSplit, VSplit, Window
 from prompt_toolkit.layout.controls import FormattedTextControl
-from prompt_toolkit.layout.dimension import LayoutDimension as D
 from prompt_toolkit.layout.margins import NumberedMargin
 from prompt_toolkit.mouse_events import MouseEventType
-from prompt_toolkit.widgets import Box, Label, RadioList
+from prompt_toolkit.widgets import Label, RadioList
 
-from euporie.box import Border, BorderLine, Pattern
+from euporie.box import BorderLine, Pattern
 from euporie.cell import Cell, get_cell_id
 from euporie.completion import KernelCompleter
 from euporie.config import config
@@ -31,10 +28,17 @@ from euporie.suggest import KernelAutoSuggest
 from euporie.tab import Tab
 
 if TYPE_CHECKING:
+    from typing import Callable, Optional, cast
+
+    from prompt_toolkit.formatted_text import AnyFormattedText
     from prompt_toolkit.key_binding import KeyBindings
     from prompt_toolkit.key_binding.key_processor import KeyPressEvent
+    from prompt_toolkit.layout.containers import AnyContainer
+    from prompt_toolkit.mouse_events import MouseEvent
 
     from euporie.app import App
+
+__all__ = ["Notebook"]
 
 log = logging.getLogger(__name__)
 
@@ -56,7 +60,7 @@ class Notebook(Tab):
         interactive: "bool" = True,
         autorun: "bool" = False,
         scroll: "bool" = False,
-        app=None,
+        app: "Application" = None,
     ):
         """Instantiate a Notebook container, using a notebook at a given path."""
         self.path = Path(path).expanduser()
@@ -138,7 +142,7 @@ class Notebook(Tab):
                 key_bindings=self.load_key_bindings(),
             )
 
-    def check_kernel(self, result=None) -> "None":
+    def check_kernel(self, result: "None" = None) -> "None":
         """Checks if the kernel has started and prompts user if not."""
         assert self.kernel is not None
         status = self.kernel.status
@@ -350,6 +354,7 @@ class Notebook(Tab):
         Args:
             cell: The rendered cell to run. If ``None``, runs the currently
                 selected cell.
+            wait: If :py:const:`True`, blocks until cell execution is finished
 
         """
         if self.kernel:
@@ -497,7 +502,9 @@ class Notebook(Tab):
             },
         )
 
-    def statusbar_fields(self):
+    def statusbar_fields(
+        self,
+    ) -> "tuple[list[AnyFormattedText], list[AnyFormattedText]]":
         """Generates the formatted text for the statusbar."""
         return (
             [
@@ -510,6 +517,7 @@ class Notebook(Tab):
             ],
         )
 
-    def _statusbar_kernel_handeler(self, event):
+    def _statusbar_kernel_handeler(self, event: "MouseEvent") -> "None":
+        """Event handler for kernel name field in statusbar."""
         if event.event_type == MouseEventType.MOUSE_UP:
             self.change_kernel()

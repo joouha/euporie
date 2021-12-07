@@ -1,14 +1,19 @@
 # -*- coding: utf-8 -*-
 """Define box border constants."""
+from typing import Optional
+
 from prompt_toolkit.layout.containers import Container
 from prompt_toolkit.layout.dimension import Dimension
-from prompt_toolkit.layout.screen import Char
+from prompt_toolkit.layout.mouse_handlers import MouseHandlers
+from prompt_toolkit.layout.screen import Char, Screen, WritePosition
 
 from euporie.config import config
 
+__all__ = ["Border", "BorderLine", "Pattern"]
+
 
 class Border:
-    """Box drawing characters, includeing characters for splits."""
+    """Box drawing characters, including characters for splits."""
 
     HORIZONTAL = "─"
     VERTICAL = "│"
@@ -24,14 +29,31 @@ class Border:
 
 
 class BorderLine(Container):
-    """
-    Generate the background of dots, which becomes visible when several clients
-    are attached and not all of them have the same size.
-    (This is implemented as a Container, rather than a UIControl wrapped in a
-    Window, because it can be done very effecient this way.)
-    """
+    """Draws a horizontal or vertical line."""
 
-    def __init__(self, char=None, width=None, height=None, collapse=False, style=""):
+    def __init__(
+        self,
+        char: "Optional[str]" = None,
+        width: "Optional[int]" = None,
+        height: "Optional[int]" = None,
+        collapse: "bool" = False,
+        style: "str" = "",
+    ) -> "None":
+        """Initalizes a border line.
+
+        Args:
+            char: The character to draw. If unset, the relavent character from
+                :py:class:`euporie.box.Border` is used
+            width: The length of the line. If specified, the line will be horizontal
+            height: The height of the line. If specified, the line will be vertical
+            collapse: Whether to hide the line when there is not enough space
+            style: Style to apply to the line
+
+        Raises:
+            ValueError: If both width and height are specified. A line must only have a
+                single dimension.
+
+        """
         if width and height:
             raise ValueError("Only one of `width` or `height` must be set")
         self.width = width
@@ -41,20 +63,44 @@ class BorderLine(Container):
         self.char = Char(char, style)
         self.collapse = collapse
 
-    def reset(self):
-        pass
+    def reset(self) -> "None":
+        """Resets the state of the line. Does nothing."""
 
-    def preferred_width(self, max_available_width):
+    def preferred_width(self, max_available_width: "int") -> "Dimension":
+        """Return the preferred width of the line."""
         return Dimension(min=int(not self.collapse), max=self.width)
 
-    def preferred_height(self, width, max_available_height):
+    def preferred_height(
+        self, width: "int", max_available_height: "int"
+    ) -> "Dimension":
+        """Return the preferred height of the line."""
         return Dimension(min=int(not self.collapse), max=self.height)
 
     def write_to_screen(
-        self, screen, mouse_handlers, write_position, parent_style, erase_bg, z_index
-    ):
-        """Fill the whole area of write_position with dots."""
+        self,
+        screen: "Screen",
+        mouse_handlers: "MouseHandlers",
+        write_position: "WritePosition",
+        parent_style: "str",
+        erase_bg: "bool",
+        z_index: "Optional[int]",
+    ) -> "None":
+        """Draws a continous line in the ``write_position`` area.
 
+        Args:
+            screen: The :class:`~prompt_toolkit.layout.screen.Screen` class to which
+                the output has to be written.
+            mouse_handlers: :class:`prompt_toolkit.layout.mouse_handlers.MouseHandlers`.
+            write_position: A :class:`prompt_toolkit.layout.screen.WritePosition` object
+                defining where this container should be drawn.
+            erase_bg: If true, the background will be erased prior to drawing.
+            parent_style: Style string to pass to the :class:`.Window` object. This will
+                be applied to all content of the windows. :class:`.VSplit` and
+                :class:`prompt_toolkit.layout.containers.HSplit` can use it to pass
+                their style down to the windows that they contain.
+            z_index: Used for propagating z_index from parent to child.
+
+        """
         ypos = write_position.ypos
         xpos = write_position.xpos
 
@@ -63,35 +109,57 @@ class BorderLine(Container):
             for x in range(xpos, xpos + write_position.width):
                 row[x] = self.char
 
-    def get_children(self):
+    def get_children(self) -> "list":
+        """Return an empty list of the container's children."""
         return []
 
 
 class Pattern(Container):
-    """
-    Generate the background of dots, which becomes visible when several clients
-    are attached and not all of them have the same size.
-    (This is implemented as a Container, rather than a UIControl wrapped in a
-    Window, because it can be done very effecient this way.)
-    """
+    """Fill an area with a repeating background pattern."""
 
-    def __init__(self):
+    def __init__(self) -> "None":
+        """Initalize the :class:`Pattern`."""
         self.bg = Char(" ", "class:background-pattern")
 
-    def reset(self):
+    def reset(self) -> "None":
+        """Resets the pattern. Does nothing."""
         pass
 
-    def preferred_width(self, max_available_width):
+    def preferred_width(self, max_available_width: "int") -> "Dimension":
+        """Return an empty diemension (expand to available width)."""
         return Dimension()
 
-    def preferred_height(self, width, max_available_height):
+    def preferred_height(
+        self, width: "int", max_available_height: "int"
+    ) -> "Dimension":
+        """Return an empty diemension (expand to available height)."""
         return Dimension()
 
     def write_to_screen(
-        self, screen, mouse_handlers, write_position, parent_style, erase_bg, z_index
-    ):
-        """Fill the whole area of write_position with dots."""
+        self,
+        screen: "Screen",
+        mouse_handlers: "MouseHandlers",
+        write_position: "WritePosition",
+        parent_style: "str",
+        erase_bg: "bool",
+        z_index: "Optional[int]",
+    ) -> "None":
+        """Fill the whole area of write_position with a pattern.
 
+        Args:
+            screen: The :class:`~prompt_toolkit.layout.screen.Screen` class to which
+                the output has to be written.
+            mouse_handlers: :class:`prompt_toolkit.layout.mouse_handlers.MouseHandlers`.
+            write_position: A :class:`prompt_toolkit.layout.screen.WritePosition` object
+                defining where this container should be drawn.
+            erase_bg: If true, the background will be erased prior to drawing.
+            parent_style: Style string to pass to the :class:`.Window` object. This will
+                be applied to all content of the windows. :class:`.VSplit` and
+                :class:`prompt_toolkit.layout.containers.HSplit` can use it to pass
+                their style down to the windows that they contain.
+            z_index: Used for propagating z_index from parent to child.
+
+        """
         ypos = write_position.ypos
         xpos = write_position.xpos
 
@@ -114,5 +182,6 @@ class Pattern(Container):
                 else:
                     row[x] = self.bg
 
-    def get_children(self):
+    def get_children(self) -> "list":
+        """Return an empty list of the container's children."""
         return []
