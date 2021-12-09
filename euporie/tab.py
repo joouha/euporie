@@ -10,8 +10,7 @@ from prompt_toolkit.application.current import get_app
 from prompt_toolkit.layout.dimension import Dimension, to_dimension
 
 if TYPE_CHECKING:
-    from pathlib import Path
-    from typing import Callable, Optional
+    from typing import Callable, Optional, Sequence
 
     from prompt_toolkit.formatted_text import AnyFormattedText
     from prompt_toolkit.layout.containers import AnyContainer
@@ -27,11 +26,15 @@ class Tab(metaclass=ABCMeta):
     def __init__(self):
         """Called when the tab is created."""
         self.container = None
-        self.file: "Path" = None
+
+    @property
+    def title(self) -> "str":
+        """Return the tab title."""
+        return ""
 
     def statusbar_fields(
         self,
-    ) -> "tuple[list[AnyFormattedText], list[AnyFormattedText]]":
+    ) -> "tuple[Sequence[AnyFormattedText], Sequence[AnyFormattedText]]":
         """Returns a list of statusbar field values shown then this tab is active."""
         return ([], [])
 

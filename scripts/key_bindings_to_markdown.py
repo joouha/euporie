@@ -4,12 +4,12 @@ from pathlib import Path
 
 from euporie.app import App
 from euporie.cell import Cell
-from euporie.containers import ScrollingContainer
 from euporie.keys import KeyBindingsInfo
 from euporie.notebook import Notebook
+from euporie.scroll import ScrollingContainer
 
 app = App()
-nb = Notebook(Path("/this/file/does/not/exist.ipynb"), scroll=True)
+nb = Notebook(Path("/this/file/does/not/exist.ipynb"))
 ScrollingContainer([])
 Cell(0, {}, nb)
 

@@ -29,7 +29,9 @@ LOG_QUEUE: "deque" = deque(maxlen=1000)
 
 def setup_logs() -> "None":
     """Configures the logger for euporie."""
-    logging.config.dictConfig(
+    # Pytype used TypedDicts to validate the dictionary structure, but I cannot get
+    # this to work for some reason...
+    logging.config.dictConfig(  # type: ignore
         {
             "version": 1,
             "disable_existing_loggers": False,
@@ -77,13 +79,13 @@ def setup_logs() -> "None":
             },
             "loggers": {
                 "euporie": {
+                    "level": "DEBUG" if config.debug else "INFO",
                     "handlers": ["internal"]
                     + (
                         []
                         if not config.log_file
                         else ["stdout" if config.log_file == "-" else "file"]
                     ),
-                    "level": "DEBUG" if config.debug else "INFO",
                     "propagate": False,
                 },
             },
@@ -139,11 +141,6 @@ class QueueHandler(logging.Handler):
 class LogView(Tab):
     """A tab which allows you to view log entries."""
 
-    @property
-    def path(self) -> "str":
-        """Returns the path of the log file (or the string ``Logs``)."""
-        return Path(config.log_file) or "Logs"
-
     def __init__(self) -> "None":
         """Builds the tab's contents.
 
@@ -170,6 +167,11 @@ class LogView(Tab):
             self.add_record(record)
         # Hook the queue handler
         self.hook_id = QueueHandler.hook(self.add_record)
+
+    @property
+    def title(self) -> "str":
+        """Returns the title of this tab."""
+        return f"Logs ({Path(config.log_file)})"
 
     def add_record(self, record: "logging.LogRecord") -> "None":
         """Adds a single new record to the textarea.

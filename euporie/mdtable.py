@@ -16,13 +16,10 @@ from rich.table import Table as RichTable
 
 from euporie.config import config
 from euporie.libs.commonmark_extensions.tables import ParserWithTables  # type: ignore
+from euporie.libs.commonmark_extensions.tables import Table as CETable  # type: ignore
 
 if TYPE_CHECKING:
     from commonmark.node import Node  # type: ignore
-
-    from euporie.libs.commonmark_extensions.tables import (
-        Table as CETable,  # type: ignore
-    )
 
 __all__ = ["Table"]
 

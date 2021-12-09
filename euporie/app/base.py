@@ -5,11 +5,11 @@ from __future__ import annotations
 import logging
 from functools import partial
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Optional, Union
+from typing import TYPE_CHECKING
 
 from prompt_toolkit.application import Application, get_app_session
 from prompt_toolkit.filters import Condition, Filter
-from prompt_toolkit.key_binding import KeyBindings, KeyPressEvent
+from prompt_toolkit.key_binding import KeyPressEvent
 from prompt_toolkit.layout import Layout
 from prompt_toolkit.layout.containers import Window
 from prompt_toolkit.output.defaults import create_output
@@ -30,13 +30,16 @@ from euporie.tab import Tab
 from euporie.term import TerminalQuery
 
 if TYPE_CHECKING:
-    from prompt_toolkit.layout.container import AnyContainer
+    from collections.abc import MutableSequence
+    from typing import Any, Optional, Type
+
+    from prompt_toolkit.layout.containers import AnyContainer
     from prompt_toolkit.output import Output
 
 log = logging.getLogger(__name__)
 
 
-class BaseApp(Application):
+class EuporieApp(Application):
     """The base euporie application class.
 
     This subclasses the `prompt_toolkit.application.Application` class, so application
@@ -61,10 +64,10 @@ class BaseApp(Application):
         self._is_running = False
         # These will be re-applied after superinit
         self.pre_run_callables = []
-        # How notebooks should be configured
-        self.notebook_kwargs = kwargs.pop("notebook_kwargs", {})
+        # Which notebook class should we use
+        self.notebook_class: "Type[Notebook]"
         # Containes the opened tab contianers
-        self.tabs = []
+        self.tabs: "MutableSequence[Tab]" = []
         self._tab_idx = 0
         # Create conditions
         self.has_tab = Condition(lambda: bool(self.tabs))
@@ -117,7 +120,7 @@ class BaseApp(Application):
         for file in config.files:
             self.open_file(file)
 
-    def open_file(self, path: "Union[str, Path]", read_only: "bool" = False) -> None:
+    def open_file(self, path: "Path", read_only: "bool" = False) -> None:
         """Creates a tab for a file.
 
         Args:
@@ -128,11 +131,11 @@ class BaseApp(Application):
         path = Path(path).expanduser()
         log.info(f"Opening file {path}")
         for tab in self.tabs:
-            if path == tab.path:
+            if path == tab.title:
                 log.info(f"File {path} already open, activating")
                 break
         else:
-            tab = Notebook(path, **self.notebook_kwargs, app=self)
+            tab = self.notebook_class(path, app=self)
             self.tabs.append(tab)
             tab.focus()
 
@@ -280,7 +283,7 @@ class BaseApp(Application):
         config.syntax_theme = pygments_style
         self.renderer.style = self._create_merged_style()
 
-    def load_key_bindings(self) -> "KeyBindings":
+    def load_key_bindings(self) -> "KeyBindingsInfo":
         """Define application-wide keybindings."""
         kb = KeyBindingsInfo()
 

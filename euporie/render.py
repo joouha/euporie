@@ -12,7 +12,7 @@ from abc import ABCMeta, abstractmethod
 from importlib import import_module
 from math import ceil
 from shutil import which
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 import rich
 from PIL import Image  # type: ignore
@@ -22,9 +22,9 @@ from euporie.box import Border
 
 if TYPE_CHECKING:
     from os import PathLike
-    from typing import Any, Optional, Type, Union, cast
+    from typing import Any, Optional, Type, Union
 
-    from euporie.app import App
+    from euporie.app.base import EuporieApp
     from euporie.cell import Cell
 
 log = logging.getLogger(__name__)
@@ -546,7 +546,7 @@ class ImageMixin(DataRendererMixin):
             # Get the original image size in pixels
             orig_px, orig_py = self.image.size
             # Get the pixel size of one terminal block
-            app = cast("App", get_app())
+            app = cast("EuporieApp", get_app())
             char_px, char_py = app.term.char_size_px
             # Scale image down if it is larger than available width
             pixels_per_col = orig_px / char_px
@@ -592,7 +592,7 @@ class SixelMixerRenderer(ImageRenderer):
 
         """
         return bool(
-            cast("App", get_app()).term.has_sixel_graphics
+            cast("EuporieApp", get_app()).term.has_sixel_graphics
             and AnsiImageRenderer.select() is not None
             and SixelRenderer.select() is not None
         )
@@ -665,7 +665,7 @@ class img_sixel_imagemagik(SubprocessRenderMixin, SixelRenderer):
         super().load(data)
         if not hasattr(self, "px"):
             self.px = self.py = 0
-        term = cast("App", get_app()).term
+        term = cast("EuporieApp", get_app()).term
         self.bg_color = term.bg_color or "#FFFFFF"
         self.args = [
             "-",
@@ -720,7 +720,7 @@ class img_sixel_timg_py(PythonRenderMixin, SixelRenderer):
         ):
             alpha = self.image.convert("RGBA").getchannel("A")
             bg = Image.new(
-                "RGBA", self.image.size, cast("App", get_app()).term.bg_color
+                "RGBA", self.image.size, cast("EuporieApp", get_app()).term.bg_color
             )
             bg.paste(self.image, mask=alpha)
             self.image = bg
@@ -759,7 +759,7 @@ class img_sixel_teimpy(PythonRenderMixin, SixelRenderer):
         ):
             alpha = self.image.convert("RGBA").getchannel("A")
             bg = Image.new(
-                "RGBA", self.image.size, cast("App", get_app()).term.bg_color
+                "RGBA", self.image.size, cast("EuporieApp", get_app()).term.bg_color
             )
             bg.paste(self.image, mask=alpha)
             self.image = bg.convert("RGB")
@@ -773,7 +773,7 @@ class img_kitty(ImageRenderer):
     @classmethod
     def validate(cls) -> "bool":
         """Determine if the terminal supports the kitty graphics protocol."""
-        return bool(cast("App", get_app()).term.has_kitty_graphics)
+        return bool(cast("EuporieApp", get_app()).term.has_kitty_graphics)
 
     def process(self, data: "str") -> "Union[bytes, str]":
         """Convert a image to kitty graphics escape sequences which display the image.
@@ -858,7 +858,7 @@ class img_ansi_timg(Base64Mixin, SubprocessRenderMixin, AnsiImageRenderer):
     def load(self, data: "str") -> "None":
         """Sets the command to use for rendering."""
         super().load(data)
-        app = cast("App", get_app())
+        app = cast("EuporieApp", get_app())
         self.bg_color = app.term.bg_color or "#FFFFFF"
         self.args = [
             f"-g{self.width}x{self.width}",
@@ -879,7 +879,7 @@ class img_ansi_chafa(Base64Mixin, SubprocessRenderMixin, AnsiImageRenderer):
     def load(self, data: "str") -> "None":
         """Sets the command to use for rendering."""
         super().load(data)
-        app = cast("App", get_app())
+        app = cast("EuporieApp", get_app())
         self.bg_color = app.term.bg_color or "#FFFFFF"
         self.args = [
             f"--size={self.width}x{self.width}",
@@ -950,7 +950,7 @@ class img_ansi_timg_py(Base64Mixin, PythonRenderMixin, AnsiImageRenderer):
             self.image.mode == "P" and "transparency" in self.image.info
         ):
             alpha = self.image.convert("RGBA").getchannel("A")
-            bg_color = cast("App", get_app()).term.bg_color
+            bg_color = cast("EuporieApp", get_app()).term.bg_color
             bg = Image.new("RGBA", self.image.size, bg_color)
             bg.paste(self.image, mask=alpha)
             self.image = bg

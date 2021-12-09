@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 import logging
-from typing import Callable, Optional, Union
+from typing import TYPE_CHECKING
 
 from prompt_toolkit.layout.containers import AnyContainer, Container, to_container
 from prompt_toolkit.layout.dimension import AnyDimension, Dimension, to_dimension
 from prompt_toolkit.layout.mouse_handlers import MouseHandlers
 from prompt_toolkit.layout.screen import Screen, WritePosition
+
+if TYPE_CHECKING:
+    from typing import Callable, Optional, Sequence, Union
 
 __all__ = ["PrintingContainer"]
 
@@ -20,7 +23,7 @@ class PrintingContainer(Container):
 
     def __init__(
         self,
-        children: "list[Union[Callable, AnyContainer]]",
+        children: "Union[Callable, Sequence[AnyContainer]]",
         width: "AnyDimension" = None,
     ):
         """Initiate the container."""
@@ -71,7 +74,7 @@ class PrintingContainer(Container):
             ypos += height
 
     @property
-    def children(self) -> "list[AnyContainer]":
+    def children(self) -> "Sequence[AnyContainer]":
         """Returns the container's children."""
         if callable(self._children):
             return self._children()
@@ -80,7 +83,7 @@ class PrintingContainer(Container):
 
     def get_children(self) -> "list[Container]":
         """Returns a list of all child containers."""
-        return map(to_container, self.children)
+        return list(map(to_container, self.children))
 
     def preferred_height(self, width: int, max_available_height: int) -> "Dimension":
         """Returns the preferred height, equal to the sum of the child heights."""

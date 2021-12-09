@@ -60,7 +60,7 @@ class NotebookKernel:
         self,
         coro: "Coroutine",
         wait: "bool" = False,
-        callback: "int" = None,
+        callback: "Callable" = None,
         timeout: "Optional[Union[int, float]]" = None,
         warn: "bool" = True,
     ) -> "Any":
@@ -96,7 +96,9 @@ class NotebookKernel:
             return result
         else:
             if callable(callback):
-                future.add_done_callback(lambda f: callback(f.result()))
+                future.add_done_callback(
+                    lambda f: callback(f.result()) if callback else None
+                )
 
     @property
     def status(self) -> "str":
@@ -401,6 +403,7 @@ class NotebookKernel:
                         ("execute", "shell", "execute_reply"),
                         rsp["header"]["date"].isoformat(),
                     )
+                    # Page '?' output here
 
         async def process_execute_iopub_rsp() -> "None":
             """Process response messages on the ``iopub`` channel."""

@@ -5,7 +5,7 @@ import io
 import logging
 import os
 import sys
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from prompt_toolkit import renderer
 from prompt_toolkit.data_structures import Size
@@ -13,31 +13,33 @@ from prompt_toolkit.output.defaults import create_output
 from prompt_toolkit.output.vt100 import Vt100_Output
 from prompt_toolkit.widgets import Box, HorizontalLine
 
-from euporie.app.base import BaseApp
+from euporie.app.base import EuporieApp
 from euporie.config import config
 from euporie.containers import PrintingContainer
+from euporie.notebook import DumpKernelNotebook, DumpNotebook
 
 if TYPE_CHECKING:
-    from typing import Any, Callable, Optional, Union
+    from typing import Any, Optional, TextIO, Type
 
     from prompt_toolkit.data_structures import Point
-    from prompt_toolkit.layout.container import AnyContainer
+    from prompt_toolkit.layout.containers import AnyContainer
+    from prompt_toolkit.output import Output
+
+    from euporie.notebook import Notebook
 
 log = logging.getLogger(__name__)
 
 
-class DumpApp(BaseApp):
+class DumpApp(EuporieApp):
     """An application which dumps the layout to the output then exits."""
 
     def __init__(self, **kwargs: "Any") -> "None":
         """Create an app for dumping a prompt-toolkit layout."""
+        self.notebook_class: "Type[Notebook]" = (
+            DumpKernelNotebook if config.run else DumpNotebook
+        )
         super().__init__(
             full_screen=False,
-            notebook_kwargs=dict(
-                interactive=False,
-                autorun=config.run,
-                scroll=False,
-            ),
             **kwargs,
         )
         self.pre_run_callables.append(self.post_dump)
@@ -50,7 +52,7 @@ class DumpApp(BaseApp):
         hr.window.width = self.output.get_size().columns
 
         # Add tabs, separated by horizontal lines
-        contents: "list[Union[Callable, AnyContainer]]" = []
+        contents: "list[AnyContainer]" = []
         for tab in self.tabs:
             # Wrap each tab in a box so it does not expand beyond its maximum width
             contents.append(Box(tab))
@@ -61,7 +63,7 @@ class DumpApp(BaseApp):
 
         return PrintingContainer(contents)
 
-    def load_output(self) -> "AnyContainer":
+    def load_output(self) -> "Output":
         """Loads the output.
 
         Depending on the application configuration, will set the output to a file, to
@@ -108,10 +110,13 @@ class DumpApp(BaseApp):
         os.environ["PROMPT_TOOLKIT_NO_CPR"] = "1"
         # Create a default output - this detectes the terminal type
         # Do not use stderr instead of stdout if stdout is not a tty
-        output = create_output(self.output_file, always_prefer_tty=False)
+        output = create_output(
+            cast("TextIO", self.output_file), always_prefer_tty=False
+        )
         # Use the width and height of stderr (this gives us the terminal size even if
         # output is being piped to a non-tty)
-        output.get_size = create_output(stdout=sys.stderr).get_size
+        # output.get_size = create_output(stdout=sys.stderr).get_size
+        setattr(output, "get_size", create_output(stdout=sys.stderr).get_size)
         return output
 
     def _redraw(self, render_as_done: "bool" = False) -> "None":
@@ -129,7 +134,8 @@ class DumpApp(BaseApp):
         for tab in self.tabs:
             self.close_tab(tab)
 
-        self.loop.call_soon(self.pre_exit)
+        if self.loop is not None:
+            self.loop.call_soon(self.pre_exit)
 
     def pre_exit(self) -> "None":
         """Close the app after dumping, optionally piping output to a pager."""

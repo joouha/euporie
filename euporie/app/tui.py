@@ -39,43 +39,40 @@ from prompt_toolkit.widgets import (
 from pygments.styles import get_all_styles  # type: ignore
 
 from euporie import __app_name__, __copyright__, __logo__, __strapline__, __version__
-from euporie.app.base import BaseApp
+from euporie.app.base import EuporieApp
 from euporie.box import Pattern
 from euporie.config import config
 from euporie.keys import KeyBindingsInfo
 from euporie.log import LogView
 from euporie.menu import SmartMenuItem
+from euporie.notebook import TuiNotebook
 from euporie.text import FormattedTextArea
 
 if TYPE_CHECKING:
     from asyncio import AbstractEventLoop
-    from typing import Any, Callable, Literal, Optional
+    from typing import Any, Callable, Literal, Mapping, Optional
 
     from prompt_toolkit.buffer import Buffer
     from prompt_toolkit.completion import Completer
+    from prompt_toolkit.enums import EditingMode
     from prompt_toolkit.formatted_text import StyleAndTextTuples
-    from prompt_toolkit.key_binding.key_processor import KeyBindings, KeyPressEvent
-    from prompt_toolkit.layout.container import AnyContainer
-    from prompt_toolkit.utils import Event
+    from prompt_toolkit.key_binding.key_processor import KeyPressEvent
+    from prompt_toolkit.layout.containers import AnyContainer
 
     from euporie.tab import Tab
 
 log = logging.getLogger(__name__)
 
 
-class TuiApp(BaseApp):
+class TuiApp(EuporieApp):
     """A text user interface euporie application."""
 
     def __init__(self, **kwargs: "Any") -> "None":
         """Create a new euporie text user interface application instance."""
+        self.notebook_class = TuiNotebook
         super().__init__(
             full_screen=True,
             mouse_support=True,
-            notebook_kwargs=dict(
-                interactive=True,
-                autorun=config.run,
-                scroll=True,
-            ),
             **kwargs,
         )
         # Ensure an opened tab is focused
@@ -85,7 +82,7 @@ class TuiApp(BaseApp):
     def format_title(self) -> "StyleAndTextTuples":
         """Formats the tab's title for display in the top right of the app."""
         if self.tab:
-            return [("bold class:menu-bar.item", f" {self.tab.path.name} ")]
+            return [("bold class:menu-bar.item", f" {self.tab.title} ")]
         else:
             return []
 
@@ -267,6 +264,11 @@ class TuiApp(BaseApp):
                             handler=lambda: config.toggle("background_pattern"),
                         ),
                         SmartMenuItem(
+                            "Show Line Numbers",
+                            handler=lambda: config.toggle("line_numbers"),
+                            toggler=Condition(lambda: config.line_numbers),
+                        ),
+                        SmartMenuItem(
                             "Run cell after external edit",
                             toggler=Condition(
                                 lambda: bool(config.run_after_external_edit)
@@ -359,7 +361,7 @@ class TuiApp(BaseApp):
         else:
             return Pattern()
 
-    def load_key_bindings(self) -> "KeyBindings":
+    def load_key_bindings(self) -> "KeyBindingsInfo":
         """Define application-wide keybindings."""
         kb = super().load_key_bindings()
 
@@ -371,10 +373,12 @@ class TuiApp(BaseApp):
                 raise Exception("Test exception, please ignore")
 
         kb.add("c-n", group="Application", desc="Create a new notebook file")(
-            self.ask_new_file
+            lambda e: self.ask_new_file
         )
 
-        kb.add("c-o", group="Application", desc="Open file")(self.ask_open_file)
+        kb.add("c-o", group="Application", desc="Open file")(
+            lambda e: self.ask_open_file
+        )
 
         @kb.add("c-w", group="Application", desc="Close the current tab")
         def close(event: "KeyPressEvent") -> None:
@@ -419,6 +423,7 @@ class TuiApp(BaseApp):
 
         def _make_handler(cb: "Optional[Callable]" = None) -> "Callable":
             def inner() -> "None":
+                assert isinstance(self.root_container.floats, list)
                 self.root_container.floats.remove(dialog)
                 if focused in self.layout.find_all_controls():
                     try:
@@ -449,20 +454,21 @@ class TuiApp(BaseApp):
                 with_background=True,
             )
         )
+        assert isinstance(self.root_container.floats, list)
         self.root_container.floats.insert(0, dialog)
 
         if to_focus is None:
             to_focus = button_widgets[0]
         self.layout.focus(to_focus)
 
-    def ask_new_file(self, event: "Event" = None) -> "None":
+    def ask_new_file(self) -> "None":
         """Prompts the user to name a file."""
         return self.ask_file(
             validate=False,
             completer=PathCompleter(),
         )
 
-    def ask_open_file(self, event: "Event" = None) -> "None":
+    def ask_open_file(self) -> "None":
         """Prompts the user to open a file."""
         self.ask_file(
             completer=PathCompleter(),
@@ -486,18 +492,16 @@ class TuiApp(BaseApp):
         """
 
         def _open_cb() -> None:
-            if not validate or Path(filepath.text).expanduser().exists():
-                self.open_file(filepath.text)
+            path = Path(filepath.text)
+            if not validate or path.expanduser().exists():
+                self.open_file(path)
             else:
-                try:
-                    self.ask_open_file(
-                        default=filepath.text,
-                        validate=validate,
-                        error="File not found",
-                        completer=completer,
-                    )
-                except Exception:
-                    log.exception()
+                self.ask_file(
+                    default=filepath.text,
+                    validate=validate,
+                    error="File not found",
+                    completer=completer,
+                )
 
         def _accept_text(buf: "Buffer") -> "bool":
             """Accepts the text in the file input field and focuses the next field."""
@@ -601,12 +605,16 @@ class TuiApp(BaseApp):
             buttons={"OK": None},
         )
 
-    def exit(self) -> "None":
+    def exit(self, **kwargs: "Any") -> "None":
         """Check for unsaved files before closing.
 
         Creates a chain of close file commands, where the callback for each triggers
         the closure of the next. The closing process can be cancelled anywhere along
         the chain.
+
+        Args:
+            **kwargs: Unused key word arguments
+
         """
         really_close = super().exit
         if self.tabs:
@@ -647,3 +655,47 @@ class TuiApp(BaseApp):
             self.tabs[-1].close(cb)
         else:
             really_close()
+
+    def set_edit_mode(self, mode: "str") -> "None":
+        """Sets the keybindings for editing mode.
+
+        Args:
+            mode: 'vi' or 'emacs'
+
+        """
+        config.key_map = mode
+        self.editing_mode = self.get_edit_mode()
+
+    def get_edit_mode(self) -> "EditingMode":
+        """Returns the editing mode enum defined in the configuration."""
+        return {"emacs": EditingMode.EMACS, "vi": EditingMode.VI}.get(
+            str(config.key_map), EditingMode.EMACS
+        )
+
+    def tab_op(
+        self,
+        operation: "str",
+        tab: "Optional[Tab]" = None,
+        args: "Optional[list[Any]]" = None,
+        kwargs: "Optional[Mapping[str, Any]]" = None,
+    ) -> None:
+        """Call a method on the current tab if it exits.
+
+        Args:
+            operation: The name of the function to attempt to call.
+            tab: The instance of the tab to use. If `None`, the currently selected tab
+                will be used.
+            args: List of parameter arguments to pass to the function
+            kwargs: Mapping of keyword arguments to pass to the function
+
+        """
+        if args is None:
+            args = []
+        if kwargs is None:
+            kwargs = {}
+        if tab is None:
+            tab = self.tab
+        if tab and hasattr(tab, operation):
+            func = getattr(self.tab, operation)
+            if callable(func):
+                func(*args, **kwargs)

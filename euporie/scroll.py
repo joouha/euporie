@@ -10,10 +10,10 @@ from prompt_toolkit.application.current import get_app
 from prompt_toolkit.data_structures import Point
 from prompt_toolkit.layout.containers import Container, Window, to_container
 from prompt_toolkit.layout.controls import UIContent, UIControl
-from prompt_toolkit.layout.dimension import Dimension
+from prompt_toolkit.layout.dimension import Dimension, to_dimension
 from prompt_toolkit.layout.mouse_handlers import MouseHandlers
 from prompt_toolkit.layout.screen import Char, Screen, WritePosition
-from prompt_toolkit.mouse_events import MouseEvent
+from prompt_toolkit.mouse_events import MouseEventType
 from prompt_toolkit.utils import to_str
 
 from euporie.keys import KeyBindingsInfo
@@ -21,13 +21,13 @@ from euporie.keys import KeyBindingsInfo
 if TYPE_CHECKING:
     from typing import Callable, Dict, List, Optional, Sequence, Union
 
-    from prompt_toolkit.formatted_text import AnyFormattedText, FormattedText
+    from prompt_toolkit.formatted_text import AnyFormattedText, StyleAndTextTuples
     from prompt_toolkit.key_binding import KeyBindings
     from prompt_toolkit.key_binding.key_processor import KeyPressEvent
-    from prompt_toolkit.layout.containers import AnyContainer
+    from prompt_toolkit.layout.containers import AnyContainer, MagicContainer
     from prompt_toolkit.layout.dimension import AnyDimension
     from prompt_toolkit.layout.mouse_handlers import MouseHandler
-    from prompt_toolkit.mouse_events import MouseEventType
+    from prompt_toolkit.mouse_events import MouseEvent
 
 log = logging.getLogger(__name__)
 
@@ -51,7 +51,7 @@ class ScrollingContainer(Container):
 
     def __init__(
         self,
-        children: "Union[List[AnyContainer], Callable]",
+        children: "Union[Sequence[AnyContainer], Callable]",
         height: "AnyDimension" = None,
         width: "AnyDimension" = None,
         style: "Union[str, Callable[[], str]]" = "",
@@ -59,8 +59,8 @@ class ScrollingContainer(Container):
     ):
         """Initiates the `ScrollingContainer`."""
         self._children = children
-        self.height = height
-        self.width = width
+        self.height = to_dimension(height).preferred
+        self.width = to_dimension(width).preferred
         self.style = style
         self.z_index = z_index
         self.key_bindings = self.load_key_bindings()
@@ -69,9 +69,8 @@ class ScrollingContainer(Container):
         # Position of viewing window relative to selected child
         self.selected_child_position: "int" = 0
         self.to_draw: "Sequence[DrawingPosition]" = []
-        self.visible = {}
-
-        self.size_cache = {}
+        self.visible: "dict[int, Union[Container, MagicContainer]]" = {}
+        self.size_cache: "dict[int, int]" = {}
 
     # Container methods
 
@@ -257,7 +256,7 @@ class ScrollingContainer(Container):
     # End of container methods
 
     @property
-    def children(self) -> "None":
+    def children(self) -> "Sequence[Union[Container, MagicContainer]]":
         """Return the current children of this contianer instance."""
         if callable(self._children):
             return self._children()
@@ -283,7 +282,7 @@ class ScrollingContainer(Container):
 
         @kb.add("}", group="Navigation", desc="Scroll down more")
         def sdm(event: "KeyPressEvent") -> None:
-            self.scrol(5)
+            self.scroll(5)
 
         @kb.add("c-up", group="Navigation", desc="Go to first cell")
         @kb.add("home", group="Navigation", desc="Go to first cell")
@@ -311,7 +310,7 @@ class ScrollingContainer(Container):
         @kb.add("c-down", group="Navigation", desc="Go to last cell")
         @kb.add("end", group="Navigation", desc="Go to last cell")
         def last_child(event: "KeyPressEvent") -> None:
-            self.selected_index = len(self.children)
+            self.selected_index = len(list(self.children))
 
         return kb
 
@@ -617,7 +616,7 @@ class ScrollBar(UIControl):
         avg_size = sum(sizes.values()) / len(sizes)
         for i in range(n_children):
             if i not in sizes:
-                sizes[i] = avg_size
+                sizes[i] = int(avg_size)
         # We let people scoll below the bottom by ½
         self.total_height = max(sum(sizes.values()) - height // 2, 1)
         offset = (
@@ -637,7 +636,7 @@ class ScrollBar(UIControl):
             show_cursor=False,
         )
 
-    def get_line(self, line: "int") -> "FormattedText":
+    def get_line(self, line: "int") -> "StyleAndTextTuples":
         """Get style-and-text tuples for a particular line number.
 
         Args:
@@ -688,7 +687,3 @@ class ScrollBar(UIControl):
             self.target.scroll(n=-1)
         elif mouse_event.event_type == MouseEventType.SCROLL_UP:
             self.target.scroll(n=1)
-
-    def __pt_container__(self) -> "Container":
-        """Returns the container of the container."""
-        return self.container
