@@ -461,6 +461,8 @@ class TuiApp(EuporieApp):
             to_focus = button_widgets[0]
         self.layout.focus(to_focus)
 
+        self.invalidate()
+
     def ask_new_file(self) -> "None":
         """Prompts the user to name a file."""
         return self.ask_file(

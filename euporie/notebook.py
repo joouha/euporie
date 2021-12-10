@@ -12,6 +12,7 @@ import nbformat  # type: ignore
 from prompt_toolkit.application.current import get_app
 from prompt_toolkit.auto_suggest import DummyAutoSuggest
 from prompt_toolkit.completion import DummyCompleter
+from prompt_toolkit.filters import buffer_has_focus
 from prompt_toolkit.layout.containers import HSplit, VSplit, Window
 from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.mouse_events import MouseEventType
@@ -224,7 +225,10 @@ class KernelNotebook(Notebook):
         """
         cell.clear_output()
         self.kernel.run(
-            cell.json, output_cb=cell.on_output, done_cb=cell.ran, wait=wait
+            cell.json,
+            output_cb=cell.on_output,
+            done_cb=cell.ran,
+            wait=wait,
         )
 
     def run_all(self, wait: "bool" = False) -> None:
@@ -238,6 +242,8 @@ class KernelNotebook(Notebook):
 
     def check_kernel(self, result: "None" = None) -> "None":
         log.debug("Kernel status is '%s'", self.kernel.status)
+
+        # TODO: do a  kernel_info_request
 
 
 class DumpKernelNotebook(DumpNotebook, KernelNotebook):
@@ -324,53 +330,98 @@ class TuiNotebook(KernelNotebook):
         def save(event: "KeyPressEvent") -> "None":
             self.save()
 
-        @kb.add("a", group="Notebook", desc="Add new cell above current")
+        @kb.add(
+            "a",
+            filter=~buffer_has_focus,
+            group="Notebook",
+            desc="Add new cell above current",
+        )
         def add_above(event: "KeyPressEvent") -> "None":
             self.add(self.page.selected_index + 0)
 
-        @kb.add("b", group="Notebook", desc="Add new cell below current")
+        @kb.add(
+            "b",
+            filter=~buffer_has_focus,
+            group="Notebook",
+            desc="Add new cell below current",
+        )
         def add_below(event: "KeyPressEvent") -> "None":
             self.add(self.page.selected_index + 1)
 
-        @kb.add("d", "d", group="Notebook", desc="Delete current cell")
+        @kb.add(
+            "d",
+            "d",
+            filter=~buffer_has_focus,
+            group="Notebook",
+            desc="Delete current cell",
+        )
         def delete(event: "KeyPressEvent") -> "None":
             self.delete()
 
-        @kb.add("x", group="Notebook", desc="Cut current cell")
+        @kb.add(
+            "x", filter=~buffer_has_focus, group="Notebook", desc="Cut current cell"
+        )
         def cut(event: "KeyPressEvent") -> "None":
             self.cut()
 
-        @kb.add("c", group="Notebook", desc="Copy current cell")
+        @kb.add(
+            "c", filter=~buffer_has_focus, group="Notebook", desc="Copy current cell"
+        )
         def copy(event: "KeyPressEvent") -> "None":
             self.copy()
 
-        @kb.add("v", group="Notebook", desc="Paste copied cell")
+        @kb.add(
+            "v", filter=~buffer_has_focus, group="Notebook", desc="Paste copied cell"
+        )
         def paste(event: "KeyPressEvent") -> "None":
             self.paste()
 
-        @kb.add("m", group="Notebook", desc="Change cell to markdown")
+        @kb.add(
+            "m",
+            filter=~buffer_has_focus,
+            group="Notebook",
+            desc="Change cell to markdown",
+        )
         def to_markdown(event: "KeyPressEvent") -> "None":
             self.cell.set_cell_type("markdown")
             self.cell.clear_output()
 
-        @kb.add("y", group="Notebook", desc="Change cell to code")
+        @kb.add(
+            "y", filter=~buffer_has_focus, group="Notebook", desc="Change cell to code"
+        )
         def to_code(event: "KeyPressEvent") -> "None":
             self.cell.set_cell_type("code")
 
-        @kb.add("r", group="Notebook", desc="Change cell to raw")
+        @kb.add(
+            "r", filter=~buffer_has_focus, group="Notebook", desc="Change cell to raw"
+        )
         def to_raw(event: "KeyPressEvent") -> "None":
             self.cell.set_cell_type("raw")
             self.cell.clear_output()
 
-        @kb.add("l", group="Notebook", desc="Toggle line numbers")
+        @kb.add(
+            "l", filter=~buffer_has_focus, group="Notebook", desc="Toggle line numbers"
+        )
         def line_nos(event: "KeyPressEvent") -> "None":
             config.toggle("line_numbers")
 
-        @kb.add("I", "I", group="Notebook", desc="Interrupt notebook kernel")
+        @kb.add(
+            "I",
+            "I",
+            filter=~buffer_has_focus,
+            group="Notebook",
+            desc="Interrupt notebook kernel",
+        )
         def interrupt(event: "KeyPressEvent") -> "None":
             self.interrupt_kernel()
 
-        @kb.add("0", "0", group="Notebook", desc="Restart notebook kernel")
+        @kb.add(
+            "0",
+            "0",
+            filter=~buffer_has_focus,
+            group="Notebook",
+            desc="Restart notebook kernel",
+        )
         def restart(event: "KeyPressEvent") -> "None":
             self.restart_kernel()
 
@@ -396,7 +447,9 @@ class TuiNotebook(KernelNotebook):
         return self.page.is_child_obscured(index)
 
     def load_kernel(self) -> "None":
-        self.kernel = NotebookKernel(str(self.kernel_name), threaded=False)
+        self.kernel = NotebookKernel(
+            str(self.kernel_name), threaded=False, allow_stdin=True
+        )
         self.kernel.start(cb=self.check_kernel, wait=False)
 
     def check_kernel(self, result: "None" = None) -> "None":
@@ -466,7 +519,15 @@ class TuiNotebook(KernelNotebook):
     def run_cell(self, cell: "Cell", wait: "bool" = False) -> "None":
         if cell is None:
             cell = self.cell
-        super().run_cell(cell, wait)
+        assert isinstance(cell, InteractiveCell)
+        cell.clear_output()
+        self.kernel.run(
+            cell.json,
+            stdin_cb=cell.get_input,
+            output_cb=cell.on_output,
+            done_cb=cell.ran,
+            wait=wait,
+        )
 
     def add(self, index: "int") -> "None":
         """Creates a new cell at a given index, and refreshes the display.

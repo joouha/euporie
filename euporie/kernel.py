@@ -30,12 +30,15 @@ class NotebookKernel:
     Has the ability to run itself in it's own thread.
     """
 
-    def __init__(self, name: "str", threaded: "bool" = False) -> "None":
+    def __init__(
+        self, name: "str", threaded: "bool" = False, allow_stdin: "bool" = False
+    ) -> "None":
         """Called when the :py:class:`NotebookKernel` is initalized.
 
         Args:
             name: The name of the kernel to start
             threaded: If :py:cont:`True`, run kernel communication in a separate thread
+            allow_stdin: Whether the kernel is allowed to request input
 
         """
         self.threaded = threaded
@@ -46,6 +49,8 @@ class NotebookKernel:
             self.thread.start()
         else:
             self.loop = asyncio.get_event_loop()
+
+        self.allow_stdin = allow_stdin
 
         self.kc: "Optional[KernelClient]" = None
         self.km = AsyncKernelManager(kernel_name=name)
@@ -209,6 +214,7 @@ class NotebookKernel:
                 self.poll_tasks = [
                     asyncio.create_task(self.poll("shell")),
                     asyncio.create_task(self.poll("iopub")),
+                    asyncio.create_task(self.poll("stdin")),
                 ]
                 log.debug(self.poll_tasks)
 
@@ -329,6 +335,25 @@ class NotebookKernel:
                 if stop:
                     break
 
+    async def await_stdin_rsps(self, msg_id: "str") -> "AsyncKernelManager":
+        """Wait for messages on the ``shell`` channel.
+
+        This will yield response message, stopping after a response with a status
+        of "ok" or "error".
+
+        Args:
+            msg_id: The ID of the message to process the responses for.
+
+        Yields:
+            The response message
+
+        """
+        async for rsp in self.await_rsps(msg_id, channel="stdin"):
+            try:
+                yield rsp
+            except StopIteration:
+                break
+
     async def process_default_iopub_rsp(self, msg_id: "str") -> "None":
         """The default processor for message responses on the ``iopub`` channel.
 
@@ -344,6 +369,7 @@ class NotebookKernel:
     def run(
         self,
         cell_json: "dict",
+        stdin_cb: "Optional[Callable[..., Any]]" = None,
         output_cb: "Optional[Callable[[], Any]]" = None,
         done_cb: "Optional[Callable[[], Any]]" = None,
         wait: "bool" = False,
@@ -354,6 +380,9 @@ class NotebookKernel:
 
         Args:
             cell_json: The JSON representation of the cell to run
+            stdin_cb: An optional coroutine callback to run when the kernel requests
+                input. Should accept a function which should be called with the user
+                input as the only argument
             output_cb: An optional callback to run after each response message
             done_cb: An optional callback to run when the cell has finished running
             wait: If :py:const`True`, will block until the cell has finished running
@@ -365,6 +394,7 @@ class NotebookKernel:
             self._aodo(
                 self.run_(
                     cell_json=cell_json,
+                    stdin_cb=stdin_cb,
                     output_cb=output_cb,
                     done_cb=done_cb,
                 ),
@@ -374,8 +404,9 @@ class NotebookKernel:
     async def run_(
         self,
         cell_json: "dict",
-        output_cb: "Optional[Callable[[], Any]]",
-        done_cb: "Optional[Callable[[], Any]]",
+        stdin_cb: "Optional[Callable[..., Any]]" = None,
+        output_cb: "Optional[Callable[[], Any]]" = None,
+        done_cb: "Optional[Callable[[], Any]]" = None,
     ) -> "None":
         """Runs the code cell asynchronously and handles the resposnes."""
         if self.kc is None:
@@ -384,8 +415,18 @@ class NotebookKernel:
         msg_id = self.kc.execute(
             cell_json.get("source"),
             store_history=True,
-            allow_stdin=False,
+            allow_stdin=(self.allow_stdin and stdin_cb is not None),
         )
+
+        async def process_stin_rsp() -> "None":
+            """Process responses messages on the ``stdin`` channel."""
+            assert self.kc is not None
+            async for rsp in self.await_stdin_rsps(msg_id):
+                if callable(stdin_cb):
+                    content = rsp.get("content", {})
+                    prompt = content.get("prompt", "")
+                    password = content.get("password", False)
+                    stdin_cb(self.kc.input, prompt=prompt, password=password)
 
         async def process_execute_shell_rsp() -> "None":
             """Process response messages on the ``shell`` channel."""
@@ -466,6 +507,7 @@ class NotebookKernel:
                     break
 
         await asyncio.gather(
+            process_stin_rsp(),
             process_execute_shell_rsp(),
             process_execute_iopub_rsp(),
             return_exceptions=True,

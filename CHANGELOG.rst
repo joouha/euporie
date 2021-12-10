@@ -4,6 +4,7 @@ Changlog
 Upcoming
 --------
 
+- Support user input with ``input()``
 - Support asynchronous cell output (à la `akernel <https://github.com/davidbrochart/akernel>`_)
 - Vastly more responsive completion & history requests
 - Major code restructure

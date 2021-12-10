@@ -185,7 +185,10 @@ class EuporieApp(Application):
         # If a tab is not open, the status bar is not shown, so focus the logo, so
         # pressing tab focuses the menu
         else:
-            self.layout.focus_next()
+            try:
+                self.layout.focus_next()
+            except ValueError:
+                pass
 
     def _create_merged_style(
         self, include_default_pygments_style: "Filter" = None
@@ -223,9 +226,9 @@ class EuporieApp(Application):
             "status": "bg:#222222 fg:#cccccc",
             "status.field": "bg:#303030",
             # Cells
-            "cell-border": "fg:#4e4e4e",
-            "cell-border-selected": "fg:#00afff",
-            "cell-border-edit": "fg:#00ff00",
+            "cell.border": "fg:#4e4e4e",
+            "cell.border.selected": "fg:#00afff",
+            "cell.border.edit": "fg:#00ff00",
             "cell-input": "fg:default",
             "line-number": f"fg:#888888 bg:{dim_bg}",
             "line-number.current": "bold",

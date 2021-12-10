@@ -2,6 +2,7 @@
 """Defines a cell object with input are and rich outputs, and related objects."""
 from __future__ import annotations
 
+import asyncio
 import logging
 import re
 from functools import partial
@@ -12,6 +13,7 @@ from prompt_toolkit.application.current import get_app
 from prompt_toolkit.buffer import Completion, indent, unindent
 from prompt_toolkit.filters import (
     Condition,
+    buffer_has_focus,
     completion_is_selected,
     emacs_mode,
     has_completions,
@@ -37,7 +39,7 @@ from prompt_toolkit.layout.processors import ConditionalProcessor
 from prompt_toolkit.lexers import DynamicLexer, PygmentsLexer, SimpleLexer
 from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
 from prompt_toolkit.search import start_search
-from prompt_toolkit.widgets import SearchToolbar, TextArea
+from prompt_toolkit.widgets import Frame, Label, SearchToolbar, TextArea
 from pygments.lexers import get_lexer_by_name  # type: ignore
 
 from euporie.box import Border
@@ -47,8 +49,9 @@ from euporie.output import Output
 from euporie.suggest import AppendLineAutoSuggestion, ConditionalAutoSuggestAsync
 
 if TYPE_CHECKING:
-    from typing import TYPE_CHECKING, Any, Literal, Optional
+    from typing import TYPE_CHECKING, Any, Callable, Literal, Optional
 
+    from prompt_toolkit.buffer import Buffer
     from prompt_toolkit.formatted_text.base import StyleAndTextTuples
     from prompt_toolkit.key_binding import KeyBindingsBase
     from prompt_toolkit.key_binding.key_processor import KeyPressEvent
@@ -97,7 +100,6 @@ class Cell:
         self.json = json
         self.nb: "Notebook" = notebook
         self.rendered = True
-        self.editing = False
 
         self.state = "idle"
 
@@ -119,7 +121,6 @@ class Cell:
         self.autocomplete = Condition(lambda: config.autocomplete)
         self.autosuggest = Condition(lambda: config.autosuggest)
         self.wrap_input = Condition(lambda: self.json.get("cell_type") == "markdown")
-        self.is_editing = Condition(lambda: self.editing)
         self.show_prompt = Condition(lambda: self.cell_type == "code")
         self.is_focused = Condition(lambda: self.focused)
         self.is_code = Condition(lambda: self.json.get("cell_type") == "code")
@@ -127,42 +128,14 @@ class Cell:
             lambda: config.line_numbers & self.is_code()
         )
         self.obscured = Condition(lambda: False)
+        self._asking_input = False
+        self.asking_input = Condition(lambda: self._asking_input)
 
-        self.input_box: TextArea
-        self.container: FloatContainer
-        self.output_box: HSplit
+        # Generates the main container used to represent a notebook cell
 
-        self.load()
+        self.search_control = SearchToolbar()
+        self.input_box = CellInputTextArea(self)
 
-    def load_key_bindings(self) -> "KeyBindingsBase":
-        """Loads the key bindings related to cells."""
-        return KeyBindingsInfo()
-
-    def on_output(self) -> "None":
-        """Runs when a message for this cell is recieved from the kernel."""
-        # Set the outputs
-        self.output_box.children = self.rendered_outputs
-        # Tell the app that the display needs updating
-        get_app().invalidate()
-
-    def ran(self, cell_json: "Optional[dict]" = None) -> "None":
-        """Callback which runs when the cell has finished running."""
-        self.state = "idle"
-
-    def set_cell_type(self, cell_type: "Literal['markdown','code','raw']") -> "None":
-        """Convert the cell to a different cell type.
-
-        Args:
-            cell_type: The desired cell type.
-
-        """
-        if cell_type == "code":
-            self.json.setdefault("execution_count", None)
-        self.json["cell_type"] = cell_type
-        self.output_box.children = self.rendered_outputs
-
-    def load(self) -> "None":
-        """Generates the main container used to represent a notebook cell."""
         ft = FormattedTextControl(
             Border.TOP_LEFT,
             focusable=True,
@@ -172,50 +145,16 @@ class Cell:
 
         fill = partial(Window, style=self.border_style)
 
-        self.search_control = SearchToolbar()
+        self.input_box = CellInputTextArea(self)
 
-        self.input_box = TextArea(
-            text=self.input,
-            # Does not accept conditions
-            scrollbar=self.scroll_input(),
-            wrap_lines=self.wrap_input,
-            # Does not accept conditions
-            # line_numbers=self.show_input_line_numbers(),
-            read_only=~self.is_editing,
-            focusable=self.is_editing,
-            lexer=DynamicLexer(
-                lambda: (
-                    PygmentsLexer(
-                        get_lexer_by_name(self.language).__class__,
-                        sync_from_start=False,
-                    )
-                    if self.cell_type != "raw"
-                    else SimpleLexer()
-                )
-            ),
-            search_field=self.search_control,
-            completer=self.nb.completer,
-            complete_while_typing=self.autocomplete & self.is_code,
-            auto_suggest=ConditionalAutoSuggestAsync(
-                self.nb.suggester, filter=self.is_code & self.autosuggest
-            ),
-            style="class:cell-input",
+        # Create textbox for standard input
+        self.stdin_prompt = Label(">", dont_extend_width=True, style="bold")
+        self.stdin_box = CellStdinTextArea(
+            multiline=False,
+            # accept_handler=self.send_input,
+            accept_handler=None,
+            focus_on_click=True,
         )
-        # Add configurable line numbers
-        self.input_box.window.left_margins = [
-            ConditionalMargin(
-                NumberedMargin(),
-                Condition(lambda: config.line_numbers),
-            )
-        ]
-        if self.input_box.control.input_processors is None:
-            self.input_box.control.input_processors = []
-        self.input_box.control.input_processors[0] = ConditionalProcessor(
-            AppendLineAutoSuggestion(),
-            has_focus(self.input_box.control.buffer) & ~is_done,
-        )
-        self.input_box.window.cursorline = self.is_editing
-        self.input_box.buffer.tempfile_suffix = ".py"
 
         self.output_box = HSplit(
             self.rendered_outputs,
@@ -306,14 +245,30 @@ class Cell:
                         content=fill(width=1, char=Border.VERTICAL),
                         filter=self.show_prompt,
                     ),
-                    self.output_box,
+                    HSplit(
+                        [
+                            self.output_box,
+                            ConditionalContainer(
+                                Frame(
+                                    VSplit(
+                                        [
+                                            self.stdin_prompt,
+                                            Label(" ", dont_extend_width=True),
+                                            self.stdin_box,
+                                        ]
+                                    ),
+                                ),
+                                filter=self.asking_input,
+                            ),
+                        ]
+                    ),
                     ConditionalContainer(
                         fill(width=1, char=" "), filter=~self.show_prompt
                     ),
                     fill(width=1, char=Border.VERTICAL),
                 ],
             ),
-            filter=self.show_output,
+            filter=self.show_output | self.asking_input,
         )
         bottom_border = VSplit(
             [
@@ -351,7 +306,7 @@ class Cell:
                             self,
                             to_formatted_text(
                                 Border.TOP_LEFT,
-                                style="class:frame.border,cell-border",
+                                style="class:frame.border,cell.border",
                             ),
                         ),
                         filter=~self.is_focused,
@@ -360,15 +315,46 @@ class Cell:
             ],
         )
 
+    def load_key_bindings(self) -> "KeyBindingsBase":
+        """Loads the key bindings related to cells."""
+        return KeyBindingsInfo()
+
+    def on_output(self) -> "None":
+        """Runs when a message for this cell is recieved from the kernel."""
+        # Set the outputs
+        self.output_box.children = self.rendered_outputs
+        # Tell the app that the display needs updating
+        get_app().invalidate()
+
+    def exit_edit_mode(self) -> "None":
+        """Removes a cell from edit mode."""
+        pass
+
+    def ran(self, cell_json: "Optional[dict]" = None) -> "None":
+        """Callback which runs when the cell has finished running."""
+        self.state = "idle"
+
+    def set_cell_type(self, cell_type: "Literal['markdown','code','raw']") -> "None":
+        """Convert the cell to a different cell type.
+
+        Args:
+            cell_type: The desired cell type.
+
+        """
+        if cell_type == "code":
+            self.json.setdefault("execution_count", None)
+        self.json["cell_type"] = cell_type
+        self.output_box.children = self.rendered_outputs
+
     def border_style(self) -> "str":
         """Determines the style of the cell borders, based on the cell state."""
         if self.focused:
-            if self.editing:
-                return "class:frame.border,cell-border-edit"
+            if has_focus(self.input_box.buffer)():
+                return "class:cell.border.edit"
             else:
-                return "class:frame.border,cell-border-selected"
+                return "class:cell.border.selected"
         else:
-            return "class:frame.border,cell-border"
+            return "class:cell.border"
 
     @property
     def id(self) -> "str":
@@ -462,8 +448,6 @@ class Cell:
 
     def __pt_container__(self) -> "Container":
         """Returns the container which represents this cell."""
-        if not self.container:
-            self.load()
         return self.container
 
 
@@ -475,39 +459,31 @@ class InteractiveCell(Cell):
         # Pytype need this re-defining...
         self.nb: "TuiNotebook" = notebook
         self.obscured = Condition(lambda: self.nb.is_cell_obscured(self.index))
+        self.stdin_event = asyncio.Event()
 
     def load_key_bindings(self) -> "KeyBindingsBase":
         """Loads the key bindings related to cells."""
         kb = KeyBindingsInfo()
 
         @kb.add(
-            "e", filter=~self.is_editing, group="Notebook", desc="Edit cell in $EDITOR"
+            "e", filter=~buffer_has_focus, group="Notebook", desc="Edit cell in $EDITOR"
         )
         async def edit_in_editor(event: "KeyPressEvent") -> "None":
-            self.editing = True
             await self.input_box.buffer.open_in_editor()
-            exit_edit_mode(event)
+            self.exit_edit_mode()
             if config.run_after_external_edit:
                 self.run_or_render()
 
         @kb.add(
             "enter",
-            filter=~self.is_editing,
+            filter=~buffer_has_focus,
             group="Notebook",
             desc="Enter cell edit mode",
         )
         def enter_edit_mode(event: "KeyPressEvent") -> "None":
-            self.editing = True
-            self.container.modal = True
+            # self.container.modal = True
             get_app().layout.focus(self.input_box)
             self.rendered = False
-
-        @kb.add("escape", group="Notebook", desc="Exit cell edit mode")
-        @kb.add(
-            "escape", "escape", group="Notebook", desc="Exit cell edit mode quickly"
-        )
-        def exit_edit_mode(event: "KeyPressEvent") -> "None":
-            self.exit_edit_mode()
 
         @kb.add(
             "escape",
@@ -543,23 +519,148 @@ class InteractiveCell(Cell):
         def run_then_next(event: "KeyPressEvent") -> "None":
             self.run_or_render(advance=True)
 
-        @kb.add("c-f", filter=self.is_editing, group="Edit Mode", desc="Find")
-        def find(event: "KeyPressEvent") -> "None":
-            start_search(self.input_box.control)
+        return kb
 
-        @kb.add("c-g", filter=self.is_editing, group="Edit Mode", desc="Find Next")
+    def exit_edit_mode(self) -> "None":
+        """Removes a cell from edit mode."""
+        self.input = self.input_box.text
+        self.nb.dirty = True
+        # Give focus back to selected cell (this might have changed e.g. if doing a run
+        # then select the next cell)
+        get_app().layout.focus(self.nb.cell.control)
+
+    def run_or_render(self, advance: "bool" = False) -> "None":
+        """Run code cells, or render markdown cells, optionally advancing.
+
+        Args:
+            advance: If True, move to next cell. If True and at the last cell, create a
+                new cell at the end of the notebook.
+
+        """
+        if advance:
+            # Insert a cell if we are at the last cell
+            n_cells = len(self.nb.json["cells"])
+            if self.nb.page.selected_index == (n_cells) - 1:
+                offset = n_cells - self.nb.page.selected_index
+                self.nb.add(offset)
+            else:
+                self.nb.page.selected_index += 1
+
+        self.exit_edit_mode()
+        if self.cell_type == "markdown":
+            self.output_box.children = self.rendered_outputs
+            self.rendered = True
+        elif self.cell_type == "code":
+            self.state = "queued"
+            # Clear output early
+            self.clear_output()
+            self.nb.run_cell(self)
+
+    def get_input(
+        self,
+        send: "Callable[[str], Any]",
+        prompt: "str" = "Please enter a valve:",
+        password: "bool" = False,
+    ) -> "None":
+        """Prompts the user for input and sends the result to the kernel."""
+        # Show and focus the input box
+        self._asking_input = True
+        get_app().layout.focus(self.stdin_box)
+        self.stdin_prompt.text = prompt
+        self.stdin_box.password = password
+
+        def _send_input(buf: "Buffer") -> "bool":
+            """Send the input to the kernel and hide the input box."""
+            send(buf.text)
+            # Cleanup
+            self._asking_input = False
+            get_app().layout.focus(self)
+            self.stdin_box.text = ""
+            return True
+
+        self.stdin_box.accept_handler = _send_input
+
+
+class CellInputTextArea(TextArea):
+    """A customized text area for the cell input."""
+
+    def __init__(self, cell: "Cell", *args: "Any", **kwargs: "Any") -> "None":
+        self.cell = cell
+
+        kwargs["text"] = cell.input
+        kwargs["focus_on_click"] = True
+        kwargs["focusable"] = True
+        kwargs["scrollbar"] = cell.scroll_input()
+        kwargs["wrap_lines"] = cell.wrap_input
+        kwargs["lexer"] = DynamicLexer(
+            lambda: (
+                PygmentsLexer(
+                    get_lexer_by_name(cell.language).__class__,
+                    sync_from_start=False,
+                )
+                if cell.cell_type != "raw"
+                else SimpleLexer()
+            )
+        )
+        kwargs["search_field"] = cell.search_control
+        kwargs["completer"] = cell.nb.completer
+        kwargs["complete_while_typing"] = cell.autocomplete & cell.is_code
+        kwargs["auto_suggest"] = ConditionalAutoSuggestAsync(
+            cell.nb.suggester, filter=cell.is_code & cell.autosuggest
+        )
+        kwargs["style"] = "class:cell-input"
+
+        super().__init__(*args, **kwargs)
+
+        # Add configurable line numbers
+        self.window.left_margins = [
+            ConditionalMargin(
+                NumberedMargin(),
+                Condition(lambda: config.line_numbers),
+            )
+        ]
+        # Replace the autosuggest processor
+        # Skip type checking as PT should use "("Optional[Sequence[Processor]]"
+        # instead of "Optional[List[Processor]]"
+        # TODO make a PR for this
+        self.control.input_processors[0] = ConditionalProcessor(  # type: ignore
+            AppendLineAutoSuggestion(),
+            has_focus(self.buffer) & ~is_done,
+        )
+        # TODO - set from kernel_info_reply language_info file_extension
+        self.buffer.tempfile_suffix = ".py"
+        # Set inpux_box key bindings here
+        self.control.key_bindings = self.load_key_bindings()
+        self.window.cursorline = has_focus(self)
+
+    def load_key_bindings(self) -> "KeyBindingsBase":
+        """Loads the key bindings related to cells."""
+        kb = KeyBindingsInfo()
+
+        @kb.add("escape", group="Notebook", desc="Exit cell edit mode")
+        @kb.add(
+            "escape", "escape", group="Notebook", desc="Exit cell edit mode quickly"
+        )
+        def exit_edit_mode(event: "KeyPressEvent") -> "None":
+            self.cell.exit_edit_mode()
+
+        @kb.add("c-f", group="Edit Mode", desc="Find")
+        def find(event: "KeyPressEvent") -> "None":
+            start_search(self.control)
+
+        @kb.add("c-g", group="Edit Mode", desc="Find Next")
         def find_next(event: "KeyPressEvent") -> "None":
             search_state = get_app().current_search_state
-            cursor_position = self.input_box.buffer.get_search_position(
+            cursor_position = event.current_buffer.get_search_position(
                 search_state, include_current_position=False
             )
-            self.input_box.buffer.cursor_position = cursor_position
+            event.current_buffer.cursor_position = cursor_position
 
-        @kb.add("c-z", filter=self.is_editing, group="Edit Mode", desc="Undo")
+        @kb.add("c-z", group="Edit Mode", desc="Undo")
         def undo(event: "KeyPressEvent") -> "None":
-            self.input_box.buffer.undo()
+            event.current_buffer.undo()
 
-        @kb.add("c-d", filter=self.is_editing, group="Edit Mode", desc="Duplicate line")
+        @kb.add("c-d", group="Edit Mode", desc="Duplicate line")
         def duplicate_line(event: "KeyPressEvent") -> "None":
             buffer = event.current_buffer
             line = buffer.document.current_line
@@ -575,13 +676,13 @@ class InteractiveCell(Cell):
                 buff.exit_selection()
             buff.cursor_position += n
 
-        @kb.add("enter", filter=self.is_editing)
+        @kb.add("enter")
         def new_line(event: "KeyPressEvent") -> "None":
             buffer = event.current_buffer
             buffer.cut_selection()
             pre = buffer.document.text_before_cursor
             buffer.newline()
-            if pre.rstrip()[-1:] in (":", "(", "["):
+            if pre.rstrip()[-1:] in (":", "(", "[", "{"):
                 dent_buffer(event)
 
         def dent_buffer(event: "KeyPressEvent", un: "bool" = False) -> "None":
@@ -624,7 +725,7 @@ class InteractiveCell(Cell):
 
         @kb.add(
             "tab",
-            filter=self.is_editing & (cursor_in_leading_ws | has_selection),
+            filter=cursor_in_leading_ws | has_selection,
             group="Edit Mode",
             desc="Indent",
         )
@@ -633,7 +734,7 @@ class InteractiveCell(Cell):
 
         @kb.add(
             "s-tab",
-            filter=self.is_editing & (cursor_in_leading_ws | has_selection),
+            filter=cursor_in_leading_ws | has_selection,
             group="Edit Mode",
             desc="Unindent",
         )
@@ -642,7 +743,7 @@ class InteractiveCell(Cell):
 
         @kb.add(
             "tab",
-            filter=self.is_editing & ~self.is_code & ~has_selection & ~has_completions,
+            filter=self.cell.is_code & ~has_selection & ~has_completions,
         )
         def instab(event: "KeyPressEvent") -> "None":
             from prompt_toolkit.document import Document
@@ -653,7 +754,7 @@ class InteractiveCell(Cell):
                 text=new_text, cursor_position=event.current_buffer.cursor_position + 4
             )
 
-        @kb.add("s-tab", filter=self.is_editing & ~has_selection & ~has_completions)
+        @kb.add("s-tab", filter=~has_selection & ~has_completions)
         def s_tab(event: "KeyPressEvent") -> "None":
             pass
 
@@ -672,19 +773,17 @@ class InteractiveCell(Cell):
                         complete_state.current_completion
                     )
 
-        @kb.add("c-c", filter=self.is_editing, group="Edit Mode", desc="Copy")
+        @kb.add("c-c", group="Edit Mode", desc="Copy")
         def copy_selection(event: "KeyPressEvent") -> "None":
             data = event.current_buffer.copy_selection()
             get_app().clipboard.set_data(data)
 
-        @kb.add(
-            "c-x", filter=self.is_editing, eager=True, group="Edit Mode", desc="Cut"
-        )
+        @kb.add("c-x", eager=True, group="Edit Mode", desc="Cut")
         def cut_selection(event: "KeyPressEvent") -> "None":
             data = event.current_buffer.cut_selection()
             get_app().clipboard.set_data(data)
 
-        @kb.add("c-v", filter=self.is_editing, group="Edit Mode", desc="Paste")
+        @kb.add("c-v", group="Edit Mode", desc="Paste")
         def paste_clipboard(event: "KeyPressEvent") -> "None":
             event.current_buffer.paste_clipboard_data(get_app().clipboard.get_data())
 
@@ -692,8 +791,7 @@ class InteractiveCell(Cell):
         def suggesting() -> "bool":
             app = get_app()
             return (
-                self.is_editing()
-                and app.current_buffer.suggestion is not None
+                app.current_buffer.suggestion is not None
                 and len(app.current_buffer.suggestion.text) > 0
                 and app.current_buffer.document.is_cursor_at_the_end_of_line
             )
@@ -719,41 +817,19 @@ class InteractiveCell(Cell):
 
         return kb
 
-    def exit_edit_mode(self) -> "None":
-        """Removes a cell from edit mode."""
-        self.editing = False
-        self.input = self.input_box.text
-        self.nb.dirty = True
-        self.container.modal = False
-        # give focus back to selected cell (this might have changed!)
-        get_app().layout.focus(self.nb.cell.control)
 
-    def run_or_render(self, advance: "bool" = False) -> "None":
-        """Run code cells, or render markdown cells, optionally advancing.
+class CellStdinTextArea(TextArea):
+    """A modal text area for user input."""
 
-        Args:
-            advance: If True, move to next cell. If True and at the last cell, create a
-                new cell at the end of the notebook.
+    def __init__(self, *args: "Any", **kwargs: "Any"):
+        """Create a cell input text area."""
+        self.password = False
+        kwargs["password"] = Condition(lambda: self.password)
+        super().__init__(*args, **kwargs)
 
-        """
-        if advance:
-            # Insert a cell if we are at the last cell
-            n_cells = len(self.nb.json["cells"])
-            if self.nb.page.selected_index == (n_cells) - 1:
-                offset = n_cells - self.nb.page.selected_index
-                self.nb.add(offset)
-            else:
-                self.nb.page.selected_index += 1
-
-        self.exit_edit_mode()
-        if self.cell_type == "markdown":
-            self.output_box.children = self.rendered_outputs
-            self.rendered = True
-        elif self.cell_type == "code":
-            self.state = "queued"
-            # Clear output early
-            self.clear_output()
-            self.nb.run_cell(self)
+    def is_modal(self) -> "bool":
+        """Returns true, so the input is always modal."""
+        return True
 
 
 class ClickArea:
