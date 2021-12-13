@@ -54,6 +54,7 @@ Euporie will attempt to render images in the best possible way it can. The follo
   If supported by your terminal, euporie can show graphical images in cell outputs
   This requires one of the following:
 
+  [`img2sixel`](https://saitoha.github.io/libsixel/#img2sixel)
   [`imagemagik`](https://www.imagemagick.org)
   [`timg`](https://github.com/adzierzanowski/timg)
   [`teimpy`](https://github.com/ar90n/teimpy)

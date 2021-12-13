@@ -647,6 +647,47 @@ class SixelRenderer(ImageMixin, DataRenderer):
     """Grouping class for sixel image renderers."""
 
 
+class img_sixel_img2sixel(SubprocessRenderMixin, SixelRenderer):
+    """Render images as sixel using ImageMagic."""
+
+    cmd = "img2sixel"
+
+    def load(self, data: "str") -> "None":
+        """Sets the command to use for rendering.
+
+        Additionally sets the default image size and background colour if they have not
+        yet been passed to the render function (i.e. during validation).
+
+        Args:
+            data: The cell output data to be rendered.
+
+        """
+        super().load(data)
+        if not hasattr(self, "px"):
+            self.px = self.py = 0
+        term = cast("EuporieApp", get_app()).term
+        self.bg_color = term.bg_color or "#FFFFFF"
+        self.args = [
+            f"--width={self.px}",
+            f"--height={self.py}",
+            f"--bgcolor={self.bg_color}",
+        ]
+
+    def process(self, data: "Union[bytes, str]") -> "Union[bytes, str]":
+        """Decode the base64 encoded image data before processing.
+
+        Args:
+            data: base64 encoded image data
+
+        Returns:
+            An ANSI string representing the rendered input.
+
+        """
+        data_bytes = base64.b64decode(data)
+        output = super().process(data_bytes)
+        return output
+
+
 class img_sixel_imagemagik(SubprocessRenderMixin, SixelRenderer):
     """Render images as sixel using ImageMagic."""
 
