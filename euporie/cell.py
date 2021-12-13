@@ -537,19 +537,20 @@ class InteractiveCell(Cell):
                 new cell at the end of the notebook.
 
         """
+        self.exit_edit_mode()
+
         if advance:
             # Insert a cell if we are at the last cell
             n_cells = len(self.nb.json["cells"])
             if self.nb.page.selected_index == (n_cells) - 1:
-                offset = n_cells - self.nb.page.selected_index
-                self.nb.add(offset)
+                self.nb.add(self.index + 1)
             else:
                 self.nb.page.selected_index += 1
 
-        self.exit_edit_mode()
         if self.cell_type == "markdown":
             self.output_box.children = self.rendered_outputs
             self.rendered = True
+
         elif self.cell_type == "code":
             self.state = "queued"
             # Clear output early
@@ -563,9 +564,12 @@ class InteractiveCell(Cell):
         password: "bool" = False,
     ) -> "None":
         """Prompts the user for input and sends the result to the kernel."""
+        # Remeber what was focused before
+        layout = get_app().layout
+        focused = layout.current_control
         # Show and focus the input box
         self._asking_input = True
-        get_app().layout.focus(self.stdin_box)
+        layout.focus(self.stdin_box)
         self.stdin_prompt.text = prompt
         self.stdin_box.password = password
 
@@ -576,6 +580,11 @@ class InteractiveCell(Cell):
             self._asking_input = False
             get_app().layout.focus(self)
             self.stdin_box.text = ""
+            if focused in layout.find_all_controls():
+                try:
+                    layout.focus(focused)
+                except ValueError:
+                    pass
             return True
 
         self.stdin_box.accept_handler = _send_input
