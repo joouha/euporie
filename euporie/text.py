@@ -12,14 +12,14 @@ from prompt_toolkit.formatted_text import (
     to_formatted_text,
 )
 from prompt_toolkit.layout.margins import ScrollbarMargin
-from prompt_toolkit.layout.processors import DynamicProcessor, Processor
+from prompt_toolkit.layout.processors import DynamicProcessor, Processor, Transformation
 from prompt_toolkit.widgets import TextArea
 
 if TYPE_CHECKING:
     from typing import Any, Generator
 
     from prompt_toolkit.formatted_text import StyleAndTextTuples
-    from prompt_toolkit.layout.processors import Transformation, TransformationInput
+    from prompt_toolkit.layout.processors import TransformationInput
 
 __all__ = ["FormatTextProcessor", "FormattedTextArea", "ANSI"]
 
