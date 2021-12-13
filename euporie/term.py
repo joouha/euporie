@@ -55,6 +55,7 @@ class QueryCodes:
     # line and move the curor to the start after sending a kitty graphics query code,
     # which prevents breaking the display
     kitty = "\x1b_Gi=1,s=1,v=1,a=q,t=d,f=24;AAAA\x1b\\" + "\x1b[1K" + "\x1b[1G"
+    cursor_position = "\x1b[6n"
 
 
 class QueryResponsePatterns:
@@ -67,6 +68,7 @@ class QueryResponsePatterns:
     pixel_dimensions = re.compile(r"4;(?P<y>\d+);(?P<x>\d+)")
     sixel = re.compile(r"\d+")
     kitty = "\x1b[_Gi=1;OK\x1b[\\"
+    cursor_position = re.compile(r"(?P<row>\d+);(?P<col>\d+)")
 
 
 @lru_cache
@@ -253,3 +255,15 @@ class TerminalQuery:
                     if response[1] == "OK":
                         return True
         return False
+
+    @property  # type: ignore
+    def cursor_position(self) -> "tuple[int, int]":
+        """Determine if the terminal supports the kitty graphics protocal."""
+        row = col = 0
+        if result := _query_term(QueryCodes.cursor_position, stdout=self.output.stdout):
+            if csi_params := result.get("csi_params"):
+                if match := QueryResponsePatterns.cursor_position.match(csi_params):
+                    if pos := match.groupdict():
+                        row = int(pos.get("row", 0))
+                        col = int(pos.get("col", 0))
+        return (row, col)
