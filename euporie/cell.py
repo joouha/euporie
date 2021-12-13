@@ -750,22 +750,30 @@ class CellInputTextArea(TextArea):
         def unindent_buffer(event: "KeyPressEvent") -> "None":
             dent_buffer(event, un=True)
 
-        @kb.add(
-            "tab",
-            filter=self.cell.is_code & ~has_selection & ~has_completions,
-        )
-        def instab(event: "KeyPressEvent") -> "None":
-            from prompt_toolkit.document import Document
+        # @kb.add(
+        # "tab",
+        # filter=(~has_selection & ~has_completions),
+        # )
+        # def instab(event: "KeyPressEvent") -> "None":
+        # from prompt_toolkit.document import Document
 
-            doc = event.current_buffer.document
-            new_text = doc.text_before_cursor + "    " + doc.text_after_cursor
-            event.current_buffer.document = Document(
-                text=new_text, cursor_position=event.current_buffer.cursor_position + 4
+        # doc = event.current_buffer.document
+        # new_text = doc.text_before_cursor + "    " + doc.text_after_cursor
+        # event.current_buffer.document = Document(
+        # text=new_text, cursor_position=event.current_buffer.cursor_position + 4
+        # )
+
+        # @kb.add("s-tab", filter=cursor_in_leading_ws | (~has_selection & ~has_completions))
+        # def s_tab(event: "KeyPressEvent") -> "None":
+        # pass
+
+        @kb.add("home")
+        def bounce_home(event: "KeyPressEvent") -> "None":
+            buff = event.current_buffer
+            buff.cursor_position += buff.document.get_start_of_line_position(
+                after_whitespace=not cursor_in_leading_ws()
+                or buff.document.cursor_position_col == 0
             )
-
-        @kb.add("s-tab", filter=~has_selection & ~has_completions)
-        def s_tab(event: "KeyPressEvent") -> "None":
-            pass
 
         @kb.add("escape", filter=has_completions, eager=True)
         def cancel_completion(event: "KeyPressEvent") -> "None":
