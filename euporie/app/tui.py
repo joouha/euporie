@@ -228,22 +228,7 @@ class TuiApp(EuporieApp):
                     " Settings ",
                     children=[
                         MenuItem(
-                            "Syntax Theme",
-                            children=[
-                                SmartMenuItem(
-                                    style,
-                                    handler=partial(self.update_style, style),
-                                    toggler=Condition(
-                                        partial(
-                                            lambda x: config.syntax_theme == x, style
-                                        )
-                                    ),
-                                )
-                                for style in sorted(get_all_styles())
-                            ],
-                        ),
-                        MenuItem(
-                            "Editing Key Bindings",
+                            "Editing key bindings",
                             children=[
                                 SmartMenuItem(
                                     "Emacs",
@@ -259,14 +244,47 @@ class TuiApp(EuporieApp):
                                 ),
                             ],
                         ),
+                        MenuItem("-", disabled=True),
                         MenuItem(
-                            "Switch Background Pattern",
+                            "Syntax Theme",
+                            children=[
+                                SmartMenuItem(
+                                    style,
+                                    handler=partial(self.update_style, style),
+                                    toggler=Condition(
+                                        partial(
+                                            lambda x: config.syntax_theme == x, style
+                                        )
+                                    ),
+                                )
+                                for style in sorted(get_all_styles())
+                            ],
+                        ),
+                        MenuItem(
+                            "Switch background pattern",
                             handler=lambda: config.toggle("background_pattern"),
                         ),
+                        MenuItem("-", disabled=True),
                         SmartMenuItem(
-                            "Show Line Numbers",
+                            "Use full width",
+                            handler=lambda: config.toggle("expand"),
+                            toggler=Condition(lambda: config.expand),
+                        ),
+                        SmartMenuItem(
+                            "Show line numbers",
                             handler=lambda: config.toggle("line_numbers"),
                             toggler=Condition(lambda: config.line_numbers),
+                        ),
+                        MenuItem("-", disabled=True),
+                        SmartMenuItem(
+                            "Completions as you type",
+                            toggler=Condition(lambda: bool(config.autocomplete)),
+                            handler=lambda: config.toggle("autocomplete"),
+                        ),
+                        SmartMenuItem(
+                            "Suggest lines from history",
+                            toggler=Condition(lambda: bool(config.autosuggest)),
+                            handler=lambda: config.toggle("autosuggest"),
                         ),
                         SmartMenuItem(
                             "Run cell after external edit",
@@ -274,16 +292,6 @@ class TuiApp(EuporieApp):
                                 lambda: bool(config.run_after_external_edit)
                             ),
                             handler=lambda: config.toggle("run_after_external_edit"),
-                        ),
-                        SmartMenuItem(
-                            "Auto-complete",
-                            toggler=Condition(lambda: bool(config.autocomplete)),
-                            handler=lambda: config.toggle("autocomplete"),
-                        ),
-                        SmartMenuItem(
-                            "Auto-suggest",
-                            toggler=Condition(lambda: bool(config.autosuggest)),
-                            handler=lambda: config.toggle("autosuggest"),
                         ),
                     ],
                 ),

@@ -221,6 +221,19 @@ CONFIG_PARAMS: "dict[str, dict]" = {
             Whether to automatically suggestion line content while typing in code cells.
         """,
     },
+    "expand": {
+        "flags_": ["--expand"],
+        "action": BooleanOptionalAction,
+        "type": bool,
+        "help": "Use the full width to display notebooks",
+        "schema_": {
+            "type": "boolean",
+            "default": False,
+        },
+        "description_": """
+            Whether the notebook page should expand to fill the available width
+        """,
+    },
     "max_notebook_width": {
         "flags_": ["--max-notebook-width"],
         "type": int,
