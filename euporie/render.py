@@ -62,6 +62,7 @@ class DataRenderer(metaclass=ABCMeta):
     """Base class for rendering output data."""
 
     render_args: "dict"
+    selected: "Optional[DataRenderer]" = None
 
     def __init__(self, **kwargs: "Any"):
         """Initiate the data renderer object."""
@@ -150,12 +151,16 @@ class DataRenderer(metaclass=ABCMeta):
             A valid DataRenderer instance.
 
         """
-        if Renderer := cls._select(*args, **kwargs):
-            renderer = Renderer(*args, **kwargs)
-            assert isinstance(renderer, DataRenderer)
-            return renderer
-        else:
-            return FallbackRenderer(*args, **kwargs)
+        if cls.selected is None:
+            if Renderer := cls._select(*args, **kwargs):
+                cls.selected = Renderer(*args, **kwargs)
+            else:
+                cls.selected = FallbackRenderer(*args, **kwargs)
+            assert isinstance(cls.selected, DataRenderer)
+            log.debug(
+                "Selecting '%s' for '%s'", type(cls.selected).__name__, cls.__name__
+            )
+        return cls.selected
 
     @classmethod
     def _select(cls, *args: "Any", **kwargs: "Any") -> "Optional[Type[DataRenderer]]":
@@ -178,7 +183,7 @@ class DataRenderer(metaclass=ABCMeta):
 
         # If there are no sub-renderers, try using the current renderer
         if not sub_renderers:
-            log.debug(f"No sub-renderers found, validating {cls}")
+            # log.debug(f"No sub-renderers found, validating {cls}")
             if cls.validate():
                 # log.debug(f"{cls} is valid")
                 return cls

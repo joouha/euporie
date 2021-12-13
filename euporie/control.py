@@ -47,7 +47,7 @@ class Control(UIControl):
             render_args = {}
         self.render_args = render_args
 
-        self.renderer_instance = self.renderer.select()
+        self.renderer_instance: "Optional[DataRenderer]" = None
         self.rendered_lines: "list" = []
         self._format_cache: SimpleCache = SimpleCache(maxsize=20)
         self._content_cache: SimpleCache = SimpleCache(maxsize=20)
@@ -98,6 +98,9 @@ class Control(UIControl):
 
     def render(self, width: "int", height: "int") -> "list[str]":
         """Calls the renderer."""
+        if self.renderer_instance is None:
+            self.renderer_instance = self.renderer.select()
+
         result = self.renderer_instance.render(
             self.data, width=width, height=height, render_args=self.render_args
         )
