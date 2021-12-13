@@ -271,23 +271,23 @@ class ScrollingContainer(Container):
         @kb.add("[", group="Navigation", desc="Scroll up", filter=~buffer_has_focus)
         @kb.add("<scroll-up>")
         def su(event: "KeyPressEvent") -> None:
-            self.scroll(-1)
+            self.scroll(1)
 
         @kb.add(
             "{", group="Navigation", desc="Scroll up more", filter=~buffer_has_focus
         )
         def sum(event: "KeyPressEvent") -> None:
-            self.scroll(-5)
+            self.scroll(5)
 
         @kb.add("]", group="Navigation", desc="Scroll down", filter=~buffer_has_focus)
         def sd(event: "KeyPressEvent") -> None:
-            self.scroll(1)
+            self.scroll(-1)
 
         @kb.add(
             "}", group="Navigation", desc="Scroll down more", filter=~buffer_has_focus
         )
         def sdm(event: "KeyPressEvent") -> None:
-            self.scroll(5)
+            self.scroll(-5)
 
         @kb.add(
             "c-up",
