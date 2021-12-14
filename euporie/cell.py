@@ -367,7 +367,8 @@ class Cell:
         if self.cell_type == "markdown":
             return "markdown"
         elif self.cell_type == "code":
-            return self.nb.json.metadata.get("language_info", {}).get("name", "python")
+            lang_info = self.nb.json.metadata.get("language_info", {})
+            return lang_info.get("name", lang_info.get("pygments_lexer", "python"))
         else:
             return "raw"
 
@@ -636,8 +637,7 @@ class CellInputTextArea(TextArea):
             AppendLineAutoSuggestion(),
             has_focus(self.buffer) & ~is_done,
         )
-        # TODO - set from kernel_info_reply language_info file_extension
-        self.buffer.tempfile_suffix = ".py"
+        self.buffer.tempfile_suffix = self.cell.nb.lang_file_ext
         # Set inpux_box key bindings here
         self.control.key_bindings = self.load_key_bindings()
         self.window.cursorline = has_focus(self)

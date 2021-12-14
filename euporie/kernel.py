@@ -550,6 +550,52 @@ class NotebookKernel:
             else:
                 level = level.setdefault(key, {})
 
+    def info(
+        self, cb: "Optional[Callable[[dict], Any]]" = None, wait: "bool" = False
+    ) -> "dict":
+        """Request information about the kernel.
+
+        Args:
+            cb: A callback function to run when the information has been retrieved. The
+                info is passed as an argument
+            wait: If True, block the main thread until complete
+
+        Returns:
+            The kernel info
+
+        """
+        return self._aodo(
+            self.info_(),
+            callback=cb,
+            wait=wait,
+        )
+
+    async def info_(self) -> "dict":
+        """Request information about the kernel.
+
+        Returns:
+            The kernel info
+
+        """
+        results = {}
+
+        assert self.kc is not None
+        msg_id = self.kc.kernel_info()
+
+        async def process_info_shell_rsp() -> "None":
+            """Process response messages on the ``shell`` channel."""
+            async for rsp in self.await_shell_rsps(msg_id):
+                status = rsp.get("content", {}).get("status", "")
+                if status == "ok":
+                    results.update(rsp.get("content", {}))
+
+        await asyncio.gather(
+            process_info_shell_rsp(),
+            self.process_default_iopub_rsp(msg_id),
+            return_exceptions=True,
+        )
+        return results
+
     def complete(self, code: "str", cursor_pos: "int") -> "list[dict]":
         """Request code completions from the kernel.
 
@@ -609,12 +655,11 @@ class NotebookKernel:
                                 {"text": match, "start_position": rel_start_position}
                             )
 
-        objs = await asyncio.gather(
+        await asyncio.gather(
             process_complete_shell_rsp(),
             self.process_default_iopub_rsp(msg_id),
             return_exceptions=True,
         )
-        log.debug(objs)
         return results
 
     def history(

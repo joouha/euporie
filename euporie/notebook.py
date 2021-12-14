@@ -100,6 +100,14 @@ class Notebook(Tab, metaclass=ABCMeta):
         """Return the tab title."""
         return self.path.name
 
+    def lang_file_ext(self) -> "str":
+        """Return the file extension for scripts in the notebook's language."""
+        return (
+            self.json.get("metadata", {})
+            .get("language_info", {})
+            .get("file_extension", ".py")
+        )
+
     def rendered_cells(self) -> "list[Cell]":
         """Return a list of `Cell` generator functions for the notebooks' cells."""
         cells = {}
@@ -247,8 +255,12 @@ class KernelNotebook(Notebook):
 
     def check_kernel(self, result: "None" = None) -> "None":
         log.debug("Kernel status is '%s'", self.kernel.status)
+        self.kernel.info(cb=self._process_kernel_info, wait=False)
 
-        # TODO: do a  kernel_info_request
+    def _process_kernel_info(self, info: "dict") -> "None":
+        self.json.setdefault("metadata", {})["language_info"] = info.get(
+            "language_info", {}
+        )
 
 
 class DumpKernelNotebook(DumpNotebook, KernelNotebook):
@@ -345,16 +357,23 @@ class TuiNotebook(KernelNotebook):
 
         if config.debug:
 
-            @kb.add("?", group="Application", desc="Save current file")
-            def debug(event: "KeyPressEvent") -> "None":
+            @kb.add(
+                "?",
+                group="Application",
+                desc="Save current file",
+                filter=~buffer_has_focus,
+            )
+            async def debug(event: "KeyPressEvent") -> "None":
+                self.check_kernel()
                 log.debug(
-                    "Kernel Report:\n- Status: %s\n- ID: %s\n- Missing: %s\n- Events: %s",
+                    "Kernel Report:\n- Status: %s\n- ID: %s\n- Missing: %s\n"
+                    "- Events: %s\n- Messages: %s",
                     self.kernel.status,
                     self.kernel.id,
                     self.kernel.missing,
                     self.kernel.events,
+                    self.kernel.msgs,
                 )
-                self.check_kernel()
 
         @kb.add("c-s", group="Application", desc="Save current file")
         def save(event: "KeyPressEvent") -> "None":

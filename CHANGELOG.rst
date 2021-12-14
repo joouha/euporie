@@ -4,6 +4,7 @@ Changlog
 Upcoming
 --------
 
+- Read notebook language configuration form the kernel
 - Configurable colorschemes
 - Support user input with ``input()``
 - Support asynchronous cell output (à la `akernel <https://github.com/davidbrochart/akernel>`_)
