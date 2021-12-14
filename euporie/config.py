@@ -250,11 +250,11 @@ CONFIG_PARAMS: "dict[str, dict]" = {
     "color_scheme": {
         "flags_": ["--color-scheme"],
         "type": str,
-        "choices": ["auto", "inverse", "light", "dark"],
+        "choices": ["default", "inverse", "light", "dark"],
         "help": "The color scheme to use",
         "schema_": {
             "type": "string",
-            "default": "auto",
+            "default": "default",
         },
         "description_": """
             The color scheme to use: `auto` means euporie will try to use your
