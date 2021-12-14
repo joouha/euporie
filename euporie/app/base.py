@@ -193,9 +193,16 @@ class EuporieApp(Application):
             except ValueError:
                 pass
 
-    def update_style(self, pygments_style: "str") -> "None":
+    def update_style(
+        self,
+        pygments_style: "Optional[str]" = None,
+        color_scheme: "Optional[str]" = None,
+    ) -> "None":
         """Updates the application's style when the syntax theme is changed."""
-        config.syntax_theme = pygments_style
+        if pygments_style is not None:
+            config.syntax_theme = pygments_style
+        if color_scheme is not None:
+            config.color_scheme = color_scheme
         self.renderer.style = self._create_merged_style()
 
     def load_key_bindings(self) -> "KeyBindingsInfo":
@@ -211,22 +218,26 @@ class EuporieApp(Application):
     def _create_merged_style(
         self, include_default_pygments_style: "Filter" = None
     ) -> "BaseStyle":
-        series = color_series(
-            bg=(self.term.bg_color or "#000000"),
-            fg=(self.term.fg_color or "#ffffff"),
-        )
+        base_colors: "dict[str, dict[str, str]]" = {
+            "auto": {"fg": self.term.fg_color, "bg": self.term.bg_color},
+            "light": {"fg": "#000000", "bg": "#FFFFFF"},
+            "dark": {"fg": "#FFFFFF", "bg": "#000000"},
+        }
+        series = color_series(**base_colors[config.color_scheme])
 
         style_dict = {
             # The default style is merged at this point so full styles can be
             # overridden. For example, this allows us to switch off the underline
             #  status of cursor-line.
             **dict(default_ui_style().style_rules),
+            # body
+            "body": f"fg:{series['fg'][0]} bg:{series['bg'][0]}",
             # Logo
             "logo": "fg:#ff0000",
             # Pattern
-            "background-pattern": f"fg:{config.background_color or series['bg'][1]}",
+            "pattern": f"fg:{config.background_color or series['bg'][1]}  bg:{series['bg'][0]}",
             # Chrome
-            "chrome": f"bg:{series['bg'][1]} fg:default",
+            "chrome": f"fg:{series['bg'][1]} bg:{series['bg'][1]}",
             # Statusbar
             "status": f"fg:{series['fg'][1]} bg:{series['bg'][1]}",
             "status.field": f"fg:{series['fg'][2]} bg:{series['bg'][2]}",
@@ -242,8 +253,8 @@ class EuporieApp(Application):
             "cell.border": f"fg:{series['bg'][5]}",
             "cell.border.selected": "fg:#00afff",
             "cell.border.edit": "fg:#00ff00",
-            "cell.input": "fg:default bg:default",
-            "cell.output": "fg:default",
+            # "cell.input": "fg:default bg:default",
+            # "cell.output": "fg:default",
             "cell.input.prompt": "fg:blue",
             "cell.output.prompt": "fg:red",
             # Scrollbars
@@ -255,6 +266,8 @@ class EuporieApp(Application):
             "dialog.body scrollbar": "reverse",
             "dialog shadow": "bg:#888888",
             "dialog.body": "bg:#b0b0b0 #000000",
+            # Notebook
+            "notebook.border": f"fg:{series['fg'][0]} bg:{series['bg'][0]}",
             # Horizontals rule
             "hr": "fg:#666666",
             # Completions menu
@@ -279,7 +292,7 @@ class EuporieApp(Application):
             "log.level.critical": "fg:red bold",
             "log.ref": "fg:grey",
             "log.date": "fg:#00875f",
-            "log.msg": "fg:default",
+            # "log.msg": "fg:default",
         }
 
         # Using a dynamic style has serious performance issues, so instead we update

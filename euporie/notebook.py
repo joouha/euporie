@@ -303,8 +303,15 @@ class TuiNotebook(KernelNotebook):
                     VSplit(
                         [
                             Pattern(),
-                            BorderLine(width=1, collapse=True),
-                            BorderLine(char=" ", width=1, collapse=True),
+                            BorderLine(
+                                width=1, collapse=True, style="class:notebook.border"
+                            ),
+                            BorderLine(
+                                char=" ",
+                                width=1,
+                                collapse=True,
+                                style="class:notebook.border",
+                            ),
                         ]
                     ),
                     filter=~expand,
@@ -313,8 +320,15 @@ class TuiNotebook(KernelNotebook):
                 ConditionalContainer(
                     VSplit(
                         [
-                            BorderLine(char=" ", width=1, collapse=True),
-                            BorderLine(width=1, collapse=True),
+                            BorderLine(
+                                char=" ",
+                                width=1,
+                                collapse=True,
+                                style="class:notebook.border",
+                            ),
+                            BorderLine(
+                                width=1, collapse=True, style="class:notebook.border"
+                            ),
                             Pattern(),
                         ]
                     ),

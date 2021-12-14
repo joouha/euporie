@@ -208,14 +208,16 @@ class TerminalQuery:
         return None
 
     @property
-    def bg_color(self) -> "Optional[str]":
+    def bg_color(self) -> "str":
         """Get the background colour of the terminal as a hex colour code."""
-        return self._color(QueryCodes.bg_color, QueryResponsePatterns.bg_color)
+        result = self._color(QueryCodes.bg_color, QueryResponsePatterns.bg_color)
+        return result or "#000000"
 
     @property
-    def fg_color(self) -> "Optional[str]":
+    def fg_color(self) -> "str":
         """Get the background colour of the terminal as a hex colour code."""
-        return self._color(QueryCodes.fg_color, QueryResponsePatterns.fg_color)
+        result = self._color(QueryCodes.fg_color, QueryResponsePatterns.fg_color)
+        return result or "#FFFFFF"
 
     @property
     def term_size_px(self) -> "tuple[int, int]":

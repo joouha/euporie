@@ -148,7 +148,8 @@ class TuiApp(EuporieApp):
                         ),
                         filter=Condition(lambda: not config.show_status_bar),
                     ),
-                ]
+                ],
+                style="class:body",
             ),
             menu_items=[
                 MenuItem(
@@ -246,11 +247,45 @@ class TuiApp(EuporieApp):
                         ),
                         MenuItem("-", disabled=True),
                         MenuItem(
+                            "Color scheme",
+                            children=[
+                                SmartMenuItem(
+                                    "Auto",
+                                    handler=partial(
+                                        self.update_style, color_scheme="auto"
+                                    ),
+                                    toggler=Condition(
+                                        lambda: config.color_scheme == "auto"
+                                    ),
+                                ),
+                                SmartMenuItem(
+                                    "Light",
+                                    handler=partial(
+                                        self.update_style, color_scheme="light"
+                                    ),
+                                    toggler=Condition(
+                                        lambda: config.color_scheme == "light"
+                                    ),
+                                ),
+                                SmartMenuItem(
+                                    "Dark",
+                                    handler=partial(
+                                        self.update_style, color_scheme="dark"
+                                    ),
+                                    toggler=Condition(
+                                        lambda: config.color_scheme == "dark"
+                                    ),
+                                ),
+                            ],
+                        ),
+                        MenuItem(
                             "Syntax Theme",
                             children=[
                                 SmartMenuItem(
                                     style,
-                                    handler=partial(self.update_style, style),
+                                    handler=partial(
+                                        self.update_style, pygments_style=style
+                                    ),
                                     toggler=Condition(
                                         partial(
                                             lambda x: config.syntax_theme == x, style

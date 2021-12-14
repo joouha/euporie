@@ -37,7 +37,7 @@ class BorderLine(Container):
         width: "Optional[int]" = None,
         height: "Optional[int]" = None,
         collapse: "bool" = False,
-        style: "str" = "",
+        style: "str" = "class:border-line",
     ) -> "None":
         """Initalizes a border line.
 
@@ -119,7 +119,8 @@ class Pattern(Container):
 
     def __init__(self) -> "None":
         """Initalize the :class:`Pattern`."""
-        self.bg = Char(" ", "class:background-pattern")
+        self.bg = Char(" ", "class:pattern")
+        self.char = Char(config.background_character, "class:pattern")
 
     def reset(self) -> "None":
         """Resets the pattern. Does nothing."""
@@ -176,9 +177,7 @@ class Pattern(Container):
                         and ((x + y % 2 * 3) % 6) % 4 == 0
                     )
                 ):
-                    row[x] = Char(
-                        config.background_character, "class:background-pattern"
-                    )
+                    row[x] = self.char
                 else:
                     row[x] = self.bg
 

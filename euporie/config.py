@@ -247,6 +247,21 @@ CONFIG_PARAMS: "dict[str, dict]" = {
             The maximum width at which to display a notebook.
         """,
     },
+    "color_scheme": {
+        "flags_": ["--color-scheme"],
+        "type": str,
+        "choices": ["auto", "light", "dark"],
+        "help": "The color scheme to use",
+        "schema_": {
+            "type": "string",
+            "default": "auto",
+        },
+        "description_": """
+            The color scheme to use: `auto` means euporie will try to use your
+            terminal's color scheme, `light` means black text on a white background,
+            and `dark` means white text on a black background.
+        """,
+    },
     "background_pattern": {
         "flags_": ["--background-pattern", "--bg-pattern"],
         "type": int,
