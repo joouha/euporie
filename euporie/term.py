@@ -49,7 +49,8 @@ class QueryCodes:
 
     device = "\x1b[>0c"
     pixel_dimensions = "\x1b[14t"
-    background_color = "\x1b]11;?\x1b\\"
+    fg_color = "\x1b]10;?\x1b\\"
+    bg_color = "\x1b]11;?\x1b\\"
     sixel = "\x1b[c"
     # For some reason, konsole prints APC codes to the screen, so we clear the current
     # line and move the curor to the start after sending a kitty graphics query code,
@@ -62,12 +63,15 @@ class QueryResponsePatterns:
     """Container for terminal query response patterns."""
 
     device = re.compile(r"\x1b\[\>(\d;?)+c")
-    background_color = re.compile(
+    bg_color = re.compile(
         "11;rgb:(?P<r>[0-9A-Fa-f]{2,4})/(?P<g>[0-9A-Fa-f]{2,4})/(?P<b>[0-9A-Fa-f]{2,4})"
+    )
+    fg_color = re.compile(
+        "10;rgb:(?P<r>[0-9A-Fa-f]{2,4})/(?P<g>[0-9A-Fa-f]{2,4})/(?P<b>[0-9A-Fa-f]{2,4})"
     )
     pixel_dimensions = re.compile(r"4;(?P<y>\d+);(?P<x>\d+)")
     sixel = re.compile(r"\d+")
-    kitty = "\x1b[_Gi=1;OK\x1b[\\"
+    # kitty = re.compile("\x1b[_Gi=1;OK\x1b[\\")
     cursor_position = re.compile(r"(?P<row>\d+);(?P<col>\d+)")
 
 
@@ -188,14 +192,11 @@ class TerminalQuery:
         """
         self.output = output
 
-    @property
-    def bg_color(self) -> "Optional[str]":
-        """Get the background colour of the terminal as a hex colour code."""
-        if result := _query_term(
-            QueryCodes.background_color, stdout=self.output.stdout
-        ):
+    def _color(self, query_code: "str", response_code: "re.Pattern") -> "Optional[str]":
+        """Get a colour of the terminal as a hex colour code."""
+        if result := _query_term(query_code, stdout=self.output.stdout):
             if oscs := result.get("osc_string"):
-                if match := QueryResponsePatterns.background_color.match(oscs):
+                if match := response_code.match(oscs):
                     if colors := match.groupdict():
                         if len(colors) >= 3:
                             r, g, b = (
@@ -205,6 +206,16 @@ class TerminalQuery:
                             )
                             return f"#{r[:2]}{g[:2]}{b[:2]}"
         return None
+
+    @property
+    def bg_color(self) -> "Optional[str]":
+        """Get the background colour of the terminal as a hex colour code."""
+        return self._color(QueryCodes.bg_color, QueryResponsePatterns.bg_color)
+
+    @property
+    def fg_color(self) -> "Optional[str]":
+        """Get the background colour of the terminal as a hex colour code."""
+        return self._color(QueryCodes.fg_color, QueryResponsePatterns.fg_color)
 
     @property
     def term_size_px(self) -> "tuple[int, int]":

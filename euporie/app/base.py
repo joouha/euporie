@@ -12,6 +12,7 @@ from prompt_toolkit.filters import Condition, Filter
 from prompt_toolkit.key_binding import KeyPressEvent
 from prompt_toolkit.layout import Layout
 from prompt_toolkit.layout.containers import Window
+from prompt_toolkit.output import ColorDepth
 from prompt_toolkit.output.defaults import create_output
 from prompt_toolkit.styles import (
     BaseStyle,
@@ -26,6 +27,7 @@ from euporie.config import config
 from euporie.keys import KeyBindingsInfo
 from euporie.log import setup_logs
 from euporie.notebook import Notebook
+from euporie.style import color_series
 from euporie.tab import Tab
 from euporie.term import TerminalQuery
 
@@ -87,6 +89,7 @@ class EuporieApp(Application):
             layout=self.layout,
             output=self.output,
             key_bindings=self.key_bindings,
+            color_depth=ColorDepth.DEPTH_24_BIT,
             **kwargs,
         )
         self.pre_run_callables = pre_run
@@ -131,7 +134,7 @@ class EuporieApp(Application):
         path = Path(path).expanduser()
         log.info(f"Opening file {path}")
         for tab in self.tabs:
-            if path == tab.title:
+            if path == getattr(tab, "path", ""):
                 log.info(f"File {path} already open, activating")
                 break
         else:
@@ -190,54 +193,61 @@ class EuporieApp(Application):
             except ValueError:
                 pass
 
+    def update_style(self, pygments_style: "str") -> "None":
+        """Updates the application's style when the syntax theme is changed."""
+        config.syntax_theme = pygments_style
+        self.renderer.style = self._create_merged_style()
+
+    def load_key_bindings(self) -> "KeyBindingsInfo":
+        """Define application-wide keybindings."""
+        kb = KeyBindingsInfo()
+
+        @kb.add("c-q", group="Application", desc="Quit euporie")
+        def exit(event: "KeyPressEvent") -> None:
+            self.exit()
+
+        return kb
+
     def _create_merged_style(
         self, include_default_pygments_style: "Filter" = None
     ) -> "BaseStyle":
-        # Calculate colors based on terminal background colour if we can
-        if self.term.bg_color:
-            from prompt_toolkit.styles import (
-                DEFAULT_ATTRS,
-                AdjustBrightnessStyleTransformation,
-            )
-
-            tr = AdjustBrightnessStyleTransformation(
-                min_brightness=0.05, max_brightness=0.92
-            )
-            dim_bg = "#{}".format(
-                tr.transform_attrs(
-                    DEFAULT_ATTRS._replace(color=self.term.bg_color.lstrip("#"))
-                ).color
-            )
-        else:
-            dim_bg = "default"
+        series = color_series(
+            bg=(self.term.bg_color or "#000000"),
+            fg=(self.term.fg_color or "#ffffff"),
+        )
 
         style_dict = {
             # The default style is merged at this point so full styles can be
             # overridden. For example, this allows us to switch off the underline
             #  status of cursor-line.
             **dict(default_ui_style().style_rules),
+            # Logo
             "logo": "fg:#ff0000",
-            "background-pattern": f"fg:{config.background_color}",
-            "chrome": "bg:#222222",
-            "menu-bar": "fg:#ffffff bg:#222222",
-            "menu-bar.item": "bg:#444444",
-            "menu": "fg:#ffffff bg:#222222",
+            # Pattern
+            "background-pattern": f"fg:{config.background_color or series['bg'][1]}",
+            # Chrome
+            "chrome": f"bg:{series['bg'][1]} fg:default",
             # Statusbar
-            "status": "bg:#222222 fg:#cccccc",
-            "status.field": "bg:#303030",
+            "status": f"fg:{series['fg'][1]} bg:{series['bg'][1]}",
+            "status.field": f"fg:{series['fg'][2]} bg:{series['bg'][2]}",
+            # Menus & Menu bar
+            "menu-bar": f"fg:{series['fg'][1]} bg:{series['bg'][1]}",
+            "menu-bar.selected-item": "reverse",
+            "menu": f"bg:{series['bg'][1]} fg:{series['fg'][1]}",
+            # Buffer
+            "line-number": f"fg:{series['fg'][1]} bg:{series['bg'][1]}",
+            "line-number.current": "bold",
+            "cursor-line": f"bg:{series['bg'][1]}",
             # Cells
-            "cell.border": "fg:#4e4e4e",
+            "cell.border": f"fg:{series['bg'][5]}",
             "cell.border.selected": "fg:#00afff",
             "cell.border.edit": "fg:#00ff00",
-            "cell-input": "fg:default",
-            "line-number": f"fg:#888888 bg:{dim_bg}",
-            "line-number.current": "bold",
-            "cursor-line": f"bg:{dim_bg}",
-            "cell-output": "fg:default",
-            "cell-input-prompt": "fg:blue",
-            "cell-output-prompt": "fg:red",
+            "cell.input": "fg:default bg:default",
+            "cell.output": "fg:default",
+            "cell.input.prompt": "fg:blue",
+            "cell.output.prompt": "fg:red",
             # Scrollbars
-            "scrollbar": "fg:#aaaaaa bg:#444444",
+            "scrollbar": f"fg:{series['fg'][5]} bg:{series['bg'][5]}",
             "scrollbar.background": "",
             "scrollbar.button": "",
             "scrollbar.arrow": "",
@@ -280,18 +290,3 @@ class EuporieApp(Application):
                 style_from_pygments_cls(get_style_by_name(config.syntax_theme)),
             ]
         )
-
-    def update_style(self, pygments_style: "str") -> "None":
-        """Updates the application's style when the syntax theme is changed."""
-        config.syntax_theme = pygments_style
-        self.renderer.style = self._create_merged_style()
-
-    def load_key_bindings(self) -> "KeyBindingsInfo":
-        """Define application-wide keybindings."""
-        kb = KeyBindingsInfo()
-
-        @kb.add("c-q", group="Application", desc="Quit euporie")
-        def exit(event: "KeyPressEvent") -> None:
-            self.exit()
-
-        return kb

@@ -82,7 +82,7 @@ class TuiApp(EuporieApp):
     def format_title(self) -> "StyleAndTextTuples":
         """Formats the tab's title for display in the top right of the app."""
         if self.tab:
-            return [("bold class:menu-bar.item", f" {self.tab.title} ")]
+            return [("bold class:status.field", f" {self.tab.title} ")]
         else:
             return []
 
@@ -318,7 +318,7 @@ class TuiApp(EuporieApp):
                 [("", f" {__logo__} ")],
                 focusable=True,
                 show_cursor=False,
-                style="class:menu-bar.item,logo",
+                style="class:menu-bar,logo",
             ),
             height=1,
             dont_extend_width=True,
@@ -330,7 +330,7 @@ class TuiApp(EuporieApp):
                     self.format_title, focusable=True, show_cursor=False
                 ),
                 height=1,
-                style="class:menu-bar",
+                style="class:menu.item",
                 dont_extend_width=True,
                 align=WindowAlign.RIGHT,
             ),

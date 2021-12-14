@@ -12,8 +12,13 @@ import nbformat  # type: ignore
 from prompt_toolkit.application.current import get_app
 from prompt_toolkit.auto_suggest import DummyAutoSuggest
 from prompt_toolkit.completion import DummyCompleter
-from prompt_toolkit.filters import buffer_has_focus
-from prompt_toolkit.layout.containers import HSplit, VSplit, Window
+from prompt_toolkit.filters import Condition, buffer_has_focus
+from prompt_toolkit.layout.containers import (
+    ConditionalContainer,
+    HSplit,
+    VSplit,
+    Window,
+)
 from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.mouse_events import MouseEventType
 from prompt_toolkit.widgets import Label, RadioList
@@ -291,18 +296,29 @@ class TuiNotebook(KernelNotebook):
             self.rendered_cells, width=config.max_notebook_width
         )
         # Wrap the scolling container in an hsplit and apply the keybindings
+        expand = Condition(lambda: config.expand)
         self.container = VSplit(
             [
-                VSplit(
-                    [
-                        Pattern(),
-                        BorderLine(width=1, collapse=True),
-                        BorderLine(char=" ", width=1, collapse=True),
-                        self.page,
-                        BorderLine(char=" ", width=1, collapse=True),
-                        BorderLine(width=1, collapse=True),
-                        Pattern(),
-                    ]
+                ConditionalContainer(
+                    VSplit(
+                        [
+                            Pattern(),
+                            BorderLine(width=1, collapse=True),
+                            BorderLine(char=" ", width=1, collapse=True),
+                        ]
+                    ),
+                    filter=~expand,
+                ),
+                self.page,
+                ConditionalContainer(
+                    VSplit(
+                        [
+                            BorderLine(char=" ", width=1, collapse=True),
+                            BorderLine(width=1, collapse=True),
+                            Pattern(),
+                        ]
+                    ),
+                    filter=~expand,
                 ),
                 Window(ScrollBar(self.page), width=1, style="class:scrollbar"),
             ],

@@ -158,7 +158,7 @@ class Cell:
 
         self.output_box = HSplit(
             self.rendered_outputs,
-            style="class:cell-output",
+            style="class:cell.output",
         )
 
         top_border = VSplit(
@@ -189,7 +189,7 @@ class Cell:
                                 lambda: self.prompt,
                             ),
                             width=lambda: len(self.prompt),
-                            style="class:cell-input-prompt",
+                            style="class:cell.input.prompt",
                         ),
                         filter=self.show_prompt,
                     ),
@@ -234,7 +234,7 @@ class Cell:
                                 lambda: self.prompt,
                             ),
                             width=lambda: len(self.prompt),
-                            style="class:cell-output-prompt",
+                            style="class:cell.output.prompt",
                         ),
                         filter=self.show_prompt,
                     ),

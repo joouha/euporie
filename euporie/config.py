@@ -284,7 +284,7 @@ CONFIG_PARAMS: "dict[str, dict]" = {
         "schema_": {
             "type": "string",
             "maxLength": 7,
-            "default": "#444",
+            "default": "",
         },
         "description_": """
             The color to use for the background pattern.
