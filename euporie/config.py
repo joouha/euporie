@@ -250,7 +250,7 @@ CONFIG_PARAMS: "dict[str, dict]" = {
     "color_scheme": {
         "flags_": ["--color-scheme"],
         "type": str,
-        "choices": ["auto", "light", "dark"],
+        "choices": ["auto", "inverse", "light", "dark"],
         "help": "The color scheme to use",
         "schema_": {
             "type": "string",
@@ -586,6 +586,18 @@ class Config:
         return f"Config({self.chain!r})"
 
     __repr__ = __str__
+
+    def choices(self, name: "str") -> "list":
+        """Returns a list of valid choices for a configuration item.
+
+        Args:
+            name: The name of the attribute to query.
+
+        Returns:
+            A list of valid choices
+
+        """
+        return CONFIG_PARAMS.get(name, {}).get("choices", [])
 
     def toggle(self, name: "str") -> "None":
         """Switches attributes between permitted configuration states.

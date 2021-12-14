@@ -16,8 +16,12 @@ from prompt_toolkit.output import ColorDepth
 from prompt_toolkit.output.defaults import create_output
 from prompt_toolkit.styles import (
     BaseStyle,
+    ConditionalStyleTransformation,
+    SetDefaultColorStyleTransformation,
     Style,
+    SwapLightAndDarkStyleTransformation,
     default_ui_style,
+    merge_style_transformations,
     merge_styles,
     style_from_pygments_cls,
 )
@@ -218,24 +222,31 @@ class EuporieApp(Application):
     def _create_merged_style(
         self, include_default_pygments_style: "Filter" = None
     ) -> "BaseStyle":
-        base_colors: "dict[str, dict[str, str]]" = {
-            "auto": {"fg": self.term.fg_color, "bg": self.term.bg_color},
+        base_colors: "dict[str, str]" = {
             "light": {"fg": "#000000", "bg": "#FFFFFF"},
             "dark": {"fg": "#FFFFFF", "bg": "#000000"},
-        }
-        series = color_series(**base_colors[config.color_scheme])
+        }.get(config.color_scheme, {"fg": self.term.fg_color, "bg": self.term.bg_color})
+        series = color_series(**base_colors)
+
+        self.style_transformation = merge_style_transformations(
+            [
+                SetDefaultColorStyleTransformation(**base_colors),
+                ConditionalStyleTransformation(
+                    SwapLightAndDarkStyleTransformation(),
+                    config.color_scheme == "inverse",
+                ),
+            ]
+        )
 
         style_dict = {
             # The default style is merged at this point so full styles can be
             # overridden. For example, this allows us to switch off the underline
             #  status of cursor-line.
             **dict(default_ui_style().style_rules),
-            # body
-            "body": f"fg:{series['fg'][0]} bg:{series['bg'][0]}",
             # Logo
             "logo": "fg:#ff0000",
             # Pattern
-            "pattern": f"fg:{config.background_color or series['bg'][1]}  bg:{series['bg'][0]}",
+            "pattern": f"fg:{config.background_color or series['bg'][1]}",
             # Chrome
             "chrome": f"fg:{series['bg'][1]} bg:{series['bg'][1]}",
             # Statusbar
@@ -266,8 +277,6 @@ class EuporieApp(Application):
             "dialog.body scrollbar": "reverse",
             "dialog shadow": "bg:#888888",
             "dialog.body": "bg:#b0b0b0 #000000",
-            # Notebook
-            "notebook.border": f"fg:{series['fg'][0]} bg:{series['bg'][0]}",
             # Horizontals rule
             "hr": "fg:#666666",
             # Completions menu

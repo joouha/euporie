@@ -250,32 +250,17 @@ class TuiApp(EuporieApp):
                             "Color scheme",
                             children=[
                                 SmartMenuItem(
-                                    "Auto",
+                                    choice.title(),
                                     handler=partial(
-                                        self.update_style, color_scheme="auto"
+                                        self.update_style, color_scheme=choice
                                     ),
                                     toggler=Condition(
-                                        lambda: config.color_scheme == "auto"
+                                        partial(
+                                            lambda x: config.color_scheme == x, choice
+                                        )
                                     ),
-                                ),
-                                SmartMenuItem(
-                                    "Light",
-                                    handler=partial(
-                                        self.update_style, color_scheme="light"
-                                    ),
-                                    toggler=Condition(
-                                        lambda: config.color_scheme == "light"
-                                    ),
-                                ),
-                                SmartMenuItem(
-                                    "Dark",
-                                    handler=partial(
-                                        self.update_style, color_scheme="dark"
-                                    ),
-                                    toggler=Condition(
-                                        lambda: config.color_scheme == "dark"
-                                    ),
-                                ),
+                                )
+                                for choice in config.choices("color_scheme")
                             ],
                         ),
                         MenuItem(
