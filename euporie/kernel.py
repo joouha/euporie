@@ -216,7 +216,6 @@ class NotebookKernel:
                     asyncio.create_task(self.poll("iopub")),
                     asyncio.create_task(self.poll("stdin")),
                 ]
-                log.debug(self.poll_tasks)
 
     async def poll(self, channel: "str") -> "None":
         """Polls for messages on a channel, and signal when they arrive.
@@ -244,14 +243,16 @@ class NotebookKernel:
                     msg["header"]["msg_type"],
                     msg.get("content"),
                 )
-                log.debug(self.events[channel])
 
-    async def await_rsps(self, msg_id: "str", channel: "str") -> "AsyncGenerator":
+    async def await_rsps(
+        self, msg_id: "str", channel: "str", timeout: "int" = 360
+    ) -> "AsyncGenerator":
         """Yields resposnes to a given message ID on a given channel.
 
         Args:
             msg_id: Wait for responses to this message ID
             channel: The channel to listen on for responses
+            timeout: Maximum time to wait for a response before stopping
 
         Yields:
             Message resposnes recieved on the given channel
@@ -259,24 +260,40 @@ class NotebookKernel:
         self.events[channel][msg_id] = asyncio.Event()
         log.debug("Waiting for %s response to %s", channel, msg_id[-7:])
         while msg_id in self.events[channel]:
+            stop = False
             event = self.events[channel][msg_id]
             log.debug("Waiting for event on %s channel", channel)
-            await self.events[channel][msg_id].wait()
-            log.debug("Event occured on channel %s", channel)
-            rsp = self.msgs[channel][msg_id]
-            del self.msgs[channel][msg_id]
-            log.debug(
-                "Got %s response:\ntype = '%s', content = '%s'",
-                channel,
-                rsp["header"]["msg_type"],
-                rsp.get("content"),
-            )
             try:
-                yield rsp
-            except StopIteration:
+                await asyncio.wait_for(self.events[channel][msg_id].wait(), timeout)
+            except asyncio.TimeoutError:
+                log.debug("Timed out for response to %s on %s channel", msg_id, channel)
+                stop = True
+            except asyncio.CancelledError:
+                stop = True
+            else:
+                log.debug("Event occured on channel %s", channel)
+                rsp = self.msgs[channel][msg_id]
+                del self.msgs[channel][msg_id]
+                log.debug(
+                    "Got %s response:\ntype = '%s', content = '%s'",
+                    channel,
+                    rsp["header"]["msg_type"],
+                    rsp.get("content"),
+                )
+                try:
+                    yield rsp
+                except GeneratorExit:
+                    log.debug(
+                        "Stopping waiting for responses to %s on %s channel",
+                        msg_id,
+                        channel,
+                    )
+                    stop = True
+                else:
+                    event.clear()
+            if stop:
                 del self.events[channel][msg_id]
-            finally:
-                event.clear()
+                break
 
     async def await_iopub_rsps(self, msg_id: "str") -> "AsyncKernelManager":
         """Wait for messages on the ``iopub`` channel.
@@ -304,10 +321,9 @@ class NotebookKernel:
             try:
                 yield rsp
             except StopIteration:
+                stop = True
+            if stop:
                 break
-            else:
-                if stop:
-                    break
 
     async def await_shell_rsps(self, msg_id: "str") -> "AsyncKernelManager":
         """Wait for messages on the ``shell`` channel.
@@ -330,10 +346,9 @@ class NotebookKernel:
             try:
                 yield rsp
             except StopIteration:
+                stop = True
+            if stop:
                 break
-            else:
-                if stop:
-                    break
 
     async def await_stdin_rsps(self, msg_id: "str") -> "AsyncKernelManager":
         """Wait for messages on the ``shell`` channel.
@@ -505,9 +520,13 @@ class NotebookKernel:
                     output_cb()
                 if stop:
                     break
+            # Stop the stdin listener
+            log.debug(stdin_listener.cancel())
+
+        stdin_listener = asyncio.ensure_future(process_stin_rsp())
 
         await asyncio.gather(
-            process_stin_rsp(),
+            stdin_listener,
             process_execute_shell_rsp(),
             process_execute_iopub_rsp(),
             return_exceptions=True,
