@@ -556,7 +556,7 @@ class ScrollingContainer(Container):
                 if n > 0 and drawing.top + n > 0:
                     return
                 break
-            elif drawing.index == len(self.children) + n:
+            elif drawing.index == len(self.children) - 1:
                 if n < 0 and drawing.top + drawing.height < self.content_height // 2:
                     return
                 break
