@@ -104,7 +104,7 @@ class Output:
                 else:
                     continue  # Use plain text rendering instead
 
-            if mime_path.match("text/x-markdown"):
+            if mime_path.match("text/x-markdown") or mime_path.match("text/markdown"):
                 self.content = Window(
                     RichControl(
                         Markdown(
