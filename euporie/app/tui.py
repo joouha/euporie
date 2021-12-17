@@ -393,13 +393,6 @@ class TuiApp(EuporieApp):
         """Define application-wide keybindings."""
         kb = super().load_key_bindings()
 
-        if config.debug:
-
-            @kb.add(">")
-            def test_exception(event: "KeyPressEvent") -> None:
-                log.debug("Raising test exception")
-                raise Exception("Test exception, please ignore")
-
         kb.add("c-n", group="Application", desc="Create a new notebook file")(
             lambda e: self.ask_new_file
         )
