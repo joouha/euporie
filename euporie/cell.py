@@ -50,10 +50,10 @@ from euporie.output import Output
 from euporie.suggest import AppendLineAutoSuggestion, ConditionalAutoSuggestAsync
 
 if TYPE_CHECKING:
-    from typing import TYPE_CHECKING, Any, Callable, Literal, Optional
+    from typing import Any, Callable, Literal, Optional, Union
 
     from prompt_toolkit.buffer import Buffer
-    from prompt_toolkit.formatted_text.base import StyleAndTextTuples
+    from prompt_toolkit.formatted_text.base import AnyFormattedText, StyleAndTextTuples
     from prompt_toolkit.key_binding import KeyBindingsBase
     from prompt_toolkit.key_binding.key_processor import KeyPressEvent
     from prompt_toolkit.layout.layout import FocusableElement
@@ -305,10 +305,8 @@ class Cell:
                     content=ConditionalContainer(
                         ClickArea(
                             self,
-                            to_formatted_text(
-                                Border.TOP_LEFT,
-                                style="class:frame.border,cell.border",
-                            ),
+                            Border.TOP_LEFT,
+                            style=self.border_style,
                         ),
                         filter=~self.is_focused,
                     ),
@@ -349,13 +347,16 @@ class Cell:
 
     def border_style(self) -> "str":
         """Determines the style of the cell borders, based on the cell state."""
-        if self.focused:
-            if has_focus(self.input_box.buffer)():
-                return "class:cell.border.edit"
-            else:
-                return "class:cell.border.selected"
-        else:
+        if not config.dump:
+            if self.focused:
+                if has_focus(self.input_box.buffer)():
+                    return "class:cell.border.edit"
+                else:
+                    return "class:cell.border.selected"
+        if config.show_cell_borders:
             return "class:cell.border"
+        else:
+            return "class:cell.border.hidden"
 
     @property
     def id(self) -> "str":
@@ -864,16 +865,20 @@ class ClickArea:
     """
 
     def __init__(
-        self, target: "FocusableElement", formatted_text: "StyleAndTextTuples"
+        self,
+        target: "FocusableElement",
+        text: "AnyFormattedText",
+        style: "Union[str, Callable[[], str]]",
     ):
         """Initiate a click area overlay element, which focuses another element when clicked.
 
         Args:
             target: The element to focus on click.
-            formatted_text: The formatted text to display in the click overlay
+            text: The formatted text to display in the click overlay
+            style: The style to apply to the text
 
         """
-        self.formatted_text = formatted_text
+        self.text = text
         self.target = target
         self.window = Window(
             FormattedTextControl(
@@ -882,6 +887,7 @@ class ClickArea:
             ),
             dont_extend_width=False,
             dont_extend_height=False,
+            style=style,
         )
 
     def _get_text_fragments(self) -> "StyleAndTextTuples":
@@ -889,7 +895,9 @@ class ClickArea:
             if mouse_event.event_type == MouseEventType.MOUSE_UP:
                 get_app().layout.focus(self.target)
 
-        return [(style, text, handler) for style, text, *_ in self.formatted_text]
+        return [
+            (style, text, handler) for style, text, *_ in to_formatted_text(self.text)
+        ]
 
     def __pt_container__(self) -> "Container":
         """Return the `ClickArea`'s window with a blank `FormattedTextControl`."""

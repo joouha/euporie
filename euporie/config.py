@@ -305,6 +305,19 @@ CONFIG_PARAMS: "dict[str, dict]" = {
             The color to use for the background pattern.
         """,
     },
+    "show_cell_borders": {
+        "flags_": ["--show-cell-borders"],
+        "action": BooleanOptionalAction,
+        "type": bool,
+        "help": "Show or hide cell borders.",
+        "schema_": {
+            "type": "boolean",
+            "default": False,
+        },
+        "description_": """
+            Whether cell borders should be drawn for unselected cells.
+        """,
+    },
     "line_numbers": {
         "flags_": ["--line-numbers"],
         "action": BooleanOptionalAction,

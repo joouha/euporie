@@ -264,8 +264,9 @@ class EuporieApp(Application):
             "cell.border": f"fg:{series['bg'][5]}",
             "cell.border.selected": "fg:#00afff",
             "cell.border.edit": "fg:#00ff00",
-            # "cell.input": "fg:default bg:default",
-            # "cell.output": "fg:default",
+            "cell.border.hidden": f"fg:{series['bg'][0]}",
+            "cell.input": "fg:default bg:default",
+            "cell.output": "fg:default bg:default",
             "cell.input.prompt": "fg:blue",
             "cell.output.prompt": "fg:red",
             # Scrollbars

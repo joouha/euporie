@@ -284,6 +284,11 @@ class TuiApp(EuporieApp):
                             "Switch background pattern",
                             handler=lambda: config.toggle("background_pattern"),
                         ),
+                        SmartMenuItem(
+                            "Show cell borders",
+                            handler=lambda: config.toggle("show_cell_borders"),
+                            toggler=Condition(lambda: config.show_cell_borders),
+                        ),
                         MenuItem("-", disabled=True),
                         SmartMenuItem(
                             "Use full width",

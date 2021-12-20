@@ -4,6 +4,7 @@ Changlog
 Upcoming
 --------
 
+- Configurable cell border visibility
 - Read notebook language configuration form the kernel
 - Configurable colorschemes
 - Support user input with ``input()``
