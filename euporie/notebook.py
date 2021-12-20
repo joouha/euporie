@@ -173,9 +173,15 @@ class Notebook(Tab, metaclass=ABCMeta):
 
     def save(self) -> "None":
         """Write the notebook's JSON to the current notebook's file."""
+        log.debug("Saving notebook...")
+        self.saving = True
+        self.app.invalidate()
         self.json = nbformat.from_dict(self.json)
         nbformat.write(nb=self.json, fp=self.path)
         self.dirty = False
+        self.saving = False
+        self.app.invalidate()
+        log.debug("Notebook saved")
 
 
 class DumpNotebook(Notebook):
@@ -302,6 +308,7 @@ class TuiNotebook(KernelNotebook):
 
         self.clipboard: "list[Cell]" = []
         self.dirty = False
+        self.saving = False
 
         self.cell_type = InteractiveCell
         self.page = ScrollingContainer(
@@ -686,6 +693,7 @@ class TuiNotebook(KernelNotebook):
             [
                 f"Cell {self.page.selected_index+1}",
                 "*" if self.dirty else "",
+                "Saving..." if self.saving else "",
             ],
             [
                 [("", self.kernel_display_name, self._statusbar_kernel_handeler)],

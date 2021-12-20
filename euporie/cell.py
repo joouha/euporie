@@ -39,6 +39,7 @@ from prompt_toolkit.layout.processors import ConditionalProcessor
 from prompt_toolkit.lexers import DynamicLexer, PygmentsLexer, SimpleLexer
 from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
 from prompt_toolkit.search import start_search
+from prompt_toolkit.utils import Event
 from prompt_toolkit.widgets import Frame, Label, SearchToolbar, TextArea
 from pygments.lexers import get_lexer_by_name  # type: ignore
 
@@ -622,13 +623,9 @@ class CellInputTextArea(TextArea):
 
         super().__init__(*args, **kwargs)
 
-        # Add configurable line numbers
-        self.window.left_margins = [
-            ConditionalMargin(
-                NumberedMargin(),
-                Condition(lambda: config.line_numbers),
-            )
-        ]
+        self.buffer.tempfile_suffix = self.cell.nb.lang_file_ext
+        self.buffer.on_text_changed = Event(self.buffer, self.text_changed)
+
         # Replace the autosuggest processor
         # Skip type checking as PT should use "("Optional[Sequence[Processor]]"
         # instead of "Optional[List[Processor]]"
@@ -637,10 +634,21 @@ class CellInputTextArea(TextArea):
             AppendLineAutoSuggestion(),
             has_focus(self.buffer) & ~is_done,
         )
-        self.buffer.tempfile_suffix = self.cell.nb.lang_file_ext
-        # Set inpux_box key bindings here
         self.control.key_bindings = self.load_key_bindings()
+
+        # Add configurable line numbers
+        self.window.left_margins = [
+            ConditionalMargin(
+                NumberedMargin(),
+                Condition(lambda: config.line_numbers),
+            )
+        ]
         self.window.cursorline = has_focus(self)
+
+    def text_changed(self, buf: "Buffer") -> "None":
+        """Update cell json when the input buffer has been edited."""
+        self.cell.input = buf.text
+        self.cell.nb.dirty = True
 
     def load_key_bindings(self) -> "KeyBindingsBase":
         """Loads the key bindings related to cells."""
