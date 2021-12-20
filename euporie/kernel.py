@@ -459,7 +459,13 @@ class NotebookKernel:
                         ("execute", "shell", "execute_reply"),
                         rsp["header"]["date"].isoformat(),
                     )
-                    # Page '?' output here
+                    cell_json["execution_count"] = rsp.get("content", {}).get(
+                        "execution_count"
+                    )
+                    if callable(output_cb):
+                        log.debug("Calling output callback")
+                        output_cb()
+                # Page '?' output here
 
         async def process_execute_iopub_rsp() -> "None":
             """Process response messages on the ``iopub`` channel."""
@@ -516,7 +522,7 @@ class NotebookKernel:
                         )
 
                 if callable(output_cb):
-                    log.debug("Calling callback")
+                    log.debug("Calling output callback")
                     output_cb()
                 if stop:
                     break
