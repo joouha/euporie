@@ -109,10 +109,10 @@ def run_macro() -> None:
         app.key_processor.feed_multiple(macro, first=True)
 
 
-add(name="backspace", filter=buffer_has_focus & ~shift_selection_mode)(
+add(name="backspace", filter=~shift_selection_mode, save_before=if_no_repeat)(
     backward_delete_char
 )
-add(name="delete", filter=buffer_has_focus & ~shift_selection_mode)(delete_char)
+add(name="delete", filter=~shift_selection_mode)(delete_char)
 add(filter=buffer_has_focus)(backward_kill_word)
 
 # Naavigation
@@ -350,6 +350,7 @@ def indent_lines(event: "KeyPressEvent") -> "None":
     dent_buffer(event)
 
 
+@add(name="unindent-line", filter=cursor_in_leading_ws & ~has_selection)
 @add(filter=cursor_in_leading_ws | has_selection)
 def unindent_lines(event: "KeyPressEvent") -> "None":
     dent_buffer(event, un=True)
@@ -431,14 +432,14 @@ def extend_selection(event: "KeyPressEvent") -> "None":
             buff.exit_selection()
 
 
-@add(filter=shift_selection_mode)
+@add(filter=has_selection)
 def replace_selection(event: "KeyPressEvent") -> "None":
     """Replace selection by what is typed."""
     event.current_buffer.cut_selection()
     get_by_name("self-insert").call(event)
 
 
-@add(filter=shift_selection_mode)
+@add(filter=has_selection)
 def delete_selection() -> "None":
     get_app().current_buffer.cut_selection()
 

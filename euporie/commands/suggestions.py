@@ -4,10 +4,12 @@ from prompt_toolkit.application import get_app
 from euporie.commands.command import add
 from euporie.filters import has_suggestion
 
+
 # Suggestions
-
-
-@add(filter=has_suggestion)
+@add(
+    # keys=["right", "c-f"],
+    filter=has_suggestion,
+)
 def accept_suggestion(event: "KeyPressEvent") -> "None":
     """Accept suggestion."""
     b = get_app().current_buffer
@@ -16,7 +18,10 @@ def accept_suggestion(event: "KeyPressEvent") -> "None":
         b.insert_text(suggestion.text)
 
 
-@add(filter=has_suggestion)
+@add(
+    # keys=("escape", "f"),
+    filter=has_suggestion,
+)
 def fill_sugestion(event: "KeyPressEvent") -> "None":
     """Fill partial suggestion."""
     b = get_app().current_buffer

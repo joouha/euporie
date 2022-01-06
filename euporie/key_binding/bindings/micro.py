@@ -26,6 +26,9 @@ def micro_bindings() -> "KeyBindingsBase":
             "type-key": "<any>",
             "move-cursor-right": "right",
             "move-cursor-left": "left",
+            "newline": "enter",
+            "backspace": ["backspace", "c-h"],
+            "backward-kill-word": [("escape", "backspace"), ("escape", "c-h")],
             "start-selection": [
                 "s-up",
                 "s-down",
@@ -68,8 +71,8 @@ def micro_bindings() -> "KeyBindingsBase":
                 "c-home",
                 "c-end",
             ],
-            "delete-selection": ["backspace", "delete"],
             "replace-selection": "<any>",
+            "delete-selection": ["delete", "backspace", "c-h"],
             "backward-word": ["c-left", ("escape", "b")],
             "forward-word": ["c-right", ("escape", "f")],
             "move-lines-up": ("escape", "up"),
@@ -80,10 +83,8 @@ def micro_bindings() -> "KeyBindingsBase":
             "end-of-buffer": "c-down",
             "go-to-start-of-paragraph": ("escape", "{"),
             "go-to-end-of-paragraph": ("escape", "}"),
-            "newline": "enter",
-            "backspace": ["backspace", "c-h"],
-            "backward-kill-word": [("escape", "backspace"), ("escape", "c-h")],
-            "indent-lines": "tab",
+            "indent-lines": ["tab"],
+            "unindent-line": "backspace",
             "unindent-lines": "s-tab",
             "undo": "c-z",
             "redo": "c-y",
@@ -107,10 +108,6 @@ def micro_bindings() -> "KeyBindingsBase":
             "run-macro": "c-j",
             "accept-suggestion": ["right", "c-f"],
             "fill-sugestion": ("escape", "f"),
-            "next-completion": "tab",
-            "previous-completion": "s-tab",
-            "accept-completion": "enter",
-            "cancel-completion": "escape",
         }
     )
 

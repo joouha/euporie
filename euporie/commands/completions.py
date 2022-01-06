@@ -1,7 +1,11 @@
 # -*- coding: utf-8 -*-
 from prompt_toolkit.application import get_app
 from prompt_toolkit.completion import Completion
-from prompt_toolkit.filters import completion_is_selected, has_completions
+from prompt_toolkit.filters import (
+    completion_is_selected,
+    has_completions,
+    has_selection,
+)
 from prompt_toolkit.key_binding.bindings.named_commands import (
     menu_complete,
     menu_complete_backward,
@@ -10,8 +14,10 @@ from prompt_toolkit.key_binding.bindings.named_commands import (
 from euporie.commands.command import add
 from euporie.filters import insert_mode
 
-add(keys="c-i", filter=insert_mode, name="next-completion")(menu_complete)
-add(keys="s-tab", filter=insert_mode, name="previous-completion")(
+add(keys="c-i", filter=insert_mode & ~has_selection, name="next-completion")(
+    menu_complete
+)
+add(keys="s-tab", filter=insert_mode & ~has_selection, name="previous-completion")(
     menu_complete_backward
 )
 
