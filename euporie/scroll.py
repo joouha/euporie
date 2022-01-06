@@ -225,6 +225,32 @@ class ScrollingContainer(Container):
                     z_index,
                 )
 
+        # Fill in the unused space
+        spaces = []
+        if self.to_draw:
+            # top space
+            spaces.append((0, self.to_draw[0].top))
+            # bottom space
+            spaces.append(
+                (
+                    self.to_draw[-1].top + self.to_draw[-1].height,
+                    self.available_height
+                    - (self.to_draw[-1].top + self.to_draw[-1].height),
+                )
+            )
+        else:
+            spaces.append((0, self.available_height))
+        for (start, height) in spaces:
+            if height > 0:
+                Window(char=" ", style="class:default").write_to_screen(
+                    screen,
+                    mouse_handlers,
+                    WritePosition(xpos, ypos + start, self.content_width, height),
+                    style,
+                    erase_bg,
+                    z_index,
+                )
+
         # Draw floats before wrapping mouse handlers
         screen.draw_all_floats()
 

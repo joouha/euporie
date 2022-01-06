@@ -243,6 +243,7 @@ class EuporieApp(Application):
             # overridden. For example, this allows us to switch off the underline
             #  status of cursor-line.
             **dict(default_ui_style().style_rules),
+            "default": f"fg:{series['bg'][0]} bg:{series['bg'][0]}",
             # Logo
             "logo": "fg:#ff0000",
             # Pattern
