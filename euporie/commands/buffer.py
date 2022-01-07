@@ -49,7 +49,7 @@ from prompt_toolkit.key_binding.key_bindings import Binding
 from prompt_toolkit.keys import Keys
 from prompt_toolkit.selection import SelectionState, SelectionType
 
-from euporie.commands.command import add, get
+from euporie.commands.registry import add, get
 from euporie.config import config
 from euporie.filters import (
     cell_is_code,
@@ -201,6 +201,7 @@ def duplicate_line() -> "None":
 
 
 @add(
+    title="Paste",
     filter=buffer_has_focus,
     description="Paste the clipboard, replacing any current selection",
 )
@@ -213,7 +214,8 @@ def paste_clipboard() -> "None":
 
 
 @add(
-    filter=buffer_has_focus & has_selection,
+    title="Copy",
+    filter=has_selection,
     description="Adds the current selection to the clipboard",
 )
 def copy_selection() -> "None":
@@ -223,7 +225,8 @@ def copy_selection() -> "None":
 
 
 @add(
-    filter=buffer_has_focus & has_selection,
+    title="Cut",
+    filter=has_selection,
     description="Removes the current selection and adds it to the clipboard",
 )
 def cut_selection() -> "None":

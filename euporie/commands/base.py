@@ -12,6 +12,8 @@ from prompt_toolkit.key_binding.key_bindings import (
 )
 from prompt_toolkit.keys import Keys
 
+from euporie.components.menu.item import MenuItem
+
 log = logging.getLogger(__name__)
 
 
@@ -30,9 +32,7 @@ class Command:
         title: "Optional[str]" = None,
         description: "Optional[str]" = None,
         group: "Optional[str]" = None,
-        menu: "bool" = False,
-        menu_idx: "int" = 0,
-        status: "Optional[Filter]" = None,
+        toggled: "Optional[Filter]" = None,
         keys: "Optional[list[Union[Keys, str]], tuple[Union[Keys, str], ...]]" = None,
         key_repr: "Optional[str]" = None,
         eager: "FilterOrBool" = False,
@@ -40,7 +40,7 @@ class Command:
         save_before: "Callable[[KeyPressEvent], bool]" = (lambda event: True),
         record_in_macro: "FilterOrBool" = True,
     ):
-        self._handler = handler
+        self.handler = handler
         self.filter = to_filter(filter)
         if name is None:
             name = handler.__name__.replace("_", "-")
@@ -56,8 +56,10 @@ class Command:
                 description = title
         self.description = description
         self.group = group
-        self.menu = menu
-        self.menu_idx = menu_idx
+
+        self.toggled = toggled
+        self._menu: "Optional[MenuItem]" = None
+
         self.keys = []
         self.eager = to_filter(eager)
         self.is_global = to_filter(is_global)
@@ -67,6 +69,7 @@ class Command:
         self.add_keys(keys)
 
         self.selected_item = 0
+        self.children = []
 
     def bind(self, key_bindings, keys):
         self.add_keys(keys)
@@ -102,47 +105,36 @@ class Command:
 
     @property
     def key_handler(self) -> "Callable":
-        sig = signature(self._handler)
+        sig = signature(self.handler)
 
         if sig.parameters:
             # The handler already accepts a `KeyPressEvent` argument
-            return self._handler
+            return self.handler
 
-        if isawaitable(self._handler):
+        if isawaitable(self.handler):
 
             async def _key_handler(event: "KeyPressEvent"):
-                return await self._handler()
+                return await self.handler()
 
             return _key_handler
         else:
 
             def _key_handler(event: "KeyPressEvent"):
-                return self._handler()
+                return self.handler()
 
             return _key_handler
 
     @property
-    def menu_handler(self):
-        """The handler must be ``None`` for a disabled menu item."""
-        if self.filter():
-            return self._handler
-
-    @property
-    def text(self) -> "str":
-        """Generate the text for the menu item."""
-        text = self.title
-        if self.status is not None:
-            text += " ✓" if self.status() else ""
-
-        return text
-
-    @property
-    def disabled(self) -> "bool":
-        """Determine if the menu item is disabled."""
-        return self.filter()
-
-    def __repr__(self):
-        return f"<Command name='{self.name}'>"
+    def menu(self):
+        if self._menu is None:
+            self._menu = MenuItem(
+                text=self.title,
+                handler=self.handler,
+                shortcut=self.keys[0] if self.keys else None,
+                disabled=~self.filter,
+                toggled=self.toggled,
+            )
+        return self._menu
 
 
 def add(**kwargs: "Any"):

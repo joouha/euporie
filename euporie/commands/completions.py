@@ -11,7 +11,7 @@ from prompt_toolkit.key_binding.bindings.named_commands import (
     menu_complete_backward,
 )
 
-from euporie.commands.command import add
+from euporie.commands.registry import add
 from euporie.filters import insert_mode
 
 add(keys="c-i", filter=insert_mode & ~has_selection, name="next-completion")(

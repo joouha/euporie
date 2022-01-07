@@ -43,7 +43,7 @@ from prompt_toolkit.utils import Event
 from prompt_toolkit.widgets import Frame, Label, SearchToolbar, TextArea
 from pygments.lexers import get_lexer_by_name  # type: ignore
 
-from euporie.box import Border
+from euporie.box import RoundBorder as Border
 from euporie.config import config
 from euporie.keys import KeyBindingsInfo
 from euporie.output import Output
@@ -328,13 +328,18 @@ class Cell:
         """Callback which runs when the cell has finished running."""
         self.state = "idle"
 
-    def set_cell_type(self, cell_type: "Literal['markdown','code','raw']") -> "None":
+    def set_cell_type(
+        self, cell_type: "Literal['markdown','code','raw']", clear: "bool" = False
+    ) -> "None":
         """Convert the cell to a different cell type.
 
         Args:
             cell_type: The desired cell type.
+            clear: If True, cell outputs will be cleared
 
         """
+        if clear:
+            self.clear_output()
         if cell_type == "code":
             self.json.setdefault("execution_count", None)
         self.json["cell_type"] = cell_type
@@ -578,7 +583,7 @@ class CellInputTextArea(TextArea):
         kwargs["auto_suggest"] = ConditionalAutoSuggestAsync(
             cell.nb.suggester, filter=cell.is_code & cell.autosuggest
         )
-        kwargs["style"] = "class:cell-input"
+        kwargs["style"] = "class:cell.input"
         kwargs["accept_handler"] = self.cell.run_or_render
 
         super().__init__(*args, **kwargs)

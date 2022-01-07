@@ -356,133 +356,14 @@ class TuiNotebook(KernelNotebook):
                 ),
                 Window(ScrollBar(self.page), width=1, style="class:scrollbar"),
             ],
-            key_bindings=self.load_key_bindings(),
+            # key_bindings=self.load_key_bindings(),
         )
 
-    def load_key_bindings(self) -> "KeyBindings":
-        """Load the key bindings associate with a `Notebook` container."""
-        kb = KeyBindingsInfo()
+    def add_cell_above(self) -> "None":
+        self.add(self.page.selected_index + 0)
 
-        if config.debug:
-
-            @kb.add(
-                "?",
-                group="Application",
-                desc="Save current file",
-                filter=~buffer_has_focus,
-            )
-            async def debug(event: "KeyPressEvent") -> "None":
-                self.check_kernel()
-                log.debug(
-                    "Kernel Report:\n- Status: %s\n- ID: %s\n- Missing: %s\n"
-                    "- Events: %s\n- Messages: %s",
-                    self.kernel.status,
-                    self.kernel.id,
-                    self.kernel.missing,
-                    self.kernel.events,
-                    self.kernel.msgs,
-                )
-
-        @kb.add("c-s", group="Application", desc="Save current file")
-        def save(event: "KeyPressEvent") -> "None":
-            self.save()
-
-        @kb.add(
-            "a",
-            filter=~buffer_has_focus,
-            group="Notebook",
-            desc="Add new cell above current",
-        )
-        def add_above(event: "KeyPressEvent") -> "None":
-            self.add(self.page.selected_index + 0)
-
-        @kb.add(
-            "b",
-            filter=~buffer_has_focus,
-            group="Notebook",
-            desc="Add new cell below current",
-        )
-        def add_below(event: "KeyPressEvent") -> "None":
-            self.add(self.page.selected_index + 1)
-
-        @kb.add(
-            "d",
-            "d",
-            filter=~buffer_has_focus,
-            group="Notebook",
-            desc="Delete current cell",
-        )
-        def delete(event: "KeyPressEvent") -> "None":
-            self.delete()
-
-        @kb.add(
-            "x", filter=~buffer_has_focus, group="Notebook", desc="Cut current cell"
-        )
-        def cut(event: "KeyPressEvent") -> "None":
-            self.cut()
-
-        @kb.add(
-            "c", filter=~buffer_has_focus, group="Notebook", desc="Copy current cell"
-        )
-        def copy(event: "KeyPressEvent") -> "None":
-            self.copy()
-
-        @kb.add(
-            "v", filter=~buffer_has_focus, group="Notebook", desc="Paste copied cell"
-        )
-        def paste(event: "KeyPressEvent") -> "None":
-            self.paste()
-
-        @kb.add(
-            "m",
-            filter=~buffer_has_focus,
-            group="Notebook",
-            desc="Change cell to markdown",
-        )
-        def to_markdown(event: "KeyPressEvent") -> "None":
-            self.cell.set_cell_type("markdown")
-            self.cell.clear_output()
-
-        @kb.add(
-            "y", filter=~buffer_has_focus, group="Notebook", desc="Change cell to code"
-        )
-        def to_code(event: "KeyPressEvent") -> "None":
-            self.cell.set_cell_type("code")
-
-        @kb.add(
-            "r", filter=~buffer_has_focus, group="Notebook", desc="Change cell to raw"
-        )
-        def to_raw(event: "KeyPressEvent") -> "None":
-            self.cell.set_cell_type("raw")
-            self.cell.clear_output()
-
-        @kb.add(
-            "l", filter=~buffer_has_focus, group="Notebook", desc="Toggle line numbers"
-        )
-        def line_nos(event: "KeyPressEvent") -> "None":
-            config.toggle("line_numbers")
-
-        @kb.add(
-            "I",
-            "I",
-            filter=~buffer_has_focus,
-            group="Notebook",
-            desc="Interrupt notebook kernel",
-        )
-        def interrupt(event: "KeyPressEvent") -> "None":
-            self.interrupt_kernel()
-
-        @kb.add(
-            "0",
-            "0",
-            filter=~buffer_has_focus,
-            group="Notebook",
-            desc="Restart notebook kernel",
-        )
-        def restart(event: "KeyPressEvent") -> "None":
-            self.restart_kernel()
-
-        return kb
+    def add_cell_below(self) -> "None":
+        self.add(self.page.selected_index + 1)
 
     @property
     def cell(self) -> "Cell":

@@ -228,7 +228,7 @@ class EuporieApp(Application):
             "light": {"fg": "#000000", "bg": "#FFFFFF"},
             "dark": {"fg": "#FFFFFF", "bg": "#000000"},
         }.get(config.color_scheme, {"fg": self.term.fg_color, "bg": self.term.bg_color})
-        series = color_series(**base_colors)
+        series = color_series(**base_colors, n=10)
 
         self.style_transformation = merge_style_transformations(
             [
@@ -257,7 +257,11 @@ class EuporieApp(Application):
             "status.field": f"fg:{series['fg'][2]} bg:{series['bg'][2]}",
             # Menus & Menu bar
             "menu-bar": f"fg:{series['fg'][1]} bg:{series['bg'][1]}",
+            "menu-bar.disabled-item": f"fg:{series['bg'][5]}",
             "menu-bar.selected-item": "reverse",
+            "menu-bar.shortcut": f"fg:{series['fg'][9]}",
+            "menu-bar.selected-item menu-bar.shortcut": f"fg:{series['fg'][1]} bg:{series['bg'][5]}",
+            "menu-bar.disabled-item menu-bar.shortcut": f"fg:{series['bg'][5]}",
             "menu": f"bg:{series['bg'][1]} fg:{series['fg'][1]}",
             # Buffer
             "line-number": f"fg:{series['fg'][1]} bg:{series['bg'][1]}",

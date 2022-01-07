@@ -29,23 +29,16 @@ from prompt_toolkit.layout import (
 from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.layout.dimension import Dimension
 from prompt_toolkit.layout.menus import CompletionsMenu
-from prompt_toolkit.widgets import (
-    Button,
-    Dialog,
-    Label,
-    MenuContainer,
-    MenuItem,
-    TextArea,
-)
-from pygments.styles import get_all_styles  # type: ignore
+from prompt_toolkit.widgets import Button, Dialog, Label, MenuContainer, TextArea
 
 from euporie import __app_name__, __copyright__, __logo__, __strapline__, __version__
 from euporie.app.base import EuporieApp
 from euporie.box import Pattern
+from euporie.components.menu import MenuContainer
+from euporie.components.menu.contents import load_menu_items
 from euporie.config import config
 from euporie.keys import KeyBindingsInfo
 from euporie.log import LogView
-from euporie.menu import SmartMenuItem
 from euporie.notebook import TuiNotebook
 from euporie.text import FormattedTextArea
 
@@ -124,216 +117,6 @@ class TuiApp(EuporieApp):
 
     def load_container(self) -> "AnyContainer":
         """Builds the main application layout."""
-        self.root_container = MenuContainer(
-            body=HSplit(
-                [
-                    DynamicContainer(self.tab_container),
-                    ConditionalContainer(
-                        content=VSplit(
-                            [
-                                Window(
-                                    FormattedTextControl(
-                                        lambda: self.format_status(part="left")
-                                    ),
-                                    style="class:status",
-                                ),
-                                Window(
-                                    FormattedTextControl(
-                                        lambda: self.format_status(part="right")
-                                    ),
-                                    style="class:status.right",
-                                    align=WindowAlign.RIGHT,
-                                ),
-                            ],
-                            height=1,
-                        ),
-                        filter=Condition(lambda: not config.show_status_bar),
-                    ),
-                ],
-                style="class:body",
-            ),
-            menu_items=[
-                MenuItem(
-                    " File ",
-                    children=[
-                        MenuItem("New", handler=self.ask_new_file),
-                        MenuItem("Open", handler=self.ask_open_file),
-                        MenuItem("-", disabled=True),
-                        SmartMenuItem(
-                            "Save",
-                            handler=lambda: self.tab_op("save"),
-                            disabler=~self.has_tab,
-                        ),
-                        SmartMenuItem(
-                            "Close",
-                            handler=self.close_tab,
-                            disabler=~self.has_tab,
-                        ),
-                        MenuItem("-", disabled=True),
-                        MenuItem("Exit", handler=self.exit),
-                    ],
-                ),
-                MenuItem(
-                    " Edit ",
-                    children=[
-                        SmartMenuItem(
-                            "Cut Cell",
-                            handler=lambda: self.tab_op("cut"),
-                            disabler=~self.has_tab,
-                        ),
-                        SmartMenuItem(
-                            "Copy Cell",
-                            handler=lambda: self.tab_op("copy"),
-                            disabler=~self.has_tab,
-                        ),
-                        SmartMenuItem(
-                            "Paste Cell",
-                            handler=lambda: self.tab_op("paste"),
-                            disabler=~self.has_tab,
-                        ),
-                    ],
-                ),
-                MenuItem(
-                    " Run ",
-                    children=[
-                        MenuItem(
-                            "Run Cell",
-                            handler=lambda: self.tab_op("run_cell"),
-                        ),
-                        MenuItem(
-                            "Run All Cells",
-                            handler=lambda: self.tab_op("run_all"),
-                        ),
-                    ],
-                ),
-                MenuItem(
-                    " Kernel ",
-                    children=[
-                        SmartMenuItem(
-                            "Interupt Kernel",
-                            handler=lambda: self.tab_op("interrupt_kernel"),
-                            disabler=~self.has_tab,
-                        ),
-                        SmartMenuItem(
-                            "Restart Kernel",
-                            handler=lambda: self.tab_op("restart_kernel"),
-                            disabler=~self.has_tab,
-                        ),
-                        SmartMenuItem(
-                            "Change Kernel...",
-                            handler=lambda: self.tab_op("change_kernel"),
-                            disabler=~self.has_tab,
-                        ),
-                    ],
-                ),
-                MenuItem(
-                    " Settings ",
-                    children=[
-                        MenuItem(
-                            "Editing key bindings",
-                            children=[
-                                SmartMenuItem(
-                                    choice.title(),
-                                    handler=partial(self.set_edit_mode, choice),
-                                    toggler=Condition(
-                                        partial(lambda x: config.key_map == x, choice),
-                                    ),
-                                )
-                                for choice in config.choices("key_map")
-                            ],
-                        ),
-                        MenuItem("-", disabled=True),
-                        MenuItem(
-                            "Color scheme",
-                            children=[
-                                SmartMenuItem(
-                                    choice.title(),
-                                    handler=partial(
-                                        self.update_style, color_scheme=choice
-                                    ),
-                                    toggler=Condition(
-                                        partial(
-                                            lambda x: config.color_scheme == x, choice
-                                        )
-                                    ),
-                                )
-                                for choice in config.choices("color_scheme")
-                            ],
-                        ),
-                        MenuItem(
-                            "Syntax Theme",
-                            children=[
-                                SmartMenuItem(
-                                    style,
-                                    handler=partial(
-                                        self.update_style, pygments_style=style
-                                    ),
-                                    toggler=Condition(
-                                        partial(
-                                            lambda x: config.syntax_theme == x, style
-                                        )
-                                    ),
-                                )
-                                for style in sorted(get_all_styles())
-                            ],
-                        ),
-                        MenuItem(
-                            "Switch background pattern",
-                            handler=lambda: config.toggle("background_pattern"),
-                        ),
-                        SmartMenuItem(
-                            "Show cell borders",
-                            handler=lambda: config.toggle("show_cell_borders"),
-                            toggler=Condition(lambda: config.show_cell_borders),
-                        ),
-                        MenuItem("-", disabled=True),
-                        SmartMenuItem(
-                            "Use full width",
-                            handler=lambda: config.toggle("expand"),
-                            toggler=Condition(lambda: config.expand),
-                        ),
-                        SmartMenuItem(
-                            "Show line numbers",
-                            handler=lambda: config.toggle("line_numbers"),
-                            toggler=Condition(lambda: config.line_numbers),
-                        ),
-                        MenuItem("-", disabled=True),
-                        SmartMenuItem(
-                            "Completions as you type",
-                            toggler=Condition(lambda: bool(config.autocomplete)),
-                            handler=lambda: config.toggle("autocomplete"),
-                        ),
-                        SmartMenuItem(
-                            "Suggest lines from history",
-                            toggler=Condition(lambda: bool(config.autosuggest)),
-                            handler=lambda: config.toggle("autosuggest"),
-                        ),
-                        SmartMenuItem(
-                            "Run cell after external edit",
-                            toggler=Condition(
-                                lambda: bool(config.run_after_external_edit)
-                            ),
-                            handler=lambda: config.toggle("run_after_external_edit"),
-                        ),
-                    ],
-                ),
-                MenuItem(
-                    " Help ",
-                    children=[
-                        MenuItem("Keyboard Shortcuts", handler=self.help_keys),
-                        MenuItem("Logs", handler=self.help_logs),
-                        MenuItem("About", handler=self.help_about),
-                    ],
-                ),
-            ],
-            floats=[
-                Float(
-                    xcursor=True,
-                    ycursor=True,
-                    content=CompletionsMenu(max_height=16, scroll_offset=1),
-                )
-            ],
-        )
 
         self.logo = Window(
             FormattedTextControl(
@@ -359,18 +142,41 @@ class TuiApp(EuporieApp):
             filter=self.has_tab,
         )
 
-        # Add logo and status bar into menubar
-        assert isinstance(self.root_container.container.content, HSplit)
-        self.root_container.container.content.children = [
-            VSplit(
+        tabs = DynamicContainer(self.tab_container)
+
+        status_bar = ConditionalContainer(
+            content=VSplit(
                 [
-                    self.logo,
-                    self.root_container.window,
-                    self.title_bar,
-                ]
+                    Window(
+                        FormattedTextControl(lambda: self.format_status(part="left")),
+                        style="class:status",
+                    ),
+                    Window(
+                        FormattedTextControl(lambda: self.format_status(part="right")),
+                        style="class:status.right",
+                        align=WindowAlign.RIGHT,
+                    ),
+                ],
+                height=1,
             ),
-            self.root_container.container.content.children[1],
-        ]
+            filter=Condition(lambda: not config.show_status_bar),
+        )
+
+        body = HSplit([tabs, status_bar], style="class:body")
+
+        self.root_container = MenuContainer(
+            body=body,
+            menu_items=load_menu_items(),
+            floats=[
+                Float(
+                    xcursor=True,
+                    ycursor=True,
+                    content=CompletionsMenu(max_height=16, scroll_offset=1),
+                )
+            ],
+            left=[self.logo],
+            right=[self.title_bar],
+        )
 
         return self.root_container
 

@@ -18,7 +18,7 @@ import rich
 from PIL import Image  # type: ignore
 from prompt_toolkit.application import get_app
 
-from euporie.box import Border
+from euporie.box import RoundBorder as Border
 
 if TYPE_CHECKING:
     from os import PathLike

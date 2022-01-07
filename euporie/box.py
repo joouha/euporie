@@ -6,26 +6,30 @@ from prompt_toolkit.layout.containers import Container
 from prompt_toolkit.layout.dimension import Dimension
 from prompt_toolkit.layout.mouse_handlers import MouseHandlers
 from prompt_toolkit.layout.screen import Char, Screen, WritePosition
+from prompt_toolkit.widgets.base import Border as PtkBorder
 
 from euporie.config import config
 
 __all__ = ["Border", "BorderLine", "Pattern"]
 
 
-class Border:
+class SquareBorder(PtkBorder):
     """Box drawing characters, including characters for splits."""
 
-    HORIZONTAL = "─"
-    VERTICAL = "│"
-    TOP_LEFT = "╭"
-    TOP_RIGHT = "╮"
-    BOTTOM_LEFT = "╰"
-    BOTTOM_RIGHT = "╯"
     SPLIT_BOTTOM = "┴"
     SPLIT_TOP = "┬"
     SPLIT_LEFT = "├"
     SPLIT_RIGHT = "┤"
     CROSS = "┼"
+
+
+class RoundBorder(SquareBorder):
+    """Box drawing characters with rounded corners."""
+
+    TOP_LEFT = "╭"
+    TOP_RIGHT = "╮"
+    BOTTOM_LEFT = "╰"
+    BOTTOM_RIGHT = "╯"
 
 
 class BorderLine(Container):
@@ -59,7 +63,7 @@ class BorderLine(Container):
         self.width = width
         self.height = height
         if char is None:
-            char = Border.VERTICAL if width else Border.HORIZONTAL
+            char = SquareBorder.VERTICAL if width else SquareBorder.HORIZONTAL
         self.char = Char(char, style)
         self.collapse = collapse
 

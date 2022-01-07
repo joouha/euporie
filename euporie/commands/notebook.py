@@ -4,10 +4,117 @@ import logging
 from prompt_toolkit.application import get_app
 from prompt_toolkit.filters import buffer_has_focus
 
-from euporie.commands.command import add
+from euporie.commands.registry import add
 from euporie.filters import notebook_has_focus
 
 log = logging.getLogger(__name__)
+
+
+@add(
+    keys="c-s",
+    filter=notebook_has_focus,
+    group="Notebook",
+)
+def save_notebook():
+    get_app().notebook.save()
+
+
+@add(
+    filter=notebook_has_focus,
+    description="Run or render all cells",
+    group="Cell",
+)
+def run_all_cells() -> None:
+    get_app().notebook.run_all()
+
+
+@add(
+    keys="a",
+    filter=notebook_has_focus & ~buffer_has_focus,
+    group="Notebook",
+    description="Add new cell above current",
+)
+def add_cell_above() -> "None":
+    get_app().notebook.add_cell_above()
+
+
+@add(
+    keys="b",
+    filter=notebook_has_focus & ~buffer_has_focus,
+    group="Notebook",
+    description="Add new cell below current",
+)
+def add_cell_below() -> "None":
+    get_app().notebook.add_cell_below()
+
+
+@add(
+    keys=("d", "d"),
+    filter=notebook_has_focus & ~buffer_has_focus,
+    group="Notebook",
+    description="Delete current cell",
+)
+def delete_cell() -> "None":
+    get_app().notebook.delete()
+
+
+@add(
+    keys="x",
+    filter=notebook_has_focus & ~buffer_has_focus,
+    group="Notebook",
+    description="Cut current cell",
+)
+def cut_cell() -> "None":
+    get_app().notebook.cut()
+
+
+@add(
+    keys="c",
+    filter=notebook_has_focus & ~buffer_has_focus,
+    group="Notebook",
+    description="Copy current cell",
+)
+def copy_cell() -> "None":
+    get_app().notebook.copy()
+
+
+@add(
+    keys="v",
+    filter=notebook_has_focus & ~buffer_has_focus,
+    group="Notebook",
+    description="Paste copied cell",
+)
+def paste_cell() -> "None":
+    get_app().notebook.paste()
+
+
+@add(
+    keys=("I", "I"),
+    filter=notebook_has_focus & ~buffer_has_focus,
+    group="Notebook",
+    description="Interrupt notebook kernel",
+)
+def interrupt_kernel() -> "None":
+    get_app().notebook.interrupt_kernel()
+
+
+@add(
+    keys=("0", "0"),
+    filter=notebook_has_focus & ~buffer_has_focus,
+    group="Notebook",
+    description="Restart notebook kernel",
+)
+def restart_kernel() -> "None":
+    get_app().notebook.restart_kernel()
+
+
+@add(
+    filter=notebook_has_focus & ~buffer_has_focus,
+    group="Notebook",
+    description="Change the notebook kernel",
+)
+def change_kernel() -> "None":
+    get_app().notebook.change_kernel()
 
 
 @add(

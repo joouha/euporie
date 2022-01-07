@@ -8,4 +8,5 @@ from euporie.commands import (
     search,
     suggestions,
 )
-from euporie.commands.command import add, commands, get
+from euporie.commands.base import Command
+from euporie.commands.registry import add, commands, get
