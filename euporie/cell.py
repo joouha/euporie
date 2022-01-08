@@ -342,6 +342,8 @@ class Cell:
             self.clear_output()
         if cell_type == "code":
             self.json.setdefault("execution_count", None)
+        if cell_type == "markdown" and "execution_count" in self.json:
+            del self.json["execution_count"]
         self.json["cell_type"] = cell_type
         self.output_box.children = self.rendered_outputs
 
@@ -429,7 +431,8 @@ class Cell:
 
     def clear_output(self) -> "None":
         """Remove all outputs from the cell."""
-        self.json["outputs"] = []
+        if "outputs" in self.json:
+            del self.json["outputs"]
 
     @property
     def outputs(self) -> "list[dict[str, Any]]":
