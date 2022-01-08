@@ -155,7 +155,7 @@ def move_cursor_right() -> "None":
 
 
 @add(
-    filter=buffer_has_focus,
+    filter=buffer_has_focus & ~shift_selection_mode,
     description="Move the cursor to the start of the line",
 )
 def go_to_start_of_line() -> "None":
@@ -166,8 +166,9 @@ def go_to_start_of_line() -> "None":
     )
 
 
-@add(
-    filter=buffer_has_focus,
+add(
+    name="go-to-end-of-line",
+    filter=buffer_has_focus & ~shift_selection_mode,
     description="Move the cursor to the end of the line",
 )
 def go_to_end_of_line() -> "None":
