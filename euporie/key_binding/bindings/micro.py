@@ -27,6 +27,7 @@ def micro_bindings() -> "KeyBindingsBase":
             "move-cursor-right": "right",
             "move-cursor-left": "left",
             "newline": "enter",
+            "accept-line": "enter",
             "backspace": ["backspace", "c-h"],
             "backward-kill-word": [("escape", "backspace"), ("escape", "c-h")],
             "start-selection": [

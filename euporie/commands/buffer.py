@@ -20,6 +20,7 @@ from prompt_toolkit.filters import (
     to_filter,
 )
 from prompt_toolkit.key_binding.bindings.named_commands import (
+    accept_line,
     backward_char,
     backward_delete_char,
     backward_kill_word,
@@ -54,9 +55,11 @@ from euporie.commands.registry import add, get
 from euporie.config import config
 from euporie.filters import (
     cell_is_code,
+    cursor_at_start_of_line,
     cursor_in_leading_ws,
     has_suggestion,
     insert_mode,
+    is_returnable,
     micro_recording_macro,
     micro_replace_mode,
 )
@@ -337,6 +340,9 @@ def move_lines_down() -> "None":
     move_line(1)
 
 
+add(filter=insert_mode & is_returnable & ~is_multiline)(accept_line)
+
+
 @add(filter=buffer_has_focus & is_multiline)
 def newline(event: "KeyPressEvent") -> "None":
     """Insert a new line, replacing any selection."""
@@ -397,7 +403,10 @@ def indent_lines(event: "KeyPressEvent") -> "None":
     dent_buffer(event)
 
 
-@add(name="unindent-line", filter=cursor_in_leading_ws & ~has_selection)
+@add(
+    name="unindent-line",
+    filter=cursor_in_leading_ws & ~has_selection & ~cursor_at_start_of_line,
+)
 @add(filter=cursor_in_leading_ws | has_selection)
 def unindent_lines(event: "KeyPressEvent") -> "None":
     dent_buffer(event, un=True)

@@ -72,4 +72,14 @@ def micro_recording_macro() -> "bool":
     return app.micro_state.current_recording is not None
 
 
+@Condition
+def is_returnable() -> "bool":
+    return get_app().current_buffer.is_returnable
+
+
+@Condition
+def cursor_at_start_of_line() -> "bool":
+    return get_app().current_buffer.document.current_line_before_cursor == ""
+
+
 insert_mode = vi_insert_mode | emacs_insert_mode | micro_insert_mode
