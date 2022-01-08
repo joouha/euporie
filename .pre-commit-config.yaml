@@ -6,11 +6,6 @@ repos:
         entry: fix-byte-order-marker
         language: system
         types: [text]
-      - id: fix-encoding-pragma
-        name: Fix Encoding Pragma
-        entry: fix-encoding-pragma
-        language: system
-        types: [python]
       - id: black
         name: black
         entry: black

@@ -5,38 +5,26 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from prompt_toolkit.application import get_app
-from prompt_toolkit.filters import Condition, to_filter
 from prompt_toolkit.formatted_text.base import (
     OneStyleAndTextTuple,
     StyleAndTextTuples,
     to_formatted_text,
 )
 from prompt_toolkit.formatted_text.utils import fragment_list_width
-from prompt_toolkit.keys import Keys
-from prompt_toolkit.layout import HSplit, VSplit
-from prompt_toolkit.layout.containers import (
-    AnyContainer,
-    ConditionalContainer,
-    Container,
-    Float,
-    FloatContainer,
-    HSplit,
-    Window,
-)
+from prompt_toolkit.layout import VSplit
+from prompt_toolkit.layout.containers import Window
 from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
-from prompt_toolkit.widgets import Shadow
 from prompt_toolkit.widgets.menus import MenuContainer as PtKMenuContainer
 
 from euporie.box import SquareBorder as Border
 from euporie.components.menu.item import MenuItem
-from euporie.config import config
-from euporie.filters import notebook_has_focus
 
 if TYPE_CHECKING:
-    from typing import Any, Callable, Optional, Sequence, Union
+    from typing import Iterable, Optional
 
-    from prompt_toolkit.filters import Filter, FilterOrBool
+    from prompt_toolkit.key_bindings import KeyBindingsBase
+    from prompt_toolkit.layout.containers import AnyContainer
 
 __all__ = ["MenuItem"]
 
@@ -45,8 +33,8 @@ class MenuContainer(PtKMenuContainer):
     def __init__(
         self,
         body: "AnyContainer",
-        menu_items: "List[MenuItem]",
-        floats: "Optional[List[Float]]" = None,
+        menu_items: "list[MenuItem]",
+        floats: "Optional[list[float]]" = None,
         key_bindings: "Optional[KeyBindingsBase]" = None,
         left: "Optional[list[AnyContainer]]" = None,
         right: "Optional[list[AnyContainer]]" = None,
@@ -121,11 +109,11 @@ class MenuContainer(PtKMenuContainer):
 
                     def one_item(
                         i: int, item: "MenuItem"
-                    ) -> Iterable["OneStyleAndTextTuple"]:
+                    ) -> "Iterable[OneStyleAndTextTuple]":
                         def mouse_handler(mouse_event: "MouseEvent") -> None:
                             if item.disabled:
-                                # The arrow keys can't interact with menu items that are disabled.
-                                # The mouse shouldn't be able to either.
+                                # The arrow keys can't interact with menu items that
+                                # are disabled. The mouse shouldn't be able to either.
                                 return
                             hover = mouse_event.event_type == MouseEventType.MOUSE_MOVE
                             if (

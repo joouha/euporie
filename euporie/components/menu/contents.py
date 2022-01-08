@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+"""Defines the application's menu structure."""
 from functools import partial
 
 from prompt_toolkit.application import get_app
@@ -10,7 +11,8 @@ from euporie.components.menu.item import MenuItem
 from euporie.config import config
 
 
-def load_menu_items():
+def load_menu_items() -> "list[MenuItem]":
+    """Loads the list of menu items to display in the menu."""
     separator = MenuItem(separator=True)
     return [
         MenuItem(

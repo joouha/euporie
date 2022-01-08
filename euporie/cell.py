@@ -4,25 +4,13 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import re
 from functools import partial
 from typing import TYPE_CHECKING
 
 import nbformat  # type: ignore
 from prompt_toolkit.application.current import get_app
-from prompt_toolkit.buffer import Completion, indent, unindent
-from prompt_toolkit.filters import (
-    Condition,
-    buffer_has_focus,
-    completion_is_selected,
-    emacs_mode,
-    has_completions,
-    has_focus,
-    has_selection,
-    is_done,
-)
+from prompt_toolkit.filters import Condition, has_focus, is_done
 from prompt_toolkit.formatted_text import to_formatted_text
-from prompt_toolkit.key_binding.bindings.named_commands import register
 from prompt_toolkit.layout.containers import (
     ConditionalContainer,
     Container,
@@ -38,14 +26,12 @@ from prompt_toolkit.layout.margins import ConditionalMargin, NumberedMargin
 from prompt_toolkit.layout.processors import ConditionalProcessor
 from prompt_toolkit.lexers import DynamicLexer, PygmentsLexer, SimpleLexer
 from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
-from prompt_toolkit.search import start_search
 from prompt_toolkit.utils import Event
 from prompt_toolkit.widgets import Frame, Label, SearchToolbar, TextArea
 from pygments.lexers import get_lexer_by_name  # type: ignore
 
 from euporie.box import RoundBorder as Border
 from euporie.config import config
-from euporie.keys import KeyBindingsInfo
 from euporie.output import Output
 from euporie.suggest import AppendLineAutoSuggestion, ConditionalAutoSuggestAsync
 
@@ -54,13 +40,18 @@ if TYPE_CHECKING:
 
     from prompt_toolkit.buffer import Buffer
     from prompt_toolkit.formatted_text.base import AnyFormattedText, StyleAndTextTuples
-    from prompt_toolkit.key_binding import KeyBindingsBase
-    from prompt_toolkit.key_binding.key_processor import KeyPressEvent
     from prompt_toolkit.layout.layout import FocusableElement
 
     from euporie.notebook import Notebook, TuiNotebook
 
-__all__ = ["get_cell_id", "ClickArea", "Cell", "backward_char", "forward_char"]
+__all__ = [
+    "get_cell_id",
+    "Cell",
+    "InteractiveCell",
+    "ClickArea",
+    "CellStdinTextArea",
+    "CellInputTextArea",
+]
 
 log = logging.getLogger(__name__)
 
@@ -94,7 +85,14 @@ class Cell:
     container: "FloatContainer"
 
     def __init__(self, index: "int", json: "dict", notebook: "Notebook"):
-        """Initiate the cell element."""
+        """Initiate the cell element.
+
+        Args:
+            index: The position of this cell in the notebook
+            json: A refernce to the cell's json object
+            notebook: The notebook instance this cell belongs to
+
+        """
         self.container: "Container"
 
         self.index = index
@@ -452,8 +450,25 @@ class Cell:
             rendered_outputs.append(to_container(Output(i, output_json, parent=self)))
         return rendered_outputs
 
-    def run_or_render(self):
-        ...
+    def run_or_render(
+        self,
+        buffer: "Optional[Buffer]" = None,
+        advance: "bool" = False,
+        insert: "bool" = False,
+    ) -> "bool":
+        """Placeholder function for running the cell.
+
+        Args:
+            buffer: Unused parameter, required when accepting the contents of a cell's
+                input buffer
+            advance: Has no affect
+            insert: Has no affect
+
+        Returns:
+            Always returns True
+
+        """
+        return True
 
     def __pt_container__(self) -> "Container":
         """Returns the container which represents this cell."""
@@ -464,6 +479,14 @@ class InteractiveCell(Cell):
     """An interactive notebook cell."""
 
     def __init__(self, index: "int", json: "dict", notebook: "TuiNotebook") -> "None":
+        """Initiate the interactive cell element.
+
+        Args:
+            index: The position of this cell in the notebook
+            json: A refernce to the cell's json object
+            notebook: The notebook instance this cell belongs to
+
+        """
         super().__init__(index, json, notebook)
         # Pytype need this re-defining...
         self.nb: "TuiNotebook" = notebook
@@ -496,13 +519,18 @@ class InteractiveCell(Cell):
         buffer: "Optional[Buffer]" = None,
         advance: "bool" = False,
         insert: "bool" = False,
-    ) -> "None":
+    ) -> "bool":
         """Run code cells, or render markdown cells, optionally advancing.
 
         Args:
+            buffer: Unused parameter, required when accepting the contents of a cell's
+                input buffer
             advance: If True, move to next cell. If True and at the last cell, create a
                 new cell at the end of the notebook.
             insert: If True, add a new empty cell below the current cell and select it.
+
+        Returns:
+            Always return True
 
         """
         self.exit_edit_mode()
@@ -563,6 +591,7 @@ class CellInputTextArea(TextArea):
     """A customized text area for the cell input."""
 
     def __init__(self, cell: "Cell", *args: "Any", **kwargs: "Any") -> "None":
+        """Initiate the cell input box."""
         self.cell = cell
 
         kwargs["text"] = cell.input
@@ -680,10 +709,3 @@ class ClickArea:
     def __pt_container__(self) -> "Container":
         """Return the `ClickArea`'s window with a blank `FormattedTextControl`."""
         return self.window
-
-
-@Condition
-def cursor_in_leading_ws() -> "bool":
-    """Determine if the cursor of the current buffer is in leading whitespace."""
-    before = get_app().current_buffer.document.current_line_before_cursor
-    return (not before) or before.isspace()

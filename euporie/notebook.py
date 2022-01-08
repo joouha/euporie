@@ -12,7 +12,7 @@ import nbformat  # type: ignore
 from prompt_toolkit.application.current import get_app
 from prompt_toolkit.auto_suggest import DummyAutoSuggest
 from prompt_toolkit.completion import DummyCompleter
-from prompt_toolkit.filters import Condition, buffer_has_focus
+from prompt_toolkit.filters import Condition
 from prompt_toolkit.layout.containers import (
     ConditionalContainer,
     HSplit,
@@ -29,7 +29,6 @@ from euporie.completion import KernelCompleter
 from euporie.config import config
 from euporie.containers import PrintingContainer
 from euporie.kernel import NotebookKernel
-from euporie.keys import KeyBindingsInfo
 from euporie.scroll import ScrollBar, ScrollingContainer
 from euporie.suggest import KernelAutoSuggest
 from euporie.tab import Tab
@@ -41,8 +40,6 @@ if TYPE_CHECKING:
     from prompt_toolkit.auto_suggest import AutoSuggest
     from prompt_toolkit.completion import Completer
     from prompt_toolkit.formatted_text import AnyFormattedText
-    from prompt_toolkit.key_binding import KeyBindings
-    from prompt_toolkit.key_binding.key_processor import KeyPressEvent
     from prompt_toolkit.layout.containers import AnyContainer
     from prompt_toolkit.mouse_events import MouseEvent
 

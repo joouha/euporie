@@ -2,42 +2,19 @@
 """Defines the application menu."""
 from __future__ import annotations
 
-from functools import partial
 from typing import TYPE_CHECKING
 
-from prompt_toolkit.application import get_app
-from prompt_toolkit.filters import Condition, to_filter
-from prompt_toolkit.formatted_text.base import (
-    OneStyleAndTextTuple,
-    StyleAndTextTuples,
-    to_formatted_text,
-)
+from prompt_toolkit.filters import to_filter
+from prompt_toolkit.formatted_text.base import to_formatted_text
 from prompt_toolkit.formatted_text.utils import fragment_list_width
 from prompt_toolkit.keys import Keys
-from prompt_toolkit.layout import HSplit, VSplit
-from prompt_toolkit.layout.containers import (
-    AnyContainer,
-    ConditionalContainer,
-    Container,
-    Float,
-    FloatContainer,
-    HSplit,
-    Window,
-)
-from prompt_toolkit.layout.controls import FormattedTextControl
-from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
-from prompt_toolkit.widgets import Shadow
 from prompt_toolkit.widgets.menus import MenuItem as PtkMenuItem
-from pygments.styles import get_all_styles  # type: ignore
-
-from euporie.box import SquareBorder as Border
-from euporie.config import config
-from euporie.filters import notebook_has_focus
 
 if TYPE_CHECKING:
     from typing import Any, Callable, Optional, Sequence, Union
 
     from prompt_toolkit.filters import Filter, FilterOrBool
+    from prompt_toolkit.formatted_text.base import AnyFormattedText, StyleAndTextTuples
 
 __all__ = ["MenuItem"]
 
@@ -51,7 +28,7 @@ class MenuItem(PtkMenuItem):
 
     def __init__(
         self,
-        text: "Union[str, Callable]" = "",
+        text: "Union[AnyFormattedText, Callable]" = "",
         separator: "bool" = False,
         handler: "Optional[Callable[[], None]]" = None,
         children: "Optional[list[MenuItem]]" = None,
@@ -62,13 +39,14 @@ class MenuItem(PtkMenuItem):
         """Initiate a smart menu item.
 
         Args:
-            text: A string, or a callable which returns the text to display.
-            handler: As per `prompt_toolkit.widgets.menus.MenuItem`.
-            children: As per `prompt_toolkit.widgets.menus.MenuItem`.
-            shortcut: As per `prompt_toolkit.widgets.menus.MenuItem`.
-            disabled: The handler will be disabled when this filter is True.
+            text: A string, or a callable which returns the text to display
+            separator: If True, this menu item is treated as a separator
+            handler: As per `prompt_toolkit.widgets.menus.MenuItem`
+            children: As per `prompt_toolkit.widgets.menus.MenuItem`
+            shortcut: As per `prompt_toolkit.widgets.menus.MenuItem`
+            disabled: The handler will be disabled when this filter is True
             toggled: A checkmark will be displayed next to the menu text when this
-                callable returns true.
+                callable returns True
 
         """
         self.separator = separator
@@ -83,17 +61,13 @@ class MenuItem(PtkMenuItem):
 
     @property  # type: ignore
     def text(self) -> "StyleAndTextTuples":  # type: ignore
-        """Generate the text for this menu item."""
+        """Generate the formatted text for this menu item."""
         if callable(self.text_generator):
             text = self.text_generator()
         else:
             text = self.text_generator
 
-        # Check if this menu item should be disabled, and if so, remove the handler
-        # self.handler = None if self.disabled else self._handler
-
         return to_formatted_text(text)
-        # return text
 
     @text.setter
     def text(self, value: "Any") -> "None":
@@ -111,16 +85,25 @@ class MenuItem(PtkMenuItem):
         pass
 
     @property
-    def has_toggles(self):
+    def has_toggles(self) -> "bool":
+        """Returns true if any child items have a toggle state."""
         toggles = False
         for child in self.children:
-            child_width = get_cwidth(child.text)
             if not toggles and child.toggled is not None:
                 toggles = True
         return toggles
 
     @property
     def prefix(self) -> "StyleAndTextTuples":
+        """The item's prefix.
+
+        Formatted text that will be displayed before the item's main text. All prefixes
+        in a menu are left aligned and padded to take up equal width.
+
+        Returns:
+            Formatted text
+
+        """
         prefix = []
         if self.toggled is not None:
             prefix.append(("", "✓ " if self.toggled() else "  "))
@@ -128,6 +111,14 @@ class MenuItem(PtkMenuItem):
 
     @property
     def suffix(self) -> "StyleAndTextTuples":
+        """The item's suffix.
+
+        Formatted text that will be displayed aligned right after them item's main text.
+
+        Returns:
+            Formatted text
+
+        """
         suffix = []
         if self.children:
             suffix.append(("", ">"))
@@ -136,7 +127,8 @@ class MenuItem(PtkMenuItem):
         return suffix
 
     @property
-    def shortcut_str(self):
+    def shortcut_str(self) -> "str":
+        """A string representing the item's main keyboard shortcut."""
         key_strs = []
         for key in self.shortcut or []:
             if isinstance(key, Keys):
@@ -146,7 +138,8 @@ class MenuItem(PtkMenuItem):
         return ",".join(key_strs)
 
     @property
-    def width(self) -> int:
+    def width(self) -> "int":
+        """The maximum width of the item's children."""
         return (
             self.prefix_width
             + max([fragment_list_width(child.text) for child in self.children])
@@ -154,9 +147,11 @@ class MenuItem(PtkMenuItem):
         )
 
     @property
-    def prefix_width(self) -> int:
+    def prefix_width(self) -> "int":
+        """The maximum width of the item's children's prefixes."""
         return max([fragment_list_width(child.prefix) for child in self.children] + [0])
 
     @property
-    def suffix_width(self) -> int:
+    def suffix_width(self) -> "int":
+        """The maximum width of the item's children's suffixes."""
         return max([fragment_list_width(child.suffix) for child in self.children] + [0])

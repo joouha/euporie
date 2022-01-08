@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING, cast
 
@@ -29,7 +28,7 @@ from prompt_toolkit.layout import (
 from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.layout.dimension import Dimension
 from prompt_toolkit.layout.menus import CompletionsMenu
-from prompt_toolkit.widgets import Button, Dialog, Label, MenuContainer, TextArea
+from prompt_toolkit.widgets import Button, Dialog, Label, TextArea
 
 from euporie import __app_name__, __copyright__, __logo__, __strapline__, __version__
 from euporie.app.base import EuporieApp
@@ -117,7 +116,6 @@ class TuiApp(EuporieApp):
 
     def load_container(self) -> "AnyContainer":
         """Builds the main application layout."""
-
         self.logo = Window(
             FormattedTextControl(
                 [("", f" {__logo__} ")],

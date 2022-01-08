@@ -1,41 +1,29 @@
-# -*- coding: utf-8 -*-
+"""Defines commands relating to editing buffers."""
+
 import logging
 from functools import partial
+from typing import TYPE_CHECKING
 
 from prompt_toolkit.application import get_app
 from prompt_toolkit.buffer import indent, unindent
-from prompt_toolkit.completion import Completion
 from prompt_toolkit.document import Document
 from prompt_toolkit.filters import (
     buffer_has_focus,
-    completion_is_selected,
-    emacs_mode,
-    has_completions,
-    has_focus,
     has_selection,
     in_paste_mode,
-    is_done,
     is_multiline,
     shift_selection_mode,
-    to_filter,
 )
 from prompt_toolkit.key_binding.bindings.named_commands import (
     accept_line,
-    backward_char,
     backward_delete_char,
     backward_kill_word,
     backward_word,
     beginning_of_buffer,
-    beginning_of_line,
     delete_char,
     end_of_buffer,
-    end_of_line,
-    forward_char,
     forward_word,
     get_by_name,
-    menu_complete,
-    menu_complete_backward,
-    self_insert,
 )
 from prompt_toolkit.key_binding.bindings.scroll import (
     scroll_backward,
@@ -47,7 +35,6 @@ from prompt_toolkit.key_binding.bindings.scroll import (
     scroll_page_down,
     scroll_page_up,
 )
-from prompt_toolkit.key_binding.key_bindings import Binding
 from prompt_toolkit.keys import Keys
 from prompt_toolkit.selection import SelectionState, SelectionType
 
@@ -57,13 +44,18 @@ from euporie.filters import (
     cell_is_code,
     cursor_at_start_of_line,
     cursor_in_leading_ws,
-    has_suggestion,
     insert_mode,
     is_returnable,
+    micro_insert_mode,
     micro_recording_macro,
     micro_replace_mode,
 )
 from euporie.key_binding.micro_state import InputMode
+
+if TYPE_CHECKING:
+    from typing import Union
+
+    from prompt_toolkit.key_binding import KeyPressEvent
 
 log = logging.getLogger(__name__)
 
@@ -78,6 +70,7 @@ def if_no_repeat(event: "KeyPressEvent") -> bool:
 
 @add(filter=buffer_has_focus, save_before=if_no_repeat)
 def type_key(event: "KeyPressEvent") -> "None":
+    """Enter a key."""
     event.current_buffer.insert_text(
         event.data * event.arg, overwrite=micro_replace_mode()
     )
@@ -85,6 +78,7 @@ def type_key(event: "KeyPressEvent") -> "None":
 
 @add(filter=buffer_has_focus)
 def toggle_micro_input_mode() -> "None":
+    """Toggle overwrite when using micro editing mode."""
     if micro_replace_mode():
         get_app().micro_state.input_mode = InputMode.INSERT
     elif micro_insert_mode():
@@ -136,29 +130,21 @@ add(filter=buffer_has_focus)(scroll_page_down)
 add(filter=buffer_has_focus)(scroll_page_up)
 
 
-@add(
-    filter=buffer_has_focus,
-    description="Move the cursor forward a character, or down a line",
-)
+@add(filter=buffer_has_focus)
 def move_cursor_left() -> "None":
     """Move back a character, or up a line."""
     get_app().current_buffer.cursor_position -= 1
 
 
-@add(
-    filter=buffer_has_focus,
-    description="Move the cursor forward a character, or down a line",
-)
+@add(filter=buffer_has_focus)
 def move_cursor_right() -> "None":
     """Move forward a character, or down a line."""
     get_app().current_buffer.cursor_position += 1
 
 
-@add(
-    filter=buffer_has_focus & ~shift_selection_mode,
-    description="Move the cursor to the start of the line",
-)
+@add(filter=buffer_has_focus & ~shift_selection_mode)
 def go_to_start_of_line() -> "None":
+    """Move the cursor to the start of the line."""
     buff = get_app().current_buffer
     buff.cursor_position += buff.document.get_start_of_line_position(
         after_whitespace=not cursor_in_leading_ws()
@@ -166,53 +152,42 @@ def go_to_start_of_line() -> "None":
     )
 
 
-add(
+@add(
     name="go-to-end-of-line",
     filter=buffer_has_focus & ~shift_selection_mode,
-    description="Move the cursor to the end of the line",
 )
 def go_to_end_of_line() -> "None":
+    """Move the cursor to the end of the line."""
     buff = get_app().current_buffer
     buff.cursor_position += buff.document.get_end_of_line_position()
 
 
 @add(filter=buffer_has_focus)
 def go_to_start_of_paragraph() -> "None":
+    """Move the cursor to the start of the current paragraph."""
     buf = get_app().current_buffer
     buf.cursor_position += buf.document.start_of_paragraph()
 
 
 @add(filter=buffer_has_focus)
 def go_to_end_of_paragraph() -> "None":
+    """Move the cursor to the end of the current paragraph."""
     buffer = get_app().current_buffer
-    buffer.cursor_position += buf.document.end_of_paragraph()
+    buffer.cursor_position += buffer.document.end_of_paragraph()
 
 
 # Editing
 
 
-def wrap_selection(buffer, left, right=None):
-    selection_state = buffer.selection_state
-
-    for start, end in buffer.document.selection_ranges():
-        buffer.transform_region(start, end, lambda s: f"{left}{s}{right}")
-
-    # keep the selection of the inner expression
-    # e.g. `echo |Hello World|` -> `echo "|Hello World|"`
-    buffer.cursor_position += 1
-    selection_state.original_cursor_position += 1
-    buffer.selection_state = selection_state
-
-
-def wrap_selection_cmd(left, right):
+def wrap_selection_cmd(left: "str", right: "str") -> "None":
+    """Adds strings to either end of the current selection."""
     buffer = get_app().current_buffer
     selection_state = buffer.selection_state
     for start, end in buffer.document.selection_ranges():
         buffer.transform_region(start, end, lambda s: f"{left}{s}{right}")
     # keep the selection of the inner expression
-    # e.g. `echo |Hello World|` -> `echo "|Hello World|"`
-    buffer.cursor_position += 1
-    selection_state.original_cursor_position += 1
+    buffer.cursor_position += len(left)
+    selection_state.original_cursor_position += len(left)
     buffer.selection_state = selection_state
 
 
@@ -230,15 +205,16 @@ for pair in [
             name=f"wrap-selection-{key}",
             keys=key,
             title="Wrap selection in {pair}",
+            description=f"Wraps the current selection with: {pair}",
             filter=buffer_has_focus & has_selection,
         )(partial(wrap_selection_cmd, left, right))
 
 
 @add(
     filter=buffer_has_focus,
-    description="Duplicate the current line",
 )
 def duplicate_line() -> "None":
+    """Duplicate the current line."""
     buffer = get_app().current_buffer
     line = buffer.document.current_line
     eol = buffer.document.get_end_of_line_position()
@@ -251,9 +227,9 @@ def duplicate_line() -> "None":
 @add(
     title="Paste",
     filter=buffer_has_focus,
-    description="Paste the clipboard, replacing any current selection",
 )
 def paste_clipboard() -> "None":
+    """Paste the clipboard contents, replacing any current selection."""
     app = get_app()
     buff = app.current_buffer
     if buff.selection_state:
@@ -264,9 +240,9 @@ def paste_clipboard() -> "None":
 @add(
     title="Copy",
     filter=has_selection,
-    description="Adds the current selection to the clipboard",
 )
 def copy_selection() -> "None":
+    """Adds the current selection to the clipboard."""
     app = get_app()
     data = app.current_buffer.copy_selection()
     app.clipboard.set_data(data)
@@ -275,18 +251,18 @@ def copy_selection() -> "None":
 @add(
     title="Cut",
     filter=has_selection,
-    description="Removes the current selection and adds it to the clipboard",
 )
 def cut_selection() -> "None":
+    """Removes the current selection and adds it to the clipboard."""
     data = get_app().current_buffer.cut_selection()
     get_app().clipboard.set_data(data)
 
 
 @add(
     filter=buffer_has_focus,
-    description="Removes the current line adds it to the clipboard",
 )
 def cut_line() -> "None":
+    """Removes the current line adds it to the clipboard."""
     app = get_app()
     buffer = app.current_buffer
     clipboard = app.clipboard
@@ -302,6 +278,7 @@ def cut_line() -> "None":
 
 
 def move_line(n: "int") -> "None":
+    """Moves the current or selected lines up or down by one or more lines."""
     buffer = get_app().current_buffer
     selection_state = buffer.selection_state
     lines = buffer.text.splitlines(keepends=False)
@@ -333,20 +310,24 @@ def move_line(n: "int") -> "None":
 
 @add(filter=buffer_has_focus)
 def move_lines_up() -> "None":
+    """Move the current or selected lines up by one line."""
     move_line(-1)
 
 
 @add(filter=buffer_has_focus)
 def move_lines_down() -> "None":
+    """Move the current or selected lines down by one line."""
     move_line(1)
 
 
+"""Accept an input."""
 add(filter=insert_mode & is_returnable & ~is_multiline)(accept_line)
 
 
 @add(filter=buffer_has_focus & is_multiline)
 def newline(event: "KeyPressEvent") -> "None":
-    """Insert a new line, replacing any selection."""
+    """Insert a new line, replacing any selection and indenting if appropriate.."""
+    # TODO https://git.io/J9GfI
     buffer = get_app().current_buffer
     buffer.cut_selection()
     buffer.newline(copy_margin=not in_paste_mode())
@@ -361,6 +342,7 @@ def newline(event: "KeyPressEvent") -> "None":
 
 
 def dent_buffer(event: "KeyPressEvent", un: "bool" = False) -> "None":
+    """Indent or unindent the current or selected lines in a buffer."""
     buffer = get_app().current_buffer
     selection_state = buffer.selection_state
     cursor_position = buffer.cursor_position
@@ -401,6 +383,7 @@ def dent_buffer(event: "KeyPressEvent", un: "bool" = False) -> "None":
 
 @add(filter=cursor_in_leading_ws | has_selection)
 def indent_lines(event: "KeyPressEvent") -> "None":
+    """Inndent the current or selected lines."""
     dent_buffer(event)
 
 
@@ -410,11 +393,13 @@ def indent_lines(event: "KeyPressEvent") -> "None":
 )
 @add(filter=cursor_in_leading_ws | has_selection)
 def unindent_lines(event: "KeyPressEvent") -> "None":
+    """Unindent the current or selected lines."""
     dent_buffer(event, un=True)
 
 
 @add(filter=buffer_has_focus)
-def toggle_case():
+def toggle_case() -> "None":
+    """Toggle the case of the current word or selection."""
     buffer = get_app().current_buffer
     if buffer.selection_state is None:
         cp = buffer.cursor_position
@@ -437,34 +422,28 @@ def toggle_case():
 
 
 @add(filter=buffer_has_focus)
-def undo():
+def undo() -> "None":
+    """Undo the last edit."""
     get_app().current_buffer.undo()
 
 
 @add(filter=buffer_has_focus)
-def redo():
+def redo() -> "None":
+    """Redo the last edit."""
     get_app().current_buffer.redo()
 
 
 # Selection
 
 
-@add(
-    filter=~has_selection,
-)
+@add(filter=~has_selection)
 def start_selection(event: "KeyPressEvent") -> "None":
-    """
-    Start selection with shift + movement.
-    """
+    """Start a new selection."""
     # Take the current cursor position as the start of this selection.
     buff = event.current_buffer
     if buff.text:
         buff.start_selection(selection_type=SelectionType.CHARACTERS)
-
-        if buff.selection_state is not None:
-            # (`selection_state` should never be `None`, it is created by
-            # `start_selection`.)
-            buff.selection_state.enter_shift_mode()
+        buff.selection_state.enter_shift_mode()
 
         # Then move the cursor
         original_position = buff.cursor_position
@@ -498,6 +477,7 @@ def replace_selection(event: "KeyPressEvent") -> "None":
 
 @add(filter=has_selection)
 def delete_selection() -> "None":
+    """Delete the contents of the current selection."""
     get_app().current_buffer.cut_selection()
 
 
@@ -506,6 +486,9 @@ def unshift_move(event: "KeyPressEvent") -> "None":
 
     When called with a shift + movement key press event, moves the cursor as if shift
     is not pressed.
+
+    Args:
+        event: The key press event to process
 
     """
     key = event.key_sequence[0].key
@@ -518,7 +501,7 @@ def unshift_move(event: "KeyPressEvent") -> "None":
         return
 
     # the other keys are handled through their readline command
-    key_to_command: Dict[Union[Keys, str], str] = {
+    key_to_command: "dict[Union[Keys, str], str]" = {
         Keys.ShiftLeft: "move-cursor-left",
         Keys.ShiftRight: "move-cursor-right",
         Keys.ShiftHome: "go-to-start-of-line",
@@ -548,6 +531,7 @@ def cancel_selection(event: "KeyPressEvent") -> "None":
 
 @add(filter=buffer_has_focus)
 def select_all() -> "None":
+    """Select all text."""
     buffer = get_app().current_buffer
     buffer.selection_state = SelectionState(0)
     buffer.cursor_position = len(buffer.text)

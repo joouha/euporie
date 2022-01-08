@@ -1,26 +1,17 @@
-# -*- coding: utf-8 -*-
-import logging
-from inspect import isawaitable, signature
+"""Defines functions to manage the command registry."""
 
-from prompt_toolkit.buffer import indent, unindent
-from prompt_toolkit.filters import to_filter
-from prompt_toolkit.key_binding.key_bindings import (
-    Binding,
-    KeyBindings,
-    _parse_key,
-    key_binding,
-)
-from prompt_toolkit.keys import Keys
+from typing import TYPE_CHECKING
 
 from euporie.commands.base import Command
 
-log = logging.getLogger(__name__)
+if TYPE_CHECKING:
+    from typing import Any, Callable
 
 
 commands: "dict[str, Command]" = {}
 
 
-def add(**kwargs: "Any"):
+def add(**kwargs: "Any") -> "Callable":
     """Adds a command to the centralized command system."""
 
     def decorator(handler: "Callable") -> "Callable":
@@ -31,7 +22,7 @@ def add(**kwargs: "Any"):
     return decorator
 
 
-def get(name: "str"):
+def get(name: "str") -> "None":
     """Get a command from the centralized command system by name."""
     try:
         return commands[name]

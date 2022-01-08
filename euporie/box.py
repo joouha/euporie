@@ -10,7 +10,7 @@ from prompt_toolkit.widgets.base import Border as PtkBorder
 
 from euporie.config import config
 
-__all__ = ["Border", "BorderLine", "Pattern"]
+__all__ = ["SquareBorder", "RoundBorder", "BorderLine", "Pattern"]
 
 
 class SquareBorder(PtkBorder):

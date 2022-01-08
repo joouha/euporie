@@ -1,26 +1,18 @@
 # -*- coding: utf-8 -*-
-import logging
+"""Defines editor key-bindings in the style of the ``micro`` text editor."""
+from typing import TYPE_CHECKING
 
-from prompt_toolkit.application import get_app
-from prompt_toolkit.filters import has_selection, shift_selection_mode
-from prompt_toolkit.key_binding import (
-    ConditionalKeyBindings,
-    KeyBindings,
-    KeyBindingsBase,
-)
-from prompt_toolkit.key_binding.bindings.named_commands import get_by_name
-from prompt_toolkit.key_binding.key_bindings import Binding
-from prompt_toolkit.key_binding.key_processor import KeyPressEvent
-from prompt_toolkit.keys import Keys
+from prompt_toolkit.key_binding import ConditionalKeyBindings
 
-from euporie.commands import get
 from euporie.filters import micro_mode
-from euporie.key_binding.load import dict_bindings
+from euporie.key_binding.util import dict_bindings
 
-log = logging.getLogger(__name__)
+if TYPE_CHECKING:
+    from prompt_toolkit.key_binding import KeyBindingsBase
 
 
 def micro_bindings() -> "KeyBindingsBase":
+    """Load editor key-bindings in the style of the ``micro`` text editor."""
     kb = dict_bindings(
         {
             "type-key": "<any>",
@@ -78,10 +70,10 @@ def micro_bindings() -> "KeyBindingsBase":
             "forward-word": ["c-right", ("escape", "f")],
             "move-lines-up": ("escape", "up"),
             "move-lines-down": ("escape", "down"),
-            "go-to-start-of-line": ("escape", "left"),
-            "go-to-end-of-line": ("escape", "right"),
-            "beginning-of-buffer": "c-up",
-            "end-of-buffer": "c-down",
+            "go-to-start-of-line": ["home", ("escape", "left"), ("escape", "a")],
+            "go-to-end-of-line": ["end", ("escape", "right"), ("escape", "e")],
+            "beginning-of-buffer": ["c-up", "c-home"],
+            "end-of-buffer": ["c-down", "c-end"],
             "go-to-start-of-paragraph": ("escape", "{"),
             "go-to-end-of-paragraph": ("escape", "}"),
             "indent-lines": ["tab"],
@@ -95,10 +87,6 @@ def micro_bindings() -> "KeyBindingsBase":
             "duplicate-line": "c-d",
             "paste-clipboard": "c-v",
             "select-all": "c-a",
-            "go-to-start-of-line": ["home", ("escape", "a")],
-            "go-to-end-of-line": ["end", ("escape", "e")],
-            "beginning-of-buffer": "c-home",
-            "end-of-buffer": "c-end",
             "scroll-page-up": "pageup",
             "scroll-page-down": "pagedown",
             "delete": "delete",

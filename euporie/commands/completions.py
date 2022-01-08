@@ -1,4 +1,5 @@
-# -*- coding: utf-8 -*-
+"""Defines commands relating to completions."""
+
 from prompt_toolkit.application import get_app
 from prompt_toolkit.completion import Completion
 from prompt_toolkit.filters import (

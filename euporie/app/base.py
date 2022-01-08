@@ -9,7 +9,6 @@ from typing import TYPE_CHECKING
 
 from prompt_toolkit.application import Application, get_app_session
 from prompt_toolkit.filters import Condition, Filter
-from prompt_toolkit.key_binding import DynamicKeyBindings, KeyPressEvent
 from prompt_toolkit.layout import Layout
 from prompt_toolkit.layout.containers import Window
 from prompt_toolkit.output import ColorDepth
@@ -42,6 +41,8 @@ if TYPE_CHECKING:
 
     from prompt_toolkit.layout.containers import AnyContainer
     from prompt_toolkit.output import Output
+
+    from euporie.cell import Cell
 
 log = logging.getLogger(__name__)
 
@@ -165,11 +166,13 @@ class EuporieApp(Application):
             return None
 
     @property
-    def tab_idx(self):
+    def tab_idx(self) -> "int":
+        """Gets the current tab index."""
         return self._tab_idx
 
     @tab_idx.setter
-    def tab_idx(self, value):
+    def tab_idx(self, value: "int") -> "None":
+        """Sets the current tab by index."""
         self._tab_idx = value % len(self.tabs)
         self.layout.focus(self.tabs[self._tab_idx])
 
@@ -260,7 +263,9 @@ class EuporieApp(Application):
             "menu-bar.disabled-item": f"fg:{series['bg'][5]}",
             "menu-bar.selected-item": "reverse",
             "menu-bar.shortcut": f"fg:{series['fg'][9]}",
-            "menu-bar.selected-item menu-bar.shortcut": f"fg:{series['fg'][1]} bg:{series['bg'][5]}",
+            "menu-bar.selected-item menu-bar.shortcut": (
+                f"fg:{series['fg'][1]} bg:{series['bg'][5]}"
+            ),
             "menu-bar.disabled-item menu-bar.shortcut": f"fg:{series['bg'][5]}",
             "menu": f"bg:{series['bg'][1]} fg:{series['fg'][1]}",
             # Buffer

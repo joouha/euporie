@@ -1,4 +1,5 @@
-# -*- coding: utf-8 -*-
+"""Defines commands related to searching."""
+
 # Search
 
 # register("abort-search")(abort_search)

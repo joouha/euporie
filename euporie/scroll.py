@@ -8,7 +8,6 @@ from typing import TYPE_CHECKING
 
 from prompt_toolkit.application.current import get_app
 from prompt_toolkit.data_structures import Point
-from prompt_toolkit.filters import buffer_has_focus
 from prompt_toolkit.layout.containers import Container, Window, to_container
 from prompt_toolkit.layout.controls import UIContent, UIControl
 from prompt_toolkit.layout.dimension import Dimension, to_dimension
@@ -17,14 +16,10 @@ from prompt_toolkit.layout.screen import Char, Screen, WritePosition
 from prompt_toolkit.mouse_events import MouseEventType
 from prompt_toolkit.utils import to_str
 
-from euporie.keys import KeyBindingsInfo
-
 if TYPE_CHECKING:
     from typing import Callable, Dict, List, Optional, Sequence, Union
 
     from prompt_toolkit.formatted_text import AnyFormattedText, StyleAndTextTuples
-    from prompt_toolkit.key_binding.key_processor import KeyPressEvent
-    from prompt_toolkit.keys import Keys
     from prompt_toolkit.layout.containers import AnyContainer, MagicContainer
     from prompt_toolkit.layout.dimension import AnyDimension
     from prompt_toolkit.layout.mouse_handlers import MouseHandler
