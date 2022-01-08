@@ -100,6 +100,7 @@ def load_menu_items():
                 separator,
                 get("use-full-width").menu,
                 get("show-line-numbers").menu,
+                get("show-status-bar").menu,
                 separator,
                 get("autocomplete").menu,
                 get("autosuggest").menu,

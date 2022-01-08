@@ -260,6 +260,19 @@ CONFIG_PARAMS: "dict[str, dict]" = {
             The maximum width at which to display a notebook.
         """,
     },
+    "show_status_bar": {
+        "flags_": ["--show-status-bar"],
+        "action": BooleanOptionalAction,
+        "type": bool,
+        "help": "Show the status bar",
+        "schema_": {
+            "type": "boolean",
+            "default": True,
+        },
+        "description_": """
+            Whether the status bar should be shown at the bottom of the screen.
+        """,
+    },
     "color_scheme": {
         "flags_": ["--color-scheme"],
         "type": str,

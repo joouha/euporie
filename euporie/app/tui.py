@@ -159,7 +159,7 @@ class TuiApp(EuporieApp):
                 ],
                 height=1,
             ),
-            filter=Condition(lambda: not config.show_status_bar),
+            filter=Condition(lambda: config.show_status_bar),
         )
 
         body = HSplit([tabs, status_bar], style="class:body")

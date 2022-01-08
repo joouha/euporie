@@ -125,7 +125,6 @@ def use_full_width() -> "None":
 @add(
     title="Completions as you type",
     filter=~buffer_has_focus,
-    group="Config",
     toggled=Condition(lambda: bool(config.autocomplete)),
 )
 def autocomplete() -> "None":
@@ -134,7 +133,6 @@ def autocomplete() -> "None":
 
 @add(
     title="Suggest lines from history",
-    filter=~buffer_has_focus,
     group="Config",
     toggled=Condition(lambda: bool(config.autosuggest)),
 )
@@ -144,12 +142,19 @@ def autosuggest() -> "None":
 
 @add(
     title="Run cell after external edit",
-    filter=~buffer_has_focus,
     group="Config",
     toggled=Condition(lambda: bool(config.run_after_external_edit)),
 )
 def run_after_external_edit() -> "None":
-    config.toggle("run_after_external_edit"),
+    config.toggle("run_after_external_edit")
+
+
+@add(
+    group="Config",
+    toggled=Condition(lambda: bool(config.show_status_bar)),
+)
+def show_status_bar() -> "None":
+    config.toggle("show_status_bar")
 
 
 @add(group="help")

@@ -4,6 +4,7 @@ Changlog
 Upcoming
 --------
 
+- Allow status bar to be hidden
 - Allow wrapping selection in quotes or brackets
 - Display keyboard shortcuts on menus, and better looking menus
 - Add `micro` editor style key-bindings as the default
