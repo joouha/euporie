@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import logging
+from functools import partial
 
 from prompt_toolkit.application import get_app
 from prompt_toolkit.buffer import indent, unindent
@@ -184,6 +185,49 @@ def go_to_end_of_paragraph() -> "None":
 
 
 # Editing
+
+
+def wrap_selection(buffer, left, right=None):
+    selection_state = buffer.selection_state
+
+    for start, end in buffer.document.selection_ranges():
+        buffer.transform_region(start, end, lambda s: f"{left}{s}{right}")
+
+    # keep the selection of the inner expression
+    # e.g. `echo |Hello World|` -> `echo "|Hello World|"`
+    buffer.cursor_position += 1
+    selection_state.original_cursor_position += 1
+    buffer.selection_state = selection_state
+
+
+def wrap_selection_cmd(left, right):
+    buffer = get_app().current_buffer
+    selection_state = buffer.selection_state
+    for start, end in buffer.document.selection_ranges():
+        buffer.transform_region(start, end, lambda s: f"{left}{s}{right}")
+    # keep the selection of the inner expression
+    # e.g. `echo |Hello World|` -> `echo "|Hello World|"`
+    buffer.cursor_position += 1
+    selection_state.original_cursor_position += 1
+    buffer.selection_state = selection_state
+
+
+for pair in [
+    '""',
+    "''",
+    "``",
+    "()",
+    "{}",
+    "[]",
+]:
+    left, right = pair
+    for key in set(pair):
+        add(
+            name=f"wrap-selection-{key}",
+            keys=key,
+            title="Wrap selection in {pair}",
+            filter=buffer_has_focus & has_selection,
+        )(partial(wrap_selection_cmd, left, right))
 
 
 @add(
