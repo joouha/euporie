@@ -170,8 +170,8 @@ CONFIG_PARAMS: "dict[str, dict]" = {
         output, notebooks will be run before being output.
     """,
     },
-    "key_map": {
-        "flags_": ["--key-map"],
+    "edit_mode": {
+        "flags_": ["--edit-mode"],
         "type": str,
         "choices": ["micro", "emacs", "vi"],
         "help": "Key-binding mode for text editing",

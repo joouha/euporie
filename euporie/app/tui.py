@@ -494,7 +494,7 @@ class TuiApp(EuporieApp):
             mode: One of default, vi, or emacs
 
         """
-        config.key_map = mode
+        config.edit_mode = mode
         self.editing_mode = self.get_edit_mode()
         log.debug("Editing mode set to: %s", self.editing_mode)
 
@@ -506,7 +506,7 @@ class TuiApp(EuporieApp):
                 "micro": "MICRO",
                 "vi": EditingMode.VI,
                 "emacs": EditingMode.EMACS,
-            }.get(str(config.key_map), "micro"),
+            }.get(str(config.edit_mode), "micro"),
         )
 
     def tab_op(

@@ -58,10 +58,10 @@ def load_menu_items():
                             choice.title(),
                             handler=partial(get_app().set_edit_mode, choice),
                             toggled=Condition(
-                                partial(lambda x: config.key_map == x, choice),
+                                partial(lambda x: config.edit_mode == x, choice),
                             ),
                         )
-                        for choice in config.choices("key_map")
+                        for choice in config.choices("edit_mode")
                     ],
                 ),
                 separator,
