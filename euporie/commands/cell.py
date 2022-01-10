@@ -2,9 +2,9 @@
 
 import logging
 
-from prompt_toolkit.application import get_app
 from prompt_toolkit.filters import buffer_has_focus
 
+from euporie.app.current import get_tui_app as get_app
 from euporie.commands.registry import add
 from euporie.filters import cell_has_focus
 
@@ -21,7 +21,9 @@ log = logging.getLogger(__name__)
 )
 async def edit_in_external_editor() -> "None":
     """Edit cell in $EDITOR."""
-    await get_app().cell.edit_in_editor()
+    cell = get_app().cell
+    if cell is not None:
+        await cell.edit_in_editor()
 
 
 @add(
@@ -31,7 +33,9 @@ async def edit_in_external_editor() -> "None":
 )
 def run_cell() -> None:
     """Run or render the current cell."""
-    get_app().cell.run_or_render()
+    cell = get_app().cell
+    if cell is not None:
+        cell.run_or_render()
 
 
 @add(
@@ -41,7 +45,9 @@ def run_cell() -> None:
 )
 def run_cell_and_select_next_cell() -> None:
     """Run or render the current cell and select the next cell."""
-    get_app().cell.run_or_render(advance=True)
+    cell = get_app().cell
+    if cell is not None:
+        cell.run_or_render(advance=True)
 
 
 @add(
@@ -51,7 +57,9 @@ def run_cell_and_select_next_cell() -> None:
 )
 def run_cell_and_insert_below() -> None:
     """Run or render the current cell and insert a new cell below."""
-    get_app().cell.run_or_render(insert=True)
+    cell = get_app().cell
+    if cell is not None:
+        cell.run_or_render(insert=True)
 
 
 @add(
@@ -61,7 +69,9 @@ def run_cell_and_insert_below() -> None:
 )
 def enter_cell_edit_mode() -> "None":
     """Enter cell edit mode."""
-    get_app().cell.enter_edit_mode()
+    cell = get_app().cell
+    if cell is not None:
+        cell.enter_edit_mode()
 
 
 @add(
@@ -71,7 +81,9 @@ def enter_cell_edit_mode() -> "None":
 )
 def exit_edit_mode() -> "None":
     """Exit cell edit mode."""
-    get_app().cell.exit_edit_mode()
+    cell = get_app().cell
+    if cell is not None:
+        cell.exit_edit_mode()
 
 
 @add(
@@ -81,7 +93,9 @@ def exit_edit_mode() -> "None":
 )
 def to_markdown() -> "None":
     """Change cell type to markdown."""
-    get_app().cell.set_cell_type("markdown", clear=True)
+    cell = get_app().cell
+    if cell is not None:
+        cell.set_cell_type("markdown", clear=True)
 
 
 @add(
@@ -91,7 +105,9 @@ def to_markdown() -> "None":
 )
 def cell_to_code() -> "None":
     """Change cell type to code."""
-    get_app().cell.set_cell_type("code", clear=False)
+    cell = get_app().cell
+    if cell is not None:
+        cell.set_cell_type("code", clear=False)
 
 
 @add(
@@ -101,4 +117,6 @@ def cell_to_code() -> "None":
 )
 def cell_to_raw() -> "None":
     """Change cell type to raw."""
-    get_app().cell.set_cell_type("raw", clear=True)
+    cell = get_app().cell
+    if cell is not None:
+        cell.set_cell_type("raw", clear=True)

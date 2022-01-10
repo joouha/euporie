@@ -2,10 +2,10 @@
 """Defines the application's menu structure."""
 from functools import partial
 
-from prompt_toolkit.application import get_app
 from prompt_toolkit.filters import Condition
 from pygments.styles import get_all_styles  # type: ignore
 
+from euporie.app.current import get_tui_app as get_app
 from euporie.commands.registry import get
 from euporie.components.menu.item import MenuItem
 from euporie.config import config

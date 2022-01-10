@@ -2,9 +2,9 @@
 
 import logging
 
-from prompt_toolkit.application import get_app
 from prompt_toolkit.filters import buffer_has_focus
 
+from euporie.app.current import get_tui_app as get_app
 from euporie.commands.registry import add
 from euporie.filters import notebook_has_focus
 
@@ -18,7 +18,9 @@ log = logging.getLogger(__name__)
 )
 def save_notebook() -> "None":
     """Save the current notebook."""
-    get_app().notebook.save()
+    nb = get_app().notebook
+    if nb is not None:
+        nb.save()
 
 
 @add(
@@ -27,7 +29,9 @@ def save_notebook() -> "None":
 )
 def run_all_cells() -> "None":
     """Run or render all the cells in the current notebook."""
-    get_app().notebook.run_all()
+    nb = get_app().notebook
+    if nb is not None:
+        nb.run_all()
 
 
 @add(
@@ -37,7 +41,9 @@ def run_all_cells() -> "None":
 )
 def add_cell_above() -> "None":
     """Add a new cell above the current."""
-    get_app().notebook.add_cell_above()
+    nb = get_app().notebook
+    if nb is not None:
+        nb.add_cell_above()
 
 
 @add(
@@ -47,7 +53,9 @@ def add_cell_above() -> "None":
 )
 def add_cell_below() -> "None":
     """Add a new cell below the current."""
-    get_app().notebook.add_cell_below()
+    nb = get_app().notebook
+    if nb is not None:
+        nb.add_cell_below()
 
 
 @add(
@@ -57,7 +65,9 @@ def add_cell_below() -> "None":
 )
 def delete_cell() -> "None":
     """Delete the current cell."""
-    get_app().notebook.delete()
+    nb = get_app().notebook
+    if nb is not None:
+        nb.delete()
 
 
 @add(
@@ -67,7 +77,9 @@ def delete_cell() -> "None":
 )
 def cut_cell() -> "None":
     """Cut the current cell."""
-    get_app().notebook.cut()
+    nb = get_app().notebook
+    if nb is not None:
+        nb.cut()
 
 
 @add(
@@ -77,7 +89,9 @@ def cut_cell() -> "None":
 )
 def copy_cell() -> "None":
     """Copy the current cell."""
-    get_app().notebook.copy()
+    nb = get_app().notebook
+    if nb is not None:
+        nb.copy()
 
 
 @add(
@@ -87,7 +101,9 @@ def copy_cell() -> "None":
 )
 def paste_cell() -> "None":
     """Paste the last copied cell."""
-    get_app().notebook.paste()
+    nb = get_app().notebook
+    if nb is not None:
+        nb.paste()
 
 
 @add(
@@ -97,7 +113,9 @@ def paste_cell() -> "None":
 )
 def interrupt_kernel() -> "None":
     """Interrupt the notebook's kernel."""
-    get_app().notebook.interrupt_kernel()
+    nb = get_app().notebook
+    if nb is not None:
+        nb.interrupt_kernel()
 
 
 @add(
@@ -107,7 +125,9 @@ def interrupt_kernel() -> "None":
 )
 def restart_kernel() -> "None":
     """Restart the notebook's kernel."""
-    get_app().notebook.restart_kernel()
+    nb = get_app().notebook
+    if nb is not None:
+        nb.restart_kernel()
 
 
 @add(
@@ -116,7 +136,9 @@ def restart_kernel() -> "None":
 )
 def change_kernel() -> "None":
     """Change the notebook's kernel."""
-    get_app().notebook.change_kernel()
+    nb = get_app().notebook
+    if nb is not None:
+        nb.change_kernel()
 
 
 @add(
@@ -131,7 +153,9 @@ def change_kernel() -> "None":
 )
 def scroll_up() -> "None":
     """Scroll the page up a line."""
-    get_app().notebook.page.scroll(1)
+    nb = get_app().notebook
+    if nb is not None:
+        nb.page.scroll(1)
 
 
 @add(
@@ -146,7 +170,9 @@ def scroll_up() -> "None":
 )
 def scroll_down() -> "None":
     """Scroll the page down a line."""
-    get_app().notebook.page.scroll(-1)
+    nb = get_app().notebook
+    if nb is not None:
+        nb.page.scroll(-1)
 
 
 @add(
@@ -156,7 +182,9 @@ def scroll_down() -> "None":
 )
 def scroll_up_5_lines() -> "None":
     """Scroll the page up 5 lines."""
-    get_app().notebook.page.scroll(5)
+    nb = get_app().notebook
+    if nb is not None:
+        nb.page.scroll(5)
 
 
 @add(
@@ -166,7 +194,9 @@ def scroll_up_5_lines() -> "None":
 )
 def scroll_down_5_lines() -> "None":
     """Scroll the page down 5 lines."""
-    get_app().notebook.page.scroll(-5)
+    nb = get_app().notebook
+    if nb is not None:
+        nb.page.scroll(-5)
 
 
 @add(
@@ -176,7 +206,9 @@ def scroll_down_5_lines() -> "None":
 )
 def first_child() -> "None":
     """Select the first cell in the notebook."""
-    get_app().notebook.page.selected_index = 0
+    nb = get_app().notebook
+    if nb is not None:
+        nb.page.selected_index = 0
 
 
 @add(
@@ -186,7 +218,9 @@ def first_child() -> "None":
 )
 def select_5th_previous_cell() -> "None":
     """Go up 5 cells."""
-    get_app().notebook.page.selected_index -= 5
+    nb = get_app().notebook
+    if nb is not None:
+        nb.page.selected_index -= 5
 
 
 @add(
@@ -196,7 +230,9 @@ def select_5th_previous_cell() -> "None":
 )
 def select_previous_cell() -> "None":
     """Go up one cell."""
-    get_app().notebook.page.selected_index -= 1
+    nb = get_app().notebook
+    if nb is not None:
+        nb.page.selected_index -= 1
 
 
 @add(
@@ -206,7 +242,9 @@ def select_previous_cell() -> "None":
 )
 def next_child() -> "None":
     """Select the next cell."""
-    get_app().notebook.page.selected_index += 1
+    nb = get_app().notebook
+    if nb is not None:
+        nb.page.selected_index += 1
 
 
 @add(
@@ -216,7 +254,9 @@ def next_child() -> "None":
 )
 def select_5th_next_cell() -> "None":
     """Go down 5 cells."""
-    get_app().notebook.page.selected_index += 5
+    nb = get_app().notebook
+    if nb is not None:
+        nb.page.selected_index += 5
 
 
 @add(
@@ -226,5 +266,6 @@ def select_5th_next_cell() -> "None":
 )
 def select_last_cell() -> "None":
     """Select the last cell in the notebook."""
-    page = get_app().notebook.page
-    page.selected_index = len(list(page.children))
+    nb = get_app().notebook
+    if nb is not None:
+        nb.page.selected_index = len(list(nb.page.children))

@@ -8,14 +8,13 @@ from typing import TYPE_CHECKING, cast
 
 from prompt_toolkit.completion import PathCompleter
 from prompt_toolkit.enums import EditingMode
-from prompt_toolkit.filters import Condition, buffer_has_focus, has_completions
+from prompt_toolkit.filters import Condition
 from prompt_toolkit.formatted_text import (
     HTML,
     AnyFormattedText,
     fragment_list_to_text,
     to_formatted_text,
 )
-from prompt_toolkit.key_binding.bindings.focus import focus_next, focus_previous
 from prompt_toolkit.layout import (
     ConditionalContainer,
     DynamicContainer,
@@ -48,9 +47,9 @@ if TYPE_CHECKING:
     from prompt_toolkit.buffer import Buffer
     from prompt_toolkit.completion import Completer
     from prompt_toolkit.formatted_text import StyleAndTextTuples
-    from prompt_toolkit.key_binding.key_processor import KeyPressEvent
     from prompt_toolkit.layout.containers import AnyContainer
 
+    from euporie.cell import InteractiveCell
     from euporie.tab import Tab
 
 log = logging.getLogger(__name__)
@@ -164,7 +163,7 @@ class TuiApp(EuporieApp):
 
         self.root_container = MenuContainer(
             body=body,
-            menu_items=load_menu_items(),
+            menu_items=load_menu_items(),  # type: ignore
             floats=[
                 Float(
                     xcursor=True,
@@ -194,37 +193,6 @@ class TuiApp(EuporieApp):
             )
         else:
             return Pattern()
-
-    def load_key_bindings(self) -> "KeyBindingsInfo":
-        """Define application-wide keybindings."""
-        kb = super().load_key_bindings()
-
-        kb.add("c-n", group="Application", desc="Create a new notebook file")(
-            lambda e: self.ask_new_file
-        )
-
-        kb.add("c-o", group="Application", desc="Open file")(
-            lambda e: self.ask_open_file
-        )
-
-        @kb.add("c-w", group="Application", desc="Close the current tab")
-        def close(event: "KeyPressEvent") -> None:
-            self.close_tab(self.tab)
-
-        kb.add(
-            "tab",
-            group="Navigation",
-            desc="Focus next element",
-            filter=~has_completions & ~buffer_has_focus,
-        )(focus_next)
-        kb.add(
-            "s-tab",
-            group="Navigation",
-            desc="Focus previous element",
-            filter=~has_completions & ~buffer_has_focus,
-        )(focus_previous)
-
-        return kb
 
     def dialog(
         self,
@@ -492,7 +460,7 @@ class TuiApp(EuporieApp):
             mode: One of default, vi, or emacs
 
         """
-        config.edit_mode = mode
+        config.edit_mode = str(mode)
         self.editing_mode = self.get_edit_mode()
         log.debug("Editing mode set to: %s", self.editing_mode)
 
@@ -534,3 +502,17 @@ class TuiApp(EuporieApp):
             func = getattr(self.tab, operation)
             if callable(func):
                 func(*args, **kwargs)
+
+    @property
+    def notebook(self) -> "Optional[TuiNotebook]":
+        """Return the currently active notebook."""
+        if isinstance(self.tab, TuiNotebook):
+            return self.tab
+        return None
+
+    @property
+    def cell(self) -> "Optional[InteractiveCell]":
+        """Return the currently active cell."""
+        if isinstance(self.tab, TuiNotebook):
+            return self.tab.cell
+        return None

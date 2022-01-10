@@ -5,49 +5,67 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from prompt_toolkit.application import get_app
-from prompt_toolkit.formatted_text.base import (
-    OneStyleAndTextTuple,
-    StyleAndTextTuples,
-    to_formatted_text,
-)
+from prompt_toolkit.formatted_text.base import to_formatted_text
 from prompt_toolkit.formatted_text.utils import fragment_list_width
 from prompt_toolkit.layout import VSplit
-from prompt_toolkit.layout.containers import Window
+from prompt_toolkit.layout.containers import Container, HSplit, Window
 from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
 from prompt_toolkit.widgets.menus import MenuContainer as PtKMenuContainer
+from prompt_toolkit.widgets.menus import MenuItem as PtkMenuItem
 
 from euporie.box import SquareBorder as Border
 from euporie.components.menu.item import MenuItem
 
 if TYPE_CHECKING:
-    from typing import Iterable, Optional
+    from typing import Iterable, Optional, Sequence
 
-    from prompt_toolkit.key_bindings import KeyBindingsBase
-    from prompt_toolkit.layout.containers import AnyContainer
+    from prompt_toolkit.formatted_text.base import (
+        OneStyleAndTextTuple,
+        StyleAndTextTuples,
+    )
+    from prompt_toolkit.key_binding import KeyBindingsBase
+    from prompt_toolkit.layout.containers import AnyContainer, Float
 
-__all__ = ["MenuItem"]
+__all__ = ["MenuContainer"]
 
 
 class MenuContainer(PtKMenuContainer):
+    """A container to hold the menubar and main application body."""
+
     def __init__(
         self,
         body: "AnyContainer",
-        menu_items: "list[MenuItem]",
-        floats: "Optional[list[float]]" = None,
+        menu_items: "list[PtkMenuItem]",
+        floats: "Optional[list[Float]]" = None,
         key_bindings: "Optional[KeyBindingsBase]" = None,
-        left: "Optional[list[AnyContainer]]" = None,
-        right: "Optional[list[AnyContainer]]" = None,
-    ):
-        # super().__init__(body, self.load_menu_items(), floats, key_bindings)
+        left: "Optional[Sequence[AnyContainer]]" = None,
+        right: "Optional[Sequence[AnyContainer]]" = None,
+    ) -> "None":
+        """Initiate the menu bar.
+
+        Args:
+            body: The main application container below the menubar
+            menu_items: The menu items to show in the menubar
+            floats: Any floats which might be displayed above the menu container
+            key_bindings: Any key-bindings to apply to the menu-bar
+            left: A list of containers to display to the left of the menubar
+            right: A list of containers to display to the right of the menubar
+
+        """
         super().__init__(body, menu_items, floats, key_bindings)
+
+        assert isinstance(self.container.content, HSplit)
+        assert isinstance(self.body, Container)
+
         # Add left and right containers to menubar
         self.container.content.children = [
             VSplit([*(left or []), self.window, *(right or [])]),
             self.body,
         ]
 
-    def _get_menu_fragments(self) -> StyleAndTextTuples:
+    def _get_menu_fragments(self) -> "StyleAndTextTuples":
+
         focused = get_app().layout.has_focus(self.window)
 
         # This is called during the rendering. When we discover that this
@@ -56,7 +74,9 @@ class MenuContainer(PtKMenuContainer):
             self.selected_menu = [0]
 
         # Generate text fragments for the main menu.
-        def one_item(i: int, item: MenuItem) -> Iterable[OneStyleAndTextTuple]:
+        def one_item(i: "int", item: "PtkMenuItem") -> "Iterable[OneStyleAndTextTuple]":
+            assert isinstance(item, MenuItem)
+
             def mouse_handler(mouse_event: MouseEvent) -> None:
                 hover = mouse_event.event_type == MouseEventType.MOUSE_MOVE
                 if (
@@ -81,22 +101,26 @@ class MenuContainer(PtKMenuContainer):
                 style = "class:menu-bar"
             yield (style, " ", mouse_handler)
             yield from to_formatted_text(
-                [(*fragment, mouse_handler) for fragment in item.text],
+                [
+                    (fragment[0], fragment[1], mouse_handler)
+                    for fragment in item.formatted_text
+                ],
                 style=style,
             )
             yield (style, " ", mouse_handler)
 
-        result: StyleAndTextTuples = []
+        result: "StyleAndTextTuples" = []
         for i, item in enumerate(self.menu_items):
             result.extend(one_item(i, item))
 
         return result
 
     def _submenu(self, level: "int" = 0) -> "Window":
-        def get_text_fragments() -> StyleAndTextTuples:
-            result: StyleAndTextTuples = []
+        def get_text_fragments() -> "StyleAndTextTuples":
+            result: "StyleAndTextTuples" = []
             if level < len(self.selected_menu):
                 menu = self._get_menu(level)
+
                 if menu.children:
                     result.append(("class:menu", Border.TOP_LEFT))
                     result.append(("class:menu", Border.HORIZONTAL * (menu.width + 2)))
@@ -108,8 +132,11 @@ class MenuContainer(PtKMenuContainer):
                         selected_item = -1
 
                     def one_item(
-                        i: int, item: "MenuItem"
+                        i: int, item: "PtkMenuItem"
                     ) -> "Iterable[OneStyleAndTextTuple]":
+                        assert isinstance(item, MenuItem)
+                        assert isinstance(menu, MenuItem)
+
                         def mouse_handler(mouse_event: "MouseEvent") -> None:
                             if item.disabled:
                                 # The arrow keys can't interact with menu items that
@@ -150,45 +177,49 @@ class MenuContainer(PtKMenuContainer):
                             if item.disabled:
                                 style += "class:menu-bar.disabled-item"
                             # Construct the menu item contents
-                            menu_formatted_text = to_formatted_text(
-                                [
-                                    ("", " "),
-                                    *item.prefix,
-                                    (
-                                        "",
-                                        " "
-                                        * (
-                                            menu.prefix_width
-                                            - fragment_list_width(item.prefix)
+                            menu_formatted_text: "StyleAndTextTuples" = (
+                                to_formatted_text(
+                                    [
+                                        ("", " "),
+                                        *item.prefix,
+                                        (
+                                            "",
+                                            " "
+                                            * (
+                                                menu.prefix_width
+                                                - fragment_list_width(item.prefix)
+                                            ),
                                         ),
-                                    ),
-                                    *item.text,
-                                    (
-                                        "",
-                                        " "
-                                        * (
-                                            menu.width
-                                            - menu.prefix_width
-                                            - fragment_list_width(item.text)
-                                            - menu.suffix_width
+                                        *item.formatted_text,
+                                        (
+                                            "",
+                                            " "
+                                            * (
+                                                menu.width
+                                                - menu.prefix_width
+                                                - fragment_list_width(
+                                                    item.formatted_text
+                                                )
+                                                - menu.suffix_width
+                                            ),
                                         ),
-                                    ),
-                                    (
-                                        "",
-                                        " "
-                                        * (
-                                            menu.suffix_width
-                                            - fragment_list_width(item.suffix)
+                                        (
+                                            "",
+                                            " "
+                                            * (
+                                                menu.suffix_width
+                                                - fragment_list_width(item.suffix)
+                                            ),
                                         ),
-                                    ),
-                                    *item.suffix,
-                                    ("", " "),
-                                ],
-                                style=style,
+                                        *item.suffix,
+                                        ("", " "),
+                                    ],
+                                    style=style,
+                                )
                             )
                             # Apply mouse handler to all fragments
                             menu_formatted_text = [
-                                (*fragment, mouse_handler)
+                                (fragment[0], fragment[1], mouse_handler)
                                 for fragment in menu_formatted_text
                             ]
                             # Show the menu item contents

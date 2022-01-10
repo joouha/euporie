@@ -1,8 +1,9 @@
 """Defines a command object for use in key-bindings, menus, and the command palette."""
 import logging
 from inspect import isawaitable, signature
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
+from prompt_toolkit.application import get_app
 from prompt_toolkit.filters import to_filter
 from prompt_toolkit.key_binding.key_bindings import Binding, _parse_key
 from prompt_toolkit.keys import Keys
@@ -10,18 +11,29 @@ from prompt_toolkit.keys import Keys
 from euporie.components.menu.item import MenuItem
 
 if TYPE_CHECKING:
-    from typing import Any, Callable, Optional, Union
+    from typing import (
+        Any,
+        Awaitable,
+        Callable,
+        Dict,
+        List,
+        Optional,
+        Sequence,
+        Tuple,
+        Union,
+    )
 
     from prompt_toolkit.filters import Filter, FilterOrBool
     from prompt_toolkit.key_binding import KeyBindingsBase, KeyPressEvent
+    from prompt_toolkit.key_binding.key_bindings import KeyHandlerCallable
 
-    AnyKey = Union[tuple[Union[Keys, str], ...], Union[Keys, str]]
-    AnyKeys = Union[list[AnyKey], AnyKey]
+    AnyKey = Union[Tuple[Union[Keys, str], ...], Union[Keys, str]]
+    AnyKeys = Union[List[AnyKey], AnyKey]
 
 log = logging.getLogger(__name__)
 
 
-commands: "dict[str, Command]" = {}
+commands: "Dict[str, Command]" = {}
 
 
 class Command:
@@ -29,7 +41,7 @@ class Command:
 
     def __init__(
         self,
-        handler: "Callable[[], None]",
+        handler: "Callable[..., Optional[Awaitable[Any]]]",
         *,
         filter: "FilterOrBool" = True,
         name: "Optional[str]" = None,
@@ -80,7 +92,7 @@ class Command:
         self.toggled = toggled
         self._menu: "Optional[MenuItem]" = None
 
-        self.keys = []
+        self.keys: "List[Tuple[Union[str, Keys], ...]]" = []
         self.add_keys(keys)
         self.eager = to_filter(eager)
         self.is_global = to_filter(is_global)
@@ -88,7 +100,7 @@ class Command:
         self.record_in_macro = to_filter(record_in_macro)
 
         self.selected_item = 0
-        self.children = []
+        self.children: "Sequence[MenuItem]" = []
 
     def bind(
         self, key_bindings: "KeyBindingsBase", keys: "Optional[AnyKeys]" = None
@@ -104,21 +116,23 @@ class Command:
         for binding in self.key_bindings:
             key_bindings.bindings.append(binding)
 
-    def add_keys(self, keys: "AnyKeys") -> "Command":
+    def add_keys(self, keys: "Optional[AnyKeys]") -> "Command":
         """Adds keyboard shortcuts to the current command."""
         if keys is None:
             keys = []
         if not isinstance(keys, list):
             keys = [keys]
         for key in keys:
-            if isinstance(key, tuple):
+            if isinstance(key, Keys):
+                self.keys.append((key,))
+            elif isinstance(key, tuple):
                 self.keys.append(tuple(_parse_key(k) for k in key))
             else:
                 self.keys.append((_parse_key(key),))
         return self
 
     @property
-    def key_bindings(self) -> "list[Binding]":
+    def key_bindings(self) -> "Sequence[Binding]":
         """Returns a list of key-bindings given to the current command."""
         return [
             Binding(
@@ -134,34 +148,48 @@ class Command:
         ]
 
     @property
-    def key_handler(self) -> "Callable":
+    def key_handler(self) -> "KeyHandlerCallable":
         """Returns a key hander for the command."""
         sig = signature(self.handler)
 
         if sig.parameters:
             # The handler already accepts a `KeyPressEvent` argument
-            return self.handler
+            return cast("KeyHandlerCallable", self.handler)
 
         if isawaitable(self.handler):
 
-            async def _key_handler(event: "KeyPressEvent") -> "Callable":
-                return await self.handler()
+            async def _key_handler_async(event: "KeyPressEvent") -> "None":
+                await cast("Awaitable", self.handler())
 
-            return _key_handler
+            return _key_handler_async
         else:
 
-            def _key_handler(event: "KeyPressEvent") -> "Callable":
-                return self.handler()
+            def _key_handler(event: "KeyPressEvent") -> "None":
+                self.handler()
 
             return _key_handler
+
+    @property
+    def menu_handler(self) -> "Callable[[], None]":
+        """Returns a menu hander for the command."""
+        if isawaitable(self.handler):
+
+            def _menu_handler() -> "None":
+                task = self.handler()
+                if task is not None:
+                    get_app().create_background_task(task)
+
+            return _menu_handler
+        else:
+            return cast("Callable[[], None]", self.handler)
 
     @property
     def menu(self) -> "MenuItem":
         """Returns a menu item for the command."""
         if self._menu is None:
             self._menu = MenuItem(
-                text=self.title,
-                handler=self.handler,
+                formatted_text=self.title,
+                handler=self.menu_handler,
                 shortcut=self.keys[0] if self.keys else None,
                 disabled=~self.filter,
                 toggled=self.toggled,
@@ -169,7 +197,7 @@ class Command:
         return self._menu
 
 
-def add(**kwargs: "Any") -> "callable":
+def add(**kwargs: "Any") -> "Callable":
     """Adds a command to the centralized command system."""
 
     def decorator(handler: "Callable") -> "Callable":
@@ -180,7 +208,7 @@ def add(**kwargs: "Any") -> "callable":
     return decorator
 
 
-def get(name: "str") -> "list":
+def get(name: "str") -> "Command":
     """Get a command from the centralized command system by name.
 
     Args:

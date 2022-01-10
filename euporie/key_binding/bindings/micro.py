@@ -76,7 +76,7 @@ def micro_bindings() -> "KeyBindingsBase":
             "end-of-buffer": ["c-down", "c-end"],
             "go-to-start-of-paragraph": ("escape", "{"),
             "go-to-end-of-paragraph": ("escape", "}"),
-            "indent-lines": ["tab"],
+            "indent-lines": "tab",
             "unindent-line": "backspace",
             "unindent-lines": "s-tab",
             "undo": "c-z",

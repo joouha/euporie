@@ -4,7 +4,6 @@ import logging
 from functools import partial
 from typing import TYPE_CHECKING
 
-from prompt_toolkit.application import get_app
 from prompt_toolkit.buffer import indent, unindent
 from prompt_toolkit.document import Document
 from prompt_toolkit.filters import (
@@ -38,6 +37,7 @@ from prompt_toolkit.key_binding.bindings.scroll import (
 from prompt_toolkit.keys import Keys
 from prompt_toolkit.selection import SelectionState, SelectionType
 
+from euporie.app.current import get_tui_app as get_app
 from euporie.commands.registry import add, get
 from euporie.config import config
 from euporie.filters import (
@@ -187,19 +187,24 @@ def wrap_selection_cmd(left: "str", right: "str") -> "None":
         buffer.transform_region(start, end, lambda s: f"{left}{s}{right}")
     # keep the selection of the inner expression
     buffer.cursor_position += len(left)
-    selection_state.original_cursor_position += len(left)
+    if selection_state is not None:
+        selection_state.original_cursor_position += len(left)
     buffer.selection_state = selection_state
 
 
-for pair in [
+WRAP_PAIRS: "list[str]" = [
     '""',
     "''",
     "``",
     "()",
     "{}",
     "[]",
-]:
-    left, right = pair
+    "**",
+    "__",
+]
+
+for pair in WRAP_PAIRS:
+    left, right = list(pair)
     for key in set(pair):
         add(
             name=f"wrap-selection-{key}",
@@ -381,7 +386,7 @@ def dent_buffer(event: "KeyPressEvent", un: "bool" = False) -> "None":
     buffer.selection_state = selection_state
 
 
-@add(filter=cursor_in_leading_ws | has_selection)
+@add(filter=(buffer_has_focus & (cursor_in_leading_ws | has_selection)))
 def indent_lines(event: "KeyPressEvent") -> "None":
     """Inndent the current or selected lines."""
     dent_buffer(event)
@@ -391,7 +396,7 @@ def indent_lines(event: "KeyPressEvent") -> "None":
     name="unindent-line",
     filter=cursor_in_leading_ws & ~has_selection & ~cursor_at_start_of_line,
 )
-@add(filter=cursor_in_leading_ws | has_selection)
+@add(filter=buffer_has_focus & (cursor_in_leading_ws | has_selection))
 def unindent_lines(event: "KeyPressEvent") -> "None":
     """Unindent the current or selected lines."""
     dent_buffer(event, un=True)
@@ -443,7 +448,8 @@ def start_selection(event: "KeyPressEvent") -> "None":
     buff = event.current_buffer
     if buff.text:
         buff.start_selection(selection_type=SelectionType.CHARACTERS)
-        buff.selection_state.enter_shift_mode()
+        if buff.selection_state is not None:
+            buff.selection_state.enter_shift_mode()
 
         # Then move the cursor
         original_position = buff.cursor_position

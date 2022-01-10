@@ -6,8 +6,12 @@ from typing import TYPE_CHECKING
 
 from prompt_toolkit.filters import to_filter
 from prompt_toolkit.formatted_text.base import to_formatted_text
-from prompt_toolkit.formatted_text.utils import fragment_list_width
+from prompt_toolkit.formatted_text.utils import (
+    fragment_list_to_text,
+    fragment_list_width,
+)
 from prompt_toolkit.keys import Keys
+from prompt_toolkit.utils import get_cwidth
 from prompt_toolkit.widgets.menus import MenuItem as PtkMenuItem
 
 if TYPE_CHECKING:
@@ -22,16 +26,16 @@ __all__ = ["MenuItem"]
 class MenuItem(PtkMenuItem):
     """A prompt-toolkit compatible menu item with more advanced capabilities.
 
-    It can use a function to generate the text to display, display a checkmark if a
-    condition is true, and disable the handler if a condition is met.
+    It can use a function to generate formatted text to display, display a checkmark if
+    a condition is true, and disable the handler if a condition is met.
     """
 
     def __init__(
         self,
-        text: "Union[AnyFormattedText, Callable]" = "",
+        formatted_text: "AnyFormattedText" = "",
         separator: "bool" = False,
         handler: "Optional[Callable[[], None]]" = None,
-        children: "Optional[list[MenuItem]]" = None,
+        children: "Optional[list[PtkMenuItem]]" = None,
         shortcut: "Optional[Sequence[Union[Keys, str]]]" = None,
         disabled: "FilterOrBool" = False,
         toggled: "Optional[Filter]" = None,
@@ -39,7 +43,8 @@ class MenuItem(PtkMenuItem):
         """Initiate a smart menu item.
 
         Args:
-            text: A string, or a callable which returns the text to display
+            formatted_text: A formatted text, or a callable which returns the text to
+                display
             separator: If True, this menu item is treated as a separator
             handler: As per `prompt_toolkit.widgets.menus.MenuItem`
             children: As per `prompt_toolkit.widgets.menus.MenuItem`
@@ -49,25 +54,35 @@ class MenuItem(PtkMenuItem):
                 callable returns True
 
         """
+        self._formatted_text = formatted_text
         self.separator = separator
-        self.text_generator = text
         self._disabled = to_filter(disabled) | to_filter(self.separator)
         self.toggled = toggled
-        self._handler = handler
-        super().__init__(self.text, handler, children, shortcut, False)
+        super().__init__(
+            text=self.text,
+            handler=handler,
+            children=children,
+            shortcut=shortcut,
+            disabled=False,
+        )
+
+    @property
+    def formatted_text(self) -> "StyleAndTextTuples":
+        """Generate the formatted text for this menu item."""
+        if callable(self._formatted_text):
+            text = self._formatted_text()
+        else:
+            text = self._formatted_text
+
+        return to_formatted_text(text)
 
     # Type checking disabled for the following property methods due to open mypy bug:
     # https://github.com/python/mypy/issues/4125
 
     @property  # type: ignore
-    def text(self) -> "StyleAndTextTuples":  # type: ignore
-        """Generate the formatted text for this menu item."""
-        if callable(self.text_generator):
-            text = self.text_generator()
-        else:
-            text = self.text_generator
-
-        return to_formatted_text(text)
+    def text(self) -> "str":  # type: ignore
+        """Return plain text verision of the item's formatted text."""
+        return fragment_list_to_text(self.formatted_text)
 
     @text.setter
     def text(self, value: "Any") -> "None":
@@ -89,7 +104,11 @@ class MenuItem(PtkMenuItem):
         """Returns true if any child items have a toggle state."""
         toggles = False
         for child in self.children:
-            if not toggles and child.toggled is not None:
+            if (
+                not toggles
+                and isinstance(child, MenuItem)
+                and child.toggled is not None
+            ):
                 toggles = True
         return toggles
 
@@ -104,7 +123,7 @@ class MenuItem(PtkMenuItem):
             Formatted text
 
         """
-        prefix = []
+        prefix: "StyleAndTextTuples" = []
         if self.toggled is not None:
             prefix.append(("", "✓ " if self.toggled() else "  "))
         return prefix
@@ -119,7 +138,7 @@ class MenuItem(PtkMenuItem):
             Formatted text
 
         """
-        suffix = []
+        suffix: "StyleAndTextTuples" = []
         if self.children:
             suffix.append(("", ">"))
         elif self.shortcut is not None:
@@ -142,16 +161,28 @@ class MenuItem(PtkMenuItem):
         """The maximum width of the item's children."""
         return (
             self.prefix_width
-            + max([fragment_list_width(child.text) for child in self.children])
+            + max([get_cwidth(child.text) for child in self.children])
             + self.suffix_width
         )
 
     @property
     def prefix_width(self) -> "int":
         """The maximum width of the item's children's prefixes."""
-        return max([fragment_list_width(child.prefix) for child in self.children] + [0])
+        return max(
+            [
+                fragment_list_width(child.prefix) if isinstance(child, MenuItem) else 0
+                for child in self.children
+            ]
+            + [0]
+        )
 
     @property
     def suffix_width(self) -> "int":
         """The maximum width of the item's children's suffixes."""
-        return max([fragment_list_width(child.suffix) for child in self.children] + [0])
+        return max(
+            [
+                fragment_list_width(child.suffix) if isinstance(child, MenuItem) else 0
+                for child in self.children
+            ]
+            + [0]
+        )

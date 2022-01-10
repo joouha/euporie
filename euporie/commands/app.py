@@ -2,9 +2,9 @@
 
 import logging
 
-from prompt_toolkit.application import get_app
 from prompt_toolkit.filters import Condition, buffer_has_focus
 
+from euporie.app.current import get_tui_app as get_app
 from euporie.commands.registry import add
 from euporie.config import config
 from euporie.filters import tab_has_focus
@@ -52,6 +52,7 @@ def quit() -> "None":
 
 @add(
     keys="c-pageup",
+    filter=tab_has_focus,
     group="App",
 )
 def next_tab() -> "None":
@@ -61,6 +62,7 @@ def next_tab() -> "None":
 
 @add(
     keys="c-pagedown",
+    filter=tab_has_focus,
     group="App",
 )
 def previous_tab() -> "None":
@@ -71,6 +73,12 @@ def previous_tab() -> "None":
 @add(
     keys="tab",
     group="App",
+    filter=~buffer_has_focus,
+)
+@add(
+    keys="tab",
+    group="App",
+    filter=~buffer_has_focus,
 )
 def focus_next() -> "None":
     """Focus the next control."""
@@ -80,6 +88,7 @@ def focus_next() -> "None":
 @add(
     keys="s-tab",
     group="App",
+    filter=~buffer_has_focus,
 )
 def focus_previous() -> "None":
     """Focus the previous control."""

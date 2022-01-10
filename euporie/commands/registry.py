@@ -5,10 +5,10 @@ from typing import TYPE_CHECKING
 from euporie.commands.base import Command
 
 if TYPE_CHECKING:
-    from typing import Any, Callable
+    from typing import Any, Callable, Dict
 
 
-commands: "dict[str, Command]" = {}
+commands: "Dict[str, Command]" = {}
 
 
 def add(**kwargs: "Any") -> "Callable":
@@ -22,7 +22,7 @@ def add(**kwargs: "Any") -> "Callable":
     return decorator
 
 
-def get(name: "str") -> "None":
+def get(name: "str") -> "Command":
     """Get a command from the centralized command system by name."""
     try:
         return commands[name]

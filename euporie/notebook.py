@@ -363,10 +363,10 @@ class TuiNotebook(KernelNotebook):
         self.add(self.page.selected_index + 1)
 
     @property
-    def cell(self) -> "Cell":
+    def cell(self) -> "InteractiveCell":
         """Returns the currently selected `Cell` in this `Notebook`."""
         cell = self.page.get_child()
-        assert isinstance(cell, Cell)
+        assert isinstance(cell, InteractiveCell)
         return cell
 
     def is_cell_obscured(self, index: "int") -> "bool":

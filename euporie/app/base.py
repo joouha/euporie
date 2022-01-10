@@ -42,8 +42,6 @@ if TYPE_CHECKING:
     from prompt_toolkit.layout.containers import AnyContainer
     from prompt_toolkit.output import Output
 
-    from euporie.cell import Cell
-
 log = logging.getLogger(__name__)
 
 
@@ -331,9 +329,4 @@ class EuporieApp(Application):
         """Return the currently active notebook."""
         if isinstance(self.tab, Notebook):
             return self.tab
-
-    @property
-    def cell(self) -> "Optional[Cell]":
-        """Return the currently active cell."""
-        if isinstance(self.tab, Notebook):
-            return self.tab.cell
+        return None
