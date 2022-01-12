@@ -96,21 +96,31 @@ class TuiApp(EuporieApp):
                 [HTML("Press <b>Ctrl+n</b> to start a new notebook")],
                 [HTML("Press <b>Ctrl+q</b> to quit")],
             )
-        output = []
-        for field in entries[0 if part == "left" else 1]:
-            if field:
-                if isinstance(field, tuple):
-                    ft = [field]
-                else:
-                    ft = to_formatted_text(field, style="class:status.field")
-                output += [
-                    ("class:status.field", " "),
-                    *ft,
-                    ("class:status.field", " "),
-                    ("class:status", " "),
-                ]
-        if output:
-            output.pop()
+
+        output: "StyleAndTextTuples" = []
+
+        # Show selected menu description if set
+        if part == "left" and self.root_container.status_text:
+            output.append(
+                ("class:status.field", f" {self.root_container.status_text} ")
+            )
+
+        # Show the tab's status fields
+        else:
+            for field in entries[0 if part == "left" else 1]:
+                if field:
+                    if isinstance(field, tuple):
+                        ft = [field]
+                    else:
+                        ft = to_formatted_text(field, style="class:status.field")
+                    output += [
+                        ("class:status.field", " "),
+                        *ft,
+                        ("class:status.field", " "),
+                        ("class:status", " "),
+                    ]
+            if output:
+                output.pop()
         return output
 
     def load_container(self) -> "AnyContainer":

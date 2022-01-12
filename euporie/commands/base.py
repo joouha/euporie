@@ -187,13 +187,7 @@ class Command:
     def menu(self) -> "MenuItem":
         """Returns a menu item for the command."""
         if self._menu is None:
-            self._menu = MenuItem(
-                formatted_text=self.title,
-                handler=self.menu_handler,
-                shortcut=self.keys[0] if self.keys else None,
-                disabled=~self.filter,
-                toggled=self.toggled,
-            )
+            self._menu = MenuItem.from_command(self)
         return self._menu
 
 

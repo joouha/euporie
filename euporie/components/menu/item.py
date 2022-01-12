@@ -20,6 +20,8 @@ if TYPE_CHECKING:
     from prompt_toolkit.filters import Filter, FilterOrBool
     from prompt_toolkit.formatted_text.base import AnyFormattedText, StyleAndTextTuples
 
+    from euporie.commands.base import Command
+
 __all__ = ["MenuItem"]
 
 
@@ -33,6 +35,7 @@ class MenuItem(PtkMenuItem):
     def __init__(
         self,
         formatted_text: "AnyFormattedText" = "",
+        description: "str" = "",
         separator: "bool" = False,
         handler: "Optional[Callable[[], None]]" = None,
         children: "Optional[list[PtkMenuItem]]" = None,
@@ -45,6 +48,7 @@ class MenuItem(PtkMenuItem):
         Args:
             formatted_text: A formatted text, or a callable which returns the text to
                 display
+            description: More information about what the menu item does
             separator: If True, this menu item is treated as a separator
             handler: As per `prompt_toolkit.widgets.menus.MenuItem`
             children: As per `prompt_toolkit.widgets.menus.MenuItem`
@@ -55,6 +59,7 @@ class MenuItem(PtkMenuItem):
 
         """
         self._formatted_text = formatted_text
+        self.description = description
         self.separator = separator
         self._disabled = to_filter(disabled) | to_filter(self.separator)
         self.toggled = toggled
@@ -64,6 +69,18 @@ class MenuItem(PtkMenuItem):
             children=children,
             shortcut=shortcut,
             disabled=False,
+        )
+
+    @classmethod
+    def from_command(cls, command: "Command") -> "MenuItem":
+        """Create a menu item from a command."""
+        return cls(
+            formatted_text=command.title,
+            handler=command.menu_handler,
+            shortcut=command.keys[0] if command.keys else None,
+            disabled=~command.filter,
+            toggled=command.toggled,
+            description=command.description,
         )
 
     @property

@@ -2,6 +2,7 @@
 """Defines the application menu."""
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING
 
 from prompt_toolkit.application import get_app
@@ -28,6 +29,8 @@ if TYPE_CHECKING:
     from prompt_toolkit.layout.containers import AnyContainer, Float
 
 __all__ = ["MenuContainer"]
+
+log = logging.getLogger(__name__)
 
 
 class MenuContainer(PtKMenuContainer):
@@ -63,6 +66,15 @@ class MenuContainer(PtKMenuContainer):
             VSplit([*(left or []), self.window, *(right or [])]),
             self.body,
         ]
+
+    @property
+    def status_text(self) -> "str":
+        """Return the description of the currently selected menu item."""
+        selected_item = self._get_menu(len(self.selected_menu) - 1)
+        if isinstance(selected_item, MenuItem):
+            return selected_item.description
+        else:
+            return ""
 
     def _get_menu_fragments(self) -> "StyleAndTextTuples":
 

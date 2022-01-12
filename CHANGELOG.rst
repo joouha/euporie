@@ -4,6 +4,8 @@ Changlog
 Upcoming
 --------
 
+- Show menu item descriptions in the statusbar
+- Add keyboard shortcuts to the menu
 - Allow status bar to be hidden
 - Allow wrapping selection in quotes or brackets
 - Display keyboard shortcuts on menus, and better looking menus

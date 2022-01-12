@@ -106,7 +106,7 @@ for choice in config.choices("edit_mode"):
     add(
         name=f"set-edit-mode-{choice.lower()}",
         title=choice.title(),
-        description="Set the editing mode key-binding style to '{choice}'.",
+        description=f"Set the editing mode key-binding style to '{choice}'.",
         toggled=Condition(
             partial(lambda x: config.edit_mode == x, choice),
         ),
@@ -122,7 +122,7 @@ for choice in config.choices("color_scheme"):
     add(
         name=f"set-color-scheme-{choice.lower()}",
         title=choice.title(),
-        description="Set the color scheme to '{choice}'.",
+        description=f"Set the color scheme to '{choice}'.",
         toggled=Condition(
             partial(lambda x: config.color_scheme == x, choice),
         ),
@@ -138,7 +138,7 @@ for choice in sorted(get_all_styles()):
     add(
         name=f"set-syntax-theme-{choice.lower()}",
         title=choice,
-        description="Set the syntax highlighting theme to '{choice}'.",
+        description=f"Set the syntax highlighting theme to '{choice}'.",
         toggled=Condition(
             partial(lambda x: config.syntax_theme == x, choice),
         ),
