@@ -85,6 +85,7 @@ def micro_bindings() -> "KeyBindingsBase":
             "cut-selection": "c-x",
             "cut-line": "c-k",
             "duplicate-line": "c-d",
+            "duplicate-selection": "c-d",
             "paste-clipboard": "c-v",
             "select-all": "c-a",
             "scroll-page-up": "pageup",

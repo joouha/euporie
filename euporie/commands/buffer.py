@@ -216,7 +216,7 @@ for pair in WRAP_PAIRS:
 
 
 @add(
-    filter=buffer_has_focus,
+    filter=buffer_has_focus & ~has_selection,
 )
 def duplicate_line() -> "None":
     """Duplicate the current line."""
@@ -224,9 +224,22 @@ def duplicate_line() -> "None":
     line = buffer.document.current_line
     eol = buffer.document.get_end_of_line_position()
     buffer.cursor_position += eol
-    buffer.newline()
+    buffer.newline(copy_margin=False)
     buffer.insert_text(line)
     buffer.cursor_position -= eol
+
+
+@add(
+    filter=buffer_has_focus & has_selection,
+)
+def duplicate_selection() -> "None":
+    """Duplicate the current line."""
+    buffer = get_app().current_buffer
+    selection_state = buffer.selection_state
+    from_, to = buffer.document.selection_range()
+    text = buffer.document.text[from_:to]
+    buffer.insert_text(text)
+    buffer.selection_state = selection_state
 
 
 @add(
