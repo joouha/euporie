@@ -470,6 +470,8 @@ class ScrollingContainer(Container):
         else:
             self.selected_child_position = new_top
 
+        self.focus(new_index)
+
     def scroll(self, n: "int" = 1) -> "None":
         """Scrolls up or down a number of rows.
 
@@ -520,9 +522,6 @@ class ScrollingContainer(Container):
             # Ensure selected index is a valid child
             new_index = min(max(new_index, 0), len(self.children) - 1)
             self.select_child(new_index)
-
-            # Focus new child if not already focused
-            self.focus(new_index)
 
             # Track which child was selected
             self.last_selected_index = new_index

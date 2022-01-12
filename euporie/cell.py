@@ -540,8 +540,7 @@ class InteractiveCell(Cell):
         # Insert a cell if we are at the last cell
         if insert or (advance and self.nb.page.selected_index == (n_cells) - 1):
             self.nb.add(self.index + 1)
-
-        if advance:
+        elif advance:
             self.nb.page.selected_index += 1
 
         if self.cell_type == "markdown":
