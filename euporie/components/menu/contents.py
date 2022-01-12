@@ -1,11 +1,7 @@
 # -*- coding: utf-8 -*-
 """Defines the application's menu structure."""
-from functools import partial
-
-from prompt_toolkit.filters import Condition
 from pygments.styles import get_all_styles  # type: ignore
 
-from euporie.app.current import get_tui_app as get_app
 from euporie.commands.registry import get
 from euporie.components.menu.item import MenuItem
 from euporie.config import config
@@ -56,13 +52,7 @@ def load_menu_items() -> "list[MenuItem]":
                 MenuItem(
                     "Editor key bindings",
                     children=[
-                        MenuItem(
-                            choice.title(),
-                            handler=partial(get_app().set_edit_mode, choice),
-                            toggled=Condition(
-                                partial(lambda x: config.edit_mode == x, choice),
-                            ),
-                        )
+                        get(f"set-edit-mode-{choice}").menu
                         for choice in config.choices("edit_mode")
                     ],
                 ),
@@ -70,31 +60,15 @@ def load_menu_items() -> "list[MenuItem]":
                 MenuItem(
                     "Color scheme",
                     children=[
-                        MenuItem(
-                            choice.title(),
-                            handler=partial(
-                                get_app().update_style, color_scheme=choice
-                            ),
-                            toggled=Condition(
-                                partial(lambda x: config.color_scheme == x, choice)
-                            ),
-                        )
+                        get(f"set-color-scheme-{choice}").menu
                         for choice in config.choices("color_scheme")
                     ],
                 ),
                 MenuItem(
                     "Syntax Theme",
                     children=[
-                        MenuItem(
-                            style,
-                            handler=partial(
-                                get_app().update_style, pygments_style=style
-                            ),
-                            toggled=Condition(
-                                partial(lambda x: config.syntax_theme == x, style)
-                            ),
-                        )
-                        for style in sorted(get_all_styles())
+                        get(f"set-syntax-theme-{choice}").menu
+                        for choice in sorted(get_all_styles())
                     ],
                 ),
                 get("switch-background-pattern").menu,

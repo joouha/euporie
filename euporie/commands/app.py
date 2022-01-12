@@ -2,11 +2,10 @@
 
 import logging
 
-from prompt_toolkit.filters import Condition, buffer_has_focus
+from prompt_toolkit.filters import buffer_has_focus
 
 from euporie.app.current import get_tui_app as get_app
 from euporie.commands.registry import add
-from euporie.config import config
 from euporie.filters import tab_has_focus
 
 log = logging.getLogger(__name__)
@@ -93,86 +92,6 @@ def focus_next() -> "None":
 def focus_previous() -> "None":
     """Focus the previous control."""
     get_app().layout.focus_previous()
-
-
-@add(
-    keys="l",
-    filter=~buffer_has_focus,
-    group="Config",
-    toggled=Condition(lambda: config.line_numbers),
-)
-def show_line_numbers() -> "None":
-    """Toggle the visibility of line numbers."""
-    config.toggle("line_numbers")
-
-
-@add(
-    filter=~buffer_has_focus,
-    group="Config",
-)
-def switch_background_pattern() -> "None":
-    """Switch between different background patterns."""
-    config.toggle("background_pattern")
-
-
-@add(
-    filter=~buffer_has_focus,
-    group="Config",
-    toggled=Condition(lambda: config.show_cell_borders),
-)
-def show_cell_borders() -> "None":
-    """Toggle the visibility of the borders of unselected cells."""
-    config.toggle("show_cell_borders")
-
-
-@add(
-    keys="w",
-    filter=~buffer_has_focus,
-    group="Config",
-    toggled=Condition(lambda: config.expand),
-)
-def use_full_width() -> "None":
-    """Toggle whether cells should extend across the full width of the screen."""
-    config.toggle("expand")
-
-
-@add(
-    title="Completions as you type",
-    filter=~buffer_has_focus,
-    toggled=Condition(lambda: bool(config.autocomplete)),
-)
-def autocomplete() -> "None":
-    """Toggle whether completions should be shown automatically."""
-    config.toggle("autocomplete")
-
-
-@add(
-    title="Suggest lines from history",
-    group="Config",
-    toggled=Condition(lambda: bool(config.autosuggest)),
-)
-def autosuggest() -> "None":
-    """Toggle whether to suggest line completions from the kernel's history."""
-    config.toggle("autosuggest")
-
-
-@add(
-    title="Run cell after external edit",
-    group="Config",
-    toggled=Condition(lambda: bool(config.run_after_external_edit)),
-)
-def run_after_external_edit() -> "None":
-    """Toggle whether cells should run automatically after editing externally."""
-    config.toggle("run_after_external_edit")
-
-
-@add(
-    group="Config",
-    toggled=Condition(lambda: bool(config.show_status_bar)),
-)
-def show_status_bar() -> "None":
-    """Toggle the visibility of the status bar."""
-    config.toggle("show_status_bar")
 
 
 @add(group="help")
