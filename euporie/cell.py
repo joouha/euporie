@@ -390,7 +390,7 @@ class Cell:
         if self.state in ("busy", "queued"):
             prompt = "*"
         else:
-            prompt = self.execution_count
+            prompt = str(self.execution_count)
         if prompt is None:
             prompt = " "
         if prompt:
