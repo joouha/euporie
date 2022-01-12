@@ -440,7 +440,7 @@ class Cell:
                 {"data": {"text/x-markdown": self.input}, "output_type": "markdown"}
             ]
         else:
-            return self.json.get("outputs", [])
+            return self.json.setdefault("outputs", [])
 
     @property
     def rendered_outputs(self) -> "list[Container]":
