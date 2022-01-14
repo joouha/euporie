@@ -28,6 +28,7 @@ jsonschema = "^3.2.0"
 appdirs = "^1.4.4"
 pyperclip = "^1.8.2"
 jupyter-client = "^7.1.0"
+flatlatex = "^0.15"
 
 [tool.poetry.extras]
 html-mtable = ["mtable", "html5lib"]

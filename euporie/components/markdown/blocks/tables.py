@@ -1,52 +1,41 @@
-# -*- coding: utf-8 -*-
-# type: ignore
-# flake8: noqa
-# Mokey-patch the reMaybeSpecial regex to add our table symbol |.
-# This regex is apparently just an optimization so this should not
-# affect CommonMark parser instances that do not recognize tables.
+"""An extension for python commonmark to include markdown tables.
+
+Based on https://github.com/GovReady/CommonMark-py-Extensions
+"""
+
 import re
 from collections import defaultdict
+from typing import TYPE_CHECKING
 
-import commonmark
-import commonmark.blocks
-import commonmark.node
+import commonmark  # type: ignore
+import commonmark.blocks  # type: ignore
+from commonmark.blocks import Block  # type: ignore
+from commonmark.node import Node  # type: ignore
 
-__all__ = ["BlockStarts", "Table"]
+if TYPE_CHECKING:
+    from typing import List
 
-commonmark.blocks.reMaybeSpecial = re.compile(r"^[#`~*+_=<>0-9-|]")
+    from commonmark.blocks import Parser  # type: ignore
 
-
-# Define a new BlockStarts class that implements a table method
-# to detect and parse table starts, modeled after the blockquote.
-class BlockStarts(commonmark.blocks.BlockStarts):
-    def __init__(self):
-        self.METHODS = ["table"] + self.METHODS
-
-    @staticmethod
-    def table(parser, container):
-        if (
-            not parser.indented
-            and commonmark.blocks.peek(parser.current_line, parser.next_nonspace) == "|"
-        ):
-            parser.advance_next_nonspace()
-            parser.advance_offset(1, False)
-            parser.close_unmatched_blocks()
-            parser.add_child("table", parser.next_nonspace)
-            parser.tip.string_content = "|"
-            return 2
-        return 0
+__all__ = ["Table"]
 
 
-# Define a new Table class that handles incoming table lines, modeled
-# a bit after the Blockquote, which allows continuation lines so long as
-# they start with the symbol. Also has accepts_lines to suck in everything
-# within it as raw data. Accept : as a continuation symbol for
-# Github-flavored Markdown table column alignment.
-class Table(commonmark.blocks.Block):
+class Table(Block):
+    """Define a new markdown Table block.
+
+    Define a new Table class that handles incoming table lines, modeled
+    a bit after the Blockquote, which allows continuation lines so long as
+    they start with the symbol. Also has accepts_lines to suck in everything
+    within it as raw data. Accept : as a continuation symbol for
+    Github-flavored Markdown table column alignment.
+
+    """
+
     accepts_lines = True
 
     @staticmethod
-    def continue_(parser=None, container=None):
+    def continue_(parser: "Parser", container: "Node") -> "int":
+        """Checks for the end of the table block."""
         ln = parser.current_line
         if (
             not parser.indented
@@ -64,16 +53,14 @@ class Table(commonmark.blocks.Block):
         return 0
 
     @staticmethod
-    def finalize(parser=None, block=None):
-        # Split the table content into rows and columns,
-        # with each line a new row.
-        #
-        # Note that the | in the first column is not a
-        # part of string_content because it was removed
-        # when we slurped in the table.
+    def finalize(parser: "Parser", block: "Node") -> "None":
+        """Split the table content into rows and columns, with each line a new row."""
+        # Note that the '|' in the first column is not a part of string_content because
+        # it was removed when we slurped in the table.
+
         table = [[""]]
         escape = False
-        newrowbars = False  # noqa F841
+        # newrowbars = False  # noqa F841
         ignore_pipe = True
         for c in block.string_content.rstrip():
             # \-escaping
@@ -122,8 +109,8 @@ class Table(commonmark.blocks.Block):
         # and if the separator row uses ='s instead of -'s then
         # treat subsequent rows as multiline rows that must be
         # separated by ='s.
-        column_properties = defaultdict(lambda: {})
-        table_parts = [[]]  # [thead, tbody] or just [tbody]
+        column_properties: "dict" = defaultdict(lambda: {})
+        table_parts: "List[List[Node]]" = [[]]  # [thead, tbody] or just [tbody]
         multiline = False
         newrow = False
         for row in table:
@@ -198,9 +185,9 @@ class Table(commonmark.blocks.Block):
             # Just parse the inlines in each cell using the parser's
             # inline_parser function. Wrap each cell string content
             # in a Node first.
-            def inner_parser(cell):
-                node = commonmark.node.Node("document", 0)
-                para = commonmark.node.Node("paragraph", 0)
+            def inner_parser(cell: "str") -> "Node":
+                node = Node("document", 0)
+                para = Node("paragraph", 0)
                 para.string_content = cell
                 node.append_child(para)
                 parser.inline_parser.parse(para)
@@ -225,88 +212,37 @@ class Table(commonmark.blocks.Block):
 commonmark.blocks.Table = Table
 
 
-# Create a new parser sub-class that adds the new block-start
-# for tables.
-class ParserWithTables(commonmark.Parser):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.block_starts = BlockStarts()
-        if hasattr(self, "blocks"):
-            self.blocks["table"] = commonmark.blocks.Table
+"""
+Original copyright notice:
 
+Copyright (c) 2017 GovReady PBC
 
-# Define a new renderer that extends the HtmlRenderer and
-# adds table rendering.
-class RendererWithTables(commonmark.HtmlRenderer):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+All rights reserved.
 
-    def make_table_node(self, node):
-        return "<table>"
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
 
-    def table(self, node, entering):
-        if entering:
-            self.lit(self.make_table_node(node) + "\n")
-            for i, part in enumerate(node.table):
-                if i == 0:
-                    part_tag = "thead"
-                else:
-                    part_tag = "tbody"
-                self.lit("<" + part_tag + ">\n")
-                for row in part:
-                    self.lit("<tr>\n")
-                    for colidx, cell in enumerate(row):
-                        if part_tag == "thead":
-                            col_tag = "th"
-                            if self.options.get("table_th_scope"):
-                                col_attrs = '  scope="col"'
-                            else:
-                                col_attrs = ""
-                        else:
-                            col_tag = "td"
-                            col_attrs = ""
+    * Redistributions of source code must retain the above copyright
+      notice, this list of conditions and the following disclaimer.
 
-                        if (
-                            colidx in node.column_properties
-                            and "align" in node.column_properties[colidx]
-                        ):
-                            col_attrs += (
-                                ' align="'
-                                + node.column_properties[colidx]["align"]
-                                + '"'
-                            )
+    * Redistributions in binary form must reproduce the above
+      copyright notice, this list of conditions and the following
+      disclaimer in the documentation and/or other materials provided
+      with the distribution.
 
-                        self.lit("<" + col_tag + col_attrs + ">")
+    * Neither the names of Bibek Kafle, Roland Shoemaker nor the names of other
+      contributors may be used to endorse or promote products derived
+      from this software without specific prior written permission.
 
-                        import copy
-
-                        inner_renderer = copy.copy(self)
-                        cell = inner_renderer.render(cell)
-
-                        # If the cell is just one <p>, unwrap it.
-                        m = re.match("<p>(.*)</p>$", cell)
-                        if m:
-                            cell = m.group(1)
-
-                        self.lit(cell)
-                        self.lit("</" + col_tag + ">\n")
-                    self.lit("</tr>\n")
-                self.lit("</" + part_tag + ">\n")
-            self.lit("</table>\n")
-
-
-# Define a new helper method that would be an in-place replacement
-# for commonmark.commonmark.
-def commonmark_to_html(markup):
-    parser = ParserWithTables()
-    ast = parser.parse(markup)
-    return RendererWithTables().render(ast)
-
-
-if __name__ == "__main__":
-    # Run the parser on STDIN and write to STDOUT.
-    import sys
-
-    parser = ParserWithTables()
-    ast = parser.parse(sys.stdin.read())
-    print(RendererWithTables().render(ast))
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+"""

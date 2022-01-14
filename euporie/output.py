@@ -10,7 +10,7 @@ from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.widgets import Label
 from rich.markdown import Markdown
 
-from euporie import mdtable  # noqa E401
+from euporie.components.markdown import rich  # noqa E401
 from euporie.config import config
 from euporie.control import HTMLControl, ImageControl, RichControl, SVGControl
 from euporie.text import ANSI
@@ -105,6 +105,7 @@ class Output:
                     continue  # Use plain text rendering instead
 
             if mime_path.match("text/x-markdown") or mime_path.match("text/markdown"):
+
                 self.content = Window(
                     RichControl(
                         Markdown(
