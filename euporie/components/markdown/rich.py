@@ -87,10 +87,14 @@ class Table(rich.markdown.MarkdownElement):
             ]
         )
         # Generate content rows
-        for row in self.contents[1]:
-            rows.append(
-                [self.node_to_md(cell, justify=aligns[i]) for i, cell in enumerate(row)]
-            )
+        if len(self.contents) > 1:
+            for row in self.contents[1]:
+                rows.append(
+                    [
+                        self.node_to_md(cell, justify=aligns[i])
+                        for i, cell in enumerate(row)
+                    ]
+                )
 
         # Get maximum column widths
         max_col_widths = []
