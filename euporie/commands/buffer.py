@@ -107,10 +107,10 @@ def run_macro() -> None:
         app.key_processor.feed_multiple(macro, first=True)
 
 
-add(name="backspace", filter=~shift_selection_mode, save_before=if_no_repeat)(
+add(name="backspace", filter=~has_selection, save_before=if_no_repeat)(
     backward_delete_char
 )
-add(name="delete", filter=~shift_selection_mode)(delete_char)
+add(name="delete", filter=~has_selection)(delete_char)
 add(filter=buffer_has_focus)(backward_kill_word)
 
 # Naavigation
