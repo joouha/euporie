@@ -638,9 +638,8 @@ class CellInputTextArea(TextArea):
         ]
         self.window.cursorline = has_focus(self)
 
-        # Check for non-shift-mode selection and change it to shift mode
+        # TODO - Check for non-shift-mode selection and change it to shift mode
         # buffer.on_cursor_position_changed -> Event
-        #
 
     def text_changed(self, buf: "Buffer") -> "None":
         """Update cell json when the input buffer has been edited."""

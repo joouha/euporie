@@ -208,6 +208,7 @@ class KernelNotebook(Notebook):
         self.load_kernel()
         self.completer = KernelCompleter(self.kernel)
         self.suggester = KernelAutoSuggest(self.kernel)
+        self.dirty = False
 
     @abstractmethod
     def load_kernel(self) -> "None":
@@ -305,7 +306,6 @@ class TuiNotebook(KernelNotebook):
         super().__init__(path, app)
 
         self.clipboard: "list[Cell]" = []
-        self.dirty = False
         self.saving = False
 
         self.cell_type = InteractiveCell
@@ -456,6 +456,7 @@ class TuiNotebook(KernelNotebook):
             cell = self.cell
         assert isinstance(cell, InteractiveCell)
         cell.clear_output()
+        self.dirty = True
         self.kernel.run(
             cell.json,
             stdin_cb=cell.get_input,
