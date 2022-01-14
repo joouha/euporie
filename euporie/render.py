@@ -286,7 +286,12 @@ class SubprocessRenderMixin(DataRendererMixin):
         # stdout, stderr = await proc.communicate(data)
 
         cmd = list(cmd)
-        output_bytes = subprocess.check_output(cmd, input=data_bytes)  # noqa S603
+        log.debug("Running external command `%s`", cmd)
+        try:
+            output_bytes = subprocess.check_output(cmd, input=data_bytes)  # noqa S603
+        except FileNotFoundError:
+            log.error("Could not run external command `%s`", cmd)
+            output_bytes = b"[Error drawing output]"
 
         # TODO Log any stderr
         # print(stderr)
@@ -619,8 +624,8 @@ class SixelMixerRenderer(ImageRenderer):
 
         output = ""
         # Add text representation
-        cell = self.render_args.get("cell")
-        if cell is not None and cell.obscured():
+        obscured = self.render_args.get("obscured", lambda: None)()
+        if obscured:
             output += self.ansi_renderer.render(
                 data,
                 width=self.width,

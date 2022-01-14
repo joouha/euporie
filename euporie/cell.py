@@ -31,8 +31,8 @@ from prompt_toolkit.widgets import Frame, Label, SearchToolbar, TextArea
 from pygments.lexers import get_lexer_by_name  # type: ignore
 
 from euporie.box import RoundBorder as Border
+from euporie.components.output import Output
 from euporie.config import config
-from euporie.output import Output
 from euporie.suggest import AppendLineAutoSuggestion, ConditionalAutoSuggestAsync
 
 if TYPE_CHECKING:

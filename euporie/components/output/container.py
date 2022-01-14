@@ -11,8 +11,13 @@ from prompt_toolkit.widgets import Label
 from rich.markdown import Markdown
 
 from euporie.components.markdown import rich  # noqa E401
+from euporie.components.output.control import (
+    HTMLControl,
+    ImageControl,
+    RichControl,
+    SVGControl,
+)
 from euporie.config import config
-from euporie.control import HTMLControl, ImageControl, RichControl, SVGControl
 from euporie.text import ANSI
 
 if TYPE_CHECKING:
@@ -23,11 +28,12 @@ if TYPE_CHECKING:
 
     from euporie.cell import Cell
 
-__all__ = ["calculate_bling", "Output"]
+__all__ = ["Output"]
 
 BLING_SCORES = {
     "image/*": 0,
     "text/html": 1,
+    "text/markdown": 2,
     "text/x-markdown": 2,
     "text/x-python-traceback": 3,
     "text/stderr": 4,
@@ -36,7 +42,7 @@ BLING_SCORES = {
 }
 
 
-def calculate_bling(item: tuple[str, str]) -> int:
+def _calculate_bling(item: tuple[str, str]) -> int:
     """Scores the richness of mime output types."""
     mime, _ = item
     for bling_path, score in BLING_SCORES.items():
@@ -66,7 +72,7 @@ class Output:
         control: "UIControl"
 
         # Sort data first so there is more bling first
-        for mime, datum in sorted(self.data.items(), key=calculate_bling):
+        for mime, datum in sorted(self.data.items(), key=_calculate_bling):
 
             mime_path = PurePath(mime)
 
@@ -74,9 +80,7 @@ class Output:
                 control = SVGControl(
                     datum,
                     render_args=dict(
-                        cell=self.parent,
-                        cell_index=self.parent.index,
-                        output_index=index,
+                        obscured=lambda: self.parent.obscured(),
                     ),
                 )
                 if control.renderer:
@@ -87,9 +91,7 @@ class Output:
                 control = ImageControl(
                     datum,
                     render_args=dict(
-                        cell=self.parent,
-                        cell_index=self.parent.index,
-                        output_index=index,
+                        obscured=lambda: self.parent.obscured(),
                     ),
                 )
                 if control.renderer:
@@ -137,7 +139,7 @@ class Output:
                 break
 
         else:
-            datum = sorted(self.data.items(), key=calculate_bling)[-1][1]
+            datum = sorted(self.data.items(), key=_calculate_bling)[-1][1]
             self.content = Label(str(datum).rstrip())
 
     @property

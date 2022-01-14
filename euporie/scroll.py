@@ -421,9 +421,10 @@ class ScrollingContainer(Container):
 
         """
         drawing = {drawing.index: drawing for drawing in self.to_draw}.get(index)
-        return drawing is None or (
-            drawing.top < 0 or drawing.parent_height < drawing.top + drawing.height
-        )
+        if drawing is None:
+            return False
+        # return drawing is None or (
+        return drawing.top < 0 or drawing.parent_height < drawing.top + drawing.height
 
     def select_child(self, new_index: "int") -> "None":
         """Focus a child and scroll so it is visible.
