@@ -1,5 +1,5 @@
-# -*- coding: utf-8 -*-
 """Suggests line completions from kernel history."""
+
 from __future__ import annotations
 
 import logging

@@ -1,5 +1,5 @@
-# -*- coding: utf-8 -*-
 """Concerns dumping output."""
+
 import asyncio
 import io
 import logging

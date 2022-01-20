@@ -1,5 +1,5 @@
-# -*- coding: utf-8 -*-
 """Contains the `ScrollingContainer` class, which renders children on the fly."""
+
 from __future__ import annotations
 
 import logging
@@ -7,7 +7,6 @@ from collections import namedtuple
 from typing import TYPE_CHECKING
 
 from prompt_toolkit.application.current import get_app
-from prompt_toolkit.data_structures import Point
 from prompt_toolkit.layout.containers import Container, Window, to_container
 from prompt_toolkit.layout.controls import UIContent, UIControl
 from prompt_toolkit.layout.dimension import Dimension, to_dimension
@@ -57,6 +56,7 @@ class ScrollingContainer(Container):
         self._children = children
         self.height = to_dimension(height).preferred
         self.width = to_dimension(width).preferred
+        self.last_write_position: "Optional[WritePosition]" = None
         self.style = style
         self.z_index = z_index
         self._remaining_space_window = Window()
@@ -71,9 +71,11 @@ class ScrollingContainer(Container):
 
     def reset(self) -> "None":
         """Reset the state of rendered children."""
-        for c in self.get_children():
-            c.reset()
-        self.visible = {}
+        app = get_app()
+        if app.render_counter > 0:
+            for c in self.get_children():
+                c.reset()
+            self.visible = {}
 
     def get_children(self) -> "List[Container]":
         """Return a list of the containers of the currently rendered children."""
@@ -140,12 +142,14 @@ class ScrollingContainer(Container):
             if drawing.top < 0 or drawing.top + drawing.height > self.content_height:
                 # Create a virtual screen to draw partially obscured children
                 temp_screen = Screen(default_char=Char(char=" ", style=parent_style))
-                temp_screen.show_cursor = False
                 # Create empty mouse handler array
                 temp_mouse_handlers = MouseHandlers()
                 # Draw child at (0,0) on temp screen
                 temp_write_position = WritePosition(
-                    xpos=0, ypos=0, width=self.content_width, height=drawing.height
+                    xpos=xpos,
+                    ypos=ypos + drawing.top,
+                    width=self.content_width,
+                    height=drawing.height,
                 )
 
                 drawing.container.write_to_screen(
@@ -159,48 +163,36 @@ class ScrollingContainer(Container):
                 temp_screen.draw_all_floats()
 
                 # Determine how many rows to copy
-                if drawing.top < 0:
-                    copy_rows = drawing.top + drawing.height
-                else:
-                    copy_rows = self.content_height - drawing.top
-                # Trim to fit content area
-                copy_rows = min(copy_rows, self.content_height)
+                copy_row_start = max(ypos, ypos + drawing.top)
+                copy_row_end = max(ypos + drawing.top, ypos + self.content_height)
 
                 # Copy screen contents
-                for i in range(0, copy_rows):
-
-                    real_y = ypos + max(0, drawing.top) + i
-                    virt_y = 0 - min(0, drawing.top) + i
-
-                    real_row = screen.data_buffer[real_y]
-                    virt_row = temp_screen.data_buffer[virt_y]
-
-                    real_mouse_row = mouse_handlers.mouse_handlers[real_y]
-                    virt_mouse_row = temp_mouse_handlers.mouse_handlers[virt_y]
-
-                    # real_escapes = screen.zero_width_escapes[real_y]
-                    # virt_escapes = temp_screen.zero_width_escapes[virt_y]
-
-                    for x in range(self.content_width):
-                        real_row[x + xpos] = virt_row[x]
-                        real_mouse_row[x + xpos] = virt_mouse_row[x]
-                        # real_escapes[x + xpos] = virt_escapes[x]
+                for y in range(copy_row_start, copy_row_end):
+                    for x in range(xpos, xpos + self.content_width):
+                        screen.data_buffer[y][x] = temp_screen.data_buffer[y][x]
+                        mouse_handlers.mouse_handlers[y][
+                            x
+                        ] = temp_mouse_handlers.mouse_handlers[y][x]
+                        screen.zero_width_escapes[y][
+                            x
+                        ] = temp_screen.zero_width_escapes[y][x]
 
                 # Copy cursors
-                if temp_screen.show_cursor:
-                    screen.show_cursor = True
                 for window, point in temp_screen.cursor_positions.items():
-                    # Check cursor is in the visibible zone on the temp screen
+                    # Check cursor is in the visibile zone on the temp screen
                     if (
-                        0 <= point.x < self.content_width
-                        and 0 - min(0, drawing.top)
-                        <= point.y
-                        < 0 - min(0, drawing.top) + copy_rows
+                        xpos <= point.x < xpos + self.content_width
+                        and ypos <= point.y < xpos + self.content_height
                     ):
-                        screen.cursor_positions[window] = Point(
-                            x=point.x + xpos,
-                            y=point.y + ypos + drawing.top,
-                        )
+                        screen.cursor_positions[window] = point
+                        # Show cursors if one is within the copied region
+                        if temp_screen.show_cursor:
+                            screen.show_cursor = True
+
+                # Copy write positions
+                screen.visible_windows_to_write_positions.update(
+                    temp_screen.visible_windows_to_write_positions
+                )
 
             # If the child is fully visible, simply write it to the screen
             else:
@@ -410,21 +402,23 @@ class ScrollingContainer(Container):
 
         return self.to_draw
 
-    def is_child_obscured(self, index: "int") -> "bool":
-        """Determine if a child is partially visible.
+    def is_child_fully_visible(self, index: "int") -> "bool":
+        """Determine if a child is fully onscreen.
 
         Args:
             index: The index of the child of interest.
 
         Returns:
-            True if the child is rendered and partially off-screen, otherwise False.=
+            False if the child is fully or partially off-screen, otherwise True.
 
         """
         drawing = {drawing.index: drawing for drawing in self.to_draw}.get(index)
-        if drawing is None:
-            return False
-        # return drawing is None or (
-        return drawing.top < 0 or drawing.parent_height < drawing.top + drawing.height
+        return True
+        return (
+            drawing is not None
+            and 0 <= drawing.top
+            and drawing.top + drawing.height <= drawing.parent_height
+        )
 
     def select_child(self, new_index: "int") -> "None":
         """Focus a child and scroll so it is visible.

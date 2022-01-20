@@ -1,5 +1,5 @@
-# -*- coding: utf-8 -*-
 """Load the default bindings assigned to commands."""
+
 from typing import TYPE_CHECKING
 
 from prompt_toolkit.key_binding import KeyBindings

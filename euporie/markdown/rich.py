@@ -1,11 +1,5 @@
-# -*- coding: utf-8 -*-
-"""Adds markdown table support to rich.markdown.
+"""Adds extends :py:class`rich.markdown.Markdown` with tables and LaTeX."""
 
-Currently every table cell is treated as a paragraph, which makes the table take the
-full width of the display.
-
-TODO - fix this.
-"""
 from __future__ import annotations
 
 import logging
@@ -14,26 +8,30 @@ from typing import TYPE_CHECKING
 import flatlatex  # type: ignore
 import rich.markdown
 from rich.console import Console, ConsoleOptions, JustifyMethod, RenderResult
-from rich.markdown import MarkdownContext
+from rich.markdown import Markdown as RichMarkdown
+from rich.markdown import MarkdownContext, MarkdownElement, Paragraph, TextElement
 from rich.table import Table as RichTable
 from rich.text import Text
 
-from euporie.components.markdown.parser import Parser
 from euporie.config import config
+from euporie.markdown.parser import Parser
 
 if TYPE_CHECKING:
+    from typing import List
+
     from commonmark.node import Node  # type: ignore
-    from rich.markdown import Markdown
     from rich.text import TextType
 
-    from euporie.components.markdown.blocks.tables import Table as TableNode
+    from euporie.markdown.blocks.tables import Table as TableNode
 
-__all__ = ["Table"]
+__all__ = ["Table", "LatexElement", "LatexBlock", "LatexInline", "Markdown"]
 
 log = logging.getLogger(__name__)
 
+rich.markdown.Parser = Parser
 
-class Table(rich.markdown.MarkdownElement):
+
+class Table(MarkdownElement):
     """A table."""
 
     style_name = "markdown.table"
@@ -41,9 +39,7 @@ class Table(rich.markdown.MarkdownElement):
     dumb_console = Console(force_terminal=False, record=True)
 
     @classmethod
-    def create(
-        cls, markdown: "rich.markdown.Markdown", table_node: "TableNode"
-    ) -> "Table":
+    def create(cls, markdown: "RichMarkdown", table_node: "TableNode") -> "Table":
         """Instantiates and returns a rich markdown table."""
         return cls(table_node)
 
@@ -77,7 +73,7 @@ class Table(rich.markdown.MarkdownElement):
             for i in range(len(self.contents[0][0]))
         ]
 
-        rows: "list[list[Markdown]]" = []
+        rows: "List[List[Markdown]]" = []
 
         # Generate header row
         rows.append(
@@ -130,7 +126,7 @@ class Table(rich.markdown.MarkdownElement):
         justify: "JustifyMethod" = None,
     ) -> "Markdown":
         """Create a rich markdown object, then add the parsed node to it."""
-        node_md = rich.markdown.Markdown(
+        node_md = Markdown(
             markup="",
             code_theme=str(config.syntax_theme),
             justify=justify,
@@ -139,17 +135,18 @@ class Table(rich.markdown.MarkdownElement):
         return node_md
 
 
-class LatexElement(rich.markdown.TextElement):
+class LatexElement(TextElement):
     """A latex element which renders text as LaTeX."""
 
     c = flatlatex.converter()
 
     def on_text(self, context: "MarkdownContext", text: "TextType") -> None:
+        """Converts LaTeX source text to rendered LaTeX text."""
         text = self.c.convert(text)
         super().on_text(context, text)
 
 
-class LatexBlock(rich.markdown.Paragraph, LatexElement):
+class LatexBlock(Paragraph, LatexElement):
     """Render a block of LaTeX centered as a paragraph."""
 
     new_line = True
@@ -157,6 +154,7 @@ class LatexBlock(rich.markdown.Paragraph, LatexElement):
     def __rich_console__(
         self, console: "Console", options: "ConsoleOptions"
     ) -> "RenderResult":
+        """Centers the LaTeX block."""
         self.text.justify = "center"
         yield self.text
 
@@ -169,11 +167,16 @@ class LatexInline(LatexElement):
     def __rich_console__(
         self, console: "Console", options: "ConsoleOptions"
     ) -> "RenderResult":
+        """Ensures the output does not end in a newline."""
         yield Text.assemble(self.text, end=" ")
 
 
-rich.markdown.Parser = Parser
-rich.markdown.Markdown.elements["math_block"] = LatexBlock
-rich.markdown.Markdown.elements["math"] = LatexInline
-rich.markdown.Markdown.elements["table"] = Table
-# rich.markdown.Markdown.inlines.add("math")
+class Markdown(RichMarkdown):
+    """Rich's markdown with additional elements."""
+
+    elements = {
+        **RichMarkdown.elements,
+        "math_block": LatexBlock,
+        "math": LatexInline,
+        "table": Table,
+    }

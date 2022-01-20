@@ -6,8 +6,8 @@ from typing import TYPE_CHECKING
 import commonmark  # type: ignore
 import commonmark.blocks  # type: ignore
 
-from euporie.components.markdown.blocks.math import MathBlock
-from euporie.components.markdown.blocks.tables import Table
+from euporie.markdown.blocks.math import MathBlock
+from euporie.markdown.blocks.tables import Table
 
 if TYPE_CHECKING:
     from typing import Any, List, Optional

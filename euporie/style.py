@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Style related functions."""
 
 from functools import lru_cache

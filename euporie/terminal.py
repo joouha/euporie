@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import array
+import logging
 import re
 import sys
 from functools import lru_cache
@@ -10,7 +11,9 @@ from typing import IO, Callable, Optional, cast
 
 from prompt_toolkit.output import Output
 
-__all__ = ["QueryCodes", "QueryResponsePatterns", "TerminalQuery"]
+__all__ = ["QueryCodes", "QueryResponsePatterns", "TerminalInfo", "query_terminal"]
+
+log = logging.getLogger(__name__)
 
 CONTROL_RE = re.compile(
     r"""
@@ -87,7 +90,7 @@ def _have_termios_tty_fcntl() -> "bool":
         return True
 
 
-def _query_term(
+def query_terminal(
     query_code: "str",
     stdin: "Optional[IO[str]]" = None,
     stdout: "Optional[IO[str]]" = None,
@@ -180,7 +183,7 @@ def _tiocgwnsz() -> "tuple[int, int, int, int]":
     return rows, cols, xpixels, ypixels
 
 
-class TerminalQuery:
+class TerminalInfo:
     """Provides terminal feature properties."""
 
     def __init__(self, output: "Output") -> "None":
@@ -194,7 +197,7 @@ class TerminalQuery:
 
     def _color(self, query_code: "str", response_code: "re.Pattern") -> "Optional[str]":
         """Get a colour of the terminal as a hex colour code."""
-        if result := _query_term(query_code, stdout=self.output.stdout):
+        if result := query_terminal(query_code, stdout=self.output.stdout):
             if oscs := result.get("osc_string"):
                 if match := response_code.match(oscs):
                     if colors := match.groupdict():
@@ -225,7 +228,7 @@ class TerminalQuery:
         *_, px, py = _tiocgwnsz()
         # If unsuccessful, try requesting info with escape code method
         if px == 0:
-            if result := _query_term(
+            if result := query_terminal(
                 QueryCodes.pixel_dimensions, stdout=self.output.stdout
             ):
                 params = result.get("csi_params", "")
@@ -249,7 +252,7 @@ class TerminalQuery:
     @lru_cache
     def has_sixel_graphics(self) -> "bool":
         """Determine if the terminal supports sixel graphics."""
-        if result := _query_term(QueryCodes.sixel, stdout=self.output.stdout):
+        if result := query_terminal(QueryCodes.sixel, stdout=self.output.stdout):
             param_str = result.get("csi_params", "")
             matches = QueryResponsePatterns.sixel.findall(param_str)
             params = [int(x) for x in matches]
@@ -261,7 +264,7 @@ class TerminalQuery:
     @lru_cache
     def has_kitty_graphics(self) -> "bool":
         """Determine if the terminal supports the kitty graphics protocal."""
-        if result := _query_term(QueryCodes.kitty, stdout=self.output.stdout):
+        if result := query_terminal(QueryCodes.kitty, stdout=self.output.stdout):
             apc_string = result.get("apc_string", "")
             if apc_string.startswith("G"):
                 if len(response := apc_string.lstrip("G").split(";")) >= 2:
@@ -273,7 +276,9 @@ class TerminalQuery:
     def cursor_position(self) -> "tuple[int, int]":
         """Determine if the terminal supports the kitty graphics protocal."""
         row = col = 0
-        if result := _query_term(QueryCodes.cursor_position, stdout=self.output.stdout):
+        if result := query_terminal(
+            QueryCodes.cursor_position, stdout=self.output.stdout
+        ):
             if csi_params := result.get("csi_params"):
                 if match := QueryResponsePatterns.cursor_position.match(csi_params):
                     if pos := match.groupdict():

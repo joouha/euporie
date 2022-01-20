@@ -1,5 +1,5 @@
-# -*- coding: utf-8 -*-
 """Contains dpdated ANSI parsing and Formatted Text processing."""
+
 from __future__ import annotations
 
 import re

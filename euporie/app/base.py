@@ -1,13 +1,14 @@
-# -*- coding: utf-8 -*-
 """Contains the main Application class which runs euporie."""
+
 from __future__ import annotations
 
 import logging
 from functools import partial
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from prompt_toolkit.application import Application, get_app_session
+from prompt_toolkit.enums import EditingMode
 from prompt_toolkit.filters import Condition, Filter
 from prompt_toolkit.layout import Layout
 from prompt_toolkit.layout.containers import Window
@@ -27,13 +28,14 @@ from prompt_toolkit.styles import (
 from pygments.styles import get_style_by_name  # type: ignore
 
 from euporie.config import config
+from euporie.graphics import TerminalGraphicsRenderer
 from euporie.key_binding import load_key_bindings
 from euporie.key_binding.micro_state import MicroState
 from euporie.log import setup_logs
 from euporie.notebook import Notebook
 from euporie.style import color_series
 from euporie.tab import Tab
-from euporie.term import TerminalQuery
+from euporie.terminal import TerminalInfo
 
 if TYPE_CHECKING:
     from collections.abc import MutableSequence
@@ -41,6 +43,8 @@ if TYPE_CHECKING:
 
     from prompt_toolkit.layout.containers import AnyContainer
     from prompt_toolkit.output import Output
+
+    from euporie.graphics import TerminalGraphic
 
 log = logging.getLogger(__name__)
 
@@ -80,7 +84,20 @@ class EuporieApp(Application):
         # Load the output
         self.output = self.load_output()
         # Inspect terminal feautres
-        self.term = TerminalQuery(self.output)
+        self.term_info = TerminalInfo(self.output)
+
+        # Load graphics system
+        graphics_system: "Optional[Type[TerminalGraphic]]" = None
+        if self.term_info.has_kitty_graphics:
+            from euporie.graphics.kitty import KittyTerminalGraphic
+
+            graphics_system = KittyTerminalGraphic
+        elif self.term_info.has_sixel_graphics:
+            from euporie.graphics.sixel import SixelTerminalGraphic
+
+            graphics_system = SixelTerminalGraphic
+        self.graphics_renderer = TerminalGraphicsRenderer(graphics_system)
+
         # Open any files we need to open
         self.open_files()
         # Load the main app container
@@ -155,7 +172,7 @@ class EuporieApp(Application):
             # Detect if focused tab has changed
             # Find index of selected child
             for i, tab in enumerate(self.tabs):
-                if self.layout.has_focus(tab):
+                if self.render_counter > 0 and self.layout.has_focus(tab):
                     self._tab_idx = i
                     break
             self._tab_idx = max(0, min(self._tab_idx, len(self.tabs) - 1))
@@ -210,6 +227,28 @@ class EuporieApp(Application):
             except ValueError:
                 pass
 
+    def set_edit_mode(self, mode: "EditingMode") -> "None":
+        """Sets the keybindings for editing mode.
+
+        Args:
+            mode: One of default, vi, or emacs
+
+        """
+        config.edit_mode = str(mode)
+        self.editing_mode = self.get_edit_mode()
+        log.debug("Editing mode set to: %s", self.editing_mode)
+
+    def get_edit_mode(self) -> "EditingMode":
+        """Returns the editing mode enum defined in the configuration."""
+        return cast(
+            EditingMode,
+            {
+                "micro": "MICRO",
+                "vi": EditingMode.VI,
+                "emacs": EditingMode.EMACS,
+            }.get(str(config.edit_mode), "micro"),
+        )
+
     def update_style(
         self,
         pygments_style: "Optional[str]" = None,
@@ -228,7 +267,10 @@ class EuporieApp(Application):
         base_colors: "dict[str, str]" = {
             "light": {"fg": "#000000", "bg": "#FFFFFF"},
             "dark": {"fg": "#FFFFFF", "bg": "#000000"},
-        }.get(config.color_scheme, {"fg": self.term.fg_color, "bg": self.term.bg_color})
+        }.get(
+            config.color_scheme,
+            {"fg": self.term_info.fg_color, "bg": self.term_info.bg_color},
+        )
         series = color_series(**base_colors, n=10)
 
         self.style_transformation = merge_style_transformations(

@@ -1,5 +1,5 @@
-# -*- coding: utf-8 -*-
 """Contains the `ScrollingContainer` class, which renders children on the fly."""
+
 from __future__ import annotations
 
 import logging

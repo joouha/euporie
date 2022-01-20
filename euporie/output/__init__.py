@@ -1,17 +1,18 @@
 """Defines an output container and the controls used within in."""
-from euporie.components.output.container import Output
-from euporie.components.output.control import (
+
+from euporie.output.container import Output
+from euporie.output.control import (
     HTMLControl,
     ImageControl,
+    MarkdownControl,
     OutputControl,
-    RichControl,
     SVGControl,
 )
 
 __all__ = [
     "Output",
     "OutputControl",
-    "RichControl",
+    "MarkdownControl",
     "HTMLControl",
     "ImageControl",
     "SVGControl",

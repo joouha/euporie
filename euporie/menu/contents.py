@@ -3,8 +3,8 @@
 from pygments.styles import get_all_styles  # type: ignore
 
 from euporie.commands.registry import get
-from euporie.components.menu.item import MenuItem
 from euporie.config import config
+from euporie.menu.item import MenuItem
 
 
 def load_menu_items() -> "list[MenuItem]":

@@ -1,5 +1,5 @@
-# -*- coding: utf-8 -*-
 """Defines editor key-bindings in the style of the ``micro`` text editor."""
+
 from typing import TYPE_CHECKING
 
 from prompt_toolkit.key_binding import ConditionalKeyBindings

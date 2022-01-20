@@ -1,5 +1,5 @@
-# -*- coding: utf-8 -*-
 """Defines the state of the micro editing mode."""
+
 from enum import Enum
 from typing import TYPE_CHECKING
 

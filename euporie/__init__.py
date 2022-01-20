@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Instantiates the euporie package."""
 
 __app_name__ = "euporie"

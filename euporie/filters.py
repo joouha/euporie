@@ -1,5 +1,5 @@
-# -*- coding: utf-8 -*-
 """Defines common filters."""
+
 from prompt_toolkit.filters import Condition, emacs_insert_mode, vi_insert_mode
 
 from euporie.app.current import get_tui_app as get_app

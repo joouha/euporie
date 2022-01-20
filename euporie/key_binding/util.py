@@ -1,5 +1,5 @@
-# -*- coding: utf-8 -*-
 """Utility functions for loading key-bindings."""
+
 from typing import TYPE_CHECKING
 
 from prompt_toolkit.key_binding import KeyBindings, KeyBindingsBase

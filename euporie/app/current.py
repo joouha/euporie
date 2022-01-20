@@ -1,4 +1,5 @@
 """Defines functions which allow access to typed version of the current application."""
+
 from typing import TYPE_CHECKING, cast
 
 from prompt_toolkit.application import get_app

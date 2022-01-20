@@ -1,5 +1,5 @@
-# -*- coding: utf-8 -*-
 """Defines a cell object with input are and rich outputs, and related objects."""
+
 from __future__ import annotations
 
 import asyncio
@@ -31,8 +31,8 @@ from prompt_toolkit.widgets import Frame, Label, SearchToolbar, TextArea
 from pygments.lexers import get_lexer_by_name  # type: ignore
 
 from euporie.box import RoundBorder as Border
-from euporie.components.output import Output
 from euporie.config import config
+from euporie.output import Output
 from euporie.suggest import AppendLineAutoSuggestion, ConditionalAutoSuggestAsync
 
 if TYPE_CHECKING:
@@ -156,7 +156,7 @@ class Cell:
         )
 
         self.output_box = HSplit(
-            self.rendered_outputs,
+            self.render_outputs(),
             style="class:cell.output",
         )
 
@@ -314,7 +314,7 @@ class Cell:
     def on_output(self) -> "None":
         """Runs when a message for this cell is recieved from the kernel."""
         # Set the outputs
-        self.output_box.children = self.rendered_outputs
+        self.output_box.children = self.render_outputs()
         # Tell the app that the display needs updating
         get_app().invalidate()
 
@@ -343,7 +343,7 @@ class Cell:
         if cell_type == "markdown" and "execution_count" in self.json:
             del self.json["execution_count"]
         self.json["cell_type"] = cell_type
-        self.output_box.children = self.rendered_outputs
+        self.output_box.children = self.render_outputs()
 
     def border_style(self) -> "str":
         """Determines the style of the cell borders, based on the cell state."""
@@ -440,8 +440,8 @@ class Cell:
         else:
             return self.json.setdefault("outputs", [])
 
-    @property
-    def rendered_outputs(self) -> "list[Container]":
+    # @property
+    def render_outputs(self) -> "list[Container]":
         """Generates a list of rendered outputs."""
         rendered_outputs: "list[Container]" = []
         for i, output_json in enumerate(self.outputs):
@@ -542,7 +542,7 @@ class InteractiveCell(Cell):
             self.nb.page.selected_index += 1
 
         if self.cell_type == "markdown":
-            self.output_box.children = self.rendered_outputs
+            self.output_box.children = self.render_outputs()
             self.rendered = True
 
         elif self.cell_type == "code":

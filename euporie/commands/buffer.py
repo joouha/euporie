@@ -37,7 +37,7 @@ from prompt_toolkit.key_binding.bindings.scroll import (
 from prompt_toolkit.keys import Keys
 from prompt_toolkit.selection import SelectionState, SelectionType
 
-from euporie.app.current import get_tui_app as get_app
+from euporie.app import get_app
 from euporie.commands.registry import add, get
 from euporie.config import config
 from euporie.filters import (

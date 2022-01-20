@@ -1,5 +1,5 @@
-# -*- coding: utf-8 -*-
 """Load the key-bindings for the application."""
+
 import logging
 from typing import TYPE_CHECKING
 

@@ -1,5 +1,5 @@
-# -*- coding: utf-8 -*-
 """Contains the main class for a notebook file."""
+
 from __future__ import annotations
 
 import copy
@@ -9,7 +9,6 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 import nbformat  # type: ignore
-from prompt_toolkit.application.current import get_app
 from prompt_toolkit.auto_suggest import DummyAutoSuggest
 from prompt_toolkit.completion import DummyCompleter
 from prompt_toolkit.filters import Condition
@@ -23,6 +22,7 @@ from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.mouse_events import MouseEventType
 from prompt_toolkit.widgets import Label, RadioList
 
+from euporie.app.current import get_tui_app as get_app
 from euporie.box import BorderLine, Pattern
 from euporie.cell import Cell, InteractiveCell, get_cell_id
 from euporie.completion import KernelCompleter
@@ -376,10 +376,10 @@ class TuiNotebook(KernelNotebook):
             index: The index of the child of interest.
 
         Returns:
-            True if the child is rendered and partially off-screen, otherwise False
+            True if the child is fully or partially off-screen, otherwise False
 
         """
-        return self.page.is_child_obscured(index)
+        return not self.page.is_child_fully_visible(index)
 
     def load_kernel(self) -> "None":
         self.kernel = NotebookKernel(

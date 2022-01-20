@@ -1,5 +1,5 @@
-# -*- coding: utf-8 -*-
 """Initiate logging for euporie."""
+
 from __future__ import annotations
 
 import logging

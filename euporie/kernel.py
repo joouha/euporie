@@ -1,5 +1,5 @@
-# -*- coding: utf-8 -*-
 """Contains the main class for a notebook file."""
+
 from __future__ import annotations
 
 import asyncio

@@ -1,13 +1,12 @@
-# -*- coding: utf-8 -*-
 """A text base user interface for euporie."""
+
 from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
 
 from prompt_toolkit.completion import PathCompleter
-from prompt_toolkit.enums import EditingMode
 from prompt_toolkit.filters import Condition
 from prompt_toolkit.formatted_text import (
     HTML,
@@ -32,11 +31,11 @@ from prompt_toolkit.widgets import Button, Dialog, Label, TextArea
 from euporie import __app_name__, __copyright__, __logo__, __strapline__, __version__
 from euporie.app.base import EuporieApp
 from euporie.box import Pattern
-from euporie.components.menu import MenuContainer
-from euporie.components.menu.contents import load_menu_items
 from euporie.config import config
 from euporie.keys import KeyBindingsInfo
 from euporie.log import LogView
+from euporie.menu import MenuContainer
+from euporie.menu.contents import load_menu_items
 from euporie.notebook import TuiNotebook
 from euporie.text import FormattedTextArea
 
@@ -58,18 +57,26 @@ log = logging.getLogger(__name__)
 class TuiApp(EuporieApp):
     """A text user interface euporie application."""
 
+    root_container: "MenuContainer"
+
     def __init__(self, **kwargs: "Any") -> "None":
         """Create a new euporie text user interface application instance."""
         self.notebook_class = TuiNotebook
+
         super().__init__(
             full_screen=True,
             mouse_support=True,
             editing_mode=self.get_edit_mode(),
             **kwargs,
         )
+
         # Ensure an opened tab is focused
         if self.tab:
             self.pre_run_callables.append(self.tab.focus)
+
+        # Load graphics system hooks
+        self.before_render += self.graphics_renderer.before_render
+        self.after_render += self.graphics_renderer.after_render
 
     def format_title(self) -> "StyleAndTextTuples":
         """Formats the tab's title for display in the top right of the app."""
@@ -462,28 +469,6 @@ class TuiApp(EuporieApp):
             self.tabs[-1].close(cb)
         else:
             really_close()
-
-    def set_edit_mode(self, mode: "EditingMode") -> "None":
-        """Sets the keybindings for editing mode.
-
-        Args:
-            mode: One of default, vi, or emacs
-
-        """
-        config.edit_mode = str(mode)
-        self.editing_mode = self.get_edit_mode()
-        log.debug("Editing mode set to: %s", self.editing_mode)
-
-    def get_edit_mode(self) -> "EditingMode":
-        """Returns the editing mode enum defined in the configuration."""
-        return cast(
-            EditingMode,
-            {
-                "micro": "MICRO",
-                "vi": EditingMode.VI,
-                "emacs": EditingMode.EMACS,
-            }.get(str(config.edit_mode), "micro"),
-        )
 
     def tab_op(
         self,

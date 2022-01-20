@@ -1,5 +1,5 @@
-# -*- coding: utf-8 -*-
 """Define box border constants."""
+
 from typing import Optional
 
 from prompt_toolkit.layout.containers import Container

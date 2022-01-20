@@ -4,6 +4,7 @@ Changlog
 Upcoming
 --------
 
+- Add new terminal graphics system, which makes displaying using sixels / kitty graphics more reliable
 - Add support for LaTex equations in markdown using flatlatex
 - Markdown tables no longer expand to the full width of the display
 - Show menu item descriptions in the statusbar

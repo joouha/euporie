@@ -3,8 +3,7 @@
 import re
 from typing import TYPE_CHECKING
 
-from prompt_toolkit.application import get_app
-
+from euporie.app import get_app
 from euporie.commands.registry import add
 from euporie.filters import has_suggestion
 

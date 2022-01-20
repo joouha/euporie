@@ -16,7 +16,7 @@ from prompt_toolkit.widgets.menus import MenuContainer as PtKMenuContainer
 from prompt_toolkit.widgets.menus import MenuItem as PtkMenuItem
 
 from euporie.box import SquareBorder as Border
-from euporie.components.menu.item import MenuItem
+from euporie.menu.item import MenuItem
 
 if TYPE_CHECKING:
     from typing import Iterable, Optional, Sequence

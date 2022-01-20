@@ -1,13 +1,13 @@
 """Defines a centralized command system."""
 
 from euporie.commands import (  # search,
-    app,
     buffer,
     cell,
     completions,
     config,
     notebook,
     suggestions,
+    tui,
 )
 from euporie.commands.base import Command
 from euporie.commands.registry import add, commands, get
@@ -18,7 +18,7 @@ __all__ = [
     "get",
     "commands",
     "config",
-    "app",
+    "tui",
     "buffer",
     "cell",
     "completions",

@@ -1,5 +1,5 @@
-# -*- coding: utf-8 -*-
 """Defines a configuration class for euporie."""
+
 from __future__ import annotations
 
 import argparse
