@@ -83,7 +83,7 @@ class html_links(SubprocessRenderMixin, HTMLRenderer):
 class html_mtable_py(PythonRenderMixin, HTMLRenderer):
     """Renders HTML tables using `mtable` by converting to markdown."""
 
-    modules = ["mtable"]
+    modules = ["mtable", "html5lib"]
 
     def __init__(self, *args: "Any", **kwargs: "Any") -> "None":
         """Initiates the renderer and selects a markdown renderer to use."""
