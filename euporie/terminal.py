@@ -50,7 +50,9 @@ CONTROL_RE = re.compile(
 class QueryCodes:
     """Container for terminal query strings."""
 
-    device = "\x1b[>0c"
+    os = "\x1b[5n"
+    device_1 = "\x1b[0c"
+    device_2 = "\x1b[>0c"
     pixel_dimensions = "\x1b[14t"
     fg_color = "\x1b]10;?\x1b\\"
     bg_color = "\x1b]11;?\x1b\\"
@@ -65,7 +67,9 @@ class QueryCodes:
 class QueryResponsePatterns:
     """Container for terminal query response patterns."""
 
-    device = re.compile(r"\x1b\[\>(\d;?)+c")
+    os = re.compile(r"\x1b\[0n")
+    device_1 = re.compile(r"\x1b\[\?(\d;?)+c")
+    device_2 = re.compile(r"\x1b\[\>(\d;?)+c")
     bg_color = re.compile(
         "11;rgb:(?P<r>[0-9A-Fa-f]{2,4})/(?P<g>[0-9A-Fa-f]{2,4})/(?P<b>[0-9A-Fa-f]{2,4})"
     )
@@ -94,6 +98,8 @@ def query_terminal(
     query_code: "str",
     stdin: "Optional[IO[str]]" = None,
     stdout: "Optional[IO[str]]" = None,
+    sep: "str" = QueryCodes.os,
+    sep_rsp: "re.Pattern" = QueryResponsePatterns.os,
 ) -> "Optional[dict[str,str]]":
     """Query the terminal and parse the response.
 
@@ -104,6 +110,8 @@ def query_terminal(
         query_code: The ANSI escape sequence to send to the terminal.
         stdin: IO to use as stdin
         stdout: IO to use as stdout
+        sep: The separator code to use
+        sep_rsp: The expected response pattern from the separator code
 
     Returns:
         A parsed escape code response.
@@ -135,7 +143,7 @@ def query_terminal(
 
         try:
             tty.setcbreak(stdin, termios.TCSANOW)
-            stdout_write(QueryCodes.device)
+            stdout_write(sep)
             stdout.flush()
 
             output_started = False
@@ -148,20 +156,20 @@ def query_terminal(
                     stdout_write(query_code)
                     stdout.flush()
                     query_sent = True
-                if re.search(QueryResponsePatterns.device, output):
+                if re.search(sep_rsp, output):
                     if not output_started:
                         output_started = True
                         # Discard the first deliminator
                         output = ""
                         # Send the second deliminator
-                        stdout_write(QueryCodes.device)
+                        stdout_write(sep)
                         stdout.flush()
                         continue
                     break
         finally:
             termios.tcsetattr(stdin, termios.TCSANOW, tattr)
         # Remove deliminator
-        output = re.sub(QueryResponsePatterns.device, "", output, 1)
+        output = re.sub(sep_rsp, "", output, 1)
         # Parse result
         if match := CONTROL_RE.search(output):
             return match.groupdict()
@@ -252,7 +260,10 @@ class TerminalInfo:
     @lru_cache
     def has_sixel_graphics(self) -> "bool":
         """Determine if the terminal supports sixel graphics."""
-        if result := query_terminal(QueryCodes.sixel, stdout=self.output.stdout):
+        if result := query_terminal(
+            QueryCodes.sixel,
+            stdout=self.output.stdout,
+        ):
             param_str = result.get("csi_params", "")
             matches = QueryResponsePatterns.sixel.findall(param_str)
             params = [int(x) for x in matches]
