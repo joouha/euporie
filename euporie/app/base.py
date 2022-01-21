@@ -113,6 +113,7 @@ class EuporieApp(Application):
             output=self.output,
             key_bindings=self.key_bindings,
             color_depth=ColorDepth.DEPTH_24_BIT,
+            min_redraw_interval=0.1,
             **kwargs,
         )
         self.pre_run_callables = pre_run
