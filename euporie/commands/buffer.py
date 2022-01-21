@@ -262,7 +262,10 @@ def paste_clipboard() -> "None":
 def copy_selection() -> "None":
     """Adds the current selection to the clipboard."""
     app = get_app()
-    data = app.current_buffer.copy_selection()
+    buffer = app.current_buffer
+    selection_state = buffer.selection_state
+    data = buffer.copy_selection()
+    buffer.selection_state = selection_state
     app.clipboard.set_data(data)
 
 
