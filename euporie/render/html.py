@@ -6,8 +6,6 @@ import io
 import logging
 from typing import TYPE_CHECKING
 
-import rich
-
 from euporie.render.base import DataRenderer
 from euporie.render.markdown import MarkdownRenderer
 from euporie.render.mixin import PythonRenderMixin, SubprocessRenderMixin
@@ -85,14 +83,14 @@ class html_links(SubprocessRenderMixin, HTMLRenderer):
 class html_mtable_py(PythonRenderMixin, HTMLRenderer):
     """Renders HTML tables using `mtable` by converting to markdown."""
 
-    module = "mtable"
+    modules = ["mtable"]
 
     def __init__(self, *args: "Any", **kwargs: "Any") -> "None":
         """Initiates the renderer and selects a markdown renderer to use."""
         super().__init__(*args, **kwargs)
         self.markdown_renderer = MarkdownRenderer.select()
 
-    def process(self, data: "rich.console.RenderableType") -> "Union[bytes, str]":
+    def process(self, data: "str") -> "Union[bytes, str]":
         """Converts HTML tables to markdown with `mtable`.
 
         The resulting markdown is rendered using rich.

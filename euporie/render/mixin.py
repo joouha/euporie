@@ -159,17 +159,17 @@ class SubprocessRenderMixin(DataRendererMixin):
 class PythonRenderMixin(DataRendererMixin):
     """Mixin for renderers which use external python libraries."""
 
-    module: "str"
+    modules: "list[str]"
 
     @classmethod
     def validate(cls) -> "bool":
-        """Checks the required python module is importable."""
-        try:
-            import_module(cls.module)
-        except ModuleNotFoundError:
-            return False
-        else:
-            return True
+        """Checks the required python modules are importable."""
+        for module in cls.modules:
+            try:
+                import_module(module)
+            except ModuleNotFoundError:
+                return False
+        return True
 
 
 class ImageMixin(DataRendererMixin):

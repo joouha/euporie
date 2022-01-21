@@ -129,7 +129,7 @@ class ansi_tiv(Base64Mixin, SubprocessRenderMixin, AnsiImageRenderer):
 class img_ansi_timg_py(Base64Mixin, PythonRenderMixin, AnsiImageRenderer):
     """Render an image as ANSI text using the `timg` python package."""
 
-    module = "timg"
+    modules = ["timg"]
 
     def process(self, data: "Union[bytes, str]") -> "Union[bytes, str]":
         """Converts a `PIL.Image` to a ansi text string using `timg`.
@@ -167,7 +167,7 @@ class img_ansi_timg_py(Base64Mixin, PythonRenderMixin, AnsiImageRenderer):
 class img_ansi_img2unicode_py(Base64Mixin, PythonRenderMixin, AnsiImageRenderer):
     """Render an image as ANSI text using the `img2unicode` python package."""
 
-    module = "img2unicode"
+    modules = ["img2unicode"]
 
     def process(self, data: "Union[bytes, str]") -> "Union[bytes, str]":
         """Converts a `PIL.Image` to a sixel string using `img2unicode`.

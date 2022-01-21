@@ -27,7 +27,7 @@ class SVGRenderer(DataRenderer):
 class svg_librsvg(PythonRenderMixin, SVGRenderer):
     """Renders SVGs using `cairosvg`."""
 
-    module = "cairosvg"
+    modules = ["cairosvg"]
 
     def __init__(self, *args: "Any", **kwargs: "Any") -> "None":
         """Creates a new svg renderer using cairosvg."""

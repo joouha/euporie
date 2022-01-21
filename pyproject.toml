@@ -29,8 +29,12 @@ appdirs = "^1.4.4"
 pyperclip = "^1.8.2"
 jupyter-client = "^7.1.0"
 flatlatex = "^0.15"
+sympy = {version = "^1.9", optional = true}
+antlr4-python3-runtime = {version = "^4.9.3", optional = true}
 
 [tool.poetry.extras]
+all = ["sympy", "antlr4-python3-runtime", "mtable", "html5lib", "timg"]
+latex-sympy = ["sympy", "antlr4-python3-runtime"]
 html-mtable = ["mtable", "html5lib"]
 images-timg = ["timg"]
 images-img2unicode = ["img2unicode"]

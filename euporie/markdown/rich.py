@@ -5,8 +5,8 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-import flatlatex  # type: ignore
 import rich.markdown
+from rich.align import Align
 from rich.console import Console, ConsoleOptions, JustifyMethod, RenderResult
 from rich.markdown import Markdown as RichMarkdown
 from rich.markdown import MarkdownContext, MarkdownElement, Paragraph, TextElement
@@ -15,6 +15,7 @@ from rich.text import Text
 
 from euporie.config import config
 from euporie.markdown.parser import Parser
+from euporie.render.latex import LatexRenderer
 
 if TYPE_CHECKING:
     from typing import List
@@ -138,11 +139,12 @@ class Table(MarkdownElement):
 class LatexElement(TextElement):
     """A latex element which renders text as LaTeX."""
 
-    c = flatlatex.converter()
+    renderer = LatexRenderer.select()
 
     def on_text(self, context: "MarkdownContext", text: "TextType") -> None:
         """Converts LaTeX source text to rendered LaTeX text."""
-        text = self.c.convert(text)
+        text = self.renderer.render(text, 0, 0)
+        text = text.ljust(max(map(len, text.split("\n"))))
         super().on_text(context, text)
 
 
@@ -155,8 +157,7 @@ class LatexBlock(Paragraph, LatexElement):
         self, console: "Console", options: "ConsoleOptions"
     ) -> "RenderResult":
         """Centers the LaTeX block."""
-        self.text.justify = "center"
-        yield self.text
+        yield Align.center(self.text)
 
 
 class LatexInline(LatexElement):

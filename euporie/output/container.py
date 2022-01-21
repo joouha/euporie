@@ -15,6 +15,7 @@ from euporie.app import get_app
 from euporie.output.control import (
     HTMLControl,
     ImageControl,
+    LatexControl,
     MarkdownControl,
     OutputControl,
     SVGControl,
@@ -81,7 +82,9 @@ class Output:
 
         control: "UIControl"
 
-        bg_color = json.get("metadata", {}).get("needs_background")
+        bg_color = json.get("metadata", {}).get(
+            "needs_background", get_app().term_info.bg_color
+        )
         bg_color = {"light": "#FFFFFF", "dark": "#000000"}.get(bg_color, bg_color)
 
         # TODO - force image dimensions based on metadata
@@ -126,6 +129,14 @@ class Output:
 
             if mime_path.match("text/html"):
                 control = HTMLControl(datum)
+                if control.renderer:
+                    self.content = Window(control)
+                    break
+                else:
+                    continue  # Use plain text rendering instead
+
+            if mime_path.match("text/latex"):
+                control = LatexControl(datum)
                 if control.renderer:
                     self.content = Window(control)
                     break

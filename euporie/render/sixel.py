@@ -154,7 +154,7 @@ class sixel_chafa(SubprocessRenderMixin, SixelRenderer):
 class sixel_timg_py(PythonRenderMixin, SixelRenderer):
     """Render images as sixels using `timg`."""
 
-    module = "timg"
+    modules = ["timg"]
 
     def process(self, data: "str") -> "Union[bytes, str]":
         """Converts a `PIL.Image` to a sixel string using `timg`.
@@ -191,7 +191,7 @@ class sixel_timg_py(PythonRenderMixin, SixelRenderer):
 class sixel_teimpy(PythonRenderMixin, SixelRenderer):
     """Render images as sixels using `teimpy`."""
 
-    module = "teimpy"
+    modules = ["teimpy"]
 
     def process(self, data: "str") -> "Union[bytes, str]":
         """Converts a `PIL.Image` to a sixel string using `teimpy`.

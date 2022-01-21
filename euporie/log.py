@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import logging
 import logging.config
+import sys
 from collections import deque
+from io import StringIO
 from pathlib import Path
 from typing import TYPE_CHECKING, cast
 
@@ -18,6 +20,7 @@ from euporie.tab import Tab
 from euporie.text import FormattedTextArea
 
 if TYPE_CHECKING:
+    from types import TracebackType
     from typing import IO, Callable
 
     from prompt_toolkit.formatted_text import StyleAndTextTuples
@@ -204,3 +207,25 @@ class LogView(Tab):
         ]
 
         return formatted_record
+
+
+class log_to_stdout:
+    def __init__(self, log: "logging.Logger"):
+        self.log = log
+        self.out = StringIO()
+
+    def __enter__(self):
+        self._original_stdout = sys.stdout
+        sys.stdout = self.out
+
+    def __exit__(
+        self,
+        exc_type: "type[BaseException]",
+        exc_value: "BaseException",
+        exc_traceback: "TracebackType",
+    ):
+        sys.stdout = self._original_stdout
+        self.out.seek(0)
+        for line in self.out.readlines():
+            self.log.debug(str(line))
+        self.out.close()

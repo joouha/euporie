@@ -9,7 +9,13 @@ from prompt_toolkit.cache import SimpleCache
 from prompt_toolkit.formatted_text.utils import fragment_list_len
 from prompt_toolkit.layout.controls import GetLinePrefixCallable, UIContent, UIControl
 
-from euporie.render import HTMLRenderer, ImageRenderer, MarkdownRenderer, SVGRenderer
+from euporie.render import (
+    HTMLRenderer,
+    ImageRenderer,
+    LatexRenderer,
+    MarkdownRenderer,
+    SVGRenderer,
+)
 from euporie.text import ANSI
 
 if TYPE_CHECKING:
@@ -24,6 +30,7 @@ __all__ = [
     "OutputControl",
     "MarkdownControl",
     "HTMLControl",
+    "LatexControl",
     "ImageControl",
     "SVGControl",
 ]
@@ -151,6 +158,12 @@ class HTMLControl(OutputControl):
     """Control for rendered HTML."""
 
     renderer_class = HTMLRenderer
+
+
+class LatexControl(OutputControl):
+    """Control for rendered LaTeX."""
+
+    renderer_class = LatexRenderer
 
 
 class BaseImageControl(OutputControl):
