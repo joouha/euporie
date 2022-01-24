@@ -69,7 +69,8 @@ class EuporieApp(Application):
 
         """
         # Set app super early
-        get_app_session().app = self
+        session = get_app_session()
+        session.app = self
         self._is_running = False
         # These will be re-applied after superinit
         self.pre_run_callables = []
@@ -81,17 +82,20 @@ class EuporieApp(Application):
         # Create conditions
         self.has_tab = Condition(lambda: bool(self.tabs))
         # Load the output
+        self.input = session.input
+        # if isinstance(self.input, Vt100Input):
+        # self.input.vt100_parser = Vt100Parser(self.input.vt100_parser.feed_key_callback)
         self.output = self.load_output()
         # Inspect terminal feautres
-        self.term_info = TerminalInfo(self.output)
+        self.term_info = TerminalInfo(self.input, self.output)
 
         # Load graphics system
         graphics_system: "Optional[Type[TerminalGraphic]]" = None
-        if self.term_info.has_kitty_graphics:
+        if self.term_info.kitty_graphics_status:
             from euporie.graphics.kitty import KittyTerminalGraphic
 
             graphics_system = KittyTerminalGraphic
-        elif self.term_info.has_sixel_graphics:
+        elif self.term_info.sixel_graphics_status:
             from euporie.graphics.sixel import SixelTerminalGraphic
 
             graphics_system = SixelTerminalGraphic
@@ -269,7 +273,10 @@ class EuporieApp(Application):
             "dark": {"fg": "#FFFFFF", "bg": "#000000"},
         }.get(
             config.color_scheme,
-            {"fg": self.term_info.fg_color, "bg": self.term_info.bg_color},
+            {
+                "fg": self.term_info.foreground_color,
+                "bg": self.term_info.background_color,
+            },
         )
         series = color_series(**base_colors, n=10)
 

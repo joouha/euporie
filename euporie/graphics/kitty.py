@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING
 
 from euporie.app import get_app
 from euporie.graphics.base import TerminalGraphic
-from euporie.terminal import query_terminal
 
 if TYPE_CHECKING:
     from typing import Any, Optional
@@ -47,7 +46,7 @@ class KittyTerminalGraphic(TerminalGraphic):
                 f=100,  # Sending a PNG image
                 m=1 if data else 0,  # Data will be chunked
             )
-        if result := query_terminal(query, stdout=get_app().term_info.output.stdout):
+        if result := get_app().term_info.query_terminal(query):
             apc_string = result.get("apc_string", "")
             if apc_string and apc_string.startswith("G"):
                 if len(response := apc_string.lstrip("G").split(";")) >= 2:

@@ -216,7 +216,7 @@ class ImageMixin(DataRendererMixin):
             orig_px, orig_py = self.image.size
             # Get the pixel size of one terminal block
             app = get_app()
-            char_px, char_py = app.term_info.char_size_px
+            char_px, char_py = app.term_info.cell_size_px
             # Scale image down if it is larger than available width
             pixels_per_col = orig_px / char_px
             # Only down-scale images

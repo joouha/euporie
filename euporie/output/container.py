@@ -83,7 +83,7 @@ class Output:
         control: "UIControl"
 
         bg_color = json.get("metadata", {}).get(
-            "needs_background", get_app().term_info.bg_color
+            "needs_background", get_app().term_info.background_color
         )
         bg_color = {"light": "#FFFFFF", "dark": "#000000"}.get(bg_color, bg_color)
 
