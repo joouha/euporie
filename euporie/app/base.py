@@ -273,9 +273,18 @@ class EuporieApp(Application):
         )
         series = color_series(**base_colors, n=10)
 
+        # Actually use default colors if in default mode
+        # This is needed for transparent terminals and the like
+        if config.color_scheme == "default":
+            series["fg"][0] = "default"
+            series["bg"][0] = "default"
+
         self.style_transformation = merge_style_transformations(
             [
-                SetDefaultColorStyleTransformation(**base_colors),
+                ConditionalStyleTransformation(
+                    SetDefaultColorStyleTransformation(**base_colors),
+                    config.color_scheme != "default",
+                ),
                 ConditionalStyleTransformation(
                     SwapLightAndDarkStyleTransformation(),
                     config.color_scheme == "inverse",
@@ -310,7 +319,7 @@ class EuporieApp(Application):
             "menu": f"bg:{series['bg'][1]} fg:{series['fg'][1]}",
             # Buffer
             "line-number": f"fg:{series['fg'][1]} bg:{series['bg'][1]}",
-            "line-number.current": "bold",
+            "line-number.current": "bold orange",
             "cursor-line": f"bg:{series['bg'][1]}",
             # Cells
             "cell.border": f"fg:{series['bg'][5]}",
