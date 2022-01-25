@@ -66,6 +66,9 @@ class ScrollingContainer(Container):
         self.to_draw: "Sequence[DrawingPosition]" = []
         self.visible: "dict[int, Union[Container, MagicContainer]]" = {}
         self.size_cache: "dict[int, int]" = {}
+        # We need to remember the height of the container
+        self.content_width = 0
+        self.content_height = 0
 
     # Container methods
 

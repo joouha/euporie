@@ -13,6 +13,8 @@ if TYPE_CHECKING:
 
     from prompt_toolkit.filters import FilterOrBool
 
+    from euporie.terminal import TerminalQuery
+
 __all__ = ["KittyTerminalGraphic"]
 
 log = logging.getLogger(__name__)
@@ -27,53 +29,87 @@ class KittyTerminalGraphic(TerminalGraphic):
         self.loaded = False
         self.kitty_image_id: "Optional[int]" = None
         self.shown = False
+        self.app = get_app()
+        self.kitty_event = self.app.term_info.kitty_graphic_id.event
 
     def load(self) -> "None":
         """Sends the graphic to the terminal without displaying it."""
         # Build the terminal query
         self.delete()
         data = self.data[:]
-        query = ""
         while data:
             chunk, data = data[:4096], data[4096:]
-            query += _kitty_cmd(
+            cmd = _kitty_cmd(
                 chunk=chunk,
                 a="t",  # We are sending an image without displaying it
                 t="d",  # Transferring the image directly
-                I=self.id + 1,  # Send and image number, wait for an image id
+                I=self.id,  # Send a unique image number, wait for an image id
                 p=1,  # Placement ID
                 q=0,
                 f=100,  # Sending a PNG image
                 m=1 if data else 0,  # Data will be chunked
             )
-        if result := get_app().term_info.query_terminal(query):
-            apc_string = result.get("apc_string", "")
-            if apc_string and apc_string.startswith("G"):
-                if len(response := apc_string.lstrip("G").split(";")) >= 2:
-                    for part in response[0].split(","):
-                        key, _, value = part.partition("=")
-                        if key == "i":
-                            self.kitty_image_id = int(value)
-        self.loaded = True
+            self.app.output.write_raw(cmd)
+        self.app.output.flush()
+
+        # Listen for a kitty image id response
+        self.kitty_event += self.update_kitty_image_id
+
+    def update_kitty_image_id(self, query: "TerminalQuery") -> "None":
+        """Sets the current graphic's image id base on the terminal's response."""
+        if self.kitty_image_id is None and int(query.value.get("I", -1)) == self.id:
+            self.kitty_image_id = int(query.value.get("i"))
+            log.debug("Setting image id: %s", query.value)
+            self.kitty_event -= self.update_kitty_image_id
+            self.loaded = True
 
     def draw(self) -> "str":
         """Displays the graphic at its current location with its current dimensions."""
         if not self.loaded:
             self.load()
-        self.shown = True
-        self.redraw = False
-        # Place the image
-        return _kitty_cmd(
-            a="p",  # Display a previously transmitted image
-            i=self.kitty_image_id,
-            p=1,  # Placement ID
-            m=0,  # No batches remaining
-            q=2,  # No backchat
-            c=self.width,
-            r=self.height,
-            C=1,  # Do not move the cursor
-            z=-(2 ** 30) - 1,
-        )
+        if self.loaded:
+            self.shown = True
+            self.redraw = False
+            # Place the image
+            return _kitty_cmd(
+                a="p",  # Display a previously transmitted image
+                i=self.kitty_image_id,
+                p=1,  # Placement ID
+                m=0,  # No batches remaining
+                q=2,  # No backchat
+                c=self.width,
+                r=self.height,
+                C=1,  # Do not move the cursor
+                z=-(2 ** 30) - 1,
+            )
+        return ""
+
+    def draw_inline(self) -> "str":
+        """Returns a command to draw the current graphic inline.
+
+        Used when dumping notebooks to the terminal.
+
+        Returns:
+            A terminal command to draw the graphic inline
+
+        """
+        cmd = ""
+        data = self.data[:]
+        while data:
+            chunk, data = data[:4096], data[4096:]
+            cmd += _kitty_cmd(
+                chunk=chunk,
+                a="T",  # We are sending an image and displaying it
+                t="d",  # Transferring the image directly
+                I=self.id,  # Send a unique image number, wait for an image id
+                p=1,  # Placement ID
+                q=2,  # No chatback at all
+                f=100,  # Sending a PNG image
+                m=1 if data else 0,  # Data will be chunked
+            )
+        # Restore cursor
+        cmd += "\x1b[u"
+        return cmd
 
     def hide(self) -> "str":
         """Hides the graphic from show without deleting it."""

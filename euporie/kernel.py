@@ -92,8 +92,7 @@ class NotebookKernel:
             try:
                 result = future.result(timeout)
             except concurrent.futures.TimeoutError:
-                if warn:
-                    log.error("Operation '%s' timed out", coro)
+                log.error("Operation '%s' timed out", coro)
                 future.cancel()
             finally:
                 if callable(callback):

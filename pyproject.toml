@@ -32,6 +32,7 @@ flatlatex = "^0.15"
 sympy = {version = "^1.9", optional = true}
 antlr4-python3-runtime = {version = "^4.9.3", optional = true}
 CairoSVG = {version = "^2.5.2", optional = true}
+aenum = "^3.1.8"
 
 [tool.poetry.extras]
 all = ["sympy", "antlr4-python3-runtime", "mtable", "html5lib", "timg", "CairoSVG"]

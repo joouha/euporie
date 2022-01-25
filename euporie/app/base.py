@@ -2,20 +2,21 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING, cast
 
-from prompt_toolkit.application import Application, get_app_session
+from prompt_toolkit.application import Application
 from prompt_toolkit.enums import EditingMode
-from prompt_toolkit.filters import Condition, Filter
 from prompt_toolkit.layout import Layout
 from prompt_toolkit.layout.containers import Window
 from prompt_toolkit.output.defaults import create_output
 from prompt_toolkit.styles import (
     BaseStyle,
     ConditionalStyleTransformation,
+    DummyStyle,
     SetDefaultColorStyleTransformation,
     Style,
     SwapLightAndDarkStyleTransformation,
@@ -24,6 +25,7 @@ from prompt_toolkit.styles import (
     merge_styles,
     style_from_pygments_cls,
 )
+from prompt_toolkit.utils import is_windows
 from pygments.styles import get_style_by_name  # type: ignore
 
 from euporie.config import config
@@ -34,16 +36,21 @@ from euporie.log import setup_logs
 from euporie.notebook import Notebook
 from euporie.style import color_series
 from euporie.tab import Tab
-from euporie.terminal import TerminalInfo
+from euporie.terminal import TerminalInfo, Vt100Parser
 
 if TYPE_CHECKING:
     from collections.abc import MutableSequence
     from typing import Any, Optional, Type
 
+    from prompt_toolkit.filters import Filter
+    from prompt_toolkit.input.vt100 import Vt100Input
+    from prompt_toolkit.key_binding import KeyBindingsBase
     from prompt_toolkit.layout.containers import AnyContainer
     from prompt_toolkit.output import Output
 
-    from euporie.graphics import TerminalGraphic
+    from euporie.cell import InteractiveCell
+    from euporie.notebook import TuiNotebook
+    from euporie.terminal import TerminalQuery
 
 log = logging.getLogger(__name__)
 
@@ -57,6 +64,8 @@ class EuporieApp(Application):
 
     # This configures the logs for euporie
     setup_logs()
+    # Defines which notebook class should we use
+    notebook_class: "Type[Notebook]"
 
     def __init__(self, **kwargs: "Any") -> "None":
         """Instantiates euporie specific application variables.
@@ -68,62 +77,107 @@ class EuporieApp(Application):
             **kwargs: The key-word arguments for the :py:class:`Application`
 
         """
-        # Set app super early
-        session = get_app_session()
-        session.app = self
-        self._is_running = False
-        # These will be re-applied after superinit
-        self.pre_run_callables = []
-        # Which notebook class should we use
-        self.notebook_class: "Type[Notebook]"
-        # Containes the opened tab contianers
-        self.tabs: "MutableSequence[Tab]" = []
-        self._tab_idx = 0
-        # Create conditions
-        self.has_tab = Condition(lambda: bool(self.tabs))
-        # Load the output
-        self.input = session.input
-        # if isinstance(self.input, Vt100Input):
-        # self.input.vt100_parser = Vt100Parser(self.input.vt100_parser.feed_key_callback)
-        self.output = self.load_output()
-        # Inspect terminal feautres
-        self.term_info = TerminalInfo(self.input, self.output)
-
-        # Load graphics system
-        graphics_system: "Optional[Type[TerminalGraphic]]" = None
-        if self.term_info.kitty_graphics_status:
-            from euporie.graphics.kitty import KittyTerminalGraphic
-
-            graphics_system = KittyTerminalGraphic
-        elif self.term_info.sixel_graphics_status:
-            from euporie.graphics.sixel import SixelTerminalGraphic
-
-            graphics_system = SixelTerminalGraphic
-        self.graphics_renderer = TerminalGraphicsRenderer(graphics_system)
-
-        # Open any files we need to open
-        self.open_files()
-        # Load the main app container
-        self.layout = Layout(self.load_container())
-        # Load key bindings
-        self.key_bindings = load_key_bindings()
-        # Add state for micro key-bindings
-        self.micro_state = MicroState()
-
-        pre_run = self.pre_run_callables[:]
+        # Initalise the application
         super().__init__(
-            layout=self.layout,
-            output=self.output,
-            key_bindings=self.key_bindings,
-            min_redraw_interval=0.1,
-            color_depth=self.term_info.color_depth,
+            # input=self.input,
+            output=self.load_output(),
+            # key_bindings=load_key_bindings(),
+            # layout=Layout(self.load_container()),
+            # color_depth=self.term_info.color_depth,
             **kwargs,
         )
-        self.pre_run_callables = pre_run
+        # Use a custom vt100 parser to allow querying the terminal
+        self.using_vt100 = not is_windows()
+        if self.using_vt100:
+            self.input = cast("Vt100Input", self.input)
+            self.input.vt100_parser = Vt100Parser(
+                self.input.vt100_parser.feed_key_callback
+            )
+        # Containes the opened tab contianers
+        self.tabs: "MutableSequence[Tab]" = []
+        # Holds the index of the current tab
+        self._tab_idx = 0
+        # Add state for micro key-bindings
+        self.micro_state = MicroState()
+        # Load the terminal information system
+        self.term_info = TerminalInfo(self.input, self.output)
+        # Load the graphics display system
+        self.load_graphics_system()
+        # Continue loading
+        self.pre_run_callables = [self.pre_run]
+
+    def pre_run(self, app: "Application" = None) -> "None":
+        """Called during the 'pre-run' stage of application loading."""
+        # Blocks rendering, but allows input to be processed
+        # The first line prevents the display being drawn, and the second line means
+        # the key processor continues to process keys. We need this as we need to
+        # wait for the results of terminal queries which come in as key events
+        self._is_running = False
+        self.renderer._waiting_for_cpr_futures.append(asyncio.Future())
+
+        async def continue_loading() -> "None":
+            # Load key bindings
+            self.key_bindings = self.load_key_bindings()
+            # Wait for the terminal query responses
+            if self.using_vt100:
+                self.term_info.send_all()
+                await asyncio.sleep(0.1)
+            # Open any files we need to
+            self.open_files()
+            # Load the colour depth of the renderer
+            self._color_depth = self.term_info.depth_of_color.value
+            # Load the layout
+            self.layout = Layout(self.load_container())
+            # Set the application's style
+            self.update_style()
+            # Run any additional steps
+            self.post_load()
+            # Resume rendering
+            self._is_running = True
+            self.renderer._waiting_for_cpr_futures.pop()
+            # Sending a repaint trigger
+            self.invalidate()
+
+        # Waits until the event loop is ready
+        self.create_background_task(continue_loading())
+
+    def post_load(self) -> "None":
+        """Allows subclasses to define additional loading steps."""
+        pass
+
+    def load_key_bindings(self) -> "KeyBindingsBase":
+        """Loads the application's key bindings."""
+        return load_key_bindings()
+
+    def load_graphics_system(self) -> "None":
+        """Loads the graphic rendering system.
+
+        Sets up hooks to configure the backend depending on the response the terminal
+        gives to capability queries.
+        """
+        self.graphics_renderer = TerminalGraphicsRenderer()
+
+        def _use_kitty_graphics(query: "TerminalQuery") -> "None":
+            from euporie.graphics.kitty import KittyTerminalGraphic
+
+            self.graphics_renderer.graphic_class = KittyTerminalGraphic
+
+        def _use_sixel_graphics(query: "TerminalQuery") -> "None":
+            from euporie.graphics.sixel import SixelTerminalGraphic
+
+            self.graphics_renderer.graphic_class = SixelTerminalGraphic
+
+        self.term_info.sixel_graphics_status.event += _use_sixel_graphics
+        self.term_info.kitty_graphics_status.event += _use_kitty_graphics
+
+    def _on_resize(self) -> "None":
+        """Hook the resize event to also query the terminal dimensions."""
+        self.term_info.pixel_dimensions.send()
+        super()._on_resize()
 
     @classmethod
     def launch(cls) -> "None":
-        """Launches the app, opening any command line arguments as files."""
+        """Launches the app."""
         app = cls()
         app.run()
 
@@ -150,7 +204,7 @@ class EuporieApp(Application):
         for file in config.files:
             self.open_file(file)
 
-    def open_file(self, path: "Path", read_only: "bool" = False) -> None:
+    def open_file(self, path: "Path", read_only: "bool" = False) -> "None":
         """Creates a tab for a file.
 
         Args:
@@ -195,7 +249,7 @@ class EuporieApp(Application):
         self._tab_idx = value % len(self.tabs)
         self.layout.focus(self.tabs[self._tab_idx])
 
-    def close_tab(self, tab: "Optional[Tab]" = None) -> None:
+    def close_tab(self, tab: "Optional[Tab]" = None) -> "None":
         """Closes a notebook tab.
 
         Args:
@@ -208,7 +262,7 @@ class EuporieApp(Application):
         if tab is not None:
             tab.close(cb=partial(self.cleanup_closed_tab, tab))
 
-    def cleanup_closed_tab(self, tab: "Tab") -> None:
+    def cleanup_closed_tab(self, tab: "Tab") -> "None":
         """Remove a tab container from the current instance of the app.
 
         Args:
@@ -255,6 +309,7 @@ class EuporieApp(Application):
 
     def update_style(
         self,
+        query: "Optional[TerminalQuery]" = None,
         pygments_style: "Optional[str]" = None,
         color_scheme: "Optional[str]" = None,
     ) -> "None":
@@ -263,19 +318,24 @@ class EuporieApp(Application):
             config.syntax_theme = pygments_style
         if color_scheme is not None:
             config.color_scheme = color_scheme
-        self.renderer.style = self._create_merged_style()
+        self.renderer.style = self.create_merged_style()
 
     def _create_merged_style(
         self, include_default_pygments_style: "Filter" = None
     ) -> "BaseStyle":
+        """Block default style loading."""
+        return DummyStyle()
+
+    def create_merged_style(self) -> "BaseStyle":
+        """Generate a new merged style for the application."""
         base_colors: "dict[str, str]" = {
             "light": {"fg": "#000000", "bg": "#FFFFFF"},
             "dark": {"fg": "#FFFFFF", "bg": "#000000"},
         }.get(
             config.color_scheme,
             {
-                "fg": self.term_info.foreground_color,
-                "bg": self.term_info.background_color,
+                "fg": self.term_info.foreground_color.value,
+                "bg": self.term_info.background_color.value,
             },
         )
         series = color_series(**base_colors, n=10)
@@ -332,7 +392,7 @@ class EuporieApp(Application):
             "cell.border": f"fg:{series['bg'][5]}",
             "cell.border.selected": "fg:#00afff",
             "cell.border.edit": "fg:#00ff00",
-            "cell.border.hidden": f"fg:{series['bg'][0]}",
+            "cell.border.hidden": "hidden",
             "cell.input": "fg:default bg:default",
             "cell.output": "fg:default bg:default",
             "cell.input.prompt": "fg:blue",
@@ -383,8 +443,11 @@ class EuporieApp(Application):
         )
 
     @property
-    def notebook(self) -> "Optional[Notebook]":
+    def notebook(self) -> "Optional[TuiNotebook]":
         """Return the currently active notebook."""
-        if isinstance(self.tab, Notebook):
-            return self.tab
+        return None
+
+    @property
+    def cell(self) -> "Optional[InteractiveCell]":
+        """Return the currently active cell."""
         return None

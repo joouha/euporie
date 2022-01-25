@@ -21,7 +21,7 @@ from euporie.text import FormattedTextArea
 
 if TYPE_CHECKING:
     from types import TracebackType
-    from typing import IO, Callable
+    from typing import IO, Callable, Optional
 
     from prompt_toolkit.formatted_text import StyleAndTextTuples
 
@@ -220,12 +220,13 @@ class log_to_stdout:
 
     def __exit__(
         self,
-        exc_type: "type[BaseException]",
-        exc_value: "BaseException",
-        exc_traceback: "TracebackType",
+        exc_type: "Optional[type[BaseException]]",
+        exc_value: "Optional[BaseException]",
+        exc_traceback: "Optional[TracebackType]",
     ):
-        sys.stdout = self._original_stdout
-        self.out.seek(0)
-        for line in self.out.readlines():
-            self.log.debug(str(line))
+        if exc_type is not None:
+            sys.stdout = self._original_stdout
+            self.out.seek(0)
+            for line in self.out.readlines():
+                self.log.debug(str(line).strip())
         self.out.close()

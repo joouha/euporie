@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -41,7 +42,7 @@ from euporie.text import FormattedTextArea
 
 if TYPE_CHECKING:
     from asyncio import AbstractEventLoop
-    from typing import Any, Callable, Literal, Mapping, Optional
+    from typing import Any, Callable, Literal, Optional, Type
 
     from prompt_toolkit.buffer import Buffer
     from prompt_toolkit.completion import Completer
@@ -49,6 +50,7 @@ if TYPE_CHECKING:
     from prompt_toolkit.layout.containers import AnyContainer
 
     from euporie.cell import InteractiveCell
+    from euporie.notebook import Notebook
     from euporie.tab import Tab
 
 log = logging.getLogger(__name__)
@@ -58,11 +60,10 @@ class TuiApp(EuporieApp):
     """A text user interface euporie application."""
 
     root_container: "MenuContainer"
+    notebook_class: "Type[Notebook]" = TuiNotebook
 
     def __init__(self, **kwargs: "Any") -> "None":
         """Create a new euporie text user interface application instance."""
-        self.notebook_class = TuiNotebook
-
         super().__init__(
             full_screen=True,
             mouse_support=True,
@@ -70,13 +71,28 @@ class TuiApp(EuporieApp):
             **kwargs,
         )
 
+    def post_load(self) -> "None":
+        """Continues loading the app."""
         # Ensure an opened tab is focused
         if self.tab:
-            self.pre_run_callables.append(self.tab.focus)
+            self.tab.focus()
 
         # Load graphics system hooks
         self.before_render += self.graphics_renderer.before_render
         self.after_render += self.graphics_renderer.after_render
+
+        # Load style hooks and start polling terminal style
+        if self.using_vt100:
+            self.term_info.background_color.event += self.update_style
+            self.term_info.foreground_color.event += self.update_style
+            self.create_background_task(self._poll_terminal_colors())
+
+    async def _poll_terminal_colors(self, interval: "int" = 5) -> "None":
+        """Repeatedly queries the terminal for its background and foreground colours."""
+        while True:
+            await asyncio.sleep(interval)
+            self.term_info.background_color.send()
+            self.term_info.foreground_color.send()
 
     def format_title(self) -> "StyleAndTextTuples":
         """Formats the tab's title for display in the top right of the app."""
@@ -153,7 +169,7 @@ class TuiApp(EuporieApp):
                 dont_extend_width=True,
                 align=WindowAlign.RIGHT,
             ),
-            filter=self.has_tab,
+            filter=Condition(lambda: bool(self.tabs)),
         )
 
         tabs = DynamicContainer(self.tab_container)
@@ -469,34 +485,6 @@ class TuiApp(EuporieApp):
             self.tabs[-1].close(cb)
         else:
             really_close()
-
-    def tab_op(
-        self,
-        operation: "str",
-        tab: "Optional[Tab]" = None,
-        args: "Optional[list[Any]]" = None,
-        kwargs: "Optional[Mapping[str, Any]]" = None,
-    ) -> None:
-        """Call a method on the current tab if it exits.
-
-        Args:
-            operation: The name of the function to attempt to call.
-            tab: The instance of the tab to use. If `None`, the currently selected tab
-                will be used.
-            args: List of parameter arguments to pass to the function
-            kwargs: Mapping of keyword arguments to pass to the function
-
-        """
-        if args is None:
-            args = []
-        if kwargs is None:
-            kwargs = {}
-        if tab is None:
-            tab = self.tab
-        if tab and hasattr(tab, operation):
-            func = getattr(self.tab, operation)
-            if callable(func):
-                func(*args, **kwargs)
 
     @property
     def notebook(self) -> "Optional[TuiNotebook]":

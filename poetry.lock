@@ -1,4 +1,12 @@
 [[package]]
+name = "aenum"
+version = "3.1.8"
+description = "Advanced Enumerations (compatible with Python's stdlib Enum), NamedTuples, and NamedConstants"
+category = "main"
+optional = false
+python-versions = "*"
+
+[[package]]
 name = "antlr4-python3-runtime"
 version = "4.9.3"
 description = "ANTLR 4.9.3 runtime for Python 3.7"
@@ -1523,18 +1531,24 @@ docs = ["sphinx", "jaraco.packaging (>=8.2)", "rst.linker (>=1.9)"]
 testing = ["pytest (>=6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytest-cov", "pytest-enabler (>=1.0.1)", "jaraco.itertools", "func-timeout", "pytest-black (>=0.3.7)", "pytest-mypy"]
 
 [extras]
-all = ["sympy", "antlr4-python3-runtime", "mtable", "html5lib", "timg"]
+all = ["sympy", "antlr4-python3-runtime", "mtable", "html5lib", "timg", "CairoSVG"]
 html-mtable = ["mtable", "html5lib"]
 images-img2unicode = ["img2unicode"]
 images-timg = ["timg"]
 latex-sympy = ["sympy", "antlr4-python3-runtime"]
+svg-cairosvg = ["CairoSVG"]
 
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8 <4"
-content-hash = "76b9d28f0cc89621e2a2604b0a0f561eb102442259531bddb06d1ac117351ecc"
+content-hash = "adeb23e043cd6706fb6ca8ade8b1e2e327e8d66288bf2ce7d42f60d07ad0754b"
 
 [metadata.files]
+aenum = [
+    {file = "aenum-3.1.8-py2-none-any.whl", hash = "sha256:07ea89f43d78b3d5997b32b8d5b0ec3e5be17b3e05b7bac0154b8c484a4aeff5"},
+    {file = "aenum-3.1.8-py3-none-any.whl", hash = "sha256:859fe994719e6b5e39f15f73acd84e08b4e57dc642373b177a5fa6646798706a"},
+    {file = "aenum-3.1.8.tar.gz", hash = "sha256:8dbe15f446eb8264b788dfeca163fb0a043d408d212152397dc11377b851e4ae"},
+]
 antlr4-python3-runtime = [
     {file = "antlr4-python3-runtime-4.9.3.tar.gz", hash = "sha256:f224469b4168294902bb1efa80a8bf7855f24c99aef99cbefc1bcd3cce77881b"},
 ]

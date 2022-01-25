@@ -21,11 +21,11 @@ log = logging.getLogger(__name__)
 class TerminalGraphicsRenderer:
     """Defines a terminal graphics display manager."""
 
-    def __init__(self, graphic_class: "Optional[Type[TerminalGraphic]]"):
+    def __init__(self, graphic_class: "Optional[Type[TerminalGraphic]]" = None):
         """Creates a terinal graphics display manager."""
         self.graphics: "MutableMapping[int, TerminalGraphic]" = {}
         self.graphic_class = graphic_class
-        self.next_id = 0
+        self.next_id = 1
         self.hide_all = False
 
     def before_render(self, app: "Application[Any]") -> "None":
@@ -122,7 +122,12 @@ class TerminalGraphic(metaclass=ABCMeta):
             output.show_cursor()
         output.flush()
 
-    def draw_inline(self) -> "str":
+    @abstractmethod
+    def draw(self) -> "str":
+        """Returns a command to draw the terminal graphic."""
+        ...
+
+    def _draw_inline(self) -> "str":
         """Returns a command to draw the current graphic inline.
 
         Used when dumping notebooks to the terminal.
@@ -137,15 +142,14 @@ class TerminalGraphic(metaclass=ABCMeta):
         # Move back to start of image position
         cmd += f"\x1b[{self.height-1}A\x1b[{self.width-1}D"
         # Place image
-        cmd += self.draw()
+        cmd += self.draw_inline()
         # Restore cursor
         cmd += "\x1b[u"
         return cmd
 
-    @abstractmethod
-    def draw(self) -> "str":
-        """Returns a command to draw the terminal graphic."""
-        ...
+    def draw_inline(self) -> "str":
+        """Draw an inline version of the graphic."""
+        return self.draw()
 
     def _hide(self, app: "Application") -> "None":
         """Hides the terminal graphic."""

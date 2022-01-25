@@ -1,6 +1,5 @@
 """Concerns dumping output."""
 
-import asyncio
 import io
 import logging
 import os
@@ -21,6 +20,7 @@ from euporie.notebook import DumpKernelNotebook, DumpNotebook
 if TYPE_CHECKING:
     from typing import Any, Optional, TextIO, Type
 
+    from prompt_toolkit.application.application import Application
     from prompt_toolkit.data_structures import Point
     from prompt_toolkit.layout.containers import AnyContainer
     from prompt_toolkit.output import Output
@@ -33,17 +33,16 @@ log = logging.getLogger(__name__)
 class DumpApp(EuporieApp):
     """An application which dumps the layout to the output then exits."""
 
+    notebook_class: "Type[Notebook]" = (
+        DumpKernelNotebook if config.run else DumpNotebook
+    )
+
     def __init__(self, **kwargs: "Any") -> "None":
         """Create an app for dumping a prompt-toolkit layout."""
-        self.notebook_class: "Type[Notebook]" = (
-            DumpKernelNotebook if config.run else DumpNotebook
-        )
-        super().__init__(
-            full_screen=False,
-            **kwargs,
-        )
-        self.pre_run_callables.append(self.post_dump)
-        self.rendered = False
+        # Initalise the application
+        super().__init__(full_screen=False, **kwargs)
+        # We want the app to close when rendering is complete
+        self.after_render += self.pre_exit
 
     def load_container(self) -> "AnyContainer":
         """Returns a container with all opened tabs."""
@@ -115,40 +114,24 @@ class DumpApp(EuporieApp):
         )
         # Use the width and height of stderr (this gives us the terminal size even if
         # output is being piped to a non-tty)
-        # output.get_size = create_output(stdout=sys.stderr).get_size
         setattr(output, "get_size", create_output(stdout=sys.stderr).get_size)
         return output
 
     def _redraw(self, render_as_done: "bool" = False) -> "None":
         """Ensure the output is drawn once, and the cursor is left after the output."""
-        if not self.rendered:
+        if self.render_counter < 1:
             super()._redraw(render_as_done=True)
-            self.rendered = True
 
-    def post_dump(self) -> "None":
-        """Close all files and exit the app."""
-        log.debug("Gathering background tasks")
-        asyncio.gather(*self.background_tasks)
-
-        # Close all the files
-        for tab in self.tabs:
-            self.close_tab(tab)
-
-        if self.loop is not None:
-            self.loop.call_soon(self.pre_exit)
-
-    def pre_exit(self) -> "None":
+    def pre_exit(self, app: "Application") -> "None":
         """Close the app after dumping, optionally piping output to a pager."""
+        self.exit()
         # Display pager if needed
         if config.page:
             from pydoc import pager
 
-            log.debug(self.output_file.fileno())
             self.output_file.seek(0)
             data = self.output_file.read()
             pager(data)
-
-        self.exit()
 
 
 def _patched_output_screen_diff(

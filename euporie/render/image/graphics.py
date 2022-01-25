@@ -57,7 +57,7 @@ class TerminalGraphicsImageRenderer(ImageRenderer):
             if config.dump:
                 self.graphic.set_size(width=self.width, height=self.height)
                 output += "\001"
-                output += self.graphic.draw_inline()
+                output += self.graphic._draw_inline()
                 output += "\002"
         else:
             image_lines = self.ansi_renderer.render(
