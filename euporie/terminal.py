@@ -4,12 +4,13 @@ from __future__ import annotations
 
 import array
 import logging
+import os
 import re
 import sys
 from functools import lru_cache
 from typing import IO, Callable, Optional, cast
 
-from prompt_toolkit.output import Output
+from prompt_toolkit.output import ColorDepth, Output
 
 __all__ = ["QueryCodes", "QueryResponsePatterns", "TerminalInfo", "query_terminal"]
 
@@ -284,6 +285,7 @@ class TerminalInfo:
         return False
 
     @property  # type: ignore
+    @lru_cache
     def cursor_position(self) -> "tuple[int, int]":
         """Determine if the terminal supports the kitty graphics protocal."""
         row = col = 0
@@ -296,3 +298,18 @@ class TerminalInfo:
                         row = int(pos.get("row", 0))
                         col = int(pos.get("col", 0))
         return (row, col)
+
+    @property  # type: ignore
+    @lru_cache
+    def color_depth(self) -> "ColorDepth":
+        """Return the suspected color depth of the terminal."""
+        # TODO - detect 24bit color support
+        # "\x1b[48:2:1:2:3m\eP$qm\x1b\\"
+        colorterm = os.environ.get("COLORTERM", "")
+        if "truecolor" in colorterm or "24bit" in colorterm:
+            return ColorDepth.DEPTH_24_BIT
+
+        if "256" in os.environ.get("TERM", ""):
+            return ColorDepth.DEPTH_8_BIT
+
+        return ColorDepth.DEPTH_24_BIT

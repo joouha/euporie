@@ -12,7 +12,6 @@ from prompt_toolkit.enums import EditingMode
 from prompt_toolkit.filters import Condition, Filter
 from prompt_toolkit.layout import Layout
 from prompt_toolkit.layout.containers import Window
-from prompt_toolkit.output import ColorDepth
 from prompt_toolkit.output.defaults import create_output
 from prompt_toolkit.styles import (
     BaseStyle,
@@ -112,8 +111,8 @@ class EuporieApp(Application):
             layout=self.layout,
             output=self.output,
             key_bindings=self.key_bindings,
-            color_depth=ColorDepth.DEPTH_24_BIT,
             min_redraw_interval=0.1,
+            color_depth=self.term_info.color_depth,
             **kwargs,
         )
         self.pre_run_callables = pre_run
