@@ -4,6 +4,7 @@ Changlog
 Upcoming
 --------
 
+- Add shortcut key to toggle line commenting
 - Improved terminal feature detection
 - Add ability to render LaTeX using ``sympy``
 - Add new terminal graphics system, which makes displaying using sixels / kitty graphics more reliable

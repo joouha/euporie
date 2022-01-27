@@ -98,6 +98,7 @@ def micro_bindings() -> "KeyBindingsBase":
             "run-macro": "c-j",
             "accept-suggestion": ["right", "c-f"],
             "fill-sugestion": ("escape", "f"),
+            "toggle-comment": "c-_",
         }
     )
 
