@@ -6,8 +6,8 @@ from typing import TYPE_CHECKING, cast
 from prompt_toolkit.application import get_app
 from prompt_toolkit.filters import to_filter
 from prompt_toolkit.key_binding.key_bindings import Binding, _parse_key
-from prompt_toolkit.keys import Keys
 
+from euporie.keys import Keys
 from euporie.menu.item import MenuItem
 
 if TYPE_CHECKING:

@@ -27,7 +27,7 @@ async def edit_in_external_editor() -> "None":
 
 
 @add(
-    keys=["c-e", ("escape", "[", "1", "3", ";", "5", "u"), "c-f20"],
+    keys=["c-enter", "c-e"],
     filter=cell_has_focus,
     group="Cell",
 )
@@ -39,7 +39,7 @@ def run_cell() -> None:
 
 
 @add(
-    keys=["c-r", ("escape", "[", "1", "3", ";", "2", "u"), "f21"],
+    keys=["s-enter", "c-r"],
     filter=cell_has_focus,
     group="Cell",
 )

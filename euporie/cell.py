@@ -698,10 +698,11 @@ class ClickArea:
             if mouse_event.event_type == MouseEventType.MOUSE_UP:
                 get_app().layout.focus(self.target)
 
-        return [
-            (style, text, handler)
-            for style, text, *_ in to_formatted_text(self.text, self.style())
-        ]
+        ft = to_formatted_text(
+            self.text,
+            self.style() if callable(self.style) else self.style,
+        )
+        return [(style, text, handler) for style, text, *_ in ft]
 
     def __pt_container__(self) -> "Container":
         """Return the `ClickArea`'s window with a blank `FormattedTextControl`."""
