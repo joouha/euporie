@@ -28,6 +28,7 @@ class svg_librsvg(PythonRenderMixin, SVGRenderer):
     """Renders SVGs using `cairosvg`."""
 
     modules = ["cairosvg"]
+    priority = 0
 
     def __init__(self, *args: "Any", **kwargs: "Any") -> "None":
         """Creates a new svg renderer using cairosvg."""
@@ -64,7 +65,8 @@ class svg_librsvg(PythonRenderMixin, SVGRenderer):
 class svg_imagemagik(SubprocessRenderMixin, SVGRenderer):
     """Renders SVGs using `imagemagik`."""
 
-    cmd = "convert"
+    cmd = "magick"
+    priority = 1
 
     def __init__(self, *args: "Any", **kwargs: "Any") -> "None":
         """Creates a new svg renderer using imagemagick."""
