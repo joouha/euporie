@@ -683,6 +683,7 @@ class ClickArea:
         """
         self.text = text
         self.target = target
+        self.style = style
         self.window = Window(
             FormattedTextControl(
                 self._get_text_fragments,
@@ -690,7 +691,6 @@ class ClickArea:
             ),
             dont_extend_width=False,
             dont_extend_height=False,
-            style=style,
         )
 
     def _get_text_fragments(self) -> "StyleAndTextTuples":
@@ -699,7 +699,8 @@ class ClickArea:
                 get_app().layout.focus(self.target)
 
         return [
-            (style, text, handler) for style, text, *_ in to_formatted_text(self.text)
+            (style, text, handler)
+            for style, text, *_ in to_formatted_text(self.text, self.style())
         ]
 
     def __pt_container__(self) -> "Container":
