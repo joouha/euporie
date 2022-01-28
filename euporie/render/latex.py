@@ -20,10 +20,34 @@ class LatexRenderer(DataRenderer):
     """Collection of renderers for LaTeX."""
 
 
+class latex_flatlatex_py(PythonRenderMixin, LatexRenderer):
+    """Renders LaTeX using :py:mod:`flatlatex`."""
+
+    modules = ["flatlatex"]
+
+    def __init__(self, *args: "Any", **kwargs: "Any") -> "None":
+        """Initiates the renderer."""
+        import flatlatex  # type: ignore
+
+        super().__init__(*args, **kwargs)
+        self.convertor = flatlatex.converter()
+
+    def process(self, data: "str") -> "Union[bytes, str]":
+        """Converts LaTeX code to a unicode string.
+
+        Args:
+            data: An LaTeX string.
+
+        Returns:
+            An ANSI string representing the rendered input.
+
+        """
+        return self.convertor.convert(data.strip("$"))
+
+
 class latex_sympy_py(PythonRenderMixin, LatexRenderer):
     """Renders LaTeX using :py:mod:`sympy`."""
 
-    priority = 0
     modules = ["sympy", "antlr4"]
 
     def process(self, data: "str") -> "Union[bytes, str]":
@@ -50,18 +74,17 @@ class latex_sympy_py(PythonRenderMixin, LatexRenderer):
         return pretty(parsed)
 
 
-class latex_flatlatex_py(PythonRenderMixin, LatexRenderer):
-    """Renders LaTeX using :py:mod:`flatlatex`."""
+class latex_pylatexenc_py(PythonRenderMixin, LatexRenderer):
+    """Renders LaTeX using :py:mod:`pylatexenc`."""
 
-    priority = 1
-    modules = ["flatlatex"]
+    modules = ["pylatexenc"]
 
     def __init__(self, *args: "Any", **kwargs: "Any") -> "None":
         """Initiates the renderer."""
-        import flatlatex  # type: ignore
+        from pylatexenc.latex2text import LatexNodes2Text  # type: ignore
 
         super().__init__(*args, **kwargs)
-        self.convertor = flatlatex.converter()
+        self.convertor = LatexNodes2Text()
 
     def process(self, data: "str") -> "Union[bytes, str]":
         """Converts LaTeX code to a unicode string.
@@ -73,4 +96,4 @@ class latex_flatlatex_py(PythonRenderMixin, LatexRenderer):
             An ANSI string representing the rendered input.
 
         """
-        return self.convertor.convert(data.strip("$"))
+        return self.convertor.latex_to_text(data.strip("$"))
