@@ -425,42 +425,57 @@ def newline(event: "KeyPressEvent") -> "None":
     # if post.lstrip()[0:1] in (")", "]", "}"):
 
 
-def dent_buffer(event: "KeyPressEvent", un: "bool" = False) -> "None":
+def dent_buffer(event: "KeyPressEvent", indenting: "bool" = True) -> "None":
     """Indent or unindent the current or selected lines in a buffer."""
     buffer = get_app().current_buffer
+    document = buffer.document
     selection_state = buffer.selection_state
     cursor_position = buffer.cursor_position
     lines = buffer.document.lines
 
-    # Apply indentation to the selected range
-    from_, to = map(
-        lambda x: buffer.document.translate_index_to_position(x)[0],
-        buffer.document.selection_range(),
+    # Apply indentation end the selected range
+    start, end = map(
+        lambda x: document.translate_index_to_position(x)[0],
+        document.selection_range(),
     )
-    dent = unindent if un else indent
-    dent(buffer, from_, to + 1, count=event.arg)
+    dent_func = indent if indenting else unindent
+    dent_func(buffer, start, end + 1)
 
-    # If there is a selection, indent it and adjust the selection range
+    # If there is a selection, adjust the selection range
     if selection_state:
-        change = config.tab_size * (un * -2 + 1)
-        # Count how many lines will be affected
-        line_count = 0
-        for i in range(from_, to + 1):
-            if not un or lines[i][:1] == " ":
-                line_count += 1
-        backwards = cursor_position < selection_state.original_cursor_position
-        if un and not line_count:
-            buffer.cursor_position = cursor_position
-        else:
-            buffer.cursor_position = max(
-                0, cursor_position + change * (1 if backwards else line_count)
+        # Calculate the direction of the change
+        sign = indenting * 2 - 1
+        # Determine which lines were affected
+        lines_affected = {
+            i: indenting or lines[i][:1] == " " for i in range(start, end + 1)
+        }
+        total_lines_affected = sum(lines_affected.values())
+        # If the cursor was in the first line, it will only move by the change of that line
+        # otherwise it will move by the total change of all lines
+        cursor_in_first_line = document.cursor_position_row == start
+        diffs = (
+            config.tab_size * total_lines_affected,
+            config.tab_size * lines_affected[start],
+        )
+        # Do not move the cursor or the start of the selection back onto a previous line
+        buffer.cursor_position = (
+            cursor_position
+            + max(
+                diffs[cursor_in_first_line],
+                document.get_start_of_line_position(),
             )
-            selection_state.original_cursor_position = max(
-                0,
-                selection_state.original_cursor_position
-                + change * (line_count if backwards else 1),
+            * sign
+        )
+        og_cursor_col = document.translate_index_to_position(
+            selection_state.original_cursor_position
+        )[1]
+        selection_state.original_cursor_position += (
+            max(
+                diffs[not cursor_in_first_line],
+                -og_cursor_col,
             )
-
+            * sign
+        )
     # Maintain the selection state before indentation
     buffer.selection_state = selection_state
 
@@ -478,7 +493,7 @@ def indent_lines(event: "KeyPressEvent") -> "None":
 @add(filter=buffer_has_focus & (cursor_in_leading_ws | has_selection))
 def unindent_lines(event: "KeyPressEvent") -> "None":
     """Unindent the current or selected lines."""
-    dent_buffer(event, un=True)
+    dent_buffer(event, indenting=False)
 
 
 @add(filter=buffer_has_focus)
