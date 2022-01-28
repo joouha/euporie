@@ -342,6 +342,9 @@ class EuporieApp(Application):
 
         # Actually use default colors if in default mode
         # This is needed for transparent terminals and the like
+        # We retain the detected colours as we still need them
+        series["fg"][-1] = series["fg"][0]
+        series["bg"][-1] = series["bg"][0]
         if config.color_scheme == "default":
             series["fg"][0] = "default"
             series["bg"][0] = "default"
@@ -392,7 +395,7 @@ class EuporieApp(Application):
             "cell.border": f"fg:{series['bg'][5]}",
             "cell.border.selected": "fg:#00afff",
             "cell.border.edit": "fg:#00ff00",
-            "cell.border.hidden": f"fg:{series['bg'][1]} hidden",
+            "cell.border.hidden": f"fg:{series['bg'][-1]} hidden",
             "cell.input": "fg:default bg:default",
             "cell.output": "fg:default bg:default",
             "cell.input.prompt": "fg:blue",
