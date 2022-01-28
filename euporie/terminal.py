@@ -115,8 +115,11 @@ class TerminalQuery:
         """
         log.debug("Got terminal response for '%s'", self.__class__.__name__)
         self.waiting = False
-        self._value = self.verify(event.data)
-        self.event.fire()
+        new_value = self.verify(event.data)
+        # Only fire the event if the value has changed
+        if self._value != new_value:
+            self._value = new_value
+            self.event.fire()
         return NotImplemented
 
     def send(self) -> "None":
