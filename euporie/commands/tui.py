@@ -50,7 +50,7 @@ def quit() -> "None":
 
 
 @add(
-    keys="c-pageup",
+    keys="c-pagedown",
     filter=tab_has_focus,
     group="App",
 )
@@ -60,7 +60,7 @@ def next_tab() -> "None":
 
 
 @add(
-    keys="c-pagedown",
+    keys="c-pageup",
     filter=tab_has_focus,
     group="App",
 )
