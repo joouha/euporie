@@ -64,12 +64,12 @@ class img_ansi_timg(Base64Mixin, SubprocessRenderMixin, AnsiImageRenderer):
         self.args = [
             f"-g{self.width}x{self.width}",
             "--compress",
-            "-b",
-            self.bg_color,
             "-pq",
             "--threads=-1",
             "-",
         ]
+        if self.bg_color:
+            self.args += ["-b", self.bg_color]
 
 
 class img_ansi_chafa(Base64Mixin, SubprocessRenderMixin, AnsiImageRenderer):
@@ -82,11 +82,8 @@ class img_ansi_chafa(Base64Mixin, SubprocessRenderMixin, AnsiImageRenderer):
         super().load(data)
         self.args = [
             "--format=symbols",
-            # f"--size={self.width}x{self.height}",
             f"--size={self.width}x{self.height}",
             "--stretch",
-            "--bg",
-            self.bg_color,
             "-",
         ]
 
@@ -151,8 +148,9 @@ class img_ansi_timg_py(Base64Mixin, PythonRenderMixin, AnsiImageRenderer):
         if self.image.mode in ("RGBA", "LA") or (
             self.image.mode == "P" and "transparency" in self.image.info
         ):
+            bg_color = self.bg_color or self.app.term_info.background_color.value
             alpha = self.image.convert("RGBA").getchannel("A")
-            bg = Image.new("RGBA", self.image.size, self.bg_color)
+            bg = Image.new("RGBA", self.image.size, bg_color)
             bg.paste(self.image, mask=alpha)
             self.image = bg
         self.image = self.image.convert("P", palette=Image.ADAPTIVE, colors=16).convert(
@@ -254,14 +252,18 @@ class img_ansi_placeholder(AnsiImageRenderer):
         t = len(self.msg)
         w = max(self.width, t + 4)
         h = max(3, self.height)
+        # Top border
         output = b.TOP_LEFT + (b.HORIZONTAL * (w - 2)) + b.TOP_RIGHT + "\n"
-        for _ in range((h - 3) // 2 + 1):
+        # Space above message
+        for _ in range((h - 3) // 2):
             output += b.VERTICAL + (" " * (w - 2)) + b.VERTICAL + "\n"
+        # Display the message
         output += b.VERTICAL + " "
         output += " " * ((self.width - 4 - t) // 2)
         output += self.msg
         output += " " * ((self.width - 4 - t) - (self.width - 4 - t) // 2)
         output += " " + b.VERTICAL + "\n"
+        # Space below above message
         for _ in range((h - 3) - ((h - 3) // 2)):
             output += b.VERTICAL + (" " * (w - 2)) + b.VERTICAL + "\n"
         output += b.BOTTOM_LEFT + (b.HORIZONTAL * (w - 2)) + b.BOTTOM_RIGHT

@@ -21,7 +21,10 @@ log = logging.getLogger(__name__)
 class TerminalGraphicsRenderer:
     """Defines a terminal graphics display manager."""
 
-    def __init__(self, graphic_class: "Optional[Type[TerminalGraphic]]" = None):
+    def __init__(
+        self,
+        graphic_class: "Optional[Type[TerminalGraphic]]" = None,
+    ):
         """Creates a terinal graphics display manager."""
         self.graphics: "MutableMapping[int, TerminalGraphic]" = {}
         self.graphic_class = graphic_class
@@ -46,12 +49,15 @@ class TerminalGraphicsRenderer:
                     graphic._hide(app)
 
     def add(
-        self, data: "str", visible: "FilterOrBool" = False
+        self,
+        data: "str",
+        visible: "FilterOrBool" = False,
+        bg_color: "Optional[str]" = None,
     ) -> "Optional[TerminalGraphic]":
         """Method used to register a new terminal graphic."""
         if self.graphic_class:
             data = "".join(data.split("\n"))
-            graphic = self.graphic_class(self.next_id, data, visible)
+            graphic = self.graphic_class(self.next_id, data, visible, bg_color)
             self.next_id += 1
             self.graphics[graphic.id] = graphic
             return graphic
@@ -73,12 +79,14 @@ class TerminalGraphic(metaclass=ABCMeta):
         id: "int",
         data: "str",
         visible: "FilterOrBool" = False,
+        bg_color: "Optional[str]" = None,
     ) -> "None":
         """Creates a new terminal graphic."""
         self.id = id
         self.data = data[:]
         self._visible = to_filter(visible)
         self.last_visible_value = self._visible()
+        self.bg_color = bg_color
 
         self.xpos = 0
         self.ypos = 0

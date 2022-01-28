@@ -31,7 +31,7 @@ class SixelRenderer(ImageMixin, DataRenderer):
 
 
 class sixel_img2sixel(SubprocessRenderMixin, SixelRenderer):
-    """Render images as sixel using ImageMagic."""
+    """Render images as sixel using libsixel' ``img2sixel`` command."""
 
     cmd = "img2sixel"
 
@@ -48,10 +48,11 @@ class sixel_img2sixel(SubprocessRenderMixin, SixelRenderer):
         super().load(data)
         if not hasattr(self, "px"):
             self.px = self.py = 0
+        bg_color = self.bg_color or self.app.term_info.background_color.value
         self.args = [
             f"--width={self.px}",
             f"--height={self.py}",
-            f"--bgcolor={self.bg_color}",
+            f"--bgcolor={bg_color}",
         ]
 
     def process(self, data: "Union[bytes, str]") -> "Union[bytes, str]":
@@ -72,7 +73,7 @@ class sixel_img2sixel(SubprocessRenderMixin, SixelRenderer):
 class sixel_imagemagik(SubprocessRenderMixin, SixelRenderer):
     """Render images as sixel using ImageMagic."""
 
-    cmd = "convert"
+    cmd = "magick"
 
     def load(self, data: "str") -> "None":
         """Sets the command to use for rendering.
@@ -87,12 +88,13 @@ class sixel_imagemagik(SubprocessRenderMixin, SixelRenderer):
         super().load(data)
         if not hasattr(self, "px"):
             self.px = self.py = 0
+        bg_color = self.bg_color or self.app.term_info.background_color.value
         self.args = [
             "-",
             "-geometry",
             f"{self.px}x{self.py}",
             "-background",
-            self.bg_color,
+            bg_color,
             "-flatten",
             "sixel:-",
         ]
@@ -131,8 +133,6 @@ class sixel_chafa(SubprocessRenderMixin, SixelRenderer):
         self.args = [
             "--format=sixel",
             f"--size={self.width}x{self.height}",
-            "--bg",
-            self.bg_color,
             "-",
         ]
 
@@ -177,8 +177,9 @@ class sixel_timg_py(PythonRenderMixin, SixelRenderer):
         if self.image.mode in ("RGBA", "LA") or (
             self.image.mode == "P" and "transparency" in self.image.info
         ):
+            bg_color = self.bg_color or self.app.term_info.background_color.value
             alpha = self.image.convert("RGBA").getchannel("A")
-            bg = Image.new("RGBA", self.image.size, self.bg_color)
+            bg = Image.new("RGBA", self.image.size, bg_color)
             bg.paste(self.image, mask=alpha)
             self.image = bg
         self.image = self.image.convert("P", palette=Image.ADAPTIVE, colors=16).convert(

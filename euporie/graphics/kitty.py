@@ -23,9 +23,15 @@ log = logging.getLogger(__name__)
 class KittyTerminalGraphic(TerminalGraphic):
     """Defines a kitty terminal graphic."""
 
-    def __init__(self, id: "int", data: "str", visible: "FilterOrBool") -> "None":
+    def __init__(
+        self,
+        id: "int",
+        data: "str",
+        visible: "FilterOrBool",
+        bg_color: "Optional[str]" = None,
+    ) -> "None":
         """Creates a new kitty terminal graphic."""
-        super().__init__(id, data, visible)
+        super().__init__(id, data, visible, bg_color)
         self.loaded = False
         self.kitty_image_id: "Optional[int]" = None
         self.shown = False

@@ -9,7 +9,7 @@ from euporie.graphics.base import TerminalGraphic
 from euporie.render import SixelRenderer
 
 if TYPE_CHECKING:
-    from typing import Any
+    from typing import Any, Optional
 
     from prompt_toolkit.filters import FilterOrBool
 
@@ -21,10 +21,16 @@ log = logging.getLogger(__name__)
 class SixelTerminalGraphic(TerminalGraphic):
     """A terminal graphic class which uses sixels to render images."""
 
-    def __init__(self, id: "int", data: "str", visible: "FilterOrBool") -> "None":
+    def __init__(
+        self,
+        id: "int",
+        data: "str",
+        visible: "FilterOrBool",
+        bg_color: "Optional[str]" = None,
+    ) -> "None":
         """Creates a new sixel graphic."""
-        super().__init__(id, data, visible)
-        self.renderer = SixelRenderer.select()
+        super().__init__(id, data, visible, bg_color)
+        self.renderer = SixelRenderer.select(bg_color=self.bg_color)
         self.redraw = True
         self.command = ""
         self.refresh = True

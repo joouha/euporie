@@ -82,17 +82,16 @@ class Output:
 
         control: "UIControl"
 
-        bg_color = json.get("metadata", {}).get(
-            "needs_background", get_app().term_info.background_color.value
+        bg_color = {"light": "#FFFFFF", "dark": "#000000"}.get(
+            json.get("metadata", {}).get("needs_background")
         )
-        bg_color = {"light": "#FFFFFF", "dark": "#000000"}.get(bg_color, bg_color)
-
-        # TODO - force image dimensions based on metadata
-        """"metadata": {
-        "image/jpeg": {
-        "height": 200,
-        "width": 100
-        }"""
+        # TODO - force image dimensions based on metadata, e.g.:
+        # metadata": {
+        #    "image/jpeg": {
+        #        "height": 200,
+        #        "width": 100
+        #    }
+        # }
 
         # Sort data first so there is more bling first
         for mime, datum in sorted(self.data.items(), key=_calculate_bling):
@@ -101,7 +100,7 @@ class Output:
             if mime_path.match("image/svg+xml"):
                 window = GraphicsWindow()
                 graphic = get_app().graphics_renderer.add(
-                    "", visible=~Condition(window.is_obscured)
+                    "", visible=~Condition(window.is_obscured), bg_color=bg_color
                 )
                 control = SVGControl(
                     datum,
@@ -116,7 +115,7 @@ class Output:
 
                 window = GraphicsWindow()
                 graphic = get_app().graphics_renderer.add(
-                    datum, visible=~Condition(window.is_obscured)
+                    datum, visible=~Condition(window.is_obscured), bg_color=bg_color
                 )
                 control = ImageControl(
                     datum,

@@ -66,7 +66,6 @@ class svg_imagemagik(SubprocessRenderMixin, SVGRenderer):
     """Renders SVGs using `imagemagik`."""
 
     cmd = "magick"
-    priority = 1
 
     def __init__(self, *args: "Any", **kwargs: "Any") -> "None":
         """Creates a new svg renderer using imagemagick."""
@@ -82,6 +81,8 @@ class svg_imagemagik(SubprocessRenderMixin, SVGRenderer):
         """Sets the command to use for rendering."""
         super().load(data)
         self.args = [
+            "-background",
+            self.bg_color or self.app.term_info.background_color.value,
             "-",
             "PNG:-",
         ]

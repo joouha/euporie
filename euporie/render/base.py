@@ -45,7 +45,7 @@ class DataRenderer(metaclass=DataRendererMeta):
         self.width: "int" = width or 1
         self.height: "int" = height or 1
         self.graphic = graphic
-        self.bg_color: "str" = bg_color or "#FFFFFF"
+        self.bg_color = bg_color
 
     def load(self, data: "Any") -> "None":
         """Function which performs setup tasks for the renderer.
