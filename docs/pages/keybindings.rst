@@ -2,7 +2,7 @@
 Key Bindings
 ############
 
-
+TBC
 
 *************
 Running Cells
@@ -94,7 +94,7 @@ You can define the key-binding in your :file:`$HOME/`.config/alacritty/alacritty
 Konsole
 =======
 
-In the menu, navigate to `Settings` > `Edit Current Profile`, then select `Keyboard` > `Edit`.
+In the menu, navigate to :menuselection:`Settings --> Edit Current Profile`, then select :menuselection:`Keyboard --> Edit`.
 
 Change the existing entry for `Return+Shift` to `Return+Shift+Ctrl` (or whatever you prefer), then add the following entries:
 

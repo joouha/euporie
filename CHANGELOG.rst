@@ -1,12 +1,14 @@
-Changlog
-========
+#########
+Changelog
+#########
 
+********
 Upcoming
---------
+********
 
-- Add shortcut key to toggle line commenting
+- Add shortcut key (:kbd:`c-/`) to toggle line commenting
 - Improved terminal feature detection
-- Add ability to render LaTeX using ``sympy``
+- Add ability to render LaTeX using :py:mod:`sympy`
 - Add new terminal graphics system, which makes displaying using sixels / kitty graphics more reliable
 - Add support for LaTex equations in markdown using flatlatex
 - Markdown tables no longer expand to the full width of the display
@@ -21,7 +23,7 @@ Upcoming
 - Read notebook language configuration form the kernel
 - Configurable colorschemes
 - Support user input with ``input()``
-- Support asynchronous cell output (à la `akernel <https://github.com/davidbrochart/akernel>`_)
+- Support asynchronous cell output (à la :py:mod:`akernel`)
 - Vastly more responsive completion & history requests
 - Major code restructure
 - Much improved scrollbar

@@ -98,7 +98,7 @@ name = "beautifulsoup4"
 version = "4.10.0"
 description = "Screen-scraping library"
 category = "main"
-optional = true
+optional = false
 python-versions = ">3.0.0"
 
 [package.dependencies]
@@ -469,6 +469,23 @@ regex = "*"
 
 [package.extras]
 test = ["pytest"]
+
+[[package]]
+name = "furo"
+version = "2022.1.2"
+description = "A clean customisable Sphinx documentation theme."
+category = "dev"
+optional = false
+python-versions = ">=3.6"
+
+[package.dependencies]
+beautifulsoup4 = "*"
+pygments = ">=2.7,<3.0"
+sphinx = ">=4.0,<5.0"
+
+[package.extras]
+test = ["pytest", "pytest-cov", "pytest-xdist"]
+doc = ["myst-parser", "sphinx-copybutton", "sphinx-design", "sphinx-inline-tabs"]
 
 [[package]]
 name = "gitdb"
@@ -1357,7 +1374,7 @@ name = "soupsieve"
 version = "2.3.1"
 description = "A modern CSS selector implementation for Beautiful Soup."
 category = "main"
-optional = true
+optional = false
 python-versions = ">=3.6"
 
 [[package]]
@@ -1740,7 +1757,7 @@ svg-cairosvg = ["CairoSVG"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8 <4"
-content-hash = "235062ae050faa0dc8b8f6b80f6ffd9dfa280ebd0dd03f8de7a1059e9c5fd378"
+content-hash = "32f74500aa5782dc72e5f9c0ed9b70769460a8a1d221edc41422823ce8fa682c"
 
 [metadata.files]
 aenum = [
@@ -1962,6 +1979,10 @@ flake8-polyfill = [
 flatlatex = [
     {file = "flatlatex-0.15-py3-none-any.whl", hash = "sha256:4cf3ed9c1b837935fd79468ddbb25ac561325467a3a9dc050805b297eb0b25c6"},
     {file = "flatlatex-0.15.tar.gz", hash = "sha256:5170e1bcd4fccb52bdbdff300b14b68730483bc46f6a2a89f7ae2bb024e4d139"},
+]
+furo = [
+    {file = "furo-2022.1.2-py3-none-any.whl", hash = "sha256:958016bfe1387c1e8ddf5b9d71696b69c4eaa5cd8afc9492abfb008aba2d300c"},
+    {file = "furo-2022.1.2.tar.gz", hash = "sha256:b217f218cbcd423ffbfe69baa79389d4ecebf2d86f0d593c44ef31da7b5aed30"},
 ]
 gitdb = [
     {file = "gitdb-4.0.9-py3-none-any.whl", hash = "sha256:8033ad4e853066ba6ca92050b9df2f89301b8fc8bf7e9324d412a63f8bf1a8fd"},

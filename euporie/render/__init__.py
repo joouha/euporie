@@ -26,7 +26,12 @@ from euporie.render.image import (
     img_ansi_timg_py,
     img_ansi_viu,
 )
-from euporie.render.latex import LatexRenderer, latex_flatlatex_py, latex_sympy_py
+from euporie.render.latex import (
+    LatexRenderer,
+    latex_flatlatex_py,
+    latex_pylatexenc_py,
+    latex_sympy_py,
+)
 from euporie.render.markdown import MarkdownRenderer, markdown_rich
 from euporie.render.mixin import (
     Base64Mixin,
@@ -60,6 +65,7 @@ __all__ = [
     "LatexRenderer",
     "latex_sympy_py",
     "latex_flatlatex_py",
+    "latex_pylatexenc_py",
     "DataRendererMixin",
     "Base64Mixin",
     "Base64Mixin",

@@ -80,11 +80,6 @@ class BooleanOptionalAction(argparse.Action):
 
 
 CONFIG_PARAMS: "dict[str, dict]" = {
-    "version": {
-        "flags_": ["--verion", "-V"],
-        "action": "version",
-        "version": f"%(prog)s {__version__}",
-    },
     "log_file": {
         "flags_": ["--log-file"],
         "nargs": "?",
@@ -96,9 +91,8 @@ CONFIG_PARAMS: "dict[str, dict]" = {
             "default": "",
         },
         "description_": """
-            When set to a file path, the log output will be written to the
-            given path. If no value is given (or the default "-" is passed) output
-            will be printed to standard output.
+            When set to a file path, the log output will be written to the given path.
+            If no value is given output will be sent to the standard output.
         """,
     },
     "debug": {
@@ -154,7 +148,7 @@ CONFIG_PARAMS: "dict[str, dict]" = {
             "default": False,
         },
         "description_": """
-            Whether to pipe output to the system pager when using `--dump`.
+            Whether to pipe output to the system pager when using ``--dump``.
         """,
     },
     "run": {
@@ -308,7 +302,7 @@ CONFIG_PARAMS: "dict[str, dict]" = {
         "flags_": ["--background-character", "--bg-char"],
         "type": str,
         "help": "Character for background pattern",
-        # "choices": "·⬤╳╱╲░▒▓▞╬",
+        # "choices": ,
         "schema_": {
             "type": "string",
             "maxLength": 1,
@@ -316,6 +310,8 @@ CONFIG_PARAMS: "dict[str, dict]" = {
         },
         "description_": """
             The character to use when drawing the background pattern.
+
+            Reccomended characters include: "·", "⬤", "╳", "╱", "╲", "░", "▒", "▓", "▞", "╬"
         """,
     },
     "background_color": {
@@ -369,7 +365,7 @@ CONFIG_PARAMS: "dict[str, dict]" = {
             "default": "default",
         },
         "description_": """
-            The name of the pygments style for syntax highlighting.
+            The name of the pygments style to use for syntax highlighting.
         """,
     },
     "files": {
@@ -388,6 +384,20 @@ CONFIG_PARAMS: "dict[str, dict]" = {
             },
         },
         "description_": """
+            A list of file paths to open when euporie is launched.
+        """,
+    },
+    "version": {
+        "flags_": ["--verion", "-V"],
+        "action": "version",
+        "version": f"%(prog)s {__version__}",
+        "help": "Show the version number and exit",
+        "description_": """
+            If set, euporie will print the current version number of the application and exit.
+            All other configuration options will be ignored.
+
+            .. note::
+               This cannot be set in the configuration file or via an environment variable
         """,
     },
 }

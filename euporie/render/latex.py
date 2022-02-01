@@ -11,7 +11,12 @@ from euporie.render.mixin import PythonRenderMixin
 if TYPE_CHECKING:
     from typing import Any, Union
 
-__all__ = ["LatexRenderer", "latex_sympy_py", "latex_flatlatex_py"]
+__all__ = [
+    "LatexRenderer",
+    "latex_sympy_py",
+    "latex_flatlatex_py",
+    "latex_pylatexenc_py",
+]
 
 log = logging.getLogger(__name__)
 
