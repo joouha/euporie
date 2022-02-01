@@ -26,12 +26,6 @@ Welcome to euporie's documentation!
 
    reference/euporie
 
-.. autosummary::
-   :toctree: reference
-   :recursive:
-
-   euporie
-
 ******************
 Indices and tables
 ******************
