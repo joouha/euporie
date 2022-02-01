@@ -63,10 +63,10 @@ Euporie requires Python 3.8 or later. It works on Linux, Windows and MacOS
     :alt: Latest Version
 
 .. |RTD| image:: https://readthedocs.org/projects/euporie/badge/
-    :target: https://euporie.readthedocs.io/en/master/
+    :target: https://euporie.readthedocs.io/en/latest/
 
 .. |License| image:: https://img.shields.io/github/license/joouha/euporie.svg
-    :target: https://github.com/joouha/euporie/blob/master/LICENSE
+    :target: https://github.com/joouha/euporie/blob/main/LICENSE
 
 .. |Stars| image:: https://img.shields.io/github/stars/joouha/euporie
     :target: https://github.com/joouha/euporie/stargazers
