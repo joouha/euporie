@@ -12,7 +12,7 @@ for name, param in CONFIG_PARAMS.items():
     s += "\n\n"
     if "flags_" in param and param.get("flags_", [""])[0].startswith("-"):
         s += ":flags: "
-        s += " or ".join([f":option:`{x}`" for x in param.get("flags_")])
+        s += " or ".join([f":option:`{x}`" for x in param["flags_"]])
         s += "\n"
     if name not in {"version"}:
         s += f":environment variable: :envvar:`EUPORIE_{name.upper()}`\n"
@@ -23,7 +23,7 @@ for name, param in CONFIG_PARAMS.items():
     if "choices" in param:
         s += f":options: [``{'``, ``'.join([x.__repr__() for x in param['choices']])}``]\n"
     s += f":description: {param.get('help')}\n"
-    s += indent(dedent(param.get("description_")), "   ")
+    s += indent(dedent(param["description_"]), "   ")
     s += "\n"
 
 

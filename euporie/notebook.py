@@ -29,6 +29,7 @@ from euporie.completion import KernelCompleter
 from euporie.config import config
 from euporie.containers import PrintingContainer
 from euporie.kernel import NotebookKernel
+from euporie.key_binding.bindings.commands import load_command_bindings
 from euporie.scroll import ScrollBar, ScrollingContainer
 from euporie.suggest import KernelAutoSuggest
 from euporie.tab import Tab
@@ -353,7 +354,7 @@ class TuiNotebook(KernelNotebook):
                 ),
                 Window(ScrollBar(self.page), width=1, style="class:scrollbar"),
             ],
-            # key_bindings=self.load_key_bindings(),
+            key_bindings=load_command_bindings("notebook"),
         )
 
     def add_cell_above(self) -> "None":

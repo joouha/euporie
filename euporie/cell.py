@@ -32,6 +32,7 @@ from pygments.lexers import get_lexer_by_name  # type: ignore
 
 from euporie.box import RoundBorder as Border
 from euporie.config import config
+from euporie.key_binding.bindings.commands import load_command_bindings
 from euporie.output import Output
 from euporie.suggest import AppendLineAutoSuggestion, ConditionalAutoSuggestAsync
 
@@ -291,6 +292,7 @@ class Cell:
         self.container = FloatContainer(
             content=HSplit(
                 [top_border, input_row, middle_line, output_row, bottom_border],
+                key_bindings=load_command_bindings("cell"),
             ),
             floats=[
                 Float(

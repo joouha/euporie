@@ -14,6 +14,7 @@ if TYPE_CHECKING:
 @add(
     # keys=["right", "c-f"],
     filter=has_suggestion,
+    group="suggestion",
 )
 def accept_suggestion(event: "KeyPressEvent") -> "None":
     """Accept suggestion."""
@@ -26,6 +27,7 @@ def accept_suggestion(event: "KeyPressEvent") -> "None":
 @add(
     # keys=("escape", "f"),
     filter=has_suggestion,
+    group="suggestion",
 )
 def fill_sugestion(event: "KeyPressEvent") -> "None":
     """Fill partial suggestion."""

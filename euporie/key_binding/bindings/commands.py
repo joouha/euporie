@@ -7,13 +7,17 @@ from prompt_toolkit.key_binding import KeyBindings
 from euporie.commands import commands
 
 if TYPE_CHECKING:
+    from typing import Optional
+
     from prompt_toolkit.key_binding import KeyBindingsBase
 
 
-def command_default_bindings() -> "KeyBindingsBase":
-    """Load the default bindings assigned to each command."""
+def load_command_bindings(*groups: "Optional[str]") -> "KeyBindingsBase":
+    """Loads key-bindings for command belonging to a list of groups."""
     kb = KeyBindings()
+    if groups is None:
+        groups = []
     for cmd in commands.values():
-        kb._bindings += cmd.key_bindings
-
+        if not groups or cmd.group in groups:
+            kb._bindings += cmd.key_bindings
     return kb

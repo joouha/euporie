@@ -13,7 +13,7 @@ log = logging.getLogger(__name__)
 
 @add(
     keys="c-n",
-    group="File",
+    group="app",
 )
 def new_notebook() -> "None":
     """Create a new file."""
@@ -22,7 +22,7 @@ def new_notebook() -> "None":
 
 @add(
     keys="c-o",
-    group="File",
+    group="app",
 )
 def open_file() -> "None":
     """Open a file."""
@@ -32,7 +32,7 @@ def open_file() -> "None":
 @add(
     keys="c-w",
     filter=tab_has_focus,
-    group="File",
+    group="app",
 )
 def close_file() -> None:
     """Close the current file."""
@@ -42,7 +42,7 @@ def close_file() -> None:
 @add(
     keys="c-q",
     name="quit",
-    group="File",
+    group="app",
 )
 def quit() -> "None":
     """Quit euporie."""
@@ -52,7 +52,7 @@ def quit() -> "None":
 @add(
     keys="c-pagedown",
     filter=tab_has_focus,
-    group="App",
+    group="app",
 )
 def next_tab() -> "None":
     """Switch to the next tab."""
@@ -62,7 +62,7 @@ def next_tab() -> "None":
 @add(
     keys="c-pageup",
     filter=tab_has_focus,
-    group="App",
+    group="app",
 )
 def previous_tab() -> "None":
     """Switch to the previous tab."""
@@ -71,12 +71,12 @@ def previous_tab() -> "None":
 
 @add(
     keys="tab",
-    group="App",
+    group="app",
     filter=~buffer_has_focus,
 )
 @add(
     keys="tab",
-    group="App",
+    group="app",
     filter=~buffer_has_focus,
 )
 def focus_next() -> "None":
@@ -86,7 +86,7 @@ def focus_next() -> "None":
 
 @add(
     keys="s-tab",
-    group="App",
+    group="app",
     filter=~buffer_has_focus,
 )
 def focus_previous() -> "None":
@@ -94,19 +94,19 @@ def focus_previous() -> "None":
     get_app().layout.focus_previous()
 
 
-@add(group="help")
+@add(group="app")
 def keyboard_shortcuts() -> "None":
     """Show the currently bound keyboard shortcuts."""
     get_app().help_keys()
 
 
-@add(group="help")
+@add(group="app")
 def view_logs() -> "None":
     """Open the logs in a new tab."""
     get_app().help_logs()
 
 
-@add(group="help")
+@add(group="app")
 def about() -> "None":
     """Show the about dialog."""
     get_app().help_about()

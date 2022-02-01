@@ -1,5 +1,6 @@
 """Defines common filters."""
 
+from prompt_toolkit.enums import EditingMode
 from prompt_toolkit.filters import Condition, emacs_insert_mode, vi_insert_mode
 
 from euporie.app.current import get_tui_app as get_app
@@ -70,7 +71,7 @@ def cell_is_code() -> "bool":
 @Condition
 def micro_mode() -> "bool":
     """When the micro key-bindings are active."""
-    return get_app().editing_mode == "MICRO"
+    return get_app().editing_mode == EditingMode.MICRO  # type: ignore
 
 
 @Condition

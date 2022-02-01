@@ -23,4 +23,4 @@ euporie.key\_binding.bindings.commands
    .. autosummary::
       :toctree:
 
-      command_default_bindings
+      load_command_bindings

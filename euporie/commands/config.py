@@ -20,7 +20,7 @@ log = logging.getLogger(__name__)
 @add(
     keys="l",
     filter=~buffer_has_focus,
-    group="Config",
+    group="config",
     toggled=Condition(lambda: config.line_numbers),
 )
 def show_line_numbers() -> "None":
@@ -30,7 +30,7 @@ def show_line_numbers() -> "None":
 
 @add(
     filter=~buffer_has_focus,
-    group="Config",
+    group="config",
 )
 def switch_background_pattern() -> "None":
     """Switch between different background patterns."""
@@ -39,7 +39,7 @@ def switch_background_pattern() -> "None":
 
 @add(
     filter=~buffer_has_focus,
-    group="Config",
+    group="config",
     toggled=Condition(lambda: config.show_cell_borders),
 )
 def show_cell_borders() -> "None":
@@ -50,7 +50,7 @@ def show_cell_borders() -> "None":
 @add(
     keys="w",
     filter=~buffer_has_focus,
-    group="Config",
+    group="config",
     toggled=Condition(lambda: config.expand),
 )
 def use_full_width() -> "None":
@@ -70,7 +70,7 @@ def autocomplete() -> "None":
 
 @add(
     title="Suggest lines from history",
-    group="Config",
+    group="config",
     toggled=Condition(lambda: bool(config.autosuggest)),
 )
 def autosuggest() -> "None":
@@ -80,7 +80,7 @@ def autosuggest() -> "None":
 
 @add(
     title="Run cell after external edit",
-    group="Config",
+    group="config",
     toggled=Condition(lambda: bool(config.run_after_external_edit)),
 )
 def run_after_external_edit() -> "None":
@@ -89,7 +89,7 @@ def run_after_external_edit() -> "None":
 
 
 @add(
-    group="Config",
+    group="config",
     toggled=Condition(lambda: bool(config.show_status_bar)),
 )
 def show_status_bar() -> "None":
@@ -106,6 +106,7 @@ for choice in config.choices("edit_mode"):
     add(
         name=f"set-edit-mode-{choice.lower()}",
         title=choice.title(),
+        group="config",
         description=f"Set the editing mode key-binding style to '{choice}'.",
         toggled=Condition(
             partial(lambda x: config.edit_mode == x, choice),
@@ -122,6 +123,7 @@ for choice in config.choices("color_scheme"):
     add(
         name=f"set-color-scheme-{choice.lower()}",
         title=choice.title(),
+        group="config",
         description=f"Set the color scheme to '{choice}'.",
         toggled=Condition(
             partial(lambda x: config.color_scheme == x, choice),
@@ -138,6 +140,7 @@ for choice in sorted(get_all_styles()):
     add(
         name=f"set-syntax-theme-{choice.lower()}",
         title=choice,
+        group="config",
         description=f"Set the syntax highlighting theme to '{choice}'.",
         toggled=Condition(
             partial(lambda x: config.syntax_theme == x, choice),

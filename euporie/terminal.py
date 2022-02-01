@@ -336,6 +336,7 @@ class TerminalInfo:
                 name=name,
                 title=f"Set terminal {title}",
                 description=f"Sets the terminal's {title} value.",
+                group="terminal",
                 keys=[key],
             )(query_inst._handle_response)
 

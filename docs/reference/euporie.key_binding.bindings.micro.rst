@@ -23,4 +23,4 @@ euporie.key\_binding.bindings.micro
    .. autosummary::
       :toctree:
 
-      micro_bindings
+      load_micro_bindings

@@ -17,7 +17,7 @@ log = logging.getLogger(__name__)
 @add(
     keys="e",
     filter=cell_has_focus & ~buffer_has_focus,
-    group="Cell",
+    group="cell",
 )
 async def edit_in_external_editor() -> "None":
     """Edit cell in $EDITOR."""
@@ -29,7 +29,7 @@ async def edit_in_external_editor() -> "None":
 @add(
     keys=["c-enter", "c-e"],
     filter=cell_has_focus,
-    group="Cell",
+    group="cell",
 )
 def run_cell() -> None:
     """Run or render the current cell."""
@@ -41,7 +41,7 @@ def run_cell() -> None:
 @add(
     keys=["s-enter", "c-r"],
     filter=cell_has_focus,
-    group="Cell",
+    group="cell",
 )
 def run_cell_and_select_next_cell() -> None:
     """Run or render the current cell and select the next cell."""
@@ -53,7 +53,7 @@ def run_cell_and_select_next_cell() -> None:
 @add(
     keys=("escape", "enter"),
     filter=cell_has_focus,
-    group="Cell",
+    group="cell",
 )
 def run_cell_and_insert_below() -> None:
     """Run or render the current cell and insert a new cell below."""
@@ -65,7 +65,7 @@ def run_cell_and_insert_below() -> None:
 @add(
     keys="enter",
     filter=cell_has_focus & ~buffer_has_focus,
-    group="Cell",
+    group="cell",
 )
 def enter_cell_edit_mode() -> "None":
     """Enter cell edit mode."""
@@ -77,7 +77,7 @@ def enter_cell_edit_mode() -> "None":
 @add(
     keys=["escape", ("escape", "escape")],
     filter=cell_has_focus & buffer_has_focus,
-    group="Cell",
+    group="cell",
 )
 def exit_edit_mode() -> "None":
     """Exit cell edit mode."""
@@ -89,7 +89,7 @@ def exit_edit_mode() -> "None":
 @add(
     keys="m",
     filter=cell_has_focus & ~buffer_has_focus,
-    group="Cell",
+    group="cell",
 )
 def to_markdown() -> "None":
     """Change cell type to markdown."""
@@ -101,7 +101,7 @@ def to_markdown() -> "None":
 @add(
     keys="y",
     filter=cell_has_focus & ~buffer_has_focus,
-    group="Cell",
+    group="cell",
 )
 def cell_to_code() -> "None":
     """Change cell type to code."""
@@ -113,7 +113,7 @@ def cell_to_code() -> "None":
 @add(
     keys="r",
     filter=cell_has_focus & ~buffer_has_focus,
-    group="Cell",
+    group="cell",
 )
 def cell_to_raw() -> "None":
     """Change cell type to raw."""

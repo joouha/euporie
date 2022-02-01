@@ -68,7 +68,7 @@ def if_no_repeat(event: "KeyPressEvent") -> bool:
 # Typing
 
 
-@add(filter=buffer_has_focus, save_before=if_no_repeat)
+@add(filter=buffer_has_focus, save_before=if_no_repeat, group="micro")
 def type_key(event: "KeyPressEvent") -> "None":
     """Enter a key."""
     event.current_buffer.insert_text(
@@ -76,7 +76,7 @@ def type_key(event: "KeyPressEvent") -> "None":
     )
 
 
-@add(filter=buffer_has_focus)
+@add(filter=buffer_has_focus, group="micro")
 def toggle_micro_input_mode() -> "None":
     """Toggle overwrite when using micro editing mode."""
     if micro_replace_mode():
@@ -85,19 +85,19 @@ def toggle_micro_input_mode() -> "None":
         get_app().micro_state.input_mode = InputMode.REPLACE
 
 
-@add(filter=buffer_has_focus & ~micro_recording_macro)
+@add(filter=buffer_has_focus & ~micro_recording_macro, group="micro")
 def start_macro() -> None:
     """Start recording a macro."""
     get_app().micro_state.start_macro()
 
 
-@add(filter=buffer_has_focus & micro_recording_macro)
+@add(filter=buffer_has_focus & micro_recording_macro, group="micro")
 def end_macro() -> None:
     """Stop recording a macro."""
     get_app().micro_state.end_macro()
 
 
-@add(filter=buffer_has_focus, record_in_macro=False)
+@add(filter=buffer_has_focus, record_in_macro=False, group="micro")
 def run_macro() -> None:
     """Re-execute the last keyboard macro defined."""
     # Insert the macro.
@@ -107,7 +107,7 @@ def run_macro() -> None:
         app.key_processor.feed_multiple(macro, first=True)
 
 
-add(name="backspace", filter=~has_selection, save_before=if_no_repeat)(
+add(name="backspace", filter=~has_selection, save_before=if_no_repeat, group="micro")(
     backward_delete_char
 )
 add(name="delete", filter=~has_selection)(delete_char)
@@ -115,34 +115,34 @@ add(filter=buffer_has_focus)(backward_kill_word)
 
 # Naavigation
 
-add(filter=buffer_has_focus)(backward_word)
-add(filter=buffer_has_focus)(forward_word)
-add(filter=buffer_has_focus)(beginning_of_buffer)
-add(filter=buffer_has_focus)(end_of_buffer)
+add(filter=buffer_has_focus, group="micro")(backward_word)
+add(filter=buffer_has_focus, group="micro")(forward_word)
+add(filter=buffer_has_focus, group="micro")(beginning_of_buffer)
+add(filter=buffer_has_focus, group="micro")(end_of_buffer)
 
-add(filter=buffer_has_focus)(scroll_backward)
-add(filter=buffer_has_focus)(scroll_forward)
-add(filter=buffer_has_focus)(scroll_half_page_down)
-add(filter=buffer_has_focus)(scroll_half_page_up)
-add(filter=buffer_has_focus)(scroll_one_line_down)
-add(filter=buffer_has_focus)(scroll_one_line_up)
-add(filter=buffer_has_focus)(scroll_page_down)
-add(filter=buffer_has_focus)(scroll_page_up)
+add(filter=buffer_has_focus, group="micro")(scroll_backward)
+add(filter=buffer_has_focus, group="micro")(scroll_forward)
+add(filter=buffer_has_focus, group="micro")(scroll_half_page_down)
+add(filter=buffer_has_focus, group="micro")(scroll_half_page_up)
+add(filter=buffer_has_focus, group="micro")(scroll_one_line_down)
+add(filter=buffer_has_focus, group="micro")(scroll_one_line_up)
+add(filter=buffer_has_focus, group="micro")(scroll_page_down)
+add(filter=buffer_has_focus, group="micro")(scroll_page_up)
 
 
-@add(filter=buffer_has_focus)
+@add(filter=buffer_has_focus, group="micro")
 def move_cursor_left() -> "None":
     """Move back a character, or up a line."""
     get_app().current_buffer.cursor_position -= 1
 
 
-@add(filter=buffer_has_focus)
+@add(filter=buffer_has_focus, group="micro")
 def move_cursor_right() -> "None":
     """Move forward a character, or down a line."""
     get_app().current_buffer.cursor_position += 1
 
 
-@add(filter=buffer_has_focus & ~shift_selection_mode)
+@add(filter=buffer_has_focus & ~shift_selection_mode, group="micro")
 def go_to_start_of_line() -> "None":
     """Move the cursor to the start of the line."""
     buff = get_app().current_buffer
@@ -155,6 +155,7 @@ def go_to_start_of_line() -> "None":
 @add(
     name="go-to-end-of-line",
     filter=buffer_has_focus & ~shift_selection_mode,
+    group="micro",
 )
 def go_to_end_of_line() -> "None":
     """Move the cursor to the end of the line."""
@@ -162,14 +163,14 @@ def go_to_end_of_line() -> "None":
     buff.cursor_position += buff.document.get_end_of_line_position()
 
 
-@add(filter=buffer_has_focus)
+@add(filter=buffer_has_focus, group="micro")
 def go_to_start_of_paragraph() -> "None":
     """Move the cursor to the start of the current paragraph."""
     buf = get_app().current_buffer
     buf.cursor_position += buf.document.start_of_paragraph()
 
 
-@add(filter=buffer_has_focus)
+@add(filter=buffer_has_focus, group="micro")
 def go_to_end_of_paragraph() -> "None":
     """Move the cursor to the end of the current paragraph."""
     buffer = get_app().current_buffer
@@ -179,7 +180,7 @@ def go_to_end_of_paragraph() -> "None":
 # Editing
 
 
-@add(filter=buffer_has_focus & cell_is_code)
+@add(filter=buffer_has_focus & cell_is_code, group="micro")
 def toggle_comment() -> "None":
     """Comments or uncomments the current or selected lines."""
     comment = "# "
@@ -275,12 +276,11 @@ for pair in WRAP_PAIRS:
             title="Wrap selection in {pair}",
             description=f"Wraps the current selection with: {pair}",
             filter=buffer_has_focus & has_selection,
+            group="micro",
         )(partial(wrap_selection_cmd, left, right))
 
 
-@add(
-    filter=buffer_has_focus & ~has_selection,
-)
+@add(filter=buffer_has_focus & ~has_selection, group="micro")
 def duplicate_line() -> "None":
     """Duplicate the current line."""
     buffer = get_app().current_buffer
@@ -292,9 +292,7 @@ def duplicate_line() -> "None":
     buffer.cursor_position -= eol
 
 
-@add(
-    filter=buffer_has_focus & has_selection,
-)
+@add(filter=buffer_has_focus & has_selection, group="micro")
 def duplicate_selection() -> "None":
     """Duplicate the current line."""
     buffer = get_app().current_buffer
@@ -305,10 +303,7 @@ def duplicate_selection() -> "None":
     buffer.selection_state = selection_state
 
 
-@add(
-    title="Paste",
-    filter=buffer_has_focus,
-)
+@add(title="Paste", filter=buffer_has_focus, group="micro")
 def paste_clipboard() -> "None":
     """Paste the clipboard contents, replacing any current selection."""
     app = get_app()
@@ -318,10 +313,7 @@ def paste_clipboard() -> "None":
     buff.paste_clipboard_data(app.clipboard.get_data())
 
 
-@add(
-    title="Copy",
-    filter=has_selection,
-)
+@add(title="Copy", filter=has_selection, group="micro")
 def copy_selection() -> "None":
     """Adds the current selection to the clipboard."""
     app = get_app()
@@ -332,19 +324,14 @@ def copy_selection() -> "None":
     app.clipboard.set_data(data)
 
 
-@add(
-    title="Cut",
-    filter=has_selection,
-)
+@add(title="Cut", filter=has_selection, group="micro")
 def cut_selection() -> "None":
     """Removes the current selection and adds it to the clipboard."""
     data = get_app().current_buffer.cut_selection()
     get_app().clipboard.set_data(data)
 
 
-@add(
-    filter=buffer_has_focus,
-)
+@add(filter=buffer_has_focus, group="micro")
 def cut_line() -> "None":
     """Removes the current line adds it to the clipboard."""
     app = get_app()
@@ -392,25 +379,28 @@ def move_line(n: "int") -> "None":
     buffer.selection_state = selection_state
 
 
-@add(filter=buffer_has_focus)
+@add(filter=buffer_has_focus, group="micro")
 def move_lines_up() -> "None":
     """Move the current or selected lines up by one line."""
     move_line(-1)
 
 
-@add(filter=buffer_has_focus)
+@add(filter=buffer_has_focus, group="micro")
 def move_lines_down() -> "None":
     """Move the current or selected lines down by one line."""
     move_line(1)
 
 
-"""Accept an input."""
-add(filter=insert_mode & is_returnable & ~is_multiline)(accept_line)
+add(
+    filter=insert_mode & is_returnable & ~is_multiline,
+    group="micro",
+    description="Accept an input.",
+)(accept_line)
 
 
-@add(filter=buffer_has_focus & is_multiline)
+@add(filter=buffer_has_focus & is_multiline, group="micro")
 def newline(event: "KeyPressEvent") -> "None":
-    """Insert a new line, replacing any selection and indenting if appropriate.."""
+    """Insert a new line, replacing any selection and indenting if appropriate."""
     # TODO https://git.io/J9GfI
     buffer = get_app().current_buffer
     buffer.cut_selection()
@@ -480,7 +470,7 @@ def dent_buffer(event: "KeyPressEvent", indenting: "bool" = True) -> "None":
     buffer.selection_state = selection_state
 
 
-@add(filter=(buffer_has_focus & (cursor_in_leading_ws | has_selection)))
+@add(filter=(buffer_has_focus & (cursor_in_leading_ws | has_selection)), group="micro")
 def indent_lines(event: "KeyPressEvent") -> "None":
     """Inndent the current or selected lines."""
     dent_buffer(event)
@@ -489,14 +479,15 @@ def indent_lines(event: "KeyPressEvent") -> "None":
 @add(
     name="unindent-line",
     filter=cursor_in_leading_ws & ~has_selection & ~cursor_at_start_of_line,
+    group="micro",
 )
-@add(filter=buffer_has_focus & (cursor_in_leading_ws | has_selection))
+@add(filter=buffer_has_focus & (cursor_in_leading_ws | has_selection), group="micro")
 def unindent_lines(event: "KeyPressEvent") -> "None":
     """Unindent the current or selected lines."""
     dent_buffer(event, indenting=False)
 
 
-@add(filter=buffer_has_focus)
+@add(filter=buffer_has_focus, group="micro")
 def toggle_case() -> "None":
     """Toggle the case of the current word or selection."""
     buffer = get_app().current_buffer
@@ -520,13 +511,13 @@ def toggle_case() -> "None":
         buffer.selection_state = selection_state
 
 
-@add(filter=buffer_has_focus)
+@add(filter=buffer_has_focus, group="micro")
 def undo() -> "None":
     """Undo the last edit."""
     get_app().current_buffer.undo()
 
 
-@add(filter=buffer_has_focus)
+@add(filter=buffer_has_focus, group="micro")
 def redo() -> "None":
     """Redo the last edit."""
     get_app().current_buffer.redo()
@@ -535,7 +526,7 @@ def redo() -> "None":
 # Selection
 
 
-@add(filter=~has_selection)
+@add(filter=~has_selection, group="micro")
 def start_selection(event: "KeyPressEvent") -> "None":
     """Start a new selection."""
     # Take the current cursor position as the start of this selection.
@@ -554,9 +545,7 @@ def start_selection(event: "KeyPressEvent") -> "None":
             buff.exit_selection()
 
 
-@add(
-    filter=shift_selection_mode,
-)
+@add(filter=shift_selection_mode, group="micro")
 def extend_selection(event: "KeyPressEvent") -> "None":
     """Extend the selection."""
     # Just move the cursor, like shift was not pressed
@@ -568,14 +557,14 @@ def extend_selection(event: "KeyPressEvent") -> "None":
             buff.exit_selection()
 
 
-@add(filter=has_selection)
+@add(filter=has_selection, group="micro")
 def replace_selection(event: "KeyPressEvent") -> "None":
     """Replace selection by what is typed."""
     event.current_buffer.cut_selection()
     get_by_name("self-insert").call(event)
 
 
-@add(filter=has_selection)
+@add(filter=has_selection, group="micro")
 def delete_selection() -> "None":
     """Delete the contents of the current selection."""
     get_app().current_buffer.cut_selection()
@@ -620,7 +609,7 @@ def unshift_move(event: "KeyPressEvent") -> "None":
         command.key_handler(event)
 
 
-@add(filter=shift_selection_mode)
+@add(filter=shift_selection_mode, group="micro")
 def cancel_selection(event: "KeyPressEvent") -> "None":
     """Cancel the selection."""
     event.current_buffer.exit_selection()
@@ -629,7 +618,7 @@ def cancel_selection(event: "KeyPressEvent") -> "None":
     event.key_processor.feed(key_press, first=True)
 
 
-@add(filter=buffer_has_focus)
+@add(filter=buffer_has_focus, group="micro")
 def select_all() -> "None":
     """Select all text."""
     buffer = get_app().current_buffer

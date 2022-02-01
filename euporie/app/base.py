@@ -10,6 +10,23 @@ from typing import TYPE_CHECKING, cast
 
 from prompt_toolkit.application import Application
 from prompt_toolkit.enums import EditingMode
+from prompt_toolkit.filters import buffer_has_focus
+from prompt_toolkit.key_binding.bindings.basic import load_basic_bindings
+from prompt_toolkit.key_binding.bindings.cpr import load_cpr_bindings
+from prompt_toolkit.key_binding.bindings.emacs import (
+    load_emacs_bindings,
+    load_emacs_search_bindings,
+    load_emacs_shift_selection_bindings,
+)
+from prompt_toolkit.key_binding.bindings.mouse import load_mouse_bindings
+from prompt_toolkit.key_binding.bindings.vi import (
+    load_vi_bindings,
+    load_vi_search_bindings,
+)
+from prompt_toolkit.key_binding.key_bindings import (
+    ConditionalKeyBindings,
+    merge_key_bindings,
+)
 from prompt_toolkit.layout import Layout
 from prompt_toolkit.layout.containers import Window
 from prompt_toolkit.output.defaults import create_output
@@ -30,7 +47,8 @@ from pygments.styles import get_style_by_name  # type: ignore
 
 from euporie.config import config
 from euporie.graphics import TerminalGraphicsRenderer
-from euporie.key_binding import load_key_bindings
+from euporie.key_binding.bindings.commands import load_command_bindings
+from euporie.key_binding.bindings.micro import load_micro_bindings
 from euporie.key_binding.micro_state import MicroState
 from euporie.log import setup_logs
 from euporie.notebook import Notebook
@@ -44,7 +62,6 @@ if TYPE_CHECKING:
 
     from prompt_toolkit.filters import Filter
     from prompt_toolkit.input.vt100 import Vt100Input
-    from prompt_toolkit.key_binding import KeyBindingsBase
     from prompt_toolkit.layout.containers import AnyContainer
     from prompt_toolkit.output import Output
 
@@ -81,9 +98,6 @@ class EuporieApp(Application):
         super().__init__(
             # input=self.input,
             output=self.load_output(),
-            # key_bindings=load_key_bindings(),
-            # layout=Layout(self.load_container()),
-            # color_depth=self.term_info.color_depth,
             **kwargs,
         )
         # Use a custom vt100 parser to allow querying the terminal
@@ -117,7 +131,7 @@ class EuporieApp(Application):
 
         async def continue_loading() -> "None":
             # Load key bindings
-            self.key_bindings = self.load_key_bindings()
+            self.load_key_bindings()
             # Wait for the terminal query responses
             if self.using_vt100:
                 self.term_info.send_all()
@@ -145,9 +159,44 @@ class EuporieApp(Application):
         """Allows subclasses to define additional loading steps."""
         pass
 
-    def load_key_bindings(self) -> "KeyBindingsBase":
+    def load_key_bindings(self) -> "None":
         """Loads the application's key bindings."""
-        return load_key_bindings()
+        self._default_bindings = merge_key_bindings(
+            [
+                # Make sure that the above key bindings are only active if the
+                # currently focused control is a `BufferControl`. For other controls, we
+                # don't want these key bindings to intervene. (This would break "ptterm"
+                # for instance, which handles 'Keys.Any' in the user control itself.)
+                ConditionalKeyBindings(
+                    merge_key_bindings(
+                        [
+                            # Load basic bindings.
+                            load_basic_bindings(),
+                            # Load micro bindings
+                            load_micro_bindings(),
+                            # Load emacs bindings.
+                            load_emacs_bindings(),
+                            load_emacs_search_bindings(),
+                            load_emacs_shift_selection_bindings(),
+                            # Load Vi bindings.
+                            load_vi_bindings(),
+                            load_vi_search_bindings(),
+                        ]
+                    ),
+                    buffer_has_focus,
+                ),
+                # Active, even when no buffer has been focused.
+                load_mouse_bindings(),
+                load_cpr_bindings(),
+                # Load terminal query response key bindings
+                load_command_bindings("terminal"),
+            ]
+        )
+
+        self.key_bindings = load_command_bindings(
+            "app", "config", "completion", "suggestion"
+        )
+        # dict_bindings(config.key_bindings or {})
 
     def load_graphics_system(self) -> "None":
         """Loads the graphic rendering system.
@@ -298,13 +347,12 @@ class EuporieApp(Application):
 
     def get_edit_mode(self) -> "EditingMode":
         """Returns the editing mode enum defined in the configuration."""
-        return cast(
-            EditingMode,
-            {
-                "micro": "MICRO",
-                "vi": EditingMode.VI,
-                "emacs": EditingMode.EMACS,
-            }.get(str(config.edit_mode), "micro"),
+        return {
+            "micro": EditingMode.MICRO,  # type: ignore
+            "vi": EditingMode.VI,
+            "emacs": EditingMode.EMACS,
+        }.get(
+            str(config.edit_mode), EditingMode.MICRO  # type: ignore
         )
 
     def update_style(

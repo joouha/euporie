@@ -20,21 +20,25 @@ add(
     keys="c-i",
     filter=buffer_has_focus & insert_mode & ~has_selection,
     name="next-completion",
+    group="completion",
+    description="Show the completion menu and select the next completion.",
 )(menu_complete)
 add(
     keys="s-tab",
     filter=buffer_has_focus & insert_mode & ~has_selection,
     name="previous-completion",
+    group="completion",
+    description="Show the completion menu and select the previous completion.",
 )(menu_complete_backward)
 
 
-@add(keys="escape", filter=has_completions, eager=True)
+@add(keys="escape", filter=has_completions, group="completion", eager=True)
 def cancel_completion() -> "None":
     """Cancel a completion with the escape key."""
     get_app().current_buffer.cancel_completion()
 
 
-@add(keys="enter", filter=completion_is_selected)
+@add(keys="enter", filter=completion_is_selected, group="completion")
 def accept_completion() -> "None":
     """Cancel a completion with the escape key."""
     buffer = get_app().current_buffer

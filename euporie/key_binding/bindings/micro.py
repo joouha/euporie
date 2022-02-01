@@ -2,107 +2,114 @@
 
 from typing import TYPE_CHECKING
 
+from aenum import extend_enum  # type: ignore
+from prompt_toolkit.enums import EditingMode
 from prompt_toolkit.key_binding import ConditionalKeyBindings
 
 from euporie.filters import micro_mode
 from euporie.key_binding.util import dict_bindings
 
 if TYPE_CHECKING:
+    from typing import Union
+
     from prompt_toolkit.key_binding import KeyBindingsBase
+    from prompt_toolkit.keys import Keys
 
 
-def micro_bindings() -> "KeyBindingsBase":
+extend_enum(EditingMode, "MICRO", "MICRO")
+
+
+MICRO_BINDINGS: "dict[str, Union[list[Union[tuple[Union[Keys, str], ...], Keys, str]], Union[tuple[Union[Keys, str], ...], Keys, str]]]" = {  # noqa B950
+    "type-key": "<any>",
+    "move-cursor-right": "right",
+    "move-cursor-left": "left",
+    "newline": "enter",
+    "accept-line": "enter",
+    "backspace": ["backspace", "c-h"],
+    "backward-kill-word": [("escape", "backspace"), ("escape", "c-h")],
+    "start-selection": [
+        "s-up",
+        "s-down",
+        "s-right",
+        "s-left",
+        ("escape", "s-left"),
+        ("escape", "s-right"),
+        "c-s-left",
+        "c-s-right",
+        "s-home",
+        "s-end",
+        "c-s-home",
+        "c-s-end",
+    ],
+    "extend-selection": [
+        "s-up",
+        "s-down",
+        "s-right",
+        "s-left",
+        ("escape", "s-left"),
+        ("escape", "s-right"),
+        "c-s-left",
+        "c-s-right",
+        "s-home",
+        "s-end",
+        "c-s-home",
+        "c-s-end",
+    ],
+    "cancel-selection": [
+        "up",
+        "down",
+        "right",
+        "left",
+        ("escape", "left"),
+        ("escape", "right"),
+        "c-left",
+        "c-right",
+        "home",
+        "end",
+        "c-home",
+        "c-end",
+    ],
+    "replace-selection": "<any>",
+    "delete-selection": ["delete", "backspace", "c-h"],
+    "backward-word": ["c-left", ("escape", "b")],
+    "forward-word": ["c-right", ("escape", "f")],
+    "move-lines-up": ("escape", "up"),
+    "move-lines-down": ("escape", "down"),
+    "go-to-start-of-line": ["home", ("escape", "left"), ("escape", "a")],
+    "go-to-end-of-line": ["end", ("escape", "right"), ("escape", "e")],
+    "beginning-of-buffer": ["c-up", "c-home"],
+    "end-of-buffer": ["c-down", "c-end"],
+    "go-to-start-of-paragraph": ("escape", "{"),
+    "go-to-end-of-paragraph": ("escape", "}"),
+    "indent-lines": "tab",
+    "unindent-line": "backspace",
+    "unindent-lines": "s-tab",
+    "undo": "c-z",
+    "redo": "c-y",
+    "copy-selection": "c-c",
+    "cut-selection": "c-x",
+    "cut-line": "c-k",
+    "duplicate-line": "c-d",
+    "duplicate-selection": "c-d",
+    "paste-clipboard": "c-v",
+    "select-all": "c-a",
+    "scroll-page-up": "pageup",
+    "scroll-page-down": "pagedown",
+    "delete": "delete",
+    "toggle-case": "f16",
+    "toggle-micro-input-mode": "insert",
+    "start-macro": "c-u",
+    "end-macro": "c-u",
+    "run-macro": "c-j",
+    "accept-suggestion": ["right", "c-f"],
+    "fill-sugestion": ("escape", "f"),
+    "toggle-comment": "c-_",
+}
+
+
+def load_micro_bindings() -> "KeyBindingsBase":
     """Load editor key-bindings in the style of the ``micro`` text editor."""
-    kb = dict_bindings(
-        {
-            "type-key": "<any>",
-            "move-cursor-right": "right",
-            "move-cursor-left": "left",
-            "newline": "enter",
-            "accept-line": "enter",
-            "backspace": ["backspace", "c-h"],
-            "backward-kill-word": [("escape", "backspace"), ("escape", "c-h")],
-            "start-selection": [
-                "s-up",
-                "s-down",
-                "s-right",
-                "s-left",
-                ("escape", "s-left"),
-                ("escape", "s-right"),
-                "c-s-left",
-                "c-s-right",
-                "s-home",
-                "s-end",
-                "c-s-home",
-                "c-s-end",
-            ],
-            "extend-selection": [
-                "s-up",
-                "s-down",
-                "s-right",
-                "s-left",
-                ("escape", "s-left"),
-                ("escape", "s-right"),
-                "c-s-left",
-                "c-s-right",
-                "s-home",
-                "s-end",
-                "c-s-home",
-                "c-s-end",
-            ],
-            "cancel-selection": [
-                "up",
-                "down",
-                "right",
-                "left",
-                ("escape", "left"),
-                ("escape", "right"),
-                "c-left",
-                "c-right",
-                "home",
-                "end",
-                "c-home",
-                "c-end",
-            ],
-            "replace-selection": "<any>",
-            "delete-selection": ["delete", "backspace", "c-h"],
-            "backward-word": ["c-left", ("escape", "b")],
-            "forward-word": ["c-right", ("escape", "f")],
-            "move-lines-up": ("escape", "up"),
-            "move-lines-down": ("escape", "down"),
-            "go-to-start-of-line": ["home", ("escape", "left"), ("escape", "a")],
-            "go-to-end-of-line": ["end", ("escape", "right"), ("escape", "e")],
-            "beginning-of-buffer": ["c-up", "c-home"],
-            "end-of-buffer": ["c-down", "c-end"],
-            "go-to-start-of-paragraph": ("escape", "{"),
-            "go-to-end-of-paragraph": ("escape", "}"),
-            "indent-lines": "tab",
-            "unindent-line": "backspace",
-            "unindent-lines": "s-tab",
-            "undo": "c-z",
-            "redo": "c-y",
-            "copy-selection": "c-c",
-            "cut-selection": "c-x",
-            "cut-line": "c-k",
-            "duplicate-line": "c-d",
-            "duplicate-selection": "c-d",
-            "paste-clipboard": "c-v",
-            "select-all": "c-a",
-            "scroll-page-up": "pageup",
-            "scroll-page-down": "pagedown",
-            "delete": "delete",
-            "toggle-case": "f16",
-            "toggle-micro-input-mode": "insert",
-            "start-macro": "c-u",
-            "end-macro": "c-u",
-            "run-macro": "c-j",
-            "accept-suggestion": ["right", "c-f"],
-            "fill-sugestion": ("escape", "f"),
-            "toggle-comment": "c-_",
-        }
-    )
-
-    return ConditionalKeyBindings(kb, micro_mode)
+    return ConditionalKeyBindings(dict_bindings(MICRO_BINDINGS), micro_mode)
 
     # ----------------
 
