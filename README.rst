@@ -1,9 +1,12 @@
 #######
 euporie
 #######
+
+|PyPI|  |RTD|  |License| |Stars|
+
 .. content_start
 
-Euporie is a text-based user interface for running and editing Jupyter notebooks.
+**Euporie is a text-based user interface for running and editing Jupyter notebooks.**
 
 The interface is similar to JupyterLab or Jupyter Notebook, and supports keyboard or mouse navigation.
 
@@ -52,3 +55,18 @@ Compatibility
 *************
 
 Euporie requires Python 3.8 or later. It works on Linux, Windows and MacOS
+
+
+
+.. |PyPI| image:: https://img.shields.io/pypi/v/euporie.svg
+    :target: https://pypi.python.org/projects/euporie/
+    :alt: Latest Version
+
+.. |RTD| image:: https://readthedocs.org/projects/euporie/badge/
+    :target: https://euporie.readthedocs.io/en/master/
+
+.. |License| image:: https://img.shields.io/github/license/joouha/euporie.svg
+    :target: https://github.com/joouha/euporie/blob/master/LICENSE
+
+.. |Stars| image:: https://img.shields.io/github/stars/joouha/euporie
+    :target: https://github.com/joouha/euporie/stargazers
