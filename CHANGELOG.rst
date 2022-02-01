@@ -6,6 +6,7 @@ Changelog
 Upcoming
 ********
 
+- Added documentation
 - Add shortcut key (:kbd:`c-/`) to toggle line commenting
 - Improved terminal feature detection
 - Add ability to render LaTeX using :py:mod:`sympy`
