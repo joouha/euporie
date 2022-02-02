@@ -52,7 +52,9 @@ def setup_logs() -> "None":
             },
             "handlers": {
                 "stdout": {
-                    "level": "DEBUG" if config.debug else "ERROR",
+                    "level": "DEBUG"
+                    if config.debug and config.log_file == "-"
+                    else "CRITICAL",
                     "class": "rich.logging.RichHandler",
                     "formatter": "rich_format",
                     "console": Console(
@@ -83,12 +85,8 @@ def setup_logs() -> "None":
             "loggers": {
                 "euporie": {
                     "level": "DEBUG" if config.debug else "INFO",
-                    "handlers": ["internal"]
-                    + (
-                        []
-                        if not config.log_file
-                        else ["stdout" if config.log_file == "-" else "file"]
-                    ),
+                    "handlers": ["internal", "stdout"]
+                    + ([] if not config.log_file else ["file"]),
                     "propagate": False,
                 },
             },

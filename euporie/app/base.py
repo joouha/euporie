@@ -130,27 +130,34 @@ class EuporieApp(Application):
         self.renderer._waiting_for_cpr_futures.append(asyncio.Future())
 
         async def continue_loading() -> "None":
-            # Load key bindings
-            self.load_key_bindings()
-            # Wait for the terminal query responses
-            if self.using_vt100:
-                self.term_info.send_all()
-                await asyncio.sleep(0.1)
-            # Open any files we need to
-            self.open_files()
-            # Load the colour depth of the renderer
-            self._color_depth = self.term_info.depth_of_color.value
-            # Load the layout
-            self.layout = Layout(self.load_container())
-            # Set the application's style
-            self.update_style()
-            # Run any additional steps
-            self.post_load()
-            # Resume rendering
-            self._is_running = True
-            self.renderer._waiting_for_cpr_futures.pop()
-            # Sending a repaint trigger
-            self.invalidate()
+            try:
+                # Load key bindings
+                self.load_key_bindings()
+                # Wait for the terminal query responses
+                if self.using_vt100:
+                    self.term_info.send_all()
+                    await asyncio.sleep(0.1)
+                # Open any files we need to
+                self.open_files()
+                # Load the colour depth of the renderer
+                self._color_depth = self.term_info.depth_of_color.value
+                # Load the layout
+                self.layout = Layout(self.load_container())
+                # Set the application's style
+                self.update_style()
+                # Run any additional steps
+                self.post_load()
+                # Resume rendering
+                self._is_running = True
+                self.renderer._waiting_for_cpr_futures.pop()
+                # Sending a repaint trigger
+                self.invalidate()
+            except Exception as exception:
+                log.critical(
+                    "An error occured while trying to load the application",
+                    exc_info=True,
+                )
+                self.exit(exception=exception)
 
         # Waits until the event loop is ready
         self.create_background_task(continue_loading())
