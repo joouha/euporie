@@ -22,5 +22,5 @@ Running on Windows:
       :target: https://user-images.githubusercontent.com/12154190/151821390-255dcec6-433d-41e3-8ee9-17e4ab59570f.png
 
 Running inside JupyterLab:
-   .. image:: https://user-images.githubusercontent.com/12154190/151957146-524f7257-7ff5-4782-b0c6-473f4c5ce931.png
-      :target: https://user-images.githubusercontent.com/12154190/151957146-524f7257-7ff5-4782-b0c6-473f4c5ce931.png
+   .. image:: https://user-images.githubusercontent.com/12154190/152125608-3b283ac6-ae9e-4165-a3e3-628657f27b50.png
+      :target: https://user-images.githubusercontent.com/12154190/152125608-3b283ac6-ae9e-4165-a3e3-628657f27b50.png
