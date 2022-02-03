@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from functools import lru_cache
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -34,7 +35,6 @@ from euporie import __app_name__, __copyright__, __logo__, __strapline__, __vers
 from euporie.app.base import EuporieApp
 from euporie.box import Pattern
 from euporie.config import config
-from euporie.keys import KeyBindingsInfo
 from euporie.log import LogView
 from euporie.menu import MenuContainer
 from euporie.menu.contents import load_menu_items
@@ -43,7 +43,7 @@ from euporie.text import FormattedTextArea
 
 if TYPE_CHECKING:
     from asyncio import AbstractEventLoop
-    from typing import Any, Callable, Literal, Optional, Type
+    from typing import Any, Callable, Generator, Literal, Optional, Type
 
     from prompt_toolkit.buffer import Buffer
     from prompt_toolkit.completion import Completer
@@ -366,7 +366,34 @@ class TuiApp(EuporieApp):
 
     def help_keys(self) -> None:
         """Displays details of registered key-bindings in a dialog."""
-        key_details = KeyBindingsInfo.to_formatted_text()
+        from euporie.commands.format import format_command_attrs
+
+        @lru_cache
+        def kb_info() -> "Generator":
+            bg_colors = ("#fff", "#eee")
+            data = format_command_attrs(
+                attrs=["title", "keys"],
+                groups=[
+                    "app",
+                    "config",
+                    "notebook",
+                    "cell",
+                    "completion",
+                    "suggestion",
+                    "micro-edit-mode",
+                ],
+            )
+            for group, info in data.items():
+                total_w = len(info[0]["title"]) + len(info[0]["keys"][0]) + 4
+                yield ("bold underline bg:#aaa", f"{group.center(total_w)}\n")
+                for i, rec in enumerate(info):
+                    for j, key in enumerate(rec["keys"]):
+                        key_str = key.strip().rjust(len(key))
+                        title_str = rec["title"] if j == 0 else " " * len(rec["title"])
+                        yield (f"bold bg:{bg_colors[i%2]}", f" {key_str} ")
+                        yield (f"nobold bg:{bg_colors[i%2]}", f" {title_str} \n")
+
+        key_details = list(kb_info())
         max_line_width = max(
             [len(line) for line in fragment_list_to_text(key_details).split("\n")]
         )
@@ -375,7 +402,7 @@ class TuiApp(EuporieApp):
             multiline=True,
             focusable=True,
             wrap_lines=False,
-            width=Dimension(preferred=max_line_width + 2),
+            width=Dimension(preferred=max_line_width + 1),
             scrollbar=True,
         )
 

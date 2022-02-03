@@ -91,7 +91,7 @@ def exit_edit_mode() -> "None":
     filter=cell_has_focus & ~buffer_has_focus,
     group="cell",
 )
-def to_markdown() -> "None":
+def cell_to_markdown() -> "None":
     """Change cell type to markdown."""
     cell = get_app().cell
     if cell is not None:

@@ -78,7 +78,7 @@ class Command:
             name = handler.__name__.replace("_", "-")
         self.name = name
         if title is None:
-            title = name.title().replace("-", " ")
+            title = name.capitalize().replace("-", " ")
         self.title = title
         if description is None:
             # Use the first line of the docstring as the command description

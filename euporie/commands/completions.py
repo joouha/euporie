@@ -34,13 +34,13 @@ add(
 
 @add(keys="escape", filter=has_completions, group="completion", eager=True)
 def cancel_completion() -> "None":
-    """Cancel a completion with the escape key."""
+    """Cancel a completion."""
     get_app().current_buffer.cancel_completion()
 
 
 @add(keys="enter", filter=completion_is_selected, group="completion")
 def accept_completion() -> "None":
-    """Cancel a completion with the escape key."""
+    """Accept a selected completion."""
     buffer = get_app().current_buffer
     complete_state = buffer.complete_state
     if complete_state:
