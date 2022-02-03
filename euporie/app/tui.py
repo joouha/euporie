@@ -7,6 +7,7 @@ import logging
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from prompt_toolkit.clipboard.pyperclip import PyperclipClipboard
 from prompt_toolkit.completion import PathCompleter
 from prompt_toolkit.filters import Condition
 from prompt_toolkit.formatted_text import (
@@ -68,6 +69,7 @@ class TuiApp(EuporieApp):
             full_screen=True,
             mouse_support=True,
             editing_mode=self.get_edit_mode(),
+            clipboard=PyperclipClipboard(),
             **kwargs,
         )
 
