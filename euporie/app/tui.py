@@ -8,6 +8,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from prompt_toolkit.clipboard import InMemoryClipboard
 from prompt_toolkit.clipboard.pyperclip import PyperclipClipboard
 from prompt_toolkit.completion import PathCompleter
 from prompt_toolkit.filters import Condition
@@ -30,6 +31,7 @@ from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.layout.dimension import Dimension
 from prompt_toolkit.layout.menus import CompletionsMenu
 from prompt_toolkit.widgets import Button, Dialog, Label, TextArea
+from pyperclip import determine_clipboard  # type: ignore
 
 from euporie import __app_name__, __copyright__, __logo__, __strapline__, __version__
 from euporie.app.base import EuporieApp
@@ -46,6 +48,7 @@ if TYPE_CHECKING:
     from typing import Any, Callable, Generator, Literal, Optional, Type
 
     from prompt_toolkit.buffer import Buffer
+    from prompt_toolkit.clipboard import Clipboard
     from prompt_toolkit.completion import Completer
     from prompt_toolkit.formatted_text import StyleAndTextTuples
     from prompt_toolkit.layout.containers import AnyContainer
@@ -62,6 +65,7 @@ class TuiApp(EuporieApp):
 
     root_container: "MenuContainer"
     notebook_class: "Type[Notebook]" = TuiNotebook
+    clipboard: "Clipboard"
 
     def __init__(self, **kwargs: "Any") -> "None":
         """Create a new euporie text user interface application instance."""
@@ -69,12 +73,14 @@ class TuiApp(EuporieApp):
             full_screen=True,
             mouse_support=True,
             editing_mode=self.get_edit_mode(),
-            clipboard=PyperclipClipboard(),
             **kwargs,
         )
 
     def post_load(self) -> "None":
         """Continues loading the app."""
+        # Load a clipboard
+        self.load_clipboard()
+
         # Ensure an opened tab is focused
         if self.tab:
             self.tab.focus()
@@ -95,6 +101,13 @@ class TuiApp(EuporieApp):
             await asyncio.sleep(interval)
             self.term_info.background_color.send()
             self.term_info.foreground_color.send()
+
+    def load_clipboard(self) -> "None":
+        """Determines which clipboard mechanism to use."""
+        if determine_clipboard()[0]:
+            self.clipboard = PyperclipClipboard()
+        else:
+            self.clipboard = InMemoryClipboard()
 
     def format_title(self) -> "StyleAndTextTuples":
         """Formats the tab's title for display in the top right of the app."""
