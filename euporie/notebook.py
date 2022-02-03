@@ -174,8 +174,7 @@ class Notebook(Tab, metaclass=ABCMeta):
         log.debug("Saving notebook...")
         self.saving = True
         self.app.invalidate()
-        self.json = nbformat.from_dict(self.json)
-        nbformat.write(nb=self.json, fp=self.path)
+        nbformat.write(nb=nbformat.from_dict(self.json), fp=self.path)
         self.dirty = False
         self.saving = False
         self.app.invalidate()
