@@ -345,9 +345,13 @@ def cut_line() -> "None":
     clipboard.set_text(f"{clipboard_text}\n{line}")
     lines = buffer.document.lines[:]
     del lines[buffer.document.cursor_position_row]
+    text = "\n".join(lines)
     buffer.document = Document(
-        "\n".join(lines),
-        buffer.cursor_position + buffer.document.get_start_of_line_position(),
+        text,
+        min(
+            buffer.cursor_position + buffer.document.get_start_of_line_position(),
+            len(text),
+        ),
     )
 
 
