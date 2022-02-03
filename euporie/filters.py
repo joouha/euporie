@@ -13,6 +13,7 @@ __all__ = [
     "notebook_has_focus",
     "cell_has_focus",
     "cell_is_code",
+    "cell_is_markdown",
     "micro_mode",
     "micro_replace_mode",
     "micro_insert_mode",
@@ -66,6 +67,15 @@ def cell_is_code() -> "bool":
     if cell is None:
         return False
     return cell.json.get("cell_type") == "code"
+
+
+@Condition
+def cell_is_markdown() -> "bool":
+    """Determine if the current cell is a markdown cell."""
+    cell = get_app().cell
+    if cell is None:
+        return False
+    return cell.json.get("cell_type") == "markdown"
 
 
 @Condition

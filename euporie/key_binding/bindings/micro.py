@@ -4,9 +4,10 @@ from typing import TYPE_CHECKING
 
 from aenum import extend_enum  # type: ignore
 from prompt_toolkit.enums import EditingMode
-from prompt_toolkit.key_binding import ConditionalKeyBindings
+from prompt_toolkit.key_binding import ConditionalKeyBindings, merge_key_bindings
 
 from euporie.filters import micro_mode
+from euporie.key_binding.bindings.commands import load_command_bindings
 from euporie.key_binding.util import dict_bindings
 
 if TYPE_CHECKING:
@@ -19,6 +20,7 @@ if TYPE_CHECKING:
 extend_enum(EditingMode, "MICRO", "MICRO")
 
 
+# TODO - move these keybindings into command definitions
 MICRO_BINDINGS: "dict[str, Union[list[Union[tuple[Union[Keys, str], ...], Keys, str]], Union[tuple[Union[Keys, str], ...], Keys, str]]]" = {  # noqa B950
     "type-key": "<any>",
     "move-cursor-right": "right",
@@ -109,7 +111,15 @@ MICRO_BINDINGS: "dict[str, Union[list[Union[tuple[Union[Keys, str], ...], Keys, 
 
 def load_micro_bindings() -> "KeyBindingsBase":
     """Load editor key-bindings in the style of the ``micro`` text editor."""
-    return ConditionalKeyBindings(dict_bindings(MICRO_BINDINGS), micro_mode)
+    return ConditionalKeyBindings(
+        merge_key_bindings(
+            [
+                load_command_bindings("micro-edit-mode"),
+                dict_bindings(MICRO_BINDINGS),
+            ]
+        ),
+        micro_mode,
+    )
 
     # ----------------
 

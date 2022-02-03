@@ -14,11 +14,11 @@ from prompt_toolkit.key_binding.bindings.named_commands import (
 )
 
 from euporie.commands.registry import add
-from euporie.filters import insert_mode
+from euporie.filters import cell_is_code, insert_mode
 
 add(
     keys="c-i",
-    filter=buffer_has_focus & insert_mode & ~has_selection,
+    filter=buffer_has_focus & insert_mode & ~has_selection & cell_is_code,
     name="next-completion",
     group="completion",
     description="Show the completion menu and select the next completion.",

@@ -42,6 +42,7 @@ from euporie.commands.registry import add, get
 from euporie.config import config
 from euporie.filters import (
     cell_is_code,
+    cell_is_markdown,
     cursor_at_start_of_line,
     cursor_in_leading_ws,
     insert_mode,
@@ -259,18 +260,22 @@ def wrap_selection_cmd(left: "str", right: "str") -> "None":
     buffer.selection_state = selection_state
 
 
-WRAP_PAIRS: "list[str]" = [
-    '""',
-    "''",
-    "``",
-    "()",
-    "{}",
-    "[]",
-    "**",
-    "__",
-]
+WRAP_PAIRS: "dict[str, list[str]]" = {
+    "code": [
+        '""',
+        "''",
+        "()",
+        "{}",
+        "[]",
+    ],
+    "markdown": [
+        "``",
+        "**",
+        "__",
+    ],
+}
 
-for pair in WRAP_PAIRS:
+for pair in WRAP_PAIRS["code"]:
     left, right = list(pair)
     for key in set(pair):
         add(
@@ -278,7 +283,20 @@ for pair in WRAP_PAIRS:
             keys=key,
             title=f"Wrap selection in {pair}",
             description=f"Wraps the current selection with: {pair}",
-            filter=buffer_has_focus & has_selection,
+            filter=buffer_has_focus & has_selection & cell_is_code,
+            group="micro-edit-mode",
+        )(partial(wrap_selection_cmd, left, right))
+
+
+for pair in WRAP_PAIRS["markdown"]:
+    left, right = list(pair)
+    for key in set(pair):
+        add(
+            name=f"wrap-selection-{key}",
+            keys=key,
+            title=f"Wrap selection in {pair}",
+            description=f"Wraps the current selection with: {pair}",
+            filter=buffer_has_focus & has_selection & cell_is_markdown,
             group="micro-edit-mode",
         )(partial(wrap_selection_cmd, left, right))
 
