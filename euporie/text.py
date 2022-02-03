@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import re
 from typing import TYPE_CHECKING
 
@@ -22,6 +23,8 @@ if TYPE_CHECKING:
     from prompt_toolkit.layout.processors import TransformationInput
 
 __all__ = ["FormatTextProcessor", "FormattedTextArea", "ANSI"]
+
+log = logging.getLogger(__name__)
 
 
 class FormatTextProcessor(Processor):
@@ -113,7 +116,11 @@ class ANSI(PTANSI):
         value = value.replace("\r\n", "\n")
         # Remove anything before a carriage return if there is something after it to
         # emulate a carriage return in the output
-        value = re.sub("^.*\\r(?!\\n)", "", value, 0, re.MULTILINE)
+        value = re.sub(r"^.*\r(?!\n)", "", value, 0, re.MULTILINE)
+        # Clear line by deleting previous characters
+        value = re.sub(r".*\x1b\[2K", "", value, 0)
+        # Ignore cursor hide / show request
+        value = re.sub(r"\x1b\[\?25[hl]", "", value, 0)
 
         super().__init__(value)
 
