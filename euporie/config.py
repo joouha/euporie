@@ -202,6 +202,19 @@ CONFIG_PARAMS: "dict[str, dict]" = {
             Whether to execute a cell immediately after editing in `$EDITOR`.
         """,
     },
+    "autoformat": {
+        "flags_": ["--autoformat"],
+        "action": BooleanOptionalAction,
+        "type": bool,
+        "help": "Automatically re-format code cells when run",
+        "schema_": {
+            "type": "boolean",
+            "default": False,
+        },
+        "description_": """
+            Whether to automatically reformat code cells before they are run.
+        """,
+    },
     "autocomplete": {
         "flags_": ["--autocomplete"],
         "action": BooleanOptionalAction,

@@ -1,5 +1,8 @@
 """Fill in the configration option in euporie's documentation."""
 
+from __future__ import annotations
+
+from pathlib import Path
 from textwrap import dedent, indent
 
 from euporie.config import CONFIG_PARAMS
@@ -27,13 +30,15 @@ for name, param in CONFIG_PARAMS.items():
     s += "\n"
 
 
-with open("../docs/pages/configuration.rst", "r") as f:
+rst_file = Path(__file__).parent / "../docs/pages/configuration.rst"
+
+with open(rst_file, "r") as f:
     lines = f.readlines()
 
 start = lines.index(".. _configuration-options-start:\n")
 end = lines.index(".. _configuration-options-end:\n")
 
-with open("../docs/pages/configuration.rst", "w") as f:
+with open(rst_file, "w") as f:
 
     f.writelines(lines[: start + 1])
     f.write(s)

@@ -1,12 +1,18 @@
 """Defines common filters."""
 
 from prompt_toolkit.enums import EditingMode
-from prompt_toolkit.filters import Condition, emacs_insert_mode, vi_insert_mode
+from prompt_toolkit.filters import (
+    Condition,
+    emacs_insert_mode,
+    to_filter,
+    vi_insert_mode,
+)
 
 from euporie.app.current import get_tui_app as get_app
 from euporie.key_binding.micro_state import InputMode
 
 __all__ = [
+    "have_black",
     "cursor_in_leading_ws",
     "has_suggestion",
     "tab_has_focus",
@@ -21,7 +27,16 @@ __all__ = [
     "is_returnable",
     "cursor_at_start_of_line",
     "insert_mode",
+    "kernel_is_python",
 ]
+
+
+try:
+    import black  # type: ignore  # noqa F401
+except ModuleNotFoundError:
+    have_black = to_filter(False)
+else:
+    have_black = to_filter(True)
 
 
 @Condition
@@ -66,7 +81,7 @@ def cell_is_code() -> "bool":
     cell = get_app().cell
     if cell is None:
         return False
-    return cell.json.get("cell_type") == "code"
+    return cell.cell_type == "code"
 
 
 @Condition
@@ -75,7 +90,7 @@ def cell_is_markdown() -> "bool":
     cell = get_app().cell
     if cell is None:
         return False
-    return cell.json.get("cell_type") == "markdown"
+    return cell.cell_type == "markdown"
 
 
 @Condition
@@ -114,6 +129,17 @@ def is_returnable() -> "bool":
 def cursor_at_start_of_line() -> "bool":
     """Determine if the cursor is at the start of a line."""
     return get_app().current_buffer.document.current_line_before_cursor == ""
+
+
+@Condition
+def kernel_is_python() -> "bool":
+    """Determine if the current notebook has a python kernel."""
+    notebook = get_app().notebook
+    return (
+        notebook is not None
+        and notebook.json.get("metadata", {}).get("kernelspec", {}).get("language")
+        == "python"
+    )
 
 
 """Determine if any binding style is in insert mode"""

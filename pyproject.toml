@@ -33,19 +33,21 @@ sympy = {version = "^1.9", optional = true}
 antlr4-python3-runtime = {version = "^4.9", optional = true}
 CairoSVG = {version = "^2.5", optional = true}
 img2unicode = {version = "^0.1a8", optional = true}
+black = {version = ">=19.3b0", optional = true}
 
 [tool.poetry.extras]
-all = ["sympy", "antlr4-python3-runtime", "mtable", "html5lib", "timg", "CairoSVG"]
+all = ["black", "mtable", "html5lib", "CairoSVG"]
+black = ["black"]
 svg-cairosvg = ["CairoSVG"]
 latex-sympy = ["sympy", "antlr4-python3-runtime"]
 html-mtable = ["mtable", "html5lib"]
 images-img2unicode = ["img2unicode"]
 
+
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
 isort = "^5.8.0"
 flake8 = "^3.9.1"
-black = "^21.5b0"
 poetry-publish = "^0.4.1"
 flake8-black = "^0.2.1"
 flake8-bugbear = "^21.4.3"
@@ -60,6 +62,7 @@ Sphinx = "^4.4.0"
 sphinx-autobuild = "^2021.3.14"
 sphinx-rtd-theme = "^1.0.0"
 furo = "^2022.1.2"
+black = "^22.1.0"
 
 [tool.poetry.scripts]
 euporie = 'euporie.app:App.launch'

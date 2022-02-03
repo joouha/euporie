@@ -141,11 +141,8 @@ class Cell:
             focusable=True,
             show_cursor=False,
         )
-        self.control = Window(ft, width=1, height=0, style=self.border_style)
-
         fill = partial(Window, style=self.border_style)
-
-        self.input_box = CellInputTextArea(self)
+        self.control = Window(ft, width=1, height=0, style=self.border_style)
 
         # Create textbox for standard input
         self.stdin_prompt = Label(">", dont_extend_width=True, style="bold")
@@ -425,6 +422,10 @@ class Cell:
             value: The new cell contents text.
 
         """
+        self._set_input(value)
+        self.input_box.text = self.json["source"]
+
+    def _set_input(self, value: "str") -> "None":
         self.json["source"] = value
 
     def clear_output(self) -> "None":
@@ -449,6 +450,10 @@ class Cell:
         for i, output_json in enumerate(self.outputs):
             rendered_outputs.append(to_container(Output(i, output_json, parent=self)))
         return rendered_outputs
+
+    def reformat(self) -> "None":
+        """Reformats the cell's input."""
+        pass
 
     def run_or_render(
         self,
@@ -514,6 +519,18 @@ class InteractiveCell(Cell):
         # then select the next cell)
         get_app().layout.focus(self.nb.cell.control)
 
+    def reformat(self) -> "None":
+        """Reformats the cell's input using black."""
+        try:
+            import black  # type: ignore
+        except ModuleNotFoundError:
+            pass
+        else:
+            try:
+                self.input = black.format_str(self.input, mode=black.Mode()).rstrip()
+            except black.parsing.InvalidInput:
+                log.exception("Error formatting cell")
+
     def run_or_render(
         self,
         buffer: "Optional[Buffer]" = None,
@@ -548,6 +565,8 @@ class InteractiveCell(Cell):
             self.rendered = True
 
         elif self.cell_type == "code":
+            if config.autoformat:
+                self.reformat()
             self.state = "queued"
             self.nb.run_cell(self)
 
@@ -645,7 +664,7 @@ class CellInputTextArea(TextArea):
 
     def text_changed(self, buf: "Buffer") -> "None":
         """Update cell json when the input buffer has been edited."""
-        self.cell.input = buf.text
+        self.cell._set_input(buf.text)
         self.cell.nb.dirty = True
 
 

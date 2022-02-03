@@ -2,6 +2,12 @@
 Changelog
 #########
 
+********
+Upcoming
+********
+
+- Add option to automatically format code cells with black
+
 *****
 1.0.0
 *****

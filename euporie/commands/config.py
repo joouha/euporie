@@ -69,6 +69,16 @@ def autocomplete() -> "None":
 
 
 @add(
+    title="Autoformat code cells",
+    filter=~buffer_has_focus,
+    toggled=Condition(lambda: bool(config.autoformat)),
+)
+def autoformat() -> "None":
+    """Toggle whether code cells are formatted before they are run."""
+    config.toggle("autoformat")
+
+
+@add(
     title="Suggest lines from history",
     group="config",
     toggled=Condition(lambda: bool(config.autosuggest)),

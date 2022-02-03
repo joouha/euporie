@@ -249,7 +249,13 @@ class KernelNotebook(Notebook):
             wait=wait,
         )
 
-    def run_all(self, wait: "bool" = False) -> None:
+    def reformat(self) -> "None":
+        """Reformat all code cells in the notebooks."""
+        for cell in self.rendered_cells():
+            if cell.cell_type == "code":
+                cell.reformat()
+
+    def run_all(self, wait: "bool" = False) -> "None":
         """Run all cells."""
         if self.kernel:
             log.debug("Running all cells (wait=%s)", wait)

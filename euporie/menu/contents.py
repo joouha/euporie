@@ -29,6 +29,9 @@ def load_menu_items() -> "list[MenuItem]":
                 get("cut-cell").menu,
                 get("copy-cell").menu,
                 get("paste-cell").menu,
+                separator,
+                get("reformat-cell-black").menu,
+                get("reformat-notebook").menu,
             ],
         ),
         MenuItem(
@@ -78,6 +81,7 @@ def load_menu_items() -> "list[MenuItem]":
                 get("show-line-numbers").menu,
                 get("show-status-bar").menu,
                 separator,
+                get("autoformat").menu,
                 get("autocomplete").menu,
                 get("autosuggest").menu,
                 get("run-after-external-edit").menu,

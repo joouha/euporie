@@ -15,7 +15,7 @@ from prompt_toolkit.keys import Keys
 from prompt_toolkit.output import ColorDepth
 from prompt_toolkit.utils import Event
 
-from euporie.commands import add
+from euporie.commands.registry import add
 
 if TYPE_CHECKING:
     from typing import Any, Optional, Type, Union

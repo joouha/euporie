@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 from prompt_toolkit.key_binding import KeyBindings, KeyBindingsBase
 from prompt_toolkit.keys import Keys
 
-from euporie.commands import get
+from euporie.commands.registry import get
 
 if TYPE_CHECKING:
     from typing import Union

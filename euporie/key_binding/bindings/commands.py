@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 
 from prompt_toolkit.key_binding import KeyBindings
 
-from euporie.commands import commands
+from euporie.commands.registry import commands
 
 if TYPE_CHECKING:
     from typing import Optional

@@ -175,6 +175,16 @@ All available configuration options are listed below:
 
    Whether to execute a cell immediately after editing in `$EDITOR`.
 
+.. option:: autoformat
+
+:flags: :option:`--autoformat`
+:environment variable: :envvar:`EUPORIE_AUTOFORMAT`
+:default: ``False``
+:type: :keyword:`boolean`
+:description: Automatically re-format code cells when run
+
+   Whether to automatically reformat code cells before they are run.
+
 .. option:: autocomplete
 
 :flags: :option:`--autocomplete`

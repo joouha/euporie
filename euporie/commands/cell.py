@@ -6,7 +6,7 @@ from prompt_toolkit.filters import buffer_has_focus
 
 from euporie.app.current import get_tui_app as get_app
 from euporie.commands.registry import add
-from euporie.filters import cell_has_focus
+from euporie.filters import cell_has_focus, cell_is_code, have_black, kernel_is_python
 
 log = logging.getLogger(__name__)
 
@@ -120,3 +120,20 @@ def cell_to_raw() -> "None":
     cell = get_app().cell
     if cell is not None:
         cell.set_cell_type("raw", clear=True)
+
+
+@add(
+    keys="f",
+    title="Reformat cell",
+    filter=have_black
+    & kernel_is_python
+    & cell_is_code
+    & cell_has_focus
+    & ~buffer_has_focus,
+    group="cell",
+)
+def reformat_cell_black() -> "None":
+    """Format a cell's code using black code formatter."""
+    cell = get_app().cell
+    if cell is not None:
+        cell.reformat()

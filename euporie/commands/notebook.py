@@ -6,7 +6,7 @@ from prompt_toolkit.filters import buffer_has_focus
 
 from euporie.app.current import get_tui_app as get_app
 from euporie.commands.registry import add
-from euporie.filters import notebook_has_focus
+from euporie.filters import kernel_is_python, notebook_has_focus
 
 log = logging.getLogger(__name__)
 
@@ -269,3 +269,15 @@ def select_last_cell() -> "None":
     nb = get_app().notebook
     if nb is not None:
         nb.page.selected_index = len(list(nb.page.children))
+
+
+@add(
+    keys="F",
+    group="notebook",
+    filter=notebook_has_focus & kernel_is_python & ~buffer_has_focus,
+)
+def reformat_notebook() -> "None":
+    """Automaticall reformat all code cells in the notebook."""
+    nb = get_app().notebook
+    if nb is not None:
+        nb.reformat()

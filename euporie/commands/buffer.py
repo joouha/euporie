@@ -277,28 +277,26 @@ WRAP_PAIRS: "dict[str, list[str]]" = {
 
 for pair in WRAP_PAIRS["code"]:
     left, right = list(pair)
-    for key in set(pair):
-        add(
-            name=f"wrap-selection-{key}",
-            keys=key,
-            title=f"Wrap selection in {pair}",
-            description=f"Wraps the current selection with: {pair}",
-            filter=buffer_has_focus & has_selection & cell_is_code,
-            group="micro-edit-mode",
-        )(partial(wrap_selection_cmd, left, right))
+    add(
+        name=f"wrap-selection-{pair}",
+        keys=list(set(pair)),
+        title=f"Wrap selection in {pair}",
+        description=f"Wraps the current selection with: {pair}",
+        filter=buffer_has_focus & has_selection & cell_is_code,
+        group="micro-edit-mode",
+    )(partial(wrap_selection_cmd, left, right))
 
 
 for pair in WRAP_PAIRS["markdown"]:
     left, right = list(pair)
-    for key in set(pair):
-        add(
-            name=f"wrap-selection-{key}",
-            keys=key,
-            title=f"Wrap selection in {pair}",
-            description=f"Wraps the current selection with: {pair}",
-            filter=buffer_has_focus & has_selection & cell_is_markdown,
-            group="micro-edit-mode",
-        )(partial(wrap_selection_cmd, left, right))
+    add(
+        name=f"wrap-selection-{pair}",
+        keys=list(set(pair)),
+        title=f"Wrap selection in {pair}",
+        description=f"Wraps the current selection with: {pair}",
+        filter=buffer_has_focus & has_selection & cell_is_markdown,
+        group="micro-edit-mode",
+    )(partial(wrap_selection_cmd, left, right))
 
 
 @add(filter=buffer_has_focus & ~has_selection, group="micro-edit-mode")
