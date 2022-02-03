@@ -254,8 +254,9 @@ class KernelNotebook(Notebook):
         if self.kernel:
             log.debug("Running all cells (wait=%s)", wait)
             for cell in self.rendered_cells():
-                log.debug("Running cell %s", cell.id)
-                self.run_cell(cell, wait=wait)
+                if cell.json.get("cell_type") == "code":
+                    log.debug("Running cell %s", cell.id)
+                    self.run_cell(cell, wait=wait)
             log.debug("All cells run")
 
     def check_kernel(self, result: "None" = None) -> "None":
