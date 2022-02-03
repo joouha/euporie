@@ -87,6 +87,8 @@ def load_menu_items() -> "list[MenuItem]":
             "Help",
             children=[
                 get("keyboard-shortcuts").menu,
+                get("view-documentation").menu,
+                separator,
                 get("view-logs").menu,
                 separator,
                 get("about").menu,

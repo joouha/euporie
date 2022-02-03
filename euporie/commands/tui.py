@@ -107,6 +107,14 @@ def view_logs() -> "None":
 
 
 @add(group="app")
+def view_documentation() -> "None":
+    """Open the documentation in the browser."""
+    import webbrowser
+
+    webbrowser.open("https://euporie.readthedocs.io/")
+
+
+@add(group="app")
 def about() -> "None":
     """Show the about dialog."""
     get_app().help_about()
