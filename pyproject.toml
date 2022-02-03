@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "euporie"
-version = "0.2.0-dev"
+version = "1.0.0"
 description = "Euporie is a text-based user interface for running and editing Jupyter notebooks"
 authors = ["Josiah Outram Halstead <josiah@halstead.email>"]
 license = "MIT"
@@ -8,31 +8,31 @@ readme = "README.rst"
 homepage = "https://github.com/joouha/euporie"
 keywords = ["jupyter", "ipython", "markdown", "terminal", "notebook"]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 4 - Beta",
     "Environment :: Console",
     "Programming Language :: Python :: 3.8",
     "Topic :: Scientific/Engineering",
 ]
 
 [tool.poetry.dependencies]
-python = ">=3.8 <4"
-rich = "^10.1.0"
-nbformat = "^5.1.3"
-img2unicode = {version = "^0.1a7", optional = true}
-prompt-toolkit = "^3.0.18"
-timg = "^1.1.5"
-mtable = {version = "^0.1.10", optional = true}
+python = "^3.8"
+prompt-toolkit = "^3.0"
+nbformat = "^5"
+jupyter-client = "^7.1"
+rich = "^11"
+appdirs = "^1.4"
+jsonschema = "^4.4"
+pyperclip = "^1.8"
+aenum = "^3.1"
+flatlatex = "~0.15"
+timg = "^1.1"
+Pillow = "^9.0"
+mtable = {version = "^0.1", optional = true}
 html5lib = {version = "^1.1", optional = true}
-Pillow = "^8.2.0"
-jsonschema = "^3.2.0"
-appdirs = "^1.4.4"
-pyperclip = "^1.8.2"
-jupyter-client = "^7.1.0"
-flatlatex = "^0.15"
 sympy = {version = "^1.9", optional = true}
-antlr4-python3-runtime = {version = "^4.9.3", optional = true}
-CairoSVG = {version = "^2.5.2", optional = true}
-aenum = "^3.1.8"
+antlr4-python3-runtime = {version = "^4.9", optional = true}
+CairoSVG = {version = "^2.5", optional = true}
+img2unicode = {version = "^0.1a8", optional = true}
 
 [tool.poetry.extras]
 all = ["sympy", "antlr4-python3-runtime", "mtable", "html5lib", "timg", "CairoSVG"]
