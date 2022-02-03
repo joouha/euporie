@@ -2,7 +2,7 @@
 euporie
 #######
 
-|PyPI|  |RTD|  |License| |Stars|
+|PyPI| |RTD| |Binder| |License| |Stars|
 
 .. content_start
 
@@ -64,9 +64,16 @@ Euporie requires Python 3.8 or later. It works on Linux, Windows and MacOS
 
 .. |RTD| image:: https://readthedocs.org/projects/euporie/badge/
     :target: https://euporie.readthedocs.io/en/latest/
+    :alt: Documentation
+
+.. |Binder| image:: https://mybinder.org/badge_logo.svg
+   :target: https://mybinder.org/v2/gh/joouha/euporie-binder/HEAD?urlpath=%2Feuporie%2F
+   :alt: Launch with Binder
 
 .. |License| image:: https://img.shields.io/github/license/joouha/euporie.svg
     :target: https://github.com/joouha/euporie/blob/main/LICENSE
+    :alt: View license
 
 .. |Stars| image:: https://img.shields.io/github/stars/joouha/euporie
     :target: https://github.com/joouha/euporie/stargazers
+    :alt: ⭐
