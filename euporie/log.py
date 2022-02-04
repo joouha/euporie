@@ -222,8 +222,8 @@ class log_to_stdout:
         exc_value: "Optional[BaseException]",
         exc_traceback: "Optional[TracebackType]",
     ):
+        sys.stdout = self._original_stdout
         if exc_type is not None:
-            sys.stdout = self._original_stdout
             self.out.seek(0)
             for line in self.out.readlines():
                 self.log.debug(str(line).strip())
