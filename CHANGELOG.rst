@@ -6,6 +6,7 @@ Changelog
 Upcoming
 ********
 
+- New data conversion system to replace the output rendering system
 - Add option to automatically format code cells with black
 
 *****

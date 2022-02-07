@@ -34,6 +34,7 @@ antlr4-python3-runtime = {version = "^4.9", optional = true}
 CairoSVG = {version = "^2.5", optional = true}
 img2unicode = {version = "^0.1a8", optional = true}
 black = {version = ">=19.3b0", optional = true}
+imagesize = "^1.3.0"
 
 [tool.poetry.extras]
 all = ["black", "mtable", "html5lib", "CairoSVG"]

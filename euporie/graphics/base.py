@@ -7,6 +7,9 @@ from typing import TYPE_CHECKING
 from prompt_toolkit.filters import to_filter
 from prompt_toolkit.utils import Event
 
+from euporie.config import config
+from euporie.convert.base import find_route
+
 if TYPE_CHECKING:
     from typing import Any, MutableMapping, Optional, Type
 
@@ -35,32 +38,38 @@ class TerminalGraphicsRenderer:
         """Hide graphics as necessary before rendering the display."""
         if self.graphic_class:
             for graphic in self.graphics.values():
-                visible = graphic.visible()
-                if not visible or self.hide_all:
-                    graphic._hide(app)
+                if graphic.data:
+                    visible = graphic.visible()
+                    if not visible or self.hide_all:
+                        graphic._hide(app)
 
     def after_render(self, app: "Application[Any]") -> "None":
         """Display or hide graphics as necessary after rendering the display."""
         if self.graphic_class and not self.hide_all:
             for graphic in self.graphics.values():
-                if not self.hide_all and graphic.visible() and graphic.redraw:
-                    graphic._draw(app)
-                else:
-                    graphic._hide(app)
+                if graphic.data:
+                    if not self.hide_all and graphic.visible() and graphic.redraw:
+                        graphic._draw(app)
+                    else:
+                        graphic._hide(app)
 
     def add(
         self,
         data: "str",
+        format_: "str",
         visible: "FilterOrBool" = False,
+        fg_color: "Optional[str]" = None,
         bg_color: "Optional[str]" = None,
     ) -> "Optional[TerminalGraphic]":
         """Method used to register a new terminal graphic."""
         if self.graphic_class:
-            data = "".join(data.split("\n"))
-            graphic = self.graphic_class(self.next_id, data, visible, bg_color)
-            self.next_id += 1
-            self.graphics[graphic.id] = graphic
-            return graphic
+            if find_route(format_, self.graphic_class.final_format) is not None:
+                graphic = self.graphic_class(
+                    self.next_id, data, format_, visible, fg_color, bg_color
+                )
+                self.next_id += 1
+                self.graphics[graphic.id] = graphic
+                return graphic
         return None
 
     def remove(self, id_: "int") -> "None":
@@ -74,18 +83,24 @@ class TerminalGraphicsRenderer:
 class TerminalGraphic(metaclass=ABCMeta):
     """Defines a base class for terminal graphics."""
 
+    final_format: "str" = ""
+
     def __init__(
         self,
         id: "int",
         data: "str",
+        format_: "str",
         visible: "FilterOrBool" = False,
+        fg_color: "Optional[str]" = None,
         bg_color: "Optional[str]" = None,
     ) -> "None":
         """Creates a new terminal graphic."""
         self.id = id
-        self.data = data[:]
+        self.format_ = format_
+        self.data = data
         self._visible = to_filter(visible)
         self.last_visible_value = self._visible()
+        self.fg_color = fg_color
         self.bg_color = bg_color
 
         self.xpos = 0
@@ -99,9 +114,11 @@ class TerminalGraphic(metaclass=ABCMeta):
 
     def visible(self) -> "bool":
         """Determines if the terminal graphic should be visible."""
+        if config.dump:
+            return True
         visible_value = self._visible()
         if self.last_visible_value != visible_value:
-            self.redraw = True
+            self.p = True
         self.last_visible_value = visible_value
         return self.last_visible_value
 
@@ -148,11 +165,11 @@ class TerminalGraphic(metaclass=ABCMeta):
         # Save cursor position
         cmd += "\x1b[s"
         # Move back to start of image position
-        cmd += f"\x1b[{self.height-1}A\x1b[{self.width-1}D"
+        cmd += f"\x1b[{self.height-1}A\x1b[{self.width}D"
         # Place image
         cmd += self.draw_inline()
         # Restore cursor
-        cmd += "\x1b[u"
+        cmd += "\x1b[u "
         return cmd
 
     def draw_inline(self) -> "str":
@@ -188,7 +205,7 @@ class TerminalGraphic(metaclass=ABCMeta):
             self.xpos = xpos
             self.ypos = ypos
             self.redraw = True
-            self.on_resize.fire()
+            self.on_move.fire()
 
     def set_size(self, width: "int", height: "int") -> "None":
         """Sets the graphic's display dimensions, triggering a redraw if changed.
@@ -202,7 +219,7 @@ class TerminalGraphic(metaclass=ABCMeta):
             self.width = width
             self.height = height
             self.redraw = True
-            self.on_move.fire()
+            self.on_resize.fire()
 
     def __repr__(self):
         """Returns A string representation of the graphic."""

@@ -15,7 +15,8 @@ from rich.text import Text
 
 from euporie.config import config
 from euporie.markdown.parser import Parser
-from euporie.render.latex import LatexRenderer
+
+# from euporie.render.latex import LatexRenderer
 
 if TYPE_CHECKING:
     from typing import List
@@ -139,12 +140,13 @@ class Table(MarkdownElement):
 class LatexElement(TextElement):
     """A latex element which renders text as LaTeX."""
 
-    renderer = LatexRenderer.select()
-
     def on_text(self, context: "MarkdownContext", text: "TextType") -> None:
         """Converts LaTeX source text to rendered LaTeX text."""
-        text = self.renderer.render(text, 0, 0)
-        text = text.ljust(max(map(len, text.split("\n"))))
+        from euporie.convert.base import convert
+
+        text = str(text)
+        text = convert(text, "latex", "ansi")
+        text = str(text).ljust(max(map(len, text.split("\n"))))
         super().on_text(context, text)
 
 

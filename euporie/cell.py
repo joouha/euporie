@@ -33,7 +33,7 @@ from pygments.lexers import get_lexer_by_name  # type: ignore
 from euporie.box import RoundBorder as Border
 from euporie.config import config
 from euporie.key_binding.bindings.commands import load_command_bindings
-from euporie.output import Output
+from euporie.output.container import CellOutput
 from euporie.suggest import AppendLineAutoSuggestion, ConditionalAutoSuggestAsync
 
 if TYPE_CHECKING:
@@ -443,12 +443,11 @@ class Cell:
         else:
             return self.json.setdefault("outputs", [])
 
-    # @property
     def render_outputs(self) -> "list[Container]":
         """Generates a list of rendered outputs."""
         rendered_outputs: "list[Container]" = []
-        for i, output_json in enumerate(self.outputs):
-            rendered_outputs.append(to_container(Output(i, output_json, parent=self)))
+        for output_json in self.outputs:
+            rendered_outputs.append(to_container(CellOutput(output_json)))
         return rendered_outputs
 
     def reformat(self) -> "None":

@@ -376,4 +376,4 @@ class TerminalInfo:
         px, py = self.terminal_size_px
         rows, cols = self.output.get_size()
         # If we can't get the pixel size, just guess wildly
-        return px // cols or 10, py // rows or 22
+        return px // cols or 10, py // rows or 20

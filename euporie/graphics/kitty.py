@@ -6,6 +6,7 @@ import logging
 from typing import TYPE_CHECKING
 
 from euporie.app import get_app
+from euporie.convert.base import convert
 from euporie.graphics.base import TerminalGraphic
 
 if TYPE_CHECKING:
@@ -23,26 +24,42 @@ log = logging.getLogger(__name__)
 class KittyTerminalGraphic(TerminalGraphic):
     """Defines a kitty terminal graphic."""
 
+    final_format = "base64"
+
     def __init__(
         self,
         id: "int",
         data: "str",
+        format_: "str",
         visible: "FilterOrBool",
+        fg_color: "Optional[str]" = None,
         bg_color: "Optional[str]" = None,
     ) -> "None":
         """Creates a new kitty terminal graphic."""
-        super().__init__(id, data, visible, bg_color)
+        super().__init__(id, data, format_, visible, fg_color, bg_color)
         self.loaded = False
         self.kitty_image_id: "Optional[int]" = None
         self.shown = False
         self.app = get_app()
         self.kitty_event = self.app.term_info.kitty_graphic_id.event
 
+    def convert_data(self) -> "str":
+        """Converts the graphic's data to base64 data for kitty graphics protocol."""
+        return convert(
+            self.data,
+            from_=self.format_,
+            to=self.final_format,
+            cols=self.width,
+            rows=self.height,
+            fg=self.fg_color,
+            bg=self.bg_color,
+        ).replace("\n", "")
+
     def load(self) -> "None":
         """Sends the graphic to the terminal without displaying it."""
         # Build the terminal query
         self.delete()
-        data = self.data[:]
+        data = self.convert_data()
         while data:
             chunk, data = data[:4096], data[4096:]
             cmd = _kitty_cmd(
@@ -86,7 +103,7 @@ class KittyTerminalGraphic(TerminalGraphic):
                 c=self.width,
                 r=self.height,
                 C=1,  # Do not move the cursor
-                z=-(2 ** 30) - 1,
+                z=-(2**30) - 1,
             )
         return ""
 
@@ -100,7 +117,7 @@ class KittyTerminalGraphic(TerminalGraphic):
 
         """
         cmd = ""
-        data = self.data[:]
+        data = self.convert_data()
         while data:
             chunk, data = data[:4096], data[4096:]
             cmd += _kitty_cmd(
