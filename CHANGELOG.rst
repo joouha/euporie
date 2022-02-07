@@ -2,9 +2,9 @@
 Changelog
 #########
 
-********
-Upcoming
-********
+*****
+1.0.0
+*****
 
 - Added documentation
 - Add shortcut key (:kbd:`c-/`) to toggle line commenting
@@ -32,7 +32,7 @@ Upcoming
 - Introduced the concept of "tabs" (tabs are only displayed vertially tiled for now)
 - Automatic suggestions from kernel history
 - Completion type annotations in the completion menu
-- Added ability to automatically run notebooks with `--run` commmand line flag
+- Added ability to automatically run notebooks with `--run` command line flag
 - Allow changing background colour
 - Add `chafa <https://hpjansson.org/chafa/>`_ as an image renderer
 - Fix issue where clicking on cells failed to focus them
