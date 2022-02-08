@@ -39,7 +39,7 @@ class DumpApp(EuporieApp):
 
     def __init__(self, **kwargs: "Any") -> "None":
         """Create an app for dumping a prompt-toolkit layout."""
-        # Initalise the application
+        # Initialise the application
         super().__init__(full_screen=False, **kwargs)
         # We want the app to close when rendering is complete
         self.after_render += self.pre_exit
@@ -103,11 +103,11 @@ class DumpApp(EuporieApp):
                     )
                     self.output_file = sys.stdout
 
-        # Ensure we do not recieve the "Output is not a terminal" message
+        # Ensure we do not receive the "Output is not a terminal" message
         Vt100_Output._fds_not_a_terminal.add(self.output_file.fileno())
         # Set environment variable to disable character position requests
         os.environ["PROMPT_TOOLKIT_NO_CPR"] = "1"
-        # Create a default output - this detectes the terminal type
+        # Create a default output - this detects the terminal type
         # Do not use stderr instead of stdout if stdout is not a tty
         output = create_output(
             cast("TextIO", self.output_file), always_prefer_tty=False
