@@ -7,6 +7,8 @@ from math import ceil
 from typing import TYPE_CHECKING
 
 from prompt_toolkit.cache import SimpleCache
+from prompt_toolkit.formatted_text.base import to_formatted_text
+from prompt_toolkit.formatted_text.utils import split_lines
 from prompt_toolkit.layout.controls import GetLinePrefixCallable, UIContent, UIControl
 
 from euporie.config import config
@@ -14,7 +16,7 @@ from euporie.convert.base import convert
 from euporie.text import ANSI
 
 if TYPE_CHECKING:
-    from typing import Any, Iterable, List, Optional
+    from typing import Any, Iterable, Optional
 
     from prompt_toolkit.formatted_text import StyleAndTextTuples
     from prompt_toolkit.utils import Event
@@ -65,20 +67,22 @@ class FormatterControl(UIControl):
         self.max_cols = max_cols or 0
         self.aspect = aspect
 
-        self.rendered_lines: "list" = []
+        self.rendered_lines: "list[StyleAndTextTuples]" = []
         self._format_cache: SimpleCache = SimpleCache(maxsize=50)
         self._content_cache: SimpleCache = SimpleCache(maxsize=50)
 
-    def get_rendered_lines(self, width: "int", height: "int") -> "List[str]":
+    def get_rendered_lines(
+        self, width: "int", height: "int"
+    ) -> "list[StyleAndTextTuples]":
         """Get rendered lines from the cache, or generate them."""
 
-        def render_lines() -> "list[str]":
+        def render_lines() -> "list[StyleAndTextTuples]":
             """Renders the lines to display in the control."""
             lines = ""
             if self.graphic and config.dump:
                 # We are displaying graphics images inline, so don't show any ansi
                 log.debug(width)
-                lines += "\n" * (height - 1) + " " * (width - 1) + "?"
+                lines += "\n" * (height - 1) + " " * (width - 1) + " "
                 lines += "\001" + self.graphic._draw_inline() + "\002"
             else:
                 lines += convert(
@@ -89,8 +93,8 @@ class FormatterControl(UIControl):
                     rows=height,
                     fg=self.fg_color,
                     bg=self.bg_color,
-                )
-            return lines.splitlines()
+                ).strip()
+            return list(split_lines(to_formatted_text(ANSI(lines))))
 
         return self._format_cache.get(
             (width,),
@@ -152,7 +156,7 @@ class FormatterControl(UIControl):
                 ):
                     return []
                 else:
-                    return ANSI(self.rendered_lines[i]).__pt_formatted_text__()
+                    return self.rendered_lines[i]
 
             return UIContent(
                 get_line=get_line,

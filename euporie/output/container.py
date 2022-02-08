@@ -8,15 +8,14 @@ from pathlib import PurePath
 from typing import TYPE_CHECKING, cast
 
 import imagesize  # type: ignore
-from prompt_toolkit.filters import Condition, to_filter
+from prompt_toolkit.filters import Condition
 from prompt_toolkit.layout import Window
 from prompt_toolkit.layout.containers import to_container
 from prompt_toolkit.layout.controls import FormattedTextControl
 
 from euporie.app import get_app
-from euporie.convert.base import convert
+from euporie.convert.base import convert, find_route
 from euporie.output.control import FormatterControl
-from euporie.text import ANSI
 
 if TYPE_CHECKING:
     from typing import Any, Optional, Protocol
@@ -35,17 +34,34 @@ if TYPE_CHECKING:
 
 log = logging.getLogger(__name__)
 
+
+MIME_FORMATS = {
+    "image/svg+xml": "svg",
+    "image/png": "base64-png",
+    "image/jpeg": "base64-jpeg",
+    "application/pdf": "base64-pdf",
+    "text/html": "html",
+    "text/latex": "latex",
+    "text/markdown": "markdown",
+    "text/x-markdown": "markdown",
+    "text/*": "ansi",
+    "stream/std*": "ansi",
+}
+
+
 BLING_SCORES = {
     "image/*": 0,
-    "text/html": 1,
-    "text/latex": 1,
-    "text/markdown": 2,
-    "text/x-markdown": 2,
-    "text/x-python-traceback": 3,
-    "text/stderr": 4,
-    "text/*": 5,
-    "*": 6,
+    "application/pdf": 1,
+    "text/html": 2,
+    "text/latex": 2,
+    "text/markdown": 3,
+    "text/x-markdown": 3,
+    "text/x-python-traceback": 4,
+    "text/stderr": 5,
+    "text/*": 6,
+    "*": 7,
 }
+0
 
 
 def _calculate_bling(item: tuple[str, str]) -> int:
@@ -59,8 +75,13 @@ def _calculate_bling(item: tuple[str, str]) -> int:
 
 
 def get_dims(
-    data: "Any", format_: "str", fg: "Optional[str]" = None, bg: "Optional[str]" = None
-) -> "tuple[Optional[int], Optional[int]]":
+    data: "Any",
+    format_: "str",
+    px: "Optional[int]" = None,
+    py: "Optional[int]" = None,
+    fg: "Optional[str]" = None,
+    bg: "Optional[str]" = None,
+) -> "tuple[Optional[int], Optional[float]]":
     """Get the dimensions of an image.
 
     Foreground and background color are set at this point if they are available, as
@@ -69,6 +90,8 @@ def get_dims(
     Args:
         data: The data to check the dimensions of
         format_: The current format of the data
+        px: The desired pixel width of the data if known
+        py: The pixel height of the data if known
         fg: The desired foreground color of the data
         bg: The desired background color of the data
 
@@ -78,14 +101,17 @@ def get_dims(
 
     """
     cols, aspect = None, None
-    if format_ not in {"png", "svg", "jpg", "gif", "tiff"}:
-        try:
-            data = convert(data, from_=format_, to="png", fg=fg, bg=bg)
-        except NotImplementedError:
-            pass
-    if isinstance(data, str):
-        data = data.encode()
-    px, py = imagesize.get(io.BytesIO(data))
+    if px is None or py is None:
+        if format_ not in {"png", "svg", "jpg", "gif", "tiff"}:
+            try:
+                data = convert(data, from_=format_, to="png", fg=fg, bg=bg)
+            except NotImplementedError:
+                pass
+        if isinstance(data, str):
+            data = data.encode()
+        px_calc, py_calc = imagesize.get(io.BytesIO(data))
+        px = px or int(px_calc)
+        py = py or int(py_calc)
     if px > 0:
         cell_px, cell_py = get_app().term_info.cell_size_px
         cols = int(px // cell_px)
@@ -105,72 +131,59 @@ class CellOutput:
         """
         self.json = json
 
-        self.window: AnyContainer = OutputWindow()
+        self.window = OutputWindow()
         self.graphic = None
 
+        metadata = json.get("metadata", {})
         fg_color = get_app().term_info.foreground_color.value
         bg_color = {"light": "#FFFFFF", "dark": "#000000"}.get(
-            json.get("metadata", {}).get("needs_background")
+            metadata.get("needs_background")
         )
 
         # Sort data first so there is more bling first
         for mime, datum in sorted(self.data.items(), key=_calculate_bling):
             mime_path = PurePath(mime)
 
-            # TODO - force image dimensions based on metadata, e.g.:
-            # metadata": {
-            #    "image/jpeg": {
-            #        "height": 200,
-            #        "width": 100
-            #    }
-            # }
-
             format_ = None
-            if mime_path.match("image/svg+xml"):
-                format_ = "svg"
-            elif mime_path.match("image/*"):
-                format_ = "base64"
-            elif mime_path.match("text/html"):
-                format_ = "html"
-            elif mime_path.match("text/latex"):
-                format_ = "latex"
-            elif mime_path.match("text/x-markdown") or mime_path.match("text/markdown"):
-                format_ = "markdown"
+            for data_mime, data_format in MIME_FORMATS.items():
+                if mime_path.match(data_mime):
+                    if mime_path.name == "stderr":
+                        self.window.style = "fg:red"
+                    if find_route(data_format, "ansi") is not None:
+                        format_ = data_format
+                        break
+            else:
+                continue
 
-            if format_ is not None:
+            self.graphic = get_app().graphics_renderer.add(
+                datum,
+                format_=format_,
+                visible=~Condition(self.window.is_obscured),
+                fg_color=fg_color,
+                bg_color=bg_color,
+            )
 
-                self.graphic = get_app().graphics_renderer.add(
-                    datum,
-                    format_=format_,
-                    visible=~Condition(self.window.is_obscured),
-                    fg_color=fg_color,
-                    bg_color=bg_color,
-                )
+            mime_meta = metadata.get(mime, {})
+            cols, aspect = get_dims(
+                datum,
+                format_,
+                px=mime_meta.get("width"),
+                py=mime_meta.get("height"),
+                fg=fg_color,
+                bg=bg_color,
+            )
 
-                cols, aspect = get_dims(datum, format_, fg_color, bg_color)
+            self.window.content = FormatterControl(
+                datum,
+                format_=format_,
+                graphic=self.graphic,
+                fg_color=fg_color,
+                bg_color=bg_color,
+                max_cols=cols,
+                aspect=aspect,
+            )
+            break
 
-                self.window.content = FormatterControl(
-                    datum,
-                    format_=format_,
-                    graphic=self.graphic,
-                    fg_color=fg_color,
-                    bg_color=bg_color,
-                    max_cols=cols,
-                    aspect=aspect,
-                )
-                break
-            elif mime_path.match("text/x-python-traceback"):
-                self.window.content = FormattedTextControl(ANSI(datum.rstrip()))
-                break
-            elif mime_path.match("stream/std*"):
-                self.window.content = FormattedTextControl(ANSI(datum.rstrip()))
-                self.window.wrap_lines = to_filter(False)
-                self.window.style = "fg:red" if mime_path.name == "stderr" else ""
-                break
-            elif mime_path.match("text/*"):
-                self.window.content = FormattedTextControl(datum.rstrip())
-                self.window.wrap_lines = to_filter(True)
-                break
         else:
             datum = sorted(self.data.items(), key=_calculate_bling)[-1][1]
             self.window.content = FormattedTextControl(str(datum).rstrip())
