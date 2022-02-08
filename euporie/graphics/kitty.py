@@ -24,7 +24,7 @@ log = logging.getLogger(__name__)
 class KittyTerminalGraphic(TerminalGraphic):
     """Defines a kitty terminal graphic."""
 
-    final_format = "base64"
+    final_format = "base64-png"
 
     def __init__(
         self,

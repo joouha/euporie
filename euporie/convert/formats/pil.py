@@ -1,19 +1,18 @@
-"""Contains function which convert PIL images to other formats."""
+"""Contains functions which convert data to PIL format."""
 
 from __future__ import annotations
 
 import logging
-from math import ceil
 from typing import TYPE_CHECKING
 
-from PIL import Image  # type: ignore
-
-from euporie.app.current import get_base_app as get_app
 from euporie.convert.base import register
 from euporie.convert.util import have_modules
 
 if TYPE_CHECKING:
     from typing import Optional
+
+    from PIL import Image  # type: ignore
+
 
 log = logging.getLogger(__name__)
 
@@ -34,87 +33,25 @@ def set_background(image: "Image", bg_color: "Optional[str]" = None) -> "bytes":
 
 
 @register(
-    from_="pil",
-    to="ansi",
-    filter_=have_modules("timg"),
+    from_=("png", "jpeg"),
+    to="pil",
+    filter_=have_modules("PIL"),
 )
-def pil_to_ansi_py_timg(
-    data: "Image",
+def png_to_pil_py(
+    data: "bytes",
     cols: "Optional[int]" = None,
     rows: "Optional[int]" = None,
     fg: "Optional[str]" = None,
     bg: "Optional[str]" = None,
-) -> "str":
-    """Convert a PIL image to ANSI text using :py:mod:`timg`."""
-    import timg  # type: ignore
-
-    w, h = data.size
-    if cols is not None:
-        data = data.resize((cols, ceil(cols / w * h)))
-    bg = bg or get_app().term_info.background_color.value
-    if bg:
-        data = set_background(data, bg)
-    data = set_background(data, bg)
-    return timg.Ansi24HblockMethod(data).to_string()
-
-
-@register(
-    from_="pil",
-    to="ansi",
-    filter_=have_modules("img2unicode"),
-)
-def pil_to_ansi_py_img2unicode(
-    data: "Image",
-    cols: "Optional[int]" = None,
-    rows: "Optional[int]" = None,
-    fg: "Optional[str]" = None,
-    bg: "Optional[str]" = None,
-) -> "str":
-    """Convert a PIL image to ANSI text using :py:mod:`timg`."""
+) -> "Image":
+    """Convert PNG to a pillow image using :py:mod:`PIL`."""
     import io
 
-    from img2unicode import FastQuadDualOptimizer, Renderer  # type: ignore
+    from PIL import Image  # type: ignore
 
-    output = io.StringIO()
-    Renderer(FastQuadDualOptimizer(), max_w=cols, max_h=rows).render_terminal(
-        data, output
-    )
-    output.seek(0)
-    return output.read()
-
-
-@register(
-    from_="pil",
-    to="sixel",
-    filter_=have_modules("timg"),
-)
-def pil_to_sixel_py_timg(
-    data: "Image",
-    cols: "Optional[int]" = None,
-    rows: "Optional[int]" = None,
-    fg: "Optional[str]" = None,
-    bg: "Optional[str]" = None,
-) -> "str":
-    """Convert a pillow image to sixels :py:mod:`timg`."""
-    import timg  # type: ignore
-
-    return timg.SixelMethod(data).to_string()
-
-
-@register(
-    from_="pil",
-    to="sixel",
-    filter_=have_modules("teimpy", "numpy"),
-)
-def pil_to_sixel_py_teimpy(
-    data: "Image",
-    cols: "Optional[int]" = None,
-    rows: "Optional[int]" = None,
-    fg: "Optional[str]" = None,
-    bg: "Optional[str]" = None,
-) -> "str":
-    """Convert a pillow image to sixels :py:mod:`teimpy`."""
-    import numpy as np  # type: ignore
-    import teimpy  # type: ignore
-
-    return teimpy.get_drawer(teimpy.Mode.SIXEL).draw(np.asarray(data))
+    try:
+        image = Image.open(io.BytesIO(data))
+    except IOError:
+        log.error("Could not load image.")
+    else:
+        return image

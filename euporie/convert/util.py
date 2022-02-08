@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING
 from prompt_toolkit.filters import Condition, to_filter
 
 if TYPE_CHECKING:
-    from typing import Any
+    from typing import Any, Union
 
     from prompt_toolkit.filters import Filter
 
@@ -43,7 +43,7 @@ def have_modules(*modules: "str") -> "Filter":
 
 
 def call_subproc(
-    data: "bytes", cmd: "list[Any]", use_tempfile: "bool" = False
+    data: "Union[str, bytes]", cmd: "list[Any]", use_tempfile: "bool" = False
 ) -> "bytes":
     """Call the command as a subprocess and return it's output as bytes.
 
@@ -58,6 +58,10 @@ def call_subproc(
     """
     # Convert all command arguments to strings
     cmd = list(map(str, cmd))
+
+    # Convert data to bytes
+    if isinstance(data, str):
+        data = data.encode()
 
     if use_tempfile:
         # If the command cannot read from stdin, create a temporary file to pass to

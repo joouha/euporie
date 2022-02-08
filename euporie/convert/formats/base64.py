@@ -1,4 +1,4 @@
-"""Contains function which convert base64 encoded strings to other formats."""
+"""Contains functions which convert data to base64 format."""
 
 from __future__ import annotations
 
@@ -12,34 +12,18 @@ if TYPE_CHECKING:
 
 
 @register(
-    from_="base64",
-    to="png",
-    filter_=True,
-)
-@register(
-    from_="base64",
-    to="jpg",
-    filter_=True,
-)
-def base64_to_bytes_py(
-    data: "str",
-    width: "Optional[int]" = None,
-    height: "Optional[int]" = None,
-    fg: "Optional[str]" = None,
-    bg: "Optional[str]" = None,
-) -> "bytes":
-    """Converts base64 encoded data to bytes."""
-    return base64.b64decode(data)
-
-
-@register(
     from_="png",
-    to="base64",
+    to="base64-png",
     filter_=True,
 )
 @register(
-    from_="jpg",
-    to="base64",
+    from_="jpeg",
+    to="base64-jpeg",
+    filter_=True,
+)
+@register(
+    from_="pdf",
+    to="base64-pdf",
     filter_=True,
 )
 def bytes_to_base64_py(

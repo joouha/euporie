@@ -446,25 +446,31 @@ class NotebookKernel:
             """Process response messages on the ``shell`` channel."""
             async for rsp in self.await_shell_rsps(msg_id):
                 rsp_type = rsp.get("header", {}).get("msg_type")
+                content = rsp.get("content", {})
                 if rsp_type == "status":
                     status = rsp.get("content", {}).get("status", "")
                     if status == "ok":
-                        cell_json["execution_count"] = rsp.get("content", {}).get(
-                            "execution_count"
-                        )
+                        cell_json["execution_count"] = content.get("execution_count")
+
                 elif rsp_type == "execute_reply":
                     self.set_metadata(
                         cell_json,
                         ("execute", "shell", "execute_reply"),
                         rsp["header"]["date"].isoformat(),
                     )
-                    cell_json["execution_count"] = rsp.get("content", {}).get(
-                        "execution_count"
-                    )
+                    cell_json["execution_count"] = content.get("execution_count")
+                    # Show pager output as a cell execution output
+                    for payload in content.get("payload", []):
+                        if data := payload.get("data", {}):
+                            cell_json.setdefault("outputs", []).append(
+                                nbformat.v4.new_output(
+                                    "execute_result",
+                                    data=data,
+                                )
+                            )
                     if callable(output_cb):
                         log.debug("Calling output callback")
                         output_cb()
-                # Page '?' output here
 
         async def process_execute_iopub_rsp() -> "None":
             """Process response messages on the ``iopub`` channel."""
@@ -526,7 +532,7 @@ class NotebookKernel:
                 if stop:
                     break
             # Stop the stdin listener
-            log.debug(stdin_listener.cancel())
+            stdin_listener.cancel()
 
         stdin_listener = asyncio.ensure_future(process_stin_rsp())
 

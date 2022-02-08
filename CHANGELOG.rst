@@ -6,6 +6,8 @@ Changelog
 Upcoming
 ********
 
+- Allow displaying pager outputs (e.g. when using ``print??`` ipython syntax)
+- Display PDF outputs
 - New data conversion system to replace the output rendering system
 - Add option to automatically format code cells with black
 

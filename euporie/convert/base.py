@@ -10,7 +10,7 @@ from prompt_toolkit.cache import FastDictCache, SimpleCache
 from prompt_toolkit.filters import to_filter
 
 if TYPE_CHECKING:
-    from typing import Any, Callable, Optional
+    from typing import Any, Callable, Iterable, Optional, Union
 
     from prompt_toolkit.filters import FilterOrBool
 
@@ -23,16 +23,21 @@ convertors: "dict[str, dict[str, list[Callable]]]" = {}
 _CONVERSION_CACHE: "SimpleCache" = SimpleCache(maxsize=20)
 
 
-def register(from_: "str", to: "str", filter_: "FilterOrBool") -> "Callable":
+def register(
+    from_: "Union[Iterable[str], str]", to: "str", filter_: "FilterOrBool" = True
+) -> "Callable":
     """Adds a convertor to the centralized format conversion system."""
+    if isinstance(from_, str):
+        from_ = (from_,)
 
     def decorator(func: "Callable") -> "Callable":
         if to_filter(filter_)():
             if to not in convertors:
                 convertors[to] = {}
-            if from_ not in convertors[to]:
-                convertors[to][from_] = []
-            convertors[to][from_].append(func)
+            for from_format in from_:
+                if from_format not in convertors[to]:
+                    convertors[to][from_format] = []
+                convertors[to][from_format].append(func)
         return func
 
     return decorator

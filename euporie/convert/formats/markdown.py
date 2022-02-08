@@ -1,33 +1,29 @@
-"""Contains function which convert markdown strings to other formats."""
+"""Contains functions which convert data to markdown format."""
 
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from euporie.config import config
 from euporie.convert.base import register
 from euporie.convert.util import have_modules
-from euporie.markdown import Markdown
 
 if TYPE_CHECKING:
     from typing import Optional
 
 
 @register(
-    from_="markdown",
-    to="rich",
-    filter_=have_modules("rich"),
+    from_="html",
+    to="markdown",
+    filter_=have_modules("mtable", "html5lib"),
 )
-def markdown_to_rich_py(
+def html_to_markdown_py_mtable(
     data: "str",
     width: "Optional[int]" = None,
     height: "Optional[int]" = None,
     fg: "Optional[str]" = None,
     bg: "Optional[str]" = None,
-) -> "Markdown":
-    """Converts base64 encoded data to bytes."""
-    return Markdown(
-        data,
-        code_theme=str(config.syntax_theme),
-        inline_code_theme=str(config.syntax_theme),
-    )
+) -> "str":
+    """Convert HTML tables to markdown tables using :py:mod:`mtable`."""
+    from mtable import MarkupTable  # type: ignore
+
+    return "\n\n".join([table.to_md() for table in MarkupTable.from_html(data)])
