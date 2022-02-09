@@ -6,6 +6,7 @@ import asyncio
 import concurrent.futures
 import logging
 import threading
+from subprocess import DEVNULL, STDOUT  # noqa S404 - Security implications considered
 from typing import TYPE_CHECKING
 
 import nbformat  # type: ignore
@@ -188,7 +189,8 @@ class NotebookKernel:
         log.debug("Starting kernel")
         self._status = "starting"
         try:
-            await self.km.start_kernel()
+            # TODO - send stdout to log
+            await self.km.start_kernel(stdout=DEVNULL, stderr=STDOUT)
         except Exception as e:
             log.error("Kernel '%s' does not exist", self.km.kernel_name)
             self._status = "error"
