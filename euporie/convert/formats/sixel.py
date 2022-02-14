@@ -16,20 +16,6 @@ if TYPE_CHECKING:
     from PIL import Image  # type: ignore
 
 
-register(
-    from_=("png", "jpeg", "svg", "pdf"),
-    to="sixel",
-    filter_=commands_exist("convert", "magick"),
-)(partial(imagemagick_convert, "sixel"))
-
-
-register(
-    from_=("png", "jpeg", "svg", "pdf"),
-    to="ansi",
-    filter_=commands_exist("chafa"),
-)(partial(chafa_convert, "sixel"))
-
-
 @register(
     from_=("png", "jpeg"),
     to="sixel",
@@ -51,6 +37,20 @@ def png_to_sixel_img2sixel(
         px, _ = get_app().term_info.cell_size_px
         cmd += [f"--width={int(cols * px)}"]
     return call_subproc(data, cmd).decode()
+
+
+register(
+    from_=("png", "jpeg", "svg", "pdf"),
+    to="ansi",
+    filter_=commands_exist("chafa"),
+)(partial(chafa_convert, "sixel"))
+
+
+register(
+    from_=("png", "jpeg", "svg", "pdf"),
+    to="sixel",
+    filter_=commands_exist("convert", "magick"),
+)(partial(imagemagick_convert, "sixel"))
 
 
 @register(

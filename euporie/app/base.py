@@ -28,7 +28,7 @@ from prompt_toolkit.key_binding.key_bindings import (
     merge_key_bindings,
 )
 from prompt_toolkit.layout import Layout
-from prompt_toolkit.layout.containers import Window
+from prompt_toolkit.layout.containers import Window, to_container
 from prompt_toolkit.output.defaults import create_output
 from prompt_toolkit.styles import (
     BaseStyle,
@@ -46,7 +46,6 @@ from prompt_toolkit.utils import is_windows
 from pygments.styles import get_style_by_name  # type: ignore
 
 from euporie.config import config
-from euporie.graphics import TerminalGraphicsRenderer
 from euporie.key_binding.bindings.commands import load_command_bindings
 from euporie.key_binding.bindings.micro import load_micro_bindings
 from euporie.key_binding.micro_state import MicroState
@@ -62,7 +61,7 @@ if TYPE_CHECKING:
 
     from prompt_toolkit.filters import Filter
     from prompt_toolkit.input.vt100 import Vt100Input
-    from prompt_toolkit.layout.containers import AnyContainer
+    from prompt_toolkit.layout.containers import AnyContainer, Float
     from prompt_toolkit.output import Output
 
     from euporie.cell import InteractiveCell
@@ -115,10 +114,10 @@ class EuporieApp(Application):
         self.micro_state = MicroState()
         # Load the terminal information system
         self.term_info = TerminalInfo(self.input, self.output)
-        # Load the graphics display system
-        self.load_graphics_system()
         # Continue loading
         self.pre_run_callables = [self.pre_run]
+        # Floats at the app level
+        self.floats: "list[Float]" = []
 
     def pre_run(self, app: "Application" = None) -> "None":
         """Called during the 'pre-run' stage of application loading."""
@@ -204,27 +203,6 @@ class EuporieApp(Application):
             "app", "config", "completion", "suggestion"
         )
         # dict_bindings(config.key_bindings or {})
-
-    def load_graphics_system(self) -> "None":
-        """Loads the graphic rendering system.
-
-        Sets up hooks to configure the backend depending on the response the terminal
-        gives to capability queries.
-        """
-        self.graphics_renderer = TerminalGraphicsRenderer()
-
-        def _use_kitty_graphics(query: "TerminalQuery") -> "None":
-            from euporie.graphics.kitty import KittyTerminalGraphic
-
-            self.graphics_renderer.graphic_class = KittyTerminalGraphic
-
-        def _use_sixel_graphics(query: "TerminalQuery") -> "None":
-            from euporie.graphics.sixel import SixelTerminalGraphic
-
-            self.graphics_renderer.graphic_class = SixelTerminalGraphic
-
-        self.term_info.sixel_graphics_status.event += _use_sixel_graphics
-        self.term_info.kitty_graphics_status.event += _use_kitty_graphics
 
     def _on_resize(self) -> "None":
         """Hook the resize event to also query the terminal dimensions."""
@@ -375,6 +353,11 @@ class EuporieApp(Application):
             config.color_scheme = color_scheme
         self.renderer.style = self.create_merged_style()
 
+    def refresh(self) -> "None":
+        """Reset all tabs."""
+        for tab in self.tabs:
+            to_container(tab).reset()
+
     def _create_merged_style(
         self, include_default_pygments_style: "Filter" = None
     ) -> "BaseStyle":
@@ -509,3 +492,13 @@ class EuporieApp(Application):
     def cell(self) -> "Optional[InteractiveCell]":
         """Return the currently active cell."""
         return None
+
+    def add_float(self, float_container: "Float") -> "None":
+        """Adds a float to the application."""
+        if float_container not in self.floats:
+            self.floats.append(float_container)
+
+    def remove_float(self, float_container: "Float") -> "None":
+        """Adds a float to the application."""
+        if float_container in self.floats:
+            self.floats.remove(float_container)

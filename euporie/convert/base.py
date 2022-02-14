@@ -67,7 +67,7 @@ def convert(
         if from_ == to:
             return data
         route = _CONVERTOR_ROUTE_CACHE[(from_, to)]
-        log.debug("Converting from '%s' to '%s' using route: %s", from_, to, route)
+        # log.debug("Converting from '%s' to '%s' using route: %s", from_, to, route)
         if route is None:
             raise NotImplementedError(f"Cannot convert from `{from_}` to `{to}`")
         for stage_a, stage_b in zip(route, route[1:]):

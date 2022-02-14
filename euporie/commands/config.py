@@ -26,6 +26,7 @@ log = logging.getLogger(__name__)
 def show_line_numbers() -> "None":
     """Toggle the visibility of line numbers."""
     config.toggle("line_numbers")
+    get_app().refresh()
 
 
 @add(
@@ -45,6 +46,7 @@ def switch_background_pattern() -> "None":
 def show_cell_borders() -> "None":
     """Toggle the visibility of the borders of unselected cells."""
     config.toggle("show_cell_borders")
+    get_app().refresh()
 
 
 @add(

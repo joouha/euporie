@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import base64
+import logging
 from typing import TYPE_CHECKING
 
 from euporie.app.current import get_base_app as get_app
@@ -10,6 +11,8 @@ from euporie.convert.util import call_subproc
 
 if TYPE_CHECKING:
     from typing import Any, Optional, Union
+
+log = logging.getLogger(__name__)
 
 
 def base64_to_bytes_py(

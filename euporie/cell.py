@@ -32,7 +32,6 @@ from pygments.lexers import get_lexer_by_name  # type: ignore
 
 from euporie.box import RoundBorder as Border
 from euporie.config import config
-from euporie.key_binding.bindings.commands import load_command_bindings
 from euporie.output.container import CellOutput
 from euporie.suggest import AppendLineAutoSuggestion, ConditionalAutoSuggestAsync
 
@@ -90,7 +89,7 @@ class Cell:
 
         Args:
             index: The position of this cell in the notebook
-            json: A refernce to the cell's json object
+            json: A reference to the cell's json object
             notebook: The notebook instance this cell belongs to
 
         """
@@ -142,7 +141,9 @@ class Cell:
             show_cursor=False,
         )
         fill = partial(Window, style=self.border_style)
-        self.control = Window(ft, width=1, height=0, style=self.border_style)
+        self.control = Window(
+            ft, width=1, height=0, style=self.border_style, always_hide_cursor=True
+        )
 
         # Create textbox for standard input
         self.stdin_prompt = Label(">", dont_extend_width=True, style="bold")
@@ -289,7 +290,7 @@ class Cell:
         self.container = FloatContainer(
             content=HSplit(
                 [top_border, input_row, middle_line, output_row, bottom_border],
-                key_bindings=load_command_bindings("cell"),
+                # key_bindings=load_command_bindings("cell"),
             ),
             floats=[
                 Float(
@@ -311,7 +312,7 @@ class Cell:
         )
 
     def on_output(self) -> "None":
-        """Runs when a message for this cell is recieved from the kernel."""
+        """Runs when a message for this cell is received from the kernel."""
         # Set the outputs
         self.output_box.children = self.render_outputs()
         # Tell the app that the display needs updating
@@ -451,27 +452,47 @@ class Cell:
         return rendered_outputs
 
     def reformat(self) -> "None":
-        """Reformats the cell's input."""
-        pass
+        """Reformats the cell's input using black."""
+        try:
+            import black  # type: ignore
+        except ModuleNotFoundError:
+            pass
+        else:
+            try:
+                self.input = black.format_str(self.input, mode=black.Mode()).rstrip()
+            except black.parsing.InvalidInput:
+                log.exception("Error formatting cell")
 
     def run_or_render(
         self,
         buffer: "Optional[Buffer]" = None,
         advance: "bool" = False,
         insert: "bool" = False,
+        wait: "bool" = False,
     ) -> "bool":
         """Placeholder function for running the cell.
 
         Args:
             buffer: Unused parameter, required when accepting the contents of a cell's
                 input buffer
-            advance: Has no affect
-            insert: Has no affect
+            advance: Has no effect
+            insert: Has no effect
+            wait: Has no effect
 
         Returns:
             Always returns True
 
         """
+        if self.cell_type == "markdown":
+            self.output_box.children = self.render_outputs()
+            self.rendered = True
+
+        elif self.cell_type == "code":
+            if config.autoformat:
+                self.reformat()
+            self.state = "queued"
+            self.nb.run_cell(self, wait=wait)
+
         return True
 
     def __pt_container__(self) -> "Container":
@@ -487,14 +508,13 @@ class InteractiveCell(Cell):
 
         Args:
             index: The position of this cell in the notebook
-            json: A refernce to the cell's json object
+            json: A reference to the cell's json object
             notebook: The notebook instance this cell belongs to
 
         """
         super().__init__(index, json, notebook)
         # Pytype need this re-defining...
         self.nb: "TuiNotebook" = notebook
-        self.obscured = Condition(lambda: self.nb.is_cell_obscured(self.index))
         self.stdin_event = asyncio.Event()
 
     async def edit_in_editor(self) -> "None":
@@ -518,23 +538,12 @@ class InteractiveCell(Cell):
         # then select the next cell)
         get_app().layout.focus(self.nb.cell.control)
 
-    def reformat(self) -> "None":
-        """Reformats the cell's input using black."""
-        try:
-            import black  # type: ignore
-        except ModuleNotFoundError:
-            pass
-        else:
-            try:
-                self.input = black.format_str(self.input, mode=black.Mode()).rstrip()
-            except black.parsing.InvalidInput:
-                log.exception("Error formatting cell")
-
     def run_or_render(
         self,
         buffer: "Optional[Buffer]" = None,
         advance: "bool" = False,
         insert: "bool" = False,
+        wait: "bool" = False,
     ) -> "bool":
         """Run code cells, or render markdown cells, optionally advancing.
 
@@ -544,6 +553,7 @@ class InteractiveCell(Cell):
             advance: If True, move to next cell. If True and at the last cell, create a
                 new cell at the end of the notebook.
             insert: If True, add a new empty cell below the current cell and select it.
+            wait: If True, block the main thread until the cell has finished running
 
         Returns:
             Always return True
@@ -555,21 +565,12 @@ class InteractiveCell(Cell):
 
         # Insert a cell if we are at the last cell
         if insert or (advance and self.nb.page.selected_index == (n_cells) - 1):
-            self.nb.add(self.index + 1)
+            # self.nb.add(self.index + 1)
+            self.nb.add_cell_below()
         elif advance:
             self.nb.page.selected_index += 1
 
-        if self.cell_type == "markdown":
-            self.output_box.children = self.render_outputs()
-            self.rendered = True
-
-        elif self.cell_type == "code":
-            if config.autoformat:
-                self.reformat()
-            self.state = "queued"
-            self.nb.run_cell(self)
-
-        return True
+        return super().run_or_render(buffer, advance, insert)
 
     def get_input(
         self,
@@ -578,7 +579,8 @@ class InteractiveCell(Cell):
         password: "bool" = False,
     ) -> "None":
         """Prompts the user for input and sends the result to the kernel."""
-        # Remeber what was focused before
+        # self.nb.page.selected_index = self.index
+        # Remember what was focused before
         layout = get_app().layout
         focused = layout.current_control
         # Show and focus the input box

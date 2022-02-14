@@ -4,33 +4,28 @@ from __future__ import annotations
 
 import io
 import logging
+from functools import partial
 from pathlib import PurePath
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
 
 import imagesize  # type: ignore
-from prompt_toolkit.filters import Condition
-from prompt_toolkit.layout import Window
-from prompt_toolkit.layout.containers import to_container
-from prompt_toolkit.layout.controls import FormattedTextControl
+from prompt_toolkit.filters import has_completions
+from prompt_toolkit.layout.containers import Float, Window
+from prompt_toolkit.layout.mouse_handlers import MouseHandlers
+from prompt_toolkit.layout.screen import WritePosition
 
 from euporie.app import get_app
 from euporie.convert.base import convert, find_route
-from euporie.output.control import FormatterControl
+from euporie.filters import has_dialog, has_menus
+from euporie.output.control import AnsiControl, KittyGraphicControl, SixelGraphicControl
 
 if TYPE_CHECKING:
-    from typing import Any, Optional, Protocol
+    from typing import Any, Optional, Type
 
     from prompt_toolkit.layout.containers import AnyContainer
-    from prompt_toolkit.layout.mouse_handlers import MouseHandlers
-    from prompt_toolkit.layout.screen import Screen, WritePosition
+    from prompt_toolkit.layout.screen import Screen
 
-    from euporie.graphics.base import TerminalGraphic
-
-    class ParentContainer(Protocol):
-        """A type for a parent container which remembers it's write position."""
-
-        last_write_position: "Optional[WritePosition]"
-
+    from euporie.output.control import OutputControl
 
 log = logging.getLogger(__name__)
 
@@ -53,15 +48,14 @@ BLING_SCORES = {
     "image/*": 0,
     "application/pdf": 1,
     "text/html": 2,
-    "text/latex": 2,
-    "text/markdown": 3,
-    "text/x-markdown": 3,
-    "text/x-python-traceback": 4,
-    "text/stderr": 5,
-    "text/*": 6,
-    "*": 7,
+    "text/latex": 3,
+    "text/markdown": 4,
+    "text/x-markdown": 4,
+    "text/x-python-traceback": 5,
+    "text/stderr": 6,
+    "text/*": 7,
+    "*": 8,
 }
-0
 
 
 def _calculate_bling(item: tuple[str, str]) -> int:
@@ -101,6 +95,10 @@ def get_dims(
 
     """
     cols, aspect = None, None
+    # Do not bother trying if the format is ANSI
+    if format_ == "ansi":
+        return cols, aspect
+    # Try using imagesize to get the size of the output
     if px is None or py is None:
         if format_ not in {"png", "svg", "jpg", "gif", "tiff"}:
             try:
@@ -119,6 +117,82 @@ def get_dims(
     return cols, aspect
 
 
+class GraphicWindow(Window):
+    """A window responsible for displaying terminal graphics content.
+
+    The graphic will be displayed if:
+    - a completion menu is not being shown
+    - a dialog is not being shown
+    - a menu is not being shown
+    - the output it attached to is fully in view
+    """
+
+    content: "OutputControl"
+
+    def __init__(
+        self,
+        content: "OutputControl",
+        target_window: "Window",
+        *args: "Any",
+        **kwargs: "Any",
+    ):
+        """Initiates a new :py:class:`GraphicWindow` object.
+
+        Args:
+            content: A control which generates the graphical content to display
+            target_window: The window this graphic should position itself over
+            *args: Positional arguments for :py:method:`Window.__init__`
+            **kwargs: Key-word arguments for :py:method:`Window.__init__`
+        """
+        super().__init__(*args, **kwargs)
+        self.target_window = target_window
+        self.content = content
+
+    def write_to_screen(
+        self,
+        screen: "Screen",
+        mouse_handlers: "MouseHandlers",
+        write_position: "WritePosition",
+        parent_style: "str",
+        erase_bg: "bool",
+        z_index: "Optional[int]",
+    ) -> "None":
+        """Draws the graphic window's contents to the screen if required."""
+        if (
+            not has_completions()
+            and not has_dialog()
+            and not has_menus()
+            and (
+                target_wp := screen.visible_windows_to_write_positions.get(
+                    self.target_window
+                )
+            )
+        ):
+            assert self.target_window.render_info is not None
+            rendered_height = self.target_window.render_info.window_height
+            # Only draw if the target window is fully visible
+            if target_wp.height == rendered_height:
+                cpos = screen.get_menu_position(self.target_window)
+                new_write_position = WritePosition(
+                    xpos=cpos.x,
+                    ypos=cpos.y,
+                    width=target_wp.width,
+                    height=target_wp.height,
+                )
+                super().write_to_screen(
+                    screen,
+                    MouseHandlers(),  # Do not let the float add mouse events
+                    new_write_position,
+                    # Ensure the float is always updated by constantly changing style
+                    parent_style + f"class:{get_app().render_counter}",
+                    erase_bg=True,
+                    z_index=z_index,
+                )
+                return
+        # Otherwise hide the content (required for kitty graphics)
+        self.content.hide()
+
+
 class CellOutput:
     """A container for rendered cell outputs."""
 
@@ -130,9 +204,7 @@ class CellOutput:
 
         """
         self.json = json
-
-        self.window = OutputWindow()
-        self.graphic = None
+        self.window = Window()
 
         metadata = json.get("metadata", {})
         fg_color = get_app().term_info.foreground_color.value
@@ -141,9 +213,9 @@ class CellOutput:
         )
 
         # Sort data first so there is more bling first
-        for mime, datum in sorted(self.data.items(), key=_calculate_bling):
+        datum = ""
+        for mime, datum_ in sorted(self.data.items(), key=_calculate_bling):
             mime_path = PurePath(mime)
-
             format_ = None
             for data_mime, data_format in MIME_FORMATS.items():
                 if mime_path.match(data_mime):
@@ -151,42 +223,69 @@ class CellOutput:
                         self.window.style = "fg:red"
                     if find_route(data_format, "ansi") is not None:
                         format_ = data_format
+                        datum = datum_
                         break
             else:
                 continue
-
-            self.graphic = get_app().graphics_renderer.add(
-                datum,
-                format_=format_,
-                visible=~Condition(self.window.is_obscured),
-                fg_color=fg_color,
-                bg_color=bg_color,
-            )
-
-            mime_meta = metadata.get(mime, {})
-            cols, aspect = get_dims(
-                datum,
-                format_,
-                px=mime_meta.get("width"),
-                py=mime_meta.get("height"),
-                fg=fg_color,
-                bg=bg_color,
-            )
-
-            self.window.content = FormatterControl(
-                datum,
-                format_=format_,
-                graphic=self.graphic,
-                fg_color=fg_color,
-                bg_color=bg_color,
-                max_cols=cols,
-                aspect=aspect,
-            )
             break
-
         else:
+            format_ = "ansi"
             datum = sorted(self.data.items(), key=_calculate_bling)[-1][1]
-            self.window.content = FormattedTextControl(str(datum).rstrip())
+
+        mime_meta = metadata.get(mime, {})
+
+        # We create a function to calculate the size of the output so it can be
+        # called when actually needed - it can be quite expensive to calculate
+        sizing_func = partial(
+            get_dims,
+            datum,
+            format_,
+            px=mime_meta.get("width"),
+            py=mime_meta.get("height"),
+            fg=fg_color,
+            bg=bg_color,
+        )
+
+        self.window.content = AnsiControl(
+            datum,
+            format_=format_,
+            fg_color=fg_color,
+            bg_color=bg_color,
+            sizing_func=sizing_func,
+        )
+
+        # Add graphic
+        self.graphic_float = None
+        GraphicControl: "Optional[Type[OutputControl]]" = None
+
+        if (
+            get_app().term_info.sixel_graphics_status.value
+            and find_route(format_, "sixel") is not None
+        ):
+            GraphicControl = SixelGraphicControl
+        elif (
+            get_app().term_info.kitty_graphics_status.value
+            and find_route(format_, "base64-png") is not None
+        ):
+            GraphicControl = KittyGraphicControl
+
+        if GraphicControl is not None:
+            self.graphic_float = Float(
+                content=GraphicWindow(
+                    target_window=self.window,
+                    content=GraphicControl(
+                        datum,
+                        format_=format_,
+                        fg_color=fg_color,
+                        bg_color=bg_color,
+                        sizing_func=sizing_func,
+                    ),
+                ),
+                left=0,
+                top=0,
+            )
+        if self.graphic_float is not None:
+            get_app().add_float(self.graphic_float)
 
     @property
     def data(self) -> "dict[str, str]":
@@ -212,103 +311,3 @@ class CellOutput:
     def __pt_container__(self) -> "AnyContainer":
         """Return the content of this output."""
         return self.window
-
-
-class OutputWindow(Window):
-    """A window to contain a formatted control and a terminal graphics."""
-
-    def __init__(
-        self,
-        *args: "Any",
-        graphic: "Optional[TerminalGraphic]" = None,
-        **kwargs: "Any",
-    ):
-        """Create a new output window."""
-        super().__init__(*args, **kwargs)
-        self.parent: "Optional[ParentContainer]" = None
-        self.write_position: "Optional[WritePosition]" = None
-
-    def write_to_screen(
-        self,
-        screen: "Screen",
-        mouse_handlers: "MouseHandlers",
-        write_position: "WritePosition",
-        parent_style: "str",
-        erase_bg: "bool",
-        z_index: "Optional[int]",
-    ) -> "None":
-        """Draw the window's contents to the screen.
-
-        This also updates the location of the control's graphic if it has one.
-
-        Args:
-            screen: The :class:`~prompt_toolkit.layout.screen.Screen` class to which
-                the output has to be drawn.
-            mouse_handlers: :class:`prompt_toolkit.layout.mouse_handlers.MouseHandlers`.
-            write_position: A :class:`prompt_toolkit.layout.screen.WritePosition` object
-                defining where this container should be drawn.
-            erase_bg: If true, the background will be erased prior to drawing.
-            parent_style: Style string to pass to the :class:`.Window` object. This will
-                be applied to all content of the windows. :class:`.VSplit` and
-                :class:`prompt_toolkit.layout.containers.HSplit` can use it to pass
-                their style down to the windows that they contain.
-            z_index: Used for propagating z_index from parent to child.
-
-        """
-        super().write_to_screen(
-            screen,
-            mouse_handlers,
-            write_position,
-            parent_style,
-            erase_bg,
-            z_index,
-        )
-        self.write_position = write_position
-
-        # TODO - set cropping dimensions for graphic
-
-        # Set graphic position
-        if isinstance(self.content, FormatterControl):
-            if self.content.graphic is not None:
-                self.content.graphic.set_position(
-                    write_position.xpos, write_position.ypos
-                )
-
-    def is_obscured(self) -> "bool":
-        """Determine if the control is partially obscured."""
-        if self not in get_app().layout.visible_windows:
-            return True
-        if self.parent is None:
-            self.parent = get_parent(self)
-        if (
-            self.parent is not None
-            and self.parent.last_write_position is not None
-            and self.write_position is not None
-        ):
-            wp = self.write_position
-            pwp = self.parent.last_write_position
-            assert pwp is not None
-            if wp.ypos < pwp.ypos or pwp.ypos + pwp.height < wp.ypos + wp.height:
-                return True
-        return False
-
-
-def get_parent(*containers: "AnyContainer") -> "Optional[ParentContainer]":
-    """Find the first parent of a container with a ``last_write_position`` attribute.
-
-    Args:
-        containers: A list of nested containers to find the parent of. Pass a single
-            container instance to find a parent with a known write position.
-
-    Returns:
-        A parent container with a :py:attr:`last_write_position` attribute, if one is
-            found
-
-    """
-    parent = get_app().layout.get_parent(to_container(containers[0]))
-    if parent is None:
-        return None
-    elif hasattr(parent, "last_write_position"):
-        return cast("ParentContainer", parent)
-    else:
-        return get_parent(parent, *containers)

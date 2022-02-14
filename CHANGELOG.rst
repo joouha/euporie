@@ -6,6 +6,8 @@ Changelog
 Upcoming
 ********
 
+- New terminal graphic rendering system to work with new scrolling method
+- New notebooks scrolling method which improves scrolling performance
 - Allow displaying pager outputs (e.g. when using ``print??`` ipython syntax)
 - Display PDF outputs
 - New data conversion system to replace the output rendering system

@@ -11,17 +11,19 @@ from typing import TYPE_CHECKING
 from prompt_toolkit.clipboard import InMemoryClipboard
 from prompt_toolkit.clipboard.pyperclip import PyperclipClipboard
 from prompt_toolkit.completion import PathCompleter
-from prompt_toolkit.filters import Condition
+from prompt_toolkit.filters import Condition, buffer_has_focus
 from prompt_toolkit.formatted_text import (
     HTML,
     AnyFormattedText,
     fragment_list_to_text,
     to_formatted_text,
 )
+from prompt_toolkit.key_binding.key_bindings import KeyBindings, merge_key_bindings
 from prompt_toolkit.layout import (
     ConditionalContainer,
     DynamicContainer,
     Float,
+    FloatContainer,
     HSplit,
     VSplit,
     Window,
@@ -51,6 +53,7 @@ if TYPE_CHECKING:
     from prompt_toolkit.clipboard import Clipboard
     from prompt_toolkit.completion import Completer
     from prompt_toolkit.formatted_text import StyleAndTextTuples
+    from prompt_toolkit.key_binding.key_processor import KeyPressEvent
     from prompt_toolkit.layout.containers import AnyContainer
 
     from euporie.cell import InteractiveCell
@@ -75,6 +78,7 @@ class TuiApp(EuporieApp):
             editing_mode=self.get_edit_mode(),
             **kwargs,
         )
+        self.has_dialog = False
 
     def post_load(self) -> "None":
         """Continues loading the app."""
@@ -86,8 +90,8 @@ class TuiApp(EuporieApp):
             self.tab.focus()
 
         # Load graphics system hooks
-        self.before_render += self.graphics_renderer.before_render
-        self.after_render += self.graphics_renderer.after_render
+        # self.before_render += self.graphics_renderer.before_render
+        # self.after_render += self.graphics_renderer.after_render
 
         # Load style hooks and start polling terminal style
         if self.using_vt100:
@@ -262,12 +266,16 @@ class TuiApp(EuporieApp):
             to_focus: The control to focus when the dialog is displayed.
 
         """
+        # Only show one dialog at a time
+        if self.has_dialog:
+            return
+
         focused = self.layout.current_control
 
         def _make_handler(cb: "Optional[Callable]" = None) -> "Callable":
-            def inner() -> "None":
-                assert isinstance(self.root_container.floats, list)
-                self.root_container.floats.remove(dialog)
+            def inner(event: "Optional[KeyPressEvent]" = None) -> "None":
+                self.remove_float(dialog_float)
+                self.has_dialog = False
                 if focused in self.layout.find_all_controls():
                     try:
                         self.layout.focus(focused)
@@ -278,27 +286,37 @@ class TuiApp(EuporieApp):
 
             return inner
 
-        # kb = KeyBindingsInfo()
-        # kb.add("escape")(lambda event: _make_handler())
+        kb = KeyBindings()
+        kb.add("escape")(lambda event: _make_handler()())
         button_widgets = []
         for text, cb in buttons.items():
             handler = _make_handler(cb)
             button_widgets.append(
                 Button(text, handler, left_symbol="[", right_symbol="]")
             )
-            # kb.add(text[:1].lower())(lambda event: handler)
+            kb.add(text[:1].lower(), filter=~buffer_has_focus)(handler)
 
-        dialog = Float(
-            Dialog(
-                title=title,
-                body=body,
-                buttons=button_widgets,
-                modal=True,
-                with_background=True,
-            )
+        dialog = Dialog(
+            title=title,
+            body=body,
+            buttons=button_widgets,
+            modal=True,
+            with_background=False,
         )
-        assert isinstance(self.root_container.floats, list)
-        self.root_container.floats.insert(0, dialog)
+        # Add extra key-bindings
+        dialog_innards = dialog.container.container
+        if (
+            isinstance(dialog_innards, FloatContainer)
+            and isinstance(dialog_innards.content, HSplit)
+            and dialog_innards.content.key_bindings is not None
+        ):
+            dialog_innards.content.key_bindings = merge_key_bindings(
+                [dialog_innards.content.key_bindings, kb]
+            )
+        dialog_float = Float(content=dialog, z_index=10**9)
+        # Add to top of the float stack
+        self.add_float(dialog_float)
+        self.has_dialog = True
 
         if to_focus is None:
             to_focus = button_widgets[0]
@@ -462,14 +480,14 @@ class TuiApp(EuporieApp):
     ) -> "None":
         exception = context.get("exception")
         # Log observed exceptions to the log
-        log.exception("An unhandled exception occured", exc_info=exception)
+        log.exception("An unhandled exception occurred", exc_info=exception)
         # Also display a dialog to the user
         self.dialog(
             title="Error",
             body=Window(
                 FormattedTextControl(
                     [
-                        ("bold", "An error occured:\n\n"),
+                        ("bold", "An error occurred:\n\n"),
                         ("", exception.__repr__()),
                     ]
                 )
@@ -541,3 +559,22 @@ class TuiApp(EuporieApp):
         if isinstance(self.tab, TuiNotebook):
             return self.tab.cell
         return None
+
+    def add_float(self, float_container: "Float") -> "None":
+        """Adds a float to the application."""
+        super().add_float(float_container)
+        for float_ in self.floats:
+            if (
+                self.root_container.floats is not None
+                and float_ not in self.root_container.floats
+            ):
+                self.root_container.floats.append(float_)
+
+    def remove_float(self, float_container: "Float") -> "None":
+        """Adds a float to the application."""
+        super().remove_float(float_container)
+        if (
+            self.root_container.floats is not None
+            and float_container in self.root_container.floats
+        ):
+            self.root_container.floats.remove(float_container)

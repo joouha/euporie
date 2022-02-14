@@ -89,9 +89,9 @@ class Notebook(Tab, metaclass=ABCMeta):
         self._rendered_cells: "dict[str, Cell]" = {}
         self.cell_type: "Type[Cell]" = Cell
 
-    def refresh(self, index: "Optional[int]" = None) -> "None":
+    def refresh(self, index: "Optional[int]" = None, scroll: "bool" = True) -> "None":
         """Refresh the notebook display."""
-        pass
+        return None
 
     @property
     def title(self) -> "str":
@@ -116,6 +116,7 @@ class Notebook(Tab, metaclass=ABCMeta):
             else:
                 # Pytype doesn't like this...
                 cells[cell_id] = self.cell_type(i, cell_json, self)  # type: ignore
+        # TODO - remove graphic floats from deleted cells at this point
         self._rendered_cells = cells
         return list(self._rendered_cells.values())
 
@@ -164,10 +165,13 @@ class Notebook(Tab, metaclass=ABCMeta):
 
     def delete(self, index: "Optional[int]" = None) -> "None":
         """Delete a cell from the notebook."""
-        if len(self.json["cells"]) > 1:
+        # Ensure there is always one cell
+        if index is not None:
+            if len(self.json["cells"]) == 1:
+                self.add(1)
             del self.json["cells"][index]
             self.dirty = True
-            self.refresh()
+            self.refresh(max(0, index), scroll=True)
 
     def save(self) -> "None":
         """Write the notebook's JSON to the current notebook's file."""
@@ -179,6 +183,10 @@ class Notebook(Tab, metaclass=ABCMeta):
         self.saving = False
         self.app.invalidate()
         log.debug("Notebook saved")
+
+    def run_cell(self, cell: "Cell", wait: "bool" = False) -> "None":
+        """Runs a cell in the notebook."""
+        pass
 
 
 class DumpNotebook(Notebook):
@@ -262,7 +270,8 @@ class KernelNotebook(Notebook):
             for cell in self.rendered_cells():
                 if cell.json.get("cell_type") == "code":
                     log.debug("Running cell %s", cell.id)
-                    self.run_cell(cell, wait=wait)
+                    # self.run_cell(cell, wait=wait)
+                    cell.run_or_render(wait=wait)
             log.debug("All cells run")
 
     def check_kernel(self, result: "None" = None) -> "None":
@@ -328,7 +337,9 @@ class TuiNotebook(KernelNotebook):
                         [
                             Pattern(),
                             BorderLine(
-                                width=1, collapse=True, style="class:notebook.border"
+                                width=1,
+                                collapse=True,
+                                style="class:notebook.border",
                             ),
                             BorderLine(
                                 char=" ",
@@ -351,7 +362,9 @@ class TuiNotebook(KernelNotebook):
                                 style="class:notebook.border",
                             ),
                             BorderLine(
-                                width=1, collapse=True, style="class:notebook.border"
+                                width=1,
+                                collapse=True,
+                                style="class:notebook.border",
                             ),
                             Pattern(),
                         ]
@@ -360,14 +373,18 @@ class TuiNotebook(KernelNotebook):
                 ),
                 Window(ScrollBar(self.page), width=1, style="class:scrollbar"),
             ],
-            key_bindings=load_command_bindings("notebook"),
+            key_bindings=load_command_bindings("notebook", "cell"),
         )
 
     def add_cell_above(self) -> "None":
-        self.add(self.page.selected_index + 0)
+        index = self.page.selected_index + 0
+        self.add(index)
+        self.refresh(index=index, scroll=False)
 
     def add_cell_below(self) -> "None":
-        self.add(self.page.selected_index + 1)
+        index = self.page.selected_index + 1
+        self.add(index)
+        self.refresh(index=index, scroll=True)
 
     @property
     def cell(self) -> "InteractiveCell":
@@ -375,18 +392,6 @@ class TuiNotebook(KernelNotebook):
         cell = self.page.get_child()
         assert isinstance(cell, InteractiveCell)
         return cell
-
-    def is_cell_obscured(self, index: "int") -> "bool":
-        """Determine if a cell is partially visible.
-
-        Args:
-            index: The index of the child of interest.
-
-        Returns:
-            True if the child is fully or partially off-screen, otherwise False
-
-        """
-        return not self.page.is_child_fully_visible(index)
 
     def load_kernel(self) -> "None":
         self.kernel = NotebookKernel(
@@ -472,16 +477,6 @@ class TuiNotebook(KernelNotebook):
             wait=wait,
         )
 
-    def add(self, index: "int") -> "None":
-        """Creates a new cell at a given index, and refreshes the display.
-
-        Args:
-            index: The index at which a new cell should be inserted.
-
-        """
-        super().add(index)
-        self.refresh(index=index)
-
     def cut(self, index: "Optional[int]" = None) -> "None":
         """Remove a cell from the notebook and add it to the `Notebook`'s clipboard."""
         if index is None:
@@ -506,12 +501,12 @@ class TuiNotebook(KernelNotebook):
             index = self.page.selected_index
         super().delete(index)
 
-    def refresh(self, index: "Optional[int]" = None) -> "None":
+    def refresh(self, index: "Optional[int]" = None, scroll: "bool" = True) -> "None":
         """Refresh the rendered contents of this notebook."""
         if index is None:
             index = self.page.selected_index
         self.page.reset()
-        self.page._set_selected_index(index, force=True)
+        self.page._set_selected_index(index, force=True, scroll=scroll)
 
     def close(self, cb: "Optional[Callable]") -> "None":
         """Check if the user want to save an unsaved notebook, then close the file.

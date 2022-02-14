@@ -15,6 +15,8 @@ __all__ = [
     "have_black",
     "cursor_in_leading_ws",
     "has_suggestion",
+    "has_menus",
+    "has_dialog",
     "tab_has_focus",
     "notebook_has_focus",
     "cell_has_focus",
@@ -55,6 +57,19 @@ def has_suggestion() -> "bool":
         and len(app.current_buffer.suggestion.text) > 0
         and app.current_buffer.document.is_cursor_at_the_end_of_line
     )
+
+
+@Condition
+def has_dialog() -> "bool":
+    """Determine if a dialog is being displayed."""
+    return get_app().has_dialog
+
+
+@Condition
+def has_menus() -> "bool":
+    """Determine if a dialog is being displayed."""
+    app = get_app()
+    return app.layout.current_window == app.root_container.window
 
 
 @Condition
