@@ -41,6 +41,7 @@ class ChildMeta:
         """
         self.parent = parent
         self.child = child
+        child.meta = self
         self.container = to_container(child)
 
         self.screen = Screen(default_char=Char(char=" "))
@@ -88,10 +89,6 @@ class ChildMeta:
             )
             self.screen.draw_all_floats()
             self.refresh = False
-
-        # Ensure cell is re-rendered if we are expecting output
-        if self.child.state != "idle":
-            self.refresh = True
 
     def blit(
         self,
@@ -191,9 +188,6 @@ class ChildMeta:
         # Copy menu positions
         for window, point in self.screen.menu_positions.items():
             screen.menu_positions[window] = Point(x=left + point.x, y=top + point.y)
-        # Ensure cell is re-rendered if we are expecting output
-        if self.child.state != "idle":
-            self.refresh = True
 
 
 class ScrollingContainer(Container):

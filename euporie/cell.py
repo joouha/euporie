@@ -101,6 +101,7 @@ class Cell:
         self.rendered = True
 
         self.state = "idle"
+        self.meta = None
 
         self.show_input = Condition(
             lambda: bool(
@@ -322,11 +323,17 @@ class Cell:
             ],
         )
 
+    def trigger_refresh(self) -> "None":
+        """Request that the cell to be re-rendered next time it is drawn."""
+        if self.meta:
+            self.meta.refresh = True
+
     def on_output(self) -> "None":
         """Runs when a message for this cell is received from the kernel."""
         # Set the outputs
         self.output_box.children = self.render_outputs()
         # Tell the app that the display needs updating
+        self.trigger_refresh()
         get_app().invalidate()
 
     def exit_edit_mode(self) -> "None":
@@ -336,6 +343,7 @@ class Cell:
     def ran(self, cell_json: "Optional[dict]" = None) -> "None":
         """Callback which runs when the cell has finished running."""
         self.state = "idle"
+        self.trigger_refresh()
 
     def set_cell_type(
         self, cell_type: "Literal['markdown','code','raw']", clear: "bool" = False
@@ -502,6 +510,7 @@ class Cell:
             if config.autoformat:
                 self.reformat()
             self.state = "queued"
+            self.trigger_refresh()
             self.nb.run_cell(self, wait=wait)
 
         return True
