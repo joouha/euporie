@@ -197,6 +197,7 @@ def toggle_comment() -> "None":
         lambda x: document.translate_index_to_position(x)[0],
         document.selection_range(),
     )
+    cursor_in_first_line = document.cursor_position_row == start
     # Only remove comments if all lines in the selection have a comment
     uncommenting = all(
         line.lstrip().startswith(comment) for line in lines[start : end + 1]
@@ -205,6 +206,25 @@ def toggle_comment() -> "None":
         for i in range(start, end + 1):
             # Replace the first instance of the comment in each line
             lines[i] = lines[i].replace(comment, "", 1)
+        # Find cursor and selection column positions
+        cur_col = document.translate_index_to_position(buffer.cursor_position)[1]
+        if selection_state is not None:
+            sel_col = document.translate_index_to_position(
+                selection_state.original_cursor_position
+            )[1]
+        # Move cursor & adjust selection
+        if cursor_in_first_line:
+            bcp = buffer.cursor_position - min(len(comment), cur_col)
+            if selection_state is not None:
+                selection_state.original_cursor_position -= len(comment) * (
+                    end - start
+                ) + min(len(comment), sel_col)
+        else:
+            if selection_state is not None:
+                selection_state.original_cursor_position -= min(len(comment), sel_col)
+            bcp = buffer.cursor_position - (
+                len(comment) * (end - start) + min(len(comment), cur_col)
+            )
     else:
         # Find the minimum leading whitespace in the selected lines
         whitespace = min(
@@ -214,36 +234,20 @@ def toggle_comment() -> "None":
             # Add a comment after the minimum leading whitespace to each line
             line = lines[i]
             lines[i] = line[:whitespace] + comment + line[whitespace:]
-
-    # Move cursor & adjust selection
-    cursor_in_first_line = document.cursor_position_row == start
-    # If we are uncommenting we want to reduce the cursor position
-    sign = 2 * uncommenting - 1
-    # We move the start of the selection one comment length and the end of the
-    # selection n comment lengths (where n is the number of lines)
-    diffs = (
-        len(comment) * (end - start + 1),
-        len(comment),
-    )
-    # If we are uncommenting and the cursor is in the first line of the selection,
-    # we need to remove one comment length. Etc.
-    # Do not move the cursor or the start of the selection back onto a previous line
-    buffer.cursor_position = max(
-        buffer.cursor_position - diffs[cursor_in_first_line] * sign,
-        buffer.cursor_position + document.get_start_of_line_position(),
-    )
-    if selection_state is not None:
-        og_cursor_col = document.translate_index_to_position(
-            selection_state.original_cursor_position
-        )[1]
-        selection_state.original_cursor_position = max(
-            selection_state.original_cursor_position
-            - diffs[not cursor_in_first_line] * sign,
-            selection_state.original_cursor_position - og_cursor_col,
-        )
+        # Move cursor & adjust selection
+        if cursor_in_first_line:
+            bcp = buffer.cursor_position + len(comment)
+            if selection_state is not None:
+                selection_state.original_cursor_position += len(comment) * (
+                    end - start + 1
+                )
+        else:
+            if selection_state is not None:
+                selection_state.original_cursor_position += len(comment)
+            bcp = buffer.cursor_position + len(comment) * (end - start + 1)
 
     # Set the buffer text, curor position and selection state
-    buffer.document = Document("\n".join(lines), buffer.cursor_position)
+    buffer.document = Document("\n".join(lines), bcp)
     buffer.selection_state = selection_state
 
 
