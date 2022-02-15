@@ -43,6 +43,7 @@ if TYPE_CHECKING:
     from prompt_toolkit.layout.layout import FocusableElement
 
     from euporie.notebook import Notebook, TuiNotebook
+    from euporie.scroll import ChildMeta
 
 __all__ = [
     "get_cell_id",
@@ -101,7 +102,7 @@ class Cell:
         self.rendered = True
 
         self.state = "idle"
-        self.meta = None
+        self.meta: "Optional[ChildMeta]" = None
 
         self.show_input = Condition(
             lambda: bool(
