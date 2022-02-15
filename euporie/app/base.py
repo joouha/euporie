@@ -28,7 +28,7 @@ from prompt_toolkit.key_binding.key_bindings import (
     merge_key_bindings,
 )
 from prompt_toolkit.layout import Layout
-from prompt_toolkit.layout.containers import Window, to_container
+from prompt_toolkit.layout.containers import FloatContainer, Window, to_container
 from prompt_toolkit.output.defaults import create_output
 from prompt_toolkit.styles import (
     BaseStyle,
@@ -61,7 +61,7 @@ if TYPE_CHECKING:
 
     from prompt_toolkit.filters import Filter
     from prompt_toolkit.input.vt100 import Vt100Input
-    from prompt_toolkit.layout.containers import Float, FloatContainer
+    from prompt_toolkit.layout.containers import Float
     from prompt_toolkit.output import Output
 
     from euporie.cell import InteractiveCell

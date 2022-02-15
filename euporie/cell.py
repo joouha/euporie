@@ -146,11 +146,22 @@ class Cell:
         )
 
         # Create textbox for standard input
-        self.stdin_prompt = Label(">", dont_extend_width=True, style="bold")
+
+        self.stdin_prompt_text = ">"
+        self.stdin_prompt = Window(
+            content=FormattedTextControl(text=lambda: self.stdin_prompt_text),
+            style="bold",
+            dont_extend_height=True,
+            dont_extend_width=True,
+        )
+
+        def _send_input(buf: "Buffer") -> "bool":
+            return False
+
+        self.stdin_box_accept_handler = _send_input
         self.stdin_box = CellStdinTextArea(
             multiline=False,
-            # accept_handler=self.send_input,
-            accept_handler=None,
+            accept_handler=lambda buf: self.stdin_box_accept_handler(buf),
             focus_on_click=True,
         )
 
@@ -526,9 +537,12 @@ class InteractiveCell(Cell):
 
     def enter_edit_mode(self) -> "None":
         """Set the cell to edit mode."""
-        # self.container.modal = True
-        get_app().layout.focus(self.input_box)
-        self.rendered = False
+        layout = get_app().layout
+        if self.asking_input():
+            layout.focus(self.stdin_box)
+        else:
+            layout.focus(self.input_box)
+            self.rendered = False
 
     def exit_edit_mode(self) -> "None":
         """Removes a cell from edit mode."""
@@ -579,14 +593,18 @@ class InteractiveCell(Cell):
         password: "bool" = False,
     ) -> "None":
         """Prompts the user for input and sends the result to the kernel."""
-        # self.nb.page.selected_index = self.index
-        # Remember what was focused before
-        layout = get_app().layout
-        focused = layout.current_control
-        # Show and focus the input box
+        # Set this first so the height of the cell includes the input box if it gets
+        # rendered when we scroll to it
         self._asking_input = True
-        layout.focus(self.stdin_box)
-        self.stdin_prompt.text = prompt
+        # Remember what was focused before
+        app = get_app()
+        layout = app.layout
+        focused = layout.current_control
+        # Scroll the current cell into view - this cause the cell to be rendered if it
+        # is not already on screen
+        self.nb.page.selected_index = self.index
+        # Update the input box
+        self.stdin_prompt_text = prompt
         self.stdin_box.password = password
 
         def _send_input(buf: "Buffer") -> "bool":
@@ -603,7 +621,19 @@ class InteractiveCell(Cell):
                     pass
             return True
 
-        self.stdin_box.accept_handler = _send_input
+        self.stdin_box_accept_handler = _send_input
+
+        # Try focusing the input box - we create an asynchronous task which will
+        # probably run after the next render, when the stdin_box is recognised as being
+        # in the layout. This doesn't always work (depending on timing), does usually.
+        async def _focus_input() -> "None":
+            # Focus the input box
+            if self.stdin_box.window in layout.visible_windows:
+                layout.focus(self.stdin_box)
+            # Redraw the screen to show it as focused
+            app.invalidate()
+
+        app.create_background_task(_focus_input())
 
 
 class CellInputTextArea(TextArea):
