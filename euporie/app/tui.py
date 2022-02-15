@@ -6,7 +6,7 @@ import asyncio
 import logging
 from functools import lru_cache
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from prompt_toolkit.clipboard import InMemoryClipboard
 from prompt_toolkit.clipboard.pyperclip import PyperclipClipboard
@@ -28,6 +28,7 @@ from prompt_toolkit.layout import (
     VSplit,
     Window,
     WindowAlign,
+    to_container,
 )
 from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.layout.dimension import Dimension
@@ -66,7 +67,7 @@ log = logging.getLogger(__name__)
 class TuiApp(EuporieApp):
     """A text user interface euporie application."""
 
-    root_container: "MenuContainer"
+    menu_container: "MenuContainer"
     notebook_class: "Type[Notebook]" = TuiNotebook
     clipboard: "Clipboard"
 
@@ -142,9 +143,9 @@ class TuiApp(EuporieApp):
         output: "StyleAndTextTuples" = []
 
         # Show selected menu description if set
-        if part == "left" and self.root_container.status_text:
+        if part == "left" and self.menu_container.status_text:
             output.append(
-                ("class:status.field", f" {self.root_container.status_text} ")
+                ("class:status.field", f" {self.menu_container.status_text} ")
             )
 
         # Show the tab's status fields
@@ -165,7 +166,7 @@ class TuiApp(EuporieApp):
                 output.pop()
         return output
 
-    def load_container(self) -> "AnyContainer":
+    def load_container(self) -> "FloatContainer":
         """Builds the main application layout."""
         self.logo = Window(
             FormattedTextControl(
@@ -213,7 +214,7 @@ class TuiApp(EuporieApp):
 
         body = HSplit([tabs, status_bar], style="class:body")
 
-        self.root_container = MenuContainer(
+        self.menu_container = MenuContainer(
             body=body,
             menu_items=load_menu_items(),  # type: ignore
             floats=[
@@ -226,8 +227,7 @@ class TuiApp(EuporieApp):
             left=[self.logo],
             right=[self.title_bar],
         )
-
-        return self.root_container
+        return cast("FloatContainer", to_container(self.menu_container))
 
     def tab_container(self) -> "AnyContainer":
         """Returns a container with all opened tabs.
@@ -559,22 +559,3 @@ class TuiApp(EuporieApp):
         if isinstance(self.tab, TuiNotebook):
             return self.tab.cell
         return None
-
-    def add_float(self, float_container: "Float") -> "None":
-        """Adds a float to the application."""
-        super().add_float(float_container)
-        for float_ in self.floats:
-            if (
-                self.root_container.floats is not None
-                and float_ not in self.root_container.floats
-            ):
-                self.root_container.floats.append(float_)
-
-    def remove_float(self, float_container: "Float") -> "None":
-        """Adds a float to the application."""
-        super().remove_float(float_container)
-        if (
-            self.root_container.floats is not None
-            and float_container in self.root_container.floats
-        ):
-            self.root_container.floats.remove(float_container)

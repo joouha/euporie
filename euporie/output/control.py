@@ -243,7 +243,7 @@ class KittyGraphicControl(OutputControl):
             bg_color,
             sizing_func,
         )
-        self.kitty_image_id: "int"
+        self.kitty_image_id = 0
         self.loaded = False
         self.app = get_app()
 
@@ -276,7 +276,7 @@ class KittyGraphicControl(OutputControl):
                 i=self.kitty_image_id,  # Send a unique image number, wait for an image id
                 # I=self.kitty_image_number,  # Send a unique image number, wait for an image id
                 p=1,  # Placement ID
-                q=0,
+                q=2,  # No chatback
                 f=100,  # Sending a PNG image
                 m=1 if data else 0,  # Data will be chunked
             )
@@ -286,15 +286,16 @@ class KittyGraphicControl(OutputControl):
 
     def hide(self) -> "None":
         """Hides the graphic from show without deleting it."""
-        self.app.output.write_raw(
-            self._kitty_cmd(
-                a="d",
-                d="i",
-                i=self.kitty_image_id,
-                q=1,
+        if self.kitty_image_id > 0:
+            self.app.output.write_raw(
+                self._kitty_cmd(
+                    a="d",
+                    d="i",
+                    i=self.kitty_image_id,
+                    q=1,
+                )
             )
-        )
-        self.app.output.flush()
+            self.app.output.flush()
 
     def delete(self) -> "None":
         """Deletes the graphic from the terminal."""

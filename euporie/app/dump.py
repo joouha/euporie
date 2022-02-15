@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, cast
 
 from prompt_toolkit import renderer
 from prompt_toolkit.data_structures import Size
+from prompt_toolkit.layout.containers import FloatContainer
 from prompt_toolkit.output.defaults import create_output
 from prompt_toolkit.output.vt100 import Vt100_Output
 from prompt_toolkit.widgets import Box, HorizontalLine
@@ -44,7 +45,7 @@ class DumpApp(EuporieApp):
         # We want the app to close when rendering is complete
         self.after_render += self.pre_exit
 
-    def load_container(self) -> "AnyContainer":
+    def load_container(self) -> "FloatContainer":
         """Returns a container with all opened tabs."""
         # Create a horizontal line that takes up the full width of the display
         hr = HorizontalLine()
@@ -60,7 +61,10 @@ class DumpApp(EuporieApp):
         if self.tabs:
             contents.pop()
 
-        return PrintingContainer(contents)
+        return FloatContainer(
+            content=PrintingContainer(contents),
+            floats=[],
+        )
 
     def load_output(self) -> "Output":
         """Loads the output.

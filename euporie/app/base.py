@@ -61,7 +61,7 @@ if TYPE_CHECKING:
 
     from prompt_toolkit.filters import Filter
     from prompt_toolkit.input.vt100 import Vt100Input
-    from prompt_toolkit.layout.containers import AnyContainer, Float
+    from prompt_toolkit.layout.containers import Float, FloatContainer
     from prompt_toolkit.output import Output
 
     from euporie.cell import InteractiveCell
@@ -93,7 +93,7 @@ class EuporieApp(Application):
             **kwargs: The key-word arguments for the :py:class:`Application`
 
         """
-        # Initalise the application
+        # Initialise the application
         super().__init__(
             # input=self.input,
             output=self.load_output(),
@@ -106,7 +106,7 @@ class EuporieApp(Application):
             self.input.vt100_parser = Vt100Parser(
                 self.input.vt100_parser.feed_key_callback
             )
-        # Containes the opened tab contianers
+        # Contains the opened tab containers
         self.tabs: "MutableSequence[Tab]" = []
         # Holds the index of the current tab
         self._tab_idx = 0
@@ -118,6 +118,8 @@ class EuporieApp(Application):
         self.pre_run_callables = [self.pre_run]
         # Floats at the app level
         self.floats: "list[Float]" = []
+
+        self.has_dialog = False
 
     def pre_run(self, app: "Application" = None) -> "None":
         """Called during the 'pre-run' stage of application loading."""
@@ -153,7 +155,7 @@ class EuporieApp(Application):
                 self.invalidate()
             except Exception as exception:
                 log.critical(
-                    "An error occured while trying to load the application",
+                    "An error occurred while trying to load the application",
                     exc_info=True,
                 )
                 self.exit(exception=exception)
@@ -215,14 +217,14 @@ class EuporieApp(Application):
         app = cls()
         app.run()
 
-    def load_container(self) -> "AnyContainer":
+    def load_container(self) -> "FloatContainer":
         """Loads the root container for this application.
 
         Returns:
             The root container for this app
 
         """
-        return Window()
+        return FloatContainer(content=Window(), floats=[])
 
     def load_output(self) -> "Output":
         """Creates the output for this application to use.
@@ -497,8 +499,17 @@ class EuporieApp(Application):
         """Adds a float to the application."""
         if float_container not in self.floats:
             self.floats.append(float_container)
+        root = self.layout.container
+        assert isinstance(root, FloatContainer)
+        for float_ in self.floats:
+            if root.floats is not None and float_ not in root.floats:
+                root.floats.append(float_)
 
     def remove_float(self, float_container: "Float") -> "None":
-        """Adds a float to the application."""
+        """Removes a float to the application."""
         if float_container in self.floats:
             self.floats.remove(float_container)
+        root = self.layout.container
+        assert isinstance(root, FloatContainer)
+        if root.floats is not None and float_container in root.floats:
+            root.floats.remove(float_container)

@@ -69,7 +69,10 @@ def has_dialog() -> "bool":
 def has_menus() -> "bool":
     """Determine if a dialog is being displayed."""
     app = get_app()
-    return app.layout.current_window == app.root_container.window
+    if hasattr(app, "menu_container"):
+        return app.layout.current_window == app.menu_container.window
+    else:
+        return False
 
 
 @Condition
