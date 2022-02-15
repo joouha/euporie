@@ -207,7 +207,7 @@ class LogView(Tab):
         return formatted_record
 
 
-class log_to_stdout:
+class stdout_to_log:
     def __init__(self, log: "logging.Logger"):
         self.log = log
         self.out = StringIO()

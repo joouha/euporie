@@ -212,9 +212,9 @@ def latex_to_ansi_py_sympy(
     from sympy.parsing.latex import parse_latex  # type: ignore
     from sympy.parsing.latex.errors import LaTeXParsingError  # type: ignore
 
-    from euporie.log import log_to_stdout
+    from euporie.log import stdout_to_log
 
-    with log_to_stdout(log):
+    with stdout_to_log(log):
         try:
             parsed = parse_latex(data.strip().strip("$").strip())
         except LaTeXParsingError:
