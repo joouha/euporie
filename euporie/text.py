@@ -16,6 +16,8 @@ from prompt_toolkit.layout.margins import ScrollbarMargin
 from prompt_toolkit.layout.processors import DynamicProcessor, Processor, Transformation
 from prompt_toolkit.widgets import TextArea
 
+from euporie.config import config
+
 if TYPE_CHECKING:
     from typing import Any, Generator
 
@@ -158,6 +160,11 @@ class ANSI(PTANSI):
             elif char == "\x08":
                 # TODO - remove last character from last non-ZeroWidthEscape fragment
                 formatted_text.pop()
+                continue
+
+            # Check for tabs
+            elif char == "\t":
+                formatted_text.append(("", " " * config.tab_size))
                 continue
 
             elif char in ("\x1b", "\x9b"):

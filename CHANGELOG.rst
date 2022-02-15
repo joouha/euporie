@@ -6,6 +6,7 @@ Changelog
 Upcoming
 ********
 
+- Display tabs in ansi output correctly
 - Prevent output from the kernel subprocess being printed and breaking the display
 - New terminal graphic rendering system to work with new scrolling method
 - New notebooks scrolling method which improves scrolling performance
