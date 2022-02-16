@@ -81,6 +81,20 @@ class TuiApp(EuporieApp):
         )
         self.has_dialog = False
 
+    async def _poll_terminal_colors(self, interval: "int" = 5) -> "None":
+        """Repeatedly queries the terminal for its background and foreground colours."""
+        while True:
+            await asyncio.sleep(interval)
+            self.term_info.background_color.send()
+            self.term_info.foreground_color.send()
+
+    def load_clipboard(self) -> "None":
+        """Determines which clipboard mechanism to use."""
+        if determine_clipboard()[0]:
+            self.clipboard = PyperclipClipboard()
+        else:
+            self.clipboard = InMemoryClipboard()
+
     def post_load(self) -> "None":
         """Continues loading the app."""
         # Load a clipboard
@@ -99,20 +113,6 @@ class TuiApp(EuporieApp):
             self.term_info.background_color.event += self.update_style
             self.term_info.foreground_color.event += self.update_style
             self.create_background_task(self._poll_terminal_colors())
-
-    async def _poll_terminal_colors(self, interval: "int" = 5) -> "None":
-        """Repeatedly queries the terminal for its background and foreground colours."""
-        while True:
-            await asyncio.sleep(interval)
-            self.term_info.background_color.send()
-            self.term_info.foreground_color.send()
-
-    def load_clipboard(self) -> "None":
-        """Determines which clipboard mechanism to use."""
-        if determine_clipboard()[0]:
-            self.clipboard = PyperclipClipboard()
-        else:
-            self.clipboard = InMemoryClipboard()
 
     def format_title(self) -> "StyleAndTextTuples":
         """Formats the tab's title for display in the top right of the app."""
@@ -165,6 +165,23 @@ class TuiApp(EuporieApp):
             if output:
                 output.pop()
         return output
+
+    def tab_container(self) -> "AnyContainer":
+        """Returns a container with all opened tabs.
+
+        Returns:
+            A vertical split containing the opened tab containers.
+
+        """
+        if self.tabs:
+            return VSplit(
+                self.tabs,
+                padding=1,
+                padding_char=" ",
+                padding_style="class:chrome",
+            )
+        else:
+            return Pattern()
 
     def load_container(self) -> "FloatContainer":
         """Builds the main application layout."""
@@ -228,23 +245,6 @@ class TuiApp(EuporieApp):
             right=[self.title_bar],
         )
         return cast("FloatContainer", to_container(self.menu_container))
-
-    def tab_container(self) -> "AnyContainer":
-        """Returns a container with all opened tabs.
-
-        Returns:
-            A vertical split containing the opened tab containers.
-
-        """
-        if self.tabs:
-            return VSplit(
-                self.tabs,
-                padding=1,
-                padding_char=" ",
-                padding_style="class:chrome",
-            )
-        else:
-            return Pattern()
 
     def dialog(
         self,
@@ -324,19 +324,6 @@ class TuiApp(EuporieApp):
 
         self.invalidate()
 
-    def ask_new_file(self) -> "None":
-        """Prompts the user to name a file."""
-        return self.ask_file(
-            validate=False,
-            completer=PathCompleter(),
-        )
-
-    def ask_open_file(self) -> "None":
-        """Prompts the user to open a file."""
-        self.ask_file(
-            completer=PathCompleter(),
-        )
-
     def ask_file(
         self,
         default: "str" = "",
@@ -393,6 +380,19 @@ class TuiApp(EuporieApp):
                 "Cancel": None,
             },
             to_focus=filepath,
+        )
+
+    def ask_new_file(self) -> "None":
+        """Prompts the user to name a file."""
+        return self.ask_file(
+            validate=False,
+            completer=PathCompleter(),
+        )
+
+    def ask_open_file(self) -> "None":
+        """Prompts the user to open a file."""
+        self.ask_file(
+            completer=PathCompleter(),
         )
 
     def help_keys(self) -> None:

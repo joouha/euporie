@@ -57,6 +57,15 @@ class BooleanOptionalAction(argparse.Action):
         kwargs["nargs"] = 0
         super().__init__(_option_strings, *args, **kwargs)
 
+    def format_usage(self) -> "str":
+        """Formats the action string.
+
+        Returns:
+            The formatted string.
+
+        """
+        return " | ".join(self.option_strings)
+
     def __call__(
         self,
         parser: "argparse.ArgumentParser",
@@ -68,15 +77,6 @@ class BooleanOptionalAction(argparse.Action):
         if option_string in self.option_strings:
             assert isinstance(option_string, str)
             setattr(namespace, self.dest, not option_string.startswith("--no-"))
-
-    def format_usage(self) -> "str":
-        """Formats the action string.
-
-        Returns:
-            The formatted string.
-
-        """
-        return " | ".join(self.option_strings)
 
 
 CONFIG_PARAMS: "dict[str, dict]" = {
@@ -449,28 +449,6 @@ class Config:
         for name, param in CONFIG_PARAMS.items()
     }
 
-    def __init__(self):
-        """Ininitate the Configuration object."""
-        self.user = {}
-        self.env = {}
-        self.args = {}
-
-        user_conf_dir = Path(user_config_dir(__app_name__, appauthor=False))
-        user_conf_dir.mkdir(exist_ok=True, parents=True)
-        self.config_file_path = user_conf_dir / self.conf_file_name
-        self.valid_user = True
-
-        self.load_user()
-        self.load_env()
-        self.load_args()
-
-        self.chain = ChainMap(
-            self.args,
-            self.env,
-            self.user,
-            self.defaults,
-        )
-
     def load_args(self) -> "None":
         """Attempts to load configuration settings from commandline flags."""
         parser = argparse.ArgumentParser(
@@ -551,6 +529,28 @@ class Config:
                         return
             log.warning("The configuration file was not loaded")
 
+    def __init__(self):
+        """Ininitate the Configuration object."""
+        self.user = {}
+        self.env = {}
+        self.args = {}
+
+        user_conf_dir = Path(user_config_dir(__app_name__, appauthor=False))
+        user_conf_dir.mkdir(exist_ok=True, parents=True)
+        self.config_file_path = user_conf_dir / self.conf_file_name
+        self.valid_user = True
+
+        self.load_user()
+        self.load_env()
+        self.load_args()
+
+        self.chain = ChainMap(
+            self.args,
+            self.env,
+            self.user,
+            self.defaults,
+        )
+
     def get(self, name: "str") -> "Any":
         """Access a configuration variable, falling back to the default value if unset.
 
@@ -562,6 +562,41 @@ class Config:
 
         """
         return self.chain.get(name)
+
+    def choices(self, name: "str") -> "list":
+        """Returns a list of valid choices for a configuration item.
+
+        Args:
+            name: The name of the attribute to query.
+
+        Returns:
+            A list of valid choices
+
+        """
+        return CONFIG_PARAMS.get(name, {}).get("choices", [])
+
+    def toggle(self, name: "str") -> "None":
+        """Switches attributes between permitted configuration states.
+
+        For boolean values, they are toggled between True and False. Integer values are
+        incremented and reset within the permitted range.
+
+        Args:
+            name: The name of the attribute to toggle.
+
+        """
+        if name in self.defaults:
+            current = getattr(self, name)
+            schema = CONFIG_SCHEMA["properties"][name]
+            if schema["type"] == "boolean":
+                setattr(self, name, not current)
+            elif schema["type"] == "integer":
+                setattr(
+                    self,
+                    name,
+                    schema["minimum"]
+                    + (current - schema["minimum"] + 1) % (schema["maximum"] + 1),
+                )
 
     def __getattr__(self, name: "str") -> "Any":
         """Enables access of config elements via dotted attributes.
@@ -648,41 +683,6 @@ class Config:
         return f"Config({self.chain!r})"
 
     __repr__ = __str__
-
-    def choices(self, name: "str") -> "list":
-        """Returns a list of valid choices for a configuration item.
-
-        Args:
-            name: The name of the attribute to query.
-
-        Returns:
-            A list of valid choices
-
-        """
-        return CONFIG_PARAMS.get(name, {}).get("choices", [])
-
-    def toggle(self, name: "str") -> "None":
-        """Switches attributes between permitted configuration states.
-
-        For boolean values, they are toggled between True and False. Integer values are
-        incremented and reset within the permitted range.
-
-        Args:
-            name: The name of the attribute to toggle.
-
-        """
-        if name in self.defaults:
-            current = getattr(self, name)
-            schema = CONFIG_SCHEMA["properties"][name]
-            if schema["type"] == "boolean":
-                setattr(self, name, not current)
-            elif schema["type"] == "integer":
-                setattr(
-                    self,
-                    name,
-                    schema["minimum"]
-                    + (current - schema["minimum"] + 1) % (schema["maximum"] + 1),
-                )
 
 
 # Do not actually load the config if type checking - it causes pytype to exit

@@ -31,6 +31,13 @@ def dict_bindings(binding_dict: "dict[str, AnyKeys]") -> "KeyBindingsBase":
     return kb
 
 
+def _format_key_str(key: "str") -> "str":
+    key = key.replace("c-", "Ctrl+").replace("s-", "Shift+")
+    if min(map(len, key.split("+"))) > 1:
+        key = key.title()
+    return key
+
+
 def format_keys(keys: "list[tuple[Union[str, Keys], ...]]") -> "list[str]":
     """Converts a list of tuples of keys to a string."""
     s: "list[str]" = []
@@ -59,10 +66,3 @@ def format_keys(keys: "list[tuple[Union[str, Keys], ...]]") -> "list[str]":
     keys_ = list(dict(zip(keys, range(len(keys)))).keys())
 
     return s
-
-
-def _format_key_str(key: "str") -> "str":
-    key = key.replace("c-", "Ctrl+").replace("s-", "Shift+")
-    if min(map(len, key.split("+"))) > 1:
-        key = key.title()
-    return key

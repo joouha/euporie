@@ -38,6 +38,17 @@ class DumpApp(EuporieApp):
         DumpKernelNotebook if config.run else DumpNotebook
     )
 
+    def pre_exit(self, app: "Application") -> "None":
+        """Close the app after dumping, optionally piping output to a pager."""
+        self.exit()
+        # Display pager if needed
+        if config.page:
+            from pydoc import pager
+
+            self.output_file.seek(0)
+            data = self.output_file.read()
+            pager(data)
+
     def __init__(self, **kwargs: "Any") -> "None":
         """Create an app for dumping a prompt-toolkit layout."""
         # Initialise the application
@@ -126,16 +137,9 @@ class DumpApp(EuporieApp):
         if self.render_counter < 1:
             super()._redraw(render_as_done=True)
 
-    def pre_exit(self, app: "Application") -> "None":
-        """Close the app after dumping, optionally piping output to a pager."""
-        self.exit()
-        # Display pager if needed
-        if config.page:
-            from pydoc import pager
 
-            self.output_file.seek(0)
-            data = self.output_file.read()
-            pager(data)
+# Monkey patch the screen size
+_original_output_screen_diff = renderer._output_screen_diff
 
 
 def _patched_output_screen_diff(
@@ -154,6 +158,4 @@ def _patched_output_screen_diff(
     return _original_output_screen_diff(*args, **kwargs)
 
 
-# Monkey patch the screen size
-_original_output_screen_diff = renderer._output_screen_diff
 renderer._output_screen_diff = _patched_output_screen_diff

@@ -40,11 +40,6 @@ class Table(MarkdownElement):
     new_line = True
     dumb_console = Console(force_terminal=False, record=True)
 
-    @classmethod
-    def create(cls, markdown: "RichMarkdown", table_node: "TableNode") -> "Table":
-        """Instantiates and returns a rich markdown table."""
-        return cls(table_node)
-
     def __init__(self, table_node: "TableNode") -> None:
         """Sets the contents for this markdown table.
 
@@ -54,6 +49,32 @@ class Table(MarkdownElement):
         """
         self.contents = table_node.table
         self.column_properties = table_node.column_properties
+
+    @classmethod
+    def create(cls, markdown: "RichMarkdown", table_node: "TableNode") -> "Table":
+        """Instantiates and returns a rich markdown table."""
+        return cls(table_node)
+
+    def get_markdown_width(self, md: "Markdown") -> "int":
+        """Get the width of markdown text."""
+        buffer = self.dumb_console.render(md)
+        self.dumb_console._render_buffer(buffer)
+        rendered_lines = self.dumb_console.export_text(clear=True)
+        return max(map(lambda x: len(x.strip()), rendered_lines.strip().split("\n")))
+
+    @staticmethod
+    def node_to_md(
+        node: "Node",
+        justify: "JustifyMethod" = None,
+    ) -> "Markdown":
+        """Create a rich markdown object, then add the parsed node to it."""
+        node_md = Markdown(
+            markup="",
+            code_theme=str(config.syntax_theme),
+            justify=justify,
+        )
+        node_md.parsed = node
+        return node_md
 
     def __rich_console__(
         self, console: "Console", options: "ConsoleOptions"
@@ -114,27 +135,6 @@ class Table(MarkdownElement):
             table.add_row(*row)
 
         yield table
-
-    def get_markdown_width(self, md: "Markdown") -> "int":
-        """Get the width of markdown text."""
-        buffer = self.dumb_console.render(md)
-        self.dumb_console._render_buffer(buffer)
-        rendered_lines = self.dumb_console.export_text(clear=True)
-        return max(map(lambda x: len(x.strip()), rendered_lines.strip().split("\n")))
-
-    @staticmethod
-    def node_to_md(
-        node: "Node",
-        justify: "JustifyMethod" = None,
-    ) -> "Markdown":
-        """Create a rich markdown object, then add the parsed node to it."""
-        node_md = Markdown(
-            markup="",
-            code_theme=str(config.syntax_theme),
-            justify=justify,
-        )
-        node_md.parsed = node
-        return node_md
 
 
 class LatexElement(TextElement):

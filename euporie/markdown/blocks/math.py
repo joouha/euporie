@@ -16,6 +16,12 @@ class MathBlock(Block):
     accepts_lines = True
 
     @staticmethod
+    def finalize(parser: "Parser", block: "Node") -> "None":
+        """Ends the math block."""
+        block.literal = block.string_content
+        block.string_content = None
+
+    @staticmethod
     def continue_(parser: "Parser", container: "Node") -> "int":
         """Checks for the end of the math block."""
         ln = parser.current_line
@@ -27,12 +33,6 @@ class MathBlock(Block):
             return 1
         else:
             return 0
-
-    @staticmethod
-    def finalize(parser: "Parser", block: "Node") -> "None":
-        """Ends the math block."""
-        block.literal = block.string_content
-        block.string_content = None
 
     @staticmethod
     def can_contain(t: "str") -> "bool":

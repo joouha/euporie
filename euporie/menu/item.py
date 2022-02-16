@@ -32,6 +32,29 @@ class MenuItem(PtkMenuItem):
     a condition is true, and disable the handler if a condition is met.
     """
 
+    @property
+    def formatted_text(self) -> "StyleAndTextTuples":
+        """Generate the formatted text for this menu item."""
+        if callable(self._formatted_text):
+            text = self._formatted_text()
+        else:
+            text = self._formatted_text
+
+        return to_formatted_text(text)
+
+    # Type checking disabled for the following property methods due to open mypy bug:
+    # https://github.com/python/mypy/issues/4125
+
+    @property  # type: ignore
+    def text(self) -> "str":  # type: ignore
+        """Return plain text verision of the item's formatted text."""
+        return fragment_list_to_text(self.formatted_text)
+
+    @text.setter
+    def text(self, value: "Any") -> "None":
+        """Prevent the inherited `__init__` method setting this property value."""
+        pass
+
     def __init__(
         self,
         formatted_text: "AnyFormattedText" = "",
@@ -82,29 +105,6 @@ class MenuItem(PtkMenuItem):
             toggled=command.toggled,
             description=command.description,
         )
-
-    @property
-    def formatted_text(self) -> "StyleAndTextTuples":
-        """Generate the formatted text for this menu item."""
-        if callable(self._formatted_text):
-            text = self._formatted_text()
-        else:
-            text = self._formatted_text
-
-        return to_formatted_text(text)
-
-    # Type checking disabled for the following property methods due to open mypy bug:
-    # https://github.com/python/mypy/issues/4125
-
-    @property  # type: ignore
-    def text(self) -> "str":  # type: ignore
-        """Return plain text verision of the item's formatted text."""
-        return fragment_list_to_text(self.formatted_text)
-
-    @text.setter
-    def text(self, value: "Any") -> "None":
-        """Prevent the inherited `__init__` method setting this property value."""
-        pass
 
     @property  # type: ignore
     def disabled(self) -> "bool":  # type: ignore
@@ -174,15 +174,6 @@ class MenuItem(PtkMenuItem):
         return ",".join(key_strs)
 
     @property
-    def width(self) -> "int":
-        """The maximum width of the item's children."""
-        return (
-            self.prefix_width
-            + max([get_cwidth(child.text) for child in self.children])
-            + self.suffix_width
-        )
-
-    @property
     def prefix_width(self) -> "int":
         """The maximum width of the item's children's prefixes."""
         return max(
@@ -202,4 +193,13 @@ class MenuItem(PtkMenuItem):
                 for child in self.children
             ]
             + [0]
+        )
+
+    @property
+    def width(self) -> "int":
+        """The maximum width of the item's children."""
+        return (
+            self.prefix_width
+            + max([get_cwidth(child.text) for child in self.children])
+            + self.suffix_width
         )

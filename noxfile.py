@@ -69,6 +69,7 @@ def precommit(session: Session) -> None:
     session.install(
         "black",
         "isort",
+        "ssort",
         "darglint",
         "flake8",
         "flake8-bandit",
@@ -88,9 +89,10 @@ def precommit(session: Session) -> None:
 def format(session: "Session") -> None:
     """Run black and isort code formatters."""
     args = session.posargs or locations
-    session.install("black", "isort")
-    session.run("black", *args)
+    session.install("black", "isort", "ssort")
+    session.run("ssort", *args)
     session.run("isort", "--profile", "black", *args)
+    session.run("black", *args)
 
 
 @session(python=python_versions)

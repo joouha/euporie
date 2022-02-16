@@ -237,6 +237,96 @@ class ScrollingContainer(Container):
             return Dimension(min=1, preferred=self.height)
         return Dimension()
 
+    @property
+    def children(
+        self,
+    ) -> "Sequence[Cell]":  # Sequence[Union[Container, MagicContainer]]":
+        """Return the current children of this container instance."""
+        if self.refresh_children:
+            self._children = self.children_func()
+            self.refresh_children = False
+            # Clean up metacache
+            for child_hash in set(self.child_metas) - set(map(hash, self._children)):
+                del self.child_metas[child_hash]
+            # Clean up positions
+            self.index_positions = {
+                i: pos
+                for i, pos in self.index_positions.items()
+                if i < len(self._children)
+            }
+        return self._children
+
+    @property
+    def selected_index(self) -> "int":
+        """Returns in index of the currently selected child."""
+        app = get_app()
+        # Detect if focused child element has changed
+        if app.layout.has_focus(self):
+            # Find index of selected child
+            index = self._selected_index
+            for i, child in enumerate(self.children):
+                if app.layout.has_focus(child):
+                    self._selected_child = child
+                    index = i
+                    break
+            # This will change the position when a new child is selected
+            self.selected_index = index
+        return self._selected_index
+
+    @selected_index.setter
+    def selected_index(self, new_index: "int") -> "None":
+        """Sets the currently selected child index.
+
+        Args:
+            new_index: The index of the child to select.
+
+        """
+        self._set_selected_index(new_index)
+
+    def _set_selected_index(
+        self, new_index: "int", force: "bool" = False, scroll: "bool" = True
+    ) -> None:
+        # Only update the selected child if it was not selected before
+        if force or new_index != self._selected_index:
+            self.refresh_children = True
+            # Ensure selected index is a valid child
+            new_index = min(max(new_index, 0), len(self.children) - 1)
+            # Request a refresh of the previously selected child
+            self._selected_child_meta.refresh = True
+            # Scroll into view
+            if scroll:
+                self.scroll_to(new_index)
+            # Get the new child and focus it
+            child = self.children[new_index]
+            app = get_app()
+            if not app.layout.has_focus(child):
+                app.layout.focus(child)
+            # Track which child was selected
+            self._selected_index = new_index
+
+    def get_child_meta(self, index: "Optional[int]" = None) -> "ChildMeta":
+        """Return a rendered instance of the child at the given index.
+
+        If no index is given, the currently selected child is returned.
+
+        Args:
+            index: The index of the child to return.
+
+        Returns:
+            A rendered instance of the child.
+
+        """
+        if index is None:
+            index = self.selected_index
+        child = self.children[index]
+        child_hash = hash(child)
+        if child_hash not in self.child_metas:
+            child_meta = ChildMeta(self, child)
+            self.child_metas[child_hash] = child_meta
+        else:
+            child_meta = self.child_metas[child_hash]
+        return child_meta
+
     # @abstractmethod
     def write_to_screen(
         self,
@@ -384,73 +474,6 @@ class ScrollingContainer(Container):
             if i < len(self.children)
         ]
 
-    @property
-    def selected_index(self) -> "int":
-        """Returns in index of the currently selected child."""
-        app = get_app()
-        # Detect if focused child element has changed
-        if app.layout.has_focus(self):
-            # Find index of selected child
-            index = self._selected_index
-            for i, child in enumerate(self.children):
-                if app.layout.has_focus(child):
-                    self._selected_child = child
-                    index = i
-                    break
-            # This will change the position when a new child is selected
-            self.selected_index = index
-        return self._selected_index
-
-    @selected_index.setter
-    def selected_index(self, new_index: "int") -> "None":
-        """Sets the currently selected child index.
-
-        Args:
-            new_index: The index of the child to select.
-
-        """
-        self._set_selected_index(new_index)
-
-    def _set_selected_index(
-        self, new_index: "int", force: "bool" = False, scroll: "bool" = True
-    ) -> None:
-        # Only update the selected child if it was not selected before
-        if force or new_index != self._selected_index:
-            self.refresh_children = True
-            # Ensure selected index is a valid child
-            new_index = min(max(new_index, 0), len(self.children) - 1)
-            # Request a refresh of the previously selected child
-            self._selected_child_meta.refresh = True
-            # Scroll into view
-            if scroll:
-                self.scroll_to(new_index)
-            # Get the new child and focus it
-            child = self.children[new_index]
-            app = get_app()
-            if not app.layout.has_focus(child):
-                app.layout.focus(child)
-            # Track which child was selected
-            self._selected_index = new_index
-
-    @property
-    def children(
-        self,
-    ) -> "Sequence[Cell]":  # Sequence[Union[Container, MagicContainer]]":
-        """Return the current children of this container instance."""
-        if self.refresh_children:
-            self._children = self.children_func()
-            self.refresh_children = False
-            # Clean up metacache
-            for child_hash in set(self.child_metas) - set(map(hash, self._children)):
-                del self.child_metas[child_hash]
-            # Clean up positions
-            self.index_positions = {
-                i: pos
-                for i, pos in self.index_positions.items()
-                if i < len(self._children)
-            }
-        return self._children
-
     def get_child(self, index: "Optional[int]" = None) -> "AnyContainer":
         """Return a rendered instance of the child at the given index.
 
@@ -466,29 +489,6 @@ class ScrollingContainer(Container):
         if index is None:
             index = self.selected_index
         return self.children[index]
-
-    def get_child_meta(self, index: "Optional[int]" = None) -> "ChildMeta":
-        """Return a rendered instance of the child at the given index.
-
-        If no index is given, the currently selected child is returned.
-
-        Args:
-            index: The index of the child to return.
-
-        Returns:
-            A rendered instance of the child.
-
-        """
-        if index is None:
-            index = self.selected_index
-        child = self.children[index]
-        child_hash = hash(child)
-        if child_hash not in self.child_metas:
-            child_meta = ChildMeta(self, child)
-            self.child_metas[child_hash] = child_meta
-        else:
-            child_meta = self.child_metas[child_hash]
-        return child_meta
 
     def scroll(self, n: "int") -> "None":
         """Scrolls up or down a number of rows.
@@ -588,6 +588,36 @@ class ScrollBar(UIControl):
         """Get the preferred height of the scrollbar: all of the height available."""
         return max_available_height
 
+    def get_line(self, line: "int") -> "StyleAndTextTuples":
+        """Get style-and-text tuples for a particular line number.
+
+        Args:
+            line: The desired line dumber
+
+        Returns:
+            A list of style-and-text tuples
+
+        """
+        if line == 0:
+            return [("class:scrollbar.arrow", self.arrows[0])]
+        elif line == self.height - 1:
+            return [("class:scrollbar.arrow", self.arrows[1])]
+        elif int(self.top) == line:
+            return [
+                ("class:scrollbar.button", self.eighths[int((self.top - line) * 8)])
+            ]
+        elif self.top <= line and line < int(self.top + self.size):
+            return [("class:scrollbar.button", self.eighths[0])]
+        elif (int(self.top + self.size)) == line:
+            return [
+                (
+                    "class:scrollbar.button reverse",
+                    self.eighths[int((self.top + self.size - line) * 8)],
+                )
+            ]
+        else:
+            return [("class:scrollbar.background", " ")]
+
     def create_content(self, width: "int", height: "int") -> "UIContent":
         """Generate the content for this scrollbar.
 
@@ -623,36 +653,6 @@ class ScrollBar(UIControl):
             line_count=height,
             show_cursor=False,
         )
-
-    def get_line(self, line: "int") -> "StyleAndTextTuples":
-        """Get style-and-text tuples for a particular line number.
-
-        Args:
-            line: The desired line dumber
-
-        Returns:
-            A list of style-and-text tuples
-
-        """
-        if line == 0:
-            return [("class:scrollbar.arrow", self.arrows[0])]
-        elif line == self.height - 1:
-            return [("class:scrollbar.arrow", self.arrows[1])]
-        elif int(self.top) == line:
-            return [
-                ("class:scrollbar.button", self.eighths[int((self.top - line) * 8)])
-            ]
-        elif self.top <= line and line < int(self.top + self.size):
-            return [("class:scrollbar.button", self.eighths[0])]
-        elif (int(self.top + self.size)) == line:
-            return [
-                (
-                    "class:scrollbar.button reverse",
-                    self.eighths[int((self.top + self.size - line) * 8)],
-                )
-            ]
-        else:
-            return [("class:scrollbar.background", " ")]
 
     async def mouse_handler(self, mouse_event: MouseEvent) -> "None":
         """Handle mouse events."""

@@ -77,6 +77,131 @@ def get_cell_id(cell_json: "dict") -> "str":
     return cell_id
 
 
+class CellInputTextArea(TextArea):
+    """A customized text area for the cell input."""
+
+    # TODO - Check for non-shift-mode selection and change it to shift mode
+    # buffer.on_cursor_position_changed -> Event
+
+    def text_changed(self, buf: "Buffer") -> "None":
+        """Update cell json when the input buffer has been edited."""
+        self.cell._set_input(buf.text)
+        self.cell.nb.dirty = True
+
+    def __init__(self, cell: "Cell", *args: "Any", **kwargs: "Any") -> "None":
+        """Initiate the cell input box."""
+        self.cell = cell
+
+        kwargs["text"] = cell.input
+        kwargs["focus_on_click"] = True
+        kwargs["focusable"] = True
+        kwargs["scrollbar"] = cell.scroll_input()
+        kwargs["wrap_lines"] = cell.wrap_input
+        kwargs["lexer"] = DynamicLexer(
+            lambda: (
+                PygmentsLexer(
+                    get_lexer_by_name(cell.language).__class__,
+                    sync_from_start=False,
+                )
+                if cell.cell_type != "raw"
+                else SimpleLexer()
+            )
+        )
+        kwargs["search_field"] = cell.search_control
+        kwargs["completer"] = cell.nb.completer
+        kwargs["complete_while_typing"] = cell.autocomplete & cell.is_code
+        kwargs["auto_suggest"] = ConditionalAutoSuggestAsync(
+            cell.nb.suggester, filter=cell.is_code & cell.autosuggest
+        )
+        kwargs["style"] = "class:cell.input"
+        kwargs["accept_handler"] = self.cell.run_or_render
+
+        super().__init__(*args, **kwargs)
+
+        self.buffer.tempfile_suffix = self.cell.nb.lang_file_ext
+        self.buffer.on_text_changed = Event(self.buffer, self.text_changed)
+
+        # Replace the autosuggest processor
+        # Skip type checking as PT should use "("Optional[Sequence[Processor]]"
+        # instead of "Optional[List[Processor]]"
+        # TODO make a PR for this
+        self.control.input_processors[0] = ConditionalProcessor(  # type: ignore
+            AppendLineAutoSuggestion(),
+            has_focus(self.buffer) & ~is_done,
+        )
+
+        # Add configurable line numbers
+        self.window.left_margins = [
+            ConditionalMargin(
+                NumberedMargin(),
+                Condition(lambda: config.line_numbers),
+            )
+        ]
+        self.window.cursorline = has_focus(self)
+
+
+class CellStdinTextArea(TextArea):
+    """A modal text area for user input."""
+
+    def __init__(self, *args: "Any", **kwargs: "Any"):
+        """Create a cell input text area."""
+        self.password = False
+        kwargs["password"] = Condition(lambda: self.password)
+        super().__init__(*args, **kwargs)
+
+    def is_modal(self) -> "bool":
+        """Returns true, so the input is always modal."""
+        return True
+
+
+class ClickArea:
+    """Any empty widget which focuses `target` when clicked.
+
+    Designed to be used as an overlay for clickable widgets in a FloatContainer.
+    """
+
+    def _get_text_fragments(self) -> "StyleAndTextTuples":
+        def handler(mouse_event: MouseEvent) -> None:
+            if mouse_event.event_type == MouseEventType.MOUSE_UP:
+                get_app().layout.focus(self.target)
+
+        ft = to_formatted_text(
+            self.text,
+            self.style() if callable(self.style) else self.style,
+        )
+        return [(style, text, handler) for style, text, *_ in ft]
+
+    def __init__(
+        self,
+        target: "FocusableElement",
+        text: "AnyFormattedText",
+        style: "Union[str, Callable[[], str]]",
+    ):
+        """Initiate a click area overlay element, which focuses another element when clicked.
+
+        Args:
+            target: The element to focus on click.
+            text: The formatted text to display in the click overlay
+            style: The style to apply to the text
+
+        """
+        self.text = text
+        self.target = target
+        self.style = style
+        self.window = Window(
+            FormattedTextControl(
+                self._get_text_fragments,
+                focusable=False,
+            ),
+            dont_extend_width=False,
+            dont_extend_height=False,
+        )
+
+    def __pt_container__(self) -> "Container":
+        """Return the `ClickArea`'s window with a blank `FormattedTextControl`."""
+        return self.window
+
+
 class Cell:
     """A notebook cell element.
 
@@ -84,6 +209,91 @@ class Cell:
     """
 
     container: "FloatContainer"
+
+    @property
+    def focused(self) -> "bool":
+        """Determine if the cell currently has focus."""
+        return get_app().layout.has_focus(self.container)
+
+    def border_style(self) -> "str":
+        """Determines the style of the cell borders, based on the cell state."""
+        if not config.dump:
+            if self.focused:
+                if has_focus(self.input_box.buffer)():
+                    return "class:cell.border.edit"
+                else:
+                    return "class:cell.border.selected"
+        if config.show_cell_borders:
+            return "class:cell.border"
+        else:
+            return "class:cell.border.hidden"
+
+    @property
+    def cell_type(self) -> "str":
+        """Determine the currrent cell type."""
+        return self.json.get("cell_type", "code")
+
+    @property
+    def execution_count(self) -> "str":
+        """Retrieve the execution count from the cell's JSON."""
+        return self.json.get("execution_count", " ")
+
+    @execution_count.setter
+    def execution_count(self, count: int) -> "None":
+        """Set the execution count in the cell's JSON.
+
+        Args:
+            count: The new execution count number.
+
+        """
+        self.json["execution_count"] = count
+
+    @property
+    def prompt(self) -> "str":
+        """Determine what should be displayed in the prompt of the cell."""
+        if self.state in ("busy", "queued"):
+            prompt = "*"
+        else:
+            prompt = self.execution_count or " "
+        if prompt:
+            prompt = f"[{prompt}]"
+        return prompt
+
+    @property
+    def input(self) -> "str":
+        """Fetch the cell's contents from the cell's JSON."""
+        return self.json.get("source", "")
+
+    def _set_input(self, value: "str") -> "None":
+        self.json["source"] = value
+
+    @input.setter
+    def input(self, value: "str") -> "None":
+        """Set the cell's contents in the cell's JSON.
+
+        Args:
+            value: The new cell contents text.
+
+        """
+        self._set_input(value)
+        self.input_box.text = self.json["source"]
+
+    @property
+    def outputs(self) -> "list[dict[str, Any]]":
+        """Retrieve a list of cell outputs from the cell's JSON."""
+        if self.cell_type == "markdown":
+            return [
+                {"data": {"text/x-markdown": self.input}, "output_type": "markdown"}
+            ]
+        else:
+            return self.json.setdefault("outputs", [])
+
+    def render_outputs(self) -> "list[Container]":
+        """Generates a list of rendered outputs."""
+        rendered_outputs: "list[Container]" = []
+        for output_json in self.outputs:
+            rendered_outputs.append(to_container(CellOutput(output_json)))
+        return rendered_outputs
 
     def __init__(self, index: "int", json: "dict", notebook: "Notebook"):
         """Initiate the cell element.
@@ -346,6 +556,11 @@ class Cell:
         self.state = "idle"
         self.trigger_refresh()
 
+    def clear_output(self) -> "None":
+        """Remove all outputs from the cell."""
+        if "outputs" in self.json:
+            del self.json["outputs"]
+
     def set_cell_type(
         self, cell_type: "Literal['markdown','code','raw']", clear: "bool" = False
     ) -> "None":
@@ -365,19 +580,6 @@ class Cell:
         self.json["cell_type"] = cell_type
         self.output_box.children = self.render_outputs()
 
-    def border_style(self) -> "str":
-        """Determines the style of the cell borders, based on the cell state."""
-        if not config.dump:
-            if self.focused:
-                if has_focus(self.input_box.buffer)():
-                    return "class:cell.border.edit"
-                else:
-                    return "class:cell.border.selected"
-        if config.show_cell_borders:
-            return "class:cell.border"
-        else:
-            return "class:cell.border.hidden"
-
     @property
     def id(self) -> "str":
         """Returns the cell's ID as per the cell JSON."""
@@ -393,83 +595,6 @@ class Cell:
             return lang_info.get("name", lang_info.get("pygments_lexer", "python"))
         else:
             return "raw"
-
-    @property
-    def focused(self) -> "bool":
-        """Determine if the cell currently has focus."""
-        return get_app().layout.has_focus(self.container)
-
-    @property
-    def cell_type(self) -> "str":
-        """Determine the currrent cell type."""
-        return self.json.get("cell_type", "code")
-
-    @property
-    def prompt(self) -> "str":
-        """Determine what should be displayed in the prompt of the cell."""
-        if self.state in ("busy", "queued"):
-            prompt = "*"
-        else:
-            prompt = self.execution_count or " "
-        if prompt:
-            prompt = f"[{prompt}]"
-        return prompt
-
-    @property
-    def execution_count(self) -> "str":
-        """Retrieve the execution count from the cell's JSON."""
-        return self.json.get("execution_count", " ")
-
-    @execution_count.setter
-    def execution_count(self, count: int) -> "None":
-        """Set the execution count in the cell's JSON.
-
-        Args:
-            count: The new execution count number.
-
-        """
-        self.json["execution_count"] = count
-
-    @property
-    def input(self) -> "str":
-        """Fetch the cell's contents from the cell's JSON."""
-        return self.json.get("source", "")
-
-    @input.setter
-    def input(self, value: "str") -> "None":
-        """Set the cell's contents in the cell's JSON.
-
-        Args:
-            value: The new cell contents text.
-
-        """
-        self._set_input(value)
-        self.input_box.text = self.json["source"]
-
-    def _set_input(self, value: "str") -> "None":
-        self.json["source"] = value
-
-    def clear_output(self) -> "None":
-        """Remove all outputs from the cell."""
-        if "outputs" in self.json:
-            del self.json["outputs"]
-
-    @property
-    def outputs(self) -> "list[dict[str, Any]]":
-        """Retrieve a list of cell outputs from the cell's JSON."""
-        if self.cell_type == "markdown":
-            return [
-                {"data": {"text/x-markdown": self.input}, "output_type": "markdown"}
-            ]
-        else:
-            return self.json.setdefault("outputs", [])
-
-    def render_outputs(self) -> "list[Container]":
-        """Generates a list of rendered outputs."""
-        rendered_outputs: "list[Container]" = []
-        for output_json in self.outputs:
-            rendered_outputs.append(to_container(CellOutput(output_json)))
-        return rendered_outputs
 
     def reformat(self) -> "None":
         """Reformats the cell's input using black."""
@@ -538,6 +663,14 @@ class InteractiveCell(Cell):
         self.nb: "TuiNotebook" = notebook
         self.stdin_event = asyncio.Event()
 
+    def exit_edit_mode(self) -> "None":
+        """Removes a cell from edit mode."""
+        # self.input = self.input_box.text
+        # self.nb.dirty = True
+        # Give focus back to selected cell (this might have changed e.g. if doing a run
+        # then select the next cell)
+        get_app().layout.focus(self.nb.cell.control)
+
     async def edit_in_editor(self) -> "None":
         """Edit the cell in $EDITOR."""
         self.exit_edit_mode()
@@ -553,14 +686,6 @@ class InteractiveCell(Cell):
         else:
             layout.focus(self.input_box)
             self.rendered = False
-
-    def exit_edit_mode(self) -> "None":
-        """Removes a cell from edit mode."""
-        # self.input = self.input_box.text
-        # self.nb.dirty = True
-        # Give focus back to selected cell (this might have changed e.g. if doing a run
-        # then select the next cell)
-        get_app().layout.focus(self.nb.cell.control)
 
     def run_or_render(
         self,
@@ -644,128 +769,3 @@ class InteractiveCell(Cell):
             app.invalidate()
 
         app.create_background_task(_focus_input())
-
-
-class CellInputTextArea(TextArea):
-    """A customized text area for the cell input."""
-
-    def __init__(self, cell: "Cell", *args: "Any", **kwargs: "Any") -> "None":
-        """Initiate the cell input box."""
-        self.cell = cell
-
-        kwargs["text"] = cell.input
-        kwargs["focus_on_click"] = True
-        kwargs["focusable"] = True
-        kwargs["scrollbar"] = cell.scroll_input()
-        kwargs["wrap_lines"] = cell.wrap_input
-        kwargs["lexer"] = DynamicLexer(
-            lambda: (
-                PygmentsLexer(
-                    get_lexer_by_name(cell.language).__class__,
-                    sync_from_start=False,
-                )
-                if cell.cell_type != "raw"
-                else SimpleLexer()
-            )
-        )
-        kwargs["search_field"] = cell.search_control
-        kwargs["completer"] = cell.nb.completer
-        kwargs["complete_while_typing"] = cell.autocomplete & cell.is_code
-        kwargs["auto_suggest"] = ConditionalAutoSuggestAsync(
-            cell.nb.suggester, filter=cell.is_code & cell.autosuggest
-        )
-        kwargs["style"] = "class:cell.input"
-        kwargs["accept_handler"] = self.cell.run_or_render
-
-        super().__init__(*args, **kwargs)
-
-        self.buffer.tempfile_suffix = self.cell.nb.lang_file_ext
-        self.buffer.on_text_changed = Event(self.buffer, self.text_changed)
-
-        # Replace the autosuggest processor
-        # Skip type checking as PT should use "("Optional[Sequence[Processor]]"
-        # instead of "Optional[List[Processor]]"
-        # TODO make a PR for this
-        self.control.input_processors[0] = ConditionalProcessor(  # type: ignore
-            AppendLineAutoSuggestion(),
-            has_focus(self.buffer) & ~is_done,
-        )
-
-        # Add configurable line numbers
-        self.window.left_margins = [
-            ConditionalMargin(
-                NumberedMargin(),
-                Condition(lambda: config.line_numbers),
-            )
-        ]
-        self.window.cursorline = has_focus(self)
-
-        # TODO - Check for non-shift-mode selection and change it to shift mode
-        # buffer.on_cursor_position_changed -> Event
-
-    def text_changed(self, buf: "Buffer") -> "None":
-        """Update cell json when the input buffer has been edited."""
-        self.cell._set_input(buf.text)
-        self.cell.nb.dirty = True
-
-
-class CellStdinTextArea(TextArea):
-    """A modal text area for user input."""
-
-    def __init__(self, *args: "Any", **kwargs: "Any"):
-        """Create a cell input text area."""
-        self.password = False
-        kwargs["password"] = Condition(lambda: self.password)
-        super().__init__(*args, **kwargs)
-
-    def is_modal(self) -> "bool":
-        """Returns true, so the input is always modal."""
-        return True
-
-
-class ClickArea:
-    """Any empty widget which focuses `target` when clicked.
-
-    Designed to be used as an overlay for clickable widgets in a FloatContainer.
-    """
-
-    def __init__(
-        self,
-        target: "FocusableElement",
-        text: "AnyFormattedText",
-        style: "Union[str, Callable[[], str]]",
-    ):
-        """Initiate a click area overlay element, which focuses another element when clicked.
-
-        Args:
-            target: The element to focus on click.
-            text: The formatted text to display in the click overlay
-            style: The style to apply to the text
-
-        """
-        self.text = text
-        self.target = target
-        self.style = style
-        self.window = Window(
-            FormattedTextControl(
-                self._get_text_fragments,
-                focusable=False,
-            ),
-            dont_extend_width=False,
-            dont_extend_height=False,
-        )
-
-    def _get_text_fragments(self) -> "StyleAndTextTuples":
-        def handler(mouse_event: MouseEvent) -> None:
-            if mouse_event.event_type == MouseEventType.MOUSE_UP:
-                get_app().layout.focus(self.target)
-
-        ft = to_formatted_text(
-            self.text,
-            self.style() if callable(self.style) else self.style,
-        )
-        return [(style, text, handler) for style, text, *_ in ft]
-
-    def __pt_container__(self) -> "Container":
-        """Return the `ClickArea`'s window with a blank `FormattedTextControl`."""
-        return self.window

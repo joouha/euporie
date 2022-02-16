@@ -31,6 +31,14 @@ class NotebookKernel:
     Has the ability to run itself in it's own thread.
     """
 
+    def _setup_loop(self) -> "None":
+        """Set the current loop the the kernel's event loop.
+
+        This method is intended to be run in the kernel thread.
+        """
+        asyncio.set_event_loop(self.loop)
+        self.loop.run_forever()
+
     def __init__(
         self, name: "str", threaded: "bool" = False, allow_stdin: "bool" = False
     ) -> "None":
@@ -105,6 +113,11 @@ class NotebookKernel:
                     lambda f: callback(f.result()) if callback else None
                 )
 
+    def _set_living_status(self, alive: "bool") -> "None":
+        """Set the life status of the kernel."""
+        if not alive:
+            self._status = "error"
+
     @property
     def status(self) -> "str":
         """Retrive the current kernel status.
@@ -126,11 +139,6 @@ class NotebookKernel:
             )
 
         return self._status
-
-    def _set_living_status(self, alive: "bool") -> "None":
-        """Set the life status of the kernel."""
-        if not alive:
-            self._status = "error"
 
     @property
     def missing(self) -> "bool":
@@ -158,31 +166,42 @@ class NotebookKernel:
         """Returns a list of available kernelspecs."""
         return self.km.kernel_spec_manager.get_all_specs()
 
-    def _setup_loop(self) -> "None":
-        """Set the current loop the the kernel's event loop.
-
-        This method is intended to be run in the kernel thread.
-        """
-        asyncio.set_event_loop(self.loop)
-        self.loop.run_forever()
-
-    def start(
-        self, cb: "Optional[Callable]" = None, wait: "bool" = False, timeout: "int" = 10
-    ) -> "None":
-        """Starts the kernel.
+    async def poll(self, channel: "str") -> "None":
+        """Polls for messages on a channel, and signal when they arrive.
 
         Args:
-            cb: An optional callback to run after the kernel has started
-            wait: If :py:const:`True`, block until the kernel has started
-            timeout: How long to wait until failure is assumed
+            channel: The name of the channel to get messages from
 
         """
-        self._aodo(
-            self.start_(cb),
-            timeout=timeout,
-            wait=wait,
-            callback=cb,
-        )
+        msg_getter_coro = getattr(self.kc, f"get_{channel}_msg")
+        self.events[channel] = {}
+        self.msgs[channel] = {}
+        log.debug("Waiting for %s messages", channel)
+        while True:
+            log.debug("Waiting for next %s message", channel)
+            msg = await msg_getter_coro()
+            msg_id = msg["parent_header"].get("msg_id")
+            # log.debug("Got message in response to %s", msg_id)
+            if msg_id in self.events[channel]:
+                self.msgs[channel][msg_id] = msg
+                self.events[channel][msg_id].set()
+            else:
+                log.debug(
+                    "Got stray %s message:\ntype = '%s', content = '%s'",
+                    channel,
+                    msg["header"]["msg_type"],
+                    msg.get("content"),
+                )
+
+    async def stop_(self, cb: "Optional[Callable[[], Any]]" = None) -> "None":
+        """Stop the kernel asynchronously."""
+        for task in self.poll_tasks:
+            task.cancel()
+        if self.kc is not None:
+            self.kc.stop_channels()
+        if self.km.has_kernel:
+            await self.km.shutdown_kernel()
+        log.debug("Kernel %s shutdown", self.id)
 
     async def start_(self, cb: "Optional[Callable]" = None) -> "None":
         """Start the kernel asynchronously and set its status."""
@@ -218,32 +237,23 @@ class NotebookKernel:
                     asyncio.create_task(self.poll("stdin")),
                 ]
 
-    async def poll(self, channel: "str") -> "None":
-        """Polls for messages on a channel, and signal when they arrive.
+    def start(
+        self, cb: "Optional[Callable]" = None, wait: "bool" = False, timeout: "int" = 10
+    ) -> "None":
+        """Starts the kernel.
 
         Args:
-            channel: The name of the channel to get messages from
+            cb: An optional callback to run after the kernel has started
+            wait: If :py:const:`True`, block until the kernel has started
+            timeout: How long to wait until failure is assumed
 
         """
-        msg_getter_coro = getattr(self.kc, f"get_{channel}_msg")
-        self.events[channel] = {}
-        self.msgs[channel] = {}
-        log.debug("Waiting for %s messages", channel)
-        while True:
-            log.debug("Waiting for next %s message", channel)
-            msg = await msg_getter_coro()
-            msg_id = msg["parent_header"].get("msg_id")
-            # log.debug("Got message in response to %s", msg_id)
-            if msg_id in self.events[channel]:
-                self.msgs[channel][msg_id] = msg
-                self.events[channel][msg_id].set()
-            else:
-                log.debug(
-                    "Got stray %s message:\ntype = '%s', content = '%s'",
-                    channel,
-                    msg["header"]["msg_type"],
-                    msg.get("content"),
-                )
+        self._aodo(
+            self.start_(cb),
+            timeout=timeout,
+            wait=wait,
+            callback=cb,
+        )
 
     async def await_rsps(
         self, msg_id: "str", channel: "str", timeout: "int" = 360
@@ -382,41 +392,6 @@ class NotebookKernel:
         async for rsp in self.await_iopub_rsps(msg_id):
             pass
 
-    def run(
-        self,
-        cell_json: "dict",
-        stdin_cb: "Optional[Callable[..., Any]]" = None,
-        output_cb: "Optional[Callable[[], Any]]" = None,
-        done_cb: "Optional[Callable[[], Any]]" = None,
-        wait: "bool" = False,
-    ) -> "None":
-        """Run a cell using the notebook kernel and process the responses.
-
-        Cell output is added to the cell json.
-
-        Args:
-            cell_json: The JSON representation of the cell to run
-            stdin_cb: An optional coroutine callback to run when the kernel requests
-                input. Should accept a function which should be called with the user
-                input as the only argument
-            output_cb: An optional callback to run after each response message
-            done_cb: An optional callback to run when the cell has finished running
-            wait: If :py:const`True`, will block until the cell has finished running
-
-        """
-        if self.kc is None:
-            log.debug("Cannot run cell because kernel has not started")
-        else:
-            self._aodo(
-                self.run_(
-                    cell_json=cell_json,
-                    stdin_cb=stdin_cb,
-                    output_cb=output_cb,
-                    done_cb=done_cb,
-                ),
-                wait=wait,
-            )
-
     async def run_(
         self,
         cell_json: "dict",
@@ -545,6 +520,41 @@ class NotebookKernel:
             return_exceptions=True,
         )
 
+    def run(
+        self,
+        cell_json: "dict",
+        stdin_cb: "Optional[Callable[..., Any]]" = None,
+        output_cb: "Optional[Callable[[], Any]]" = None,
+        done_cb: "Optional[Callable[[], Any]]" = None,
+        wait: "bool" = False,
+    ) -> "None":
+        """Run a cell using the notebook kernel and process the responses.
+
+        Cell output is added to the cell json.
+
+        Args:
+            cell_json: The JSON representation of the cell to run
+            stdin_cb: An optional coroutine callback to run when the kernel requests
+                input. Should accept a function which should be called with the user
+                input as the only argument
+            output_cb: An optional callback to run after each response message
+            done_cb: An optional callback to run when the cell has finished running
+            wait: If :py:const`True`, will block until the cell has finished running
+
+        """
+        if self.kc is None:
+            log.debug("Cannot run cell because kernel has not started")
+        else:
+            self._aodo(
+                self.run_(
+                    cell_json=cell_json,
+                    stdin_cb=stdin_cb,
+                    output_cb=output_cb,
+                    done_cb=done_cb,
+                ),
+                wait=wait,
+            )
+
     def set_metadata(
         self, cell_json: "dict", path: "tuple[str, ...]", data: "Any"
     ) -> "None":
@@ -562,26 +572,6 @@ class NotebookKernel:
                 level[key] = data
             else:
                 level = level.setdefault(key, {})
-
-    def info(
-        self, cb: "Optional[Callable[[dict], Any]]" = None, wait: "bool" = False
-    ) -> "dict":
-        """Request information about the kernel.
-
-        Args:
-            cb: A callback function to run when the information has been retrieved. The
-                info is passed as an argument
-            wait: If True, block the main thread until complete
-
-        Returns:
-            The kernel info
-
-        """
-        return self._aodo(
-            self.info_(),
-            callback=cb,
-            wait=wait,
-        )
 
     async def info_(self) -> "dict":
         """Request information about the kernel.
@@ -609,23 +599,24 @@ class NotebookKernel:
         )
         return results
 
-    def complete(self, code: "str", cursor_pos: "int") -> "list[dict]":
-        """Request code completions from the kernel.
+    def info(
+        self, cb: "Optional[Callable[[dict], Any]]" = None, wait: "bool" = False
+    ) -> "dict":
+        """Request information about the kernel.
 
         Args:
-            code: The code string to retrieve completions for
-            cursor_pos: The position of the cursor in the code string
+            cb: A callback function to run when the information has been retrieved. The
+                info is passed as an argument
+            wait: If True, block the main thread until complete
 
         Returns:
-            A list of dictionaries defining completion entries. The dictionaries
-            contain ``text`` (the completion text), ``start_position`` (the stating
-            position of the complation text), and optionally ``display_meta``
-            (a string containing additional data about the completion type)
+            The kernel info
 
         """
         return self._aodo(
-            self.complete_(code, cursor_pos),
-            wait=True,
+            self.info_(),
+            callback=cb,
+            wait=wait,
         )
 
     async def complete_(self, code: "str", cursor_pos: "int") -> "list[dict]":
@@ -675,21 +666,22 @@ class NotebookKernel:
         )
         return results
 
-    def history(
-        self, pattern: "str", n: "int" = 1
-    ) -> "Optional[list[tuple[int, int, str]]]":
-        """Retrieve history from the kernel.
+    def complete(self, code: "str", cursor_pos: "int") -> "list[dict]":
+        """Request code completions from the kernel.
 
         Args:
-            pattern: The pattern to search for
-            n: the number of history items to return
+            code: The code string to retrieve completions for
+            cursor_pos: The position of the cursor in the code string
 
         Returns:
-            A list of history items, consisting of tuples (session, line_number, input)
+            A list of dictionaries defining completion entries. The dictionaries
+            contain ``text`` (the completion text), ``start_position`` (the stating
+            position of the complation text), and optionally ``display_meta``
+            (a string containing additional data about the completion type)
 
         """
         return self._aodo(
-            self.history_(pattern, n),
+            self.complete_(code, cursor_pos),
             wait=True,
         )
 
@@ -719,6 +711,24 @@ class NotebookKernel:
         )
         return results
 
+    def history(
+        self, pattern: "str", n: "int" = 1
+    ) -> "Optional[list[tuple[int, int, str]]]":
+        """Retrieve history from the kernel.
+
+        Args:
+            pattern: The pattern to search for
+            n: the number of history items to return
+
+        Returns:
+            A list of history items, consisting of tuples (session, line_number, input)
+
+        """
+        return self._aodo(
+            self.history_(pattern, n),
+            wait=True,
+        )
+
     def interrupt(self) -> "None":
         """Interrupt the kernel.
 
@@ -729,6 +739,18 @@ class NotebookKernel:
         if self.km.has_kernel:
             log.debug("Interrupting kernel %s", self.id)
             KernelManager.interrupt_kernel(self.km)
+
+    async def restart_(self) -> "None":
+        """Restart the kernel asyncchronously."""
+        await self.km.restart_kernel()
+        log.debug("Kernel %s restarted", self.id)
+
+    def restart(self, wait: "bool" = False) -> "None":
+        """Restarts the current kernel."""
+        self._aodo(
+            self.restart_(),
+            wait=wait,
+        )
 
     def change(self, name: "str", metadata_json: "dict") -> "None":
         """Change the kernel.
@@ -750,18 +772,6 @@ class NotebookKernel:
             self.restart()
         else:
             self.start()
-
-    def restart(self, wait: "bool" = False) -> "None":
-        """Restarts the current kernel."""
-        self._aodo(
-            self.restart_(),
-            wait=wait,
-        )
-
-    async def restart_(self) -> "None":
-        """Restart the kernel asyncchronously."""
-        await self.km.restart_kernel()
-        log.debug("Kernel %s restarted", self.id)
 
     def stop(self, cb: "Optional[Callable]" = None, wait: "bool" = False) -> "None":
         """Stops the current kernel.
@@ -787,15 +797,14 @@ class NotebookKernel:
                 wait=wait,
             )
 
-    async def stop_(self, cb: "Optional[Callable[[], Any]]" = None) -> "None":
-        """Stop the kernel asynchronously."""
-        for task in self.poll_tasks:
-            task.cancel()
-        if self.kc is not None:
-            self.kc.stop_channels()
+    async def shutdown_(self) -> "None":
+        """Shut down the kernel and close the event loop if running in a thread."""
         if self.km.has_kernel:
-            await self.km.shutdown_kernel()
-        log.debug("Kernel %s shutdown", self.id)
+            await self.km.shutdown_kernel(now=True)
+        if self.threaded:
+            self.loop.stop()
+            self.loop.close()
+            log.debug("Loop closed")
 
     def shutdown(self, wait: "bool" = False) -> "None":
         """Shutdown the kernel and close the kernel's thread.
@@ -813,12 +822,3 @@ class NotebookKernel:
         )
         if self.threaded:
             self.thread.join(timeout=5)
-
-    async def shutdown_(self) -> "None":
-        """Shut down the kernel and close the event loop if running in a thread."""
-        if self.km.has_kernel:
-            await self.km.shutdown_kernel(now=True)
-        if self.threaded:
-            self.loop.stop()
-            self.loop.close()
-            log.debug("Loop closed")

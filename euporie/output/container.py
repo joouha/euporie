@@ -196,6 +196,27 @@ class GraphicWindow(Window):
 class CellOutput:
     """A container for rendered cell outputs."""
 
+    @property
+    def data(self) -> "dict[str, str]":
+        """Return dictionary of mime types and data for this output.
+
+        This generates similarly structured data objects for markdown cells and text
+        output streams.
+
+        Returns:
+            JSON dictionary mapping mimes type to representation data.
+
+        """
+        output_type = self.json.get("output_type", "unknown")
+        if output_type == "stream":
+            return {f'stream/{self.json.get("name")}': self.json.get("text", "")}
+        elif output_type == "error":
+            return {
+                "text/x-python-traceback": "\n".join(self.json.get("traceback", ""))
+            }
+        else:
+            return self.json.get("data", {})
+
     def __init__(self, json: "dict[str, Any]"):
         """Instantiate an Output container object.
 
@@ -286,27 +307,6 @@ class CellOutput:
             )
         if self.graphic_float is not None:
             get_app().add_float(self.graphic_float)
-
-    @property
-    def data(self) -> "dict[str, str]":
-        """Return dictionary of mime types and data for this output.
-
-        This generates similarly structured data objects for markdown cells and text
-        output streams.
-
-        Returns:
-            JSON dictionary mapping mimes type to representation data.
-
-        """
-        output_type = self.json.get("output_type", "unknown")
-        if output_type == "stream":
-            return {f'stream/{self.json.get("name")}': self.json.get("text", "")}
-        elif output_type == "error":
-            return {
-                "text/x-python-traceback": "\n".join(self.json.get("traceback", ""))
-            }
-        else:
-            return self.json.get("data", {})
 
     def __pt_container__(self) -> "AnyContainer":
         """Return the content of this output."""

@@ -59,6 +59,21 @@ class FormatTextProcessor(Processor):
 class FormattedTextArea(TextArea):
     """Applies formatted text to a TextArea."""
 
+    @property
+    def formatted_text(self) -> "StyleAndTextTuples":
+        """The formatted text."""
+        return self._formatted_text
+
+    @formatted_text.setter
+    def formatted_text(self, value: "StyleAndTextTuples") -> None:
+        """Sets the formatted text."""
+        self._formatted_text = to_formatted_text(value)
+        self.text = fragment_list_to_text(value)
+
+    def get_processor(self) -> "FormatTextProcessor":
+        """Generate a processor for the formatted text."""
+        return FormatTextProcessor(self.formatted_text)
+
     def __init__(
         self, formatted_text: "StyleAndTextTuples", *args: "Any", **kwargs: "Any"
     ):
@@ -85,21 +100,6 @@ class FormattedTextArea(TextArea):
             if isinstance(margin, ScrollbarMargin):
                 margin.up_arrow_symbol = "▲"
                 margin.down_arrow_symbol = "▼"
-
-    def get_processor(self) -> "FormatTextProcessor":
-        """Generate a processor for the formatted text."""
-        return FormatTextProcessor(self.formatted_text)
-
-    @property
-    def formatted_text(self) -> "StyleAndTextTuples":
-        """The formatted text."""
-        return self._formatted_text
-
-    @formatted_text.setter
-    def formatted_text(self, value: "StyleAndTextTuples") -> None:
-        """Sets the formatted text."""
-        self._formatted_text = to_formatted_text(value)
-        self.text = fragment_list_to_text(value)
 
 
 class ANSI(PTANSI):

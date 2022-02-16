@@ -78,48 +78,8 @@ class EuporieApp(Application):
     wide methods can be easily added.
     """
 
-    # This configures the logs for euporie
-    setup_logs()
     # Defines which notebook class should we use
     notebook_class: "Type[Notebook]"
-
-    def __init__(self, **kwargs: "Any") -> "None":
-        """Instantiates euporie specific application variables.
-
-        After euporie specific application variables are instantiated, the application
-        instance is initiated.
-
-        Args:
-            **kwargs: The key-word arguments for the :py:class:`Application`
-
-        """
-        # Initialise the application
-        super().__init__(
-            # input=self.input,
-            output=self.load_output(),
-            **kwargs,
-        )
-        # Use a custom vt100 parser to allow querying the terminal
-        self.using_vt100 = not is_windows()
-        if self.using_vt100:
-            self.input = cast("Vt100Input", self.input)
-            self.input.vt100_parser = Vt100Parser(
-                self.input.vt100_parser.feed_key_callback
-            )
-        # Contains the opened tab containers
-        self.tabs: "MutableSequence[Tab]" = []
-        # Holds the index of the current tab
-        self._tab_idx = 0
-        # Add state for micro key-bindings
-        self.micro_state = MicroState()
-        # Load the terminal information system
-        self.term_info = TerminalInfo(self.input, self.output)
-        # Continue loading
-        self.pre_run_callables = [self.pre_run]
-        # Floats at the app level
-        self.floats: "list[Float]" = []
-
-        self.has_dialog = False
 
     def pre_run(self, app: "Application" = None) -> "None":
         """Called during the 'pre-run' stage of application loading."""
@@ -162,6 +122,56 @@ class EuporieApp(Application):
 
         # Waits until the event loop is ready
         self.create_background_task(continue_loading())
+
+    def load_output(self) -> "Output":
+        """Creates the output for this application to use.
+
+        Returns:
+            A prompt-toolkit output instance
+
+        """
+        return create_output()
+
+    def __init__(self, **kwargs: "Any") -> "None":
+        """Instantiates euporie specific application variables.
+
+        After euporie specific application variables are instantiated, the application
+        instance is initiated.
+
+        Args:
+            **kwargs: The key-word arguments for the :py:class:`Application`
+
+        """
+        # Initialise the application
+        super().__init__(
+            # input=self.input,
+            output=self.load_output(),
+            **kwargs,
+        )
+        # Use a custom vt100 parser to allow querying the terminal
+        self.using_vt100 = not is_windows()
+        if self.using_vt100:
+            self.input = cast("Vt100Input", self.input)
+            self.input.vt100_parser = Vt100Parser(
+                self.input.vt100_parser.feed_key_callback
+            )
+        # Contains the opened tab containers
+        self.tabs: "MutableSequence[Tab]" = []
+        # Holds the index of the current tab
+        self._tab_idx = 0
+        # Add state for micro key-bindings
+        self.micro_state = MicroState()
+        # Load the terminal information system
+        self.term_info = TerminalInfo(self.input, self.output)
+        # Continue loading
+        self.pre_run_callables = [self.pre_run]
+        # Floats at the app level
+        self.floats: "list[Float]" = []
+
+        self.has_dialog = False
+
+    # This configures the logs for euporie
+    setup_logs()
 
     def post_load(self) -> "None":
         """Allows subclasses to define additional loading steps."""
@@ -226,20 +236,6 @@ class EuporieApp(Application):
         """
         return FloatContainer(content=Window(), floats=[])
 
-    def load_output(self) -> "Output":
-        """Creates the output for this application to use.
-
-        Returns:
-            A prompt-toolkit output instance
-
-        """
-        return create_output()
-
-    def open_files(self) -> "None":
-        """Opens the files defined in the configuration."""
-        for file in config.files:
-            self.open_file(file)
-
     def open_file(self, path: "Path", read_only: "bool" = False) -> "None":
         """Creates a tab for a file.
 
@@ -258,6 +254,11 @@ class EuporieApp(Application):
             tab = self.notebook_class(path, app=self)
             self.tabs.append(tab)
             tab.focus()
+
+    def open_files(self) -> "None":
+        """Opens the files defined in the configuration."""
+        for file in config.files:
+            self.open_file(file)
 
     @property
     def tab(self) -> "Optional[Tab]":
@@ -285,19 +286,6 @@ class EuporieApp(Application):
         self._tab_idx = value % len(self.tabs)
         self.layout.focus(self.tabs[self._tab_idx])
 
-    def close_tab(self, tab: "Optional[Tab]" = None) -> "None":
-        """Closes a notebook tab.
-
-        Args:
-            tab: The instance of the tab to close. If `None`, the currently
-                selected tab will be closed.
-
-        """
-        if tab is None:
-            tab = self.tab
-        if tab is not None:
-            tab.close(cb=partial(self.cleanup_closed_tab, tab))
-
     def cleanup_closed_tab(self, tab: "Tab") -> "None":
         """Remove a tab container from the current instance of the app.
 
@@ -321,16 +309,18 @@ class EuporieApp(Application):
             except ValueError:
                 pass
 
-    def set_edit_mode(self, mode: "EditingMode") -> "None":
-        """Sets the keybindings for editing mode.
+    def close_tab(self, tab: "Optional[Tab]" = None) -> "None":
+        """Closes a notebook tab.
 
         Args:
-            mode: One of default, vi, or emacs
+            tab: The instance of the tab to close. If `None`, the currently
+                selected tab will be closed.
 
         """
-        config.edit_mode = str(mode)
-        self.editing_mode = self.get_edit_mode()
-        log.debug("Editing mode set to: %s", self.editing_mode)
+        if tab is None:
+            tab = self.tab
+        if tab is not None:
+            tab.close(cb=partial(self.cleanup_closed_tab, tab))
 
     def get_edit_mode(self) -> "EditingMode":
         """Returns the editing mode enum defined in the configuration."""
@@ -342,29 +332,16 @@ class EuporieApp(Application):
             str(config.edit_mode), EditingMode.MICRO  # type: ignore
         )
 
-    def update_style(
-        self,
-        query: "Optional[TerminalQuery]" = None,
-        pygments_style: "Optional[str]" = None,
-        color_scheme: "Optional[str]" = None,
-    ) -> "None":
-        """Updates the application's style when the syntax theme is changed."""
-        if pygments_style is not None:
-            config.syntax_theme = pygments_style
-        if color_scheme is not None:
-            config.color_scheme = color_scheme
-        self.renderer.style = self.create_merged_style()
+    def set_edit_mode(self, mode: "EditingMode") -> "None":
+        """Sets the keybindings for editing mode.
 
-    def refresh(self) -> "None":
-        """Reset all tabs."""
-        for tab in self.tabs:
-            to_container(tab).reset()
+        Args:
+            mode: One of default, vi, or emacs
 
-    def _create_merged_style(
-        self, include_default_pygments_style: "Filter" = None
-    ) -> "BaseStyle":
-        """Block default style loading."""
-        return DummyStyle()
+        """
+        config.edit_mode = str(mode)
+        self.editing_mode = self.get_edit_mode()
+        log.debug("Editing mode set to: %s", self.editing_mode)
 
     def create_merged_style(self) -> "BaseStyle":
         """Generate a new merged style for the application."""
@@ -484,6 +461,30 @@ class EuporieApp(Application):
                 style_from_pygments_cls(get_style_by_name(config.syntax_theme)),
             ]
         )
+
+    def update_style(
+        self,
+        query: "Optional[TerminalQuery]" = None,
+        pygments_style: "Optional[str]" = None,
+        color_scheme: "Optional[str]" = None,
+    ) -> "None":
+        """Updates the application's style when the syntax theme is changed."""
+        if pygments_style is not None:
+            config.syntax_theme = pygments_style
+        if color_scheme is not None:
+            config.color_scheme = color_scheme
+        self.renderer.style = self.create_merged_style()
+
+    def refresh(self) -> "None":
+        """Reset all tabs."""
+        for tab in self.tabs:
+            to_container(tab).reset()
+
+    def _create_merged_style(
+        self, include_default_pygments_style: "Filter" = None
+    ) -> "BaseStyle":
+        """Block default style loading."""
+        return DummyStyle()
 
     @property
     def notebook(self) -> "Optional[TuiNotebook]":

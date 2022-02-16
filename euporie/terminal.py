@@ -102,6 +102,10 @@ class TerminalQuery:
         self._value: "Optional[Any]" = None
         self.event = Event(self)
 
+    def verify(self, data: "str") -> "Optional[Any]":
+        """Verifies the response from the terminal."""
+        return None
+
     async def _handle_response(self, event: "KeyPressEvent") -> "object":
         """Run when the terminal recieves the response from the terminal.
 
@@ -139,10 +143,6 @@ class TerminalQuery:
 
         """
         return self._value or self.default
-
-    def verify(self, data: "str") -> "Optional[Any]":
-        """Verifies the response from the terminal."""
-        return None
 
 
 class ColorQueryMixin:
@@ -291,20 +291,6 @@ class DepthOfColor(TerminalQuery):
 class TerminalInfo:
     """A class to gather and hold information about the terminal."""
 
-    def __init__(self, input_: "Input", output: "Output") -> "None":
-        """Instantiates the terminal information class."""
-        self.input = input_
-        self.output = output
-        self._queries: "list[TerminalQuery]" = []
-
-        self.foreground_color = self.register(ForegroundColor)
-        self.background_color = self.register(BackgroundColor)
-        self.pixel_dimensions = self.register(PixelDimensions)
-        self.sixel_graphics_status = self.register(SixelGraphicsStatus)
-        self.kitty_graphics_status = self.register(KittyGraphicsStatus)
-        self.kitty_graphic_id = self.register(KittyGraphicId)
-        self.depth_of_color = self.register(DepthOfColor)
-
     def register(self, query: "Type[TerminalQuery]") -> "TerminalQuery":
         """Instantiates and registers a query's response with the input parser."""
         # Create an instance of this query
@@ -342,6 +328,20 @@ class TerminalInfo:
 
         return query_inst
 
+    def __init__(self, input_: "Input", output: "Output") -> "None":
+        """Instantiates the terminal information class."""
+        self.input = input_
+        self.output = output
+        self._queries: "list[TerminalQuery]" = []
+
+        self.foreground_color = self.register(ForegroundColor)
+        self.background_color = self.register(BackgroundColor)
+        self.pixel_dimensions = self.register(PixelDimensions)
+        self.sixel_graphics_status = self.register(SixelGraphicsStatus)
+        self.kitty_graphics_status = self.register(KittyGraphicsStatus)
+        self.kitty_graphic_id = self.register(KittyGraphicId)
+        self.depth_of_color = self.register(DepthOfColor)
+
     def send_all(self) -> "None":
         """Sends the command for all queries."""
         for query in self._queries:
@@ -364,7 +364,7 @@ class TerminalInfo:
     @property
     def terminal_size_px(self) -> "tuple[int, int]":
         """Get the pixel dimensions of the terminal."""
-        *_, px, py = self._tiocgwnsz()
+        _rows, _cols, px, py = self._tiocgwnsz()
         # If unsuccessful, try requesting info with escape code method
         if px == 0:
             px, py = self.pixel_dimensions.value

@@ -31,6 +31,18 @@ class PrintingContainer(Container):
         self.rendered = False
         self._children = children
 
+    @property
+    def children(self) -> "Sequence[AnyContainer]":
+        """Returns the container's children."""
+        if callable(self._children):
+            return self._children()
+        else:
+            return self._children
+
+    def get_children(self) -> "list[Container]":
+        """Returns a list of all child containers."""
+        return list(map(to_container, self.children))
+
     def write_to_screen(
         self,
         screen: "Screen",
@@ -72,18 +84,6 @@ class PrintingContainer(Container):
                 z_index,
             )
             ypos += height
-
-    @property
-    def children(self) -> "Sequence[AnyContainer]":
-        """Returns the container's children."""
-        if callable(self._children):
-            return self._children()
-        else:
-            return self._children
-
-    def get_children(self) -> "list[Container]":
-        """Returns a list of all child containers."""
-        return list(map(to_container, self.children))
 
     def preferred_height(self, width: int, max_available_height: int) -> "Dimension":
         """Returns the preferred height, equal to the sum of the child heights."""

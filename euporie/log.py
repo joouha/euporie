@@ -142,6 +142,38 @@ class QueueHandler(logging.Handler):
 class LogView(Tab):
     """A tab which allows you to view log entries."""
 
+    def render(self, record: "logging.LogRecord") -> "StyleAndTextTuples":
+        """Converts a log record to formatted text.
+
+        Args:
+            record: The log record to format
+
+        Returns:
+            A list of style and text tuples describing the log record
+
+        """
+        date = self.formatter.formatTime(record, "%Y%m%d.%H%M%S")
+        record.message = record.getMessage()
+        msg = self.formatter.formatMessage(record)
+        formatted_record: "StyleAndTextTuples" = [
+            ("class:log.date", f"{date} "),
+            (f"class:log.level.{record.levelname}", f"{record.levelname:>7} "),
+            ("class:log.msg", f"{msg} "),
+            ("class:log.ref", f"{record.name}.{record.funcName}:{record.lineno} "),
+            ("", "\n"),
+        ]
+
+        return formatted_record
+
+    def add_record(self, record: "logging.LogRecord") -> "None":
+        """Adds a single new record to the textarea.
+
+        Args:
+            record: The log record to add
+
+        """
+        self.text_area.formatted_text += self.render(record)
+
     def __init__(self) -> "None":
         """Builds the tab's contents.
 
@@ -173,38 +205,6 @@ class LogView(Tab):
     def title(self) -> "str":
         """Returns the title of this tab."""
         return f"Logs ({Path(config.log_file)})"
-
-    def add_record(self, record: "logging.LogRecord") -> "None":
-        """Adds a single new record to the textarea.
-
-        Args:
-            record: The log record to add
-
-        """
-        self.text_area.formatted_text += self.render(record)
-
-    def render(self, record: "logging.LogRecord") -> "StyleAndTextTuples":
-        """Converts a log record to formatted text.
-
-        Args:
-            record: The log record to format
-
-        Returns:
-            A list of style and text tuples describing the log record
-
-        """
-        date = self.formatter.formatTime(record, "%Y%m%d.%H%M%S")
-        record.message = record.getMessage()
-        msg = self.formatter.formatMessage(record)
-        formatted_record: "StyleAndTextTuples" = [
-            ("class:log.date", f"{date} "),
-            (f"class:log.level.{record.levelname}", f"{record.levelname:>7} "),
-            ("class:log.msg", f"{msg} "),
-            ("class:log.ref", f"{record.name}.{record.funcName}:{record.lineno} "),
-            ("", "\n"),
-        ]
-
-        return formatted_record
 
 
 class stdout_to_log:

@@ -64,6 +64,7 @@ sphinx-autobuild = "^2021.3.14"
 sphinx-rtd-theme = "^1.0.0"
 furo = "^2022.1.2"
 black = "^22.1.0"
+ssort = "^0.10.1"
 
 [tool.poetry.scripts]
 euporie = 'euporie.app:App.launch'

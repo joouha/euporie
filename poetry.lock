@@ -1523,6 +1523,14 @@ lint = ["flake8", "mypy", "docutils-stubs"]
 test = ["pytest"]
 
 [[package]]
+name = "ssort"
+version = "0.10.1"
+description = "The python statement sorter"
+category = "dev"
+optional = false
+python-versions = ">=3.8"
+
+[[package]]
 name = "stevedore"
 version = "3.5.0"
 description = "Manage dynamic plugins for Python applications"
@@ -1770,7 +1778,7 @@ svg-cairosvg = ["CairoSVG"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "d64509ed45db56773d4d016aca37a46db7dc85b757652f8ddce6052bb88b9826"
+content-hash = "87f21a2805eea3a94968f884e69a7263395d7ee22906158e1ffadbcdd6d932ad"
 
 [metadata.files]
 aenum = [
@@ -2786,6 +2794,9 @@ sphinxcontrib-qthelp = [
 sphinxcontrib-serializinghtml = [
     {file = "sphinxcontrib-serializinghtml-1.1.5.tar.gz", hash = "sha256:aa5f6de5dfdf809ef505c4895e51ef5c9eac17d0f287933eb49ec495280b6952"},
     {file = "sphinxcontrib_serializinghtml-1.1.5-py2.py3-none-any.whl", hash = "sha256:352a9a00ae864471d3a7ead8d7d79f5fc0b57e8b3f95e9867eb9eb28999b92fd"},
+]
+ssort = [
+    {file = "ssort-0.10.1.tar.gz", hash = "sha256:30a9e88561aa3644106283d7da507dff3100d101cf0a5ecf1babd0db302d70c5"},
 ]
 stevedore = [
     {file = "stevedore-3.5.0-py3-none-any.whl", hash = "sha256:a547de73308fd7e90075bb4d301405bebf705292fa90a90fc3bcf9133f58616c"},

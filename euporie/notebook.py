@@ -142,14 +142,24 @@ class Notebook(Tab, metaclass=ABCMeta):
         )
         self.dirty = True
 
+    def copy(self, index: "int") -> "None":
+        """Add a copy of this cell to the `Notebook`'s clipboard."""
+        self.clipboard = copy.deepcopy(self.json["cells"][index : index + 1])
+
+    def delete(self, index: "Optional[int]" = None) -> "None":
+        """Delete a cell from the notebook."""
+        # Ensure there is always one cell
+        if index is not None:
+            if len(self.json["cells"]) == 1:
+                self.add(1)
+            del self.json["cells"][index]
+            self.dirty = True
+            self.refresh(max(0, index), scroll=True)
+
     def cut(self, index: "int") -> "None":
         """Remove a cell from the notebook and add it to the `Notebook`'s clipboard."""
         self.copy(index)
         self.delete(index)
-
-    def copy(self, index: "int") -> "None":
-        """Add a copy of this cell to the `Notebook`'s clipboard."""
-        self.clipboard = copy.deepcopy(self.json["cells"][index : index + 1])
 
     def paste(self, index: "int") -> "None":
         """Append the contents of the `Notebook`'s clipboard below the current cell."""
@@ -162,16 +172,6 @@ class Notebook(Tab, metaclass=ABCMeta):
         # Only change the selected cell if we actually pasted something
         if cell_jsons:
             self.refresh(index + 1)
-
-    def delete(self, index: "Optional[int]" = None) -> "None":
-        """Delete a cell from the notebook."""
-        # Ensure there is always one cell
-        if index is not None:
-            if len(self.json["cells"]) == 1:
-                self.add(1)
-            del self.json["cells"][index]
-            self.dirty = True
-            self.refresh(max(0, index), scroll=True)
 
     def save(self) -> "None":
         """Write the notebook's JSON to the current notebook's file."""
@@ -206,6 +206,10 @@ class KernelNotebook(Notebook):
 
     kernel: "NotebookKernel"
 
+    @abstractmethod
+    def load_kernel(self) -> "None":
+        ...
+
     def __init__(
         self,
         path: "Path",
@@ -217,10 +221,6 @@ class KernelNotebook(Notebook):
         self.completer = KernelCompleter(self.kernel)
         self.suggester = KernelAutoSuggest(self.kernel)
         self.dirty = False
-
-    @abstractmethod
-    def load_kernel(self) -> "None":
-        ...
 
     def interrupt_kernel(self) -> "None":
         """Interrupt the current `Notebook`'s kernel."""
@@ -274,27 +274,27 @@ class KernelNotebook(Notebook):
                     cell.run_or_render(wait=wait)
             log.debug("All cells run")
 
-    def check_kernel(self, result: "None" = None) -> "None":
-        log.debug("Kernel status is '%s'", self.kernel.status)
-        self.kernel.info(cb=self._process_kernel_info, wait=False)
-
     def _process_kernel_info(self, info: "dict") -> "None":
         self.json.setdefault("metadata", {})["language_info"] = info.get(
             "language_info", {}
         )
 
+    def check_kernel(self, result: "None" = None) -> "None":
+        log.debug("Kernel status is '%s'", self.kernel.status)
+        self.kernel.info(cb=self._process_kernel_info, wait=False)
+
 
 class DumpKernelNotebook(DumpNotebook, KernelNotebook):
-    def load_kernel(self) -> "None":
-        self.kernel = NotebookKernel(str(self.kernel_name), threaded=True)
-        self.kernel.start(cb=self.check_kernel, wait=True)
-
     def check_kernel(self, result: "None" = None) -> "None":
         super().check_kernel()
         if self.kernel.status == "idle" and config.run:
             self.autoran = True
             log.debug("Notebook was set to autorun: running all cells")
             self.run_all(wait=True)
+
+    def load_kernel(self) -> "None":
+        self.kernel = NotebookKernel(str(self.kernel_name), threaded=True)
+        self.kernel.start(cb=self.check_kernel, wait=True)
 
     def close(self, cb: "Optional[Callable]") -> "None":
         """Shutdown the kernel and close the notebook.
@@ -376,6 +376,13 @@ class TuiNotebook(KernelNotebook):
             key_bindings=load_command_bindings("notebook", "cell"),
         )
 
+    def refresh(self, index: "Optional[int]" = None, scroll: "bool" = True) -> "None":
+        """Refresh the rendered contents of this notebook."""
+        if index is None:
+            index = self.page.selected_index
+        self.page.reset()
+        self.page._set_selected_index(index, force=True, scroll=scroll)
+
     def add_cell_above(self) -> "None":
         index = self.page.selected_index + 0
         self.add(index)
@@ -392,43 +399,6 @@ class TuiNotebook(KernelNotebook):
         cell = self.page.get_child()
         assert isinstance(cell, InteractiveCell)
         return cell
-
-    def load_kernel(self) -> "None":
-        self.kernel = NotebookKernel(
-            str(self.kernel_name), threaded=False, allow_stdin=True
-        )
-        self.kernel.start(cb=self.check_kernel, wait=False)
-
-    def check_kernel(self, result: "None" = None) -> "None":
-        """Checks if the kernel has started and prompts user if not."""
-        super().check_kernel()
-        if self.kernel.missing:
-            self.change_kernel(
-                msg=f"Kernel '{self.kernel_display_name}' not registered"
-            )
-        elif self.kernel.status == "error":
-            self.app.dialog(
-                "Error Starting Kernel",
-                Label(self.kernel.error.__repr__()),
-                {"OK": None},
-            )
-        elif self.kernel.status == "idle" and config.run:
-            self.run_all(wait=False)
-
-        self.app.invalidate()
-
-    def restart_kernel(self) -> "None":
-        """Restarts the current `Notebook`'s kernel."""
-
-        def _do_restart() -> "None":
-            assert self.kernel is not None
-            self.kernel.restart()
-
-        self.app.dialog(
-            "Restart",
-            Label("Are you sure you want to restart the kernel?"),
-            {"Yes": _do_restart, "No": None},
-        )
 
     def change_kernel(self, msg: "Optional[str]" = None) -> None:
         """Displays a dialog for the user to select a new kernel."""
@@ -461,6 +431,43 @@ class TuiNotebook(KernelNotebook):
                 "Select": _change_kernel_cb,
                 "Cancel": None,
             },
+        )
+
+    def check_kernel(self, result: "None" = None) -> "None":
+        """Checks if the kernel has started and prompts user if not."""
+        super().check_kernel()
+        if self.kernel.missing:
+            self.change_kernel(
+                msg=f"Kernel '{self.kernel_display_name}' not registered"
+            )
+        elif self.kernel.status == "error":
+            self.app.dialog(
+                "Error Starting Kernel",
+                Label(self.kernel.error.__repr__()),
+                {"OK": None},
+            )
+        elif self.kernel.status == "idle" and config.run:
+            self.run_all(wait=False)
+
+        self.app.invalidate()
+
+    def load_kernel(self) -> "None":
+        self.kernel = NotebookKernel(
+            str(self.kernel_name), threaded=False, allow_stdin=True
+        )
+        self.kernel.start(cb=self.check_kernel, wait=False)
+
+    def restart_kernel(self) -> "None":
+        """Restarts the current `Notebook`'s kernel."""
+
+        def _do_restart() -> "None":
+            assert self.kernel is not None
+            self.kernel.restart()
+
+        self.app.dialog(
+            "Restart",
+            Label("Are you sure you want to restart the kernel?"),
+            {"Yes": _do_restart, "No": None},
         )
 
     def run_cell(self, cell: "Cell", wait: "bool" = False) -> "None":
@@ -500,25 +507,6 @@ class TuiNotebook(KernelNotebook):
         if index is None:
             index = self.page.selected_index
         super().delete(index)
-
-    def refresh(self, index: "Optional[int]" = None, scroll: "bool" = True) -> "None":
-        """Refresh the rendered contents of this notebook."""
-        if index is None:
-            index = self.page.selected_index
-        self.page.reset()
-        self.page._set_selected_index(index, force=True, scroll=scroll)
-
-    def close(self, cb: "Optional[Callable]") -> "None":
-        """Check if the user want to save an unsaved notebook, then close the file.
-
-        Args:
-            cb: A callback to run if after closing the notebook.
-
-        """
-        if self.dirty:
-            self.unsaved(cb)
-        else:
-            self.really_close(cb)
 
     def really_close(self, cb: "Optional[Callable]") -> "None":
         """Shutdown the kernel and close the notebook.
@@ -567,6 +555,23 @@ class TuiNotebook(KernelNotebook):
             },
         )
 
+    def close(self, cb: "Optional[Callable]") -> "None":
+        """Check if the user want to save an unsaved notebook, then close the file.
+
+        Args:
+            cb: A callback to run if after closing the notebook.
+
+        """
+        if self.dirty:
+            self.unsaved(cb)
+        else:
+            self.really_close(cb)
+
+    def _statusbar_kernel_handeler(self, event: "MouseEvent") -> "None":
+        """Event handler for kernel name field in statusbar."""
+        if event.event_type == MouseEventType.MOUSE_UP:
+            self.change_kernel()
+
     def statusbar_fields(
         self,
     ) -> "tuple[Sequence[AnyFormattedText], Sequence[AnyFormattedText]]":
@@ -582,8 +587,3 @@ class TuiNotebook(KernelNotebook):
                 KERNEL_STATUS_REPR[self.kernel.status] if self.kernel else ".",
             ],
         )
-
-    def _statusbar_kernel_handeler(self, event: "MouseEvent") -> "None":
-        """Event handler for kernel name field in statusbar."""
-        if event.event_type == MouseEventType.MOUSE_UP:
-            self.change_kernel()

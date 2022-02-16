@@ -425,23 +425,6 @@ add(
 )(accept_line)
 
 
-@add(filter=buffer_has_focus & is_multiline, group="micro-edit-mode")
-def newline(event: "KeyPressEvent") -> "None":
-    """Insert a new line, replacing any selection and indenting if appropriate."""
-    # TODO https://git.io/J9GfI
-    buffer = get_app().current_buffer
-    buffer.cut_selection()
-    buffer.newline(copy_margin=not in_paste_mode())
-
-    if cell_is_code():
-        pre = buffer.document.text_before_cursor
-        if pre.rstrip()[-1:] in (":", "(", "[", "{"):
-            dent_buffer(event)
-    # TODO
-    # post = buffer.document.text_after_cursor
-    # if post.lstrip()[0:1] in (")", "]", "}"):
-
-
 def dent_buffer(event: "KeyPressEvent", indenting: "bool" = True) -> "None":
     """Indent or unindent the current or selected lines in a buffer."""
     buffer = get_app().current_buffer
@@ -495,6 +478,23 @@ def dent_buffer(event: "KeyPressEvent", indenting: "bool" = True) -> "None":
         )
     # Maintain the selection state before indentation
     buffer.selection_state = selection_state
+
+
+@add(filter=buffer_has_focus & is_multiline, group="micro-edit-mode")
+def newline(event: "KeyPressEvent") -> "None":
+    """Insert a new line, replacing any selection and indenting if appropriate."""
+    # TODO https://git.io/J9GfI
+    buffer = get_app().current_buffer
+    buffer.cut_selection()
+    buffer.newline(copy_margin=not in_paste_mode())
+
+    if cell_is_code():
+        pre = buffer.document.text_before_cursor
+        if pre.rstrip()[-1:] in (":", "(", "[", "{"):
+            dent_buffer(event)
+    # TODO
+    # post = buffer.document.text_after_cursor
+    # if post.lstrip()[0:1] in (")", "]", "}"):
 
 
 @add(
@@ -569,6 +569,45 @@ def select_all() -> "None":
     buffer.selection_state.enter_shift_mode()
 
 
+def unshift_move(event: "KeyPressEvent") -> "None":
+    """Used for the shift selection mode.
+
+    When called with a shift + movement key press event, moves the cursor as if shift
+    is not pressed.
+
+    Args:
+        event: The key press event to process
+
+    """
+    key = event.key_sequence[0].key
+
+    if key == Keys.ShiftUp:
+        event.current_buffer.auto_up(count=event.arg)
+        return
+    if key == Keys.ShiftDown:
+        event.current_buffer.auto_down(count=event.arg)
+        return
+
+    # the other keys are handled through their readline command
+    key_to_command: "dict[Union[Keys, str], str]" = {
+        Keys.ShiftLeft: "move-cursor-left",
+        Keys.ShiftRight: "move-cursor-right",
+        Keys.ShiftHome: "go-to-start-of-line",
+        Keys.ShiftEnd: "go-to-end-of-line",
+        Keys.ControlShiftLeft: "backward-word",
+        Keys.ControlShiftRight: "forward-word",
+        Keys.ControlShiftHome: "beginning-of-buffer",
+        Keys.ControlShiftEnd: "end-of-buffer",
+    }
+
+    try:
+        command = get(key_to_command[key])
+    except KeyError:
+        pass
+    else:
+        command.key_handler(event)
+
+
 @add(filter=~has_selection, group="micro-edit-mode")
 def start_selection(event: "KeyPressEvent") -> "None":
     """Start a new selection."""
@@ -611,45 +650,6 @@ def replace_selection(event: "KeyPressEvent") -> "None":
 def delete_selection() -> "None":
     """Delete the contents of the current selection."""
     get_app().current_buffer.cut_selection()
-
-
-def unshift_move(event: "KeyPressEvent") -> "None":
-    """Used for the shift selection mode.
-
-    When called with a shift + movement key press event, moves the cursor as if shift
-    is not pressed.
-
-    Args:
-        event: The key press event to process
-
-    """
-    key = event.key_sequence[0].key
-
-    if key == Keys.ShiftUp:
-        event.current_buffer.auto_up(count=event.arg)
-        return
-    if key == Keys.ShiftDown:
-        event.current_buffer.auto_down(count=event.arg)
-        return
-
-    # the other keys are handled through their readline command
-    key_to_command: "dict[Union[Keys, str], str]" = {
-        Keys.ShiftLeft: "move-cursor-left",
-        Keys.ShiftRight: "move-cursor-right",
-        Keys.ShiftHome: "go-to-start-of-line",
-        Keys.ShiftEnd: "go-to-end-of-line",
-        Keys.ControlShiftLeft: "backward-word",
-        Keys.ControlShiftRight: "forward-word",
-        Keys.ControlShiftHome: "beginning-of-buffer",
-        Keys.ControlShiftEnd: "end-of-buffer",
-    }
-
-    try:
-        command = get(key_to_command[key])
-    except KeyError:
-        pass
-    else:
-        command.key_handler(event)
 
 
 @add(filter=shift_selection_mode, group="micro-edit-mode")

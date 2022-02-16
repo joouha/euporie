@@ -259,6 +259,17 @@ class KittyGraphicControl(OutputControl):
             bg=self.bg_color,
         ).replace("\n", "")
 
+    @staticmethod
+    def _kitty_cmd(chunk: "str" = "", **params: "Any") -> "str":
+        param_str = ",".join(
+            [f"{key}={value}" for key, value in params.items() if value is not None]
+        )
+        cmd = f"\x1b_G{param_str}"
+        if chunk:
+            cmd += f";{chunk}"
+        cmd += "\x1b\\"
+        return cmd
+
     def load(self, rows: "int", cols: "int") -> "None":
         """Sends the graphic to the terminal without displaying it."""
         global _kitty_image_count
@@ -353,14 +364,3 @@ class KittyGraphicControl(OutputControl):
 
     def create_content(self, width: "int", height: "int") -> "UIContent":
         return super().create_content(width, height)
-
-    @staticmethod
-    def _kitty_cmd(chunk: "str" = "", **params: "Any") -> "str":
-        param_str = ",".join(
-            [f"{key}={value}" for key, value in params.items() if value is not None]
-        )
-        cmd = f"\x1b_G{param_str}"
-        if chunk:
-            cmd += f";{chunk}"
-        cmd += "\x1b\\"
-        return cmd

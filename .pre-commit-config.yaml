@@ -1,4 +1,9 @@
 repos:
+  - repo: https://github.com/prettier/pre-commit
+    rev: v2.1.2
+    hooks:
+      - id: prettier
+
   - repo: local
     hooks:
       - id: fix-byte-order-marker
@@ -6,12 +11,6 @@ repos:
         entry: fix-byte-order-marker
         language: system
         types: [text]
-      - id: black
-        name: black
-        entry: black
-        language: system
-        types: [python]
-        require_serial: true
       - id: check-added-large-files
         name: Check for added large files
         entry: check-added-large-files
@@ -32,9 +31,21 @@ repos:
         language: system
         types: [text]
         stages: [commit, push, manual]
-      - id: flake8
-        name: flake8
-        entry: flake8
+      - id: trailing-whitespace
+        name: Trim Trailing Whitespace
+        entry: trailing-whitespace-fixer
+        language: system
+        types: [text]
+        stages: [commit, push, manual]
+      - id: ssort
+        name: ssort
+        entry: poetry run ssort
+        language: system
+        types: [python]
+        require_serial: true
+      - id: black
+        name: black
+        entry: black
         language: system
         types: [python]
         require_serial: true
@@ -44,15 +55,9 @@ repos:
         args: ["--profile", "black", "--filter-files"]
         language: system
         types: [python]
-        require_serial: true
-      - id: trailing-whitespace
-        name: Trim Trailing Whitespace
-        entry: trailing-whitespace-fixer
+      - id: flake8
+        name: flake8
+        entry: flake8
         language: system
-        types: [text]
-        stages: [commit, push, manual]
-
-  - repo: https://github.com/prettier/pre-commit
-    rev: v2.1.2
-    hooks:
-      - id: prettier
+        types: [python]
+        require_serial: true

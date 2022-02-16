@@ -43,6 +43,30 @@ def register(
     return decorator
 
 
+def find_route(from_: "str", to: "str") -> "Optional[list]":
+    """Finds the shortest conversion path between two formats."""
+    chains = []
+
+    def find(start: "str", chain: "list[str]") -> "None":
+        if chain[0] == start:
+            chains.append(chain)
+        for link in convertors.get(chain[0], []):
+            if link not in chain:
+                find(start, [link, *chain])
+
+    find(from_, [to])
+
+    if chains:
+        return sorted(chains, key=len)[0]
+    else:
+        return None
+
+
+_CONVERTOR_ROUTE_CACHE: "FastDictCache[tuple[str, str], Optional[list]]" = (
+    FastDictCache(find_route)
+)
+
+
 def convert(
     data: "str",
     from_: "str",
@@ -85,27 +109,3 @@ def convert(
     )
 
     return data
-
-
-def find_route(from_: "str", to: "str") -> "Optional[list]":
-    """Finds the shortest conversion path between two formats."""
-    chains = []
-
-    def find(start: "str", chain: "list[str]") -> "None":
-        if chain[0] == start:
-            chains.append(chain)
-        for link in convertors.get(chain[0], []):
-            if link not in chain:
-                find(start, [link, *chain])
-
-    find(from_, [to])
-
-    if chains:
-        return sorted(chains, key=len)[0]
-    else:
-        return None
-
-
-_CONVERTOR_ROUTE_CACHE: "FastDictCache[tuple[str, str], Optional[list]]" = (
-    FastDictCache(find_route)
-)
