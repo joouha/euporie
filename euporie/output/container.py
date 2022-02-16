@@ -17,7 +17,12 @@ from prompt_toolkit.layout.screen import WritePosition
 from euporie.app import get_app
 from euporie.convert.base import convert, find_route
 from euporie.filters import has_dialog, has_menus
-from euporie.output.control import AnsiControl, KittyGraphicControl, SixelGraphicControl
+from euporie.output.control import (
+    AnsiControl,
+    ItermGraphicControl,
+    KittyGraphicControl,
+    SixelGraphicControl,
+)
 
 if TYPE_CHECKING:
     from typing import Any, Optional, Type
@@ -279,16 +284,15 @@ class CellOutput:
         self.graphic_float = None
         GraphicControl: "Optional[Type[OutputControl]]" = None
 
-        if (
-            get_app().term_info.sixel_graphics_status.value
-            and find_route(format_, "sixel") is not None
-        ):
-            GraphicControl = SixelGraphicControl
-        elif (
-            get_app().term_info.kitty_graphics_status.value
-            and find_route(format_, "base64-png") is not None
-        ):
+        term_info = get_app().term_info
+        if term_info.kitty_graphics_status.value and find_route(format_, "base64-png"):
             GraphicControl = KittyGraphicControl
+        elif term_info.iterm_graphics_status.value and find_route(
+            format_, "base64-png"
+        ):
+            GraphicControl = ItermGraphicControl
+        elif term_info.sixel_graphics_status.value and find_route(format_, "sixel"):
+            GraphicControl = SixelGraphicControl
 
         if GraphicControl is not None:
             self.graphic_float = Float(

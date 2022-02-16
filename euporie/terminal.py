@@ -231,28 +231,6 @@ class KittyGraphicsStatus(TerminalQuery):
         return False
 
 
-class KittyGraphicId(TerminalQuery):
-    """A terminal query to check the id of a sent kitty graphic."""
-
-    default: "dict[str, str]" = {}
-    cache = False
-    pattern = re.compile(
-        r"^\x1b_G(?P<items>(?:\D=\d+,)*(?:I=\d+)(?:.\D=\d+)*);(?P<status>OK)\x1b\\\Z"
-    )
-
-    def verify(self, data: "str") -> "Optional[dict[str, str]]":
-        """Verifies the terminal responsed with a ketty image id."""
-        if match := self.pattern.match(data):
-            if values := match.groupdict():
-                results = {}
-                if items := values.get("items"):
-                    for item in items.split(","):
-                        key, value = item.split("=")
-                        results[key] = value
-                    return results
-        return None
-
-
 class SixelGraphicsStatus(TerminalQuery):
     """A terminal query to check for sixel graphics support."""
 
@@ -268,6 +246,22 @@ class SixelGraphicsStatus(TerminalQuery):
                 if values.get("sixel"):
                     return True
         return False
+
+
+class ItermGraphicsStatus(TerminalQuery):
+    """A terminal query to check for sixel graphics support."""
+
+    default = False
+    cache = True
+
+    def __init__(self, output: "Output") -> "None":
+        """Detect the terminal's colour support based on environment variables."""
+        self._value = None
+        if (
+            os.environ.get("TERM_PROGRAM", "") in {"WezTerm", "iTerm.app"}
+            or os.environ.get("MLTERM") is not None
+        ):
+            self._value = True
 
 
 class DepthOfColor(TerminalQuery):
@@ -339,7 +333,7 @@ class TerminalInfo:
         self.pixel_dimensions = self.register(PixelDimensions)
         self.sixel_graphics_status = self.register(SixelGraphicsStatus)
         self.kitty_graphics_status = self.register(KittyGraphicsStatus)
-        self.kitty_graphic_id = self.register(KittyGraphicId)
+        self.iterm_graphics_status = self.register(ItermGraphicsStatus)
         self.depth_of_color = self.register(DepthOfColor)
 
     def send_all(self) -> "None":

@@ -224,6 +224,63 @@ class SixelGraphicControl(OutputControl):
         )
 
 
+class ItermGraphicControl(OutputControl):
+    def __init__(
+        self,
+        data: "Any",
+        format_: "str",
+        fg_color: "Optional[str]" = None,
+        bg_color: "Optional[str]" = None,
+        sizing_func: "Optional[Callable]" = None,
+    ) -> "None":
+        super().__init__(
+            data,
+            format_,
+            fg_color,
+            bg_color,
+            sizing_func,
+        )
+        if format_.startswith("base64-"):
+            self.b64data = data
+        else:
+            self.b64data = convert(
+                data=data,
+                from_=self.format_,
+                to="base64-png",
+                fg=self.fg_color,
+                bg=self.bg_color,
+            )
+        self.b64data = self.b64data.replace("\n", "").strip()
+
+    def get_rendered_lines(
+        self, width: "int", height: "int"
+    ) -> "list[StyleAndTextTuples]":
+        """Get rendered lines from the cache, or generate them."""
+
+        def render_lines() -> "list[StyleAndTextTuples]":
+            """Renders the lines to display in the control."""
+            cmd = f"\x1b]1337;File=inline=1;width={width}:{self.b64data}\a"
+            return list(
+                split_lines(
+                    to_formatted_text(
+                        [
+                            ("", "\n".join([" " * width] * (height))),
+                            (
+                                "[ZeroWidthEscape]",
+                                f"\x1b[s\x1b[{height-1}A\x1b[{width}D{cmd}\x1b[u",
+                            ),
+                            ("", "\n"),
+                        ]
+                    )
+                )
+            )
+
+        return self._format_cache.get(
+            (width,),
+            render_lines,
+        )
+
+
 _kitty_image_count = 1
 
 

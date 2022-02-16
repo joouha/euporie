@@ -6,6 +6,7 @@ Changelog
 Upcoming
 ********
 
+- Add support for displaying images using the [iTerm inline imagese protocol](https://iterm2.com/documentation-images.html)
 - Display tabs in ansi output correctly
 - Prevent output from the kernel subprocess being printed and breaking the display
 - New terminal graphic rendering system to work with new scrolling method
