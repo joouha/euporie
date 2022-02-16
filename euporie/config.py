@@ -443,6 +443,8 @@ class Config:
     schema, then overwritten with values defined in a configuration file.
     """
 
+    valid_user: "bool"
+
     conf_file_name = "config.json"
     defaults = {
         name: param.get("schema_", {}).get("default")

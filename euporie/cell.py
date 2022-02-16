@@ -259,13 +259,13 @@ class Cell:
             prompt = f"[{prompt}]"
         return prompt
 
+    def _set_input(self, value: "str") -> "None":
+        self.json["source"] = value
+
     @property
     def input(self) -> "str":
         """Fetch the cell's contents from the cell's JSON."""
         return self.json.get("source", "")
-
-    def _set_input(self, value: "str") -> "None":
-        self.json["source"] = value
 
     @input.setter
     def input(self, value: "str") -> "None":

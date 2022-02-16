@@ -285,6 +285,9 @@ class DepthOfColor(TerminalQuery):
 class TerminalInfo:
     """A class to gather and hold information about the terminal."""
 
+    input: "Input"
+    output: "Output"
+
     def register(self, query: "Type[TerminalQuery]") -> "TerminalQuery":
         """Instantiates and registers a query's response with the input parser."""
         # Create an instance of this query
