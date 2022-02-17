@@ -24,6 +24,7 @@ euporie.commands.config
       :toctree:
 
       autocomplete
+      autoformat
       autosuggest
       run_after_external_edit
       set_edit_mode
@@ -31,6 +32,7 @@ euporie.commands.config
       show_line_numbers
       show_status_bar
       switch_background_pattern
+      tmux_terminal_graphics
       update_color_scheme
       update_syntax_theme
       use_full_width

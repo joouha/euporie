@@ -21,6 +21,7 @@ euporie.commands
       euporie.commands.cell
       euporie.commands.completions
       euporie.commands.config
+      euporie.commands.format
       euporie.commands.notebook
       euporie.commands.registry
       euporie.commands.search

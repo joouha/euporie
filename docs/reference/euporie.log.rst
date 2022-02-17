@@ -37,4 +37,4 @@ euporie.log
 
       LogView
       QueueHandler
-      log_to_stdout
+      stdout_to_log

@@ -9,11 +9,11 @@ Notebook Editors
 `nbterm <https://github.com/davidbrochart/nbterm>`_
    An alternative effort sponsored by QuantStack
 
-`jpterm <https://github.com/davidbrochart/jpterm>`_
-   A Jupyter notebook client built using :py:mod:`textual`
-
 `nbtermix <https://github.com/mtatton/nbtermix>`_
    A fork of nbterm
+
+`jpterm <https://github.com/davidbrochart/jpterm>`_
+   Jupyter in the terminal
 
 ****************
 Notebook Viewers

@@ -24,3 +24,4 @@ euporie.key\_binding.util
       :toctree:
 
       dict_bindings
+      format_keys

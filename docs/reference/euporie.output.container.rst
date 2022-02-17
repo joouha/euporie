@@ -23,7 +23,7 @@ euporie.output.container
    .. autosummary::
       :toctree:
 
-      get_parent
+      get_dims
 
 
 
@@ -35,5 +35,5 @@ euporie.output.container
       :toctree:
       :template: class.tpl.rst
 
-      GraphicsWindow
-      Output
+      CellOutput
+      GraphicWindow

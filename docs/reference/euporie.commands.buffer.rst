@@ -54,7 +54,7 @@ euporie.commands.buffer
       start_selection
       toggle_case
       toggle_comment
-      toggle_micro_input_mode
+      toggle_overwrite_mode
       type_key
       undo
       unindent_lines

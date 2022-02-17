@@ -28,6 +28,6 @@ euporie.scroll
       :toctree:
       :template: class.tpl.rst
 
-      DrawingPosition
+      ChildMeta
       ScrollBar
       ScrollingContainer

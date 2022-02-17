@@ -18,6 +18,13 @@ euporie.terminal
 
 
 
+   .. rubric:: Functions
+
+   .. autosummary::
+      :toctree:
+
+      tmuxify
+
 
 
 
@@ -32,7 +39,7 @@ euporie.terminal
       ColorQueryMixin
       DepthOfColor
       ForegroundColor
-      KittyGraphicId
+      ItermGraphicsStatus
       KittyGraphicsStatus
       PixelDimensions
       SixelGraphicsStatus

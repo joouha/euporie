@@ -28,10 +28,8 @@ euporie.output.control
       :toctree:
       :template: class.tpl.rst
 
-      BaseImageControl
-      HTMLControl
-      ImageControl
-      LatexControl
-      MarkdownControl
+      AnsiControl
+      ItermGraphicControl
+      KittyGraphicControl
       OutputControl
-      SVGControl
+      SixelGraphicControl

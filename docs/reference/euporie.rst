@@ -23,8 +23,8 @@ euporie
       euporie.completion
       euporie.config
       euporie.containers
+      euporie.convert
       euporie.filters
-      euporie.graphics
       euporie.kernel
       euporie.key_binding
       euporie.keys
@@ -33,7 +33,6 @@ euporie
       euporie.menu
       euporie.notebook
       euporie.output
-      euporie.render
       euporie.scroll
       euporie.style
       euporie.suggest

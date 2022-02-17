@@ -144,6 +144,23 @@ All available configuration options are listed below:
    If set, notebooks will be run automatically when opened, or if dumping
    output, notebooks will be run before being output.
 
+.. option:: tmux_graphics
+
+:flags: :option:`--tmux-graphics`
+:environment variable: :envvar:`EUPORIE_TMUX_GRAPHICS`
+:default: ``False``
+:type: :keyword:`boolean`
+:description: Enable terminal graphics in tmux (experimental)
+
+   If set, terminal graphics will be used if :program:`tmux` is running by
+   performing terminal escape sequence pass-through. You must restart euporie for
+   this to take effect.
+
+   .. warning::
+
+      Terminal graphics in :program:`tmux` is experimental, and is not guaranteed
+      to work. Use at your own risk!
+
 .. option:: edit_mode
 
 :flags: :option:`--edit-mode`

@@ -33,6 +33,7 @@ euporie.commands.notebook
       interrupt_kernel
       next_child
       paste_cell
+      reformat_notebook
       restart_kernel
       run_all_cells
       save_notebook
