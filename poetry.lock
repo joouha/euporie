@@ -1524,7 +1524,7 @@ test = ["pytest"]
 
 [[package]]
 name = "ssort"
-version = "0.10.1"
+version = "0.10.2"
 description = "The python statement sorter"
 category = "dev"
 optional = false
@@ -2796,7 +2796,7 @@ sphinxcontrib-serializinghtml = [
     {file = "sphinxcontrib_serializinghtml-1.1.5-py2.py3-none-any.whl", hash = "sha256:352a9a00ae864471d3a7ead8d7d79f5fc0b57e8b3f95e9867eb9eb28999b92fd"},
 ]
 ssort = [
-    {file = "ssort-0.10.1.tar.gz", hash = "sha256:30a9e88561aa3644106283d7da507dff3100d101cf0a5ecf1babd0db302d70c5"},
+    {file = "ssort-0.10.2.tar.gz", hash = "sha256:58abef52533b62382d5d6b117b5416ba3fe709e96ef846ae9107aba202476587"},
 ]
 stevedore = [
     {file = "stevedore-3.5.0-py3-none-any.whl", hash = "sha256:a547de73308fd7e90075bb4d301405bebf705292fa90a90fc3bcf9133f58616c"},
