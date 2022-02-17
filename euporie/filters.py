@@ -1,5 +1,7 @@
 """Defines common filters."""
 
+import os
+
 from prompt_toolkit.enums import EditingMode
 from prompt_toolkit.filters import (
     Condition,
@@ -33,12 +35,17 @@ __all__ = [
 ]
 
 
+# Determine if black is available
 try:
     import black  # type: ignore  # noqa F401
 except ModuleNotFoundError:
     have_black = to_filter(False)
 else:
     have_black = to_filter(True)
+
+
+# Determine if euporie is running inside tmux.
+in_tmux = to_filter(os.environ.get("TMUX") is not None)
 
 
 @Condition

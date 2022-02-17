@@ -63,6 +63,7 @@ class MenuItem(PtkMenuItem):
         handler: "Optional[Callable[[], None]]" = None,
         children: "Optional[list[PtkMenuItem]]" = None,
         shortcut: "Optional[Sequence[Union[Keys, str]]]" = None,
+        hidden: "FilterOrBool" = False,
         disabled: "FilterOrBool" = False,
         toggled: "Optional[Filter]" = None,
     ) -> None:
@@ -76,6 +77,7 @@ class MenuItem(PtkMenuItem):
             handler: As per `prompt_toolkit.widgets.menus.MenuItem`
             children: As per `prompt_toolkit.widgets.menus.MenuItem`
             shortcut: As per `prompt_toolkit.widgets.menus.MenuItem`
+            hidden: The handler will be hidden when this filter is True
             disabled: The handler will be disabled when this filter is True
             toggled: A checkmark will be displayed next to the menu text when this
                 callable returns True
@@ -85,6 +87,7 @@ class MenuItem(PtkMenuItem):
         self.description = description
         self.separator = separator
         self._disabled = to_filter(disabled) | to_filter(self.separator)
+        self.hidden = to_filter(hidden)
         self.toggled = toggled
         super().__init__(
             text=self.text,
@@ -102,6 +105,7 @@ class MenuItem(PtkMenuItem):
             handler=command.menu_handler,
             shortcut=command.keys[0] if command.keys else None,
             disabled=~command.filter,
+            hidden=command.hidden,
             toggled=command.toggled,
             description=command.description,
         )

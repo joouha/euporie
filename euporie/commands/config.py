@@ -10,6 +10,7 @@ from pygments.styles import get_all_styles  # type: ignore
 from euporie.app import get_app
 from euporie.commands.registry import add
 from euporie.config import config
+from euporie.filters import in_tmux
 
 if TYPE_CHECKING:
     from prompt_toolkit.enums import EditingMode
@@ -107,6 +108,17 @@ def run_after_external_edit() -> "None":
 def show_status_bar() -> "None":
     """Toggle the visibility of the status bar."""
     config.toggle("show_status_bar")
+
+
+@add(
+    title="Enable terminal graphics in tmux",
+    group="config",
+    hidden=~in_tmux,
+    toggled=Condition(lambda: bool(config.tmux_graphics)),
+)
+def tmux_terminal_graphics() -> "None":
+    """Toggle the use of terminal graphics inside tmux."""
+    config.toggle("tmux_graphics")
 
 
 def set_edit_mode(edit_mode: "EditingMode") -> "None":

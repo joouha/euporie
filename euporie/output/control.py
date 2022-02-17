@@ -14,6 +14,7 @@ from prompt_toolkit.layout.controls import GetLinePrefixCallable, UIContent, UIC
 
 from euporie.app.current import get_tui_app as get_app
 from euporie.convert.base import convert
+from euporie.terminal import tmuxify
 from euporie.text import ANSI
 
 if TYPE_CHECKING:
@@ -210,7 +211,9 @@ class SixelGraphicControl(OutputControl):
                             ("", "\n".join([" " * width] * (height))),
                             (
                                 "[ZeroWidthEscape]",
-                                f"\x1b[s\x1b[{height-1}A\x1b[{width}D{cmd}\x1b[u",
+                                tmuxify(
+                                    f"\x1b[s\x1b[{height-1}A\x1b[{width}D{cmd}\x1b[u"
+                                ),
                             ),
                             ("", "\n"),
                         ]
@@ -267,7 +270,9 @@ class ItermGraphicControl(OutputControl):
                             ("", "\n".join([" " * width] * (height))),
                             (
                                 "[ZeroWidthEscape]",
-                                f"\x1b[s\x1b[{height-1}A\x1b[{width}D{cmd}\x1b[u",
+                                tmuxify(
+                                    f"\x1b[s\x1b[{height-1}A\x1b[{width}D{cmd}\x1b[u"
+                                ),
                             ),
                             ("", "\n"),
                         ]
@@ -348,7 +353,7 @@ class KittyGraphicControl(OutputControl):
                 f=100,  # Sending a PNG image
                 m=1 if data else 0,  # Data will be chunked
             )
-            self.app.output.write_raw(cmd)
+            self.app.output.write_raw(tmuxify(cmd))
         self.app.output.flush()
         self.loaded = True
 
@@ -356,26 +361,31 @@ class KittyGraphicControl(OutputControl):
         """Hides the graphic from show without deleting it."""
         if self.kitty_image_id > 0:
             self.app.output.write_raw(
-                self._kitty_cmd(
-                    a="d",
-                    d="i",
-                    i=self.kitty_image_id,
-                    q=1,
+                tmuxify(
+                    self._kitty_cmd(
+                        a="d",
+                        d="i",
+                        i=self.kitty_image_id,
+                        q=1,
+                    )
                 )
             )
             self.app.output.flush()
 
     def delete(self) -> "None":
         """Deletes the graphic from the terminal."""
-        self.app.output.write_raw(
-            self._kitty_cmd(
-                a="D",
-                d="I",
-                i=self.kitty_image_id,
-                q=2,
+        if self.kitty_image_id > 0:
+            self.app.output.write_raw(
+                tmuxify(
+                    self._kitty_cmd(
+                        a="D",
+                        d="I",
+                        i=self.kitty_image_id,
+                        q=2,
+                    )
+                )
             )
-        )
-        self.app.output.flush()
+            self.app.output.flush()
 
     def get_rendered_lines(
         self, width: "int", height: "int"
@@ -399,6 +409,7 @@ class KittyGraphicControl(OutputControl):
                 C=1,  # Do not scroll
                 z=-(2**30) - 1,
             )
+            cmd = cmd
             return list(
                 split_lines(
                     to_formatted_text(
@@ -406,7 +417,9 @@ class KittyGraphicControl(OutputControl):
                             ("", "\n".join([" " * width] * height)),
                             (
                                 "[ZeroWidthEscape]",
-                                f"\x1b[s\x1b[{height-1}A\x1b[{width}D{cmd}\x1b[u",
+                                tmuxify(
+                                    f"\x1b[s\x1b[{height-1}A\x1b[{width}D{cmd}\x1b[u"
+                                ),
                             ),
                             ("", "\n"),
                         ]
@@ -418,6 +431,3 @@ class KittyGraphicControl(OutputControl):
             (width,),
             render_lines,
         )
-
-    def create_content(self, width: "int", height: "int") -> "UIContent":
-        return super().create_content(width, height)

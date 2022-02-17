@@ -152,6 +152,7 @@ class GraphicWindow(Window):
         super().__init__(*args, **kwargs)
         self.target_window = target_window
         self.content = content
+        self.float = None
 
     def write_to_screen(
         self,
@@ -309,6 +310,7 @@ class CellOutput:
                 left=0,
                 top=0,
             )
+        self.window.graphic_float = self.graphic_float
         if self.graphic_float is not None:
             get_app().add_float(self.graphic_float)
 

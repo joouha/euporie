@@ -16,6 +16,8 @@ from prompt_toolkit.output import ColorDepth
 from prompt_toolkit.utils import Event
 
 from euporie.commands.registry import add
+from euporie.config import config
+from euporie.filters import in_tmux
 
 if TYPE_CHECKING:
     from typing import Any, Optional, Type, Union
@@ -81,6 +83,14 @@ class Vt100Parser(vt100_parser.Vt100Parser):
                 return key
 
         return super()._get_match(prefix)
+
+
+def tmuxify(cmd: "str") -> "str":
+    """Wraps an escape sequence for tmux passthrough."""
+    if in_tmux() and config.tmux_graphics:
+        cmd = cmd.replace("\x1b", "\x1b\x1b")
+        cmd = f"\x1bPtmux;{cmd}\033\\"
+    return cmd
 
 
 class TerminalQuery:
@@ -217,7 +227,7 @@ class KittyGraphicsStatus(TerminalQuery):
 
     default = False
     cache = True
-    cmd = (
+    cmd = tmuxify(
         "\x1b_Gi=4294967295,s=1,v=1,a=q,t=d,f=24;AAAA\x1b\\"  # + "\x1b[1K" + "\x1b[1G"
     )
     pattern = re.compile(r"^\x1b_Gi=4294967295;(?P<status>OK)\x1b\\\Z")
@@ -236,7 +246,7 @@ class SixelGraphicsStatus(TerminalQuery):
 
     default = False
     cache = True
-    cmd = "\x1b[c"
+    cmd = tmuxify("\x1b[c")
     pattern = re.compile(r"^\x1b\[\?(?:\d+;)*(?P<sixel>4)(?:;\d+)*c\Z")
 
     def verify(self, data: "str") -> "bool":
@@ -249,13 +259,13 @@ class SixelGraphicsStatus(TerminalQuery):
 
 
 class ItermGraphicsStatus(TerminalQuery):
-    """A terminal query to check for sixel graphics support."""
+    """A terminal query to check for iterm graphics support."""
 
     default = False
     cache = True
 
     def __init__(self, output: "Output") -> "None":
-        """Detect the terminal's colour support based on environment variables."""
+        """Detect the iterm graphics support based on environment variables."""
         self._value = None
         if (
             os.environ.get("TERM_PROGRAM", "") in {"WezTerm", "iTerm.app"}

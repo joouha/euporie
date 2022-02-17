@@ -164,6 +164,25 @@ CONFIG_PARAMS: "dict[str, dict]" = {
         output, notebooks will be run before being output.
     """,
     },
+    "tmux_graphics": {
+        "flags_": ["--tmux-graphics"],
+        "action": BooleanOptionalAction,
+        "help": "Enable terminal graphics in tmux (experimental)",
+        "schema_": {
+            "type": "boolean",
+            "default": False,
+        },
+        "description_": """
+        If set, terminal graphics will be used if :program:`tmux` is running by
+        performing terminal escape sequence pass-through. You must restart euporie for
+        this to take effect.
+
+        .. warning::
+
+           Terminal graphics in :program:`tmux` is experimental, and is not guaranteed
+           to work. Use at your own risk!
+    """,
+    },
     "edit_mode": {
         "flags_": ["--edit-mode"],
         "type": str,

@@ -558,6 +558,11 @@ class Cell:
 
     def clear_output(self) -> "None":
         """Remove all outputs from the cell."""
+        # Clean up floats
+        for output in self.output_box.children:
+            if output.graphic_float:
+                output.graphic_float.content.content.hide()
+                get_app().remove_float(output.graphic_float)
         if "outputs" in self.json:
             del self.json["outputs"]
 

@@ -76,6 +76,7 @@ def load_menu_items() -> "list[MenuItem]":
                 ),
                 get("switch-background-pattern").menu,
                 get("show-cell-borders").menu,
+                get("tmux-terminal-graphics").menu,
                 separator,
                 get("use-full-width").menu,
                 get("show-line-numbers").menu,

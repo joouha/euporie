@@ -245,7 +245,8 @@ class MenuContainer(PtKMenuContainer):
                         yield ("", "\n")
 
                     for i, item in enumerate(menu.children):
-                        result.extend(one_item(i, item))
+                        if not item.hidden():
+                            result.extend(one_item(i, item))
 
                     result.append(("class:menu", Border.BOTTOM_LEFT))
                     result.append(("class:menu", Border.HORIZONTAL * (menu.width + 2)))
