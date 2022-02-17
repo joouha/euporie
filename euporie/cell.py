@@ -5,10 +5,9 @@ from __future__ import annotations
 import asyncio
 import logging
 from functools import partial
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 import nbformat  # type: ignore
-from prompt_toolkit.application.current import get_app
 from prompt_toolkit.filters import Condition, has_focus, is_done
 from prompt_toolkit.formatted_text import to_formatted_text
 from prompt_toolkit.layout.containers import (
@@ -30,6 +29,7 @@ from prompt_toolkit.utils import Event
 from prompt_toolkit.widgets import Frame, Label, SearchToolbar, TextArea
 from pygments.lexers import get_lexer_by_name  # type: ignore
 
+from euporie.app.current import get_tui_app as get_app
 from euporie.box import RoundBorder as Border
 from euporie.config import config
 from euporie.output.container import CellOutput
@@ -43,6 +43,7 @@ if TYPE_CHECKING:
     from prompt_toolkit.layout.layout import FocusableElement
 
     from euporie.notebook import Notebook, TuiNotebook
+    from euporie.output.control import OutputControl
     from euporie.scroll import ChildMeta
 
 __all__ = [
@@ -558,11 +559,13 @@ class Cell:
 
     def clear_output(self) -> "None":
         """Remove all outputs from the cell."""
-        # Clean up floats
+        # Clean up floats - TODO: refactor this
         for output in self.output_box.children:
-            if output.graphic_float:
-                output.graphic_float.content.content.hide()
-                get_app().remove_float(output.graphic_float)
+            if graphic_float := cast("CellOutput", output).graphic_float:
+                cast(
+                    "OutputControl", cast("Window", graphic_float.content).content
+                ).hide()
+                get_app().remove_float(graphic_float)
         if "outputs" in self.json:
             del self.json["outputs"]
 

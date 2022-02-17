@@ -210,7 +210,7 @@ class ScrollingContainer(Container):
         self.selected_child_position: "int" = 0
 
         self.child_metas: "dict[int, ChildMeta]" = {}  # Holds child container wrappers
-        self.visible_indicies = set()
+        self.visible_indicies: "set[int]" = set()
         self.index_positions: "dict[int, int]" = {}
 
         self.last_write_position = WritePosition(0, 0, 0, 0)

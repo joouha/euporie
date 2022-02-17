@@ -282,7 +282,7 @@ class CellOutput:
         )
 
         # Add graphic
-        self.graphic_float = None
+        self.graphic_float: "Optional[Float]" = None
         GraphicControl: "Optional[Type[OutputControl]]" = None
 
         term_info = get_app().term_info
@@ -310,7 +310,6 @@ class CellOutput:
                 left=0,
                 top=0,
             )
-        self.window.graphic_float = self.graphic_float
         if self.graphic_float is not None:
             get_app().add_float(self.graphic_float)
 

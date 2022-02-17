@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from prompt_toolkit.application import get_app
 from prompt_toolkit.formatted_text.base import to_formatted_text
@@ -245,6 +245,7 @@ class MenuContainer(PtKMenuContainer):
                         yield ("", "\n")
 
                     for i, item in enumerate(menu.children):
+                        item = cast("MenuItem", item)
                         if not item.hidden():
                             result.extend(one_item(i, item))
 
