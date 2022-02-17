@@ -210,7 +210,7 @@ class ScrollingContainer(Container):
         self.selected_child_position: "int" = 0
 
         self.child_metas: "dict[int, ChildMeta]" = {}  # Holds child container wrappers
-        self.visible_indicies = set([self._selected_index])
+        self.visible_indicies = set()
         self.index_positions: "dict[int, int]" = {}
 
         self.last_write_position = WritePosition(0, 0, 0, 0)
@@ -327,6 +327,40 @@ class ScrollingContainer(Container):
             child_meta = self.child_metas[child_hash]
         return child_meta
 
+    def scroll(self, n: "int") -> "None":
+        """Scrolls up or down a number of rows.
+
+        Args:
+            n: The number of rows to scroll, negative for up, positive for down
+
+        """
+        self.refresh_children = True
+        log.debug(n)
+        if n > 0:
+            if min(self.visible_indicies) == 0 and self.index_positions[0] + n > 0:
+                log.debug("b")
+                return
+        elif n < 0:
+            bottom_index = len(self.children) - 1
+            if bottom_index in self.visible_indicies:
+                bottom_child = self.get_child_meta(bottom_index)
+                if (
+                    self.index_positions[bottom_index] + bottom_child.height + n
+                    < self.last_write_position.height
+                ):
+                    log.debug("c")
+                    return
+
+        self.selected_child_position += n
+        log.debug("d")
+
+    def mouse_scroll_handler(self, mouse_event: "MouseEvent") -> "None":
+        """A mouse handler to scroll the pane."""
+        if mouse_event.event_type == MouseEventType.SCROLL_DOWN:
+            self.scroll(-1)
+        elif mouse_event.event_type == MouseEventType.SCROLL_UP:
+            self.scroll(1)
+
     # @abstractmethod
     def write_to_screen(
         self,
@@ -363,8 +397,8 @@ class ScrollingContainer(Container):
         available_width = write_position.width
         available_height = write_position.height
 
-        # Recode children which are currently visible
-        visible_indicies = set([self._selected_index])
+        # Record children which are currently visible
+        visible_indicies = set()
 
         # Force the selected child to refresh
         selected_index = self.selected_index
@@ -408,7 +442,6 @@ class ScrollingContainer(Container):
                 break
         else:
             if line < available_height:
-                # TODO - add mouse handler
                 Window(char=" ").write_to_screen(
                     screen,
                     mouse_handlers,
@@ -419,7 +452,10 @@ class ScrollingContainer(Container):
                     erase_bg,
                     z_index,
                 )
-        # Blit selected child and those above it that are on screen
+                for y in range(ypos + line, ypos + available_height):
+                    for x in range(xpos, xpos + available_width):
+                        mouse_handlers.mouse_handlers[y][x] = self.mouse_scroll_handler
+        # Blit children above the selected that are on screen
         line = self.selected_child_position
         for i in range(selected_index - 1, -1, -1):
             child_meta = self.get_child_meta(i)
@@ -447,7 +483,6 @@ class ScrollingContainer(Container):
                 break
         else:
             if line > 0:
-                # TODO - add mouse handler
                 Window(char=" ").write_to_screen(
                     screen,
                     mouse_handlers,
@@ -456,6 +491,9 @@ class ScrollingContainer(Container):
                     erase_bg,
                     z_index,
                 )
+                for y in range(ypos, ypos + line):
+                    for x in range(xpos, xpos + available_width):
+                        mouse_handlers.mouse_handlers[y][x] = self.mouse_scroll_handler
 
         # Dont bother drawing floats
         # screen.draw_all_floats()
@@ -470,7 +508,7 @@ class ScrollingContainer(Container):
         """Return the list of currently visible children to include in the layout."""
         return [
             self.get_child_meta(i).container
-            for i in self.visible_indicies
+            for i in self.visible_indicies | {self._selected_index}
             if i < len(self.children)
         ]
 
@@ -489,29 +527,6 @@ class ScrollingContainer(Container):
         if index is None:
             index = self.selected_index
         return self.children[index]
-
-    def scroll(self, n: "int") -> "None":
-        """Scrolls up or down a number of rows.
-
-        Args:
-            n: The number of rows to scroll, negative for up, positive for down
-
-        """
-        self.refresh_children = True
-        if n > 0:
-            if 0 in self.visible_indicies and self.index_positions[0] + n > 0:
-                return
-        elif n < 0:
-            bottom_index = len(self.children) - 1
-            if bottom_index in self.visible_indicies:
-                bottom_child = self.get_child_meta(bottom_index)
-                if (
-                    self.index_positions[bottom_index] + bottom_child.height + n
-                    < self.last_write_position.height
-                ):
-                    return
-
-        self.selected_child_position += n
 
     def scroll_to(self, index: "int") -> "None":
         """Scroll a child into view.

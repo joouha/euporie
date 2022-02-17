@@ -208,7 +208,7 @@ def first_child() -> "None":
     """Select the first cell in the notebook."""
     nb = get_app().notebook
     if nb is not None:
-        nb.page.selected_index = 0
+        nb.page._set_selected_index(0, force=True, scroll=True)
 
 
 @add(
@@ -268,7 +268,7 @@ def select_last_cell() -> "None":
     """Select the last cell in the notebook."""
     nb = get_app().notebook
     if nb is not None:
-        nb.page.selected_index = len(list(nb.page.children))
+        nb.page._set_selected_index(len(nb.page.children), force=True, scroll=True)
 
 
 @add(
