@@ -335,10 +335,8 @@ class ScrollingContainer(Container):
 
         """
         self.refresh_children = True
-        log.debug(n)
         if n > 0:
             if min(self.visible_indicies) == 0 and self.index_positions[0] + n > 0:
-                log.debug("b")
                 return
         elif n < 0:
             bottom_index = len(self.children) - 1
@@ -348,11 +346,9 @@ class ScrollingContainer(Container):
                     self.index_positions[bottom_index] + bottom_child.height + n
                     < self.last_write_position.height
                 ):
-                    log.debug("c")
                     return
 
         self.selected_child_position += n
-        log.debug("d")
 
     def mouse_scroll_handler(self, mouse_event: "MouseEvent") -> "None":
         """A mouse handler to scroll the pane."""
