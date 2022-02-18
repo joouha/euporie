@@ -420,10 +420,12 @@ class EuporieApp(Application):
             # Scrollbars
             "scrollbar": f"fg:{series['fg'][5]} bg:{series['bg'][5]}",
             "scrollbar.background": "",
-            "scrollbar.button": "",
+            "scrollbar.button": f"fg:{series['fg'][5]} bg:{series['bg'][5]}",
             "scrollbar.arrow": "",
             # Dialogs
-            "dialog.body scrollbar": "reverse",
+            "dialog.body scrollbar": f"fg:{series['bg'][5]} bg:{series['fg'][5]}",
+            "dialog.body scrollbar.button": f"bg:{series['bg'][5]}",
+            "dialog.body scrollbar.end": f"bg:{series['bg'][5]}",
             "dialog shadow": "bg:#888888",
             "dialog.body": "bg:#b0b0b0 #000000",
             # Horizontals rule
