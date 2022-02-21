@@ -210,7 +210,7 @@ class ScrollingContainer(Container):
         self.selected_child_position: "int" = 0
 
         self.child_metas: "dict[int, ChildMeta]" = {}  # Holds child container wrappers
-        self.visible_indicies: "set[int]" = set()
+        self.visible_indicies: "set[int]" = set([self._selected_index])
         self.index_positions: "dict[int, int]" = {}
 
         self.last_write_position = WritePosition(0, 0, 0, 0)
@@ -494,6 +494,9 @@ class ScrollingContainer(Container):
         # Dont bother drawing floats
         # screen.draw_all_floats()
 
+        # Ensure the selected child is always in the layout
+        visible_indicies.add(self._selected_index)
+
         # Update which children will appear in the layout
         self.visible_indicies = visible_indicies
         # Record where the contain was last drawn so we can determine if cell outputs
@@ -504,7 +507,7 @@ class ScrollingContainer(Container):
         """Return the list of currently visible children to include in the layout."""
         return [
             self.get_child_meta(i).container
-            for i in self.visible_indicies | {self._selected_index}
+            for i in self.visible_indicies
             if i < len(self.children)
         ]
 
