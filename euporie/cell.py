@@ -26,7 +26,7 @@ from prompt_toolkit.layout.processors import ConditionalProcessor
 from prompt_toolkit.lexers import DynamicLexer, PygmentsLexer, SimpleLexer
 from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
 from prompt_toolkit.utils import Event
-from prompt_toolkit.widgets import Frame, Label, SearchToolbar, TextArea
+from prompt_toolkit.widgets import Frame, SearchToolbar, TextArea
 from pygments.lexers import get_lexer_by_name  # type: ignore
 
 from euporie.app.current import get_tui_app as get_app
@@ -359,15 +359,6 @@ class Cell:
         )
 
         # Create textbox for standard input
-
-        self.stdin_prompt_text = ">"
-        self.stdin_prompt = Window(
-            content=FormattedTextControl(text=lambda: self.stdin_prompt_text),
-            style="bold",
-            dont_extend_height=True,
-            dont_extend_width=True,
-        )
-
         def _send_input(buf: "Buffer") -> "bool":
             return False
 
@@ -376,6 +367,7 @@ class Cell:
             multiline=False,
             accept_handler=lambda buf: self.stdin_box_accept_handler(buf),
             focus_on_click=True,
+            prompt="> ",
         )
 
         self.output_box = HSplit(
@@ -471,15 +463,7 @@ class Cell:
                         [
                             self.output_box,
                             ConditionalContainer(
-                                Frame(
-                                    VSplit(
-                                        [
-                                            self.stdin_prompt,
-                                            Label(" ", dont_extend_width=True),
-                                            self.stdin_box,
-                                        ]
-                                    ),
-                                ),
+                                Frame(self.stdin_box),
                                 filter=self.asking_input,
                             ),
                         ]
@@ -746,8 +730,9 @@ class InteractiveCell(Cell):
         # Scroll the current cell into view - this cause the cell to be rendered if it
         # is not already on screen
         self.nb.page.selected_index = self.index
-        # Update the input box
-        self.stdin_prompt_text = prompt
+        # Set the prompt text for the BeforeInput pre-processor
+        self.stdin_box.control.input_processors[2].text = f"{prompt} "
+        # Set the password status of the input box
         self.stdin_box.password = password
 
         def _send_input(buf: "Buffer") -> "bool":
