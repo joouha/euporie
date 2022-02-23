@@ -404,6 +404,7 @@ class EuporieApp(Application):
             ),
             "menu-bar.disabled-item menu-bar.shortcut": f"fg:{series['bg'][5]}",
             "menu": f"bg:{series['bg'][1]} fg:{series['fg'][1]}",
+            "menu-border": f"bg:{series['bg'][1]} fg:{series['fg'][9]}",
             # Buffer
             "line-number": f"fg:{series['fg'][1]} bg:{series['bg'][1]}",
             "line-number.current": "bold orange",
@@ -422,12 +423,16 @@ class EuporieApp(Application):
             "scrollbar.background": "",
             "scrollbar.button": f"fg:{series['fg'][5]} bg:{series['bg'][5]}",
             "scrollbar.arrow": "",
+            # Shadows
+            "shadow": f"bg:{series['bg'][9]}",
+            "cell.input shadow": f"bg:{series['bg'][9]}",
+            "cell.output shadow": f"bg:{series['bg'][9]}",
             # Dialogs
-            "dialog.body scrollbar": f"fg:{series['bg'][5]} bg:{series['fg'][5]}",
-            "dialog.body scrollbar.button": f"bg:{series['bg'][5]}",
-            "dialog.body scrollbar.end": f"bg:{series['bg'][5]}",
-            "dialog shadow": "bg:#888888",
-            "dialog.body": "bg:#b0b0b0 #000000",
+            "dialog.body": f"fg:{series['fg'][-1]} bg:{series['bg'][4]}",
+            "dialog.body text-area": f"fg:{series['fg'][-1]}",
+            "dialog.body scrollbar": f"fg:{series['fg'][5]} bg:{series['bg'][5]}",
+            "dialog.body scrollbar.button": f"bg:{series['fg'][5]}",
+            "dialog.body scrollbar.end": f"bg:{series['fg'][5]}",
             # Horizontals rule
             "hr": "fg:#666666",
             # Completions menu
@@ -452,7 +457,15 @@ class EuporieApp(Application):
             "log.level.critical": "fg:red bold",
             "log.ref": "fg:grey",
             "log.date": "fg:#00875f",
-            # "log.msg": "fg:default",
+            # Shortcuts
+            "shortcuts.group": f"bg:{series['bg'][8]} bold underline",
+            "shortcuts.row": f"bg:{series['bg'][0]} nobold",
+            "shortcuts.row alt": f"bg:{series['bg'][2]}",
+            "shortcuts.row key": "bold",
+            # Palette
+            "palette.item": f"fg:{series['fg'][1]} bg:{series['bg'][1]}",
+            "palette.item.alt": f"bg:{series['bg'][3]}",
+            "palette.item.selected": "fg:#ffffff bg:#0055ff",
         }
 
         # Using a dynamic style has serious performance issues, so instead we update

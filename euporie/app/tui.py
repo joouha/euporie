@@ -395,36 +395,38 @@ class TuiApp(EuporieApp):
             completer=PathCompleter(),
         )
 
-    def help_keys(self) -> None:
-        """Displays details of registered key-bindings in a dialog."""
+    @staticmethod
+    @lru_cache
+    def _kb_info() -> "Generator":
         from euporie.commands.format import format_command_attrs
 
-        @lru_cache
-        def kb_info() -> "Generator":
-            bg_colors = ("#fff", "#eee")
-            data = format_command_attrs(
-                attrs=["title", "keys"],
-                groups=[
-                    "app",
-                    "config",
-                    "notebook",
-                    "cell",
-                    "completion",
-                    "suggestion",
-                    "micro-edit-mode",
-                ],
-            )
-            for group, info in data.items():
+        data = format_command_attrs(
+            attrs=["title", "keys"],
+            groups=[
+                "app",
+                "config",
+                "notebook",
+                "cell",
+                "completion",
+                "suggestion",
+                "micro-edit-mode",
+            ],
+        )
+        for group, info in data.items():
+            if info:
                 total_w = len(info[0]["title"]) + len(info[0]["keys"][0]) + 4
-                yield ("bold underline bg:#aaa", f"{group.center(total_w)}\n")
+                yield ("class:shortcuts.group", f"{group.center(total_w)}\n")
                 for i, rec in enumerate(info):
                     for j, key in enumerate(rec["keys"]):
                         key_str = key.strip().rjust(len(key))
                         title_str = rec["title"] if j == 0 else " " * len(rec["title"])
-                        yield (f"bold bg:{bg_colors[i%2]}", f" {key_str} ")
-                        yield (f"nobold bg:{bg_colors[i%2]}", f" {title_str} \n")
+                        style = "class:shortcuts.row" + (" class:alt" if i % 2 else "")
+                        yield (style, f" {key_str} ")
+                        yield (style + " class:key", f" {title_str} \n")
 
-        key_details = list(kb_info())
+    def help_keys(self) -> None:
+        """Displays details of registered key-bindings in a dialog."""
+        key_details = list(self._kb_info())
         max_line_width = max(
             [len(line) for line in fragment_list_to_text(key_details).split("\n")]
         )

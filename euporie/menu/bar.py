@@ -134,9 +134,11 @@ class MenuContainer(PtKMenuContainer):
                 menu = self._get_menu(level)
 
                 if menu.children:
-                    result.append(("class:menu", Border.TOP_LEFT))
-                    result.append(("class:menu", Border.HORIZONTAL * (menu.width + 2)))
-                    result.append(("class:menu", Border.TOP_RIGHT))
+                    result.append(("class:menu-border", Border.TOP_LEFT))
+                    result.append(
+                        ("class:menu-border", Border.HORIZONTAL * (menu.width + 2))
+                    )
+                    result.append(("class:menu-border", Border.TOP_RIGHT))
                     result.append(("", "\n"))
                     try:
                         selected_item = self.selected_menu[level + 1]
@@ -179,7 +181,7 @@ class MenuContainer(PtKMenuContainer):
 
                         else:
                             # Show the right edge
-                            yield ("class:menu", Border.VERTICAL)
+                            yield ("class:menu-border", Border.VERTICAL)
                             # Set the style and cursor if selected
                             style = ""
                             if i == selected_item:
@@ -240,7 +242,7 @@ class MenuContainer(PtKMenuContainer):
                             if i == selected_item:
                                 yield ("[SetMenuPosition]", "")
                             # Show the right edge
-                            yield ("class:menu", Border.VERTICAL)
+                            yield ("class:menu-border", Border.VERTICAL)
 
                         yield ("", "\n")
 
@@ -249,9 +251,11 @@ class MenuContainer(PtKMenuContainer):
                         if not item.hidden():
                             result.extend(one_item(i, item))
 
-                    result.append(("class:menu", Border.BOTTOM_LEFT))
-                    result.append(("class:menu", Border.HORIZONTAL * (menu.width + 2)))
-                    result.append(("class:menu", Border.BOTTOM_RIGHT))
+                    result.append(("class:menu-border", Border.BOTTOM_LEFT))
+                    result.append(
+                        ("class:menu-border", Border.HORIZONTAL * (menu.width + 2))
+                    )
+                    result.append(("class:menu-border", Border.BOTTOM_RIGHT))
 
             return result
 
