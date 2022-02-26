@@ -129,7 +129,8 @@ def set_edit_mode(edit_mode: "EditingMode") -> "None":
 for choice in config.choices("edit_mode"):
     add(
         name=f"set-edit-mode-{choice.lower()}",
-        title=choice.title(),
+        title=f'Set edit mode to "{choice.title()}"',
+        menu_title=choice.title(),
         group="config",
         description=f"Set the editing mode key-binding style to '{choice}'.",
         toggled=Condition(
@@ -146,7 +147,8 @@ def update_color_scheme(choice: "str") -> "None":
 for choice in config.choices("color_scheme"):
     add(
         name=f"set-color-scheme-{choice.lower()}",
-        title=choice.title(),
+        title=f'Set color scheme to "{choice.title()}"',
+        menu_title=choice.title(),
         group="config",
         description=f"Set the color scheme to '{choice}'.",
         toggled=Condition(
@@ -163,7 +165,8 @@ def update_syntax_theme(choice: "str") -> "None":
 for choice in sorted(get_all_styles()):
     add(
         name=f"set-syntax-theme-{choice.lower()}",
-        title=choice,
+        title=f'Set syntax theme to "{choice}"',
+        menu_title=choice,
         group="config",
         description=f"Set the syntax highlighting theme to '{choice}'.",
         toggled=Condition(

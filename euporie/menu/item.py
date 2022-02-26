@@ -101,7 +101,7 @@ class MenuItem(PtkMenuItem):
     def from_command(cls, command: "Command") -> "MenuItem":
         """Create a menu item from a command."""
         return cls(
-            formatted_text=command.title,
+            formatted_text=command.menu_title,
             handler=command.menu_handler,
             shortcut=command.keys[0] if command.keys else None,
             disabled=~command.filter,

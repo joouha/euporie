@@ -179,6 +179,7 @@ class LogView(Tab):
 
         Also hooks into the queue handeler to update the log.
         """
+        super().__init__()
         self.formatter = logging.Formatter()
         # Build the container
         self.search_field = SearchToolbar(

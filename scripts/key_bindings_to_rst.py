@@ -30,27 +30,32 @@ data = format_command_attrs(
 s = []
 
 for group, info in data.items():
-    total_w = len(info[0]["description"]) + len(info[0]["keys"][0]) + 3
-    # Section title
-    s.append("")
-    s.append(group)
-    s.append("=" * len(group))
-    s.append("")
-    # Table header
-    w1 = len(info[0]["keys"][0]) + 7
-    w2 = len(info[0]["description"])
-    s.append("+-" + "-" * w1 + "-+-" + "-" * w2 + "-+")
-    s.append("| " + "Keys".ljust(w1) + " | " + "Command".ljust(w2) + " |")
-    s.append("+=" + "=" * w1 + "=+=" + "=" * w2 + "=+")
-    # Rows
-    for rec in info:
-        for j, key in enumerate(rec["keys"]):
-            key_str = f":kbd:`{key.strip()}`".ljust(len(key) + 7)
-            title_str = rec["description"] if j == 0 else " " * len(rec["description"])
-            s.append(f"| {key_str} | {title_str} |")
-            s.append("| " + " " * len(key_str) + " | " + " " * len(title_str) + " |")
-        s.pop()
-        s.append("+-" + "-" * len(key_str) + "-+-" + "-" * len(title_str) + "-+")
+    if info:
+        total_w = len(info[0]["description"]) + len(info[0]["keys"][0]) + 3
+        # Section title
+        s.append("")
+        s.append(group)
+        s.append("=" * len(group))
+        s.append("")
+        # Table header
+        w1 = len(info[0]["keys"][0]) + 7
+        w2 = len(info[0]["description"])
+        s.append("+-" + "-" * w1 + "-+-" + "-" * w2 + "-+")
+        s.append("| " + "Keys".ljust(w1) + " | " + "Command".ljust(w2) + " |")
+        s.append("+=" + "=" * w1 + "=+=" + "=" * w2 + "=+")
+        # Rows
+        for rec in info:
+            for j, key in enumerate(rec["keys"]):
+                key_str = f":kbd:`{key.strip()}`".ljust(len(key) + 7)
+                title_str = (
+                    rec["description"] if j == 0 else " " * len(rec["description"])
+                )
+                s.append(f"| {key_str} | {title_str} |")
+                s.append(
+                    "| " + " " * len(key_str) + " | " + " " * len(title_str) + " |"
+                )
+            s.pop()
+            s.append("+-" + "-" * len(key_str) + "-+-" + "-" * len(title_str) + "-+")
 
 rst_file = Path(__file__).parent / "../docs/pages/keybindings.rst"
 

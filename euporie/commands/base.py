@@ -62,6 +62,7 @@ class Command:
         hidden: "FilterOrBool" = False,
         name: "Optional[str]" = None,
         title: "Optional[str]" = None,
+        menu_title: "Optional[str]" = None,
         description: "Optional[str]" = None,
         group: "Optional[str]" = None,
         toggled: "Optional[Filter]" = None,
@@ -78,7 +79,8 @@ class Command:
             filter: The condition under which the command is allowed to run
             hidden: The condition under the command is visible to the user
             name: The name of the command, for accessing the command from the registry
-            title: The title of the command for display in menu and the command palette
+            title: The title of the command for display
+            menu_title: The title to display in menus if different
             description: The discription of the command to explain it's function
             group: The group to which this command belongs
             toggled: The toggle state of this command If this command toggles something
@@ -98,6 +100,7 @@ class Command:
         if title is None:
             title = name.capitalize().replace("-", " ")
         self.title = title
+        self.menu_title = menu_title or title
         if description is None:
             # Use the first line of the docstring as the command description
             if handler.__doc__:
@@ -121,6 +124,11 @@ class Command:
 
         self.selected_item = 0
         self.children: "Sequence[MenuItem]" = []
+
+    def run(self) -> "None":
+        """Runs the command's handler."""
+        sig = signature(self.handler)
+        self.handler(*[None for _ in sig.parameters])
 
     @property
     def key_handler(self) -> "KeyHandlerCallable":

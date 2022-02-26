@@ -44,6 +44,7 @@ from euporie.log import LogView
 from euporie.menu import MenuContainer
 from euporie.menu.contents import load_menu_items
 from euporie.notebook import TuiNotebook
+from euporie.palette import CommandPalette
 from euporie.text import FormattedTextArea
 
 if TYPE_CHECKING:
@@ -132,8 +133,10 @@ class TuiApp(EuporieApp):
             A list of style and text tuples for display in the statusbar
 
         """
-        if self.tab:
-            entries = self.tab.statusbar_fields()
+        for container, status_func in self.container_statuses.items():
+            if self.layout.has_focus(container):
+                entries = status_func()
+                break
         else:
             entries = (
                 [HTML("Press <b>Ctrl+n</b> to start a new notebook")],
@@ -141,29 +144,21 @@ class TuiApp(EuporieApp):
             )
 
         output: "StyleAndTextTuples" = []
-
-        # Show selected menu description if set
-        if part == "left" and self.menu_container.status_text:
-            output.append(
-                ("class:status.field", f" {self.menu_container.status_text} ")
-            )
-
         # Show the tab's status fields
-        else:
-            for field in entries[0 if part == "left" else 1]:
-                if field:
-                    if isinstance(field, tuple):
-                        ft = [field]
-                    else:
-                        ft = to_formatted_text(field, style="class:status.field")
-                    output += [
-                        ("class:status.field", " "),
-                        *ft,
-                        ("class:status.field", " "),
-                        ("class:status", " "),
-                    ]
-            if output:
-                output.pop()
+        for field in entries[0 if part == "left" else 1]:
+            if field:
+                if isinstance(field, tuple):
+                    ft = [field]
+                else:
+                    ft = to_formatted_text(field, style="class:status.field")
+                output += [
+                    ("class:status.field", " "),
+                    *ft,
+                    ("class:status.field", " "),
+                    ("class:status", " "),
+                ]
+        if output:
+            output.pop()
         return output
 
     def tab_container(self) -> "AnyContainer":
@@ -231,15 +226,22 @@ class TuiApp(EuporieApp):
 
         body = HSplit([tabs, status_bar], style="class:body")
 
+        self.command_palette = CommandPalette()
+
         self.menu_container = MenuContainer(
             body=body,
             menu_items=load_menu_items(),  # type: ignore
             floats=[
+                Float(self.command_palette, top=4),
                 Float(
+                    content=CompletionsMenu(
+                        max_height=16,
+                        scroll_offset=1,
+                        extra_filter=~self.command_palette.visible,
+                    ),
                     xcursor=True,
                     ycursor=True,
-                    content=CompletionsMenu(max_height=16, scroll_offset=1),
-                )
+                ),
             ],
             left=[self.logo],
             right=[self.title_bar],
@@ -313,7 +315,7 @@ class TuiApp(EuporieApp):
             dialog_innards.content.key_bindings = merge_key_bindings(
                 [dialog_innards.content.key_bindings, kb]
             )
-        dialog_float = Float(content=dialog, z_index=10**9)
+        dialog_float = Float(content=dialog)
         # Add to top of the float stack
         self.add_float(dialog_float)
         self.has_dialog = True

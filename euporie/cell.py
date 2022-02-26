@@ -22,7 +22,7 @@ from prompt_toolkit.layout.containers import (
 )
 from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.layout.margins import ConditionalMargin, NumberedMargin
-from prompt_toolkit.layout.processors import ConditionalProcessor
+from prompt_toolkit.layout.processors import BeforeInput, ConditionalProcessor
 from prompt_toolkit.lexers import DynamicLexer, PygmentsLexer, SimpleLexer
 from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
 from prompt_toolkit.utils import Event
@@ -731,7 +731,10 @@ class InteractiveCell(Cell):
         # is not already on screen
         self.nb.page.selected_index = self.index
         # Set the prompt text for the BeforeInput pre-processor
-        self.stdin_box.control.input_processors[2].text = f"{prompt} "
+        if self.stdin_box.control.input_processors is not None:
+            prompt_processor = self.stdin_box.control.input_processors[2]
+            if isinstance(prompt_processor, BeforeInput):
+                prompt_processor.text = f"{prompt} "
         # Set the password status of the input box
         self.stdin_box.password = password
 

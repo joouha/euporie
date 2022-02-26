@@ -41,7 +41,6 @@ if TYPE_CHECKING:
     from prompt_toolkit.auto_suggest import AutoSuggest
     from prompt_toolkit.completion import Completer
     from prompt_toolkit.formatted_text import AnyFormattedText
-    from prompt_toolkit.layout.containers import AnyContainer
     from prompt_toolkit.mouse_events import MouseEvent
 
     from euporie.app.base import EuporieApp
@@ -69,6 +68,7 @@ class Notebook(Tab, metaclass=ABCMeta):
         app: "Optional[EuporieApp]" = None,
     ):
         """Instantiate a Notebook container, using a notebook at a given path."""
+        super().__init__()
         self.path: "Path" = Path(path).expanduser()
         self.completer: "Completer" = DummyCompleter()
         self.suggester: "AutoSuggest" = DummyAutoSuggest()
@@ -84,7 +84,6 @@ class Notebook(Tab, metaclass=ABCMeta):
         if not self.json.setdefault("cells", []):
             self.json["cells"] = [nbformat.v4.new_code_cell()]
 
-        self.container: "AnyContainer"
         self.app = app or get_app()
         self._rendered_cells: "dict[str, Cell]" = {}
         self.cell_type: "Type[Cell]" = Cell
@@ -196,9 +195,13 @@ class DumpNotebook(Notebook):
         app: "Optional[EuporieApp]" = None,
     ):
         super().__init__(path, app)
-        self.container = PrintingContainer(
-            self.rendered_cells,
-            width=config.max_notebook_width,
+        self.container = HSplit(
+            [
+                PrintingContainer(
+                    self.rendered_cells,
+                    width=config.max_notebook_width,
+                )
+            ]
         )
 
 

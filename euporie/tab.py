@@ -6,14 +6,15 @@ import logging
 from abc import ABCMeta
 from typing import TYPE_CHECKING
 
-from prompt_toolkit.application.current import get_app
 from prompt_toolkit.layout.dimension import Dimension, to_dimension
+
+from euporie.app.current import get_base_app as get_app
 
 if TYPE_CHECKING:
     from typing import Callable, Optional, Sequence
 
     from prompt_toolkit.formatted_text import AnyFormattedText
-    from prompt_toolkit.layout.containers import AnyContainer
+    from prompt_toolkit.layout.containers import AnyContainer, _Split
 
 log = logging.getLogger(__name__)
 
@@ -23,20 +24,22 @@ __all__ = ["Tab"]
 class Tab(metaclass=ABCMeta):
     """Base class for interface tabs."""
 
-    def __init__(self):
-        """Called when the tab is created."""
-        self.container = None
-
-    @property
-    def title(self) -> "str":
-        """Return the tab title."""
-        return ""
+    container: "_Split"
 
     def statusbar_fields(
         self,
     ) -> "tuple[Sequence[AnyFormattedText], Sequence[AnyFormattedText]]":
         """Returns a list of statusbar field values shown then this tab is active."""
         return ([], [])
+
+    def __init__(self):
+        """Called when the tab is created."""
+        get_app().container_statuses[self] = self.statusbar_fields
+
+    @property
+    def title(self) -> "str":
+        """Return the tab title."""
+        return ""
 
     def close(self, cb: "Optional[Callable]") -> "None":
         """Function to close a tab with a callback.
@@ -45,6 +48,9 @@ class Tab(metaclass=ABCMeta):
             cb: A function to call after the tab is closed.
 
         """
+        app = get_app()
+        if self in app.container_statuses:
+            del app.container_statuses[self]
         if callable(cb):
             cb()
 
@@ -57,14 +63,15 @@ class Tab(metaclass=ABCMeta):
 
     def __pt_container__(self) -> "AnyContainer":
         """Return the main container object."""
-        if hasattr(self.container, "width"):
-            d = to_dimension(self.container.width)
-            self.container.width = Dimension(
+        container = self.container
+        if hasattr(container, "width"):
+            d = to_dimension(container.width)
+            container.width = Dimension(
                 min=d.min, max=d.max, preferred=d.preferred, weight=1
             )
-        if hasattr(self.container, "height"):
-            d = to_dimension(self.container.height)
-            self.container.height = Dimension(
+        if hasattr(container, "height"):
+            d = to_dimension(container.height)
+            container.height = Dimension(
                 min=d.min, max=d.max, preferred=d.preferred, weight=1
             )
-        return self.container
+        return container

@@ -69,7 +69,12 @@ def if_no_repeat(event: "KeyPressEvent") -> bool:
 # Typing
 
 
-@add(filter=buffer_has_focus, save_before=if_no_repeat, group="micro-edit-mode")
+@add(
+    filter=buffer_has_focus,
+    save_before=if_no_repeat,
+    group="micro-edit-mode",
+    hidden=True,
+)
 def type_key(event: "KeyPressEvent") -> "None":
     """Enter a key."""
     event.current_buffer.insert_text(
@@ -86,19 +91,29 @@ def toggle_overwrite_mode() -> "None":
         get_app().micro_state.input_mode = InputMode.REPLACE
 
 
-@add(filter=buffer_has_focus & ~micro_recording_macro, group="micro-edit-mode")
+@add(
+    filter=buffer_has_focus & ~micro_recording_macro,
+    group="micro-edit-mode",
+    hidden=True,
+)
 def start_macro() -> None:
     """Start recording a macro."""
     get_app().micro_state.start_macro()
 
 
-@add(filter=buffer_has_focus & micro_recording_macro, group="micro-edit-mode")
+@add(
+    filter=buffer_has_focus & micro_recording_macro,
+    group="micro-edit-mode",
+    hidden=True,
+)
 def end_macro() -> None:
     """Stop recording a macro."""
     get_app().micro_state.end_macro()
 
 
-@add(filter=buffer_has_focus, record_in_macro=False, group="micro-edit-mode")
+@add(
+    filter=buffer_has_focus, record_in_macro=False, group="micro-edit-mode", hidden=True
+)
 def run_macro() -> None:
     """Re-execute the last keyboard macro defined."""
     # Insert the macro.
@@ -608,7 +623,7 @@ def unshift_move(event: "KeyPressEvent") -> "None":
         command.key_handler(event)
 
 
-@add(filter=~has_selection, group="micro-edit-mode")
+@add(filter=~has_selection, group="micro-edit-mode", hidden=True)
 def start_selection(event: "KeyPressEvent") -> "None":
     """Start a new selection."""
     # Take the current cursor position as the start of this selection.
@@ -627,7 +642,7 @@ def start_selection(event: "KeyPressEvent") -> "None":
             buff.exit_selection()
 
 
-@add(filter=shift_selection_mode, group="micro-edit-mode")
+@add(filter=shift_selection_mode, group="micro-edit-mode", hidden=True)
 def extend_selection(event: "KeyPressEvent") -> "None":
     """Extend the selection."""
     # Just move the cursor, like shift was not pressed
@@ -639,20 +654,20 @@ def extend_selection(event: "KeyPressEvent") -> "None":
             buff.exit_selection()
 
 
-@add(filter=has_selection, group="micro-edit-mode")
+@add(filter=has_selection, group="micro-edit-mode", hidden=True)
 def replace_selection(event: "KeyPressEvent") -> "None":
     """Replace selection by what is typed."""
     event.current_buffer.cut_selection()
     get_by_name("self-insert").call(event)
 
 
-@add(filter=has_selection, group="micro-edit-mode")
+@add(filter=has_selection, group="micro-edit-mode", hidden=True)
 def delete_selection() -> "None":
     """Delete the contents of the current selection."""
     get_app().current_buffer.cut_selection()
 
 
-@add(filter=shift_selection_mode, group="micro-edit-mode")
+@add(filter=shift_selection_mode, group="micro-edit-mode", hidden=True)
 def cancel_selection(event: "KeyPressEvent") -> "None":
     """Cancel the selection."""
     event.current_buffer.exit_selection()

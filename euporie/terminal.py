@@ -328,6 +328,7 @@ class TerminalInfo:
             add(
                 name=name,
                 title=f"Set terminal {title}",
+                hidden=True,
                 description=f"Sets the terminal's {title} value.",
                 group="terminal",
                 keys=[key],

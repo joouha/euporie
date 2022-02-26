@@ -204,7 +204,7 @@ def scroll_down_5_lines() -> "None":
     group="notebook",
     filter=notebook_has_focus & ~buffer_has_focus,
 )
-def first_child() -> "None":
+def select_first_cell() -> "None":
     """Select the first cell in the notebook."""
     nb = get_app().notebook
     if nb is not None:
@@ -277,7 +277,7 @@ def select_last_cell() -> "None":
     filter=notebook_has_focus & kernel_is_python & ~buffer_has_focus,
 )
 def reformat_notebook() -> "None":
-    """Automaticall reformat all code cells in the notebook."""
+    """Automatically reformat all code cells in the notebook."""
     nb = get_app().notebook
     if nb is not None:
         nb.reformat()

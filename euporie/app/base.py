@@ -57,16 +57,23 @@ from euporie.terminal import TerminalInfo, Vt100Parser
 
 if TYPE_CHECKING:
     from collections.abc import MutableSequence
-    from typing import Any, Optional, Type
+    from typing import Any, Callable, Optional, Type
 
     from prompt_toolkit.filters import Filter
+    from prompt_toolkit.formatted_text import AnyFormattedText
     from prompt_toolkit.input.vt100 import Vt100Input
-    from prompt_toolkit.layout.containers import Float
+    from prompt_toolkit.layout.containers import AnyContainer, Float
     from prompt_toolkit.output import Output
 
     from euporie.cell import InteractiveCell
     from euporie.notebook import TuiNotebook
     from euporie.terminal import TerminalQuery
+
+    StatusBarFields = tuple[list[AnyFormattedText], list[AnyFormattedText]]
+    ContainerStatusDict = dict[
+        AnyContainer,
+        Callable[..., StatusBarFields],
+    ]
 
 log = logging.getLogger(__name__)
 
@@ -167,8 +174,10 @@ class EuporieApp(Application):
         self.pre_run_callables = [self.pre_run]
         # Floats at the app level
         self.floats: "list[Float]" = []
-
+        # If a dialog is showing
         self.has_dialog = False
+        # Mapping of Containers to status field generating functions
+        self.container_statuses: "ContainerStatusDict" = {}
 
     # This configures the logs for euporie
     setup_logs()
@@ -519,7 +528,7 @@ class EuporieApp(Application):
         assert isinstance(root, FloatContainer)
         for float_ in self.floats:
             if root.floats is not None and float_ not in root.floats:
-                root.floats.append(float_)
+                root.floats.insert(-1, float_)
 
     def remove_float(self, float_container: "Float") -> "None":
         """Removes a float to the application."""

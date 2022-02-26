@@ -5,7 +5,6 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, cast
 
-from prompt_toolkit.application import get_app
 from prompt_toolkit.formatted_text.base import to_formatted_text
 from prompt_toolkit.formatted_text.utils import fragment_list_width
 from prompt_toolkit.layout import VSplit
@@ -15,6 +14,7 @@ from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
 from prompt_toolkit.widgets.menus import MenuContainer as PtKMenuContainer
 from prompt_toolkit.widgets.menus import MenuItem as PtkMenuItem
 
+from euporie.app.current import get_base_app as get_app
 from euporie.box import SquareBorder as Border
 from euporie.menu.item import MenuItem
 
@@ -22,6 +22,7 @@ if TYPE_CHECKING:
     from typing import Iterable, Optional, Sequence
 
     from prompt_toolkit.formatted_text.base import (
+        AnyFormattedText,
         OneStyleAndTextTuple,
         StyleAndTextTuples,
     )
@@ -35,6 +36,16 @@ log = logging.getLogger(__name__)
 
 class MenuContainer(PtKMenuContainer):
     """A container to hold the menubar and main application body."""
+
+    def statusbar_fields(
+        self,
+    ) -> "tuple[list[AnyFormattedText], list[AnyFormattedText]]":
+        """Return the description of the currently selected menu item."""
+        selected_item = self._get_menu(len(self.selected_menu) - 1)
+        if isinstance(selected_item, MenuItem):
+            return (["", selected_item.description], [])
+        else:
+            return (["", ""], [])
 
     def __init__(
         self,
@@ -67,14 +78,7 @@ class MenuContainer(PtKMenuContainer):
             self.body,
         ]
 
-    @property
-    def status_text(self) -> "str":
-        """Return the description of the currently selected menu item."""
-        selected_item = self._get_menu(len(self.selected_menu) - 1)
-        if isinstance(selected_item, MenuItem):
-            return selected_item.description
-        else:
-            return ""
+        get_app().container_statuses[self.window] = self.statusbar_fields
 
     def _get_menu_fragments(self) -> "StyleAndTextTuples":
 

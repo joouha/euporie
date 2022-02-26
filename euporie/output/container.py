@@ -312,6 +312,7 @@ class CellOutput:
             )
         if self.graphic_float is not None:
             get_app().add_float(self.graphic_float)
+        # self.window.graphic_float = self.graphic_float
 
     def __pt_container__(self) -> "AnyContainer":
         """Return the content of this output."""

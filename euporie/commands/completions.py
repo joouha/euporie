@@ -19,6 +19,7 @@ from euporie.filters import cell_is_code, insert_mode
 add(
     keys="c-i",
     filter=buffer_has_focus & insert_mode & ~has_selection & cell_is_code,
+    hidden=True,
     name="next-completion",
     group="completion",
     description="Show the completion menu and select the next completion.",
@@ -26,19 +27,20 @@ add(
 add(
     keys="s-tab",
     filter=buffer_has_focus & insert_mode & ~has_selection,
+    hidden=True,
     name="previous-completion",
     group="completion",
     description="Show the completion menu and select the previous completion.",
 )(menu_complete_backward)
 
 
-@add(keys="escape", filter=has_completions, group="completion", eager=True)
+@add(keys="escape", filter=has_completions, hidden=True, group="completion", eager=True)
 def cancel_completion() -> "None":
     """Cancel a completion."""
     get_app().current_buffer.cancel_completion()
 
 
-@add(keys="enter", filter=completion_is_selected, group="completion")
+@add(keys="enter", filter=completion_is_selected, hidden=True, group="completion")
 def accept_completion() -> "None":
     """Accept a selected completion."""
     buffer = get_app().current_buffer

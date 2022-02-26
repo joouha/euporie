@@ -32,7 +32,7 @@ def format_command_attrs(
 
     """
     if groups is None:
-        groups = [str(cmd.group) for cmd in set(commands.values())]
+        groups = [str(cmd.group) for cmd in set(commands.values()) if not cmd.hidden()]
 
     if attrs is None:
         attrs = ["name", "title", "description", "keys"]
@@ -52,8 +52,7 @@ def format_command_attrs(
                                     for x in format_keys(cmd.keys)
                                 ]
                                 for cmd in commands.values()
-                                if cmd.group in groups
-                                if cmd.keys
+                                if not cmd.hidden() and cmd.group in groups and cmd.keys
                             ]
                         ),
                     )
@@ -65,7 +64,7 @@ def format_command_attrs(
                         (
                             getattr(cmd, attr).replace("`", r"\`" if escape else "`")
                             for cmd in commands.values()
-                            if cmd.group in groups
+                            if not cmd.hidden() and cmd.group in groups
                         ),
                     )
                 )
@@ -78,7 +77,7 @@ def format_command_attrs(
             data[group_title] = []
 
         for cmd in commands.values():
-            if cmd.group == group:
+            if not cmd.hidden() and cmd.group == group:
                 cmd_info: "dict[str, Union[str, list[str]]]" = {}
                 for attr in attrs:
                     if attr == "keys":

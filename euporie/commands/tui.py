@@ -118,3 +118,12 @@ def view_documentation() -> "None":
 def about() -> "None":
     """Show the about dialog."""
     get_app().help_about()
+
+
+@add(
+    keys="c-@",
+    group="app",
+)
+def show_command_palette() -> "None":
+    """Shows the command palette."""
+    get_app().command_palette.toggle()

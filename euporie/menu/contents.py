@@ -91,6 +91,7 @@ def load_menu_items() -> "list[MenuItem]":
         MenuItem(
             "Help",
             children=[
+                get("show-command-palette").menu,
                 get("keyboard-shortcuts").menu,
                 get("view-documentation").menu,
                 separator,

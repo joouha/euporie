@@ -6,6 +6,7 @@ Changelog
 Upcoming
 ********
 
+- Add command palette (summoned with :kbd:`Ctrl+space`)
 - Add experimental support for terminal graphics from within tmux
 - Add support for displaying images using the `iTerm inline imagese protocol <https://iterm2.com/documentation-images.html>`_`
 - Display tabs in ansi output correctly
