@@ -221,6 +221,45 @@ CONFIG_PARAMS: "dict[str, dict]" = {
             Whether to execute a cell immediately after editing in `$EDITOR`.
         """,
     },
+    "format_black": {
+        "flags_": ["--format-black"],
+        "action": BooleanOptionalAction,
+        "type": bool,
+        "help": "Use black when re-formatting code cells",
+        "schema_": {
+            "type": "boolean",
+            "default": True,
+        },
+        "description_": """
+            Whether to use :py:mod:`black` when reformatting code cells.
+        """,
+    },
+    "format_isort": {
+        "flags_": ["--format-isort"],
+        "action": BooleanOptionalAction,
+        "type": bool,
+        "help": "Use isort when re-formatting code cells",
+        "schema_": {
+            "type": "boolean",
+            "default": True,
+        },
+        "description_": """
+            Whether to use :py:mod:`isort` when reformatting code cells.
+        """,
+    },
+    "format_ssort": {
+        "flags_": ["--format-ssort"],
+        "action": BooleanOptionalAction,
+        "type": bool,
+        "help": "Use ssort when re-formatting code cells",
+        "schema_": {
+            "type": "boolean",
+            "default": True,
+        },
+        "description_": """
+            Whether to use :py:mod:`ssort` when reformatting code cells.
+        """,
+    },
     "autoformat": {
         "flags_": ["--autoformat"],
         "action": BooleanOptionalAction,
@@ -470,6 +509,28 @@ class Config:
         for name, param in CONFIG_PARAMS.items()
     }
 
+    def __init__(self):
+        """Ininitate the Configuration object."""
+        self.user = {}
+        self.env = {}
+        self.args = {}
+
+        user_conf_dir = Path(user_config_dir(__app_name__, appauthor=False))
+        user_conf_dir.mkdir(exist_ok=True, parents=True)
+        self.config_file_path = user_conf_dir / self.conf_file_name
+        self.valid_user = True
+
+        self.load_user()
+        self.load_env()
+        self.load_args()
+
+        self.chain = ChainMap(
+            self.args,
+            self.env,
+            self.user,
+            self.defaults,
+        )
+
     def load_args(self) -> "None":
         """Attempts to load configuration settings from commandline flags."""
         parser = argparse.ArgumentParser(
@@ -549,28 +610,6 @@ class Config:
                         self.user.update(json_data)
                         return
             log.warning("The configuration file was not loaded")
-
-    def __init__(self):
-        """Ininitate the Configuration object."""
-        self.user = {}
-        self.env = {}
-        self.args = {}
-
-        user_conf_dir = Path(user_config_dir(__app_name__, appauthor=False))
-        user_conf_dir.mkdir(exist_ok=True, parents=True)
-        self.config_file_path = user_conf_dir / self.conf_file_name
-        self.valid_user = True
-
-        self.load_user()
-        self.load_env()
-        self.load_args()
-
-        self.chain = ChainMap(
-            self.args,
-            self.env,
-            self.user,
-            self.defaults,
-        )
 
     def get(self, name: "str") -> "Any":
         """Access a configuration variable, falling back to the default value if unset.

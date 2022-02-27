@@ -82,7 +82,16 @@ def load_menu_items() -> "list[MenuItem]":
                 get("show-line-numbers").menu,
                 get("show-status-bar").menu,
                 separator,
-                get("autoformat").menu,
+                MenuItem(
+                    "Cell formatting",
+                    children=[
+                        get("autoformat").menu,
+                        separator,
+                        get("format-black").menu,
+                        get("format-isort").menu,
+                        get("format-ssort").menu,
+                    ],
+                ),
                 get("autocomplete").menu,
                 get("autosuggest").menu,
                 get("run-after-external-edit").menu,

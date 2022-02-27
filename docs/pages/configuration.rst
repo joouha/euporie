@@ -192,6 +192,36 @@ All available configuration options are listed below:
 
    Whether to execute a cell immediately after editing in `$EDITOR`.
 
+.. option:: format_black
+
+:flags: :option:`--format-black`
+:environment variable: :envvar:`EUPORIE_FORMAT_BLACK`
+:default: ``True``
+:type: :keyword:`boolean`
+:description: Use black when re-formatting code cells
+
+   Whether to use :py:mod:`black` when reformatting code cells.
+
+.. option:: format_isort
+
+:flags: :option:`--format-isort`
+:environment variable: :envvar:`EUPORIE_FORMAT_ISORT`
+:default: ``True``
+:type: :keyword:`boolean`
+:description: Use isort when re-formatting code cells
+
+   Whether to use :py:mod:`isort` when reformatting code cells.
+
+.. option:: format_ssort
+
+:flags: :option:`--format-ssort`
+:environment variable: :envvar:`EUPORIE_FORMAT_SSORT`
+:default: ``True``
+:type: :keyword:`boolean`
+:description: Use ssort when re-formatting code cells
+
+   Whether to use :py:mod:`ssort` when reformatting code cells.
+
 .. option:: autoformat
 
 :flags: :option:`--autoformat`

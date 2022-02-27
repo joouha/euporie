@@ -8,6 +8,11 @@ All notable changes to this project will be documented in this file.
 Unreleased
 **********
 
+Added
+=====
+
+- Add ability to use :py:mod:`isort` and :py:mod:`ssort` when formatting code cells
+
 ******************
 1.1.0 - 2022-03-04
 ******************

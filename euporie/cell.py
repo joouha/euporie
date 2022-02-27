@@ -32,6 +32,7 @@ from pygments.lexers import get_lexer_by_name  # type: ignore
 from euporie.app.current import get_tui_app as get_app
 from euporie.box import RoundBorder as Border
 from euporie.config import config
+from euporie.format import format_code
 from euporie.output.container import CellOutput
 from euporie.suggest import AppendLineAutoSuggestion, ConditionalAutoSuggestAsync
 
@@ -80,14 +81,6 @@ def get_cell_id(cell_json: "dict") -> "str":
 
 class CellInputTextArea(TextArea):
     """A customized text area for the cell input."""
-
-    # TODO - Check for non-shift-mode selection and change it to shift mode
-    # buffer.on_cursor_position_changed -> Event
-
-    def text_changed(self, buf: "Buffer") -> "None":
-        """Update cell json when the input buffer has been edited."""
-        self.cell._set_input(buf.text)
-        self.cell.nb.dirty = True
 
     def __init__(self, cell: "Cell", *args: "Any", **kwargs: "Any") -> "None":
         """Initiate the cell input box."""
@@ -139,6 +132,14 @@ class CellInputTextArea(TextArea):
             )
         ]
         self.window.cursorline = has_focus(self)
+
+    # TODO - Check for non-shift-mode selection and change it to shift mode
+    # buffer.on_cursor_position_changed -> Event
+
+    def text_changed(self, buf: "Buffer") -> "None":
+        """Update cell json when the input buffer has been edited."""
+        self.cell._set_input(buf.text)
+        self.cell.nb.dirty = True
 
 
 class CellStdinTextArea(TextArea):
@@ -208,103 +209,6 @@ class Cell:
 
     Contains a transparent clickable overlay, which is not displayed when the cell is focused.
     """
-
-    @property
-    def focused(self) -> "bool":
-        """Determine if the cell currently has focus."""
-        if self.container is not None:
-            return get_app().layout.has_focus(self.container)
-        else:
-            return False
-
-    def border_style(self) -> "str":
-        """Determines the style of the cell borders, based on the cell state."""
-        if not config.dump:
-            if self.focused:
-                if has_focus(self.input_box.buffer)():
-                    return "class:cell.border.edit"
-                else:
-                    return "class:cell.border.selected"
-        return "class:cell.border"
-
-    def border_char(self, name: "str") -> "Callable[..., str]":
-        """Returns a function  which returns the cell border character to display."""
-        border_char = getattr(Border, name.upper())
-
-        def _inner() -> "str":
-            if config.show_cell_borders or self.focused:
-                return border_char
-            else:
-                return Border.NONE
-
-        return _inner
-
-    @property
-    def cell_type(self) -> "str":
-        """Determine the currrent cell type."""
-        return self.json.get("cell_type", "code")
-
-    @property
-    def execution_count(self) -> "str":
-        """Retrieve the execution count from the cell's JSON."""
-        return self.json.get("execution_count", " ")
-
-    @execution_count.setter
-    def execution_count(self, count: int) -> "None":
-        """Set the execution count in the cell's JSON.
-
-        Args:
-            count: The new execution count number.
-
-        """
-        self.json["execution_count"] = count
-
-    @property
-    def prompt(self) -> "str":
-        """Determine what should be displayed in the prompt of the cell."""
-        if self.state in ("busy", "queued"):
-            prompt = "*"
-        else:
-            prompt = self.execution_count or " "
-        if prompt:
-            prompt = f"[{prompt}]"
-        return prompt
-
-    def _set_input(self, value: "str") -> "None":
-        self.json["source"] = value
-
-    @property
-    def input(self) -> "str":
-        """Fetch the cell's contents from the cell's JSON."""
-        return self.json.get("source", "")
-
-    @input.setter
-    def input(self, value: "str") -> "None":
-        """Set the cell's contents in the cell's JSON.
-
-        Args:
-            value: The new cell contents text.
-
-        """
-        self._set_input(value)
-        self.input_box.text = self.json["source"]
-
-    @property
-    def outputs(self) -> "list[dict[str, Any]]":
-        """Retrieve a list of cell outputs from the cell's JSON."""
-        if self.cell_type == "markdown":
-            return [
-                {"data": {"text/x-markdown": self.input}, "output_type": "markdown"}
-            ]
-        else:
-            return self.json.setdefault("outputs", [])
-
-    def render_outputs(self) -> "list[Container]":
-        """Generates a list of rendered outputs."""
-        rendered_outputs: "list[Container]" = []
-        for output_json in self.outputs:
-            rendered_outputs.append(to_container(CellOutput(output_json)))
-        return rendered_outputs
 
     def __init__(self, index: "int", json: "dict", notebook: "Notebook"):
         """Initiate the cell element.
@@ -536,6 +440,103 @@ class Cell:
             ],
         )
 
+    @property
+    def focused(self) -> "bool":
+        """Determine if the cell currently has focus."""
+        if self.container is not None:
+            return get_app().layout.has_focus(self.container)
+        else:
+            return False
+
+    def border_style(self) -> "str":
+        """Determines the style of the cell borders, based on the cell state."""
+        if not config.dump:
+            if self.focused:
+                if has_focus(self.input_box.buffer)():
+                    return "class:cell.border.edit"
+                else:
+                    return "class:cell.border.selected"
+        return "class:cell.border"
+
+    def border_char(self, name: "str") -> "Callable[..., str]":
+        """Returns a function  which returns the cell border character to display."""
+        border_char = getattr(Border, name.upper())
+
+        def _inner() -> "str":
+            if config.show_cell_borders or self.focused:
+                return border_char
+            else:
+                return Border.NONE
+
+        return _inner
+
+    @property
+    def cell_type(self) -> "str":
+        """Determine the currrent cell type."""
+        return self.json.get("cell_type", "code")
+
+    @property
+    def execution_count(self) -> "str":
+        """Retrieve the execution count from the cell's JSON."""
+        return self.json.get("execution_count", " ")
+
+    @execution_count.setter
+    def execution_count(self, count: int) -> "None":
+        """Set the execution count in the cell's JSON.
+
+        Args:
+            count: The new execution count number.
+
+        """
+        self.json["execution_count"] = count
+
+    @property
+    def prompt(self) -> "str":
+        """Determine what should be displayed in the prompt of the cell."""
+        if self.state in ("busy", "queued"):
+            prompt = "*"
+        else:
+            prompt = self.execution_count or " "
+        if prompt:
+            prompt = f"[{prompt}]"
+        return prompt
+
+    def _set_input(self, value: "str") -> "None":
+        self.json["source"] = value
+
+    @property
+    def input(self) -> "str":
+        """Fetch the cell's contents from the cell's JSON."""
+        return self.json.get("source", "")
+
+    @input.setter
+    def input(self, value: "str") -> "None":
+        """Set the cell's contents in the cell's JSON.
+
+        Args:
+            value: The new cell contents text.
+
+        """
+        self._set_input(value)
+        self.input_box.text = self.json["source"]
+
+    @property
+    def outputs(self) -> "list[dict[str, Any]]":
+        """Retrieve a list of cell outputs from the cell's JSON."""
+        if self.cell_type == "markdown":
+            return [
+                {"data": {"text/x-markdown": self.input}, "output_type": "markdown"}
+            ]
+        else:
+            return self.json.setdefault("outputs", [])
+
+    def render_outputs(self) -> "list[Container]":
+        """Generates a list of rendered outputs."""
+        rendered_outputs: "list[Container]" = []
+        for output_json in self.outputs:
+            rendered_outputs.append(to_container(CellOutput(output_json)))
+        return rendered_outputs
+
     def trigger_refresh(self) -> "None":
         """Request that the cell to be re-rendered next time it is drawn."""
         if self.meta:
@@ -609,16 +610,9 @@ class Cell:
             return "raw"
 
     def reformat(self) -> "None":
-        """Reformats the cell's input using black."""
-        try:
-            import black  # type: ignore
-        except ModuleNotFoundError:
-            pass
-        else:
-            try:
-                self.input = black.format_str(self.input, mode=black.Mode()).rstrip()
-            except black.parsing.InvalidInput:
-                log.exception("Error formatting cell")
+        """Reformats the cell's input."""
+        self.input = format_code(self.input)
+        self.trigger_refresh()
 
     def run_or_render(
         self,

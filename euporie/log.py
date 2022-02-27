@@ -142,6 +142,34 @@ class QueueHandler(logging.Handler):
 class LogView(Tab):
     """A tab which allows you to view log entries."""
 
+    def __init__(self) -> "None":
+        """Builds the tab's contents.
+
+        Also hooks into the queue handeler to update the log.
+        """
+        super().__init__()
+        self.formatter = logging.Formatter()
+        # Build the container
+        self.search_field = SearchToolbar(
+            text_if_not_searching=[("class:not-searching", "Press '/' to search.")]
+        )
+        self.text_area = FormattedTextArea(
+            formatted_text=[],
+            read_only=True,
+            scrollbar=True,
+            line_numbers=True,
+            search_field=self.search_field,
+            focus_on_click=True,
+            wrap_lines=True,
+            dont_extend_width=False,
+        )
+        self.container = HSplit([self.text_area, self.search_field])
+        # Add text to the textarea
+        for record in LOG_QUEUE:
+            self.add_record(record)
+        # Hook the queue handler
+        self.hook_id = QueueHandler.hook(self.add_record)
+
     def render(self, record: "logging.LogRecord") -> "StyleAndTextTuples":
         """Converts a log record to formatted text.
 
@@ -176,34 +204,6 @@ class LogView(Tab):
         self.text_area.formatted_text += self.render(record)
         self.text_area.buffer.cursor_position = cp
 
-    def __init__(self) -> "None":
-        """Builds the tab's contents.
-
-        Also hooks into the queue handeler to update the log.
-        """
-        super().__init__()
-        self.formatter = logging.Formatter()
-        # Build the container
-        self.search_field = SearchToolbar(
-            text_if_not_searching=[("class:not-searching", "Press '/' to search.")]
-        )
-        self.text_area = FormattedTextArea(
-            formatted_text=[],
-            read_only=True,
-            scrollbar=True,
-            line_numbers=True,
-            search_field=self.search_field,
-            focus_on_click=True,
-            wrap_lines=True,
-            dont_extend_width=False,
-        )
-        self.container = HSplit([self.text_area, self.search_field])
-        # Add text to the textarea
-        for record in LOG_QUEUE:
-            self.add_record(record)
-        # Hook the queue handler
-        self.hook_id = QueueHandler.hook(self.add_record)
-
     @property
     def title(self) -> "str":
         """Returns the title of this tab."""
@@ -211,21 +211,33 @@ class LogView(Tab):
 
 
 class stdout_to_log:
-    def __init__(self, log: "logging.Logger"):
+    """A decorator which captures standard output and logs it."""
+
+    def __init__(
+        self, log: "logging.Logger", output: "str" = "Literal['stdout','stderr']"
+    ) -> "None":
         self.log = log
         self.out = StringIO()
+        self.output = output
 
-    def __enter__(self):
-        self._original_stdout = sys.stdout
-        sys.stdout = self.out
+    def __enter__(self) -> "None":
+        if self.output == "stderr":
+            self._original = sys.stderr
+            sys.stderr = self.out
+        else:
+            self._original = sys.stdout
+            sys.stdout = self.out
 
     def __exit__(
         self,
         exc_type: "Optional[type[BaseException]]",
         exc_value: "Optional[BaseException]",
         exc_traceback: "Optional[TracebackType]",
-    ):
-        sys.stdout = self._original_stdout
+    ) -> "None":
+        if self.output == "stderr":
+            sys.stderr = self._original
+        else:
+            sys.stdout = self._original
         if exc_type is not None:
             self.out.seek(0)
             for line in self.out.readlines():

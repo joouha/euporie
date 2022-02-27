@@ -10,7 +10,7 @@ from pygments.styles import get_all_styles  # type: ignore
 from euporie.app import get_app
 from euporie.commands.registry import add
 from euporie.config import config
-from euporie.filters import in_tmux
+from euporie.filters import have_black, have_isort, have_ssort, in_tmux
 
 if TYPE_CHECKING:
     from prompt_toolkit.enums import EditingMode
@@ -79,6 +79,39 @@ def autocomplete() -> "None":
 def autoformat() -> "None":
     """Toggle whether code cells are formatted before they are run."""
     config.toggle("autoformat")
+
+
+@add(
+    title="Format code cells using black",
+    menu_title="Use black",
+    filter=~buffer_has_focus & have_black,
+    toggled=Condition(lambda: bool(config.format_black)),
+)
+def format_black() -> "None":
+    """Toggle whether code cells are formatted using black."""
+    config.toggle("format_black")
+
+
+@add(
+    title="Format code cells using isort",
+    menu_title="Use isort",
+    filter=~buffer_has_focus & have_isort,
+    toggled=Condition(lambda: bool(config.format_isort)),
+)
+def format_isort() -> "None":
+    """Toggle whether code cells are formatted using isort."""
+    config.toggle("format_isort")
+
+
+@add(
+    title="Format code cells using ssort",
+    menu_title="Use ssort",
+    filter=~buffer_has_focus & have_ssort,
+    toggled=Condition(lambda: bool(config.format_ssort)),
+)
+def format_ssort() -> "None":
+    """Toggle whether code cells are formatted using ssort."""
+    config.toggle("format_ssort")
 
 
 @add(

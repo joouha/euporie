@@ -15,6 +15,8 @@ from euporie.key_binding.micro_state import InputMode
 
 __all__ = [
     "have_black",
+    "have_isort",
+    "have_ssort",
     "cursor_in_leading_ws",
     "has_suggestion",
     "has_menus",
@@ -43,6 +45,21 @@ except ModuleNotFoundError:
 else:
     have_black = to_filter(True)
 
+# Determine if isort is available
+try:
+    import isort  # type: ignore  # noqa F401
+except ModuleNotFoundError:
+    have_isort = to_filter(False)
+else:
+    have_isort = to_filter(True)
+
+# Determine if ssort is available
+try:
+    import ssort  # type: ignore  # noqa F401
+except ModuleNotFoundError:
+    have_ssort = to_filter(False)
+else:
+    have_ssort = to_filter(True)
 
 # Determine if euporie is running inside tmux.
 in_tmux = to_filter(os.environ.get("TMUX") is not None)
