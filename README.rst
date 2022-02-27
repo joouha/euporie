@@ -59,7 +59,7 @@ Euporie requires Python 3.8 or later. It works on Linux, Windows and MacOS
 
 
 .. |PyPI| image:: https://img.shields.io/pypi/v/euporie.svg
-    :target: https://pypi.python.org/projects/euporie/
+    :target: https://pypi.python.org/project/euporie/
     :alt: Latest Version
 
 .. |RTD| image:: https://readthedocs.org/projects/euporie/badge/
