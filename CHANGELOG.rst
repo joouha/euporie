@@ -16,6 +16,7 @@ Added
 Fixed
 =====
 
+- Indent if cursor in leading whitespace rather than suggest complete
 - No longer continue indenting on subsequent newlines after a colon
 
 ******************

@@ -14,11 +14,15 @@ from prompt_toolkit.key_binding.bindings.named_commands import (
 )
 
 from euporie.commands.registry import add
-from euporie.filters import cell_is_code, insert_mode
+from euporie.filters import cell_is_code, cursor_in_leading_ws, insert_mode
 
 add(
     keys="c-i",
-    filter=buffer_has_focus & insert_mode & ~has_selection & cell_is_code,
+    filter=buffer_has_focus
+    & insert_mode
+    & ~has_selection
+    & cell_is_code
+    & ~cursor_in_leading_ws,
     hidden=True,
     name="next-completion",
     group="completion",
@@ -26,7 +30,7 @@ add(
 )(menu_complete)
 add(
     keys="s-tab",
-    filter=buffer_has_focus & insert_mode & ~has_selection,
+    filter=buffer_has_focus & insert_mode & ~has_selection & ~cursor_in_leading_ws,
     hidden=True,
     name="previous-completion",
     group="completion",
