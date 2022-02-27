@@ -13,6 +13,11 @@ Added
 
 - Add ability to use :py:mod:`isort` and :py:mod:`ssort` when formatting code cells
 
+Fixed
+=====
+
+- No longer continue indenting on subsequent newlines after a colon
+
 ******************
 1.1.0 - 2022-03-04
 ******************

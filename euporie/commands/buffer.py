@@ -527,11 +527,11 @@ def newline(event: "KeyPressEvent") -> "None":
     """Insert a new line, replacing any selection and indenting if appropriate."""
     # TODO https://git.io/J9GfI
     buffer = get_app().current_buffer
+    document = buffer.document
     buffer.cut_selection()
     buffer.newline(copy_margin=not in_paste_mode())
-
     if cell_is_code():
-        pre = buffer.document.text_before_cursor
+        pre = document.current_line_before_cursor
         if pre.rstrip()[-1:] in (":", "(", "[", "{"):
             dent_buffer(event)
     # TODO
