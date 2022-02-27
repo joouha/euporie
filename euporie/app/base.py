@@ -88,6 +88,46 @@ class EuporieApp(Application):
     # Defines which notebook class should we use
     notebook_class: "Type[Notebook]"
 
+    def __init__(self, **kwargs: "Any") -> "None":
+        """Instantiates euporie specific application variables.
+
+        After euporie specific application variables are instantiated, the application
+        instance is initiated.
+
+        Args:
+            **kwargs: The key-word arguments for the :py:class:`Application`
+
+        """
+        # Initialise the application
+        super().__init__(
+            # input=self.input,
+            output=self.load_output(),
+            **kwargs,
+        )
+        # Use a custom vt100 parser to allow querying the terminal
+        self.using_vt100 = not is_windows()
+        if self.using_vt100:
+            self.input = cast("Vt100Input", self.input)
+            self.input.vt100_parser = Vt100Parser(
+                self.input.vt100_parser.feed_key_callback
+            )
+        # Contains the opened tab containers
+        self.tabs: "MutableSequence[Tab]" = []
+        # Holds the index of the current tab
+        self._tab_idx = 0
+        # Add state for micro key-bindings
+        self.micro_state = MicroState()
+        # Load the terminal information system
+        self.term_info = TerminalInfo(self.input, self.output)
+        # Continue loading
+        self.pre_run_callables = [self.pre_run]
+        # Floats at the app level
+        self.floats: "list[Float]" = []
+        # If a dialog is showing
+        self.has_dialog = False
+        # Mapping of Containers to status field generating functions
+        self.container_statuses: "ContainerStatusDict" = {}
+
     def pre_run(self, app: "Application" = None) -> "None":
         """Called during the 'pre-run' stage of application loading."""
         # Blocks rendering, but allows input to be processed
@@ -138,46 +178,6 @@ class EuporieApp(Application):
 
         """
         return create_output()
-
-    def __init__(self, **kwargs: "Any") -> "None":
-        """Instantiates euporie specific application variables.
-
-        After euporie specific application variables are instantiated, the application
-        instance is initiated.
-
-        Args:
-            **kwargs: The key-word arguments for the :py:class:`Application`
-
-        """
-        # Initialise the application
-        super().__init__(
-            # input=self.input,
-            output=self.load_output(),
-            **kwargs,
-        )
-        # Use a custom vt100 parser to allow querying the terminal
-        self.using_vt100 = not is_windows()
-        if self.using_vt100:
-            self.input = cast("Vt100Input", self.input)
-            self.input.vt100_parser = Vt100Parser(
-                self.input.vt100_parser.feed_key_callback
-            )
-        # Contains the opened tab containers
-        self.tabs: "MutableSequence[Tab]" = []
-        # Holds the index of the current tab
-        self._tab_idx = 0
-        # Add state for micro key-bindings
-        self.micro_state = MicroState()
-        # Load the terminal information system
-        self.term_info = TerminalInfo(self.input, self.output)
-        # Continue loading
-        self.pre_run_callables = [self.pre_run]
-        # Floats at the app level
-        self.floats: "list[Float]" = []
-        # If a dialog is showing
-        self.has_dialog = False
-        # Mapping of Containers to status field generating functions
-        self.container_statuses: "ContainerStatusDict" = {}
 
     # This configures the logs for euporie
     setup_logs()

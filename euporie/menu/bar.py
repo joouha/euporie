@@ -37,16 +37,6 @@ log = logging.getLogger(__name__)
 class MenuContainer(PtKMenuContainer):
     """A container to hold the menubar and main application body."""
 
-    def statusbar_fields(
-        self,
-    ) -> "tuple[list[AnyFormattedText], list[AnyFormattedText]]":
-        """Return the description of the currently selected menu item."""
-        selected_item = self._get_menu(len(self.selected_menu) - 1)
-        if isinstance(selected_item, MenuItem):
-            return (["", selected_item.description], [])
-        else:
-            return (["", ""], [])
-
     def __init__(
         self,
         body: "AnyContainer",
@@ -79,6 +69,16 @@ class MenuContainer(PtKMenuContainer):
         ]
 
         get_app().container_statuses[self.window] = self.statusbar_fields
+
+    def statusbar_fields(
+        self,
+    ) -> "tuple[list[AnyFormattedText], list[AnyFormattedText]]":
+        """Return the description of the currently selected menu item."""
+        selected_item = self._get_menu(len(self.selected_menu) - 1)
+        if isinstance(selected_item, MenuItem):
+            return (["", selected_item.description], [])
+        else:
+            return (["", ""], [])
 
     def _get_menu_fragments(self) -> "StyleAndTextTuples":
 

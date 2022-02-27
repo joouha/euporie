@@ -303,6 +303,20 @@ class TerminalInfo:
     input: "Input"
     output: "Output"
 
+    def __init__(self, input_: "Input", output: "Output") -> "None":
+        """Instantiates the terminal information class."""
+        self.input = input_
+        self.output = output
+        self._queries: "list[TerminalQuery]" = []
+
+        self.foreground_color = self.register(ForegroundColor)
+        self.background_color = self.register(BackgroundColor)
+        self.pixel_dimensions = self.register(PixelDimensions)
+        self.sixel_graphics_status = self.register(SixelGraphicsStatus)
+        self.kitty_graphics_status = self.register(KittyGraphicsStatus)
+        self.iterm_graphics_status = self.register(ItermGraphicsStatus)
+        self.depth_of_color = self.register(DepthOfColor)
+
     def register(self, query: "Type[TerminalQuery]") -> "TerminalQuery":
         """Instantiates and registers a query's response with the input parser."""
         # Create an instance of this query
@@ -340,20 +354,6 @@ class TerminalInfo:
             )(query_inst._handle_response)
 
         return query_inst
-
-    def __init__(self, input_: "Input", output: "Output") -> "None":
-        """Instantiates the terminal information class."""
-        self.input = input_
-        self.output = output
-        self._queries: "list[TerminalQuery]" = []
-
-        self.foreground_color = self.register(ForegroundColor)
-        self.background_color = self.register(BackgroundColor)
-        self.pixel_dimensions = self.register(PixelDimensions)
-        self.sixel_graphics_status = self.register(SixelGraphicsStatus)
-        self.kitty_graphics_status = self.register(KittyGraphicsStatus)
-        self.iterm_graphics_status = self.register(ItermGraphicsStatus)
-        self.depth_of_color = self.register(DepthOfColor)
 
     def send_all(self) -> "None":
         """Sends the command for all queries."""

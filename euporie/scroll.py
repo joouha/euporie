@@ -273,16 +273,6 @@ class ScrollingContainer(Container):
             self.selected_index = index
         return self._selected_index
 
-    @selected_index.setter
-    def selected_index(self, new_index: "int") -> "None":
-        """Sets the currently selected child index.
-
-        Args:
-            new_index: The index of the child to select.
-
-        """
-        self._set_selected_index(new_index)
-
     def _set_selected_index(
         self, new_index: "int", force: "bool" = False, scroll: "bool" = True
     ) -> None:
@@ -303,6 +293,16 @@ class ScrollingContainer(Container):
                 app.layout.focus(child)
             # Track which child was selected
             self._selected_index = new_index
+
+    @selected_index.setter
+    def selected_index(self, new_index: "int") -> "None":
+        """Sets the currently selected child index.
+
+        Args:
+            new_index: The index of the child to select.
+
+        """
+        self._set_selected_index(new_index)
 
     def get_child_meta(self, index: "Optional[int]" = None) -> "ChildMeta":
         """Return a rendered instance of the child at the given index.

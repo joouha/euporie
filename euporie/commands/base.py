@@ -39,21 +39,6 @@ commands: "Dict[str, Command]" = {}
 class Command:
     """Wraps a function so it can be used as a key-binding or a menu item."""
 
-    def add_keys(self, keys: "Optional[AnyKeys]") -> "Command":
-        """Adds keyboard shortcuts to the current command."""
-        if keys is None:
-            keys = []
-        if not isinstance(keys, list):
-            keys = [keys]
-        for key in keys:
-            if isinstance(key, Keys):
-                self.keys.append((key,))
-            elif isinstance(key, tuple):
-                self.keys.append(tuple(_parse_key(k) for k in key))
-            else:
-                self.keys.append((_parse_key(key),))
-        return self
-
     def __init__(
         self,
         handler: "Callable[..., Optional[Awaitable[Any]]]",
@@ -124,6 +109,21 @@ class Command:
 
         self.selected_item = 0
         self.children: "Sequence[MenuItem]" = []
+
+    def add_keys(self, keys: "Optional[AnyKeys]") -> "Command":
+        """Adds keyboard shortcuts to the current command."""
+        if keys is None:
+            keys = []
+        if not isinstance(keys, list):
+            keys = [keys]
+        for key in keys:
+            if isinstance(key, Keys):
+                self.keys.append((key,))
+            elif isinstance(key, tuple):
+                self.keys.append(tuple(_parse_key(k) for k in key))
+            else:
+                self.keys.append((_parse_key(key),))
+        return self
 
     def run(self) -> "None":
         """Runs the command's handler."""

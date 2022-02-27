@@ -156,68 +156,6 @@ class CommandPalette:
     index: "int"
     matches: "list[_CommandMatch]"
 
-    def statusbar_fields(
-        self,
-    ) -> "StatusBarFields":
-        """Returns a list of statusbar field values shown then this tab is active."""
-        if self.matches:
-            return ([self.matches[self.index].command.description], [])
-        else:
-            return ([], [])
-
-    def select(self, n: "int", event: "KeyPressEvent" = None) -> "None":
-        """Change the index of the selected command.
-
-        Args:
-            n: The relative amount by which to change the selected index
-            event: Ignored
-
-        """
-        self.index += n
-        self.index = min(len(self.matches) - 1, max(0, self.index))
-
-    def text_changed(self, buffer: "Buffer") -> "None":
-        """Called when the input text changes: filters the command list."""
-        self.matches = []
-
-        # Lookahead regex to manage overlapping matches
-        regex = re.compile(
-            "(?=({0}))".format(".*?".join(map(re.escape, buffer.text))), re.IGNORECASE
-        )
-        for cmd in commands.values():
-            if not cmd.hidden():
-                matches = list(regex.finditer(cmd.title))
-                if matches:
-                    # Prefer the match closest to the left, then shortest.
-                    best = min(matches, key=lambda m: (len(m.group(1)), m.start()))
-                    self.matches.append(
-                        _CommandMatch(len(best.group(1)), best.start(), cmd)
-                    )
-        self.matches = sorted(self.matches, key=lambda m: (m.length, m.position))
-
-        # Ensure the selected index is within the list of matches
-        self.index = min(len(self.matches) - 1, max(0, self.index))
-
-    def hide(self, event: "KeyPressEvent" = None) -> "None":
-        """Hides the command palette and returns focus to what was focused before."""
-        self._visible = False
-        app = get_app()
-        if (
-            self.last_focused is not None
-            and self.last_focused in app.layout.find_all_controls()
-        ):
-            app.layout.focus(self.last_focused)
-        app.has_dialog = False
-
-    def accept(self, buffer: "Optional[Buffer]" = None) -> "bool":
-        """Called on :kbd:`enter`: runs the selected command."""
-        if self.matches:
-            self.hide()
-            self.matches[self.index].command.run()
-            return True
-        else:
-            return False
-
     def __init__(self) -> "None":
         """Instantiates a new command palette instance."""
         self.matches: "list[_CommandMatch]" = []
@@ -290,6 +228,68 @@ class CommandPalette:
         )
 
         get_app().container_statuses[self] = self.statusbar_fields
+
+    def statusbar_fields(
+        self,
+    ) -> "StatusBarFields":
+        """Returns a list of statusbar field values shown then this tab is active."""
+        if self.matches:
+            return ([self.matches[self.index].command.description], [])
+        else:
+            return ([], [])
+
+    def select(self, n: "int", event: "KeyPressEvent" = None) -> "None":
+        """Change the index of the selected command.
+
+        Args:
+            n: The relative amount by which to change the selected index
+            event: Ignored
+
+        """
+        self.index += n
+        self.index = min(len(self.matches) - 1, max(0, self.index))
+
+    def text_changed(self, buffer: "Buffer") -> "None":
+        """Called when the input text changes: filters the command list."""
+        self.matches = []
+
+        # Lookahead regex to manage overlapping matches
+        regex = re.compile(
+            "(?=({0}))".format(".*?".join(map(re.escape, buffer.text))), re.IGNORECASE
+        )
+        for cmd in commands.values():
+            if not cmd.hidden():
+                matches = list(regex.finditer(cmd.title))
+                if matches:
+                    # Prefer the match closest to the left, then shortest.
+                    best = min(matches, key=lambda m: (len(m.group(1)), m.start()))
+                    self.matches.append(
+                        _CommandMatch(len(best.group(1)), best.start(), cmd)
+                    )
+        self.matches = sorted(self.matches, key=lambda m: (m.length, m.position))
+
+        # Ensure the selected index is within the list of matches
+        self.index = min(len(self.matches) - 1, max(0, self.index))
+
+    def hide(self, event: "KeyPressEvent" = None) -> "None":
+        """Hides the command palette and returns focus to what was focused before."""
+        self._visible = False
+        app = get_app()
+        if (
+            self.last_focused is not None
+            and self.last_focused in app.layout.find_all_controls()
+        ):
+            app.layout.focus(self.last_focused)
+        app.has_dialog = False
+
+    def accept(self, buffer: "Optional[Buffer]" = None) -> "bool":
+        """Called on :kbd:`enter`: runs the selected command."""
+        if self.matches:
+            self.hide()
+            self.matches[self.index].command.run()
+            return True
+        else:
+            return False
 
     def show(self) -> "None":
         """Displays and focuses the command palette."""

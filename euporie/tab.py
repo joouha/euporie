@@ -26,15 +26,15 @@ class Tab(metaclass=ABCMeta):
 
     container: "_Split"
 
+    def __init__(self):
+        """Called when the tab is created."""
+        get_app().container_statuses[self] = self.statusbar_fields
+
     def statusbar_fields(
         self,
     ) -> "tuple[Sequence[AnyFormattedText], Sequence[AnyFormattedText]]":
         """Returns a list of statusbar field values shown then this tab is active."""
         return ([], [])
-
-    def __init__(self):
-        """Called when the tab is created."""
-        get_app().container_statuses[self] = self.statusbar_fields
 
     @property
     def title(self) -> "str":

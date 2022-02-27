@@ -211,10 +211,6 @@ class KernelNotebook(Notebook):
 
     kernel: "NotebookKernel"
 
-    @abstractmethod
-    def load_kernel(self) -> "None":
-        ...
-
     def __init__(
         self,
         path: "Path",
@@ -226,6 +222,10 @@ class KernelNotebook(Notebook):
         self.completer = KernelCompleter(self.kernel)
         self.suggester = KernelAutoSuggest(self.kernel)
         self.dirty = False
+
+    @abstractmethod
+    def load_kernel(self) -> "None":
+        ...
 
     def interrupt_kernel(self) -> "None":
         """Interrupt the current `Notebook`'s kernel."""

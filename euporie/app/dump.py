@@ -38,6 +38,13 @@ class DumpApp(EuporieApp):
         DumpKernelNotebook if config.run else DumpNotebook
     )
 
+    def __init__(self, **kwargs: "Any") -> "None":
+        """Create an app for dumping a prompt-toolkit layout."""
+        # Initialise the application
+        super().__init__(full_screen=False, **kwargs)
+        # We want the app to close when rendering is complete
+        self.after_render += self.pre_exit
+
     def pre_exit(self, app: "Application") -> "None":
         """Close the app after dumping, optionally piping output to a pager."""
         self.exit()
@@ -48,13 +55,6 @@ class DumpApp(EuporieApp):
             self.output_file.seek(0)
             data = self.output_file.read()
             pager(data)
-
-    def __init__(self, **kwargs: "Any") -> "None":
-        """Create an app for dumping a prompt-toolkit layout."""
-        # Initialise the application
-        super().__init__(full_screen=False, **kwargs)
-        # We want the app to close when rendering is complete
-        self.after_render += self.pre_exit
 
     def load_container(self) -> "FloatContainer":
         """Returns a container with all opened tabs."""
