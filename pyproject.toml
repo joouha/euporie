@@ -6,6 +6,7 @@ authors = ["Josiah Outram Halstead <josiah@halstead.email>"]
 license = "MIT"
 readme = "README.rst"
 homepage = "https://github.com/joouha/euporie"
+documentation = "https://euporie.readthedocs.io/en/latest"
 keywords = ["jupyter", "ipython", "markdown", "terminal", "notebook"]
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -15,7 +16,6 @@ classifiers = [
 ]
 
 [tool.poetry.urls]
-"Documentation" = "https://euporie.readthedocs.io/"
 "Changelog" = "https://euporie.readthedocs.io/en/latest/pages/changelog.html"
 "Bug Tracker" = "https://github.com/joouha/euporie/issues"
 
