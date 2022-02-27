@@ -14,6 +14,11 @@ classifiers = [
     "Topic :: Scientific/Engineering",
 ]
 
+[tool.poetry.urls]
+"Documentation" = "https://euporie.readthedocs.io/"
+"Changelog" = "https://euporie.readthedocs.io/en/latest/pages/changelog.html"
+"Bug Tracker" = "https://github.com/joouha/euporie/issues"
+
 [tool.poetry.dependencies]
 python = "^3.8"
 prompt-toolkit = "^3.0"
