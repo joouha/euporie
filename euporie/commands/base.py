@@ -127,21 +127,22 @@ class Command:
 
     def run(self) -> "None":
         """Runs the command's handler."""
-        sig = signature(self.handler)
+        if self.filter():
+            sig = signature(self.handler)
 
-        if isawaitable(self.handler):
-            task = cast("Callable[..., Awaitable[None]]", self.handler)()
-            get_app().create_background_task(task)
-        elif sig.parameters:
+            if isawaitable(self.handler):
+                task = cast("Callable[..., Awaitable[None]]", self.handler)()
+                get_app().create_background_task(task)
+            elif sig.parameters:
 
-            class _Event:
-                app = get_app()
-                current_buffer = app.layout.current_buffer
-                arg = 1
+                class _Event:
+                    app = get_app()
+                    current_buffer = app.layout.current_buffer
+                    arg = 1
 
-            self.handler(_Event)
-        else:
-            self.handler()
+                self.handler(_Event)
+            else:
+                self.handler()
 
     @property
     def key_handler(self) -> "KeyHandlerCallable":

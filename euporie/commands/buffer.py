@@ -125,28 +125,55 @@ def run_macro() -> None:
 
 add(
     name="backspace",
-    filter=~has_selection,
+    title="Delete previous character",
+    filter=buffer_has_focus & ~has_selection,
     save_before=if_no_repeat,
     group="micro-edit-mode",
 )(backward_delete_char)
-add(name="delete", filter=~has_selection)(delete_char)
-add(filter=buffer_has_focus)(backward_kill_word)
+add(title="Delete character", name="delete", filter=buffer_has_focus & ~has_selection)(
+    delete_char
+)
+add(title="Delete previous word", filter=buffer_has_focus)(backward_kill_word)
 
 # Naavigation
 
-add(filter=buffer_has_focus, group="micro-edit-mode")(backward_word)
-add(filter=buffer_has_focus, group="micro-edit-mode")(forward_word)
-add(filter=buffer_has_focus, group="micro-edit-mode")(beginning_of_buffer)
-add(filter=buffer_has_focus, group="micro-edit-mode")(end_of_buffer)
+add(title="Move back one word", filter=buffer_has_focus, group="micro-edit-mode")(
+    backward_word
+)
+add(title="Move forward one word", filter=buffer_has_focus, group="micro-edit-mode")(
+    forward_word
+)
+add(
+    title="Move to the beginning of the input",
+    filter=buffer_has_focus,
+    group="micro-edit-mode",
+)(beginning_of_buffer)
+add(
+    title="Move to the end of the input",
+    filter=buffer_has_focus,
+    group="micro-edit-mode",
+)(end_of_buffer)
 
 add(filter=buffer_has_focus, group="micro-edit-mode")(scroll_backward)
 add(filter=buffer_has_focus, group="micro-edit-mode")(scroll_forward)
-add(filter=buffer_has_focus, group="micro-edit-mode")(scroll_half_page_down)
-add(filter=buffer_has_focus, group="micro-edit-mode")(scroll_half_page_up)
-add(filter=buffer_has_focus, group="micro-edit-mode")(scroll_one_line_down)
-add(filter=buffer_has_focus, group="micro-edit-mode")(scroll_one_line_up)
-add(filter=buffer_has_focus, group="micro-edit-mode")(scroll_page_down)
-add(filter=buffer_has_focus, group="micro-edit-mode")(scroll_page_up)
+add(title="Scroll down half a page", filter=buffer_has_focus, group="micro-edit-mode")(
+    scroll_half_page_down
+)
+add(title="Scroll up half a page", filter=buffer_has_focus, group="micro-edit-mode")(
+    scroll_half_page_up
+)
+add(title="Scroll down one line", filter=buffer_has_focus, group="micro-edit-mode")(
+    scroll_one_line_down
+)
+add(title="Scroll up one line", filter=buffer_has_focus, group="micro-edit-mode")(
+    scroll_one_line_up
+)
+add(title="Scroll one one page", filter=buffer_has_focus, group="micro-edit-mode")(
+    scroll_page_down
+)
+add(title="Scroll up one page", filter=buffer_has_focus, group="micro-edit-mode")(
+    scroll_page_up
+)
 
 
 @add(filter=buffer_has_focus, group="micro-edit-mode")
