@@ -57,7 +57,7 @@ from euporie.terminal import TerminalInfo, Vt100Parser
 
 if TYPE_CHECKING:
     from collections.abc import MutableSequence
-    from typing import Any, Callable, Optional, Type
+    from typing import Any, Callable, Dict, List, Optional, Tuple, Type
 
     from prompt_toolkit.filters import Filter
     from prompt_toolkit.formatted_text import AnyFormattedText
@@ -69,8 +69,8 @@ if TYPE_CHECKING:
     from euporie.notebook import TuiNotebook
     from euporie.terminal import TerminalQuery
 
-    StatusBarFields = tuple[list[AnyFormattedText], list[AnyFormattedText]]
-    ContainerStatusDict = dict[
+    StatusBarFields = Tuple[List[AnyFormattedText], List[AnyFormattedText]]
+    ContainerStatusDict = Dict[
         AnyContainer,
         Callable[..., StatusBarFields],
     ]
