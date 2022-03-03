@@ -207,6 +207,7 @@ class CommandPalette:
             and self.last_focused in app.layout.find_all_controls()
         ):
             app.layout.focus(self.last_focused)
+        app.has_dialog = False
 
     def accept(self, buffer: "Optional[Buffer]" = None) -> "bool":
         """Called on :kbd:`enter`: runs the selected command."""
@@ -297,6 +298,7 @@ class CommandPalette:
         app = get_app()
         self.last_focused = app.layout.current_control
         app.layout.focus(self.text_area)
+        app.has_dialog = True
 
     def toggle(self) -> "None":
         """Shows or hides the command palette."""
