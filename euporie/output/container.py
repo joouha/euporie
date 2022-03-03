@@ -199,6 +199,15 @@ class GraphicWindow(Window):
         self.content.hide()
 
 
+class OutputWindow(Window):
+    """A window sub-class which holds a reference to a graphic float."""
+
+    def __init__(self, *args: "Any", **kwargs: "Any") -> "None":
+        """Initialise the window, creating an attribute to hold a float reference."""
+        Window.__init__(self, *args, **kwargs)
+        self.graphic_float: "Optional[Float]" = None
+
+
 class CellOutput:
     """A container for rendered cell outputs."""
 
@@ -231,7 +240,7 @@ class CellOutput:
 
         """
         self.json = json
-        self.window = Window()
+        self.window = OutputWindow()
 
         metadata = json.get("metadata", {})
         fg_color = get_app().term_info.foreground_color.value
@@ -312,7 +321,7 @@ class CellOutput:
             )
         if self.graphic_float is not None:
             get_app().add_float(self.graphic_float)
-        # self.window.graphic_float = self.graphic_float
+        self.window.graphic_float = self.graphic_float
 
     def __pt_container__(self) -> "AnyContainer":
         """Return the content of this output."""
