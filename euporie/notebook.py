@@ -115,7 +115,9 @@ class Notebook(Tab, metaclass=ABCMeta):
             else:
                 # Pytype doesn't like this...
                 cells[cell_id] = self.cell_type(i, cell_json, self)  # type: ignore
-        # TODO - remove graphic floats from deleted cells at this point
+        # Clean up graphic floats from deleted cells
+        for cell in set(self._rendered_cells.values()) - set(cells.values()):
+            cell.remove_output_graphic_floats()
         self._rendered_cells = cells
         return list(self._rendered_cells.values())
 

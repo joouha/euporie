@@ -541,15 +541,18 @@ class Cell:
         self.state = "idle"
         self.trigger_refresh()
 
-    def clear_output(self) -> "None":
-        """Remove all outputs from the cell."""
-        # Clean up floats - TODO: refactor this
+    def remove_output_graphic_floats(self) -> "None":
+        """Unregisters the cell's output's graphic floats with the applications."""
         for output in self.output_box.children:
             if graphic_float := cast("CellOutput", output).graphic_float:
                 cast(
                     "OutputControl", cast("Window", graphic_float.content).content
                 ).hide()
                 get_app().remove_float(graphic_float)
+
+    def clear_output(self) -> "None":
+        """Remove all outputs from the cell."""
+        self.remove_output_graphic_floats()
         if "outputs" in self.json:
             del self.json["outputs"]
 
