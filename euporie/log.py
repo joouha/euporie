@@ -172,7 +172,9 @@ class LogView(Tab):
             record: The log record to add
 
         """
+        cp = self.text_area.buffer.cursor_position
         self.text_area.formatted_text += self.render(record)
+        self.text_area.buffer.cursor_position = cp
 
     def __init__(self) -> "None":
         """Builds the tab's contents.
