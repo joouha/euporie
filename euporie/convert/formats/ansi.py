@@ -240,7 +240,7 @@ def pil_to_ansi_py_timg(
     w, h = data.size
     if cols is not None:
         data = data.resize((cols, ceil(cols / w * h)))
-    bg = bg or get_app().term_info.background_color.value
+    bg = bg or get_app().color_palette["bg"][-1]
     if bg:
         data = set_background(data, bg)
     data = set_background(data, bg)

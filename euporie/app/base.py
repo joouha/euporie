@@ -364,16 +364,16 @@ class EuporieApp(Application):
                 "bg": self.term_info.background_color.value,
             },
         )
-        series = color_series(**base_colors, n=10)
+        self.color_palette = color_series(**base_colors, n=10)
 
         # Actually use default colors if in default mode
         # This is needed for transparent terminals and the like
         # We retain the detected colours as we still need them
-        series["fg"][-1] = series["fg"][0]
-        series["bg"][-1] = series["bg"][0]
+        self.color_palette["fg"][-1] = self.color_palette["fg"][0]
+        self.color_palette["bg"][-1] = self.color_palette["bg"][0]
         if config.color_scheme == "default":
-            series["fg"][0] = "default"
-            series["bg"][0] = "default"
+            self.color_palette["fg"][0] = "default"
+            self.color_palette["bg"][0] = "default"
 
         self.style_transformation = merge_style_transformations(
             [
@@ -388,60 +388,61 @@ class EuporieApp(Application):
             ]
         )
 
+        cp = self.color_palette
         style_dict = {
             # The default style is merged at this point so full styles can be
             # overridden. For example, this allows us to switch off the underline
             #  status of cursor-line.
             **dict(default_ui_style().style_rules),
-            "default": f"fg:{series['bg'][0]} bg:{series['bg'][0]}",
+            "default": f"fg:{cp['bg'][0]} bg:{cp['bg'][0]}",
             # Logo
             "logo": "fg:#ff0000",
             # Pattern
-            "pattern": f"fg:{config.background_color or series['bg'][1]}",
+            "pattern": f"fg:{config.background_color or cp['bg'][1]}",
             # Chrome
-            "chrome": f"fg:{series['bg'][1]} bg:{series['bg'][1]}",
+            "chrome": f"fg:{cp['bg'][1]} bg:{cp['bg'][1]}",
             # Statusbar
-            "status": f"fg:{series['fg'][1]} bg:{series['bg'][1]}",
-            "status.field": f"fg:{series['fg'][2]} bg:{series['bg'][2]}",
+            "status": f"fg:{cp['fg'][1]} bg:{cp['bg'][1]}",
+            "status.field": f"fg:{cp['fg'][2]} bg:{cp['bg'][2]}",
             # Menus & Menu bar
-            "menu-bar": f"fg:{series['fg'][1]} bg:{series['bg'][1]}",
-            "menu-bar.disabled-item": f"fg:{series['bg'][5]}",
+            "menu-bar": f"fg:{cp['fg'][1]} bg:{cp['bg'][1]}",
+            "menu-bar.disabled-item": f"fg:{cp['bg'][5]}",
             "menu-bar.selected-item": "reverse",
-            "menu-bar.shortcut": f"fg:{series['fg'][9]}",
+            "menu-bar.shortcut": f"fg:{cp['fg'][9]}",
             "menu-bar.selected-item menu-bar.shortcut": (
-                f"fg:{series['fg'][1]} bg:{series['bg'][5]}"
+                f"fg:{cp['fg'][1]} bg:{cp['bg'][5]}"
             ),
-            "menu-bar.disabled-item menu-bar.shortcut": f"fg:{series['bg'][5]}",
-            "menu": f"bg:{series['bg'][1]} fg:{series['fg'][1]}",
-            "menu-border": f"bg:{series['bg'][1]} fg:{series['fg'][9]}",
+            "menu-bar.disabled-item menu-bar.shortcut": f"fg:{cp['bg'][5]}",
+            "menu": f"bg:{cp['bg'][1]} fg:{cp['fg'][1]}",
+            "menu-border": f"bg:{cp['bg'][1]} fg:{cp['fg'][9]}",
             # Buffer
-            "line-number": f"fg:{series['fg'][1]} bg:{series['bg'][1]}",
+            "line-number": f"fg:{cp['fg'][1]} bg:{cp['bg'][1]}",
             "line-number.current": "bold orange",
-            "cursor-line": f"bg:{series['bg'][1]}",
+            "cursor-line": f"bg:{cp['bg'][1]}",
             # Cells
-            "cell.border": f"fg:{series['bg'][5]}",
+            "cell.border": f"fg:{cp['bg'][5]}",
             "cell.border.selected": "fg:#00afff",
             "cell.border.edit": "fg:#00ff00",
-            "cell.border.hidden": f"fg:{series['bg'][-1]} hidden",
+            "cell.border.hidden": f"fg:{cp['bg'][-1]} hidden",
             "cell.input": "fg:default bg:default",
             "cell.output": "fg:default bg:default",
             "cell.input.prompt": "fg:blue",
             "cell.output.prompt": "fg:red",
             # Scrollbars
-            "scrollbar": f"fg:{series['fg'][5]} bg:{series['bg'][5]}",
+            "scrollbar": f"fg:{cp['fg'][5]} bg:{cp['bg'][5]}",
             "scrollbar.background": "",
-            "scrollbar.button": f"fg:{series['fg'][5]} bg:{series['bg'][5]}",
+            "scrollbar.button": f"fg:{cp['fg'][5]} bg:{cp['bg'][5]}",
             "scrollbar.arrow": "",
             # Shadows
-            "shadow": f"bg:{series['bg'][9]}",
-            "cell.input shadow": f"bg:{series['bg'][9]}",
-            "cell.output shadow": f"bg:{series['bg'][9]}",
+            "shadow": f"bg:{cp['bg'][9]}",
+            "cell.input shadow": f"bg:{cp['bg'][9]}",
+            "cell.output shadow": f"bg:{cp['bg'][9]}",
             # Dialogs
-            "dialog.body": f"fg:{series['fg'][-1]} bg:{series['bg'][4]}",
-            "dialog.body text-area": f"fg:{series['fg'][-1]}",
-            "dialog.body scrollbar": f"fg:{series['fg'][5]} bg:{series['bg'][5]}",
-            "dialog.body scrollbar.button": f"bg:{series['fg'][5]}",
-            "dialog.body scrollbar.end": f"bg:{series['fg'][5]}",
+            "dialog.body": f"fg:{cp['fg'][-1]} bg:{cp['bg'][4]}",
+            "dialog.body text-area": f"fg:{cp['fg'][-1]}",
+            "dialog.body scrollbar": f"fg:{cp['fg'][5]} bg:{cp['bg'][5]}",
+            "dialog.body scrollbar.button": f"bg:{cp['fg'][5]}",
+            "dialog.body scrollbar.end": f"bg:{cp['fg'][5]}",
             # Horizontals rule
             "hr": "fg:#666666",
             # Completions menu
@@ -467,13 +468,13 @@ class EuporieApp(Application):
             "log.ref": "fg:grey",
             "log.date": "fg:#00875f",
             # Shortcuts
-            "shortcuts.group": f"bg:{series['bg'][8]} bold underline",
-            "shortcuts.row": f"bg:{series['bg'][0]} nobold",
-            "shortcuts.row alt": f"bg:{series['bg'][2]}",
+            "shortcuts.group": f"bg:{cp['bg'][8]} bold underline",
+            "shortcuts.row": f"bg:{cp['bg'][0]} nobold",
+            "shortcuts.row alt": f"bg:{cp['bg'][2]}",
             "shortcuts.row key": "bold",
             # Palette
-            "palette.item": f"fg:{series['fg'][1]} bg:{series['bg'][1]}",
-            "palette.item.alt": f"bg:{series['bg'][3]}",
+            "palette.item": f"fg:{cp['fg'][1]} bg:{cp['bg'][1]}",
+            "palette.item.alt": f"bg:{cp['bg'][3]}",
             "palette.item.selected": "fg:#ffffff bg:#0055ff",
         }
 

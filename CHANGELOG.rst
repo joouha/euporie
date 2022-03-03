@@ -6,6 +6,7 @@ Changelog
 Upcoming
 ********
 
+- Graphic background now follows theme color not terminal color
 - Add command palette (summoned with :kbd:`Ctrl+space`)
 - Add experimental support for terminal graphics from within tmux
 - Add support for displaying images using the `iTerm inline imagese protocol <https://iterm2.com/documentation-images.html>`_`
