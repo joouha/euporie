@@ -6,6 +6,7 @@ Changelog
 Upcoming
 ********
 
+- Obey the :envvar:`NO_COLOR` environment variable (`https://no-color.org/ <https://no-color.org/>`_)
 - Graphic background now follows theme color not terminal color
 - Add command palette (summoned with :kbd:`Ctrl+space`)
 - Add experimental support for terminal graphics from within tmux

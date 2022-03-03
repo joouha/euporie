@@ -285,11 +285,16 @@ class DepthOfColor(TerminalQuery):
     def __init__(self, output: "Output") -> "None":
         """Detect the terminal's colour support based on environment variables."""
         self._value: "Optional[ColorDepth]" = None
+        if os.environ.get("NO_COLOR", ""):
+            self._value = ColorDepth.DEPTH_1_BIT
+            return
         colorterm = os.environ.get("COLORTERM", "")
         if "truecolor" in colorterm or "24bit" in colorterm:
             self._value = ColorDepth.DEPTH_24_BIT
-        elif "256" in os.environ.get("TERM", ""):
+            return
+        if "256" in os.environ.get("TERM", ""):
             self._value = ColorDepth.DEPTH_8_BIT
+            return
 
 
 class TerminalInfo:
