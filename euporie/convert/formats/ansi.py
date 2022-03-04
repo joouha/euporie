@@ -107,6 +107,7 @@ def html_to_ansi_links(
 @register(
     from_="html",
     to="ansi",
+    weight=4,
 )
 def html_to_ansi_py_htmlparser(
     data: "str",

@@ -5,13 +5,13 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
+from PIL import Image  # type: ignore
+
 from euporie.convert.base import register
 from euporie.convert.util import have_modules
 
 if TYPE_CHECKING:
     from typing import Optional
-
-    from PIL import Image  # type: ignore
 
 
 log = logging.getLogger(__name__)

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from functools import partial
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, NamedTuple
 
 from prompt_toolkit.cache import FastDictCache, SimpleCache
 from prompt_toolkit.filters import to_filter
@@ -17,14 +17,23 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 
-convertors: "dict[str, dict[str, list[Callable]]]" = {}
+class Convertor(NamedTuple):
+    """Holds a conversion function and its weight."""
 
+    func: Callable
+    weight: int = 1
+
+
+convertors: "dict[str, dict[str, list[Convertor]]]" = {}
 
 _CONVERSION_CACHE: "SimpleCache" = SimpleCache(maxsize=20)
 
 
 def register(
-    from_: "Union[Iterable[str], str]", to: "str", filter_: "FilterOrBool" = True
+    from_: "Union[Iterable[str], str]",
+    to: "str",
+    filter_: "FilterOrBool" = True,
+    weight: "int" = 1,
 ) -> "Callable":
     """Adds a convertor to the centralized format conversion system."""
     if isinstance(from_, str):
@@ -37,7 +46,7 @@ def register(
             for from_format in from_:
                 if from_format not in convertors[to]:
                     convertors[to][from_format] = []
-                convertors[to][from_format].append(func)
+                convertors[to][from_format].append(Convertor(func=func, weight=weight))
         return func
 
     return decorator
@@ -57,7 +66,21 @@ def find_route(from_: "str", to: "str") -> "Optional[list]":
     find(from_, [to])
 
     if chains:
-        return sorted(chains, key=len)[0]
+        return sorted(
+            chains,
+            # Find chain with shortest weighted length
+            key=lambda chain: sum(
+                [
+                    min(
+                        [
+                            conv.weight
+                            for conv in convertors.get(step_b, {}).get(step_a, [])
+                        ]
+                    )
+                    for step_a, step_b in zip(chain, chain[1:])
+                ]
+            ),
+        )[0]
     else:
         return None
 
@@ -95,7 +118,12 @@ def convert(
         if route is None:
             raise NotImplementedError(f"Cannot convert from `{from_}` to `{to}`")
         for stage_a, stage_b in zip(route, route[1:]):
-            func = convertors[stage_b][stage_a][0]
+            # Find convertor with lowest weight
+            func = sorted(
+                convertors[stage_b][stage_a],
+                key=lambda x: x.weight,
+            )[0].func
+            func = convertors[stage_b][stage_a][0].func
             # Add intermediate steps to the cache
             data = _CONVERSION_CACHE.get(
                 (data_hash, from_, stage_b, cols, rows, fg, bg),
