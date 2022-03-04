@@ -37,3 +37,4 @@ euporie.output.container
 
       CellOutput
       GraphicWindow
+      OutputWindow

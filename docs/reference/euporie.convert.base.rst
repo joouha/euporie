@@ -26,3 +26,15 @@ euporie.convert.base
       convert
       find_route
       register
+
+
+
+
+
+   .. rubric:: Classes
+
+   .. autosummary::
+      :toctree:
+      :template: class.tpl.rst
+
+      Convertor

@@ -29,7 +29,6 @@ euporie.commands.notebook
       copy_cell
       cut_cell
       delete_cell
-      first_child
       interrupt_kernel
       next_child
       paste_cell
@@ -43,5 +42,6 @@ euporie.commands.notebook
       scroll_up_5_lines
       select_5th_next_cell
       select_5th_previous_cell
+      select_first_cell
       select_last_cell
       select_previous_cell

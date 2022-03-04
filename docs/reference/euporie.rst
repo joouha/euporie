@@ -33,6 +33,7 @@ euporie
       euporie.menu
       euporie.notebook
       euporie.output
+      euporie.palette
       euporie.scroll
       euporie.style
       euporie.suggest

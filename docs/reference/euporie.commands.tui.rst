@@ -33,5 +33,6 @@ euporie.commands.tui
       open_file
       previous_tab
       quit
+      show_command_palette
       view_documentation
       view_logs
