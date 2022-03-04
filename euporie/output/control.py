@@ -208,14 +208,13 @@ class SixelGraphicControl(OutputControl):
                 split_lines(
                     to_formatted_text(
                         [
-                            ("", "\n".join([" " * width] * (height))),
+                            ("", "\n".join([" " * width] * (height))[:-1]),
                             (
                                 "[ZeroWidthEscape]",
                                 tmuxify(
-                                    f"\x1b[s\x1b[{height-1}A\x1b[{width}D{cmd}\x1b[u"
+                                    f"\x1b[s\x1b[{height-1}A\x1b[{width-1}D{cmd}\x1b[u"
                                 ),
                             ),
-                            ("", "\n"),
                         ]
                     )
                 )
