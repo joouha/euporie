@@ -209,12 +209,13 @@ class Cell:
     Contains a transparent clickable overlay, which is not displayed when the cell is focused.
     """
 
-    container: "FloatContainer"
-
     @property
     def focused(self) -> "bool":
         """Determine if the cell currently has focus."""
-        return get_app().layout.has_focus(self.container)
+        if self.container is not None:
+            return get_app().layout.has_focus(self.container)
+        else:
+            return False
 
     def border_style(self) -> "str":
         """Determines the style of the cell borders, based on the cell state."""
@@ -224,10 +225,19 @@ class Cell:
                     return "class:cell.border.edit"
                 else:
                     return "class:cell.border.selected"
-        if config.show_cell_borders:
-            return "class:cell.border"
-        else:
-            return "class:cell.border.hidden"
+        return "class:cell.border"
+
+    def border_char(self, name: "str") -> "Callable[..., str]":
+        """Returns a function  which returns the cell border character to display."""
+        border_char = getattr(Border, name.upper())
+
+        def _inner() -> "str":
+            if config.show_cell_borders or self.focused:
+                return border_char
+            else:
+                return Border.NONE
+
+        return _inner
 
     @property
     def cell_type(self) -> "str":
@@ -305,7 +315,7 @@ class Cell:
             notebook: The notebook instance this cell belongs to
 
         """
-        self.container: "Container"
+        self.container: "Container" = Window()
 
         self.index = index
         self.json = json
@@ -349,14 +359,15 @@ class Cell:
         self.input_box = CellInputTextArea(self)
 
         ft = FormattedTextControl(
-            Border.TOP_LEFT,
+            self.border_char("TOP_LEFT"),
             focusable=True,
             show_cursor=False,
         )
-        fill = partial(Window, style=self.border_style)
         self.control = Window(
             ft, width=1, height=0, style=self.border_style, always_hide_cursor=True
         )
+
+        fill = partial(Window, style=self.border_style)
 
         # Create textbox for standard input
         def _send_input(buf: "Buffer") -> "bool":
@@ -380,23 +391,25 @@ class Cell:
                 self.control,
                 ConditionalContainer(
                     content=fill(
-                        char=Border.HORIZONTAL, width=lambda: len(self.prompt), height=1
+                        char=self.border_char("horizontal"),
+                        width=lambda: len(self.prompt),
+                        height=1,
                     ),
                     filter=self.show_prompt,
                 ),
                 ConditionalContainer(
-                    content=fill(width=1, height=1, char=Border.SPLIT_TOP),
+                    content=fill(width=1, height=1, char=self.border_char("SPLIT_TOP")),
                     filter=self.show_prompt,
                 ),
-                fill(char=Border.HORIZONTAL, height=1),
-                fill(width=1, height=1, char=Border.TOP_RIGHT),
+                fill(char=self.border_char("HORIZONTAL"), height=1),
+                fill(width=1, height=1, char=self.border_char("TOP_RIGHT")),
             ],
             height=1,
         )
         input_row = ConditionalContainer(
             VSplit(
                 [
-                    fill(width=1, char=Border.VERTICAL),
+                    fill(width=1, char=self.border_char("VERTICAL")),
                     ConditionalContainer(
                         content=Window(
                             FormattedTextControl(
@@ -408,11 +421,11 @@ class Cell:
                         filter=self.show_prompt,
                     ),
                     ConditionalContainer(
-                        content=fill(width=1, char=Border.VERTICAL),
+                        content=fill(width=1, char=self.border_char("VERTICAL")),
                         filter=self.show_prompt,
                     ),
                     HSplit([self.input_box, self.search_control]),
-                    fill(width=1, char=Border.VERTICAL),
+                    fill(width=1, char=self.border_char("VERTICAL")),
                 ],
             ),
             filter=self.show_input,
@@ -420,19 +433,20 @@ class Cell:
         middle_line = ConditionalContainer(
             content=VSplit(
                 [
-                    fill(width=1, height=1, char=Border.SPLIT_LEFT),
+                    fill(width=1, height=1, char=self.border_char("SPLIT_LEFT")),
                     ConditionalContainer(
                         content=fill(
-                            char=Border.HORIZONTAL, width=lambda: len(self.prompt)
+                            char=self.border_char("HORIZONTAL"),
+                            width=lambda: len(self.prompt),
                         ),
                         filter=self.show_prompt,
                     ),
                     ConditionalContainer(
-                        content=fill(width=1, height=1, char=Border.CROSS),
+                        content=fill(width=1, height=1, char=self.border_char("CROSS")),
                         filter=self.show_prompt,
                     ),
-                    fill(char=Border.HORIZONTAL),
-                    fill(width=1, height=1, char=Border.SPLIT_RIGHT),
+                    fill(char=self.border_char("HORIZONTAL")),
+                    fill(width=1, height=1, char=self.border_char("SPLIT_RIGHT")),
                 ],
                 height=1,
             ),
@@ -441,7 +455,7 @@ class Cell:
         output_row = ConditionalContainer(
             VSplit(
                 [
-                    fill(width=1, char=Border.VERTICAL),
+                    fill(width=1, char=self.border_char("VERTICAL")),
                     ConditionalContainer(
                         content=Window(
                             FormattedTextControl(
@@ -456,7 +470,7 @@ class Cell:
                         fill(width=1, char=" "), filter=~self.show_prompt
                     ),
                     ConditionalContainer(
-                        content=fill(width=1, char=Border.VERTICAL),
+                        content=fill(width=1, char=self.border_char("VERTICAL")),
                         filter=self.show_prompt,
                     ),
                     HSplit(
@@ -471,26 +485,29 @@ class Cell:
                     ConditionalContainer(
                         fill(width=1, char=" "), filter=~self.show_prompt
                     ),
-                    fill(width=1, char=Border.VERTICAL),
+                    fill(width=1, char=self.border_char("VERTICAL")),
                 ],
             ),
             filter=self.show_output | self.asking_input,
         )
         bottom_border = VSplit(
             [
-                fill(width=1, height=1, char=Border.BOTTOM_LEFT),
+                fill(width=1, height=1, char=self.border_char("BOTTOM_LEFT")),
                 ConditionalContainer(
                     content=fill(
-                        char=Border.HORIZONTAL, width=lambda: len(self.prompt)
+                        char=self.border_char("HORIZONTAL"),
+                        width=lambda: len(self.prompt),
                     ),
                     filter=self.show_prompt,
                 ),
                 ConditionalContainer(
-                    content=fill(width=1, height=1, char=Border.SPLIT_BOTTOM),
+                    content=fill(
+                        width=1, height=1, char=self.border_char("SPLIT_BOTTOM")
+                    ),
                     filter=self.show_prompt,
                 ),
-                fill(char=Border.HORIZONTAL),
-                fill(width=1, height=1, char=Border.BOTTOM_RIGHT),
+                fill(char=self.border_char("HORIZONTAL")),
+                fill(width=1, height=1, char=self.border_char("BOTTOM_RIGHT")),
             ],
             height=1,
         )
@@ -510,7 +527,7 @@ class Cell:
                     content=ConditionalContainer(
                         ClickArea(
                             self,
-                            Border.TOP_LEFT,
+                            self.border_char("TOP_LEFT"),
                             style=self.border_style,
                         ),
                         filter=~self.is_focused,

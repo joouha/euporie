@@ -16,6 +16,7 @@ __all__ = ["SquareBorder", "RoundBorder", "BorderLine", "Pattern"]
 class SquareBorder(PtkBorder):
     """Box drawing characters, including characters for splits."""
 
+    NONE = " "
     SPLIT_BOTTOM = "┴"
     SPLIT_TOP = "┬"
     SPLIT_LEFT = "├"
