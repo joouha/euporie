@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from functools import lru_cache
 from pathlib import Path
 from typing import TYPE_CHECKING, cast
 
@@ -398,7 +397,6 @@ class TuiApp(EuporieApp):
         )
 
     @staticmethod
-    @lru_cache
     def _kb_info() -> "Generator":
         from euporie.commands.format import format_command_attrs
 
@@ -423,8 +421,8 @@ class TuiApp(EuporieApp):
                         key_str = key.strip().rjust(len(key))
                         title_str = rec["title"] if j == 0 else " " * len(rec["title"])
                         style = "class:shortcuts.row" + (" class:alt" if i % 2 else "")
-                        yield (style, f" {key_str} ")
-                        yield (style + " class:key", f" {title_str} \n")
+                        yield (style + " class:key", f" {key_str} ")
+                        yield (style, f" {title_str} \n")
 
     def help_keys(self) -> None:
         """Displays details of registered key-bindings in a dialog."""
