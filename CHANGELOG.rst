@@ -11,7 +11,7 @@ All notable changes to this project will be documented in this file.
 Added
 =====
 
-- Inspection pane for showing contextual help
+- Inspection pane for showing contextual help (summon with :kbd:`Shift+Tab` in a code cell)
 - Add ability to use :py:mod:`isort` and :py:mod:`ssort` when formatting code cells
 
 Fixed
@@ -31,7 +31,7 @@ Added
 - Graphic background now follows theme color not terminal color
 - Add command palette (summoned with :kbd:`Ctrl+space`)
 - Add experimental support for terminal graphics from within tmux
-- Add support for displaying images using the `iTerm inline imagese protocol <https://iterm2.com/documentation-images.html>`_`
+- Add support for displaying images using the `iTerm inline images protocol <https://iterm2.com/documentation-images.html>`_
 - New terminal graphic rendering system to work with new scrolling method
 - Allow displaying pager outputs (e.g. when using ``print??`` ipython syntax)
 - Display PDF outputs
