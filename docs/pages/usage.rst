@@ -18,9 +18,13 @@ Additional command line flags are described when running ``euporie --help``, the
                  [--run | --no-run] [--tmux-graphics | --no-tmux-graphics]
                  [--edit-mode {micro,emacs,vi}] [--tab-size int]
                  [--run-after-external-edit bool]
+                 [--format-black | --no-format-black]
+                 [--format-isort | --no-format-isort]
+                 [--format-ssort | --no-format-ssort]
                  [--autoformat | --no-autoformat]
                  [--autocomplete | --no-autocomplete]
-                 [--autosuggest | --no-autosuggest] [--expand | --no-expand]
+                 [--autosuggest | --no-autosuggest]
+                 [--autoinspect | --no-autoinspect] [--expand | --no-expand]
                  [--max-notebook-width int]
                  [--show-status-bar | --no-show-status-bar]
                  [--color-scheme {default,inverse,light,dark}]
@@ -51,12 +55,20 @@ Additional command line flags are described when running ``euporie --help``, the
     --tab-size int        Spaces per indentation level
     --run-after-external-edit bool
                           Run cells after editing externally
+    --format-black, --no-format-black
+                          Use black when re-formatting code cells
+    --format-isort, --no-format-isort
+                          Use isort when re-formatting code cells
+    --format-ssort, --no-format-ssort
+                          Use ssort when re-formatting code cells
     --autoformat, --no-autoformat
                           Automatically re-format code cells when run
     --autocomplete, --no-autocomplete
                           Provide completions suggestions automatically
     --autosuggest, --no-autosuggest
                           Provide line completion suggestions
+    --autoinspect, --no-autoinspect
+                          Display contextual help automatically
     --expand, --no-expand
                           Use the full width to display notebooks
     --max-notebook-width int

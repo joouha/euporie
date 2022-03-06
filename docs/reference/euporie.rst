@@ -25,6 +25,7 @@ euporie
       euporie.containers
       euporie.convert
       euporie.filters
+      euporie.format
       euporie.kernel
       euporie.key_binding
       euporie.keys

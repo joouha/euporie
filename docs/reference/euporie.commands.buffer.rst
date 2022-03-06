@@ -50,6 +50,7 @@ euporie.commands.buffer
       replace_selection
       run_macro
       select_all
+      show_contextual_help
       start_macro
       start_selection
       toggle_case

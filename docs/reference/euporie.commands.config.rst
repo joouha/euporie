@@ -25,7 +25,11 @@ euporie.commands.config
 
       autocomplete
       autoformat
+      autoinspect
       autosuggest
+      format_black
+      format_isort
+      format_ssort
       run_after_external_edit
       set_edit_mode
       show_cell_borders
