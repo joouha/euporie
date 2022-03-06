@@ -8,9 +8,12 @@ from typing import TYPE_CHECKING
 
 from prompt_toolkit.cache import SimpleCache
 from prompt_toolkit.data_structures import Point
+from prompt_toolkit.filters import to_filter
 from prompt_toolkit.formatted_text.base import to_formatted_text
 from prompt_toolkit.formatted_text.utils import split_lines
 from prompt_toolkit.layout.controls import GetLinePrefixCallable, UIContent, UIControl
+from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
+from prompt_toolkit.utils import Event
 
 from euporie.app.current import get_tui_app as get_app
 from euporie.convert.base import convert
@@ -18,9 +21,11 @@ from euporie.terminal import tmuxify
 from euporie.text import ANSI
 
 if TYPE_CHECKING:
-    from typing import Any, Callable, Optional
+    from typing import Any, Callable, Iterable, Optional
 
+    from prompt_toolkit.filters import FilterOrBool
     from prompt_toolkit.formatted_text import StyleAndTextTuples
+    from prompt_toolkit.key_binding.key_bindings import NotImplementedOrNone
 
 __all__ = [
     "AnsiControl",
@@ -43,6 +48,8 @@ class OutputControl(UIControl):
         fg_color: "Optional[str]" = None,
         bg_color: "Optional[str]" = None,
         sizing_func: "Optional[Callable]" = None,
+        focusable: "FilterOrBool" = False,
+        focus_on_click: "FilterOrBool" = False,
     ) -> "None":
         """Creates a new data formatter control.
 
@@ -53,12 +60,20 @@ class OutputControl(UIControl):
             bg_color: The background colour to use when renderin this output
             sizing_func: Function which returns the maximum width and aspect ratio of
                 the output
+            focusable: Whether the control can be focused
+            focus_on_click: Whether to focus the control when clicked
 
         """
         self.data = data
         self.format_ = format_
         self.fg_color = fg_color
         self.bg_color = bg_color
+        self.focusable = to_filter(focusable)
+        self.focus_on_click = to_filter(focus_on_click)
+
+        self.on_cursor_position_changed = Event(self)
+        self._cursor_position = Point(x=0, y=0)
+        self.dy = 0
 
         self.sizing_func = sizing_func
         self.sized = False
@@ -68,6 +83,33 @@ class OutputControl(UIControl):
         self.rendered_lines: "list[StyleAndTextTuples]" = []
         self._format_cache: SimpleCache = SimpleCache(maxsize=50)
         self._content_cache: SimpleCache = SimpleCache(maxsize=50)
+
+    @property
+    def cursor_position(self) -> "Point":
+        """Get the cursor position."""
+        return self._cursor_position
+
+    @cursor_position.setter
+    def cursor_position(self, value: "Point") -> "None":
+        """Set the cursor position."""
+        changed = self._cursor_position != value
+        self._cursor_position = value
+        if changed:
+            self.on_cursor_position_changed.fire()
+
+    def move_cursor_down(self) -> "None":
+        """Moves the cursor down one line."""
+        x, y = self.cursor_position
+        self.cursor_position = Point(x=x, y=y + 1)
+
+    def move_cursor_up(self) -> "None":
+        """Moves the cursor up one line."""
+        x, y = self.cursor_position
+        self.cursor_position = Point(x=x, y=max(0, y - 1))
+
+    def is_focusable(self) -> "bool":
+        """Determines if the current control is focusable."""
+        return self.focusable()
 
     def size(self) -> "None":
         """Lazily load the maximum width and apect ratio of the output."""
@@ -135,25 +177,45 @@ class OutputControl(UIControl):
         cols = min(self.max_cols, width) if self.max_cols else width
         rows = ceil(cols * self.aspect) if self.aspect else height
 
-        def get_content() -> "Optional[UIContent]":
+        def get_content() -> "dict[str, Any]":
             rendered_lines = self.get_rendered_lines(cols, rows)
             self.rendered_lines = rendered_lines[:]
             line_count = len(rendered_lines)
 
             def get_line(i: "int") -> "StyleAndTextTuples":
                 # Return blank lines if the renderer expects more content than we have
-                if i > line_count - 1:
-                    return []
-                else:
-                    return rendered_lines[i]
+                line = []
+                if i < line_count:
+                    line += rendered_lines[i]
+                # Add a space at the end, because that is a possible cursor position.
+                # This is what PTK does, and fixes a nasty bug which took me ages to
+                # track down the source of where scrolling would stop working when the
+                # cursor was on an empty line.
+                line += [("", " ")]
+                return line
 
-            return UIContent(
-                get_line=get_line,
-                line_count=line_count,
-                menu_position=Point(0, 0),
-            )
+            return {
+                "get_line": get_line,
+                "line_count": line_count,
+                "menu_position": Point(0, 0),
+            }
 
-        return self._content_cache.get((width,), get_content)
+        return UIContent(
+            cursor_position=self.cursor_position,
+            **self._content_cache.get((width,), get_content),
+        )
+
+    def mouse_handler(self, mouse_event: "MouseEvent") -> "NotImplementedOrNone":
+        """Mouse handler for this control."""
+        if self.focus_on_click() and mouse_event.event_type == MouseEventType.MOUSE_UP:
+            get_app().layout.current_control = self
+            return None
+        return NotImplemented
+
+    def get_invalidate_events(self) -> "Iterable[Event[object]]":
+        """Return the Window invalidate events."""
+        # Whenever the curosr position changes, the UI has to be updated.
+        yield self.on_cursor_position_changed
 
 
 class AnsiControl(OutputControl):

@@ -299,6 +299,19 @@ CONFIG_PARAMS: "dict[str, dict]" = {
             Whether to automatically suggestion line content while typing in code cells.
         """,
     },
+    "autoinspect": {
+        "flags_": ["--autoinspect"],
+        "action": BooleanOptionalAction,
+        "type": bool,
+        "help": "Display contextual help automatically",
+        "schema_": {
+            "type": "boolean",
+            "default": False,
+        },
+        "description_": """
+            Whether to automatically display contextual help when navigating through code cells.
+        """,
+    },
     "expand": {
         "flags_": ["--expand"],
         "action": BooleanOptionalAction,

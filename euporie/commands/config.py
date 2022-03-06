@@ -125,6 +125,16 @@ def autosuggest() -> "None":
 
 
 @add(
+    title="Automatic contextual help",
+    group="config",
+    toggled=Condition(lambda: bool(config.autoinspect)),
+)
+def autoinspect() -> "None":
+    """Toggle whether to automatically show contextual help when navigating code cells."""
+    config.toggle("autoinspect")
+
+
+@add(
     title="Run cell after external edit",
     group="config",
     toggled=Condition(lambda: bool(config.run_after_external_edit)),

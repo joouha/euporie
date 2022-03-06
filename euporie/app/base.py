@@ -145,14 +145,14 @@ class EuporieApp(Application):
                 if self.using_vt100:
                     self.term_info.send_all()
                     await asyncio.sleep(0.1)
-                # Open any files we need to
-                self.open_files()
                 # Load the colour depth of the renderer
                 self._color_depth = self.term_info.depth_of_color.value
-                # Load the layout
-                self.layout = Layout(self.load_container())
                 # Set the application's style
                 self.update_style()
+                # Load the layout
+                self.layout = Layout(self.load_container())
+                # Open any files we need to
+                self.open_files()
                 # Run any additional steps
                 self.post_load()
                 # Resume rendering
@@ -476,6 +476,11 @@ class EuporieApp(Application):
             "palette.item": f"fg:{cp['fg'][1]} bg:{cp['bg'][1]}",
             "palette.item.alt": f"bg:{cp['bg'][3]}",
             "palette.item.selected": "fg:#ffffff bg:#0055ff",
+            # Pager
+            "pager.border": f"fg:{cp['bg'][9]}",
+            "pager scrollbar": f"fg:{cp['fg'][5]} bg:{cp['bg'][5]}",
+            "pager scrollbar.button": f"bg:{cp['fg'][5]}",
+            "pager scrollbar.end": f"bg:{cp['fg'][5]}",
         }
 
         # Using a dynamic style has serious performance issues, so instead we update

@@ -21,7 +21,7 @@ from euporie.config import config
 if TYPE_CHECKING:
     from typing import Any, Generator
 
-    from prompt_toolkit.formatted_text import StyleAndTextTuples
+    from prompt_toolkit.formatted_text import AnyFormattedText, StyleAndTextTuples
     from prompt_toolkit.layout.processors import TransformationInput
 
 __all__ = ["FormatTextProcessor", "FormattedTextArea", "ANSI"]
@@ -39,6 +39,7 @@ class FormatTextProcessor(Processor):
             formatted_text: The text in a buffer but with formatting applied.
 
         """
+        self.formatted_lines: "list[StyleAndTextTuples]" = []
         self.formatted_text = formatted_text
         super().__init__()
 
@@ -46,7 +47,7 @@ class FormatTextProcessor(Processor):
         self, transformation_input: "TransformationInput"
     ) -> "Transformation":
         """Apply text formatting to a line in a buffer."""
-        if not hasattr(self, "formatted_lines"):
+        if not self.formatted_lines:
             self.formatted_lines = list(split_lines(self.formatted_text))
         lineno = transformation_input.lineno
         max_lineno = len(self.formatted_lines) - 1
@@ -59,8 +60,14 @@ class FormatTextProcessor(Processor):
 class FormattedTextArea(TextArea):
     """Applies formatted text to a TextArea."""
 
+    _formatted_text: "AnyFormattedText"
+
+    def _set_formatted_text(self, value: "AnyFormattedText") -> None:
+        self._formatted_text = value
+        self.text = fragment_list_to_text(self.formatted_text)
+
     def __init__(
-        self, formatted_text: "StyleAndTextTuples", *args: "Any", **kwargs: "Any"
+        self, formatted_text: "AnyFormattedText", *args: "Any", **kwargs: "Any"
     ):
         """Initialise a `FormattedTextArea` instance.
 
@@ -70,6 +77,7 @@ class FormattedTextArea(TextArea):
             **kwargs: Key-word arguments to pass to `prompt_toolkit.widgets.TextArea`.
 
         """
+        self._formatted_text = formatted_text
         input_processors = kwargs.pop("input_processors", [])
         input_processors.append(DynamicProcessor(self.get_processor))
         # The following is not type checked due to a currently open mypy bug
@@ -80,22 +88,26 @@ class FormattedTextArea(TextArea):
             **kwargs,
         )  # type: ignore
         # Set the formatted text to display
-        self.formatted_text: "StyleAndTextTuples" = formatted_text
         for margin in self.window.right_margins:
             if isinstance(margin, ScrollbarMargin):
                 margin.up_arrow_symbol = "▲"
                 margin.down_arrow_symbol = "▼"
 
+        self._set_formatted_text(formatted_text)
+
     @property
     def formatted_text(self) -> "StyleAndTextTuples":
         """The formatted text."""
-        return self._formatted_text
+        ft = to_formatted_text(self._formatted_text)
+        text = fragment_list_to_text(ft)
+        if self.text != text:
+            self.text = text
+        return ft
 
     @formatted_text.setter
-    def formatted_text(self, value: "StyleAndTextTuples") -> None:
+    def formatted_text(self, value: "AnyFormattedText") -> None:
         """Sets the formatted text."""
-        self._formatted_text = to_formatted_text(value)
-        self.text = fragment_list_to_text(value)
+        self._set_formatted_text(value)
 
     def get_processor(self) -> "FormatTextProcessor":
         """Generate a processor for the formatted text."""

@@ -554,7 +554,9 @@ def indent_lines(event: "KeyPressEvent") -> "None":
     group="micro-edit-mode",
 )
 @add(
-    filter=buffer_has_focus & (cursor_in_leading_ws | has_selection),
+    filter=buffer_has_focus
+    & (cursor_in_leading_ws | has_selection)
+    & ~cursor_at_start_of_line,
     group="micro-edit-mode",
 )
 def unindent_lines(event: "KeyPressEvent") -> "None":
@@ -701,3 +703,15 @@ def cancel_selection(event: "KeyPressEvent") -> "None":
     # we then process the cursor movement
     key_press = event.key_sequence[0]
     event.key_processor.feed(key_press, first=True)
+
+
+@add(
+    keys="s-tab",
+    filter=cell_is_code & buffer_has_focus & ~has_selection,
+    group="micro-edit-mode",
+)
+def show_contextual_help(event: "KeyPressEvent") -> "None":
+    """Displays contextual help."""
+    cell = get_app().cell
+    if cell is not None:
+        cell.inspect()

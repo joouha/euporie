@@ -729,6 +729,59 @@ class NotebookKernel:
             wait=True,
         )
 
+    async def inspect_(
+        self, code: "str", cursor_pos: "int", detail_level: "int" = 0
+    ) -> "dict[str, Any]":
+        """Retrieve introspection string from the kernel asynchronously."""
+        result: "dict[str, Any]" = {}
+
+        if not self.kc:
+            return result
+
+        msg_id = self.kc.inspect(code, cursor_pos=cursor_pos, detail_level=detail_level)
+
+        async def process_introspection_shell_rsp() -> "None":
+            """Process resposnes on the shell channel."""
+            nonlocal result
+            async for rsp in self.await_shell_rsps(msg_id):
+                content = rsp.get("content", {})
+                status = content.get("status", "")
+                if status == "ok":
+                    if content.get("found", False):
+                        result = content
+
+        await asyncio.gather(
+            process_introspection_shell_rsp(),
+            self.process_default_iopub_rsp(msg_id),
+            return_exceptions=True,
+        )
+        return result
+
+    def inspect(
+        self,
+        code: "str",
+        cursor_pos: "int",
+        callback: "Callable[[dict[str, Any]], None]" = None,
+    ) -> "str":
+        """Request code inspection from the kernel.
+
+        Args:
+            code: The code string to retrieve completions for
+            cursor_pos: The position of the cursor in the code string
+            callback: A function to run when the inspection result arrives. The result
+                is passed as an argument.
+
+        Returns:
+            A string containing useful information about the code at the current cursor
+            position
+
+        """
+        return self._aodo(
+            self.inspect_(code, cursor_pos),
+            wait=False,
+            callback=callback,
+        )
+
     def interrupt(self) -> "None":
         """Interrupt the kernel.
 

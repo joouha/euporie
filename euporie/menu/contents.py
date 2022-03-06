@@ -94,6 +94,7 @@ def load_menu_items() -> "list[MenuItem]":
                 ),
                 get("autocomplete").menu,
                 get("autosuggest").menu,
+                get("autoinspect").menu,
                 get("run-after-external-edit").menu,
             ],
         ),

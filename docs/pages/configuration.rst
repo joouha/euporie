@@ -252,6 +252,16 @@ All available configuration options are listed below:
 
    Whether to automatically suggestion line content while typing in code cells.
 
+.. option:: autoinspect
+
+:flags: :option:`--autoinspect`
+:environment variable: :envvar:`EUPORIE_AUTOINSPECT`
+:default: ``False``
+:type: :keyword:`boolean`
+:description: Display contextual help automatically
+
+   Whether to automatically display contextual help when navigating through code cells.
+
 .. option:: expand
 
 :flags: :option:`--expand`

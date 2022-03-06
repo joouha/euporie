@@ -25,7 +25,6 @@ from prompt_toolkit.layout.margins import ConditionalMargin, NumberedMargin
 from prompt_toolkit.layout.processors import BeforeInput, ConditionalProcessor
 from prompt_toolkit.lexers import DynamicLexer, PygmentsLexer, SimpleLexer
 from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
-from prompt_toolkit.utils import Event
 from prompt_toolkit.widgets import Frame, SearchToolbar, TextArea
 from pygments.lexers import get_lexer_by_name  # type: ignore
 
@@ -113,7 +112,8 @@ class CellInputTextArea(TextArea):
         super().__init__(*args, **kwargs)
 
         self.buffer.tempfile_suffix = self.cell.nb.lang_file_ext
-        self.buffer.on_text_changed = Event(self.buffer, self.text_changed)
+        self.buffer.on_text_changed += self.on_text_changed
+        self.buffer.on_cursor_position_changed += self.on_cursor_position_changed
 
         # Replace the autosuggest processor
         # Skip type checking as PT should use "("Optional[Sequence[Processor]]"
@@ -136,10 +136,18 @@ class CellInputTextArea(TextArea):
     # TODO - Check for non-shift-mode selection and change it to shift mode
     # buffer.on_cursor_position_changed -> Event
 
-    def text_changed(self, buf: "Buffer") -> "None":
+    def on_text_changed(self, buf: "Buffer") -> "None":
         """Update cell json when the input buffer has been edited."""
         self.cell._set_input(buf.text)
         self.cell.nb.dirty = True
+
+    def on_cursor_position_changed(self, buf: "Buffer") -> "None":
+        """Respond to cursor movements."""
+        # Update contextual help
+        if config.autoinspect and self.cell.is_code():
+            self.cell.inspect()
+        else:
+            self.cell.nb.hide_pager()
 
 
 class CellStdinTextArea(TextArea):
@@ -647,6 +655,10 @@ class Cell:
 
         return True
 
+    def inspect(self) -> "None":
+        """Get contextual help for the current cursor position."""
+        pass
+
     def __pt_container__(self) -> "Container":
         """Returns the container which represents this cell."""
         return self.container
@@ -779,3 +791,16 @@ class InteractiveCell(Cell):
             app.invalidate()
 
         app.create_background_task(_focus_input())
+
+    def inspect(self) -> "None":
+        """Get contextual help for the current cursor position."""
+
+        def _cb(response: "dict") -> "None":
+            self.nb.pager_json = response
+            get_app().invalidate()
+
+        self.nb.kernel.inspect(
+            code=self.input_box.text,
+            cursor_pos=self.input_box.buffer.cursor_position,
+            callback=_cb,
+        )

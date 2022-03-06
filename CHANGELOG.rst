@@ -11,6 +11,7 @@ Unreleased
 Added
 =====
 
+- Inspection pane for showing contextual help
 - Add ability to use :py:mod:`isort` and :py:mod:`ssort` when formatting code cells
 
 Fixed

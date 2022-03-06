@@ -30,7 +30,11 @@ add(
 )(menu_complete)
 add(
     keys="s-tab",
-    filter=buffer_has_focus & insert_mode & ~has_selection & ~cursor_in_leading_ws,
+    filter=buffer_has_focus
+    & completion_is_selected
+    & insert_mode
+    & ~has_selection
+    & ~cursor_in_leading_ws,
     hidden=True,
     name="previous-completion",
     group="completion",
@@ -38,7 +42,13 @@ add(
 )(menu_complete_backward)
 
 
-@add(keys="escape", filter=has_completions, hidden=True, group="completion", eager=True)
+@add(
+    keys="escape",
+    filter=completion_is_selected & has_completions,
+    hidden=True,
+    group="completion",
+    eager=True,
+)
 def cancel_completion() -> "None":
     """Cancel a completion."""
     get_app().current_buffer.cancel_completion()

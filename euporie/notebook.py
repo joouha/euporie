@@ -14,13 +14,15 @@ from prompt_toolkit.completion import DummyCompleter
 from prompt_toolkit.filters import Condition
 from prompt_toolkit.layout.containers import (
     ConditionalContainer,
+    DynamicContainer,
     HSplit,
     VSplit,
     Window,
 )
 from prompt_toolkit.layout.controls import FormattedTextControl
+from prompt_toolkit.layout.dimension import Dimension
 from prompt_toolkit.mouse_events import MouseEventType
-from prompt_toolkit.widgets import Label, RadioList
+from prompt_toolkit.widgets import Box, Label, RadioList
 
 from euporie.app.current import get_tui_app as get_app
 from euporie.box import BorderLine, Pattern
@@ -30,13 +32,14 @@ from euporie.config import config
 from euporie.containers import PrintingContainer
 from euporie.kernel import NotebookKernel
 from euporie.key_binding.bindings.commands import load_command_bindings
+from euporie.output.container import CellOutput
 from euporie.scroll import ScrollBar, ScrollingContainer
 from euporie.suggest import KernelAutoSuggest
 from euporie.tab import Tab
 
 if TYPE_CHECKING:
     from collections.abc import MutableSequence
-    from typing import Callable, Optional, Sequence, Type
+    from typing import Any, Callable, Optional, Sequence, Type
 
     from prompt_toolkit.auto_suggest import AutoSuggest
     from prompt_toolkit.completion import Completer
@@ -189,6 +192,10 @@ class Notebook(Tab, metaclass=ABCMeta):
         """Runs a cell in the notebook."""
         pass
 
+    def hide_pager(self) -> "None":
+        """Closes the pager."""
+        pass
+
 
 class DumpNotebook(Notebook):
     def __init__(
@@ -329,57 +336,99 @@ class TuiNotebook(KernelNotebook):
         self.clipboard: "list[Cell]" = []
         self.saving = False
 
+        self.pager_json: "dict[str, Any]" = {}
+        self.show_pager = Condition(lambda: bool(self.pager_json.get("found")))
+        self._pager_content = CellOutput(self.pager_json)
+
         self.cell_type = InteractiveCell
         self.page = ScrollingContainer(
             self.rendered_cells, width=config.max_notebook_width
         )
         # Wrap the scolling container in an hsplit and apply the keybindings
         expand = Condition(lambda: config.expand)
-        self.container = VSplit(
+
+        self.container = HSplit(
             [
-                ConditionalContainer(
-                    VSplit(
-                        [
-                            Pattern(),
-                            BorderLine(
-                                width=1,
-                                collapse=True,
-                                style="class:notebook.border",
+                VSplit(
+                    [
+                        ConditionalContainer(
+                            VSplit(
+                                [
+                                    Pattern(),
+                                    BorderLine(
+                                        width=1,
+                                        collapse=True,
+                                        style="class:notebook.border",
+                                    ),
+                                    BorderLine(
+                                        char=" ",
+                                        width=1,
+                                        collapse=True,
+                                        style="class:notebook.border",
+                                    ),
+                                ]
                             ),
-                            BorderLine(
-                                char=" ",
-                                width=1,
-                                collapse=True,
-                                style="class:notebook.border",
+                            filter=~expand,
+                        ),
+                        self.page,
+                        ConditionalContainer(
+                            VSplit(
+                                [
+                                    BorderLine(
+                                        char=" ",
+                                        width=1,
+                                        collapse=True,
+                                        style="class:notebook.border",
+                                    ),
+                                    BorderLine(
+                                        width=1,
+                                        collapse=True,
+                                        style="class:notebook.border",
+                                    ),
+                                    Pattern(),
+                                ]
                             ),
-                        ]
-                    ),
-                    filter=~expand,
+                            filter=~expand,
+                        ),
+                        Window(ScrollBar(self.page), width=1, style="class:scrollbar"),
+                    ],
+                    height=Dimension(weight=2),
                 ),
-                self.page,
                 ConditionalContainer(
-                    VSplit(
+                    HSplit(
                         [
                             BorderLine(
-                                char=" ",
-                                width=1,
-                                collapse=True,
-                                style="class:notebook.border",
+                                height=1, collapse=False, style="class:pager.border"
                             ),
-                            BorderLine(
-                                width=1,
-                                collapse=True,
-                                style="class:notebook.border",
+                            Box(
+                                DynamicContainer(self.pager_content),
+                                padding=0,
+                                padding_left=1,
                             ),
-                            Pattern(),
-                        ]
+                        ],
+                        height=Dimension(weight=1),
                     ),
-                    filter=~expand,
+                    filter=self.show_pager,
                 ),
-                Window(ScrollBar(self.page), width=1, style="class:scrollbar"),
             ],
             key_bindings=load_command_bindings("notebook", "cell"),
         )
+
+    def pager_content(self) -> "CellOutput":
+        if self._pager_content.json is not self.pager_json:
+            self._pager_content = CellOutput(
+                self.pager_json,
+                show_scrollbar=True,
+                focusable=True,
+                focus_on_click=True,
+                wrap_lines=True,
+                style="class:pager",
+            )
+        return self._pager_content
+
+    def hide_pager(self) -> "None":
+        """Closes the pager."""
+        self.pager_json = {}
 
     def refresh(self, index: "Optional[int]" = None, scroll: "bool" = True) -> "None":
         """Refresh the rendered contents of this notebook."""
@@ -551,7 +600,6 @@ class TuiNotebook(KernelNotebook):
                         ("", "Do you want to save your changes?"),
                     ]
                 ),
-                dont_extend_height=True,
             ),
             buttons={
                 "Yes": yes_cb,

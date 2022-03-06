@@ -9,8 +9,9 @@ from pathlib import PurePath
 from typing import TYPE_CHECKING
 
 import imagesize  # type: ignore
-from prompt_toolkit.filters import has_completions
+from prompt_toolkit.filters import has_completions, to_filter
 from prompt_toolkit.layout.containers import Float, Window
+from prompt_toolkit.layout.margins import ConditionalMargin, ScrollbarMargin
 from prompt_toolkit.layout.mouse_handlers import MouseHandlers
 from prompt_toolkit.layout.screen import WritePosition
 
@@ -25,9 +26,11 @@ from euporie.output.control import (
 )
 
 if TYPE_CHECKING:
-    from typing import Any, Optional, Type
+    from typing import Any, Callable, Optional, Type, Union
 
+    from prompt_toolkit.filters import FilterOrBool
     from prompt_toolkit.layout.containers import AnyContainer
+    from prompt_toolkit.layout.dimension import AnyDimension
     from prompt_toolkit.layout.screen import Screen
 
     from euporie.output.control import OutputControl
@@ -211,15 +214,50 @@ class OutputWindow(Window):
 class CellOutput:
     """A container for rendered cell outputs."""
 
-    def __init__(self, json: "dict[str, Any]"):
+    def __init__(
+        self,
+        json: "dict[str, Any]",
+        height: "AnyDimension" = None,
+        width: "AnyDimension" = None,
+        focusable: "FilterOrBool" = False,
+        focus_on_click: "FilterOrBool" = False,
+        show_scrollbar: "FilterOrBool" = False,
+        wrap_lines: "FilterOrBool" = False,
+        style: "Union[str, Callable[[], str]]" = "",
+    ) -> "None":
         """Instantiate an Output container object.
 
         Args:
             json: A reference to the notebook json branch corresponding to this output
+            height: The height of the output
+            width: The width of the output
+            focusable: If the output should be focusable
+            focus_on_click: If the output should become focused when clicked
+            show_scrollbar: If the ouptut should have a scrollbar
+            wrap_lines: If the output's lines should be wrapped
+            style: The style to apply to the output
 
         """
         self.json = json
-        self.window = OutputWindow()
+        self.show_scrollbar = to_filter(show_scrollbar)
+        self.style = style
+        self.window = OutputWindow(
+            height=height,
+            width=width,
+            right_margins=[
+                ConditionalMargin(
+                    margin=ScrollbarMargin(
+                        display_arrows=True,
+                        up_arrow_symbol="▲",
+                        down_arrow_symbol="▼",
+                    ),
+                    filter=self.show_scrollbar,
+                ),
+            ],
+            wrap_lines=wrap_lines,
+            dont_extend_height=False,
+            style=self.style,
+        )
 
         metadata = json.get("metadata", {})
         fg_color = get_app().color_palette["fg"][-1]
@@ -244,8 +282,11 @@ class CellOutput:
                 continue
             break
         else:
-            format_ = "ansi"
-            datum = sorted(self.data.items(), key=_calculate_bling)[-1][1]
+            if self.data:
+                format_ = "ansi"
+                datum = sorted(self.data.items(), key=_calculate_bling)[-1][1]
+            else:
+                return
 
         mime_meta = metadata.get(mime, {})
 
@@ -267,6 +308,8 @@ class CellOutput:
             fg_color=fg_color,
             bg_color=bg_color,
             sizing_func=sizing_func,
+            focusable=focusable,
+            focus_on_click=focus_on_click,
         )
 
         # Add graphic

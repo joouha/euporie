@@ -256,23 +256,6 @@ class ScrollingContainer(Container):
             }
         return self._children
 
-    @property
-    def selected_index(self) -> "int":
-        """Returns in index of the currently selected child."""
-        app = get_app()
-        # Detect if focused child element has changed
-        if app.layout.has_focus(self):
-            # Find index of selected child
-            index = self._selected_index
-            for i, child in enumerate(self.children):
-                if app.layout.has_focus(child):
-                    self._selected_child = child
-                    index = i
-                    break
-            # This will change the position when a new child is selected
-            self.selected_index = index
-        return self._selected_index
-
     def _set_selected_index(
         self, new_index: "int", force: "bool" = False, scroll: "bool" = True
     ) -> None:
@@ -293,6 +276,23 @@ class ScrollingContainer(Container):
                 app.layout.focus(child)
             # Track which child was selected
             self._selected_index = new_index
+
+    @property
+    def selected_index(self) -> "int":
+        """Returns in index of the currently selected child."""
+        app = get_app()
+        # Detect if focused child element has changed
+        if app.layout.has_focus(self):
+            # Find index of selected child
+            index = self._selected_index
+            for i, child in enumerate(self.children):
+                if app.layout.has_focus(child):
+                    self._selected_child = child
+                    index = i
+                    break
+            # This will change the position when a new child is selected
+            self.selected_index = index
+        return self._selected_index
 
     @selected_index.setter
     def selected_index(self, new_index: "int") -> "None":

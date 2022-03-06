@@ -170,7 +170,7 @@ def is_returnable() -> "bool":
 @Condition
 def cursor_at_start_of_line() -> "bool":
     """Determine if the cursor is at the start of a line."""
-    return get_app().current_buffer.document.current_line_before_cursor == ""
+    return get_app().current_buffer.document.cursor_position_col == 0
 
 
 @Condition
