@@ -161,6 +161,18 @@ All available configuration options are listed below:
       Terminal graphics in :program:`tmux` is experimental, and is not guaranteed
       to work. Use at your own risk!
 
+.. option:: terminal_polling_interval
+
+:flags: :option:`--terminal-polling-interval`
+:environment variable: :envvar:`EUPORIE_TERMINAL_POLLING_INTERVAL`
+:default: ``0``
+:type: :keyword:`integer`
+:description: Time between terminal colour queries
+
+   Determine how frequently the terminal should be polled for changes to the
+   background / foreground colours. Set to zero to disable terminal polling.
+
+
 .. option:: edit_mode
 
 :flags: :option:`--edit-mode`

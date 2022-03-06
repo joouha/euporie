@@ -16,6 +16,7 @@ Additional command line flags are described when running ``euporie --help``, the
   usage: euporie [-h] [--log-file [str]] [--debug | --no-debug]
                  [--dump | --no-dump] [--dump-file [Path]] [--page | --no-page]
                  [--run | --no-run] [--tmux-graphics | --no-tmux-graphics]
+                 [--terminal-polling-interval int]
                  [--edit-mode {micro,emacs,vi}] [--tab-size int]
                  [--run-after-external-edit bool]
                  [--format-black | --no-format-black]
@@ -50,6 +51,8 @@ Additional command line flags are described when running ``euporie --help``, the
     --run, --no-run       Run the notebook when loaded
     --tmux-graphics, --no-tmux-graphics
                           Enable terminal graphics in tmux (experimental)
+    --terminal-polling-interval int
+                          Time between terminal colour queries
     --edit-mode {micro,emacs,vi}
                           Key-binding mode for text editing
     --tab-size int        Spaces per indentation level

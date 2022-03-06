@@ -4,6 +4,15 @@ Changelog
 
 All notable changes to this project will be documented in this file.
 
+********
+Upcoming
+********
+
+Added
+=====
+
+- Make terminal colour polling timeout configurable
+
 ******************
 1.1.1 - 2022-03-06
 ******************
@@ -13,6 +22,7 @@ Added
 
 - Inspection pane for showing contextual help (summon with :kbd:`Shift+Tab` in a code cell)
 - Add ability to use :py:mod:`isort` and :py:mod:`ssort` when formatting code cells
+- Make terminal colour change detection interval configurable
 
 Fixed
 =====
@@ -40,11 +50,13 @@ Added
 
 Changed
 =======
+
 - New notebooks scrolling method which improves scrolling performance
 - New data conversion system to replace the output rendering system
 
 Fixed
 =====
+
 - Prevent output from the kernel subprocess being printed and breaking the display
 - Display tabs in ansi output correctly
 - Prevent hidden cell borders show up when syntax theme is changed

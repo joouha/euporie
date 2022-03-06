@@ -140,9 +140,9 @@ CONFIG_PARAMS: "dict[str, dict]" = {
     },
     "page": {
         "flags_": ["--page"],
+        "type": bool,
         "action": BooleanOptionalAction,
         "help": "Pass output to pager",
-        "type": bool,
         "schema_": {
             "type": "boolean",
             "default": False,
@@ -154,6 +154,7 @@ CONFIG_PARAMS: "dict[str, dict]" = {
     "run": {
         "flags_": ["--run"],
         "action": BooleanOptionalAction,
+        "type": bool,
         "help": "Run the notebook when loaded",
         "schema_": {
             "type": "boolean",
@@ -167,6 +168,7 @@ CONFIG_PARAMS: "dict[str, dict]" = {
     "tmux_graphics": {
         "flags_": ["--tmux-graphics"],
         "action": BooleanOptionalAction,
+        "type": bool,
         "help": "Enable terminal graphics in tmux (experimental)",
         "schema_": {
             "type": "boolean",
@@ -181,6 +183,21 @@ CONFIG_PARAMS: "dict[str, dict]" = {
 
            Terminal graphics in :program:`tmux` is experimental, and is not guaranteed
            to work. Use at your own risk!
+    """,
+    },
+    "terminal_polling_interval": {
+        "flags_": ["--terminal-polling-interval"],
+        "type": int,
+        "help": "Time between terminal colour queries",
+        "schema_": {
+            "type": "integer",
+            "default": 0,
+            "min": 0,
+        },
+        "description_": """
+        Determine how frequently the terminal should be polled for changes to the
+        background / foreground colours. Set to zero to disable terminal polling.
+
     """,
     },
     "edit_mode": {

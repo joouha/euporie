@@ -81,10 +81,10 @@ class TuiApp(EuporieApp):
         )
         self.has_dialog = False
 
-    async def _poll_terminal_colors(self, interval: "int" = 5) -> "None":
-        """Repeatedly queries the terminal for its background and foreground colours."""
-        while True:
-            await asyncio.sleep(interval)
+    async def _poll_terminal_colors(self) -> "None":
+        """Repeatedly query the terminal for its background and foreground colours."""
+        while config.terminal_polling_interval:
+            await asyncio.sleep(config.terminal_polling_interval)
             self.term_info.background_color.send()
             self.term_info.foreground_color.send()
 
@@ -103,10 +103,6 @@ class TuiApp(EuporieApp):
         # Ensure an opened tab is focused
         if self.tab:
             self.tab.focus()
-
-        # Load graphics system hooks
-        # self.before_render += self.graphics_renderer.before_render
-        # self.after_render += self.graphics_renderer.after_render
 
         # Load style hooks and start polling terminal style
         if self.using_vt100:
