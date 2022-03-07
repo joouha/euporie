@@ -126,4 +126,6 @@ def about() -> "None":
 )
 def show_command_palette() -> "None":
     """Shows the command palette."""
-    get_app().command_palette.toggle()
+    command_palette = get_app().command_palette
+    if command_palette is not None:
+        command_palette.toggle()

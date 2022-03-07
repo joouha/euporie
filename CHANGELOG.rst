@@ -13,6 +13,11 @@ Added
 
 - Make terminal colour polling timeout configurable
 
+Fixed
+=====
+
+- Ensure opening command palette does not show an error if it is opened before is has loaded
+
 ******************
 1.1.1 - 2022-03-06
 ******************

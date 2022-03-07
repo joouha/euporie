@@ -127,6 +127,8 @@ class EuporieApp(Application):
         self.has_dialog = False
         # Mapping of Containers to status field generating functions
         self.container_statuses: "ContainerStatusDict" = {}
+        # Assign command palette variable
+        self.command_palette = None
 
     def pre_run(self, app: "Application" = None) -> "None":
         """Called during the 'pre-run' stage of application loading."""
