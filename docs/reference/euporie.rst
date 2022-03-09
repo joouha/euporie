@@ -30,6 +30,7 @@ euporie
       euporie.key_binding
       euporie.keys
       euporie.log
+      euporie.margins
       euporie.markdown
       euporie.menu
       euporie.notebook

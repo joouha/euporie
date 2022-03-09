@@ -21,6 +21,7 @@ data = format_command_attrs(
         "notebook",
         "cell",
         "completion",
+        "pager",
         "suggestion",
         "micro-edit-mode",
     ],

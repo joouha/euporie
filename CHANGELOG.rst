@@ -12,6 +12,8 @@ Added
 =====
 
 - Make terminal colour polling timeout configurable
+- Add ability to focus and scroll the inspection pane
+- Add inspection pane key-bindings
 
 Fixed
 =====

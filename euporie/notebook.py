@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING
 import nbformat  # type: ignore
 from prompt_toolkit.auto_suggest import DummyAutoSuggest
 from prompt_toolkit.completion import DummyCompleter
-from prompt_toolkit.filters import Condition
+from prompt_toolkit.filters import Condition, to_filter
 from prompt_toolkit.layout.containers import (
     ConditionalContainer,
     DynamicContainer,
@@ -39,7 +39,7 @@ from euporie.tab import Tab
 
 if TYPE_CHECKING:
     from collections.abc import MutableSequence
-    from typing import Any, Callable, Optional, Sequence, Type
+    from typing import Callable, Optional, Sequence, Type
 
     from prompt_toolkit.auto_suggest import AutoSuggest
     from prompt_toolkit.completion import Completer
@@ -48,6 +48,7 @@ if TYPE_CHECKING:
 
     from euporie.app.base import EuporieApp
     from euporie.app.tui import TuiApp
+    from euporie.cell import PagerState
 
 __all__ = ["Notebook"]
 
@@ -90,6 +91,8 @@ class Notebook(Tab, metaclass=ABCMeta):
         self.app = app or get_app()
         self._rendered_cells: "dict[str, Cell]" = {}
         self.cell_type: "Type[Cell]" = Cell
+
+        self.pager_visible = to_filter(False)
 
     def refresh(self, index: "Optional[int]" = None, scroll: "bool" = True) -> "None":
         """Refresh the notebook display."""
@@ -336,9 +339,12 @@ class TuiNotebook(KernelNotebook):
         self.clipboard: "list[Cell]" = []
         self.saving = False
 
-        self.pager_json: "dict[str, Any]" = {}
-        self.show_pager = Condition(lambda: bool(self.pager_json.get("found")))
-        self._pager_content = CellOutput(self.pager_json)
+        self.pager_state: "Optional[PagerState]" = None
+        self.pager_visible = Condition(
+            lambda: self.pager_state is not None
+            and bool(self.pager_state.response.get("found"))
+        )
+        self.pager_content = CellOutput({})
 
         self.cell_type = InteractiveCell
         self.page = ScrollingContainer(
@@ -393,6 +399,7 @@ class TuiNotebook(KernelNotebook):
                         Window(ScrollBar(self.page), width=1, style="class:scrollbar"),
                     ],
                     height=Dimension(weight=2),
+                    key_bindings=load_command_bindings("notebook", "cell"),
                 ),
                 ConditionalContainer(
                     HSplit(
@@ -401,34 +408,43 @@ class TuiNotebook(KernelNotebook):
                                 height=1, collapse=False, style="class:pager.border"
                             ),
                             Box(
-                                DynamicContainer(self.pager_content),
+                                DynamicContainer(self.get_pager_content),
                                 padding=0,
                                 padding_left=1,
                             ),
                         ],
                         height=Dimension(weight=1),
+                        style="class:pager",
+                        key_bindings=load_command_bindings("pager"),
                     ),
-                    filter=self.show_pager,
+                    filter=self.pager_visible,
                 ),
             ],
-            key_bindings=load_command_bindings("notebook", "cell"),
         )
 
-    def pager_content(self) -> "CellOutput":
-        if self._pager_content.json is not self.pager_json:
-            self._pager_content = CellOutput(
-                self.pager_json,
+    def get_pager_content(self) -> "CellOutput":
+        """Returns the rendered pager content."""
+        if (
+            self.pager_state is not None
+            and self.pager_content.json is not self.pager_state.response
+        ):
+            self.pager_content = CellOutput(
+                self.pager_state.response,
                 show_scrollbar=True,
                 focusable=True,
                 focus_on_click=True,
                 wrap_lines=True,
                 style="class:pager",
             )
-        return self._pager_content
+        return self.pager_content
+
+    def focus_pager(self) -> "None":
+        """Focuses the pager."""
+        self.app.layout.focus(self.pager_content)
 
     def hide_pager(self) -> "None":
         """Closes the pager."""
-        self.pager_json = {}
+        self.pager_state = None
 
     def refresh(self, index: "Optional[int]" = None, scroll: "bool" = True) -> "None":
         """Refresh the rendered contents of this notebook."""
@@ -507,7 +523,7 @@ class TuiNotebook(KernelNotebook):
 
     def load_kernel(self) -> "None":
         self.kernel = NotebookKernel(
-            str(self.kernel_name), threaded=False, allow_stdin=True
+            str(self.kernel_name), threaded=True, allow_stdin=True
         )
         self.kernel.start(cb=self.check_kernel, wait=False)
 

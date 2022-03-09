@@ -3,9 +3,11 @@
 from euporie.commands import (  # search,
     buffer,
     cell,
+    cell_output,
     completions,
     config,
     notebook,
+    pager,
     suggestions,
     tui,
 )
@@ -21,8 +23,10 @@ __all__ = [
     "tui",
     "buffer",
     "cell",
+    "cell_output",
     "completions",
     "notebook",
+    "pager",
     # "search",
     "suggestions",
 ]

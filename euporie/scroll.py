@@ -617,15 +617,13 @@ class ScrollBar(UIControl):
         elif line == self.height - 1:
             return [("class:scrollbar.arrow", self.arrows[1])]
         elif int(self.top) == line:
-            return [
-                ("class:scrollbar.button", self.eighths[int((self.top - line) * 8)])
-            ]
+            return [("class:scrollbar.start", self.eighths[int((self.top - line) * 8)])]
         elif self.top <= line and line < int(self.top + self.size):
             return [("class:scrollbar.button", self.eighths[0])]
         elif (int(self.top + self.size)) == line:
             return [
                 (
-                    "class:scrollbar.button reverse",
+                    "class:scrollbar.end",
                     self.eighths[int((self.top + self.size - line) * 8)],
                 )
             ]

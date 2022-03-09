@@ -224,6 +224,7 @@ class CellOutput:
         focus_on_click: "FilterOrBool" = False,
         show_scrollbar: "FilterOrBool" = False,
         wrap_lines: "FilterOrBool" = False,
+        always_hide_cursor: "FilterOrBool" = True,
         style: "Union[str, Callable[[], str]]" = "",
     ) -> "None":
         """Instantiate an Output container object.
@@ -236,6 +237,7 @@ class CellOutput:
             focus_on_click: If the output should become focused when clicked
             show_scrollbar: If the ouptut should have a scrollbar
             wrap_lines: If the output's lines should be wrapped
+            always_hide_cursor: When true, the cursor is never shown
             style: The style to apply to the output
 
         """
@@ -257,6 +259,7 @@ class CellOutput:
                 ),
             ],
             wrap_lines=wrap_lines,
+            always_hide_cursor=always_hide_cursor,
             dont_extend_height=False,
             style=self.style,
         )

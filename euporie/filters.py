@@ -24,6 +24,7 @@ __all__ = [
     "tab_has_focus",
     "notebook_has_focus",
     "cell_has_focus",
+    "cell_output_has_focus",
     "cell_is_code",
     "cell_is_markdown",
     "micro_mode",
@@ -112,9 +113,27 @@ def notebook_has_focus() -> "bool":
 
 
 @Condition
+def pager_has_focus() -> "bool":
+    """Determine if there is a currently focused notebook."""
+    app = get_app()
+    notebook = app.notebook
+    if notebook is not None:
+        return app.layout.has_focus(notebook.pager_content)
+    return False
+
+
+@Condition
 def cell_has_focus() -> "bool":
     """Determine if there is a currently focused cell."""
     return get_app().cell is not None
+
+
+@Condition
+def cell_output_has_focus() -> "bool":
+    """Determine if there is a currently focused cell."""
+    from euporie.output.control import OutputControl
+
+    return isinstance(get_app().layout.current_control, OutputControl)
 
 
 @Condition

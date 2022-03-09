@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from functools import partial
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, NamedTuple, cast
 
 import nbformat  # type: ignore
 from prompt_toolkit.filters import Condition, has_focus, is_done
@@ -146,7 +146,7 @@ class CellInputTextArea(TextArea):
         # Update contextual help
         if config.autoinspect and self.cell.is_code():
             self.cell.inspect()
-        else:
+        elif self.cell.nb.pager_visible():
             self.cell.nb.hide_pager()
 
 
@@ -664,6 +664,12 @@ class Cell:
         return self.container
 
 
+PagerState = NamedTuple(
+    "PagerState",
+    [("code", str), ("cursor_pos", int), ("response", dict)],
+)
+
+
 class InteractiveCell(Cell):
     """An interactive notebook cell."""
 
@@ -680,6 +686,7 @@ class InteractiveCell(Cell):
         # Pytype need this re-defining...
         self.nb: "TuiNotebook" = notebook
         self.stdin_event = asyncio.Event()
+        self.inspect_future = None
 
     def exit_edit_mode(self) -> "None":
         """Removes a cell from edit mode."""
@@ -794,13 +801,30 @@ class InteractiveCell(Cell):
 
     def inspect(self) -> "None":
         """Get contextual help for the current cursor position."""
+        code = self.input_box.text
+        cursor_pos = self.input_box.buffer.cursor_position
 
         def _cb(response: "dict") -> "None":
-            self.nb.pager_json = response
-            get_app().invalidate()
+            prev_state = self.nb.pager_state
+            new_state = PagerState(
+                code=code,
+                cursor_pos=cursor_pos,
+                response=response,
+            )
+            if prev_state != new_state:
+                self.nb.pager_state = new_state
+                get_app().invalidate()
+
+        if self.nb.pager_visible() and self.nb.pager_state is not None:
+            if (
+                self.nb.pager_state.code == code
+                and self.nb.pager_state.cursor_pos == cursor_pos
+            ):
+                self.nb.focus_pager()
+                return
 
         self.nb.kernel.inspect(
-            code=self.input_box.text,
-            cursor_pos=self.input_box.buffer.cursor_position,
+            code=code,
+            cursor_pos=cursor_pos,
             callback=_cb,
         )

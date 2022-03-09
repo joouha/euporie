@@ -40,3 +40,4 @@ euporie.cell
       CellStdinTextArea
       ClickArea
       InteractiveCell
+      PagerState

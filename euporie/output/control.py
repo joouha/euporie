@@ -17,6 +17,7 @@ from prompt_toolkit.utils import Event
 
 from euporie.app.current import get_tui_app as get_app
 from euporie.convert.base import convert
+from euporie.key_binding.bindings.commands import load_command_bindings
 from euporie.terminal import tmuxify
 from euporie.text import ANSI
 
@@ -25,6 +26,7 @@ if TYPE_CHECKING:
 
     from prompt_toolkit.filters import FilterOrBool
     from prompt_toolkit.formatted_text import StyleAndTextTuples
+    from prompt_toolkit.key_binding import KeyBindingsBase
     from prompt_toolkit.key_binding.key_bindings import NotImplementedOrNone
 
 __all__ = [
@@ -70,6 +72,7 @@ class OutputControl(UIControl):
         self.bg_color = bg_color
         self.focusable = to_filter(focusable)
         self.focus_on_click = to_filter(focus_on_click)
+        self.key_bindings = load_command_bindings("cell-output")
 
         self.on_cursor_position_changed = Event(self)
         self._cursor_position = Point(x=0, y=0)
@@ -83,6 +86,9 @@ class OutputControl(UIControl):
         self.rendered_lines: "list[StyleAndTextTuples]" = []
         self._format_cache: SimpleCache = SimpleCache(maxsize=50)
         self._content_cache: SimpleCache = SimpleCache(maxsize=50)
+
+    def get_key_bindings(self) -> "Optional[KeyBindingsBase]":
+        return self.key_bindings
 
     @property
     def cursor_position(self) -> "Point":

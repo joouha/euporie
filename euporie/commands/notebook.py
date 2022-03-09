@@ -6,7 +6,7 @@ from prompt_toolkit.filters import buffer_has_focus
 
 from euporie.app.current import get_tui_app as get_app
 from euporie.commands.registry import add
-from euporie.filters import kernel_is_python, notebook_has_focus
+from euporie.filters import cell_output_has_focus, kernel_is_python, notebook_has_focus
 
 log = logging.getLogger(__name__)
 
@@ -36,7 +36,7 @@ def run_all_cells() -> "None":
 
 @add(
     keys="a",
-    filter=notebook_has_focus & ~buffer_has_focus,
+    filter=notebook_has_focus & ~buffer_has_focus & ~cell_output_has_focus,
     group="notebook",
 )
 def add_cell_above() -> "None":
@@ -48,7 +48,7 @@ def add_cell_above() -> "None":
 
 @add(
     keys="b",
-    filter=notebook_has_focus & ~buffer_has_focus,
+    filter=notebook_has_focus & ~buffer_has_focus & ~cell_output_has_focus,
     group="notebook",
 )
 def add_cell_below() -> "None":
@@ -60,7 +60,7 @@ def add_cell_below() -> "None":
 
 @add(
     keys=("d", "d"),
-    filter=notebook_has_focus & ~buffer_has_focus,
+    filter=notebook_has_focus & ~buffer_has_focus & ~cell_output_has_focus,
     group="notebook",
 )
 def delete_cell() -> "None":
@@ -72,7 +72,7 @@ def delete_cell() -> "None":
 
 @add(
     keys="x",
-    filter=notebook_has_focus & ~buffer_has_focus,
+    filter=notebook_has_focus & ~buffer_has_focus & ~cell_output_has_focus,
     group="notebook",
 )
 def cut_cell() -> "None":
@@ -84,7 +84,7 @@ def cut_cell() -> "None":
 
 @add(
     keys="c",
-    filter=notebook_has_focus & ~buffer_has_focus,
+    filter=notebook_has_focus & ~buffer_has_focus & ~cell_output_has_focus,
     group="notebook",
 )
 def copy_cell() -> "None":
@@ -96,7 +96,7 @@ def copy_cell() -> "None":
 
 @add(
     keys="v",
-    filter=notebook_has_focus & ~buffer_has_focus,
+    filter=notebook_has_focus & ~buffer_has_focus & ~cell_output_has_focus,
     group="notebook",
 )
 def paste_cell() -> "None":
@@ -108,7 +108,7 @@ def paste_cell() -> "None":
 
 @add(
     keys=("I", "I"),
-    filter=notebook_has_focus & ~buffer_has_focus,
+    filter=notebook_has_focus & ~buffer_has_focus & ~cell_output_has_focus,
     group="notebook",
 )
 def interrupt_kernel() -> "None":
@@ -120,7 +120,7 @@ def interrupt_kernel() -> "None":
 
 @add(
     keys=("0", "0"),
-    filter=notebook_has_focus & ~buffer_has_focus,
+    filter=notebook_has_focus & ~buffer_has_focus & ~cell_output_has_focus,
     group="notebook",
 )
 def restart_kernel() -> "None":
@@ -131,7 +131,7 @@ def restart_kernel() -> "None":
 
 
 @add(
-    filter=notebook_has_focus & ~buffer_has_focus,
+    filter=notebook_has_focus & ~buffer_has_focus & ~cell_output_has_focus,
     group="notebook",
 )
 def change_kernel() -> "None":
@@ -143,7 +143,7 @@ def change_kernel() -> "None":
 
 @add(
     keys="[",
-    filter=notebook_has_focus & ~buffer_has_focus,
+    filter=notebook_has_focus & ~buffer_has_focus & ~cell_output_has_focus,
     group="notebook",
 )
 @add(
@@ -160,7 +160,7 @@ def scroll_up() -> "None":
 
 @add(
     keys="]",
-    filter=notebook_has_focus & ~buffer_has_focus,
+    filter=notebook_has_focus & ~buffer_has_focus & ~cell_output_has_focus,
     group="notebook",
 )
 @add(
@@ -177,7 +177,7 @@ def scroll_down() -> "None":
 
 @add(
     keys="{",
-    filter=notebook_has_focus & ~buffer_has_focus,
+    filter=notebook_has_focus & ~buffer_has_focus & ~cell_output_has_focus,
     group="notebook",
 )
 def scroll_up_5_lines() -> "None":
@@ -189,7 +189,7 @@ def scroll_up_5_lines() -> "None":
 
 @add(
     keys="}",
-    filter=notebook_has_focus & ~buffer_has_focus,
+    filter=notebook_has_focus & ~buffer_has_focus & ~cell_output_has_focus,
     group="notebook",
 )
 def scroll_down_5_lines() -> "None":
@@ -202,7 +202,7 @@ def scroll_down_5_lines() -> "None":
 @add(
     keys=["home", "c-up"],
     group="notebook",
-    filter=notebook_has_focus & ~buffer_has_focus,
+    filter=notebook_has_focus & ~buffer_has_focus & ~cell_output_has_focus,
 )
 def select_first_cell() -> "None":
     """Select the first cell in the notebook."""
@@ -214,7 +214,7 @@ def select_first_cell() -> "None":
 @add(
     keys="pageup",
     group="notebook",
-    filter=notebook_has_focus & ~buffer_has_focus,
+    filter=notebook_has_focus & ~buffer_has_focus & ~cell_output_has_focus,
 )
 def select_5th_previous_cell() -> "None":
     """Go up 5 cells."""
@@ -226,7 +226,7 @@ def select_5th_previous_cell() -> "None":
 @add(
     keys=["up", "k"],
     group="notebook",
-    filter=notebook_has_focus & ~buffer_has_focus,
+    filter=notebook_has_focus & ~buffer_has_focus & ~cell_output_has_focus,
 )
 def select_previous_cell() -> "None":
     """Go up one cell."""
@@ -238,7 +238,7 @@ def select_previous_cell() -> "None":
 @add(
     keys=["down", "j"],
     group="notebook",
-    filter=notebook_has_focus & ~buffer_has_focus,
+    filter=notebook_has_focus & ~buffer_has_focus & ~cell_output_has_focus,
 )
 def next_child() -> "None":
     """Select the next cell."""
@@ -262,7 +262,7 @@ def select_5th_next_cell() -> "None":
 @add(
     keys=["end", "c-down"],
     group="notebook",
-    filter=notebook_has_focus & ~buffer_has_focus,
+    filter=notebook_has_focus & ~buffer_has_focus & ~cell_output_has_focus,
 )
 def select_last_cell() -> "None":
     """Select the last cell in the notebook."""

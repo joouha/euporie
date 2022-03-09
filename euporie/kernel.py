@@ -18,7 +18,7 @@ from jupyter_client import (  # type: ignore
 from jupyter_client.kernelspec import NoSuchKernel  # type: ignore
 
 if TYPE_CHECKING:
-    from typing import Any, AsyncGenerator, Callable, Coroutine, Optional, Union
+    from typing import Any, AsyncGenerator, Callable, Coroutine, Dict, Optional, Union
 
 __all__ = ["NotebookKernel"]
 
@@ -40,9 +40,9 @@ class NotebookKernel:
         self.loop.run_forever()
 
     def __init__(
-        self, name: "str", threaded: "bool" = False, allow_stdin: "bool" = False
+        self, name: "str", threaded: "bool" = True, allow_stdin: "bool" = False
     ) -> "None":
-        """Called when the :py:class:`NotebookKernel` is initalized.
+        """Called when the :py:class:`NotebookKernel` is initialized.
 
         Args:
             name: The name of the kernel to start
@@ -66,6 +66,7 @@ class NotebookKernel:
         self._status = "stopped"
         self.error: "Optional[Exception]" = None
 
+        self.coros: "Dict[str, concurrent.futures.Future]" = {}
         self.poll_tasks: "list[asyncio.Task]" = []
         self.events: "dict[str, dict[str, asyncio.Event]]" = {}
         self.msgs: "dict[str, dict[str, dict]]" = {}
@@ -77,6 +78,7 @@ class NotebookKernel:
         callback: "Callable" = None,
         timeout: "Optional[Union[int, float]]" = None,
         warn: "bool" = True,
+        single: "bool" = False,
     ) -> "Any":
         """Shedules a coroutine in the kernel's event loop.
 
@@ -86,16 +88,24 @@ class NotebookKernel:
         Args:
             coro: The coroutine to run
             wait: If :py:const:`True`, block until the kernel has started
-            callback: A function to run when the coroutine compeltes. The result from
+            callback: A function to run when the coroutine completes. The result from
                 the coroutine will be passed as an argument
             timeout: The number of seconds to allow the coroutine to run if waiting
             warn: If :py:const:`True`, log an error if the coroutine times out
+            single: If :py:const:`True`, any futures for previous instances of the
+                coroutine will be cancelled
 
         Returns:
             The result of the coroutine
 
         """
         future = asyncio.run_coroutine_threadsafe(coro, self.loop)
+
+        # Cancel previous future instances if required
+        if single and self.coros.get(coro.__name__):
+            self.coros[coro.__name__].cancel()
+        self.coros[coro.__name__] = future
+
         if wait:
             result = None
             try:
@@ -266,7 +276,7 @@ class NotebookKernel:
             timeout: Maximum time to wait for a response before stopping
 
         Yields:
-            Message resposnes recieved on the given channel
+            Message resposnes received on the given channel
         """
         self.events[channel][msg_id] = asyncio.Event()
         log.debug("Waiting for %s response to %s", channel, msg_id[-7:])
@@ -282,7 +292,7 @@ class NotebookKernel:
             except asyncio.CancelledError:
                 stop = True
             else:
-                log.debug("Event occured on channel %s", channel)
+                log.debug("Event occurred on channel %s", channel)
                 rsp = self.msgs[channel][msg_id]
                 del self.msgs[channel][msg_id]
                 log.debug(
@@ -383,7 +393,7 @@ class NotebookKernel:
     async def process_default_iopub_rsp(self, msg_id: "str") -> "None":
         """The default processor for message responses on the ``iopub`` channel.
 
-        This does nothing when a response is recieved.
+        This does nothing when a response is received.
 
         Args:
             msg_id: The ID of the message to process the responses for.
@@ -683,6 +693,7 @@ class NotebookKernel:
         return self._aodo(
             self.complete_(code, cursor_pos),
             wait=True,
+            single=True,
         )
 
     async def history_(
@@ -727,12 +738,15 @@ class NotebookKernel:
         return self._aodo(
             self.history_(pattern, n),
             wait=True,
+            single=True,
         )
 
     async def inspect_(
         self, code: "str", cursor_pos: "int", detail_level: "int" = 0
     ) -> "dict[str, Any]":
         """Retrieve introspection string from the kernel asynchronously."""
+        await asyncio.sleep(0.1)  # Add a tiny timeout so we don't spam the kernel
+
         result: "dict[str, Any]" = {}
 
         if not self.kc:
@@ -780,6 +794,7 @@ class NotebookKernel:
             self.inspect_(code, cursor_pos),
             wait=False,
             callback=callback,
+            single=True,
         )
 
     def interrupt(self) -> "None":
