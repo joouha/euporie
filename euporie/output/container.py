@@ -11,13 +11,14 @@ from typing import TYPE_CHECKING
 import imagesize  # type: ignore
 from prompt_toolkit.filters import has_completions, to_filter
 from prompt_toolkit.layout.containers import Float, Window
-from prompt_toolkit.layout.margins import ConditionalMargin, ScrollbarMargin
+from prompt_toolkit.layout.margins import ConditionalMargin
 from prompt_toolkit.layout.mouse_handlers import MouseHandlers
 from prompt_toolkit.layout.screen import WritePosition
 
 from euporie.app import get_app
 from euporie.convert.base import convert, find_route
 from euporie.filters import has_dialog, has_menus
+from euporie.margins import ScrollbarMargin
 from euporie.output.control import (
     AnsiControl,
     ItermGraphicControl,
@@ -246,10 +247,11 @@ class CellOutput:
             width=width,
             right_margins=[
                 ConditionalMargin(
-                    margin=ScrollbarMargin(
+                    ScrollbarMargin(
                         display_arrows=True,
                         up_arrow_symbol="▲",
                         down_arrow_symbol="▼",
+                        smooth=True,
                     ),
                     filter=self.show_scrollbar,
                 ),

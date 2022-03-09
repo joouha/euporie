@@ -432,19 +432,20 @@ class EuporieApp(Application):
             "cell.output.prompt": "fg:red",
             # Scrollbars
             "scrollbar": f"fg:{cp['fg'][5]} bg:{cp['bg'][5]}",
-            "scrollbar.background": "",
-            "scrollbar.button": f"fg:{cp['fg'][5]} bg:{cp['bg'][5]}",
-            "scrollbar.arrow": "",
+            "scrollbar.background": f"fg:{cp['fg'][5]} bg:{cp['bg'][5]}",
+            "scrollbar.arrow": f"fg:{cp['fg'][5]} bg:{cp['bg'][5]}",
+            "scrollbar.start": "",
+            "scrollbar.button": f"fg:{cp['fg'][5]} bg:{cp['fg'][5]}",
+            "scrollbar.end": f"fg:{cp['bg'][5]} bg:{cp['fg'][5]}",
             # Shadows
             "shadow": f"bg:{cp['bg'][9]}",
+            "pager shadow": f"bg:{cp['bg'][9]}",
             "cell.input shadow": f"bg:{cp['bg'][9]}",
             "cell.output shadow": f"bg:{cp['bg'][9]}",
             # Dialogs
             "dialog.body": f"fg:{cp['fg'][-1]} bg:{cp['bg'][4]}",
             "dialog.body text-area": f"fg:{cp['fg'][-1]}",
-            "dialog.body scrollbar": f"fg:{cp['fg'][5]} bg:{cp['bg'][5]}",
-            "dialog.body scrollbar.button": f"bg:{cp['fg'][5]}",
-            "dialog.body scrollbar.end": f"bg:{cp['fg'][5]}",
+            "dialog.body scrollbar.button": f"fg:{cp['bg'][5]} bg:{cp['fg'][5]}",
             # Horizontals rule
             "hr": "fg:#666666",
             # Completions menu
@@ -479,10 +480,8 @@ class EuporieApp(Application):
             "palette.item.alt": f"bg:{cp['bg'][3]}",
             "palette.item.selected": "fg:#ffffff bg:#0055ff",
             # Pager
+            "pager": f"bg:{cp['bg'][1]}",
             "pager.border": f"fg:{cp['bg'][9]}",
-            "pager scrollbar": f"fg:{cp['fg'][5]} bg:{cp['bg'][5]}",
-            "pager scrollbar.button": f"bg:{cp['fg'][5]}",
-            "pager scrollbar.end": f"bg:{cp['fg'][5]}",
         }
 
         # Using a dynamic style has serious performance issues, so instead we update
