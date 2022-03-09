@@ -19,6 +19,7 @@ Fixed
 =====
 
 - Ensure opening command palette does not show an error if it is opened before is has loaded
+- Fixed bug where nothing would be focused after a completion if pager was opened
 
 ******************
 1.1.1 - 2022-03-06
