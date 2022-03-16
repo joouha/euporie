@@ -15,6 +15,11 @@ Added
 - Add ability to focus and scroll the inspection pane
 - Add inspection pane key-bindings
 
+Changed
+=======
+
+- Use improved scrollbars with mouse support (if `PR #1587 <https://github.com/prompt-toolkit/python-prompt-toolkit/pull/1587>`_ is merged)
+
 Fixed
 =====
 

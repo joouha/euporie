@@ -44,7 +44,7 @@ if TYPE_CHECKING:
 
     from euporie.notebook import Notebook, TuiNotebook
     from euporie.output.control import OutputControl
-    from euporie.scroll import ChildMeta
+    from euporie.scroll import ChildRenderInfo
 
 __all__ = [
     "get_cell_id",
@@ -235,7 +235,7 @@ class Cell:
         self.rendered = True
 
         self.state = "idle"
-        self.meta: "Optional[ChildMeta]" = None
+        self.meta: "Optional[ChildRenderInfo]" = None
 
         self.show_input = Condition(
             lambda: bool(

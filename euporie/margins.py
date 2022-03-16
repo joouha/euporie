@@ -69,27 +69,30 @@ class ScrollbarMargin(Margin):
         # Show we render the arrow buttons?
         display_arrows = self.display_arrows()
 
-        # Height of all text in the output: If there is none, we cannot divide
-        # by zero so we return no content
-        content_height = window_render_info.content_height
-        if content_height == 0 or content_height <= len(
-            window_render_info.displayed_lines
-        ):
-            return result
-
         # The height of the scrollbar, excluding the optional buttons
         self.track_height = window_render_info.window_height
         if display_arrows:
             self.track_height -= 2
 
-        # The thumb is the part which moves, floating on the track: calculate its size
-        fraction_visible = len(window_render_info.displayed_lines) / (content_height)
-        self.thumb_size = (
-            int(
-                min(self.track_height, max(1, self.track_height * fraction_visible)) * 8
+        # Height of all text in the output: If there is none, we cannot divide
+        # by zero so we hide the thumb
+        content_height = window_render_info.content_height
+        if content_height == 0 or content_height <= len(
+            window_render_info.displayed_lines
+        ):
+            self.thumb_size = 0
+        else:
+            # The thumb is the part which moves, floating on the track: calculate its size
+            fraction_visible = len(window_render_info.displayed_lines) / (
+                content_height
             )
-            / 8
-        )
+            self.thumb_size = (
+                int(
+                    min(self.track_height, max(1, self.track_height * fraction_visible))
+                    * 8
+                )
+                / 8
+            )
         if not self.smooth:
             self.thumb_size = int(self.thumb_size)
 
@@ -97,8 +100,12 @@ class ScrollbarMargin(Margin):
         fraction_above = window_render_info.vertical_scroll / (
             content_height - len(window_render_info.displayed_lines)
         )
-        self.thumb_top = (
-            int((self.track_height - self.thumb_size) * fraction_above * 8) / 8
+        self.thumb_top = max(
+            0,
+            min(
+                self.track_height - self.thumb_size,
+                (int((self.track_height - self.thumb_size) * fraction_above * 8) / 8),
+            ),
         )
         if not self.smooth:
             self.thumb_top = int(self.thumb_top)

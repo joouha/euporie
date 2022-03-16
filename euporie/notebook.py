@@ -33,7 +33,7 @@ from euporie.containers import PrintingContainer
 from euporie.kernel import NotebookKernel
 from euporie.key_binding.bindings.commands import load_command_bindings
 from euporie.output.container import CellOutput
-from euporie.scroll import ScrollBar, ScrollingContainer
+from euporie.scroll import ScrollbarControl, ScrollingContainer
 from euporie.suggest import KernelAutoSuggest
 from euporie.tab import Tab
 
@@ -396,7 +396,11 @@ class TuiNotebook(KernelNotebook):
                             ),
                             filter=~expand,
                         ),
-                        Window(ScrollBar(self.page), width=1, style="class:scrollbar"),
+                        Window(
+                            ScrollbarControl(self.page),
+                            width=1,
+                            style="class:scrollbar",
+                        ),
                     ],
                     height=Dimension(weight=2),
                     key_bindings=load_command_bindings("notebook", "cell"),
