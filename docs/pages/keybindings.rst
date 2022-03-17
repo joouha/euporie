@@ -8,7 +8,7 @@ Editing Modes
 
 The key-bindings used when editing a cell are determined by the :option:`edit_mode` configuration variable. This can be set to ``micro``, ``emacs`` or ``vim`` to use key-bindings in the style of the respective text editor.
 
-.. note:: The ``vim`` and ``emacs`` key-bindings are defined by the :py:module:`prompt_toolkit` package and are largely untested, so your results may vary!
+.. note:: The ``vim`` and ``emacs`` key-bindings are defined by the :py:mod:`prompt_toolkit` package and are largely untested, so your results may vary!
 
 *************
 Running Cells

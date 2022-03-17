@@ -25,15 +25,15 @@ repos:
         entry: check-yaml
         language: system
         types: [yaml]
-      - id: end-of-file-fixer
-        name: Fix End of Files
-        entry: end-of-file-fixer
-        language: system
-        types: [text]
-        stages: [commit, push, manual]
       - id: trailing-whitespace
         name: Trim Trailing Whitespace
         entry: trailing-whitespace-fixer
+        language: system
+        types: [text]
+        stages: [commit, push, manual]
+      - id: end-of-file-fixer
+        name: Fix End of Files
+        entry: end-of-file-fixer
         language: system
         types: [text]
         stages: [commit, push, manual]
