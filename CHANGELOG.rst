@@ -4,9 +4,9 @@ Changelog
 
 All notable changes to this project will be documented in this file.
 
-********
-Upcoming
-********
+******************
+1.2.1 - 2022-03-17
+******************
 
 Added
 =====
@@ -27,7 +27,7 @@ Fixed
 - Fixed bug where nothing would be focused after a completion if pager was opened
 
 ******************
-1.1.1 - 2022-03-06
+1.2.0 - 2022-03-06
 ******************
 
 Added
