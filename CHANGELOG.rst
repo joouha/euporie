@@ -4,6 +4,17 @@ Changelog
 
 All notable changes to this project will be documented in this file.
 
+
+
+******************
+1.2.2 - 2022-03-17
+******************
+
+Fixed
+=====
+
+- Fix zero-division error if scrolling a window with less content than its height
+
 ******************
 1.2.1 - 2022-03-17
 ******************

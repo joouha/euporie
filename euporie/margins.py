@@ -97,9 +97,12 @@ class ScrollbarMargin(Margin):
             self.thumb_size = int(self.thumb_size)
 
         # Calculate the position of the thumb
-        fraction_above = window_render_info.vertical_scroll / (
-            content_height - len(window_render_info.displayed_lines)
-        )
+        if content_height <= len(window_render_info.displayed_lines):
+            fraction_above = 0
+        else:
+            fraction_above = window_render_info.vertical_scroll / (
+                content_height - len(window_render_info.displayed_lines)
+            )
         self.thumb_top = max(
             0,
             min(
