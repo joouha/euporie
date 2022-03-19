@@ -152,9 +152,38 @@ class Notebook(Tab, metaclass=ABCMeta):
         )
         self.dirty = True
 
+    def move(self, n: "int", slice_: "Optional[slice]" = None) -> "None":
+        """Move a slice of cells up or down.
+
+        Args:
+            slice_: A slice describing the cell indicies to move
+            n: The amount to move them by
+
+        """
+        if slice_ is not None:
+            indices = range(*slice_.indices(len(self.json["cells"])))
+            index = min(indices) + n
+            log.debug(index)
+            if 0 <= index and index + len(indices) <= len(self.json["cells"]):
+                cells = [
+                    x
+                    for _, x in sorted(
+                        zip(indices, self.json["cells"][slice_]), key=lambda x: x[0]
+                    )
+                ]
+                del self.json["cells"][slice_]
+                self.json["cells"][index:index] = cells
+                self.refresh(
+                    slice(
+                        slice_.start + n,
+                        (-1 if slice_.stop is None else slice_.stop) + n,
+                        slice_.step,
+                    )
+                )
+
     def copy(self, slice_: "slice") -> "None":
         """Add a copy of this cell to the `Notebook`'s clipboard."""
-        indices = slice_.indices(len(self.json["cells"]))
+        indices = range(*slice_.indices(len(self.json["cells"])))
         self.clipboard = copy.deepcopy(
             # Sort clipboard contents by index)
             [
@@ -677,6 +706,12 @@ class TuiNotebook(KernelNotebook):
         if slice_ is None:
             slice_ = self.page.selected_slice
         super().delete(slice_)
+
+    def move(self, n: "int", slice_: "Optional[slice]" = None) -> "None":
+        """Move a slice of cells up or down."""
+        if slice_ is None:
+            slice_ = self.page.selected_slice
+        super().move(n, slice_)
 
     def merge(self, slice_: "Optional[slice]" = None) -> "None":
         """Merge two or more cells."""

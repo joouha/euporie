@@ -301,38 +301,6 @@ def select_previous_cell() -> "None":
 
 
 @add(
-    keys=["s-up", "K"],
-    group="notebook",
-    filter=notebook_has_focus & ~buffer_has_focus & ~cell_output_has_focus,
-)
-def extend_cell_selection_up() -> "None":
-    """Go up one cell."""
-    nb = get_app().notebook
-    if nb is not None:
-        slice_ = nb.page._selected_slice
-        if slice_.start - 1 == slice_.stop:
-            nb.page.selected_slice = slice(slice_.stop, slice_.start + 1, 1)
-        else:
-            nb.page.selected_slice = slice(slice_.start - 1, slice_.stop, slice_.step)
-
-
-@add(
-    keys=["s-down", "J"],
-    group="notebook",
-    filter=notebook_has_focus & ~buffer_has_focus & ~cell_output_has_focus,
-)
-def extend_cell_selection_down() -> "None":
-    """Go up one cell."""
-    nb = get_app().notebook
-    if nb is not None:
-        slice_ = nb.page._selected_slice
-        if slice_.start + 1 == slice_.stop:
-            nb.page.selected_slice = slice(slice_.stop, slice_.start - 1, -1)
-        else:
-            nb.page.selected_slice = slice(slice_.start + 1, slice_.stop, slice_.step)
-
-
-@add(
     keys=["down", "j"],
     group="notebook",
     filter=notebook_has_focus & ~buffer_has_focus & ~cell_output_has_focus,
@@ -390,6 +358,62 @@ def select_all_cells() -> "None":
             0,
             len(nb.page.children) + 1,
         )
+
+
+@add(
+    keys=["s-up", "K"],
+    group="notebook",
+    filter=notebook_has_focus & ~buffer_has_focus & ~cell_output_has_focus,
+)
+def extend_cell_selection_up() -> "None":
+    """Go up one cell."""
+    nb = get_app().notebook
+    if nb is not None:
+        slice_ = nb.page._selected_slice
+        if slice_.start - 1 == slice_.stop:
+            nb.page.selected_slice = slice(slice_.stop, slice_.start + 1, 1)
+        else:
+            nb.page.selected_slice = slice(slice_.start - 1, slice_.stop, slice_.step)
+
+
+@add(
+    keys=["s-down", "J"],
+    group="notebook",
+    filter=notebook_has_focus & ~buffer_has_focus & ~cell_output_has_focus,
+)
+def extend_cell_selection_down() -> "None":
+    """Go up one cell."""
+    nb = get_app().notebook
+    if nb is not None:
+        slice_ = nb.page._selected_slice
+        if slice_.start + 1 == slice_.stop:
+            nb.page.selected_slice = slice(slice_.stop, slice_.start - 1, -1)
+        else:
+            nb.page.selected_slice = slice(slice_.start + 1, slice_.stop, slice_.step)
+
+
+@add(
+    # keys=[""],
+    group="notebook",
+    filter=notebook_has_focus & ~buffer_has_focus & ~cell_output_has_focus,
+)
+def move_cells_up() -> "None":
+    """Move selected cells up."""
+    nb = get_app().notebook
+    if nb is not None:
+        nb.move(-1)
+
+
+@add(
+    # keys=[""],
+    group="notebook",
+    filter=notebook_has_focus & ~buffer_has_focus & ~cell_output_has_focus,
+)
+def move_cells_down() -> "None":
+    """Move selected cells down."""
+    nb = get_app().notebook
+    if nb is not None:
+        nb.move(1)
 
 
 @add(
