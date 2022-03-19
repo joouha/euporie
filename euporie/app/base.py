@@ -423,7 +423,6 @@ class EuporieApp(Application):
             "cursor-line": f"bg:{cp['bg'][1]}",
             # Cells
             "cell.border": f"fg:{cp['bg'][5]}",
-            "cell.border.focused": "fg:#00afff bold",
             "cell.border.selected": "fg:#00afff",
             "cell.border.edit": "fg:#00ff00",
             "cell.border.hidden": f"fg:{cp['bg'][-1]} hidden",

@@ -465,8 +465,6 @@ class Cell:
     def border_style(self) -> "str":
         """Determines the style of the cell borders, based on the cell state."""
         if not config.dump:
-            if self.focused:
-                return "class:cell.border.focused"
             if self.selected:
                 if has_focus(self.input_box.buffer)():
                     return "class:cell.border.edit"
