@@ -14,6 +14,8 @@ from euporie.app.current import get_tui_app as get_app
 from euporie.key_binding.micro_state import InputMode
 
 __all__ = [
+    "code_cell_selected",
+    "have_formatter",
     "have_black",
     "have_isort",
     "have_ssort",
@@ -62,6 +64,9 @@ except ModuleNotFoundError:
     have_ssort = to_filter(False)
 else:
     have_ssort = to_filter(True)
+
+# Determine if we have at least one formatter
+have_formatter = have_black | have_isort | have_ssort
 
 # Determine if euporie is running inside tmux.
 in_tmux = to_filter(os.environ.get("TMUX") is not None)
@@ -144,6 +149,17 @@ def cell_output_has_focus() -> "bool":
     from euporie.output.control import OutputControl
 
     return isinstance(get_app().layout.current_control, OutputControl)
+
+
+@Condition
+def code_cell_selected() -> "bool":
+    """Determine if a code cell is selected."""
+    nb = get_app().notebook
+    if nb is not None:
+        for cell in nb.cells:
+            if cell.cell_type == "code":
+                return True
+    return False
 
 
 @Condition

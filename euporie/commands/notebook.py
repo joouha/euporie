@@ -9,6 +9,8 @@ from euporie.commands.registry import add
 from euporie.filters import (
     cell_has_focus,
     cell_output_has_focus,
+    code_cell_selected,
+    have_formatter,
     kernel_is_python,
     multiple_cells_selected,
     notebook_has_focus,
@@ -391,9 +393,67 @@ def select_all_cells() -> "None":
 
 
 @add(
+    keys="m",
+    filter=cell_has_focus & ~buffer_has_focus,
+    group="notebook",
+)
+def cells_to_markdown() -> "None":
+    """Change selected cells to markdown cells."""
+    nb = get_app().notebook
+    if nb is not None:
+        for cell in nb.cells:
+            cell.set_cell_type("markdown", clear=True)
+
+
+@add(
+    keys="y",
+    filter=cell_has_focus & ~buffer_has_focus,
+    group="notebook",
+)
+def cells_to_code() -> "None":
+    """Change selected cells to code cells."""
+    nb = get_app().notebook
+    if nb is not None:
+        for cell in nb.cells:
+            cell.set_cell_type("code", clear=False)
+
+
+@add(
+    keys="r",
+    filter=cell_has_focus & ~buffer_has_focus,
+    group="notebook",
+)
+def cells_to_raw() -> "None":
+    """Change selected cells to raw cells."""
+    nb = get_app().notebook
+    if nb is not None:
+        for cell in nb.cells:
+            cell.set_cell_type("raw", clear=True)
+
+
+@add(
+    keys="f",
+    title="Reformat cells",
+    filter=have_formatter
+    & code_cell_selected
+    & kernel_is_python
+    & cell_has_focus
+    & ~buffer_has_focus,
+    group="cell",
+)
+def reformat_cells() -> "None":
+    """Format the selected code cells."""
+    nb = get_app().notebook
+    if nb is not None:
+        for cell in nb.cells:
+            if cell.cell_type == "code":
+                cell.reformat()
+
+
+@add(
     keys="F",
     group="notebook",
-    filter=notebook_has_focus & kernel_is_python & ~buffer_has_focus,
+    filter=have_formatter & kernel_is_python & notebook_has_focus & ~buffer_has_focus,
 )
 def reformat_notebook() -> "None":
     """Automatically reformat all code cells in the notebook."""

@@ -325,7 +325,7 @@ for pair in WRAP_PAIRS["code"]:
     left, right = list(pair)
     add(
         name=f"wrap-selection-{pair}",
-        keys=list(set(pair)),
+        keys=sorted(list(set(pair))),
         title=f"Wrap selection in {pair}",
         description=f"Wraps the current selection with: {pair}",
         filter=buffer_has_focus & has_selection & cell_is_code,
@@ -337,7 +337,7 @@ for pair in WRAP_PAIRS["markdown"]:
     left, right = list(pair)
     add(
         name=f"wrap-selection-{pair}",
-        keys=list(set(pair)),
+        keys=sorted(list(set(pair))),
         title=f"Wrap selection in {pair}",
         description=f"Wraps the current selection with: {pair}",
         filter=buffer_has_focus & has_selection & cell_is_markdown,

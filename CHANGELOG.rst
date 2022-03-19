@@ -18,6 +18,8 @@ Changed
 =======
 
 - Expanded run, cut, copy, paste commands to work with multiple cells
+- Changing cell type affects all selected cells
+- Formatting cells formats all selected code cells
 
 Fixed
 =====

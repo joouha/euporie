@@ -30,7 +30,7 @@ def load_menu_items() -> "list[MenuItem]":
                 get("copy-cells").menu,
                 get("paste-cells").menu,
                 separator,
-                get("reformat-cell-black").menu,
+                get("reformat-cells").menu,
                 get("reformat-notebook").menu,
             ],
         ),

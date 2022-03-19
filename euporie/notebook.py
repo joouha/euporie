@@ -515,6 +515,11 @@ class TuiNotebook(KernelNotebook):
         assert isinstance(cell, InteractiveCell)
         return cell
 
+    @property
+    def cells(self) -> "Sequence[Cell]":
+        """Returns the currently selected `Cells` in this `Notebook`."""
+        return self.page.children[self.page.selected_slice]
+
     def change_kernel(self, msg: "Optional[str]" = None) -> None:
         """Displays a dialog for the user to select a new kernel."""
 
