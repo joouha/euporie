@@ -2,9 +2,21 @@
 Changelog
 #########
 
-All notable changes to this project will be documented in this file.
+Notable changes to this project will be documented in this file.
 
+********
+Upcoming
+********
 
+Added
+=====
+
+- Added ability to select multiple notebook cells
+
+Changed
+=======
+
+- Expanded run, cut, copy, paste commands to work with multiple cells
 
 ******************
 1.2.2 - 2022-03-17

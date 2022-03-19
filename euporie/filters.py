@@ -31,6 +31,7 @@ __all__ = [
     "micro_replace_mode",
     "micro_insert_mode",
     "micro_recording_macro",
+    "multiple_cells_selected",
     "is_returnable",
     "cursor_at_start_of_line",
     "insert_mode",
@@ -126,6 +127,15 @@ def pager_has_focus() -> "bool":
 def cell_has_focus() -> "bool":
     """Determine if there is a currently focused cell."""
     return get_app().cell is not None
+
+
+@Condition
+def multiple_cells_selected() -> "bool":
+    """Determine if there is more than one selected cell."""
+    nb = get_app().notebook
+    if nb is not None:
+        return len(nb.page.selected_indices) > 1
+    return False
 
 
 @Condition

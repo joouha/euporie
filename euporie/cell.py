@@ -29,18 +29,20 @@ from prompt_toolkit.widgets import Frame, SearchToolbar, TextArea
 from pygments.lexers import get_lexer_by_name  # type: ignore
 
 from euporie.app.current import get_tui_app as get_app
-from euporie.box import RoundBorder as Border
+from euporie.box import RoundBorder, ThickVerticalBorder
 from euporie.config import config
+from euporie.filters import multiple_cells_selected
 from euporie.format import format_code
 from euporie.output.container import CellOutput
 from euporie.suggest import AppendLineAutoSuggestion, ConditionalAutoSuggestAsync
 
 if TYPE_CHECKING:
-    from typing import Any, Callable, Literal, Optional, Union
+    from typing import Any, Callable, Literal, Optional, Type, Union
 
     from prompt_toolkit.buffer import Buffer
     from prompt_toolkit.formatted_text.base import AnyFormattedText, StyleAndTextTuples
     from prompt_toolkit.layout.layout import FocusableElement
+    from prompt_toolkit.widgets.base import Border as PtkBorder
 
     from euporie.notebook import Notebook, TuiNotebook
     from euporie.output.control import OutputControl
@@ -333,7 +335,7 @@ class Cell:
                         filter=self.show_prompt,
                     ),
                     ConditionalContainer(
-                        content=fill(width=1, char=self.border_char("VERTICAL")),
+                        content=fill(width=1, char=self.border_char("INNER_VERTICAL")),
                         filter=self.show_prompt,
                     ),
                     HSplit([self.input_box, self.search_control]),
@@ -382,7 +384,7 @@ class Cell:
                         fill(width=1, char=" "), filter=~self.show_prompt
                     ),
                     ConditionalContainer(
-                        content=fill(width=1, char=self.border_char("VERTICAL")),
+                        content=fill(width=1, char=self.border_char("INNER_VERTICAL")),
                         filter=self.show_prompt,
                     ),
                     HSplit(
@@ -427,7 +429,6 @@ class Cell:
         self.container = FloatContainer(
             content=HSplit(
                 [top_border, input_row, middle_line, output_row, bottom_border],
-                # key_bindings=load_command_bindings("cell"),
             ),
             floats=[
                 Float(
@@ -456,10 +457,17 @@ class Cell:
         else:
             return False
 
+    @property
+    def selected(self) -> "bool":
+        """Determine if the cell currently is selected."""
+        return False
+
     def border_style(self) -> "str":
         """Determines the style of the cell borders, based on the cell state."""
         if not config.dump:
             if self.focused:
+                return "class:cell.border.focused"
+            if self.selected:
                 if has_focus(self.input_box.buffer)():
                     return "class:cell.border.edit"
                 else:
@@ -468,11 +476,15 @@ class Cell:
 
     def border_char(self, name: "str") -> "Callable[..., str]":
         """Returns a function  which returns the cell border character to display."""
-        border_char = getattr(Border, name.upper())
 
         def _inner() -> "str":
-            if config.show_cell_borders or self.focused:
-                return border_char
+            Border: "Type[PtkBorder]"
+            if self.focused and multiple_cells_selected():
+                Border = ThickVerticalBorder
+            else:
+                Border = RoundBorder
+            if config.show_cell_borders or self.selected:
+                return getattr(Border, name.upper())
             else:
                 return Border.NONE
 
@@ -625,8 +637,6 @@ class Cell:
     def run_or_render(
         self,
         buffer: "Optional[Buffer]" = None,
-        advance: "bool" = False,
-        insert: "bool" = False,
         wait: "bool" = False,
     ) -> "bool":
         """Placeholder function for running the cell.
@@ -634,8 +644,6 @@ class Cell:
         Args:
             buffer: Unused parameter, required when accepting the contents of a cell's
                 input buffer
-            advance: Has no effect
-            insert: Has no effect
             wait: Has no effect
 
         Returns:
@@ -688,13 +696,22 @@ class InteractiveCell(Cell):
         self.stdin_event = asyncio.Event()
         self.inspect_future = None
 
+    @property
+    def selected(self) -> "bool":
+        """Determine if the cell currently is selected."""
+        if self.container is not None:
+            return self.index in self.nb.page.selected_indices
+        else:
+            return False
+
     def exit_edit_mode(self) -> "None":
         """Removes a cell from edit mode."""
-        # self.input = self.input_box.text
-        # self.nb.dirty = True
         # Give focus back to selected cell (this might have changed e.g. if doing a run
         # then select the next cell)
-        get_app().layout.focus(self.nb.cell.control)
+        try:
+            get_app().layout.focus(self.nb.cell.control)
+        except ValueError:
+            pass
 
     async def edit_in_editor(self) -> "None":
         """Edit the cell in $EDITOR."""
@@ -715,8 +732,6 @@ class InteractiveCell(Cell):
     def run_or_render(
         self,
         buffer: "Optional[Buffer]" = None,
-        advance: "bool" = False,
-        insert: "bool" = False,
         wait: "bool" = False,
     ) -> "bool":
         """Run code cells, or render markdown cells, optionally advancing.
@@ -724,9 +739,6 @@ class InteractiveCell(Cell):
         Args:
             buffer: Unused parameter, required when accepting the contents of a cell's
                 input buffer
-            advance: If True, move to next cell. If True and at the last cell, create a
-                new cell at the end of the notebook.
-            insert: If True, add a new empty cell below the current cell and select it.
             wait: If True, block the main thread until the cell has finished running
 
         Returns:
@@ -734,17 +746,7 @@ class InteractiveCell(Cell):
 
         """
         self.exit_edit_mode()
-
-        n_cells = len(self.nb.json["cells"])
-
-        # Insert a cell if we are at the last cell
-        if insert or (advance and self.nb.page.selected_index == (n_cells) - 1):
-            # self.nb.add(self.index + 1)
-            self.nb.add_cell_below()
-        elif advance:
-            self.nb.page.selected_index += 1
-
-        return super().run_or_render(buffer, advance, insert)
+        return super().run_or_render(buffer)
 
     def get_input(
         self,
@@ -760,9 +762,9 @@ class InteractiveCell(Cell):
         app = get_app()
         layout = app.layout
         focused = layout.current_control
-        # Scroll the current cell into view - this cause the cell to be rendered if it
+        # Scroll the current cell into view - this causes the cell to be rendered if it
         # is not already on screen
-        self.nb.page.selected_index = self.index
+        self.nb.page.selected_slice = slice(self.index, self.index + 1)
         # Set the prompt text for the BeforeInput pre-processor
         if self.stdin_box.control.input_processors is not None:
             prompt_processor = self.stdin_box.control.input_processors[2]

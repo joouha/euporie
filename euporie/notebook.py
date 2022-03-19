@@ -94,7 +94,9 @@ class Notebook(Tab, metaclass=ABCMeta):
 
         self.pager_visible = to_filter(False)
 
-    def refresh(self, index: "Optional[int]" = None, scroll: "bool" = True) -> "None":
+    def refresh(
+        self, slice_: "Optional[slice]" = None, scroll: "bool" = True
+    ) -> "None":
         """Refresh the notebook display."""
         return None
 
@@ -118,8 +120,9 @@ class Notebook(Tab, metaclass=ABCMeta):
             cell_id = get_cell_id(cell_json)
             if cell_id in self._rendered_cells:
                 cells[cell_id] = self._rendered_cells[cell_id]
+                cells[cell_id].index = i
             else:
-                # Pytype doesn't like this...
+                # Pytype doesn't like this..
                 cells[cell_id] = self.cell_type(i, cell_json, self)  # type: ignore
         # Clean up graphic floats from deleted cells
         for cell in set(self._rendered_cells.values()) - set(cells.values()):
@@ -149,27 +152,28 @@ class Notebook(Tab, metaclass=ABCMeta):
         )
         self.dirty = True
 
-    def copy(self, index: "int") -> "None":
+    def copy(self, slice_: "slice") -> "None":
         """Add a copy of this cell to the `Notebook`'s clipboard."""
-        self.clipboard = copy.deepcopy(self.json["cells"][index : index + 1])
+        self.clipboard = copy.deepcopy(self.json["cells"][slice_])
 
-    def delete(self, index: "Optional[int]" = None) -> "None":
+    def delete(self, slice_: "Optional[slice]" = None) -> "None":
         """Delete a cell from the notebook."""
-        # Ensure there is always one cell
-        if index is not None:
-            if len(self.json["cells"]) == 1:
+        if slice_ is not None:
+            index = min(range(*slice_.indices(len(self.json["cells"]))))
+            del self.json["cells"][slice_]
+            # Ensure there is always one cell
+            if len(self.json["cells"]) == 0:
                 self.add(1)
-            del self.json["cells"][index]
             self.dirty = True
-            self.refresh(max(0, index), scroll=True)
+            self.refresh(slice(index, index + 1), scroll=True)
 
-    def cut(self, index: "int") -> "None":
+    def cut(self, slice_: "slice") -> "None":
         """Remove a cell from the notebook and add it to the `Notebook`'s clipboard."""
-        self.copy(index)
-        self.delete(index)
+        self.copy(slice_)
+        self.delete(slice_)
 
     def paste(self, index: "int") -> "None":
-        """Append the contents of the `Notebook`'s clipboard below the current cell."""
+        """Append the contents of the `Notebook`'s clipboard below the first selected cell."""
         cell_jsons: "MutableSequence" = copy.deepcopy(self.clipboard)
         # Assign a new cell IDs
         for cell_json in cell_jsons:
@@ -178,11 +182,11 @@ class Notebook(Tab, metaclass=ABCMeta):
         self.dirty = True
         # Only change the selected cell if we actually pasted something
         if cell_jsons:
-            self.refresh(index + 1)
+            self.refresh(slice(index + 1, index + 1 + len(cell_jsons)))
 
     def save(self) -> "None":
         """Write the notebook's JSON to the current notebook's file."""
-        log.debug("Saving notebook...")
+        log.debug("Saving notebook..")
         self.saving = True
         self.app.invalidate()
         nbformat.write(nb=nbformat.from_dict(self.json), fp=self.path)
@@ -285,7 +289,6 @@ class KernelNotebook(Notebook):
             for cell in self.rendered_cells():
                 if cell.json.get("cell_type") == "code":
                     log.debug("Running cell %s", cell.id)
-                    # self.run_cell(cell, wait=wait)
                     cell.run_or_render(wait=wait)
             log.debug("All cells run")
 
@@ -450,22 +453,24 @@ class TuiNotebook(KernelNotebook):
         """Closes the pager."""
         self.pager_state = None
 
-    def refresh(self, index: "Optional[int]" = None, scroll: "bool" = True) -> "None":
+    def refresh(
+        self, slice_: "Optional[slice]" = None, scroll: "bool" = True
+    ) -> "None":
         """Refresh the rendered contents of this notebook."""
-        if index is None:
-            index = self.page.selected_index
+        if slice_ is None:
+            slice_ = self.page._selected_slice
         self.page.reset()
-        self.page._set_selected_index(index, force=True, scroll=scroll)
+        self.page._set_selected_slice(slice_, force=True, scroll=scroll)
 
     def add_cell_above(self) -> "None":
-        index = self.page.selected_index + 0
+        index = self.page.selected_slice.start + 0
         self.add(index)
-        self.refresh(index=index, scroll=False)
+        self.refresh(slice_=slice(index, index + 1), scroll=False)
 
     def add_cell_below(self) -> "None":
-        index = self.page.selected_index + 1
+        index = self.page.selected_slice.start + 1
         self.add(index)
-        self.refresh(index=index, scroll=True)
+        self.refresh(slice_=slice(index, index + 1), scroll=True)
 
     @property
     def cell(self) -> "InteractiveCell":
@@ -544,6 +549,34 @@ class TuiNotebook(KernelNotebook):
             {"Yes": _do_restart, "No": None},
         )
 
+    def run_selected_cells(
+        self,
+        advance: "bool" = False,
+        insert: "bool" = False,
+    ) -> "None":
+        """Runs the currently selected cells.
+
+        Args:
+            advance: If True, move to next cell. If True and at the last cell, create a
+                new cell at the end of the notebook.
+            insert: If True, add a new empty cell below the current cell and select it.
+
+        """
+        n_cells = len(self.json["cells"])
+        selected_indices = self.page.selected_indices
+        rendered_cells = {cell.index: cell for cell in self._rendered_cells.values()}
+
+        # Insert a cell if we are at the last cell
+        index = max(selected_indices)
+        if insert or (advance and max(selected_indices) == (n_cells) - 1):
+            self.add(index + 1)
+            self.refresh(slice_=slice(index + 1, index + 2), scroll=True)
+        elif advance:
+            self.page.selected_slice = slice(index + 1, index + 2)
+        # Run the cells
+        for i in sorted(selected_indices):
+            rendered_cells[i].run_or_render()
+
     def run_cell(self, cell: "Cell", wait: "bool" = False) -> "None":
         if cell is None:
             cell = self.cell
@@ -558,29 +591,29 @@ class TuiNotebook(KernelNotebook):
             wait=wait,
         )
 
-    def cut(self, index: "Optional[int]" = None) -> "None":
-        """Remove a cell from the notebook and add it to the `Notebook`'s clipboard."""
-        if index is None:
-            index = self.page.selected_index
-        super().cut(index)
+    def cut(self, slice_: "Optional[slice]" = None) -> "None":
+        """Remove cells from the notebook and them to the `Notebook`'s clipboard."""
+        if slice_ is None:
+            slice_ = self.page.selected_slice
+        super().cut(slice_)
 
-    def copy(self, index: "Optional[int]" = None) -> "None":
-        """Add a copy of this cell to the `Notebook`'s clipboard."""
-        if index is None:
-            index = self.page.selected_index
-        super().copy(index)
+    def copy(self, slice_: "Optional[slice]" = None) -> "None":
+        """Add a copy of the selected cells to the `Notebook`'s clipboard."""
+        if slice_ is None:
+            slice_ = self.page.selected_slice
+        super().copy(slice_)
 
     def paste(self, index: "Optional[int]" = None) -> "None":
         """Append the contents of the `Notebook`'s clipboard below the current cell."""
         if index is None:
-            index = self.page.selected_index
+            index = self.page.selected_slice.start
         super().paste(index)
 
-    def delete(self, index: "Optional[int]" = None) -> "None":
-        """Delete a cell from the notebook."""
-        if index is None:
-            index = self.page.selected_index
-        super().delete(index)
+    def delete(self, slice_: "Optional[slice]" = None) -> "None":
+        """Delete a slice of cells from the notebook."""
+        if slice_ is None:
+            slice_ = self.page.selected_slice
+        super().delete(slice_)
 
     def really_close(self, cb: "Optional[Callable]") -> "None":
         """Shutdown the kernel and close the notebook.
@@ -651,9 +684,9 @@ class TuiNotebook(KernelNotebook):
         """Generates the formatted text for the statusbar."""
         return (
             [
-                f"Cell {self.page.selected_index+1}",
+                f"Cell {self.page.selected_slice.start+1}",
                 "*" if self.dirty else "",
-                "Saving..." if self.saving else "",
+                "Saving.." if self.saving else "",
             ],
             [
                 [("", self.kernel_display_name, self._statusbar_kernel_handeler)],

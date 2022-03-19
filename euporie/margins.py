@@ -98,7 +98,7 @@ class ScrollbarMargin(Margin):
 
         # Calculate the position of the thumb
         if content_height <= len(window_render_info.displayed_lines):
-            fraction_above = 0
+            fraction_above = 0.0
         else:
             fraction_above = window_render_info.vertical_scroll / (
                 content_height - len(window_render_info.displayed_lines)

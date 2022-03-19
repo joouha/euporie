@@ -27,42 +27,6 @@ async def edit_in_external_editor() -> "None":
 
 
 @add(
-    keys=["c-enter", "c-e"],
-    filter=cell_has_focus,
-    group="cell",
-)
-def run_cell() -> None:
-    """Run or render the current cell."""
-    cell = get_app().cell
-    if cell is not None:
-        cell.run_or_render()
-
-
-@add(
-    keys=["s-enter", "c-r"],
-    filter=cell_has_focus,
-    group="cell",
-)
-def run_cell_and_select_next_cell() -> None:
-    """Run or render the current cell and select the next cell."""
-    cell = get_app().cell
-    if cell is not None:
-        cell.run_or_render(advance=True)
-
-
-@add(
-    keys=("escape", "enter"),
-    filter=cell_has_focus,
-    group="cell",
-)
-def run_cell_and_insert_below() -> None:
-    """Run or render the current cell and insert a new cell below."""
-    cell = get_app().cell
-    if cell is not None:
-        cell.run_or_render(insert=True)
-
-
-@add(
     keys="enter",
     filter=cell_has_focus & ~buffer_has_focus,
     group="cell",

@@ -22,6 +22,7 @@ class SquareBorder(PtkBorder):
     SPLIT_LEFT = "├"
     SPLIT_RIGHT = "┤"
     CROSS = "┼"
+    INNER_VERTICAL = "│"
 
 
 class RoundBorder(SquareBorder):
@@ -31,6 +32,19 @@ class RoundBorder(SquareBorder):
     TOP_RIGHT = "╮"
     BOTTOM_LEFT = "╰"
     BOTTOM_RIGHT = "╯"
+
+
+class ThickVerticalBorder(SquareBorder):
+    """Box drawing characters with thick verticals corners."""
+
+    TOP_LEFT = "┎"
+    TOP_RIGHT = "┒"
+    VERTICAL = "┃"
+    INNER_VERTICAL = "│"
+    BOTTOM_LEFT = "┖"
+    BOTTOM_RIGHT = "┚"
+    SPLIT_LEFT = "┠"
+    SPLIT_RIGHT = "┨"
 
 
 class BorderLine(Container):

@@ -215,14 +215,16 @@ class ScrollingContainer(Container):
         self._children: "list[Cell]" = []
         self.refresh_children = True
 
-        self._selected_index = 0  # The index of the currently selected
-        self._selected_child_render_info: "ChildRenderInfo"
+        self._selected_slice = slice(
+            0, 1
+        )  # The index of the currently selected children
+        self._selected_child_render_infos: "list[ChildRenderInfo]"
         self.selected_child_position: "int" = 0
 
         self.child_render_infos: "dict[int, ChildRenderInfo]" = (
             {}
         )  # Holds child container wrappers
-        self.visible_indicies: "set[int]" = set([self._selected_index])
+        self.visible_indicies: "set[int]" = set([0])
         self.index_positions: "dict[int, int]" = {}
 
         self.last_write_position = WritePosition(0, 0, 0, 0)
@@ -233,7 +235,6 @@ class ScrollingContainer(Container):
 
     def reset(self) -> "None":
         """Reset the state of this container and all the children."""
-        # self.render_info = None
         for meta in self.child_render_infos.values():
             meta.container.reset()
             meta.refresh = True
@@ -271,53 +272,69 @@ class ScrollingContainer(Container):
             }
         return self._children
 
-    def _set_selected_index(
-        self, new_index: "int", force: "bool" = False, scroll: "bool" = True
+    def _set_selected_slice(
+        self, new_slice: "slice", force: "bool" = False, scroll: "bool" = True
     ) -> None:
         # Only update the selected child if it was not selected before
-        if force or new_index != self._selected_index:
+        if force or new_slice != self._selected_slice:
             self.refresh_children = True
-            # Ensure selected index is a valid child
-            new_index = min(max(new_index, 0), len(self.children) - 1)
-            # Request a refresh of the previously selected child
-            self._selected_child_render_info.refresh = True
+            # Ensure new selected slice is valid
+            new_slice = self.validate_slice(new_slice)
+            # Request a refresh of the previously selected children
+            for render_info in self._selected_child_render_infos:
+                render_info.refresh = True
             # Scroll into view
             if scroll:
-                self.scroll_to(new_index)
-            # Get the new child and focus it
-            child = self.children[new_index]
+                self.scroll_to(new_slice.start)
+            # Get the first selected child and focus it
+            child = self.children[new_slice.start]
             app = get_app()
             if not app.layout.has_focus(child):
                 app.layout.focus(child)
             # Track which child was selected
-            self._selected_index = new_index
+            self._selected_slice = new_slice
 
     @property
-    def selected_index(self) -> "int":
-        """Returns in index of the currently selected child."""
+    def selected_slice(self) -> "slice":
+        """Returns the currently selected slice, checking for changes in focus."""
         app = get_app()
         # Detect if focused child element has changed
         if app.layout.has_focus(self):
-            # Find index of selected child
-            index = self._selected_index
+            # Find index of focused child
+            index = self._selected_slice.start
             for i, child in enumerate(self.children):
                 if app.layout.has_focus(child):
-                    self._selected_child = child
                     index = i
                     break
             # This will change the position when a new child is selected
-            self.selected_index = index
-        return self._selected_index
+            # self.selected_slice = slice(index, index + 1)
+            if index != self._selected_slice.start:
+                self.selected_slice = slice(index, index + 1)
+        return self._selected_slice
 
-    @selected_index.setter
-    def selected_index(self, new_index: "int") -> "None":
+    @selected_slice.setter
+    def selected_slice(self, new_slice: "slice") -> "None":
         """Sets the currently selected child index.
 
         Args:
-            new_index: The index of the child to select.
-
+            new_slice: The slice of the children to select.
         """
-        self._set_selected_index(new_index)
+        self._set_selected_slice(new_slice)
+
+    def validate_slice(self, slice_: "slice") -> "slice":
+        """Ensures a slice describes a valid range of children."""
+        start = min(max(slice_.start, 0), len(self.children) - 1)
+        stop = slice_.stop
+        if stop == -1:
+            stop = None
+        if stop is not None:
+            stop = min(max(slice_.stop, int(start == 0)), len(self.children))
+        return slice(start, stop, slice_.step)
+
+    @property
+    def selected_indices(self) -> "list[int]":
+        """Returns in indices of the currently selected children."""
+        return list(range(*self.selected_slice.indices(len(self._children))))
 
     def get_child_render_info(self, index: "Optional[int]" = None) -> "ChildRenderInfo":
         """Return a rendered instance of the child at the given index.
@@ -332,7 +349,7 @@ class ScrollingContainer(Container):
 
         """
         if index is None:
-            index = self.selected_index
+            index = self._selected_slice.start
         child = self.children[index]
         child_hash = hash(child)
         if child_hash not in self.child_render_infos:
@@ -372,7 +389,6 @@ class ScrollingContainer(Container):
         elif mouse_event.event_type == MouseEventType.SCROLL_UP:
             self.scroll(1)
 
-    # @abstractmethod
     def write_to_screen(
         self,
         screen: "Screen",
@@ -411,11 +427,13 @@ class ScrollingContainer(Container):
         # Record children which are currently visible
         visible_indicies = set()
 
-        # Force the selected child to refresh
-        selected_index = self.selected_index
-
-        self._selected_child_render_info = self.get_child_render_info(selected_index)
-        self._selected_child_render_info.refresh = True
+        # Force the selected children to refresh
+        selected_indices = self.selected_indices
+        self._selected_child_render_infos = []
+        for index in selected_indices:
+            render_info = self.get_child_render_info(index)
+            render_info.refresh = True
+            self._selected_child_render_infos.append(render_info)
 
         # Refresh all children if the width has changed
         if (
@@ -425,9 +443,9 @@ class ScrollingContainer(Container):
             for child_render_info in self.child_render_infos.values():
                 child_render_info.refresh = True
 
-        # Blit selected child and those below it that are on screen
+        # Blit first selected child and those below it that are on screen
         line = self.selected_child_position
-        for i in range(selected_index, len(self.children)):
+        for i in range(self._selected_slice.start, len(self.children)):
             child_render_info = self.get_child_render_info(i)
             child_render_info.render(
                 available_width=available_width,
@@ -468,7 +486,7 @@ class ScrollingContainer(Container):
                         mouse_handlers.mouse_handlers[y][x] = self.mouse_scroll_handler
         # Blit children above the selected that are on screen
         line = self.selected_child_position
-        for i in range(selected_index - 1, -1, -1):
+        for i in range(self._selected_slice.start - 1, -1, -1):
             child_render_info = self.get_child_render_info(i)
             child_render_info.render(
                 available_width=available_width,
@@ -509,8 +527,8 @@ class ScrollingContainer(Container):
         # Dont bother drawing floats
         # screen.draw_all_floats()
 
-        # Ensure the selected child is always in the layout
-        visible_indicies.add(self._selected_index)
+        # Ensure the focused child is always in the layout
+        visible_indicies.add(self._selected_slice.start)
 
         # Update which children will appear in the layout
         self.visible_indicies = visible_indicies
@@ -528,7 +546,7 @@ class ScrollingContainer(Container):
         content_height = max(sum(sizes.values()), 1)
 
         vertical_scroll = (
-            sum(list(sizes.values())[: self._selected_index])
+            sum(list(sizes.values())[: self._selected_slice.start])
             - self.selected_child_position
         )
 
@@ -569,7 +587,7 @@ class ScrollingContainer(Container):
 
         """
         if index is None:
-            index = self.selected_index
+            index = self.selected_slice.start
         return self.children[index]
 
     def scroll_to(self, index: "int") -> "None":
@@ -587,11 +605,11 @@ class ScrollingContainer(Container):
         if index in self.visible_indicies:
             new_top = self.index_positions[index]
         else:
-            if index < self._selected_index:
+            if index < self._selected_slice.start:
                 new_top = 0
-            elif index == self._selected_index:
+            elif index == self._selected_slice.start:
                 new_top = self.selected_child_position
-            elif index > self._selected_index:
+            elif index > self._selected_slice.start:
                 last_index = max(self.index_positions)
                 new_top = max(
                     min(

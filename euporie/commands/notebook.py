@@ -6,7 +6,12 @@ from prompt_toolkit.filters import buffer_has_focus
 
 from euporie.app.current import get_tui_app as get_app
 from euporie.commands.registry import add
-from euporie.filters import cell_output_has_focus, kernel_is_python, notebook_has_focus
+from euporie.filters import (
+    cell_has_focus,
+    cell_output_has_focus,
+    kernel_is_python,
+    notebook_has_focus,
+)
 
 log = logging.getLogger(__name__)
 
@@ -21,6 +26,42 @@ def save_notebook() -> "None":
     nb = get_app().notebook
     if nb is not None:
         nb.save()
+
+
+@add(
+    keys=["c-enter", "c-e"],
+    filter=cell_has_focus,
+    group="notebook",
+)
+def run_selected_cells() -> None:
+    """Run or render the current cells."""
+    nb = get_app().notebook
+    if nb is not None:
+        nb.run_selected_cells()
+
+
+@add(
+    keys=["s-enter", "c-r"],
+    filter=cell_has_focus,
+    group="notebook",
+)
+def run_selected_cells_and_select_next_cell() -> None:
+    """Run or render the current cells and select the next cell."""
+    nb = get_app().notebook
+    if nb is not None:
+        nb.run_selected_cells(advance=True)
+
+
+@add(
+    keys=("escape", "enter"),
+    filter=cell_has_focus,
+    group="notebook",
+)
+def run_cell_and_insert_below() -> None:
+    """Run or render the current cells and insert a new cell below."""
+    nb = get_app().notebook
+    if nb is not None:
+        nb.run_selected_cells(insert=True)
 
 
 @add(
@@ -208,7 +249,7 @@ def select_first_cell() -> "None":
     """Select the first cell in the notebook."""
     nb = get_app().notebook
     if nb is not None:
-        nb.page._set_selected_index(0, force=True, scroll=True)
+        nb.page._set_selected_slice((slice(0, 1)), force=True, scroll=True)
 
 
 @add(
@@ -220,7 +261,10 @@ def select_5th_previous_cell() -> "None":
     """Go up 5 cells."""
     nb = get_app().notebook
     if nb is not None:
-        nb.page.selected_index -= 5
+        nb.page.selected_slice = slice(
+            nb.page.selected_slice.start - 5,
+            nb.page.selected_slice.start - 5 + 1,
+        )
 
 
 @add(
@@ -232,7 +276,42 @@ def select_previous_cell() -> "None":
     """Go up one cell."""
     nb = get_app().notebook
     if nb is not None:
-        nb.page.selected_index -= 1
+        nb.page.selected_slice = slice(
+            nb.page.selected_slice.start - 1,
+            nb.page.selected_slice.start,
+        )
+
+
+@add(
+    keys=["s-up", "K"],
+    group="notebook",
+    filter=notebook_has_focus & ~buffer_has_focus & ~cell_output_has_focus,
+)
+def extend_cell_selection_up() -> "None":
+    """Go up one cell."""
+    nb = get_app().notebook
+    if nb is not None:
+        slice_ = nb.page._selected_slice
+        if slice_.start - 1 == slice_.stop:
+            nb.page.selected_slice = slice(slice_.stop, slice_.start + 1, 1)
+        else:
+            nb.page.selected_slice = slice(slice_.start - 1, slice_.stop, slice_.step)
+
+
+@add(
+    keys=["s-down", "J"],
+    group="notebook",
+    filter=notebook_has_focus & ~buffer_has_focus & ~cell_output_has_focus,
+)
+def extend_cell_selection_down() -> "None":
+    """Go up one cell."""
+    nb = get_app().notebook
+    if nb is not None:
+        slice_ = nb.page._selected_slice
+        if slice_.start + 1 == slice_.stop:
+            nb.page.selected_slice = slice(slice_.stop, slice_.start - 1, -1)
+        else:
+            nb.page.selected_slice = slice(slice_.start + 1, slice_.stop, slice_.step)
 
 
 @add(
@@ -244,7 +323,10 @@ def next_child() -> "None":
     """Select the next cell."""
     nb = get_app().notebook
     if nb is not None:
-        nb.page.selected_index += 1
+        nb.page.selected_slice = slice(
+            nb.page.selected_slice.start + 1,
+            nb.page.selected_slice.start + 1 + 1,
+        )
 
 
 @add(
@@ -256,7 +338,10 @@ def select_5th_next_cell() -> "None":
     """Go down 5 cells."""
     nb = get_app().notebook
     if nb is not None:
-        nb.page.selected_index += 5
+        nb.page.selected_slice = slice(
+            nb.page.selected_slice.start + 5,
+            nb.page.selected_slice.start + 5 + 1,
+        )
 
 
 @add(
@@ -268,7 +353,25 @@ def select_last_cell() -> "None":
     """Select the last cell in the notebook."""
     nb = get_app().notebook
     if nb is not None:
-        nb.page._set_selected_index(len(nb.page.children), force=True, scroll=True)
+        nb.page.selected_slice = slice(
+            len(nb.page.children),
+            len(nb.page.children) + 1,
+        )
+
+
+@add(
+    keys="c-a",
+    group="notebook",
+    filter=notebook_has_focus & ~buffer_has_focus & ~cell_output_has_focus,
+)
+def select_all_cells() -> "None":
+    """Select all cells in the notebook."""
+    nb = get_app().notebook
+    if nb is not None:
+        nb.page.selected_slice = slice(
+            0,
+            len(nb.page.children) + 1,
+        )
 
 
 @add(

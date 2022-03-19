@@ -37,7 +37,7 @@ def load_menu_items() -> "list[MenuItem]":
         MenuItem(
             "Run",
             children=[
-                get("run-cell").menu,
+                get("run-selected-cells").menu,
                 get("run-all-cells").menu,
             ],
         ),
