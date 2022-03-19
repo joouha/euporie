@@ -12,6 +12,7 @@ Added
 =====
 
 - Added ability to select multiple notebook cells
+- Added ability to merge multiple cells
 
 Changed
 =======

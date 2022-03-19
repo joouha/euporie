@@ -157,7 +157,12 @@ class Notebook(Tab, metaclass=ABCMeta):
         indices = slice_.indices(len(self.json["cells"]))
         self.clipboard = copy.deepcopy(
             # Sort clipboard contents by index)
-            [x for _, x in sorted(zip(indices, self.json["cells"][slice_]))]
+            [
+                x
+                for _, x in sorted(
+                    zip(indices, self.json["cells"][slice_]), key=lambda x: x[0]
+                )
+            ]
         )
 
     def delete(self, slice_: "Optional[slice]" = None) -> "None":
@@ -187,6 +192,33 @@ class Notebook(Tab, metaclass=ABCMeta):
         # Only change the selected cell if we actually pasted something
         if cell_jsons:
             self.refresh(slice(index + 1, index + 1 + len(cell_jsons)))
+
+    def merge(self, slice_: "Optional[slice]" = None) -> "None":
+        """Merge two or more cells."""
+        if slice_ is not None:
+            indices = sorted(range(*slice_.indices(len(self.json["cells"]))))
+            if len(indices) >= 2:
+                # Create a new cell
+                new_cell_json = nbformat.v4.new_code_cell()
+                # Set the type for that for the focused cell
+                cell_type = self.json["cells"][slice_.start].get("cell_type", "code")
+                new_cell_json["cell_type"] = cell_type
+                # Create and set the combined cell source
+                sources = []
+                for i in indices:
+                    cell_json = self.json["cells"][i]
+                    source = cell_json.get("source", "")
+                    # Comment markdown cell contents if merging into code cell
+                    if cell_type == "code" and cell_json.get("cell_type") == "markdown":
+                        source = "\n".join([f"# {line}" for line in source.split("\n")])
+                    sources.append(source)
+                new_cell_json["source"] = "\n\n".join(sources)
+                # Insert the new cell
+                new_index = max(indices) + 1
+                self.json["cells"].insert(new_index, new_cell_json)
+                # Delete the selected slice
+                self.delete(slice_)
+                self.dirty = True
 
     def save(self) -> "None":
         """Write the notebook's JSON to the current notebook's file."""
@@ -618,6 +650,12 @@ class TuiNotebook(KernelNotebook):
         if slice_ is None:
             slice_ = self.page.selected_slice
         super().delete(slice_)
+
+    def merge(self, slice_: "Optional[slice]" = None) -> "None":
+        """Merge two or more cells."""
+        if slice_ is None:
+            slice_ = self.page.selected_slice
+        super().merge(slice_)
 
     def really_close(self, cb: "Optional[Callable]") -> "None":
         """Shutdown the kernel and close the notebook.

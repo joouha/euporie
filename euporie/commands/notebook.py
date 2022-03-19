@@ -10,6 +10,7 @@ from euporie.filters import (
     cell_has_focus,
     cell_output_has_focus,
     kernel_is_python,
+    multiple_cells_selected,
     notebook_has_focus,
 )
 
@@ -104,8 +105,8 @@ def add_cell_below() -> "None":
     filter=notebook_has_focus & ~buffer_has_focus & ~cell_output_has_focus,
     group="notebook",
 )
-def delete_cell() -> "None":
-    """Delete the current cell."""
+def delete_cells() -> "None":
+    """Delete the current cells."""
     nb = get_app().notebook
     if nb is not None:
         nb.delete()
@@ -116,8 +117,8 @@ def delete_cell() -> "None":
     filter=notebook_has_focus & ~buffer_has_focus & ~cell_output_has_focus,
     group="notebook",
 )
-def cut_cell() -> "None":
-    """Cut the current cell."""
+def cut_cells() -> "None":
+    """Cut the current cells."""
     nb = get_app().notebook
     if nb is not None:
         nb.cut()
@@ -128,8 +129,8 @@ def cut_cell() -> "None":
     filter=notebook_has_focus & ~buffer_has_focus & ~cell_output_has_focus,
     group="notebook",
 )
-def copy_cell() -> "None":
-    """Copy the current cell."""
+def copy_cells() -> "None":
+    """Copy the current cells."""
     nb = get_app().notebook
     if nb is not None:
         nb.copy()
@@ -140,11 +141,26 @@ def copy_cell() -> "None":
     filter=notebook_has_focus & ~buffer_has_focus & ~cell_output_has_focus,
     group="notebook",
 )
-def paste_cell() -> "None":
-    """Paste the last copied cell."""
+def paste_cells() -> "None":
+    """Paste the previously copied cells."""
     nb = get_app().notebook
     if nb is not None:
         nb.paste()
+
+
+@add(
+    keys="M",
+    filter=notebook_has_focus
+    & ~buffer_has_focus
+    & ~cell_output_has_focus
+    & multiple_cells_selected,
+    group="notebook",
+)
+def merge_cells() -> "None":
+    """Merge the selected cells."""
+    nb = get_app().notebook
+    if nb is not None:
+        nb.merge()
 
 
 @add(

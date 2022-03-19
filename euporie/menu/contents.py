@@ -26,9 +26,9 @@ def load_menu_items() -> "list[MenuItem]":
         MenuItem(
             "Edit",
             children=[
-                get("cut-cell").menu,
-                get("copy-cell").menu,
-                get("paste-cell").menu,
+                get("cut-cells").menu,
+                get("copy-cells").menu,
+                get("paste-cells").menu,
                 separator,
                 get("reformat-cell-black").menu,
                 get("reformat-notebook").menu,
