@@ -77,6 +77,7 @@ class ChildRenderInfo:
 
         """
         if self.refresh:
+            self.refresh = False
             self.height = self.container.preferred_height(
                 available_width, available_height
             ).preferred
@@ -98,7 +99,6 @@ class ChildRenderInfo:
                 z_index=0,
             )
             self.screen.draw_all_floats()
-            self.refresh = False
 
     def blit(
         self,
@@ -280,12 +280,12 @@ class ScrollingContainer(Container):
             self.refresh_children = True
             # Ensure new selected slice is valid
             new_slice = self.validate_slice(new_slice)
-            # Request a refresh of the previously selected children
-            for render_info in self._selected_child_render_infos:
-                render_info.refresh = True
             # Scroll into view
             if scroll:
                 self.scroll_to(new_slice.start)
+            # Request a refresh of the previously selected children
+            for render_info in self._selected_child_render_infos:
+                render_info.refresh = True
             # Get the first selected child and focus it
             child = self.children[new_slice.start]
             app = get_app()

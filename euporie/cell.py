@@ -696,6 +696,10 @@ class InteractiveCell(Cell):
         self.stdin_event = asyncio.Event()
         self.inspect_future = None
 
+    def select(self) -> "None":
+        """Selects this cell."""
+        self.nb.page.selected_slice = slice(self.index, self.index + 1)
+
     @property
     def selected(self) -> "bool":
         """Determine if the cell currently is selected."""
@@ -723,6 +727,8 @@ class InteractiveCell(Cell):
     def enter_edit_mode(self) -> "None":
         """Set the cell to edit mode."""
         layout = get_app().layout
+        # Select just this cell when editing
+        self.select()
         if self.asking_input():
             layout.focus(self.stdin_box)
         else:

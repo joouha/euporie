@@ -18,6 +18,11 @@ Changed
 
 - Expanded run, cut, copy, paste commands to work with multiple cells
 
+Fixed
+=====
+
+- Fix recursion bug when editing a cell when multiple cells are selected
+
 ******************
 1.2.2 - 2022-03-17
 ******************
