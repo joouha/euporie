@@ -23,7 +23,7 @@ View the online documentation at: `https://euporie.readthedocs.io/ <https://eupo
 Install
 *******
 
-You can install euporie with `pipx <pipxproject.github.io/>`_:
+You can install euporie with `pipx <https://pipxproject.github.io/>`_ or ``pip``:
 
 .. code-block:: console
 
