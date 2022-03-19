@@ -154,7 +154,11 @@ class Notebook(Tab, metaclass=ABCMeta):
 
     def copy(self, slice_: "slice") -> "None":
         """Add a copy of this cell to the `Notebook`'s clipboard."""
-        self.clipboard = copy.deepcopy(self.json["cells"][slice_])
+        indices = slice_.indices(len(self.json["cells"]))
+        self.clipboard = copy.deepcopy(
+            # Sort clipboard contents by index)
+            [x for _, x in sorted(zip(indices, self.json["cells"][slice_]))]
+        )
 
     def delete(self, slice_: "Optional[slice]" = None) -> "None":
         """Delete a cell from the notebook."""
