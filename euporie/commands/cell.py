@@ -48,3 +48,15 @@ def exit_edit_mode() -> "None":
     cell = get_app().cell
     if cell is not None:
         cell.exit_edit_mode()
+
+
+@add(
+    keys=["c-\\"],
+    filter=cell_has_focus & buffer_has_focus,
+    group="cell",
+)
+def split_cell() -> "None":
+    """Split the current cell at the cursor position."""
+    cell = get_app().cell
+    if cell is not None:
+        cell.split()

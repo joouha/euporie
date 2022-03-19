@@ -220,6 +220,28 @@ class Notebook(Tab, metaclass=ABCMeta):
                 self.delete(slice_)
                 self.dirty = True
 
+    def split_cell(self, cell: "Cell", cursor_position: "int") -> "None":
+        """Splits a cell into two at the given cursor position.
+
+        Args:
+            cell: The rendered cell to split
+            cursor_position: The position at which to split the cell
+
+        """
+        # Get the cell contents
+        source = cell.json.get("source", "")
+        # Create a new cell
+        new_cell_json = nbformat.v4.new_code_cell()
+        # Split the cell contents at the cursor position
+        cell.input = source[cursor_position:]
+        new_cell_json["source"] = source[:cursor_position]
+        # Copy the cell type
+        new_cell_json["cell_type"] = cell.json["cell_type"]
+        # Add the new cell to the notebook
+        self.json["cells"].insert(cell.index, new_cell_json)
+        # Refresh the notebook display
+        self.refresh()
+
     def save(self) -> "None":
         """Write the notebook's JSON to the current notebook's file."""
         log.debug("Saving notebook..")

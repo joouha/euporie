@@ -535,8 +535,11 @@ class Cell:
             value: The new cell contents text.
 
         """
+        cp = self.input_box.buffer.cursor_position
         self._set_input(value)
         self.input_box.text = self.json["source"]
+        cp = max(0, min(cp, len(value)))
+        self.input_box.buffer.cursor_position = cp
 
     @property
     def outputs(self) -> "list[dict[str, Any]]":
@@ -732,6 +735,11 @@ class InteractiveCell(Cell):
         else:
             layout.focus(self.input_box)
             self.rendered = False
+
+    def split(self) -> "None":
+        """Split the cell at the current cursor position."""
+        self.nb.split_cell(self, self.input_box.buffer.cursor_position)
+        self.input_box.buffer.cursor_position = 0
 
     def run_or_render(
         self,
