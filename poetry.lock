@@ -1143,7 +1143,7 @@ six = ">=1.5"
 
 [[package]]
 name = "pytz"
-version = "2021.3"
+version = "2022.1"
 description = "World timezone definitions, modern and historical"
 category = "main"
 optional = false
@@ -1419,6 +1419,20 @@ lint = ["flake8 (>=3.5.0)", "isort", "mypy (>=0.931)", "docutils-stubs", "types-
 test = ["pytest", "pytest-cov", "html5lib", "cython", "typed-ast"]
 
 [[package]]
+name = "sphinx-argparse-cli"
+version = "1.8.3"
+description = "render CLI arguments (sub-commands friendly) defined by argparse module"
+category = "dev"
+optional = false
+python-versions = ">=3.7"
+
+[package.dependencies]
+sphinx = ">=3"
+
+[package.extras]
+test = ["pytest (>=6)", "pytest-cov (>=3)"]
+
+[[package]]
 name = "sphinx-autobuild"
 version = "2021.3.14"
 description = "Rebuild Sphinx documentation on changes, with live-reload in the browser."
@@ -1433,6 +1447,21 @@ sphinx = "*"
 
 [package.extras]
 test = ["pytest", "pytest-cov"]
+
+[[package]]
+name = "sphinx-copybutton"
+version = "0.5.0"
+description = "Add a copy button to each of your code cells."
+category = "dev"
+optional = false
+python-versions = ">=3.6"
+
+[package.dependencies]
+sphinx = ">=1.8"
+
+[package.extras]
+code_style = ["pre-commit (==2.12.1)"]
+rtd = ["sphinx", "ipython", "myst-nb", "sphinx-book-theme"]
 
 [[package]]
 name = "sphinx-rtd-theme"
@@ -1521,12 +1550,26 @@ lint = ["flake8", "mypy", "docutils-stubs"]
 test = ["pytest"]
 
 [[package]]
+name = "sphinxext-opengraph"
+version = "0.6.2"
+description = "Sphinx Extension to enable OGP support"
+category = "dev"
+optional = false
+python-versions = ">=3.6"
+
+[package.dependencies]
+sphinx = ">=2.0"
+
+[[package]]
 name = "ssort"
-version = "0.11.2"
+version = "0.11.3"
 description = "The python statement sorter"
 category = "main"
 optional = false
 python-versions = ">=3.8"
+
+[package.dependencies]
+pathspec = ">=0.9.0"
 
 [[package]]
 name = "stevedore"
@@ -1541,7 +1584,7 @@ pbr = ">=2.0.0,<2.1.0 || >2.1.0"
 
 [[package]]
 name = "sympy"
-version = "1.10"
+version = "1.10.1"
 description = "Computer algebra system (CAS) in Python"
 category = "main"
 optional = true
@@ -1573,7 +1616,7 @@ python-versions = ">=3.6"
 
 [[package]]
 name = "tifffile"
-version = "2022.2.9"
+version = "2022.3.16"
 description = "Read and write TIFF files"
 category = "main"
 optional = true
@@ -1721,7 +1764,7 @@ socks = ["PySocks (>=1.5.6,!=1.5.7,<2.0)"]
 
 [[package]]
 name = "virtualenv"
-version = "20.13.3"
+version = "20.13.4"
 description = "Virtual Python Environment builder"
 category = "dev"
 optional = false
@@ -1776,7 +1819,7 @@ svg-cairosvg = ["CairoSVG"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "ec8a75fa8018befe92c8aed40db53215cd3f58d21f91581bec8849014e4ab06f"
+content-hash = "7903211258a2054d754627b9594652b711cbd4444b61a10896f3cb8c9d427981"
 
 [metadata.files]
 aenum = [
@@ -2385,8 +2428,8 @@ python-dateutil = [
     {file = "python_dateutil-2.8.2-py2.py3-none-any.whl", hash = "sha256:961d03dc3453ebbc59dbdea9e4e11c5651520a876d0f4db161e8674aae935da9"},
 ]
 pytz = [
-    {file = "pytz-2021.3-py2.py3-none-any.whl", hash = "sha256:3672058bc3453457b622aab7a1c3bfd5ab0bdae451512f6cf25f64ed37f5b87c"},
-    {file = "pytz-2021.3.tar.gz", hash = "sha256:acad2d8b20a1af07d4e4c9d2e9285c5ed9104354062f275f3fcd88dcef4f1326"},
+    {file = "pytz-2022.1-py2.py3-none-any.whl", hash = "sha256:e68985985296d9a66a881eb3193b0906246245294a881e7c8afe623866ac6a5c"},
+    {file = "pytz-2022.1.tar.gz", hash = "sha256:1e760e2fe6a8163bc0b3d9a19c4f84342afa0a2affebfaa84b01b978a02ecaa7"},
 ]
 pywavelets = [
     {file = "PyWavelets-1.3.0-cp310-cp310-macosx_10_13_universal2.whl", hash = "sha256:eebaa9c28600da336743fefd650332460c132792660e70eb09abf343b0664b87"},
@@ -2728,9 +2771,17 @@ sphinx = [
     {file = "Sphinx-4.4.0-py3-none-any.whl", hash = "sha256:5da895959511473857b6d0200f56865ed62c31e8f82dd338063b84ec022701fe"},
     {file = "Sphinx-4.4.0.tar.gz", hash = "sha256:6caad9786055cb1fa22b4a365c1775816b876f91966481765d7d50e9f0dd35cc"},
 ]
+sphinx-argparse-cli = [
+    {file = "sphinx_argparse_cli-1.8.3-py3-none-any.whl", hash = "sha256:794d492e92f407f5e6ed0f2af29e5170a3caa532fd043cee930aeeaeddbc6c6d"},
+    {file = "sphinx_argparse_cli-1.8.3.tar.gz", hash = "sha256:3b1042ec3ed5c148f90c2872424528e4335f849a972fd0e3972d31fa9777f2eb"},
+]
 sphinx-autobuild = [
     {file = "sphinx-autobuild-2021.3.14.tar.gz", hash = "sha256:de1ca3b66e271d2b5b5140c35034c89e47f263f2cd5db302c9217065f7443f05"},
     {file = "sphinx_autobuild-2021.3.14-py3-none-any.whl", hash = "sha256:8fe8cbfdb75db04475232f05187c776f46f6e9e04cacf1e49ce81bdac649ccac"},
+]
+sphinx-copybutton = [
+    {file = "sphinx-copybutton-0.5.0.tar.gz", hash = "sha256:a0c059daadd03c27ba750da534a92a63e7a36a7736dcf684f26ee346199787f6"},
+    {file = "sphinx_copybutton-0.5.0-py3-none-any.whl", hash = "sha256:9684dec7434bd73f0eea58dda93f9bb879d24bff2d8b187b1f2ec08dfe7b5f48"},
 ]
 sphinx-rtd-theme = [
     {file = "sphinx_rtd_theme-1.0.0-py2.py3-none-any.whl", hash = "sha256:4d35a56f4508cfee4c4fb604373ede6feae2a306731d533f409ef5c3496fdbd8"},
@@ -2760,16 +2811,20 @@ sphinxcontrib-serializinghtml = [
     {file = "sphinxcontrib-serializinghtml-1.1.5.tar.gz", hash = "sha256:aa5f6de5dfdf809ef505c4895e51ef5c9eac17d0f287933eb49ec495280b6952"},
     {file = "sphinxcontrib_serializinghtml-1.1.5-py2.py3-none-any.whl", hash = "sha256:352a9a00ae864471d3a7ead8d7d79f5fc0b57e8b3f95e9867eb9eb28999b92fd"},
 ]
+sphinxext-opengraph = [
+    {file = "sphinxext-opengraph-0.6.2.tar.gz", hash = "sha256:30d4dbe345da991c210626795c05918c3f9ad9f7d14d9c48812ccfa7a1ec4bab"},
+    {file = "sphinxext_opengraph-0.6.2-py3-none-any.whl", hash = "sha256:bed3df675b0717b294e274fc59602ee43ccfb758418d5f194d2908c3592605e9"},
+]
 ssort = [
-    {file = "ssort-0.11.2.tar.gz", hash = "sha256:747073857f0ef4f4e0f78edaf958562e00f1c83b468bcb25538a883badefcd39"},
+    {file = "ssort-0.11.3.tar.gz", hash = "sha256:ee3f83bc05d42c2d73c446ba70b0e0f3ec5df18da7142430e331d87afb93a7ed"},
 ]
 stevedore = [
     {file = "stevedore-3.5.0-py3-none-any.whl", hash = "sha256:a547de73308fd7e90075bb4d301405bebf705292fa90a90fc3bcf9133f58616c"},
     {file = "stevedore-3.5.0.tar.gz", hash = "sha256:f40253887d8712eaa2bb0ea3830374416736dc8ec0e22f5a65092c1174c44335"},
 ]
 sympy = [
-    {file = "sympy-1.10-py3-none-any.whl", hash = "sha256:2009368e862cd29f1b568dc6572786371a2faa1cd8eb4d313e11a90195d6ee36"},
-    {file = "sympy-1.10.tar.gz", hash = "sha256:6cf85a5cfe8fff69553e745b05128de6fc8de8f291965c63871c79701dc6efc9"},
+    {file = "sympy-1.10.1-py3-none-any.whl", hash = "sha256:df75d738930f6fe9ebe7034e59d56698f29e85f443f743e51e47df0caccc2130"},
+    {file = "sympy-1.10.1.tar.gz", hash = "sha256:5939eeffdf9e152172601463626c022a2c27e75cf6278de8d401d50c9d58787b"},
 ]
 testfixtures = [
     {file = "testfixtures-6.18.5-py2.py3-none-any.whl", hash = "sha256:7de200e24f50a4a5d6da7019fb1197aaf5abd475efb2ec2422fdcf2f2eb98c1d"},
@@ -2780,8 +2835,8 @@ threadpoolctl = [
     {file = "threadpoolctl-3.1.0.tar.gz", hash = "sha256:a335baacfaa4400ae1f0d8e3a58d6674d2f8828e3716bb2802c44955ad391380"},
 ]
 tifffile = [
-    {file = "tifffile-2022.2.9-py3-none-any.whl", hash = "sha256:cf6c32777e1ff6249e9227196535c5ab8531ec520744cf2a62789535d4aec417"},
-    {file = "tifffile-2022.2.9.tar.gz", hash = "sha256:7eda74117643681bb2caa695b48f39e2243b4887f7cf991d5adffd813e5c8373"},
+    {file = "tifffile-2022.3.16-py3-none-any.whl", hash = "sha256:68f4f3aece7daafbe3dd58751622be0412510ee5921625ca611e47b618f906e6"},
+    {file = "tifffile-2022.3.16.tar.gz", hash = "sha256:fe2c79190a1d625076e68a2f0e49ca72a907315fe8ebf488f5eecf70b257fe3c"},
 ]
 timg = [
     {file = "timg-1.1.6-py3-none-any.whl", hash = "sha256:5e981277c18a3aac8b1215fa354a085723296a9e1c701106187642b82f53cca4"},
@@ -2899,8 +2954,8 @@ urllib3 = [
     {file = "urllib3-1.26.9.tar.gz", hash = "sha256:aabaf16477806a5e1dd19aa41f8c2b7950dd3c746362d7e3223dbe6de6ac448e"},
 ]
 virtualenv = [
-    {file = "virtualenv-20.13.3-py2.py3-none-any.whl", hash = "sha256:dd448d1ded9f14d1a4bfa6bfc0c5b96ae3be3f2d6c6c159b23ddcfd701baa021"},
-    {file = "virtualenv-20.13.3.tar.gz", hash = "sha256:e9dd1a1359d70137559034c0f5433b34caf504af2dc756367be86a5a32967134"},
+    {file = "virtualenv-20.13.4-py2.py3-none-any.whl", hash = "sha256:c3e01300fb8495bc00ed70741f5271fc95fed067eb7106297be73d30879af60c"},
+    {file = "virtualenv-20.13.4.tar.gz", hash = "sha256:ce8901d3bbf3b90393498187f2d56797a8a452fb2d0d7efc6fd837554d6f679c"},
 ]
 wcwidth = [
     {file = "wcwidth-0.2.5-py2.py3-none-any.whl", hash = "sha256:beb4802a9cebb9144e99086eff703a642a13d6a0052920003a230f3294bbe784"},

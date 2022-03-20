@@ -58,6 +58,8 @@ Documentation
 
 View the online documentation at: `https://euporie.readthedocs.io/ <https://euporie.readthedocs.io/>`_
 
+The code is available on GitHub at: `https://github.com/joouha/euporie <https://github.com/joouha/euporie>`_
+
 ********
 Features
 ********

@@ -1,6 +1,6 @@
-###################################
-Welcome to euporie's documentation!
-###################################
+#######################
+euporie's documentation
+#######################
 
 .. include:: ../README.rst
    :start-after: .. content_start

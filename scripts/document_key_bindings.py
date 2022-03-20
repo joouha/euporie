@@ -47,7 +47,8 @@ for group, info in data.items():
         # Rows
         for rec in info:
             for j, key in enumerate(rec["keys"]):
-                key_str = f":kbd:`{key.strip()}`".ljust(len(key) + 7)
+                key_str = key.strip().replace("\\", "\\\\")
+                key_str = f":kbd:`{key_str}`".ljust(len(key) + 7)
                 title_str = (
                     rec["description"] if j == 0 else " " * len(rec["description"])
                 )

@@ -13,9 +13,13 @@ extensions: "list[str]" = [
     "sphinx.ext.napoleon",  # Enable google-style docstring parsing
     "sphinx.ext.autodoc",  # Document modules
     "sphinx.ext.autosummary",  # Generate API documentation
+    "sphinx_argparse_cli",  # Command line argument documentation
+    "sphinxext.opengraph",  # OGP data
+    "sphinx_copybutton",  # Copy button
 ]
 templates_path = ["_templates"]
 exclude_patterns: "list[str]" = []
+
 
 # Options for HTML output
 
@@ -23,6 +27,12 @@ html_theme = "sphinx_rtd_theme"
 html_static_path = ["_static"]
 html_favicon = "_static/favicon.ico"
 html_logo = "_static/logo.svg"
+html_css_files = ["custom.css"]
+html_theme_options = {
+    "style_nav_header_background": "#1a1c1e",
+}
+
+pygments_style = "native"
 
 # Autosummary options
 autosummary_generate = True

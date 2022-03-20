@@ -2,97 +2,151 @@
 Usage
 #####
 
-To open a notebook, launch euporie with the notebook file's path as an argument:
+**********************
+Command Line Interface
+**********************
+
+To open a notebook from the command line, launch euporie with the notebook file's path as an argument:
 
 .. code-block:: console
 
    $ euporie ./my-notebook.ipynb
 
-Additional command line flags are described when running ``euporie --help``, the output of which is copied below:
+The following command line arguments are available:
+
+Positional Arguments
+====================
+
+.. option:: <Path ...>
+
+   A sequence of notebook file-paths to open
+
+Options
+=======
 
 .. _usage-start:
-.. code-block::
 
-  usage: euporie [-h] [--log-file [str]] [--debug | --no-debug]
-                 [--dump | --no-dump] [--dump-file [Path]] [--page | --no-page]
-                 [--run | --no-run] [--tmux-graphics | --no-tmux-graphics]
-                 [--terminal-polling-interval int]
-                 [--edit-mode {micro,emacs,vi}] [--tab-size int]
-                 [--run-after-external-edit bool]
-                 [--format-black | --no-format-black]
-                 [--format-isort | --no-format-isort]
-                 [--format-ssort | --no-format-ssort]
-                 [--autoformat | --no-autoformat]
-                 [--autocomplete | --no-autocomplete]
-                 [--autosuggest | --no-autosuggest]
-                 [--autoinspect | --no-autoinspect] [--expand | --no-expand]
-                 [--max-notebook-width int]
-                 [--show-status-bar | --no-show-status-bar]
-                 [--color-scheme {default,inverse,light,dark}]
-                 [--background-pattern {0,1,2,3,4,5}]
-                 [--background-character str] [--background-color str]
-                 [--show-cell-borders | --no-show-cell-borders]
-                 [--line-numbers | --no-line-numbers] [--syntax-theme str]
-                 [--verion]
-                 [Path ...]
+.. option:: -h, --help
 
-  A TUI editor for Jupyter notebooks
+   show this help message and exit
 
-  positional arguments:
-    Path                  List of file names to open
+.. option:: --version, -V
 
-  options:
-    -h, --help            show this help message and exit
-    --log-file [str]      File path for logs
-    --debug, --no-debug   Include debug output in logs
-    --dump, --no-dump     Output formatted file to display or file
-    --dump-file [Path]    Output path when dumping file
-    --page, --no-page     Pass output to pager
-    --run, --no-run       Run the notebook when loaded
-    --tmux-graphics, --no-tmux-graphics
-                          Enable terminal graphics in tmux (experimental)
-    --terminal-polling-interval int
-                          Time between terminal colour queries
-    --edit-mode {micro,emacs,vi}
-                          Key-binding mode for text editing
-    --tab-size int        Spaces per indentation level
-    --run-after-external-edit bool
-                          Run cells after editing externally
-    --format-black, --no-format-black
-                          Use black when re-formatting code cells
-    --format-isort, --no-format-isort
-                          Use isort when re-formatting code cells
-    --format-ssort, --no-format-ssort
-                          Use ssort when re-formatting code cells
-    --autoformat, --no-autoformat
-                          Automatically re-format code cells when run
-    --autocomplete, --no-autocomplete
-                          Provide completions suggestions automatically
-    --autosuggest, --no-autosuggest
-                          Provide line completion suggestions
-    --autoinspect, --no-autoinspect
-                          Display contextual help automatically
-    --expand, --no-expand
-                          Use the full width to display notebooks
-    --max-notebook-width int
-                          Maximum width of notebooks
-    --show-status-bar, --no-show-status-bar
-                          Show the status bar
-    --color-scheme {default,inverse,light,dark}
-                          The color scheme to use
-    --background-pattern {0,1,2,3,4,5}, --bg-pattern {0,1,2,3,4,5}
-                          The background pattern to use
-    --background-character str, --bg-char str
-                          Character for background pattern
-    --background-color str, --bg-color str
-                          Color for background pattern
-    --show-cell-borders, --no-show-cell-borders
-                          Show or hide cell borders.
-    --line-numbers, --no-line-numbers
-                          Show or hide line numbers
-    --syntax-theme str    Syntax higlighting theme
-    --verion, -V          Show the version number and exit
+   Show the version number and exit
 
-  © 2022, Josiah Outram Halstead
+.. option:: --log-file <str>
 
+   File path for logs
+
+.. option:: --debug, --no-debug
+
+   Include debug output in logs
+
+.. option:: --dump, --no-dump
+
+   Output formatted file to display or file
+
+.. option:: --dump-file <Path>
+
+   Output path when dumping file
+
+.. option:: --page, --no-page
+
+   Pass output to pager
+
+.. option:: --run, --no-run
+
+   Run the notebook when loaded
+
+.. option:: --tmux-graphics, --no-tmux-graphics
+
+   Enable terminal graphics in tmux (experimental)
+
+.. option:: --terminal-polling-interval <int>
+
+   Time between terminal colour queries
+
+.. option:: --edit-mode {micro,emacs,vi}
+
+   Key-binding mode for text editing
+
+.. option:: --tab-size <int>
+
+   Spaces per indentation level
+
+.. option:: --run-after-external-edit
+
+   Run cells after editing externally
+
+.. option:: --format-black, --no-format-black
+
+   Use black when re-formatting code cells
+
+.. option:: --format-isort, --no-format-isort
+
+   Use isort when re-formatting code cells
+
+.. option:: --format-ssort, --no-format-ssort
+
+   Use ssort when re-formatting code cells
+
+.. option:: --autoformat, --no-autoformat
+
+   Automatically re-format code cells when run
+
+.. option:: --autocomplete, --no-autocomplete
+
+   Provide completions suggestions automatically
+
+.. option:: --autosuggest, --no-autosuggest
+
+   Provide line completion suggestions
+
+.. option:: --autoinspect, --no-autoinspect
+
+   Display contextual help automatically
+
+.. option:: --expand, --no-expand
+
+   Use the full width to display notebooks
+
+.. option:: --max-notebook-width <int>
+
+   Maximum width of notebooks
+
+.. option:: --show-status-bar, --no-show-status-bar
+
+   Show the status bar
+
+.. option:: --color-scheme {default,inverse,light,dark}
+
+   The color scheme to use
+
+.. option:: --background-pattern {0,1,2,3,4,5}, --bg-pattern {0,1,2,3,4,5}
+
+   The background pattern to use
+
+.. option:: --background-character <str>, --bg-char <str>
+
+   Character for background pattern
+
+.. option:: --background-color <str>, --bg-color <str>
+
+   Color for background pattern
+
+.. option:: --show-cell-borders, --no-show-cell-borders
+
+   Show or hide cell borders.
+
+.. option:: --line-numbers, --no-line-numbers
+
+   Show or hide line numbers
+
+.. option:: --syntax-theme <str>
+
+   Syntax higlighting theme
+
+.. option::
+
+   List of file names to open
 .. _usage-end:

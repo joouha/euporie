@@ -80,6 +80,17 @@ Configuration Options
 All available configuration options are listed below:
 
 .. _configuration-options-start:
+.. option:: version
+
+:flags: :option:`--version` or :option:`-V`
+:description: Show the version number and exit
+
+   If set, euporie will print the current version number of the application and exit.
+   All other configuration options will be ignored.
+
+   .. note::
+      This cannot be set in the configuration file or via an environment variable
+
 .. option:: log_file
 
 :flags: :option:`--log-file`
@@ -384,20 +395,10 @@ All available configuration options are listed below:
 .. option:: files
 
 :environment variable: :envvar:`EUPORIE_FILES`
+:default: ``[]``
 :type: :keyword:`array`
 :description: List of file names to open
 
    A list of file paths to open when euporie is launched.
-
-.. option:: version
-
-:flags: :option:`--verion` or :option:`-V`
-:description: Show the version number and exit
-
-   If set, euporie will print the current version number of the application and exit.
-   All other configuration options will be ignored.
-
-   .. note::
-      This cannot be set in the configuration file or via an environment variable
 
 .. _configuration-options-end:

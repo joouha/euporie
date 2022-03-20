@@ -1,0 +1,38 @@
+.wy-menu-vertical header,
+.wy-menu-vertical p.caption {
+  color: #f00;
+}
+
+.wy-menu-vertical a:active {
+  background-color: #d00;
+}
+
+.tagline {
+  color: hsla(0, 0%, 100%, 0.75);
+}
+
+.highlight {
+  backgronud-color: #343131;
+}
+
+.rst-content div[class^="highlight"] {
+  border-radius: 0.25rem;
+}
+
+p > kbd {
+  box-shadow: 0 0.0625rem 0 rgba(0, 0, 0, 0.2), inset 0 0 0 0.125rem #eee;
+  border-radius: 0.2rem;
+  border: 1px solid #aaa;
+  background-color: #fff;
+  line-height: 2em;
+  padding: 0.2rem;
+}
+kbd > kbd {
+  margin: 0 0.2rem;
+}
+kbd > kbd:first-child {
+  margin-left: 0;
+}
+kbd > kbd:last-child {
+  margin-right: 0;
+}

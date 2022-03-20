@@ -83,6 +83,19 @@ class BooleanOptionalAction(argparse.Action):
 
 
 CONFIG_PARAMS: "dict[str, dict]" = {
+    "version": {
+        "flags_": ["--version", "-V"],
+        "action": "version",
+        "version": f"%(prog)s {__version__}",
+        "help": "Show the version number and exit",
+        "description_": """
+            If set, euporie will print the current version number of the application and exit.
+            All other configuration options will be ignored.
+
+            .. note::
+               This cannot be set in the configuration file or via an environment variable
+        """,
+    },
     "log_file": {
         "flags_": ["--log-file"],
         "nargs": "?",
@@ -491,19 +504,6 @@ CONFIG_PARAMS: "dict[str, dict]" = {
             A list of file paths to open when euporie is launched.
         """,
     },
-    "version": {
-        "flags_": ["--verion", "-V"],
-        "action": "version",
-        "version": f"%(prog)s {__version__}",
-        "help": "Show the version number and exit",
-        "description_": """
-            If set, euporie will print the current version number of the application and exit.
-            All other configuration options will be ignored.
-
-            .. note::
-               This cannot be set in the configuration file or via an environment variable
-        """,
-    },
 }
 
 CONFIG_SCHEMA: "dict" = {
@@ -567,8 +567,8 @@ class Config:
         self.load_args()
         return self
 
-    def load_args(self) -> "None":
-        """Attempts to load configuration settings from commandline flags."""
+    def load_parser(self) -> "argparse.ArgumentParser":
+        """Constructs an :py:class:`argparse.ArgumentParser`."""
         parser = argparse.ArgumentParser(
             description=__strapline__,
             epilog=__copyright__,
@@ -586,7 +586,11 @@ class Config:
                     if not key.endswith("_") and key != "default"
                 },
             )
-        for name, value in vars(parser.parse_args()).items():
+        return parser
+
+    def load_args(self) -> "None":
+        """Attempts to load configuration settings from commandline flags."""
+        for name, value in vars(self.load_parser().parse_args()).items():
             if value is not None:
                 # Convert to json and back to attain json types
                 json_data = json.loads(_json_encoder.encode({name: value}))
