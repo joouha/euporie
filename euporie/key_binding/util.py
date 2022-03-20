@@ -8,14 +8,14 @@ from prompt_toolkit.keys import Keys
 from euporie.commands.registry import get
 
 if TYPE_CHECKING:
-    from typing import Union
+    from typing import Dict, List, Tuple, Union
 
     from euporie.commands.base import AnyKeys
 
 __all__ = ["dict_bindings"]
 
 
-KEY_ALIASES: "dict[Union[str, Keys], str]" = {
+KEY_ALIASES: "Dict[Union[str, Keys], str]" = {
     Keys.ControlH: "backspace",
     Keys.ControlM: "enter",
     Keys.ControlI: "tab",
@@ -23,7 +23,7 @@ KEY_ALIASES: "dict[Union[str, Keys], str]" = {
 }
 
 
-def dict_bindings(binding_dict: "dict[str, AnyKeys]") -> "KeyBindingsBase":
+def dict_bindings(binding_dict: "Dict[str, AnyKeys]") -> "KeyBindingsBase":
     """Assign key-bindings to commands based on a dictionary."""
     kb = KeyBindings()
     for command, keys in binding_dict.items():
@@ -38,12 +38,12 @@ def _format_key_str(key: "str") -> "str":
     return key
 
 
-def format_keys(keys: "list[tuple[Union[str, Keys], ...]]") -> "list[str]":
+def format_keys(keys: "List[Tuple[Union[str, Keys], ...]]") -> "List[str]":
     """Converts a list of tuples of keys to a string."""
-    s: "list[str]" = []
+    s: "List[str]" = []
 
     # Add duplicate key aliases to the list
-    keys_: "list[tuple[Union[str, Keys], ...]]" = []
+    keys_: "List[Tuple[Union[str, Keys], ...]]" = []
     for key in keys:
         if len(key) == 1 and key[0] in KEY_ALIASES:
             keys_.append((KEY_ALIASES[key[0]],))

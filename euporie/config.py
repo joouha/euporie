@@ -8,13 +8,16 @@ import logging
 import os
 from collections import ChainMap
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Iterator, Optional, Sequence, Union
+from typing import TYPE_CHECKING
 
 import jsonschema  # type: ignore
 from appdirs import user_config_dir  # type: ignore
 from pygments.styles import get_all_styles  # type: ignore
 
 from euporie import __app_name__, __copyright__, __strapline__, __version__
+
+if TYPE_CHECKING:
+    from typing import Any, Iterator, Optional, Sequence, Union
 
 __all__ = ["JSONEncoderPlus", "BooleanOptionalAction", "Config", "config"]
 
@@ -472,7 +475,6 @@ CONFIG_PARAMS: "dict[str, dict]" = {
     "files": {
         "flags_": ["files"],
         "nargs": "*",
-        "default": [],
         "type": Path,
         "help": "List of file names to open",
         "schema_": {
@@ -481,8 +483,9 @@ CONFIG_PARAMS: "dict[str, dict]" = {
                 "file": {
                     "description": "File path",
                     "type": "string",
-                }
+                },
             },
+            "default": [],
         },
         "description_": """
             A list of file paths to open when euporie is launched.
@@ -550,16 +553,19 @@ class Config:
         self.config_file_path = user_conf_dir / self.conf_file_name
         self.valid_user = True
 
-        self.load_user()
-        self.load_env()
-        self.load_args()
-
         self.chain = ChainMap(
             self.args,
             self.env,
             self.user,
             self.defaults,
         )
+
+    def load(self) -> "Config":
+        """Loads the command line, environment, and user configuration."""
+        self.load_user()
+        self.load_env()
+        self.load_args()
+        return self
 
     def load_args(self) -> "None":
         """Attempts to load configuration settings from commandline flags."""
@@ -775,7 +781,4 @@ class Config:
     __repr__ = __str__
 
 
-# Do not actually load the config if type checking - it causes pytype to exit
-config: "Config"
-if not TYPE_CHECKING:
-    config = Config()
+config = Config()

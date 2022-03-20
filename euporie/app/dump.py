@@ -71,6 +71,8 @@ class DumpApp(EuporieApp):
         # Remove the final horizontal line
         if self.tabs:
             contents.pop()
+        if not contents:
+            contents.append(hr)
 
         return FloatContainer(
             content=PrintingContainer(contents),

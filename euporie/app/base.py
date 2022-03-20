@@ -67,6 +67,7 @@ if TYPE_CHECKING:
 
     from euporie.cell import InteractiveCell
     from euporie.notebook import TuiNotebook
+    from euporie.palette import CommandPalette
     from euporie.terminal import TerminalQuery
 
     StatusBarFields = Tuple[List[AnyFormattedText], List[AnyFormattedText]]
@@ -128,7 +129,7 @@ class EuporieApp(Application):
         # Mapping of Containers to status field generating functions
         self.container_statuses: "ContainerStatusDict" = {}
         # Assign command palette variable
-        self.command_palette = None
+        self.command_palette: "Optional[CommandPalette]" = None
 
     def pre_run(self, app: "Application" = None) -> "None":
         """Called during the 'pre-run' stage of application loading."""

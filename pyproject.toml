@@ -77,7 +77,7 @@ bandit = "1.7.2"
 flake8-comprehensions = "^3.8.0"
 
 [tool.poetry.scripts]
-euporie = 'euporie.app:App.launch'
+euporie = 'euporie.__main__:main'
 
 [tool.isort]
 profile = "black"

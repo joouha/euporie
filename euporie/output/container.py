@@ -15,7 +15,7 @@ from prompt_toolkit.layout.margins import ConditionalMargin
 from prompt_toolkit.layout.mouse_handlers import MouseHandlers
 from prompt_toolkit.layout.screen import WritePosition
 
-from euporie.app import get_app
+from euporie.app.current import get_base_app as get_app
 from euporie.convert.base import convert, find_route
 from euporie.filters import has_dialog, has_menus
 from euporie.margins import ScrollbarMargin

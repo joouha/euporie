@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 from prompt_toolkit.filters import Condition, buffer_has_focus
 from pygments.styles import get_all_styles  # type: ignore
 
-from euporie.app import get_app
+from euporie.app.current import get_base_app as get_app
 from euporie.commands.registry import add
 from euporie.config import config
 from euporie.filters import have_black, have_isort, have_ssort, in_tmux

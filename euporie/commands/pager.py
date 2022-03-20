@@ -2,7 +2,7 @@
 
 import logging
 
-from euporie.app import get_app
+from euporie.app.current import get_base_app as get_app
 from euporie.commands.registry import add
 from euporie.filters import pager_has_focus
 
