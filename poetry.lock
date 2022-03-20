@@ -414,6 +414,17 @@ flake8 = ">=3.0.0"
 dev = ["coverage", "hypothesis", "hypothesmith (>=0.2)", "pre-commit"]
 
 [[package]]
+name = "flake8-comprehensions"
+version = "3.8.0"
+description = "A flake8 plugin to help you write better list/set/dict comprehensions."
+category = "dev"
+optional = false
+python-versions = ">=3.7"
+
+[package.dependencies]
+flake8 = ">=3.0,<3.2.0 || >3.2.0"
+
+[[package]]
 name = "flake8-docstrings"
 version = "1.6.0"
 description = "Extension for flake8 which uses pydocstyle to check docstrings"
@@ -1765,7 +1776,7 @@ svg-cairosvg = ["CairoSVG"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "3c79d950751fd914419db52f6ff5f9bf554f74cd619f296b9aed0a58830379d9"
+content-hash = "ec8a75fa8018befe92c8aed40db53215cd3f58d21f91581bec8849014e4ab06f"
 
 [metadata.files]
 aenum = [
@@ -1992,6 +2003,10 @@ flake8-black = [
 flake8-bugbear = [
     {file = "flake8-bugbear-21.11.29.tar.gz", hash = "sha256:8b04cb2fafc6a78e1a9d873bd3988e4282f7959bb6b0d7c1ae648ec09b937a7b"},
     {file = "flake8_bugbear-21.11.29-py36.py37.py38-none-any.whl", hash = "sha256:179e41ddae5de5e3c20d1f61736feeb234e70958fbb56ab3c28a67739c8e9a82"},
+]
+flake8-comprehensions = [
+    {file = "flake8-comprehensions-3.8.0.tar.gz", hash = "sha256:8e108707637b1d13734f38e03435984f6b7854fa6b5a4e34f93e69534be8e521"},
+    {file = "flake8_comprehensions-3.8.0-py3-none-any.whl", hash = "sha256:9406314803abe1193c064544ab14fdc43c58424c0882f6ff8a581eb73fc9bb58"},
 ]
 flake8-docstrings = [
     {file = "flake8-docstrings-1.6.0.tar.gz", hash = "sha256:9fe7c6a306064af8e62a055c2f61e9eb1da55f84bb39caef2b84ce53708ac34b"},

@@ -74,6 +74,7 @@ furo = "^2022.1.2"
 black = "^22.1.0"
 ssort = "^0.11.0"
 bandit = "1.7.2"
+flake8-comprehensions = "^3.8.0"
 
 [tool.poetry.scripts]
 euporie = 'euporie.app:App.launch'

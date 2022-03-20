@@ -224,7 +224,7 @@ class ScrollingContainer(Container):
         self.child_render_infos: "dict[int, ChildRenderInfo]" = (
             {}
         )  # Holds child container wrappers
-        self.visible_indicies: "set[int]" = set([0])
+        self.visible_indicies: "set[int]" = {0}
         self.index_positions: "dict[int, int]" = {}
 
         self.last_write_position = WritePosition(0, 0, 0, 0)
