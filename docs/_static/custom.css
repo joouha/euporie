@@ -36,3 +36,13 @@ kbd > kbd:first-child {
 kbd > kbd:last-child {
   margin-right: 0;
 }
+
+html.writer-html4 .rst-content dl:not(.docutils) > dt,
+html.writer-html5
+  .rst-content
+  dl[class]:not(.option-list):not(.field-list):not(.footnote):not(.glossary):not(.simple)
+  > dt {
+  background: #fdf3f2;
+  color: #a02;
+  border-top: 3px solid #f29f97;
+}
