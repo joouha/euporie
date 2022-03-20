@@ -11,7 +11,7 @@ from prompt_toolkit.data_structures import Size
 from prompt_toolkit.layout.containers import FloatContainer
 from prompt_toolkit.output.defaults import create_output
 from prompt_toolkit.output.vt100 import Vt100_Output
-from prompt_toolkit.widgets import Box, HorizontalLine
+from prompt_toolkit.widgets import HorizontalLine
 
 from euporie.app.base import EuporieApp
 from euporie.config import config
@@ -19,7 +19,7 @@ from euporie.containers import PrintingContainer
 from euporie.notebook import DumpKernelNotebook, DumpNotebook
 
 if TYPE_CHECKING:
-    from typing import Any, Optional, TextIO, Type
+    from typing import Any, Optional, Sequence, TextIO, Type
 
     from prompt_toolkit.application.application import Application
     from prompt_toolkit.data_structures import Point
@@ -58,6 +58,13 @@ class DumpApp(EuporieApp):
 
     def load_container(self) -> "FloatContainer":
         """Returns a container with all opened tabs."""
+        return FloatContainer(
+            content=PrintingContainer(self.load_tabs),
+            floats=[],
+        )
+
+    def load_tabs(self) -> "Sequence[AnyContainer]":
+        """Returns the currently opened tabs for the printing container."""
         # Create a horizontal line that takes up the full width of the display
         hr = HorizontalLine()
         hr.window.width = self.output.get_size().columns
@@ -66,18 +73,12 @@ class DumpApp(EuporieApp):
         contents: "list[AnyContainer]" = []
         for tab in self.tabs:
             # Wrap each tab in a box so it does not expand beyond its maximum width
-            contents.append(Box(tab))
+            contents.append(tab)
             contents.append(hr)
         # Remove the final horizontal line
         if self.tabs:
             contents.pop()
-        if not contents:
-            contents.append(hr)
-
-        return FloatContainer(
-            content=PrintingContainer(contents),
-            floats=[],
-        )
+        return contents
 
     def load_output(self) -> "Output":
         """Loads the output.

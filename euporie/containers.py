@@ -5,7 +5,12 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-from prompt_toolkit.layout.containers import AnyContainer, Container, to_container
+from prompt_toolkit.layout.containers import (
+    AnyContainer,
+    Container,
+    Window,
+    to_container,
+)
 from prompt_toolkit.layout.dimension import AnyDimension, Dimension, to_dimension
 from prompt_toolkit.layout.mouse_handlers import MouseHandlers
 from prompt_toolkit.layout.screen import Screen, WritePosition
@@ -35,9 +40,10 @@ class PrintingContainer(Container):
     def children(self) -> "Sequence[AnyContainer]":
         """Returns the container's children."""
         if callable(self._children):
-            return self._children()
+            children = self._children()
         else:
-            return self._children
+            children = self._children
+        return children or [Window()]
 
     def get_children(self) -> "list[Container]":
         """Returns a list of all child containers."""
@@ -73,7 +79,8 @@ class PrintingContainer(Container):
         xpos = write_position.xpos
         ypos = write_position.ypos
 
-        for child in self.get_children():
+        children = self.get_children()
+        for child in children:
             height = child.preferred_height(write_position.width, 999999).preferred
             child.write_to_screen(
                 screen,
@@ -103,7 +110,7 @@ class PrintingContainer(Container):
             dim = to_dimension(self.width).preferred
             return Dimension(max=dim, preferred=dim)
         else:
-            return Dimension()
+            return Dimension(max_available_width)
 
     def reset(self) -> "None":
         """Reset the state of this container and all the children.

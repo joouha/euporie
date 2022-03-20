@@ -64,6 +64,7 @@ class Tab(metaclass=ABCMeta):
     def __pt_container__(self) -> "AnyContainer":
         """Return the main container object."""
         container = self.container
+        # Ensure tab dimensions are equally weighted
         if hasattr(container, "width"):
             d = to_dimension(container.width)
             container.width = Dimension(

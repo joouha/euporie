@@ -298,13 +298,12 @@ class DumpNotebook(Notebook):
         app: "Optional[EuporieApp]" = None,
     ):
         super().__init__(path, app)
-        self.container = HSplit(
+        self.container = VSplit(
             [
-                PrintingContainer(
-                    self.rendered_cells,
-                    width=config.max_notebook_width,
-                )
-            ]
+                Window(),
+                PrintingContainer(self.rendered_cells, width=config.max_notebook_width),
+                Window(),
+            ],
         )
 
 
