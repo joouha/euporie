@@ -32,3 +32,4 @@ euporie.box
       Pattern
       RoundBorder
       SquareBorder
+      ThickVerticalBorder

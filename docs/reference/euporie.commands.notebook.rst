@@ -25,16 +25,28 @@ euporie.commands.notebook
 
       add_cell_above
       add_cell_below
+      cells_to_code
+      cells_to_markdown
+      cells_to_raw
       change_kernel
-      copy_cell
-      cut_cell
-      delete_cell
+      copy_cells
+      cut_cells
+      delete_cells
+      extend_cell_selection_down
+      extend_cell_selection_up
       interrupt_kernel
+      merge_cells
+      move_cells_down
+      move_cells_up
       next_child
-      paste_cell
+      paste_cells
+      reformat_cells
       reformat_notebook
       restart_kernel
       run_all_cells
+      run_cell_and_insert_below
+      run_selected_cells
+      run_selected_cells_and_select_next_cell
       save_notebook
       scroll_down
       scroll_down_5_lines
@@ -42,6 +54,7 @@ euporie.commands.notebook
       scroll_up_5_lines
       select_5th_next_cell
       select_5th_previous_cell
+      select_all_cells
       select_first_cell
       select_last_cell
       select_previous_cell

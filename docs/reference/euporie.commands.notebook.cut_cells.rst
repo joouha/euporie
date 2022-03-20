@@ -1,6 +1,6 @@
-euporie.commands.notebook.copy\_cell
+euporie.commands.notebook.cut\_cells
 ====================================
 
 .. currentmodule:: euporie.commands.notebook
 
-.. autofunction:: copy_cell
+.. autofunction:: cut_cells

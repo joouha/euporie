@@ -1,6 +1,6 @@
-euporie.commands.notebook.delete\_cell
+euporie.commands.notebook.merge\_cells
 ======================================
 
 .. currentmodule:: euporie.commands.notebook
 
-.. autofunction:: delete_cell
+.. autofunction:: merge_cells

@@ -1,6 +1,6 @@
-euporie.commands.notebook.paste\_cell
+euporie.commands.notebook.copy\_cells
 =====================================
 
 .. currentmodule:: euporie.commands.notebook
 
-.. autofunction:: paste_cell
+.. autofunction:: copy_cells
