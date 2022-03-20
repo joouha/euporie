@@ -4,9 +4,9 @@ Changelog
 
 Notable changes to this project will be documented in this file.
 
-********
-Upcoming
-********
+******************
+1.3.1 - 2022-03-20
+******************
 
 Fixed
 =====
