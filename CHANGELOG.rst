@@ -4,6 +4,12 @@ Changelog
 
 Notable changes to this project will be documented in this file.
 
+********
+Upcoming
+********
+
+----
+
 ******************
 1.3.1 - 2022-03-20
 ******************
@@ -12,6 +18,8 @@ Fixed
 =====
 
 - Fix notebook dumping regression
+
+----
 
 ******************
 1.3.0 - 2022-03-19
@@ -37,6 +45,8 @@ Fixed
 
 - Fix recursion bug when editing a cell when multiple cells are selected
 
+----
+
 ******************
 1.2.2 - 2022-03-17
 ******************
@@ -45,6 +55,8 @@ Fixed
 =====
 
 - Fix zero-division error if scrolling a window with less content than its height
+
+----
 
 ******************
 1.2.1 - 2022-03-17
@@ -68,6 +80,8 @@ Fixed
 - Ensure opening command palette does not show an error if it is opened before is has loaded
 - Fixed bug where nothing would be focused after a completion if pager was opened
 
+----
+
 ******************
 1.2.0 - 2022-03-06
 ******************
@@ -84,6 +98,8 @@ Fixed
 
 - Indent if cursor in leading whitespace rather than suggest complete
 - No longer continue indenting on subsequent newlines after a colon
+
+----
 
 ******************
 1.1.0 - 2022-03-04
@@ -120,6 +136,8 @@ Fixed
 - Prevent terminal graphics obscuring dialogs
 - Run all cells now works as expected in TUI mode
 - Restore clipboard functionality
+
+----
 
 ******************
 1.0.0 - 2020-02-03
