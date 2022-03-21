@@ -66,7 +66,7 @@ class Command:
             name: The name of the command, for accessing the command from the registry
             title: The title of the command for display
             menu_title: The title to display in menus if different
-            description: The discription of the command to explain it's function
+            description: The description of the command to explain it's function
             group: The group to which this command belongs
             toggled: The toggle state of this command If this command toggles something
             keys: The default keys to which this command should be bound
@@ -146,7 +146,7 @@ class Command:
 
     @property
     def key_handler(self) -> "KeyHandlerCallable":
-        """Returns a key hander for the command."""
+        """Returns a key handler for the command."""
         sig = signature(self.handler)
 
         if sig.parameters:
@@ -202,7 +202,7 @@ class Command:
 
     @property
     def menu_handler(self) -> "Callable[[], None]":
-        """Returns a menu hander for the command."""
+        """Returns a menu handler for the command."""
         if isawaitable(self.handler):
 
             def _menu_handler() -> "None":

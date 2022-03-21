@@ -24,6 +24,6 @@ euporie.commands.cell
       :toctree:
 
       edit_in_external_editor
-      enter_cell_edit_mode
-      exit_edit_mode
+      edit_next_cell
+      edit_previous_cell
       split_cell

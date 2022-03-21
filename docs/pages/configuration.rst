@@ -6,7 +6,7 @@ Configuration
 Configuring Euporie
 *******************
 
-Euporie has a ranger of configurable options which affect euporie's bahaviour and appearance.
+Euporie has a ranger of configurable options which affect euporie's behaviour and appearance.
 
 Options are validated at application startup, so if an option is set to an invalid value, it will be ignored.
 
@@ -42,7 +42,7 @@ Configuration File
 Euporie can be configured using a JSON configuration file. The file takes the form of *key: value* pairs, where the key is one of the options listed in :ref:`configuration-options`
 
 .. warning::
-   The configuration file is read when euporie is launched, and modifying options from the :menuselection:`Settings` menu in euporie will cause the configuration file to be updated. Thus, any changes made to the configuration file while euporie is running may be lost, so this is not reccomended.
+   The configuration file is read when euporie is launched, and modifying options from the :menuselection:`Settings` menu in euporie will cause the configuration file to be updated. Thus, any changes made to the configuration file while euporie is running may be lost, so this is not recommended.
 
 Example
    .. code-block:: JSON
@@ -110,7 +110,7 @@ All available configuration options are listed below:
 :type: :keyword:`boolean`
 :description: Include debug output in logs
 
-   When set, logging events at the debug level are emmitted.
+   When set, logging events at the debug level are emitted.
 
 .. option:: dump
 
@@ -338,7 +338,7 @@ All available configuration options are listed below:
 :description: The background pattern to use
 
    The background pattern to use when the notebook is narrower than the
-   availble width. Zero mean no pattern is used.
+   available width. Zero mean no pattern is used.
 
 .. option:: background_character
 
@@ -350,7 +350,7 @@ All available configuration options are listed below:
 
    The character to use when drawing the background pattern.
 
-   Reccomended characters include: "·", "⬤", "╳", "╱", "╲", "░", "▒", "▓", "▞", "╬"
+   Recommended characters include: "·", "⬤", "╳", "╱", "╲", "░", "▒", "▓", "▞", "╬"
 
 .. option:: background_color
 
@@ -388,7 +388,7 @@ All available configuration options are listed below:
 :environment variable: :envvar:`EUPORIE_SYNTAX_THEME`
 :default: ``'default'``
 :type: :keyword:`string`
-:description: Syntax higlighting theme
+:description: Syntax highlighting theme
 
    The name of the pygments style to use for syntax highlighting.
 

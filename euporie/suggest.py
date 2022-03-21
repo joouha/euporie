@@ -28,7 +28,7 @@ class KernelAutoSuggest(AutoSuggest):
     """Suggests line completions from kernel history."""
 
     def __init__(self, kernel: "NotebookKernel") -> "None":
-        """Sets the kernel instance in initalization."""
+        """Sets the kernel instance in initialization."""
         self.kernel = kernel
 
     def get_suggestion(
@@ -64,7 +64,7 @@ class ConditionalAutoSuggestAsync(ConditionalAutoSuggest):
     def __init__(
         self, auto_suggest: "AutoSuggest", filter: "Union[bool, Filter]"
     ) -> "None":
-        """An asyncronous conditional autosuggestion wrapper.
+        """An asynchronous conditional autosuggestion wrapper.
 
         Args:
             auto_suggest: The :class:`AutoSuggest` to use to retrieve suggestions

@@ -80,7 +80,7 @@ class NotebookKernel:
         warn: "bool" = True,
         single: "bool" = False,
     ) -> "Any":
-        """Shedules a coroutine in the kernel's event loop.
+        """Schedules a coroutine in the kernel's event loop.
 
         Optionally waits for the results (blocking the main thread). Optionally
         schedules a callback to run when the coroutine has completed or timed out.
@@ -130,7 +130,7 @@ class NotebookKernel:
 
     @property
     def status(self) -> "str":
-        """Retrive the current kernel status.
+        """Retrieve the current kernel status.
 
         Trigger a kernel life status check when retrieved
 
@@ -268,7 +268,7 @@ class NotebookKernel:
     async def await_rsps(
         self, msg_id: "str", channel: "str", timeout: "int" = 360
     ) -> "AsyncGenerator":
-        """Yields resposnes to a given message ID on a given channel.
+        """Yields responses to a given message ID on a given channel.
 
         Args:
             msg_id: Wait for responses to this message ID
@@ -276,7 +276,7 @@ class NotebookKernel:
             timeout: Maximum time to wait for a response before stopping
 
         Yields:
-            Message resposnes received on the given channel
+            Message responses received on the given channel
         """
         self.events[channel][msg_id] = asyncio.Event()
         log.debug("Waiting for %s response to %s", channel, msg_id[-7:])
@@ -409,7 +409,7 @@ class NotebookKernel:
         output_cb: "Optional[Callable[[], Any]]" = None,
         done_cb: "Optional[Callable[[], Any]]" = None,
     ) -> "None":
-        """Runs the code cell asynchronously and handles the resposnes."""
+        """Runs the code cell asynchronously and handles the responses."""
         if self.kc is None:
             return
 
@@ -686,7 +686,7 @@ class NotebookKernel:
         Returns:
             A list of dictionaries defining completion entries. The dictionaries
             contain ``text`` (the completion text), ``start_position`` (the stating
-            position of the complation text), and optionally ``display_meta``
+            position of the completion text), and optionally ``display_meta``
             (a string containing additional data about the completion type)
 
         """
@@ -708,7 +708,7 @@ class NotebookKernel:
         msg_id = self.kc.history(pattern=pattern, n=n, hist_access_type="search")
 
         async def process_history_shell_rsp() -> "None":
-            """Process resposnes on the shell channel."""
+            """Process responses on the shell channel."""
             async for rsp in self.await_shell_rsps(msg_id):
                 status = rsp.get("content", {}).get("status", "")
                 if status == "ok":
@@ -755,7 +755,7 @@ class NotebookKernel:
         msg_id = self.kc.inspect(code, cursor_pos=cursor_pos, detail_level=detail_level)
 
         async def process_introspection_shell_rsp() -> "None":
-            """Process resposnes on the shell channel."""
+            """Process responses on the shell channel."""
             nonlocal result
             async for rsp in self.await_shell_rsps(msg_id):
                 content = rsp.get("content", {})

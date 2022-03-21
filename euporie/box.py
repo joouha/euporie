@@ -58,10 +58,10 @@ class BorderLine(Container):
         collapse: "bool" = False,
         style: "str" = "class:border-line",
     ) -> "None":
-        """Initalizes a border line.
+        """Initializes a border line.
 
         Args:
-            char: The character to draw. If unset, the relavent character from
+            char: The character to draw. If unset, the relevant character from
                 :py:class:`euporie.box.Border` is used
             width: The length of the line. If specified, the line will be horizontal
             height: The height of the line. If specified, the line will be vertical
@@ -104,7 +104,7 @@ class BorderLine(Container):
         erase_bg: "bool",
         z_index: "Optional[int]",
     ) -> "None":
-        """Draws a continous line in the ``write_position`` area.
+        """Draws a continuous line in the ``write_position`` area.
 
         Args:
             screen: The :class:`~prompt_toolkit.layout.screen.Screen` class to which
@@ -137,7 +137,7 @@ class Pattern(Container):
     """Fill an area with a repeating background pattern."""
 
     def __init__(self) -> "None":
-        """Initalize the :class:`Pattern`."""
+        """Initialize the :class:`Pattern`."""
         self.bg = Char(" ", "class:pattern")
         self.char = Char(config.background_character, "class:pattern")
 

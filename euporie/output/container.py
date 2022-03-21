@@ -235,7 +235,7 @@ class CellOutput:
             width: The width of the output
             focusable: If the output should be focusable
             focus_on_click: If the output should become focused when clicked
-            show_scrollbar: If the ouptut should have a scrollbar
+            show_scrollbar: If the output should have a scrollbar
             wrap_lines: If the output's lines should be wrapped
             always_hide_cursor: When true, the cursor is never shown
             style: The style to apply to the output

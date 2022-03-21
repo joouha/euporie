@@ -55,7 +55,7 @@ def _have_termios_tty_fcntl() -> "bool":
 
 class _IsPrefixOfLongerMatchCache(vt100_parser._IsPrefixOfLongerMatchCache):
     def __missing__(self, prefix: "str") -> "bool":
-        """Check if the response might match an OSC or APC code, or DA resposne."""
+        """Check if the response might match an OSC or APC code, or DA response."""
         result = super().__missing__(prefix)
         if not result:
             if _response_prefix_re.match(prefix):
@@ -97,7 +97,7 @@ class TerminalQuery:
     """A class representing a terminal query.
 
     This allows a control sequence to sent to the terminal, the response interpreted,
-    and the recieved value processed and stored.
+    and the received value processed and stored.
     """
 
     default: "Optional[Any]" = None
@@ -117,14 +117,14 @@ class TerminalQuery:
         return None
 
     async def _handle_response(self, event: "KeyPressEvent") -> "object":
-        """Run when the terminal recieves the response from the terminal.
+        """Run when the terminal receives the response from the terminal.
 
         Args:
-            event: The key press event recieved when the termina sends a response
+            event: The key press event received when the termina sends a response
 
         Returns:
             :py:obj:`NotImplemented`, so the application is not invalidated when a
-            response from the terminal is recieved
+            response from the terminal is received
 
         """
         log.debug("Got terminal response for '%s'", self.__class__.__name__)
@@ -149,7 +149,7 @@ class TerminalQuery:
         """Returns the last known value for the query.
 
         Returns:
-            The last value recieved, or the default value.
+            The last value received, or the default value.
 
         """
         return self._value or self.default
@@ -161,7 +161,7 @@ class ColorQueryMixin:
     pattern: "re.Pattern"
 
     def verify(self, data: "str") -> "Optional[str]":
-        """Verifies the response containes a colour."""
+        """Verifies the response contains a colour."""
         if match := self.pattern.match(data):
             if colors := match.groupdict():
                 r, g, b = (
@@ -259,13 +259,13 @@ class SixelGraphicsStatus(TerminalQuery):
 
 
 class ItermGraphicsStatus(TerminalQuery):
-    """A terminal query to check for iterm graphics support."""
+    """A terminal query to check for iTerm graphics support."""
 
     default = False
     cache = True
 
     def __init__(self, output: "Output") -> "None":
-        """Detect the iterm graphics support based on environment variables."""
+        """Detect the iTerm graphics support based on environment variables."""
         self._value = None
         if (
             os.environ.get("TERM_PROGRAM", "") in {"WezTerm", "iTerm.app"}
@@ -323,7 +323,7 @@ class TerminalInfo:
         query_inst = query(self.output)
         self._queries.append(query_inst)
 
-        # If the query expectes a response from the terminal, we need to add a
+        # If the query expects a response from the terminal, we need to add a
         # key-binding for it and register it with the input parser
         if query.pattern:
             name = re.sub(r"(?<!^)(?=[A-Z])", "-", query.__name__).lower()

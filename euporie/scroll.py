@@ -633,7 +633,7 @@ class ScrollingContainer(Container):
 
     @property
     def known_sizes(self) -> "dict[int, int]":
-        """A dictionary mapping child indicies to height values."""
+        """A dictionary mapping child indices to height values."""
         sizes = {}
         for i, child in enumerate(self.children):
             child_hash = hash(child)

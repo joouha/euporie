@@ -1,6 +1,6 @@
-euporie.commands.cell.exit\_edit\_mode
+euporie.commands.cell.edit\_next\_cell
 ======================================
 
 .. currentmodule:: euporie.commands.cell
 
-.. autofunction:: exit_edit_mode
+.. autofunction:: edit_next_cell

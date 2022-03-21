@@ -1,6 +1,6 @@
-euporie.convert.base.Convertor
+euporie.convert.base.Converter
 ==============================
 
 .. currentmodule:: euporie.convert.base
 
-.. autoclass:: Convertor
+.. autoclass:: Converter

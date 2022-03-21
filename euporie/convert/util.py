@@ -1,4 +1,4 @@
-"""Utility functions for format convertors."""
+"""Utility functions for format converters."""
 
 from __future__ import annotations
 

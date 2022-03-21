@@ -1,4 +1,4 @@
-"""Fill in the configration option in euporie's documentation."""
+"""Fill in the configuration option in euporie's documentation."""
 
 from __future__ import annotations
 

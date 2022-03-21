@@ -145,7 +145,7 @@ class LogView(Tab):
     def __init__(self) -> "None":
         """Builds the tab's contents.
 
-        Also hooks into the queue handeler to update the log.
+        Also hooks into the queue handler to update the log.
         """
         super().__init__()
         self.formatter = logging.Formatter()

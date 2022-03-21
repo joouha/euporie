@@ -144,7 +144,7 @@ Options
 
 .. option:: --syntax-theme <str>
 
-   Syntax higlighting theme
+   Syntax highlighting theme
 
 .. option::
 

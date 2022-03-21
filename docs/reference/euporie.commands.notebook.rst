@@ -32,13 +32,16 @@ euporie.commands.notebook
       copy_cells
       cut_cells
       delete_cells
+      enter_cell_edit_mode
+      exit_edit_mode
       extend_cell_selection_down
+      extend_cell_selection_to_bottom
+      extend_cell_selection_to_top
       extend_cell_selection_up
       interrupt_kernel
       merge_cells
       move_cells_down
       move_cells_up
-      next_child
       paste_cells
       reformat_cells
       reformat_notebook
@@ -57,4 +60,5 @@ euporie.commands.notebook
       select_all_cells
       select_first_cell
       select_last_cell
+      select_next_cell
       select_previous_cell
