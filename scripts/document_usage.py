@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from subprocess import check_output  # noqa S404 - security implications considered
+from typing import Callable, cast
 
 from euporie.config import config
 
@@ -15,7 +16,8 @@ for action in parser._actions:
 
     type_ = ""
     if action.type and action.type != bool:
-        type_ = f"<{action.type.__name__}>"
+        action.type = cast("Callable", action.type)
+        type_ = f"<{action.type.__name__}>"  # typing: ignore
     if action.choices:
         type_ = f"{{{','.join(map(str, action.choices))}}}"
 
