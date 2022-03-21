@@ -27,30 +27,6 @@ async def edit_in_external_editor() -> "None":
 
 
 @add(
-    keys="enter",
-    filter=cell_has_focus & ~buffer_has_focus,
-    group="cell",
-)
-def enter_cell_edit_mode() -> "None":
-    """Enter cell edit mode."""
-    cell = get_app().cell
-    if cell is not None:
-        cell.enter_edit_mode()
-
-
-@add(
-    keys=["escape", ("escape", "escape")],
-    filter=cell_has_focus & buffer_has_focus,
-    group="cell",
-)
-def exit_edit_mode() -> "None":
-    """Exit cell edit mode."""
-    cell = get_app().cell
-    if cell is not None:
-        cell.exit_edit_mode()
-
-
-@add(
     keys=["c-\\"],
     filter=cell_has_focus & buffer_has_focus,
     group="cell",

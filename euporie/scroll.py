@@ -432,6 +432,7 @@ class ScrollingContainer(Container):
         self._selected_child_render_infos = []
         for index in selected_indices:
             render_info = self.get_child_render_info(index)
+            # TODO - improve performance
             render_info.refresh = True
             self._selected_child_render_infos.append(render_info)
 

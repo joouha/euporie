@@ -92,6 +92,9 @@ class Notebook(Tab, metaclass=ABCMeta):
         self._rendered_cells: "dict[str, Cell]" = {}
         self.cell_type: "Type[Cell]" = Cell
 
+        self.edit_mode = False
+        self.in_edit_mode = Condition(lambda: self.edit_mode)
+
         self.pager_visible = to_filter(False)
 
     def refresh(
@@ -180,6 +183,16 @@ class Notebook(Tab, metaclass=ABCMeta):
                         slice_.step,
                     )
                 )
+
+    def select(self, cell_index: "int", extend: "bool" = False) -> "None":
+        """Selects a cell or adds it to the selection.
+
+        Args:
+            cell_index: The index of the cell to select
+            extend: If true, the selection will be extended to include the cell
+
+        """
+        pass
 
     def copy(self, slice_: "slice") -> "None":
         """Add a copy of this cell to the `Notebook`'s clipboard."""
@@ -515,6 +528,15 @@ class TuiNotebook(KernelNotebook):
             ],
         )
 
+    def enter_edit_mode(self) -> "None":
+        self.edit_mode = True
+        self.cell.focus()
+
+    def exit_edit_mode(self) -> "None":
+        self.edit_mode = False
+        # self.cell.exit_edit_mode()
+        get_app().layout.focus(self.cell.control)
+
     def get_pager_content(self) -> "CellOutput":
         """Returns the rendered pager content."""
         if (
@@ -538,6 +560,37 @@ class TuiNotebook(KernelNotebook):
     def hide_pager(self) -> "None":
         """Closes the pager."""
         self.pager_state = None
+
+    def select(self, cell_index: "int", extend: "bool" = False) -> "None":
+        """Selects a cell or adds it to the selection.
+
+        Args:
+            cell_index: The index of the cell to select
+            extend: If true, the selection will be extended to include the cell
+
+        """
+        if extend:
+            # indices = self.page.selected_indices
+            slice_ = self.page._selected_slice
+            stop = -1 if slice_.stop is None else slice_.stop
+            step = slice_.step
+            if step == -1 and cell_index <= stop:
+                stop += 2
+                step = 1
+            elif step == -1 and cell_index >= stop:
+                pass
+            elif step in (1, None) and cell_index < stop:
+                step = 1
+            elif step in (1, None) and cell_index >= stop:
+                step = -1
+                stop -= 2
+            self.page.selected_slice = slice(
+                cell_index,
+                stop,
+                step,
+            )
+        else:
+            self.page.selected_slice = slice(cell_index, cell_index + 1)
 
     def refresh(
         self, slice_: "Optional[slice]" = None, scroll: "bool" = True
