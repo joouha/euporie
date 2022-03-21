@@ -20,6 +20,11 @@ Changed
 
 - Make cell edit mode persistent between cells
 
+Fixed
+=====
+
+- Fix editing cells in external editor
+
 ----
 
 ******************

@@ -153,18 +153,22 @@ class Command:
             # The handler already accepts a `KeyPressEvent` argument
             return cast("KeyHandlerCallable", self.handler)
 
-        if isawaitable(self.handler):
+        def _key_handler(event: "KeyPressEvent") -> "None":
+            result = self.handler()
+            # If the handler is a coroutine, create an asyncio task.
+            if isawaitable(result):
+                awaitable = result
 
-            async def _key_handler_async(event: "KeyPressEvent") -> "None":
-                await cast("Awaitable", self.handler())
+                async def bg_task() -> None:
+                    result = await awaitable
+                    if result != NotImplemented:
+                        event.app.invalidate()
 
-            return _key_handler_async
-        else:
+                event.app.create_background_task(bg_task())
+            elif result != NotImplemented:
+                event.app.invalidate()
 
-            def _key_handler(event: "KeyPressEvent") -> "None":
-                self.handler()
-
-            return _key_handler
+        return _key_handler
 
     @property
     def key_bindings(self) -> "Sequence[Binding]":
