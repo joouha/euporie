@@ -44,7 +44,7 @@ Update your :file:`$HOME/.config/wezterm/wezterm.lua` file to include the follow
 Kitty
 =====
 
-Add the following to your :file:`$HOME/.config/kitty/kitty.conf file:
+Add the following to your :file:`$HOME/.config/kitty/kitty.conf` file:
 
 .. code-block::
 
@@ -89,7 +89,7 @@ You can add the key-bindings to your :file:`settings.json` file:
 Alacritty
 =========
 
-You can define the key-binding in your :file:`$HOME/`.config/alacritty/alacritty.yml` file as follows:
+You can define the key-binding in your :file:`$HOME/.config/alacritty/alacritty.yml` file as follows:
 
 .. code-block:: yaml
 
@@ -144,7 +144,9 @@ App
 +-----------------------+----------------------------------------------------------------------------------+
 | :kbd:`Shift+Tab`      | Focus the previous control.                                                      |
 +-----------------------+----------------------------------------------------------------------------------+
-| :kbd:`Ctrl+@`         | Shows the command palette.                                                       |
+| :kbd:`Ctrl+Space`     | Shows the command palette.                                                       |
+|                       |                                                                                  |
+| :kbd:`Ctrl+@`         |                                                                                  |
 +-----------------------+----------------------------------------------------------------------------------+
 
 Config
@@ -165,6 +167,14 @@ Notebook
 | Keys                  | Command                                                                          |
 +=======================+==================================================================================+
 | :kbd:`Ctrl+s`         | Save the current notebook.                                                       |
++-----------------------+----------------------------------------------------------------------------------+
+| :kbd:`Enter`          | Enter cell edit mode.                                                            |
+|                       |                                                                                  |
+| :kbd:`Ctrl+m`         |                                                                                  |
++-----------------------+----------------------------------------------------------------------------------+
+| :kbd:`Escape`         | Exit cell edit mode.                                                             |
+|                       |                                                                                  |
+| :kbd:`Alt+Escape`     |                                                                                  |
 +-----------------------+----------------------------------------------------------------------------------+
 | :kbd:`Ctrl+Enter`     | Run or render the current cells.                                                 |
 |                       |                                                                                  |
@@ -224,13 +234,17 @@ Notebook
 +-----------------------+----------------------------------------------------------------------------------+
 | :kbd:`Ctrl+a`         | Select all cells in the notebook.                                                |
 +-----------------------+----------------------------------------------------------------------------------+
-| :kbd:`Shift+Up`       | Go up one cell.                                                                  |
+| :kbd:`Shift+Home`     | Extend the cell selection to the top of the notebook.                            |
++-----------------------+----------------------------------------------------------------------------------+
+| :kbd:`Shift+Up`       | Extend the cell selection up a cell.                                             |
 |                       |                                                                                  |
 | :kbd:`K`              |                                                                                  |
 +-----------------------+----------------------------------------------------------------------------------+
-| :kbd:`Shift+Down`     | Go up one cell.                                                                  |
+| :kbd:`Shift+Down`     | Extend the cell selection down a cell.                                           |
 |                       |                                                                                  |
 | :kbd:`J`              |                                                                                  |
++-----------------------+----------------------------------------------------------------------------------+
+| :kbd:`Shift+End`      | Extend the cell selection to the bottom of the notebook.                         |
 +-----------------------+----------------------------------------------------------------------------------+
 | :kbd:`m`              | Change selected cells to markdown cells.                                         |
 +-----------------------+----------------------------------------------------------------------------------+
@@ -248,14 +262,6 @@ Cell
 | Keys                  | Command                                                                          |
 +=======================+==================================================================================+
 | :kbd:`e`              | Edit cell in $EDITOR.                                                            |
-+-----------------------+----------------------------------------------------------------------------------+
-| :kbd:`Enter`          | Enter cell edit mode.                                                            |
-|                       |                                                                                  |
-| :kbd:`Ctrl+m`         |                                                                                  |
-+-----------------------+----------------------------------------------------------------------------------+
-| :kbd:`Escape`         | Exit cell edit mode.                                                             |
-|                       |                                                                                  |
-| :kbd:`Alt+Escape`     |                                                                                  |
 +-----------------------+----------------------------------------------------------------------------------+
 | :kbd:`Ctrl+\\`        | Split the current cell at the cursor position.                                   |
 +-----------------------+----------------------------------------------------------------------------------+

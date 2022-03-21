@@ -20,6 +20,7 @@ KEY_ALIASES: "Dict[Union[str, Keys], str]" = {
     Keys.ControlM: "enter",
     Keys.ControlI: "tab",
     Keys.ControlUnderscore: "c-/",
+    Keys.ControlAt: "c-space",
 }
 
 
