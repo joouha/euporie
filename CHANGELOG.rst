@@ -8,7 +8,19 @@ Notable changes to this project will be documented in this file.
 Upcoming
 ********
 
----
+======
+Added
+=====
+
+- Allow extended a notebooks' cell selection with the mouse (:kbd:`Shift + Click` or :kbd:`Ctrl + Click`)
+- Add ability to extend cell selection to top or bottom of notebook
+
+Changed
+=======
+
+- Make cell edit mode persistent between cells
+
+----
 
 ******************
 1.3.1 - 2022-03-24

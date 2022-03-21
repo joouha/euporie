@@ -24,7 +24,7 @@ from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.layout.margins import ConditionalMargin, NumberedMargin
 from prompt_toolkit.layout.processors import BeforeInput, ConditionalProcessor
 from prompt_toolkit.lexers import DynamicLexer, PygmentsLexer, SimpleLexer
-from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
+from prompt_toolkit.mouse_events import MouseEvent, MouseEventType, MouseModifier
 from prompt_toolkit.widgets import Frame, SearchToolbar, TextArea
 from pygments.lexers import get_lexer_by_name  # type: ignore
 
@@ -41,7 +41,6 @@ if TYPE_CHECKING:
 
     from prompt_toolkit.buffer import Buffer
     from prompt_toolkit.formatted_text.base import AnyFormattedText, StyleAndTextTuples
-    from prompt_toolkit.layout.layout import FocusableElement
     from prompt_toolkit.widgets.base import Border as PtkBorder
 
     from euporie.notebook import Notebook, TuiNotebook
@@ -89,7 +88,7 @@ class CellInputTextArea(TextArea):
 
         kwargs["text"] = cell.input
         kwargs["focus_on_click"] = True
-        kwargs["focusable"] = True
+        kwargs["focusable"] = self.cell.nb.in_edit_mode
         kwargs["scrollbar"] = cell.scroll_input()
         kwargs["wrap_lines"] = cell.wrap_input
         kwargs["lexer"] = DynamicLexer(
@@ -174,8 +173,14 @@ class ClickArea:
 
     def _get_text_fragments(self) -> "StyleAndTextTuples":
         def handler(mouse_event: MouseEvent) -> None:
+
             if mouse_event.event_type == MouseEventType.MOUSE_UP:
-                get_app().layout.focus(self.target)
+                # Set intersection
+                if mouse_event.modifiers & {MouseModifier.SHIFT, MouseModifier.CONTROL}:
+                    self.target.select(extend=True)
+                else:
+                    self.target.select()
+                self.target.focus()
 
         ft = to_formatted_text(
             self.text,
@@ -185,7 +190,7 @@ class ClickArea:
 
     def __init__(
         self,
-        target: "FocusableElement",
+        target: "Cell",
         text: "AnyFormattedText",
         style: "Union[str, Callable[[], str]]",
     ):
@@ -449,6 +454,10 @@ class Cell:
             ],
         )
 
+    def focus(self) -> "None":
+        """Focuses this cell."""
+        pass
+
     @property
     def focused(self) -> "bool":
         """Determine if the cell currently has focus."""
@@ -461,6 +470,15 @@ class Cell:
     def selected(self) -> "bool":
         """Determine if the cell currently is selected."""
         return False
+
+    def select(self, extend: "bool" = False) -> "None":
+        """Selects this cell or adds it to the selection.
+
+        Args:
+            extend: If true, the selection will be extended to include this cell
+
+        """
+        self.nb.select(self.index, extend=extend)
 
     def border_style(self) -> "str":
         """Determines the style of the cell borders, based on the cell state."""
@@ -697,10 +715,6 @@ class InteractiveCell(Cell):
         self.stdin_event = asyncio.Event()
         self.inspect_future = None
 
-    def select(self) -> "None":
-        """Selects this cell."""
-        self.nb.page.selected_slice = slice(self.index, self.index + 1)
-
     @property
     def selected(self) -> "bool":
         """Determine if the cell currently is selected."""
@@ -709,14 +723,19 @@ class InteractiveCell(Cell):
         else:
             return False
 
-    def exit_edit_mode(self) -> "None":
-        """Removes a cell from edit mode."""
-        # Give focus back to selected cell (this might have changed e.g. if doing a run
-        # then select the next cell)
-        try:
-            get_app().layout.focus(self.nb.cell.control)
-        except ValueError:
-            pass
+    def focus(self) -> "None":
+        """Focuses this cell."""
+        layout = get_app().layout
+        if self.nb.edit_mode:
+            # Select just this cell when editing
+            self.select()
+            if self.asking_input():
+                layout.focus(self.stdin_box)
+            else:
+                layout.focus(self.input_box)
+                self.rendered = False
+        else:
+            layout.focus(self.nb.cell.control)
 
     async def edit_in_editor(self) -> "None":
         """Edit the cell in $EDITOR."""
@@ -724,17 +743,6 @@ class InteractiveCell(Cell):
         await self.input_box.buffer.open_in_editor(
             validate_and_handle=config.run_after_external_edit
         )
-
-    def enter_edit_mode(self) -> "None":
-        """Set the cell to edit mode."""
-        layout = get_app().layout
-        # Select just this cell when editing
-        self.select()
-        if self.asking_input():
-            layout.focus(self.stdin_box)
-        else:
-            layout.focus(self.input_box)
-            self.rendered = False
 
     def split(self) -> "None":
         """Split the cell at the current cursor position."""

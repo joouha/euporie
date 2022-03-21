@@ -32,6 +32,30 @@ def save_notebook() -> "None":
 
 
 @add(
+    keys="enter",
+    filter=cell_has_focus & ~buffer_has_focus,
+    group="notebook",
+)
+def enter_cell_edit_mode() -> "None":
+    """Enter cell edit mode."""
+    nb = get_app().notebook
+    if nb is not None:
+        nb.enter_edit_mode()
+
+
+@add(
+    keys=["escape", ("escape", "escape")],
+    filter=cell_has_focus & buffer_has_focus,
+    group="notebook",
+)
+def exit_edit_mode() -> "None":
+    """Exit cell edit mode."""
+    nb = get_app().notebook
+    if nb is not None:
+        nb.exit_edit_mode()
+
+
+@add(
     keys=["c-enter", "c-e"],
     filter=cell_has_focus,
     group="notebook",
@@ -361,12 +385,24 @@ def select_all_cells() -> "None":
 
 
 @add(
+    keys=["s-home"],
+    group="notebook",
+    filter=notebook_has_focus & ~buffer_has_focus & ~cell_output_has_focus,
+)
+def extend_cell_selection_to_top() -> "None":
+    """Extend the cell selection to the top of the notebook."""
+    nb = get_app().notebook
+    if nb is not None:
+        nb.select(0, extend=True)
+
+
+@add(
     keys=["s-up", "K"],
     group="notebook",
     filter=notebook_has_focus & ~buffer_has_focus & ~cell_output_has_focus,
 )
 def extend_cell_selection_up() -> "None":
-    """Go up one cell."""
+    """Extend the cell selection up a cell."""
     nb = get_app().notebook
     if nb is not None:
         slice_ = nb.page._selected_slice
@@ -382,7 +418,7 @@ def extend_cell_selection_up() -> "None":
     filter=notebook_has_focus & ~buffer_has_focus & ~cell_output_has_focus,
 )
 def extend_cell_selection_down() -> "None":
-    """Go up one cell."""
+    """Extend the cell selection down a cell."""
     nb = get_app().notebook
     if nb is not None:
         slice_ = nb.page._selected_slice
@@ -390,6 +426,18 @@ def extend_cell_selection_down() -> "None":
             nb.page.selected_slice = slice(slice_.stop, slice_.start - 1, -1)
         else:
             nb.page.selected_slice = slice(slice_.start + 1, slice_.stop, slice_.step)
+
+
+@add(
+    keys=["s-end"],
+    group="notebook",
+    filter=notebook_has_focus & ~buffer_has_focus & ~cell_output_has_focus,
+)
+def extend_cell_selection_to_bottom() -> "None":
+    """Extend the cell selection to the bottom of the notebook."""
+    nb = get_app().notebook
+    if nb is not None:
+        nb.select(len(nb.json["cells"]) - 1, extend=True)
 
 
 @add(
