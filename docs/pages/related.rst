@@ -31,7 +31,7 @@ Notebook Viewers
 `jupytui <https://github.com/mosiman/jupytui>`_
    A cli Jupyter notebook viewer
 
-`jut <https://kracekumar.com/post/jut/>`_
+`jut <https://github.com/kracekumar/jut>`_
    Another cli Jupyter notebook viewer
 
 `juoview <https://github.com/Artiomio/jupview>`_
