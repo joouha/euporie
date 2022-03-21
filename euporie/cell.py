@@ -88,7 +88,7 @@ class CellInputTextArea(TextArea):
 
         kwargs["text"] = cell.input
         kwargs["focus_on_click"] = True
-        kwargs["focusable"] = self.cell.nb.in_edit_mode
+        kwargs["focusable"] = True
         kwargs["scrollbar"] = cell.scroll_input()
         kwargs["wrap_lines"] = cell.wrap_input
         kwargs["lexer"] = DynamicLexer(
@@ -134,9 +134,6 @@ class CellInputTextArea(TextArea):
         ]
         self.window.cursorline = has_focus(self)
 
-    # TODO - Check for non-shift-mode selection and change it to shift mode
-    # buffer.on_cursor_position_changed -> Event
-
     def on_text_changed(self, buf: "Buffer") -> "None":
         """Update cell json when the input buffer has been edited."""
         self.cell._set_input(buf.text)
@@ -172,10 +169,10 @@ class ClickArea:
     """
 
     def _get_text_fragments(self) -> "StyleAndTextTuples":
-        def handler(mouse_event: MouseEvent) -> None:
+        def handler(mouse_event: MouseEvent) -> "None":
 
             if mouse_event.event_type == MouseEventType.MOUSE_UP:
-                # Set intersection
+                # Use a set intersection
                 if mouse_event.modifiers & {MouseModifier.SHIFT, MouseModifier.CONTROL}:
                     self.target.select(extend=True)
                 else:
@@ -454,7 +451,7 @@ class Cell:
             ],
         )
 
-    def focus(self) -> "None":
+    def focus(self, position: "Optional[int]" = None) -> "None":
         """Focuses this cell."""
         pass
 
@@ -462,7 +459,7 @@ class Cell:
     def focused(self) -> "bool":
         """Determine if the cell currently has focus."""
         if self.container is not None:
-            return get_app().layout.has_focus(self.container)
+            return get_app().layout.has_focus(self)
         else:
             return False
 
@@ -471,20 +468,23 @@ class Cell:
         """Determine if the cell currently is selected."""
         return False
 
-    def select(self, extend: "bool" = False) -> "None":
+    def select(
+        self, extend: "bool" = False, position: "Optional[int]" = None
+    ) -> "None":
         """Selects this cell or adds it to the selection.
 
         Args:
             extend: If true, the selection will be extended to include this cell
+            position: An optional cursor position index to apply to the cell input
 
         """
-        self.nb.select(self.index, extend=extend)
+        self.nb.select(self.index, extend=extend, position=position)
 
     def border_style(self) -> "str":
         """Determines the style of the cell borders, based on the cell state."""
         if not config.dump:
             if self.selected:
-                if has_focus(self.input_box.buffer)():
+                if self.nb.in_edit_mode():  # has_focus(self.input_box.buffer)():
                     return "class:cell.border.edit"
                 else:
                     return "class:cell.border.selected"
@@ -589,10 +589,6 @@ class Cell:
         self.trigger_refresh()
         get_app().invalidate()
 
-    def exit_edit_mode(self) -> "None":
-        """Removes a cell from edit mode."""
-        pass
-
     def ran(self, cell_json: "Optional[dict]" = None) -> "None":
         """Callback which runs when the cell has finished running."""
         self.state = "idle"
@@ -669,6 +665,8 @@ class Cell:
             Always returns True
 
         """
+        self.nb.exit_edit_mode()
+
         if self.cell_type == "markdown":
             self.output_box.children = self.render_outputs()
             self.rendered = True
@@ -724,26 +722,35 @@ class InteractiveCell(Cell):
             return False
 
     def focus(self, position: "Optional[int]" = None) -> "None":
-        """Focuses this cell."""
-        layout = get_app().layout
+        """Focuses the relevant control in this cell.
+
+        Args:
+            position: An optional cursor position index to apply to the input box
+
+        """
+        to_focus = None
         if self.nb.edit_mode:
             # Select just this cell when editing
-            self.select()
+            # self.nb.select(self.index)
             if self.asking_input():
-                layout.focus(self.stdin_box)
+                to_focus = self.stdin_box.window
             else:
-                layout.focus(self.input_box)
+                to_focus = self.input_box.window
                 self.rendered = False
             if position is not None:
                 self.input_box.buffer.cursor_position = position % len(
                     self.input_box.buffer.text
                 )
         else:
-            layout.focus(self.nb.cell.control)
+            to_focus = self.nb.cell.control
+
+        # We force focus here, bypassing the layout's checks, as the control we want to
+        # focus might be not be in the current layout yet.
+        get_app().layout._stack.append(to_focus)
 
     async def edit_in_editor(self) -> "None":
         """Edit the cell in $EDITOR."""
-        self.exit_edit_mode()
+        self.nb.exit_edit_mode()
         await self.input_box.buffer.open_in_editor(
             validate_and_handle=config.run_after_external_edit
         )
@@ -752,25 +759,6 @@ class InteractiveCell(Cell):
         """Split the cell at the current cursor position."""
         self.nb.split_cell(self, self.input_box.buffer.cursor_position)
         self.input_box.buffer.cursor_position = 0
-
-    def run_or_render(
-        self,
-        buffer: "Optional[Buffer]" = None,
-        wait: "bool" = False,
-    ) -> "bool":
-        """Run code cells, or render markdown cells, optionally advancing.
-
-        Args:
-            buffer: Unused parameter, required when accepting the contents of a cell's
-                input buffer
-            wait: If True, block the main thread until the cell has finished running
-
-        Returns:
-            Always return True
-
-        """
-        self.exit_edit_mode()
-        return super().run_or_render(buffer)
 
     def get_input(
         self,

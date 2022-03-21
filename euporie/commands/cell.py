@@ -47,7 +47,7 @@ def edit_previous_cell() -> "None":
         new_index = nb.cell.index - 1
         cells = nb.rendered_cells()
         if 0 <= new_index < len(cells):
-            cells[new_index].focus(position=-1)
+            cells[new_index].select(position=-1)
 
 
 @add(
@@ -63,4 +63,4 @@ def edit_next_cell() -> "None":
         cells = nb.rendered_cells()
         log.debug(new_index)
         if 0 <= new_index < len(cells):
-            cells[new_index].focus(position=0)
+            cells[new_index].select(position=0)

@@ -291,7 +291,7 @@ def select_first_cell() -> "None":
     """Select the first cell in the notebook."""
     nb = get_app().notebook
     if nb is not None:
-        nb.page._set_selected_slice((slice(0, 1)), force=True, scroll=True)
+        nb.select(0)
 
 
 @add(
@@ -303,10 +303,7 @@ def select_5th_previous_cell() -> "None":
     """Go up 5 cells."""
     nb = get_app().notebook
     if nb is not None:
-        nb.page.selected_slice = slice(
-            nb.page.selected_slice.start - 5,
-            nb.page.selected_slice.start - 5 + 1,
-        )
+        nb.select(nb.page.selected_slice.start - 5)
 
 
 @add(
@@ -318,10 +315,7 @@ def select_previous_cell() -> "None":
     """Go up one cell."""
     nb = get_app().notebook
     if nb is not None:
-        nb.page.selected_slice = slice(
-            nb.page.selected_slice.start - 1,
-            nb.page.selected_slice.start,
-        )
+        nb.select(nb.page.selected_slice.start - 1)
 
 
 @add(
@@ -329,14 +323,11 @@ def select_previous_cell() -> "None":
     group="notebook",
     filter=notebook_has_focus & ~buffer_has_focus & ~cell_output_has_focus,
 )
-def next_child() -> "None":
+def select_next_cell() -> "None":
     """Select the next cell."""
     nb = get_app().notebook
     if nb is not None:
-        nb.page.selected_slice = slice(
-            nb.page.selected_slice.start + 1,
-            nb.page.selected_slice.start + 1 + 1,
-        )
+        nb.select(nb.page.selected_slice.start + 1)
 
 
 @add(
@@ -348,10 +339,7 @@ def select_5th_next_cell() -> "None":
     """Go down 5 cells."""
     nb = get_app().notebook
     if nb is not None:
-        nb.page.selected_slice = slice(
-            nb.page.selected_slice.start + 5,
-            nb.page.selected_slice.start + 5 + 1,
-        )
+        nb.select(nb.page.selected_slice.start + 5)
 
 
 @add(
@@ -363,10 +351,7 @@ def select_last_cell() -> "None":
     """Select the last cell in the notebook."""
     nb = get_app().notebook
     if nb is not None:
-        nb.page.selected_slice = slice(
-            len(nb.page.children),
-            len(nb.page.children) + 1,
-        )
+        nb.select(len(nb.page.children))
 
 
 @add(

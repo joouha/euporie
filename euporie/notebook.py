@@ -106,7 +106,7 @@ class Notebook(Tab, metaclass=ABCMeta):
     @property
     def title(self) -> "str":
         """Return the tab title."""
-        return self.path.name
+        return ("* " if self.dirty else "") + self.path.name
 
     def lang_file_ext(self) -> "str":
         """Return the file extension for scripts in the notebook's language."""
@@ -184,12 +184,18 @@ class Notebook(Tab, metaclass=ABCMeta):
                     )
                 )
 
-    def select(self, cell_index: "int", extend: "bool" = False) -> "None":
+    def select(
+        self,
+        cell_index: "int",
+        extend: "bool" = False,
+        position: "Optional[int]" = None,
+    ) -> "None":
         """Selects a cell or adds it to the selection.
 
         Args:
             cell_index: The index of the cell to select
             extend: If true, the selection will be extended to include the cell
+            position: An optional cursor position index to apply to the cell input
 
         """
         pass
@@ -302,6 +308,14 @@ class Notebook(Tab, metaclass=ABCMeta):
     def hide_pager(self) -> "None":
         """Closes the pager."""
         pass
+
+    def enter_edit_mode(self) -> "None":
+        """Enter cell edit mode."""
+        self.edit_mode = True
+
+    def exit_edit_mode(self) -> "None":
+        """Leave cell edit mode."""
+        self.edit_mode = False
 
 
 class DumpNotebook(Notebook):
@@ -528,15 +542,6 @@ class TuiNotebook(KernelNotebook):
             ],
         )
 
-    def enter_edit_mode(self) -> "None":
-        self.edit_mode = True
-        self.cell.focus()
-
-    def exit_edit_mode(self) -> "None":
-        self.edit_mode = False
-        # self.cell.exit_edit_mode()
-        get_app().layout.focus(self.cell.control)
-
     def get_pager_content(self) -> "CellOutput":
         """Returns the rendered pager content."""
         if (
@@ -561,12 +566,18 @@ class TuiNotebook(KernelNotebook):
         """Closes the pager."""
         self.pager_state = None
 
-    def select(self, cell_index: "int", extend: "bool" = False) -> "None":
+    def select(
+        self,
+        cell_index: "int",
+        extend: "bool" = False,
+        position: "Optional[int]" = None,
+    ) -> "None":
         """Selects a cell or adds it to the selection.
 
         Args:
             cell_index: The index of the cell to select
             extend: If true, the selection will be extended to include the cell
+            position: An optional cursor position index to apply to the cell input
 
         """
         if extend:
@@ -591,6 +602,18 @@ class TuiNotebook(KernelNotebook):
             )
         else:
             self.page.selected_slice = slice(cell_index, cell_index + 1)
+        # Focus the selected cell
+        self.rendered_cells()[cell_index].focus(position)
+
+    def enter_edit_mode(self) -> "None":
+        """Enter cell edit mode."""
+        super().enter_edit_mode()
+        self.cell.select()
+
+    def exit_edit_mode(self) -> "None":
+        """Leave cell edit mode."""
+        super().exit_edit_mode()
+        self.cell.select()
 
     def refresh(
         self, slice_: "Optional[slice]" = None, scroll: "bool" = True
@@ -710,16 +733,16 @@ class TuiNotebook(KernelNotebook):
         selected_indices = self.page.selected_indices
         rendered_cells = {cell.index: cell for cell in self._rendered_cells.values()}
 
+        # Run the cells
+        for i in sorted(selected_indices):
+            rendered_cells[i].run_or_render()
         # Insert a cell if we are at the last cell
         index = max(selected_indices)
         if insert or (advance and max(selected_indices) == (n_cells) - 1):
             self.add(index + 1)
             self.refresh(slice_=slice(index + 1, index + 2), scroll=True)
         elif advance:
-            self.page.selected_slice = slice(index + 1, index + 2)
-        # Run the cells
-        for i in sorted(selected_indices):
-            rendered_cells[i].run_or_render()
+            self.select(index + 1)
 
     def run_cell(self, cell: "Cell", wait: "bool" = False) -> "None":
         if cell is None:
@@ -840,8 +863,8 @@ class TuiNotebook(KernelNotebook):
         """Generates the formatted text for the statusbar."""
         return (
             [
+                "^" if self.edit_mode else ">",
                 f"Cell {self.page.selected_slice.start+1}",
-                "*" if self.dirty else "",
                 "Saving.." if self.saving else "",
             ],
             [
