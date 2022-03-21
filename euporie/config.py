@@ -52,7 +52,7 @@ class BooleanOptionalAction(argparse.Action):
     """
 
     def __init__(self, option_strings: "list[str]", *args: "Any", **kwargs: "Any"):
-        """Initate the Action, as per `argparse.BooleanOptionalAction`."""
+        """Initiate the Action, as per `argparse.BooleanOptionalAction`."""
         _option_strings = list(option_strings)
         for option_string in option_strings:
             if option_string.startswith("--"):
@@ -121,7 +121,7 @@ CONFIG_PARAMS: "dict[str, dict]" = {
             "default": False,
         },
         "description_": """
-            When set, logging events at the debug level are emmitted.
+            When set, logging events at the debug level are emitted.
         """,
     },
     "dump": {
@@ -412,7 +412,7 @@ CONFIG_PARAMS: "dict[str, dict]" = {
         },
         "description_": """
             The background pattern to use when the notebook is narrower than the
-            availble width. Zero mean no pattern is used.
+            available width. Zero mean no pattern is used.
         """,
     },
     "background_character": {
@@ -428,7 +428,7 @@ CONFIG_PARAMS: "dict[str, dict]" = {
         "description_": """
             The character to use when drawing the background pattern.
 
-            Reccomended characters include: "·", "⬤", "╳", "╱", "╲", "░", "▒", "▓", "▞", "╬"
+            Recommended characters include: "·", "⬤", "╳", "╱", "╲", "░", "▒", "▓", "▞", "╬"
         """,
     },
     "background_color": {
@@ -475,7 +475,7 @@ CONFIG_PARAMS: "dict[str, dict]" = {
         "type": str,
         # Do not want to print all theme names in --help screen as it looks messy
         # "choices": list(get_all_styles()),
-        "help": "Syntax higlighting theme",
+        "help": "Syntax highlighting theme",
         "schema_": {
             "type": "string",
             "pattern": f"({'|'.join(get_all_styles())})",

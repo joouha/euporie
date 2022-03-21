@@ -8,7 +8,7 @@ import euporie
 
 
 def publish() -> "None":
-    """Publishes a new releasse of euporie to pypi.org."""
+    """Publishes a new release of euporie to pypi.org."""
     poetry_publish(
         package_root=Path(euporie.__file__).parent.parent,
         version=euporie.__version__,

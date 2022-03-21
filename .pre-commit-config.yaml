@@ -55,6 +55,12 @@ repos:
         args: ["--profile", "black", "--filter-files"]
         language: system
         types: [python]
+      - id: codespell
+        name: codespell
+        description: Checks for common misspellings in text files.
+        entry: codespell
+        language: system
+        types: [text]
       - id: flake8
         name: flake8
         entry: flake8

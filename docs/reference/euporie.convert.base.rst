@@ -37,4 +37,4 @@ euporie.convert.base
       :toctree:
       :template: class.tpl.rst
 
-      Convertor
+      Converter

@@ -508,7 +508,7 @@ class Cell:
 
     @property
     def cell_type(self) -> "str":
-        """Determine the currrent cell type."""
+        """Determine the current cell type."""
         return self.json.get("cell_type", "code")
 
     @property

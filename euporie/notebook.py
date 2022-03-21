@@ -159,7 +159,7 @@ class Notebook(Tab, metaclass=ABCMeta):
         """Move a slice of cells up or down.
 
         Args:
-            slice_: A slice describing the cell indicies to move
+            slice_: A slice describing the cell indices to move
             n: The amount to move them by
 
         """
@@ -466,7 +466,7 @@ class TuiNotebook(KernelNotebook):
         self.page = ScrollingContainer(
             self.rendered_cells, width=config.max_notebook_width
         )
-        # Wrap the scolling container in an hsplit and apply the keybindings
+        # Wrap the scrolling container in an hsplit and apply the keybindings
         expand = Condition(lambda: config.expand)
 
         self.container = HSplit(

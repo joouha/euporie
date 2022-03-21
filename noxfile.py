@@ -79,7 +79,7 @@ def precommit(session: Session) -> None:
         "flake8-annotations",
         "pre-commit",
         "pre-commit-hooks",
-        "mypy",
+        "codespell",
     )
     session.run("pre-commit", *args)
     if args and args[0] == "install":
