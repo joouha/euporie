@@ -36,6 +36,8 @@ __all__ = [
     "multiple_cells_selected",
     "is_returnable",
     "cursor_at_start_of_line",
+    "cursor_on_first_line",
+    "cursor_on_last_line",
     "insert_mode",
     "kernel_is_python",
 ]
@@ -216,6 +218,18 @@ def is_returnable() -> "bool":
 def cursor_at_start_of_line() -> "bool":
     """Determine if the cursor is at the start of a line."""
     return get_app().current_buffer.document.cursor_position_col == 0
+
+
+@Condition
+def cursor_on_first_line() -> "bool":
+    """Determine if the cursor is on the first line of a buffer."""
+    return get_app().current_buffer.document.on_first_line
+
+
+@Condition
+def cursor_on_last_line() -> "bool":
+    """Determine if the cursor is on the last line of a buffer."""
+    return get_app().current_buffer.document.on_last_line
 
 
 @Condition

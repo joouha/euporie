@@ -405,11 +405,7 @@ def extend_cell_selection_up() -> "None":
     """Extend the cell selection up a cell."""
     nb = get_app().notebook
     if nb is not None:
-        slice_ = nb.page._selected_slice
-        if slice_.start - 1 == slice_.stop:
-            nb.page.selected_slice = slice(slice_.stop, slice_.start + 1, 1)
-        else:
-            nb.page.selected_slice = slice(slice_.start - 1, slice_.stop, slice_.step)
+        nb.select(nb.page._selected_slice.start - 1, extend=True)
 
 
 @add(
@@ -421,11 +417,7 @@ def extend_cell_selection_down() -> "None":
     """Extend the cell selection down a cell."""
     nb = get_app().notebook
     if nb is not None:
-        slice_ = nb.page._selected_slice
-        if slice_.start + 1 == slice_.stop:
-            nb.page.selected_slice = slice(slice_.stop, slice_.start - 1, -1)
-        else:
-            nb.page.selected_slice = slice(slice_.start + 1, slice_.stop, slice_.step)
+        nb.select(nb.page._selected_slice.start + 1, extend=True)
 
 
 @add(

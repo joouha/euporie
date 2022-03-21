@@ -12,6 +12,7 @@ Upcoming
 Added
 =====
 
+- Allow moving cursor between cells from first / last line
 - Allow extended a notebooks' cell selection with the mouse (:kbd:`Shift + Click` or :kbd:`Ctrl + Click`)
 - Add ability to extend cell selection to top or bottom of notebook
 

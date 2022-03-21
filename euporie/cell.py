@@ -723,7 +723,7 @@ class InteractiveCell(Cell):
         else:
             return False
 
-    def focus(self) -> "None":
+    def focus(self, position: "Optional[int]" = None) -> "None":
         """Focuses this cell."""
         layout = get_app().layout
         if self.nb.edit_mode:
@@ -734,6 +734,10 @@ class InteractiveCell(Cell):
             else:
                 layout.focus(self.input_box)
                 self.rendered = False
+            if position is not None:
+                self.input_box.buffer.cursor_position = position % len(
+                    self.input_box.buffer.text
+                )
         else:
             layout.focus(self.nb.cell.control)
 
