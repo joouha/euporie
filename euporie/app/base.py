@@ -182,9 +182,6 @@ class EuporieApp(Application):
         """
         return create_output()
 
-    # This configures the logs for euporie
-    setup_logs()
-
     def post_load(self) -> "None":
         """Allows subclasses to define additional loading steps."""
         pass
@@ -236,7 +233,11 @@ class EuporieApp(Application):
     @classmethod
     def launch(cls) -> "None":
         """Launches the app."""
+        # This configures the logs for euporie
+        setup_logs()
+        # Create an instance of the app
         app = cls()
+        # Run the app
         app.run()
 
     def load_container(self) -> "FloatContainer":
