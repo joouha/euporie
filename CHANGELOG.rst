@@ -12,6 +12,7 @@ Upcoming
 Added
 =====
 
+- Add shortcuts :kbd:`Alt+Up` and :kbd:`Alt+Down` to move cells
 - Show notebook mode in status-bar
 - Allow moving cursor between cells from first / last line
 - Allow extended a notebooks' cell selection with the mouse (:kbd:`Shift + Click` or :kbd:`Ctrl + Click`)
