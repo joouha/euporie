@@ -418,7 +418,7 @@ def extend_cell_selection_to_bottom() -> "None":
 
 
 @add(
-    # keys=[""],
+    keys=[("escape", "up")],
     group="notebook",
     filter=notebook_has_focus & ~buffer_has_focus & ~cell_output_has_focus,
 )
@@ -430,7 +430,7 @@ def move_cells_up() -> "None":
 
 
 @add(
-    # keys=[""],
+    keys=[("escape", "down")],
     group="notebook",
     filter=notebook_has_focus & ~buffer_has_focus & ~cell_output_has_focus,
 )
