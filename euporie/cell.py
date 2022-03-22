@@ -22,7 +22,11 @@ from prompt_toolkit.layout.containers import (
 )
 from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.layout.margins import ConditionalMargin, NumberedMargin
-from prompt_toolkit.layout.processors import BeforeInput, ConditionalProcessor
+from prompt_toolkit.layout.processors import (
+    BeforeInput,
+    ConditionalProcessor,
+    HighlightMatchingBracketProcessor,
+)
 from prompt_toolkit.lexers import DynamicLexer, PygmentsLexer, SimpleLexer
 from prompt_toolkit.mouse_events import MouseEvent, MouseEventType, MouseModifier
 from prompt_toolkit.widgets import Frame, SearchToolbar, TextArea
@@ -109,6 +113,7 @@ class CellInputTextArea(TextArea):
         )
         kwargs["style"] = "class:cell.input"
         kwargs["accept_handler"] = self.cell.run_or_render
+        kwargs["input_processors"] = [HighlightMatchingBracketProcessor()]
 
         super().__init__(*args, **kwargs)
 

@@ -12,6 +12,7 @@ Upcoming
 Added
 =====
 
+- Highlight matching brackets and add command (:kbd:`Ctrl+g`) to jump between matching brackets
 - Add shortcuts :kbd:`Alt+Up` and :kbd:`Alt+Down` to move cells
 - Show notebook mode in status-bar
 - Allow moving cursor between cells from first / last line

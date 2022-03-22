@@ -423,6 +423,8 @@ class EuporieApp(Application):
             "line-number": f"fg:{cp['fg'][1]} bg:{cp['bg'][1]}",
             "line-number.current": "bold orange",
             "cursor-line": f"bg:{cp['bg'][1]}",
+            "matching-bracket.cursor": "fg:yellow bold",
+            "matching-bracket.other": "fg:yellow bold",
             # Cells
             "cell.border": f"fg:{cp['bg'][5]}",
             "cell.border.selected": "fg:#00afff",

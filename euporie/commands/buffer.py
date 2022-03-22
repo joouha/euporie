@@ -715,3 +715,14 @@ def show_contextual_help(event: "KeyPressEvent") -> "None":
     cell = get_app().cell
     if cell is not None:
         cell.inspect()
+
+
+@add(
+    keys="c-g",
+    filter=buffer_has_focus,
+    group="micro-edit-mode",
+)
+def go_to_matching_bracket(event: "KeyPressEvent") -> "None":
+    """Go to matching bracket if the cursor is on a paired bracket."""
+    buff = event.current_buffer
+    buff.cursor_position += buff.document.find_matching_bracket_position()
