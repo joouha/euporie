@@ -46,7 +46,7 @@ class NotebookKernel:
 
         Args:
             name: The name of the kernel to start
-            threaded: If :py:cont:`True`, run kernel communication in a separate thread
+            threaded: If :py:const:`True`, run kernel communication in a separate thread
             allow_stdin: Whether the kernel is allowed to request input
 
         """
