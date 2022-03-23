@@ -35,7 +35,7 @@ class RoundBorder(SquareBorder):
 
 
 class ThickVerticalBorder(SquareBorder):
-    """Box drawing characters with thick verticals corners."""
+    """Box drawing characters with thick vertical lines."""
 
     TOP_LEFT = "┎"
     TOP_RIGHT = "┒"
@@ -45,6 +45,22 @@ class ThickVerticalBorder(SquareBorder):
     BOTTOM_RIGHT = "┚"
     SPLIT_LEFT = "┠"
     SPLIT_RIGHT = "┨"
+
+
+class DoubleBorder:
+    """Box drawing characters with double lines."""
+
+    TOP_LEFT = "╔"
+    TOP_RIGHT = "╗"
+    VERTICAL = "║"
+    INNER_VERTICAL = "║"
+    HORIZONTAL = "═"
+    INNER_HORIZONTAL = "═"
+    BOTTOM_LEFT = "╚"
+    BOTTOM_RIGHT = "╝"
+    SPLIT_LEFT = "╠"
+    SPLIT_RIGHT = "╣"
+    CROSS = "╬"
 
 
 class BorderLine(Container):

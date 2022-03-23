@@ -49,6 +49,7 @@ from euporie.config import config
 from euporie.key_binding.bindings.commands import load_command_bindings
 from euporie.key_binding.bindings.micro import load_micro_bindings
 from euporie.key_binding.micro_state import MicroState
+from euporie.formatted_text.markdown import DEFAULT_MD_STYLE
 from euporie.log import setup_logs
 from euporie.notebook import Notebook
 from euporie.style import color_series
@@ -492,8 +493,9 @@ class EuporieApp(Application):
         # the style on the renderer directly when it changes in `self.update_style`
         return merge_styles(
             [
-                Style.from_dict(style_dict),
                 style_from_pygments_cls(get_style_by_name(config.syntax_theme)),
+                DEFAULT_MD_STYLE,
+                Style.from_dict(style_dict),
             ]
         )
 

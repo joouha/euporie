@@ -19,7 +19,6 @@ from euporie.app.current import get_tui_app as get_app
 from euporie.convert.base import convert
 from euporie.key_binding.bindings.commands import load_command_bindings
 from euporie.terminal import tmuxify
-from euporie.text import ANSI
 
 if TYPE_CHECKING:
     from typing import Any, Callable, Iterable, Optional
@@ -30,7 +29,7 @@ if TYPE_CHECKING:
     from prompt_toolkit.key_binding.key_bindings import NotImplementedOrNone
 
 __all__ = [
-    "AnsiControl",
+    "FormattedOutputControl",
 ]
 
 log = logging.getLogger(__name__)
@@ -224,7 +223,7 @@ class OutputControl(UIControl):
         yield self.on_cursor_position_changed
 
 
-class AnsiControl(OutputControl):
+class FormattedOutputControl(OutputControl):
     """A data formatter, which displays cell output data.
 
     It will attempt to display the data in the best way possible, and reacts to resize
@@ -238,16 +237,15 @@ class AnsiControl(OutputControl):
 
         def render_lines() -> "list[StyleAndTextTuples]":
             """Renders the lines to display in the control."""
-            lines = convert(
+            return list(split_lines(convert(
                 data=self.data,
                 from_=self.format_,
-                to="ansi",
+                to="formatted_text",
                 cols=width,
                 rows=height,
                 fg=self.fg_color,
                 bg=self.bg_color,
-            ).strip()
-            return list(split_lines(to_formatted_text(ANSI(lines))))
+            )))
 
         return self._format_cache.get(
             (width,),

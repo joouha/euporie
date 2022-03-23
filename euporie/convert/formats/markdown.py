@@ -14,6 +14,25 @@ if TYPE_CHECKING:
 @register(
     from_="html",
     to="markdown",
+    filter_=have_modules("html2text"),
+)
+def html_to_markdown_py_html2text(
+    data: "str",
+    width: "Optional[int]" = None,
+    height: "Optional[int]" = None,
+    fg: "Optional[str]" = None,
+    bg: "Optional[str]" = None,
+) -> "str":
+    """Convert HTML to markdown tables using :py:mod:`html2text`."""
+    from html2text import HTML2Text
+
+    parser = HTML2Text()
+    return parser.handle(data)
+
+
+@register(
+    from_="html",
+    to="markdown",
     filter_=have_modules("mtable", "html5lib"),
 )
 def html_to_markdown_py_mtable(

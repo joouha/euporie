@@ -8,7 +8,7 @@ from prompt_toolkit.filters import to_filter
 from prompt_toolkit.key_binding.key_bindings import Binding, _parse_key
 
 from euporie.keys import Keys
-from euporie.menu.item import MenuItem
+from euporie.widgets.menu import MenuItem
 
 if TYPE_CHECKING:
     from typing import (

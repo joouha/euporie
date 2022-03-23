@@ -17,7 +17,7 @@ from rich.console import Console
 
 from euporie.config import config
 from euporie.tab import Tab
-from euporie.text import FormattedTextArea
+from euporie.widgets.formatted_text_area import FormattedTextArea
 
 if TYPE_CHECKING:
     from types import TracebackType

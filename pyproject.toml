@@ -25,7 +25,6 @@ python = "^3.8"
 prompt-toolkit = "^3.0"
 nbformat = "^5"
 jupyter-client = "^7.1"
-rich = "^11"
 appdirs = "^1.4"
 jsonschema = "^4.4"
 pyperclip = "^1.8"
@@ -43,6 +42,11 @@ img2unicode = {version = "^0.1a8", optional = true}
 black = {version = ">=19.3b0", optional = true}
 isort = {version = "^5.10.1", optional = true}
 ssort = {version = "^0.11.4", optional = true}
+markdown-it-py = "^2.0.1"
+linkify = "^1.4"
+mdit-py-plugins = "^0.3.0"
+html2text = "^2020.1.16"
+rich = "^12.0.1"
 
 [tool.poetry.extras]
 all = ["black", "mtable", "html5lib", "CairoSVG"]
