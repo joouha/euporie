@@ -602,8 +602,8 @@ class TuiNotebook(KernelNotebook):
             )
         else:
             self.page.selected_slice = slice(cell_index, cell_index + 1)
-        # Focus the selected cell
-        self.rendered_cells()[cell_index].focus(position)
+        # Focus the selected cell - use the current slice in case it did not change
+        self.rendered_cells()[self.page.selected_slice.start].focus(position)
 
     def enter_edit_mode(self) -> "None":
         """Enter cell edit mode."""
