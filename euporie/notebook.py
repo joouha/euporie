@@ -166,7 +166,6 @@ class Notebook(Tab, metaclass=ABCMeta):
         if slice_ is not None:
             indices = range(*slice_.indices(len(self.json["cells"])))
             index = min(indices) + n
-            log.debug(index)
             if 0 <= index and index + len(indices) <= len(self.json["cells"]):
                 cells = [
                     x
