@@ -20,7 +20,7 @@ from euporie.convert.base import convert, find_route
 from euporie.filters import has_dialog, has_menus
 from euporie.margins import ScrollbarMargin
 from euporie.output.control import (
-    AnsiControl,
+    FormattedOutputControl,
     ItermGraphicControl,
     KittyGraphicControl,
     SixelGraphicControl,
@@ -307,7 +307,7 @@ class CellOutput:
             bg=bg_color,
         )
 
-        self.window.content = AnsiControl(
+        self.window.content = FormattedOutputControl(
             datum,
             format_=format_,
             fg_color=fg_color,

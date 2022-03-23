@@ -4,13 +4,15 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+
 from euporie.config import config
 from euporie.convert.base import register
 from euporie.convert.util import have_modules
-from euporie.markdown import Markdown
 
 if TYPE_CHECKING:
     from typing import Optional
+
+    from rich.markdown import Markdown
 
 
 @register(
@@ -26,6 +28,8 @@ def markdown_to_rich_py(
     bg: "Optional[str]" = None,
 ) -> "Markdown":
     """Converts base64 encoded data to bytes."""
+    from rich.markdown import Markdown
+
     return Markdown(
         data,
         code_theme=str(config.syntax_theme),

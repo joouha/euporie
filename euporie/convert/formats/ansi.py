@@ -456,7 +456,7 @@ def markdown_to_rich_py(
     fg: "Optional[str]" = None,
     bg: "Optional[str]" = None,
 ) -> "str":
-    """Converts base64 encoded data to bytes."""
+    """Converts rich objects to formatted ANSI text."""
     import rich
 
     console = rich.get_console()
