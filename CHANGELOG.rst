@@ -8,7 +8,16 @@ Notable changes to this project will be documented in this file.
 Upcoming
 ********
 
-----
+---
+
+******************
+1.3.1 - 2022-03-24
+******************
+
+Fixed
+=====
+
+- Prevent :py:mod:`ssort` clearing cells with only comments
 
 ******************
 1.3.1 - 2022-03-20

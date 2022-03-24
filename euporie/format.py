@@ -42,14 +42,12 @@ def format_ssort(text: "str") -> "str":
     else:
         with stdout_to_log(log, output="stderr"):
             try:
-                text = ssort.ssort(
-                    text,
-                    # on_syntax_error="ignore",
-                    # on_unresolved="ignore",
-                    # on_wildcard_import="ignore",
-                )
+                output = ssort.ssort(text)
             except Exception:
                 log.warning("Error formatting code with ssort")
+            finally:
+                if output:
+                    text = output
     return text
 
 
