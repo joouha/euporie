@@ -41,6 +41,20 @@ else:
         MarkdownIt().enable("linkify").enable("table").enable("strikethrough")
     )
 
+try:
+    import mdit_py_plugins  # type: ignore # noqa F401
+except ModuleNotFoundError:
+    pass
+else:
+    from mdit_py_plugins.amsmath import amsmath_plugin  # type: ignore
+    from mdit_py_plugins.dollarmath import dollarmath_plugin  # type: ignore
+    from mdit_py_plugins.texmath import texmath_plugin  # type: ignore
+
+    if markdown_parser is not None:
+        markdown_parser.use(texmath_plugin)
+        markdown_parser.use(dollarmath_plugin)
+        markdown_parser.use(amsmath_plugin)
+
 DEFAULT_MD_STYLE = Style.from_dict(
     {
         "md": "",

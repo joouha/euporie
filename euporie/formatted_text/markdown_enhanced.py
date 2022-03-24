@@ -3,9 +3,6 @@
 from math import ceil
 from typing import TYPE_CHECKING
 
-from mdit_py_plugins.amsmath import amsmath_plugin  # type: ignore
-from mdit_py_plugins.dollarmath import dollarmath_plugin  # type: ignore
-from mdit_py_plugins.texmath import texmath_plugin  # type: ignore
 from prompt_toolkit.layout.containers import WindowAlign
 
 from euporie.box import RoundBorder
@@ -97,10 +94,6 @@ def a_enhanced(
 def enable_enchanced_markdown() -> "None":
     """Enables euporie-specific markdown features."""
     if markdown.markdown_parser is not None:
-        # Enable plugins
-        markdown.markdown_parser.use(texmath_plugin)
-        markdown.markdown_parser.use(dollarmath_plugin)
-        markdown.markdown_parser.use(amsmath_plugin)
         # Override formatters
         markdown.TAG_RULES["math"] = math_enhanced
         markdown.TAG_RULES["img"] = img_enhanced
