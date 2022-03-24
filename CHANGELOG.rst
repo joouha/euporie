@@ -29,6 +29,7 @@ Changed
 Fixed
 =====
 
+- Images now resized if terminal font size changes
 - Fixed maultiple bugs with external image converters
 - Fix editing cells in external editor
 

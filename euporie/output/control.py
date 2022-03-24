@@ -48,7 +48,7 @@ class OutputControl(UIControl):
         format_: "str",
         fg_color: "Optional[str]" = None,
         bg_color: "Optional[str]" = None,
-        sizing_func: "Optional[Callable]" = None,
+        sizing_func: "Optional[Callable[[], tuple[int, float]]]" = None,
         focusable: "FilterOrBool" = False,
         focus_on_click: "FilterOrBool" = False,
     ) -> "None":
@@ -72,19 +72,20 @@ class OutputControl(UIControl):
         self.focusable = to_filter(focusable)
         self.focus_on_click = to_filter(focus_on_click)
         self.key_bindings = load_command_bindings("cell-output")
+        self.app = get_app()
 
         self.on_cursor_position_changed = Event(self)
         self._cursor_position = Point(x=0, y=0)
         self.dy = 0
 
-        self.sizing_func = sizing_func
-        self.sized = False
+        self.sizing_func = sizing_func or (lambda: (0, 0))
         self._max_cols = 0
-        self._aspect: "Optional[float]" = None
+        self._aspect = 0.0
 
         self.rendered_lines: "list[StyleAndTextTuples]" = []
         self._format_cache: SimpleCache = SimpleCache(maxsize=50)
         self._content_cache: SimpleCache = SimpleCache(maxsize=50)
+        self._size_cache: SimpleCache = SimpleCache(maxsize=1)
 
     def get_key_bindings(self) -> "Optional[KeyBindingsBase]":
         return self.key_bindings
@@ -117,10 +118,10 @@ class OutputControl(UIControl):
         return self.focusable()
 
     def size(self) -> "None":
-        """Lazily load the maximum width and apect ratio of the output."""
-        if self.sizing_func is not None:
-            self._max_cols, self._aspect = self.sizing_func()
-        self.sized = True
+        """Load the maximum cell width and apect ratio of the output."""
+        self._max_cols, self._aspect = self._size_cache.get(
+            (self.app.render_counter,), self.sizing_func
+        )
 
     def hide(self) -> "None":
         """Hides the output from show."""
@@ -128,20 +129,19 @@ class OutputControl(UIControl):
 
     @property
     def max_cols(self) -> "int":
-        """Lazily load the maximum width of the output in terminal columns."""
-        if not self.sized:
-            self.size()
+        """Load the maximum width of the output in terminal columns."""
+        self.size()
         return self._max_cols
 
     @property
-    def aspect(self) -> "Optional[float]":
+    def aspect(self) -> "float":
         """Lazily load the aspect ratio of the output."""
-        if not self.sized:
-            self.size()
+        self.size()
         return self._aspect
 
     def preferred_width(self, max_available_width: "int") -> "Optional[int]":
         """Returns the width of the rendered content."""
+        self.max_available_width = max_available_width
         return (
             min(self.max_cols, max_available_width)
             if self.max_cols
@@ -205,6 +205,7 @@ class OutputControl(UIControl):
                 "menu_position": Point(0, 0),
             }
 
+        # Re-render if the image width changes, or the terminal character size changes
         return UIContent(
             cursor_position=self.cursor_position,
             **self._content_cache.get((width,), get_content),
@@ -213,13 +214,13 @@ class OutputControl(UIControl):
     def mouse_handler(self, mouse_event: "MouseEvent") -> "NotImplementedOrNone":
         """Mouse handler for this control."""
         if self.focus_on_click() and mouse_event.event_type == MouseEventType.MOUSE_UP:
-            get_app().layout.current_control = self
+            self.app.layout.current_control = self
             return None
         return NotImplemented
 
     def get_invalidate_events(self) -> "Iterable[Event[object]]":
         """Return the Window invalidate events."""
-        # Whenever the curosr position changes, the UI has to be updated.
+        # Whenever the cursor position changes, the UI has to be updated.
         yield self.on_cursor_position_changed
 
 
@@ -251,10 +252,10 @@ class FormattedOutputControl(OutputControl):
                 )
             )
 
-        return self._format_cache.get(
-            (width,),
-            render_lines,
-        )
+        # Re-render if the image width changes, or the terminal character size changes
+        key = (width, self.app.term_info.cell_size_px)
+        # log.debug(key)
+        return self._format_cache.get(key, render_lines)
 
 
 class SixelGraphicControl(OutputControl):
@@ -376,7 +377,6 @@ class KittyGraphicControl(OutputControl):
         )
         self.kitty_image_id = 0
         self.loaded = False
-        self.app = get_app()
 
     def convert_data(self, rows: "int", cols: "int") -> "str":
         """Converts the graphic's data to base64 data for kitty graphics protocol."""

@@ -77,14 +77,12 @@ def _calculate_bling(item: tuple[str, str]) -> int:
         return 999
 
 
-def get_dims(
+def data_pixel_size(
     data: "Any",
     format_: "str",
-    px: "Optional[int]" = None,
-    py: "Optional[int]" = None,
     fg: "Optional[str]" = None,
     bg: "Optional[str]" = None,
-) -> "tuple[Optional[int], Optional[float]]":
+) -> "tuple[Optional[int], Optional[int]]":
     """Get the dimensions of an image.
 
     Foreground and background color are set at this point if they are available, as
@@ -93,8 +91,6 @@ def get_dims(
     Args:
         data: The data to check the dimensions of
         format_: The current format of the data
-        px: The desired pixel width of the data if known
-        py: The pixel height of the data if known
         fg: The desired foreground color of the data
         bg: The desired background color of the data
 
@@ -103,23 +99,43 @@ def get_dims(
             converted to a image.
 
     """
-    cols, aspect = None, None
+    px = py = None
     # Do not bother trying if the format is ANSI
     if format_ == "ansi":
-        return cols, aspect
+        return px, py
     # Try using imagesize to get the size of the output
-    if px is None or py is None:
-        if format_ not in {"png", "svg", "jpg", "gif", "tiff"}:
-            try:
-                data = convert(data, from_=format_, to="png", fg=fg, bg=bg)
-            except NotImplementedError:
-                pass
-        if isinstance(data, str):
-            data = data.encode()
-        px_calc, py_calc = imagesize.get(io.BytesIO(data))
-        px = px or int(px_calc)
-        py = py or int(py_calc)
-    if px > 0:
+    if format_ not in {"png", "svg", "jpg", "gif", "tiff"}:
+        try:
+            data = convert(data, from_=format_, to="png", fg=fg, bg=bg)
+        except NotImplementedError:
+            pass
+    if isinstance(data, str):
+        data = data.encode()
+    px_calc, py_calc = imagesize.get(io.BytesIO(data))
+    if px_calc > 0:
+        px = px_calc
+    if py_calc > 0:
+        py = py_calc
+    return px, py
+
+
+def pixels_to_cell_size(
+    px: "Optional[int]",
+    py: "Optional[int]",
+) -> "tuple[int, float]":
+    """Get the cell width and aspect ration of a pixel dimension.
+
+    Args:
+        px: The desired pixel width of the data if known
+        py: The pixel height of the data if known
+
+    Returns:
+        A tuple of the data's width in terminal columns and its aspect ratio, when
+            converted to a image.
+
+    """
+    cols, aspect = 0, 0.0
+    if px is not None and py is not None:
         cell_px, cell_py = get_app().term_info.cell_size_px
         cols = max(1, int(px // cell_px))
         aspect = (py / cell_py) / (px / cell_px)
@@ -297,16 +313,20 @@ class CellOutput:
 
         # We create a function to calculate the size of the output so it can be
         # called when actually needed - it can be quite expensive to calculate
-        sizing_func = partial(
-            get_dims,
-            datum,
-            format_,
-            px=mime_meta.get("width"),
-            py=mime_meta.get("height"),
-            fg=fg_color,
-            bg=bg_color,
-        )
 
+        # Get data pixel dimensions
+        px = mime_meta.get("width")
+        py = mime_meta.get("height")
+        if px is None or py is None:
+            px, py = data_pixel_size(
+                datum,
+                format_,
+                fg=fg_color,
+                bg=bg_color,
+            )
+        sizing_func = partial(pixels_to_cell_size, px, py)
+
+        # Create the control
         self.window.content = FormattedOutputControl(
             datum,
             format_=format_,

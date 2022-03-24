@@ -9,7 +9,7 @@ from euporie.box import RoundBorder
 from euporie.convert.base import convert
 from euporie.formatted_text import markdown
 from euporie.formatted_text.util import add_border, align, indent, strip
-from euporie.output.container import get_dims
+from euporie.output.container import data_pixel_size, pixels_to_cell_size
 from euporie.terminal import tmuxify
 from euporie.url import load_url
 
@@ -51,11 +51,14 @@ def img_enhanced(
 
     if data := load_url(attrs.get("src", "")):
         # Display it graphically
-        cols, aspect = get_dims(data, format_="png")
-        cols = cols or 50
+        cols, aspect = pixels_to_cell_size(*data_pixel_size(data, format_="png"))
+        # Manially set a value if we don't have one
+        cols = cols or 20
         aspect = aspect or 0.5
+        # Scale down the image to fit to width
         cols = min(width, cols)
         rows = ceil(cols * aspect)
+        # Convert the image to formatted-text
         result = convert(
             data,
             "png",
@@ -63,15 +66,19 @@ def img_enhanced(
             cols=cols,
             rows=rows,
         )
+        # Remove trailing new-lines
         result = strip(result, char="\n")
+        # Optionally add a border
         if border:
             result = add_border(
                 result,
                 border=RoundBorder,
                 style="class:md.img.border",
             )
+        # Indent for line continuation as images are inline
         result = indent(result, " " * left, skip_first=True)
 
+    # Fallback to formatting the title if we still don't have image formatted-text data
     if not result:
         result = markdown.img(ft, width, attrs, block, left, border, **kwargs)
 
