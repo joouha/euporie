@@ -1,6 +1,7 @@
 """Responsible for loading data from urls."""
 
 import base64
+import binascii
 import logging
 from typing import TYPE_CHECKING
 from urllib.parse import ParseResult, urlparse, urlunparse
@@ -39,7 +40,10 @@ def load_url(url: "str") -> "Optional[bytes]":
         _mime, _, url_data = parsed_url.path.partition(";")
         data_format, _, encoded_data = url_data.partition(",")
         if data_format == "base64":
-            data = base64.b64decode(encoded_data)
+            try:
+                data = base64.b64decode(encoded_data)
+            except binascii.Error:
+                data = None
     else:
         try:
             data = urlopen(url).read()  # noqa S310 - use of 'file:' scheme is intended
