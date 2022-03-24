@@ -27,6 +27,7 @@ Changed
 Fixed
 =====
 
+- Fixed maultiple bugs with external image converters
 - Fix editing cells in external editor
 
 ----

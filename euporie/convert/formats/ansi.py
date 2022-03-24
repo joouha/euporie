@@ -260,7 +260,7 @@ def pil_to_ansi_py_img2unicode(
     fg: "Optional[str]" = None,
     bg: "Optional[str]" = None,
 ) -> "str":
-    """Convert a PIL image to ANSI text using :py:mod:`timg`."""
+    """Convert a PIL image to ANSI text using :py:mod:`img2unicode`."""
     import io
 
     from img2unicode import FastQuadDualOptimizer, Renderer  # type: ignore
@@ -313,9 +313,9 @@ def image_to_ansi_catimg(
     bg: "Optional[str]" = None,
 ) -> "str":
     """Converts image data to ANSI text using :command:`catimg`."""
-    cmd: "list[Any]" = ["catimg", "--format=symbols"]
+    cmd: "list[Any]" = ["catimg"]
     if cols is not None and rows is not None:
-        cmd += ["-w", cols * 2, "-"]
+        cmd += ["-w", cols * 2]
     cmd += ["-"]
     return call_subproc(data, cmd).decode()
 
@@ -336,7 +336,7 @@ def image_to_ansi_icat(
     cmd: "list[Any]" = ["icat"]
     if cols is not None and rows is not None:
         cmd += ["-w", cols]
-    cmd += ["--mode", "24bit"]
+    cmd += ["--mode", "24bit", "-"]
     return call_subproc(data, cmd).decode()
 
 
@@ -356,7 +356,7 @@ def image_to_ansi_tiv(
     cmd: "list[Any]" = ["tiv"]
     if cols is not None and rows is not None:
         cmd += ["-w", cols, "-h", rows]
-    return call_subproc(data, cmd).decode()
+    return call_subproc(data, cmd, use_tempfile=True).decode()
 
 
 @register(
@@ -392,7 +392,7 @@ def image_to_ansi_jp2a(
     bg: "Optional[str]" = None,
 ) -> "str":
     """Converts image data to ANSI text using :command:`jp2a`."""
-    cmd: "list[Any]" = ["jp2a", "--color", "-"]
+    cmd: "list[Any]" = ["jp2a", "--color"]
     if cols is not None and rows is not None:
         cmd += [f"--height={rows}"]
     cmd += ["-"]
@@ -415,14 +415,10 @@ def png_to_ansi_img2txt(
     cmd: "list[Any]" = ["img2txt"]
     if cols is not None and rows is not None:
         cmd += ["-W", cols, "-H", rows]
-    return call_subproc(data, cmd).decode()
+    return call_subproc(data, cmd, use_tempfile=True).decode()
 
 
-@register(
-    from_=("png", "jpeg", "svg"),
-    to="ansi",
-    filter_=True,
-)
+@register(from_=("png", "jpeg", "svg"), to="ansi", filter_=True, weight=2)
 def png_to_ansi_py_placeholder(
     data: "bytes",
     cols: "int" = 7,
@@ -456,7 +452,7 @@ def markdown_to_rich_py(
     fg: "Optional[str]" = None,
     bg: "Optional[str]" = None,
 ) -> "str":
-    """Converts base64 encoded data to bytes."""
+    """Converts rich objects to formatted ANSI text."""
     import rich
 
     console = rich.get_console()
