@@ -8,6 +8,7 @@ from prompt_toolkit.formatted_text.utils import (
     fragment_list_width,
     split_lines,
     to_formatted_text,
+    to_plain_text,
 )
 from prompt_toolkit.layout.containers import WindowAlign
 from prompt_toolkit.styles import Style
@@ -202,11 +203,22 @@ def img(
     block: "bool",
     left: "int",
     border: "bool" = False,
-    bounds: "tuple[str, str]" = ("", ""),
+    bounds: "tuple[str, str]" = ("", ""),  # Semi-circle blocks
     **kwargs: "Any",
 ) -> "StyleAndTextTuples":
     """Formats image titles."""
-    result = [("class:md.img", "🖼️  "), *ft]
+    if not to_plain_text(ft):
+        # Add fallback text if there is no image title
+        title = attrs.get("alt")
+        # Try getting the filename
+        if not title and not (src := attrs.get("src", "")).startswith("data:"):
+            title = src.rsplit("/", 1)[-1]
+        if not title:
+            title = "Image"
+        ft = [("class:md.img", title)]
+    # Add the sunrise emoji to represent an image. I would use :framed_picture:, but it
+    # requires multiple code-points and causes breakage in many terminals
+    result = [("class:md.img", "🌄 "), *ft]
     result = apply_style(result, style="class:md.img")
     result = [
         ("class:md.img.border", f"{bounds[0]}"),
