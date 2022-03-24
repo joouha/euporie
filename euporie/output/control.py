@@ -237,15 +237,19 @@ class FormattedOutputControl(OutputControl):
 
         def render_lines() -> "list[StyleAndTextTuples]":
             """Renders the lines to display in the control."""
-            return list(split_lines(convert(
-                data=self.data,
-                from_=self.format_,
-                to="formatted_text",
-                cols=width,
-                rows=height,
-                fg=self.fg_color,
-                bg=self.bg_color,
-            )))
+            return list(
+                split_lines(
+                    convert(
+                        data=self.data,
+                        from_=self.format_,
+                        to="formatted_text",
+                        cols=width,
+                        rows=height,
+                        fg=self.fg_color,
+                        bg=self.bg_color,
+                    )
+                )
+            )
 
         return self._format_cache.get(
             (width,),

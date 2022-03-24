@@ -145,3 +145,33 @@ def pytype(session: "Session") -> "None":
 # session.run("poetry", "install", "--no-dev", external=True)
 # session.install("pytest", "pytest-mock", "typeguard")
 # session.run("pytest", f"--typeguard-packages={package}", *args)
+
+
+@session
+def tests(session: "Session") -> "None":
+    """Run the test suite."""
+    session.install(".")
+    session.install(
+        "coverage",
+        "pytest",
+        # "pygments",
+    )
+
+    try:
+        session.run("coverage", "run", "--parallel", "-m", "pytest", *session.posargs)
+    finally:
+        if session.interactive:
+            session.notify("coverage", posargs=[])
+
+
+@session
+def coverage(session: "Session") -> "None":
+    """Produce the coverage report."""
+    args = session.posargs or ["report"]
+
+    session.install("coverage[toml]")
+
+    if not session.posargs and any(Path().glob(".coverage.*")):
+        session.run("coverage", "combine")
+
+    session.run("coverage", *args)

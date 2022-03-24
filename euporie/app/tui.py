@@ -39,13 +39,13 @@ from pyperclip import determine_clipboard  # type: ignore
 from euporie import __app_name__, __copyright__, __logo__, __strapline__, __version__
 from euporie.app.base import EuporieApp
 from euporie.box import Pattern
-from euporie.config import config
 from euporie.commands.registry import get
+from euporie.config import config
 from euporie.log import LogView
-from euporie.widgets.menu import MenuContainer, MenuItem
 from euporie.notebook import TuiNotebook
 from euporie.palette import CommandPalette
 from euporie.widgets.formatted_text_area import FormattedTextArea
+from euporie.widgets.menu import MenuContainer, MenuItem
 
 if TYPE_CHECKING:
     from asyncio import AbstractEventLoop

@@ -13,6 +13,8 @@ from euporie.formatted_text.markdown import Markdown
 if TYPE_CHECKING:
     from typing import Optional
 
+    from prompt_toolkit.formatted_text.base import StyleAndTextTuples
+
 
 @register(
     from_="markdown",
@@ -24,7 +26,7 @@ def markdown_to_ft(
     height: "Optional[int]" = None,
     fg: "Optional[str]" = None,
     bg: "Optional[str]" = None,
-) -> "str":
+) -> "StyleAndTextTuples":
     """Converts markdown to formatted text."""
     return to_formatted_text(Markdown(data, width=width))
 
@@ -39,6 +41,6 @@ def ansi_to_ft(
     height: "Optional[int]" = None,
     fg: "Optional[str]" = None,
     bg: "Optional[str]" = None,
-) -> "str":
+) -> "StyleAndTextTuples":
     """Converts ANSI text to formatted text."""
     return to_formatted_text(ANSI(data.strip()))

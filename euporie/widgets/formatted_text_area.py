@@ -3,10 +3,8 @@
 from __future__ import annotations
 
 import logging
-import re
 from typing import TYPE_CHECKING
 
-from prompt_toolkit.formatted_text import ANSI as PTANSI
 from prompt_toolkit.formatted_text import (
     fragment_list_to_text,
     split_lines,
@@ -16,15 +14,13 @@ from prompt_toolkit.layout.margins import ScrollbarMargin
 from prompt_toolkit.layout.processors import DynamicProcessor, Processor, Transformation
 from prompt_toolkit.widgets import TextArea
 
-from euporie.config import config
-
 if TYPE_CHECKING:
-    from typing import Any, Generator
+    from typing import Any
 
     from prompt_toolkit.formatted_text import AnyFormattedText, StyleAndTextTuples
     from prompt_toolkit.layout.processors import TransformationInput
 
-__all__ = ["FormatTextProcessor", "FormattedTextArea", "ANSI"]
+__all__ = ["FormatTextProcessor", "FormattedTextArea"]
 
 log = logging.getLogger(__name__)
 

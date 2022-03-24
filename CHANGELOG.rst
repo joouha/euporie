@@ -12,6 +12,8 @@ Upcoming
 Added
 =====
 
+- Add :py:mod:`html2text` as a HTML renderer
+- Add new markdown parser based on :py:mod:`markdown_it`
 - Highlight matching brackets and add command (:kbd:`Ctrl+g`) to jump between matching brackets
 - Add shortcuts :kbd:`Alt+Up` and :kbd:`Alt+Down` to move cells
 - Show notebook mode in status-bar

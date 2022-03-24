@@ -37,7 +37,6 @@ if TYPE_CHECKING:
     from euporie.commands.base import Command
 
 
-
 __all__ = ["MenuContainer", "MenuItem"]
 
 log = logging.getLogger(__name__)
@@ -283,8 +282,8 @@ class MenuContainer(PtKMenuContainer):
             self.selected_menu = [0]
 
         # Generate text fragments for the main menu.
-        def one_item(i: "int", item: "PtkMenuItem") -> "Iterable[OneStyleAndTextTuple]":
-            assert isinstance(item, MenuItem)
+        def one_item(i: "int", item: "MenuItem") -> "Iterable[OneStyleAndTextTuple]":
+            item = cast("MenuItem", item)
 
             def mouse_handler(mouse_event: MouseEvent) -> None:
                 hover = mouse_event.event_type == MouseEventType.MOUSE_MOVE
@@ -320,6 +319,7 @@ class MenuContainer(PtKMenuContainer):
 
         result: "StyleAndTextTuples" = []
         for i, item in enumerate(self.menu_items):
+            item = cast("MenuItem", item)
             result.extend(one_item(i, item))
 
         return result
@@ -343,10 +343,10 @@ class MenuContainer(PtKMenuContainer):
                         selected_item = -1
 
                     def one_item(
-                        i: int, item: "PtkMenuItem"
+                        i: int, item: "MenuItem"
                     ) -> "Iterable[OneStyleAndTextTuple]":
-                        assert isinstance(item, PtkMenuItem)
-                        assert isinstance(menu, PtkMenuItem)
+                        assert isinstance(item, MenuItem)
+                        assert isinstance(menu, MenuItem)
 
                         def mouse_handler(mouse_event: "MouseEvent") -> None:
                             if item.disabled:

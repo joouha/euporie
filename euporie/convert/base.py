@@ -91,7 +91,7 @@ _CONVERTOR_ROUTE_CACHE: "FastDictCache[tuple[str, str], Optional[list]]" = (
 
 
 def convert(
-    data: "str",
+    data: "Any",
     from_: "str",
     to: "str",
     cols: "Optional[int]" = None,

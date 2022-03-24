@@ -3,8 +3,8 @@
 from euporie.convert.formats import (
     ansi,
     base64,
-    jpeg,
     formatted_text,
+    jpeg,
     markdown,
     pdf,
     pil,

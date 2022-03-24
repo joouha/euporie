@@ -47,7 +47,7 @@ class ThickVerticalBorder(SquareBorder):
     SPLIT_RIGHT = "┨"
 
 
-class DoubleBorder:
+class DoubleBorder(PtkBorder):
     """Box drawing characters with double lines."""
 
     TOP_LEFT = "╔"

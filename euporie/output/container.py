@@ -121,7 +121,7 @@ def get_dims(
         py = py or int(py_calc)
     if px > 0:
         cell_px, cell_py = get_app().term_info.cell_size_px
-        cols = int(px // cell_px)
+        cols = max(1, int(px // cell_px))
         aspect = (py / cell_py) / (px / cell_px)
     return cols, aspect
 

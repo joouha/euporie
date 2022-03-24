@@ -24,7 +24,7 @@ def html_to_markdown_py_html2text(
     bg: "Optional[str]" = None,
 ) -> "str":
     """Convert HTML to markdown tables using :py:mod:`html2text`."""
-    from html2text import HTML2Text
+    from html2text import HTML2Text  # type: ignore
 
     parser = HTML2Text()
     return parser.handle(data)

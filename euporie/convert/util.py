@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING
 from prompt_toolkit.filters import Condition, to_filter
 
 if TYPE_CHECKING:
-    from typing import Any, Union
+    from typing import Any, Optional, Union
 
     from prompt_toolkit.filters import Filter
 
@@ -81,17 +81,37 @@ def call_subproc(
     # stdout, stderr = await proc.communicate(data)
 
     log.debug("Running external command `%s`", cmd)
+    error: "Optional[Exception]" = None
     try:
-        output_bytes = subprocess.check_output(cmd, input=data)  # noqa S603
-    except FileNotFoundError:
+        # Execution of untrusted input has been checked for
+        output_bytes = subprocess.check_output(  # noqa S603
+            cmd, input=data, stderr=subprocess.DEVNULL
+        )
+    except FileNotFoundError as error_:
         log.error("Could not run external command `%s`", cmd)
-        output_bytes = b"[Error drawing output]"
+        error = error_
+    except subprocess.CalledProcessError as error_:
+        log.error("There was an error while running external command `%s`", cmd)
+        error = error_
+    finally:
+        if error is not None:
+            # Generate an output stating there was an error
+            output_bytes = (
+                b"\x1b[33m"  # Set fg to yellow
+                b"\xee\x82\xb6"  # Draw left pill side
+                b"\x1b[43m\x1b[30m"  # Set fg to black, bg to yellow
+                b"\xe2\x9a\xa0"  # Draw warning symbol
+                b" Rendering Error"
+                b"\x1b[33m\x1b[49m"  # Set fg to yellow, reset bg
+                b"\xee\x82\xb4"  # Draw right pill side
+                b"\x1b[n"  # Reset style
+            )
 
-    # TODO Log any stderr
+        # TODO Log any stderr
 
-    # Clean up any temporary file
-    if use_tempfile:
-        tfile.close()
-        os.unlink(tfile.name)
+        # Clean up any temporary file
+        if use_tempfile:
+            tfile.close()
+            os.unlink(tfile.name)
 
     return output_bytes

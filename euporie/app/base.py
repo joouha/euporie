@@ -46,10 +46,11 @@ from prompt_toolkit.utils import is_windows
 from pygments.styles import get_style_by_name  # type: ignore
 
 from euporie.config import config
+from euporie.formatted_text.markdown import DEFAULT_MD_STYLE
+from euporie.formatted_text.markdown_enhanced import enable_enchanced_markdown
 from euporie.key_binding.bindings.commands import load_command_bindings
 from euporie.key_binding.bindings.micro import load_micro_bindings
 from euporie.key_binding.micro_state import MicroState
-from euporie.formatted_text.markdown import DEFAULT_MD_STYLE
 from euporie.log import setup_logs
 from euporie.notebook import Notebook
 from euporie.style import color_series
@@ -234,6 +235,8 @@ class EuporieApp(Application):
     @classmethod
     def launch(cls) -> "None":
         """Launches the app."""
+        # Enable enhanced markdown
+        enable_enchanced_markdown()
         # This configures the logs for euporie
         setup_logs()
         # Create an instance of the app
@@ -487,6 +490,8 @@ class EuporieApp(Application):
             # Pager
             "pager": f"bg:{cp['bg'][1]}",
             "pager.border": f"fg:{cp['bg'][9]}",
+            # Markdown
+            "md.code.inline": f"bg:{cp['bg'][4]}",
         }
 
         # Using a dynamic style has serious performance issues, so instead we update

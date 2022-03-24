@@ -42,11 +42,15 @@ img2unicode = {version = "^0.1a8", optional = true}
 black = {version = ">=19.3b0", optional = true}
 isort = {version = "^5.10.1", optional = true}
 ssort = {version = "^0.11.4", optional = true}
-markdown-it-py = "^2.0.1"
 linkify = "^1.4"
 mdit-py-plugins = "^0.3.0"
 html2text = "^2020.1.16"
 rich = "^12.0.1"
+markdown-it-py = {extras = ["linkify"], version = "^2.0.1"}
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.1.1"
+mypy = "^0.941"
 
 [tool.poetry.extras]
 all = ["black", "mtable", "html5lib", "CairoSVG"]
@@ -58,7 +62,6 @@ images-img2unicode = ["img2unicode"]
 
 
 [tool.poetry.dev-dependencies]
-pytest = "^5.2"
 isort = "^5.8.0"
 flake8 = "^3.9.1"
 poetry-publish = "^0.4.1"

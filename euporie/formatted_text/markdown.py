@@ -1,19 +1,18 @@
 """Contains a markdown to formatted text parser."""
-
 from itertools import zip_longest
 from typing import TYPE_CHECKING
+from warnings import warn
 
-from markdown_it import MarkdownIt
-from mdit_py_plugins.amsmath import amsmath_plugin
-from mdit_py_plugins.dollarmath import dollarmath_plugin
-from mdit_py_plugins.texmath import texmath_plugin
 from prompt_toolkit.application.current import get_app_session
-from prompt_toolkit.formatted_text.base import to_formatted_text
-from prompt_toolkit.formatted_text.utils import fragment_list_width, split_lines
+from prompt_toolkit.formatted_text.utils import (
+    fragment_list_width,
+    split_lines,
+    to_formatted_text,
+)
+from prompt_toolkit.layout.containers import WindowAlign
 from prompt_toolkit.styles import Style
 
-from euporie.box import DoubleBorder, RoundBorder, SquareBorder
-from euporie.formatted_text.ansi import ANSI
+from euporie.box import DoubleBorder, SquareBorder
 from euporie.formatted_text.util import (
     add_border,
     align,
@@ -24,26 +23,30 @@ from euporie.formatted_text.util import (
     strip,
     wrap,
 )
-from euporie.terminal import tmuxify
 
 if TYPE_CHECKING:
-    from markdown_it.token import Token, Optional
+    from typing import Any, Callable, Optional, Type
 
-_MarkdownItParser = (
-    MarkdownIt()
-    .enable("linkify")
-    .enable("table")
-    .use(texmath_plugin)
-    .use(dollarmath_plugin)
-    .use(amsmath_plugin)
-)
+    from markdown_it.token import Token  # type: ignore
+    from prompt_toolkit.formatted_text.base import StyleAndTextTuples
+
+markdown_parser: "Optional[MarkdownIt]" = None
+try:
+    from markdown_it import MarkdownIt  # type: ignore
+except ModuleNotFoundError:
+    warn("The markdown parser requires `markdown-it-py` to be installed")
+else:
+    markdown_parser = (
+        MarkdownIt().enable("linkify").enable("table").enable("strikethrough")
+    )
 
 DEFAULT_MD_STYLE = Style.from_dict(
     {
         "md": "",
-        "md.h1": "bold",
-        "md.h1.border": "fg:ansiyellow",
-        "md.h2": "bold underline",
+        "md.h1": "bold underline",
+        "md.h1.border": "fg:ansiyellow nounderline",
+        "md.h2": "bold",
+        "md.h2.border": "fg:grey nobold",
         "md.h3": "bold",
         "md.h4": "bold italic",
         "md.h5": "underline",
@@ -63,34 +66,57 @@ DEFAULT_MD_STYLE = Style.from_dict(
     }
 )
 
+_SIDES = {
+    "left": WindowAlign.LEFT,
+    "right": WindowAlign.RIGHT,
+    "center": WindowAlign.CENTER,
+}
 
-def h1(ft, width, **kwargs):
+
+def h1(ft: "StyleAndTextTuples", width: "int", **kwargs: "Any") -> "StyleAndTextTuples":
+    """Formats a top-level heading wrapped and centered with a full width double border."""
     ft = wrap(ft, width - 4)
-    ft = align("center", ft, width=width - 4)
+    ft = align(WindowAlign.CENTER, ft, width=width - 4)
     ft = add_border(ft, width, style="class:md.h1.border", border=DoubleBorder)
     ft.append(("", "\n\n"))
     return ft
 
 
-def h(ft, width, **kwargs):
-    ft = wrap(ft, width)
-    ft = align("center", ft, width=width)
+def h2(ft: "StyleAndTextTuples", width: "int", **kwargs: "Any") -> "StyleAndTextTuples":
+    """Formats a 2nd-level headding wrapped and centered with a double border."""
+    ft = wrap(ft, width=width - 4)
+    ft = align(WindowAlign.CENTER, ft)
+    ft = add_border(ft, style="class:md.h2.border", border=SquareBorder)
+    ft = align(WindowAlign.CENTER, ft, width=width)
     ft.append(("", "\n\n"))
     return ft
 
 
-def p(ft, width, hidden, **kwargs):
+def h(ft: "StyleAndTextTuples", width: "int", **kwargs: "Any") -> "StyleAndTextTuples":
+    """Formats headings wrapped and centeredr."""
+    ft = wrap(ft, width)
+    ft = align(WindowAlign.CENTER, ft, width=width)
+    ft.append(("", "\n\n"))
+    return ft
+
+
+def p(
+    ft: "StyleAndTextTuples", width: "int", hidden: "bool", **kwargs: "Any"
+) -> "StyleAndTextTuples":
+    """Formats paragraphs wrapped."""
     ft = wrap(ft, width)
     ft.append(("", "\n" if hidden else "\n\n"))
     return ft
 
 
-def ul(ft, width, **kwargs):
+def ul(ft: "StyleAndTextTuples", width: "int", **kwargs: "Any") -> "StyleAndTextTuples":
+    """Formats unordered lists."""
     ft.append(("", "\n"))
     return ft
 
 
-def li(ft, width, **kwargs):
+def li(ft: "StyleAndTextTuples", width: "int", **kwargs: "Any") -> "StyleAndTextTuples":
+    """Formats list items."""
     ft = strip(ft)
     ft = indent(ft, margin="   ", style="class:md.bullet")
     ft[0] = (ft[0][0], " • ")
@@ -98,7 +124,8 @@ def li(ft, width, **kwargs):
     return ft
 
 
-def hr(ft, width, **kwargs):
+def hr(ft: "StyleAndTextTuples", width: "int", **kwargs: "Any") -> "StyleAndTextTuples":
+    """Formats horizontal rules."""
     ft = [
         ("class:md.hr", "─" * width),
         ("", "\n\n"),
@@ -106,22 +133,37 @@ def hr(ft, width, **kwargs):
     return ft
 
 
-def br(ft, **kwargs):
-    return (("", "\n"),)
+def br(ft: "StyleAndTextTuples", **kwargs: "Any") -> "StyleAndTextTuples":
+    """Formats line breaks."""
+    return [("", "\n")]
 
 
-def blockquote(ft, width, info="", block=False, **kwargs):
+def blockquote(
+    ft: "StyleAndTextTuples",
+    width: "int",
+    info: "str" = "",
+    block: "bool" = False,
+    **kwargs: "Any",
+) -> "StyleAndTextTuples":
+    """Formats blockquotes with a solid left margin."""
     ft = strip(ft)
     ft = indent(ft, margin="▌ ", style="class:md.blockquote.margin")
     ft.append(("", "\n\n"))
     return ft
 
 
-def code(ft, width, info="", block=False, **kwargs):
+def code(
+    ft: "StyleAndTextTuples",
+    width: "int",
+    info: "str" = "",
+    block: "bool" = False,
+    **kwargs: "Any",
+) -> "StyleAndTextTuples":
+    """Formats inline code, and lexes and formats code blocks with a border."""
     if block:
         ft = strip(ft, left=False, right=True, char="\n")
         ft = lex(ft, lexer_name=info)
-        ft = align("left", ft, width - 4)
+        ft = align(WindowAlign.LEFT, ft, width - 4)
         ft = add_border(ft, width, style="class:md.code.border", border=SquareBorder)
         ft.append(("", "\n\n"))
     else:
@@ -129,23 +171,41 @@ def code(ft, width, info="", block=False, **kwargs):
     return ft
 
 
-def math(ft, width, block, **kwargs):
-    return blockquote(ft, width - 2, **kwargs)
+def math(
+    ft: "StyleAndTextTuples", width: "int", block: "bool", **kwargs: "Any"
+) -> "StyleAndTextTuples":
+    """Formats inline maths, and quotes math blocks."""
+    if block:
+        return blockquote(ft, width - 2, **kwargs)
+    else:
+        return ft
 
 
-def a(ft, attrs, **kwargs):
-    result = []
+def a(
+    ft: "StyleAndTextTuples", attrs: "dict[str, str]", **kwargs: "Any"
+) -> "StyleAndTextTuples":
+    """Formats hyperlinks and adds link escape sequences."""
+    result: "StyleAndTextTuples" = []
     href = attrs.get("href")
     if href:
-        result.append(("[ZeroWidthEscape]", tmuxify(f"\x1b]8;;{href}\x1b\\")))
+        result.append(("[ZeroWidthEscape]", f"\x1b]8;;{href}\x1b\\"))
     result += ft
     if href:
-        result.append(("[ZeroWidthEscape]", tmuxify("\x1b]8;;\x1b\\")))
+        result.append(("[ZeroWidthEscape]", "\x1b]8;;\x1b\\"))
     return result
 
 
-def img(ft, width, attrs, block, left, border: "bool" = False, bounds=("", ""), **kwargs):
-    result = []
+def img(
+    ft: "StyleAndTextTuples",
+    width: "int",
+    attrs: "dict[str, str]",
+    block: "bool",
+    left: "int",
+    border: "bool" = False,
+    bounds: "tuple[str, str]" = ("", ""),
+    **kwargs: "Any",
+) -> "StyleAndTextTuples":
+    """Formats image titles."""
     result = [("class:md.img", "🖼️  "), *ft]
     result = apply_style(result, style="class:md.img")
     result = [
@@ -156,41 +216,71 @@ def img(ft, width, attrs, block, left, border: "bool" = False, bounds=("", "�
     return result
 
 
+# Maps HTML tag names to formatting functions. Functionality can be extended by
+# modifying this dictionary
+TAG_RULES: "dict[str, Callable]" = {
+    "h1": h1,
+    "h2": h2,
+    "h3": h,
+    "h4": h,
+    "h5": h,
+    "h6": h,
+    "p": p,
+    "ul": ul,
+    "li": li,
+    "hr": hr,
+    "br": br,
+    "blockquote": blockquote,
+    "code": code,
+    "math": math,
+    "a": a,
+    "img": img,
+}
+
+# Mapping showing how much width the formatting of block elements used. This is used to
+# reduce the available width when rendering child elements
+TAG_INSETS = {
+    "li": 3,
+    "blockquote": 2,
+}
+
+
 class Markdown:
+    """A markdown formatted text renderer.
 
-    tag_rules = {
-        "h1": h1,
-        "h2": h,
-        "h3": h,
-        "h4": h,
-        "h5": h,
-        "h6": h,
-        "p": p,
-        "ul": ul,
-        "li": li,
-        "hr": hr,
-        "br": br,
-        "blockquote": blockquote,
-        "code": code,
-        "math": math,
-        "a": a,
-        "img": img,
-    }
+    Accepts a markdown string and renders it at a given width.
+    """
 
-    tag_insets = {
-        "li": 3,
-        "blockquote": 2,
-    }
+    def __init__(
+        self,
+        markup: "str",
+        width: "Optional[int]" = None,
+        strip_trailing_lines: "bool" = True,
+    ) -> "None":
+        """Initialize the markdown formatter.
 
-    def __init__(self, markup: "str", width: "Optional[int]" = None, strip_trailing_lines: "bool" = True) -> "None":
+        Args:
+            markup: The markdown text to render
+            width: The width in characters available for rendering. If :py:const:`None`
+                the terminal width will be used
+            strip_trailing_lines: If :py:const:`True`, empty lines at the end of the
+                rendered output will be removed
+
+        """
         self.markup = markup
         self.width = width or get_app_session().output.get_size().columns
         self.strip_trailing_lines = strip_trailing_lines
 
-        self.formatted_text = self.render(
-            tokens=_MarkdownItParser.parse(self.markup),
-            width=self.width,
-        )
+        if markdown_parser is not None:
+            self.formatted_text = self.render(
+                tokens=markdown_parser.parse(self.markup),
+                width=self.width,
+            )
+        else:
+            self.formatted_text = lex(
+                to_formatted_text(self.markup),
+                lexer_name="markdown",
+            )
         if strip_trailing_lines:
             self.formatted_text = strip(
                 self.formatted_text,
@@ -198,13 +288,26 @@ class Markdown:
                 char="\n",
             )
 
-    def render(self, tokens, width: "int" = 80, left: "int" = 0):
+    def render(
+        self, tokens: "list[Token]", width: "int" = 80, left: "int" = 0
+    ) -> "StyleAndTextTuples":
+        """Renders a list of parsed markdown tokens.
+
+        Args:
+            tokens: The list of parsed tokens to render
+            width: The width at which to render the tokens
+            left: The position on the current line at which to render the output - used
+                to indent subsequent lines when rendering inline blocks like images
+
+        Returns:
+            Formatted text
+
+        """
         ft = []
 
         i = 0
         while i < len(tokens):
             token = tokens[i]
-            tag = token.tag
 
             # If this is an inline block, render it's children
             if token.type == "inline":
@@ -214,34 +317,57 @@ class Markdown:
             # Otherwise gather the tokens in the current block
             else:
                 nest = 0
+                tokens_in_block = 0
                 for j, token in enumerate(tokens[i:]):
                     nest += token.nesting
                     if nest == 0:
+                        tokens_in_block = j
                         break
 
                 # If there is a special method for rendering the block,
                 # used that
                 if token.tag == "table":
                     ft += self.render_table(
-                        tokens[i : i + j + 1], width=width, left=last_line_length(ft)
+                        tokens[i : i + tokens_in_block + 1],
+                        width=width,
+                        left=last_line_length(ft),
                     )
 
-                # Otherwize all other blocks are rendered in the same way
+                # Otherwise all other blocks are rendered in the same way
                 else:
                     ft += self.render_block(
-                        tokens[i : i + j + 1], width=width, left=last_line_length(ft)
+                        tokens[i : i + tokens_in_block + 1],
+                        width=width,
+                        left=last_line_length(ft),
                     )
 
                 i += j + 1
 
         return ft
 
-    def render_block(self, tokens, width: "int", border=SquareBorder, left: "int" = 0):
+    def render_block(
+        self,
+        tokens: "list[Token]",
+        width: "int",
+        left: "int" = 0,
+    ) -> "StyleAndTextTuples":
+        """Renders a list of parsed markdown tokens representing a block element.
+
+        Args:
+            tokens: The list of parsed tokens to render
+            width: The width at which to render the tokens
+            left: The position on the current line at which to render the output - used
+                to indent subsequent lines when rendering inline blocks like images
+
+        Returns:
+            Formatted text
+
+        """
         ft = []
         token = tokens[0]
 
         # Restrict width if necessary
-        if inset := self.tag_insets.get(token.tag):
+        if inset := TAG_INSETS.get(token.tag):
             width -= inset
 
         style = "class:md"
@@ -256,7 +382,7 @@ class Markdown:
             ft.append((style, token.content))
 
         # Apply tag rule
-        if rule := self.tag_rules.get(token.tag):
+        if rule := TAG_RULES.get(token.tag):
             ft = rule(
                 ft,
                 width=width,
@@ -269,10 +395,29 @@ class Markdown:
 
         return ft
 
-    def render_table(self, tokens, width: "int", border=SquareBorder, left: "int" = 0):
-        ft = []
+    def render_table(
+        self,
+        tokens: "list[Token]",
+        width: "int",
+        left: "int" = 0,
+        border: "Type[SquareBorder]" = SquareBorder,
+    ) -> "StyleAndTextTuples":
+        """Renders a list of parsed markdown tokens representing a table element.
+
+        Args:
+            tokens: The list of parsed tokens to render
+            width: The width at which to render the tokens
+            left: The position on the current line at which to render the output - used
+                to indent subsequent lines when rendering inline blocks like images
+            border: The border style to use to render the table
+
+        Returns:
+            Formatted text
+
+        """
+        ft: "StyleAndTextTuples" = []
         # Stack the tokens in the shape of the table
-        cell_tokens = []
+        cell_tokens: "list[list[Token]]" = []
         i = 0
         while i < len(tokens):
             token = tokens[i]
@@ -286,7 +431,9 @@ class Markdown:
                 i += j
             i += 1
 
-        def _render_token(tokens, width: "Optional[int]" = None):
+        def _render_token(
+            tokens: "list[Token]", width: "Optional[int]" = None
+        ) -> "StyleAndTextTuples":
             """Render a token with correct alignment."""
             side = "left"
             # Check CSS for text alignment
@@ -300,12 +447,12 @@ class Markdown:
             # If we do have a width, wrap and apply the alignment
             if width:
                 ft = wrap(ft, width)
-                ft = align(side, ft, width)
+                ft = align(_SIDES[side], ft, width)
             return ft
 
         # Find the naive widths of each cell
-        cell_renders = []
-        cell_widths = []
+        cell_renders: "list[list[StyleAndTextTuples]]" = []
+        cell_widths: "list[list[int]]" = []
         for row in cell_tokens:
             cell_widths.append([])
             cell_renders.append([])
@@ -335,12 +482,12 @@ class Markdown:
         # Justify cell contents
         for i, row in enumerate(cell_renders):
             for j, cell in enumerate(row):
-                cell_renders[i][j] = align("left", cell, width=col_widths[j])
+                cell_renders[i][j] = align(WindowAlign.LEFT, cell, width=col_widths[j])
 
         # Render table
         style = "class:md.table.border"
 
-        def _draw_add_border(left, split, right):
+        def _draw_add_border(left: "str", split: "str", right: "str") -> "None":
             ft.append((style, left + border.HORIZONTAL))
             for col_width in col_widths:
                 ft.append((style, border.HORIZONTAL * col_width))
@@ -372,6 +519,7 @@ class Markdown:
         return ft
 
     def __pt_formatted_text__(self) -> "StyleAndTextTuples":
+        """Formatted text magic method."""
         return self.formatted_text
 
 

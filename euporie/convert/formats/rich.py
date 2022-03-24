@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-
 from euporie.config import config
 from euporie.convert.base import register
 from euporie.convert.util import have_modules
