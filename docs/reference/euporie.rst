@@ -26,13 +26,12 @@ euporie
       euporie.convert
       euporie.filters
       euporie.format
+      euporie.formatted_text
       euporie.kernel
       euporie.key_binding
       euporie.keys
       euporie.log
       euporie.margins
-      euporie.markdown
-      euporie.menu
       euporie.notebook
       euporie.output
       euporie.palette
@@ -41,4 +40,5 @@ euporie
       euporie.suggest
       euporie.tab
       euporie.terminal
-      euporie.text
+      euporie.url
+      euporie.widgets

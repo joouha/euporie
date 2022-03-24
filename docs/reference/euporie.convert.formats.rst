@@ -19,6 +19,7 @@ euporie.convert.formats
       euporie.convert.formats.ansi
       euporie.convert.formats.base64
       euporie.convert.formats.common
+      euporie.convert.formats.formatted_text
       euporie.convert.formats.jpeg
       euporie.convert.formats.markdown
       euporie.convert.formats.pdf

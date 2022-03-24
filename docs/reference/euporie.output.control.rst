@@ -28,7 +28,7 @@ euporie.output.control
       :toctree:
       :template: class.tpl.rst
 
-      AnsiControl
+      FormattedOutputControl
       ItermGraphicControl
       KittyGraphicControl
       OutputControl

@@ -23,4 +23,5 @@ euporie.convert.formats.markdown
    .. autosummary::
       :toctree:
 
+      html_to_markdown_py_html2text
       html_to_markdown_py_mtable

@@ -1,7 +1,7 @@
-euporie.box
-===========
+euporie.formatted\_text.ansi
+============================
 
-.. automodule:: euporie.box
+.. automodule:: euporie.formatted_text.ansi
    :members:
    :undoc-members:
    :inherited-members:
@@ -28,9 +28,4 @@ euporie.box
       :toctree:
       :template: class.tpl.rst
 
-      BorderLine
-      DoubleBorder
-      Pattern
-      RoundBorder
-      SquareBorder
-      ThickVerticalBorder
+      ANSI

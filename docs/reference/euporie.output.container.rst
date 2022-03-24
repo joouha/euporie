@@ -23,7 +23,8 @@ euporie.output.container
    .. autosummary::
       :toctree:
 
-      get_dims
+      data_pixel_size
+      pixels_to_cell_size
 
 
 

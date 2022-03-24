@@ -35,6 +35,7 @@ euporie.commands.buffer
       extend_selection
       go_to_end_of_line
       go_to_end_of_paragraph
+      go_to_matching_bracket
       go_to_start_of_line
       go_to_start_of_paragraph
       if_no_repeat

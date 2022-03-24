@@ -1,7 +1,7 @@
-euporie.box
-===========
+euporie.widgets.formatted\_text\_area
+=====================================
 
-.. automodule:: euporie.box
+.. automodule:: euporie.widgets.formatted_text_area
    :members:
    :undoc-members:
    :inherited-members:
@@ -28,9 +28,5 @@ euporie.box
       :toctree:
       :template: class.tpl.rst
 
-      BorderLine
-      DoubleBorder
-      Pattern
-      RoundBorder
-      SquareBorder
-      ThickVerticalBorder
+      FormatTextProcessor
+      FormattedTextArea

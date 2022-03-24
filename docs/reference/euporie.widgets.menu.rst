@@ -1,7 +1,7 @@
-euporie.box
-===========
+euporie.widgets.menu
+====================
 
-.. automodule:: euporie.box
+.. automodule:: euporie.widgets.menu
    :members:
    :undoc-members:
    :inherited-members:
@@ -28,9 +28,5 @@ euporie.box
       :toctree:
       :template: class.tpl.rst
 
-      BorderLine
-      DoubleBorder
-      Pattern
-      RoundBorder
-      SquareBorder
-      ThickVerticalBorder
+      MenuContainer
+      MenuItem
