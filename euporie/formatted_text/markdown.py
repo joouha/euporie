@@ -1,4 +1,5 @@
 """Contains a markdown to formatted text parser."""
+
 from itertools import zip_longest
 from typing import TYPE_CHECKING
 from warnings import warn
@@ -70,7 +71,8 @@ DEFAULT_MD_STYLE = Style.from_dict(
         "md.strong": "bold",
         "md.em": "italic",
         "md.hr": "fg:ansired",
-        "md.bullet": "fg:ansiyellow",
+        "md.ul.margin": "fg:ansiyellow",
+        "md.ol.margin": "fg:ansicyan",
         "md.blockquote": "fg:ansipurple",
         "md.blockquote.margin": "fg:grey",
         "md.th": "bold",
@@ -124,17 +126,33 @@ def p(
     return ft
 
 
+def ol(ft: "StyleAndTextTuples", width: "int", **kwargs: "Any") -> "StyleAndTextTuples":
+    """Formats ordered lists."""
+    ft.append(("", "\n"))
+    return ft
+
+
 def ul(ft: "StyleAndTextTuples", width: "int", **kwargs: "Any") -> "StyleAndTextTuples":
     """Formats unordered lists."""
     ft.append(("", "\n"))
     return ft
 
 
-def li(ft: "StyleAndTextTuples", width: "int", **kwargs: "Any") -> "StyleAndTextTuples":
+def li(
+    ft: "StyleAndTextTuples", width: "int", attrs: "dict[str, Any]", **kwargs: "Any"
+) -> "StyleAndTextTuples":
     """Formats list items."""
     ft = strip(ft)
-    ft = indent(ft, margin="   ", style="class:md.bullet")
-    ft[0] = (ft[0][0], " • ")
+    # Determine if this is an ordered or unordered list
+    if attrs.get("data-list-type") == "ol":
+        margin_style = "class:md.ol.margin"
+    else:
+        margin_style = "class:md.ul.margin"
+    # Get the margin (potentially contains aligned item numbers)
+    margin = attrs.get("data-margin", "•")
+    # We put a speace each side of the margin
+    ft = indent(ft, margin=" " * (len(margin) + 2), style=margin_style)
+    ft[0] = (ft[0][0], f" {margin} ")
     ft.append(("", "\n"))
     return ft
 
@@ -252,6 +270,7 @@ TAG_RULES: "dict[str, Callable]" = {
     "h5": h,
     "h6": h,
     "p": p,
+    "ol": ol,
     "ul": ul,
     "li": li,
     "hr": hr,
@@ -359,6 +378,13 @@ class Markdown:
                         left=last_line_length(ft),
                     )
 
+                elif token.tag == "ol":
+                    ft += self.render_ordered_list(
+                        tokens[i : i + tokens_in_block + 1],
+                        width=width,
+                        left=last_line_length(ft),
+                    )
+
                 # Otherwise all other blocks are rendered in the same way
                 else:
                     ft += self.render_block(
@@ -420,6 +446,32 @@ class Markdown:
             )
 
         return ft
+
+    def render_ordered_list(
+        self,
+        tokens: "list[Token]",
+        width: "int",
+        left: "int" = 0,
+    ) -> "StyleAndTextTuples":
+        """Renders an ordered list by adding indices to the child list items."""
+        # Find the list item tokens
+        list_level_tokens = []
+        nest = 0
+        for token in tokens:
+            if nest == 1 and token.tag == "li":
+                list_level_tokens.append(token)
+            nest += token.nesting
+        # Assign them a marking
+        margin_width = len(str(len(list_level_tokens)))
+        for i, token in enumerate(list_level_tokens, start=1):
+            token.attrs["data-margin"] = str(i).rjust(margin_width) + "."
+            token.attrs["data-list-type"] = "ol"
+        # Now render the tokens as normal
+        return self.render_block(
+            tokens,
+            width=width,
+            left=left,
+        )
 
     def render_table(
         self,
