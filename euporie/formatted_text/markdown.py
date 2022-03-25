@@ -14,7 +14,7 @@ from prompt_toolkit.layout.containers import WindowAlign
 from prompt_toolkit.styles import Style
 
 from euporie.box import DoubleBorder, SquareBorder
-from euporie.formatted_text.util import (
+from euporie.formatted_text.utils import (
     add_border,
     align,
     apply_style,

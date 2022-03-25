@@ -8,7 +8,7 @@ from prompt_toolkit.layout.containers import WindowAlign
 from euporie.box import RoundBorder
 from euporie.convert.base import convert
 from euporie.formatted_text import markdown
-from euporie.formatted_text.util import add_border, align, indent, strip
+from euporie.formatted_text.utils import add_border, align, indent, strip
 from euporie.output.container import data_pixel_size, pixels_to_cell_size
 from euporie.terminal import tmuxify
 from euporie.url import load_url
