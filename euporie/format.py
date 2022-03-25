@@ -41,6 +41,7 @@ def format_ssort(text: "str") -> "str":
         pass
     else:
         with stdout_to_log(log, output="stderr"):
+            output = ""
             try:
                 output = ssort.ssort(text)
             except Exception:
