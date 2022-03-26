@@ -498,7 +498,12 @@ class NotebookKernel:
                         rsp["header"]["date"].isoformat(),
                     )
 
-                elif msg_type in ("display_data", "execute_result", "error"):
+                elif msg_type in (
+                    "display_data",
+                    "update_display_data",  # TODO - implement display naming and updating
+                    "execute_result",
+                    "error",
+                ):
                     _clear_output_if_required()
                     cell_json.setdefault("outputs", []).append(
                         nbformat.v4.output_from_msg(rsp)
