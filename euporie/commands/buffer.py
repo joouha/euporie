@@ -571,10 +571,9 @@ def toggle_case() -> "None":
     selection_state = buffer.selection_state
     if selection_state is None:
         start, end = buffer.document.find_boundaries_of_current_word()
-        if start != 0 and end != 0:
-            buffer.cursor_position += end
-            selection_state = SelectionState(buffer.cursor_position + start)
-            selection_state.enter_shift_mode()
+        selection_state = SelectionState(buffer.cursor_position + start)
+        selection_state.enter_shift_mode()
+        buffer.cursor_position += end
     if selection_state is not None:
         cp = buffer.cursor_position
         text = buffer.cut_selection().text
