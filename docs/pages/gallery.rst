@@ -4,9 +4,6 @@ Gallery
 
 This page showcases screenshots demonstrating some of the features of euporie
 
-
-
-
 Displaying multiple notebooks side-by-side:
    .. image:: https://user-images.githubusercontent.com/12154190/151829345-80b40ac3-eb71-41d4-9be5-61ca52de2c4d.png
       :target: https://user-images.githubusercontent.com/12154190/151829345-80b40ac3-eb71-41d4-9be5-61ca52de2c4d.png
@@ -32,5 +29,5 @@ Running on Windows:
       :target: https://user-images.githubusercontent.com/12154190/151821390-255dcec6-433d-41e3-8ee9-17e4ab59570f.png
 
 Running inside JupyterLab:
-   .. image:: https://user-images.githubusercontent.com/12154190/152125608-3b283ac6-ae9e-4165-a3e3-628657f27b50.png
-      :target: https://user-images.githubusercontent.com/12154190/152125608-3b283ac6-ae9e-4165-a3e3-628657f27b50.png
+   .. image:: https://user-images.githubusercontent.com/12154190/160244358-14f01325-ed33-4e09-9356-09723ca4385d.png
+      :target: https://user-images.githubusercontent.com/12154190/160244358-14f01325-ed33-4e09-9356-09723ca4385d.png

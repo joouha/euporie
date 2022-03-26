@@ -28,9 +28,12 @@ euporie.box
       :toctree:
       :template: class.tpl.rst
 
+      Border
       BorderLine
       DoubleBorder
+      NoBorder
       Pattern
       RoundBorder
       SquareBorder
-      ThickVerticalBorder
+      ThickBorder
+      ThickVerticalEdgeBorder

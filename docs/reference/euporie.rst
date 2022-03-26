@@ -17,7 +17,6 @@ euporie
       :recursive:
 
       euporie.app
-      euporie.border
       euporie.box
       euporie.cell
       euporie.commands

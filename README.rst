@@ -12,8 +12,8 @@ euporie
 
 The text-based interface is inspired by JupyterLab / Jupyter Notebook, and runs entirely in the terminal.
 
-.. figure:: https://user-images.githubusercontent.com/12154190/151821363-9176faac-169f-4b12-a83f-8a4004e5b9bb.png
-   :target: https://user-images.githubusercontent.com/12154190/151821363-9176faac-169f-4b12-a83f-8a4004e5b9bb.png
+.. figure:: https://user-images.githubusercontent.com/12154190/160244007-cfde84ea-cddd-47f3-964a-96a10d60fb06.png
+   :target: https://user-images.githubusercontent.com/12154190/160244007-cfde84ea-cddd-47f3-964a-96a10d60fb06.png
 
    `View more screenshots here <https://euporie.readthedocs.io/en/latest/pages/gallery.html>`_
 

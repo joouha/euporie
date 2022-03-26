@@ -34,3 +34,15 @@ euporie.formatted\_text.utils
       strip
       truncate
       wrap
+
+
+
+
+
+   .. rubric:: Classes
+
+   .. autosummary::
+      :toctree:
+      :template: class.tpl.rst
+
+      FormattedTextAlign
