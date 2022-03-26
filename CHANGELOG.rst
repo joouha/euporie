@@ -11,6 +11,7 @@ Upcoming
 Added
 =====
 
+- Respond to kernel requests to clear cell outputs
 - Used colored output with elinks HTML renderer
 
 ----

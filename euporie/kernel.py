@@ -461,9 +461,18 @@ class NotebookKernel:
 
         async def process_execute_iopub_rsp() -> "None":
             """Process response messages on the ``iopub`` channel."""
+            clear_output = False
+
+            def _clear_output_if_required() -> "None":
+                nonlocal clear_output
+                if clear_output:
+                    cell_json["outputs"] = []
+                    clear_output = False
+
             async for rsp in self.await_iopub_rsps(msg_id):
                 stop = False
                 msg_type = rsp.get("header", {}).get("msg_type")
+
                 if msg_type == "status":
                     status = rsp.get("content", {}).get("execution_state")
                     if status == "idle":
@@ -490,6 +499,7 @@ class NotebookKernel:
                     )
 
                 elif msg_type in ("display_data", "execute_result", "error"):
+                    _clear_output_if_required()
                     cell_json.setdefault("outputs", []).append(
                         nbformat.v4.output_from_msg(rsp)
                     )
@@ -499,8 +509,10 @@ class NotebookKernel:
                         )
                     elif msg_type == "error":
                         stop = True
+
                 elif msg_type == "stream":
-                    # Combine stream outputs
+                    # Combine stream outputs with existing stream outputs
+                    _clear_output_if_required()
                     stream_name = rsp.get("content", {}).get("name")
                     for output in cell_json.get("outputs", []):
                         if output.get("name") == stream_name:
@@ -513,11 +525,20 @@ class NotebookKernel:
                             nbformat.v4.output_from_msg(rsp)
                         )
 
+                elif msg_type == "clear_output":
+                    # Clear cell output, either now or when we get the next output
+                    wait = rsp.get("content", {}).get("wait", False)
+                    if wait:
+                        clear_output = True
+                    else:
+                        cell_json["outputs"] = []
+
                 if callable(output_cb):
                     log.debug("Calling output callback")
                     output_cb()
                 if stop:
                     break
+
             # Stop the stdin listener
             stdin_listener.cancel()
 
