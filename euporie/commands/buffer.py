@@ -54,7 +54,7 @@ from euporie.filters import (
 from euporie.key_binding.micro_state import InputMode
 
 if TYPE_CHECKING:
-    from typing import Union
+    from typing import Dict, List, Union
 
     from prompt_toolkit.key_binding import KeyPressEvent
 
@@ -306,7 +306,7 @@ def wrap_selection_cmd(left: "str", right: "str") -> "None":
     buffer.selection_state = selection_state
 
 
-WRAP_PAIRS: "dict[str, list[str]]" = {
+WRAP_PAIRS: "Dict[str, List[str]]" = {
     "code": [
         '""',
         "''",
@@ -632,7 +632,7 @@ def unshift_move(event: "KeyPressEvent") -> "None":
         return
 
     # the other keys are handled through their readline command
-    key_to_command: "dict[Union[Keys, str], str]" = {
+    key_to_command: "Dict[Union[Keys, str], str]" = {
         Keys.ShiftLeft: "move-cursor-left",
         Keys.ShiftRight: "move-cursor-right",
         Keys.ShiftHome: "go-to-start-of-line",

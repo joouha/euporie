@@ -8,17 +8,17 @@ from euporie.commands.registry import commands
 from euporie.key_binding.util import format_keys
 
 if TYPE_CHECKING:
-    from typing import Optional, Union
+    from typing import Dict, List, Optional, Union
 
 log = logging.getLogger(__name__)
 
 
 def format_command_attrs(
-    groups: "Optional[list[str]]" = None,
-    attrs: "Optional[list[str]]" = None,
+    groups: "Optional[List[str]]" = None,
+    attrs: "Optional[List[str]]" = None,
     pad: "bool" = True,
     escape: "bool" = False,
-) -> "dict[str, list[dict[str, Union[str, list[str]]]]]":
+) -> "Dict[str, List[Dict[str, Union[str, List[str]]]]]":
     """Format command attributes by group.
 
     Args:
@@ -70,7 +70,7 @@ def format_command_attrs(
                 )
 
     # Populate attribute data for each command group
-    data: "dict[str, list[dict[str, Union[str, list[str]]]]]" = {}
+    data: "Dict[str, List[Dict[str, Union[str, List[str]]]]]" = {}
     for group in groups:
         group_title = group.replace("-", " ").capitalize()
         if group_title not in data:
@@ -78,7 +78,7 @@ def format_command_attrs(
 
         for cmd in commands.values():
             if not cmd.hidden() and cmd.group == group:
-                cmd_info: "dict[str, Union[str, list[str]]]" = {}
+                cmd_info: "Dict[str, Union[str, List[str]]]" = {}
                 for attr in attrs:
                     if attr == "keys":
                         keys = format_keys(cmd.keys)

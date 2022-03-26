@@ -11,7 +11,7 @@ from euporie.key_binding.bindings.commands import load_command_bindings
 from euporie.key_binding.util import dict_bindings
 
 if TYPE_CHECKING:
-    from typing import Union
+    from typing import Dict, List, Tuple, Union
 
     from prompt_toolkit.key_binding import KeyBindingsBase
     from prompt_toolkit.keys import Keys
@@ -21,7 +21,7 @@ extend_enum(EditingMode, "MICRO", "MICRO")
 
 
 # TODO - move these keybindings into command definitions
-MICRO_BINDINGS: "dict[str, Union[list[Union[tuple[Union[Keys, str], ...], Keys, str]], Union[tuple[Union[Keys, str], ...], Keys, str]]]" = {  # noqa B950
+MICRO_BINDINGS: "Dict[str, Union[List[Union[Tuple[Union[Keys, str], ...], Keys, str]], Union[Tuple[Union[Keys, str], ...], Keys, str]]]" = {  # noqa B950
     "type-key": "<any>",
     "move-cursor-right": "right",
     "move-cursor-left": "left",

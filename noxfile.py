@@ -10,7 +10,7 @@ from nox_poetry import Session, session  # type: ignore
 
 package = "euporie"
 python_versions = ["3.10", "3.9", "3.8"]
-nox.options.sessions = "lint", "safety", "mypy", "pytype"
+nox.options.sessions = "lint", "safety", "tests", "mypy", "pytype"
 locations = "euporie", "tests", "scripts"
 
 
@@ -96,6 +96,14 @@ def format(session: "Session") -> None:
     session.run("black", *args)
 
 
+@nox.session(python=python_versions)
+def mypy(session: "Session") -> "None":
+    """Type-check using mypy."""
+    args = session.posargs or locations
+    session.install("mypy", ".")
+    session.run("mypy", *args)
+
+
 @session(python=python_versions)
 def lint(session: "Session") -> "None":
     """Lint using flake8."""
@@ -113,29 +121,12 @@ def lint(session: "Session") -> "None":
     session.run("flake8", *args)
 
 
-@session(python=python_versions[0])
+@session(python=python_versions)
 def safety(session: "Session") -> "None":
     """Scan dependencies for insecure packages."""
     requirements = session.poetry.export_requirements()
     session.install("safety")
     session.run("safety", "check", "--full-report", f"--file={requirements}")
-
-
-@nox.session(python=python_versions)
-def mypy(session: "Session") -> "None":
-    """Type-check using mypy."""
-    args = session.posargs or locations
-    session.install("mypy", ".")
-    session.run("mypy", *args)
-
-
-# Pytype does not support 3.10 yet
-@session(python=["3.8", "3.9"])
-def pytype(session: "Session") -> "None":
-    """Type-check using pytype."""
-    args = session.posargs or locations
-    session.install("pytype", ".")
-    session.run("pytype", *args)
 
 
 # @nox.session(python=["3.9", "3.8"])
@@ -147,7 +138,7 @@ def pytype(session: "Session") -> "None":
 # session.run("pytest", f"--typeguard-packages={package}", *args)
 
 
-@session
+@session(python=python_versions)
 def tests(session: "Session") -> "None":
     """Run the test suite."""
     session.install(".")
@@ -164,7 +155,7 @@ def tests(session: "Session") -> "None":
             session.notify("coverage", posargs=[])
 
 
-@session
+@session(python=python_versions)
 def coverage(session: "Session") -> "None":
     """Produce the coverage report."""
     args = session.posargs or ["report"]
@@ -175,3 +166,12 @@ def coverage(session: "Session") -> "None":
         session.run("coverage", "combine")
 
     session.run("coverage", *args)
+
+
+# Pytype does not support 3.10 yet
+@session(python=["3.8", "3.9"])
+def pytype(session: "Session") -> "None":
+    """Type-check using pytype."""
+    args = session.posargs or locations
+    session.install("pytype", ".")
+    session.run("pytype", *args)

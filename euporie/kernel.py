@@ -75,7 +75,7 @@ class NotebookKernel:
         self,
         coro: "Coroutine",
         wait: "bool" = False,
-        callback: "Callable" = None,
+        callback: "Optional[Callable]" = None,
         timeout: "Optional[Union[int, float]]" = None,
         warn: "bool" = True,
         single: "bool" = False,
@@ -775,7 +775,7 @@ class NotebookKernel:
         self,
         code: "str",
         cursor_pos: "int",
-        callback: "Callable[[dict[str, Any]], None]" = None,
+        callback: "Optional[Callable[[dict[str, Any]], None]]" = None,
     ) -> "str":
         """Request code inspection from the kernel.
 

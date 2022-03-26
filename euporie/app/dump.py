@@ -19,7 +19,7 @@ from euporie.containers import PrintingContainer
 from euporie.notebook import DumpKernelNotebook, DumpNotebook
 
 if TYPE_CHECKING:
-    from typing import Any, Optional, Sequence, TextIO, Type
+    from typing import Any, List, Optional, Sequence, TextIO, Tuple, Type
 
     from prompt_toolkit.application.application import Application
     from prompt_toolkit.data_structures import Point
@@ -70,7 +70,7 @@ class DumpApp(EuporieApp):
         hr.window.width = self.output.get_size().columns
 
         # Add tabs, separated by horizontal lines
-        contents: "list[AnyContainer]" = []
+        contents: "List[AnyContainer]" = []
         for tab in self.tabs:
             # Wrap each tab in a box so it does not expand beyond its maximum width
             contents.append(tab)
@@ -147,7 +147,7 @@ _original_output_screen_diff = renderer._output_screen_diff
 
 def _patched_output_screen_diff(
     *args: "Any", **kwargs: "Any"
-) -> "tuple[Point, Optional[str]]":
+) -> "Tuple[Point, Optional[str]]":
     """Function used to monkey-patch the renderer to extend the application height."""
     # Remove ZWE from screen
     # from collections import defaultdict
