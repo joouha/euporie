@@ -99,7 +99,7 @@ def strip(
     """
     result = ft[:]
     for toggle, index, strip_func in [(left, 0, str.lstrip), (right, -1, str.rstrip)]:
-        if toggle:
+        if result and toggle:
             text = strip_func(result[index][1], char)
             while result and not text:
                 del result[index]
