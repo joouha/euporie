@@ -111,6 +111,8 @@ class TerminalQuery:
         self.waiting = False
         self._value: "Optional[Any]" = None
         self.event = Event(self)
+        if self.output.stdout and not self.output.stdout.isatty():
+            self.cmd = ""
 
     def verify(self, data: "str") -> "Optional[Any]":
         """Verifies the response from the terminal."""

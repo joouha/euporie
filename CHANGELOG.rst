@@ -29,6 +29,7 @@ Changed
 Fixed
 =====
 
+- Only send terminal query escape codes if output is a TTY - this prevents disrupted output when dumping or paging notebooks
 - Fix word selection in case toggle command
 - Images now resized if terminal font size changes
 - Fixed maultiple bugs with external image converters
