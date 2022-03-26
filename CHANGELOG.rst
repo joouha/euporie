@@ -4,6 +4,16 @@ Changelog
 
 Notable changes to this project will be documented in this file.
 
+********
+Upcoming
+********
+
+Added
+=====
+
+- Used colored output with elinks HTML renderer
+
+----
 
 *********************
 v1.4.1 - (2022-03-26)
@@ -15,12 +25,12 @@ Fixed
 
 - Exception raised when attempting to strip an empty formatted text string which occasionally caused issues when rendering markdown
 
+----
 
 *********************
 v1.4.0 - (2022-03-26)
 *********************
 
-=====
 Added
 =====
 

@@ -57,6 +57,8 @@ def html_to_ansi_elinks(
     cmd: "list[Any]" = [
         "elinks",
         "-dump",
+        "-dump-color-mode",
+        "3",
         "-no-numbering",
         "-force-html",
         "-no-references",
