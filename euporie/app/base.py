@@ -46,8 +46,10 @@ from prompt_toolkit.utils import is_windows
 from pygments.styles import get_style_by_name  # type: ignore
 
 from euporie.config import config
-from euporie.formatted_text.markdown import DEFAULT_MD_STYLE
-from euporie.formatted_text.markdown_enhanced import enable_enchanced_markdown
+from euporie.formatted_text.markdown_enhanced import (
+    MARKDOWN_STYLE,
+    enable_enchanced_markdown,
+)
 from euporie.key_binding.bindings.commands import load_command_bindings
 from euporie.key_binding.bindings.micro import load_micro_bindings
 from euporie.key_binding.micro_state import MicroState
@@ -499,7 +501,7 @@ class EuporieApp(Application):
         return merge_styles(
             [
                 style_from_pygments_cls(get_style_by_name(config.syntax_theme)),
-                DEFAULT_MD_STYLE,
+                Style(MARKDOWN_STYLE),
                 Style.from_dict(style_dict),
             ]
         )

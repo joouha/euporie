@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from functools import partial
-from typing import TYPE_CHECKING, NamedTuple, cast
+from typing import TYPE_CHECKING, NamedTuple, Type, cast
 
 import nbformat  # type: ignore
 from prompt_toolkit.filters import Condition, has_focus, is_done
@@ -33,7 +33,7 @@ from prompt_toolkit.widgets import Frame, SearchToolbar, TextArea
 from pygments.lexers import get_lexer_by_name  # type: ignore
 
 from euporie.app.current import get_tui_app as get_app
-from euporie.box import RoundBorder, ThickVerticalBorder
+from euporie.box import NoBorder, RoundBorder, ThickVerticalEdgeBorder
 from euporie.config import config
 from euporie.filters import multiple_cells_selected
 from euporie.format import format_code
@@ -41,12 +41,12 @@ from euporie.output.container import CellOutput
 from euporie.suggest import AppendLineAutoSuggestion, ConditionalAutoSuggestAsync
 
 if TYPE_CHECKING:
-    from typing import Any, Callable, Literal, Optional, Type, Union
+    from typing import Any, Callable, Literal, Optional, Union
 
     from prompt_toolkit.buffer import Buffer
     from prompt_toolkit.formatted_text.base import AnyFormattedText, StyleAndTextTuples
-    from prompt_toolkit.widgets.base import Border as PtkBorder
 
+    from euporie.box import Border
     from euporie.notebook import Notebook, TuiNotebook
     from euporie.output.control import OutputControl
     from euporie.scroll import ChildRenderInfo
@@ -319,7 +319,7 @@ class Cell:
                     filter=self.show_prompt,
                 ),
                 ConditionalContainer(
-                    content=fill(width=1, height=1, char=self.border_char("SPLIT_TOP")),
+                    content=fill(width=1, height=1, char=self.border_char("TOP_SPLIT")),
                     filter=self.show_prompt,
                 ),
                 fill(char=self.border_char("HORIZONTAL"), height=1),
@@ -354,7 +354,7 @@ class Cell:
         middle_line = ConditionalContainer(
             content=VSplit(
                 [
-                    fill(width=1, height=1, char=self.border_char("SPLIT_LEFT")),
+                    fill(width=1, height=1, char=self.border_char("LEFT_SPLIT")),
                     ConditionalContainer(
                         content=fill(
                             char=self.border_char("HORIZONTAL"),
@@ -367,7 +367,7 @@ class Cell:
                         filter=self.show_prompt,
                     ),
                     fill(char=self.border_char("HORIZONTAL")),
-                    fill(width=1, height=1, char=self.border_char("SPLIT_RIGHT")),
+                    fill(width=1, height=1, char=self.border_char("RIGHT_SPLIT")),
                 ],
                 height=1,
             ),
@@ -423,7 +423,7 @@ class Cell:
                 ),
                 ConditionalContainer(
                     content=fill(
-                        width=1, height=1, char=self.border_char("SPLIT_BOTTOM")
+                        width=1, height=1, char=self.border_char("BOTTOM_SPLIT")
                     ),
                     filter=self.show_prompt,
                 ),
@@ -499,15 +499,13 @@ class Cell:
         """Returns a function  which returns the cell border character to display."""
 
         def _inner() -> "str":
-            Border: "Type[PtkBorder]"
-            if self.focused and multiple_cells_selected():
-                Border = ThickVerticalBorder
-            else:
-                Border = RoundBorder
+            border: "Type[Border]" = NoBorder
             if config.show_cell_borders or self.selected:
-                return getattr(Border, name.upper())
-            else:
-                return Border.NONE
+                if self.focused and multiple_cells_selected():
+                    border = ThickVerticalEdgeBorder
+                else:
+                    border = RoundBorder
+            return getattr(border, name.upper())
 
         return _inner
 

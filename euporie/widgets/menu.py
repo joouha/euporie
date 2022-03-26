@@ -371,9 +371,9 @@ class MenuContainer(PtKMenuContainer):
                             # Show a connected line with no mouse handler
                             yield (
                                 "class:menu-border",
-                                Border.SPLIT_LEFT
+                                Border.LEFT_SPLIT
                                 + (Border.HORIZONTAL * (menu.width + 2))
-                                + Border.SPLIT_RIGHT,
+                                + Border.RIGHT_SPLIT,
                             )
 
                         else:

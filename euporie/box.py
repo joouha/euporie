@@ -1,32 +1,72 @@
 """Define box border constants."""
 
+from abc import ABCMeta
 from typing import Optional
 
 from prompt_toolkit.layout.containers import Container
 from prompt_toolkit.layout.dimension import Dimension
 from prompt_toolkit.layout.mouse_handlers import MouseHandlers
 from prompt_toolkit.layout.screen import Char, Screen, WritePosition
-from prompt_toolkit.widgets.base import Border as PtkBorder
 
 from euporie.config import config
 
 __all__ = ["SquareBorder", "RoundBorder", "BorderLine", "Pattern"]
 
 
-class SquareBorder(PtkBorder):
-    """Box drawing characters, including characters for splits."""
+class Border(metaclass=ABCMeta):
+    """Base border type."""
 
-    NONE = " "
-    SPLIT_BOTTOM = "┴"
-    SPLIT_TOP = "┬"
-    SPLIT_LEFT = "├"
-    SPLIT_RIGHT = "┤"
-    CROSS = "┼"
+    TOP_LEFT: str
+    TOP_SPLIT: str
+    TOP_RIGHT: str
+    HORIZONTAL: str
+    INNER_VERTICAL: str
+    VERTICAL: str
+    LEFT_SPLIT: str
+    RIGHT_SPLIT: str
+    CROSS: str
+    BOTTOM_LEFT: str
+    BOTTOM_SPLIT: str
+    BOTTOM_RIGHT: str
+    NONE: str
+
+
+class NoBorder(Border):
+    """Invisible border."""
+
+    TOP_LEFT = " "
+    TOP_SPLIT = " "
+    TOP_RIGHT = " "
+    HORIZONTAL = " "
+    INNER_VERTICAL = " "
+    VERTICAL = " "
+    LEFT_SPLIT = " "
+    RIGHT_SPLIT = " "
+    CROSS = " "
+    BOTTOM_LEFT = " "
+    BOTTOM_SPLIT = " "
+    BOTTOM_RIGHT = " "
+
+
+class SquareBorder(Border):
+    """Square thin border."""
+
+    TOP_LEFT = "┌"
+    TOP_SPLIT = "┬"
+    TOP_RIGHT = "┐"
+    HORIZONTAL = "─"
     INNER_VERTICAL = "│"
+    VERTICAL = "│"
+    LEFT_SPLIT = "├"
+    RIGHT_SPLIT = "┤"
+    CROSS = "┼"
+    BOTTOM_LEFT = "└"
+    BOTTOM_SPLIT = "┴"
+    BOTTOM_RIGHT = "┘"
 
 
 class RoundBorder(SquareBorder):
-    """Box drawing characters with rounded corners."""
+    """Thin border with round corners."""
 
     TOP_LEFT = "╭"
     TOP_RIGHT = "╮"
@@ -34,33 +74,49 @@ class RoundBorder(SquareBorder):
     BOTTOM_RIGHT = "╯"
 
 
-class ThickVerticalBorder(SquareBorder):
-    """Box drawing characters with thick vertical lines."""
+class DoubleBorder(Border):
+    """Square border with double lines."""
+
+    TOP_LEFT = "╔"
+    TOP_SPLIT = "╦"
+    TOP_RIGHT = "╗"
+    HORIZONTAL = "═"
+    VERTICAL = "║"
+    LEFT_SPLIT = "╠"
+    RIGHT_SPLIT = "╣"
+    CROSS = "╬"
+    BOTTOM_LEFT = "╚"
+    BOTTOM_SPLIT = "╩"
+    BOTTOM_RIGHT = "╝"
+
+
+class ThickBorder(Border):
+    """Square border with thick lines."""
+
+    TOP_LEFT = "┏"
+    TOP_SPLIT = "┳"
+    TOP_RIGHT = "┓"
+    HORIZONTAL = "━"
+    VERTICAL = "┃"
+    LEFT_SPLIT = "┣"
+    RIGHT_SPLIT = "┫"
+    CROSS = "╋"
+    BOTTOM_LEFT = "┗"
+    BOTTOM_SPLIT = "┻"
+    BOTTOM_RIGHT = "┛"
+
+
+class ThickVerticalEdgeBorder(SquareBorder):
+    """Box drawing characters with thick verticals outer edges."""
 
     TOP_LEFT = "┎"
     TOP_RIGHT = "┒"
     VERTICAL = "┃"
     INNER_VERTICAL = "│"
+    LEFT_SPLIT = "┠"
+    RIGHT_SPLIT = "┨"
     BOTTOM_LEFT = "┖"
     BOTTOM_RIGHT = "┚"
-    SPLIT_LEFT = "┠"
-    SPLIT_RIGHT = "┨"
-
-
-class DoubleBorder(PtkBorder):
-    """Box drawing characters with double lines."""
-
-    TOP_LEFT = "╔"
-    TOP_RIGHT = "╗"
-    VERTICAL = "║"
-    INNER_VERTICAL = "║"
-    HORIZONTAL = "═"
-    INNER_HORIZONTAL = "═"
-    BOTTOM_LEFT = "╚"
-    BOTTOM_RIGHT = "╝"
-    SPLIT_LEFT = "╠"
-    SPLIT_RIGHT = "╣"
-    CROSS = "╬"
 
 
 class BorderLine(Container):
