@@ -6,16 +6,34 @@ Usage
 Command Line Interface
 **********************
 
+Editing Notebooks
+=================
+
 To open a notebook from the command line, launch euporie with the notebook file's path as an argument:
 
 .. code-block:: console
 
    $ euporie ./my-notebook.ipynb
 
-The following command line arguments are available:
+Printing Notebooks
+==================
+
+To print a notebook to the terminal, run:
+
+.. code-block:: console
+
+   $ euporie --dump notebook.ipynb
+
+To view a notebook in the system pager, run:
+
+.. code-block:: console
+
+   $ euporie --dump --page notebook.ipynb
 
 Positional Arguments
 ====================
+
+The following command line arguments are available:
 
 .. option:: <Path ...>
 

@@ -34,6 +34,7 @@ euporie.formatted\_text.markdown
       img
       li
       math
+      ol
       p
       ul
 

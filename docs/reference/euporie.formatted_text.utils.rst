@@ -1,7 +1,7 @@
-euporie.formatted\_text.util
-============================
+euporie.formatted\_text.utils
+=============================
 
-.. automodule:: euporie.formatted_text.util
+.. automodule:: euporie.formatted_text.utils
    :members:
    :undoc-members:
    :inherited-members:
