@@ -14,6 +14,11 @@ Added
 - Respond to kernel requests to clear cell outputs
 - Used colored output with elinks HTML renderer
 
+Fixed
+=====
+
+- Fix parsing of html tables with empty first cells by :py:mod:`html2text`
+
 ----
 
 *********************
