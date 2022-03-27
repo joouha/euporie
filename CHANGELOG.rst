@@ -19,6 +19,7 @@ Fixed
 =====
 
 - Fix parsing of html tables with empty first cells by :py:mod:`html2text`
+- Fixed toggling comments if a line consists of a single right-stripped comment
 
 Improved
 ========

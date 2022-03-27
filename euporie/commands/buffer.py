@@ -242,12 +242,15 @@ def toggle_comment() -> "None":
     cursor_in_first_line = document.cursor_position_row == start
     # Only remove comments if all lines in the selection have a comment
     uncommenting = all(
-        line.lstrip().startswith(comment) for line in lines[start : end + 1]
+        line.lstrip().startswith(comment.rstrip()) for line in lines[start : end + 1]
     )
     if uncommenting:
         for i in range(start, end + 1):
             # Replace the first instance of the comment in each line
             lines[i] = lines[i].replace(comment, "", 1)
+            if len(lines[i]) < len(comment):
+                # The line might be blank and have trailing whitespace removed
+                lines[i] = lines[i].replace(comment.rstrip(), "", 1)
         # Find cursor and selection column positions
         cur_col = document.translate_index_to_position(buffer.cursor_position)[1]
         if selection_state is not None:
