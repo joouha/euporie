@@ -17,6 +17,7 @@ from prompt_toolkit.formatted_text import (
     fragment_list_to_text,
     to_formatted_text,
 )
+from prompt_toolkit.input.defaults import create_input
 from prompt_toolkit.key_binding.key_bindings import KeyBindings, merge_key_bindings
 from prompt_toolkit.layout import (
     ConditionalContainer,
@@ -32,6 +33,7 @@ from prompt_toolkit.layout import (
 from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.layout.dimension import Dimension
 from prompt_toolkit.layout.menus import CompletionsMenu
+from prompt_toolkit.output.defaults import create_output
 from prompt_toolkit.widgets import Button, Dialog, Label, TextArea
 from pygments.styles import get_all_styles  # type: ignore
 from pyperclip import determine_clipboard  # type: ignore
@@ -55,8 +57,10 @@ if TYPE_CHECKING:
     from prompt_toolkit.clipboard import Clipboard
     from prompt_toolkit.completion import Completer
     from prompt_toolkit.formatted_text import StyleAndTextTuples
+    from prompt_toolkit.input import Input
     from prompt_toolkit.key_binding.key_processor import KeyPressEvent
     from prompt_toolkit.layout.containers import AnyContainer
+    from prompt_toolkit.output import Output
 
     from euporie.cell import InteractiveCell
     from euporie.notebook import Notebook
@@ -88,6 +92,24 @@ class TuiApp(EuporieApp):
             await asyncio.sleep(config.terminal_polling_interval)
             self.term_info.background_color.send()
             self.term_info.foreground_color.send()
+
+    def load_input(self) -> "Input":
+        """Creates the input for this application to use.
+
+        Returns:
+            A prompt-toolkit input instance
+
+        """
+        return create_input(always_prefer_tty=True)
+
+    def load_output(self) -> "Output":
+        """Creates the output for this application to use.
+
+        Returns:
+            A prompt-toolkit output instance
+
+        """
+        return create_output(always_prefer_tty=True)
 
     def load_clipboard(self) -> "None":
         """Determines which clipboard mechanism to use."""

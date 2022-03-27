@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING, cast
 from prompt_toolkit.application import Application
 from prompt_toolkit.enums import EditingMode
 from prompt_toolkit.filters import buffer_has_focus
+from prompt_toolkit.input.defaults import create_input
 from prompt_toolkit.key_binding.bindings.basic import load_basic_bindings
 from prompt_toolkit.key_binding.bindings.cpr import load_cpr_bindings
 from prompt_toolkit.key_binding.bindings.emacs import (
@@ -65,6 +66,7 @@ if TYPE_CHECKING:
 
     from prompt_toolkit.filters import Filter
     from prompt_toolkit.formatted_text import AnyFormattedText
+    from prompt_toolkit.input import Input
     from prompt_toolkit.input.vt100 import Vt100Input
     from prompt_toolkit.layout.containers import AnyContainer, Float
     from prompt_toolkit.output import Output
@@ -106,6 +108,7 @@ class EuporieApp(Application):
         # Initialise the application
         super().__init__(
             # input=self.input,
+            input=self.load_input(),
             output=self.load_output(),
             **kwargs,
         )
@@ -177,14 +180,27 @@ class EuporieApp(Application):
         # Waits until the event loop is ready
         self.create_background_task(continue_loading())
 
+    def load_input(self) -> "Input":
+        """Creates the input for this application to use.
+
+        Ensures the TUI app always tries to run in a TTY.
+
+        Returns:
+            A prompt-toolkit input instance
+
+        """
+        return create_input(always_prefer_tty=True)
+
     def load_output(self) -> "Output":
         """Creates the output for this application to use.
+
+        Ensures the TUI app always tries to run in a TTY.
 
         Returns:
             A prompt-toolkit output instance
 
         """
-        return create_output()
+        return create_output(always_prefer_tty=True)
 
     def post_load(self) -> "None":
         """Allows subclasses to define additional loading steps."""
