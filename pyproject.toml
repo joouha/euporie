@@ -30,26 +30,26 @@ jsonschema = "^4.4"
 pyperclip = "^1.8"
 aenum = "^3.1"
 flatlatex = "~0.15"
+imagesize = "^1.3.0"
 timg = "^1.1"
 Pillow = "^9.0"
-mtable = {version = "^0.1", optional = true}
-html5lib = {version = "^1.1", optional = true}
-sympy = {version = "^1.9", optional = true}
-imagesize = "^1.3.0"
-antlr4-python3-runtime = {version = "^4.9", optional = true}
-CairoSVG = {version = "^2.5", optional = true}
-img2unicode = {version = "^0.1a8", optional = true}
+html2text = "^2020.1.16"
+markdown-it-py = {extras = ["linkify"], version = "^2.0.1"}
+mdit-py-plugins = "^0.3.0"
+linkify = "^1.4"
+rich = "^12.0.1"
 black = {version = ">=19.3b0", optional = true}
 isort = {version = "^5.10.1", optional = true}
 ssort = {version = "^0.11.4", optional = true}
-linkify = "^1.4"
-mdit-py-plugins = "^0.3.0"
-html2text = "^2020.1.16"
-rich = "^12.0.1"
-markdown-it-py = {extras = ["linkify"], version = "^2.0.1"}
+mtable = {version = "^0.1", optional = true}
+CairoSVG = {version = "^2.5", optional = true}
+html5lib = {version = "^1.1", optional = true}
+sympy = {version = "^1.9", optional = true}
+antlr4-python3-runtime = {version = "^4.9", optional = true}
+img2unicode = {version = "^0.1a8", optional = true}
 
 [tool.poetry.extras]
-all = ["black", "mtable", "html5lib", "CairoSVG"]
+all = ["formatters", "CairoSVG"]
 formatters = ["black", "isort", "ssort"]
 svg-cairosvg = ["CairoSVG"]
 latex-sympy = ["sympy", "antlr4-python3-runtime"]
@@ -58,11 +58,11 @@ images-img2unicode = ["img2unicode"]
 
 [tool.poetry.dev-dependencies]
 isort = "^5.8.0"
-flake8 = "^3.9.1"
+flake8 = "^4.0.1"
 poetry-publish = "^0.4.1"
-flake8-black = "^0.2.1"
-flake8-bugbear = "^21.4.3"
-flake8-bandit = "^2.1.2"
+flake8-black = "^0.3.2"
+flake8-bugbear = "^22.3.23"
+flake8-bandit = "^3.0.0"
 flake8-annotations = "^2.6.2"
 flake8-docstrings = "^1.6.0"
 flake8-isort = "^4.0.0"
@@ -74,14 +74,13 @@ sphinx-rtd-theme = "^1.0.0"
 furo = "^2022.3.4"
 black = "^22.1.0"
 ssort = "^0.11.0"
-bandit = "1.7.2"
 flake8-comprehensions = "^3.8.0"
 sphinx-argparse-cli = "^1.8.3"
 sphinxext-opengraph = "^0.6.2"
 sphinx-copybutton = "^0.5.0"
 codespell = "^2.1.0"
 pytest = "^7.1.1"
-mypy = "^0.941"
+mypy = "^0.942"
 
 [tool.poetry.scripts]
 euporie = 'euporie.__main__:main'
