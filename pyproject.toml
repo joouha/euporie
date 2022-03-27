@@ -22,7 +22,7 @@ classifiers = [
 
 [tool.poetry.dependencies]
 python = "^3.8"
-prompt-toolkit = "^3.0"
+prompt-toolkit = "^3.0.27"
 nbformat = "^5"
 jupyter-client = "^7.1"
 appdirs = "^1.4"
