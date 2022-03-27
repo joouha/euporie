@@ -1,3 +1,4 @@
+i
 #########
 Changelog
 #########
@@ -18,6 +19,11 @@ Fixed
 =====
 
 - Fix parsing of html tables with empty first cells by :py:mod:`html2text`
+
+Improved
+========
+
+- Parse environment variables a Python literals, so setting a binary variable to ``"False"`` no longer evaluates to :py:const:`True`
 
 ----
 

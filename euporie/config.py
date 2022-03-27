@@ -6,6 +6,7 @@ import argparse
 import json
 import logging
 import os
+from ast import literal_eval
 from collections import ChainMap
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -607,8 +608,22 @@ class Config:
             env = f"{__app_name__.upper()}_{name.upper()}"
             if env in os.environ:
                 type_ = param.get("type", str)
+                value = os.environ.get(env)
+                # Attempt to parse the value as a literal
+                if value:
+                    try:
+                        value = literal_eval(value)
+                    except (
+                        ValueError,
+                        TypeError,
+                        SyntaxError,
+                        MemoryError,
+                        RecursionError,
+                    ):
+                        pass
+                # Attempt to cast the value to the desired type
                 try:
-                    value = type_(os.environ[env])
+                    value = type_(value)
                 except (ValueError, TypeError):
                     log.warning(
                         f"Environment variable `{env}` not understood"

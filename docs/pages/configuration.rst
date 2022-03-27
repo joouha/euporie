@@ -30,7 +30,7 @@ Euporie can be configured by setting environment variables. Each option can be s
 
 .. code-block:: console
 
-   $ EUPORIE_COLOR_SCHEME=light EUPORIE_SHOW_CELL_BORDERS= EUPORIE_EXPAND=True euporie notebook.ipynb
+   $ EUPORIE_COLOR_SCHEME=light EUPORIE_SHOW_CELL_BORDERS=False EUPORIE_EXPAND=True euporie notebook.ipynb
 
 Setting boolean values to an empty string will cause them to evaluate to :py:keyword:`False`.
 
