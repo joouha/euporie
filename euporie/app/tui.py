@@ -11,12 +11,7 @@ from prompt_toolkit.clipboard import InMemoryClipboard
 from prompt_toolkit.clipboard.pyperclip import PyperclipClipboard
 from prompt_toolkit.completion import PathCompleter
 from prompt_toolkit.filters import Condition, buffer_has_focus
-from prompt_toolkit.formatted_text import (
-    HTML,
-    AnyFormattedText,
-    fragment_list_to_text,
-    to_formatted_text,
-)
+from prompt_toolkit.formatted_text import HTML, fragment_list_to_text, to_formatted_text
 from prompt_toolkit.input.defaults import create_input
 from prompt_toolkit.key_binding.key_bindings import KeyBindings, merge_key_bindings
 from prompt_toolkit.layout import (
@@ -51,12 +46,12 @@ from euporie.widgets.menu import MenuContainer, MenuItem
 
 if TYPE_CHECKING:
     from asyncio import AbstractEventLoop
-    from typing import Any, Callable, Generator, Literal, Optional, Type
+    from typing import Any, Callable, Generator, List, Literal, Optional, Tuple, Type
 
     from prompt_toolkit.buffer import Buffer
     from prompt_toolkit.clipboard import Clipboard
     from prompt_toolkit.completion import Completer
-    from prompt_toolkit.formatted_text import StyleAndTextTuples
+    from prompt_toolkit.formatted_text import AnyFormattedText, StyleAndTextTuples
     from prompt_toolkit.input import Input
     from prompt_toolkit.key_binding.key_processor import KeyPressEvent
     from prompt_toolkit.layout.containers import AnyContainer
@@ -151,15 +146,17 @@ class TuiApp(EuporieApp):
             A list of style and text tuples for display in the statusbar
 
         """
+        entries: "Tuple[List[AnyFormattedText], List[AnyFormattedText]]" = ([], [])
         for container, status_func in self.container_statuses.items():
             if self.layout.has_focus(container):
                 entries = status_func()
                 break
         else:
-            entries = (
-                [HTML("Press <b>Ctrl+n</b> to start a new notebook")],
-                [HTML("Press <b>Ctrl+q</b> to quit")],
-            )
+            if not self.tabs:
+                entries = (
+                    [HTML("Press <b>Ctrl+n</b> to start a new notebook")],
+                    [HTML("Press <b>Ctrl+q</b> to quit")],
+                )
 
         output: "StyleAndTextTuples" = []
         # Show the tab's status fields
@@ -198,10 +195,12 @@ class TuiApp(EuporieApp):
 
     def load_container(self) -> "FloatContainer":
         """Builds the main application layout."""
+        have_tabs = Condition(lambda: bool(self.tabs))
+
         self.logo = Window(
             FormattedTextControl(
                 [("", f" {__logo__} ")],
-                focusable=True,
+                focusable=~have_tabs,
                 show_cursor=False,
                 style="class:menu-bar,logo",
             ),
@@ -211,15 +210,13 @@ class TuiApp(EuporieApp):
 
         self.title_bar = ConditionalContainer(
             Window(
-                content=FormattedTextControl(
-                    self.format_title, focusable=True, show_cursor=False
-                ),
+                content=FormattedTextControl(self.format_title, show_cursor=False),
                 height=1,
                 style="class:menu.item",
                 dont_extend_width=True,
                 align=WindowAlign.RIGHT,
             ),
-            filter=Condition(lambda: bool(self.tabs)),
+            filter=have_tabs,
         )
 
         tabs = DynamicContainer(self.tab_container)
