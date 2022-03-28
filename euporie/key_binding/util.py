@@ -33,10 +33,13 @@ def dict_bindings(binding_dict: "Dict[str, AnyKeys]") -> "KeyBindingsBase":
 
 
 def _format_key_str(key: "str") -> "str":
-    key = key.replace("c-", "Ctrl+").replace("s-", "Shift+")
-    if min(map(len, key.split("+"))) > 1:
-        key = key.title()
-    return key
+    if key:
+        key = key.replace("c-", "Ctrl+").replace("s-", "Shift+")
+        parts = key.split("+")
+        if parts[-1].isupper():
+            parts.insert(-1, "Shift")
+            key = "+".join(parts)
+    return key.title()
 
 
 def format_keys(keys: "List[Tuple[Union[str, Keys], ...]]") -> "List[str]":

@@ -221,6 +221,15 @@ class Command:
             self._menu = MenuItem.from_command(self)
         return self._menu
 
+    @property
+    def key_str(self) -> "Optional[str]":
+        """Return a string representing the first registered key-binding."""
+        from euporie.key_binding.util import format_keys
+
+        if self.keys:
+            return format_keys([self.keys[0]])[0]
+        return None
+
 
 def add(**kwargs: "Any") -> "Callable":
     """Adds a command to the centralized command system."""

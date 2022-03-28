@@ -120,7 +120,7 @@ class MenuItem(PtkMenuItem):
         return cls(
             formatted_text=command.menu_title,
             handler=command.menu_handler,
-            shortcut=command.keys[0] if command.keys else None,
+            shortcut=command.key_str,
             disabled=~command.filter,
             hidden=command.hidden,
             toggled=command.toggled,
@@ -180,19 +180,8 @@ class MenuItem(PtkMenuItem):
         if self.children:
             suffix.append(("", ">"))
         elif self.shortcut is not None:
-            suffix.append(("class:menu-bar.shortcut", f"  {self.shortcut_str}"))
+            suffix.append(("class:menu-bar.shortcut", f"  {self.shortcut}"))
         return suffix
-
-    @property
-    def shortcut_str(self) -> "str":
-        """A string representing the item's main keyboard shortcut."""
-        key_strs = []
-        for key in self.shortcut or []:
-            if isinstance(key, Keys):
-                key_strs.append(key.value)
-            else:
-                key_strs.append(key)
-        return ",".join(key_strs)
 
     @property
     def prefix_width(self) -> "int":

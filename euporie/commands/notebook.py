@@ -203,7 +203,7 @@ def merge_cells() -> "None":
 
 
 @add(
-    keys=("I", "I"),
+    keys=("i", "i"),
     filter=notebook_has_focus & ~buffer_has_focus & ~cell_output_has_focus,
     group="notebook",
 )
