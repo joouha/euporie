@@ -1,4 +1,6 @@
 """Main entry point into euporie."""
+import os
+import sys
 from typing import Type
 
 
@@ -11,7 +13,17 @@ def main() -> "None":
 
     App: "Type[EuporieApp]"
 
+    is_dumb_term = os.environ.get("TERM") == "dumb"
+    if is_dumb_term and not config.dump:
+        config.defaults["page"] = True
+    if is_dumb_term:
+        config.defaults["dump"] = True
+    if not config.dump and not sys.stdin.isatty() and not sys.stderr.isatty():
+        config.defaults["dump"] = True
+
+    # If on a dumb terminal, the TUI app won't work, so dump and notebooks instead
     if config.dump:
+
         from euporie.app.dump import DumpApp
 
         App = DumpApp

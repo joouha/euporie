@@ -19,7 +19,7 @@ from euporie.containers import PrintingContainer
 from euporie.notebook import DumpKernelNotebook, DumpNotebook
 
 if TYPE_CHECKING:
-    from typing import Any, List, Optional, Sequence, TextIO, Tuple, Type
+    from typing import IO, Any, List, Optional, Sequence, TextIO, Tuple, Type, Union
 
     from prompt_toolkit.application.application import Application
     from prompt_toolkit.data_structures import Point
@@ -29,6 +29,36 @@ if TYPE_CHECKING:
     from euporie.notebook import Notebook
 
 log = logging.getLogger(__name__)
+
+
+class PseudoTTY:
+    """Make an output stream look like a TTY."""
+
+    fake_tty = True
+
+    def __init__(
+        self, underlying: "Union[IO[str], TextIO]", isatty: "bool" = True
+    ) -> "None":
+        """Wraps an underlying output stream.
+
+        Args:
+            underlying: The underlying output stream
+            isatty: The value to return from :py:method:`PseudoTTY.isatty`.
+
+        Result:
+            Returns :py:const:`True` or :py:const:`False`
+
+        """
+        self._underlying = underlying
+        self._isatty = isatty
+
+    def isatty(self) -> "bool":
+        """Determines if the stream is interpreted as a TTY."""
+        return self._isatty
+
+    def __getattr__(self, name: "str") -> "Any":
+        """Returns an attribute of the wrappeed stream."""
+        return getattr(self._underlying, name)
 
 
 class DumpApp(EuporieApp):
@@ -78,6 +108,7 @@ class DumpApp(EuporieApp):
         # Remove the final horizontal line
         if self.tabs:
             contents.pop()
+
         return contents
 
     def load_output(self) -> "Output":
@@ -90,15 +121,16 @@ class DumpApp(EuporieApp):
             A container for notebook output
 
         """
-        if config.page and sys.stdout.isatty():
+        if config.page:
             # Use a temporary file as display output if we are going to page the output
             from tempfile import TemporaryFile
 
             self.output_file = TemporaryFile("w+")
+            # Make this file look like a tty so we get colorful output
+            self.output_file = cast("TextIO", PseudoTTY(self.output_file, isatty=True))
+
         else:
-            if config.page:
-                log.warning("Cannot page output because standard output is not a TTY")
-            # If we are not paging output, determine when to print it
+            # If we are not paging output, determine where to print it
             if config.dump_file is None or str(config.dump_file) in (
                 "-",
                 "/dev/stdout",
@@ -120,6 +152,15 @@ class DumpApp(EuporieApp):
                         "Standard output will be used."
                     )
                     self.output_file = sys.stdout
+
+            # Make the output look like a TTY if color-depth has meen configureed
+            self.output_file = cast(
+                "TextIO",
+                PseudoTTY(
+                    self.output_file,
+                    isatty=config.color_depth is not None,
+                ),
+            )
 
         # Ensure we do not receive the "Output is not a terminal" message
         Vt100_Output._fds_not_a_terminal.add(self.output_file.fileno())

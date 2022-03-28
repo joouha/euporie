@@ -111,7 +111,14 @@ class TerminalQuery:
         self.waiting = False
         self._value: "Optional[Any]" = None
         self.event = Event(self)
-        if self.output.stdout and not self.output.stdout.isatty():
+        if (
+            self.output.stdout
+            and not self.output.stdout.isatty()
+            # Don't send escape codes if this is not a real TTY.
+            # We create pseudo-ttys to get colored output, but don't want
+            # any termianl queries to be sent
+            or getattr(self.output.stdout, "fake_tty", False)
+        ):
             self.cmd = ""
 
     def verify(self, data: "str") -> "Optional[Any]":
