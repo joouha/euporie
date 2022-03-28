@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING
 
 import nbformat  # type: ignore
 from prompt_toolkit.auto_suggest import DummyAutoSuggest
+from prompt_toolkit.clipboard.base import ClipboardData
 from prompt_toolkit.completion import DummyCompleter
 from prompt_toolkit.filters import Condition, to_filter
 from prompt_toolkit.layout.containers import (
@@ -135,6 +136,7 @@ class Notebook(Tab, metaclass=ABCMeta):
 
     def get_cell_by_id(self, cell_id: "str") -> "Optional[Cell]":
         """Returns a reference to the `Cell` container with a given cell id."""
+        # Re-render the cells as the one we want might be new
         for cell in self._rendered_cells.values():
             if cell.id == cell_id:
                 break
@@ -730,11 +732,11 @@ class TuiNotebook(KernelNotebook):
         """
         n_cells = len(self.json["cells"])
         selected_indices = self.page.selected_indices
-        rendered_cells = {cell.index: cell for cell in self._rendered_cells.values()}
+        cells = {cell.index: cell for cell in self._rendered_cells.values()}
 
         # Run the cells
         for i in sorted(selected_indices):
-            rendered_cells[i].run_or_render()
+            cells[i].run_or_render()
         # Insert a cell if we are at the last cell
         index = max(selected_indices)
         if insert or (advance and max(selected_indices) == (n_cells) - 1):
@@ -792,6 +794,29 @@ class TuiNotebook(KernelNotebook):
         if slice_ is None:
             slice_ = self.page.selected_slice
         super().merge(slice_)
+
+    def copy_outputs(self, slice_: "Optional[slice]" = None) -> "None":
+        """Copy the outputs of the selected cells."""
+        if slice_ is None:
+            slice_ = self.page.selected_slice
+        output_strings = []
+        indices = sorted(range(*slice_.indices(len(self.json["cells"]))))
+        rendered_cells = list(self._rendered_cells.values())
+        for index in indices:
+            cell = rendered_cells[index]
+            for output in cell.outputs:
+                data = output.get("data", {})
+                if data:
+                    output_strings.append(
+                        data.get("text/markdown", "")
+                        or data.get("text/x-markdown", "")
+                        or data.get("text/latex", "")
+                        or data.get("text/x-python-traceback", "")
+                        or data.get("text/stderr", "") + data.get("text/stdout", "")
+                        or data.get("text/plain", "")
+                    )
+        if output_strings:
+            self.app.clipboard.set_data(ClipboardData("\n\n".join(output_strings)))
 
     def really_close(self, cb: "Optional[Callable]") -> "None":
         """Shutdown the kernel and close the notebook.

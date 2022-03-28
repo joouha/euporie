@@ -601,6 +601,8 @@ class TuiApp(EuporieApp):
                     get("copy-cells").menu,
                     get("paste-cells").menu,
                     separator,
+                    get("copy-outputs").menu,
+                    separator,
                     get("reformat-cells").menu,
                     get("reformat-notebook").menu,
                 ],

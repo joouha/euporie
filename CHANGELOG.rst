@@ -9,6 +9,11 @@ Notable changes to this project will be documented in this file.
 Upcoming
 ********
 
+Added
+=====
+
+- Add ability to copy cell output
+
 Fixed
 =====
 

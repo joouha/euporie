@@ -163,6 +163,19 @@ def copy_cells() -> "None":
 
 
 @add(
+    keys=[("escape", "c")],
+    menu_title="Copy cell outputs",
+    filter=cell_has_focus & ~buffer_has_focus,
+    group="cell",
+)
+def copy_outputs() -> "None":
+    """Copy the cell's output to the clipboard."""
+    nb = get_app().notebook
+    if nb is not None:
+        nb.copy_outputs()
+
+
+@add(
     keys="v",
     filter=notebook_has_focus & ~buffer_has_focus & ~cell_output_has_focus,
     group="notebook",
