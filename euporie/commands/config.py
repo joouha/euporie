@@ -154,6 +154,15 @@ def show_status_bar() -> "None":
 
 
 @add(
+    group="config",
+    toggled=Condition(lambda: bool(config.show_scroll_bar)),
+)
+def show_scroll_bar() -> "None":
+    """Toggle the visibility of the scroll bar."""
+    config.toggle("show_scroll_bar")
+
+
+@add(
     title="Enable terminal graphics in tmux",
     group="config",
     hidden=~in_tmux,

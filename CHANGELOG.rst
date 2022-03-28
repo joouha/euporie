@@ -1,4 +1,3 @@
-i
 #########
 Changelog
 #########
@@ -14,6 +13,7 @@ Added
 
 - Add ability to copy cell output
 - Allow colour-depth to be manually configured
+- Allow scroll bar visibility to be toggled
 
 Fixed
 =====

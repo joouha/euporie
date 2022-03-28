@@ -513,10 +513,13 @@ class TuiNotebook(KernelNotebook):
                             ),
                             filter=~expand,
                         ),
-                        Window(
-                            ScrollbarControl(self.page),
-                            width=1,
-                            style="class:scrollbar",
+                        ConditionalContainer(
+                            Window(
+                                ScrollbarControl(self.page),
+                                width=1,
+                                style="class:scrollbar",
+                            ),
+                            filter=Condition(lambda: config.show_scroll_bar),
                         ),
                     ],
                     height=Dimension(weight=2),

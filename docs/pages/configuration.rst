@@ -295,6 +295,15 @@ All available configuration options are listed below:
 
    Whether the status bar should be shown at the bottom of the screen.
 
+.. option:: show_scroll_bar
+
+:flags: :option:`--show-scroll-bar`
+:environment variable: :envvar:`EUPORIE_SHOW_SCROLL_BAR`
+:type: :keyword:`boolean`
+:description: Show the scroll bar
+
+   Whether the scroll bar should be shown on the right of the screen.
+
 .. option:: color_scheme
 
 :flags: :option:`--color-scheme`

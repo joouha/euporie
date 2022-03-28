@@ -654,6 +654,7 @@ class TuiApp(EuporieApp):
                     get("use-full-width").menu,
                     get("show-line-numbers").menu,
                     get("show-status-bar").menu,
+                    get("show-scroll-bar").menu,
                     separator,
                     MenuItem(
                         "Cell formatting",

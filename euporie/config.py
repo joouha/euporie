@@ -384,6 +384,19 @@ CONFIG_PARAMS: "dict[str, dict]" = {
             Whether the status bar should be shown at the bottom of the screen.
         """,
     },
+    "show_scroll_bar": {
+        "flags_": ["--show-scroll-bar"],
+        "action": BooleanOptionalAction,
+        "type": bool,
+        "help": "Show the scroll bar",
+        "default": True,
+        "schema_": {
+            "type": "boolean",
+        },
+        "description_": """
+            Whether the scroll bar should be shown on the right of the screen.
+        """,
+    },
     "color_scheme": {
         "flags_": ["--color-scheme"],
         "type": str,
