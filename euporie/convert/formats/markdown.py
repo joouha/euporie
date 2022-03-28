@@ -31,9 +31,12 @@ def html_to_markdown_py_html2text(
     """Convert HTML to markdown tables using :py:mod:`html2text`."""
     import re
 
-    from html2text import HTML2Text  # type: ignore
+    from html2text import HTML2Text
 
-    parser = HTML2Text()
+    # config.UNICODE_SNOB = True
+    # config.PAD_TABLES = True
+
+    parser = HTML2Text(bodywidth=0)
     result = parser.handle(data)
 
     # Fix for html2text issue with empty first cells in tables

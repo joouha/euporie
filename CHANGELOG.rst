@@ -9,6 +9,11 @@ Notable changes to this project will be documented in this file.
 Upcoming
 ********
 
+Fixed
+=====
+
+- Prevent wide tables from wrapping with :py:mod:`html2text` renderer
+
 ----
 
 *********************
