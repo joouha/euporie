@@ -402,7 +402,7 @@ class Markdown:
 
                 # If there is a special method for rendering the block, use it
 
-                # Table require a lot of care
+                # Tables require a lot of care
                 if token.tag == "table":
                     ft += self.render_table(
                         tokens[i : i + tokens_in_block + 1],
@@ -580,7 +580,9 @@ class Markdown:
 
         # Adjust widths and potentially re-render cells
         # Reduce biggest cells until we fit in width
-        while sum(col_widths) + 3 * (len(col_widths) - 1) + 4 > width:
+        while sum(col_widths) + 3 * (len(col_widths) - 1) + 4 > max(
+            width, len(col_widths) * 7 + 2
+        ):
             idxmax = max(enumerate(col_widths), key=lambda x: x[1])[0]
             col_widths[idxmax] -= 1
         # Re-render changed cells
