@@ -13,6 +13,7 @@ Added
 =====
 
 - Add ability to copy cell output
+- Allow colour-depth to be manually configured
 
 Fixed
 =====

@@ -95,7 +95,6 @@ All available configuration options are listed below:
 
 :flags: :option:`--log-file`
 :environment variable: :envvar:`EUPORIE_LOG_FILE`
-:default: ``''``
 :type: :keyword:`string`
 :description: File path for logs
 
@@ -106,7 +105,6 @@ All available configuration options are listed below:
 
 :flags: :option:`--debug`
 :environment variable: :envvar:`EUPORIE_DEBUG`
-:default: ``False``
 :type: :keyword:`boolean`
 :description: Include debug output in logs
 
@@ -116,7 +114,6 @@ All available configuration options are listed below:
 
 :flags: :option:`--dump`
 :environment variable: :envvar:`EUPORIE_DUMP`
-:default: ``False``
 :type: :keyword:`boolean`
 :description: Output formatted file to display or file
 
@@ -138,7 +135,6 @@ All available configuration options are listed below:
 
 :flags: :option:`--page`
 :environment variable: :envvar:`EUPORIE_PAGE`
-:default: ``False``
 :type: :keyword:`boolean`
 :description: Pass output to pager
 
@@ -148,7 +144,6 @@ All available configuration options are listed below:
 
 :flags: :option:`--run`
 :environment variable: :envvar:`EUPORIE_RUN`
-:default: ``False``
 :type: :keyword:`boolean`
 :description: Run the notebook when loaded
 
@@ -159,7 +154,6 @@ All available configuration options are listed below:
 
 :flags: :option:`--tmux-graphics`
 :environment variable: :envvar:`EUPORIE_TMUX_GRAPHICS`
-:default: ``False``
 :type: :keyword:`boolean`
 :description: Enable terminal graphics in tmux (experimental)
 
@@ -176,7 +170,6 @@ All available configuration options are listed below:
 
 :flags: :option:`--terminal-polling-interval`
 :environment variable: :envvar:`EUPORIE_TERMINAL_POLLING_INTERVAL`
-:default: ``0``
 :type: :keyword:`integer`
 :description: Time between terminal colour queries
 
@@ -188,7 +181,6 @@ All available configuration options are listed below:
 
 :flags: :option:`--edit-mode`
 :environment variable: :envvar:`EUPORIE_EDIT_MODE`
-:default: ``'micro'``
 :type: :keyword:`string`
 :options: [``'micro'``, ``'emacs'``, ``'vi'``]
 :description: Key-binding mode for text editing
@@ -199,7 +191,6 @@ All available configuration options are listed below:
 
 :flags: :option:`--tab-size`
 :environment variable: :envvar:`EUPORIE_TAB_SIZE`
-:default: ``4``
 :type: :keyword:`integer`
 :description: Spaces per indentation level
 
@@ -209,7 +200,6 @@ All available configuration options are listed below:
 
 :flags: :option:`--run-after-external-edit`
 :environment variable: :envvar:`EUPORIE_RUN_AFTER_EXTERNAL_EDIT`
-:default: ``False``
 :type: :keyword:`boolean`
 :description: Run cells after editing externally
 
@@ -219,7 +209,6 @@ All available configuration options are listed below:
 
 :flags: :option:`--format-black`
 :environment variable: :envvar:`EUPORIE_FORMAT_BLACK`
-:default: ``True``
 :type: :keyword:`boolean`
 :description: Use black when re-formatting code cells
 
@@ -229,7 +218,6 @@ All available configuration options are listed below:
 
 :flags: :option:`--format-isort`
 :environment variable: :envvar:`EUPORIE_FORMAT_ISORT`
-:default: ``True``
 :type: :keyword:`boolean`
 :description: Use isort when re-formatting code cells
 
@@ -239,7 +227,6 @@ All available configuration options are listed below:
 
 :flags: :option:`--format-ssort`
 :environment variable: :envvar:`EUPORIE_FORMAT_SSORT`
-:default: ``True``
 :type: :keyword:`boolean`
 :description: Use ssort when re-formatting code cells
 
@@ -249,7 +236,6 @@ All available configuration options are listed below:
 
 :flags: :option:`--autoformat`
 :environment variable: :envvar:`EUPORIE_AUTOFORMAT`
-:default: ``False``
 :type: :keyword:`boolean`
 :description: Automatically re-format code cells when run
 
@@ -259,7 +245,6 @@ All available configuration options are listed below:
 
 :flags: :option:`--autocomplete`
 :environment variable: :envvar:`EUPORIE_AUTOCOMPLETE`
-:default: ``False``
 :type: :keyword:`boolean`
 :description: Provide completions suggestions automatically
 
@@ -269,7 +254,6 @@ All available configuration options are listed below:
 
 :flags: :option:`--autosuggest`
 :environment variable: :envvar:`EUPORIE_AUTOSUGGEST`
-:default: ``True``
 :type: :keyword:`boolean`
 :description: Provide line completion suggestions
 
@@ -279,7 +263,6 @@ All available configuration options are listed below:
 
 :flags: :option:`--autoinspect`
 :environment variable: :envvar:`EUPORIE_AUTOINSPECT`
-:default: ``False``
 :type: :keyword:`boolean`
 :description: Display contextual help automatically
 
@@ -289,7 +272,6 @@ All available configuration options are listed below:
 
 :flags: :option:`--expand`
 :environment variable: :envvar:`EUPORIE_EXPAND`
-:default: ``False``
 :type: :keyword:`boolean`
 :description: Use the full width to display notebooks
 
@@ -299,7 +281,6 @@ All available configuration options are listed below:
 
 :flags: :option:`--max-notebook-width`
 :environment variable: :envvar:`EUPORIE_MAX_NOTEBOOK_WIDTH`
-:default: ``120``
 :type: :keyword:`integer`
 :description: Maximum width of notebooks
 
@@ -309,7 +290,6 @@ All available configuration options are listed below:
 
 :flags: :option:`--show-status-bar`
 :environment variable: :envvar:`EUPORIE_SHOW_STATUS_BAR`
-:default: ``True``
 :type: :keyword:`boolean`
 :description: Show the status bar
 
@@ -319,7 +299,6 @@ All available configuration options are listed below:
 
 :flags: :option:`--color-scheme`
 :environment variable: :envvar:`EUPORIE_COLOR_SCHEME`
-:default: ``'default'``
 :type: :keyword:`string`
 :options: [``'default'``, ``'inverse'``, ``'light'``, ``'dark'``]
 :description: The color scheme to use
@@ -332,7 +311,6 @@ All available configuration options are listed below:
 
 :flags: :option:`--background-pattern` or :option:`--bg-pattern`
 :environment variable: :envvar:`EUPORIE_BACKGROUND_PATTERN`
-:default: ``2``
 :type: :keyword:`integer`
 :options: [``0``, ``1``, ``2``, ``3``, ``4``, ``5``]
 :description: The background pattern to use
@@ -344,7 +322,6 @@ All available configuration options are listed below:
 
 :flags: :option:`--background-character` or :option:`--bg-char`
 :environment variable: :envvar:`EUPORIE_BACKGROUND_CHARACTER`
-:default: ``'·'``
 :type: :keyword:`string`
 :description: Character for background pattern
 
@@ -356,7 +333,6 @@ All available configuration options are listed below:
 
 :flags: :option:`--background-color` or :option:`--bg-color`
 :environment variable: :envvar:`EUPORIE_BACKGROUND_COLOR`
-:default: ``''``
 :type: :keyword:`string`
 :description: Color for background pattern
 
@@ -366,7 +342,6 @@ All available configuration options are listed below:
 
 :flags: :option:`--show-cell-borders`
 :environment variable: :envvar:`EUPORIE_SHOW_CELL_BORDERS`
-:default: ``False``
 :type: :keyword:`boolean`
 :description: Show or hide cell borders.
 
@@ -376,7 +351,6 @@ All available configuration options are listed below:
 
 :flags: :option:`--line-numbers`
 :environment variable: :envvar:`EUPORIE_LINE_NUMBERS`
-:default: ``True``
 :type: :keyword:`boolean`
 :description: Show or hide line numbers
 
@@ -386,11 +360,22 @@ All available configuration options are listed below:
 
 :flags: :option:`--syntax-theme`
 :environment variable: :envvar:`EUPORIE_SYNTAX_THEME`
-:default: ``'default'``
 :type: :keyword:`string`
 :description: Syntax highlighting theme
 
    The name of the pygments style to use for syntax highlighting.
+
+.. option:: color_depth
+
+:flags: :option:`--color-depth`
+:environment variable: :envvar:`EUPORIE_COLOR_DEPTH`
+:type: :keyword:`integer`
+:options: [``1``, ``4``, ``8``, ``24``]
+:description: The color scheme to use
+
+   The number of bits to use to represent colors displayable on the screen.
+   If set to None, the supported color depth of the terminal will be detected
+   automatically.
 
 .. option:: files
 

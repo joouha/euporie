@@ -105,7 +105,6 @@ CONFIG_PARAMS: "dict[str, dict]" = {
         "help": "File path for logs",
         "schema_": {
             "type": "string",
-            "default": "",
         },
         "description_": """
             When set to a file path, the log output will be written to the given path.
@@ -117,9 +116,9 @@ CONFIG_PARAMS: "dict[str, dict]" = {
         "action": BooleanOptionalAction,
         "type": bool,
         "help": "Include debug output in logs",
+        "default": False,
         "schema_": {
             "type": "boolean",
-            "default": False,
         },
         "description_": """
             When set, logging events at the debug level are emitted.
@@ -130,9 +129,9 @@ CONFIG_PARAMS: "dict[str, dict]" = {
         "action": BooleanOptionalAction,
         "type": bool,
         "help": "Output formatted file to display or file",
+        "default": False,
         "schema_": {
             "type": "boolean",
-            "default": False,
         },
         "description_": """
             When set, the formatted output will be written to the the output file path
@@ -145,9 +144,9 @@ CONFIG_PARAMS: "dict[str, dict]" = {
         "const": "-",
         "type": Path,
         "help": "Output path when dumping file",
+        "default": None,
         "schema_": {
             "type": "string",
-            "default": None,
         },
         "description_": """
             When set to a file path, the formatted output will be written to the
@@ -160,9 +159,9 @@ CONFIG_PARAMS: "dict[str, dict]" = {
         "type": bool,
         "action": BooleanOptionalAction,
         "help": "Pass output to pager",
+        "default": False,
         "schema_": {
             "type": "boolean",
-            "default": False,
         },
         "description_": """
             Whether to pipe output to the system pager when using ``--dump``.
@@ -173,9 +172,9 @@ CONFIG_PARAMS: "dict[str, dict]" = {
         "action": BooleanOptionalAction,
         "type": bool,
         "help": "Run the notebook when loaded",
+        "default": False,
         "schema_": {
             "type": "boolean",
-            "default": False,
         },
         "description_": """
         If set, notebooks will be run automatically when opened, or if dumping
@@ -187,9 +186,9 @@ CONFIG_PARAMS: "dict[str, dict]" = {
         "action": BooleanOptionalAction,
         "type": bool,
         "help": "Enable terminal graphics in tmux (experimental)",
+        "default": False,
         "schema_": {
             "type": "boolean",
-            "default": False,
         },
         "description_": """
         If set, terminal graphics will be used if :program:`tmux` is running by
@@ -206,9 +205,9 @@ CONFIG_PARAMS: "dict[str, dict]" = {
         "flags_": ["--terminal-polling-interval"],
         "type": int,
         "help": "Time between terminal colour queries",
+        "default": 0,
         "schema_": {
             "type": "integer",
-            "default": 0,
             "min": 0,
         },
         "description_": """
@@ -222,9 +221,9 @@ CONFIG_PARAMS: "dict[str, dict]" = {
         "type": str,
         "choices": ["micro", "emacs", "vi"],
         "help": "Key-binding mode for text editing",
+        "default": "micro",
         "schema_": {
             "type": "string",
-            "default": "micro",
         },
         "description_": """
             Key binding mode to use when editing cells.
@@ -234,10 +233,10 @@ CONFIG_PARAMS: "dict[str, dict]" = {
         "flags_": ["--tab-size"],
         "type": int,
         "help": "Spaces per indentation level",
+        "default": 4,
         "schema_": {
             "type": "integer",
             "minimum": 1,
-            "default": 4,
         },
         "description_": """
             The number of spaces to use per indentation level. Should be set to 4.
@@ -247,9 +246,9 @@ CONFIG_PARAMS: "dict[str, dict]" = {
         "flags_": ["--run-after-external-edit"],
         "type": bool,
         "help": "Run cells after editing externally",
+        "default": False,
         "schema_": {
             "type": "boolean",
-            "default": False,
         },
         "description_": """
             Whether to execute a cell immediately after editing in `$EDITOR`.
@@ -260,9 +259,9 @@ CONFIG_PARAMS: "dict[str, dict]" = {
         "action": BooleanOptionalAction,
         "type": bool,
         "help": "Use black when re-formatting code cells",
+        "default": False,
         "schema_": {
             "type": "boolean",
-            "default": True,
         },
         "description_": """
             Whether to use :py:mod:`black` when reformatting code cells.
@@ -273,9 +272,9 @@ CONFIG_PARAMS: "dict[str, dict]" = {
         "action": BooleanOptionalAction,
         "type": bool,
         "help": "Use isort when re-formatting code cells",
+        "default": False,
         "schema_": {
             "type": "boolean",
-            "default": True,
         },
         "description_": """
             Whether to use :py:mod:`isort` when reformatting code cells.
@@ -286,9 +285,9 @@ CONFIG_PARAMS: "dict[str, dict]" = {
         "action": BooleanOptionalAction,
         "type": bool,
         "help": "Use ssort when re-formatting code cells",
+        "default": False,
         "schema_": {
             "type": "boolean",
-            "default": True,
         },
         "description_": """
             Whether to use :py:mod:`ssort` when reformatting code cells.
@@ -299,9 +298,9 @@ CONFIG_PARAMS: "dict[str, dict]" = {
         "action": BooleanOptionalAction,
         "type": bool,
         "help": "Automatically re-format code cells when run",
+        "default": False,
         "schema_": {
             "type": "boolean",
-            "default": False,
         },
         "description_": """
             Whether to automatically reformat code cells before they are run.
@@ -312,9 +311,9 @@ CONFIG_PARAMS: "dict[str, dict]" = {
         "action": BooleanOptionalAction,
         "type": bool,
         "help": "Provide completions suggestions automatically",
+        "default": False,
         "schema_": {
             "type": "boolean",
-            "default": False,
         },
         "description_": """
             Whether to automatically suggestion completions while typing in code cells.
@@ -325,9 +324,9 @@ CONFIG_PARAMS: "dict[str, dict]" = {
         "action": BooleanOptionalAction,
         "type": bool,
         "help": "Provide line completion suggestions",
+        "default": True,
         "schema_": {
             "type": "boolean",
-            "default": True,
         },
         "description_": """
             Whether to automatically suggestion line content while typing in code cells.
@@ -338,9 +337,9 @@ CONFIG_PARAMS: "dict[str, dict]" = {
         "action": BooleanOptionalAction,
         "type": bool,
         "help": "Display contextual help automatically",
+        "default": False,
         "schema_": {
             "type": "boolean",
-            "default": False,
         },
         "description_": """
             Whether to automatically display contextual help when navigating through code cells.
@@ -351,9 +350,9 @@ CONFIG_PARAMS: "dict[str, dict]" = {
         "action": BooleanOptionalAction,
         "type": bool,
         "help": "Use the full width to display notebooks",
+        "default": False,
         "schema_": {
             "type": "boolean",
-            "default": False,
         },
         "description_": """
             Whether the notebook page should expand to fill the available width
@@ -363,10 +362,10 @@ CONFIG_PARAMS: "dict[str, dict]" = {
         "flags_": ["--max-notebook-width"],
         "type": int,
         "help": "Maximum width of notebooks",
+        "default": 120,
         "schema_": {
             "type": "integer",
             "minimum": 1,
-            "default": 120,
         },
         "description_": """
             The maximum width at which to display a notebook.
@@ -377,9 +376,9 @@ CONFIG_PARAMS: "dict[str, dict]" = {
         "action": BooleanOptionalAction,
         "type": bool,
         "help": "Show the status bar",
+        "default": True,
         "schema_": {
             "type": "boolean",
-            "default": True,
         },
         "description_": """
             Whether the status bar should be shown at the bottom of the screen.
@@ -390,9 +389,9 @@ CONFIG_PARAMS: "dict[str, dict]" = {
         "type": str,
         "choices": ["default", "inverse", "light", "dark"],
         "help": "The color scheme to use",
+        "default": "default",
         "schema_": {
             "type": "string",
-            "default": "default",
         },
         "description_": """
             The color scheme to use: `auto` means euporie will try to use your
@@ -403,13 +402,13 @@ CONFIG_PARAMS: "dict[str, dict]" = {
     "background_pattern": {
         "flags_": ["--background-pattern", "--bg-pattern"],
         "type": int,
-        "choices": range(6),
+        "choices": list(range(6)),
         "help": "The background pattern to use",
+        "default": 2,
         "schema_": {
             "type": "integer",
             "minimum": 0,
             "maximum": 5,
-            "default": 2,
         },
         "description_": """
             The background pattern to use when the notebook is narrower than the
@@ -420,11 +419,10 @@ CONFIG_PARAMS: "dict[str, dict]" = {
         "flags_": ["--background-character", "--bg-char"],
         "type": str,
         "help": "Character for background pattern",
-        # "choices": ,
+        "default": "·",
         "schema_": {
             "type": "string",
             "maxLength": 1,
-            "default": "·",
         },
         "description_": """
             The character to use when drawing the background pattern.
@@ -436,10 +434,10 @@ CONFIG_PARAMS: "dict[str, dict]" = {
         "flags_": ["--background-color", "--bg-color"],
         "type": str,
         "help": "Color for background pattern",
+        "default": "",
         "schema_": {
             "type": "string",
             "maxLength": 7,
-            "default": "",
         },
         "description_": """
             The color to use for the background pattern.
@@ -450,9 +448,9 @@ CONFIG_PARAMS: "dict[str, dict]" = {
         "action": BooleanOptionalAction,
         "type": bool,
         "help": "Show or hide cell borders.",
+        "default": False,
         "schema_": {
             "type": "boolean",
-            "default": False,
         },
         "description_": """
             Whether cell borders should be drawn for unselected cells.
@@ -463,9 +461,9 @@ CONFIG_PARAMS: "dict[str, dict]" = {
         "action": BooleanOptionalAction,
         "type": bool,
         "help": "Show or hide line numbers",
+        "default": True,
         "schema_": {
             "type": "boolean",
-            "default": True,
         },
         "description_": """
             Whether line numbers are shown by default.
@@ -477,13 +475,26 @@ CONFIG_PARAMS: "dict[str, dict]" = {
         # Do not want to print all theme names in --help screen as it looks messy
         # "choices": list(get_all_styles()),
         "help": "Syntax highlighting theme",
+        "default": "default",
         "schema_": {
             "type": "string",
-            "pattern": f"({'|'.join(get_all_styles())})",
-            "default": "default",
+            "enum": list(get_all_styles()),
         },
         "description_": """
             The name of the pygments style to use for syntax highlighting.
+        """,
+    },
+    "color_depth": {
+        "flags_": ["--color-depth"],
+        "type": int,
+        "choices": [1, 4, 8, 24],
+        "default": None,
+        "help": "The color scheme to use",
+        "schema_": {"type": "integer"},
+        "description_": """
+            The number of bits to use to represent colors displayable on the screen.
+            If set to None, the supported color depth of the terminal will be detected
+            automatically.
         """,
     },
     "files": {
@@ -514,11 +525,7 @@ CONFIG_SCHEMA: "dict" = {
     "properties": {
         name: {
             "description": param.get("help"),
-            **(
-                {"pattern": f"({'|'.join(choices)})"}
-                if (choices := param.get("choices")) and param.get("type") == str
-                else {}
-            ),
+            **({"enum": choices} if (choices := param.get("choices", [])) else {}),
             **({"default": default} if (default := param.get("default")) else {}),
             **param["schema_"],
         }
@@ -538,10 +545,7 @@ class Config:
     valid_user: "bool"
 
     conf_file_name = "config.json"
-    defaults = {
-        name: param.get("schema_", {}).get("default")
-        for name, param in CONFIG_PARAMS.items()
-    }
+    defaults = {name: param.get("default") for name, param in CONFIG_PARAMS.items()}
 
     def __init__(self):
         """Ininitate the Configuration object."""

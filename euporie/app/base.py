@@ -30,6 +30,7 @@ from prompt_toolkit.key_binding.key_bindings import (
 )
 from prompt_toolkit.layout import Layout
 from prompt_toolkit.layout.containers import FloatContainer, Window, to_container
+from prompt_toolkit.output import ColorDepth
 from prompt_toolkit.output.defaults import create_output
 from prompt_toolkit.styles import (
     BaseStyle,
@@ -83,6 +84,14 @@ if TYPE_CHECKING:
     ]
 
 log = logging.getLogger(__name__)
+
+
+_COLOR_DEPTHS = {
+    1: ColorDepth.DEPTH_1_BIT,
+    4: ColorDepth.DEPTH_4_BIT,
+    8: ColorDepth.DEPTH_8_BIT,
+    24: ColorDepth.DEPTH_24_BIT,
+}
 
 
 class EuporieApp(Application):
@@ -156,7 +165,9 @@ class EuporieApp(Application):
                     self.term_info.send_all()
                     await asyncio.sleep(0.1)
                 # Load the colour depth of the renderer
-                self._color_depth = self.term_info.depth_of_color.value
+                self._color_depth = _COLOR_DEPTHS.get(
+                    config.color_depth, self.term_info.depth_of_color.value
+                )
                 # Set the application's style
                 self.update_style()
                 # Load the layout
