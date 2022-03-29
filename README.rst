@@ -1,4 +1,7 @@
-.. image:: https://user-images.githubusercontent.com/12154190/159142921-77e710d8-823a-46d0-917a-8703048a43b7.svg
+|logo|
+
+.. |logo| image:: https://user-images.githubusercontent.com/12154190/160670889-c6fc4cd8-413d-49f0-b105-9c0e03117032.svg
+   :alt: <Logo>
 
 #######
 euporie
