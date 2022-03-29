@@ -18,6 +18,7 @@ Added
 Fixed
 =====
 
+- Prevent exception when navigating to an empty cell in edit mode
 - Prevent wide tables from wrapping with :py:mod:`html2text` renderer
 
 ----

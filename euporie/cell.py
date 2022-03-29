@@ -741,8 +741,8 @@ class InteractiveCell(Cell):
                 to_focus = self.input_box.window
                 self.rendered = False
             if position is not None:
-                self.input_box.buffer.cursor_position = position % len(
-                    self.input_box.buffer.text
+                self.input_box.buffer.cursor_position = position % (
+                    len(self.input_box.buffer.text) or 1
                 )
         else:
             to_focus = self.nb.cell.control
