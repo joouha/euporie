@@ -152,6 +152,9 @@ class CellInputTextArea(TextArea):
         elif self.cell.nb.pager_visible():
             self.cell.nb.hide_pager()
 
+        # Tell the scrolling container to scroll the cursor into view on the next render
+        self.cell.nb.page.scroll_to_cursor = True
+
 
 class CellStdinTextArea(TextArea):
     """A modal text area for user input."""

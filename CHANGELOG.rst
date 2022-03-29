@@ -11,6 +11,7 @@ Upcoming
 Added
 =====
 
+- Notebook will scroll so the cursor is always visible when in edit mode
 - Add ability to copy cell output
 - Allow colour-depth to be manually configured
 - Allow scroll bar visibility to be toggled

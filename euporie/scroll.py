@@ -233,6 +233,8 @@ class ScrollingContainer(Container):
         self.width = to_dimension(width).preferred
         self.style = style
 
+        self.scroll_to_cursor = False
+
     def reset(self) -> "None":
         """Reset the state of this container and all the children."""
         for meta in self.child_render_infos.values():
@@ -443,6 +445,27 @@ class ScrollingContainer(Container):
         ):
             for child_render_info in self.child_render_infos.values():
                 child_render_info.refresh = True
+
+        # Scroll to make the cursor visible
+        if self.scroll_to_cursor:
+            selected_child_render_info = self._selected_child_render_infos[0]
+            selected_child_render_info.render(
+                available_width=available_width,
+                available_height=available_height,
+                style=f"{parent_style} {self.style}",
+            )
+            current_window = get_app().layout.current_window
+            cursor_position = selected_child_render_info.screen.cursor_positions.get(
+                current_window
+            )
+            if cursor_position:
+                cursor_row = self.selected_child_position + cursor_position.y
+                if cursor_row < 0:
+                    self.selected_child_position -= cursor_row
+                elif available_height <= cursor_row:
+                    self.selected_child_position -= cursor_row - available_height + 1
+            # Set this to false again, allowing us to scroll the cursor out of view
+            self.scroll_to_cursor = False
 
         # Blit first selected child and those below it that are on screen
         line = self.selected_child_position
