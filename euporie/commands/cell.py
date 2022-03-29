@@ -61,6 +61,5 @@ def edit_next_cell() -> "None":
     if nb is not None:
         new_index = nb.cell.index + 1
         cells = nb.rendered_cells()
-        log.debug(new_index)
         if 0 <= new_index < len(cells):
             cells[new_index].select(position=0)
