@@ -34,6 +34,7 @@ euporie.commands.config
       set_edit_mode
       show_cell_borders
       show_line_numbers
+      show_scroll_bar
       show_status_bar
       switch_background_pattern
       tmux_terminal_graphics

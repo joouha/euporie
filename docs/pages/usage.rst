@@ -136,6 +136,10 @@ Options
 
    Show the status bar
 
+.. option:: --show-scroll-bar, --no-show-scroll-bar
+
+   Show the scroll bar
+
 .. option:: --color-scheme {default,inverse,light,dark}
 
    The color scheme to use
@@ -163,6 +167,10 @@ Options
 .. option:: --syntax-theme <str>
 
    Syntax highlighting theme
+
+.. option:: --color-depth {1,4,8,24}
+
+   The color scheme to use
 
 .. option::
 

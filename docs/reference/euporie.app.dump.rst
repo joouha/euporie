@@ -29,3 +29,4 @@ euporie.app.dump
       :template: class.tpl.rst
 
       DumpApp
+      PseudoTTY

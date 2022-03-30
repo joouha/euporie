@@ -8,6 +8,12 @@ Notable changes to this project will be documented in this file.
 Upcoming
 ********
 
+----
+
+*********************
+v1.4.3 - (2022-03-30)
+*********************
+
 Added
 =====
 

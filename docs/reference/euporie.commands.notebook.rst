@@ -30,6 +30,7 @@ euporie.commands.notebook
       cells_to_raw
       change_kernel
       copy_cells
+      copy_outputs
       cut_cells
       delete_cells
       enter_cell_edit_mode
