@@ -13,6 +13,12 @@ Added
 
 - Theme more elements based on current terminal theme
 
+Fixed
+=====
+
+- Prevent an underscore being printed when the app is launched
+- Only send terminal queries if the terminal supports it
+
 ----
 
 *********************

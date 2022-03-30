@@ -111,13 +111,14 @@ class TerminalQuery:
         self.waiting = False
         self._value: "Optional[Any]" = None
         self.event = Event(self)
-        if self.output.stdout and (
-            not self.output.stdout.isatty()
+        self.queryable = self.output.stdout and (
+            self.output.stdout.isatty()
             # Don't send escape codes if this is not a real TTY.
             # We create pseudo-ttys to get colored output, but don't want
             # any termianl queries to be sent
-            or getattr(self.output.stdout, "fake_tty", False)
-        ):
+            and not getattr(self.output.stdout, "fake_tty", False)
+        )
+        if not self.queryable:
             self.cmd = ""
 
     def verify(self, data: "str") -> "Optional[Any]":
@@ -146,8 +147,10 @@ class TerminalQuery:
 
     def send(self) -> "None":
         """Sends the terminal query command to the output."""
-        if self.cmd and not self.waiting:
-            log.debug("Sending query %s", self.cmd.__repr__())
+        if self.queryable and self.cmd and not self.waiting:
+            log.debug(
+                "Sending query %s for %s", self.cmd.__repr__(), self.__class__.__name__
+            )
             self.output.write_raw(self.cmd)
             self.output.flush()
             self.waiting = True
@@ -271,7 +274,6 @@ class ItermGraphicsStatus(TerminalQuery):
 
     default = False
     cache = True
-    cmd = "_"
 
     def __init__(self, output: "Output") -> "None":
         """Detect the iTerm graphics support based on environment variables."""
@@ -280,7 +282,7 @@ class ItermGraphicsStatus(TerminalQuery):
         if (
             os.environ.get("TERM_PROGRAM", "") in {"WezTerm", "iTerm.app"}
             or os.environ.get("MLTERM") is not None
-        ) and self.cmd:
+        ) and self.queryable:
             self._value = True
 
 
@@ -294,6 +296,7 @@ class DepthOfColor(TerminalQuery):
 
     def __init__(self, output: "Output") -> "None":
         """Detect the terminal's colour support based on environment variables."""
+        super().__init__(output)
         self._value: "Optional[ColorDepth]" = None
         if os.environ.get("NO_COLOR", "") or os.environ.get("TERM", "") == "dumb":
             self._value = ColorDepth.DEPTH_1_BIT
