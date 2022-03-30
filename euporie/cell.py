@@ -111,7 +111,7 @@ class CellInputTextArea(TextArea):
         kwargs["auto_suggest"] = ConditionalAutoSuggestAsync(
             cell.nb.suggester, filter=cell.is_code & cell.autosuggest
         )
-        kwargs["style"] = "class:cell.input"
+        kwargs["style"] = "class:cell.input.box"
         kwargs["accept_handler"] = self.cell.run_or_render
         kwargs["input_processors"] = [HighlightMatchingBracketProcessor()]
 

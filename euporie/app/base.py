@@ -429,13 +429,11 @@ class EuporieApp(Application):
                 "bg": self.term_info.background_color.value,
             },
         )
-        self.color_palette = color_series(**base_colors, n=10)
+        self.color_palette = color_series(**base_colors, n=20)
 
         # Actually use default colors if in default mode
         # This is needed for transparent terminals and the like
         # We retain the detected colours as we still need them
-        self.color_palette["fg"][-1] = self.color_palette["fg"][0]
-        self.color_palette["bg"][-1] = self.color_palette["bg"][0]
         if config.color_scheme == "default":
             self.color_palette["fg"][0] = "default"
             self.color_palette["bg"][0] = "default"
@@ -463,7 +461,7 @@ class EuporieApp(Application):
             # Logo
             "logo": "fg:#ff0000",
             # Pattern
-            "pattern": f"fg:{config.background_color or cp['bg'][1]}",
+            "pattern": f"fg:{config.background_color or cp['fg'][14]}",
             # Chrome
             "chrome": f"fg:{cp['bg'][1]} bg:{cp['bg'][1]}",
             # Statusbar
@@ -471,15 +469,15 @@ class EuporieApp(Application):
             "status.field": f"fg:{cp['fg'][2]} bg:{cp['bg'][2]}",
             # Menus & Menu bar
             "menu-bar": f"fg:{cp['fg'][1]} bg:{cp['bg'][1]}",
-            "menu-bar.disabled-item": f"fg:{cp['bg'][5]}",
+            "menu-bar.disabled-item": f"fg:{cp['bg'][3]}",
             "menu-bar.selected-item": "reverse",
-            "menu-bar.shortcut": f"fg:{cp['fg'][9]}",
+            "menu-bar.shortcut": f"fg:{cp['fg'][5]}",
             "menu-bar.selected-item menu-bar.shortcut": (
-                f"fg:{cp['fg'][1]} bg:{cp['bg'][5]}"
+                f"fg:{cp['fg'][1]} bg:{cp['bg'][4]}"
             ),
-            "menu-bar.disabled-item menu-bar.shortcut": f"fg:{cp['bg'][5]}",
+            "menu-bar.disabled-item menu-bar.shortcut": f"fg:{cp['bg'][3]}",
             "menu": f"bg:{cp['bg'][1]} fg:{cp['fg'][1]}",
-            "menu-border": f"bg:{cp['bg'][1]} fg:{cp['fg'][9]}",
+            "menu-border": f"fg:{cp['bg'][6]} bg:{cp['bg'][1]}",
             # Buffer
             "line-number": f"fg:{cp['fg'][1]} bg:{cp['bg'][1]}",
             "line-number.current": "bold orange",
@@ -490,29 +488,28 @@ class EuporieApp(Application):
             "cell.border": f"fg:{cp['bg'][5]}",
             "cell.border.selected": "fg:#00afff",
             "cell.border.edit": "fg:#00ff00",
-            "cell.border.hidden": f"fg:{cp['bg'][-1]} hidden",
-            "cell.input": "fg:default bg:default",
+            "cell.input.box": f"fg:default bg:{cp['bg'][-2]}",
             "cell.output": "fg:default bg:default",
             "cell.input.prompt": "fg:blue",
             "cell.output.prompt": "fg:red",
             # Scrollbars
-            "scrollbar": f"fg:{cp['fg'][5]} bg:{cp['bg'][5]}",
-            "scrollbar.background": f"fg:{cp['fg'][5]} bg:{cp['bg'][5]}",
-            "scrollbar.arrow": f"fg:{cp['fg'][5]} bg:{cp['bg'][5]}",
+            "scrollbar": f"fg:{cp['bg'][15]} bg:{cp['bg'][5]}",
+            "scrollbar.background": f"fg:{cp['bg'][15]} bg:{cp['bg'][5]}",
+            "scrollbar.arrow": f"fg:{cp['bg'][15]} bg:{cp['bg'][5]}",
             "scrollbar.start": "",
-            "scrollbar.button": f"fg:{cp['fg'][5]} bg:{cp['fg'][5]}",
-            "scrollbar.end": f"fg:{cp['bg'][5]} bg:{cp['fg'][5]}",
+            "scrollbar.button": f"fg:{cp['bg'][15]} bg:{cp['bg'][15]}",
+            "scrollbar.end": f"fg:{cp['bg'][5]} bg:{cp['bg'][15]}",
             # Shadows
             "shadow": f"bg:{cp['bg'][9]}",
             "pager shadow": f"bg:{cp['bg'][9]}",
             "cell.input shadow": f"bg:{cp['bg'][9]}",
             "cell.output shadow": f"bg:{cp['bg'][9]}",
             # Dialogs
-            "dialog.body": f"fg:{cp['fg'][-1]} bg:{cp['bg'][4]}",
-            "dialog.body text-area": f"fg:{cp['fg'][-1]}",
-            "dialog.body scrollbar.button": f"fg:{cp['bg'][5]} bg:{cp['fg'][5]}",
+            "dialog.body": f"fg:{cp['fg']['base']} bg:{cp['bg'][4]}",
+            "dialog.body text-area": f"fg:{cp['fg']['base']}",
+            "dialog.body scrollbar.button": f"fg:{cp['bg'][5]} bg:{cp['bg'][15]}",
             # Horizontals rule
-            "hr": "fg:#666666",
+            "hr": "fg:ansired",
             # Completions menu
             "completion-menu.completion.keyword": "fg:#d700af",
             "completion-menu.completion.current.keyword": "fg:#fff bg:#d700ff",
@@ -548,7 +545,10 @@ class EuporieApp(Application):
             "pager": f"bg:{cp['bg'][1]}",
             "pager.border": f"fg:{cp['bg'][9]}",
             # Markdown
-            "md.code.inline": f"bg:{cp['bg'][4]}",
+            "md.code.inline": f"bg:{cp['bg'][3]}",
+            "md.code.block": f"bg:{cp['bg'][-4]}",
+            "md.code.block.border": f"fg:{cp['bg'][5]}",
+            "md.table.border": f"fg:{cp['bg'][8]}",
         }
 
         # Using a dynamic style has serious performance issues, so instead we update

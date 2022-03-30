@@ -39,7 +39,7 @@ def imagemagick_convert(
     if cols is not None:
         px, _ = get_app().term_info.cell_size_px
         cmd += ["-geometry", f"{int(cols * px)}"]
-    bg = bg or get_app().color_palette["bg"][-1]
+    bg = bg or get_app().color_palette["bg"]["base"]
     if bg is not None:
         cmd += ["-background", bg]
     cmd += ["-", f"{output_format}:-"]

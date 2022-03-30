@@ -29,7 +29,7 @@ def png_to_sixel_img2sixel(
     bg: "Optional[str]" = None,
 ) -> "str":
     """Converts PNG data to sixels :command:`img2sixel`."""
-    bg = bg or get_app().color_palette["bg"][-1]
+    bg = bg or get_app().color_palette["bg"]["base"]
     cmd: "list[Any]" = ["img2sixel"]
     if bg:
         cmd += [f"--bgcolor={bg}"]

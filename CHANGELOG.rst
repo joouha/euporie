@@ -8,6 +8,11 @@ Notable changes to this project will be documented in this file.
 Upcoming
 ********
 
+Added
+=====
+
+- Theme more elements based on current terminal theme
+
 ----
 
 *********************

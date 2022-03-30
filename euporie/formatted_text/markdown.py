@@ -211,7 +211,10 @@ def code(
         ft = strip(ft, left=False, right=True, char="\n")
         ft = lex(ft, lexer_name=token.info)
         ft = align(FormattedTextAlign.LEFT, ft, width - 4)
-        ft = add_border(ft, width, style="class:md.code.border", border=SquareBorder)
+        ft = add_border(
+            ft, width, style="class:md.code.block.border", border=SquareBorder
+        )
+        ft = apply_style(ft, style="class:md.code.block")
         ft.append(("", "\n\n"))
     else:
         ft = apply_style(ft, style="class:md.code.inline")

@@ -281,7 +281,7 @@ class CellOutput:
         )
 
         metadata = json.get("metadata", {})
-        fg_color = get_app().color_palette["fg"][-1]
+        fg_color = get_app().color_palette["fg"]["base"]
         bg_color = {"light": "#FFFFFF", "dark": "#000000"}.get(
             metadata.get("needs_background")
         )
