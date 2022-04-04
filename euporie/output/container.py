@@ -222,10 +222,58 @@ class GraphicWindow(Window):
 class OutputWindow(Window):
     """A window sub-class which holds a reference to a graphic float."""
 
+    content: "OutputControl"
+
     def __init__(self, *args: "Any", **kwargs: "Any") -> "None":
         """Initialise the window, creating an attribute to hold a float reference."""
         Window.__init__(self, *args, **kwargs)
         self.graphic_float: "Optional[Float]" = None
+
+    def _write_to_screen_at_index(
+        self,
+        screen: Screen,
+        mouse_handlers: MouseHandlers,
+        write_position: WritePosition,
+        parent_style: str,
+        erase_bg: bool,
+    ) -> None:
+        """Ensure the :attr:`horizontal_scroll` is recorded."""
+        super()._write_to_screen_at_index(
+            screen,
+            mouse_handlers,
+            write_position,
+            parent_style,
+            erase_bg,
+        )
+        if self.render_info:
+            setattr(self.render_info, "horizontal_scroll", self.horizontal_scroll)
+
+    def _scroll_right(self) -> None:
+        """Scroll window right."""
+        info = self.render_info
+        if info is None:
+            return
+        content_width = self.content.content_width
+        if self.horizontal_scroll < content_width - info.window_width:
+            if info.cursor_position.y <= info.configured_scroll_offsets.right:
+                self.content.move_cursor_right()
+
+            self.horizontal_scroll += 1
+
+    def _scroll_left(self) -> None:
+        """Scroll window left."""
+        info = self.render_info
+        if info is None:
+            return
+        horizontal_scroll = getattr(self.render_info, "horizontal_scroll")  # noqa B009
+        if horizontal_scroll > 0:
+            if (
+                info.cursor_position.x
+                >= info.window_width - 1 - info.configured_scroll_offsets.left
+            ):
+                self.content.move_cursor_left()
+
+            self.horizontal_scroll -= 1
 
 
 class CellOutput:

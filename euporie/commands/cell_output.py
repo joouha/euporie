@@ -11,6 +11,26 @@ from euporie.filters import cell_output_has_focus
 log = logging.getLogger(__name__)
 
 
+@add(keys=["left"], filter=cell_output_has_focus, group="cell-output")
+def scroll_left_cell_output() -> "None":
+    """Scroll the output up one line."""
+    from euporie.output.container import OutputWindow
+
+    window = get_app().layout.current_window
+    assert isinstance(window, OutputWindow)
+    window._scroll_left()
+
+
+@add(keys=["right"], filter=cell_output_has_focus, group="cell-output")
+def scroll_right_cell_output() -> "None":
+    """Scroll the output down one line."""
+    from euporie.output.container import OutputWindow
+
+    window = get_app().layout.current_window
+    assert isinstance(window, OutputWindow)
+    window._scroll_right()
+
+
 @add(keys=["up", "k"], filter=cell_output_has_focus, group="cell-output")
 def scroll_up_cell_output() -> "None":
     """Scroll the output up one line."""

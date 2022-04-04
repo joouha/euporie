@@ -10,7 +10,7 @@ from prompt_toolkit.cache import SimpleCache
 from prompt_toolkit.data_structures import Point
 from prompt_toolkit.filters import to_filter
 from prompt_toolkit.formatted_text.base import to_formatted_text
-from prompt_toolkit.formatted_text.utils import split_lines
+from prompt_toolkit.formatted_text.utils import fragment_list_width, split_lines
 from prompt_toolkit.layout.controls import GetLinePrefixCallable, UIContent, UIControl
 from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
 from prompt_toolkit.utils import Event
@@ -112,6 +112,16 @@ class OutputControl(UIControl):
         """Moves the cursor up one line."""
         x, y = self.cursor_position
         self.cursor_position = Point(x=x, y=max(0, y - 1))
+
+    def move_cursor_left(self) -> "None":
+        """Moves the cursor down one line."""
+        x, y = self.cursor_position
+        self.cursor_position = Point(x=max(0, x - 1), y=y)
+
+    def move_cursor_right(self) -> "None":
+        """Moves the cursor up one line."""
+        x, y = self.cursor_position
+        self.cursor_position = Point(x=x + 1, y=y)
 
     def is_focusable(self) -> "bool":
         """Determines if the current control is focusable."""
@@ -222,6 +232,11 @@ class OutputControl(UIControl):
         """Return the Window invalidate events."""
         # Whenever the cursor position changes, the UI has to be updated.
         yield self.on_cursor_position_changed
+
+    @property
+    def content_width(self) -> "int":
+        """Return the maximum line length of the content."""
+        return max(fragment_list_width(line) for line in self.rendered_lines)
 
 
 class FormattedOutputControl(OutputControl):
