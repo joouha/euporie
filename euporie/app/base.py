@@ -493,12 +493,12 @@ class EuporieApp(Application):
             "cell.input.prompt": "fg:blue",
             "cell.output.prompt": "fg:red",
             # Scrollbars
-            "scrollbar": f"fg:{cp['bg'][15]} bg:{cp['bg'][5]}",
-            "scrollbar.background": f"fg:{cp['bg'][15]} bg:{cp['bg'][5]}",
-            "scrollbar.arrow": f"fg:{cp['bg'][15]} bg:{cp['bg'][5]}",
+            "scrollbar": f"fg:{cp['bg'][15]} bg:{cp['bg'][3]}",
+            "scrollbar.background": f"fg:{cp['bg'][15]} bg:{cp['bg'][3]}",
+            "scrollbar.arrow": f"fg:{cp['bg'][15]} bg:{cp['bg'][3]}",
             "scrollbar.start": "",
             "scrollbar.button": f"fg:{cp['bg'][15]} bg:{cp['bg'][15]}",
-            "scrollbar.end": f"fg:{cp['bg'][5]} bg:{cp['bg'][15]}",
+            "scrollbar.end": f"fg:{cp['bg'][3]} bg:{cp['bg'][15]}",
             # Shadows
             "shadow": f"bg:{cp['bg'][9]}",
             "pager shadow": f"bg:{cp['bg'][9]}",
