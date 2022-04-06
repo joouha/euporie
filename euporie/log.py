@@ -20,6 +20,7 @@ from prompt_toolkit.styles import Style
 from prompt_toolkit.widgets import SearchToolbar
 
 from euporie.config import config
+from euporie.formatted_text.utils import indent, lex, wrap
 from euporie.style import LOG_STYLE
 from euporie.tab import Tab
 from euporie.widgets.formatted_text_area import FormattedTextArea
@@ -28,7 +29,7 @@ if TYPE_CHECKING:
     from types import TracebackType
     from typing import Any, Callable, Optional, TextIO
 
-__all__ = ["setup_logs", "QueueHandler", "LogView"]
+    from prompt_toolkit.formatted_text.base import StyleAndTextTuples
 
 log = logging.getLogger(__name__)
 
@@ -40,7 +41,10 @@ class FormattedTextHandler(logging.StreamHandler):
 
     formatter: "FtFormatter"
 
-    def __init__(self, *args: "Any", style: "Optional[Style]" = None, **kwargs: "Any"):
+    def __init__(
+        self, *args: "Any", style: "Optional[Style]" = None, **kwargs: "Any"
+    ) -> "None":
+        """Creates a new log handler instance."""
         super().__init__(*args, **kwargs)
         self.output = create_output(stdout=self.stream)
         self.style = style or Style(LOG_STYLE)
@@ -83,7 +87,7 @@ class QueueHandler(logging.Handler):
 
     def emit(self, record: "logging.LogRecord") -> "None":
         """Queue unformatted records, as they will be formatted when accessed."""
-        message = self.format(record)
+        message = self.formatter.ft_format(record)
         self.queue.append(message)
         for hook in self.hooks.values():
             if callable(hook):
@@ -118,9 +122,31 @@ class QueueHandler(logging.Handler):
 class FtFormatter(logging.Formatter):
     """Base class for formatted text logging formatter."""
 
+    def __init__(self, *args: "Any", **kwargs: "Any") -> "None":
+        """Creates a new formatter instance."""
+        super().__init__(*args, **kwargs)
+        self.datefmt = self.datefmt or "%Y-%m-%d %H:%M:%S"
+
+    def prepare(
+        self, record: "logging.LogRecord", width: "Optional[int]" = None
+    ) -> "logging.LogRecord":
+        """Format certain attributes on the log record."""
+        record.asctime = self.formatTime(record, self.datefmt)
+        record.message = record.getMessage()
+        # record.msg = self.formatMessage(record)
+        record.exc_text = ""
+        if record.exc_info and not record.exc_text:
+            record.exc_text = self.formatException(record.exc_info)
+        return record
+
+    def format_traceback(self, tb: "str") -> "StyleAndTextTuples":
+        """Formats a traceback string using pygments."""
+        return lex([("", tb)], "pytb")
+
     def ft_format(
         self, record: "logging.LogRecord", width: "Optional[int]" = None
     ) -> "FormattedText":
+        """Formats a log record as :py:class:`FormattedText`."""
         return FormattedText([])
 
 
@@ -131,62 +157,67 @@ class LogTabFormatter(FtFormatter):
         self, record: "logging.LogRecord", width: "Optional[int]" = None
     ) -> "FormattedText":
         """Formats a log record as formatted text."""
-        record.message = record.getMessage()
-        record.asctime = self.formatTime(record, self.datefmt)
-        message = self.formatMessage(record)
-
-        return FormattedText(
-            [
-                ("class:log.date", f"{record.asctime} "),
-                (f"class:log.level.{record.levelname}", f"{record.levelname:<7} "),
-                ("class:log.msg", message),
-                ("class:log.ref", f" {record.name}.{record.funcName}:{record.lineno}"),
-                ("", "\n"),
-            ]
-        )
+        record = self.prepare(record)
+        output = [
+            ("class:log.date", f"{record.asctime}"),
+            ("", " "),
+            (f"class:log.level.{record.levelname}", f"{record.levelname}"),
+            ("", " " * (10 - len(record.levelname))),
+            ("class:log.msg", record.message),
+            ("", " "),
+            ("class:log.ref", f"{record.name}.{record.funcName}:{record.lineno}"),
+            ("", "\n"),
+        ]
+        if record.exc_text:
+            output += self.format_traceback(record.exc_text) + [("", "\n")]
+        return FormattedText(output)
 
 
 class StdoutFormatter(FtFormatter):
-    datefmt = "%Y-%m-%d %H:%M:%S"
+    """A log formatter for formatting log entries for display on the standard output."""
 
     def __init__(self, *args: "Any", **kwargs: "Any") -> "None":
+        """Creates a new formatter instance."""
         super().__init__(*args, **kwargs)
         self.last_date: "Optional[str]" = None
 
     def ft_format(
         self, record: "logging.LogRecord", width: "Optional[int]" = None
     ) -> "FormattedText":
-
+        """Formats log records for display on the standard output."""
         if width is None:
             width = get_app_session().output.get_size()[1]
 
-        record.message = record.getMessage()
-        record.asctime = self.formatTime(record, self.datefmt)
-        message = self.formatMessage(record)
+        record = self.prepare(record)
         path_name = Path(record.pathname).name
 
-        date = f"{record.asctime} "
+        date = f"{record.asctime}"
         if date == self.last_date:
             date = " " * len(date)
         else:
             self.last_date = date
-        level = f"{record.levelname:>7} "
-        ref = f" {path_name}:{record.lineno}"
+        ref = f"{path_name}:{record.lineno}"
+
+        msg_pad = len(date) + 10
+        msg_pad_1st_line = msg_pad + 1 + len(ref)
 
         msg_lines = textwrap.wrap(
-            message,
+            record.message,
             width=width,
-            initial_indent=" " * (len(date) + len(level) + len(ref)),
-            subsequent_indent=" " * (len(date) + len(level)),
+            initial_indent=" " * msg_pad_1st_line,
+            subsequent_indent=" " * msg_pad,
         )
 
         output = [
             ("class:log.date", date),
-            (f"class:log.level.{record.levelname}", level),
+            ("", " " * (9 - len(record.levelname))),
+            (f"class:log.level.{record.levelname}", record.levelname),
+            ("", " "),
             (
                 "class:log.msg",
-                msg_lines[0].strip().ljust(width - (len(date) + len(level) + len(ref))),
+                msg_lines[0].strip().ljust(width - msg_pad_1st_line),
             ),
+            ("", " "),
             ("class:log.ref", ref),
         ]
         for line in msg_lines[1:]:
@@ -194,6 +225,14 @@ class StdoutFormatter(FtFormatter):
                 ("", "\n"),
                 ("class:log.msg", line),
             ]
+        if record.exc_text:
+            output += indent(
+                wrap(
+                    self.format_traceback(record.exc_text),
+                    width=width - msg_pad,
+                ),
+                margin=" " * msg_pad,
+            )
         return FormattedText(output)
 
 
@@ -213,11 +252,9 @@ def setup_logs() -> "None":
             },
             "stdout_format": {
                 "()": "euporie.log.StdoutFormatter",
-                "datefmt": "%Y-%m-%d %H:%M:%S",
             },
             "log_tab_format": {
                 "()": "euporie.log.LogTabFormatter",
-                "datefmt": "%Y-%m-%d %H:%M:%S",
             },
         },
         "handlers": {
@@ -322,12 +359,20 @@ class stdout_to_log:
     def __init__(
         self, log: "logging.Logger", output: "str" = "Literal['stdout','stderr']"
     ) -> "None":
+        """Creates a new instance of the capturing context manager.
+
+        Args:
+            log: The logger to send the output to
+            output: Whether to capture the standard output or the standard error
+
+        """
         self.log = log
         self.out = StringIO()
         self.output = output
         self._original: "Optional[TextIO]" = None
 
     def __enter__(self) -> "None":
+        """Hooks the standard output when entering the context manager."""
         if self.output == "stderr":
             self._original = sys.stderr
             sys.stderr = self.out
@@ -341,6 +386,7 @@ class stdout_to_log:
         exc_value: "Optional[BaseException]",
         exc_traceback: "Optional[TracebackType]",
     ) -> "None":
+        """Replaces the standard output, and logs the captured output."""
         assert self._original is not None
         if self.output == "stderr":
             sys.stderr = self._original
