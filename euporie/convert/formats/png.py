@@ -40,14 +40,14 @@ def latex_to_png_py_ipython(
 register(
     from_="latex",
     to="png",
-    filter_=commands_exist("dvipng") & have_modules("IPython"),
+    filter_=commands_exist("dvipng") & have_modules("IPython.lib.latextools"),
 )(partial(latex_to_png_py_ipython, "dvipng"))
 
 
 register(
     from_="latex",
     to="png",
-    filter_=have_modules("IPython", "matplotlib"),
+    filter_=have_modules("IPython.lib.latextools", "matplotlib"),
 )(partial(latex_to_png_py_ipython, "matplotlib"))
 
 

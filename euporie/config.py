@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING
 
 import jsonschema  # type: ignore
 from appdirs import user_config_dir  # type: ignore
-from pygments.styles import get_all_styles  # type: ignore
+from pygments.styles import STYLE_MAP as pygments_styles  # type: ignore
 
 from euporie import __app_name__, __copyright__, __strapline__, __version__
 
@@ -486,12 +486,11 @@ CONFIG_PARAMS: "dict[str, dict]" = {
         "flags_": ["--syntax-theme"],
         "type": str,
         # Do not want to print all theme names in --help screen as it looks messy
-        # "choices": list(get_all_styles()),
         "help": "Syntax highlighting theme",
         "default": "default",
         "schema_": {
             "type": "string",
-            "enum": list(get_all_styles()),
+            "enum": list(pygments_styles.keys()),
         },
         "description_": """
             The name of the pygments style to use for syntax highlighting.

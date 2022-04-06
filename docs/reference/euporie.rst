@@ -18,11 +18,9 @@ euporie
 
       euporie.app
       euporie.box
-      euporie.cell
       euporie.commands
       euporie.completion
       euporie.config
-      euporie.containers
       euporie.convert
       euporie.filters
       euporie.format
@@ -32,13 +30,9 @@ euporie
       euporie.keys
       euporie.log
       euporie.margins
-      euporie.notebook
-      euporie.output
-      euporie.palette
-      euporie.scroll
       euporie.style
       euporie.suggest
-      euporie.tab
+      euporie.tabs
       euporie.terminal
       euporie.url
       euporie.widgets

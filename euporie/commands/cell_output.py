@@ -14,7 +14,7 @@ log = logging.getLogger(__name__)
 @add(keys=["left"], filter=cell_output_has_focus, group="cell-output")
 def scroll_left_cell_output() -> "None":
     """Scroll the output up one line."""
-    from euporie.output.container import OutputWindow
+    from euporie.widgets.output.container import OutputWindow
 
     window = get_app().layout.current_window
     assert isinstance(window, OutputWindow)
@@ -24,7 +24,7 @@ def scroll_left_cell_output() -> "None":
 @add(keys=["right"], filter=cell_output_has_focus, group="cell-output")
 def scroll_right_cell_output() -> "None":
     """Scroll the output down one line."""
-    from euporie.output.container import OutputWindow
+    from euporie.widgets.output.container import OutputWindow
 
     window = get_app().layout.current_window
     assert isinstance(window, OutputWindow)
@@ -64,7 +64,7 @@ def page_down_cell_output() -> "None":
 @add(keys="home", filter=cell_output_has_focus, group="cell-output")
 def go_to_start_of_cell_output() -> "None":
     """Scroll the output to the top."""
-    from euporie.output.control import OutputControl
+    from euporie.widgets.output.control import OutputControl
 
     current_control = get_app().layout.current_control
     if isinstance(current_control, OutputControl):
@@ -74,7 +74,7 @@ def go_to_start_of_cell_output() -> "None":
 @add(keys="end", filter=cell_output_has_focus, group="cell-output")
 def go_to_end_of_cell_output() -> "None":
     """Scroll the output down one page."""
-    from euporie.output.control import OutputControl
+    from euporie.widgets.output.control import OutputControl
 
     layout = get_app().layout
     current_control = layout.current_control

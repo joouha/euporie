@@ -165,7 +165,7 @@ def html_to_ansi_py_htmlparser(
 @register(
     from_="latex",
     to="ansi",
-    filter_=have_modules("flatlatex"),
+    filter_=have_modules("flatlatex.latexfuntypes"),
 )
 def latex_to_ansi_py_flatlatex(
     data: "str",
@@ -192,7 +192,7 @@ def latex_to_ansi_py_pylatexenc(
     fg: "Optional[str]" = None,
     bg: "Optional[str]" = None,
 ) -> "str":
-    """Convert LaTeX to ANSI using :py:mod:`flatlatex`."""
+    """Convert LaTeX to ANSI using :py:mod:`pylatexenc`."""
     from pylatexenc.latex2text import LatexNodes2Text  # type: ignore
 
     return LatexNodes2Text().latex_to_text(data.strip().strip("$").strip())

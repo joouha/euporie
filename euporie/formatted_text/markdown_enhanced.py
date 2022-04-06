@@ -6,9 +6,9 @@ from typing import TYPE_CHECKING
 from euporie.convert.base import convert
 from euporie.formatted_text import markdown
 from euporie.formatted_text.utils import FormattedTextAlign, align, indent, strip
-from euporie.output.container import data_pixel_size, pixels_to_cell_size
 from euporie.terminal import tmuxify
 from euporie.url import load_url
+from euporie.widgets.output.container import data_pixel_size, pixels_to_cell_size
 
 if TYPE_CHECKING:
     from markdown_it.token import Token

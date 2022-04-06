@@ -5,11 +5,10 @@ from functools import partial
 from typing import TYPE_CHECKING
 
 from prompt_toolkit.filters import Condition, buffer_has_focus
-from pygments.styles import get_all_styles  # type: ignore
 
 from euporie.app.current import get_base_app as get_app
 from euporie.commands.registry import add
-from euporie.config import config
+from euporie.config import CONFIG_PARAMS, config
 from euporie.filters import have_black, have_isort, have_ssort, in_tmux
 
 if TYPE_CHECKING:
@@ -214,7 +213,7 @@ def update_syntax_theme(choice: "str") -> "None":
     get_app().update_style(pygments_style=choice)
 
 
-for choice in sorted(get_all_styles()):
+for choice in sorted(CONFIG_PARAMS["syntax_theme"]["schema_"]["enum"]):
     add(
         name=f"set-syntax-theme-{choice.lower()}",
         title=f'Set syntax theme to "{choice}"',

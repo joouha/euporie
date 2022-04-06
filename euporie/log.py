@@ -13,17 +13,13 @@ from typing import TYPE_CHECKING
 
 from prompt_toolkit.application.current import get_app_session
 from prompt_toolkit.formatted_text.base import FormattedText
-from prompt_toolkit.layout.containers import HSplit
 from prompt_toolkit.output.defaults import create_output
 from prompt_toolkit.shortcuts.utils import print_formatted_text
 from prompt_toolkit.styles import Style
-from prompt_toolkit.widgets import SearchToolbar
 
 from euporie.config import config
 from euporie.formatted_text.utils import indent, lex, wrap
 from euporie.style import LOG_STYLE
-from euporie.tab import Tab
-from euporie.widgets.formatted_text_area import FormattedTextArea
 
 if TYPE_CHECKING:
     from types import TracebackType
@@ -70,6 +66,7 @@ class FormattedTextHandler(logging.StreamHandler):
 class QueueHandler(logging.Handler):
     """This handler store logs events into a queue."""
 
+    formatter: "FtFormatter"
     hook_id = 0
     hooks: "dict[int, Callable]" = {}
 
@@ -158,7 +155,7 @@ class LogTabFormatter(FtFormatter):
     ) -> "FormattedText":
         """Formats a log record as formatted text."""
         record = self.prepare(record)
-        output = [
+        output: "StyleAndTextTuples" = [
             ("class:log.date", f"{record.asctime}"),
             ("", " "),
             (f"class:log.level.{record.levelname}", f"{record.levelname}"),
@@ -208,7 +205,7 @@ class StdoutFormatter(FtFormatter):
             subsequent_indent=" " * msg_pad,
         )
 
-        output = [
+        output: "StyleAndTextTuples" = [
             ("class:log.date", date),
             ("", " " * (9 - len(record.levelname))),
             (f"class:log.level.{record.levelname}", record.levelname),
@@ -304,53 +301,6 @@ def setup_logs() -> "None":
     # log_config.update(config.log_config)
     # Configure the logger
     logging.config.dictConfig(log_config)  # type: ignore
-
-
-class LogView(Tab):
-    """A tab which allows you to view log entries."""
-
-    def __init__(self) -> "None":
-        """Builds the tab's contents.
-
-        Also hooks into the queue handler to update the log.
-        """
-        super().__init__()
-        # Build the container
-        self.search_field = SearchToolbar(
-            text_if_not_searching=[("class:not-searching", "Press '/' to search.")]
-        )
-        self.text_area = FormattedTextArea(
-            formatted_text=[],
-            read_only=True,
-            scrollbar=True,
-            line_numbers=True,
-            search_field=self.search_field,
-            focus_on_click=True,
-            wrap_lines=False,
-            dont_extend_width=False,
-        )
-        self.container = HSplit([self.text_area, self.search_field])
-        # Add text to the textarea
-        for record in LOG_QUEUE:
-            self.add_record(record)
-        # Hook the queue handler
-        self.hook_id = QueueHandler.hook(self.add_record)
-
-    def add_record(self, message: "FormattedText") -> "None":
-        """Adds a single new record to the textarea.
-
-        Args:
-            message: The formatted log record to add
-
-        """
-        cp = self.text_area.buffer.cursor_position
-        self.text_area.formatted_text += message
-        self.text_area.buffer.cursor_position = cp
-
-    @property
-    def title(self) -> "str":
-        """Returns the title of this tab."""
-        return f"Logs ({Path(config.log_file)})"
 
 
 class stdout_to_log:

@@ -904,7 +904,7 @@ class NotebookKernel:
         """Shutdown the kernel and close the kernel's thread.
 
         This is intended to be run when the notebook is closed: the
-        :py:class:`~euporie.notebook.NotebookKernel` cannot be restarted after this.
+        :py:class:`~euporie.tabs.notebook.NotebookKernel` cannot be restarted after this.
 
         Args:
             wait: Whether to block until shutdown completes

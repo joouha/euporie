@@ -1,6 +1,7 @@
 """Defines common filters."""
 
 import os
+from functools import lru_cache
 
 from prompt_toolkit.enums import EditingMode
 from prompt_toolkit.filters import (
@@ -43,29 +44,41 @@ __all__ = [
 ]
 
 
-# Determine if black is available
-try:
-    import black  # type: ignore  # noqa F401
-except ModuleNotFoundError:
-    have_black = to_filter(False)
-else:
-    have_black = to_filter(True)
+@Condition
+@lru_cache
+def have_black() -> "bool":
+    """Determine if black is available."""
+    try:
+        import black.const  # type: ignore  # noqa F401
+    except ModuleNotFoundError:
+        return False
+    else:
+        return True
 
-# Determine if isort is available
-try:
-    import isort  # type: ignore  # noqa F401
-except ModuleNotFoundError:
-    have_isort = to_filter(False)
-else:
-    have_isort = to_filter(True)
 
-# Determine if ssort is available
-try:
-    import ssort  # type: ignore  # noqa F401
-except ModuleNotFoundError:
-    have_ssort = to_filter(False)
-else:
-    have_ssort = to_filter(True)
+@Condition
+@lru_cache
+def have_isort() -> "bool":
+    """Determine if isort is available."""
+    try:
+        import isort  # type: ignore  # noqa F401
+    except ModuleNotFoundError:
+        return False
+    else:
+        return True
+
+
+@Condition
+@lru_cache
+def have_ssort() -> "bool":
+    """Determine if ssort is available."""
+    try:
+        import ssort  # type: ignore  # noqa F401
+    except ModuleNotFoundError:
+        return False
+    else:
+        return True
+
 
 # Determine if we have at least one formatter
 have_formatter = have_black | have_isort | have_ssort
@@ -148,7 +161,7 @@ def multiple_cells_selected() -> "bool":
 @Condition
 def cell_output_has_focus() -> "bool":
     """Determine if there is a currently focused cell."""
-    from euporie.output.control import OutputControl
+    from euporie.widgets.output.control import OutputControl
 
     return isinstance(get_app().layout.current_control, OutputControl)
 

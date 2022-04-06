@@ -30,19 +30,18 @@ from prompt_toolkit.layout.dimension import Dimension
 from prompt_toolkit.layout.menus import CompletionsMenu
 from prompt_toolkit.output.defaults import create_output
 from prompt_toolkit.widgets import Button, Dialog, Label, TextArea
-from pygments.styles import get_all_styles  # type: ignore
 from pyperclip import determine_clipboard  # type: ignore
 
 from euporie import __app_name__, __copyright__, __logo__, __strapline__, __version__
 from euporie.app.base import EuporieApp
 from euporie.box import Pattern
 from euporie.commands.registry import get
-from euporie.config import config
-from euporie.log import LogView
-from euporie.notebook import TuiNotebook
-from euporie.palette import CommandPalette
+from euporie.config import CONFIG_PARAMS, config
+from euporie.tabs.log import LogView
+from euporie.tabs.notebook import TuiNotebook
 from euporie.widgets.formatted_text_area import FormattedTextArea
 from euporie.widgets.menu import MenuContainer, MenuItem
+from euporie.widgets.palette import CommandPalette
 
 if TYPE_CHECKING:
     from asyncio import AbstractEventLoop
@@ -57,9 +56,9 @@ if TYPE_CHECKING:
     from prompt_toolkit.layout.containers import AnyContainer
     from prompt_toolkit.output import Output
 
-    from euporie.cell import InteractiveCell
-    from euporie.notebook import Notebook
-    from euporie.tab import Tab
+    from euporie.tabs.base import Tab
+    from euporie.tabs.notebook import Notebook
+    from euporie.widgets.cell import InteractiveCell
 
 log = logging.getLogger(__name__)
 
@@ -644,7 +643,9 @@ class TuiApp(EuporieApp):
                         "Syntax Theme",
                         children=[
                             get(f"set-syntax-theme-{choice}").menu
-                            for choice in sorted(get_all_styles())
+                            for choice in sorted(
+                                CONFIG_PARAMS["syntax_theme"]["schema_"]["enum"]
+                            )
                         ],
                     ),
                     get("switch-background-pattern").menu,

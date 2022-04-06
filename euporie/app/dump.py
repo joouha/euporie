@@ -15,8 +15,8 @@ from prompt_toolkit.widgets import HorizontalLine
 
 from euporie.app.base import EuporieApp
 from euporie.config import config
-from euporie.containers import PrintingContainer
-from euporie.notebook import DumpKernelNotebook, DumpNotebook
+from euporie.tabs.notebook import DumpKernelNotebook, DumpNotebook
+from euporie.widgets.page import PrintingContainer
 
 if TYPE_CHECKING:
     from typing import IO, Any, List, Optional, Sequence, TextIO, Tuple, Type, Union
@@ -26,7 +26,7 @@ if TYPE_CHECKING:
     from prompt_toolkit.layout.containers import AnyContainer
     from prompt_toolkit.output import Output
 
-    from euporie.notebook import Notebook
+    from euporie.tabs.notebook import Notebook
 
 log = logging.getLogger(__name__)
 

@@ -10,9 +10,9 @@ from prompt_toolkit.cache import FastDictCache, SimpleCache
 from prompt_toolkit.filters import to_filter
 
 if TYPE_CHECKING:
-    from typing import Any, Callable, Iterable, Optional, Union
+    from typing import Any, Callable, Dict, Iterable, List, Optional, Union
 
-    from prompt_toolkit.filters import FilterOrBool
+    from prompt_toolkit.filters import Filter, FilterOrBool
 
 log = logging.getLogger(__name__)
 
@@ -21,12 +21,14 @@ class Converter(NamedTuple):
     """Holds a conversion function and its weight."""
 
     func: Callable
+    filter_: Filter
     weight: int = 1
 
 
 converters: "dict[str, dict[str, list[Converter]]]" = {}
 
 _CONVERSION_CACHE: "SimpleCache" = SimpleCache(maxsize=20)
+_FILTER_CACHE: "SimpleCache" = SimpleCache()
 
 
 def register(
@@ -40,13 +42,14 @@ def register(
         from_ = (from_,)
 
     def decorator(func: "Callable") -> "Callable":
-        if to_filter(filter_)():
-            if to not in converters:
-                converters[to] = {}
-            for from_format in from_:
-                if from_format not in converters[to]:
-                    converters[to][from_format] = []
-                converters[to][from_format].append(Converter(func=func, weight=weight))
+        if to not in converters:
+            converters[to] = {}
+        for from_format in from_:
+            if from_format not in converters[to]:
+                converters[to][from_format] = []
+            converters[to][from_format].append(
+                Converter(func=func, filter_=to_filter(filter_), weight=weight)
+            )
         return func
 
     return decorator
@@ -54,21 +57,29 @@ def register(
 
 def find_route(from_: "str", to: "str") -> "Optional[list]":
     """Finds the shortest conversion path between two formats."""
+    if from_ == to:
+        return [from_]
+
     chains = []
 
     def find(start: "str", chain: "list[str]") -> "None":
         if chain[0] == start:
             chains.append(chain)
-        for link in converters.get(chain[0], []):
+        sources: "Dict[str, List[Converter]]" = converters.get(chain[0], {})
+        for link in sources:
             if link not in chain:
-                find(start, [link, *chain])
+                if any(
+                    _FILTER_CACHE.get((conv,), conv.filter_)
+                    for conv in sources.get(link, [])
+                ):
+                    find(start, [link, *chain])
 
     find(from_, [to])
 
     if chains:
+        # Find chain with shortest weighted length
         return sorted(
             chains,
-            # Find chain with shortest weighted length
             key=lambda chain: sum(
                 [
                     min(
@@ -120,10 +131,13 @@ def convert(
         for stage_a, stage_b in zip(route, route[1:]):
             # Find converter with lowest weight
             func = sorted(
-                converters[stage_b][stage_a],
+                [
+                    conv
+                    for conv in converters[stage_b][stage_a]
+                    if _FILTER_CACHE.get((conv,), conv.filter_)
+                ],
                 key=lambda x: x.weight,
             )[0].func
-            func = converters[stage_b][stage_a][0].func
             # Add intermediate steps to the cache
             data = _CONVERSION_CACHE.get(
                 (data_hash, from_, stage_b, cols, rows, fg, bg),

@@ -38,7 +38,6 @@ euporie.log
       FormattedTextHandler
       FtFormatter
       LogTabFormatter
-      LogView
       QueueHandler
       StdoutFormatter
       stdout_to_log

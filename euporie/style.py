@@ -44,7 +44,7 @@ LOG_STYLE = [
     ("log.level.info", "fg:blue"),
     ("log.level.warning", "fg:yellow"),
     ("log.level.error", "fg:red"),
-    ("log.level.critical", "fg:red bold"),
+    ("log.level.critical", "fg:white bg:red bold"),
     ("log.ref", "fg:grey italic"),
     ("log.date", "fg:ansiblue"),
 ]

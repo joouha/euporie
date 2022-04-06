@@ -46,14 +46,13 @@ from prompt_toolkit.styles import (
 from pygments.styles import get_style_by_name  # type: ignore
 
 from euporie.config import config
-from euporie.formatted_text.markdown_enhanced import enable_enchanced_markdown
 from euporie.key_binding.bindings.commands import load_command_bindings
 from euporie.key_binding.bindings.micro import load_micro_bindings
 from euporie.key_binding.micro_state import MicroState
 from euporie.log import setup_logs
-from euporie.notebook import Notebook
 from euporie.style import LOG_STYLE, MARKDOWN_STYLE, build_style, color_series
-from euporie.tab import Tab
+from euporie.tabs.base import Tab
+from euporie.tabs.notebook import Notebook
 from euporie.terminal import TerminalInfo, Vt100Parser
 
 if TYPE_CHECKING:
@@ -67,10 +66,10 @@ if TYPE_CHECKING:
     from prompt_toolkit.layout.containers import AnyContainer, Float
     from prompt_toolkit.output import Output
 
-    from euporie.cell import InteractiveCell
-    from euporie.notebook import TuiNotebook
-    from euporie.palette import CommandPalette
+    from euporie.tabs.notebook import TuiNotebook
     from euporie.terminal import TerminalQuery
+    from euporie.widgets.cell import InteractiveCell
+    from euporie.widgets.palette import CommandPalette
 
     StatusBarFields = Tuple[List[AnyFormattedText], List[AnyFormattedText]]
     ContainerStatusDict = Dict[
@@ -288,8 +287,6 @@ class EuporieApp(Application):
     @classmethod
     def launch(cls) -> "None":
         """Launches the app."""
-        # Enable enhanced markdown
-        enable_enchanced_markdown()
         # This configures the logs for euporie
         setup_logs()
         # Create an instance of the app

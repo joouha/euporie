@@ -25,4 +25,6 @@ euporie.convert.util
 
       call_subproc
       commands_exist
+      data_pixel_size
       have_modules
+      pixels_to_cell_size

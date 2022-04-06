@@ -15,6 +15,11 @@ Added
 - Allow scrolling cell outputs with :kbd:`left` and :kbd`right` in command mode
 - Theme more elements based on current terminal theme
 
+Changed
+=======
+
+- Optimize imports, reducing import times by ~50%
+
 Fixed
 =====
 
@@ -61,8 +66,8 @@ Fixed
 - Fix parsing of html tables with empty first cells by :py:mod:`html2text`
 - Fixed toggling comments if a line consists of a single right-stripped comment
 
-Improved
-========
+Changed
+=======
 
 - Parse environment variables a Python literals, so setting a binary variable to ``"False"`` no longer evaluates to :py:const:`True`
 
