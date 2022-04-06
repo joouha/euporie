@@ -12,7 +12,6 @@ from prompt_toolkit.application import Application
 from prompt_toolkit.enums import EditingMode
 from prompt_toolkit.filters import buffer_has_focus
 from prompt_toolkit.input.defaults import create_input
-from prompt_toolkit.input.vt100 import Vt100Input
 from prompt_toolkit.key_binding.bindings.basic import load_basic_bindings
 from prompt_toolkit.key_binding.bindings.cpr import load_cpr_bindings
 from prompt_toolkit.key_binding.bindings.emacs import (
@@ -64,6 +63,7 @@ if TYPE_CHECKING:
     from prompt_toolkit.filters import Filter
     from prompt_toolkit.formatted_text import AnyFormattedText
     from prompt_toolkit.input import Input
+    from prompt_toolkit.input.vt100 import Vt100Input
     from prompt_toolkit.layout.containers import AnyContainer, Float
     from prompt_toolkit.output import Output
 
@@ -118,7 +118,7 @@ class EuporieApp(Application):
             **kwargs,
         )
         # Use a custom vt100 parser to allow querying the terminal
-        self.using_vt100 = isinstance(self.input, Vt100Input)
+        self.using_vt100 = self.input.__class__.__name__ == "Vt100Input"
         if self.using_vt100:
             self.input = cast("Vt100Input", self.input)
             self.input.vt100_parser = Vt100Parser(

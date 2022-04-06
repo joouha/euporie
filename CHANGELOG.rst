@@ -18,6 +18,7 @@ Added
 Fixed
 =====
 
+- Enable euporie to run on Window again
 - Prevent an underscore being printed when the app is launched
 - Only send terminal queries if the terminal supports it
 
