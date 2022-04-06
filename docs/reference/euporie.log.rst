@@ -35,6 +35,10 @@ euporie.log
       :toctree:
       :template: class.tpl.rst
 
+      FormattedTextHandler
+      FtFormatter
+      LogTabFormatter
       LogView
       QueueHandler
+      StdoutFormatter
       stdout_to_log

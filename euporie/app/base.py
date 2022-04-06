@@ -40,7 +40,6 @@ from prompt_toolkit.styles import (
     SetDefaultColorStyleTransformation,
     Style,
     SwapLightAndDarkStyleTransformation,
-    default_ui_style,
     merge_style_transformations,
     merge_styles,
     style_from_pygments_cls,
@@ -48,16 +47,13 @@ from prompt_toolkit.styles import (
 from pygments.styles import get_style_by_name  # type: ignore
 
 from euporie.config import config
-from euporie.formatted_text.markdown_enhanced import (
-    MARKDOWN_STYLE,
-    enable_enchanced_markdown,
-)
+from euporie.formatted_text.markdown_enhanced import enable_enchanced_markdown
 from euporie.key_binding.bindings.commands import load_command_bindings
 from euporie.key_binding.bindings.micro import load_micro_bindings
 from euporie.key_binding.micro_state import MicroState
 from euporie.log import setup_logs
 from euporie.notebook import Notebook
-from euporie.style import color_series
+from euporie.style import LOG_STYLE, MARKDOWN_STYLE, build_style, color_series
 from euporie.tab import Tab
 from euporie.terminal import TerminalInfo, Vt100Parser
 
@@ -419,6 +415,7 @@ class EuporieApp(Application):
 
     def create_merged_style(self) -> "BaseStyle":
         """Generate a new merged style for the application."""
+        # Get foreground and background colors based on the configured colour scheme
         base_colors: "dict[str, str]" = {
             "light": {"fg": "#000000", "bg": "#FFFFFF"},
             "dark": {"fg": "#FFFFFF", "bg": "#000000"},
@@ -429,15 +426,17 @@ class EuporieApp(Application):
                 "bg": self.term_info.background_color.value,
             },
         )
+        # Build a color palette from the fg/bg colors
         self.color_palette = color_series(**base_colors, n=20)
 
         # Actually use default colors if in default mode
         # This is needed for transparent terminals and the like
-        # We retain the detected colours as we still need them
+        # The detected colours are available under the "base" key
         if config.color_scheme == "default":
             self.color_palette["fg"][0] = "default"
             self.color_palette["bg"][0] = "default"
 
+        # Apply style transformations based on the configured color scheme
         self.style_transformation = merge_style_transformations(
             [
                 ConditionalStyleTransformation(
@@ -451,113 +450,14 @@ class EuporieApp(Application):
             ]
         )
 
-        cp = self.color_palette
-        style_dict = {
-            # The default style is merged at this point so full styles can be
-            # overridden. For example, this allows us to switch off the underline
-            #  status of cursor-line.
-            **dict(default_ui_style().style_rules),
-            "default": f"fg:{cp['bg'][0]} bg:{cp['bg'][0]}",
-            # Logo
-            "logo": "fg:#ff0000",
-            # Pattern
-            "pattern": f"fg:{config.background_color or cp['fg'][14]}",
-            # Chrome
-            "chrome": f"fg:{cp['bg'][1]} bg:{cp['bg'][1]}",
-            # Statusbar
-            "status": f"fg:{cp['fg'][1]} bg:{cp['bg'][1]}",
-            "status.field": f"fg:{cp['fg'][2]} bg:{cp['bg'][2]}",
-            # Menus & Menu bar
-            "menu-bar": f"fg:{cp['fg'][1]} bg:{cp['bg'][1]}",
-            "menu-bar.disabled-item": f"fg:{cp['bg'][3]}",
-            "menu-bar.selected-item": "reverse",
-            "menu-bar.shortcut": f"fg:{cp['fg'][5]}",
-            "menu-bar.selected-item menu-bar.shortcut": (
-                f"fg:{cp['fg'][1]} bg:{cp['bg'][4]}"
-            ),
-            "menu-bar.disabled-item menu-bar.shortcut": f"fg:{cp['bg'][3]}",
-            "menu": f"bg:{cp['bg'][1]} fg:{cp['fg'][1]}",
-            "menu-border": f"fg:{cp['bg'][6]} bg:{cp['bg'][1]}",
-            # Buffer
-            "line-number": f"fg:{cp['fg'][1]} bg:{cp['bg'][1]}",
-            "line-number.current": "bold orange",
-            "cursor-line": f"bg:{cp['bg'][1]}",
-            "matching-bracket.cursor": "fg:yellow bold",
-            "matching-bracket.other": "fg:yellow bold",
-            # Cells
-            "cell.border": f"fg:{cp['bg'][5]}",
-            "cell.border.selected": "fg:#00afff",
-            "cell.border.edit": "fg:#00ff00",
-            "cell.input.box": f"fg:default bg:{cp['bg'][-2]}",
-            "cell.output": "fg:default bg:default",
-            "cell.input.prompt": "fg:blue",
-            "cell.output.prompt": "fg:red",
-            # Scrollbars
-            "scrollbar": f"fg:{cp['bg'][15]} bg:{cp['bg'][3]}",
-            "scrollbar.background": f"fg:{cp['bg'][15]} bg:{cp['bg'][3]}",
-            "scrollbar.arrow": f"fg:{cp['bg'][15]} bg:{cp['bg'][3]}",
-            "scrollbar.start": "",
-            "scrollbar.button": f"fg:{cp['bg'][15]} bg:{cp['bg'][15]}",
-            "scrollbar.end": f"fg:{cp['bg'][3]} bg:{cp['bg'][15]}",
-            # Shadows
-            "shadow": f"bg:{cp['bg'][9]}",
-            "pager shadow": f"bg:{cp['bg'][9]}",
-            "cell.input shadow": f"bg:{cp['bg'][9]}",
-            "cell.output shadow": f"bg:{cp['bg'][9]}",
-            # Dialogs
-            "dialog.body": f"fg:{cp['fg']['base']} bg:{cp['bg'][4]}",
-            "dialog.body text-area": f"fg:{cp['fg']['base']}",
-            "dialog.body scrollbar.button": f"fg:{cp['bg'][5]} bg:{cp['bg'][15]}",
-            # Horizontals rule
-            "hr": "fg:ansired",
-            # Completions menu
-            "completion-menu.completion.keyword": "fg:#d700af",
-            "completion-menu.completion.current.keyword": "fg:#fff bg:#d700ff",
-            "completion-menu.completion.function": "fg:#005faf",
-            "completion-menu.completion.current.function": "fg:#fff bg:#005fff",
-            "completion-menu.completion.class": "fg:#008700",
-            "completion-menu.completion.current.class": "fg:#fff bg:#00af00",
-            "completion-menu.completion.statement": "fg:#5f0000",
-            "completion-menu.completion.current.statement": "fg:#fff bg:#5f0000",
-            "completion-menu.completion.instance": "fg:#d75f00",
-            "completion-menu.completion.current.instance": "fg:#fff bg:#d78700",
-            "completion-menu.completion.module": "fg:#d70000",
-            "completion-menu.completion.current.module": "fg:#fff bg:#d70000",
-            # Log
-            "log.level.nonset": "fg:grey",
-            "log.level.debug": "fg:green",
-            "log.level.info": "fg:blue",
-            "log.level.warning": "fg:yellow",
-            "log.level.error": "fg:red",
-            "log.level.critical": "fg:red bold",
-            "log.ref": "fg:grey",
-            "log.date": "fg:#00875f",
-            # Shortcuts
-            "shortcuts.group": f"bg:{cp['bg'][8]} bold underline",
-            "shortcuts.row": f"bg:{cp['bg'][0]} nobold",
-            "shortcuts.row alt": f"bg:{cp['bg'][2]}",
-            "shortcuts.row key": "bold",
-            # Palette
-            "palette.item": f"fg:{cp['fg'][1]} bg:{cp['bg'][1]}",
-            "palette.item.alt": f"bg:{cp['bg'][3]}",
-            "palette.item.selected": "fg:#ffffff bg:#0055ff",
-            # Pager
-            "pager": f"bg:{cp['bg'][1]}",
-            "pager.border": f"fg:{cp['bg'][9]}",
-            # Markdown
-            "md.code.inline": f"bg:{cp['bg'][3]}",
-            "md.code.block": f"bg:{cp['bg'][-4]}",
-            "md.code.block.border": f"fg:{cp['bg'][5]}",
-            "md.table.border": f"fg:{cp['bg'][8]}",
-        }
-
         # Using a dynamic style has serious performance issues, so instead we update
         # the style on the renderer directly when it changes in `self.update_style`
         return merge_styles(
             [
                 style_from_pygments_cls(get_style_by_name(config.syntax_theme)),
                 Style(MARKDOWN_STYLE),
-                Style.from_dict(style_dict),
+                Style(LOG_STYLE),
+                build_style(self.color_palette),
             ]
         )
 

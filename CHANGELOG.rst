@@ -11,6 +11,7 @@ Upcoming
 Added
 =====
 
+- Use `prompt_toolkit` to format logging output
 - Allow scrolling cell outputs with :kbd:`left` and :kbd`right` in command mode
 - Theme more elements based on current terminal theme
 

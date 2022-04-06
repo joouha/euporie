@@ -10,7 +10,7 @@ from nox_poetry import Session, session  # type: ignore
 
 package = "euporie"
 python_versions = ["3.10", "3.9", "3.8"]
-nox.options.sessions = "lint", "safety", "tests", "mypy", "pytype"
+nox.options.sessions = "format_check", "lint", "safety", "tests", "mypy", "pytype"
 locations = "euporie", "tests", "scripts"
 
 
@@ -96,11 +96,21 @@ def format(session: "Session") -> None:
     session.run("black", *args)
 
 
+@session(python=python_versions[0])
+def format_check(session: "Session") -> None:
+    """Run black and isort code formatters."""
+    args = session.posargs or locations
+    session.install("black", "isort", "ssort")
+    session.run("ssort", "--check", *args)
+    session.run("isort", "--profile", "black", "--check", *args)
+    session.run("black", "--check", *args)
+
+
 @nox.session(python=python_versions)
 def mypy(session: "Session") -> "None":
     """Type-check using mypy."""
     args = session.posargs or locations
-    session.install("mypy", ".")
+    session.install("mypy", "rich", ".")
     session.run("mypy", *args)
 
 
@@ -145,7 +155,6 @@ def tests(session: "Session") -> "None":
     session.install(
         "coverage",
         "pytest",
-        # "pygments",
     )
 
     try:

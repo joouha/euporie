@@ -37,7 +37,6 @@ html2text = "^2020.1.16"
 markdown-it-py = {extras = ["linkify"], version = "^2.0.1"}
 mdit-py-plugins = "^0.3.0"
 linkify = "^1.4"
-rich = "^12.0.1"
 black = {version = ">=19.3b0", optional = true}
 isort = {version = "^5.10.1", optional = true}
 ssort = {version = "^0.11.4", optional = true}
@@ -47,6 +46,7 @@ html5lib = {version = "^1.1", optional = true}
 sympy = {version = "^1.9", optional = true}
 antlr4-python3-runtime = {version = "^4.9", optional = true}
 img2unicode = {version = "^0.1a8", optional = true}
+Pygments = "^2.11.2"
 
 [tool.poetry.extras]
 all = ["formatters", "CairoSVG"]
@@ -81,6 +81,7 @@ sphinx-copybutton = "^0.5.0"
 codespell = "^2.1.0"
 pytest = "^7.1.1"
 mypy = "^0.942"
+rich = "^12.2.0"
 
 [tool.poetry.scripts]
 euporie = 'euporie.__main__:main'

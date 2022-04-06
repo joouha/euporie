@@ -8,7 +8,6 @@ from prompt_toolkit.formatted_text import to_formatted_text
 
 from euporie.convert.base import register
 from euporie.formatted_text.ansi import ANSI
-from euporie.formatted_text.markdown import Markdown
 
 if TYPE_CHECKING:
     from typing import Optional
@@ -28,6 +27,8 @@ def markdown_to_ft(
     bg: "Optional[str]" = None,
 ) -> "StyleAndTextTuples":
     """Converts markdown to formatted text."""
+    from euporie.formatted_text.markdown import Markdown
+
     return to_formatted_text(Markdown(data, width=width))
 
 

@@ -26,4 +26,6 @@ euporie.commands.cell
       edit_in_external_editor
       edit_next_cell
       edit_previous_cell
+      scroll_output_left
+      scroll_output_right
       split_cell

@@ -28,4 +28,6 @@ euporie.commands.cell\_output
       page_down_cell_output
       page_up_cell_output
       scroll_down_cell_output
+      scroll_left_cell_output
+      scroll_right_cell_output
       scroll_up_cell_output

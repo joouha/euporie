@@ -265,7 +265,7 @@ development = ["black", "flake8", "mypy", "pytest", "types-colorama"]
 name = "commonmark"
 version = "0.9.1"
 description = "Python parser for the CommonMark Markdown spec"
-category = "main"
+category = "dev"
 optional = false
 python-versions = "*"
 
@@ -1355,15 +1355,16 @@ idna2008 = ["idna"]
 
 [[package]]
 name = "rich"
-version = "12.0.1"
+version = "12.2.0"
 description = "Render rich text, tables, progress bars, syntax highlighting, markdown and more to the terminal"
-category = "main"
+category = "dev"
 optional = false
-python-versions = ">=3.6.2,<4.0.0"
+python-versions = ">=3.6.3,<4.0.0"
 
 [package.dependencies]
 commonmark = ">=0.9.0,<0.10.0"
 pygments = ">=2.6.0,<3.0.0"
+typing-extensions = {version = ">=4.0.0,<5.0", markers = "python_version < \"3.9\""}
 
 [package.extras]
 jupyter = ["ipywidgets (>=7.5.1,<8.0.0)"]
@@ -1906,7 +1907,7 @@ svg-cairosvg = ["CairoSVG"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "10e404dc8ac5dbea613f092ebc6051ff8d823164015116d43f46e38b20e2ccee"
+content-hash = "3ebca9a78ccfccfe31cd3d0238fe5fc886836f3eacd22cc9a40bdb6c3b599902"
 
 [metadata.files]
 aenum = [
@@ -2775,8 +2776,8 @@ rfc3986 = [
     {file = "rfc3986-2.0.0.tar.gz", hash = "sha256:97aacf9dbd4bfd829baad6e6309fa6573aaf1be3f6fa735c8ab05e46cecb261c"},
 ]
 rich = [
-    {file = "rich-12.0.1-py3-none-any.whl", hash = "sha256:ce5c714e984a2d185399e4e1dd1f8b2feacb7cecfc576f1522425643a36a57ea"},
-    {file = "rich-12.0.1.tar.gz", hash = "sha256:3fba9dd15ebe048e2795a02ac19baee79dc12cc50b074ef70f2958cd651b59a9"},
+    {file = "rich-12.2.0-py3-none-any.whl", hash = "sha256:c50f3d253bc6a9bb9c79d61a26d510d74abdf1b16881260fab5edfc3edfb082f"},
+    {file = "rich-12.2.0.tar.gz", hash = "sha256:ea74bc9dad9589d8eea3e3fd0b136d8bf6e428888955f215824c2894f0da8b47"},
 ]
 scikit-image = [
     {file = "scikit-image-0.19.2.tar.gz", hash = "sha256:d433b4642a6f8219e749dfbbe4b5e742d560996540c9749ede510274d061866d"},

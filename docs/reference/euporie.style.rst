@@ -23,4 +23,5 @@ euporie.style
    .. autosummary::
       :toctree:
 
+      build_style
       color_series
