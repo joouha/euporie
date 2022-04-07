@@ -262,7 +262,7 @@ def setup_logs() -> "None":
                         "class": "logging.FileHandler",
                         "filename": "/dev/stdout"
                         if config.log_file == "-"
-                        else config.log_file,
+                        else Path(config.log_file).expanduser(),
                         "formatter": "file_format",
                     }
                 }
