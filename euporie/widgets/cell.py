@@ -139,6 +139,8 @@ class CellInputTextArea(TextArea):
         ]
         self.window.cursorline = has_focus(self)
 
+        self.has_focus = has_focus(self.buffer)
+
     def on_text_changed(self, buf: "Buffer") -> "None":
         """Update cell json when the input buffer has been edited."""
         self.cell._set_input(buf.text)
@@ -495,7 +497,10 @@ class Cell:
         """Determines the style of the cell borders, based on the cell state."""
         if not config.dump:
             if self.selected:
-                if self.nb.in_edit_mode():  # has_focus(self.input_box.buffer)():
+                # Enter edit mode if the input has become focused via a mouse click
+                if self.input_box.has_focus():
+                    self.nb.edit_mode = True
+                if self.nb.edit_mode:
                     return "class:cell.border.edit"
                 else:
                     return "class:cell.border.selected"
