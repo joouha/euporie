@@ -2,7 +2,7 @@
 
 import logging
 
-from prompt_toolkit.filters import buffer_has_focus
+from prompt_toolkit.filters import buffer_has_focus, has_completions
 
 from euporie.app.current import get_tui_app as get_app
 from euporie.commands.registry import add
@@ -37,7 +37,7 @@ def split_cell() -> "None":
 
 @add(
     keys=["up"],
-    filter=cell_has_focus & buffer_has_focus & cursor_on_first_line,
+    filter=cell_has_focus & buffer_has_focus & cursor_on_first_line & ~has_completions,
     group="cell",
 )
 def edit_previous_cell() -> "None":
@@ -52,7 +52,7 @@ def edit_previous_cell() -> "None":
 
 @add(
     keys=["down"],
-    filter=cell_has_focus & buffer_has_focus & cursor_on_last_line,
+    filter=cell_has_focus & buffer_has_focus & cursor_on_last_line & ~has_completions,
     group="cell",
 )
 def edit_next_cell() -> "None":
