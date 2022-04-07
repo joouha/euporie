@@ -16,6 +16,7 @@ from jupyter_client import (  # type: ignore
     KernelManager,
 )
 from jupyter_client.kernelspec import NoSuchKernel  # type: ignore
+from jupyter_core.paths import jupyter_path
 
 if TYPE_CHECKING:
     from typing import Any, AsyncGenerator, Callable, Coroutine, Dict, Optional, Union
@@ -70,6 +71,15 @@ class NotebookKernel:
         self.poll_tasks: "list[asyncio.Task]" = []
         self.events: "dict[str, dict[str, asyncio.Event]]" = {}
         self.msgs: "dict[str, dict[str, dict]]" = {}
+
+        # Set the kernel folder list to prevent the default method from running.
+        # This prevents the kernel spec manager from loading IPython, just for the
+        # purpose of adding the depreciated :file:`.ipython/kernels` folder to the list
+        # of kernel search paths. Without this, having IPython installed causes a
+        # import race condition error where IPython was imported in the main thread for
+        # displaying LaTex and in the kernel thread to discover kernel paths.
+        # Also this speeds up launch since importing IPython is pretty slow.
+        self.km.kernel_spec_manager.kernel_dirs = jupyter_path("kernels")
 
     def _aodo(
         self,
@@ -221,7 +231,10 @@ class NotebookKernel:
             # TODO - send stdout to log
             await self.km.start_kernel(stdout=DEVNULL, stderr=STDOUT)
         except Exception as e:
-            log.error("Kernel '%s' does not exist", self.km.kernel_name)
+            log.exception("Kernel '%s' does not exist", self.km.kernel_name)
+            import sys
+
+            log.debug("\n".join(sorted(sys.modules.keys())))
             self._status = "error"
             self.error = e
         else:
@@ -234,6 +247,7 @@ class NotebookKernel:
             try:
                 await self.kc.wait_for_ready(timeout=10)
             except RuntimeError as e:
+                log.exception("Error starting kernel")
                 await self.stop_()
                 self.error = e
                 self._status = "error"

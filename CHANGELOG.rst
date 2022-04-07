@@ -23,6 +23,7 @@ Changed
 Fixed
 =====
 
+- Prevent IPython import race condition when IPython is installed
 - Prevent down key moving to next cell if the cursor is on the last line of a cell when the completion menu is open
 - Enable euporie to run on Window again
 - Prevent an underscore being printed when the app is launched
