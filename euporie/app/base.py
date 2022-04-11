@@ -414,8 +414,8 @@ class EuporieApp(Application):
         """Generate a new merged style for the application."""
         # Get foreground and background colors based on the configured colour scheme
         base_colors: "dict[str, str]" = {
-            "light": {"fg": "#000000", "bg": "#FFFFFF"},
-            "dark": {"fg": "#FFFFFF", "bg": "#000000"},
+            "light": {"fg": "#000000", "bg": "#EFEFEF"},
+            "dark": {"fg": "#FFFFFF", "bg": "#101010"},
         }.get(
             config.color_scheme,
             {
