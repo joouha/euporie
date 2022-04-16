@@ -187,6 +187,6 @@ def build_style(cp: "Optional[Dict[str, Dict[Union[str, int], str]]]") -> "Style
             "md.code.inline": f"bg:{cp['bg'][3]}",
             "md.code.block": f"bg:{cp['bg'][-4]}",
             "md.code.block.border": f"fg:{cp['bg'][5]}",
-            "md.table.border": f"fg:{cp['bg'][8]}",
+            "md.table.border": f"fg:{cp['bg'][15]}",
         }
     )

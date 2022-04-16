@@ -1,18 +1,14 @@
 """Contains a markdown to formatted text parser."""
 
-from itertools import zip_longest
 from typing import TYPE_CHECKING, Callable, Dict, List, Optional
 from warnings import warn
 
 from prompt_toolkit.application.current import get_app_session
 from prompt_toolkit.formatted_text.base import StyleAndTextTuples, to_formatted_text
-from prompt_toolkit.formatted_text.utils import (
-    fragment_list_width,
-    split_lines,
-    to_plain_text,
-)
+from prompt_toolkit.formatted_text.utils import to_plain_text
 
-from euporie.border import Double, Thin
+from euporie.border import Double, Thick, Thin
+from euporie.formatted_text.table import Table
 from euporie.formatted_text.utils import (
     FormattedTextAlign,
     add_border,
@@ -526,115 +522,25 @@ class Markdown:
             Formatted text
 
         """
-        ft: "StyleAndTextTuples" = []
+        table = Table(border_style="class:md.table.border")
         # Stack the tokens in the shape of the table
-        cell_tokens: List[List[List["Token"]]] = []
         i = 0
         while i < len(tokens):
             token = tokens[i]
             if token.type == "tr_open":
-                cell_tokens.append([])
+                row = table.new_row()
             elif token.type in ("th_open", "td_open"):
+                start_token = token
                 for j, token in enumerate(tokens[i:]):
                     if token.type in ("th_close", "td_close"):
-                        cell_tokens[-1].append(tokens[i : i + j + 1])
+                        row.new_cell(
+                            text=self.render(tokens[i : i + j + 1], width=width),
+                            border=Thick if start_token.type == "th_open" else None,
+                        )
                         break
                 i += j
             i += 1
-
-        def _render_token(
-            tokens: List["Token"], width: Optional[int] = None
-        ) -> StyleAndTextTuples:
-            """Render a token with correct alignment."""
-            side = "left"
-            # Check CSS for text alignment
-            for style_str in str(tokens[0].attrs.get("style", "")).split(";"):
-                if ":" in style_str:
-                    key, value = style_str.strip().split(":", 1)
-                    if key.strip() == "text-align":
-                        side = value
-            # Render with a very long line length if we do not have a width
-            ft = self.render(tokens, width=width or 999999)
-            # If we do have a width, wrap and apply the alignment
-            if width:
-                ft = wrap(ft, width)
-                ft = align(_SIDES[side], ft, width)
-            return ft
-
-        # Find the naive widths of each cell
-        cell_renders: List[List[StyleAndTextTuples]] = []
-        cell_widths: List[List[int]] = []
-        for row in cell_tokens:
-            cell_widths.append([])
-            cell_renders.append([])
-            for each_tokens in row:
-                rendered = _render_token(each_tokens)
-                cell_renders[-1].append(rendered)
-                cell_widths[-1].append(fragment_list_width(rendered))
-
-        # Calculate row and column widths, accounting for borders
-        col_widths = [
-            max([row[i] for row in cell_widths]) for i in range(len(cell_widths[0]))
-        ]
-
-        # Adjust widths and potentially re-render cells
-        # Reduce biggest cells until we fit in width
-        while sum(col_widths) + 3 * (len(col_widths) - 1) + 4 > max(
-            width, len(col_widths) * 7 + 2
-        ):
-            idxmax = max(enumerate(col_widths), key=lambda x: x[1])[0]
-            col_widths[idxmax] -= 1
-        # Re-render changed cells
-        for i, row_widths in enumerate(cell_widths):
-            for j, new_width in enumerate(col_widths):
-                if row_widths[j] != new_width:
-                    cell_renders[i][j] = _render_token(
-                        cell_tokens[i][j], width=new_width
-                    )
-
-        # Justify cell contents
-        for i, renders_row in enumerate(cell_renders):
-            for j, cell in enumerate(renders_row):
-                cell_renders[i][j] = align(
-                    FormattedTextAlign.LEFT, cell, width=col_widths[j]
-                )
-
-        # Render table
-        style = "class:md.table.border"
-
-        def _draw_add_border(left: str, split: str, right: str) -> None:
-            assert border is not None
-            ft.append((style, left + border.SPLIT_MID))
-            for col_width in col_widths:
-                ft.append((style, border.SPLIT_MID * col_width))
-                ft.append((style, border.SPLIT_MID + split + border.SPLIT_MID))
-            ft.pop()
-            ft.append((style, border.SPLIT_MID + right + "\n"))
-
-        # Draw top border
-        _draw_add_border(border.TOP_LEFT, border.TOP_SPLIT, border.TOP_RIGHT)
-        # Draw each row
-        for i, renders_row in enumerate(cell_renders):
-            for row_lines in zip_longest(*map(split_lines, renders_row)):
-                # Draw each line in each row
-                ft.append((style, border.MID_SPLIT + " "))
-                for j, line in enumerate(row_lines):
-                    if line is None:
-                        line = [("", " " * col_widths[j])]
-                    ft += line
-                    ft.append((style, " " + border.MID_SPLIT + " "))
-                ft.pop()
-                ft.append((style, " " + border.MID_SPLIT + "\n"))
-            # Draw border between rows
-            if i < len(cell_renders) - 1:
-                _draw_add_border(
-                    border.SPLIT_LEFT, border.SPLIT_SPLIT, border.SPLIT_RIGHT
-                )
-        # Draw bottom border
-        _draw_add_border(border.BOTTOM_LEFT, border.BOTTOM_SPLIT, border.BOTTOM_RIGHT)
-
-        ft.append(("", "\n"))
-        return ft
+        return table.render(width) + [("", "\n")]
 
     def __pt_formatted_text__(self) -> "StyleAndTextTuples":
         """Formatted text magic method."""
@@ -645,6 +551,9 @@ if __name__ == "__main__":
     import sys
 
     from prompt_toolkit.shortcuts.utils import print_formatted_text
+    from prompt_toolkit.styles.style import Style
+
+    from euporie.style import MARKDOWN_STYLE
 
     with open(sys.argv[1]) as f:
-        print_formatted_text(Markdown(f.read()))
+        print_formatted_text(Markdown(f.read()), style=Style(MARKDOWN_STYLE))
