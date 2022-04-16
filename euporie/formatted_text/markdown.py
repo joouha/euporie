@@ -1,7 +1,7 @@
 """Contains a markdown to formatted text parser."""
 
 from itertools import zip_longest
-from typing import TYPE_CHECKING, Callable, Dict, List, Optional, Type
+from typing import TYPE_CHECKING, Callable, Dict, List, Optional
 from warnings import warn
 
 from prompt_toolkit.application.current import get_app_session
@@ -12,7 +12,7 @@ from prompt_toolkit.formatted_text.utils import (
     to_plain_text,
 )
 
-from euporie.box import DoubleBorder, SquareBorder
+from euporie.border import Double, Thin
 from euporie.formatted_text.utils import (
     FormattedTextAlign,
     add_border,
@@ -28,7 +28,7 @@ from euporie.formatted_text.utils import (
 if TYPE_CHECKING:
     from markdown_it.token import Token
 
-    from euporie.box import Border
+    from euporie.border import GridStyle
 
 
 # Check for markdown-it-py
@@ -74,7 +74,7 @@ def h1(
     """Format a top-level heading wrapped and centered with a full width double border."""
     ft = wrap(ft, width - 4)
     ft = align(FormattedTextAlign.CENTER, ft, width=width - 4)
-    ft = add_border(ft, width, style="class:md.h1.border", border=DoubleBorder)
+    ft = add_border(ft, width, style="class:md.h1.border", border=Double.grid)
     ft.append(("", "\n\n"))
     return ft
 
@@ -88,7 +88,7 @@ def h2(
     """Format a 2nd-level headding wrapped and centered with a double border."""
     ft = wrap(ft, width=width - 4)
     ft = align(FormattedTextAlign.CENTER, ft)
-    ft = add_border(ft, style="class:md.h2.border", border=SquareBorder)
+    ft = add_border(ft, style="class:md.h2.border", border=Thin.grid)
     ft = align(FormattedTextAlign.CENTER, ft, width=width)
     ft.append(("", "\n\n"))
     return ft
@@ -211,9 +211,7 @@ def code(
         ft = strip(ft, left=False, right=True, char="\n")
         ft = lex(ft, lexer_name=token.info)
         ft = align(FormattedTextAlign.LEFT, ft, width - 4)
-        ft = add_border(
-            ft, width, style="class:md.code.block.border", border=SquareBorder
-        )
+        ft = add_border(ft, width, style="class:md.code.block.border", border=Thin.grid)
         ft = apply_style(ft, style="class:md.code.block")
         ft.append(("", "\n\n"))
     else:
@@ -513,7 +511,7 @@ class Markdown:
         tokens: List["Token"],
         width: int,
         left: int = 0,
-        border: "Optional[Type[Border]]" = None,
+        border: "GridStyle" = Thin.grid,
     ) -> "StyleAndTextTuples":
         """Render a list of parsed markdown tokens representing a table element.
 
@@ -528,8 +526,6 @@ class Markdown:
             Formatted text
 
         """
-        if border is None:
-            border = SquareBorder
         ft: "StyleAndTextTuples" = []
         # Stack the tokens in the shape of the table
         cell_tokens: List[List[List["Token"]]] = []
@@ -608,12 +604,12 @@ class Markdown:
 
         def _draw_add_border(left: str, split: str, right: str) -> None:
             assert border is not None
-            ft.append((style, left + border.HORIZONTAL))
+            ft.append((style, left + border.SPLIT_MID))
             for col_width in col_widths:
-                ft.append((style, border.HORIZONTAL * col_width))
-                ft.append((style, border.HORIZONTAL + split + border.HORIZONTAL))
+                ft.append((style, border.SPLIT_MID * col_width))
+                ft.append((style, border.SPLIT_MID + split + border.SPLIT_MID))
             ft.pop()
-            ft.append((style, border.HORIZONTAL + right + "\n"))
+            ft.append((style, border.SPLIT_MID + right + "\n"))
 
         # Draw top border
         _draw_add_border(border.TOP_LEFT, border.TOP_SPLIT, border.TOP_RIGHT)
@@ -621,17 +617,19 @@ class Markdown:
         for i, renders_row in enumerate(cell_renders):
             for row_lines in zip_longest(*map(split_lines, renders_row)):
                 # Draw each line in each row
-                ft.append((style, border.VERTICAL + " "))
+                ft.append((style, border.MID_SPLIT + " "))
                 for j, line in enumerate(row_lines):
                     if line is None:
                         line = [("", " " * col_widths[j])]
                     ft += line
-                    ft.append((style, " " + border.VERTICAL + " "))
+                    ft.append((style, " " + border.MID_SPLIT + " "))
                 ft.pop()
-                ft.append((style, " " + border.VERTICAL + "\n"))
+                ft.append((style, " " + border.MID_SPLIT + "\n"))
             # Draw border between rows
             if i < len(cell_renders) - 1:
-                _draw_add_border(border.LEFT_SPLIT, border.CROSS, border.RIGHT_SPLIT)
+                _draw_add_border(
+                    border.SPLIT_LEFT, border.SPLIT_SPLIT, border.SPLIT_RIGHT
+                )
         # Draw bottom border
         _draw_add_border(border.BOTTOM_LEFT, border.BOTTOM_SPLIT, border.BOTTOM_RIGHT)
 

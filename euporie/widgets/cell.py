@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from functools import partial
-from typing import TYPE_CHECKING, NamedTuple, Type, cast
+from typing import TYPE_CHECKING, NamedTuple, cast
 
 import nbformat  # type: ignore
 from prompt_toolkit.filters import Condition, has_focus, is_done
@@ -33,7 +33,7 @@ from prompt_toolkit.widgets import Frame, SearchToolbar, TextArea
 from pygments.lexers import get_lexer_by_name  # type: ignore
 
 from euporie.app.current import get_tui_app as get_app
-from euporie.box import NoBorder, RoundBorder, ThickVerticalEdgeBorder
+from euporie.border import Invisible, Thick, Thin
 from euporie.config import config
 from euporie.filters import multiple_cells_selected
 from euporie.format import format_code
@@ -46,7 +46,6 @@ if TYPE_CHECKING:
     from prompt_toolkit.buffer import Buffer
     from prompt_toolkit.formatted_text.base import AnyFormattedText, StyleAndTextTuples
 
-    from euporie.box import Border
     from euporie.tabs.notebook import Notebook, TuiNotebook
     from euporie.widgets.output.control import OutputControl
     from euporie.widgets.page import ChildRenderInfo
@@ -320,7 +319,7 @@ class Cell:
                 self.control,
                 ConditionalContainer(
                     content=fill(
-                        char=self.border_char("horizontal"),
+                        char=self.border_char("TOP_MID"),
                         width=lambda: len(self.prompt),
                         height=1,
                     ),
@@ -330,7 +329,7 @@ class Cell:
                     content=fill(width=1, height=1, char=self.border_char("TOP_SPLIT")),
                     filter=self.show_prompt,
                 ),
-                fill(char=self.border_char("HORIZONTAL"), height=1),
+                fill(char=self.border_char("TOP_MID"), height=1),
                 fill(width=1, height=1, char=self.border_char("TOP_RIGHT")),
             ],
             height=1,
@@ -338,7 +337,7 @@ class Cell:
         input_row = ConditionalContainer(
             VSplit(
                 [
-                    fill(width=1, char=self.border_char("VERTICAL")),
+                    fill(width=1, char=self.border_char("MID_LEFT")),
                     ConditionalContainer(
                         content=Window(
                             FormattedTextControl(
@@ -350,11 +349,11 @@ class Cell:
                         filter=self.show_prompt,
                     ),
                     ConditionalContainer(
-                        content=fill(width=1, char=self.border_char("INNER_VERTICAL")),
+                        fill(width=1, char=self.border_char("MID_SPLIT")),
                         filter=self.show_prompt,
                     ),
                     HSplit([self.input_box, self.search_control]),
-                    fill(width=1, char=self.border_char("VERTICAL")),
+                    fill(width=1, char=self.border_char("MID_RIGHT")),
                 ],
             ),
             filter=self.show_input,
@@ -362,20 +361,22 @@ class Cell:
         middle_line = ConditionalContainer(
             content=VSplit(
                 [
-                    fill(width=1, height=1, char=self.border_char("LEFT_SPLIT")),
+                    fill(width=1, height=1, char=self.border_char("SPLIT_LEFT")),
                     ConditionalContainer(
                         content=fill(
-                            char=self.border_char("HORIZONTAL"),
+                            char=self.border_char("SPLIT_MID"),
                             width=lambda: len(self.prompt),
                         ),
                         filter=self.show_prompt,
                     ),
                     ConditionalContainer(
-                        content=fill(width=1, height=1, char=self.border_char("CROSS")),
+                        content=fill(
+                            width=1, height=1, char=self.border_char("SPLIT_SPLIT")
+                        ),
                         filter=self.show_prompt,
                     ),
-                    fill(char=self.border_char("HORIZONTAL")),
-                    fill(width=1, height=1, char=self.border_char("RIGHT_SPLIT")),
+                    fill(char=self.border_char("SPLIT_MID")),
+                    fill(width=1, height=1, char=self.border_char("SPLIT_RIGHT")),
                 ],
                 height=1,
             ),
@@ -384,7 +385,7 @@ class Cell:
         output_row = ConditionalContainer(
             VSplit(
                 [
-                    fill(width=1, char=self.border_char("VERTICAL")),
+                    fill(width=1, char=self.border_char("MID_LEFT")),
                     ConditionalContainer(
                         content=Window(
                             FormattedTextControl(
@@ -396,11 +397,12 @@ class Cell:
                         filter=self.show_prompt,
                     ),
                     ConditionalContainer(
-                        fill(width=1, char=" "), filter=~self.show_prompt
+                        content=fill(width=1, char=self.border_char("MID_SPLIT")),
+                        filter=self.show_prompt,
                     ),
                     ConditionalContainer(
-                        content=fill(width=1, char=self.border_char("INNER_VERTICAL")),
-                        filter=self.show_prompt,
+                        fill(width=1, char=self.border_char("MID_MID")),
+                        filter=~self.show_prompt,
                     ),
                     HSplit(
                         [
@@ -412,9 +414,10 @@ class Cell:
                         ]
                     ),
                     ConditionalContainer(
-                        fill(width=1, char=" "), filter=~self.show_prompt
+                        fill(width=1, char=self.border_char("MID_MID")),
+                        filter=~self.show_prompt,
                     ),
-                    fill(width=1, char=self.border_char("VERTICAL")),
+                    fill(width=1, char=self.border_char("MID_RIGHT")),
                 ],
             ),
             filter=self.show_output | self.asking_input,
@@ -424,7 +427,7 @@ class Cell:
                 fill(width=1, height=1, char=self.border_char("BOTTOM_LEFT")),
                 ConditionalContainer(
                     content=fill(
-                        char=self.border_char("HORIZONTAL"),
+                        char=self.border_char("BOTTOM_MID"),
                         width=lambda: len(self.prompt),
                     ),
                     filter=self.show_prompt,
@@ -435,7 +438,7 @@ class Cell:
                     ),
                     filter=self.show_prompt,
                 ),
-                fill(char=self.border_char("HORIZONTAL")),
+                fill(char=self.border_char("BOTTOM_MID")),
                 fill(width=1, height=1, char=self.border_char("BOTTOM_RIGHT")),
             ],
             height=1,
@@ -507,16 +510,16 @@ class Cell:
         return "class:cell.border"
 
     def border_char(self, name: "str") -> "Callable[..., str]":
-        """Returns a function  which returns the cell border character to display."""
+        """Returns a function which returns the cell border character to display."""
 
         def _inner() -> "str":
-            border: "Type[Border]" = NoBorder
+            grid = Invisible.grid
             if config.show_cell_borders or self.selected:
                 if self.focused and multiple_cells_selected():
-                    border = ThickVerticalEdgeBorder
+                    grid = Thin.grid + Thick.left_edge + Thick.right_edge
                 else:
-                    border = RoundBorder
-            return getattr(border, name.upper())
+                    grid = Thin.grid
+            return getattr(grid, name.upper())
 
         return _inner
 

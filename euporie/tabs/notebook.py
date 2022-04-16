@@ -26,12 +26,12 @@ from prompt_toolkit.mouse_events import MouseEventType
 from prompt_toolkit.widgets import Box, Label, RadioList
 
 from euporie.app.current import get_tui_app as get_app
-from euporie.box import BorderLine, Pattern
 from euporie.config import config
 from euporie.key_binding.bindings.commands import load_command_bindings
 from euporie.suggest import KernelAutoSuggest
 from euporie.tabs.base import Tab
 from euporie.widgets.cell import Cell, InteractiveCell, get_cell_id
+from euporie.widgets.decor import Line, Pattern
 from euporie.widgets.output.container import CellOutput
 from euporie.widgets.page import PrintingContainer, ScrollbarControl, ScrollingContainer
 
@@ -480,13 +480,13 @@ class TuiNotebook(KernelNotebook):
                         ConditionalContainer(
                             VSplit(
                                 [
-                                    Pattern(),
-                                    BorderLine(
+                                    Pattern(config.background_character),
+                                    Line(
                                         width=1,
                                         collapse=True,
                                         style="class:notebook.border",
                                     ),
-                                    BorderLine(
+                                    Line(
                                         char=" ",
                                         width=1,
                                         collapse=True,
@@ -500,18 +500,18 @@ class TuiNotebook(KernelNotebook):
                         ConditionalContainer(
                             VSplit(
                                 [
-                                    BorderLine(
+                                    Line(
                                         char=" ",
                                         width=1,
                                         collapse=True,
                                         style="class:notebook.border",
                                     ),
-                                    BorderLine(
+                                    Line(
                                         width=1,
                                         collapse=True,
                                         style="class:notebook.border",
                                     ),
-                                    Pattern(),
+                                    Pattern(config.background_character),
                                 ]
                             ),
                             filter=~expand,
@@ -531,9 +531,7 @@ class TuiNotebook(KernelNotebook):
                 ConditionalContainer(
                     HSplit(
                         [
-                            BorderLine(
-                                height=1, collapse=False, style="class:pager.border"
-                            ),
+                            Line(height=1, collapse=False, style="class:pager.border"),
                             Box(
                                 DynamicContainer(self.get_pager_content),
                                 padding=0,

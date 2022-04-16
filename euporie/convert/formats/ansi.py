@@ -429,16 +429,17 @@ def png_to_ansi_py_placeholder(
     bg: "Optional[str]" = None,
 ) -> "str":
     """Draw placeholder ANSI text."""
-    from euporie.box import RoundBorder as B
+    from euporie.border import Rounded
 
     lines = []
-    lines.append(B.TOP_LEFT + B.HORIZONTAL * max(5, (cols - 2)) + B.TOP_RIGHT)
-    lines += [B.VERTICAL + (" " * (cols - 2)) + B.VERTICAL] * ((rows - 3) // 2)
-    lines.append(B.VERTICAL + "Image".center(cols - 2) + B.VERTICAL)
-    lines += [B.VERTICAL + " " * (cols - 2) + B.VERTICAL] * (
+    B = Rounded.grid
+    lines.append(f"{B.TOP_LEFT}{B.TOP_MID * max(5, (cols - 2))}{B.TOP_RIGHT}")
+    lines += [f"{B.MID_LEFT}{B.MID_MID * (cols - 2)}{B.MID_RIGHT}"] * ((rows - 3) // 2)
+    lines.append(f"{B.MID_LEFT}{'Image'.center(cols - 2)}{B.MID_RIGHT}")
+    lines += [f"{B.MID_LEFT}{B.MID_MID * (cols - 2)}{B.MID_RIGHT}"] * (
         (rows - 3) - (rows - 3) // 2
     )
-    lines.append(B.BOTTOM_LEFT + B.HORIZONTAL * max(5, (cols - 2)) + B.BOTTOM_RIGHT)
+    lines.append(f"{B.BOTTOM_LEFT}{B.BOTTOM_MID * max(5, (cols - 2))}{B.BOTTOM_RIGHT}")
     return "\n".join(lines)
 
 

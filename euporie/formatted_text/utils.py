@@ -1,6 +1,6 @@
 """Utilities for manipulating formatted text."""
 from enum import Enum
-from typing import Iterable, Optional, Type, cast
+from typing import Iterable, Optional, cast
 
 from prompt_toolkit.formatted_text.base import OneStyleAndTextTuple, StyleAndTextTuples
 from prompt_toolkit.formatted_text.utils import (
@@ -12,7 +12,7 @@ from prompt_toolkit.utils import get_cwidth
 from pygments.lexers import get_lexer_by_name  # type: ignore
 from pygments.util import ClassNotFound  # type: ignore
 
-from euporie.box import Border, SquareBorder
+from euporie.border import GridStyle, Thin
 
 __all__ = [
     "FormattedTextAlign",
@@ -286,7 +286,7 @@ def add_border(
     ft: StyleAndTextTuples,
     width: "Optional[int]" = None,
     style: str = "",
-    border: "Optional[Type[Border]]" = None,
+    border: "GridStyle" = Thin.grid,
 ) -> StyleAndTextTuples:
     """Adds a border around formatted text.
 
@@ -294,15 +294,12 @@ def add_border(
         ft: The formatted text to enclose with a border
         width: The target width of the output including the border
         style: The style to apply to the border
-        border: The border to apply
+        border: The grid style to use for the border
 
     Returns:
         The indented formatted text
 
     """
-    if border is None:
-        # See mypy issue #4236
-        border = cast("Type[Border]", SquareBorder)
     if width is None:
         width = max_line_width(ft) + 4
 

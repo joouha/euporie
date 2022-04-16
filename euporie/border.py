@@ -5,7 +5,7 @@ from functools import total_ordering
 from typing import TYPE_CHECKING, NamedTuple
 
 if TYPE_CHECKING:
-    from typing import Dict, List, Optional, Union
+    from typing import Dict, List, Optional
 
 __all__ = [
     "Invisible",
@@ -205,7 +205,7 @@ class LineStyle:
         if parent:
             parent.children[name] = self
 
-    def __getattr__(self, value: "str") -> "Union[LineStyle, GridStyle]":
+    def __getattr__(self, value: "str") -> "GridStyle":
         """Defines attribute access.
 
         Allows dynamic access to children and :class:`GridStyle` creation via attribute
@@ -221,9 +221,7 @@ class LineStyle:
             AttributeError: Raised if there is no such attribute
 
         """
-        if value in self.children:
-            return self.children[value]
-        elif hasattr(Masks, value):
+        if hasattr(Masks, value):
             mask = getattr(Masks, value)
             return GridStyle(self, mask)
         else:
@@ -231,9 +229,7 @@ class LineStyle:
 
     def __dir__(self) -> "List[str]":
         """Lists the public attributes."""
-        return list(self.children.keys()) + [
-            x for x in Masks.__dict__ if not x.startswith("_")
-        ]
+        return [x for x in Masks.__dict__ if not x.startswith("_")]
 
     def __lt__(self, other: "LineStyle") -> "bool":
         """Allows :class:`LineStyle`s to be sorted according to their rank."""
@@ -372,8 +368,8 @@ _GRID_CHARS = {
     GridChar(ThickDoubleDashed, Invisible, ThickDoubleDashed, Invisible): "╏",
     GridChar(Invisible, ThickTripleDashed, Invisible, ThickTripleDashed): "┅",
     GridChar(ThickTripleDashed, Invisible, ThickTripleDashed, Invisible): "┇",
-    GridChar(Invisible, ThinQuadrupleDashed, Invisible, ThinQuadrupleDashed): "┉",
-    GridChar(ThinQuadrupleDashed, Invisible, ThinQuadrupleDashed, Invisible): "┋",
+    GridChar(Invisible, ThickQuadrupleDashed, Invisible, ThickQuadrupleDashed): "┉",
+    GridChar(ThickQuadrupleDashed, Invisible, ThickQuadrupleDashed, Invisible): "┋",
     # Thick / Thin
     GridChar(Invisible, Thick, Invisible, Thin): "╼",
     GridChar(Thin, Invisible, Thick, Invisible): "╽",

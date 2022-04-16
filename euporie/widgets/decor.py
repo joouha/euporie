@@ -1,6 +1,5 @@
-"""Define box border constants."""
+"""Decorative widgets."""
 
-from abc import ABCMeta
 from typing import Optional
 
 from prompt_toolkit.layout.containers import Container
@@ -8,118 +7,13 @@ from prompt_toolkit.layout.dimension import Dimension
 from prompt_toolkit.layout.mouse_handlers import MouseHandlers
 from prompt_toolkit.layout.screen import Char, Screen, WritePosition
 
+from euporie.border import Thin
 from euporie.config import config
 
-__all__ = ["SquareBorder", "RoundBorder", "BorderLine", "Pattern"]
+__all__ = ["Line", "Pattern"]
 
 
-class Border(metaclass=ABCMeta):
-    """Base border type."""
-
-    TOP_LEFT: str
-    TOP_SPLIT: str
-    TOP_RIGHT: str
-    HORIZONTAL: str
-    INNER_VERTICAL: str
-    VERTICAL: str
-    LEFT_SPLIT: str
-    RIGHT_SPLIT: str
-    CROSS: str
-    BOTTOM_LEFT: str
-    BOTTOM_SPLIT: str
-    BOTTOM_RIGHT: str
-    NONE: str
-
-
-class NoBorder(Border):
-    """Invisible border."""
-
-    TOP_LEFT = " "
-    TOP_SPLIT = " "
-    TOP_RIGHT = " "
-    HORIZONTAL = " "
-    INNER_VERTICAL = " "
-    VERTICAL = " "
-    LEFT_SPLIT = " "
-    RIGHT_SPLIT = " "
-    CROSS = " "
-    BOTTOM_LEFT = " "
-    BOTTOM_SPLIT = " "
-    BOTTOM_RIGHT = " "
-
-
-class SquareBorder(Border):
-    """Square thin border."""
-
-    TOP_LEFT = "┌"
-    TOP_SPLIT = "┬"
-    TOP_RIGHT = "┐"
-    HORIZONTAL = "─"
-    INNER_VERTICAL = "│"
-    VERTICAL = "│"
-    LEFT_SPLIT = "├"
-    RIGHT_SPLIT = "┤"
-    CROSS = "┼"
-    BOTTOM_LEFT = "└"
-    BOTTOM_SPLIT = "┴"
-    BOTTOM_RIGHT = "┘"
-
-
-class RoundBorder(SquareBorder):
-    """Thin border with round corners."""
-
-    TOP_LEFT = "╭"
-    TOP_RIGHT = "╮"
-    BOTTOM_LEFT = "╰"
-    BOTTOM_RIGHT = "╯"
-
-
-class DoubleBorder(Border):
-    """Square border with double lines."""
-
-    TOP_LEFT = "╔"
-    TOP_SPLIT = "╦"
-    TOP_RIGHT = "╗"
-    HORIZONTAL = "═"
-    VERTICAL = "║"
-    LEFT_SPLIT = "╠"
-    RIGHT_SPLIT = "╣"
-    CROSS = "╬"
-    BOTTOM_LEFT = "╚"
-    BOTTOM_SPLIT = "╩"
-    BOTTOM_RIGHT = "╝"
-
-
-class ThickBorder(Border):
-    """Square border with thick lines."""
-
-    TOP_LEFT = "┏"
-    TOP_SPLIT = "┳"
-    TOP_RIGHT = "┓"
-    HORIZONTAL = "━"
-    VERTICAL = "┃"
-    LEFT_SPLIT = "┣"
-    RIGHT_SPLIT = "┫"
-    CROSS = "╋"
-    BOTTOM_LEFT = "┗"
-    BOTTOM_SPLIT = "┻"
-    BOTTOM_RIGHT = "┛"
-
-
-class ThickVerticalEdgeBorder(SquareBorder):
-    """Box drawing characters with thick verticals outer edges."""
-
-    TOP_LEFT = "┎"
-    TOP_RIGHT = "┒"
-    VERTICAL = "┃"
-    INNER_VERTICAL = "│"
-    LEFT_SPLIT = "┠"
-    RIGHT_SPLIT = "┨"
-    BOTTOM_LEFT = "┖"
-    BOTTOM_RIGHT = "┚"
-
-
-class BorderLine(Container):
+class Line(Container):
     """Draws a horizontal or vertical line."""
 
     def __init__(
@@ -150,7 +44,7 @@ class BorderLine(Container):
         self.width = width
         self.height = height
         if char is None:
-            char = SquareBorder.VERTICAL if width else SquareBorder.HORIZONTAL
+            char = Thin.grid.VERTICAL if width else Thin.grid.HORIZONTAL
         self.char = Char(char, style)
         self.collapse = collapse
 
@@ -208,10 +102,10 @@ class BorderLine(Container):
 class Pattern(Container):
     """Fill an area with a repeating background pattern."""
 
-    def __init__(self) -> "None":
+    def __init__(self, char: "str") -> "None":
         """Initialize the :class:`Pattern`."""
         self.bg = Char(" ", "class:pattern")
-        self.char = Char(config.background_character, "class:pattern")
+        self.char = Char(char, "class:pattern")
 
     def reset(self) -> "None":
         """Resets the pattern. Does nothing."""

@@ -20,7 +20,7 @@ from prompt_toolkit.widgets.menus import MenuContainer as PtKMenuContainer
 from prompt_toolkit.widgets.menus import MenuItem as PtkMenuItem
 
 from euporie.app.current import get_base_app as get_app
-from euporie.box import SquareBorder as Border
+from euporie.border import Thin
 
 if TYPE_CHECKING:
     from typing import Any, Callable, Iterable, Optional, Sequence, Union
@@ -34,6 +34,7 @@ if TYPE_CHECKING:
     from prompt_toolkit.key_binding import KeyBindingsBase
     from prompt_toolkit.layout.containers import AnyContainer, Float
 
+    from euporie.border import GridStyle
     from euporie.commands.base import Command
 
 
@@ -226,6 +227,7 @@ class MenuContainer(PtKMenuContainer):
         key_bindings: "Optional[KeyBindingsBase]" = None,
         left: "Optional[Sequence[AnyContainer]]" = None,
         right: "Optional[Sequence[AnyContainer]]" = None,
+        grid: "GridStyle" = Thin.grid,
     ) -> "None":
         """Initiate the menu bar.
 
@@ -236,6 +238,7 @@ class MenuContainer(PtKMenuContainer):
             key_bindings: Any key-bindings to apply to the menu-bar
             left: A list of containers to display to the left of the menubar
             right: A list of containers to display to the right of the menubar
+            grid: The grid style to use for the menu's borders
 
         """
         super().__init__(body, menu_items, floats, key_bindings)
@@ -250,6 +253,8 @@ class MenuContainer(PtKMenuContainer):
         ]
 
         get_app().container_statuses[self.window] = self.statusbar_fields
+
+        self.grid = grid
 
     def statusbar_fields(
         self,
@@ -320,11 +325,11 @@ class MenuContainer(PtKMenuContainer):
                 menu = self._get_menu(level)
 
                 if menu.children:
-                    result.append(("class:menu-border", Border.TOP_LEFT))
+                    result.append(("class:menu-border", self.grid.TOP_LEFT))
                     result.append(
-                        ("class:menu-border", Border.HORIZONTAL * (menu.width + 2))
+                        ("class:menu-border", self.grid.TOP_MID * (menu.width + 2))
                     )
-                    result.append(("class:menu-border", Border.TOP_RIGHT))
+                    result.append(("class:menu-border", self.grid.TOP_RIGHT))
                     result.append(("", "\n"))
                     try:
                         selected_item = self.selected_menu[level + 1]
@@ -360,14 +365,14 @@ class MenuContainer(PtKMenuContainer):
                             # Show a connected line with no mouse handler
                             yield (
                                 "class:menu-border",
-                                Border.LEFT_SPLIT
-                                + (Border.HORIZONTAL * (menu.width + 2))
-                                + Border.RIGHT_SPLIT,
+                                self.grid.SPLIT_LEFT
+                                + (self.grid.SPLIT_MID * (menu.width + 2))
+                                + self.grid.SPLIT_RIGHT,
                             )
 
                         else:
                             # Show the right edge
-                            yield ("class:menu-border", Border.VERTICAL)
+                            yield ("class:menu-border", self.grid.MID_LEFT)
                             # Set the style and cursor if selected
                             style = ""
                             if i == selected_item:
@@ -428,7 +433,7 @@ class MenuContainer(PtKMenuContainer):
                             if i == selected_item:
                                 yield ("[SetMenuPosition]", "")
                             # Show the right edge
-                            yield ("class:menu-border", Border.VERTICAL)
+                            yield ("class:menu-border", self.grid.MID_RIGHT)
 
                         yield ("", "\n")
 
@@ -437,11 +442,11 @@ class MenuContainer(PtKMenuContainer):
                         if not item.hidden():
                             result.extend(one_item(i, item))
 
-                    result.append(("class:menu-border", Border.BOTTOM_LEFT))
+                    result.append(("class:menu-border", self.grid.BOTTOM_LEFT))
                     result.append(
-                        ("class:menu-border", Border.HORIZONTAL * (menu.width + 2))
+                        ("class:menu-border", self.grid.BOTTOM_MID * (menu.width + 2))
                     )
-                    result.append(("class:menu-border", Border.BOTTOM_RIGHT))
+                    result.append(("class:menu-border", self.grid.BOTTOM_RIGHT))
 
             return result
 
