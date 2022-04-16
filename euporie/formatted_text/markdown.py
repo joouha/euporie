@@ -576,7 +576,7 @@ class Markdown:
                 cell_renders[-1].append(rendered)
                 cell_widths[-1].append(fragment_list_width(rendered))
 
-        # Calculate row and column widths, accounting for broders
+        # Calculate row and column widths, accounting for borders
         col_widths = [
             max([row[i] for row in cell_widths]) for i in range(len(cell_widths[0]))
         ]
