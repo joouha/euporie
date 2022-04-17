@@ -8,6 +8,7 @@ from euporie.commands import (  # search,
     config,
     notebook,
     pager,
+    search,
     suggestions,
     tui,
 )
@@ -27,6 +28,6 @@ __all__ = [
     "completions",
     "notebook",
     "pager",
-    # "search",
+    "search",
     "suggestions",
 ]

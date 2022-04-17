@@ -29,7 +29,7 @@ from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.layout.dimension import Dimension
 from prompt_toolkit.layout.menus import CompletionsMenu
 from prompt_toolkit.output.defaults import create_output
-from prompt_toolkit.widgets import Button, Dialog, Label, TextArea
+from prompt_toolkit.widgets import Button, Dialog, Label, SearchToolbar, TextArea
 from pyperclip import determine_clipboard  # type: ignore
 
 from euporie import __app_name__, __copyright__, __logo__, __strapline__, __version__
@@ -220,6 +220,12 @@ class TuiApp(EuporieApp):
 
         tabs = DynamicContainer(self.tab_container)
 
+        self.search_bar = SearchToolbar(
+            text_if_not_searching="",
+            forward_search_prompt=[("bold", "Find: ")],
+            backward_search_prompt=[("", "Find (up): ")],
+        )
+
         status_bar = ConditionalContainer(
             content=VSplit(
                 [
@@ -238,7 +244,7 @@ class TuiApp(EuporieApp):
             filter=Condition(lambda: config.show_status_bar),
         )
 
-        body = HSplit([tabs, status_bar], style="class:body")
+        body = HSplit([tabs, self.search_bar, status_bar], style="class:body")
 
         self.command_palette = CommandPalette()
 

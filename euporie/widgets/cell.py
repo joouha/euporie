@@ -8,7 +8,7 @@ from functools import partial
 from typing import TYPE_CHECKING, NamedTuple, cast
 
 import nbformat  # type: ignore
-from prompt_toolkit.filters import Condition, has_focus, is_done
+from prompt_toolkit.filters import Condition, has_focus, is_done, is_searching
 from prompt_toolkit.formatted_text import to_formatted_text
 from prompt_toolkit.layout.containers import (
     ConditionalContainer,
@@ -22,10 +22,12 @@ from prompt_toolkit.layout.containers import (
 )
 from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.layout.margins import ConditionalMargin, NumberedMargin
-from prompt_toolkit.layout.processors import (
+from prompt_toolkit.layout.processors import (  # DisplayMultipleCursors,
     BeforeInput,
     ConditionalProcessor,
+    HighlightIncrementalSearchProcessor,
     HighlightMatchingBracketProcessor,
+    HighlightSelectionProcessor,
 )
 from prompt_toolkit.lexers import DynamicLexer, PygmentsLexer, SimpleLexer
 from prompt_toolkit.mouse_events import MouseEvent, MouseEventType, MouseModifier
@@ -112,9 +114,20 @@ class CellInputTextArea(TextArea):
         )
         kwargs["style"] = "class:cell.input.box"
         kwargs["accept_handler"] = self.cell.run_or_render
-        kwargs["input_processors"] = [HighlightMatchingBracketProcessor()]
+        kwargs["input_processors"] = [
+            ConditionalProcessor(
+                HighlightIncrementalSearchProcessor(),
+                filter=is_searching,
+            ),
+            HighlightSelectionProcessor(),
+            # DisplayMultipleCursors(),
+            HighlightMatchingBracketProcessor(),
+        ]
+        kwargs["search_field"] = get_app().search_bar
 
         super().__init__(*args, **kwargs)
+
+        self.control.include_default_input_processors = False
 
         self.buffer.tempfile_suffix = self.cell.nb.lang_file_ext
         self.buffer.on_text_changed += self.on_text_changed

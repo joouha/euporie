@@ -121,8 +121,13 @@ def build_style(cp: "Optional[Dict[str, Dict[Union[str, int], str]]]") -> "Style
             "line-number": f"fg:{cp['fg'][-1]} bg:{cp['bg'][-5]}",
             "line-number.current": f"bold orange bg:{cp['bg'][-1]}",
             "cursor-line": f"bg:{cp['bg'][-5]}",
+            "cursor-line incsearch": "bg:ansibrightyellow",
+            "cursor-line incsearch.current": "bg:ansibrightgreen",
             "matching-bracket.cursor": "fg:yellow bold",
             "matching-bracket.other": "fg:yellow bold",
+            # Search
+            "incsearch": "bg:ansibrightyellow",
+            "incsearch.current": "bg:ansibrightgreen",
             # Cells
             "cell.border": f"fg:{cp['bg'][5]}",
             "cell.border.selected": "fg:#00afff",

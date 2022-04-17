@@ -1,26 +1,104 @@
 """Defines commands related to searching."""
+import logging
+from typing import TYPE_CHECKING
+
+from prompt_toolkit.application.current import get_app
+from prompt_toolkit.filters import buffer_has_focus, is_searching
+from prompt_toolkit.key_binding.bindings.search import start_forward_incremental_search
+from prompt_toolkit.layout.controls import BufferControl, SearchBufferControl
+from prompt_toolkit.search import SearchDirection
+
+from euporie.commands.registry import add
+
+if TYPE_CHECKING:
+    from typing import Optional
+
+    from prompt_toolkit.layout.controls import UIControl
+
+log = logging.getLogger(__name__)
 
 # Search
+add(
+    name="find",
+    filter=buffer_has_focus,
+    group="edit-mode",
+    description="Enter search mode",
+)(start_forward_incremental_search.handler)
 
-# register("abort-search")(abort_search)
-# register("accept-search")(accept_search)
-# register("start-reverse-incremental-search")(start_reverse_incremental_search)
-# register("start-forward-incremental-search")(start_forward_incremental_search)
-# register("reverse-incremental-search")(reverse_incremental_search)
-# register("forward-incremental-search")(forward_incremental_search)
-# register("accept-search-and-accept-input")(accept_search_and_accept_input)
 
-"""
+def find_prev_next(direction: "SearchDirection") -> "None":
+    """Find the previous or next search match."""
+    layout = get_app().layout
+    control: "Optional[UIControl]" = layout.current_control
+    if isinstance(control, SearchBufferControl):
+        control = layout.search_target_buffer_control
+    if not isinstance(control, BufferControl):
+        return
+    # Update search_state.
+    search_state = control.search_state
+    search_state.direction = direction
+    # Apply search to current buffer.
+    control.buffer.apply_search(search_state, include_current_position=False, count=1)
 
-        @kb.add("c-f", group="Edit Mode", desc="Find")
-        def find(event: "KeyPressEvent") -> "None":
-            start_search(self.control)
 
-        @kb.add("c-g", group="Edit Mode", desc="Find Next")
-        def find_next(event: "KeyPressEvent") -> "None":
-            search_state = get_app().current_search_state
-            cursor_position = event.current_buffer.get_search_position(
-                search_state, include_current_position=False
-            )
-            event.current_buffer.cursor_position = cursor_position
-"""
+@add(group="tui")
+def find_next() -> "None":
+    """Find the next search match."""
+    find_prev_next(SearchDirection.FORWARD)
+
+
+@add(group="edit-mode")
+def find_previous() -> "None":
+    """Find the previous search match."""
+    find_prev_next(SearchDirection.BACKWARD)
+
+
+# Search mode commands
+
+
+@add(
+    filter=is_searching,
+    group="search-mode",
+)
+def stop_search() -> "None":
+    """Abort the search."""
+    layout = get_app().layout
+    buffer_control = layout.search_target_buffer_control
+    if buffer_control is None:
+        return
+    search_buffer_control = buffer_control.search_buffer_control
+    # Focus the original buffer again.
+    layout.focus(buffer_control)
+    # Close the search toolbar
+    if search_buffer_control is not None:
+        del layout.search_links[search_buffer_control]
+        # Reset content of search control.
+        search_buffer_control.buffer.reset()
+
+
+@add(
+    name="accept-search",
+    group="search-mode",
+    filter=is_searching,
+)
+def accept_search() -> "None":
+    """Accept the search input."""
+    layout = get_app().layout
+    search_control = layout.current_control
+    target_buffer_control = layout.search_target_buffer_control
+    if not isinstance(search_control, BufferControl):
+        return
+    if target_buffer_control is None:
+        return
+    search_state = target_buffer_control.search_state
+    # Update search state.
+    if search_control.buffer.text:
+        search_state.text = search_control.buffer.text
+    # Apply search.
+    target_buffer_control.buffer.apply_search(
+        search_state, include_current_position=True
+    )
+    # Add query to history of search line.
+    search_control.buffer.append_to_history()
+    # Stop the search
+    stop_search()

@@ -106,6 +106,11 @@ MICRO_BINDINGS: "Dict[str, Union[List[Union[Tuple[Union[Keys, str], ...], Keys, 
     "accept-suggestion": ["right", "c-f"],
     "fill-sugestion": ("escape", "f"),
     "toggle-comment": "c-_",
+    "find": ["c-f", "f3", "f7"],
+    "find-next": "c-g",
+    "find-previous": "c-p",
+    "accept-search": "enter",
+    "stop-search": "escape",
 }
 
 
