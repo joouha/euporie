@@ -222,8 +222,17 @@ class TuiApp(EuporieApp):
 
         self.search_bar = SearchToolbar(
             text_if_not_searching="",
-            forward_search_prompt=[("bold", "Find: ")],
-            backward_search_prompt=[("", "Find (up): ")],
+            forward_search_prompt=[
+                ("class:search-toolbar.title", " Find: "),
+                ("", " "),
+            ],
+            backward_search_prompt=[
+                ("class:search-toolbar.title", " Find (up): "),
+                ("", " "),
+            ],
+        )
+        is_searching = Condition(
+            lambda: self.search_bar.control in self.layout.search_links
         )
 
         status_bar = ConditionalContainer(
@@ -241,7 +250,7 @@ class TuiApp(EuporieApp):
                 ],
                 height=1,
             ),
-            filter=Condition(lambda: config.show_status_bar),
+            filter=Condition(lambda: config.show_status_bar) & ~is_searching,
         )
 
         body = HSplit([tabs, self.search_bar, status_bar], style="class:body")
@@ -607,6 +616,8 @@ class TuiApp(EuporieApp):
                     get("paste-cells").menu,
                     separator,
                     get("copy-outputs").menu,
+                    separator,
+                    get("find").menu,
                     separator,
                     get("reformat-cells").menu,
                     get("reformat-notebook").menu,

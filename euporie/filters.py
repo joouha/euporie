@@ -134,6 +134,15 @@ def notebook_has_focus() -> "bool":
 
 
 @Condition
+def in_edit_mode() -> "bool":
+    """Determine if there is a currently focused notebook."""
+    nb = get_app().notebook
+    if nb is not None:
+        return nb.edit_mode
+    return False
+
+
+@Condition
 def pager_has_focus() -> "bool":
     """Determine if there is a currently focused notebook."""
     app = get_app()

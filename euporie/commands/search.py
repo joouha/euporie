@@ -3,12 +3,12 @@ import logging
 from typing import TYPE_CHECKING
 
 from prompt_toolkit.application.current import get_app
-from prompt_toolkit.filters import buffer_has_focus, is_searching
-from prompt_toolkit.key_binding.bindings.search import start_forward_incremental_search
+from prompt_toolkit.filters import is_searching
 from prompt_toolkit.layout.controls import BufferControl, SearchBufferControl
-from prompt_toolkit.search import SearchDirection
+from prompt_toolkit.search import SearchDirection, start_search
 
 from euporie.commands.registry import add
+from euporie.filters import in_edit_mode
 
 if TYPE_CHECKING:
     from typing import Optional
@@ -17,13 +17,16 @@ if TYPE_CHECKING:
 
 log = logging.getLogger(__name__)
 
-# Search
-add(
+
+@add(
     name="find",
-    filter=buffer_has_focus,
+    menu_title="Find in cell",
+    filter=in_edit_mode,
     group="edit-mode",
-    description="Enter search mode",
-)(start_forward_incremental_search.handler)
+)
+def find() -> "None":
+    """Enter search mode."""
+    start_search(direction=SearchDirection.FORWARD)
 
 
 def find_prev_next(direction: "SearchDirection") -> "None":

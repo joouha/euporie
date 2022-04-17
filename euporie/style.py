@@ -128,6 +128,8 @@ def build_style(cp: "Optional[Dict[str, Dict[Union[str, int], str]]]") -> "Style
             # Search
             "incsearch": "bg:ansibrightyellow",
             "incsearch.current": "bg:ansibrightgreen",
+            "search-toolbar": f"fg:{cp['fg'][1]} bg:{cp['bg'][1]}",
+            "search-toolbar.title": f"fg:{cp['fg'][2]} bg:{cp['bg'][2]}",
             # Cells
             "cell.border": f"fg:{cp['bg'][5]}",
             "cell.border.selected": "fg:#00afff",
