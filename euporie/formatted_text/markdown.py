@@ -399,7 +399,7 @@ class Markdown:
 
                 # If there is a special method for rendering the block, use it
 
-                # Tables require a lot of care
+                # Tables require special care
                 if token.tag == "table":
                     ft += self.render_table(
                         tokens[i : i + tokens_in_block + 1],
@@ -530,12 +530,20 @@ class Markdown:
             if token.type == "tr_open":
                 row = table.new_row()
             elif token.type in ("th_open", "td_open"):
+                side = "left"
+                # Check CSS for text alignment
+                for style_str in str(token.attrs.get("style", "")).split(";"):
+                    if ":" in style_str:
+                        key, value = style_str.strip().split(":", 1)
+                        if key.strip() == "text-align":
+                            side = value
                 start_token = token
                 for j, token in enumerate(tokens[i:]):
                     if token.type in ("th_close", "td_close"):
                         row.new_cell(
                             text=self.render(tokens[i : i + j + 1], width=width),
                             border=Thick if start_token.type == "th_open" else None,
+                            align=_SIDES.get(side, FormattedTextAlign.LEFT),
                         )
                         break
                 i += j
