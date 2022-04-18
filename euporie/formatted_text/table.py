@@ -13,7 +13,17 @@ from euporie.border import GridChar, Invisible, LineStyle, Thin, grid_char
 from euporie.formatted_text.utils import FormattedTextAlign, align, max_line_width, wrap
 
 if TYPE_CHECKING:
-    from typing import Any, Iterable, List, Optional, Sequence, Union
+    from typing import (
+        Any,
+        Iterable,
+        Iterator,
+        List,
+        Optional,
+        Sequence,
+        Tuple,
+        TypeVar,
+        Union,
+    )
 
     from prompt_toolkit.formatted_text.base import (
         AnyFormattedText,
@@ -21,8 +31,10 @@ if TYPE_CHECKING:
         StyleAndTextTuples,
     )
 
+    PairT = TypeVar("PairT")
 
-def pairwise(iterable: "Iterable") -> "zip":
+
+def pairwise(iterable: "Iterable[PairT]") -> "Iterator[Tuple[PairT, PairT]]":
     """Returns successiver overlapping pairs from an iterable."""
     a, b = tee(iterable)
     next(b, None)
@@ -190,8 +202,8 @@ class Cell:
         """The cell's alignment."""
         if self._align is not None:
             return self._align
-        elif self.row is not None:
-            if self.row._align:
+        else:
+            if self.row._align is not None:
                 return self.row.align
             return self.col.align
 
@@ -278,7 +290,7 @@ class Cell:
         """Sets the cell's style."""
         self._style = style
 
-    def __repr__(self):
+    def __repr__(self) -> "str":
         """Returns a text representation of the cell."""
         cell_text = to_plain_text(self._text)
         if len(cell_text) > 5:
@@ -317,7 +329,7 @@ class RowCol:
         self,
         table: "Optional[Table]" = None,
         cells: "Optional[Sequence[Cell]]" = None,
-        align: "FormattedTextAlign" = None,
+        align: "Optional[FormattedTextAlign]" = None,
         padding: "Optional[CellPadding]" = None,
         border: "Optional[Union[LineStyle, CellBorder]]" = None,
         style: "str" = "",
@@ -460,7 +472,7 @@ class RowCol:
         """The default style for cells' contents in the row or column."""
         self._style = style
 
-    def __repr__(self):
+    def __repr__(self) -> "str":
         """Returns a textual representation of the row or column."""
         return f"{self.__class__.__name__}({', '.join(map(str, self._cells.values()))})"
 

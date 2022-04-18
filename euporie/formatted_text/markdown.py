@@ -8,7 +8,7 @@ from prompt_toolkit.formatted_text.base import StyleAndTextTuples, to_formatted_
 from prompt_toolkit.formatted_text.utils import to_plain_text
 
 from euporie.border import Double, Thick, Thin
-from euporie.formatted_text.table import Table
+from euporie.formatted_text.table import DummyRow, Table
 from euporie.formatted_text.utils import (
     FormattedTextAlign,
     add_border,
@@ -25,6 +25,7 @@ if TYPE_CHECKING:
     from markdown_it.token import Token
 
     from euporie.border import GridStyle
+    from euporie.formatted_text.table import Row
 
 
 # Check for markdown-it-py
@@ -525,6 +526,7 @@ class Markdown:
         table = Table(border_style="class:md.table.border")
         # Stack the tokens in the shape of the table
         i = 0
+        row: "Row" = DummyRow()
         while i < len(tokens):
             token = tokens[i]
             if token.type == "tr_open":
