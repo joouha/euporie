@@ -25,6 +25,9 @@ Notebook Viewers
 `ipynbviewer <https://github.com/PaulEcoffet/ipynbviewer>`_
    Outputs Jupyter Notebook in the terminal in a human readable format (supports images)
 
+`nbview <https://github.com/beringresearch/nbview>`_
+   A lightweight utility for viewing Jupyter Notebook files in your terminal, written in Go
+
 `nbtui <https://github.com/chentau/nbtui>`_
    A cli Jupyter notebook viewer with support for kitty's terminal graphics protocol
 
