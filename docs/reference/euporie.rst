@@ -17,7 +17,7 @@ euporie
       :recursive:
 
       euporie.app
-      euporie.box
+      euporie.border
       euporie.commands
       euporie.completion
       euporie.config

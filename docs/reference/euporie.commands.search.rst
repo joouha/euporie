@@ -6,3 +6,26 @@ euporie.commands.search
    :undoc-members:
    :inherited-members:
    :show-inheritance:
+
+
+
+
+
+
+
+
+
+
+
+
+   .. rubric:: Functions
+
+   .. autosummary::
+      :toctree:
+
+      accept_search
+      find
+      find_next
+      find_prev_next
+      find_previous
+      stop_search
