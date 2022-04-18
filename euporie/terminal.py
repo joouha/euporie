@@ -145,13 +145,19 @@ class TerminalQuery:
             self.event.fire()
         return NotImplemented
 
+    def _cmd(self) -> "str":
+        """Return the query's command."""
+        return self.cmd
+
     def send(self) -> "None":
         """Sends the terminal query command to the output."""
         if self.queryable and self.cmd and not self.waiting:
             log.debug(
-                "Sending query %s for %s", self.cmd.__repr__(), self.__class__.__name__
+                "Sending query %s for %s",
+                self._cmd().__repr__(),
+                self.__class__.__name__,
             )
-            self.output.write_raw(self.cmd)
+            self.output.write_raw(self._cmd())
             self.output.flush()
             self.waiting = True
 
@@ -238,10 +244,11 @@ class KittyGraphicsStatus(TerminalQuery):
 
     default = False
     cache = True
-    cmd = tmuxify(
-        "\x1b_Gi=4294967295,s=1,v=1,a=q,t=d,f=24;AAAA\x1b\\"  # + "\x1b[1K" + "\x1b[1G"
-    )
+    cmd = "\x1b_Gi=4294967295,s=1,v=1,a=q,t=d,f=24;AAAA\x1b\\"
     pattern = re.compile(r"^\x1b_Gi=4294967295;(?P<status>OK)\x1b\\\Z")
+
+    def _cmd(self) -> "str":
+        return tmuxify(self.cmd)
 
     def verify(self, data: "str") -> "bool":
         """Verifies the terminal response means kitty graphics are supported."""
@@ -257,8 +264,11 @@ class SixelGraphicsStatus(TerminalQuery):
 
     default = False
     cache = True
-    cmd = tmuxify("\x1b[c")
+    cmd = "\x1b[c"
     pattern = re.compile(r"^\x1b\[\?(?:\d+;)*(?P<sixel>4)(?:;\d+)*c\Z")
+
+    def _cmd(self) -> "str":
+        return tmuxify(self.cmd)
 
     def verify(self, data: "str") -> "bool":
         """Verifies the terminal response means sixel graphics are supported."""

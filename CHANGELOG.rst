@@ -25,6 +25,7 @@ Changed
 Fixed
 =====
 
+- Restore graphics in tmux functionality
 - Allow entering edit mode by clicking on cell input
 - Expand ``~`` in log file path
 - Prevent IPython import race condition when IPython is installed
