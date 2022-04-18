@@ -16,7 +16,7 @@ from jupyter_client import (  # type: ignore
     KernelManager,
 )
 from jupyter_client.kernelspec import NoSuchKernel  # type: ignore
-from jupyter_core.paths import jupyter_path
+from jupyter_core.paths import jupyter_path  # type: ignore
 
 if TYPE_CHECKING:
     from typing import Any, AsyncGenerator, Callable, Coroutine, Dict, Optional, Union
@@ -327,7 +327,7 @@ class NotebookKernel:
                 del self.events[channel][msg_id]
                 break
 
-    async def await_iopub_rsps(self, msg_id: "str") -> "AsyncKernelManager":
+    async def await_iopub_rsps(self, msg_id: "str") -> "AsyncGenerator":
         """Wait for messages on the ``iopub`` channel.
 
         This will yield response message, stopping after a response with a status
@@ -357,7 +357,7 @@ class NotebookKernel:
             if stop:
                 break
 
-    async def await_shell_rsps(self, msg_id: "str") -> "AsyncKernelManager":
+    async def await_shell_rsps(self, msg_id: "str") -> "AsyncGenerator":
         """Wait for messages on the ``shell`` channel.
 
         This will yield response message, stopping after a response with a status
@@ -382,7 +382,7 @@ class NotebookKernel:
             if stop:
                 break
 
-    async def await_stdin_rsps(self, msg_id: "str") -> "AsyncKernelManager":
+    async def await_stdin_rsps(self, msg_id: "str") -> "AsyncGenerator":
         """Wait for messages on the ``shell`` channel.
 
         This will yield response message, stopping after a response with a status
@@ -425,7 +425,7 @@ class NotebookKernel:
             return
 
         msg_id = self.kc.execute(
-            cell_json.get("source"),
+            str(cell_json.get("source")),
             store_history=True,
             allow_stdin=(self.allow_stdin and stdin_cb is not None),
         )
