@@ -145,11 +145,6 @@ def build_style(cp: "Optional[Dict[str, Dict[Union[str, int], str]]]") -> "Style
             "scrollbar.start": "",
             "scrollbar.button": f"fg:{cp['bg'][15]} bg:{cp['bg'][15]}",
             "scrollbar.end": f"fg:{cp['bg'][3]} bg:{cp['bg'][15]}",
-            # Shadows
-            "shadow": f"bg:{cp['bg'][9]}",
-            "pager shadow": f"bg:{cp['bg'][9]}",
-            "cell.input shadow": f"bg:{cp['bg'][9]}",
-            "cell.output shadow": f"bg:{cp['bg'][9]}",
             # Dialogs
             "dialog.body": f"fg:{cp['fg']['base']} bg:{cp['bg'][4]}",
             "dialog.body text-area": f"fg:{cp['fg']['base']}",
@@ -195,5 +190,12 @@ def build_style(cp: "Optional[Dict[str, Dict[Union[str, int], str]]]") -> "Style
             "md.code.block": f"bg:{cp['bg'][-4]}",
             "md.code.block.border": f"fg:{cp['bg'][5]}",
             "md.table.border": f"fg:{cp['bg'][15]}",
+            # Shadows
+            "shadow": f"bg:{cp['bg'][9]}",
+            "pager shadow": f"bg:{cp['bg'][9]}",
+            "cell.input shadow": f"bg:{cp['bg'][9]}",
+            "cell.input.box shadow": f"bg:{cp['bg'][9]}",
+            "cell.output shadow": f"bg:{cp['bg'][9]}",
+            "md.code.block shadow": f"bg:{cp['bg'][9]}",
         }
     )
