@@ -125,6 +125,8 @@ class EuporieApp(Application):
             )
         # Contains the opened tab containers
         self.tabs: "MutableSequence[Tab]" = []
+        # Holds the search bar to pass to cell inputs
+        self.search_bar = None
         # Holds the index of the current tab
         self._tab_idx = 0
         # Add state for micro key-bindings
