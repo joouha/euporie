@@ -232,9 +232,6 @@ class NotebookKernel:
             await self.km.start_kernel(stdout=DEVNULL, stderr=STDOUT)
         except Exception as e:
             log.exception("Kernel '%s' does not exist", self.km.kernel_name)
-            import sys
-
-            log.debug("\n".join(sorted(sys.modules.keys())))
             self._status = "error"
             self.error = e
         else:
