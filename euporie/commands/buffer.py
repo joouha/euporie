@@ -636,18 +636,27 @@ def unshift_move(event: "KeyPressEvent") -> "None":
 
     # the other keys are handled through their readline command
     key_to_command: "Dict[Union[Keys, str], str]" = {
-        Keys.ShiftLeft: "move-cursor-left",
-        Keys.ShiftRight: "move-cursor-right",
-        Keys.ShiftHome: "go-to-start-of-line",
-        Keys.ShiftEnd: "go-to-end-of-line",
-        Keys.ControlShiftLeft: "backward-word",
-        Keys.ControlShiftRight: "forward-word",
-        Keys.ControlShiftHome: "beginning-of-buffer",
-        Keys.ControlShiftEnd: "end-of-buffer",
+        (Keys.ShiftLeft,): "move-cursor-left",
+        (Keys.ShiftRight,): "move-cursor-right",
+        (Keys.ShiftHome,): "go-to-start-of-line",
+        (Keys.ShiftEnd,): "go-to-end-of-line",
+        (
+            Keys.Escape,
+            Keys.ShiftLeft,
+        ): "backward-word",
+        (
+            Keys.Escape,
+            Keys.ShiftRight,
+        ): "forward-word",
+        (Keys.ControlShiftLeft,): "backward-word",
+        (Keys.ControlShiftRight,): "forward-word",
+        (Keys.ControlShiftHome,): "beginning-of-buffer",
+        (Keys.ControlShiftEnd,): "end-of-buffer",
     }
 
+    key_sequence = tuple(key_ress.key for key_ress in event.key_sequence)
     try:
-        command = get(key_to_command[key])
+        command = get(key_to_command[key_sequence])
     except KeyError:
         pass
     else:

@@ -11,6 +11,7 @@ Upcoming
 Added
 =====
 
+- Allow extending selection by word using :kbd:`Alt+Shift+Left` / :kbd:`Alt+Shift+Right`
 - Add euporie hub: a multi-client SSH server serving euporie
 - Add search toolbar (searches cell input in edit mode)
 - Use `prompt_toolkit` to format logging output
