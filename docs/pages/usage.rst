@@ -15,6 +15,15 @@ To open a notebook from the command line, launch euporie with the notebook file'
 
    $ euporie ./my-notebook.ipynb
 
+Euporie Hub
+===========
+
+To allow multiple users to connect to the same euporie instance, you can use euporie hub to run euporie as an SSH server:
+
+.. code-block:: console
+
+   $ euporie --hub
+
 Printing Notebooks
 ==================
 
