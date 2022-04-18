@@ -267,7 +267,7 @@ class Notebook(Tab, metaclass=ABCMeta):
                 self.delete(slice_)
                 self.dirty = True
 
-    def split_cell(self, cell: "Cell", cursor_position: "int") -> "None":
+    def split_cell(self, cell: "InteractiveCell", cursor_position: "int") -> "None":
         """Splits a cell into two at the given cursor position.
 
         Args:

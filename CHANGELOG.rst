@@ -11,6 +11,7 @@ Upcoming
 Added
 =====
 
+- Add euporie hub: a multi-client SSH server serving euporie
 - Add search toolbar (searches cell input in edit mode)
 - Use `prompt_toolkit` to format logging output
 - Allow scrolling cell outputs with :kbd:`left` and :kbd`right` in command mode

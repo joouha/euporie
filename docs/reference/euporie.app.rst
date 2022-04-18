@@ -19,4 +19,5 @@ euporie.app
       euporie.app.base
       euporie.app.current
       euporie.app.dump
+      euporie.app.hub
       euporie.app.tui

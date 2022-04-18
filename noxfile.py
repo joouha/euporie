@@ -110,7 +110,7 @@ def format_check(session: "Session") -> None:
 def mypy(session: "Session") -> "None":
     """Type-check using mypy."""
     args = session.posargs or locations
-    session.install("mypy", "rich", ".")
+    session.install("mypy", "rich", "black", "isort", ".")
     session.run("mypy", *args)
 
 

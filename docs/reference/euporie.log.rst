@@ -23,6 +23,7 @@ euporie.log
    .. autosummary::
       :toctree:
 
+      dict_merge
       setup_logs
 
 

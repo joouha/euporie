@@ -47,9 +47,11 @@ sympy = {version = "^1.9", optional = true}
 antlr4-python3-runtime = {version = "^4.9", optional = true}
 img2unicode = {version = "^0.1a8", optional = true}
 Pygments = "^2.11.2"
+asyncssh = {version = "^2.10.1", extras = ["hub"]}
 
 [tool.poetry.extras]
-all = ["formatters", "CairoSVG"]
+all = ["black", "isort", "ssort", "CairoSVG", "asyncssh"]
+hub = ["asyncssh"]
 formatters = ["black", "isort", "ssort"]
 svg-cairosvg = ["CairoSVG"]
 latex-sympy = ["sympy", "antlr4-python3-runtime"]

@@ -345,7 +345,9 @@ class TerminalInfo:
             # Add a "key" definition for this query
             key_name = f"{query.__name__}Response"
             key_code = f"<{name}-response>"
-            extend_enum(Keys, key_name, key_code)
+            # Do not register the same key multiple times
+            if not hasattr(Keys, key_name):
+                extend_enum(Keys, key_name, key_code)
             key = getattr(Keys, key_name)
 
             # Register this key with the parser
@@ -390,10 +392,11 @@ class TerminalInfo:
     @property
     def terminal_size_px(self) -> "tuple[int, int]":
         """Get the pixel dimensions of the terminal."""
-        _rows, _cols, px, py = self._tiocgwnsz()
-        # If unsuccessful, try requesting info with escape code method
+        # Prefer using escape codes as this works over SSH
+        px, py = self.pixel_dimensions.value
         if px == 0:
-            px, py = self.pixel_dimensions.value
+            # If unsuccessful, try requesting info with tiocgwnsz
+            _rows, _cols, px, py = self._tiocgwnsz()
         return px, py
 
     @property

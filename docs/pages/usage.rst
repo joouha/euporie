@@ -72,6 +72,22 @@ Options
 
    Pass output to pager
 
+.. option:: --hub, --no-hub
+
+   Run a multi-user SSH server.
+
+.. option:: --hub-ssh-host <str>
+
+   The host address of the SSH server.
+
+.. option:: --hub-ssh-port <int>, --no-hub-ssh-port <int>
+
+   The port to use for the SSH server.
+
+.. option:: --hub-ssh-host-keys <Path>
+
+   List of file names to open
+
 .. option:: --run, --no-run
 
    Run the notebook when loaded

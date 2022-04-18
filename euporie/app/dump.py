@@ -71,7 +71,7 @@ class DumpApp(EuporieApp):
     def __init__(self, **kwargs: "Any") -> "None":
         """Create an app for dumping a prompt-toolkit layout."""
         # Initialise the application
-        super().__init__(full_screen=False, **kwargs)
+        super().__init__(**{**{"full_screen": False}, **kwargs})
         # We want the app to close when rendering is complete
         self.after_render += self.pre_exit
 
@@ -82,9 +82,11 @@ class DumpApp(EuporieApp):
         if config.page:
             from pydoc import pager
 
-            self.output_file.seek(0)
-            data = self.output_file.read()
-            pager(data)
+            output_file = getattr(self.output, "output_file")  # noqa B009
+            if output_file is not None:
+                output_file.seek(0)
+                data = output_file.read()
+                pager(data)
 
     def load_container(self) -> "FloatContainer":
         """Returns a container with all opened tabs."""
@@ -111,7 +113,8 @@ class DumpApp(EuporieApp):
 
         return contents
 
-    def load_output(self) -> "Output":
+    @classmethod
+    def load_output(cls) -> "Output":
         """Loads the output.
 
         Depending on the application configuration, will set the output to a file, to
@@ -125,9 +128,9 @@ class DumpApp(EuporieApp):
             # Use a temporary file as display output if we are going to page the output
             from tempfile import TemporaryFile
 
-            self.output_file = TemporaryFile("w+")
+            output_file = TemporaryFile("w+")
             # Make this file look like a tty so we get colorful output
-            self.output_file = cast("TextIO", PseudoTTY(self.output_file, isatty=True))
+            output_file = cast("TextIO", PseudoTTY(output_file, isatty=True))
 
         else:
             # If we are not paging output, determine where to print it
@@ -135,12 +138,12 @@ class DumpApp(EuporieApp):
                 "-",
                 "/dev/stdout",
             ):
-                self.output_file = sys.stdout
+                output_file = sys.stdout
             elif str(config.dump_file) == "/dev/stderr":
-                self.output_file = sys.stderr
+                output_file = sys.stderr
             else:
                 try:
-                    self.output_file = open(config.dump_file, "w+")
+                    output_file = open(config.dump_file, "w+")
                 except (
                     FileNotFoundError,
                     PermissionError,
@@ -151,30 +154,30 @@ class DumpApp(EuporieApp):
                         f"Output file `{config.dump_file}` cannot be opened. "
                         "Standard output will be used."
                     )
-                    self.output_file = sys.stdout
+                    output_file = sys.stdout
 
-            # Make the output look like a TTY if color-depth has meen configureed
-            if not self.output_file.isatty() and config.color_depth is not None:
-                self.output_file = cast(
+            # Make the output look like a TTY if color-depth has been configureed
+            if not output_file.isatty() and config.color_depth is not None:
+                output_file = cast(
                     "TextIO",
                     PseudoTTY(
-                        self.output_file,
+                        output_file,
                         isatty=True,
                     ),
                 )
 
         # Ensure we do not receive the "Output is not a terminal" message
-        Vt100_Output._fds_not_a_terminal.add(self.output_file.fileno())
+        Vt100_Output._fds_not_a_terminal.add(output_file.fileno())
         # Set environment variable to disable character position requests
         os.environ["PROMPT_TOOLKIT_NO_CPR"] = "1"
         # Create a default output - this detects the terminal type
         # Do not use stderr instead of stdout if stdout is not a tty
-        output = create_output(
-            cast("TextIO", self.output_file), always_prefer_tty=False
-        )
+        output = create_output(cast("TextIO", output_file), always_prefer_tty=False)
         # Use the width and height of stderr (this gives us the terminal size even if
         # output is being piped to a non-tty)
         setattr(output, "get_size", create_output(stdout=sys.stderr).get_size)
+        # Attach the output file to the output in case we need to page it
+        setattr(output, "output_file", output_file)
         return output
 
     def _redraw(self, render_as_done: "bool" = False) -> "None":

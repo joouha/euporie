@@ -46,7 +46,8 @@ def load_url(url: "str") -> "Optional[bytes]":
                 data = None
     else:
         try:
-            data = urlopen(url).read()  # noqa S310 - use of 'file:' scheme is intended
+            # The use of 'file:' scheme is intended
+            data = urlopen(url, timeout=4).read()  # noqa S310
         except Exception:
             log.debug("Failed to load `%s`", url)
 

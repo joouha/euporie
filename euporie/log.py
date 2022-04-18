@@ -14,6 +14,9 @@ from typing import TYPE_CHECKING
 from prompt_toolkit.application.current import get_app_session
 from prompt_toolkit.formatted_text.base import FormattedText
 from prompt_toolkit.output.defaults import create_output
+from prompt_toolkit.renderer import (
+    print_formatted_text as renderer_print_formatted_text,
+)
 from prompt_toolkit.shortcuts.utils import print_formatted_text
 from prompt_toolkit.styles import Style
 
@@ -23,7 +26,7 @@ from euporie.style import LOG_STYLE
 
 if TYPE_CHECKING:
     from types import TracebackType
-    from typing import Any, Callable, Optional, TextIO
+    from typing import Any, Callable, Dict, Optional, TextIO
 
     from prompt_toolkit.formatted_text.base import StyleAndTextTuples
 
@@ -32,18 +35,37 @@ log = logging.getLogger(__name__)
 LOG_QUEUE: "deque" = deque(maxlen=1000)
 
 
+def dict_merge(target_dict: "Dict", input_dict: "Dict") -> "None":
+    """Merge the second dictionary onto the first."""
+    for k in input_dict:
+        if k in target_dict:
+            if isinstance(target_dict[k], dict) and isinstance(input_dict[k], dict):
+                dict_merge(target_dict[k], input_dict[k])
+            elif isinstance(target_dict[k], list) and isinstance(input_dict[k], list):
+                target_dict[k] = [*target_dict[k], *input_dict[k]]
+            else:
+                target_dict[k] = input_dict[k]
+        else:
+            target_dict[k] = input_dict[k]
+
+
 class FormattedTextHandler(logging.StreamHandler):
     """Format log records for display on the standard output."""
 
     formatter: "FtFormatter"
 
     def __init__(
-        self, *args: "Any", style: "Optional[Style]" = None, **kwargs: "Any"
+        self,
+        *args: "Any",
+        style: "Optional[Style]" = None,
+        share_stream: "bool" = True,
+        **kwargs: "Any",
     ) -> "None":
         """Creates a new log handler instance."""
         super().__init__(*args, **kwargs)
         self.output = create_output(stdout=self.stream)
         self.style = style or Style(LOG_STYLE)
+        self.share_stream = share_stream
 
     def ft_format(self, record: "logging.LogRecord") -> "FormattedText":
         """Format the specified record."""
@@ -56,7 +78,13 @@ class FormattedTextHandler(logging.StreamHandler):
         """Emit a formatted record."""
         try:
             msg = self.ft_format(record)
-            print_formatted_text(msg, style=self.style, output=self.output)
+            if self.share_stream:
+                print_formatted_text(msg, end="", style=self.style, output=self.output)
+            else:
+                renderer_print_formatted_text(
+                    output=self.output, formatted_text=msg, style=self.style
+                )
+
         except RecursionError:
             raise
         except Exception:
@@ -130,7 +158,6 @@ class FtFormatter(logging.Formatter):
         """Format certain attributes on the log record."""
         record.asctime = self.formatTime(record, self.datefmt)
         record.message = record.getMessage()
-        # record.msg = self.formatMessage(record)
         record.exc_text = ""
         if record.exc_info and not record.exc_text:
             record.exc_text = self.formatException(record.exc_info)
@@ -186,14 +213,15 @@ class StdoutFormatter(FtFormatter):
             width = get_app_session().output.get_size()[1]
 
         record = self.prepare(record)
-        path_name = Path(record.pathname).name
+        # path_name = Path(record.pathname).name
 
         date = f"{record.asctime}"
         if date == self.last_date:
             date = " " * len(date)
         else:
             self.last_date = date
-        ref = f"{path_name}:{record.lineno}"
+        # ref = f"{path_name}:{record.lineno}"
+        ref = f"{record.name}.{record.funcName}:{record.lineno}"
 
         msg_pad = len(date) + 10
         msg_pad_1st_line = msg_pad + 1 + len(ref)
@@ -230,14 +258,12 @@ class StdoutFormatter(FtFormatter):
                 ),
                 margin=" " * msg_pad,
             )
+        output += [("", "\n")]
         return FormattedText(output)
 
 
-def setup_logs() -> "None":
+def setup_logs(extra_config: "Optional[Dict]" = None) -> "None":
     """Configures the logger for euporie."""
-    # Pytype used TypedDicts to validate the dictionary structure, but I cannot get
-    # this to work for some reason...
-
     log_config = {
         "version": 1,
         "disable_existing_loggers": False,
@@ -297,9 +323,12 @@ def setup_logs() -> "None":
         # Log everything to the internal logger
         "root": {"handlers": ["log_tab"]},
     }
-    # Update log_config based on config file
-    # log_config.update(config.log_config)
+    # Update log_config based additional config provided
+    if extra_config:
+        dict_merge(log_config, extra_config)
     # Configure the logger
+    # Pytype used TypedDicts to validate the dictionary structure, but I cannot get
+    # this to work for some reason...
     logging.config.dictConfig(log_config)  # type: ignore
 
 

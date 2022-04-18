@@ -8,7 +8,8 @@ from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING, cast
 
-from prompt_toolkit.application import Application
+from prompt_toolkit.application.application import Application
+from prompt_toolkit.application.current import create_app_session
 from prompt_toolkit.enums import EditingMode
 from prompt_toolkit.filters import buffer_has_focus
 from prompt_toolkit.input.defaults import create_input
@@ -65,6 +66,7 @@ if TYPE_CHECKING:
     from prompt_toolkit.input.vt100 import Vt100Input
     from prompt_toolkit.layout.containers import AnyContainer, Float
     from prompt_toolkit.output import Output
+    from prompt_toolkit.widgets import SearchToolbar
 
     from euporie.tabs.notebook import TuiNotebook
     from euporie.terminal import TerminalQuery
@@ -110,14 +112,18 @@ class EuporieApp(Application):
         """
         # Initialise the application
         super().__init__(
-            # input=self.input,
-            input=self.load_input(),
-            output=self.load_output(),
-            color_depth=config.color_depth,
-            **kwargs,
+            **{
+                **{
+                    "color_depth": config.color_depth,
+                },
+                **kwargs,
+            }
         )
         # Use a custom vt100 parser to allow querying the terminal
-        self.using_vt100 = self.input.__class__.__name__ == "Vt100Input"
+        self.using_vt100 = self.input.__class__.__name__ in (
+            "Vt100Input",
+            "PosixPipeInput",
+        )
         if self.using_vt100:
             self.input = cast("Vt100Input", self.input)
             self.input.vt100_parser = Vt100Parser(
@@ -126,7 +132,7 @@ class EuporieApp(Application):
         # Contains the opened tab containers
         self.tabs: "MutableSequence[Tab]" = []
         # Holds the search bar to pass to cell inputs
-        self.search_bar = None
+        self.search_bar: "Optional[SearchToolbar]" = None
         # Holds the index of the current tab
         self._tab_idx = 0
         # Add state for micro key-bindings
@@ -210,7 +216,8 @@ class EuporieApp(Application):
             # Waits until the event loop is ready
             self.create_background_task(await_terminal_feedback())
 
-    def load_input(self) -> "Input":
+    @classmethod
+    def load_input(cls) -> "Input":
         """Creates the input for this application to use.
 
         Ensures the TUI app always tries to run in a TTY.
@@ -227,7 +234,8 @@ class EuporieApp(Application):
                 input_ = DummyInput()
         return input_
 
-    def load_output(self) -> "Output":
+    @classmethod
+    def load_output(cls) -> "Output":
         """Creates the output for this application to use.
 
         Ensures the TUI app always tries to run in a TTY.
@@ -291,10 +299,9 @@ class EuporieApp(Application):
         """Launches the app."""
         # This configures the logs for euporie
         setup_logs()
-        # Create an instance of the app
-        app = cls()
-        # Run the app
-        app.run()
+        with create_app_session(input=cls.load_input(), output=cls.load_output()):
+            # Create an instance of the app and run it
+            return cls().run()
 
     def load_container(self) -> "FloatContainer":
         """Loads the root container for this application.

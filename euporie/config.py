@@ -100,7 +100,7 @@ CONFIG_PARAMS: "dict[str, dict]" = {
     "log_file": {
         "flags_": ["--log-file"],
         "nargs": "?",
-        "default": "",
+        "default": "-",
         "type": str,
         "help": "File path for logs",
         "schema_": {
@@ -165,6 +165,67 @@ CONFIG_PARAMS: "dict[str, dict]" = {
         },
         "description_": """
             Whether to pipe output to the system pager when using ``--dump``.
+        """,
+    },
+    "hub": {
+        "flags_": ["--hub"],
+        "action": BooleanOptionalAction,
+        "type": bool,
+        "help": "Run a multi-user SSH server.",
+        "default": False,
+        "schema_": {
+            "type": "boolean",
+        },
+        "description_": """
+            When set, euporie will run as a SSH server, allowing multiple users to
+            simultaneously access the same server instance.
+        """,
+    },
+    "hub_ssh_host": {
+        "flags_": ["--hub-ssh-host"],
+        "type": str,
+        "help": "The host address of the SSH server.",
+        "default": "",
+        "schema_": {
+            "type": "string",
+        },
+        "description_": """
+            This determines the host address the euporie hub SSH server will bind to.
+        """,
+    },
+    "hub_ssh_port": {
+        "flags_": ["--hub-ssh-port"],
+        "action": BooleanOptionalAction,
+        "type": int,
+        "help": "The port to use for the SSH server.",
+        "default": 8022,
+        "schema_": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 65535,
+        },
+        "description_": """
+            This determines which port euporie will listen on for connections to
+            euporie hub.
+        """,
+    },
+    "hub_ssh_host_keys": {
+        "flags_": ["--hub-ssh-host-keys"],
+        "nargs": "*",
+        "type": Path,
+        "help": "List of file names to open",
+        "default": ["/etc/ssh/ssh_host_ecdsa_key"],
+        "schema_": {
+            "type": "array",
+            "items": {
+                "file": {
+                    "description": "SSH host key File path",
+                    "type": "string",
+                },
+            },
+        },
+        "description_": """
+            One or more SSH host key files to use for the euporie hub SSH server.
         """,
     },
     "run": {

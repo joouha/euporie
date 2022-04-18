@@ -140,6 +140,44 @@ All available configuration options are listed below:
 
    Whether to pipe output to the system pager when using ``--dump``.
 
+.. option:: hub
+
+:flags: :option:`--hub`
+:environment variable: :envvar:`EUPORIE_HUB`
+:type: :keyword:`boolean`
+:description: Run a multi-user SSH server.
+
+   When set, euporie will run as a SSH server, allowing multiple users to
+   simultaneously access the same server instance.
+
+.. option:: hub_ssh_host
+
+:flags: :option:`--hub-ssh-host`
+:environment variable: :envvar:`EUPORIE_HUB_SSH_HOST`
+:type: :keyword:`string`
+:description: The host address of the SSH server.
+
+   This determines the host address the euporie hub SSH server will bind to.
+
+.. option:: hub_ssh_port
+
+:flags: :option:`--hub-ssh-port`
+:environment variable: :envvar:`EUPORIE_HUB_SSH_PORT`
+:type: :keyword:`integer`
+:description: The port to use for the SSH server.
+
+   This determines which port euporie will listen on for connections to
+   euporie hub.
+
+.. option:: hub_ssh_host_keys
+
+:flags: :option:`--hub-ssh-host-keys`
+:environment variable: :envvar:`EUPORIE_HUB_SSH_HOST_KEYS`
+:type: :keyword:`array`
+:description: List of file names to open
+
+   One or more SSH host key files to use for the euporie hub SSH server.
+
 .. option:: run
 
 :flags: :option:`--run`
