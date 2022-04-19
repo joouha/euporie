@@ -1,7 +1,7 @@
 """This package defines the euporie application and its components."""
 
 __app_name__ = "euporie"
-__version__ = "1.4.3"
+__version__ = "1.5.0"
 __logo__ = "⚈"
 __strapline__ = "A TUI editor for Jupyter notebooks"
 __author__ = "Josiah Outram Halstead"

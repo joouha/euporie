@@ -100,7 +100,7 @@ CONFIG_PARAMS: "dict[str, dict]" = {
     "log_file": {
         "flags_": ["--log-file"],
         "nargs": "?",
-        "default": "-",
+        "default": "",
         "type": str,
         "help": "File path for logs",
         "schema_": {
