@@ -22,6 +22,7 @@ Changed
 =======
 
 - Optimize imports, reducing import times by ~50%
+- Improve fix for missing first empty cells in ``html2text`` markdown tables
 
 Fixed
 =====

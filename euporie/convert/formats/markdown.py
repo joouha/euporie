@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 
 log = logging.getLogger(__name__)
 
-_HTML2TEXT_TABLE_FIRST_CELL_RE = r"^((\|\s+[^\|]+\s+)((\|\s+[^\|]+\s+|:?-+:?\|)(\|\s+[^\|]+\s+|:?-+:?\|))*:?-+:?\|:?-+:?\s*$)"  # noqa B950
+_HTML2TEXT_TABLE_RE = r"(?:(?:.*\|)+[^|]*?(?:\n|$))+"
 
 
 @register(
@@ -33,15 +33,29 @@ def html_to_markdown_py_html2text(
 
     from html2text import HTML2Text
 
-    # config.UNICODE_SNOB = True
-    # config.PAD_TABLES = True
-
     parser = HTML2Text(bodywidth=0)
     result = parser.handle(data)
 
-    # Fix for html2text issue with empty first cells in tables
-    # https://github.com/Alir3z4/html2text/pull/380
-    result = re.sub(_HTML2TEXT_TABLE_FIRST_CELL_RE, r"|  \1", result, 0, re.MULTILINE)
+    # Fix for html2text issue with empty first cells in table rows
+    remaining_result = result
+    replaced = ""
+    for match in re.finditer(_HTML2TEXT_TABLE_RE, result, re.MULTILINE):
+        # Add string before the table
+        replaced += remaining_result[
+            : match.start() - (len(result) - len(remaining_result))
+        ]
+        remaining_result = result[match.end() :]
+        table = result[match.start() : match.end()]
+        table_rows = table.strip().split("\n")
+        row_lens = [len(row.split("|")) for row in table_rows]
+        max_row_len = max(row_lens)
+        table = "\n".join(
+            "|" * (max_row_len - row_lens[i] + 1) + row
+            for i, row in enumerate(table_rows)
+        )
+        replaced += table + "\n"
+    replaced += remaining_result
+    result = replaced
 
     return result
 
