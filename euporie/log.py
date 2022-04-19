@@ -264,6 +264,8 @@ class StdoutFormatter(FtFormatter):
 
 def setup_logs(extra_config: "Optional[Dict]" = None) -> "None":
     """Configures the logger for euporie."""
+    log_file_is_stdout = config.log_file in ("-", "/dev/stdout")
+
     log_config = {
         "version": 1,
         "disable_existing_loggers": False,
@@ -286,13 +288,11 @@ def setup_logs(extra_config: "Optional[Dict]" = None) -> "None":
                     "file": {
                         "level": "DEBUG" if config.debug else "ERROR",
                         "class": "logging.FileHandler",
-                        "filename": "/dev/stdout"
-                        if config.log_file == "-"
-                        else Path(config.log_file).expanduser(),
+                        "filename": Path(config.log_file).expanduser(),
                         "formatter": "file_format",
                     }
                 }
-                if config.log_file
+                if config.log_file and not log_file_is_stdout
                 else {}
             ),
             "stdout": {
@@ -314,7 +314,7 @@ def setup_logs(extra_config: "Optional[Dict]" = None) -> "None":
                 "handlers": ["log_tab"]
                 + (
                     ["stdout"]
-                    if config.log_file in ("-", "/dev/stdout")
+                    if log_file_is_stdout
                     else (["file"] if config.log_file else [])
                 ),
                 "propagate": False,
