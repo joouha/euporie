@@ -529,7 +529,7 @@ class Cell:
             grid = Invisible.grid
             if config.show_cell_borders or self.selected:
                 if self.focused and multiple_cells_selected():
-                    grid = Thin.grid + Thick.left_edge + Thick.right_edge
+                    grid = Thin.grid + Thick.outer
                 else:
                     grid = Thin.grid
             return getattr(grid, name.upper())
