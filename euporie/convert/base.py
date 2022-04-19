@@ -86,6 +86,7 @@ def find_route(from_: "str", to: "str") -> "Optional[list]":
                         [
                             conv.weight
                             for conv in converters.get(step_b, {}).get(step_a, [])
+                            if _FILTER_CACHE.get((conv,), conv.filter_)
                         ]
                     )
                     for step_a, step_b in zip(chain, chain[1:])
