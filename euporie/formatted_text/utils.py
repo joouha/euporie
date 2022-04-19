@@ -309,21 +309,21 @@ def add_border(
     result.append(
         (
             style,
-            border.TOP_LEFT + border.HORIZONTAL * (width - 2) + border.TOP_RIGHT + "\n",
+            border.TOP_LEFT + border.TOP_MID * (width - 2) + border.TOP_RIGHT + "\n",
         )
     )
     for line in split_lines(ft):
         result += [
-            (style, border.VERTICAL),
+            (style, border.MID_LEFT),
             ("", " "),
             *line,
             ("", " "),
-            (style, border.VERTICAL + "\n"),
+            (style, border.MID_RIGHT + "\n"),
         ]
     result.append(
         (
             style,
-            border.BOTTOM_LEFT + border.HORIZONTAL * (width - 2) + border.BOTTOM_RIGHT,
+            border.BOTTOM_LEFT + border.BOTTOM_MID * (width - 2) + border.BOTTOM_RIGHT,
         )
     )
     return result
