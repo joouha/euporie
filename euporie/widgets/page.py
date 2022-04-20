@@ -298,20 +298,7 @@ class ScrollingContainer(Container):
 
     @property
     def selected_slice(self) -> "slice":
-        """Returns the currently selected slice, checking for changes in focus."""
-        app = get_app()
-        # Detect if focused child element has changed
-        if app.layout.has_focus(self):
-            # Find index of focused child
-            index = self._selected_slice.start
-            for i, child in enumerate(self.children):
-                if app.layout.has_focus(child):
-                    index = i
-                    break
-            # This will change the position when a new child is selected
-            # self.selected_slice = slice(index, index + 1)
-            if index != self._selected_slice.start:
-                self.selected_slice = slice(index, index + 1)
+        """Returns the currently selected slice."""
         return self._selected_slice
 
     @selected_slice.setter

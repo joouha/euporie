@@ -8,6 +8,11 @@ Notable changes to this project will be documented in this file.
 Upcoming
 ********
 
+Fixed
+=====
+
+- Fix regression making cell selection in long notebooks very slow
+
 ----
 
 *********************
