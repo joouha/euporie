@@ -193,7 +193,7 @@ class ColorQueryMixin:
 class ForegroundColor(ColorQueryMixin, TerminalQuery):
     """A terminal query to check the terminal's foreground colour."""
 
-    default = "#FFFFFF"
+    default = ""
     cache = True
     cmd = "\x1b]11;?\x1b\\"
     pattern = re.compile(
@@ -208,7 +208,7 @@ class ForegroundColor(ColorQueryMixin, TerminalQuery):
 class BackgroundColor(ColorQueryMixin, TerminalQuery):
     """A terminal query to check the terminal's background colour."""
 
-    default = "#000000"
+    default = ""
     cache = True
     cmd = "\x1b]10;?\x1b\\"
     pattern = re.compile(

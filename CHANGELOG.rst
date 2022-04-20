@@ -12,6 +12,7 @@ Upcoming
 Changed
 =======
 
+- Do not colour cell input box background if terminal background color is not detected
 - Improve cell stdin focus logic
 
 Fixed

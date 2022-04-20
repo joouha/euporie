@@ -86,7 +86,10 @@ def color_series(
     return series
 
 
-def build_style(cp: "Optional[Dict[str, Dict[Union[str, int], str]]]") -> "Style":
+def build_style(
+    cp: "Optional[Dict[str, Dict[Union[str, int], str]]]",
+    have_term_colors: "bool" = True,
+) -> "Style":
     """Create an application style based on the given color palette."""
     if cp is None:
         cp = color_series(fg="#ffffff", bg="#000000", n=20)
@@ -102,7 +105,7 @@ def build_style(cp: "Optional[Dict[str, Dict[Union[str, int], str]]]") -> "Style
             # Pattern
             "pattern": f"fg:{config.background_color or cp['fg'][14]}",
             # Chrome
-            "chrome": f"fg:{cp['bg'][1]} bg:{cp['bg'][1]}",
+            "chrome": f"fg:{cp['fg'][1]} bg:{cp['bg'][1]}",
             # Statusbar
             "status": f"fg:{cp['fg'][1]} bg:{cp['bg'][1]}",
             "status.field": f"fg:{cp['fg'][2]} bg:{cp['bg'][2]}",
@@ -117,6 +120,10 @@ def build_style(cp: "Optional[Dict[str, Dict[Union[str, int], str]]]") -> "Style
             "menu-bar.disabled-item menu-bar.shortcut": f"fg:{cp['bg'][3]}",
             "menu": f"bg:{cp['bg'][1]} fg:{cp['fg'][1]}",
             "menu-border": f"fg:{cp['bg'][6]} bg:{cp['bg'][1]}",
+            # Tab bar
+            "tab-bar": f"fg:{cp['bg'][1]} bg:{cp['bg'][1]}",
+            "tab-bar.tab": f"bg:{cp['bg'][0]}",
+            "tab-bar.tab.active": f"fg:{cp['fg'][0]} bg:{cp['bg'][0]}",
             # Buffer
             "line-number": f"fg:{cp['fg'][-1]} bg:{cp['bg'][-5]}",
             "line-number.current": f"bold orange bg:{cp['bg'][-1]}",
@@ -134,7 +141,8 @@ def build_style(cp: "Optional[Dict[str, Dict[Union[str, int], str]]]") -> "Style
             "cell.border": f"fg:{cp['bg'][5]}",
             "cell.border.selected": "fg:#00afff",
             "cell.border.edit": "fg:#00ff00",
-            "cell.input.box": f"fg:default bg:{cp['bg'][-1]}",
+            "cell.input.box": f"fg:default "
+            f"bg:{cp['bg'][-1] if have_term_colors else 'default'}",
             "cell.output": "fg:default bg:default",
             "cell.input.prompt": "fg:blue",
             "cell.output.prompt": "fg:red",

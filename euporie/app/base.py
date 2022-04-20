@@ -422,14 +422,17 @@ class EuporieApp(Application):
     def create_merged_style(self) -> "BaseStyle":
         """Generate a new merged style for the application."""
         # Get foreground and background colors based on the configured colour scheme
-        base_colors: "dict[str, str]" = {
+        theme_colors = {
             "light": {"fg": "#000000", "bg": "#EFEFEF"},
-            "dark": {"fg": "#FFFFFF", "bg": "#101010"},
-        }.get(
+            "dark": {"fg": "#FFFFFF", "bg": "#202020"},
+        }
+        base_colors: "dict[str, str]" = theme_colors.get(
             config.color_scheme,
             {
-                "fg": self.term_info.foreground_color.value,
-                "bg": self.term_info.background_color.value,
+                "fg": self.term_info.foreground_color.value
+                or theme_colors["dark"]["fg"],
+                "bg": self.term_info.background_color.value
+                or theme_colors["dark"]["bg"],
             },
         )
         # Build a color palette from the fg/bg colors
@@ -441,6 +444,12 @@ class EuporieApp(Application):
         if config.color_scheme == "default":
             self.color_palette["fg"][0] = "default"
             self.color_palette["bg"][0] = "default"
+
+        # Build app style
+        app_style = build_style(
+            self.color_palette,
+            have_term_colors=bool(self.term_info.foreground_color.value),
+        )
 
         # Apply style transformations based on the configured color scheme
         self.style_transformation = merge_style_transformations(
@@ -463,7 +472,7 @@ class EuporieApp(Application):
                 style_from_pygments_cls(get_style_by_name(config.syntax_theme)),
                 Style(MARKDOWN_STYLE),
                 Style(LOG_STYLE),
-                build_style(self.color_palette),
+                app_style,
             ]
         )
 
