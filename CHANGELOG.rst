@@ -8,6 +8,10 @@ Notable changes to this project will be documented in this file.
 Upcoming
 ********
 
+Added
+=====
+
+- Detect terminal colors inside :command:`tmux`
 
 Changed
 =======

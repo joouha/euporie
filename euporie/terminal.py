@@ -87,7 +87,7 @@ class Vt100Parser(vt100_parser.Vt100Parser):
 
 def tmuxify(cmd: "str") -> "str":
     """Wraps an escape sequence for tmux passthrough."""
-    if in_tmux() and config.tmux_graphics:
+    if in_tmux():
         cmd = cmd.replace("\x1b", "\x1b\x1b")
         cmd = f"\x1bPtmux;{cmd}\033\\"
     return cmd
@@ -152,12 +152,13 @@ class TerminalQuery:
     def send(self) -> "None":
         """Sends the terminal query command to the output."""
         if self.queryable and self.cmd and not self.waiting:
+            cmd = self._cmd()
             log.debug(
                 "Sending query %s for %s",
-                self._cmd().__repr__(),
+                cmd.__repr__(),
                 self.__class__.__name__,
             )
-            self.output.write_raw(self._cmd())
+            self.output.write_raw(cmd)
             self.output.flush()
             self.waiting = True
 
@@ -204,6 +205,9 @@ class ForegroundColor(ColorQueryMixin, TerminalQuery):
         r"\x1b\\\Z"
     )
 
+    def _cmd(self) -> "str":
+        return tmuxify(self.cmd)
+
 
 class BackgroundColor(ColorQueryMixin, TerminalQuery):
     """A terminal query to check the terminal's background colour."""
@@ -218,6 +222,9 @@ class BackgroundColor(ColorQueryMixin, TerminalQuery):
         "(?P<b>[0-9A-Fa-f]{2,4})"
         r"\x1b\\\Z"
     )
+
+    def _cmd(self) -> "str":
+        return tmuxify(self.cmd)
 
 
 class PixelDimensions(TerminalQuery):
@@ -248,7 +255,10 @@ class KittyGraphicsStatus(TerminalQuery):
     pattern = re.compile(r"^\x1b_Gi=4294967295;(?P<status>OK)\x1b\\\Z")
 
     def _cmd(self) -> "str":
-        return tmuxify(self.cmd)
+        if config.tmux_graphics:
+            return tmuxify(self.cmd)
+        else:
+            return self.cmd
 
     def verify(self, data: "str") -> "bool":
         """Verifies the terminal response means kitty graphics are supported."""
@@ -268,7 +278,10 @@ class SixelGraphicsStatus(TerminalQuery):
     pattern = re.compile(r"^\x1b\[\?(?:\d+;)*(?P<sixel>4)(?:;\d+)*c\Z")
 
     def _cmd(self) -> "str":
-        return tmuxify(self.cmd)
+        if config.tmux_graphics:
+            return tmuxify(self.cmd)
+        else:
+            return self.cmd
 
     def verify(self, data: "str") -> "bool":
         """Verifies the terminal response means sixel graphics are supported."""
