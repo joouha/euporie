@@ -393,7 +393,7 @@ class Cell:
                 ],
                 height=1,
             ),
-            filter=self.show_input & self.show_output,
+            filter=(self.show_input & self.show_output) | self.asking_input,
         )
         output_row = ConditionalContainer(
             VSplit(
@@ -516,6 +516,9 @@ class Cell:
                 # Enter edit mode if the input has become focused via a mouse click
                 if self.input_box.has_focus():
                     self.nb.edit_mode = True
+                # Exit edit mode if the stdin box has focus
+                elif get_app().layout.has_focus(self.stdin_box):
+                    self.nb.edit_mode = False
                 if self.nb.edit_mode:
                     return "class:cell.border.edit"
                 else:
@@ -841,7 +844,10 @@ class InteractiveCell(Cell):
             # Redraw the screen to show it as focused
             app.invalidate()
 
-        app.create_background_task(_focus_input())
+        try:
+            layout.focus(self.stdin_box)
+        finally:
+            app.create_background_task(_focus_input())
 
     def inspect(self) -> "None":
         """Get contextual help for the current cursor position."""

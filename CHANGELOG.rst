@@ -8,6 +8,12 @@ Notable changes to this project will be documented in this file.
 Upcoming
 ********
 
+
+Changed
+=======
+
+- Improve cell stdin focus logic
+
 Fixed
 =====
 
