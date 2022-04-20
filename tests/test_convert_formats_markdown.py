@@ -9,4 +9,4 @@ def test_loading_base64_url() -> "None":
     result = html_to_markdown_py_html2text(data)
     stripped_result = "".join(result.split())
 
-    assert stripped_result == "||A---|---"
+    assert stripped_result == "||A|---|---"
