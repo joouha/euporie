@@ -11,11 +11,15 @@ Upcoming
 Added
 =====
 
+- Add "Custom" color scheme, allowing foreground and background colours to be configured
+- Add "Black" and "White" color schemes
+- Add a tab bar, and tab stacking / tiling
 - Detect terminal colors inside :command:`tmux`
 
 Changed
 =======
 
+- Styling changes
 - Do not colour cell input box background if terminal background color is not detected
 - Improve cell stdin focus logic
 

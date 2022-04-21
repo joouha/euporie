@@ -28,4 +28,5 @@ euporie.margins
       :toctree:
       :template: class.tpl.rst
 
+      NumberedDiffMargin
       ScrollbarMargin

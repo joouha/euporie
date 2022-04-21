@@ -284,3 +284,43 @@ class ScrollbarMargin(Margin):
         await asyncio.sleep(timeout)
         self.mouse_handler(mouse_event, repeated=True)
         get_app().invalidate()
+
+
+class NumberedDiffMargin(Margin):
+    """Margin that displays the line numbers of a :class:`Window`."""
+
+    style = "class:line-number"
+
+    def get_width(self, get_ui_content: "Callable[[], UIContent]") -> "int":
+        """Return the width of the margin."""
+        line_count = get_ui_content().line_count
+        return len("%s" % line_count) + 2
+
+    def create_margin(
+        self, window_render_info: "WindowRenderInfo", width: "int", height: "int"
+    ) -> "StyleAndTextTuples":
+        """Generate the margin's content."""
+        # Get current line number.
+        current_lineno = window_render_info.ui_content.cursor_position.y
+        # Construct margin.
+        result: StyleAndTextTuples = []
+        last_lineno = None
+        for lineno in window_render_info.displayed_lines:
+            # Only display line number if this line is not a continuation of the previous line.
+            if lineno != last_lineno:
+                if lineno is None:
+                    pass
+                linestr = str(lineno + 1).rjust(width - 2)
+                style = self.style
+                if lineno == current_lineno:
+                    style = f"{style} class:line-number.current"
+                result.extend(
+                    [
+                        (f"{style},edge", "▏"),
+                        (style, linestr),
+                        (f"{style},edge", "▕"),
+                    ]
+                )
+            last_lineno = lineno
+            result.append(("", "\n"))
+        return result

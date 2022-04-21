@@ -22,6 +22,7 @@ euporie
       euporie.completion
       euporie.config
       euporie.convert
+      euporie.enums
       euporie.filters
       euporie.format
       euporie.formatted_text

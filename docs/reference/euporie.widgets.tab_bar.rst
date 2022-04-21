@@ -1,7 +1,7 @@
-euporie.style
-=============
+euporie.widgets.tab\_bar
+========================
 
-.. automodule:: euporie.style
+.. automodule:: euporie.widgets.tab_bar
    :members:
    :undoc-members:
    :inherited-members:
@@ -18,13 +18,6 @@ euporie.style
 
 
 
-   .. rubric:: Functions
-
-   .. autosummary::
-      :toctree:
-
-      build_style
-
 
 
 
@@ -35,5 +28,4 @@ euporie.style
       :toctree:
       :template: class.tpl.rst
 
-      ColorPalette
-      ColorPaletteColor
+      TabBar

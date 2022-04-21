@@ -34,12 +34,14 @@ from euporie import __app_name__, __copyright__, __logo__, __strapline__, __vers
 from euporie.app.base import EuporieApp
 from euporie.commands.registry import get
 from euporie.config import CONFIG_PARAMS, config
+from euporie.enums import TabMode
 from euporie.tabs.log import LogView
 from euporie.tabs.notebook import TuiNotebook
 from euporie.widgets.decor import Pattern
 from euporie.widgets.formatted_text_area import FormattedTextArea
 from euporie.widgets.menu import MenuContainer, MenuItem
 from euporie.widgets.palette import CommandPalette
+from euporie.widgets.tab_bar import TabBar
 
 if TYPE_CHECKING:
     from asyncio import AbstractEventLoop
@@ -157,6 +159,14 @@ class TuiApp(EuporieApp):
             output.pop()
         return output
 
+    @property
+    def visible_tabs(self) -> "List[Tab]":
+        """Returns a list of currently visible tabs."""
+        if TabMode(config.tab_mode) == TabMode.STACK:
+            return [self.tabs[self._tab_idx]]
+        else:
+            return self.tabs
+
     def tab_container(self) -> "AnyContainer":
         """Returns a container with all opened tabs.
 
@@ -165,12 +175,20 @@ class TuiApp(EuporieApp):
 
         """
         if self.tabs:
-            return VSplit(
-                self.tabs,
-                padding=1,
-                padding_char=" ",
-                padding_style="class:chrome",
-            )
+            if TabMode(config.tab_mode) == TabMode.TILE_HORIZONTAL:
+                return HSplit(
+                    children=self.visible_tabs,
+                    padding=1,
+                    padding_style="class:tab-padding",
+                    padding_char="─",
+                )
+            else:
+                return VSplit(
+                    children=self.visible_tabs,
+                    padding=1,
+                    padding_style="class:tab-padding",
+                    padding_char="│",
+                )
         else:
             return Pattern(config.background_character)
 
@@ -236,7 +254,15 @@ class TuiApp(EuporieApp):
             filter=Condition(lambda: config.show_status_bar) & ~is_searching,
         )
 
-        body = HSplit([tabs, self.search_bar, status_bar], style="class:body")
+        tab_bar = ConditionalContainer(
+            TabBar(self),
+            filter=Condition(
+                lambda: (len(self.tabs) > 1 or config.always_show_tab_bar)
+                and TabMode(config.tab_mode) == TabMode.STACK
+            ),
+        )
+
+        body = HSplit([tab_bar, tabs, self.search_bar, status_bar], style="class:body")
 
         self.command_palette = CommandPalette()
 
@@ -466,7 +492,7 @@ class TuiApp(EuporieApp):
         else:
             tab = LogView()
             self.tabs.append(tab)
-        self.layout.focus(tab)
+        tab.focus()
 
     def help_about(self) -> None:
         """Displays an about dialog."""
@@ -622,6 +648,21 @@ class TuiApp(EuporieApp):
                 ],
             ),
             MenuItem(
+                "Tabs",
+                children=[
+                    get("next-tab").menu,
+                    get("previous-tab").menu,
+                    separator,
+                    MenuItem(
+                        "Tab mode",
+                        children=[
+                            get(f"set-tab-mode-{choice}").menu
+                            for choice in config.choices("tab_mode")
+                        ],
+                    ),
+                ],
+            ),
+            MenuItem(
                 "Settings",
                 children=[
                     MenuItem(
@@ -640,7 +681,7 @@ class TuiApp(EuporieApp):
                         ],
                     ),
                     MenuItem(
-                        "Syntax Theme",
+                        "Syntax theme",
                         children=[
                             get(f"set-syntax-theme-{choice}").menu
                             for choice in sorted(
@@ -656,6 +697,7 @@ class TuiApp(EuporieApp):
                     get("show-line-numbers").menu,
                     get("show-status-bar").menu,
                     get("show-scroll-bar").menu,
+                    get("always-show-tab-bar").menu,
                     separator,
                     MenuItem(
                         "Cell formatting",

@@ -54,7 +54,7 @@ from euporie.filters import (
 from euporie.key_binding.micro_state import InputMode
 
 if TYPE_CHECKING:
-    from typing import Dict, List, Union
+    from typing import Dict, List, Tuple, Union
 
     from prompt_toolkit.key_binding import KeyPressEvent
 
@@ -635,7 +635,7 @@ def unshift_move(event: "KeyPressEvent") -> "None":
         return
 
     # the other keys are handled through their readline command
-    key_to_command: "Dict[Union[Keys, str], str]" = {
+    key_to_command: "Dict[Tuple[Union[Keys, str], ...], str]" = {
         (Keys.ShiftLeft,): "move-cursor-left",
         (Keys.ShiftRight,): "move-cursor-right",
         (Keys.ShiftHome,): "go-to-start-of-line",

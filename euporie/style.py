@@ -1,16 +1,13 @@
 """Style related functions."""
 
 from colorsys import hls_to_rgb, rgb_to_hls
-from functools import lru_cache
 from typing import TYPE_CHECKING
 
 from prompt_toolkit.styles.defaults import default_ui_style
 from prompt_toolkit.styles.style import Style
 
-from euporie.config import config
-
 if TYPE_CHECKING:
-    from typing import Any, Dict, Optional, Union
+    from typing import Any, Dict, Optional, Tuple
 
 
 MARKDOWN_STYLE = [
@@ -50,84 +47,208 @@ LOG_STYLE = [
 ]
 
 
-@lru_cache
-def color_series(
-    n: "int" = 10, interval: "float" = 0.05, **kwargs: "Any"
-) -> "Dict[str, Dict[Union[str, int], str]]":
-    """Create a series of dimmed colours."""
-    series: "Dict[str, Dict[Union[int, str], str]]" = {
-        key: {"base": value} for key, value in kwargs.items()
-    }
+class ColorPaletteColor:
+    """A representation of a color with adjustment methods."""
 
-    for name, color in kwargs.items():
-        color = color.lstrip("#")
-        r, g, b = (
+    def __init__(self, name: "str", base: "str", _base_override: str = "") -> "None":
+        """Creates a new color."""
+        self.name = name
+        self.base_hex = base
+        self.base = _base_override or base
+
+        color = base.lstrip("#")
+        self.red, self.green, self.blue = (
             int(color[0:2], 16) / 255,
             int(color[2:4], 16) / 255,
             int(color[4:6], 16) / 255,
         )
-        hue, brightness, saturation = rgb_to_hls(r, g, b)
 
-        for i in range(-n, n + 1):
+        self.hue, self.brightness, self.saturation = rgb_to_hls(
+            self.red, self.green, self.blue
+        )
 
-            # Linear interpolation
-            if i > 0:
-                adj_brightness = brightness + (1 - brightness) / n * i
-            else:
-                adj_brightness = brightness + (brightness) / n * i
+        self.is_light = self.brightness > 0.5
 
-            r, g, b = hls_to_rgb(hue, adj_brightness, saturation)
-            new_color = f"#{int(r * 255):02x}{int(g * 255):02x}{int(b * 255):02x}"
+        self._cache: "Dict[Tuple[float, float, float, bool], str]" = {}
 
-            if brightness > 0.5:
-                i *= -1
-            series[name][i] = new_color
+    def _adjust_abs(
+        self, hue: "float" = 0.0, brightness: "float" = 0.0, saturation: "float" = 0.0
+    ) -> "str":
+        hue = max(min(1, self.hue + hue), 0)
+        brightness = max(min(1, self.brightness + brightness), 0)
+        saturation = max(min(1, self.saturation + saturation), 0)
 
-    return series
+        r, g, b = hls_to_rgb(hue, brightness, saturation)
+        new_color = f"#{int(r * 255):02x}{int(g * 255):02x}{int(b * 255):02x}"
+        return new_color
+
+    def _adjust_rel(
+        self, hue: "float" = 0.0, brightness: "float" = 0.0, saturation: "float" = 0.0
+    ) -> "str":
+        hue = min(max(0, hue), 1)
+        brightness = min(max(-1, brightness), 1)
+        saturation = min(max(-1, saturation), 1)
+
+        new_hue = self.hue + (self.hue * (hue < 0) + (1 - self.hue) * (hue > 0)) * hue
+
+        new_brightness = (
+            self.brightness
+            + (
+                self.brightness * (brightness < 0)
+                + (1 - self.brightness) * (brightness > 0)
+            )
+            * brightness
+        )
+
+        new_saturation = (
+            self.saturation
+            + (
+                self.saturation * (saturation < 0)
+                + (1 - self.saturation) * (saturation > 0)
+            )
+            * saturation
+        )
+
+        r, g, b = hls_to_rgb(new_hue, new_brightness, new_saturation)
+        new_color = f"#{int(r * 255):02x}{int(g * 255):02x}{int(b * 255):02x}"
+        return new_color
+
+    def _adjust(
+        self,
+        hue: "float" = 0.0,
+        brightness: "float" = 0.0,
+        saturation: "float" = 0.0,
+        rel: "bool" = True,
+    ) -> "str":
+        """Performs a relative of absolute color adjustment."""
+        if rel:
+            return self._adjust_rel(hue, brightness, saturation)
+        else:
+            return self._adjust_abs(hue, brightness, saturation)
+
+    def adjust(
+        self,
+        hue: "float" = 0.0,
+        brightness: "float" = 0.0,
+        saturation: "float" = 0.0,
+        rel: "bool" = True,
+    ) -> "str":
+        """Adjust the hue, saturation, or brightness of the color."""
+        key = (hue, brightness, saturation, rel)
+        if key in self._cache:
+            return self._cache[key]
+        else:
+            return self._cache.setdefault(key, self._adjust(*key))
+
+    def lighter(self, amount: "float", rel: "bool" = True) -> "str":
+        """Makes the color lighter."""
+        return self.adjust(brightness=amount, rel=rel)
+
+    def darker(self, amount: "float", rel: "bool" = True) -> "str":
+        """Makes the color darker."""
+        return self.adjust(brightness=-amount, rel=rel)
+
+    def more(self, amount: "float", rel: "bool" = True) -> "str":
+        """Modified the brightness towards 0.5."""
+        if self.is_light:
+            amount *= -1
+        return self.adjust(brightness=amount, rel=rel)
+
+    def less(self, amount: "float", rel: "bool" = True) -> "str":
+        """Modified the brightness away from 0.5."""
+        if self.is_light:
+            amount *= -1
+        return self.adjust(brightness=-amount, rel=rel)
+
+    def __repr__(self) -> "str":
+        """Returns a string representation of the color."""
+        return self.base
+
+
+class ColorPalette:
+    """Defines a collection of colors."""
+
+    def __init__(self):
+        """Creates a new color-palette."""
+        self.colors = {}
+        self.add_color("black", "#000000")
+        self.add_color("white", "#FFFFFF")
+
+    def add_color(
+        self, name: "str", base: "str", _base_override: str = ""
+    ) -> "ColorPalette":
+        """Adds a color to the palette."""
+        self.colors[name] = ColorPaletteColor(name, base, _base_override)
+        return self
+
+    def __getattr__(self, name: "str") -> "Any":
+        """Enables access of palette colors via dotted attributes.
+
+        Args:
+            name: The name of the attribute to access.
+
+        Returns:
+            The color-palette color.
+
+        """
+        return self.colors.get(name)
 
 
 def build_style(
-    cp: "Optional[Dict[str, Dict[Union[str, int], str]]]",
+    cp: "Optional[ColorPalette]",
     have_term_colors: "bool" = True,
 ) -> "Style":
     """Create an application style based on the given color palette."""
     if cp is None:
-        cp = color_series(fg="#ffffff", bg="#000000", n=20)
+        cp = (
+            ColorPalette()
+            .add_color("fg", "#FFFFFF", "default")
+            .add_color("bg", "#000000", "default")
+        )
     return Style.from_dict(
         {
             # The default style is merged at this point so full styles can be
             # overridden. For example, this allows us to switch off the underline
             # status of cursor-line.
             **dict(default_ui_style().style_rules),
-            "default": f"fg:{cp['bg'][0]} bg:{cp['bg'][0]}",
+            "default": f"fg:{cp.bg.base} bg:{cp.bg.base}",
             # Logo
-            "logo": "fg:#ff0000",
+            "logo": "fg:#dd0000",
             # Pattern
-            "pattern": f"fg:{config.background_color or cp['fg'][14]}",
+            "pattern": f"fg:{cp.bg.more(0.075)}",
             # Chrome
-            "chrome": f"fg:{cp['fg'][1]} bg:{cp['bg'][1]}",
+            "chrome": f"fg:{cp.fg.more(1/20)} bg:{cp.bg.more(1/20)}",
+            "tab-padding": f"fg:{cp.bg.more(4/20)} bg:{cp.bg.base}",
             # Statusbar
-            "status": f"fg:{cp['fg'][1]} bg:{cp['bg'][1]}",
-            "status.field": f"fg:{cp['fg'][2]} bg:{cp['bg'][2]}",
+            "status": f"fg:{cp.fg.more(1/20)} bg:{cp.bg.more(1/20)}",
+            "status.field": f"fg:{cp.fg.more(2/20)} bg:{cp.bg.more(2/20)}",
             # Menus & Menu bar
-            "menu-bar": f"fg:{cp['fg'][1]} bg:{cp['bg'][1]}",
-            "menu-bar.disabled-item": f"fg:{cp['bg'][3]}",
+            "menu-bar": f"fg:{cp.fg.more(1/20)} bg:{cp.bg.more(1/20)}",
+            "menu-bar.disabled-item": f"fg:{cp.bg.more(3/20)}",
             "menu-bar.selected-item": "reverse",
-            "menu-bar.shortcut": f"fg:{cp['fg'][5]}",
+            "menu-bar.shortcut": f"fg:{cp.fg.more(5/20)}",
             "menu-bar.selected-item menu-bar.shortcut": (
-                f"fg:{cp['fg'][1]} bg:{cp['bg'][4]}"
+                f"fg:{cp.fg.more(1/20)} bg:{cp.bg.more(4/20)}"
             ),
-            "menu-bar.disabled-item menu-bar.shortcut": f"fg:{cp['bg'][3]}",
-            "menu": f"bg:{cp['bg'][1]} fg:{cp['fg'][1]}",
-            "menu-border": f"fg:{cp['bg'][6]} bg:{cp['bg'][1]}",
+            "menu-bar.disabled-item menu-bar.shortcut": f"fg:{cp.bg.more(3/20)}",
+            "menu": f"bg:{cp.bg.more(1/20)} fg:{cp.fg.more(1/20)}",
+            "menu-border": f"fg:{cp.bg.more(6/20)} bg:{cp.bg.more(1/20)}",
             # Tab bar
-            "tab-bar": f"fg:{cp['bg'][1]} bg:{cp['bg'][1]}",
-            "tab-bar.tab": f"bg:{cp['bg'][0]}",
-            "tab-bar.tab.active": f"fg:{cp['fg'][0]} bg:{cp['bg'][0]}",
+            "tab-bar": f"fg:{cp.bg.more(4/20)} bg:{cp.bg.darker(3/20)}",
+            "tab-bar.tab": f"fg:{cp.bg.more(2/20)} bg:{cp.bg.more(-3/20)}",
+            "tab-bar.tab.head": f"fg:{cp.bg.more(3/20)} bg:{cp.bg.darker(3/20)}",
+            "tab-bar.tab.edge": f"fg:{cp.bg.more(3/20)} bg:{cp.bg.more(-3/20)}",
+            "tab-bar.tab.close": "",
+            "tab-bar.tab active": f"bold fg:{cp.fg.more(0/20)} bg:{cp.bg.base}",
+            "tab-bar.tab.head active": f"fg:ansiblue bg:{cp.bg.darker(3/20)}",
+            "tab-bar.tab.edge active": f"fg:{cp.bg.more(4/20)} bg:{cp.bg.base}",
+            "tab-bar.tab.close active": "fg:darkred",
             # Buffer
-            "line-number": f"fg:{cp['fg'][-1]} bg:{cp['bg'][-5]}",
-            "line-number.current": f"bold orange bg:{cp['bg'][-1]}",
-            "cursor-line": f"bg:{cp['bg'][-5]}",
+            "line-number": f"fg:{cp.fg.more(10/20)} bg:{cp.bg.more(1/20)}",
+            "line-number.current": f"bold orange bg:{cp.bg.more(2/20)}",
+            "line-number edge": f"fg:{cp.bg.darker(0.1)}",
+            "line-number.current edge": f"fg:{cp.bg.darker(0.1)}",
+            "cursor-line": f"bg:{cp.bg.more(1/20)}",
             "cursor-line incsearch": "bg:ansibrightyellow",
             "cursor-line incsearch.current": "bg:ansibrightgreen",
             "matching-bracket.cursor": "fg:yellow bold",
@@ -135,28 +256,27 @@ def build_style(
             # Search
             "incsearch": "bg:ansibrightyellow",
             "incsearch.current": "bg:ansibrightgreen",
-            "search-toolbar": f"fg:{cp['fg'][1]} bg:{cp['bg'][1]}",
-            "search-toolbar.title": f"fg:{cp['fg'][2]} bg:{cp['bg'][2]}",
+            "search-toolbar": f"fg:{cp.fg.more(1/20)} bg:{cp.bg.more(1/20)}",
+            "search-toolbar.title": f"fg:{cp.fg.more(2/20)} bg:{cp.bg.more(2/20)}",
             # Cells
-            "cell.border": f"fg:{cp['bg'][5]}",
-            "cell.border.selected": "fg:#00afff",
-            "cell.border.edit": "fg:#00ff00",
-            "cell.input.box": f"fg:default "
-            f"bg:{cp['bg'][-1] if have_term_colors else 'default'}",
+            "cell.border": f"fg:{cp.bg.more(5/20)}",
+            "cell.border.selected": "fg:ansibrightblue",
+            "cell.border.edit": "fg:ansibrightgreen",
+            "cell.input.box": f"fg:default bg:{cp.bg.more(0.02)}",
             "cell.output": "fg:default bg:default",
             "cell.input.prompt": "fg:blue",
             "cell.output.prompt": "fg:red",
             # Scrollbars
-            "scrollbar": f"fg:{cp['bg'][15]} bg:{cp['bg'][3]}",
-            "scrollbar.background": f"fg:{cp['bg'][15]} bg:{cp['bg'][3]}",
-            "scrollbar.arrow": f"fg:{cp['bg'][15]} bg:{cp['bg'][3]}",
+            "scrollbar": f"fg:{cp.bg.more(15/20)} bg:{cp.bg.more(3/20)}",
+            "scrollbar.background": f"fg:{cp.bg.more(15/20)} bg:{cp.bg.more(3/20)}",
+            "scrollbar.arrow": f"fg:{cp.bg.more(15/20)} bg:{cp.bg.more(3/20)}",
             "scrollbar.start": "",
-            "scrollbar.button": f"fg:{cp['bg'][15]} bg:{cp['bg'][15]}",
-            "scrollbar.end": f"fg:{cp['bg'][3]} bg:{cp['bg'][15]}",
+            "scrollbar.button": f"fg:{cp.bg.more(15/20)} bg:{cp.bg.more(15/20)}",
+            "scrollbar.end": f"fg:{cp.bg.more(3/20)} bg:{cp.bg.more(15/20)}",
             # Dialogs
-            "dialog.body": f"fg:{cp['fg']['base']} bg:{cp['bg'][4]}",
-            "dialog.body text-area": f"fg:{cp['fg']['base']}",
-            "dialog.body scrollbar.button": f"fg:{cp['bg'][5]} bg:{cp['bg'][15]}",
+            "dialog.body": f"fg:{cp.fg.base} bg:{cp.bg.darker(2/20)}",
+            "dialog.body text-area": f"fg:{cp.fg.base}",
+            "dialog.body scrollbar.button": f"fg:{cp.bg.more(5/20)} bg:{cp.bg.more(15/20)}",
             # Horizontals rule
             "hr": "fg:ansired",
             # Completions menu
@@ -182,28 +302,32 @@ def build_style(
             "log.ref": "fg:grey",
             "log.date": "fg:#00875f",
             # Shortcuts
-            "shortcuts.group": f"bg:{cp['bg'][8]} bold underline",
-            "shortcuts.row": f"bg:{cp['bg'][0]} nobold",
-            "shortcuts.row alt": f"bg:{cp['bg'][2]}",
+            "shortcuts.group": f"bg:{cp.bg.more(8/20)} bold underline",
+            "shortcuts.row": f"bg:{cp.bg.base} nobold",
+            "shortcuts.row alt": f"bg:{cp.bg.more(2/20)}",
             "shortcuts.row key": "bold",
             # Palette
-            "palette.item": f"fg:{cp['fg'][1]} bg:{cp['bg'][1]}",
-            "palette.item.alt": f"bg:{cp['bg'][3]}",
-            "palette.item.selected": "fg:#ffffff bg:#0055ff",
+            "palette.item": f"fg:{cp.fg.more(1/20)} bg:{cp.bg.more(1/20)}",
+            "palette.item.alt": f"bg:{cp.bg.more(3/20)}",
+            "palette.item.selected": "fg:#ffffff bg:ansiblue",
             # Pager
-            "pager": f"bg:{cp['bg'][1]}",
-            "pager.border": f"fg:{cp['bg'][9]}",
+            "pager": f"bg:{cp.bg.more(1/20)}",
+            "pager.border": f"fg:{cp.bg.more(9/20)}",
             # Markdown
-            "md.code.inline": f"bg:{cp['bg'][3]}",
-            "md.code.block": f"bg:{cp['bg'][-4]}",
-            "md.code.block.border": f"fg:{cp['bg'][5]}",
-            "md.table.border": f"fg:{cp['bg'][15]}",
+            "md.code.inline": f"bg:{cp.bg.more(3/20)}",
+            "md.code.block": f"bg:{cp.bg.less(0.2)}",
+            "md.code.block.border": f"fg:{cp.bg.more(5/20)}",
+            "md.table.border": f"fg:{cp.bg.more(15/20)}",
             # Shadows
-            "shadow": f"bg:{cp['bg'][9]}",
-            "pager shadow": f"bg:{cp['bg'][9]}",
-            "cell.input shadow": f"bg:{cp['bg'][9]}",
-            "cell.input.box shadow": f"bg:{cp['bg'][9]}",
-            "cell.output shadow": f"bg:{cp['bg'][9]}",
-            "md.code.block shadow": f"bg:{cp['bg'][9]}",
+            "shadow": f"bg:{cp.bg.darker(9/20)}",
+            "tab-bar shadow": f"bg:{cp.bg.darker(9/20)}",
+            "pager shadow": f"bg:{cp.bg.darker(9/20)}",
+            "cell.input shadow": f"bg:{cp.bg.darker(9/20)}",
+            "cell.input.box shadow": f"bg:{cp.bg.darker(9/20)}",
+            "cell.output shadow": f"bg:{cp.bg.darker(9/20)}",
+            "md.code.block shadow": f"bg:{cp.bg.darker(9/20)}",
+            # Drop-shadow
+            "drop-shadow.inner": f"fg:{cp.bg.darker(3/20)}",
+            "drop-shadow.outer": f"fg:{cp.bg.darker(2/20)} bg:{cp.bg.darker(0.5/20)}",
         }
     )

@@ -16,6 +16,7 @@ from appdirs import user_config_dir  # type: ignore
 from pygments.styles import STYLE_MAP as pygments_styles  # type: ignore
 
 from euporie import __app_name__, __copyright__, __strapline__, __version__
+from euporie.enums import TabMode
 
 if TYPE_CHECKING:
     from typing import Any, Iterator, Optional, Sequence, Union
@@ -458,10 +459,24 @@ CONFIG_PARAMS: "dict[str, dict]" = {
             Whether the scroll bar should be shown on the right of the screen.
         """,
     },
+    "always_show_tab_bar": {
+        "flags_": ["--always-show-tab-bar"],
+        "action": BooleanOptionalAction,
+        "type": bool,
+        "help": "Always show the tab bar",
+        "default": False,
+        "schema_": {
+            "type": "boolean",
+        },
+        "description_": """
+            When set, the tab bar will always be shown - otherwise the tab bar is only
+            shown when multiple tabs are open.
+        """,
+    },
     "color_scheme": {
         "flags_": ["--color-scheme"],
         "type": str,
-        "choices": ["default", "inverse", "light", "dark"],
+        "choices": ["default", "inverse", "light", "dark", "black", "white", "custom"],
         "help": "The color scheme to use",
         "default": "default",
         "schema_": {
@@ -504,17 +519,32 @@ CONFIG_PARAMS: "dict[str, dict]" = {
             Recommended characters include: "·", "⬤", "╳", "╱", "╲", "░", "▒", "▓", "▞", "╬"
         """,
     },
-    "background_color": {
-        "flags_": ["--background-color", "--bg-color"],
+    "custom_background_color": {
+        "flags_": ["--custom-background-color", "--custom-bg-color", "--bg"],
         "type": str,
-        "help": "Color for background pattern",
+        "help": 'Background color for "Custom" color theme',
         "default": "",
         "schema_": {
             "type": "string",
             "maxLength": 7,
         },
         "description_": """
-            The color to use for the background pattern.
+            The hex code of the color to use for the background in the "Custom" color
+            scheme.
+        """,
+    },
+    "custom_foreground_color": {
+        "flags_": ["--custom-foreground-color", "--custom-fg-color", "--fg"],
+        "type": str,
+        "help": 'Background color for "Custom" color theme',
+        "default": "",
+        "schema_": {
+            "type": "string",
+            "maxLength": 7,
+        },
+        "description_": """
+            The hex code of the color to use for the foreground in the "Custom" color
+            scheme.
         """,
     },
     "show_cell_borders": {
@@ -568,6 +598,20 @@ CONFIG_PARAMS: "dict[str, dict]" = {
             The number of bits to use to represent colors displayable on the screen.
             If set to None, the supported color depth of the terminal will be detected
             automatically.
+        """,
+    },
+    "tab_mode": {
+        "flags_": ["--tab-mode"],
+        "type": str,
+        "choices": [mode.value for mode in TabMode],
+        "default": "stack",
+        "help": "The method used to display multiple tabs",
+        "schema_": {"type": "string"},
+        "description_": """
+            Determines how multiple tabs are displayed when more than one tab is open.
+            * ``stack`` displays one tab at a time with a tab-bar
+            * ``tile_horizontal`` displays tabs side-by-side
+            * ``tile_vertical`` displays tabs one-atop-the-next
         """,
     },
     "files": {

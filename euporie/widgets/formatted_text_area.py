@@ -5,18 +5,22 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
+from prompt_toolkit.filters import to_filter
 from prompt_toolkit.formatted_text import (
     fragment_list_to_text,
     split_lines,
     to_formatted_text,
 )
-from prompt_toolkit.layout.margins import ScrollbarMargin
+from prompt_toolkit.layout.margins import ConditionalMargin, ScrollbarMargin
 from prompt_toolkit.layout.processors import DynamicProcessor, Processor, Transformation
 from prompt_toolkit.widgets import TextArea
+
+from euporie.margins import NumberedDiffMargin
 
 if TYPE_CHECKING:
     from typing import Any
 
+    from prompt_toolkit.filters import FilterOrBool
     from prompt_toolkit.formatted_text import AnyFormattedText, StyleAndTextTuples
     from prompt_toolkit.layout.processors import TransformationInput
 
@@ -63,17 +67,23 @@ class FormattedTextArea(TextArea):
         self.text = fragment_list_to_text(self.formatted_text)
 
     def __init__(
-        self, formatted_text: "AnyFormattedText", *args: "Any", **kwargs: "Any"
+        self,
+        formatted_text: "AnyFormattedText",
+        *args: "Any",
+        line_numbers: "FilterOrBool" = False,
+        **kwargs: "Any",
     ):
         """Initialise a `FormattedTextArea` instance.
 
         Args:
             formatted_text: A list of `(style, text)` tuples to display.
+            line_numbers: Determines if line numbers are shown,
             *args: Arguments to pass to `prompt_toolkit.widgets.TextArea`.
             **kwargs: Key-word arguments to pass to `prompt_toolkit.widgets.TextArea`.
 
         """
         self._formatted_text = formatted_text
+        self.line_numbers = to_filter(line_numbers)
         input_processors = kwargs.pop("input_processors", [])
         input_processors.append(DynamicProcessor(self.get_processor))
         # The following is not type checked due to a currently open mypy bug
@@ -83,6 +93,13 @@ class FormattedTextArea(TextArea):
             input_processors=input_processors,
             **kwargs,
         )  # type: ignore
+        # Set the left margins
+        self.window.left_margins = [
+            ConditionalMargin(
+                NumberedDiffMargin(),
+                self.line_numbers,
+            )
+        ]
         # Set the formatted text to display
         for margin in self.window.right_margins:
             if isinstance(margin, ScrollbarMargin):

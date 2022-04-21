@@ -47,17 +47,17 @@ from prompt_toolkit.styles import (
 from pygments.styles import get_style_by_name  # type: ignore
 
 from euporie.config import config
+from euporie.enums import TabMode
 from euporie.key_binding.bindings.commands import load_command_bindings
 from euporie.key_binding.bindings.micro import load_micro_bindings
 from euporie.key_binding.micro_state import MicroState
 from euporie.log import setup_logs
-from euporie.style import LOG_STYLE, MARKDOWN_STYLE, build_style, color_series
+from euporie.style import LOG_STYLE, MARKDOWN_STYLE, ColorPalette, build_style
 from euporie.tabs.base import Tab
 from euporie.tabs.notebook import Notebook
 from euporie.terminal import TerminalInfo, Vt100Parser
 
 if TYPE_CHECKING:
-    from collections.abc import MutableSequence
     from typing import Any, Callable, Dict, List, Optional, Tuple, Type
 
     from prompt_toolkit.filters import Filter
@@ -99,6 +99,7 @@ class EuporieApp(Application):
 
     # Defines which notebook class should we use
     notebook_class: "Type[Notebook]"
+    tab_mode: "TabMode"
 
     def __init__(self, **kwargs: "Any") -> "None":
         """Instantiates euporie specific application variables.
@@ -130,7 +131,7 @@ class EuporieApp(Application):
                 self.input.vt100_parser.feed_key_callback
             )
         # Contains the opened tab containers
-        self.tabs: "MutableSequence[Tab]" = []
+        self.tabs: "List[Tab]" = []
         # Holds the search bar to pass to cell inputs
         self.search_bar: "Optional[SearchToolbar]" = None
         # Holds the index of the current tab
@@ -362,6 +363,10 @@ class EuporieApp(Application):
         self._tab_idx = value % len(self.tabs)
         self.layout.focus(self.tabs[self._tab_idx])
 
+    def focus_tab(self, tab: "Tab") -> "None":
+        """Makes a tab visible and focuses it."""
+        self.tab_idx = self.tabs.index(tab)
+
     def cleanup_closed_tab(self, tab: "Tab") -> "None":
         """Remove a tab container from the current instance of the app.
 
@@ -423,32 +428,35 @@ class EuporieApp(Application):
         """Generate a new merged style for the application."""
         # Get foreground and background colors based on the configured colour scheme
         theme_colors = {
-            "light": {"fg": "#000000", "bg": "#EFEFEF"},
-            "dark": {"fg": "#FFFFFF", "bg": "#202020"},
+            "light": {"fg": "#202020", "bg": "#F0F0F0"},
+            "dark": {"fg": "#F0F0F0", "bg": "#202020"},
+            "white": {"fg": "#000000", "bg": "#FFFFFF"},
+            "black": {"fg": "#FFFFFF", "bg": "#000000"},
+            "default": {
+                "fg": self.term_info.foreground_color.value,
+                "bg": self.term_info.background_color.value,
+            },
+            "custom": {
+                "fg": config.custom_foreground_color,
+                "bg": config.custom_background_color,
+            },
         }
         base_colors: "dict[str, str]" = theme_colors.get(
-            config.color_scheme,
-            {
-                "fg": self.term_info.foreground_color.value
-                or theme_colors["dark"]["fg"],
-                "bg": self.term_info.background_color.value
-                or theme_colors["dark"]["bg"],
-            },
+            config.color_scheme, theme_colors["default"]
         )
-        # Build a color palette from the fg/bg colors
-        self.color_palette = color_series(**base_colors, n=20)
 
-        # Actually use default colors if in default mode
-        # This is needed for transparent terminals and the like
-        # The detected colours are available under the "base" key
-        if config.color_scheme == "default":
-            self.color_palette["fg"][0] = "default"
-            self.color_palette["bg"][0] = "default"
+        # Build a color palette from the fg/bg colors
+        self.color_palette = ColorPalette()
+        base_override = "default" if config.color_scheme == "default" else ""
+        for name, color in base_colors.items():
+            self.color_palette.add_color(
+                name, color or theme_colors["default"][name], base_override
+            )
 
         # Build app style
         app_style = build_style(
             self.color_palette,
-            have_term_colors=bool(self.term_info.foreground_color.value),
+            # have_term_colors=bool(self.term_info.foreground_color.value),
         )
 
         # Apply style transformations based on the configured color scheme

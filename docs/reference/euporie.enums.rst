@@ -1,7 +1,7 @@
-euporie.style
+euporie.enums
 =============
 
-.. automodule:: euporie.style
+.. automodule:: euporie.enums
    :members:
    :undoc-members:
    :inherited-members:
@@ -18,13 +18,6 @@ euporie.style
 
 
 
-   .. rubric:: Functions
-
-   .. autosummary::
-      :toctree:
-
-      build_style
-
 
 
 
@@ -35,5 +28,4 @@ euporie.style
       :toctree:
       :template: class.tpl.rst
 
-      ColorPalette
-      ColorPaletteColor
+      TabMode

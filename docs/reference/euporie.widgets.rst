@@ -23,3 +23,4 @@ euporie.widgets
       euporie.widgets.output
       euporie.widgets.page
       euporie.widgets.palette
+      euporie.widgets.tab_bar

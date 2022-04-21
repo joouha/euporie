@@ -154,6 +154,15 @@ def show_status_bar() -> "None":
 
 @add(
     group="config",
+    toggled=Condition(lambda: bool(config.always_show_tab_bar)),
+)
+def always_show_tab_bar() -> "None":
+    """Toggle the visibility of the tab bar."""
+    config.toggle("always_show_tab_bar")
+
+
+@add(
+    group="config",
     toggled=Condition(lambda: bool(config.show_scroll_bar)),
 )
 def show_scroll_bar() -> "None":
@@ -224,3 +233,16 @@ for choice in sorted(CONFIG_PARAMS["syntax_theme"]["schema_"]["enum"]):
             partial(lambda x: config.syntax_theme == x, choice),
         ),
     )(partial(update_syntax_theme, choice))
+
+
+for choice in config.choices("tab_mode"):
+    add(
+        name=f"set-tab-mode-{choice.lower()}",
+        title=f'Set tab mode to "{choice.title()}"',
+        menu_title=choice.replace("_", " ").capitalize(),
+        group="config",
+        description=f"Set the tab mode to '{choice}'.",
+        toggled=Condition(
+            partial(lambda x: config.tab_mode == x, choice),
+        ),
+    )(partial(setattr, config, "tab_mode", choice))

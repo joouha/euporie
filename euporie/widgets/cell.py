@@ -21,7 +21,7 @@ from prompt_toolkit.layout.containers import (
     to_container,
 )
 from prompt_toolkit.layout.controls import FormattedTextControl
-from prompt_toolkit.layout.margins import ConditionalMargin, NumberedMargin
+from prompt_toolkit.layout.margins import ConditionalMargin
 from prompt_toolkit.layout.processors import (  # DisplayMultipleCursors,
     BeforeInput,
     ConditionalProcessor,
@@ -31,7 +31,7 @@ from prompt_toolkit.layout.processors import (  # DisplayMultipleCursors,
 )
 from prompt_toolkit.lexers import DynamicLexer, PygmentsLexer, SimpleLexer
 from prompt_toolkit.mouse_events import MouseEvent, MouseEventType, MouseModifier
-from prompt_toolkit.widgets import Frame, SearchToolbar, TextArea
+from prompt_toolkit.widgets import Frame, TextArea
 from pygments.lexers import get_lexer_by_name  # type: ignore
 
 from euporie.app.current import get_tui_app as get_app
@@ -39,6 +39,7 @@ from euporie.border import Invisible, Thick, Thin
 from euporie.config import config
 from euporie.filters import multiple_cells_selected
 from euporie.format import format_code
+from euporie.margins import NumberedDiffMargin
 from euporie.suggest import AppendLineAutoSuggestion, ConditionalAutoSuggestAsync
 from euporie.widgets.output.container import CellOutput
 
@@ -106,7 +107,6 @@ class CellInputTextArea(TextArea):
                 else SimpleLexer()
             )
         )
-        kwargs["search_field"] = cell.search_control
         kwargs["completer"] = cell.nb.completer
         kwargs["complete_while_typing"] = cell.autocomplete & cell.is_code
         kwargs["auto_suggest"] = ConditionalAutoSuggestAsync(
@@ -145,7 +145,7 @@ class CellInputTextArea(TextArea):
         # Add configurable line numbers
         self.window.left_margins = [
             ConditionalMargin(
-                NumberedMargin(),
+                NumberedDiffMargin(),
                 Condition(lambda: config.line_numbers),
             )
         ]
@@ -295,8 +295,6 @@ class Cell:
         self.asking_input = Condition(lambda: self._asking_input)
 
         # Generates the main container used to represent a notebook cell
-
-        self.search_control = SearchToolbar()
         self.input_box = CellInputTextArea(self)
 
         ft = FormattedTextControl(
@@ -365,7 +363,7 @@ class Cell:
                         fill(width=1, char=self.border_char("MID_SPLIT")),
                         filter=self.show_prompt,
                     ),
-                    HSplit([self.input_box, self.search_control]),
+                    self.input_box,
                     fill(width=1, char=self.border_char("MID_RIGHT")),
                 ],
             ),
@@ -532,9 +530,10 @@ class Cell:
             grid = Invisible.grid
             if config.show_cell_borders or self.selected:
                 if self.focused and multiple_cells_selected():
-                    grid = Thin.grid + Thick.outer
+                    # grid = Thin.grid + Thick.outer
+                    grid = Thick.outer
                 else:
-                    grid = Thin.grid
+                    grid = Thin.outer
             return getattr(grid, name.upper())
 
         return _inner

@@ -23,6 +23,7 @@ euporie.commands.config
    .. autosummary::
       :toctree:
 
+      always_show_tab_bar
       autocomplete
       autoformat
       autoinspect

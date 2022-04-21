@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from prompt_toolkit.filters import Condition, has_focus
 from prompt_toolkit.formatted_text.base import FormattedText
 from prompt_toolkit.layout.containers import HSplit
 from prompt_toolkit.widgets import SearchToolbar
@@ -33,18 +34,19 @@ class LogView(Tab):
             formatted_text=[],
             read_only=True,
             scrollbar=True,
-            line_numbers=True,
+            line_numbers=Condition(lambda: config.line_numbers),
             search_field=self.search_field,
             focus_on_click=True,
             wrap_lines=False,
             dont_extend_width=False,
         )
         self.container = HSplit([self.text_area, self.search_field])
+        self.hook_id = QueueHandler.hook(self.add_record)
         # Add text to the textarea
         for record in LOG_QUEUE:
             self.add_record(record)
         # Hook the queue handler
-        self.hook_id = QueueHandler.hook(self.add_record)
+        self.text_area.window.cursorline = has_focus(self)
 
     def add_record(self, message: "FormattedText") -> "None":
         """Adds a single new record to the textarea.
@@ -60,4 +62,5 @@ class LogView(Tab):
     @property
     def title(self) -> "str":
         """Returns the title of this tab."""
-        return f"Logs ({Path(config.log_file).name})"
+        suffix = f" ({Path(config.log_file).name})" if config.log_file else ""
+        return f"Logs{suffix}"

@@ -28,7 +28,8 @@ class Tab(metaclass=ABCMeta):
 
     def __init__(self):
         """Called when the tab is created."""
-        get_app().container_statuses[self] = self.statusbar_fields
+        self.app = get_app()
+        self.app.container_statuses[self] = self.statusbar_fields
 
     def statusbar_fields(
         self,
@@ -41,25 +42,21 @@ class Tab(metaclass=ABCMeta):
         """Return the tab title."""
         return ""
 
-    def close(self, cb: "Optional[Callable]") -> "None":
+    def close(self, cb: "Optional[Callable]" = None) -> "None":
         """Function to close a tab with a callback.
 
         Args:
             cb: A function to call after the tab is closed.
 
         """
-        app = get_app()
-        if self in app.container_statuses:
-            del app.container_statuses[self]
+        if self in self.app.container_statuses:
+            del self.app.container_statuses[self]
         if callable(cb):
             cb()
 
     def focus(self) -> "None":
-        """Focuses the tab."""
-        try:
-            get_app().layout.focus(self.container)
-        except Exception:
-            log.debug("Could not focus %s", self)
+        """Focuses the tab (or make it visible)."""
+        self.app.focus_tab(self)
 
     def __pt_container__(self) -> "AnyContainer":
         """Return the main container object."""

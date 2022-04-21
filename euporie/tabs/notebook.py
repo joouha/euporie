@@ -426,7 +426,7 @@ class DumpKernelNotebook(DumpNotebook, KernelNotebook):
         self.kernel = NotebookKernel(str(self.kernel_name), threaded=True)
         self.kernel.start(cb=self.check_kernel, wait=True)
 
-    def close(self, cb: "Optional[Callable]") -> "None":
+    def close(self, cb: "Optional[Callable]" = None) -> "None":
         """Shutdown the kernel and close the notebook.
 
         Args:
@@ -482,15 +482,16 @@ class TuiNotebook(KernelNotebook):
                                 [
                                     Pattern(config.background_character),
                                     Line(
+                                        char="▋",  # 5/8
                                         width=1,
                                         collapse=True,
-                                        style="class:notebook.border",
+                                        style="class:drop-shadow.outer reverse",
                                     ),
                                     Line(
-                                        char=" ",
+                                        char="▎",  # 2/8
                                         width=1,
                                         collapse=True,
-                                        style="class:notebook.border",
+                                        style="class:drop-shadow.inner",
                                     ),
                                 ]
                             ),
@@ -501,15 +502,16 @@ class TuiNotebook(KernelNotebook):
                             VSplit(
                                 [
                                     Line(
-                                        char=" ",
+                                        char="▊",  # 6/8
                                         width=1,
                                         collapse=True,
-                                        style="class:notebook.border",
+                                        style="class:drop-shadow.inner reverse",
                                     ),
                                     Line(
+                                        char="▍",  # 3/8
                                         width=1,
                                         collapse=True,
-                                        style="class:notebook.border",
+                                        style="class:drop-shadow.outer",
                                     ),
                                     Pattern(config.background_character),
                                 ]
@@ -531,7 +533,11 @@ class TuiNotebook(KernelNotebook):
                 ConditionalContainer(
                     HSplit(
                         [
-                            Line(height=1, collapse=False, style="class:pager.border"),
+                            Line(
+                                height=1,
+                                collapse=False,
+                                style="class:pager.border",
+                            ),
                             Box(
                                 DynamicContainer(self.get_pager_content),
                                 padding=0,
@@ -870,7 +876,7 @@ class TuiNotebook(KernelNotebook):
             },
         )
 
-    def close(self, cb: "Optional[Callable]") -> "None":
+    def close(self, cb: "Optional[Callable]" = None) -> "None":
         """Check if the user want to save an unsaved notebook, then close the file.
 
         Args:
