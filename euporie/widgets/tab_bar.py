@@ -109,6 +109,10 @@ class TabBar:
         def _handler(mouse_event: "MouseEvent") -> "None":
             if mouse_event.event_type == MouseEventType.MOUSE_DOWN:
                 func()
+            elif mouse_event.event_type == MouseEventType.SCROLL_UP:
+                self.app.tab_idx -= 1
+            elif mouse_event.event_type == MouseEventType.SCROLL_DOWN:
+                self.app.tab_idx += 1
 
         return _handler
 

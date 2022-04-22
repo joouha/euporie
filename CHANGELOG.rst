@@ -11,6 +11,7 @@ Upcoming
 Added
 =====
 
+- Allow changing tabs by scrolling on them
 - Add "Custom" color scheme, allowing foreground and background colours to be configured
 - Add "Black" and "White" color schemes
 - Add a tab bar, and tab stacking / tiling
