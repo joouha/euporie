@@ -258,6 +258,8 @@ ThickDoubleDashed = LineStyle("DoubleDashed", 54, parent=Thick)
 ThickTripleDashed = LineStyle("TripleDashed", 35, parent=Thick)
 ThickQuadrupleDashed = LineStyle("QuadDashed", 56, parent=Thick)
 Double = LineStyle("Double", 50, parent=Thick)
+HalfBlockUpperRight = LineStyle("HalfBlockUpperRight", 50, parent=Thin)
+HalfBlockLowerLeft = LineStyle("HalfBlockLowerLeft", 50, parent=Thin)
 
 
 class GridChar(NamedTuple):
@@ -421,6 +423,65 @@ _GRID_CHARS = {
     GridChar(Thin, Thick, Thick, Thick): "╈",
     GridChar(Thick, Thin, Thick, Thick): "╉",
     GridChar(Thick, Thick, Thin, Thick): "╇",
+    # HalfBlockUpperRight
+    GridChar(HalfBlockUpperRight, Invisible, HalfBlockUpperRight, Invisible): "▐",
+    GridChar(Invisible, HalfBlockUpperRight, Invisible, HalfBlockUpperRight): "▀",
+    GridChar(HalfBlockUpperRight, HalfBlockUpperRight, Invisible, Invisible): "▝",
+    GridChar(Invisible, HalfBlockUpperRight, HalfBlockUpperRight, Invisible): "▐",
+    GridChar(Invisible, Invisible, HalfBlockUpperRight, HalfBlockUpperRight): "▜",
+    GridChar(HalfBlockUpperRight, Invisible, Invisible, HalfBlockUpperRight): "▀",
+    GridChar(
+        HalfBlockUpperRight, HalfBlockUpperRight, HalfBlockUpperRight, Invisible
+    ): "▐",
+    GridChar(
+        Invisible, HalfBlockUpperRight, HalfBlockUpperRight, HalfBlockUpperRight
+    ): "▜",
+    GridChar(
+        HalfBlockUpperRight, Invisible, HalfBlockUpperRight, HalfBlockUpperRight
+    ): "▜",
+    GridChar(
+        HalfBlockUpperRight, HalfBlockUpperRight, Invisible, HalfBlockUpperRight
+    ): "▀",
+    GridChar(
+        HalfBlockUpperRight,
+        HalfBlockUpperRight,
+        HalfBlockUpperRight,
+        HalfBlockUpperRight,
+    ): "▜",
+    # HalfBlockLowerLeft
+    GridChar(HalfBlockLowerLeft, Invisible, HalfBlockLowerLeft, Invisible): "▌",
+    GridChar(Invisible, HalfBlockLowerLeft, Invisible, HalfBlockLowerLeft): "▄",
+    GridChar(HalfBlockLowerLeft, HalfBlockLowerLeft, Invisible, Invisible): "▙",
+    GridChar(Invisible, HalfBlockLowerLeft, HalfBlockLowerLeft, Invisible): "▄",
+    GridChar(Invisible, Invisible, HalfBlockLowerLeft, HalfBlockLowerLeft): "▖",
+    GridChar(HalfBlockLowerLeft, Invisible, Invisible, HalfBlockLowerLeft): "▌",
+    GridChar(
+        HalfBlockLowerLeft, HalfBlockLowerLeft, HalfBlockLowerLeft, Invisible
+    ): "▙",
+    GridChar(
+        Invisible, HalfBlockLowerLeft, HalfBlockLowerLeft, HalfBlockLowerLeft
+    ): "▄",
+    GridChar(
+        HalfBlockLowerLeft, Invisible, HalfBlockLowerLeft, HalfBlockLowerLeft
+    ): "▌",
+    GridChar(
+        HalfBlockLowerLeft, HalfBlockLowerLeft, Invisible, HalfBlockLowerLeft
+    ): "▙",
+    GridChar(
+        HalfBlockLowerLeft, HalfBlockLowerLeft, HalfBlockLowerLeft, HalfBlockLowerLeft
+    ): "▙",
+    # HalfBlock Combos
+    GridChar(Invisible, HalfBlockUpperRight, HalfBlockLowerLeft, Invisible): "▛",
+    GridChar(HalfBlockUpperRight, Invisible, Invisible, HalfBlockLowerLeft): "▟",
+    # Halfblock/Thin combos
+    GridChar(HalfBlockLowerLeft, Thin, HalfBlockLowerLeft, Invisible): "▌",
+    GridChar(Invisible, HalfBlockLowerLeft, Thin, HalfBlockLowerLeft): "▄",
+    GridChar(HalfBlockLowerLeft, Invisible, HalfBlockLowerLeft, Thin): "▌",
+    GridChar(Thin, HalfBlockLowerLeft, Invisible, HalfBlockLowerLeft): "▄",
+    GridChar(HalfBlockUpperRight, Thin, HalfBlockUpperRight, Invisible): "▐",
+    GridChar(Invisible, HalfBlockUpperRight, Thin, HalfBlockUpperRight): "▀",
+    GridChar(HalfBlockUpperRight, Invisible, HalfBlockUpperRight, Thin): "▐",
+    GridChar(Thin, HalfBlockUpperRight, Invisible, HalfBlockUpperRight): "▀",
 }
 
 

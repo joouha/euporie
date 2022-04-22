@@ -20,7 +20,7 @@ from prompt_toolkit.widgets.menus import MenuContainer as PtKMenuContainer
 from prompt_toolkit.widgets.menus import MenuItem as PtkMenuItem
 
 from euporie.app.current import get_base_app as get_app
-from euporie.border import Thin
+from euporie.border import HalfBlockLowerLeft, HalfBlockUpperRight, Thin
 
 if TYPE_CHECKING:
     from typing import Any, Callable, Iterable, Optional, Sequence, Union
@@ -41,6 +41,15 @@ if TYPE_CHECKING:
 __all__ = ["MenuContainer", "MenuItem"]
 
 log = logging.getLogger(__name__)
+
+
+MenuGrid = (
+    HalfBlockUpperRight.top_edge
+    + HalfBlockUpperRight.right_edge
+    + HalfBlockLowerLeft.left_edge
+    + HalfBlockLowerLeft.bottom_edge
+    + Thin.inner
+)
 
 
 class MenuItem(PtkMenuItem):
@@ -179,7 +188,7 @@ class MenuItem(PtkMenuItem):
         """
         suffix: "StyleAndTextTuples" = []
         if self.children:
-            suffix.append(("", ">"))
+            suffix.append(("", "›"))
         elif self.shortcut is not None:
             suffix.append(("class:menu-bar.shortcut", f"  {self.shortcut}"))
         return suffix
@@ -227,7 +236,7 @@ class MenuContainer(PtKMenuContainer):
         key_bindings: "Optional[KeyBindingsBase]" = None,
         left: "Optional[Sequence[AnyContainer]]" = None,
         right: "Optional[Sequence[AnyContainer]]" = None,
-        grid: "GridStyle" = Thin.grid,
+        grid: "GridStyle" = MenuGrid,
     ) -> "None":
         """Initiate the menu bar.
 
@@ -325,12 +334,15 @@ class MenuContainer(PtKMenuContainer):
                 menu = self._get_menu(level)
 
                 if menu.children:
-                    result.append(("class:menu-border", self.grid.TOP_LEFT))
-                    result.append(
-                        ("class:menu-border", self.grid.TOP_MID * (menu.width + 2))
+                    result.extend(
+                        [
+                            ("class:menu-border", self.grid.TOP_LEFT),
+                            ("class:menu-border", self.grid.TOP_MID * menu.width),
+                            ("class:menu-border", self.grid.TOP_RIGHT),
+                            ("", "\n"),
+                        ]
                     )
-                    result.append(("class:menu-border", self.grid.TOP_RIGHT))
-                    result.append(("", "\n"))
+
                     try:
                         selected_item = self.selected_menu[level + 1]
                     except IndexError:
@@ -366,26 +378,26 @@ class MenuContainer(PtKMenuContainer):
                             yield (
                                 "class:menu-border",
                                 self.grid.SPLIT_LEFT
-                                + (self.grid.SPLIT_MID * (menu.width + 2))
+                                + (self.grid.SPLIT_MID * menu.width)
                                 + self.grid.SPLIT_RIGHT,
                             )
 
                         else:
                             # Show the right edge
-                            yield ("class:menu-border", self.grid.MID_LEFT)
                             # Set the style and cursor if selected
                             style = ""
-                            if i == selected_item:
-                                yield ("[SetCursorPosition]", "")
-                                style += "class:menu-bar.selected-item"
-                            # Set the style if disabled
                             if item.disabled:
                                 style += "class:menu-bar.disabled-item"
+                            if i == selected_item:
+                                style += "class:menu-bar.selected-item"
+                            yield (f"{style} class:menu-border", self.grid.MID_LEFT)
+                            if i == selected_item:
+                                yield ("[SetCursorPosition]", "")
+                            # Set the style if disabled
                             # Construct the menu item contents
                             menu_formatted_text: "StyleAndTextTuples" = (
                                 to_formatted_text(
                                     [
-                                        ("", " "),
                                         *item.prefix,
                                         (
                                             "",
@@ -417,7 +429,6 @@ class MenuContainer(PtKMenuContainer):
                                             ),
                                         ),
                                         *item.suffix,
-                                        ("", " "),
                                     ],
                                     style=style,
                                 )
@@ -433,7 +444,7 @@ class MenuContainer(PtKMenuContainer):
                             if i == selected_item:
                                 yield ("[SetMenuPosition]", "")
                             # Show the right edge
-                            yield ("class:menu-border", self.grid.MID_RIGHT)
+                            yield (f"{style} class:menu-border", self.grid.MID_RIGHT)
 
                         yield ("", "\n")
 
@@ -442,11 +453,13 @@ class MenuContainer(PtKMenuContainer):
                         if not item.hidden():
                             result.extend(one_item(i, item))
 
-                    result.append(("class:menu-border", self.grid.BOTTOM_LEFT))
-                    result.append(
-                        ("class:menu-border", self.grid.BOTTOM_MID * (menu.width + 2))
+                    result.extend(
+                        [
+                            ("class:menu-border", self.grid.BOTTOM_LEFT),
+                            ("class:menu-border", self.grid.BOTTOM_MID * menu.width),
+                            ("class:menu-border", self.grid.BOTTOM_RIGHT),
+                        ]
                     )
-                    result.append(("class:menu-border", self.grid.BOTTOM_RIGHT))
 
             return result
 

@@ -205,129 +205,140 @@ def build_style(
             .add_color("fg", "#FFFFFF", "default")
             .add_color("bg", "#000000", "default")
         )
-    return Style.from_dict(
+
+    style_dict = {
+        # The default style is merged at this point so full styles can be
+        # overridden. For example, this allows us to switch off the underline
+        # status of cursor-line.
+        **dict(default_ui_style().style_rules),
+        "default": f"fg:{cp.bg.base} bg:{cp.bg.base}",
+        # Logo
+        "logo": "fg:#dd0000",
+        # Pattern
+        "pattern": f"fg:{cp.bg.more(0.075)}",
+        # Chrome
+        "chrome": f"fg:{cp.fg.more(1/20)} bg:{cp.bg.more(1/20)}",
+        "tab-padding": f"fg:{cp.bg.more(4/20)} bg:{cp.bg.base}",
+        # Statusbar
+        "status": f"fg:{cp.fg.more(1/20)} bg:{cp.bg.more(1/20)}",
+        "status.field": f"fg:{cp.fg.more(2/20)} bg:{cp.bg.more(2/20)}",
+        # Menus & Menu bar
+        "menu-bar": f"fg:{cp.fg.more(1/20)} bg:{cp.bg.more(1/20)}",
+        "menu-bar.disabled-item": f"fg:{cp.bg.more(3/20)}",
+        "menu-bar.selected-item": "reverse",
+        "menu-bar.shortcut": f"fg:{cp.fg.more(5/20)}",
+        "menu-bar.selected-item menu-bar.shortcut": (
+            f"fg:{cp.fg.more(1/20)} bg:{cp.bg.more(4/20)}"
+        ),
+        "menu-bar.disabled-item menu-bar.shortcut": f"fg:{cp.bg.more(3/20)}",
+        "menu": f"bg:{cp.bg.more(1/20)} fg:{cp.fg.more(1/20)}",
+        "menu-border": f"fg:{cp.bg.more(6/20)} bg:{cp.bg.more(1/20)}",
+        "menu-border menu-bar.selected-item": f"fg:{cp.fg.more(1/20)} bg:{cp.bg.more(6/20)} ",
+        # Tab bar
+        "tab-bar": f"fg:{cp.bg.more(4/20)} bg:{cp.bg.darker(3/20)}",
+        "tab-bar.tab": f"fg:{cp.bg.more(2/20)} bg:{cp.bg.more(-3/20)}",
+        "tab-bar.tab.head": f"fg:{cp.bg.more(3/20)} bg:{cp.bg.darker(3/20)}",
+        "tab-bar.tab.edge": f"fg:{cp.bg.more(3/20)} bg:{cp.bg.more(-3/20)}",
+        "tab-bar.tab.close": "",
+        "tab-bar.tab active": f"bold fg:{cp.fg.more(0/20)} bg:{cp.bg.base}",
+        "tab-bar.tab.head active": f"fg:ansiblue bg:{cp.bg.darker(3/20)}",
+        "tab-bar.tab.edge active": f"fg:{cp.bg.more(4/20)} bg:{cp.bg.base}",
+        "tab-bar.tab.close active": "fg:darkred",
+        # Buffer
+        "line-number": f"fg:{cp.fg.more(10/20)} bg:{cp.bg.more(1/20)}",
+        "line-number.current": f"bold orange bg:{cp.bg.more(2/20)}",
+        "line-number edge": f"fg:{cp.bg.darker(0.1)}",
+        "line-number.current edge": f"fg:{cp.bg.darker(0.1)}",
+        "cursor-line": f"bg:{cp.bg.more(1/20)}",
+        "cursor-line incsearch": "bg:ansibrightyellow",
+        "cursor-line incsearch.current": "bg:ansibrightgreen",
+        "matching-bracket.cursor": "fg:yellow bold",
+        "matching-bracket.other": "fg:yellow bold",
+        # Search
+        "incsearch": "bg:ansibrightyellow",
+        "incsearch.current": "bg:ansibrightgreen",
+        "search-toolbar": f"fg:{cp.fg.more(1/20)} bg:{cp.bg.more(1/20)}",
+        "search-toolbar.title": f"fg:{cp.fg.more(2/20)} bg:{cp.bg.more(2/20)}",
+        # Cells
+        "cell.border": f"fg:{cp.bg.more(5/20)}",
+        "cell.border.selected": "fg:ansibrightblue",
+        "cell.border.edit": "fg:ansibrightgreen",
+        "cell.input.box": f"fg:default bg:{cp.bg.more(0.02)}",
+        "cell.output": "fg:default bg:default",
+        "cell.input.prompt": "fg:blue",
+        "cell.output.prompt": "fg:red",
+        # Scrollbars
+        "scrollbar": f"fg:{cp.bg.more(15/20)} bg:{cp.bg.more(3/20)}",
+        "scrollbar.background": f"fg:{cp.bg.more(15/20)} bg:{cp.bg.more(3/20)}",
+        "scrollbar.arrow": f"fg:{cp.bg.more(15/20)} bg:{cp.bg.more(3/20)}",
+        "scrollbar.start": "",
+        "scrollbar.button": f"fg:{cp.bg.more(15/20)} bg:{cp.bg.more(15/20)}",
+        "scrollbar.end": f"fg:{cp.bg.more(3/20)} bg:{cp.bg.more(15/20)}",
+        # Dialogs
+        "dialog.body": f"fg:{cp.fg.base} bg:{cp.bg.darker(2/20)}",
+        "dialog.body text-area": f"fg:{cp.fg.base}",
+        "dialog.body scrollbar.button": f"fg:{cp.bg.more(5/20)} bg:{cp.bg.more(15/20)}",
+        # Horizontals rule
+        "hr": "fg:ansired",
+        # Completions menu
+        "completion-menu.completion.keyword": "fg:#d700af",
+        "completion-menu.completion.current.keyword": "fg:#fff bg:#d700ff",
+        "completion-menu.completion.function": "fg:#005faf",
+        "completion-menu.completion.current.function": "fg:#fff bg:#005fff",
+        "completion-menu.completion.class": "fg:#008700",
+        "completion-menu.completion.current.class": "fg:#fff bg:#00af00",
+        "completion-menu.completion.statement": "fg:#5f0000",
+        "completion-menu.completion.current.statement": "fg:#fff bg:#5f0000",
+        "completion-menu.completion.instance": "fg:#d75f00",
+        "completion-menu.completion.current.instance": "fg:#fff bg:#d78700",
+        "completion-menu.completion.module": "fg:#d70000",
+        "completion-menu.completion.current.module": "fg:#fff bg:#d70000",
+        # Log
+        "log.level.nonset": "fg:grey",
+        "log.level.debug": "fg:green",
+        "log.level.info": "fg:blue",
+        "log.level.warning": "fg:yellow",
+        "log.level.error": "fg:red",
+        "log.level.critical": "fg:red bold",
+        "log.ref": "fg:grey",
+        "log.date": "fg:#00875f",
+        # Shortcuts
+        "shortcuts.group": f"bg:{cp.bg.more(8/20)} bold underline",
+        "shortcuts.row": f"bg:{cp.bg.base} nobold",
+        "shortcuts.row alt": f"bg:{cp.bg.more(2/20)}",
+        "shortcuts.row key": "bold",
+        # Palette
+        "palette.item": f"fg:{cp.fg.more(1/20)} bg:{cp.bg.more(1/20)}",
+        "palette.item.alt": f"bg:{cp.bg.more(3/20)}",
+        "palette.item.selected": "fg:#ffffff bg:ansiblue",
+        # Pager
+        "pager": f"bg:{cp.bg.more(1/20)}",
+        "pager.border": f"fg:{cp.bg.more(9/20)}",
+        # Markdown
+        "md.code.inline": f"bg:{cp.bg.more(3/20)}",
+        "md.code.block": f"bg:{cp.bg.less(0.2)}",
+        "md.code.block.border": f"fg:{cp.bg.more(5/20)}",
+        "md.table.border": f"fg:{cp.bg.more(15/20)}",
+        # Drop-shadow
+        "drop-shadow.inner": f"fg:{cp.bg.darker(3/20)}",
+        "drop-shadow.outer": f"fg:{cp.bg.darker(2/20)} bg:{cp.bg.darker(0.5/20)}",
+        # Shadows
+        "shadow": f"bg:{cp.bg.darker(0.45)}",
+    }
+
+    # Add shadow combination for every element
+    style_dict.update(
         {
-            # The default style is merged at this point so full styles can be
-            # overridden. For example, this allows us to switch off the underline
-            # status of cursor-line.
-            **dict(default_ui_style().style_rules),
-            "default": f"fg:{cp.bg.base} bg:{cp.bg.base}",
-            # Logo
-            "logo": "fg:#dd0000",
-            # Pattern
-            "pattern": f"fg:{cp.bg.more(0.075)}",
-            # Chrome
-            "chrome": f"fg:{cp.fg.more(1/20)} bg:{cp.bg.more(1/20)}",
-            "tab-padding": f"fg:{cp.bg.more(4/20)} bg:{cp.bg.base}",
-            # Statusbar
-            "status": f"fg:{cp.fg.more(1/20)} bg:{cp.bg.more(1/20)}",
-            "status.field": f"fg:{cp.fg.more(2/20)} bg:{cp.bg.more(2/20)}",
-            # Menus & Menu bar
-            "menu-bar": f"fg:{cp.fg.more(1/20)} bg:{cp.bg.more(1/20)}",
-            "menu-bar.disabled-item": f"fg:{cp.bg.more(3/20)}",
-            "menu-bar.selected-item": "reverse",
-            "menu-bar.shortcut": f"fg:{cp.fg.more(5/20)}",
-            "menu-bar.selected-item menu-bar.shortcut": (
-                f"fg:{cp.fg.more(1/20)} bg:{cp.bg.more(4/20)}"
-            ),
-            "menu-bar.disabled-item menu-bar.shortcut": f"fg:{cp.bg.more(3/20)}",
-            "menu": f"bg:{cp.bg.more(1/20)} fg:{cp.fg.more(1/20)}",
-            "menu-border": f"fg:{cp.bg.more(6/20)} bg:{cp.bg.more(1/20)}",
-            # Tab bar
-            "tab-bar": f"fg:{cp.bg.more(4/20)} bg:{cp.bg.darker(3/20)}",
-            "tab-bar.tab": f"fg:{cp.bg.more(2/20)} bg:{cp.bg.more(-3/20)}",
-            "tab-bar.tab.head": f"fg:{cp.bg.more(3/20)} bg:{cp.bg.darker(3/20)}",
-            "tab-bar.tab.edge": f"fg:{cp.bg.more(3/20)} bg:{cp.bg.more(-3/20)}",
-            "tab-bar.tab.close": "",
-            "tab-bar.tab active": f"bold fg:{cp.fg.more(0/20)} bg:{cp.bg.base}",
-            "tab-bar.tab.head active": f"fg:ansiblue bg:{cp.bg.darker(3/20)}",
-            "tab-bar.tab.edge active": f"fg:{cp.bg.more(4/20)} bg:{cp.bg.base}",
-            "tab-bar.tab.close active": "fg:darkred",
-            # Buffer
-            "line-number": f"fg:{cp.fg.more(10/20)} bg:{cp.bg.more(1/20)}",
-            "line-number.current": f"bold orange bg:{cp.bg.more(2/20)}",
-            "line-number edge": f"fg:{cp.bg.darker(0.1)}",
-            "line-number.current edge": f"fg:{cp.bg.darker(0.1)}",
-            "cursor-line": f"bg:{cp.bg.more(1/20)}",
-            "cursor-line incsearch": "bg:ansibrightyellow",
-            "cursor-line incsearch.current": "bg:ansibrightgreen",
-            "matching-bracket.cursor": "fg:yellow bold",
-            "matching-bracket.other": "fg:yellow bold",
-            # Search
-            "incsearch": "bg:ansibrightyellow",
-            "incsearch.current": "bg:ansibrightgreen",
-            "search-toolbar": f"fg:{cp.fg.more(1/20)} bg:{cp.bg.more(1/20)}",
-            "search-toolbar.title": f"fg:{cp.fg.more(2/20)} bg:{cp.bg.more(2/20)}",
-            # Cells
-            "cell.border": f"fg:{cp.bg.more(5/20)}",
-            "cell.border.selected": "fg:ansibrightblue",
-            "cell.border.edit": "fg:ansibrightgreen",
-            "cell.input.box": f"fg:default bg:{cp.bg.more(0.02)}",
-            "cell.output": "fg:default bg:default",
-            "cell.input.prompt": "fg:blue",
-            "cell.output.prompt": "fg:red",
-            # Scrollbars
-            "scrollbar": f"fg:{cp.bg.more(15/20)} bg:{cp.bg.more(3/20)}",
-            "scrollbar.background": f"fg:{cp.bg.more(15/20)} bg:{cp.bg.more(3/20)}",
-            "scrollbar.arrow": f"fg:{cp.bg.more(15/20)} bg:{cp.bg.more(3/20)}",
-            "scrollbar.start": "",
-            "scrollbar.button": f"fg:{cp.bg.more(15/20)} bg:{cp.bg.more(15/20)}",
-            "scrollbar.end": f"fg:{cp.bg.more(3/20)} bg:{cp.bg.more(15/20)}",
-            # Dialogs
-            "dialog.body": f"fg:{cp.fg.base} bg:{cp.bg.darker(2/20)}",
-            "dialog.body text-area": f"fg:{cp.fg.base}",
-            "dialog.body scrollbar.button": f"fg:{cp.bg.more(5/20)} bg:{cp.bg.more(15/20)}",
-            # Horizontals rule
-            "hr": "fg:ansired",
-            # Completions menu
-            "completion-menu.completion.keyword": "fg:#d700af",
-            "completion-menu.completion.current.keyword": "fg:#fff bg:#d700ff",
-            "completion-menu.completion.function": "fg:#005faf",
-            "completion-menu.completion.current.function": "fg:#fff bg:#005fff",
-            "completion-menu.completion.class": "fg:#008700",
-            "completion-menu.completion.current.class": "fg:#fff bg:#00af00",
-            "completion-menu.completion.statement": "fg:#5f0000",
-            "completion-menu.completion.current.statement": "fg:#fff bg:#5f0000",
-            "completion-menu.completion.instance": "fg:#d75f00",
-            "completion-menu.completion.current.instance": "fg:#fff bg:#d78700",
-            "completion-menu.completion.module": "fg:#d70000",
-            "completion-menu.completion.current.module": "fg:#fff bg:#d70000",
-            # Log
-            "log.level.nonset": "fg:grey",
-            "log.level.debug": "fg:green",
-            "log.level.info": "fg:blue",
-            "log.level.warning": "fg:yellow",
-            "log.level.error": "fg:red",
-            "log.level.critical": "fg:red bold",
-            "log.ref": "fg:grey",
-            "log.date": "fg:#00875f",
-            # Shortcuts
-            "shortcuts.group": f"bg:{cp.bg.more(8/20)} bold underline",
-            "shortcuts.row": f"bg:{cp.bg.base} nobold",
-            "shortcuts.row alt": f"bg:{cp.bg.more(2/20)}",
-            "shortcuts.row key": "bold",
-            # Palette
-            "palette.item": f"fg:{cp.fg.more(1/20)} bg:{cp.bg.more(1/20)}",
-            "palette.item.alt": f"bg:{cp.bg.more(3/20)}",
-            "palette.item.selected": "fg:#ffffff bg:ansiblue",
-            # Pager
-            "pager": f"bg:{cp.bg.more(1/20)}",
-            "pager.border": f"fg:{cp.bg.more(9/20)}",
-            # Markdown
-            "md.code.inline": f"bg:{cp.bg.more(3/20)}",
-            "md.code.block": f"bg:{cp.bg.less(0.2)}",
-            "md.code.block.border": f"fg:{cp.bg.more(5/20)}",
-            "md.table.border": f"fg:{cp.bg.more(15/20)}",
-            # Shadows
-            "shadow": f"bg:{cp.bg.darker(9/20)}",
-            "tab-bar shadow": f"bg:{cp.bg.darker(9/20)}",
-            "pager shadow": f"bg:{cp.bg.darker(9/20)}",
-            "cell.input shadow": f"bg:{cp.bg.darker(9/20)}",
-            "cell.input.box shadow": f"bg:{cp.bg.darker(9/20)}",
-            "cell.output shadow": f"bg:{cp.bg.darker(9/20)}",
-            "md.code.block shadow": f"bg:{cp.bg.darker(9/20)}",
-            # Drop-shadow
-            "drop-shadow.inner": f"fg:{cp.bg.darker(3/20)}",
-            "drop-shadow.outer": f"fg:{cp.bg.darker(2/20)} bg:{cp.bg.darker(0.5/20)}",
+            f"{key} shadow": f"bg:{cp.bg.darker(0.45)}"
+            for key in style_dict
+            if key not in ("menu", "menu-border")
         }
     )
+    # "tab-bar shadow": f"bg:{cp.bg.darker(9/20)}",
+    # "pager shadow": f"bg:{cp.bg.darker(9/20)}",
+    # "cell.input shadow": f"bg:{cp.bg.darker(9/20)}",
+    # "cell.input.box shadow": f"bg:{cp.bg.darker(9/20)}",
+    # "cell.output shadow": f"bg:{cp.bg.darker(9/20)}",
+    # "md.code.block shadow": f"bg:{cp.bg.darker(9/20)}",
+
+    return Style.from_dict(style_dict)
