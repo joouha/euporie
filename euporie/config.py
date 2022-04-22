@@ -610,8 +610,8 @@ CONFIG_PARAMS: "dict[str, dict]" = {
         "description_": """
             Determines how multiple tabs are displayed when more than one tab is open.
             * ``stack`` displays one tab at a time with a tab-bar
-            * ``tile_horizontal`` displays tabs side-by-side
-            * ``tile_vertical`` displays tabs one-atop-the-next
+            * ``tile_horizontally`` displays tabs side-by-side
+            * ``tile_vertically`` displays tabs one-atop-the-next
         """,
     },
     "files": {

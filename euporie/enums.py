@@ -7,5 +7,5 @@ class TabMode(Enum):
     """Defines how multiple tabs are displayed."""
 
     STACK = "stack"
-    TILE_HORIZONTAL = "tile_horizontal"
-    TILE_VERTICAL = "tile_vertical"
+    TILE_HORIZONTALLY = "tile_horizontally"
+    TILE_VERTICALLY = "tile_vertically"

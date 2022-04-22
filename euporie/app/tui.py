@@ -175,7 +175,7 @@ class TuiApp(EuporieApp):
 
         """
         if self.tabs:
-            if TabMode(config.tab_mode) == TabMode.TILE_HORIZONTAL:
+            if TabMode(config.tab_mode) == TabMode.TILE_HORIZONTALLY:
                 return HSplit(
                     children=self.visible_tabs,
                     padding=1,
