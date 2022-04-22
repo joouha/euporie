@@ -1,5 +1,6 @@
 """Contains a markdown to formatted text parser."""
 
+from random import randint
 from typing import TYPE_CHECKING, Callable, Dict, List, Optional
 from warnings import warn
 
@@ -246,7 +247,8 @@ def a(
     result: "StyleAndTextTuples" = []
     href = token.attrs.get("href")
     if href:
-        result.append(("[ZeroWidthEscape]", f"\x1b]8;;{href}\x1b\\"))
+        link_id = randint(0, 999999)  # noqa S311
+        result.append(("[ZeroWidthEscape]", f"\x1b]8;id={link_id};{href}\x1b\\"))
     result += ft
     if href:
         result.append(("[ZeroWidthEscape]", "\x1b]8;;\x1b\\"))
