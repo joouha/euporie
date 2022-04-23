@@ -20,6 +20,7 @@ Added
 Changed
 =======
 
+- Use sub-command in the command line interface
 - Styling changes
 - Do not colour cell input box background if terminal background color is not detected
 - Improve cell stdin focus logic

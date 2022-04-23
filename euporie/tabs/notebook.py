@@ -25,7 +25,7 @@ from prompt_toolkit.layout.dimension import Dimension
 from prompt_toolkit.mouse_events import MouseEventType
 from prompt_toolkit.widgets import Box, Label, RadioList
 
-from euporie.app.current import get_tui_app as get_app
+from euporie.app.current import get_edit_app as get_app
 from euporie.config import config
 from euporie.key_binding.bindings.commands import load_command_bindings
 from euporie.suggest import KernelAutoSuggest
@@ -45,7 +45,7 @@ if TYPE_CHECKING:
     from prompt_toolkit.mouse_events import MouseEvent
 
     from euporie.app.base import EuporieApp
-    from euporie.app.tui import TuiApp
+    from euporie.app.edit import EditApp
     from euporie.kernel import NotebookKernel
     from euporie.widgets.cell import PagerState
 
@@ -317,7 +317,7 @@ class Notebook(Tab, metaclass=ABCMeta):
         self.edit_mode = False
 
 
-class DumpNotebook(Notebook):
+class PreviewNotebook(Notebook):
     def __init__(
         self,
         path: "Path",
@@ -327,7 +327,10 @@ class DumpNotebook(Notebook):
         self.container = VSplit(
             [
                 Window(),
-                PrintingContainer(self.rendered_cells, width=config.max_notebook_width),
+                PrintingContainer(
+                    self.rendered_cells,
+                    width=None if config.expand else config.max_notebook_width,
+                ),
                 Window(),
             ],
         )
@@ -412,7 +415,7 @@ class KernelNotebook(Notebook):
         self.kernel.info(cb=self._process_kernel_info, wait=False)
 
 
-class DumpKernelNotebook(DumpNotebook, KernelNotebook):
+class PreviewKernelNotebook(PreviewNotebook, KernelNotebook):
     def check_kernel(self, result: "None" = None) -> "None":
         super().check_kernel()
         if self.kernel.status == "idle" and config.run:
@@ -440,9 +443,9 @@ class DumpKernelNotebook(DumpNotebook, KernelNotebook):
             cb()
 
 
-class TuiNotebook(KernelNotebook):
+class EditNotebook(KernelNotebook):
 
-    app: "TuiApp"
+    app: "EditApp"
 
     def __init__(
         self,

@@ -24,7 +24,7 @@ from prompt_toolkit.layout.margins import ScrollbarMargin
 from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
 from prompt_toolkit.widgets.base import Box, Frame, Shadow, TextArea
 
-from euporie.app.current import get_tui_app as get_app
+from euporie.app.current import get_edit_app as get_app
 from euporie.commands.base import Command
 from euporie.commands.registry import commands
 from euporie.key_binding.util import format_keys

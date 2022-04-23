@@ -4,7 +4,7 @@ import logging
 from asyncio import get_event_loop
 from typing import TYPE_CHECKING
 
-from euporie.app.tui import TuiApp
+from euporie.app.edit import EditApp
 from euporie.config import config
 from euporie.log import setup_logs
 
@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 
-class HubApp(TuiApp):
+class HubApp(EditApp):
     """An app which runs as a multi-user SSH server."""
 
     @classmethod
@@ -62,9 +62,10 @@ class HubApp(TuiApp):
         loop.run_until_complete(
             asyncssh.create_server(
                 lambda: PromptToolkitSSHServer(interact=cls.interact),
-                host=config.hub_ssh_host,
-                port=config.hub_ssh_port,
-                server_host_keys=config.hub_ssh_host_keys,
+                host=config.host,
+                port=config.port,
+                server_host_keys=config.host_keys,
+                authorized_client_keys=config.client_keys,
             )
         )
         log.info("Running euporie hub on port %s", config.hub_ssh_port)

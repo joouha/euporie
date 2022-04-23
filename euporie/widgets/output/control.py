@@ -15,7 +15,7 @@ from prompt_toolkit.layout.controls import GetLinePrefixCallable, UIContent, UIC
 from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
 from prompt_toolkit.utils import Event
 
-from euporie.app.current import get_tui_app as get_app
+from euporie.app.current import get_edit_app as get_app
 from euporie.convert.base import convert
 from euporie.key_binding.bindings.commands import load_command_bindings
 from euporie.terminal import tmuxify

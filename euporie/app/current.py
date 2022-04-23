@@ -6,8 +6,8 @@ from prompt_toolkit.application import get_app
 
 if TYPE_CHECKING:
     from euporie.app.base import EuporieApp
-    from euporie.app.dump import DumpApp
-    from euporie.app.tui import TuiApp
+    from euporie.app.edit import EditApp
+    from euporie.app.preview import PreviewApp
 
 
 def get_base_app() -> "EuporieApp":
@@ -15,11 +15,11 @@ def get_base_app() -> "EuporieApp":
     return cast("EuporieApp", get_app())
 
 
-def get_dump_app() -> "DumpApp":
+def get_preview_app() -> "PreviewApp":
     """Get the current application."""
-    return cast("DumpApp", get_app())
+    return cast("PreviewApp", get_app())
 
 
-def get_tui_app() -> "TuiApp":
+def get_edit_app() -> "EditApp":
     """Get the current application."""
-    return cast("TuiApp", get_app())
+    return cast("EditApp", get_app())

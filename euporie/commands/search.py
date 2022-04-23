@@ -44,7 +44,7 @@ def find_prev_next(direction: "SearchDirection") -> "None":
     control.buffer.apply_search(search_state, include_current_position=False, count=1)
 
 
-@add(group="tui")
+@add(group="app")
 def find_next() -> "None":
     """Find the next search match."""
     find_prev_next(SearchDirection.FORWARD)

@@ -11,7 +11,7 @@ from prompt_toolkit.filters import (
     vi_insert_mode,
 )
 
-from euporie.app.current import get_tui_app as get_app
+from euporie.app.current import get_edit_app as get_app
 from euporie.key_binding.micro_state import InputMode
 
 __all__ = [

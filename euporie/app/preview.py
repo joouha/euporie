@@ -15,7 +15,7 @@ from prompt_toolkit.widgets import HorizontalLine
 
 from euporie.app.base import EuporieApp
 from euporie.config import config
-from euporie.tabs.notebook import DumpKernelNotebook, DumpNotebook
+from euporie.tabs.notebook import PreviewKernelNotebook, PreviewNotebook
 from euporie.widgets.page import PrintingContainer
 
 if TYPE_CHECKING:
@@ -61,11 +61,11 @@ class PseudoTTY:
         return getattr(self._underlying, name)
 
 
-class DumpApp(EuporieApp):
+class PreviewApp(EuporieApp):
     """An application which dumps the layout to the output then exits."""
 
     notebook_class: "Type[Notebook]" = (
-        DumpKernelNotebook if config.run else DumpNotebook
+        PreviewKernelNotebook if config.run else PreviewNotebook
     )
 
     def __init__(self, **kwargs: "Any") -> "None":
@@ -134,16 +134,16 @@ class DumpApp(EuporieApp):
 
         else:
             # If we are not paging output, determine where to print it
-            if config.dump_file is None or str(config.dump_file) in (
+            if config.output_file is None or str(config.output_file) in (
                 "-",
                 "/dev/stdout",
             ):
                 output_file = sys.stdout
-            elif str(config.dump_file) == "/dev/stderr":
+            elif str(config.output_file) == "/dev/stderr":
                 output_file = sys.stderr
             else:
                 try:
-                    output_file = open(config.dump_file, "w+")
+                    output_file = open(config.output_file, "w+")
                 except (
                     FileNotFoundError,
                     PermissionError,
@@ -151,7 +151,7 @@ class DumpApp(EuporieApp):
                 ) as error:
                     log.error(error)
                     log.error(
-                        f"Output file `{config.dump_file}` cannot be opened. "
+                        f"Output file `{config.output_file}` cannot be opened. "
                         "Standard output will be used."
                     )
                     output_file = sys.stdout

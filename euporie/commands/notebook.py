@@ -4,7 +4,7 @@ import logging
 
 from prompt_toolkit.filters import buffer_has_focus
 
-from euporie.app.current import get_tui_app as get_app
+from euporie.app.current import get_edit_app as get_app
 from euporie.commands.registry import add
 from euporie.filters import (
     cell_has_focus,

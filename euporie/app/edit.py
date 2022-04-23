@@ -36,7 +36,7 @@ from euporie.commands.registry import get
 from euporie.config import CONFIG_PARAMS, config
 from euporie.enums import TabMode
 from euporie.tabs.log import LogView
-from euporie.tabs.notebook import TuiNotebook
+from euporie.tabs.notebook import EditNotebook
 from euporie.widgets.decor import Pattern
 from euporie.widgets.formatted_text_area import FormattedTextArea
 from euporie.widgets.menu import MenuContainer, MenuItem
@@ -61,11 +61,11 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 
-class TuiApp(EuporieApp):
+class EditApp(EuporieApp):
     """A text user interface euporie application."""
 
     menu_container: "MenuContainer"
-    notebook_class: "Type[Notebook]" = TuiNotebook
+    notebook_class: "Type[Notebook]" = EditNotebook
     clipboard: "Clipboard"
 
     def __init__(self, **kwargs: "Any") -> "None":
@@ -588,16 +588,16 @@ class TuiApp(EuporieApp):
             really_close()
 
     @property
-    def notebook(self) -> "Optional[TuiNotebook]":
+    def notebook(self) -> "Optional[EditNotebook]":
         """Return the currently active notebook."""
-        if isinstance(self.tab, TuiNotebook):
+        if isinstance(self.tab, EditNotebook):
             return self.tab
         return None
 
     @property
     def cell(self) -> "Optional[InteractiveCell]":
         """Return the currently active cell."""
-        if isinstance(self.tab, TuiNotebook):
+        if isinstance(self.tab, EditNotebook):
             return self.tab.cell
         return None
 

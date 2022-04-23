@@ -68,7 +68,7 @@ if TYPE_CHECKING:
     from prompt_toolkit.output import Output
     from prompt_toolkit.widgets import SearchToolbar
 
-    from euporie.tabs.notebook import TuiNotebook
+    from euporie.tabs.notebook import EditNotebook
     from euporie.terminal import TerminalQuery
     from euporie.widgets.cell import InteractiveCell
     from euporie.widgets.palette import CommandPalette
@@ -509,7 +509,7 @@ class EuporieApp(Application):
         return DummyStyle()
 
     @property
-    def notebook(self) -> "Optional[TuiNotebook]":
+    def notebook(self) -> "Optional[EditNotebook]":
         """Return the currently active notebook."""
         return None
 

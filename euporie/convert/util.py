@@ -15,7 +15,7 @@ from typing import TYPE_CHECKING
 import imagesize  # type: ignore
 from prompt_toolkit.filters import Condition, to_filter
 
-from euporie.app.current import get_tui_app as get_app
+from euporie.app.current import get_edit_app as get_app
 from euporie.convert.base import convert
 
 if TYPE_CHECKING:

@@ -19,32 +19,44 @@ from euporie import __app_name__, __copyright__, __strapline__, __version__
 from euporie.enums import TabMode
 
 if TYPE_CHECKING:
-    from typing import Any, Iterator, Optional, Sequence, Union
+    from typing import Any, Dict, Iterator, List, Optional, Sequence, Tuple, Union
 
 __all__ = ["JSONEncoderPlus", "BooleanOptionalAction", "Config", "config"]
 
 log = logging.getLogger(__name__)
 
 
-class JSONEncoderPlus(json.JSONEncoder):
-    """JSON encode class which encodes paths as strings."""
-
-    def default(self, o: "Any") -> "Union[bool, int, float, str, None]":
-        """Encode an object to JSON.
-
-        Args:
-            o: The object to encode
-
-        Returns:
-            The encoded object
-
-        """
-        if isinstance(o, Path):
-            return str(o)
-        return json.JSONEncoder.default(self, o)
-
-
-_json_encoder = JSONEncoderPlus()
+APPS: "List[Dict]" = [
+    {
+        "name": "edit",
+        "help": "Interactively edit a notebook file",
+        "class": "euporie.app.edit.EditApp",
+        "default": True,
+        "description": """
+            Launches the interactive TUI notebook editor, allowing you to run and edit
+            Jupyter notebooks in the terminal.
+        """,
+    },
+    {
+        "name": "preview",
+        "help": "Preview a notebook",
+        "class": "euporie.app.preview.PreviewApp",
+        "description": """
+            Outputs a formatted notebook file. The formatted output will be written to
+            the the output file path given by `output_file` (the standard output by
+            default).
+        """,
+    },
+    {
+        "name": "hub",
+        "help": "Launch euporie hub",
+        "class": "euporie.app.hub.HubApp",
+        "description": """
+            Launches euporie hub, a multi-client SSH server running euporie which
+            allows multiple users to simultaneously access the same server instance.
+        """,
+    },
+]
 
 
 class BooleanOptionalAction(argparse.Action):
@@ -84,7 +96,8 @@ class BooleanOptionalAction(argparse.Action):
             setattr(namespace, self.dest, not option_string.startswith("--no-"))
 
 
-CONFIG_PARAMS: "dict[str, dict]" = {
+CONFIG_PARAMS: "Dict[str, Dict]" = {
+    # Global options
     "version": {
         "flags_": ["--version", "-V"],
         "action": "version",
@@ -96,6 +109,18 @@ CONFIG_PARAMS: "dict[str, dict]" = {
 
             .. note::
                This cannot be set in the configuration file or via an environment variable
+        """,
+    },
+    "app": {
+        "default": "euporie.app.edit.EditApp",
+        "type": str,
+        "choices": [app["class"] for app in APPS],
+        "help": "The euporie app to launch",
+        "schema_": {
+            "type": "string",
+        },
+        "description_": """
+            The dotted import path of the :class:`EuporieApp` to run.
         """,
     },
     "log_file": {
@@ -125,160 +150,9 @@ CONFIG_PARAMS: "dict[str, dict]" = {
             When set, logging events at the debug level are emitted.
         """,
     },
-    "dump": {
-        "flags_": ["--dump"],
-        "action": BooleanOptionalAction,
-        "type": bool,
-        "help": "Output formatted file to display or file",
-        "default": False,
-        "schema_": {
-            "type": "boolean",
-        },
-        "description_": """
-            When set, the formatted output will be written to the the output file path
-            given by `dump_file` (standard output by default).
-        """,
-    },
-    "dump_file": {
-        "flags_": ["--dump-file"],
-        "nargs": "?",
-        "const": "-",
-        "type": Path,
-        "help": "Output path when dumping file",
-        "default": None,
-        "schema_": {
-            "type": "string",
-        },
-        "description_": """
-            When set to a file path, the formatted output will be written to the
-            given path. If no value is given (or the default "-" is passed) output
-            will be printed to standard output.
-        """,
-    },
-    "page": {
-        "flags_": ["--page"],
-        "type": bool,
-        "action": BooleanOptionalAction,
-        "help": "Pass output to pager",
-        "default": False,
-        "schema_": {
-            "type": "boolean",
-        },
-        "description_": """
-            Whether to pipe output to the system pager when using ``--dump``.
-        """,
-    },
-    "hub": {
-        "flags_": ["--hub"],
-        "action": BooleanOptionalAction,
-        "type": bool,
-        "help": "Run a multi-user SSH server.",
-        "default": False,
-        "schema_": {
-            "type": "boolean",
-        },
-        "description_": """
-            When set, euporie will run as a SSH server, allowing multiple users to
-            simultaneously access the same server instance.
-        """,
-    },
-    "hub_ssh_host": {
-        "flags_": ["--hub-ssh-host"],
-        "type": str,
-        "help": "The host address of the SSH server.",
-        "default": "",
-        "schema_": {
-            "type": "string",
-        },
-        "description_": """
-            This determines the host address the euporie hub SSH server will bind to.
-        """,
-    },
-    "hub_ssh_port": {
-        "flags_": ["--hub-ssh-port"],
-        "action": BooleanOptionalAction,
-        "type": int,
-        "help": "The port to use for the SSH server.",
-        "default": 8022,
-        "schema_": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 65535,
-        },
-        "description_": """
-            This determines which port euporie will listen on for connections to
-            euporie hub.
-        """,
-    },
-    "hub_ssh_host_keys": {
-        "flags_": ["--hub-ssh-host-keys"],
-        "nargs": "*",
-        "type": Path,
-        "help": "List of file names to open",
-        "default": ["/etc/ssh/ssh_host_ecdsa_key"],
-        "schema_": {
-            "type": "array",
-            "items": {
-                "file": {
-                    "description": "SSH host key File path",
-                    "type": "string",
-                },
-            },
-        },
-        "description_": """
-            One or more SSH host key files to use for the euporie hub SSH server.
-        """,
-    },
-    "run": {
-        "flags_": ["--run"],
-        "action": BooleanOptionalAction,
-        "type": bool,
-        "help": "Run the notebook when loaded",
-        "default": False,
-        "schema_": {
-            "type": "boolean",
-        },
-        "description_": """
-        If set, notebooks will be run automatically when opened, or if dumping
-        output, notebooks will be run before being output.
-    """,
-    },
-    "tmux_graphics": {
-        "flags_": ["--tmux-graphics"],
-        "action": BooleanOptionalAction,
-        "type": bool,
-        "help": "Enable terminal graphics in tmux (experimental)",
-        "default": False,
-        "schema_": {
-            "type": "boolean",
-        },
-        "description_": """
-        If set, terminal graphics will be used if :program:`tmux` is running by
-        performing terminal escape sequence pass-through. You must restart euporie for
-        this to take effect.
-
-        .. warning::
-
-           Terminal graphics in :program:`tmux` is experimental, and is not guaranteed
-           to work. Use at your own risk!
-    """,
-    },
-    "terminal_polling_interval": {
-        "flags_": ["--terminal-polling-interval"],
-        "type": int,
-        "help": "Time between terminal colour queries",
-        "default": 0,
-        "schema_": {
-            "type": "integer",
-            "min": 0,
-        },
-        "description_": """
-        Determine how frequently the terminal should be polled for changes to the
-        background / foreground colours. Set to zero to disable terminal polling.
-
-    """,
-    },
+    # Edit options
     "edit_mode": {
+        "apps_": ["edit"],
         "flags_": ["--edit-mode"],
         "type": str,
         "choices": ["micro", "emacs", "vi"],
@@ -292,6 +166,7 @@ CONFIG_PARAMS: "dict[str, dict]" = {
         """,
     },
     "tab_size": {
+        "apps_": ["edit"],
         "flags_": ["--tab-size"],
         "type": int,
         "help": "Spaces per indentation level",
@@ -304,136 +179,36 @@ CONFIG_PARAMS: "dict[str, dict]" = {
             The number of spaces to use per indentation level. Should be set to 4.
         """,
     },
-    "run_after_external_edit": {
-        "flags_": ["--run-after-external-edit"],
+    "show_cell_borders": {
+        "apps_": ["edit"],
+        "flags_": ["--show-cell-borders"],
+        "action": BooleanOptionalAction,
         "type": bool,
-        "help": "Run cells after editing externally",
+        "help": "Show or hide cell borders.",
         "default": False,
         "schema_": {
             "type": "boolean",
         },
         "description_": """
-            Whether to execute a cell immediately after editing in `$EDITOR`.
+            Whether cell borders should be drawn for unselected cells.
         """,
     },
-    "format_black": {
-        "flags_": ["--format-black"],
+    "line_numbers": {
+        "apps_": ["edit"],
+        "flags_": ["--line-numbers"],
         "action": BooleanOptionalAction,
         "type": bool,
-        "help": "Use black when re-formatting code cells",
-        "default": False,
-        "schema_": {
-            "type": "boolean",
-        },
-        "description_": """
-            Whether to use :py:mod:`black` when reformatting code cells.
-        """,
-    },
-    "format_isort": {
-        "flags_": ["--format-isort"],
-        "action": BooleanOptionalAction,
-        "type": bool,
-        "help": "Use isort when re-formatting code cells",
-        "default": False,
-        "schema_": {
-            "type": "boolean",
-        },
-        "description_": """
-            Whether to use :py:mod:`isort` when reformatting code cells.
-        """,
-    },
-    "format_ssort": {
-        "flags_": ["--format-ssort"],
-        "action": BooleanOptionalAction,
-        "type": bool,
-        "help": "Use ssort when re-formatting code cells",
-        "default": False,
-        "schema_": {
-            "type": "boolean",
-        },
-        "description_": """
-            Whether to use :py:mod:`ssort` when reformatting code cells.
-        """,
-    },
-    "autoformat": {
-        "flags_": ["--autoformat"],
-        "action": BooleanOptionalAction,
-        "type": bool,
-        "help": "Automatically re-format code cells when run",
-        "default": False,
-        "schema_": {
-            "type": "boolean",
-        },
-        "description_": """
-            Whether to automatically reformat code cells before they are run.
-        """,
-    },
-    "autocomplete": {
-        "flags_": ["--autocomplete"],
-        "action": BooleanOptionalAction,
-        "type": bool,
-        "help": "Provide completions suggestions automatically",
-        "default": False,
-        "schema_": {
-            "type": "boolean",
-        },
-        "description_": """
-            Whether to automatically suggestion completions while typing in code cells.
-        """,
-    },
-    "autosuggest": {
-        "flags_": ["--autosuggest"],
-        "action": BooleanOptionalAction,
-        "type": bool,
-        "help": "Provide line completion suggestions",
+        "help": "Show or hide line numbers",
         "default": True,
         "schema_": {
             "type": "boolean",
         },
         "description_": """
-            Whether to automatically suggestion line content while typing in code cells.
-        """,
-    },
-    "autoinspect": {
-        "flags_": ["--autoinspect"],
-        "action": BooleanOptionalAction,
-        "type": bool,
-        "help": "Display contextual help automatically",
-        "default": False,
-        "schema_": {
-            "type": "boolean",
-        },
-        "description_": """
-            Whether to automatically display contextual help when navigating through code cells.
-        """,
-    },
-    "expand": {
-        "flags_": ["--expand"],
-        "action": BooleanOptionalAction,
-        "type": bool,
-        "help": "Use the full width to display notebooks",
-        "default": False,
-        "schema_": {
-            "type": "boolean",
-        },
-        "description_": """
-            Whether the notebook page should expand to fill the available width
-        """,
-    },
-    "max_notebook_width": {
-        "flags_": ["--max-notebook-width"],
-        "type": int,
-        "help": "Maximum width of notebooks",
-        "default": 120,
-        "schema_": {
-            "type": "integer",
-            "minimum": 1,
-        },
-        "description_": """
-            The maximum width at which to display a notebook.
+            Whether line numbers are shown by default.
         """,
     },
     "show_status_bar": {
+        "apps_": ["edit"],
         "flags_": ["--show-status-bar"],
         "action": BooleanOptionalAction,
         "type": bool,
@@ -447,6 +222,7 @@ CONFIG_PARAMS: "dict[str, dict]" = {
         """,
     },
     "show_scroll_bar": {
+        "apps_": ["edit"],
         "flags_": ["--show-scroll-bar"],
         "action": BooleanOptionalAction,
         "type": bool,
@@ -459,7 +235,23 @@ CONFIG_PARAMS: "dict[str, dict]" = {
             Whether the scroll bar should be shown on the right of the screen.
         """,
     },
+    "tab_mode": {
+        "apps_": ["edit"],
+        "flags_": ["--tab-mode"],
+        "type": str,
+        "choices": [mode.value for mode in TabMode],
+        "default": "stack",
+        "help": "The method used to display multiple tabs",
+        "schema_": {"type": "string"},
+        "description_": """
+            Determines how multiple tabs are displayed when more than one tab is open.
+            * ``stack`` displays one tab at a time with a tab-bar
+            * ``tile_horizontally`` displays tabs side-by-side
+            * ``tile_vertically`` displays tabs one-atop-the-next
+        """,
+    },
     "always_show_tab_bar": {
+        "apps_": ["edit"],
         "flags_": ["--always-show-tab-bar"],
         "action": BooleanOptionalAction,
         "type": bool,
@@ -473,22 +265,8 @@ CONFIG_PARAMS: "dict[str, dict]" = {
             shown when multiple tabs are open.
         """,
     },
-    "color_scheme": {
-        "flags_": ["--color-scheme"],
-        "type": str,
-        "choices": ["default", "inverse", "light", "dark", "black", "white", "custom"],
-        "help": "The color scheme to use",
-        "default": "default",
-        "schema_": {
-            "type": "string",
-        },
-        "description_": """
-            The color scheme to use: `auto` means euporie will try to use your
-            terminal's color scheme, `light` means black text on a white background,
-            and `dark` means white text on a black background.
-        """,
-    },
     "background_pattern": {
+        "apps_": ["edit"],
         "flags_": ["--background-pattern", "--bg-pattern"],
         "type": int,
         "choices": list(range(6)),
@@ -505,6 +283,7 @@ CONFIG_PARAMS: "dict[str, dict]" = {
         """,
     },
     "background_character": {
+        "apps_": ["edit"],
         "flags_": ["--background-character", "--bg-char"],
         "type": str,
         "help": "Character for background pattern",
@@ -519,102 +298,167 @@ CONFIG_PARAMS: "dict[str, dict]" = {
             Recommended characters include: "·", "⬤", "╳", "╱", "╲", "░", "▒", "▓", "▞", "╬"
         """,
     },
-    "custom_background_color": {
-        "flags_": ["--custom-background-color", "--custom-bg-color", "--bg"],
-        "type": str,
-        "help": 'Background color for "Custom" color theme',
-        "default": "",
+    "terminal_polling_interval": {
+        "apps_": ["edit"],
+        "flags_": ["--terminal-polling-interval"],
+        "type": int,
+        "help": "Time between terminal colour queries",
+        "default": 0,
         "schema_": {
-            "type": "string",
-            "maxLength": 7,
+            "type": "integer",
+            "min": 0,
         },
         "description_": """
-            The hex code of the color to use for the background in the "Custom" color
-            scheme.
+            Determine how frequently the terminal should be polled for changes to the
+            background / foreground colours. Set to zero to disable terminal polling.
         """,
     },
-    "custom_foreground_color": {
-        "flags_": ["--custom-foreground-color", "--custom-fg-color", "--fg"],
-        "type": str,
-        "help": 'Background color for "Custom" color theme',
-        "default": "",
-        "schema_": {
-            "type": "string",
-            "maxLength": 7,
-        },
-        "description_": """
-            The hex code of the color to use for the foreground in the "Custom" color
-            scheme.
-        """,
-    },
-    "show_cell_borders": {
-        "flags_": ["--show-cell-borders"],
+    "autocomplete": {
+        "apps_": ["edit"],
+        "flags_": ["--autocomplete"],
         "action": BooleanOptionalAction,
         "type": bool,
-        "help": "Show or hide cell borders.",
+        "help": "Provide completions suggestions automatically",
         "default": False,
         "schema_": {
             "type": "boolean",
         },
         "description_": """
-            Whether cell borders should be drawn for unselected cells.
+            Whether to automatically suggestion completions while typing in code cells.
         """,
     },
-    "line_numbers": {
-        "flags_": ["--line-numbers"],
+    "autosuggest": {
+        "apps_": ["edit"],
+        "flags_": ["--autosuggest"],
         "action": BooleanOptionalAction,
         "type": bool,
-        "help": "Show or hide line numbers",
+        "help": "Provide line completion suggestions",
         "default": True,
         "schema_": {
             "type": "boolean",
         },
         "description_": """
-            Whether line numbers are shown by default.
+            Whether to automatically suggestion line content while typing in code cells.
         """,
     },
-    "syntax_theme": {
-        "flags_": ["--syntax-theme"],
-        "type": str,
-        # Do not want to print all theme names in --help screen as it looks messy
-        "help": "Syntax highlighting theme",
-        "default": "default",
+    "autoinspect": {
+        "apps_": ["edit"],
+        "flags_": ["--autoinspect"],
+        "action": BooleanOptionalAction,
+        "type": bool,
+        "help": "Display contextual help automatically",
+        "default": False,
         "schema_": {
-            "type": "string",
-            "enum": list(pygments_styles.keys()),
+            "type": "boolean",
         },
         "description_": """
-            The name of the pygments style to use for syntax highlighting.
+            Whether to automatically display contextual help when navigating through code cells.
         """,
     },
-    "color_depth": {
-        "flags_": ["--color-depth"],
-        "type": int,
-        "choices": [1, 4, 8, 24],
+    "run_after_external_edit": {
+        "apps_": ["edit"],
+        "flags_": ["--run-after-external-edit"],
+        "type": bool,
+        "help": "Run cells after editing externally",
+        "default": False,
+        "schema_": {
+            "type": "boolean",
+        },
+        "description_": """
+            Whether to execute a cell immediately after editing in `$EDITOR`.
+        """,
+    },
+    "autoformat": {
+        "apps_": ["edit"],
+        "flags_": ["--autoformat"],
+        "action": BooleanOptionalAction,
+        "type": bool,
+        "help": "Automatically re-format code cells when run",
+        "default": False,
+        "schema_": {
+            "type": "boolean",
+        },
+        "description_": """
+            Whether to automatically reformat code cells before they are run.
+        """,
+    },
+    "format_black": {
+        "apps_": ["edit"],
+        "flags_": ["--format-black"],
+        "action": BooleanOptionalAction,
+        "type": bool,
+        "help": "Use black when re-formatting code cells",
+        "default": False,
+        "schema_": {
+            "type": "boolean",
+        },
+        "description_": """
+            Whether to use :py:mod:`black` when reformatting code cells.
+        """,
+    },
+    "format_isort": {
+        "apps_": ["edit"],
+        "flags_": ["--format-isort"],
+        "action": BooleanOptionalAction,
+        "type": bool,
+        "help": "Use isort when re-formatting code cells",
+        "default": False,
+        "schema_": {
+            "type": "boolean",
+        },
+        "description_": """
+            Whether to use :py:mod:`isort` when reformatting code cells.
+        """,
+    },
+    "format_ssort": {
+        "apps_": ["edit"],
+        "flags_": ["--format-ssort"],
+        "action": BooleanOptionalAction,
+        "type": bool,
+        "help": "Use ssort when re-formatting code cells",
+        "default": False,
+        "schema_": {
+            "type": "boolean",
+        },
+        "description_": """
+            Whether to use :py:mod:`ssort` when reformatting code cells.
+        """,
+    },
+    # Preview options
+    "output_file": {
+        "apps_": ["preview"],
+        "flags_": ["--output-file"],
+        "nargs": "?",
+        "const": "-",
+        "type": Path,
+        "help": "Output path when previewing file",
         "default": None,
-        "help": "The color scheme to use",
-        "schema_": {"type": "integer"},
+        "schema_": {
+            "type": "string",
+        },
         "description_": """
-            The number of bits to use to represent colors displayable on the screen.
-            If set to None, the supported color depth of the terminal will be detected
-            automatically.
-        """,
+                When set to a file path, the formatted output will be written to the
+                given path. If no value is given (or the default "-" is passed) output
+                will be printed to standard output.
+            """,
     },
-    "tab_mode": {
-        "flags_": ["--tab-mode"],
-        "type": str,
-        "choices": [mode.value for mode in TabMode],
-        "default": "stack",
-        "help": "The method used to display multiple tabs",
-        "schema_": {"type": "string"},
+    "page": {
+        "apps_": ["preview"],
+        "flags_": ["--page"],
+        "type": bool,
+        "action": BooleanOptionalAction,
+        "help": "Pass output to pager",
+        "default": False,
+        "schema_": {
+            "type": "boolean",
+        },
         "description_": """
-            Determines how multiple tabs are displayed when more than one tab is open.
-            * ``stack`` displays one tab at a time with a tab-bar
-            * ``tile_horizontally`` displays tabs side-by-side
-            * ``tile_vertically`` displays tabs one-atop-the-next
-        """,
+                Whether to pipe output to the system pager when using ``--dump``.
+            """,
     },
+    # Edit / Preview options
     "files": {
+        "apps_": ["edit", "preview"],
         "flags_": ["files"],
         "nargs": "*",
         "type": Path,
@@ -633,6 +477,216 @@ CONFIG_PARAMS: "dict[str, dict]" = {
             A list of file paths to open when euporie is launched.
         """,
     },
+    "run": {
+        "apps_": ["edit", "preview"],
+        "flags_": ["--run"],
+        "action": BooleanOptionalAction,
+        "type": bool,
+        "help": "Run the notebook when loaded",
+        "default": False,
+        "schema_": {
+            "type": "boolean",
+        },
+        "description_": """
+            If set, notebooks will be run automatically when opened, or if previewing a
+            file, the notebooks will be run before being output.
+        """,
+    },
+    "expand": {
+        "apps_": ["edit", "preview"],
+        "flags_": ["--expand"],
+        "action": BooleanOptionalAction,
+        "type": bool,
+        "help": "Use the full width to display notebooks",
+        "default": False,
+        "schema_": {
+            "type": "boolean",
+        },
+        "description_": """
+            Whether the notebook page should expand to fill the available width
+        """,
+    },
+    "max_notebook_width": {
+        "apps_": ["edit", "preview"],
+        "flags_": ["--max-notebook-width"],
+        "type": int,
+        "help": "Maximum width of notebooks",
+        "default": 120,
+        "schema_": {
+            "type": "integer",
+            "minimum": 1,
+        },
+        "description_": """
+            The maximum width at which to display a notebook.
+        """,
+    },
+    "tmux_graphics": {
+        "apps_": ["edit", "preview"],
+        "flags_": ["--tmux-graphics"],
+        "action": BooleanOptionalAction,
+        "type": bool,
+        "help": "Enable terminal graphics in tmux (experimental)",
+        "default": False,
+        "schema_": {
+            "type": "boolean",
+        },
+        "description_": """
+            If set, terminal graphics will be used if :program:`tmux` is running by
+            performing terminal escape sequence pass-through. You must restart euporie
+            forthis to take effect.
+
+            .. warning::
+
+               Terminal graphics in :program:`tmux` is experimental, and is not
+               guaranteed to work. Use at your own risk!
+        """,
+    },
+    "color_scheme": {
+        "apps_": ["edit", "preview"],
+        "flags_": ["--color-scheme"],
+        "type": str,
+        "choices": ["default", "inverse", "light", "dark", "black", "white", "custom"],
+        "help": "The color scheme to use",
+        "default": "default",
+        "schema_": {
+            "type": "string",
+        },
+        "description_": """
+            The color scheme to use: `auto` means euporie will try to use your
+            terminal's color scheme, `light` means black text on a white background,
+            and `dark` means white text on a black background.
+        """,
+    },
+    "custom_background_color": {
+        "apps_": ["edit", "preview"],
+        "flags_": ["--custom-background-color", "--custom-bg-color", "--bg"],
+        "type": str,
+        "help": 'Background color for "Custom" color theme',
+        "default": "",
+        "schema_": {
+            "type": "string",
+            "maxLength": 7,
+        },
+        "description_": """
+            The hex code of the color to use for the background in the "Custom" color
+            scheme.
+        """,
+    },
+    "custom_foreground_color": {
+        "apps_": ["edit", "preview"],
+        "flags_": ["--custom-foreground-color", "--custom-fg-color", "--fg"],
+        "type": str,
+        "help": 'Background color for "Custom" color theme',
+        "default": "",
+        "schema_": {
+            "type": "string",
+            "maxLength": 7,
+        },
+        "description_": """
+            The hex code of the color to use for the foreground in the "Custom" color
+            scheme.
+        """,
+    },
+    "syntax_theme": {
+        "apps_": ["edit", "preview"],
+        "flags_": ["--syntax-theme"],
+        "type": str,
+        # Do not want to print all theme names in --help screen as it looks messy
+        "help": "Syntax highlighting theme",
+        "default": "default",
+        "schema_": {
+            "type": "string",
+            "enum": list(pygments_styles.keys()),
+        },
+        "description_": """
+            The name of the pygments style to use for syntax highlighting.
+        """,
+    },
+    "color_depth": {
+        "apps_": ["edit", "preview"],
+        "flags_": ["--color-depth"],
+        "type": int,
+        "choices": [1, 4, 8, 24],
+        "default": None,
+        "help": "The color depth to use",
+        "schema_": {"type": "integer"},
+        "description_": """
+            The number of bits to use to represent colors displayable on the screen.
+            If set to None, the supported color depth of the terminal will be detected
+            automatically.
+        """,
+    },
+    # Hub Options
+    "host": {
+        "apps_": ["hub"],
+        "flags_": ["--host"],
+        "type": str,
+        "help": "The host address to bind to",
+        "default": "",
+        "schema_": {
+            "type": "string",
+        },
+        "description_": """
+                This determines the host address the euporie hub SSH server will bind to.
+            """,
+    },
+    "port": {
+        "apps_": ["hub"],
+        "flags_": ["--port"],
+        "type": int,
+        "help": "The port for the ssh server to use",
+        "default": 8022,
+        "schema_": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 65535,
+        },
+        "description_": """
+                This determines which port euporie will listen on for connections to
+                euporie hub.
+            """,
+    },
+    "host_keys": {
+        "apps_": ["hub"],
+        "flags_": ["--host-keys"],
+        "nargs": "*",
+        "type": Path,
+        "help": "Host keys to use for the SSH server",
+        "default": ["/etc/ssh/ssh_host_ecdsa_key"],
+        "schema_": {
+            "type": "array",
+            "items": {
+                "file": {
+                    "description": "SSH host key file path",
+                    "type": "string",
+                },
+            },
+        },
+        "description_": """
+                One or more SSH host key files to use for the euporie hub SSH server.
+            """,
+    },
+    "client_keys": {
+        "apps_": ["hub"],
+        "flags_": ["--client-keys"],
+        "nargs": "*",
+        "type": Path,
+        "help": "Client public keys authorized to connect",
+        "default": None,
+        "schema_": {
+            "type": "array",
+            "items": {
+                "file": {
+                    "description": "SSH host key File path",
+                    "type": "string",
+                },
+            },
+        },
+        "description_": """
+                One or more OpenSSH-style :file:`authorized_keys` files, containing
+                public keys for authorized clients.
+            """,
+    },
 }
 
 CONFIG_SCHEMA: "dict" = {
@@ -650,6 +704,58 @@ CONFIG_SCHEMA: "dict" = {
         if param.get("schema_")
     },
 }
+
+
+class JSONEncoderPlus(json.JSONEncoder):
+    """JSON encode class which encodes paths as strings."""
+
+    def default(self, o: "Any") -> "Union[bool, int, float, str, None]":
+        """Encode an object to JSON.
+
+        Args:
+            o: The object to encode
+
+        Returns:
+            The encoded object
+
+        """
+        if isinstance(o, Path):
+            return str(o)
+        return json.JSONEncoder.default(self, o)
+
+
+_json_encoder = JSONEncoderPlus()
+
+
+class ArgumentParser(argparse.ArgumentParser):
+    """An argument parser with a default sub-command."""
+
+    __default_subparser = None
+
+    def set_default_subparser(self, name: "str") -> "None":
+        """Sets the default subparser."""
+        self.__default_subparser = name
+
+    def _parse_known_args(
+        self, arg_strings: "List[str]", *args: "Any", **kwargs: "Any"
+    ) -> "Tuple[argparse.Namespace, List[str]]":
+        in_args = set(arg_strings)
+        d_sp = self.__default_subparser
+        if d_sp is not None and not {"-h", "--help"}.intersection(in_args):
+            assert self._subparsers is not None
+            for x in self._subparsers._actions:
+                subparser_found = isinstance(
+                    x, argparse._SubParsersAction
+                ) and in_args.intersection(x._name_parser_map.keys())
+                if subparser_found:
+                    break
+            else:
+                # insert default in first position, this implies no
+                # global options without a sub_parsers specified
+                arg_strings = [d_sp] + arg_strings
+        return super(ArgumentParser, self)._parse_known_args(
+            arg_strings, *args, **kwargs
+        )
 
 
 class Config:
@@ -689,25 +795,53 @@ class Config:
         self.load_args()
         return self
 
-    def load_parser(self) -> "argparse.ArgumentParser":
-        """Constructs an :py:class:`argparse.ArgumentParser`."""
-        parser = argparse.ArgumentParser(
+    def load_parser(self) -> "ArgumentParser":
+        """Constructs an :py:class:`ArgumentParser`."""
+        parser = ArgumentParser(
             description=__strapline__,
             epilog=__copyright__,
             allow_abbrev=True,
-            formatter_class=argparse.MetavarTypeHelpFormatter,
         )
-        for name, data in CONFIG_PARAMS.items():
-            parser.add_argument(
-                *data.get("flags_") or [name],
-                # Do not set defaults for command line arguments, as default values
-                # would override values set in the configuration file
-                **{
-                    key: value
-                    for key, value in data.items()
-                    if not key.endswith("_") and key != "default"
-                },
+
+        # Add a sub-parser for each app
+        subparsers = parser.add_subparsers(
+            title="subcommand",
+            description="the subcommand to launch",
+            help="The name of a subcommand to launch",
+            dest="subcommand",
+        )
+        app_parsers = {}
+        for app in APPS:
+            name = app["name"]
+            subparser = subparsers.add_parser(
+                name=name,
+                help=app["help"],
+                description=app.get("description"),
+                conflict_handler="resolve",
+                formatter_class=argparse.MetavarTypeHelpFormatter,
             )
+            subparser.set_defaults(app=app["class"])
+            app_parsers[name] = subparser
+            if app.get("default"):
+                parser.set_default_subparser(name)
+
+        # Add options to the relevant subparsers
+        for name, data in CONFIG_PARAMS.items():
+            if "flags_" in data:
+                for subparser in [
+                    app_parsers[app] for app in data.get("apps_", [])
+                ] or [parser]:
+                    subparser.add_argument(
+                        *data.get("flags_") or [name],
+                        # Do not set defaults for command line arguments, as default values
+                        # would override values set in the configuration file
+                        **{
+                            key: value
+                            for key, value in data.items()
+                            if not key.endswith("_") and key != "default"
+                        },
+                    )
+
         return parser
 
     def load_args(self) -> "None":

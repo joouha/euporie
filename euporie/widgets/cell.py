@@ -34,7 +34,7 @@ from prompt_toolkit.mouse_events import MouseEvent, MouseEventType, MouseModifie
 from prompt_toolkit.widgets import Frame, TextArea
 from pygments.lexers import get_lexer_by_name  # type: ignore
 
-from euporie.app.current import get_tui_app as get_app
+from euporie.app.current import get_edit_app as get_app
 from euporie.border import Invisible, Thick, Thin
 from euporie.config import config
 from euporie.filters import multiple_cells_selected
@@ -49,7 +49,7 @@ if TYPE_CHECKING:
     from prompt_toolkit.buffer import Buffer
     from prompt_toolkit.formatted_text.base import AnyFormattedText, StyleAndTextTuples
 
-    from euporie.tabs.notebook import Notebook, TuiNotebook
+    from euporie.tabs.notebook import EditNotebook, Notebook
     from euporie.widgets.output.control import OutputControl
     from euporie.widgets.page import ChildRenderInfo
 
@@ -160,7 +160,7 @@ class CellInputTextArea(TextArea):
 
     def on_cursor_position_changed(self, buf: "Buffer") -> "None":
         """Respond to cursor movements."""
-        from euporie.tabs.notebook import TuiNotebook
+        from euporie.tabs.notebook import EditNotebook
 
         # Update contextual help
         if config.autoinspect and self.cell.is_code():
@@ -169,7 +169,7 @@ class CellInputTextArea(TextArea):
             self.cell.nb.hide_pager()
 
         # Tell the scrolling container to scroll the cursor into view on the next render
-        assert isinstance(self.cell.nb, TuiNotebook)
+        assert isinstance(self.cell.nb, EditNotebook)
         self.cell.nb.page.scroll_to_cursor = True
 
 
@@ -509,18 +509,17 @@ class Cell:
 
     def border_style(self) -> "str":
         """Determines the style of the cell borders, based on the cell state."""
-        if not config.dump:
-            if self.selected:
-                # Enter edit mode if the input has become focused via a mouse click
-                if self.input_box.has_focus():
-                    self.nb.edit_mode = True
-                # Exit edit mode if the stdin box has focus
-                elif get_app().layout.has_focus(self.stdin_box):
-                    self.nb.edit_mode = False
-                if self.nb.edit_mode:
-                    return "class:cell.border.edit"
-                else:
-                    return "class:cell.border.selected"
+        if self.selected:
+            # Enter edit mode if the input has become focused via a mouse click
+            if self.input_box.has_focus():
+                self.nb.edit_mode = True
+            # Exit edit mode if the stdin box has focus
+            elif get_app().layout.has_focus(self.stdin_box):
+                self.nb.edit_mode = False
+            if self.nb.edit_mode:
+                return "class:cell.border.edit"
+            else:
+                return "class:cell.border.selected"
         return "class:cell.border"
 
     def border_char(self, name: "str") -> "Callable[..., str]":
@@ -730,7 +729,7 @@ PagerState = NamedTuple(
 class InteractiveCell(Cell):
     """An interactive notebook cell."""
 
-    def __init__(self, index: "int", json: "dict", notebook: "TuiNotebook") -> "None":
+    def __init__(self, index: "int", json: "dict", notebook: "EditNotebook") -> "None":
         """Initiate the interactive cell element.
 
         Args:
@@ -741,7 +740,7 @@ class InteractiveCell(Cell):
         """
         super().__init__(index, json, notebook)
         # Pytype need this re-defining...
-        self.nb: "TuiNotebook" = notebook
+        self.nb: "EditNotebook" = notebook
         self.stdin_event = asyncio.Event()
         self.inspect_future = None
 
