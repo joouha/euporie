@@ -189,8 +189,7 @@ class CommandPalette:
         )
 
         self.text_area = TextArea(
-            multiline=False,
-            accept_handler=self.accept,
+            multiline=False, accept_handler=self.accept, style="class:input"
         )
         self.text_area.buffer.on_text_changed += self.text_changed
         scroll_bar_margin = ScrollbarMargin(display_arrows=True)

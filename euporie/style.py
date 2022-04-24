@@ -324,6 +324,11 @@ def build_style(
         "drop-shadow.outer": f"fg:{cp.bg.darker(2/20)} bg:{cp.bg.darker(0.5/20)}",
         # Shadows
         "shadow": f"bg:{cp.bg.darker(0.45)}",
+        # Inputs
+        "input": f"bg:{cp.bg.more(0.05)}",
+        "button": f"bg:{cp.bg.more(0.05)}",
+        "button.arrow": "",
+        "button button.focused": "fg:#ffffff bg:ansidarkred",
     }
 
     # Add shadow combination for every element
@@ -334,11 +339,5 @@ def build_style(
             if key not in ("menu", "menu-border")
         }
     )
-    # "tab-bar shadow": f"bg:{cp.bg.darker(9/20)}",
-    # "pager shadow": f"bg:{cp.bg.darker(9/20)}",
-    # "cell.input shadow": f"bg:{cp.bg.darker(9/20)}",
-    # "cell.input.box shadow": f"bg:{cp.bg.darker(9/20)}",
-    # "cell.output shadow": f"bg:{cp.bg.darker(9/20)}",
-    # "md.code.block shadow": f"bg:{cp.bg.darker(9/20)}",
 
     return Style.from_dict(style_dict)

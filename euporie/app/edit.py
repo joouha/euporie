@@ -332,10 +332,9 @@ class EditApp(EuporieApp):
         for text, cb in buttons.items():
             handler = _make_handler(cb)
             button_widgets.append(
-                Button(text, handler, left_symbol="[", right_symbol="]")
+                Button(text, handler, left_symbol="▏", right_symbol="▕")
             )
             kb.add(text[:1].lower(), filter=~buffer_has_focus)(handler)
-
         dialog = Dialog(
             title=title,
             body=body,
@@ -404,6 +403,7 @@ class EditApp(EuporieApp):
             multiline=False,
             completer=completer,
             accept_handler=_accept_text,
+            style="class:input",
         )
 
         root_contents: "list[AnyContainer]" = [
