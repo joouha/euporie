@@ -29,6 +29,7 @@ Changed
 Fixed
 =====
 
+- Force cell input to be re-lexed when changing cell type
 - Prevent OSC-8 link mis-detection bug by adding link IDs
 - Fix regression making cell selection in long notebooks very slow
 

@@ -658,6 +658,7 @@ class Cell:
             del self.json["execution_count"]
         self.json["cell_type"] = cell_type
         self.output_box.children = self.render_outputs()
+        self.input_box.control._fragment_cache.clear()
 
     @property
     def id(self) -> "str":
