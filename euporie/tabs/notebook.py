@@ -660,7 +660,9 @@ class EditNotebook(KernelNotebook):
         """Returns the currently selected `Cells` in this `Notebook`."""
         return self.page.children[self.page.selected_slice]
 
-    def change_kernel(self, msg: "Optional[str]" = None) -> None:
+    def change_kernel(
+        self, msg: "Optional[str]" = None, startup: "bool" = False
+    ) -> None:
         """Displays a dialog for the user to select a new kernel."""
 
         def _change_kernel_cb() -> None:
@@ -670,6 +672,14 @@ class EditNotebook(KernelNotebook):
 
         assert self.kernel is not None
         kernel_specs = self.kernel.specs
+
+        # Automatically select the only kernel if there is only one
+        if startup and len(kernel_specs.items()) == 1:
+            self.kernel.change(
+                list(kernel_specs)[0], self.json.setdefault("metadata", {})
+            )
+            return
+
         options = RadioList(
             [
                 (
@@ -698,7 +708,8 @@ class EditNotebook(KernelNotebook):
         super().check_kernel()
         if self.kernel.missing:
             self.change_kernel(
-                msg=f"Kernel '{self.kernel_display_name}' not registered"
+                msg=f"Kernel '{self.kernel_display_name}' not registered",
+                startup=True,
             )
         elif self.kernel.status == "error":
             self.app.dialog(
