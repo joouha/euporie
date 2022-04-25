@@ -44,7 +44,7 @@ def enter_cell_edit_mode() -> "None":
 
 
 @add(
-    keys=["escape", ("escape", "escape")],
+    keys="escape",
     filter=cell_has_focus & buffer_has_focus,
     group="notebook",
 )

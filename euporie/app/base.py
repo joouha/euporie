@@ -8,7 +8,7 @@ from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING, cast
 
-from prompt_toolkit.application.application import Application
+from prompt_toolkit.application.application import Application, _CombinedRegistry
 from prompt_toolkit.application.current import create_app_session
 from prompt_toolkit.enums import EditingMode
 from prompt_toolkit.filters import buffer_has_focus
@@ -50,6 +50,7 @@ from euporie.config import config
 from euporie.enums import TabMode
 from euporie.key_binding.bindings.commands import load_command_bindings
 from euporie.key_binding.bindings.micro import load_micro_bindings
+from euporie.key_binding.key_processor import KeyProcessor
 from euporie.key_binding.micro_state import MicroState
 from euporie.log import setup_logs
 from euporie.style import LOG_STYLE, MARKDOWN_STYLE, ColorPalette, build_style
@@ -151,6 +152,12 @@ class EuporieApp(Application):
         # Continue loading when the application has been launched
         # and an event loop has been creeated
         self.pre_run_callables = [self.pre_run]
+        # Set a long timeout for mappings (e.g. dd)
+        self.timeoutlen = 1.0
+        # Set a short timeout for flushing input
+        self.ttimeoutlen = 0.0
+        # Use a custom key-processor which does not wait after escape keys
+        self.key_processor = KeyProcessor(_CombinedRegistry(self))
 
     def pre_run(self, app: "Application" = None) -> "None":
         """Called during the 'pre-run' stage of application loading."""
