@@ -11,6 +11,7 @@ Upcoming
 Added
 =====
 
+- Add dialog explaining if no kernels are found
 - Allow changing tabs by scrolling on them
 - Add "Custom" color scheme, allowing foreground and background colours to be configured
 - Add "Black" and "White" color schemes
@@ -20,6 +21,7 @@ Added
 Changed
 =======
 
+- Update documentation
 - Remove input flush timeout after escape key
 - Use sub-command in the command line interface
 - Styling changes

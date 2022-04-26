@@ -674,10 +674,35 @@ class EditNotebook(KernelNotebook):
         kernel_specs = self.kernel.specs
 
         # Automatically select the only kernel if there is only one
-        if startup and len(kernel_specs.items()) == 1:
+        if startup and len(kernel_specs) == 1:
             self.kernel.change(
                 list(kernel_specs)[0], self.json.setdefault("metadata", {})
             )
+            return
+
+        if not kernel_specs:
+            if not startup:
+                self.app.dialog(
+                    title="No Kernels Found",
+                    body=Window(
+                        FormattedTextControl(
+                            [
+                                ("bold", "No Jupyter kernels were found.\n\n"),
+                                ("", "You can view and edit the notebook,\n"),
+                                ("", "but will not be able to run any code.\n\n"),
+                                ("", "Try installing "),
+                                ("class:md.code.inline", "ipykernel"),
+                                ("", " by running:"),
+                                ("", "\n\n"),
+                                (
+                                    "class:md.code.inline",
+                                    "$ pip install --user ipykernel",
+                                ),
+                            ]
+                        )
+                    ),
+                    buttons={"OK": None},
+                )
             return
 
         options = RadioList(
