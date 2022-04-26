@@ -552,7 +552,7 @@ class Markdown:
                         break
                 i += j
             i += 1
-        return table.render(width) + [("", "\n")]
+        return table.render(width) + [("", "\n\n")]
 
     def __pt_formatted_text__(self) -> "StyleAndTextTuples":
         """Formatted text magic method."""
