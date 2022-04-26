@@ -52,8 +52,8 @@ APPS: "List[Dict]" = [
         "help": "Launch euporie hub",
         "class": "euporie.app.hub.HubApp",
         "description": """
-            Launches euporie hub, a multi-client SSH server running euporie which
-            allows multiple users to simultaneously access the same server instance.
+            Launches euporie hub, a multi-client SSH server running euporie, which
+            launches an instance of the TUI editor for each connected user.
         """,
     },
 ]
@@ -458,7 +458,7 @@ CONFIG_PARAMS: "Dict[str, Dict]" = {
     },
     # Edit / Preview options
     "files": {
-        "apps_": ["edit", "preview"],
+        "apps_": ["edit", "preview", "hub"],
         "flags_": ["files"],
         "nargs": "*",
         "type": Path,
@@ -672,12 +672,12 @@ CONFIG_PARAMS: "Dict[str, Dict]" = {
         "nargs": "*",
         "type": Path,
         "help": "Client public keys authorized to connect",
-        "default": None,
+        "default": ["~/.ssh/authorized_keys"],
         "schema_": {
             "type": "array",
             "items": {
                 "file": {
-                    "description": "SSH host key File path",
+                    "description": "Path to file containing authorized public keys",
                     "type": "string",
                 },
             },
@@ -686,6 +686,25 @@ CONFIG_PARAMS: "Dict[str, Dict]" = {
                 One or more OpenSSH-style :file:`authorized_keys` files, containing
                 public keys for authorized clients.
             """,
+    },
+    "no_auth": {
+        "apps_": ["hub"],
+        "flags_": ["--no-auth"],
+        "action": BooleanOptionalAction,
+        "type": bool,
+        "help": "Allow unauthenticated access to euporie hub",
+        "default": False,
+        "schema_": {
+            "type": "boolean",
+        },
+        "description_": """
+            When set, users will be able to access euporie hub without authentication.
+
+            .. warning::
+
+               This option is dangerous, as arbitrary code can be executed through
+               Jupyter notebooks in euporie.
+        """,
     },
 }
 
@@ -720,7 +739,7 @@ class JSONEncoderPlus(json.JSONEncoder):
 
         """
         if isinstance(o, Path):
-            return str(o)
+            return str(o.expanduser())
         return json.JSONEncoder.default(self, o)
 
 
