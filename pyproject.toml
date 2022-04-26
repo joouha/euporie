@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "euporie"
-version = "1.5.0"
+version = "1.6.0"
 description = "Euporie is a text-based user interface for running and editing Jupyter notebooks"
 authors = ["Josiah Outram Halstead <josiah@halstead.email>"]
 license = "MIT"
