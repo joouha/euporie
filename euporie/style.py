@@ -149,13 +149,13 @@ class ColorPaletteColor:
         return self.adjust(brightness=-amount, rel=rel)
 
     def more(self, amount: "float", rel: "bool" = True) -> "str":
-        """Modified the brightness towards 0.5."""
+        """Makes bright colors darker and dark colors brighter."""
         if self.is_light:
             amount *= -1
         return self.adjust(brightness=amount, rel=rel)
 
     def less(self, amount: "float", rel: "bool" = True) -> "str":
-        """Modified the brightness away from 0.5."""
+        """Makes bright colors brighter and dark colors darker."""
         if self.is_light:
             amount *= -1
         return self.adjust(brightness=-amount, rel=rel)
