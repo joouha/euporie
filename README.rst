@@ -44,7 +44,7 @@ Open a notebook by passing the notebook's file path as a command line argument:
 
 .. code-block:: console
 
-   $ euporie notebook.ipynb
+   $ euporie edit notebook.ipynb
 
 Alternatively, launch ``euporie`` and open a notebook file by selecting "Open" from the file menu (*Ctrl+o*).
 
@@ -52,13 +52,13 @@ To print a notebook to the terminal, run:
 
 .. code-block:: console
 
-   $ euporie --dump notebook.ipynb
+   $ euporie preview notebook.ipynb
 
 To view a notebook in the system pager, run:
 
 .. code-block:: console
 
-   $ euporie --dump --page notebook.ipynb
+   $ euporie preview --page notebook.ipynb
 
 For more information about the available command line flags, run:
 
