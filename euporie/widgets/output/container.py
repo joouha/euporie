@@ -277,10 +277,7 @@ class CellOutput:
                 if mime_path.match(data_mime):
                     if mime_path.name == "stderr":
                         self.window.style = "fg:red"
-                    if (
-                        data_format == "ansi"
-                        or find_route(data_format, "ansi") is not None
-                    ):
+                    if find_route(data_format, "formatted_text") is not None:
                         format_ = data_format
                         datum = datum_
                         break
