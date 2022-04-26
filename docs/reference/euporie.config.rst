@@ -28,6 +28,7 @@ euporie.config
       :toctree:
       :template: class.tpl.rst
 
+      ArgumentParser
       BooleanOptionalAction
       Config
       JSONEncoderPlus

@@ -1,6 +1,6 @@
-euporie.commands.tui.show\_command\_palette
+euporie.commands.app.show\_command\_palette
 ===========================================
 
-.. currentmodule:: euporie.commands.tui
+.. currentmodule:: euporie.commands.app
 
 .. autofunction:: show_command_palette

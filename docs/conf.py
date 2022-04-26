@@ -13,6 +13,7 @@ extensions: "list[str]" = [
     "sphinx.ext.napoleon",  # Enable google-style docstring parsing
     "sphinx.ext.autodoc",  # Document modules
     "sphinx.ext.autosummary",  # Generate API documentation
+    "sphinx.ext.autosectionlabel",  # Automatically label sections
     "sphinx_argparse_cli",  # Command line argument documentation
     "sphinxext.opengraph",  # OGP data
     "sphinx_copybutton",  # Copy button
@@ -20,6 +21,8 @@ extensions: "list[str]" = [
 templates_path = ["_templates"]
 exclude_patterns: "list[str]" = []
 
+# Make sure the target is unique
+autosectionlabel_prefix_document = True
 
 # Options for HTML output
 

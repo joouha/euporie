@@ -1,7 +1,7 @@
-euporie.commands.tui
+euporie.commands.app
 ====================
 
-.. automodule:: euporie.commands.tui
+.. automodule:: euporie.commands.app
    :members:
    :undoc-members:
    :inherited-members:

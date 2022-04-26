@@ -23,6 +23,22 @@ If you want to try the latest and potentially unstable unreleased changes, you c
 
    $ pipx install git+https://github.com/joouha/euporie.git
 
+
+**********************
+Try without installing
+**********************
+
+You can use :program:`pipx` to try euporie before installing it:
+
+.. code-block:: console
+
+   $ pipx run 'euporie[all]'
+
+You can also try euporie online here:
+
+https://mybinder.org/v2/gh/joouha/euporie-binder/HEAD?urlpath=%2Feuporie%2F
+
+
 ----
 
 *********************

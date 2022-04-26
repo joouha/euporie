@@ -18,6 +18,6 @@ euporie.app
 
       euporie.app.base
       euporie.app.current
-      euporie.app.dump
+      euporie.app.edit
       euporie.app.hub
-      euporie.app.tui
+      euporie.app.preview

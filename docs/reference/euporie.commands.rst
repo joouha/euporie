@@ -16,6 +16,7 @@ euporie.commands
       :toctree:
       :recursive:
 
+      euporie.commands.app
       euporie.commands.base
       euporie.commands.buffer
       euporie.commands.cell
@@ -28,4 +29,3 @@ euporie.commands
       euporie.commands.registry
       euporie.commands.search
       euporie.commands.suggestions
-      euporie.commands.tui

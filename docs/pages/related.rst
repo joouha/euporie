@@ -6,6 +6,9 @@ Related Projects
 Notebook Editors
 ****************
 
+`Emacs IPython Notebook <http://millejoh.github.io/emacs-ipython-notebook/>`_
+   A Jupyter Notebook client and integrated REPL in Emacs.
+
 `nbterm <https://github.com/davidbrochart/nbterm>`_
    An alternative effort sponsored by QuantStack
 
@@ -13,7 +16,7 @@ Notebook Editors
    A fork of nbterm
 
 `jpterm <https://github.com/davidbrochart/jpterm>`_
-   Jupyter in the terminal
+   A Jupyter HTTP client with a TUI using Textual (currently a work in progress)
 
 ****************
 Notebook Viewers
@@ -57,3 +60,6 @@ Notebook Viewers
 
 `Read-Jupyter-Notebook <https://github.com/qcw171717/Read-Jupyter-Notebook>`_
    Check the version or content of a Jupyter Notebook file from the terminal
+
+`nbcat <https://gist.github.com/rkern/7bf123b94079821d2764a498de40a580>`_
+   A script to page Jupyter Notebooks in the terminal

@@ -10,6 +10,7 @@ The key-bindings used when editing a cell are determined by the :option:`edit_mo
 
 .. note:: The ``vim`` and ``emacs`` key-bindings are defined by the :py:mod:`prompt_toolkit` package and are largely untested, so your results may vary!
 
+
 *************
 Running Cells
 *************
@@ -148,6 +149,8 @@ App
 |                      |                                                                                  |
 | :kbd:`Ctrl+@`        |                                                                                  |
 +----------------------+----------------------------------------------------------------------------------+
+| :kbd:`Ctrl+G`        | Find the next search match.                                                      |
++----------------------+----------------------------------------------------------------------------------+
 
 Config
 ======
@@ -173,8 +176,6 @@ Notebook
 | :kbd:`Ctrl+M`        |                                                                                  |
 +----------------------+----------------------------------------------------------------------------------+
 | :kbd:`Escape`        | Exit cell edit mode.                                                             |
-|                      |                                                                                  |
-| :kbd:`Alt+Escape`    |                                                                                  |
 +----------------------+----------------------------------------------------------------------------------+
 | :kbd:`Ctrl+Enter`    | Run or render the current cells.                                                 |
 |                      |                                                                                  |

@@ -28,8 +28,8 @@ euporie.tabs.notebook
       :toctree:
       :template: class.tpl.rst
 
-      DumpKernelNotebook
-      DumpNotebook
+      EditNotebook
       KernelNotebook
       Notebook
-      TuiNotebook
+      PreviewKernelNotebook
+      PreviewNotebook

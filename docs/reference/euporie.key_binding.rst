@@ -17,5 +17,6 @@ euporie.key\_binding
       :recursive:
 
       euporie.key_binding.bindings
+      euporie.key_binding.key_processor
       euporie.key_binding.micro_state
       euporie.key_binding.util

@@ -11,11 +11,15 @@ euporie's documentation
    :maxdepth: 2
    :caption: Contents:
 
-   pages/gallery
    pages/installation
-   pages/usage
-   pages/configuration
+   pages/gallery
+   pages/overview
+   pages/edit
+   pages/preview
+   pages/hub
    pages/keybindings
+   pages/cli
+   pages/configuration
    pages/changelog
    pages/related
 

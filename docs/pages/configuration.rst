@@ -91,6 +91,15 @@ All available configuration options are listed below:
    .. note::
       This cannot be set in the configuration file or via an environment variable
 
+.. option:: app
+
+:environment variable: :envvar:`EUPORIE_APP`
+:type: :keyword:`string`
+:options: [``'euporie.app.edit.EditApp'``, ``'euporie.app.preview.PreviewApp'``, ``'euporie.app.hub.HubApp'``]
+:description: The euporie app to launch
+
+   The dotted import path of the :class:`EuporieApp` to run.
+
 .. option:: log_file
 
 :flags: :option:`--log-file`
@@ -109,111 +118,6 @@ All available configuration options are listed below:
 :description: Include debug output in logs
 
    When set, logging events at the debug level are emitted.
-
-.. option:: dump
-
-:flags: :option:`--dump`
-:environment variable: :envvar:`EUPORIE_DUMP`
-:type: :keyword:`boolean`
-:description: Output formatted file to display or file
-
-   When set, the formatted output will be written to the the output file path
-   given by `dump_file` (standard output by default).
-
-.. option:: dump_file
-
-:flags: :option:`--dump-file`
-:environment variable: :envvar:`EUPORIE_DUMP_FILE`
-:type: :keyword:`string`
-:description: Output path when dumping file
-
-   When set to a file path, the formatted output will be written to the
-   given path. If no value is given (or the default "-" is passed) output
-   will be printed to standard output.
-
-.. option:: page
-
-:flags: :option:`--page`
-:environment variable: :envvar:`EUPORIE_PAGE`
-:type: :keyword:`boolean`
-:description: Pass output to pager
-
-   Whether to pipe output to the system pager when using ``--dump``.
-
-.. option:: hub
-
-:flags: :option:`--hub`
-:environment variable: :envvar:`EUPORIE_HUB`
-:type: :keyword:`boolean`
-:description: Run a multi-user SSH server.
-
-   When set, euporie will run as a SSH server, allowing multiple users to
-   simultaneously access the same server instance.
-
-.. option:: hub_ssh_host
-
-:flags: :option:`--hub-ssh-host`
-:environment variable: :envvar:`EUPORIE_HUB_SSH_HOST`
-:type: :keyword:`string`
-:description: The host address of the SSH server.
-
-   This determines the host address the euporie hub SSH server will bind to.
-
-.. option:: hub_ssh_port
-
-:flags: :option:`--hub-ssh-port`
-:environment variable: :envvar:`EUPORIE_HUB_SSH_PORT`
-:type: :keyword:`integer`
-:description: The port to use for the SSH server.
-
-   This determines which port euporie will listen on for connections to
-   euporie hub.
-
-.. option:: hub_ssh_host_keys
-
-:flags: :option:`--hub-ssh-host-keys`
-:environment variable: :envvar:`EUPORIE_HUB_SSH_HOST_KEYS`
-:type: :keyword:`array`
-:description: List of file names to open
-
-   One or more SSH host key files to use for the euporie hub SSH server.
-
-.. option:: run
-
-:flags: :option:`--run`
-:environment variable: :envvar:`EUPORIE_RUN`
-:type: :keyword:`boolean`
-:description: Run the notebook when loaded
-
-   If set, notebooks will be run automatically when opened, or if dumping
-   output, notebooks will be run before being output.
-
-.. option:: tmux_graphics
-
-:flags: :option:`--tmux-graphics`
-:environment variable: :envvar:`EUPORIE_TMUX_GRAPHICS`
-:type: :keyword:`boolean`
-:description: Enable terminal graphics in tmux (experimental)
-
-   If set, terminal graphics will be used if :program:`tmux` is running by
-   performing terminal escape sequence pass-through. You must restart euporie for
-   this to take effect.
-
-   .. warning::
-
-      Terminal graphics in :program:`tmux` is experimental, and is not guaranteed
-      to work. Use at your own risk!
-
-.. option:: terminal_polling_interval
-
-:flags: :option:`--terminal-polling-interval`
-:environment variable: :envvar:`EUPORIE_TERMINAL_POLLING_INTERVAL`
-:type: :keyword:`integer`
-:description: Time between terminal colour queries
-
-   Determine how frequently the terminal should be polled for changes to the
-   background / foreground colours. Set to zero to disable terminal polling.
-
 
 .. option:: edit_mode
 
@@ -234,50 +138,96 @@ All available configuration options are listed below:
 
    The number of spaces to use per indentation level. Should be set to 4.
 
-.. option:: run_after_external_edit
+.. option:: show_cell_borders
 
-:flags: :option:`--run-after-external-edit`
-:environment variable: :envvar:`EUPORIE_RUN_AFTER_EXTERNAL_EDIT`
+:flags: :option:`--show-cell-borders`
+:environment variable: :envvar:`EUPORIE_SHOW_CELL_BORDERS`
 :type: :keyword:`boolean`
-:description: Run cells after editing externally
+:description: Show or hide cell borders.
 
-   Whether to execute a cell immediately after editing in `$EDITOR`.
+   Whether cell borders should be drawn for unselected cells.
 
-.. option:: format_black
+.. option:: line_numbers
 
-:flags: :option:`--format-black`
-:environment variable: :envvar:`EUPORIE_FORMAT_BLACK`
+:flags: :option:`--line-numbers`
+:environment variable: :envvar:`EUPORIE_LINE_NUMBERS`
 :type: :keyword:`boolean`
-:description: Use black when re-formatting code cells
+:description: Show or hide line numbers
 
-   Whether to use :py:mod:`black` when reformatting code cells.
+   Whether line numbers are shown by default.
 
-.. option:: format_isort
+.. option:: show_status_bar
 
-:flags: :option:`--format-isort`
-:environment variable: :envvar:`EUPORIE_FORMAT_ISORT`
+:flags: :option:`--show-status-bar`
+:environment variable: :envvar:`EUPORIE_SHOW_STATUS_BAR`
 :type: :keyword:`boolean`
-:description: Use isort when re-formatting code cells
+:description: Show the status bar
 
-   Whether to use :py:mod:`isort` when reformatting code cells.
+   Whether the status bar should be shown at the bottom of the screen.
 
-.. option:: format_ssort
+.. option:: show_scroll_bar
 
-:flags: :option:`--format-ssort`
-:environment variable: :envvar:`EUPORIE_FORMAT_SSORT`
+:flags: :option:`--show-scroll-bar`
+:environment variable: :envvar:`EUPORIE_SHOW_SCROLL_BAR`
 :type: :keyword:`boolean`
-:description: Use ssort when re-formatting code cells
+:description: Show the scroll bar
 
-   Whether to use :py:mod:`ssort` when reformatting code cells.
+   Whether the scroll bar should be shown on the right of the screen.
 
-.. option:: autoformat
+.. option:: tab_mode
 
-:flags: :option:`--autoformat`
-:environment variable: :envvar:`EUPORIE_AUTOFORMAT`
+:flags: :option:`--tab-mode`
+:environment variable: :envvar:`EUPORIE_TAB_MODE`
+:type: :keyword:`string`
+:options: [``'stack'``, ``'tile_horizontally'``, ``'tile_vertically'``]
+:description: The method used to display multiple tabs
+
+   Determines how multiple tabs are displayed when more than one tab is open.
+   * ``stack`` displays one tab at a time with a tab-bar
+   * ``tile_horizontally`` displays tabs side-by-side
+   * ``tile_vertically`` displays tabs one-atop-the-next
+
+.. option:: always_show_tab_bar
+
+:flags: :option:`--always-show-tab-bar`
+:environment variable: :envvar:`EUPORIE_ALWAYS_SHOW_TAB_BAR`
 :type: :keyword:`boolean`
-:description: Automatically re-format code cells when run
+:description: Always show the tab bar
 
-   Whether to automatically reformat code cells before they are run.
+   When set, the tab bar will always be shown - otherwise the tab bar is only
+   shown when multiple tabs are open.
+
+.. option:: background_pattern
+
+:flags: :option:`--background-pattern` or :option:`--bg-pattern`
+:environment variable: :envvar:`EUPORIE_BACKGROUND_PATTERN`
+:type: :keyword:`integer`
+:options: [``0``, ``1``, ``2``, ``3``, ``4``, ``5``]
+:description: The background pattern to use
+
+   The background pattern to use when the notebook is narrower than the
+   available width. Zero mean no pattern is used.
+
+.. option:: background_character
+
+:flags: :option:`--background-character` or :option:`--bg-char`
+:environment variable: :envvar:`EUPORIE_BACKGROUND_CHARACTER`
+:type: :keyword:`string`
+:description: Character for background pattern
+
+   The character to use when drawing the background pattern.
+
+   Recommended characters include: "·", "⬤", "╳", "╱", "╲", "░", "▒", "▓", "▞", "╬"
+
+.. option:: terminal_polling_interval
+
+:flags: :option:`--terminal-polling-interval`
+:environment variable: :envvar:`EUPORIE_TERMINAL_POLLING_INTERVAL`
+:type: :keyword:`integer`
+:description: Time between terminal colour queries
+
+   Determine how frequently the terminal should be polled for changes to the
+   background / foreground colours. Set to zero to disable terminal polling.
 
 .. option:: autocomplete
 
@@ -306,6 +256,90 @@ All available configuration options are listed below:
 
    Whether to automatically display contextual help when navigating through code cells.
 
+.. option:: run_after_external_edit
+
+:flags: :option:`--run-after-external-edit`
+:environment variable: :envvar:`EUPORIE_RUN_AFTER_EXTERNAL_EDIT`
+:type: :keyword:`boolean`
+:description: Run cells after editing externally
+
+   Whether to execute a cell immediately after editing in `$EDITOR`.
+
+.. option:: autoformat
+
+:flags: :option:`--autoformat`
+:environment variable: :envvar:`EUPORIE_AUTOFORMAT`
+:type: :keyword:`boolean`
+:description: Automatically re-format code cells when run
+
+   Whether to automatically reformat code cells before they are run.
+
+.. option:: format_black
+
+:flags: :option:`--format-black`
+:environment variable: :envvar:`EUPORIE_FORMAT_BLACK`
+:type: :keyword:`boolean`
+:description: Use black when re-formatting code cells
+
+   Whether to use :py:mod:`black` when reformatting code cells.
+
+.. option:: format_isort
+
+:flags: :option:`--format-isort`
+:environment variable: :envvar:`EUPORIE_FORMAT_ISORT`
+:type: :keyword:`boolean`
+:description: Use isort when re-formatting code cells
+
+   Whether to use :py:mod:`isort` when reformatting code cells.
+
+.. option:: format_ssort
+
+:flags: :option:`--format-ssort`
+:environment variable: :envvar:`EUPORIE_FORMAT_SSORT`
+:type: :keyword:`boolean`
+:description: Use ssort when re-formatting code cells
+
+   Whether to use :py:mod:`ssort` when reformatting code cells.
+
+.. option:: output_file
+
+:flags: :option:`--output-file`
+:environment variable: :envvar:`EUPORIE_OUTPUT_FILE`
+:type: :keyword:`string`
+:description: Output path when previewing file
+
+   When set to a file path, the formatted output will be written to the
+   given path. If no value is given (or the default "-" is passed) output
+   will be printed to standard output.
+
+.. option:: page
+
+:flags: :option:`--page`
+:environment variable: :envvar:`EUPORIE_PAGE`
+:type: :keyword:`boolean`
+:description: Pass output to pager
+
+   Whether to pipe output to the system pager when using ``--dump``.
+
+.. option:: files
+
+:environment variable: :envvar:`EUPORIE_FILES`
+:default: ``[]``
+:type: :keyword:`array`
+:description: List of file names to open
+
+   A list of file paths to open when euporie is launched.
+
+.. option:: run
+
+:flags: :option:`--run`
+:environment variable: :envvar:`EUPORIE_RUN`
+:type: :keyword:`boolean`
+:description: Run the notebook when loaded
+
+   If set, notebooks will be run automatically when opened, or if previewing a
+   file, the notebooks will be run before being output.
+
 .. option:: expand
 
 :flags: :option:`--expand`
@@ -324,84 +358,53 @@ All available configuration options are listed below:
 
    The maximum width at which to display a notebook.
 
-.. option:: show_status_bar
+.. option:: tmux_graphics
 
-:flags: :option:`--show-status-bar`
-:environment variable: :envvar:`EUPORIE_SHOW_STATUS_BAR`
+:flags: :option:`--tmux-graphics`
+:environment variable: :envvar:`EUPORIE_TMUX_GRAPHICS`
 :type: :keyword:`boolean`
-:description: Show the status bar
+:description: Enable terminal graphics in tmux (experimental)
 
-   Whether the status bar should be shown at the bottom of the screen.
+   If set, terminal graphics will be used if :program:`tmux` is running by
+   performing terminal escape sequence pass-through. You must restart euporie
+   forthis to take effect.
 
-.. option:: show_scroll_bar
+   .. warning::
 
-:flags: :option:`--show-scroll-bar`
-:environment variable: :envvar:`EUPORIE_SHOW_SCROLL_BAR`
-:type: :keyword:`boolean`
-:description: Show the scroll bar
-
-   Whether the scroll bar should be shown on the right of the screen.
+      Terminal graphics in :program:`tmux` is experimental, and is not
+      guaranteed to work. Use at your own risk!
 
 .. option:: color_scheme
 
 :flags: :option:`--color-scheme`
 :environment variable: :envvar:`EUPORIE_COLOR_SCHEME`
 :type: :keyword:`string`
-:options: [``'default'``, ``'inverse'``, ``'light'``, ``'dark'``]
+:options: [``'default'``, ``'inverse'``, ``'light'``, ``'dark'``, ``'black'``, ``'white'``, ``'custom'``]
 :description: The color scheme to use
 
    The color scheme to use: `auto` means euporie will try to use your
    terminal's color scheme, `light` means black text on a white background,
    and `dark` means white text on a black background.
 
-.. option:: background_pattern
+.. option:: custom_background_color
 
-:flags: :option:`--background-pattern` or :option:`--bg-pattern`
-:environment variable: :envvar:`EUPORIE_BACKGROUND_PATTERN`
-:type: :keyword:`integer`
-:options: [``0``, ``1``, ``2``, ``3``, ``4``, ``5``]
-:description: The background pattern to use
-
-   The background pattern to use when the notebook is narrower than the
-   available width. Zero mean no pattern is used.
-
-.. option:: background_character
-
-:flags: :option:`--background-character` or :option:`--bg-char`
-:environment variable: :envvar:`EUPORIE_BACKGROUND_CHARACTER`
+:flags: :option:`--custom-background-color` or :option:`--custom-bg-color` or :option:`--bg`
+:environment variable: :envvar:`EUPORIE_CUSTOM_BACKGROUND_COLOR`
 :type: :keyword:`string`
-:description: Character for background pattern
+:description: Background color for "Custom" color theme
 
-   The character to use when drawing the background pattern.
+   The hex code of the color to use for the background in the "Custom" color
+   scheme.
 
-   Recommended characters include: "·", "⬤", "╳", "╱", "╲", "░", "▒", "▓", "▞", "╬"
+.. option:: custom_foreground_color
 
-.. option:: background_color
-
-:flags: :option:`--background-color` or :option:`--bg-color`
-:environment variable: :envvar:`EUPORIE_BACKGROUND_COLOR`
+:flags: :option:`--custom-foreground-color` or :option:`--custom-fg-color` or :option:`--fg`
+:environment variable: :envvar:`EUPORIE_CUSTOM_FOREGROUND_COLOR`
 :type: :keyword:`string`
-:description: Color for background pattern
+:description: Background color for "Custom" color theme
 
-   The color to use for the background pattern.
-
-.. option:: show_cell_borders
-
-:flags: :option:`--show-cell-borders`
-:environment variable: :envvar:`EUPORIE_SHOW_CELL_BORDERS`
-:type: :keyword:`boolean`
-:description: Show or hide cell borders.
-
-   Whether cell borders should be drawn for unselected cells.
-
-.. option:: line_numbers
-
-:flags: :option:`--line-numbers`
-:environment variable: :envvar:`EUPORIE_LINE_NUMBERS`
-:type: :keyword:`boolean`
-:description: Show or hide line numbers
-
-   Whether line numbers are shown by default.
+   The hex code of the color to use for the foreground in the "Custom" color
+   scheme.
 
 .. option:: syntax_theme
 
@@ -418,19 +421,62 @@ All available configuration options are listed below:
 :environment variable: :envvar:`EUPORIE_COLOR_DEPTH`
 :type: :keyword:`integer`
 :options: [``1``, ``4``, ``8``, ``24``]
-:description: The color scheme to use
+:description: The color depth to use
 
    The number of bits to use to represent colors displayable on the screen.
    If set to None, the supported color depth of the terminal will be detected
    automatically.
 
-.. option:: files
+.. option:: host
 
-:environment variable: :envvar:`EUPORIE_FILES`
-:default: ``[]``
+:flags: :option:`--host`
+:environment variable: :envvar:`EUPORIE_HOST`
+:type: :keyword:`string`
+:description: The host address to bind to
+
+   This determines the host address the euporie hub SSH server will bind to.
+
+.. option:: port
+
+:flags: :option:`--port`
+:environment variable: :envvar:`EUPORIE_PORT`
+:type: :keyword:`integer`
+:description: The port for the ssh server to use
+
+   This determines which port euporie will listen on for connections to
+   euporie hub.
+
+.. option:: host_keys
+
+:flags: :option:`--host-keys`
+:environment variable: :envvar:`EUPORIE_HOST_KEYS`
 :type: :keyword:`array`
-:description: List of file names to open
+:description: Host keys to use for the SSH server
 
-   A list of file paths to open when euporie is launched.
+   One or more SSH host key files to use for the euporie hub SSH server.
+
+.. option:: client_keys
+
+:flags: :option:`--client-keys`
+:environment variable: :envvar:`EUPORIE_CLIENT_KEYS`
+:type: :keyword:`array`
+:description: Client public keys authorized to connect
+
+   One or more OpenSSH-style :file:`authorized_keys` files, containing
+   public keys for authorized clients.
+
+.. option:: no_auth
+
+:flags: :option:`--no-auth`
+:environment variable: :envvar:`EUPORIE_NO_AUTH`
+:type: :keyword:`boolean`
+:description: Allow unauthenticated access to euporie hub
+
+   When set, users will be able to access euporie hub without authentication.
+
+   .. warning::
+
+      This option is dangerous, as arbitrary code can be executed through
+      Jupyter notebooks in euporie.
 
 .. _configuration-options-end:

@@ -1,6 +1,6 @@
-euporie.tabs.notebook.DumpNotebook
+euporie.tabs.notebook.EditNotebook
 ==================================
 
 .. currentmodule:: euporie.tabs.notebook
 
-.. autoclass:: DumpNotebook
+.. autoclass:: EditNotebook

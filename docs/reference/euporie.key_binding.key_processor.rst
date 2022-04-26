@@ -1,7 +1,7 @@
-euporie.app.dump
-================
+euporie.key\_binding.key\_processor
+===================================
 
-.. automodule:: euporie.app.dump
+.. automodule:: euporie.key_binding.key_processor
    :members:
    :undoc-members:
    :inherited-members:
@@ -28,5 +28,4 @@ euporie.app.dump
       :toctree:
       :template: class.tpl.rst
 
-      DumpApp
-      PseudoTTY
+      KeyProcessor

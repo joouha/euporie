@@ -1,7 +1,7 @@
-euporie.app.tui
-===============
+euporie.app.edit
+================
 
-.. automodule:: euporie.app.tui
+.. automodule:: euporie.app.edit
    :members:
    :undoc-members:
    :inherited-members:
@@ -28,4 +28,4 @@ euporie.app.tui
       :toctree:
       :template: class.tpl.rst
 
-      TuiApp
+      EditApp

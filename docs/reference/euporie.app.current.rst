@@ -24,5 +24,5 @@ euporie.app.current
       :toctree:
 
       get_base_app
-      get_dump_app
-      get_tui_app
+      get_edit_app
+      get_preview_app

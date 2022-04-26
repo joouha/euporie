@@ -21,6 +21,7 @@ Added
 Changed
 =======
 
+- Fix bug where markdown was not rendered on some installs
 - Update documentation
 - Remove input flush timeout after escape key
 - Use sub-command in the command line interface

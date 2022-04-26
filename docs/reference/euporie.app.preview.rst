@@ -1,7 +1,7 @@
-euporie.app.hub
-===============
+euporie.app.preview
+===================
 
-.. automodule:: euporie.app.hub
+.. automodule:: euporie.app.preview
    :members:
    :undoc-members:
    :inherited-members:
@@ -28,5 +28,5 @@ euporie.app.hub
       :toctree:
       :template: class.tpl.rst
 
-      EuporieSSHServer
-      HubApp
+      PreviewApp
+      PseudoTTY

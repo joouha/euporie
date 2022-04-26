@@ -15,8 +15,8 @@ euporie
 
 The text-based interface is inspired by JupyterLab / Jupyter Notebook, and runs entirely in the terminal.
 
-.. figure:: https://user-images.githubusercontent.com/12154190/160244007-cfde84ea-cddd-47f3-964a-96a10d60fb06.png
-   :target: https://user-images.githubusercontent.com/12154190/160244007-cfde84ea-cddd-47f3-964a-96a10d60fb06.png
+.. figure:: https://user-images.githubusercontent.com/12154190/165388661-44153d99-a44b-4a4a-98b8-7007158c3fa3.png
+   :target: https://user-images.githubusercontent.com/12154190/165388661-44153d99-a44b-4a4a-98b8-7007158c3fa3.png
 
    `View more screenshots here <https://euporie.readthedocs.io/en/latest/pages/gallery.html>`_
 
@@ -82,12 +82,13 @@ Features
 * Edit and run notebooks in the terminal
 * Displays rich cell outputs, including markdown, tables, images, LaTeX, HTML, SVG, & PDF
 * Print formatted notebooks to the terminal or pager
-* Open multiple notebooks side-by-side
-* Hightly configurable
+* Open multiple notebooks and display them stacked or tiled
 * Code completion
 * Line completions from history
-* Display contextual help
+* Contextual help
 * Automatic code formatting
+* Highly configurable
+
 
 *************
 Compatibility
