@@ -9,6 +9,7 @@ from prompt_toolkit.formatted_text.base import to_formatted_text
 from prompt_toolkit.formatted_text.utils import (
     fragment_list_to_text,
     fragment_list_width,
+    to_plain_text,
 )
 from prompt_toolkit.keys import Keys
 from prompt_toolkit.layout import VSplit
@@ -70,6 +71,8 @@ class MenuItem(PtkMenuItem):
         hidden: "FilterOrBool" = False,
         disabled: "FilterOrBool" = False,
         toggled: "Optional[Filter]" = None,
+        collapse_prefix: "bool" = False,
+        collapse_suffix: "bool" = True,
     ) -> None:
         """Initiate a smart menu item.
 
@@ -85,6 +88,10 @@ class MenuItem(PtkMenuItem):
             disabled: The handler will be disabled when this filter is True
             toggled: A checkmark will be displayed next to the menu text when this
                 callable returns True
+            collapse_prefix: If :py:const:`False`, all prefixes in the menu will be
+                padded so they have equal widths
+            collapse_suffix: if :py:const:`False`, all suffixes in the menu will be
+                padded so they have equal widths
 
         """
         self._formatted_text = formatted_text
@@ -93,6 +100,8 @@ class MenuItem(PtkMenuItem):
         self._disabled = to_filter(disabled) | to_filter(self.separator)
         self.hidden = to_filter(hidden)
         self.toggled = toggled
+        self.collapse_prefix = collapse_prefix
+        self.collapse_suffix = collapse_suffix
         super().__init__(
             text=self.text,
             handler=handler,
@@ -218,11 +227,28 @@ class MenuItem(PtkMenuItem):
     @property
     def width(self) -> "int":
         """The maximum width of the item's children."""
-        return (
-            self.prefix_width
-            + max([get_cwidth(child.text) for child in self.children])
-            + self.suffix_width
-        )
+        widths = [0]
+        for child in self.children:
+            width = 0
+            if self.collapse_prefix:
+                width += (
+                    get_cwidth(to_plain_text(child.prefix))
+                    if isinstance(child, MenuItem)
+                    else 0
+                )
+            else:
+                width += self.prefix_width
+            width += get_cwidth(child.text)
+            if self.collapse_suffix:
+                width += (
+                    get_cwidth(to_plain_text(child.suffix))
+                    if isinstance(child, MenuItem)
+                    else 0
+                )
+            else:
+                width += self.suffix_width
+            widths.append(width)
+        return max(widths)
 
 
 class MenuContainer(PtKMenuContainer):
@@ -395,39 +421,39 @@ class MenuContainer(PtKMenuContainer):
                                 yield ("[SetCursorPosition]", "")
                             # Set the style if disabled
                             # Construct the menu item contents
+                            prefix_padding = " " * (
+                                0
+                                if menu.collapse_prefix
+                                else menu.prefix_width
+                                - fragment_list_width(item.prefix)
+                            )
+                            suffix_padding = " " * (
+                                menu.width
+                                - fragment_list_width(item.prefix)
+                                - len(prefix_padding)
+                                - fragment_list_width(item.formatted_text)
+                                - (
+                                    fragment_list_width(item.suffix)
+                                    if menu.collapse_suffix
+                                    else menu.suffix_width
+                                )
+                            )
+                            text_padding = " " * (
+                                menu.width
+                                - fragment_list_width(item.prefix)
+                                - len(prefix_padding)
+                                - fragment_list_width(item.formatted_text)
+                                - fragment_list_width(item.suffix)
+                                - len(suffix_padding)
+                            )
                             menu_formatted_text: "StyleAndTextTuples" = (
                                 to_formatted_text(
                                     [
                                         *item.prefix,
-                                        (
-                                            "",
-                                            " "
-                                            * (
-                                                menu.prefix_width
-                                                - fragment_list_width(item.prefix)
-                                            ),
-                                        ),
+                                        ("", prefix_padding),
                                         *item.formatted_text,
-                                        (
-                                            "",
-                                            " "
-                                            * (
-                                                menu.width
-                                                - menu.prefix_width
-                                                - fragment_list_width(
-                                                    item.formatted_text
-                                                )
-                                                - menu.suffix_width
-                                            ),
-                                        ),
-                                        (
-                                            "",
-                                            " "
-                                            * (
-                                                menu.suffix_width
-                                                - fragment_list_width(item.suffix)
-                                            ),
-                                        ),
+                                        ("", text_padding),
+                                        ("", suffix_padding),
                                         *item.suffix,
                                     ],
                                     style=style,
