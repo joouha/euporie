@@ -493,7 +493,6 @@ class KittyGraphicControl(OutputControl):
                 C=1,  # Do not scroll
                 z=-(2**30) - 1,
             )
-            cmd = cmd
             return list(
                 split_lines(
                     to_formatted_text(
