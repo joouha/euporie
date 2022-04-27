@@ -31,13 +31,22 @@ if TYPE_CHECKING:
 
 # Check for markdown-it-py
 markdown_parser: Optional["MarkdownIt"] = None
+
 try:
     from markdown_it import MarkdownIt
 except ModuleNotFoundError:
     warn("The markdown parser requires `markdown-it-py` to be installed")
 else:
+
+    class MarkdownParser(MarkdownIt):
+        """Subclass the markdown parser to allow ``file:`` URIs."""
+
+        def validateLink(self, url: "str") -> "bool":
+            """Allows all link URIs."""
+            return True
+
     markdown_parser = (
-        MarkdownIt().enable("linkify").enable("table").enable("strikethrough")
+        MarkdownParser().enable("linkify").enable("table").enable("strikethrough")
     )
 
 # Check for markdown-it-py plugins
