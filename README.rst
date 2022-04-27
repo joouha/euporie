@@ -40,7 +40,7 @@ You can also try euporie online `here <https://mybinder.org/v2/gh/joouha/euporie
 Usage
 *****
 
-Open a notebook by passing the notebook's file path as a command line argument:
+Open a notebook using the ``edit`` subcommand and passing the notebook's file path as a command line argument:
 
 .. code-block:: console
 
@@ -48,19 +48,19 @@ Open a notebook by passing the notebook's file path as a command line argument:
 
 Alternatively, launch ``euporie`` and open a notebook file by selecting "Open" from the file menu (*Ctrl+o*).
 
-To print a notebook to the terminal, run:
+To print a notebook to the terminal, use the ``preview`` subcommand:
 
 .. code-block:: console
 
    $ euporie preview notebook.ipynb
 
-To view a notebook in the system pager, run:
+To view a notebook in the system pager, use the ``--page`` flag:
 
 .. code-block:: console
 
    $ euporie preview --page notebook.ipynb
 
-For more information about the available command line flags, run:
+For more information about the available subcommands and command line flags, run:
 
 .. code-block:: console
 

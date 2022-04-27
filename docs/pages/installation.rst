@@ -21,7 +21,7 @@ If you want to try the latest and potentially unstable unreleased changes, you c
 
 .. code-block:: console
 
-   $ pipx install git+https://github.com/joouha/euporie.git
+   $ pipx install git+https://github.com/joouha/euporie.git@dev
 
 
 **********************
@@ -32,7 +32,7 @@ You can use :program:`pipx` to try euporie before installing it:
 
 .. code-block:: console
 
-   $ pipx run 'euporie[all]'
+   $ pipx run --spec 'euporie[all]' euporie
 
 You can also try euporie online here:
 
