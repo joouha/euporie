@@ -729,7 +729,6 @@ def show_contextual_help(event: "KeyPressEvent") -> "None":
 
 
 @add(
-    keys="c-g",
     filter=buffer_has_focus,
     group="micro-edit-mode",
 )

@@ -111,6 +111,7 @@ MICRO_BINDINGS: "Dict[str, Union[List[Union[Tuple[Union[Keys, str], ...], Keys, 
     "find-previous": "c-p",
     "accept-search": "enter",
     "stop-search": "escape",
+    "go-to-matching-bracket": [("escape", "("), ("escape", ")")],
 }
 
 
