@@ -253,15 +253,16 @@ def a(
     token: "Token",
 ) -> "StyleAndTextTuples":
     """Format hyperlinks and adds link escape sequences."""
-    result: "StyleAndTextTuples" = []
     href = token.attrs.get("href")
     if href:
         link_id = randint(0, 999999)  # noqa S311
-        result.append(("[ZeroWidthEscape]", f"\x1b]8;id={link_id};{href}\x1b\\"))
-    result += ft
-    if href:
-        result.append(("[ZeroWidthEscape]", "\x1b]8;;\x1b\\"))
-    return result
+        return [
+            ("[ZeroWidthEscape]", f"\x1b]8;id={link_id};{href}\x1b\\"),
+            *ft,
+            ("[ZeroWidthEscape]", "\x1b]8;;\x1b\\"),
+        ]
+    else:
+        return ft
 
 
 def img(
