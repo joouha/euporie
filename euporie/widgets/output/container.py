@@ -144,7 +144,7 @@ class GraphicWindow(Window):
                     MouseHandlers(),  # Do not let the float add mouse events
                     new_write_position,
                     # Ensure the float is always updated by constantly changing style
-                    parent_style + f"class:{get_app().render_counter}",
+                    parent_style + f" class:graphic-{get_app().render_counter}",
                     erase_bg=True,
                     z_index=z_index,
                 )
