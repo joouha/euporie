@@ -258,6 +258,8 @@ ThickDoubleDashed = LineStyle("DoubleDashed", 54, parent=Thick)
 ThickTripleDashed = LineStyle("TripleDashed", 35, parent=Thick)
 ThickQuadrupleDashed = LineStyle("QuadDashed", 56, parent=Thick)
 Double = LineStyle("Double", 50, parent=Thick)
+EighthBlockUpperRight = LineStyle("EighthBlockUpperRight", 50, parent=Thin)
+EighthBlockLowerLeft = LineStyle("EighthBlockLowerLeft", 50, parent=Thin)
 HalfBlockUpperRight = LineStyle("HalfBlockUpperRight", 50, parent=Thin)
 HalfBlockLowerLeft = LineStyle("HalfBlockLowerLeft", 50, parent=Thin)
 
@@ -482,6 +484,70 @@ _GRID_CHARS = {
     GridChar(Invisible, HalfBlockUpperRight, Thin, HalfBlockUpperRight): "▀",
     GridChar(HalfBlockUpperRight, Invisible, HalfBlockUpperRight, Thin): "▐",
     GridChar(Thin, HalfBlockUpperRight, Invisible, HalfBlockUpperRight): "▀",
+    # EighthBlockUpperRight
+    GridChar(EighthBlockUpperRight, Invisible, EighthBlockUpperRight, Invisible): "▕",
+    GridChar(Invisible, EighthBlockUpperRight, Invisible, EighthBlockUpperRight): "▔",
+    GridChar(EighthBlockUpperRight, EighthBlockUpperRight, Invisible, Invisible): " ",
+    GridChar(Invisible, EighthBlockUpperRight, EighthBlockUpperRight, Invisible): "▕",
+    GridChar(Invisible, Invisible, EighthBlockUpperRight, EighthBlockUpperRight): "▕",
+    GridChar(EighthBlockUpperRight, Invisible, Invisible, EighthBlockUpperRight): "▔",
+    GridChar(
+        EighthBlockUpperRight, EighthBlockUpperRight, EighthBlockUpperRight, Invisible
+    ): "▕",
+    GridChar(
+        Invisible, EighthBlockUpperRight, EighthBlockUpperRight, EighthBlockUpperRight
+    ): "▔",
+    GridChar(
+        EighthBlockUpperRight, Invisible, EighthBlockUpperRight, EighthBlockUpperRight
+    ): "▕",
+    GridChar(
+        EighthBlockUpperRight, EighthBlockUpperRight, Invisible, EighthBlockUpperRight
+    ): "▔",
+    GridChar(
+        EighthBlockUpperRight,
+        EighthBlockUpperRight,
+        EighthBlockUpperRight,
+        EighthBlockUpperRight,
+    ): "▕",
+    # EighthBlockLowerLeft
+    GridChar(EighthBlockLowerLeft, Invisible, EighthBlockLowerLeft, Invisible): "▏",
+    GridChar(Invisible, EighthBlockLowerLeft, Invisible, EighthBlockLowerLeft): "▁",
+    GridChar(EighthBlockLowerLeft, EighthBlockLowerLeft, Invisible, Invisible): "▏",
+    GridChar(Invisible, EighthBlockLowerLeft, EighthBlockLowerLeft, Invisible): "▁",
+    GridChar(Invisible, Invisible, EighthBlockLowerLeft, EighthBlockLowerLeft): " ",
+    GridChar(EighthBlockLowerLeft, Invisible, Invisible, EighthBlockLowerLeft): "▏",
+    GridChar(
+        EighthBlockLowerLeft, EighthBlockLowerLeft, EighthBlockLowerLeft, Invisible
+    ): "▏",
+    GridChar(
+        Invisible, EighthBlockLowerLeft, EighthBlockLowerLeft, EighthBlockLowerLeft
+    ): "▁",
+    GridChar(
+        EighthBlockLowerLeft, Invisible, EighthBlockLowerLeft, EighthBlockLowerLeft
+    ): "▏",
+    GridChar(
+        EighthBlockLowerLeft, EighthBlockLowerLeft, Invisible, EighthBlockLowerLeft
+    ): "▁",
+    GridChar(
+        EighthBlockLowerLeft,
+        EighthBlockLowerLeft,
+        EighthBlockLowerLeft,
+        EighthBlockLowerLeft,
+    ): "▏",
+    # EighthBlock Combos
+    GridChar(Invisible, EighthBlockLowerLeft, EighthBlockUpperRight, Invisible): " ",
+    GridChar(EighthBlockLowerLeft, Invisible, Invisible, EighthBlockUpperRight): " ",
+    # Eighthblock/Thin combos
+    GridChar(EighthBlockLowerLeft, Thin, EighthBlockLowerLeft, Invisible): "▏",
+    GridChar(Invisible, EighthBlockLowerLeft, Thin, EighthBlockLowerLeft): "▁",
+    GridChar(EighthBlockLowerLeft, Invisible, EighthBlockLowerLeft, Thin): "▏",
+    GridChar(Thin, EighthBlockLowerLeft, Invisible, EighthBlockLowerLeft): "▁",
+    GridChar(EighthBlockUpperRight, Thin, EighthBlockUpperRight, Invisible): "▕",
+    GridChar(Invisible, EighthBlockUpperRight, Thin, EighthBlockUpperRight): "▔",
+    GridChar(EighthBlockUpperRight, Invisible, EighthBlockUpperRight, Thin): "▕",
+    GridChar(Thin, EighthBlockUpperRight, Invisible, EighthBlockUpperRight): "▔",
+    GridChar(Invisible, Invisible, EighthBlockUpperRight, EighthBlockLowerLeft): "▁",
+    GridChar(EighthBlockLowerLeft, EighthBlockUpperRight, Invisible, Invisible): "▔",
 }
 
 

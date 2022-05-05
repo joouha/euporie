@@ -81,7 +81,7 @@ def h1(
     """Format a top-level heading wrapped and centered with a full width double border."""
     ft = wrap(ft, width - 4)
     ft = align(FormattedTextAlign.CENTER, ft, width=width - 4)
-    ft = add_border(ft, width, style="class:md.h1.border", border=Double.grid)
+    ft = add_border(ft, width=width, style="class:md.h1.border", border=Double.grid)
     ft.append(("", "\n\n"))
     return ft
 

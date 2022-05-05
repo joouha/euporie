@@ -6,6 +6,8 @@ import asyncio
 import concurrent.futures
 import logging
 import threading
+from collections import defaultdict
+from functools import partial
 from subprocess import DEVNULL, STDOUT  # noqa S404 - Security implications considered
 from typing import TYPE_CHECKING
 
@@ -41,7 +43,7 @@ class NotebookKernel:
         self.loop.run_forever()
 
     def __init__(
-        self, name: "str", threaded: "bool" = True, allow_stdin: "bool" = False
+        self, nb: "KernelNotebook", threaded: "bool" = True, allow_stdin: "bool" = False
     ) -> "None":
         """Called when the :py:class:`NotebookKernel` is initialized.
 
@@ -62,15 +64,30 @@ class NotebookKernel:
 
         self.allow_stdin = allow_stdin
 
+        self.nb = nb
         self.kc: "Optional[KernelClient]" = None
-        self.km = AsyncKernelManager(kernel_name=name)
+        self.km = AsyncKernelManager(kernel_name=str(nb.kernel_name))
         self._status = "stopped"
         self.error: "Optional[Exception]" = None
 
         self.coros: "Dict[str, concurrent.futures.Future]" = {}
         self.poll_tasks: "list[asyncio.Task]" = []
-        self.events: "dict[str, dict[str, asyncio.Event]]" = {}
-        self.msgs: "dict[str, dict[str, dict]]" = {}
+
+        self.msg_id_callbacks = defaultdict(
+            lambda: {
+                "get_input": lambda prompt, password: self.nb.cell.get_input(
+                    prompt, password
+                ),
+                "set_execution_count": lambda n: self.nb.cell.set_execution_count(n),
+                "add_output": lambda output_json: self.nb.cell.add_output(output_json),
+                "clear_output": lambda wait: self.nb.cell.clear_output(wait),
+                "done": None,
+                "set_metadata": lambda path, data: self.nb.cell.set_metadata(
+                    path, data
+                ),
+                "set_status": lambda status: self.nb.cell.set_status(status),
+            }
+        )
 
         # Set the kernel folder list to prevent the default method from running.
         # This prevents the kernel spec manager from loading IPython, just for the
@@ -186,33 +203,6 @@ class NotebookKernel:
         """Returns a list of available kernelspecs."""
         return self.km.kernel_spec_manager.get_all_specs()
 
-    async def poll(self, channel: "str") -> "None":
-        """Polls for messages on a channel, and signal when they arrive.
-
-        Args:
-            channel: The name of the channel to get messages from
-
-        """
-        msg_getter_coro = getattr(self.kc, f"get_{channel}_msg")
-        self.events[channel] = {}
-        self.msgs[channel] = {}
-        log.debug("Waiting for %s messages", channel)
-        while True:
-            log.debug("Waiting for next %s message", channel)
-            msg = await msg_getter_coro()
-            msg_id = msg["parent_header"].get("msg_id")
-            # log.debug("Got message in response to %s", msg_id)
-            if msg_id in self.events[channel]:
-                self.msgs[channel][msg_id] = msg
-                self.events[channel][msg_id].set()
-            else:
-                log.debug(
-                    "Got stray %s message:\ntype = '%s', content = '%s'",
-                    channel,
-                    msg["header"]["msg_type"],
-                    msg.get("content"),
-                )
-
     async def stop_(self, cb: "Optional[Callable[[], Any]]" = None) -> "None":
         """Stop the kernel asynchronously."""
         for task in self.poll_tasks:
@@ -223,7 +213,7 @@ class NotebookKernel:
             await self.km.shutdown_kernel()
         log.debug("Kernel %s shutdown", self.id)
 
-    async def start_(self, cb: "Optional[Callable]" = None) -> "None":
+    async def start_(self) -> "None":
         """Start the kernel asynchronously and set its status."""
         log.debug("Starting kernel")
         self._status = "starting"
@@ -270,447 +260,314 @@ class NotebookKernel:
 
         """
         self._aodo(
-            self.start_(cb),
+            self.start_(),
             timeout=timeout,
             wait=wait,
             callback=cb,
         )
 
-    async def await_rsps(
-        self, msg_id: "str", channel: "str", timeout: "int" = 360
-    ) -> "AsyncGenerator":
-        """Yields responses to a given message ID on a given channel.
+    async def poll(self, channel: "str") -> "None":
+        """Polls for messages on a channel, and signal when they arrive.
 
         Args:
-            msg_id: Wait for responses to this message ID
-            channel: The channel to listen on for responses
-            timeout: Maximum time to wait for a response before stopping
+            channel: The name of the channel to get messages from
 
-        Yields:
-            Message responses received on the given channel
         """
-        self.events[channel][msg_id] = asyncio.Event()
-        log.debug("Waiting for %s response to %s", channel, msg_id[-7:])
-        while msg_id in self.events[channel]:
-            stop = False
-            event = self.events[channel][msg_id]
-            log.debug("Waiting for event on %s channel", channel)
+        msg_getter_coro = getattr(self.kc, f"get_{channel}_msg")
+        log.debug("Waiting for %s messages", channel)
+        while True:
+            # log.debug("Waiting for next %s message", channel)
+            rsp = await msg_getter_coro()
             try:
-                await asyncio.wait_for(self.events[channel][msg_id].wait(), timeout)
-            except asyncio.TimeoutError:
-                log.debug("Timed out for response to %s on %s channel", msg_id, channel)
-                stop = True
-            except asyncio.CancelledError:
-                stop = True
-            else:
-                log.debug("Event occurred on channel %s", channel)
-                rsp = self.msgs[channel][msg_id]
-                del self.msgs[channel][msg_id]
-                log.debug(
-                    "Got %s response:\ntype = '%s', content = '%s'",
-                    channel,
-                    rsp["header"]["msg_type"],
-                    rsp.get("content"),
-                )
-                try:
-                    yield rsp
-                except GeneratorExit:
-                    log.debug(
-                        "Stopping waiting for responses to %s on %s channel",
-                        msg_id,
-                        channel,
-                    )
-                    stop = True
-                else:
-                    event.clear()
-            if stop:
-                del self.events[channel][msg_id]
-                break
-
-    async def await_iopub_rsps(self, msg_id: "str") -> "AsyncGenerator":
-        """Wait for messages on the ``iopub`` channel.
-
-        This will yield response message, stopping after a response with a status
-        value of "idle" or a type of "error".
-
-        Args:
-            msg_id: The ID of the message to process the responses for.
-
-        Yields:
-            The response message
-
-        """
-        async for rsp in self.await_rsps(msg_id, channel="iopub"):
-            stop = False
-            msg_type = rsp.get("header", {}).get("msg_type")
-            if msg_type == "status":
-                status = rsp.get("content", {}).get("execution_state")
-                self._status = status
-                if status == "idle":
-                    stop = True
-            elif msg_type == "error":
-                stop = True
-            try:
-                yield rsp
-            except StopIteration:
-                stop = True
-            if stop:
-                break
-
-    async def await_shell_rsps(self, msg_id: "str") -> "AsyncGenerator":
-        """Wait for messages on the ``shell`` channel.
-
-        This will yield response message, stopping after a response with a status
-        of "ok" or "error".
-
-        Args:
-            msg_id: The ID of the message to process the responses for.
-
-        Yields:
-            The response message
-
-        """
-        async for rsp in self.await_rsps(msg_id, channel="shell"):
-            stop = False
-            status = rsp.get("content", {}).get("status")
-            if status in ("ok", "error"):
-                stop = True
-            try:
-                yield rsp
-            except StopIteration:
-                stop = True
-            if stop:
-                break
-
-    async def await_stdin_rsps(self, msg_id: "str") -> "AsyncGenerator":
-        """Wait for messages on the ``shell`` channel.
-
-        This will yield response message, stopping after a response with a status
-        of "ok" or "error".
-
-        Args:
-            msg_id: The ID of the message to process the responses for.
-
-        Yields:
-            The response message
-
-        """
-        async for rsp in self.await_rsps(msg_id, channel="stdin"):
-            try:
-                yield rsp
-            except StopIteration:
-                break
-
-    async def process_default_iopub_rsp(self, msg_id: "str") -> "None":
-        """The default processor for message responses on the ``iopub`` channel.
-
-        This does nothing when a response is received.
-
-        Args:
-            msg_id: The ID of the message to process the responses for.
-
-        """
-        async for rsp in self.await_iopub_rsps(msg_id):
-            pass
-
-    async def run_(
-        self,
-        cell_json: "dict",
-        stdin_cb: "Optional[Callable[..., Any]]" = None,
-        output_cb: "Optional[Callable[[], Any]]" = None,
-        done_cb: "Optional[Callable[[], Any]]" = None,
-    ) -> "None":
-        """Runs the code cell asynchronously and handles the responses."""
-        if self.kc is None:
-            return
-
-        msg_id = self.kc.execute(
-            str(cell_json.get("source")),
-            store_history=True,
-            allow_stdin=(self.allow_stdin and stdin_cb is not None),
-        )
-
-        async def process_stin_rsp() -> "None":
-            """Process responses messages on the ``stdin`` channel."""
-            assert self.kc is not None
-            async for rsp in self.await_stdin_rsps(msg_id):
-                if callable(stdin_cb):
-                    content = rsp.get("content", {})
-                    prompt = content.get("prompt", "")
-                    password = content.get("password", False)
-                    stdin_cb(self.kc.input, prompt=prompt, password=password)
-
-        async def process_execute_shell_rsp() -> "None":
-            """Process response messages on the ``shell`` channel."""
-            async for rsp in self.await_shell_rsps(msg_id):
-                rsp_type = rsp.get("header", {}).get("msg_type")
-                content = rsp.get("content", {})
-                if rsp_type == "status":
-                    status = rsp.get("content", {}).get("status", "")
-                    if status == "ok":
-                        cell_json["execution_count"] = content.get("execution_count")
-
-                elif rsp_type == "execute_reply":
-                    self.set_metadata(
-                        cell_json,
-                        ("execute", "shell", "execute_reply"),
-                        rsp["header"]["date"].isoformat(),
-                    )
-                    cell_json["execution_count"] = content.get("execution_count")
-                    # Show pager output as a cell execution output
-                    for payload in content.get("payload", []):
-                        if data := payload.get("data", {}):
-                            cell_json.setdefault("outputs", []).append(
-                                nbformat.v4.new_output(
-                                    "execute_result",
-                                    data=data,
-                                )
-                            )
-                    if callable(output_cb):
-                        log.debug("Calling output callback")
-                        output_cb()
-
-        async def process_execute_iopub_rsp() -> "None":
-            """Process response messages on the ``iopub`` channel."""
-            clear_output = False
-
-            def _clear_output_if_required() -> "None":
-                nonlocal clear_output
-                if clear_output:
-                    cell_json["outputs"] = []
-                    clear_output = False
-
-            async for rsp in self.await_iopub_rsps(msg_id):
-                stop = False
+                # Run msg type handler
                 msg_type = rsp.get("header", {}).get("msg_type")
+                if callable(handler := getattr(self, f"on_{channel}_{msg_type}", None)):
+                    handler(rsp)
+                else:
+                    self.on_unhandled(channel, rsp)
+            except:
+                log.exception("")
 
-                if msg_type == "status":
-                    status = rsp.get("content", {}).get("execution_state")
-                    if status == "idle":
-                        self.set_metadata(
-                            cell_json,
-                            ("iopub", "status", "idle"),
-                            rsp["header"]["date"].isoformat(),
-                        )
-                        if callable(done_cb):
-                            done_cb()
-                        break
-                    elif status == "busy":
-                        self.set_metadata(
-                            cell_json,
-                            ("iopub", "status", "busy"),
-                            rsp["header"]["date"].isoformat(),
-                        )
-
-                elif msg_type == "execute_input":
-                    self.set_metadata(
-                        cell_json,
-                        ("iopub", "execute_input"),
-                        rsp["header"]["date"].isoformat(),
-                    )
-
-                elif msg_type in (
-                    "display_data",
-                    "update_display_data",  # TODO - implement display naming and updating
-                    "execute_result",
-                    "error",
-                ):
-                    _clear_output_if_required()
-                    cell_json.setdefault("outputs", []).append(
-                        nbformat.v4.output_from_msg(rsp)
-                    )
-                    if msg_type == "execute_result":
-                        cell_json["execution_count"] = rsp.get("content", {}).get(
-                            "execution_count"
-                        )
-                    elif msg_type == "error":
-                        stop = True
-
-                elif msg_type == "stream":
-                    # Combine stream outputs with existing stream outputs
-                    _clear_output_if_required()
-                    stream_name = rsp.get("content", {}).get("name")
-                    for output in cell_json.get("outputs", []):
-                        if output.get("name") == stream_name:
-                            output["text"] = output.get("text", "") + rsp.get(
-                                "content", {}
-                            ).get("text", "")
-                            break
-                    else:
-                        cell_json.setdefault("outputs", []).append(
-                            nbformat.v4.output_from_msg(rsp)
-                        )
-
-                elif msg_type == "clear_output":
-                    # Clear cell output, either now or when we get the next output
-                    wait = rsp.get("content", {}).get("wait", False)
-                    if wait:
-                        clear_output = True
-                    else:
-                        cell_json["outputs"] = []
-
-                if callable(output_cb):
-                    log.debug("Calling output callback")
-                    output_cb()
-                if stop:
-                    break
-
-            # Stop the stdin listener
-            stdin_listener.cancel()
-
-        stdin_listener = asyncio.ensure_future(process_stin_rsp())
-
-        await asyncio.gather(
-            stdin_listener,
-            process_execute_shell_rsp(),
-            process_execute_iopub_rsp(),
-            return_exceptions=True,
+    def on_unhandled(self, channel, rsp):
+        log.debug(
+            "Unhandled %s message:\nparent_id = '%s'\ntype = '%s'\ncontent='%s'",
+            channel,
+            rsp.get("parent_header", {}).get("msg_id"),
+            rsp["header"]["msg_type"],
+            rsp.get("content"),
         )
+
+    def on_stdin_input_request(self, rsp) -> "Callable":
+        msg_id = rsp.get("parent_header", {}).get("msg_id")
+        content = rsp.get("content", {})
+        get_input = self.msg_id_callbacks[msg_id]["get_input"]
+        get_input(
+            prompt=content.get("prompt", ""),
+            password=content.get("password", False),
+        )
+
+    def on_shell_status(self, rsp):
+        msg_id = rsp.get("parent_header", {}).get("msg_id")
+        content = rsp.get("content", {})
+        status = rsp.get("content", {}).get("status", "")
+        if status == "ok":
+            if callable(
+                set_execution_count := self.msg_id_callbacks[msg_id].get(
+                    "set_execution_count"
+                )
+            ):
+                set_execution_count(content.get("execution_count"))
+
+    def on_shell_execute_reply(self, rsp):
+        msg_id = rsp.get("parent_header", {}).get("msg_id")
+        content = rsp.get("content", {})
+
+        set_metadata = self.msg_id_callbacks[msg_id]["set_metadata"]
+        set_metadata(
+            ("execute", "shell", "execute_reply"),
+            rsp["header"]["date"].isoformat(),
+        )
+
+        set_execution_count = self.msg_id_callbacks[msg_id]["set_execution_count"]
+        set_execution_count(content.get("execution_count"))
+
+        # Show pager output as a cell execution output
+        if payloads := content.get("payload", []):
+            add_output = self.msg_id_callbacks[msg_id]["add_output"]
+            for payload in payloads:
+                if data := payload.get("data", {}):
+                    add_output(
+                        nbformat.v4.new_output(
+                            "execute_result",
+                            data=data,
+                        )
+                    )
+
+        if content.get("status") == "ok":
+            if callable(done := self.msg_id_callbacks[msg_id].get("done")):
+                done(content)
+
+    def on_shell_kernel_info_reply(self, rsp):
+        msg_id = rsp.get("parent_header", {}).get("msg_id")
+        if callable(done := self.msg_id_callbacks[msg_id].get("done")):
+            done(rsp.get("content", {}))
+
+    def on_shell_complete_reply(self, rsp):
+        msg_id = rsp.get("parent_header", {}).get("msg_id")
+        if callable(done := self.msg_id_callbacks[msg_id].get("done")):
+            done(rsp.get("content", {}))
+
+    def on_shell_history_reply(self, rsp):
+        msg_id = rsp.get("parent_header", {}).get("msg_id")
+        if callable(done := self.msg_id_callbacks[msg_id].get("done")):
+            done(rsp.get("content", {}))
+
+    def on_shell_inspect_reply(self, rsp):
+        msg_id = rsp.get("parent_header", {}).get("msg_id")
+        if callable(done := self.msg_id_callbacks[msg_id].get("done")):
+            done(rsp.get("content", {}))
+
+    def on_iopub_status(self, rsp):
+        msg_id = rsp.get("parent_header", {}).get("msg_id")
+        status = rsp.get("content", {}).get("execution_state")
+
+        self._status = status
+        if callable(set_status := self.msg_id_callbacks[msg_id].get("set_status")):
+            set_status(status)
+
+        if status == "idle":
+            if callable(
+                set_metadata := self.msg_id_callbacks[msg_id].get("set_metadata")
+            ):
+                set_metadata(
+                    ("iopub", "status", "idle"),
+                    rsp["header"]["date"].isoformat(),
+                )
+
+        elif status == "busy":
+            if callable(
+                set_metadata := self.msg_id_callbacks[msg_id].get("set_metadata")
+            ):
+                set_metadata(
+                    ("iopub", "status", "busy"),
+                    rsp["header"]["date"].isoformat(),
+                )
+
+    def on_iopub_execute_input(self, rsp):
+        msg_id = rsp.get("parent_header", {}).get("msg_id")
+        set_metadata = self.msg_id_callbacks[msg_id]["set_metadata"]
+        set_metadata(
+            ("iopub", "execute_input"),
+            rsp["header"]["date"].isoformat(),
+        )
+
+    def on_iopub_display_data(self, rsp):
+        msg_id = rsp.get("parent_header", {}).get("msg_id")
+        add_output = self.msg_id_callbacks[msg_id]["add_output"]
+        add_output(nbformat.v4.output_from_msg(rsp))
+
+    def on_iopub_update_display_data(self, rsp):
+        msg_id = rsp.get("parent_header", {}).get("msg_id")
+        add_output = self.msg_id_callbacks[msg_id]["add_output"]
+        add_output(nbformat.v4.output_from_msg(rsp))
+
+    def on_iopub_execute_result(self, rsp):
+        msg_id = rsp.get("parent_header", {}).get("msg_id")
+        add_output = self.msg_id_callbacks[msg_id]["add_output"]
+        add_output(nbformat.v4.output_from_msg(rsp))
+
+        set_execution_count = self.msg_id_callbacks[msg_id]["set_execution_count"]
+        set_execution_count(rsp.get("content", {}).get("execution_count"))
+
+    def on_iopub_error(self, rsp):
+        msg_id = rsp.get("parent_header", {}).get("msg_id")
+        if callable(add_output := self.msg_id_callbacks[msg_id].get("add_output")):
+            add_output(nbformat.v4.output_from_msg(rsp))
+        if callable(done := self.msg_id_callbacks[msg_id].get("done")):
+            done(rsp.get("content"))
+
+    def on_iopub_stream(self, rsp):
+        msg_id = rsp.get("parent_header", {}).get("msg_id")
+        add_output = self.msg_id_callbacks[msg_id]["add_output"]
+        add_output(nbformat.v4.output_from_msg(rsp))
+
+    def on_iopub_clear_output(self, rsp):
+        # Clear cell output, either now or when we get the next output
+        msg_id = rsp.get("parent_header", {}).get("msg_id")
+        clear_output = self.msg_id_callbacks[msg_id]["clear_output"]
+        clear_output(rsp.get("content", {}).get("wait", False))
+
+    def on_iopub_comm_open(self, rsp):
+        # TODO
+        # "If the target_name key is not found on the receiving side, then it should
+        # immediately reply with a comm_close message to avoid an inconsistent state."
+        #
+        self.nb.comm_open(rsp.get("content", {}))
+
+    def on_iopub_comm_msg(self, rsp):
+        self.nb.comm_msg(rsp.get("content", {}))
+
+    def on_iopub_comm_close(self, rsp):
+        self.nb.comm_close(rsp.get("content", {}))
+
+    ####################################
+
+    def kc_comm(self, comm_id, data):
+        """Send a comm message on the shell channel."""
+        content = {
+            "comm_id": comm_id,
+            "data": data,
+        }
+        msg = self.kc.session.msg("comm_msg", content)
+        self.kc.shell_channel.send(msg)
+        return msg["header"]["msg_id"]
 
     def run(
         self,
-        cell_json: "dict",
-        stdin_cb: "Optional[Callable[..., Any]]" = None,
-        output_cb: "Optional[Callable[[], Any]]" = None,
-        done_cb: "Optional[Callable[[], Any]]" = None,
+        source: "str",
         wait: "bool" = False,
+        **callbacks: "Dict[str, Callable]",
     ) -> "None":
-        """Run a cell using the notebook kernel and process the responses.
-
-        Cell output is added to the cell json.
-
-        Args:
-            cell_json: The JSON representation of the cell to run
-            stdin_cb: An optional coroutine callback to run when the kernel requests
-                input. Should accept a function which should be called with the user
-                input as the only argument
-            output_cb: An optional callback to run after each response message
-            done_cb: An optional callback to run when the cell has finished running
-            wait: If :py:const`True`, will block until the cell has finished running
-
-        """
+        """Run a cell using the notebook kernel and process the responses."""
         if self.kc is None:
             log.debug("Cannot run cell because kernel has not started")
+            # TODO - queue cells for execution
         else:
             self._aodo(
-                self.run_(
-                    cell_json=cell_json,
-                    stdin_cb=stdin_cb,
-                    output_cb=output_cb,
-                    done_cb=done_cb,
-                ),
+                self.run_(source, **callbacks),
                 wait=wait,
             )
 
-    def set_metadata(
-        self, cell_json: "dict", path: "tuple[str, ...]", data: "Any"
-    ) -> "None":
-        """Sets a value in the metadata at an arbitrary path.
+    async def run_(self, source: "str", **callbacks: "Dict[str, Callable]") -> "None":
+        """Runs the code cell and and set the response callbacks, optionally waiting."""
+        if self.kc is None:
+            return
+        event = asyncio.Event()
+        msg_id = self.kc.execute(
+            source,
+            store_history=True,
+            allow_stdin=self.allow_stdin,
+        )
 
-        Args:
-            cell_json: The cell_json to add the meta data to
-            path: A tuple of path level names to create
-            data: The value to add
+        original_done = callbacks.get("done")
 
-        """
-        level = cell_json["metadata"]
-        for i, key in enumerate(path):
-            if i == len(path) - 1:
-                level[key] = data
-            else:
-                level = level.setdefault(key, {})
+        def wrapped_done(content) -> "None":
+            # Run the original callback
+            if callable(original_done):
+                original_done(content)
+            # Set the event
+            event.set()
 
-    async def info_(self) -> "dict":
-        """Request information about the kernel.
+        self.msg_id_callbacks[msg_id].update(
+            {
+                **callbacks,
+                "done": wrapped_done,
+            }
+        )
+        # Wait for "done" callback to be called
+        try:
+            await asyncio.wait_for(event.wait(), timeout=None)
+        except asyncio.TimeoutError:
+            log.debug("Timed out waiting for kernel info response")
 
-        Returns:
-            The kernel info
+        # Clean up callbacks
+        # await asyncio.sleep(0.1)
+        # if msg_id in self.msg_id_callbacks:
+        # del self.msg_id_callbacks[msg_id]
 
-        """
-        results = {}
-
-        assert self.kc is not None
+    def info(self, **callbacks) -> "dict":
+        """Request information about the kernel."""
         msg_id = self.kc.kernel_info()
+        if callbacks:
+            self.msg_id_callbacks[msg_id].update(callbacks)
 
-        async def process_info_shell_rsp() -> "None":
-            """Process response messages on the ``shell`` channel."""
-            async for rsp in self.await_shell_rsps(msg_id):
-                status = rsp.get("content", {}).get("status", "")
-                if status == "ok":
-                    results.update(rsp.get("content", {}))
-
-        await asyncio.gather(
-            process_info_shell_rsp(),
-            self.process_default_iopub_rsp(msg_id),
-            return_exceptions=True,
-        )
-        return results
-
-    def info(
-        self, cb: "Optional[Callable[[dict], Any]]" = None, wait: "bool" = False
-    ) -> "dict":
-        """Request information about the kernel.
-
-        Args:
-            cb: A callback function to run when the information has been retrieved. The
-                info is passed as an argument
-            wait: If True, block the main thread until complete
-
-        Returns:
-            The kernel info
-
-        """
-        return self._aodo(
-            self.info_(),
-            callback=cb,
-            wait=wait,
-        )
-
-    async def complete_(self, code: "str", cursor_pos: "int") -> "list[dict]":
+    async def complete_(
+        self, code: "str", cursor_pos: "int", timeout: "int" = 60
+    ) -> "list[dict]":
         """Request code completions from the kernel, asynchronously."""
         results: "list[dict]" = []
         if not self.kc:
             return results
 
-        msg_id = self.kc.complete(code, cursor_pos)
+        event = asyncio.Event()
 
-        async def process_complete_shell_rsp() -> "None":
+        def process_complete_reply(content) -> "None":
             """Process response messages on the ``shell`` channel."""
-            async for rsp in self.await_shell_rsps(msg_id):
-                status = rsp.get("content", {}).get("status", "")
-                if status == "ok":
-                    content = rsp.get("content", {})
-                    jupyter_types = content.get("metadata", {}).get(
-                        "_jupyter_types_experimental"
-                    )
-                    if jupyter_types:
-                        for match in jupyter_types:
-                            rel_start_position = match.get("start", 0) - cursor_pos
-                            completion_type = match.get("type")
-                            completion_type = (
-                                None
-                                if completion_type == "<unknown>"
-                                else completion_type
-                            )
-                            results.append(
-                                {
-                                    "text": match.get("text"),
-                                    "start_position": rel_start_position,
-                                    "display_meta": completion_type,
-                                }
-                            )
-                    else:
-                        rel_start_position = content.get("cursor_start", 0) - cursor_pos
-                        for match in content.get("matches", []):
-                            results.append(
-                                {"text": match, "start_position": rel_start_position}
-                            )
+            status = content.get("status", "")
+            if status == "ok":
+                jupyter_types = content.get("metadata", {}).get(
+                    "_jupyter_types_experimental"
+                )
+                if jupyter_types:
+                    for match in jupyter_types:
+                        rel_start_position = match.get("start", 0) - cursor_pos
+                        completion_type = match.get("type")
+                        completion_type = (
+                            None if completion_type == "<unknown>" else completion_type
+                        )
+                        results.append(
+                            {
+                                "text": match.get("text"),
+                                "start_position": rel_start_position,
+                                "display_meta": completion_type,
+                            }
+                        )
+                else:
+                    rel_start_position = content.get("cursor_start", 0) - cursor_pos
+                    for match in content.get("matches", []):
+                        results.append(
+                            {"text": match, "start_position": rel_start_position}
+                        )
+                event.set()
 
-        await asyncio.gather(
-            process_complete_shell_rsp(),
-            self.process_default_iopub_rsp(msg_id),
-            return_exceptions=True,
-        )
+        msg_id = self.kc.complete(code, cursor_pos)
+        self.msg_id_callbacks[msg_id].update({"done": process_complete_reply})
+
+        try:
+            await asyncio.wait_for(event.wait(), timeout)
+        except asyncio.TimeoutError:
+            log.debug("Timed out waiting for kernel info response")
+
         return results
 
     def complete(self, code: "str", cursor_pos: "int") -> "list[dict]":
@@ -734,29 +591,34 @@ class NotebookKernel:
         )
 
     async def history_(
-        self, pattern: "str", n: "int" = 1
+        self, pattern: "str", n: "int" = 1, timeout: "int" = 60
     ) -> "Optional[list[tuple[int, int, str]]]":
         """Retrieve history from the kernel asynchronously."""
+        await asyncio.sleep(0.1)  # Add a tiny timeout so we don't spam the kernel
+
         results: "list[tuple[int, int, str]]" = []
 
         if not self.kc:
             return results
 
-        msg_id = self.kc.history(pattern=pattern, n=n, hist_access_type="search")
+        event = asyncio.Event()
 
-        async def process_history_shell_rsp() -> "None":
+        def process_history_reply(content) -> "None":
             """Process responses on the shell channel."""
-            async for rsp in self.await_shell_rsps(msg_id):
-                status = rsp.get("content", {}).get("status", "")
-                if status == "ok":
-                    for item in rsp.get("content", {}).get("history", []):
-                        results.append(item)
+            status = content.get("status", "")
+            if status == "ok":
+                for item in content.get("history", []):
+                    results.append(item)
+                    event.set()
 
-        await asyncio.gather(
-            process_history_shell_rsp(),
-            self.process_default_iopub_rsp(msg_id),
-            return_exceptions=True,
-        )
+        msg_id = self.kc.history(pattern=pattern, n=n, hist_access_type="search")
+        self.msg_id_callbacks[msg_id].update({"done": process_history_reply})
+
+        try:
+            await asyncio.wait_for(event.wait(), timeout)
+        except asyncio.TimeoutError:
+            log.debug("Timed out waiting for kernel info response")
+
         return results
 
     def history(
@@ -779,7 +641,11 @@ class NotebookKernel:
         )
 
     async def inspect_(
-        self, code: "str", cursor_pos: "int", detail_level: "int" = 0
+        self,
+        code: "str",
+        cursor_pos: "int",
+        detail_level: "int" = 0,
+        timeout: "int" = 2,
     ) -> "dict[str, Any]":
         """Retrieve introspection string from the kernel asynchronously."""
         await asyncio.sleep(0.1)  # Add a tiny timeout so we don't spam the kernel
@@ -789,23 +655,25 @@ class NotebookKernel:
         if not self.kc:
             return result
 
-        msg_id = self.kc.inspect(code, cursor_pos=cursor_pos, detail_level=detail_level)
+        event = asyncio.Event()
 
-        async def process_introspection_shell_rsp() -> "None":
+        def process_inspect_reply(content) -> "None":
             """Process responses on the shell channel."""
-            nonlocal result
-            async for rsp in self.await_shell_rsps(msg_id):
-                content = rsp.get("content", {})
-                status = content.get("status", "")
-                if status == "ok":
-                    if content.get("found", False):
-                        result = content
+            status = content.get("status", "")
+            if status == "ok":
+                if content.get("found", False):
+                    result.update(content)
+                    event.set()
 
-        await asyncio.gather(
-            process_introspection_shell_rsp(),
-            self.process_default_iopub_rsp(msg_id),
-            return_exceptions=True,
-        )
+        msg_id = self.kc.inspect(code, cursor_pos=cursor_pos, detail_level=detail_level)
+        self.msg_id_callbacks[msg_id].update({"done": process_inspect_reply})
+        log.debug(self.msg_id_callbacks[msg_id])
+
+        try:
+            await asyncio.wait_for(event.wait(), timeout)
+        except asyncio.TimeoutError:
+            log.debug("Timed out waiting for kernel info response")
+
         return result
 
     def inspect(

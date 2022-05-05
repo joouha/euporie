@@ -42,7 +42,10 @@ from euporie.filters import multiple_cells_selected
 from euporie.format import format_code
 from euporie.margins import NumberedDiffMargin
 from euporie.suggest import AppendLineAutoSuggestion, ConditionalAutoSuggestAsync
-from euporie.widgets.output.container import CellOutput
+from euporie.widgets.cell_outputs import CellOutputArea
+
+# from euporie.widgets.output.container import CellOutput
+
 
 if TYPE_CHECKING:
     from typing import Any, Callable, Literal, Optional, Union
@@ -51,7 +54,8 @@ if TYPE_CHECKING:
     from prompt_toolkit.formatted_text.base import AnyFormattedText, StyleAndTextTuples
 
     from euporie.tabs.notebook import EditNotebook, Notebook
-    from euporie.widgets.output.control import OutputControl
+
+    # from euporie.widgets.output.control import OutputControl
     from euporie.widgets.page import ChildRenderInfo
 
 __all__ = [
@@ -263,6 +267,7 @@ class Cell:
         self.json = json
         self.nb: "Notebook" = notebook
         self.rendered = True
+        self.clear_outputs_on_output = False
 
         self.state = "idle"
         self.meta: "Optional[ChildRenderInfo]" = None
@@ -275,7 +280,7 @@ class Cell:
         )
         self.show_output = Condition(
             lambda: (
-                (self.json.get("cell_type") != "markdown") & bool(self.outputs)
+                (self.json.get("cell_type") != "markdown") & bool(self.output_json)
                 | ((self.json.get("cell_type") == "markdown") & self.rendered)
             )
         )
@@ -291,9 +296,10 @@ class Cell:
         self.show_input_line_numbers = Condition(
             lambda: config.line_numbers & self.is_code()
         )
-        self.obscured = Condition(lambda: False)
         self._asking_input = False
         self.asking_input = Condition(lambda: self._asking_input)
+
+        self.output_area = CellOutputArea(json=self.output_json, cell=self)
 
         # Generates the main container used to represent a notebook cell
         self.input_box = CellInputTextArea(self)
@@ -321,10 +327,10 @@ class Cell:
             prompt="> ",
         )
 
-        self.output_box = HSplit(
-            self.render_outputs(),
-            style="class:cell.output",
-        )
+        # self.output_box = HSplit(
+        # self.render_outputs(),
+        # style="class:cell.output",
+        # )
 
         top_border = VSplit(
             [
@@ -418,7 +424,7 @@ class Cell:
                     ),
                     HSplit(
                         [
-                            self.output_box,
+                            self.output_area,
                             ConditionalContainer(
                                 Frame(self.stdin_box),
                                 filter=self.asking_input,
@@ -530,7 +536,6 @@ class Cell:
             grid = Invisible.grid
             if config.show_cell_borders or self.selected:
                 if self.focused and multiple_cells_selected():
-                    # grid = Thin.grid + Thick.outer
                     grid = Thick.outer
                 else:
                     grid = Thin.outer
@@ -592,7 +597,7 @@ class Cell:
         self.input_box.buffer.cursor_position = cp
 
     @property
-    def outputs(self) -> "list[dict[str, Any]]":
+    def output_json(self) -> "list[dict[str, Any]]":
         """Retrieve a list of cell outputs from the cell's JSON."""
         if self.cell_type == "markdown":
             return [
@@ -601,33 +606,21 @@ class Cell:
         else:
             return self.json.setdefault("outputs", [])
 
-    def render_outputs(self) -> "list[Container]":
-        """Generates a list of rendered outputs."""
-        rendered_outputs: "list[Container]" = []
-        for output_json in self.outputs:
-            rendered_outputs.append(to_container(CellOutput(output_json)))
-        return rendered_outputs
-
-    def trigger_refresh(self) -> "None":
+    def trigger_refresh(self, now=True) -> "None":
         """Request that the cell to be re-rendered next time it is drawn."""
         if self.meta:
             self.meta.refresh = True
+        if now:
+            get_app().invalidate()
 
-    def on_output(self) -> "None":
-        """Runs when a message for this cell is received from the kernel."""
-        # Set the outputs
-        self.output_box.children = self.render_outputs()
-        # Tell the app that the display needs updating
-        self.trigger_refresh()
-        get_app().invalidate()
-
-    def ran(self, cell_json: "Optional[dict]" = None) -> "None":
+    def ran(self, content: "Dict" = None) -> "None":
         """Callback which runs when the cell has finished running."""
         self.state = "idle"
         self.trigger_refresh()
 
     def remove_output_graphic_floats(self) -> "None":
         """Unregisters the cell's output's graphic floats with the applications."""
+        return
         for output in self.output_box.children:
             if graphic_float := cast("CellOutput", output).graphic_float:
                 cast(
@@ -635,8 +628,9 @@ class Cell:
                 ).hide()
                 get_app().remove_float(graphic_float)
 
-    def clear_output(self) -> "None":
+    def remove_outputs(self) -> "None":
         """Remove all outputs from the cell."""
+        self.clear_outputs_on_output = False
         self.remove_output_graphic_floats()
         if "outputs" in self.json:
             del self.json["outputs"]
@@ -652,13 +646,16 @@ class Cell:
 
         """
         if clear:
-            self.clear_output()
+            self.remove_outputs()
         if cell_type == "code":
             self.json.setdefault("execution_count", None)
         if cell_type == "markdown" and "execution_count" in self.json:
             del self.json["execution_count"]
+        # Record the new cell type
         self.json["cell_type"] = cell_type
-        self.output_box.children = self.render_outputs()
+        # Update the output-area
+        self.output_area.json = self.output_json
+        # Force the input box lexer to re-run
         self.input_box.control._fragment_cache.clear()
 
     @property
@@ -701,7 +698,7 @@ class Cell:
         self.nb.exit_edit_mode()
 
         if self.cell_type == "markdown":
-            self.output_box.children = self.render_outputs()
+            self.output_area.json = self.output_json
             self.rendered = True
 
         elif self.cell_type == "code":
@@ -793,62 +790,6 @@ class InteractiveCell(Cell):
         self.nb.split_cell(self, self.input_box.buffer.cursor_position)
         self.input_box.buffer.cursor_position = 0
 
-    def get_input(
-        self,
-        send: "Callable[[str], Any]",
-        prompt: "str" = "Please enter a value:",
-        password: "bool" = False,
-    ) -> "None":
-        """Prompts the user for input and sends the result to the kernel."""
-        # Set this first so the height of the cell includes the input box if it gets
-        # rendered when we scroll to it
-        self._asking_input = True
-        # Remember what was focused before
-        app = get_app()
-        layout = app.layout
-        focused = layout.current_control
-        # Scroll the current cell into view - this causes the cell to be rendered if it
-        # is not already on screen
-        self.nb.page.selected_slice = slice(self.index, self.index + 1)
-        # Set the prompt text for the BeforeInput pre-processor
-        if self.stdin_box.control.input_processors is not None:
-            prompt_processor = self.stdin_box.control.input_processors[2]
-            if isinstance(prompt_processor, BeforeInput):
-                prompt_processor.text = f"{prompt} "
-        # Set the password status of the input box
-        self.stdin_box.password = password
-
-        def _send_input(buf: "Buffer") -> "bool":
-            """Send the input to the kernel and hide the input box."""
-            send(buf.text)
-            # Cleanup
-            self._asking_input = False
-            get_app().layout.focus(self)
-            self.stdin_box.text = ""
-            if focused in layout.find_all_controls():
-                try:
-                    layout.focus(focused)
-                except ValueError:
-                    pass
-            return True
-
-        self.stdin_box_accept_handler = _send_input
-
-        # Try focusing the input box - we create an asynchronous task which will
-        # probably run after the next render, when the stdin_box is recognised as being
-        # in the layout. This doesn't always work (depending on timing), does usually.
-        async def _focus_input() -> "None":
-            # Focus the input box
-            if self.stdin_box.window in layout.visible_windows:
-                layout.focus(self.stdin_box)
-            # Redraw the screen to show it as focused
-            app.invalidate()
-
-        try:
-            layout.focus(self.stdin_box)
-        finally:
-            app.create_background_task(_focus_input())
-
     def inspect(self) -> "None":
         """Get contextual help for the current cursor position."""
         code = self.input_box.text
@@ -878,3 +819,105 @@ class InteractiveCell(Cell):
             cursor_pos=cursor_pos,
             callback=_cb,
         )
+
+    def get_input(
+        self,
+        prompt: "str" = "Please enter a value:",
+        password: "bool" = False,
+    ) -> "None":
+        """Prompts the user for input and sends the result to the kernel."""
+        # Set this first so the height of the cell includes the input box if it gets
+        # rendered when we scroll to it
+        self._asking_input = True
+        # Remember what was focused before
+        app = get_app()
+        layout = app.layout
+        focused = layout.current_control
+        # Scroll the current cell into view - this causes the cell to be rendered if it
+        # is not already on screen
+        self.nb.page.selected_slice = slice(self.index, self.index + 1)
+        # Set the prompt text for the BeforeInput pre-processor
+        if self.stdin_box.control.input_processors is not None:
+            prompt_processor = self.stdin_box.control.input_processors[2]
+            if isinstance(prompt_processor, BeforeInput):
+                prompt_processor.text = f"{prompt} "
+        # Set the password status of the input box
+        self.stdin_box.password = password
+
+        def _send_input(buf: "Buffer") -> "bool":
+            """Send the input to the kernel and hide the input box."""
+            self.nb.kernel.kc.input(buf.text)
+            # Cleanup
+            self._asking_input = False
+            get_app().layout.focus(self)
+            self.stdin_box.text = ""
+            if focused in layout.find_all_controls():
+                try:
+                    layout.focus(focused)
+                except ValueError:
+                    pass
+            return True
+
+        self.stdin_box_accept_handler = _send_input
+
+        # Try focusing the input box - we create an asynchronous task which will
+        # probably run after the next render, when the stdin_box is recognised as being
+        # in the layout. This doesn't always work (depending on timing), does usually.
+        async def _focus_input() -> "None":
+            # Focus the input box
+            if self.stdin_box.window in layout.visible_windows:
+                layout.focus(self.stdin_box)
+            # Redraw the screen to show it as focused
+            app.invalidate()
+
+        try:
+            layout.focus(self.stdin_box)
+        finally:
+            app.create_background_task(_focus_input())
+
+    def set_execution_count(self, n) -> "None":
+        """"""
+        self.json["execution_count"] = n
+
+    def add_output(self, output_json) -> "None":
+        """"""
+        # Clear the output if we were previously asked to
+        if self.clear_outputs_on_output:
+            self.remove_outputs()
+        # Combine stream outputs with existing stream outputs
+        for output in self.json.get("outputs", []):
+            name = output.get("name")
+            if name is not None and name == output_json.get("name"):
+                output["text"] = output.get("text", "") + output_json.get("text", "")
+                break
+        else:
+            self.json.setdefault("outputs", []).append(output_json)
+        # Update the output area
+        self.output_area.json = self.output_json
+        self.trigger_refresh()
+
+    def clear_output(self, wait: "bool" = False) -> "None":
+        """"""
+        if wait:
+            self.clear_outputs_on_output = True
+        else:
+            self.remove_outputs()
+
+    def set_metadata(self, path: "Tuple[str, ...]", data: "Any") -> "None":
+        """Sets a value in the metadata at an arbitrary path.
+
+        Args:
+            path: A tuple of path level names to create
+            data: The value to add
+
+        """
+        level = self.json["metadata"]
+        for i, key in enumerate(path):
+            if i == len(path) - 1:
+                level[key] = data
+            else:
+                level = level.setdefault(key, {})
+
+    def set_status(self, status: "str") -> "None":
+        """"""
+        pass

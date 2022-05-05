@@ -17,6 +17,21 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 
+MIME_FORMATS = {
+    "image/svg+xml": "svg",
+    "image/png": "base64-png",
+    "image/jpeg": "base64-jpeg",
+    "application/pdf": "base64-pdf",
+    "text/html": "html",
+    "text/latex": "latex",
+    "text/markdown": "markdown",
+    "text/x-markdown": "markdown",
+    "text/*": "ansi",
+    "stream/std*": "ansi",
+    "*": "ansi",
+}
+
+
 class Converter(NamedTuple):
     """Holds a conversion function and its weight."""
 

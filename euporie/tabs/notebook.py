@@ -26,6 +26,7 @@ from prompt_toolkit.mouse_events import MouseEventType
 from prompt_toolkit.widgets import Box, Label, RadioList
 
 from euporie.app.current import get_edit_app as get_app
+from euporie.comm.registry import open_comm
 from euporie.config import config
 from euporie.filters import insert_mode, replace_mode
 from euporie.key_binding.bindings.commands import load_command_bindings
@@ -87,6 +88,9 @@ class Notebook(Tab, metaclass=ABCMeta):
         # Ensure there is always at least one cell
         if not self.json.setdefault("cells", []):
             self.json["cells"] = [nbformat.v4.new_code_cell()]
+
+        # The client-side comm states
+        self.comms = {}
 
         self.app = app or get_app()
         self._rendered_cells: "dict[str, Cell]" = {}
@@ -381,13 +385,18 @@ class KernelNotebook(Notebook):
             wait: If :py:const:`True`, blocks until cell execution is finished
 
         """
-        cell.clear_output()
+        cell.remove_outputs()
         self.dirty = True
         self.kernel.run(
-            cell.json,
-            output_cb=cell.on_output,
-            done_cb=cell.ran,
+            str(cell.json.get("source")),
             wait=wait,
+            get_input=cell.get_input,
+            set_execution_count=cell.set_execution_count,
+            add_output=cell.add_output,
+            clear_output=cell.clear_output,
+            set_metadata=cell.set_metadata,
+            set_status=cell.set_status,
+            done=cell.ran,
         )
 
     def reformat(self) -> "None":
@@ -406,14 +415,29 @@ class KernelNotebook(Notebook):
                     cell.run_or_render(wait=wait)
             log.debug("All cells run")
 
-    def _process_kernel_info(self, info: "dict") -> "None":
+    def set_kernel_info(self, info: "dict") -> "None":
         self.json.setdefault("metadata", {})["language_info"] = info.get(
             "language_info", {}
         )
 
     def check_kernel(self, result: "None" = None) -> "None":
         log.debug("Kernel status is '%s'", self.kernel.status)
-        self.kernel.info(cb=self._process_kernel_info, wait=False)
+        self.kernel.info(set_kernel_info=self.set_kernel_info, set_status=log.debug)
+
+    def comm_open(self, content) -> "None":
+        comm_id = content.get("comm_id")
+        self.comms[comm_id] = open_comm(nb=self, content=content)
+
+    def comm_msg(self, content) -> "None":
+
+        comm_id = content.get("comm_id")
+        if comm := self.comms.get(comm_id):
+            comm.process_data(content.get("data", {}))
+
+    def comm_close(self, content) -> "None":
+        comm_id = content.get("comm_id")
+        if comm_id in self.comms:
+            del self.comms[comm_id]
 
 
 class PreviewKernelNotebook(PreviewNotebook, KernelNotebook):
@@ -427,7 +451,7 @@ class PreviewKernelNotebook(PreviewNotebook, KernelNotebook):
     def load_kernel(self) -> "None":
         from euporie.kernel import NotebookKernel
 
-        self.kernel = NotebookKernel(str(self.kernel_name), threaded=True)
+        self.kernel = NotebookKernel(nb=self, threaded=True)
         self.kernel.start(cb=self.check_kernel, wait=True)
 
     def close(self, cb: "Optional[Callable]" = None) -> "None":
@@ -563,6 +587,7 @@ class EditNotebook(KernelNotebook):
             self.pager_state is not None
             and self.pager_content.json is not self.pager_state.response
         ):
+            log.debug(self.pager_state)
             self.pager_content = CellOutput(
                 self.pager_state.response,
                 show_scrollbar=True,
@@ -751,9 +776,7 @@ class EditNotebook(KernelNotebook):
     def load_kernel(self) -> "None":
         from euporie.kernel import NotebookKernel
 
-        self.kernel = NotebookKernel(
-            str(self.kernel_name), threaded=True, allow_stdin=True
-        )
+        self.kernel = NotebookKernel(nb=self, threaded=True, allow_stdin=True)
         self.kernel.start(cb=self.check_kernel, wait=False)
 
     def restart_kernel(self) -> "None":
@@ -801,15 +824,7 @@ class EditNotebook(KernelNotebook):
         if cell is None:
             cell = self.cell
         assert isinstance(cell, InteractiveCell)
-        cell.clear_output()
-        self.dirty = True
-        self.kernel.run(
-            cell.json,
-            stdin_cb=cell.get_input,
-            output_cb=cell.on_output,
-            done_cb=cell.ran,
-            wait=wait,
-        )
+        super().run_cell(cell, wait)
 
     def cut(self, slice_: "Optional[slice]" = None) -> "None":
         """Remove cells from the notebook and them to the `Notebook`'s clipboard."""

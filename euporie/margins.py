@@ -37,8 +37,8 @@ class ScrollbarMargin(Margin):
     def __init__(
         self,
         display_arrows: "FilterOrBool" = True,
-        up_arrow_symbol: "str" = "▲",
-        down_arrow_symbol: "str" = "▼",
+        up_arrow_symbol: "str" = "▴",
+        down_arrow_symbol: "str" = "▾",
         smooth: "bool" = True,
     ) -> "None":
         """Creates a new scrollbar instance."""
@@ -47,7 +47,7 @@ class ScrollbarMargin(Margin):
         self.down_arrow_symbol = down_arrow_symbol
         self.smooth = smooth
 
-        self.repeat_task: Optional[asyncio.Task[None]] = None
+        self.repeat_task: "Optional[asyncio.Task[None]]" = None
         self.dragging = False
         self.button_drag_offset = 0
 

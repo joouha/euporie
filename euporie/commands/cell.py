@@ -72,13 +72,9 @@ def edit_next_cell() -> "None":
 )
 def scroll_output_left() -> "None":
     """Scroll the cell output to the left."""
-    from euporie.widgets.output.container import OutputWindow
-
     nb = get_app().notebook
     if nb is not None:
-        for output_window in nb.cell.output_box.children:
-            assert isinstance(output_window, OutputWindow)
-            output_window._scroll_left()
+        nb.cell.output_area.scroll_left()
 
 
 @add(
@@ -88,10 +84,6 @@ def scroll_output_left() -> "None":
 )
 def scroll_output_right() -> "None":
     """Scroll the cell output to the right."""
-    from euporie.widgets.output.container import OutputWindow
-
     nb = get_app().notebook
     if nb is not None:
-        for output_window in nb.cell.output_box.children:
-            assert isinstance(output_window, OutputWindow)
-            output_window._scroll_right()
+        nb.cell.output_area.scroll_right()

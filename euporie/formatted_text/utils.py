@@ -13,6 +13,7 @@ from pygments.lexers import get_lexer_by_name  # type: ignore
 from pygments.util import ClassNotFound  # type: ignore
 
 from euporie.border import GridStyle, Thin
+from euporie.formatted_text.properties import Padding
 
 __all__ = [
     "FormattedTextAlign",
@@ -287,12 +288,13 @@ def add_border(
     width: "Optional[int]" = None,
     style: str = "",
     border: "GridStyle" = Thin.grid,
+    padding: "Optional[Padding]" = None,
 ) -> StyleAndTextTuples:
     """Adds a border around formatted text.
 
     Args:
         ft: The formatted text to enclose with a border
-        width: The target width of the output including the border
+        width: The target width including the border and padding
         style: The style to apply to the border
         border: The grid style to use for the border
 
@@ -300,31 +302,84 @@ def add_border(
         The indented formatted text
 
     """
-    if width is None:
-        width = max_line_width(ft) + 4
+    if padding is None:
+        padding = Padding(0, 1, 0, 1)
+    if isinstance(padding, int):
+        padding = Padding(padding, padding, padding, padding)
+    if len(padding) == 2:
+        padding = Padding(padding[0], padding[1], padding[0], padding[1])
+    # `None` is not permitted for padding here
+    padding = Padding(
+        padding[0] or 0, padding[1] or 0, padding[2] or 0, padding[3] or 0
+    )
 
-    # ft = align(FormattedTextAlign.LEFT, ft, width - 4)
+    max_lw = max_line_width(ft)
+    if width is None:
+        width = max_lw + padding[1] + padding[3] + 2
+
+    inner_width = width - 2
+    # Ensure all lines are the same length
+    ft = align(FormattedTextAlign.LEFT, ft, width=inner_width - padding[1] - padding[3])
+
     result: StyleAndTextTuples = []
 
-    result.append(
-        (
-            style,
-            border.TOP_LEFT + border.TOP_MID * (width - 2) + border.TOP_RIGHT + "\n",
-        )
-    )
-    for line in split_lines(ft):
-        result += [
-            (style, border.MID_LEFT),
-            ("", " "),
-            *line,
-            ("", " "),
-            (style, border.MID_RIGHT + "\n"),
+    result.extend(
+        [
+            (
+                f"{style} class:left,top",
+                border.TOP_LEFT,
+            ),
+            (
+                f"{style} class:top",
+                border.TOP_MID * inner_width,
+            ),
+            (
+                f"{style} class:right,top",
+                border.TOP_RIGHT + "\n",
+            ),
         ]
-    result.append(
-        (
-            style,
-            border.BOTTOM_LEFT + border.BOTTOM_MID * (width - 2) + border.BOTTOM_RIGHT,
+    )
+    for _ in range(padding[0]):
+        result.extend(
+            [
+                (f"{style} class:left", border.MID_LEFT),
+                ("", " " * inner_width),
+                (f"{style} class:right", border.MID_RIGHT + "\n"),
+            ]
         )
+    for line in split_lines(ft):
+        result.extend(
+            [
+                (f"{style} class:left", border.MID_LEFT),
+                ("", " " * padding.left),
+                *line,
+                ("", " " * padding.right),
+                (f"{style} class:right", border.MID_RIGHT + "\n"),
+            ]
+        )
+    for _ in range(padding[2]):
+        result.extend(
+            [
+                (f"{style} class:left", border.MID_LEFT),
+                ("", " " * inner_width),
+                (f"{style} class:right", border.MID_RIGHT + "\n"),
+            ]
+        )
+    result.extend(
+        [
+            (
+                f"{style} class:left,bottom",
+                border.BOTTOM_LEFT,
+            ),
+            (
+                f"{style} class:bottom",
+                border.BOTTOM_MID * inner_width,
+            ),
+            (
+                f"{style} class:right,bottom",
+                border.BOTTOM_RIGHT + "\n",
+            ),
+        ]
     )
     return result
 

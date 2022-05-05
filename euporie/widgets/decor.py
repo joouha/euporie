@@ -1,16 +1,27 @@
 """Decorative widgets."""
 
-from typing import Optional
+from functools import partial
+from typing import TYPE_CHECKING
 
-from prompt_toolkit.layout.containers import Container
+from prompt_toolkit.filters import Condition
+from prompt_toolkit.layout.containers import (
+    ConditionalContainer,
+    Container,
+    DynamicContainer,
+    HSplit,
+    VSplit,
+    Window,
+)
 from prompt_toolkit.layout.dimension import Dimension
 from prompt_toolkit.layout.mouse_handlers import MouseHandlers
 from prompt_toolkit.layout.screen import Char, Screen, WritePosition
+from prompt_toolkit.widgets import Label
 
 from euporie.border import Thin
 from euporie.config import config
 
-__all__ = ["Line", "Pattern"]
+if TYPE_CHECKING:
+    from typing import Optional
 
 
 class Line(Container):
@@ -22,13 +33,13 @@ class Line(Container):
         width: "Optional[int]" = None,
         height: "Optional[int]" = None,
         collapse: "bool" = False,
-        style: "str" = "class:border-line",
+        style: "str" = "class:grid-line",
     ) -> "None":
-        """Initializes a border line.
+        """Initializes a grid line.
 
         Args:
             char: The character to draw. If unset, the relevant character from
-                :py:class:`euporie.box.Border` is used
+                :py:class:`euporie.box.grid` is used
             width: The length of the line. If specified, the line will be horizontal
             height: The height of the line. If specified, the line will be vertical
             collapse: Whether to hide the line when there is not enough space
@@ -169,3 +180,87 @@ class Pattern(Container):
     def get_children(self) -> "list":
         """Return an empty list of the container's children."""
         return []
+
+
+class Border:
+    """Draw a border around any container."""
+
+    def __init__(
+        self,
+        body: "AnyContainer",
+        border: "GridStyle" = Thin,
+        style: "Union[str, Callable[[], str]]" = "class:frame.border",
+    ) -> None:
+
+        self.body = body
+        self.style = style
+        self.container = HSplit(
+            [
+                VSplit(
+                    [
+                        Window(
+                            width=1,
+                            height=1,
+                            char=border.TOP_LEFT,
+                            style=self.add_style("class:left,top"),
+                        ),
+                        Window(char=border.TOP_MID, style=self.add_style("class:top")),
+                        Window(
+                            width=1,
+                            height=1,
+                            char=border.TOP_RIGHT,
+                            style=self.add_style("class:right,top"),
+                        ),
+                    ],
+                    height=1,
+                ),
+                VSplit(
+                    [
+                        Window(
+                            width=1,
+                            char=border.MID_LEFT,
+                            style=self.add_style("class:left"),
+                        ),
+                        DynamicContainer(lambda: self.body),
+                        Window(
+                            width=1,
+                            char=border.MID_RIGHT,
+                            style=self.add_style("class:right"),
+                        ),
+                        # Padding is required to make sure that if the content is
+                        # too small, the right frame border is still aligned.
+                    ],
+                    padding=0,
+                ),
+                VSplit(
+                    [
+                        Window(
+                            width=1,
+                            height=1,
+                            char=border.BOTTOM_LEFT,
+                            style=self.add_style("class:left,bottom"),
+                        ),
+                        Window(
+                            char=border.BOTTOM_MID, style=self.add_style("class:bottom")
+                        ),
+                        Window(
+                            width=1,
+                            height=1,
+                            char=border.BOTTOM_RIGHT,
+                            style=self.add_style("class:right,bottom"),
+                        ),
+                    ],
+                    # specifying height here will increase the rendering speed.
+                    height=1,
+                ),
+            ],
+        )
+
+    def add_style(self, extra):
+        if callable(self.style):
+            return f"{self.style()} {extra}"
+        else:
+            return f"{self.style} {extra}"
+
+    def __pt_container__(self) -> Container:
+        return self.container

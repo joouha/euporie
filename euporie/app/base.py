@@ -53,7 +53,13 @@ from euporie.key_binding.bindings.micro import load_micro_bindings
 from euporie.key_binding.key_processor import KeyProcessor
 from euporie.key_binding.micro_state import MicroState
 from euporie.log import setup_logs
-from euporie.style import LOG_STYLE, MARKDOWN_STYLE, ColorPalette, build_style
+from euporie.style import (
+    LOG_STYLE,
+    MARKDOWN_STYLE,
+    MIME_STYLE,
+    ColorPalette,
+    build_style,
+)
 from euporie.tabs.base import Tab
 from euporie.tabs.notebook import Notebook
 from euporie.terminal import TerminalInfo, Vt100Parser
@@ -485,6 +491,7 @@ class EuporieApp(Application):
         return merge_styles(
             [
                 style_from_pygments_cls(get_style_by_name(config.syntax_theme)),
+                Style(MIME_STYLE),
                 Style(MARKDOWN_STYLE),
                 Style(LOG_STYLE),
                 app_style,

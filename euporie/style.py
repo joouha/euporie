@@ -9,6 +9,10 @@ from prompt_toolkit.styles.style import Style
 if TYPE_CHECKING:
     from typing import Any, Dict, Optional, Tuple
 
+MIME_STYLE = [
+    ("mime.stream.stderr", "fg:ansired"),
+]
+
 
 MARKDOWN_STYLE = [
     ("md.h1", "bold underline"),
@@ -329,6 +333,25 @@ def build_style(
         "button": f"bg:{cp.bg.more(0.05)}",
         "button.arrow": "",
         "button button.focused": "fg:#ffffff bg:ansidarkred",
+        # Ipywidgets
+        "ipywidget button": "fg:black bg:#d4d0c8",
+        "ipywidget button button.border": "bg:default",
+        "ipywidget button button.border right": "fg:#606060",
+        "ipywidget button button.border bottom": "fg:#606060",
+        "ipywidget button button.border left": "fg:#ffffff",
+        "ipywidget button button.border top": "fg:#ffffff",
+        "ipywidget text-area": "fg:black bg:white",
+        "ipywidget text-area text-area.border": "fg:#888888 bg:default",
+        "ipywidget text-area text-area.border": "bg:default",
+        "ipywidget text-area text-area.border right": "fg:#ffffff",
+        "ipywidget text-area text-area.border bottom": "fg:#E9E7E3",
+        "ipywidget text-area text-area.border left": "fg:#606060",
+        "ipywidget text-area text-area.border top": "fg:#606060",
+        "ipywidget text-area text-area.border invalid": "fg:ansired bg:default",
+        "ipywidget slider slider.track": "fg:#888888",
+        "ipywidget slider slider.arrow": "fg:#888888",
+        "ipywidget slider slider.handle": "fg:#888888",
+        "ipywidget slider slider.handle.selected": "noreverse fg:ansiblue",
     }
 
     # Add shadow combination for every element

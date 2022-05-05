@@ -3,13 +3,21 @@
 from collections import defaultdict
 from functools import partial
 from itertools import tee, zip_longest
-from typing import TYPE_CHECKING, NamedTuple, cast
+from typing import TYPE_CHECKING, cast
 
 from prompt_toolkit.application.current import get_app_session
 from prompt_toolkit.formatted_text.base import to_formatted_text
 from prompt_toolkit.formatted_text.utils import split_lines, to_plain_text
 
 from euporie.border import GridChar, Invisible, LineStyle, Thin, grid_char
+from euporie.formatted_text.properties import (
+    BorderLineStyle,
+    Padding,
+    WeightedBorderLineStyle,
+    WeightedInt,
+    WeightedLineStyle,
+    WeightedPadding,
+)
 from euporie.formatted_text.utils import FormattedTextAlign, align, max_line_width, wrap
 
 if TYPE_CHECKING:
@@ -41,77 +49,29 @@ def pairwise(iterable: "Iterable[PairT]") -> "Iterator[Tuple[PairT, PairT]]":
     return zip(a, b)
 
 
-class WeightedLineStyle(NamedTuple):
-    """A :class:`LineStyle` with a weight."""
-
-    weight: "int"
-    value: "LineStyle"
-
-
-class WeightedInt(NamedTuple):
-    """An :class:`int` with a weight."""
-
-    weight: "int"
-    value: "int"
-
-
-class CellBorder(NamedTuple):
-    """A description of a cell border: a :class:`LineStyle` for each edge."""
-
-    top: "Optional[LineStyle]" = None
-    right: "Optional[LineStyle]" = None
-    bottom: "Optional[LineStyle]" = None
-    left: "Optional[LineStyle]" = None
-
-
-class WeightedCellBorder(NamedTuple):
-    """A weighted description of a cell border: weighted values for each edge."""
-
-    top: "WeightedLineStyle"
-    right: "WeightedLineStyle"
-    bottom: "WeightedLineStyle"
-    left: "WeightedLineStyle"
-
-
-class CellPadding(NamedTuple):
-    """A weighted description of a cell padding: weighted values for each edge."""
-
-    top: "Optional[int]"
-    right: "Optional[int]"
-    bottom: "Optional[int]"
-    left: "Optional[int]"
-
-
-class WeightedCellPadding(NamedTuple):
-    """A description of a cell padding: :class:`LineStyle`s for each edge."""
-
-    top: "WeightedInt"
-    right: "WeightedInt"
-    bottom: "WeightedInt"
-    left: "WeightedInt"
-
-
 class Cell:
     """A table cell."""
 
-    def _set_padding(self, padding: "Optional[Union[CellPadding, int]]") -> "None":
+    def _set_padding(self, padding: "Optional[Union[Padding, int]]") -> "None":
         """Sets the cell's padding."""
         if padding is None:
-            padding = CellPadding(None, None, None, None)
+            padding = Padding(None, None, None, None)
         if isinstance(padding, int):
-            padding = CellPadding(padding, padding, padding, padding)
+            padding = Padding(padding, padding, padding, padding)
         if len(padding) == 2:
-            padding = CellPadding(padding[0], padding[1], padding[0], padding[1])
-        self._padding = padding or CellPadding(None, None, None, None)
+            padding = Padding(padding[0], padding[1], padding[0], padding[1])
+        self._padding = padding or Padding(None, None, None, None)
 
-    def _set_border(self, border: "Optional[Union[LineStyle, CellBorder]]") -> "None":
+    def _set_border(
+        self, border: "Optional[Union[LineStyle, BorderLineStyle]]"
+    ) -> "None":
         """Sets the cell's border."""
         if border is None:
-            _border = CellBorder(None, None, None, None)
+            _border = BorderLineStyle(None, None, None, None)
         elif isinstance(border, LineStyle):
-            _border = CellBorder(border, border, border, border)
+            _border = BorderLineStyle(border, border, border, border)
         elif isinstance(border, tuple) and len(border) == 2:
-            _border = CellBorder(border[0], border[1], border[0], border[1])
+            _border = BorderLineStyle(border[0], border[1], border[0], border[1])
         else:
             _border = border
         self._border = _border
@@ -122,8 +82,8 @@ class Cell:
         row: "Optional[Row]" = None,
         col: "Optional[Col]" = None,
         align: "Optional[FormattedTextAlign]" = None,
-        padding: "Optional[CellPadding]" = None,
-        border: "Optional[Union[LineStyle, CellBorder]]" = None,
+        padding: "Optional[Padding]" = None,
+        border: "Optional[Union[LineStyle, BorderLineStyle]]" = None,
         style: "str" = "",
     ):
         """Creates a new table cell.
@@ -213,9 +173,9 @@ class Cell:
         self._align = align
 
     @property
-    def weighted_padding(self) -> "WeightedCellPadding":
+    def weighted_padding(self) -> "WeightedPadding":
         """The cell's padding with inheritance weights."""
-        return WeightedCellPadding(
+        return WeightedPadding(
             *(
                 WeightedInt(
                     2
@@ -235,19 +195,19 @@ class Cell:
         )
 
     @property
-    def padding(self) -> "CellPadding":
+    def padding(self) -> "Padding":
         """The cell's padding."""
-        return CellPadding(*(x.value for x in self.weighted_padding))
+        return Padding(*(x.value for x in self.weighted_padding))
 
     @padding.setter
-    def padding(self, padding: "Optional[Union[CellPadding, int]]") -> "None":
+    def padding(self, padding: "Optional[Union[Padding, int]]") -> "None":
         """Sets the cell's padding."""
         self._set_padding(padding)
 
     @property
-    def weighted_border(self) -> "WeightedCellBorder":
+    def weighted_border(self) -> "WeightedBorderLineStyle":
         """The cell's borders with inheritance weights."""
-        return WeightedCellBorder(
+        return WeightedBorderLineStyle(
             *(
                 WeightedLineStyle(
                     2
@@ -265,12 +225,12 @@ class Cell:
         )
 
     @property
-    def border(self) -> "CellBorder":
+    def border(self) -> "BorderLineStyle":
         """The cell's border."""
-        return CellBorder(*(x.value for x in self.weighted_border))
+        return BorderLineStyle(*(x.value for x in self.weighted_border))
 
     @border.setter
-    def border(self, border: "Optional[Union[LineStyle, CellBorder]]") -> "None":
+    def border(self, border: "Optional[Union[LineStyle, BorderLineStyle]]") -> "None":
         """Sets the cell's border."""
         self._set_border(border)
 
@@ -303,24 +263,26 @@ class RowCol:
 
     type_: "str"
 
-    def _set_padding(self, padding: "Optional[Union[CellPadding, int]]") -> "None":
+    def _set_padding(self, padding: "Optional[Union[Padding, int]]") -> "None":
         """The default padding for cells in the row/column."""
         if padding is None:
-            padding = CellPadding(None, None, None, None)
+            padding = Padding(None, None, None, None)
         if isinstance(padding, int):
-            padding = CellPadding(padding, padding, padding, padding)
+            padding = Padding(padding, padding, padding, padding)
         if len(padding) == 2:
-            padding = CellPadding(padding[0], padding[1], padding[0], padding[1])
+            padding = Padding(padding[0], padding[1], padding[0], padding[1])
         self._padding = padding
 
-    def _set_border(self, border: "Optional[Union[LineStyle, CellBorder]]") -> "None":
+    def _set_border(
+        self, border: "Optional[Union[LineStyle, BorderLineStyle]]"
+    ) -> "None":
         """Set the default border style for cells in the row/column."""
         if border is None:
-            _border = CellBorder(None, None, None, None)
+            _border = BorderLineStyle(None, None, None, None)
         elif isinstance(border, LineStyle):
-            _border = CellBorder(border, border, border, border)
+            _border = BorderLineStyle(border, border, border, border)
         elif isinstance(border, tuple) and len(border) == 2:
-            _border = CellBorder(border[0], border[1], border[0], border[1])
+            _border = BorderLineStyle(border[0], border[1], border[0], border[1])
         else:
             _border = border
         self._border = _border
@@ -330,8 +292,8 @@ class RowCol:
         table: "Optional[Table]" = None,
         cells: "Optional[Sequence[Cell]]" = None,
         align: "Optional[FormattedTextAlign]" = None,
-        padding: "Optional[CellPadding]" = None,
-        border: "Optional[Union[LineStyle, CellBorder]]" = None,
+        padding: "Optional[Padding]" = None,
+        border: "Optional[Union[LineStyle, BorderLineStyle]]" = None,
         style: "str" = "",
     ):
         """Create a new row/column.
@@ -418,9 +380,9 @@ class RowCol:
         self._align = align
 
     @property
-    def weighted_padding(self) -> "WeightedCellPadding":
+    def weighted_padding(self) -> "WeightedPadding":
         """The default padding for cells in the row/column with inheritance weights."""
-        return WeightedCellPadding(
+        return WeightedPadding(
             *(
                 WeightedInt(
                     1 if x is not None else 0,
@@ -431,19 +393,19 @@ class RowCol:
         )
 
     @property
-    def padding(self) -> "CellPadding":
+    def padding(self) -> "Padding":
         """The default padding for cells in the row/column."""
-        return CellPadding(*(x.value for x in self.weighted_padding))
+        return Padding(*(x.value for x in self.weighted_padding))
 
     @padding.setter
-    def padding(self, padding: "Optional[Union[CellPadding, int]]") -> "None":
+    def padding(self, padding: "Optional[Union[Padding, int]]") -> "None":
         """The default padding for cells in the row/column."""
         self._set_padding(padding)
 
     @property
-    def weighted_border(self) -> "WeightedCellBorder":
+    def weighted_border(self) -> "WeightedBorderLineStyle":
         """The cell's borders with inheritance weights."""
-        return WeightedCellBorder(
+        return WeightedBorderLineStyle(
             *(
                 WeightedLineStyle(
                     1 if x is not None else 0,
@@ -454,12 +416,12 @@ class RowCol:
         )
 
     @property
-    def border(self) -> "CellBorder":
+    def border(self) -> "BorderLineStyle":
         """The default border style for cells in the row/column."""
-        return CellBorder(*(x.value for x in self.weighted_border))
+        return BorderLineStyle(*(x.value for x in self.weighted_border))
 
     @border.setter
-    def border(self, border: "Optional[Union[LineStyle, CellBorder]]") -> "None":
+    def border(self, border: "Optional[Union[LineStyle, BorderLineStyle]]") -> "None":
         self._set_border(border)
 
     @property
@@ -496,32 +458,34 @@ class DummyCell(Cell):
 class Table:
     """A table."""
 
-    def _set_border(self, border: "Optional[Union[LineStyle, CellBorder]]") -> "None":
+    def _set_border(
+        self, border: "Optional[Union[LineStyle, BorderLineStyle]]"
+    ) -> "None":
         """Set the default border style for cells in the table."""
         if border is None:
             border = Thin
         if isinstance(border, LineStyle):
-            border = CellBorder(border, border, border, border)
+            border = BorderLineStyle(border, border, border, border)
         if len(border) == 2:
-            border = CellBorder(border[0], border[1], border[0], border[1])
+            border = BorderLineStyle(border[0], border[1], border[0], border[1])
         # None is not a permitted value here - replace with default
-        self._border = CellBorder(
+        self._border = BorderLineStyle(
             border[0] or Thin,
             border[1] or Thin,
             border[2] or Thin,
             border[3] or Thin,
         )
 
-    def _set_padding(self, padding: "Optional[Union[CellPadding, int]]") -> "None":
+    def _set_padding(self, padding: "Optional[Union[Padding, int]]") -> "None":
         """Set the default padding for cells in the table."""
         if padding is None:
-            padding = CellPadding(0, 1, 0, 1)
+            padding = Padding(0, 1, 0, 1)
         if isinstance(padding, int):
-            padding = CellPadding(padding, padding, padding, padding)
+            padding = Padding(padding, padding, padding, padding)
         if len(padding) == 2:
-            padding = CellPadding(padding[0], padding[1], padding[0], padding[1])
+            padding = Padding(padding[0], padding[1], padding[0], padding[1])
         # `None` is not permitted for padding here, as there is nothing to inherit from
-        self._padding = CellPadding(
+        self._padding = Padding(
             padding[0] or 0, padding[1] or 0, padding[2] or 0, padding[3] or 0
         )
 
@@ -532,8 +496,8 @@ class Table:
         width: "Optional[int]" = None,
         expand: "bool" = False,
         align: "FormattedTextAlign" = FormattedTextAlign.LEFT,
-        padding: "Optional[CellPadding]" = None,
-        border: "Optional[Union[CellBorder, LineStyle]]" = Thin,
+        padding: "Optional[Padding]" = None,
+        border: "Optional[Union[BorderLineStyle, LineStyle]]" = Thin,
         border_style: "str" = "",
         border_collapse: "bool" = False,
         style: "str" = "",
@@ -580,21 +544,21 @@ class Table:
         self.style = style
 
     @property
-    def border(self) -> "CellBorder":
+    def border(self) -> "BorderLineStyle":
         """The default border style for cells in the table."""
         return self._border
 
     @border.setter
-    def border(self, border: "Optional[Union[LineStyle, CellBorder]]") -> "None":
+    def border(self, border: "Optional[Union[LineStyle, BorderLineStyle]]") -> "None":
         self._set_border(border)
 
     @property
-    def padding(self) -> "CellPadding":
+    def padding(self) -> "Padding":
         """The default padding for cells in the table."""
         return self._padding
 
     @padding.setter
-    def padding(self, padding: "Optional[Union[CellPadding, int]]") -> "None":
+    def padding(self, padding: "Optional[Union[Padding, int]]") -> "None":
         self._set_padding(padding)
 
     @property
