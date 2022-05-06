@@ -1,14 +1,13 @@
 import logging
 
-from prompt_toolkit.layout.containers import HSplit, VSplit, Window, to_container
-from prompt_toolkit.layout.controls import FormattedTextControl
+from prompt_toolkit.filters.base import Condition
+from prompt_toolkit.layout.containers import HSplit, VSplit
 from prompt_toolkit.widgets.base import Box
 
 from euporie.comm.base import Comm
 from euporie.widgets.cell_outputs import CellOutputArea
-from euporie.widgets.inputs import Button, Text, LabeledWidget, Slider
+from euporie.widgets.inputs import Button, LabeledWidget, Slider, Text
 from euporie.widgets.layout import ReferencedSplit
-
 
 log = logging.getLogger(__name__)
 
@@ -18,12 +17,15 @@ class JupyterWidget(Comm):
 
     def __init__(self, nb, comm_id: "str", data: "dict") -> "None":
         super().__init__(nb, comm_id, data)
+        self.sync = True
 
     def set_state(self, key, value):
-        self.data.setdefault("state", {})[key] = value
-        self.nb.kernel.kc_comm(
-            comm_id=self.comm_id, data={"method": "update", "state": {key: value}}
-        )
+        if self.sync:
+            self.data.setdefault("state", {})[key] = value
+            self.nb.kernel.kc_comm(
+                comm_id=self.comm_id, data={"method": "update", "state": {key: value}}
+            )
+            self.update_views()
 
     def process_data(self, data):
         if data.get("method") == "update":
@@ -33,6 +35,69 @@ class JupyterWidget(Comm):
 
 class UnimplementedWidget(JupyterWidget):
     ...
+
+
+class OutputIpyWidget(JupyterWidget):
+    """An Output widget."""
+
+    model_name = "OutputModel"
+
+    def __init__(self, nb, comm_id: "str", data: "dict") -> "None":
+        super().__init__(nb, comm_id, data)
+        self.original_callbacks = {}
+        self.clear_output_wait = False
+
+        self.prev_msg_id = ""
+        self.callbacks = {
+            "add_output": self.add_output,
+            "clear_output": self.clear_output,
+        }
+
+    def _create_view(self, cell: "Cell"):
+        return CellOutputArea(self.data.get("state", {}).get("outputs", []), cell)
+
+    def add_output(self, json):
+        if self.clear_output_wait:
+            self.set_state("outputs", [json])
+        else:
+            self.set_state("outputs", [*self.data["state"]["outputs"], json])
+        self.update_views()
+
+    def clear_output(self, wait=False):
+        if wait:
+            self.clear_output_wait = True
+        else:
+            self.clear_output_wait = False
+            self.set_state("outputs", [])
+            self.update_views()
+
+    def update_view(self, cell: "Cell", container: "AnyContainer") -> "None":
+        container.json = self.data["state"].setdefault("outputs", [])
+
+    def process_data(self, data):
+        if data.get("method") == "update":
+
+            for key, value in data.get("state", {}).items():
+                # Replace the kernel callbacks of the given message ID
+                if key == "msg_id":
+                    if value:
+                        # Replace the message's callbacks
+                        self.original_callbacks = self.nb.kernel.msg_id_callbacks[value]
+                        del self.nb.kernel.msg_id_callbacks[value]
+                        self.nb.kernel.msg_id_callbacks[value].update(self.callbacks)
+                    else:
+                        # Restore the message's callbacks
+                        if self.original_callbacks:
+                            self.nb.kernel.msg_id_callbacks[
+                                self.prev_msg_id
+                            ] = self.original_callbacks
+                            self.original_callbacks = {}
+                        else:
+                            del self.nb.kernel.msg_id_callbacks[self.prev_msg_id]
+                    self.prev_msg_id = value
+
+            self.data["state"].update(data.get("state", {}))
+        self.update_views()
 
 
 class LayoutMixin:
@@ -104,18 +169,13 @@ class TextBoxMixin:
                 validation=self.validation,
                 height=self.height,
             ),
-            label=lambda: "\n" + self.data.get("state", {}).get("description", ""),
-            height=3,
+            label=lambda: self.data.get("state", {}).get("description", ""),
+            height=1,
         )
 
     def text_changed(self, buffer: "Buffer") -> "None":
         if (value := self.normalize(buffer.text)) is not None:
             self.set_state("value", value)
-            self.nb.kernel.kc_comm(
-                comm_id=self.comm_id,
-                data={"method": "update", "state": {"value": value}},
-            )
-            self.update_views()
 
     def update_view(self, cell: "Cell", container: "AnyContainer") -> "None":
         container.body.buffer.text = str(self.data.get("state", {}).get("value", ""))
@@ -136,14 +196,14 @@ class IntValueMixin:
         try:
             value = int(x)
         except ValueError:
-            return None
+            return
         else:
             if minimum := self.data.get("state", {}).get("min"):
                 if value < minimum:
-                    return None
+                    return
             if maximum := self.data.get("state", {}).get("max"):
                 if maximum < value:
-                    return None
+                    return
             return value
 
 
@@ -152,7 +212,7 @@ class IntTextIpyWidget(IntValueMixin, TextBoxMixin, JupyterWidget):
 
 
 class BoundedIntTextIpyWidget(IntValueMixin, TextBoxMixin, JupyterWidget):
-    """An integer textbox widget with upper and lover bounds."""
+    """An integer textbox widget with upper and lower bounds."""
 
 
 class FloatValueMixin:
@@ -179,68 +239,6 @@ class BoundedFloatTextIpyWidget(IntValueMixin, TextBoxMixin, JupyterWidget):
     """An float textbox widget with upper and lover bounds."""
 
 
-class OutputIpyWidget(JupyterWidget):
-    """An Output widget."""
-
-    model_name = "OutputModel"
-
-    def __init__(self, nb, comm_id: "str", data: "dict") -> "None":
-        super().__init__(nb, comm_id, data)
-        self.original_callbacks = {}
-        self.clear_output_wait = False
-
-        self.prev_msg_id = ""
-        self.callbacks = {
-            "add_output": self.add_output,
-            "clear_output": self.clear_output,
-        }
-
-    def _create_view(self, cell: "Cell"):
-        return CellOutputArea(self.data.get("state", {}).get("outputs", []), cell)
-
-    def add_output(self, json):
-        if self.clear_output_wait:
-            self.set_state("outputs", [json])
-        else:
-            self.set_state("outputs", [*self.data["state"]["outputs"], json])
-        self.update_views()
-
-    def clear_output(self, wait=False):
-        if wait:
-            self.clear_output_wait = True
-        else:
-            self.clear_output_wait = False
-            self.set_state("outputs", [])
-            self.update_views()
-
-    def update_view(self, cell: "Cell", container: "AnyContainer") -> "None":
-        container.json = self.data["state"].setdefault("outputs", [])
-
-    def process_data(self, data):
-        if data.get("method") == "update":
-
-            for key, value in data.get("state", {}).items():
-                if key == "msg_id":
-                    if value:
-                        # Replace the message's callbacks
-                        self.original_callbacks = self.nb.kernel.msg_id_callbacks[value]
-                        del self.nb.kernel.msg_id_callbacks[value]
-                        self.nb.kernel.msg_id_callbacks[value].update(self.callbacks)
-                    else:
-                        # Restore the message's callbacks
-                        if self.original_callbacks:
-                            self.nb.kernel.msg_id_callbacks[
-                                self.prev_msg_id
-                            ] = self.original_callbacks
-                            self.original_callbacks = {}
-                        else:
-                            del self.nb.kernel.msg_id_callbacks[self.prev_msg_id]
-                    self.prev_msg_id = value
-
-            self.data["state"].update(data.get("state", {}))
-        self.update_views()
-
-
 class IntSliderIpyWidget(IntValueMixin, JupyterWidget):
     def _create_view(self, cell: "Cell"):
         options = self.options
@@ -249,11 +247,18 @@ class IntSliderIpyWidget(IntValueMixin, JupyterWidget):
                 options=options,
                 index=options.index(self.data["state"]["value"]),
                 style="class:ipywidget",
-                readout=self.data["state"]["readout"],
+                show_readout=Condition(lambda: self.data["state"]["readout"]),
+                arrows=("⮜", "⮞"),
+                show_arrows=True,
+                on_value_change=self.value_changed,
             ),
             label=lambda: self.data.get("state", {}).get("description", ""),
             height=1,
         )
+
+    def value_changed(self, slider_data: "Slider") -> "None":
+        if (value := self.normalize(slider_data.value[0])) is not None:
+            self.set_state("value", value)
 
     @property
     def options(self):
@@ -265,19 +270,13 @@ class IntSliderIpyWidget(IntValueMixin, JupyterWidget):
             )
         )
 
-    def text_changed(self, buffer: "Buffer") -> "None":
-        if (value := self.normalize(buffer.text)) is not None:
-            self.set_state("value", value)
-            self.nb.kernel.kc_comm(
-                comm_id=self.comm_id,
-                data={"method": "update", "state": {"value": value}},
-            )
-            self.update_views()
-
     def update_view(self, cell: "Cell", container: "AnyContainer") -> "None":
-        container.body.index = [
-            self.options.index(self.data.get("state", {})["value"]),
-        ]
+        value = self.data.get("state", {})["value"]
+        if value in self.options:
+            index = self.options.index(value)
+            self.sync = False
+            container.body.data.set_index(ab=value)
+            self.sync = True
 
 
 WIDGET_MODELS = {

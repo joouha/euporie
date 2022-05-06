@@ -1,5 +1,6 @@
 """Decorative widgets."""
 
+import logging
 from functools import partial
 from typing import TYPE_CHECKING
 
@@ -22,6 +23,8 @@ from euporie.config import config
 
 if TYPE_CHECKING:
     from typing import Optional
+
+log = logging.getLogger(__name__)
 
 
 class Line(Container):
@@ -257,10 +260,13 @@ class Border:
         )
 
     def add_style(self, extra):
-        if callable(self.style):
-            return f"{self.style()} {extra}"
-        else:
-            return f"{self.style} {extra}"
+        def _style():
+            if callable(self.style):
+                return f"{self.style()} {extra}"
+            else:
+                return f"{self.style} {extra}"
+
+        return _style
 
     def __pt_container__(self) -> Container:
         return self.container
