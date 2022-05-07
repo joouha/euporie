@@ -1,4 +1,5 @@
 import logging
+from decimal import Decimal
 
 from prompt_toolkit.filters.base import Condition
 from prompt_toolkit.layout.containers import HSplit, VSplit
@@ -6,7 +7,18 @@ from prompt_toolkit.widgets.base import Box
 
 from euporie.comm.base import Comm
 from euporie.widgets.cell_outputs import CellOutputArea
-from euporie.widgets.inputs import Button, LabeledWidget, Slider, Text
+from euporie.widgets.decor import Border
+from euporie.widgets.display import Display
+from euporie.widgets.inputs import (
+    Button,
+    Checkbox,
+    LabeledWidget,
+    Progress,
+    Slider,
+    Text,
+    ToggleButton,
+    WidgetGrid,
+)
 from euporie.widgets.layout import ReferencedSplit
 
 log = logging.getLogger(__name__)
@@ -20,6 +32,7 @@ class JupyterWidget(Comm):
         self.sync = True
 
     def set_state(self, key, value):
+        log.debug((key, value))
         if self.sync:
             self.data.setdefault("state", {})[key] = value
             self.nb.kernel.kc_comm(
@@ -34,7 +47,8 @@ class JupyterWidget(Comm):
 
 
 class UnimplementedWidget(JupyterWidget):
-    ...
+    def _create_view(self, cell: "Cell"):
+        return Display(f"[Widget not implemented]", format_="ansi")
 
 
 class OutputIpyWidget(JupyterWidget):
@@ -144,7 +158,7 @@ class ButtonIpyWidget(JupyterWidget):
             padding_left=0,
         )
 
-    def click(self) -> "None":
+    def click(self, button: "Button") -> "None":
         self.nb.kernel.kc_comm(
             comm_id=self.comm_id,
             data={"method": "custom", "content": {"event": "click"}},
@@ -207,11 +221,56 @@ class IntValueMixin:
             return value
 
 
-class IntTextIpyWidget(IntValueMixin, TextBoxMixin, JupyterWidget):
+class NumberTextMixin:
+    def _create_view(self, cell: "Cell"):
+        return LabeledWidget(
+            body=ReferencedSplit(
+                VSplit,
+                [
+                    Text(
+                        text=self.data.get("state", {}).get("value", ""),
+                        on_text_changed=self.text_changed,
+                        validation=self.validation,
+                        height=self.height,
+                    ),
+                    Button(
+                        "-", show_borders=(True, False, True, True), handler=self.decr
+                    ),
+                    Button(
+                        "+", show_borders=(True, True, True, False), handler=self.incr
+                    ),
+                ],
+                style="class:ipywidget",
+            ),
+            label=lambda: self.data.get("state", {}).get("description", ""),
+            height=1,
+        )
+
+    def incr(self, button: "Button") -> "None":
+        value = Decimal(str(self.data["state"]["value"]))
+        step = Decimal(str(self.data["state"].get("step", 1)))
+        if (new := self.normalize(value + step)) is not None:
+            self.set_state("value", new)
+
+    def decr(self, button: "Button") -> "None":
+        value = Decimal(str(self.data["state"]["value"]))
+        step = Decimal(str(self.data["state"].get("step", 1)))
+        if (new := self.normalize(value - step)) is not None:
+            self.set_state("value", new)
+
+    def update_view(self, cell: "Cell", container: "AnyContainer") -> "None":
+        container.body._children[0].buffer.text = str(
+            self.data.get("state", {}).get("value", "")
+        )
+
+
+class IntTextIpyWidget(IntValueMixin, NumberTextMixin, TextBoxMixin, JupyterWidget):
     """An integer textbox widget."""
 
 
-class BoundedIntTextIpyWidget(IntValueMixin, TextBoxMixin, JupyterWidget):
+class BoundedIntTextIpyWidget(
+    IntValueMixin, NumberTextMixin, TextBoxMixin, JupyterWidget
+):
     """An integer textbox widget with upper and lower bounds."""
 
 
@@ -231,37 +290,55 @@ class FloatValueMixin:
             return value
 
 
-class FloatTextIpyWidget(FloatValueMixin, TextBoxMixin, JupyterWidget):
+class FloatTextIpyWidget(FloatValueMixin, NumberTextMixin, TextBoxMixin, JupyterWidget):
     """A float textbox widget."""
 
 
-class BoundedFloatTextIpyWidget(IntValueMixin, TextBoxMixin, JupyterWidget):
+class BoundedFloatTextIpyWidget(
+    FloatValueMixin, NumberTextMixin, TextBoxMixin, JupyterWidget
+):
     """An float textbox widget with upper and lover bounds."""
 
 
-class IntSliderIpyWidget(IntValueMixin, JupyterWidget):
-    def _create_view(self, cell: "Cell"):
-        options = self.options
-        return LabeledWidget(
-            body=Slider(
-                options=options,
-                index=options.index(self.data["state"]["value"]),
-                style="class:ipywidget",
-                show_readout=Condition(lambda: self.data["state"]["readout"]),
-                arrows=("⮜", "⮞"),
-                show_arrows=True,
-                on_value_change=self.value_changed,
-            ),
-            label=lambda: self.data.get("state", {}).get("description", ""),
-            height=1,
-        )
-
+class SliderMixin:
     def value_changed(self, slider_data: "Slider") -> "None":
         if (value := self.normalize(slider_data.value[0])) is not None:
             self.set_state("value", value)
 
+    def update_view(self, cell: "Cell", container: "AnyContainer") -> "None":
+        value = self.data.get("state", {})["value"]
+        if value in self.options:
+            index = self.options.index(value)
+            self.sync = False
+            container.body.body.data.set_index(ab=index)
+            self.sync = True
+
+    def _create_view(self, cell: "Cell"):
+        options = self.options
+        orientation = self.data["state"]["orientation"]
+        return Box(
+            LabeledWidget(
+                body=Slider(
+                    options=options,
+                    index=options.index(self.data["state"]["value"]),
+                    style="class:ipywidget",
+                    show_readout=Condition(lambda: self.data["state"]["readout"]),
+                    arrows=("⮜", "⮞") if orientation == "horizontal" else ("⮟", "⮝"),
+                    show_arrows=True,
+                    on_value_change=self.value_changed,
+                    orientation=orientation,
+                ),
+                orientation=orientation,
+                label=lambda: self.data.get("state", {}).get("description", ""),
+                height=1,
+            ),
+            padding_left=0,
+        )
+
+
+class IntSliderIpyWidget(SliderMixin, IntValueMixin, JupyterWidget):
     @property
-    def options(self):
+    def options(self) -> "List[int]":
         return list(
             range(
                 self.data["state"]["min"],
@@ -270,13 +347,177 @@ class IntSliderIpyWidget(IntValueMixin, JupyterWidget):
             )
         )
 
+
+class FloatSliderIpyWidget(SliderMixin, FloatValueMixin, JupyterWidget):
+    @property
+    def options(self) -> "List[float]":
+        start = Decimal(str(self.data["state"]["min"]))
+        stop = Decimal(str(self.data["state"]["max"] + self.data["state"]["step"]))
+        step = Decimal(str(self.data["state"]["step"]))
+        return [start + step * i for i in range(int((stop - start) / step))]
+
+
+class FloatLogSliderIpyWidget(SliderMixin, FloatValueMixin, JupyterWidget):
+    @property
+    def options(self) -> "List[float]":
+        from decimal import Decimal
+
+        base = Decimal(str(self.data["state"]["base"]))
+        start = Decimal(str(self.data["state"]["min"]))
+        stop = Decimal(str(self.data["state"]["max"] + self.data["state"]["step"]))
+        step = Decimal(str(self.data["state"]["step"]))
+        return [base ** (start + step * i) for i in range(int((stop - start) / step))]
+
+
+class RangeSliderMixin:
+    def value_changed(self, slider_data: "Slider") -> "None":
+        if (value := [self.normalize(x) for x in slider_data.value]) is not None:
+            self.set_state("value", value)
+
     def update_view(self, cell: "Cell", container: "AnyContainer") -> "None":
         value = self.data.get("state", {})["value"]
         if value in self.options:
             index = self.options.index(value)
             self.sync = False
-            container.body.data.set_index(ab=value)
+            container.body.body.data.set_index(ab=index)
             self.sync = True
+
+    def _create_view(self, cell: "Cell"):
+        options = self.options
+        orientation = self.data["state"]["orientation"]
+        return Box(
+            LabeledWidget(
+                body=Slider(
+                    options=options,
+                    index=[options.index(x) for x in self.data["state"]["value"]],
+                    style="class:ipywidget",
+                    show_readout=Condition(lambda: self.data["state"]["readout"]),
+                    arrows=("⮜", "⮞") if orientation == "horizontal" else ("⮟", "⮝"),
+                    show_arrows=True,
+                    on_value_change=self.value_changed,
+                    orientation=orientation,
+                ),
+                orientation=orientation,
+                label=lambda: self.data.get("state", {}).get("description", ""),
+                height=1,
+            ),
+            padding_left=0,
+        )
+
+
+class IntRangeSliderIpyWidget(RangeSliderMixin, FloatSliderIpyWidget):
+    ...
+
+
+class FloatRangeSliderIpyWidget(RangeSliderMixin, FloatSliderIpyWidget):
+    ...
+
+
+class ProgressMixin:
+    def _create_view(self, cell: "Cell") -> "AnyContainer":
+        orientation = self.data["state"]["orientation"]
+        step = self.data["state"].get("step", 1)
+        return Box(
+            LabeledWidget(
+                body=Progress(
+                    start=self.data["state"]["min"],
+                    stop=self.data["state"]["max"],
+                    step=step,
+                    value=self.data["state"]["value"],
+                    orientation=orientation,
+                    style=self.style,
+                ),
+                orientation=orientation,
+                label=lambda: self.data.get("state", {}).get("description", ""),
+                height=1,
+            ),
+            padding_left=0,
+        )
+
+    def style(self):
+        style = self.data["state"]["bar_style"]
+        if style:
+            style = f"class:{style}"
+        return f"class:ipywidget {style}"
+
+    def update_view(self, cell: "Cell", container: "AnyContainer") -> "None":
+        container.body.body.style = self.style
+        container.body.body.value = self.data["state"]["value"]
+        container.body.body.control.start = self.data["state"]["min"]
+        container.body.body.control.stop = self.data["state"]["max"]
+
+
+class IntProgressIpyWidget(ProgressMixin, IntValueMixin, JupyterWidget):
+    """"""
+
+
+class FloatProgressIpyWidget(ProgressMixin, FloatValueMixin, JupyterWidget):
+    """"""
+
+
+class BoolMixin:
+    def normalize(self, x: "Any") -> "Optional[float]":
+        try:
+            value = bool(x)
+        except ValueError:
+            return None
+        else:
+            return value
+
+    def value_changed(self, button: "ToggleButton") -> "None":
+        if (value := self.normalize(button.selected)) is not None:
+            self.set_state("value", value)
+
+    def update_view(self, cell: "Cell", container: "AnyContainer") -> "None":
+        container.body.selected = self.data["state"]["value"]
+
+
+class ToggleButtonIpyWidget(BoolMixin, JupyterWidget):
+    """A toggleable button widget."""
+
+    def _create_view(self, cell: "Cell"):
+        return Box(
+            ToggleButton(
+                text=self.data["state"].get("description", ""),
+                handler=self.value_changed,
+                style="class:ipywidget",
+                selected=self.data["state"]["value"],
+            ),
+            padding_left=0,
+        )
+
+
+class CheckboxIpyWidget(BoolMixin, JupyterWidget):
+    """A checkbox widget."""
+
+    def _create_view(self, cell: "Cell"):
+        return Box(
+            Checkbox(
+                text=self.data["state"].get("description", ""),
+                handler=self.value_changed,
+                style="class:ipywidget",
+                selected=self.data["state"]["value"],
+            ),
+            padding_left=0,
+        )
+
+
+class ValidIpyWidget(BoolMixin, JupyterWidget):
+    """A validity indicator widget."""
+
+    def _create_view(self, cell: "Cell"):
+        return LabeledWidget(
+            body=Box(
+                Checkbox(
+                    handler=self.value_changed,
+                    style="class:ipywidget",
+                    selected=self.data["state"]["value"],
+                    states=("❌", "✔️"),
+                ),
+                padding_left=0,
+            ),
+            label=self.data["state"].get("description", ""),
+        )
 
 
 WIDGET_MODELS = {
@@ -291,6 +532,15 @@ WIDGET_MODELS = {
     "FloatTextModel": FloatTextIpyWidget,
     "BoundedFloatTextModel": BoundedFloatTextIpyWidget,
     "IntSliderModel": IntSliderIpyWidget,
+    "FloatSliderModel": FloatSliderIpyWidget,
+    "FloatLogSliderModel": FloatLogSliderIpyWidget,
+    "IntRangeSliderModel": IntRangeSliderIpyWidget,
+    "FloatRangeSliderModel": FloatRangeSliderIpyWidget,
+    "IntProgressModel": IntProgressIpyWidget,
+    "FloatProgressModel": FloatProgressIpyWidget,
+    "ToggleButtonModel": ToggleButtonIpyWidget,
+    "CheckboxModel": CheckboxIpyWidget,
+    "ValidModel": ValidIpyWidget,
 }
 
 

@@ -59,10 +59,13 @@ else:
     from mdit_py_plugins.dollarmath.index import dollarmath_plugin
     from mdit_py_plugins.texmath.index import texmath_plugin
 
+    # from mdit_py_plugins.tasklists import tasklists_plugin
+
     if markdown_parser is not None:
         markdown_parser.use(texmath_plugin)
         markdown_parser.use(dollarmath_plugin)
         markdown_parser.use(amsmath_plugin)
+        # markdown_parser.use(tasklists_plugin)
 
 
 _SIDES = {

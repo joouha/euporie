@@ -81,7 +81,7 @@ class CellOutputWidgetElement(CellOutputElement):
         if comm:
             self.container = comm.create_view(self.cell)
         else:
-            self.container = Display(self.comm_id, format_="ansi")
+            raise NotImplementedError
 
     def __pt_container__(self) -> "AnyContainer":
         return self.container
@@ -153,22 +153,28 @@ class CellOutput:
     def json(self, outputs_json: "Dict") -> "None":
         self._json = outputs_json
         self._containers = {}
+        self._selected_mime = None
 
     @property
     def container(self) -> "CellOutputElement":
         if self.selected_mime not in self._containers:
             for mime_pattern, OutputElement in MIME_RENDERERS.items():
                 if PurePath(self.selected_mime).match(mime_pattern):
-                    element = OutputElement(
-                        mime=self.selected_mime,
-                        data=self.data[self.selected_mime],
-                        metadata=self.json.get("metadata", {}).get(
-                            self.selected_mime, {}
-                        ),
-                        cell=self.cell,
-                    )
-                    self._containers[self.selected_mime] = element
-                    return element
+                    try:
+                        element = OutputElement(
+                            mime=self.selected_mime,
+                            data=self.data[self.selected_mime],
+                            metadata=self.json.get("metadata", {}).get(
+                                self.selected_mime, {}
+                            ),
+                            cell=self.cell,
+                        )
+                    except NotImplementedError:
+                        self._selected_mime = list(self.data.keys())[-1]
+                        continue
+                    else:
+                        self._containers[self.selected_mime] = element
+                        return element
 
         return self._containers[self.selected_mime]
 
@@ -233,12 +239,14 @@ class CellOutputArea:
     def scroll_left(self) -> "None":
         """Scrolls the outputs left."""
         for output_window in self.container.children:
-            output_window._scroll_left()
+            if hasattr(output_window, "_scroll_left"):
+                output_window._scroll_left()
 
     def scroll_right(self) -> "None":
         """Scrolls the outputs right."""
         for output_window in self.container.children:
-            output_window._scroll_right()
+            if hasattr(output_window, "_scroll_right"):
+                output_window._scroll_right()
 
     def __pt_container__(self):
         return self.container

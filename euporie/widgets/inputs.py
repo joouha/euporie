@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from enum import Enum
 from functools import partial
 from math import ceil, floor
 from typing import TYPE_CHECKING
@@ -18,6 +19,7 @@ from prompt_toolkit.layout.containers import (
     Window,
 )
 from prompt_toolkit.layout.controls import FormattedTextControl, UIContent, UIControl
+from prompt_toolkit.layout.utils import explode_text_fragments
 from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
 from prompt_toolkit.utils import Event
 from prompt_toolkit.validation import Validator
@@ -34,6 +36,7 @@ from euporie.margins import ScrollbarMargin
 from euporie.widgets.decor import Border
 
 if TYPE_CHECKING:
+    from numbers import Number
     from typing import Callable, List, Optional, Tuple, TypeVar, Union
 
     from prompt_toolkit.buffer import Buffer, BufferAcceptHandler
@@ -51,6 +54,11 @@ WidgetGrid = (
     + EighthBlockUpperRight.bottom_edge
     + Thin.inner
 )
+
+
+class WidgetOrientation(Enum):
+    HORIZONTAL = "horizontal"
+    VERTICAL = "vertical"
 
 
 def is_iterable(x):
@@ -73,32 +81,20 @@ class Button:
     """
 
     def _get_style(self) -> str:
-        if get_app().layout.has_focus(self):
-            return "class:button.focused"
+        if self.selected:
+            return f"{self.style} class:button.selected"
+        elif get_app().layout.has_focus(self):
+            return f"{self.style} class:button.focused"
         else:
-            return "class:button"
+            return f"{self.style} class:button"
 
     def _get_text_fragments(self) -> "StyleAndTextTuples":
-        def handler(mouse_event: MouseEvent) -> None:
-            if (
-                self.handler is not None
-                and mouse_event.event_type == MouseEventType.MOUSE_UP
-            ):
-                self.handler()
-
         ft = [
             ("[SetCursorPosition]", ""),
             *self.text,
         ]
         ft = align(FormattedTextAlign.CENTER, ft, self.width)
-        ft = add_border(
-            ft,
-            style="class:button.border",
-            border=WidgetGrid,
-            # padding=(0, 1, 0, 1),
-        )
-        ft = apply_style(ft, self._get_style())
-        ft = [(style, text, handler) for style, text, *_ in ft]
+        ft = [(style, text, self.mouse_handler) for style, text, *_ in ft]
         return ft
 
     def _get_key_bindings(self) -> "KeyBindings":
@@ -108,34 +104,125 @@ class Button:
         @kb.add(" ")
         @kb.add("enter")
         def _(event: "KeyPressEvent") -> None:
-            if self.handler is not None:
-                self.handler()
+            self.event.fire()
 
         return kb
 
     def __init__(
         self,
         text: "AnyFormattedText",
-        handler: "Optional[Callable[[], None]]" = None,
+        handler: "Optional[Callable[[Button], None]]" = None,
         width: "Optional[int]" = None,
         style: "str" = "",
+        border: "Optional[GridStyle]" = WidgetGrid,
+        show_borders: "Tuple[FilterOrBool, FilterOrBool, FilterOrBool, FilterOrBool]" = (
+            True,
+            True,
+            True,
+            True,
+        ),
+        selected: "bool" = False,
     ) -> None:
         self.text = to_formatted_text(text)
-        self.handler = handler
-        self.width = width or fragment_list_width(self.text)
-        self.window = Window(
+        self.event = Event(self, handler)
+        self.width = width or fragment_list_width(self.text) + 2
+        self.style = style
+        self.selected = selected
+        self.container = Border(
+            Window(
+                FormattedTextControl(
+                    self._get_text_fragments,
+                    key_bindings=self._get_key_bindings(),
+                    focusable=True,
+                    show_cursor=False,
+                ),
+                style=self._get_style,
+                dont_extend_width=True,
+                dont_extend_height=True,
+            ),
+            border=border,
+            show_borders=show_borders,
+            style=lambda: f"{self._get_style()} class:button.border",
+        )
+
+    def mouse_handler(self, mouse_event: "MouseEvent") -> "NotImplementedOrNone":
+        if mouse_event.event_type == MouseEventType.MOUSE_DOWN:
+            get_app().layout.focus(self)
+            self.selected = True
+        elif mouse_event.event_type == MouseEventType.MOUSE_UP:
+            self.selected = False
+            self.event.fire()
+
+    def __pt_container__(self) -> "Container":
+        return self.container
+
+
+class ToggleMixin:
+    def toggle(self):
+        self.selected = not self.selected
+        self.event.fire()
+
+    def _get_key_bindings(self) -> "KeyBindings":
+        "Key bindings for the Button."
+        kb = KeyBindings()
+
+        @kb.add(" ")
+        @kb.add("enter")
+        def _(event: "KeyPressEvent") -> None:
+            self.toggle()
+
+    def mouse_handler(self, mouse_event: "MouseEvent") -> "NotImplementedOrNone":
+        if mouse_event.event_type == MouseEventType.MOUSE_DOWN:
+            get_app().layout.focus(self)
+        elif mouse_event.event_type == MouseEventType.MOUSE_UP:
+            self.toggle()
+
+
+class ToggleButton(ToggleMixin, Button):
+    """"""
+
+
+class Checkbox(ToggleMixin):
+    """"""
+
+    def _get_text_fragments(self) -> "StyleAndTextTuples":
+        selected_style = "class:selected" if self.selected else ""
+        ft = [
+            ("[SetCursorPosition] class:checkbox.box", self.states[int(self.selected)]),
+            # Add space between the tickbox and the text
+            ("", " " if fragment_list_len(self.text) else ""),
+            *self.text,
+        ]
+        ft = [(style, text, self.mouse_handler) for style, text, *_ in ft]
+        return ft
+
+    def __init__(
+        self,
+        text: "AnyFormattedText" = "",
+        handler: "Optional[Callable[[Button], None]]" = None,
+        states: "Tuple[str, str]" = ("☐", "☑"),
+        style: "str" = "",
+        selected: "bool" = False,
+    ) -> None:
+        self.text = to_formatted_text(text)
+        self.event = Event(self, handler)
+        self.states = states
+        self.style = style
+        self.selected = selected
+        self.container = Window(
             FormattedTextControl(
                 self._get_text_fragments,
                 key_bindings=self._get_key_bindings(),
                 focusable=True,
+                show_cursor=False,
             ),
-            style=style,
+            style=f"class:checkbox {style}",
             dont_extend_width=True,
             dont_extend_height=True,
         )
 
     def __pt_container__(self) -> "Container":
-        return self.window
+        return self.container
 
 
 class Text:
@@ -195,9 +282,25 @@ class Text:
 
 
 class LabeledWidget:
-    def __init__(self, body: "AnyContainer", label, height: "Optional[int]"):
+    def __init__(
+        self,
+        body: "AnyContainer",
+        label: "AnyFormattedText",
+        height: "Optional[int]" = None,
+        width: "Optional[int]" = None,
+        orientation: "WidgetOrientation" = WidgetOrientation.HORIZONTAL,
+    ):
         self.body = body
-        self.container = VSplit(
+        self.orientation = WidgetOrientation(orientation)
+        if self.orientation == WidgetOrientation.HORIZONTAL:
+            Split = VSplit
+            padding_left = padding_right = 0
+            padding_top = padding_bottom = None
+        else:
+            Split = HSplit
+            padding_left = padding_right = None
+            padding_top = padding_bottom = 0
+        self.container = Split(
             [
                 ConditionalContainer(
                     Box(
@@ -205,9 +308,12 @@ class LabeledWidget:
                             FormattedTextControl(label),
                             dont_extend_width=True,
                             height=height,
+                            width=width,
                         ),
-                        padding_left=0,
-                        padding_right=0,
+                        padding_top=padding_top,
+                        padding_right=padding_right,
+                        padding_bottom=padding_bottom,
+                        padding_left=padding_left,
                     ),
                     filter=Condition(
                         lambda: bool(fragment_list_len(to_formatted_text(label)))
@@ -238,6 +344,14 @@ class SliderData:
         return tuple(self.options[index] for index in self._index)
 
     @property
+    def value_str(self) -> "str":
+        return " - ".join(map(str, self.value))
+
+    @property
+    def max_value_str_len(self) -> "int":
+        return (max(map(len, map(str, self.options))) + 1) * len(self._index)
+
+    @property
     def index(self) -> "Tuple[int, ...]":
         return tuple(self._index)
 
@@ -263,16 +377,26 @@ class SliderControl(UIControl):
         data: "SliderData",
         arrows: "Tuple[str, str]" = ("-", "+"),  # ⊖ ⊕  ⊟ ⊞  ⮜ ⮞
         show_arrows: "FilterOrBool" = True,
-        handle_char: "str" = "⬤",
+        orientation: "WidgetOrientation" = WidgetOrientation.HORIZONTAL,
+        handle_char: "str" = "●",
+        track_char: "Optional[str]" = None,
+        selected_track_char: "Optional[str]" = None,
         style: "str" = "",
     ):
         self.data = data
 
+        self.orientation = orientation
         self.arrows = arrows
         self.show_arrows = to_filter(show_arrows)
         self.handle_char = handle_char
-        self.has_focus = has_focus(self)
+        self.track_char = track_char or (
+            "─" if orientation == WidgetOrientation.HORIZONTAL else "│"
+        )
+        self.selected_track_char = selected_track_char or (
+            "━" if orientation == WidgetOrientation.HORIZONTAL else "┃"
+        )
 
+        self.has_focus = has_focus(self)
         self.selected_handle = 0
         self.track_len = 0
 
@@ -281,6 +405,26 @@ class SliderControl(UIControl):
         self.repeat_task: "Optional[asyncio.Task[None]]" = None
 
         self._content_cache: SimpleCache = SimpleCache(maxsize=50)
+
+    def preferred_width(self, max_available_width: "int") -> "Optional[int]":
+        return (
+            max_available_width
+            if self.orientation == WidgetOrientation.HORIZONTAL
+            else 1
+        )
+
+    def preferred_height(
+        self,
+        width: "int",
+        max_available_height: "int",
+        wrap_lines: "bool",
+        get_line_prefix: "Optional[GetLinePrefixCallable]",
+    ) -> "Optional[int]":
+        return (
+            1
+            if self.orientation == WidgetOrientation.HORIZONTAL
+            else min(max_available_height, 10)
+        )
 
     def is_focusable(self) -> bool:
         """Tell whether this user control is focusable."""
@@ -332,6 +476,12 @@ class SliderControl(UIControl):
         """Generate a mouse event handler which calls a function on click."""
         if mouse_event.event_type == MouseEventType.MOUSE_DOWN:
             get_app().layout.focus(self)
+            handle = self.selected_handle
+            if len(self.data.index) == 2:
+                if handle == 0 and index > self.data.index[1]:
+                    self.selected_handle = 1
+                elif handle == 1 and index < self.data.index[0]:
+                    self.selected_handle = 0
             self.data.set_index(self.selected_handle, ab=index)
         else:
             self.mouse_handler_scroll(mouse_event)
@@ -374,9 +524,12 @@ class SliderControl(UIControl):
             if self.show_arrows():
                 pos -= 2
             pos = max(0, min(self.track_len, pos))
+            index = int((len(self.data.options) - 0.5) * pos / self.track_len)
+            if self.orientation == WidgetOrientation.VERTICAL:
+                index = len(self.data.options) - index
             self.data.set_index(
                 self.selected_handle,
-                ab=int((len(self.data.options) - 0.5) * pos / self.track_len),
+                ab=index,
             )
             return None
         else:
@@ -395,31 +548,29 @@ class SliderControl(UIControl):
         handler(mouse_event, repeated=True, **kwargs)
         get_app().invalidate()
 
-
-class HorizontalSliderControl(SliderControl):
-    def preferred_width(self, max_available_width: "int") -> "Optional[int]":
-        return max_available_width
-
-    def preferred_height(
-        self,
-        width: "int",
-        max_available_height: "int",
-        wrap_lines: "bool",
-        get_line_prefix: "Optional[GetLinePrefixCallable]",
-    ) -> "Optional[int]":
-        return 1
-
     def get_key_bindings(self) -> "Optional[KeyBindingsBase]":
         """Key bindings for the Slider."""
         kb = KeyBindings()
 
-        @kb.add("left")
-        def _(event: "KeyPressEvent") -> None:
-            self.data.set_index(self.selected_handle, rel=-1)
+        if self.orientation == WidgetOrientation.HORIZONTAL:
 
-        @kb.add("right")
-        def _(event: "KeyPressEvent") -> None:
-            self.data.set_index(self.selected_handle, rel=1)
+            @kb.add("left")
+            def _(event: "KeyPressEvent") -> None:
+                self.data.set_index(self.selected_handle, rel=-1)
+
+            @kb.add("right")
+            def _(event: "KeyPressEvent") -> None:
+                self.data.set_index(self.selected_handle, rel=1)
+
+        else:
+
+            @kb.add("down")
+            def _(event: "KeyPressEvent") -> None:
+                self.data.set_index(self.selected_handle, rel=-1)
+
+            @kb.add("up")
+            def _(event: "KeyPressEvent") -> None:
+                self.data.set_index(self.selected_handle, rel=1)
 
         return kb
 
@@ -428,7 +579,8 @@ class HorizontalSliderControl(SliderControl):
         ft = []
         mouse_handlers = []
 
-        track_len = width - len(self.data.index)
+        size = width if self.orientation == WidgetOrientation.HORIZONTAL else height
+        track_len = size - len(self.data.index)
 
         if self.show_arrows():
             # The arrows take up 4 characters: remove them from the track length
@@ -440,10 +592,8 @@ class HorizontalSliderControl(SliderControl):
             ]
 
         # First bit of track
-        left_len = floor(
-            (track_len) * self.data.index[0] / (len(self.data.options) - 1)
-        )
-        ft.append(("class:slider.track", "─" * left_len))
+        left_len = floor(track_len * self.data.index[0] / (len(self.data.options) - 1))
+        ft.append(("class:slider.track", self.track_char * left_len))
         mouse_handlers += [
             partial(
                 self.mouse_handler_track,
@@ -459,17 +609,20 @@ class HorizontalSliderControl(SliderControl):
         # Middle bit of track
         middle_len = 0
         if len(self.data.index) > 1:
-            middle_len = floor(
-                (track_len) * (self.index[-1] - self.index[0]) / len(self.data.options)
+            middle_len = ceil(
+                track_len
+                * (self.data.index[-1] - self.data.index[0])
+                / (len(self.data.options) - 1)
             )
-        if len(self.data.index) > 1:
-            ft.append(("class:slider.track,selected", "━" * middle_len))
+            ft.append(
+                ("class:slider.track.selected", self.selected_track_char * middle_len)
+            )
             mouse_handlers += [
                 partial(
                     self.mouse_handler_track,
                     index=int((len(self.data.options) - 0.5) * i / track_len),
                 )
-                for i in range(left_len, middle_len + 1)
+                for i in range(left_len, left_len + middle_len)
             ]
             # Second handle
             ft.append(self._draw_handle(1))
@@ -477,7 +630,7 @@ class HorizontalSliderControl(SliderControl):
 
         # Last bit of track
         right_len = track_len - left_len - middle_len
-        ft.append(("class:slider.track", "─" * right_len))
+        ft.append(("class:slider.track", self.track_char * right_len))
         mouse_handlers += [
             partial(
                 self.mouse_handler_track,
@@ -493,39 +646,55 @@ class HorizontalSliderControl(SliderControl):
                 partial(self.mouse_handler_arrow, n=1),
             ]
 
-        self.mouse_handlers = dict(enumerate(mouse_handlers))
         self.track_len = track_len
 
-        return [ft]
+        if self.orientation == WidgetOrientation.VERTICAL:
+            mouse_handlers = mouse_handlers[::-1]
+            output = [[x] for x in explode_text_fragments(ft)][::-1]
+        else:
+            output = [ft]
+
+        self.mouse_handlers = dict(enumerate(mouse_handlers))
+
+        return output
 
     def mouse_handler(self, mouse_event: "MouseEvent") -> "NotImplementedOrNone":
-        self._mouse_handler(mouse_event, loc=mouse_event.position.x)
+        if self.orientation == WidgetOrientation.HORIZONTAL:
+            loc = mouse_event.position.x
+        else:
+            loc = mouse_event.position.y
+        self._mouse_handler(mouse_event, loc=loc)
 
 
 class Slider:
     """A slider input widget.
 
-    ⮜ ───⬤━━━━━━━⬤──── ⮞ 9 - 18
+    - ───⬤━━━━⬤────── + [9-18]
 
     """
 
     def _validate_readout(self, text: "str") -> "Optional[T]":
         try:
-            value = self.data_type(text)
-        except ValueError:
+            values = [self.data_type(value.strip()) for value in text.split("-")]
+        except Exception:
             return None
         else:
-            if value in self.data.options:
-                return value
+            if all(value in self.data.options for value in values):
+                order = {v: i for i, v in enumerate(self.data.options)}
+                return sorted(values, key=lambda x: order[x])
 
     def _value_changed(self, slider_data: "SliderData") -> "None":
         """Sets the readout text when the slider value changes."""
-        self.readout.text = str(self.data.value[0])
+        self.readout.text = self.data.value_str
 
     def _accept_handler(self, buffer: "Buffer") -> "bool":
-        value = self._validate_readout(buffer.text)
-        if value in self.data.options:
-            self.data.set_index(ab=self.data.options.index(value))
+        if values := self._validate_readout(buffer.text):
+            for i, value in enumerate(values):
+                self.data.set_index(
+                    handle=i, ab=self.data.options.index(value), fire=False
+                )
+            # Trigger the event once all the values have been updated
+            self.data.on_value_change.fire()
             return True
         return False
 
@@ -537,40 +706,176 @@ class Slider:
         arrows: "Optional[Tuple[str, str]]" = None,
         show_readout: "FilterOrBool" = True,
         style: "str" = "",
-        orientation="horizontal",
+        orientation: "Union[WidgetOrientation, str]" = WidgetOrientation.HORIZONTAL,
         on_value_change: "Optional[Callable[[Slider], None]]" = None,
     ) -> None:
         self.show_readout = to_filter(show_readout)
-        self.orientation = orientation
+        self.orientation = WidgetOrientation(orientation)
         self.data_type = type(options[0])
+
         self.data = SliderData(
             options=options,
             index=(index,) if isinstance(index, int) else tuple(index),
             on_value_change=on_value_change,
         )
         self.data.on_value_change += self._value_changed
-        self.slider_control = HorizontalSliderControl(
+        self.slider_control = SliderControl(
             self.data,
             arrows=arrows,
             show_arrows=to_filter(show_arrows),
+            orientation=self.orientation,
         )
+
         self.readout = Text(
-            text=self.data.value[0],
+            text=self.data.value_str,
             height=1,
-            width=min(max(map(len, map(str, self.data.options))) + 1, 10),
+            width=min(self.data.max_value_str_len, 10),
             style=style,
             validation=lambda x: self._validate_readout(x) is not None,
             accept_handler=self._accept_handler,
         )
-        self.container = VSplit(
+        Split = VSplit if self.orientation == WidgetOrientation.HORIZONTAL else HSplit
+        self.container = Split(
             [
                 Box(
-                    Window(self.slider_control, style=style),
+                    Window(
+                        self.slider_control,
+                        style=style,
+                    ),
                 ),
                 ConditionalContainer(self.readout, filter=self.show_readout),
             ],
             padding=1,
         )
+
+    def __pt_container__(self) -> "Container":
+        return self.container
+
+
+class ProgressControl(UIControl):
+
+    hchars = ("", "▏", "▎", "▍", "▌", "▋", "▊", "▉", "█")
+    vchars = ("", "▁", "▂", "▃", "▄", "▅", "▆", "▇", "█")
+
+    def __init__(
+        self,
+        start: "Number" = 0,
+        stop: "Number" = 100,
+        step: "Number" = 1,
+        value: "Number" = 0,
+        orientation: "WidgetOrientation" = WidgetOrientation.HORIZONTAL,
+    ):
+        self.start = start
+        self.stop = stop
+        self.step = step
+        self.value = value
+        self.orientation = orientation
+
+        self._content_cache: SimpleCache = SimpleCache(maxsize=50)
+
+    def preferred_width(self, max_available_width: "int") -> "Optional[int]":
+        return (
+            max_available_width
+            if self.orientation == WidgetOrientation.HORIZONTAL
+            else 1
+        )
+
+    def preferred_height(
+        self,
+        width: "int",
+        max_available_height: "int",
+        wrap_lines: "bool",
+        get_line_prefix: "Optional[GetLinePrefixCallable]",
+    ) -> "Optional[int]":
+        return (
+            1
+            if self.orientation == WidgetOrientation.HORIZONTAL
+            else min(max_available_height, 10)
+        )
+
+    def render(self, width: int, height: int):
+        length = width if self.orientation == WidgetOrientation.HORIZONTAL else height
+        size = int(self.value / (self.stop - self.start) * length * 8) / 8
+        remainder = int(size % 1 * 8)
+        chars = (
+            self.vchars
+            if self.orientation == WidgetOrientation.VERTICAL
+            else self.hchars
+        )
+
+        ft = [
+            ("class:progress", chars[8] * int(size)),
+            ("class:progress", chars[remainder]),
+            ("class:progress", " " * int(length - size)),
+        ]
+
+        if self.orientation == WidgetOrientation.VERTICAL:
+            return [[x] for x in explode_text_fragments(ft)][::-1]
+        else:
+            return [ft]
+
+    def create_content(self, width: "int", height: "int") -> "UIContent":
+        def get_content() -> UIContent:
+            fragment_lines = self.render(width, height)
+
+            return UIContent(
+                get_line=lambda i: fragment_lines[i],
+                line_count=len(fragment_lines),
+                show_cursor=False,
+            )
+
+        key = (width, self.start, self.stop, self.step, self.value)
+        return self._content_cache.get(key, get_content)
+
+
+class Progress:
+    def __init__(
+        self,
+        start: "Number" = 0,
+        stop: "Number" = 100,
+        step: "Number" = 1,
+        value: "Number" = 0,
+        orientation: "Union[WidgetOrientation, str]" = WidgetOrientation.HORIZONTAL,
+        style: "str" = "",
+    ) -> "None":
+        self.style = style
+        self.orientation = WidgetOrientation(orientation)
+        self.control = ProgressControl(
+            start=start,
+            stop=stop,
+            step=step,
+            value=value,
+            orientation=self.orientation,
+        )
+        self.container = Box(
+            Border(
+                Window(
+                    self.control,
+                    style=self.add_style("class:progress"),
+                    dont_extend_width=self.orientation == WidgetOrientation.VERTICAL,
+                ),
+                border=WidgetGrid,
+                style=self.add_style("class:progress,progress.border"),
+            ),
+            width=1 if self.orientation == WidgetOrientation.VERTICAL else None,
+        )
+
+    @property
+    def value(self) -> "Number":
+        return self.control.value
+
+    @value.setter
+    def value(self, value) -> "None":
+        self.control.value = value
+
+    def add_style(self, extra):
+        def _style():
+            if callable(self.style):
+                return f"{self.style()} {extra}"
+            else:
+                return f"{self.style} {extra}"
+
+        return _style
 
     def __pt_container__(self) -> "Container":
         return self.container

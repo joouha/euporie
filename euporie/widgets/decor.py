@@ -4,7 +4,7 @@ import logging
 from functools import partial
 from typing import TYPE_CHECKING
 
-from prompt_toolkit.filters import Condition
+from prompt_toolkit.filters import Condition, to_filter
 from prompt_toolkit.layout.containers import (
     ConditionalContainer,
     Container,
@@ -191,73 +191,115 @@ class Border:
     def __init__(
         self,
         body: "AnyContainer",
-        border: "GridStyle" = Thin,
+        border: "Optional[GridStyle]" = Thin,
         style: "Union[str, Callable[[], str]]" = "class:frame.border",
+        show_borders: "Tuple[FilterOrBool, FilterOrBool, FilterOrBool, FilterOrBool]" = (
+            True,
+            True,
+            True,
+            True,
+        ),
     ) -> None:
-
         self.body = body
         self.style = style
-        self.container = HSplit(
-            [
-                VSplit(
-                    [
-                        Window(
-                            width=1,
-                            height=1,
-                            char=border.TOP_LEFT,
-                            style=self.add_style("class:left,top"),
-                        ),
-                        Window(char=border.TOP_MID, style=self.add_style("class:top")),
-                        Window(
-                            width=1,
-                            height=1,
-                            char=border.TOP_RIGHT,
-                            style=self.add_style("class:right,top"),
-                        ),
-                    ],
-                    height=1,
-                ),
-                VSplit(
-                    [
-                        Window(
-                            width=1,
-                            char=border.MID_LEFT,
-                            style=self.add_style("class:left"),
-                        ),
-                        DynamicContainer(lambda: self.body),
-                        Window(
-                            width=1,
-                            char=border.MID_RIGHT,
-                            style=self.add_style("class:right"),
-                        ),
-                        # Padding is required to make sure that if the content is
-                        # too small, the right frame border is still aligned.
-                    ],
-                    padding=0,
-                ),
-                VSplit(
-                    [
-                        Window(
-                            width=1,
-                            height=1,
-                            char=border.BOTTOM_LEFT,
-                            style=self.add_style("class:left,bottom"),
-                        ),
-                        Window(
-                            char=border.BOTTOM_MID, style=self.add_style("class:bottom")
-                        ),
-                        Window(
-                            width=1,
-                            height=1,
-                            char=border.BOTTOM_RIGHT,
-                            style=self.add_style("class:right,bottom"),
-                        ),
-                    ],
-                    # specifying height here will increase the rendering speed.
-                    height=1,
-                ),
-            ],
-        )
+
+        border_top = to_filter(show_borders[0])
+        border_right = to_filter(show_borders[1])
+        border_bottom = to_filter(show_borders[2])
+        border_left = to_filter(show_borders[3])
+
+        if border is not None:
+            self.container = HSplit(
+                [
+                    VSplit(
+                        [
+                            ConditionalContainer(
+                                Window(
+                                    width=1,
+                                    height=1,
+                                    char=border.TOP_LEFT,
+                                    style=self.add_style("class:left,top"),
+                                ),
+                                filter=border_top & border_left,
+                            ),
+                            ConditionalContainer(
+                                Window(
+                                    char=border.TOP_MID,
+                                    style=self.add_style("class:top"),
+                                ),
+                                filter=border_top,
+                            ),
+                            ConditionalContainer(
+                                Window(
+                                    width=1,
+                                    height=1,
+                                    char=border.TOP_RIGHT,
+                                    style=self.add_style("class:right,top"),
+                                ),
+                                filter=border_top & border_right,
+                            ),
+                        ],
+                        height=1,
+                    ),
+                    VSplit(
+                        [
+                            ConditionalContainer(
+                                Window(
+                                    width=1,
+                                    char=border.MID_LEFT,
+                                    style=self.add_style("class:left"),
+                                ),
+                                filter=border_left,
+                            ),
+                            DynamicContainer(lambda: self.body),
+                            ConditionalContainer(
+                                Window(
+                                    width=1,
+                                    char=border.MID_RIGHT,
+                                    style=self.add_style("class:right"),
+                                ),
+                                filter=border_right,
+                            )
+                            # Padding is required to make sure that if the content is
+                            # too small, the right frame border is still aligned.
+                        ],
+                        padding=0,
+                    ),
+                    VSplit(
+                        [
+                            ConditionalContainer(
+                                Window(
+                                    width=1,
+                                    height=1,
+                                    char=border.BOTTOM_LEFT,
+                                    style=self.add_style("class:left,bottom"),
+                                ),
+                                filter=border_bottom & border_left,
+                            ),
+                            ConditionalContainer(
+                                Window(
+                                    char=border.BOTTOM_MID,
+                                    style=self.add_style("class:bottom"),
+                                ),
+                                filter=border_bottom,
+                            ),
+                            ConditionalContainer(
+                                Window(
+                                    width=1,
+                                    height=1,
+                                    char=border.BOTTOM_RIGHT,
+                                    style=self.add_style("class:right,bottom"),
+                                ),
+                                filter=border_bottom & border_right,
+                            ),
+                        ],
+                        # specifying height here will increase the rendering speed.
+                        height=1,
+                    ),
+                ],
+            )
+        else:
+            self.container = body
 
     def add_style(self, extra):
         def _style():

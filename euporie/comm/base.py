@@ -22,14 +22,14 @@ class Comm(metaclass=ABCMeta):
         ...
 
     def _create_view(self, cell: "Cell"):
-        return Display(self.comm_id, format_="ansi")
+        return Display(f"[Object cannot be rendered]", format_="ansi")
 
     def create_view(self, cell: "Cell") -> "AnyContainer":
         view = self._create_view(cell)
         self.views[view] = cell
         return view
 
-    def update_view(self, container):
+    def update_view(self, cell: "Cell", container: "AnyContainer"):
         pass
 
     def update_views(self):
