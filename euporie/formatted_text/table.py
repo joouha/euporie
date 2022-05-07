@@ -9,14 +9,18 @@ from prompt_toolkit.application.current import get_app_session
 from prompt_toolkit.formatted_text.base import to_formatted_text
 from prompt_toolkit.formatted_text.utils import split_lines, to_plain_text
 
-from euporie.border import GridChar, Invisible, LineStyle, Thin, grid_char
-from euporie.formatted_text.properties import (
+from euporie.border import (
     BorderLineStyle,
+    GridChar,
+    Invisible,
+    LineStyle,
     Padding,
+    Thin,
     WeightedBorderLineStyle,
     WeightedInt,
     WeightedLineStyle,
     WeightedPadding,
+    grid_char,
 )
 from euporie.formatted_text.utils import FormattedTextAlign, align, max_line_width, wrap
 

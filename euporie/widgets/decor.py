@@ -18,7 +18,7 @@ from prompt_toolkit.layout.mouse_handlers import MouseHandlers
 from prompt_toolkit.layout.screen import Char, Screen, WritePosition
 from prompt_toolkit.widgets import Label
 
-from euporie.border import Thin
+from euporie.border import BorderVisibility, Thin
 from euporie.config import config
 
 if TYPE_CHECKING:
@@ -193,20 +193,19 @@ class Border:
         body: "AnyContainer",
         border: "Optional[GridStyle]" = Thin,
         style: "Union[str, Callable[[], str]]" = "class:frame.border",
-        show_borders: "Tuple[FilterOrBool, FilterOrBool, FilterOrBool, FilterOrBool]" = (
-            True,
-            True,
-            True,
-            True,
-        ),
+        show_borders: "Optional[BorderVisibility]" = None,
     ) -> None:
         self.body = body
         self.style = style
 
-        border_top = to_filter(show_borders[0])
-        border_right = to_filter(show_borders[1])
-        border_bottom = to_filter(show_borders[2])
-        border_left = to_filter(show_borders[3])
+        if show_borders:
+            show_borders = BorderVisibility(*show_borders)
+        else:
+            show_borders = BorderVisibility(True, True, True, True)
+        border_top = to_filter(show_borders.top)
+        border_right = to_filter(show_borders.right)
+        border_bottom = to_filter(show_borders.bottom)
+        border_left = to_filter(show_borders.left)
 
         if border is not None:
             self.container = HSplit(

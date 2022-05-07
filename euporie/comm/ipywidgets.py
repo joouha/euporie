@@ -12,6 +12,7 @@ from euporie.widgets.display import Display
 from euporie.widgets.inputs import (
     Button,
     Checkbox,
+    Dropdown,
     LabeledWidget,
     Progress,
     Slider,
@@ -32,7 +33,6 @@ class JupyterWidget(Comm):
         self.sync = True
 
     def set_state(self, key, value):
-        log.debug((key, value))
         if self.sync:
             self.data.setdefault("state", {})[key] = value
             self.nb.kernel.kc_comm(
@@ -152,7 +152,7 @@ class ButtonIpyWidget(JupyterWidget):
         return Box(
             Button(
                 text=self.data["state"].get("description", ""),
-                handler=self.click,
+                on_click=self.click,
                 style="class:ipywidget",
             ),
             padding_left=0,
@@ -234,10 +234,10 @@ class NumberTextMixin:
                         height=self.height,
                     ),
                     Button(
-                        "-", show_borders=(True, False, True, True), handler=self.decr
+                        "-", show_borders=(True, False, True, True), on_click=self.decr
                     ),
                     Button(
-                        "+", show_borders=(True, True, True, False), handler=self.incr
+                        "+", show_borders=(True, True, True, False), on_click=self.incr
                     ),
                 ],
                 style="class:ipywidget",
@@ -479,7 +479,7 @@ class ToggleButtonIpyWidget(BoolMixin, JupyterWidget):
         return Box(
             ToggleButton(
                 text=self.data["state"].get("description", ""),
-                handler=self.value_changed,
+                on_click=self.value_changed,
                 style="class:ipywidget",
                 selected=self.data["state"]["value"],
             ),
@@ -494,7 +494,7 @@ class CheckboxIpyWidget(BoolMixin, JupyterWidget):
         return Box(
             Checkbox(
                 text=self.data["state"].get("description", ""),
-                handler=self.value_changed,
+                on_click=self.value_changed,
                 style="class:ipywidget",
                 selected=self.data["state"]["value"],
             ),
@@ -509,7 +509,7 @@ class ValidIpyWidget(BoolMixin, JupyterWidget):
         return LabeledWidget(
             body=Box(
                 Checkbox(
-                    handler=self.value_changed,
+                    on_click=self.value_changed,
                     style="class:ipywidget",
                     selected=self.data["state"]["value"],
                     states=("❌", "✔️"),
@@ -518,6 +518,35 @@ class ValidIpyWidget(BoolMixin, JupyterWidget):
             ),
             label=self.data["state"].get("description", ""),
         )
+
+
+class DropdownIpyWidget(JupyterWidget):
+    @property
+    def options(self) -> "Dict[str, Any]":
+        return
+
+    def _create_view(self, cell: "Cell"):
+        log.debug(self.data["state"])
+        return LabeledWidget(
+            body=Box(
+                Dropdown(
+                    options=self.data["state"]["_options_labels"],
+                    index=self.data["state"]["index"],
+                    on_select=self.update_index,
+                    style="class:ipywidget",
+                ),
+                padding_left=0,
+            ),
+            label=lambda: self.data["state"].get("description", ""),
+            height=1,
+        )
+
+    def update_index(self, dropdown: "Dropdown") -> "None":
+        self.set_state("index", dropdown.index)
+
+    def update_view(self, cell: "Cell", container: "AnyContainer") -> "None":
+        container.body.body.index = self.data["state"]["index"]
+        container.body.body.options = self.data["state"]["_options_labels"]
 
 
 WIDGET_MODELS = {
@@ -541,6 +570,7 @@ WIDGET_MODELS = {
     "ToggleButtonModel": ToggleButtonIpyWidget,
     "CheckboxModel": CheckboxIpyWidget,
     "ValidModel": ValidIpyWidget,
+    "DropdownModel": DropdownIpyWidget,
 }
 
 

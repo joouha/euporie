@@ -8,12 +8,14 @@ from typing import TYPE_CHECKING
 from prompt_toolkit.application.current import get_app
 from prompt_toolkit.buffer import ValidationState
 from prompt_toolkit.cache import SimpleCache
-from prompt_toolkit.filters import Always, Condition, has_focus, to_filter
+from prompt_toolkit.filters import Always, Condition, FilterOrBool, has_focus, to_filter
 from prompt_toolkit.formatted_text.base import to_formatted_text
 from prompt_toolkit.formatted_text.utils import fragment_list_len, fragment_list_width
-from prompt_toolkit.key_binding.key_bindings import KeyBindings
+from prompt_toolkit.key_binding.key_bindings import KeyBindings, merge_key_bindings
 from prompt_toolkit.layout.containers import (
     ConditionalContainer,
+    Float,
+    FloatContainer,
     HSplit,
     VSplit,
     Window,
@@ -25,7 +27,12 @@ from prompt_toolkit.utils import Event
 from prompt_toolkit.validation import Validator
 from prompt_toolkit.widgets.base import Box, TextArea
 
-from euporie.border import EighthBlockLowerLeft, EighthBlockUpperRight, Thin
+from euporie.border import (
+    BorderVisibility,
+    EighthBlockLowerLeft,
+    EighthBlockUpperRight,
+    Thin,
+)
 from euporie.formatted_text.utils import (
     FormattedTextAlign,
     add_border,
@@ -90,11 +97,11 @@ class Button:
 
     def _get_text_fragments(self) -> "StyleAndTextTuples":
         ft = [
-            ("[SetCursorPosition]", ""),
-            *self.text,
+            *to_formatted_text(self.text),
         ]
         ft = align(FormattedTextAlign.CENTER, ft, self.width)
         ft = [(style, text, self.mouse_handler) for style, text, *_ in ft]
+        ft = [("[SetMenuPosition]", ""), *ft]
         return ft
 
     def _get_key_bindings(self) -> "KeyBindings":
@@ -104,35 +111,38 @@ class Button:
         @kb.add(" ")
         @kb.add("enter")
         def _(event: "KeyPressEvent") -> None:
-            self.event.fire()
+            self.on_mouse_down.fire()
+            self.on_click.fire()
 
         return kb
 
     def __init__(
         self,
         text: "AnyFormattedText",
-        handler: "Optional[Callable[[Button], None]]" = None,
+        on_click: "Optional[Callable[[Button], None]]" = None,
+        on_mouse_down: "Optional[Callable[[Button], None]]" = None,
         width: "Optional[int]" = None,
         style: "str" = "",
         border: "Optional[GridStyle]" = WidgetGrid,
-        show_borders: "Tuple[FilterOrBool, FilterOrBool, FilterOrBool, FilterOrBool]" = (
-            True,
-            True,
-            True,
-            True,
-        ),
+        show_borders: "BorderVisibility" = BorderVisibility(True, True, True, True),
         selected: "bool" = False,
+        key_bindings: "Optional[KeyBindings]" = None,
     ) -> None:
-        self.text = to_formatted_text(text)
-        self.event = Event(self, handler)
-        self.width = width or fragment_list_width(self.text) + 2
+        self.text = text
+        self.on_mouse_down = Event(self, on_mouse_down)
+        self.on_click = Event(self, on_click)
+        self.width = width or fragment_list_width(to_formatted_text(self.text)) + 2
         self.style = style
         self.selected = selected
+        self.key_bindings = merge_key_bindings(
+            [self._get_key_bindings()]
+            + ([key_bindings] if key_bindings is not None else [])
+        )
         self.container = Border(
             Window(
                 FormattedTextControl(
                     self._get_text_fragments,
-                    key_bindings=self._get_key_bindings(),
+                    key_bindings=self.key_bindings,
                     focusable=True,
                     show_cursor=False,
                 ),
@@ -149,9 +159,10 @@ class Button:
         if mouse_event.event_type == MouseEventType.MOUSE_DOWN:
             get_app().layout.focus(self)
             self.selected = True
+            self.on_mouse_down.fire()
         elif mouse_event.event_type == MouseEventType.MOUSE_UP:
             self.selected = False
-            self.event.fire()
+            self.on_click.fire()
 
     def __pt_container__(self) -> "Container":
         return self.container
@@ -160,7 +171,7 @@ class Button:
 class ToggleMixin:
     def toggle(self):
         self.selected = not self.selected
-        self.event.fire()
+        self.on_click.fire()
 
     def _get_key_bindings(self) -> "KeyBindings":
         "Key bindings for the Button."
@@ -199,13 +210,13 @@ class Checkbox(ToggleMixin):
     def __init__(
         self,
         text: "AnyFormattedText" = "",
-        handler: "Optional[Callable[[Button], None]]" = None,
+        on_click: "Optional[Callable[[Button], None]]" = None,
         states: "Tuple[str, str]" = ("☐", "☑"),
         style: "str" = "",
         selected: "bool" = False,
     ) -> None:
         self.text = to_formatted_text(text)
-        self.event = Event(self, handler)
+        self.on_click = Event(self, on_click)
         self.states = states
         self.style = style
         self.selected = selected
@@ -234,6 +245,7 @@ class Text:
         style: "str" = "",
         height: "int" = 1,
         width: "Optional[int]" = None,
+        show_borders: "Optional[BorderVisibility]" = None,
         on_text_changed: "Optional[Callable[[Buffer], None]]" = None,
         validation: "Optional[Callable[[str], bool]]" = None,
         accept_handler: "Optional[BufferAcceptHandler]" = None,
@@ -261,6 +273,7 @@ class Text:
             self.text_area,
             border=WidgetGrid,
             style=self.border_style,
+            show_borders=show_borders,
         )
 
     def border_style(self):
@@ -876,6 +889,147 @@ class Progress:
                 return f"{self.style} {extra}"
 
         return _style
+
+    def __pt_container__(self) -> "Container":
+        return self.container
+
+
+class Dropdown:
+    """A drop-down selection widget."""
+
+    def _text(self) -> "StyleAndTextTuples":
+        formatted_options = self.formatted_options
+        max_width = max(fragment_list_width(x) for x in formatted_options)
+        ft = align(FormattedTextAlign.LEFT, formatted_options[self.index], max_width)
+        ft += [("", " "), ("class:arrow", self.arrow)]
+        return ft
+
+    def _menu_fragments(self) -> "StyleAndTextTuples":
+        ft = []
+        formatted_options = self.formatted_options
+        max_width = max(fragment_list_width(x) for x in formatted_options)
+        for i, option in enumerate(formatted_options):
+            # Pad each option
+            option = align(FormattedTextAlign.LEFT, option, width=max_width + 2)
+            item_style = "class:hovered" if i == self.hovered else ""
+            handler = partial(self.menu_mouse_handler, i)
+            ft.extend(
+                [
+                    (item_style, " ", handler),
+                    *[
+                        (f"{item_style} {style}", text, handler)
+                        for style, text, *_ in option
+                    ],
+                    (item_style, " ", handler),
+                    ("", "\n"),
+                ]
+            )
+        # Remoe the last newline
+        ft.pop()
+        return ft
+
+    def _get_key_bindings(self) -> "KeyBindings":
+        "Key bindings for the Button."
+        kb = KeyBindings()
+
+        menu_visible = Condition(lambda: self.menu_visible)
+
+        @kb.add("enter", filter=menu_visible)
+        @kb.add(" ", filter=menu_visible)
+        def _(event: "KeyPressEvent") -> None:
+            self.index = self.hovered
+            self.menu_visible = False
+            self.button.selected = False
+            self.on_select.fire()
+
+        @kb.add("home", filter=menu_visible)
+        def _(event: "KeyPressEvent") -> None:
+            self.hovered = 0
+
+        @kb.add("up", filter=menu_visible)
+        def _(event: "KeyPressEvent") -> None:
+            self.hovered = max(0, min(self.hovered - 1, len(self.options) - 1))
+
+        @kb.add("down", filter=menu_visible)
+        def _(event: "KeyPressEvent") -> None:
+            self.hovered = max(0, min(self.hovered + 1, len(self.options) - 1))
+
+        @kb.add("end", filter=menu_visible)
+        def _(event: "KeyPressEvent") -> None:
+            self.hovered = len(self.options) - 1
+
+        @kb.add("home", filter=~menu_visible)
+        def _(event: "KeyPressEvent") -> None:
+            self.index = 0
+
+        @kb.add("up", filter=~menu_visible)
+        def _(event: "KeyPressEvent") -> None:
+            self.index = max(0, min(self.index - 1, len(self.options) - 1))
+
+        @kb.add("down", filter=~menu_visible)
+        def _(event: "KeyPressEvent") -> None:
+            self.index = max(0, min(self.index + 1, len(self.options) - 1))
+
+        @kb.add("end", filter=~menu_visible)
+        def _(event: "KeyPressEvent") -> None:
+            self.index = len(self.options) - 1
+
+        return kb
+
+    def __init__(
+        self,
+        options: "List[AnyFormattedText]",
+        index: "int" = 0,
+        on_select: "Optional[Callable[[Dropdown], None]]" = None,
+        style: "str" = "",
+        arrow: "str" = "⯆",
+    ):
+        self.menu_visible = False
+        self.options = options
+        self.index = index
+        self.on_select = Event(self, on_select)
+        self.hovered = index
+        self.arrow = arrow
+        self.button = Button(
+            self._text,
+            on_mouse_down=self.toggle_menu,
+            style=f"class:dropdown {style}",
+            key_bindings=self._get_key_bindings(),
+        )
+        self.container = self.button
+        # self.container = FloatContainer(
+        # content=self.button,
+        # floats=[],
+        # )
+        self.float_ = Float(
+            ConditionalContainer(
+                Window(
+                    FormattedTextControl(self._menu_fragments),
+                    style=f"class:dropdown,dropdown.menu {style}",
+                ),
+                filter=Condition(lambda: self.menu_visible) & has_focus(self),
+            ),
+            xcursor=True,
+            ycursor=True,
+        )
+        get_app().add_float(self.float_)
+
+    def menu_mouse_handler(self, i, mouse_event: "MouseEvent"):
+        if mouse_event.event_type == MouseEventType.MOUSE_MOVE:
+            self.hovered = i
+        if mouse_event.event_type == MouseEventType.MOUSE_UP:
+            self.index = i
+            self.menu_visible = False
+            self.button.selected = False
+            self.on_select.fire()
+
+    @property
+    def formatted_options(self):
+        return [to_formatted_text(x) for x in self.options]
+
+    def toggle_menu(self, button: "Button"):
+        self.menu_visible = not self.menu_visible
+        self.hovered = self.index
 
     def __pt_container__(self) -> "Container":
         return self.container

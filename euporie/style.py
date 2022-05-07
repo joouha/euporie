@@ -372,6 +372,8 @@ def build_style(
         "ipywidget progress progress.border right": "fg:#E9E7E3",
         "ipywidget progress progress.border bottom": "fg:#E9E7E3",
         "ipywidget progress progress.border left": "fg:#606060",
+        "ipywidget dropdown dropdown.menu": "fg:#000000 bg:#ffffff",
+        "ipywidget dropdown dropdown.menu hovered": "fg:#ffffff bg:ansiblue",
     }
 
     # Add shadow combination for every element
