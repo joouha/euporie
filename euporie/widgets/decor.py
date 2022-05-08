@@ -4,14 +4,17 @@ import logging
 from functools import partial
 from typing import TYPE_CHECKING
 
-from prompt_toolkit.filters import Condition, to_filter
+from prompt_toolkit.filters import Condition, has_focus, to_filter
 from prompt_toolkit.layout.containers import (
     ConditionalContainer,
     Container,
     DynamicContainer,
+    Float,
+    FloatContainer,
     HSplit,
     VSplit,
     Window,
+    to_container,
 )
 from prompt_toolkit.layout.dimension import Dimension
 from prompt_toolkit.layout.mouse_handlers import MouseHandlers
@@ -311,3 +314,46 @@ class Border:
 
     def __pt_container__(self) -> Container:
         return self.container
+
+
+class FocusedStyle(Container):
+    """Applies a style to child containers when focused."""
+
+    def __init__(self, body: "AnyContainer", style: "str" = "class:focused") -> "None":
+        self.body = body
+        self.style = style
+        self.has_focus = has_focus(self.body)
+
+    def reset(self) -> "None":
+        to_container(self.body).reset()
+
+    def preferred_width(self, max_available_width: "int") -> "Dimension":
+        return to_container(self.body).preferred_width(max_available_width)
+
+    def preferred_height(
+        self, width: "int", max_available_height: "int"
+    ) -> "Dimension":
+        return to_container(self.body).preferred_height(width, max_available_height)
+
+    def write_to_screen(
+        self,
+        screen: "Screen",
+        mouse_handlers: "MouseHandlers",
+        write_position: "WritePosition",
+        parent_style: "str",
+        erase_bg: "bool",
+        z_index: "Optional[int]",
+    ) -> "None":
+        style = self.style if self.has_focus() else ""
+        return to_container(self.body).write_to_screen(
+            screen,
+            mouse_handlers,
+            write_position,
+            f"{parent_style} {style}",
+            erase_bg,
+            z_index,
+        )
+
+    def get_children(self) -> "List[Container]":
+        """Return the list of child :class:`.Container` objects."""
+        return [to_container(self.body)]

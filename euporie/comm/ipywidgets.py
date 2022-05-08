@@ -7,7 +7,7 @@ from prompt_toolkit.widgets.base import Box
 
 from euporie.comm.base import Comm
 from euporie.widgets.cell_outputs import CellOutputArea
-from euporie.widgets.decor import Border
+from euporie.widgets.decor import Border, FocusedStyle
 from euporie.widgets.display import Display
 from euporie.widgets.inputs import (
     Button,
@@ -15,6 +15,7 @@ from euporie.widgets.inputs import (
     Dropdown,
     LabeledWidget,
     Progress,
+    Selection,
     Slider,
     Text,
     ToggleButton,
@@ -51,7 +52,7 @@ class UnimplementedWidget(JupyterWidget):
         return Display(f"[Widget not implemented]", format_="ansi")
 
 
-class OutputIpyWidget(JupyterWidget):
+class OutputModel(JupyterWidget):
     """An Output widget."""
 
     model_name = "OutputModel"
@@ -127,35 +128,37 @@ class LayoutMixin:
         container.children = self.children(cell)
 
 
-class HBoxIpyWidget(LayoutMixin, JupyterWidget):
+class HBoxModel(LayoutMixin, JupyterWidget):
     """A horizontal layout."""
 
     def _create_view(self, cell: "Cell"):
         return ReferencedSplit(VSplit, self.children(cell), padding=1)
 
 
-class VBoxIpyWidget(LayoutMixin, JupyterWidget):
+class VBoxModel(LayoutMixin, JupyterWidget):
     """A vertical layout."""
 
     def _create_view(self, cell: "Cell"):
         return ReferencedSplit(HSplit, self.children(cell), padding=0)
 
 
-class BoxIpyWidget(HBoxIpyWidget):
+class BoxModel(HBoxModel):
     """Appears to be the same a HBox."""
 
 
-class ButtonIpyWidget(JupyterWidget):
+class ButtonModel(JupyterWidget):
     """A Button widget."""
 
     def _create_view(self, cell: "Cell"):
-        return Box(
-            Button(
-                text=self.data["state"].get("description", ""),
-                on_click=self.click,
+        return FocusedStyle(
+            Box(
+                Button(
+                    text=self.data["state"].get("description", ""),
+                    on_click=self.click,
+                ),
+                padding_left=0,
                 style="class:ipywidget",
-            ),
-            padding_left=0,
+            )
         )
 
     def click(self, button: "Button") -> "None":
@@ -175,16 +178,17 @@ class TextBoxMixin:
         return x
 
     def _create_view(self, cell: "Cell"):
-        return LabeledWidget(
-            body=Text(
-                text=self.data.get("state", {}).get("value", ""),
+        return FocusedStyle(
+            LabeledWidget(
+                body=Text(
+                    text=self.data.get("state", {}).get("value", ""),
+                    on_text_changed=self.text_changed,
+                    validation=self.validation,
+                    height=self.height,
+                ),
+                label=lambda: self.data.get("state", {}).get("description", ""),
                 style="class:ipywidget",
-                on_text_changed=self.text_changed,
-                validation=self.validation,
-                height=self.height,
-            ),
-            label=lambda: self.data.get("state", {}).get("description", ""),
-            height=1,
+            )
         )
 
     def text_changed(self, buffer: "Buffer") -> "None":
@@ -192,14 +196,16 @@ class TextBoxMixin:
             self.set_state("value", value)
 
     def update_view(self, cell: "Cell", container: "AnyContainer") -> "None":
-        container.body.buffer.text = str(self.data.get("state", {}).get("value", ""))
+        container.body.body.buffer.text = str(
+            self.data.get("state", {}).get("value", "")
+        )
 
 
-class TextIpyWidget(TextBoxMixin, JupyterWidget):
+class TextModel(TextBoxMixin, JupyterWidget):
     """A text input widget."""
 
 
-class TextareaIpyWidget(TextBoxMixin, JupyterWidget):
+class TextareaModel(TextBoxMixin, JupyterWidget):
     """A text input widget."""
 
     height = 3
@@ -223,27 +229,32 @@ class IntValueMixin:
 
 class NumberTextMixin:
     def _create_view(self, cell: "Cell"):
-        return LabeledWidget(
-            body=ReferencedSplit(
-                VSplit,
-                [
-                    Text(
-                        text=self.data.get("state", {}).get("value", ""),
-                        on_text_changed=self.text_changed,
-                        validation=self.validation,
-                        height=self.height,
-                    ),
-                    Button(
-                        "-", show_borders=(True, False, True, True), on_click=self.decr
-                    ),
-                    Button(
-                        "+", show_borders=(True, True, True, False), on_click=self.incr
-                    ),
-                ],
+        return FocusedStyle(
+            LabeledWidget(
+                body=ReferencedSplit(
+                    VSplit,
+                    [
+                        Text(
+                            text=self.data.get("state", {}).get("value", ""),
+                            on_text_changed=self.text_changed,
+                            validation=self.validation,
+                            height=self.height,
+                        ),
+                        Button(
+                            "-",
+                            show_borders=(True, False, True, True),
+                            on_click=self.decr,
+                        ),
+                        Button(
+                            "+",
+                            show_borders=(True, True, True, False),
+                            on_click=self.incr,
+                        ),
+                    ],
+                ),
+                label=lambda: self.data.get("state", {}).get("description", ""),
                 style="class:ipywidget",
-            ),
-            label=lambda: self.data.get("state", {}).get("description", ""),
-            height=1,
+            )
         )
 
     def incr(self, button: "Button") -> "None":
@@ -264,13 +275,11 @@ class NumberTextMixin:
         )
 
 
-class IntTextIpyWidget(IntValueMixin, NumberTextMixin, TextBoxMixin, JupyterWidget):
+class IntTextModel(IntValueMixin, NumberTextMixin, TextBoxMixin, JupyterWidget):
     """An integer textbox widget."""
 
 
-class BoundedIntTextIpyWidget(
-    IntValueMixin, NumberTextMixin, TextBoxMixin, JupyterWidget
-):
+class BoundedIntTextModel(IntValueMixin, NumberTextMixin, TextBoxMixin, JupyterWidget):
     """An integer textbox widget with upper and lower bounds."""
 
 
@@ -290,11 +299,11 @@ class FloatValueMixin:
             return value
 
 
-class FloatTextIpyWidget(FloatValueMixin, NumberTextMixin, TextBoxMixin, JupyterWidget):
+class FloatTextModel(FloatValueMixin, NumberTextMixin, TextBoxMixin, JupyterWidget):
     """A float textbox widget."""
 
 
-class BoundedFloatTextIpyWidget(
+class BoundedFloatTextModel(
     FloatValueMixin, NumberTextMixin, TextBoxMixin, JupyterWidget
 ):
     """An float textbox widget with upper and lover bounds."""
@@ -310,33 +319,37 @@ class SliderMixin:
         if value in self.options:
             index = self.options.index(value)
             self.sync = False
-            container.body.body.data.set_index(ab=index)
+            container.body.body.body.data.set_index(ab=index)
             self.sync = True
 
     def _create_view(self, cell: "Cell"):
         options = self.options
         orientation = self.data["state"]["orientation"]
-        return Box(
-            LabeledWidget(
-                body=Slider(
-                    options=options,
-                    index=options.index(self.data["state"]["value"]),
-                    style="class:ipywidget",
-                    show_readout=Condition(lambda: self.data["state"]["readout"]),
-                    arrows=("⮜", "⮞") if orientation == "horizontal" else ("⮟", "⮝"),
-                    show_arrows=True,
-                    on_value_change=self.value_changed,
+        return FocusedStyle(
+            Box(
+                LabeledWidget(
+                    body=Slider(
+                        options=options,
+                        index=options.index(self.data["state"]["value"]),
+                        show_readout=Condition(lambda: self.data["state"]["readout"]),
+                        arrows=("⮜", "⮞")
+                        if orientation == "horizontal"
+                        else ("⮟", "⮝"),
+                        show_arrows=True,
+                        on_value_change=self.value_changed,
+                        orientation=orientation,
+                    ),
                     orientation=orientation,
+                    label=lambda: self.data.get("state", {}).get("description", ""),
+                    height=1,
                 ),
-                orientation=orientation,
-                label=lambda: self.data.get("state", {}).get("description", ""),
-                height=1,
-            ),
-            padding_left=0,
+                padding_left=0,
+                style="class:ipywidget",
+            )
         )
 
 
-class IntSliderIpyWidget(SliderMixin, IntValueMixin, JupyterWidget):
+class IntSliderModel(SliderMixin, IntValueMixin, JupyterWidget):
     @property
     def options(self) -> "List[int]":
         return list(
@@ -348,7 +361,7 @@ class IntSliderIpyWidget(SliderMixin, IntValueMixin, JupyterWidget):
         )
 
 
-class FloatSliderIpyWidget(SliderMixin, FloatValueMixin, JupyterWidget):
+class FloatSliderModel(SliderMixin, FloatValueMixin, JupyterWidget):
     @property
     def options(self) -> "List[float]":
         start = Decimal(str(self.data["state"]["min"]))
@@ -357,7 +370,7 @@ class FloatSliderIpyWidget(SliderMixin, FloatValueMixin, JupyterWidget):
         return [start + step * i for i in range(int((stop - start) / step))]
 
 
-class FloatLogSliderIpyWidget(SliderMixin, FloatValueMixin, JupyterWidget):
+class FloatLogSliderModel(SliderMixin, FloatValueMixin, JupyterWidget):
     @property
     def options(self) -> "List[float]":
         from decimal import Decimal
@@ -385,31 +398,35 @@ class RangeSliderMixin:
     def _create_view(self, cell: "Cell"):
         options = self.options
         orientation = self.data["state"]["orientation"]
-        return Box(
-            LabeledWidget(
-                body=Slider(
-                    options=options,
-                    index=[options.index(x) for x in self.data["state"]["value"]],
-                    style="class:ipywidget",
-                    show_readout=Condition(lambda: self.data["state"]["readout"]),
-                    arrows=("⮜", "⮞") if orientation == "horizontal" else ("⮟", "⮝"),
-                    show_arrows=True,
-                    on_value_change=self.value_changed,
+        return FocusedStyle(
+            Box(
+                LabeledWidget(
+                    body=Slider(
+                        options=options,
+                        index=[options.index(x) for x in self.data["state"]["value"]],
+                        show_readout=Condition(lambda: self.data["state"]["readout"]),
+                        arrows=("⮜", "⮞")
+                        if orientation == "horizontal"
+                        else ("⮟", "⮝"),
+                        show_arrows=True,
+                        on_value_change=self.value_changed,
+                        orientation=orientation,
+                    ),
                     orientation=orientation,
+                    label=lambda: self.data.get("state", {}).get("description", ""),
+                    height=1,
                 ),
-                orientation=orientation,
-                label=lambda: self.data.get("state", {}).get("description", ""),
-                height=1,
-            ),
-            padding_left=0,
+                padding_left=0,
+                style="class:ipywidget",
+            )
         )
 
 
-class IntRangeSliderIpyWidget(RangeSliderMixin, FloatSliderIpyWidget):
+class IntRangeSliderModel(RangeSliderMixin, FloatSliderModel):
     ...
 
 
-class FloatRangeSliderIpyWidget(RangeSliderMixin, FloatSliderIpyWidget):
+class FloatRangeSliderModel(RangeSliderMixin, FloatSliderModel):
     ...
 
 
@@ -417,28 +434,31 @@ class ProgressMixin:
     def _create_view(self, cell: "Cell") -> "AnyContainer":
         orientation = self.data["state"]["orientation"]
         step = self.data["state"].get("step", 1)
-        return Box(
-            LabeledWidget(
-                body=Progress(
-                    start=self.data["state"]["min"],
-                    stop=self.data["state"]["max"],
-                    step=step,
-                    value=self.data["state"]["value"],
+        return FocusedStyle(
+            Box(
+                LabeledWidget(
+                    body=Progress(
+                        start=self.data["state"]["min"],
+                        stop=self.data["state"]["max"],
+                        step=step,
+                        value=self.data["state"]["value"],
+                        orientation=orientation,
+                        style=self.style,
+                    ),
                     orientation=orientation,
-                    style=self.style,
+                    label=lambda: self.data.get("state", {}).get("description", ""),
+                    height=1,
                 ),
-                orientation=orientation,
-                label=lambda: self.data.get("state", {}).get("description", ""),
-                height=1,
-            ),
-            padding_left=0,
+                padding_left=0,
+                style="class:ipywidget",
+            )
         )
 
     def style(self):
         style = self.data["state"]["bar_style"]
         if style:
-            style = f"class:{style}"
-        return f"class:ipywidget {style}"
+            return f"class:{style}"
+        return ""
 
     def update_view(self, cell: "Cell", container: "AnyContainer") -> "None":
         container.body.body.style = self.style
@@ -447,11 +467,11 @@ class ProgressMixin:
         container.body.body.control.stop = self.data["state"]["max"]
 
 
-class IntProgressIpyWidget(ProgressMixin, IntValueMixin, JupyterWidget):
+class IntProgressModel(ProgressMixin, IntValueMixin, JupyterWidget):
     """"""
 
 
-class FloatProgressIpyWidget(ProgressMixin, FloatValueMixin, JupyterWidget):
+class FloatProgressModel(ProgressMixin, FloatValueMixin, JupyterWidget):
     """"""
 
 
@@ -472,105 +492,205 @@ class BoolMixin:
         container.body.selected = self.data["state"]["value"]
 
 
-class ToggleButtonIpyWidget(BoolMixin, JupyterWidget):
+class ToggleButtonModel(BoolMixin, JupyterWidget):
     """A toggleable button widget."""
 
     def _create_view(self, cell: "Cell"):
-        return Box(
-            ToggleButton(
-                text=self.data["state"].get("description", ""),
-                on_click=self.value_changed,
+        return FocusedStyle(
+            Box(
+                ToggleButton(
+                    text=self.data["state"].get("description", ""),
+                    on_click=self.value_changed,
+                    selected=self.data["state"]["value"],
+                ),
+                padding_left=0,
                 style="class:ipywidget",
-                selected=self.data["state"]["value"],
-            ),
-            padding_left=0,
+            )
         )
 
 
-class CheckboxIpyWidget(BoolMixin, JupyterWidget):
+class CheckboxModel(BoolMixin, JupyterWidget):
     """A checkbox widget."""
 
     def _create_view(self, cell: "Cell"):
-        return Box(
-            Checkbox(
-                text=self.data["state"].get("description", ""),
-                on_click=self.value_changed,
+        return FocusedStyle(
+            Box(
+                Checkbox(
+                    text=self.data["state"].get("description", ""),
+                    on_click=self.value_changed,
+                    selected=self.data["state"]["value"],
+                ),
+                padding_left=0,
                 style="class:ipywidget",
-                selected=self.data["state"]["value"],
-            ),
-            padding_left=0,
+            )
         )
 
 
-class ValidIpyWidget(BoolMixin, JupyterWidget):
+class ValidModel(BoolMixin, JupyterWidget):
     """A validity indicator widget."""
 
     def _create_view(self, cell: "Cell"):
-        return LabeledWidget(
-            body=Box(
-                Checkbox(
-                    on_click=self.value_changed,
-                    style="class:ipywidget",
-                    selected=self.data["state"]["value"],
-                    states=("❌", "✔️"),
+        return FocusedStyle(
+            LabeledWidget(
+                body=Box(
+                    Checkbox(
+                        on_click=self.value_changed,
+                        selected=self.data["state"]["value"],
+                        prefix=("❌", "✔️"),
+                    ),
+                    padding_left=0,
                 ),
-                padding_left=0,
+                label=self.data["state"].get("description", ""),
             ),
-            label=self.data["state"].get("description", ""),
+            style="class:ipywidget",
         )
 
 
-class DropdownIpyWidget(JupyterWidget):
-    @property
-    def options(self) -> "Dict[str, Any]":
-        return
-
+class DropdownModel(JupyterWidget):
     def _create_view(self, cell: "Cell"):
-        log.debug(self.data["state"])
-        return LabeledWidget(
-            body=Box(
-                Dropdown(
-                    options=self.data["state"]["_options_labels"],
-                    index=self.data["state"]["index"],
-                    on_select=self.update_index,
-                    style="class:ipywidget",
+        return FocusedStyle(
+            LabeledWidget(
+                body=Box(
+                    Dropdown(
+                        options=self.data["state"]["_options_labels"],
+                        index=self.data["state"]["index"],
+                        on_change=self.update_index,
+                        style="class:ipywidget",
+                    ),
+                    padding_left=0,
                 ),
-                padding_left=0,
-            ),
-            label=lambda: self.data["state"].get("description", ""),
-            height=1,
+                label=lambda: self.data["state"].get("description", ""),
+                height=1,
+                style="class:ipywidget",
+            )
         )
 
-    def update_index(self, dropdown: "Dropdown") -> "None":
-        self.set_state("index", dropdown.index)
+    def update_index(self, container: "Select") -> "None":
+        self.set_state("index", container.index)
 
     def update_view(self, cell: "Cell", container: "AnyContainer") -> "None":
         container.body.body.index = self.data["state"]["index"]
         container.body.body.options = self.data["state"]["_options_labels"]
 
 
+class RadioButtonsModel(JupyterWidget):
+    def _create_view(self, cell: "Cell"):
+        return FocusedStyle(
+            LabeledWidget(
+                body=Box(
+                    Selection(
+                        options=self.data["state"]["_options_labels"],
+                        index=self.data["state"]["index"],
+                        on_change=self.update_index,
+                        style="class:radio-buttons",
+                        prefix=("○", "◉"),
+                        multiple=False,
+                    ),
+                    padding_left=0,
+                ),
+                label=lambda: self.data["state"].get("description", ""),
+                height=1,
+                style="class:ipywidget",
+            )
+        )
+
+    def update_index(self, container: "Select") -> "None":
+        self.set_state("index", container.index)
+
+    def update_view(self, cell: "Cell", container: "AnyContainer") -> "None":
+        container.body.body.index = self.data["state"]["index"]
+        container.body.body.options = self.data["state"]["_options_labels"]
+
+
+class SelectModel(JupyterWidget):
+    def _create_view(self, cell: "Cell"):
+        return FocusedStyle(
+            LabeledWidget(
+                body=Box(
+                    Border(
+                        Selection(
+                            options=self.data["state"]["_options_labels"],
+                            index=self.data["state"]["index"],
+                            on_change=self.update_index,
+                            style="class:select",
+                            multiple=False,
+                        ),
+                        border=WidgetGrid,
+                        style="class:select.border",
+                    ),
+                    padding_left=0,
+                ),
+                label=lambda: self.data["state"].get("description", ""),
+                height=1,
+                style="class:ipywidget",
+            )
+        )
+
+    def update_index(self, container: "Select") -> "None":
+        self.set_state("index", container.index)
+
+    def update_view(self, cell: "Cell", container: "AnyContainer") -> "None":
+        container.body.body.body.body.options = self.data["state"]["_options_labels"]
+        container.body.body.body.body.index = self.data["state"]["index"]
+
+
+class SelectMultipleModel(JupyterWidget):
+    def _create_view(self, cell: "Cell"):
+        return FocusedStyle(
+            LabeledWidget(
+                body=Box(
+                    Border(
+                        Selection(
+                            options=self.data["state"]["_options_labels"],
+                            indices=self.data["state"]["index"],
+                            on_change=self.update_index,
+                            style="class:select",
+                            multiple=True,
+                        ),
+                        border=WidgetGrid,
+                        style="class:select.border",
+                    ),
+                    padding_left=0,
+                ),
+                label=lambda: self.data["state"].get("description", ""),
+                height=1,
+                style="class:ipywidget",
+            )
+        )
+
+    def update_index(self, container: "Select") -> "None":
+        self.set_state("index", container.indices)
+
+    def update_view(self, cell: "Cell", container: "AnyContainer") -> "None":
+        container.body.body.body.body.options = self.data["state"]["_options_labels"]
+        container.body.body.body.body.indices = self.data["state"]["index"]
+
+
 WIDGET_MODELS = {
-    "HBoxModel": HBoxIpyWidget,
-    "VBoxModel": VBoxIpyWidget,
-    "OutputModel": OutputIpyWidget,
-    "ButtonModel": ButtonIpyWidget,
-    "TextModel": TextIpyWidget,
-    "TextareaModel": TextareaIpyWidget,
-    "IntTextModel": IntTextIpyWidget,
-    "BoundedIntTextModel": BoundedIntTextIpyWidget,
-    "FloatTextModel": FloatTextIpyWidget,
-    "BoundedFloatTextModel": BoundedFloatTextIpyWidget,
-    "IntSliderModel": IntSliderIpyWidget,
-    "FloatSliderModel": FloatSliderIpyWidget,
-    "FloatLogSliderModel": FloatLogSliderIpyWidget,
-    "IntRangeSliderModel": IntRangeSliderIpyWidget,
-    "FloatRangeSliderModel": FloatRangeSliderIpyWidget,
-    "IntProgressModel": IntProgressIpyWidget,
-    "FloatProgressModel": FloatProgressIpyWidget,
-    "ToggleButtonModel": ToggleButtonIpyWidget,
-    "CheckboxModel": CheckboxIpyWidget,
-    "ValidModel": ValidIpyWidget,
-    "DropdownModel": DropdownIpyWidget,
+    "HBoxModel": HBoxModel,
+    "VBoxModel": VBoxModel,
+    "OutputModel": OutputModel,
+    "ButtonModel": ButtonModel,
+    "TextModel": TextModel,
+    "TextareaModel": TextareaModel,
+    "IntTextModel": IntTextModel,
+    "BoundedIntTextModel": BoundedIntTextModel,
+    "FloatTextModel": FloatTextModel,
+    "BoundedFloatTextModel": BoundedFloatTextModel,
+    "IntSliderModel": IntSliderModel,
+    "FloatSliderModel": FloatSliderModel,
+    "FloatLogSliderModel": FloatLogSliderModel,
+    "IntRangeSliderModel": IntRangeSliderModel,
+    "FloatRangeSliderModel": FloatRangeSliderModel,
+    "IntProgressModel": IntProgressModel,
+    "FloatProgressModel": FloatProgressModel,
+    "ToggleButtonModel": ToggleButtonModel,
+    "CheckboxModel": CheckboxModel,
+    "ValidModel": ValidModel,
+    "DropdownModel": DropdownModel,
+    "RadioButtonsModel": RadioButtonsModel,
+    "SelectModel": SelectModel,
+    "SelectMultipleModel": SelectMultipleModel,
 }
 
 

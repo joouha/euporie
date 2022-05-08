@@ -216,6 +216,7 @@ def build_style(
         # status of cursor-line.
         **dict(default_ui_style().style_rules),
         "default": f"fg:{cp.bg.base} bg:{cp.bg.base}",
+        "selected": "fg:ansiblue",
         # Logo
         "logo": "fg:#dd0000",
         # Pattern
@@ -330,13 +331,15 @@ def build_style(
         "shadow": f"bg:{cp.bg.darker(0.45)}",
         # Inputs
         "input": f"bg:{cp.bg.more(0.05)}",
-        "button": f"bg:{cp.bg.more(0.05)}",
-        "button.arrow": "",
-        "button button.focused": "fg:#ffffff bg:ansidarkred",
+        "button": "",
+        # "button": f"bg:{cp.bg.more(0.05)}",
+        # "button.arrow": "",
+        # "button button.focused": "fg:#ffffff bg:ansidarkred",
         # Ipywidgets
-        "ipywidget button": "fg:black bg:#d4d0c8",
-        "ipywidget button.focused": "fg:black bg:#d4d0c8",
-        "ipywidget button button.border": "bg:default",
+        "ipywidget": "bg:default",
+        "ipywidget focused": f"bg:{cp.bg.more(0.05)}",
+        "ipywidget button button.face": "fg:black bg:#d4d0c8",
+        # "ipywidget button button.border": "",
         "ipywidget button button.border right": "fg:#606060",
         "ipywidget button button.border bottom": "fg:#606060",
         "ipywidget button button.border left": "fg:#ffffff",
@@ -345,8 +348,7 @@ def build_style(
         "ipywidget button.selected button.border bottom": "fg:#ffffff",
         "ipywidget button.selected button.border left": "fg:#606060",
         "ipywidget button.selected button.border top": "fg:#606060",
-        "ipywidget text-area": "fg:black bg:white",
-        "ipywidget text-area text-area.border": "bg:default",
+        "ipywidget text-area.text": "fg:black bg:white",
         "ipywidget text-area text-area.border top": "fg:#606060",
         "ipywidget text-area text-area.border right": "fg:#E9E7E3",
         "ipywidget text-area text-area.border bottom": "fg:#E9E7E3",
@@ -374,6 +376,16 @@ def build_style(
         "ipywidget progress progress.border left": "fg:#606060",
         "ipywidget dropdown dropdown.menu": "fg:#000000 bg:#ffffff",
         "ipywidget dropdown dropdown.menu hovered": "fg:#ffffff bg:ansiblue",
+        "ipywidget radio-buttons selected": "fg:default",
+        "ipywidget radio-buttons prefix selected": "fg:ansiblue",
+        "ipywidget select selection": "fg:black bg:white",
+        "ipywidget select selection hovered": "fg:black bg:#f0f0f0",
+        "ipywidget select selection selected": "fg:white bg:ansiblue",
+        "ipywidget select selection hovered selected": "fg:white bg:ansidarkblue",
+        "ipywidget select select.border top": "fg:#606060",
+        "ipywidget select select.border right": "fg:#E9E7E3",
+        "ipywidget select select.border bottom": "fg:#E9E7E3",
+        "ipywidget select select.border left": "fg:#606060",
     }
 
     # Add shadow combination for every element
