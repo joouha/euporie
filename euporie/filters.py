@@ -7,8 +7,11 @@ from prompt_toolkit.enums import EditingMode
 from prompt_toolkit.filters import (
     Condition,
     emacs_insert_mode,
+    emacs_mode,
     to_filter,
     vi_insert_mode,
+    vi_mode,
+    vi_replace_mode,
 )
 
 from euporie.app.current import get_edit_app as get_app
@@ -265,5 +268,12 @@ def kernel_is_python() -> "bool":
     )
 
 
-"""Determine if any binding style is in insert mode"""
-insert_mode = vi_insert_mode | emacs_insert_mode | micro_insert_mode
+"""Determine if any binding style is in insert mode."""
+insert_mode = (
+    (vi_mode & vi_insert_mode)
+    | (emacs_mode & emacs_insert_mode)
+    | (micro_mode & micro_insert_mode)
+)
+
+"""Determine if any binding style is in replace mode."""
+replace_mode = micro_replace_mode | vi_replace_mode

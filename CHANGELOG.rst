@@ -5,6 +5,21 @@ Changelog
 Notable changes to this project will be documented in this file.
 
 *********************
+v1.6.1 - (2022-05-08)
+*********************
+
+Changed
+=======
+
+- Allow ``file:`` scheme links in markdown
+
+Fixed
+=====
+
+- Enable entering vi navigation mode
+- Change "go to matching bracket" command key-binding in micro mode to :kbd:`Alt+(` / :kbd:`Alt+)`, so as not to conflict with the "find-next" command
+
+*********************
 v1.6.0 - (2022-04-26)
 *********************
 

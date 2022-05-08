@@ -27,6 +27,7 @@ from prompt_toolkit.widgets import Box, Label, RadioList
 
 from euporie.app.current import get_edit_app as get_app
 from euporie.config import config
+from euporie.filters import insert_mode, replace_mode
 from euporie.key_binding.bindings.commands import load_command_bindings
 from euporie.suggest import KernelAutoSuggest
 from euporie.tabs.base import Tab
@@ -938,7 +939,7 @@ class EditNotebook(KernelNotebook):
         """Generates the formatted text for the statusbar."""
         return (
             [
-                "^" if self.edit_mode else ">",
+                self.mode(),
                 f"Cell {self.page.selected_slice.start+1}",
                 "Saving.." if self.saving else "",
             ],
@@ -947,3 +948,24 @@ class EditNotebook(KernelNotebook):
                 KERNEL_STATUS_REPR[self.kernel.status] if self.kernel else ".",
             ],
         )
+
+    def mode(self) -> "str":
+        """Returns a symbol representing the current mode.
+
+        * ``^``: Notebook mode
+        * ``>``: Navigation mode
+        * ``I``: Insert mode
+        * ``v``: Visual mode
+
+        Returns:
+            A character representing the current mode
+        """
+        # TODO - sort this out
+        if self.edit_mode:
+            if insert_mode():
+                return "I"
+            elif replace_mode():
+                return "o"
+            else:
+                return ">"
+        return "^"

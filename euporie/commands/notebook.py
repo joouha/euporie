@@ -2,7 +2,7 @@
 
 import logging
 
-from prompt_toolkit.filters import buffer_has_focus
+from prompt_toolkit.filters import buffer_has_focus, vi_mode, vi_navigation_mode
 
 from euporie.app.current import get_edit_app as get_app
 from euporie.commands.registry import add
@@ -45,7 +45,9 @@ def enter_cell_edit_mode() -> "None":
 
 @add(
     keys="escape",
-    filter=cell_has_focus & buffer_has_focus,
+    filter=cell_has_focus
+    & buffer_has_focus
+    & (~vi_mode | (vi_mode & vi_navigation_mode)),
     group="notebook",
 )
 def exit_edit_mode() -> "None":
