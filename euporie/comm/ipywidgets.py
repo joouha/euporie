@@ -1,5 +1,6 @@
 import logging
 from decimal import Decimal
+from typing import TYPE_CHECKING
 
 from prompt_toolkit.filters.base import Condition
 from prompt_toolkit.layout.containers import HSplit, VSplit
@@ -7,7 +8,7 @@ from prompt_toolkit.widgets.base import Box
 
 from euporie.comm.base import Comm
 from euporie.widgets.cell_outputs import CellOutputArea
-from euporie.widgets.decor import Border, FocusedStyle
+from euporie.widgets.decor import FocusedStyle
 from euporie.widgets.display import Display
 from euporie.widgets.inputs import (
     Button,
@@ -15,7 +16,7 @@ from euporie.widgets.inputs import (
     Dropdown,
     LabeledWidget,
     Progress,
-    Selection,
+    Select,
     Slider,
     Text,
     ToggleButton,
@@ -155,11 +156,17 @@ class ButtonModel(JupyterWidget):
                 Button(
                     text=self.data["state"].get("description", ""),
                     on_click=self.click,
+                    style=self.button_style,
                 ),
                 padding_left=0,
                 style="class:ipywidget",
             )
         )
+
+    def button_style(self):
+        if style := self.data["state"]["button_style"]:
+            return f"class:{style}"
+        return ""
 
     def click(self, button: "Button") -> "None":
         self.nb.kernel.kc_comm(
@@ -257,6 +264,11 @@ class NumberTextMixin:
             )
         )
 
+    def update_view(self, cell: "Cell", container: "AnyContainer") -> "None":
+        container.body.body._children[0].buffer.text = str(
+            self.data.get("state", {}).get("value", "")
+        )
+
     def incr(self, button: "Button") -> "None":
         value = Decimal(str(self.data["state"]["value"]))
         step = Decimal(str(self.data["state"].get("step", 1)))
@@ -268,11 +280,6 @@ class NumberTextMixin:
         step = Decimal(str(self.data["state"].get("step", 1)))
         if (new := self.normalize(value - step)) is not None:
             self.set_state("value", new)
-
-    def update_view(self, cell: "Cell", container: "AnyContainer") -> "None":
-        container.body._children[0].buffer.text = str(
-            self.data.get("state", {}).get("value", "")
-        )
 
 
 class IntTextModel(IntValueMixin, NumberTextMixin, TextBoxMixin, JupyterWidget):
@@ -330,7 +337,7 @@ class SliderMixin:
                 LabeledWidget(
                     body=Slider(
                         options=options,
-                        index=options.index(self.data["state"]["value"]),
+                        index=self.index,
                         show_readout=Condition(lambda: self.data["state"]["readout"]),
                         arrows=("⮜", "⮞")
                         if orientation == "horizontal"
@@ -351,6 +358,10 @@ class SliderMixin:
 
 class IntSliderModel(SliderMixin, IntValueMixin, JupyterWidget):
     @property
+    def index(self) -> "int":
+        return self.options.index(self.data["state"]["value"])
+
+    @property
     def options(self) -> "List[int]":
         return list(
             range(
@@ -362,6 +373,10 @@ class IntSliderModel(SliderMixin, IntValueMixin, JupyterWidget):
 
 
 class FloatSliderModel(SliderMixin, FloatValueMixin, JupyterWidget):
+    @property
+    def index(self) -> "int":
+        return self.options.index(self.data["state"]["value"])
+
     @property
     def options(self) -> "List[float]":
         start = Decimal(str(self.data["state"]["min"]))
@@ -388,11 +403,12 @@ class RangeSliderMixin:
             self.set_state("value", value)
 
     def update_view(self, cell: "Cell", container: "AnyContainer") -> "None":
-        value = self.data.get("state", {})["value"]
-        if value in self.options:
-            index = self.options.index(value)
+        values = self.data.get("state", {})["value"]
+        if all(value in self.options for value in values):
             self.sync = False
-            container.body.body.data.set_index(ab=index)
+            for i, value in enumerate(values):
+                index = self.options.index(value)
+                container.body.body.body.data.set_index(handle=i, ab=index)
             self.sync = True
 
     def _create_view(self, cell: "Cell"):
@@ -443,7 +459,7 @@ class ProgressMixin:
                         step=step,
                         value=self.data["state"]["value"],
                         orientation=orientation,
-                        style=self.style,
+                        style=self.bar_style,
                     ),
                     orientation=orientation,
                     label=lambda: self.data.get("state", {}).get("description", ""),
@@ -454,14 +470,12 @@ class ProgressMixin:
             )
         )
 
-    def style(self):
-        style = self.data["state"]["bar_style"]
-        if style:
+    def bar_style(self):
+        if style := self.data["state"]["bar_style"]:
             return f"class:{style}"
         return ""
 
     def update_view(self, cell: "Cell", container: "AnyContainer") -> "None":
-        container.body.body.style = self.style
         container.body.body.value = self.data["state"]["value"]
         container.body.body.control.start = self.data["state"]["min"]
         container.body.body.control.stop = self.data["state"]["max"]
@@ -537,10 +551,11 @@ class ValidModel(BoolMixin, JupyterWidget):
                         on_click=self.value_changed,
                         selected=self.data["state"]["value"],
                         prefix=("❌", "✔️"),
+                        style="class:valid",
                     ),
                     padding_left=0,
                 ),
-                label=self.data["state"].get("description", ""),
+                label=lambda: self.data["state"].get("description", ""),
             ),
             style="class:ipywidget",
         )
@@ -578,13 +593,14 @@ class RadioButtonsModel(JupyterWidget):
         return FocusedStyle(
             LabeledWidget(
                 body=Box(
-                    Selection(
+                    Select(
                         options=self.data["state"]["_options_labels"],
                         index=self.data["state"]["index"],
                         on_change=self.update_index,
                         style="class:radio-buttons",
                         prefix=("○", "◉"),
                         multiple=False,
+                        border=None,
                     ),
                     padding_left=0,
                 ),
@@ -607,16 +623,12 @@ class SelectModel(JupyterWidget):
         return FocusedStyle(
             LabeledWidget(
                 body=Box(
-                    Border(
-                        Selection(
-                            options=self.data["state"]["_options_labels"],
-                            index=self.data["state"]["index"],
-                            on_change=self.update_index,
-                            style="class:select",
-                            multiple=False,
-                        ),
-                        border=WidgetGrid,
-                        style="class:select.border",
+                    Select(
+                        options=self.data["state"]["_options_labels"],
+                        index=self.data["state"]["index"],
+                        on_change=self.update_index,
+                        style="class:select,face",
+                        multiple=False,
                     ),
                     padding_left=0,
                 ),
@@ -630,8 +642,8 @@ class SelectModel(JupyterWidget):
         self.set_state("index", container.index)
 
     def update_view(self, cell: "Cell", container: "AnyContainer") -> "None":
-        container.body.body.body.body.options = self.data["state"]["_options_labels"]
-        container.body.body.body.body.index = self.data["state"]["index"]
+        container.body.body.body.options = self.data["state"]["_options_labels"]
+        container.body.body.body.index = self.data["state"]["index"]
 
 
 class SelectMultipleModel(JupyterWidget):
@@ -639,16 +651,12 @@ class SelectMultipleModel(JupyterWidget):
         return FocusedStyle(
             LabeledWidget(
                 body=Box(
-                    Border(
-                        Selection(
-                            options=self.data["state"]["_options_labels"],
-                            indices=self.data["state"]["index"],
-                            on_change=self.update_index,
-                            style="class:select",
-                            multiple=True,
-                        ),
-                        border=WidgetGrid,
-                        style="class:select.border",
+                    Select(
+                        options=self.data["state"]["_options_labels"],
+                        indices=self.data["state"]["index"],
+                        on_change=self.update_index,
+                        style="class:select,face",
+                        multiple=True,
                     ),
                     padding_left=0,
                 ),
@@ -662,8 +670,58 @@ class SelectMultipleModel(JupyterWidget):
         self.set_state("index", container.indices)
 
     def update_view(self, cell: "Cell", container: "AnyContainer") -> "None":
-        container.body.body.body.body.options = self.data["state"]["_options_labels"]
-        container.body.body.body.body.indices = self.data["state"]["index"]
+        container.body.body.body.options = self.data["state"]["_options_labels"]
+        container.body.body.body.indices = self.data["state"]["index"]
+
+
+class SelectionSliderModel(SliderMixin, JupyterWidget):
+    def normalize(self, x: "Any") -> "Optional[int]":
+        options = self.options
+        type_ = type(options[0])
+        try:
+            value = type_(x)
+        except ValueError:
+            return
+        else:
+            if value not in options:
+                return
+            return value
+
+    def value_changed(self, slider_data: "Slider") -> "None":
+        slider_value = slider_data.value[0]
+        if (value := self.normalize(slider_value)) is not None:
+            index = self.data["state"]["_options_labels"].index(value)
+            self.set_state("index", index)
+
+    def update_view(self, cell: "Cell", container: "AnyContainer") -> "None":
+        index = self.data.get("state", {})["index"]
+        self.sync = False
+        container.body.body.body.data.set_index(ab=index)
+        self.sync = True
+
+    @property
+    def index(self) -> "int":
+        return self.data["state"]["index"]
+
+    @property
+    def options(self) -> "List[int]":
+        return self.data["state"]["_options_labels"]
+
+
+class SelectionRangeSliderModel(SelectionSliderModel):
+    def value_changed(self, slider_data: "Slider") -> "None":
+        if (values := [self.normalize(x) for x in slider_data.value]) is not None:
+            index = [
+                self.data["state"]["_options_labels"].index(value) for value in values
+            ]
+            self.set_state("index", index)
+
+    def update_view(self, cell: "Cell", container: "AnyContainer") -> "None":
+        indices = self.data.get("state", {})["index"]
+        self.sync = False
+        for i, index in enumerate(indices):
+            container.body.body.body.data.set_index(handle=i, ab=index)
+        self.sync = True
 
 
 WIDGET_MODELS = {
@@ -691,6 +749,8 @@ WIDGET_MODELS = {
     "RadioButtonsModel": RadioButtonsModel,
     "SelectModel": SelectModel,
     "SelectMultipleModel": SelectMultipleModel,
+    "SelectionSliderModel": SelectionSliderModel,
+    "SelectionRangeSliderModel": SelectionRangeSliderModel,
 }
 
 

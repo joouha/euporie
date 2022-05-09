@@ -210,7 +210,7 @@ class Border:
         border_bottom = to_filter(show_borders.bottom)
         border_left = to_filter(show_borders.left)
 
-        if border is not None:
+        if border is not None and any(show_borders):
             self.container = HSplit(
                 [
                     VSplit(

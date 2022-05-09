@@ -1,5 +1,6 @@
 import logging
 from abc import ABCMeta, abstractmethod
+from typing import TYPE_CHECKING
 from weakref import WeakKeyDictionary
 
 from euporie.widgets.display import Display

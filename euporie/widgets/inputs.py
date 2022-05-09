@@ -88,10 +88,14 @@ class Button:
     """
 
     def _get_style(self) -> str:
-        if self.selected:
-            return f"{self.style} class:button.selected"
+        if callable(self.style):
+            style = self.style()
         else:
-            return f"{self.style} class:button"
+            style = self.style
+        if self.selected:
+            return f"{style} class:button,selection"
+        else:
+            return f"{style} class:button"
 
     def _get_text_fragments(self) -> "StyleAndTextTuples":
         ft = [
@@ -145,7 +149,7 @@ class Button:
                     key_bindings=self.key_bindings,
                     focusable=True,
                     show_cursor=False,
-                    style="class:button.face",
+                    style="class:face",
                 ),
                 style=self._get_style,
                 dont_extend_width=True,
@@ -153,7 +157,7 @@ class Button:
             ),
             border=border,
             show_borders=show_borders,
-            style=lambda: f"{self._get_style()} class:button.border",
+            style=lambda: f"{self._get_style()} class:border",
         )
 
     def mouse_handler(self, mouse_event: "MouseEvent") -> "NotImplementedOrNone":
@@ -189,6 +193,15 @@ class ToggleMixin:
         elif mouse_event.event_type == MouseEventType.MOUSE_UP:
             self.toggle()
 
+    def _get_key_bindings(self) -> "Optional[KeyBindingsBase]":
+        """Key bindings for the Toggler."""
+        kb = KeyBindings()
+
+        @kb.add(" ")
+        @kb.add("enter")
+        def _(event: "KeyPressEvent") -> None:
+            self.toggle()
+
 
 class ToggleButton(ToggleMixin, Button):
     """"""
@@ -198,9 +211,12 @@ class Checkbox(ToggleMixin):
     """"""
 
     def _get_text_fragments(self) -> "StyleAndTextTuples":
-        selected_style = "class:selected" if self.selected else ""
+        selected_style = "class:selection" if self.selected else ""
         ft = [
-            ("[SetCursorPosition] class:checkbox.box", self.prefix[int(self.selected)]),
+            (
+                f"[SetCursorPosition] class:checkbox,prefix{',selection' if self.selected else ''}",
+                self.prefix[int(self.selected)],
+            ),
             # Add space between the tickbox and the text
             ("", " " if fragment_list_len(self.text) else ""),
             *self.text,
@@ -259,7 +275,7 @@ class Text:
             width=width,
             focusable=True,
             focus_on_click=True,
-            style=f"class:text-area.text {style}",
+            style=f"class:text,text-area {style}",
             validator=Validator.from_callable(validation) if validation else None,
             accept_handler=accept_handler,
         )
@@ -279,9 +295,9 @@ class Text:
 
     def border_style(self):
         if self.text_area.buffer.validation_state == ValidationState.INVALID:
-            return f"{self.style} class:text-area.border,invalid"
+            return f"{self.style} class:text,border,invalid"
         else:
-            return f"{self.style} class:text-area.border"
+            return f"{self.style} class:text,border"
 
     @property
     def text(self) -> "str":
@@ -469,12 +485,10 @@ class SliderControl(UIControl):
         self._selected_handle = value
 
     def _draw_handle(self, n: "int") -> "StyleAndTextTyples":
-        selected_style = (
-            "class:slider.handle.selected" if self.selected_handle == n else ""
-        )
+        selected_style = "class:selection" if self.selected_handle == n else ""
         focused_style = "class:focused" if self.has_focus() else ""
         return (
-            f"class:slider.handle {selected_style} {focused_style}",
+            f"class:handle {selected_style} {focused_style}",
             self.handle_char,
         )
 
@@ -601,7 +615,7 @@ class SliderControl(UIControl):
         if self.show_arrows():
             # The arrows take up 4 characters: remove them from the track length
             track_len -= 4
-            ft += [("class:slider.arrow,left", self.arrows[0]), ("", " ")]
+            ft += [("class:arrow,left", self.arrows[0]), ("", " ")]
             mouse_handlers += [
                 partial(self.mouse_handler_arrow, n=-1),
                 self.mouse_handler_scroll,
@@ -609,7 +623,7 @@ class SliderControl(UIControl):
 
         # First bit of track
         left_len = floor(track_len * self.data.index[0] / (len(self.data.options) - 1))
-        ft.append(("class:slider.track", self.track_char * left_len))
+        ft.append(("class:track", self.track_char * left_len))
         mouse_handlers += [
             partial(
                 self.mouse_handler_track,
@@ -630,9 +644,7 @@ class SliderControl(UIControl):
                 * (self.data.index[-1] - self.data.index[0])
                 / (len(self.data.options) - 1)
             )
-            ft.append(
-                ("class:slider.track.selected", self.selected_track_char * middle_len)
-            )
+            ft.append(("class:track,selection", self.selected_track_char * middle_len))
             mouse_handlers += [
                 partial(
                     self.mouse_handler_track,
@@ -646,7 +658,7 @@ class SliderControl(UIControl):
 
         # Last bit of track
         right_len = track_len - left_len - middle_len
-        ft.append(("class:slider.track", self.track_char * right_len))
+        ft.append(("class:track", self.track_char * right_len))
         mouse_handlers += [
             partial(
                 self.mouse_handler_track,
@@ -656,7 +668,7 @@ class SliderControl(UIControl):
         ]
 
         if self.show_arrows():
-            ft += [("", " "), ("class:slider.arrow,right", self.arrows[1])]
+            ft += [("", " "), ("class:arrow,right", self.arrows[1])]
             mouse_handlers += [
                 self.mouse_handler_scroll,
                 partial(self.mouse_handler_arrow, n=1),
@@ -755,6 +767,7 @@ class Slider:
                 Box(
                     Window(
                         self.slider_control,
+                        style=f"class:slider {style}",
                     ),
                 ),
                 ConditionalContainer(self.readout, filter=self.show_readout),
@@ -870,7 +883,7 @@ class Progress:
                     dont_extend_width=self.orientation == WidgetOrientation.VERTICAL,
                 ),
                 border=WidgetGrid,
-                style=self.add_style("class:progress,progress.border"),
+                style=self.add_style("class:progress,border"),
             ),
             width=1 if self.orientation == WidgetOrientation.VERTICAL else None,
         )
@@ -1037,7 +1050,7 @@ class Dropdown:
         return self.container
 
 
-class Selection:
+class Select:
     def _get_text_fragments(self) -> "StyleAndTextTuples":
         ft = []
         formatted_options = self.formatted_options
@@ -1045,7 +1058,7 @@ class Selection:
         for i, option in enumerate(formatted_options):
             option = align(FormattedTextAlign.LEFT, option, width=max_width)
             cursor = "[SetCursorPosition]" if self.mask[i] else ""
-            style = "class:selected" if self.mask[i] else ""
+            style = "class:selection" if self.mask[i] else ""
             if self.hovered == i and self.multiple() and self.has_focus():
                 style += " class:hovered"
             ft_option = [
@@ -1065,7 +1078,7 @@ class Selection:
         return ft
 
     def _get_key_bindings(self) -> "KeyBindings":
-        """Key bindings for the radio-buttons."""
+        """Key bindings for the select."""
         kb = KeyBindings()
 
         @kb.add("home", filter=~self.multiple)
@@ -1116,6 +1129,8 @@ class Selection:
         style: "str" = "",
         prefix: "Tuple[str, str]" = ("", ""),  # ○ ◉ 🔘 ⊙ ◎ ▣ □ ◈ ◇
         multiple: "FilterOrBool" = False,
+        border: "GridStyle" = WidgetGrid,
+        show_borders: "BorderVisibility" = None,
     ):
         self.menu_visible = False
         self.options = options
@@ -1128,16 +1143,22 @@ class Selection:
 
         self.on_change = Event(self, on_change)
         self.prefix = prefix
-        self.container = Window(
-            FormattedTextControl(
-                self._get_text_fragments,
-                key_bindings=self._get_key_bindings(),
-                focusable=True,
-                show_cursor=False,
+
+        self.container = Border(
+            Window(
+                FormattedTextControl(
+                    self._get_text_fragments,
+                    key_bindings=self._get_key_bindings(),
+                    focusable=True,
+                    show_cursor=False,
+                ),
+                dont_extend_width=True,
+                dont_extend_height=True,
+                style=f"class:select {style}",
             ),
-            dont_extend_width=True,
-            dont_extend_height=True,
-            style=f"class:selection {style}",
+            border=border,
+            show_borders=show_borders,
+            style="class:select,border",
         )
         self.has_focus = has_focus(self)
 
