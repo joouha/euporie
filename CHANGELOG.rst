@@ -5,6 +5,15 @@ Changelog
 Notable changes to this project will be documented in this file.
 
 *********************
+v1.6.2 - (2022-05-09)
+*********************
+
+Changed
+=======
+
+- Display multiple cursors in vi multi-cursor mode
+
+*********************
 v1.6.1 - (2022-05-08)
 *********************
 

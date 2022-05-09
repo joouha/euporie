@@ -22,9 +22,10 @@ from prompt_toolkit.layout.containers import (
 )
 from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.layout.margins import ConditionalMargin
-from prompt_toolkit.layout.processors import (  # DisplayMultipleCursors,
+from prompt_toolkit.layout.processors import (
     BeforeInput,
     ConditionalProcessor,
+    DisplayMultipleCursors,
     HighlightIncrementalSearchProcessor,
     HighlightMatchingBracketProcessor,
     HighlightSelectionProcessor,
@@ -120,7 +121,7 @@ class CellInputTextArea(TextArea):
                 filter=is_searching,
             ),
             HighlightSelectionProcessor(),
-            # DisplayMultipleCursors(),
+            DisplayMultipleCursors(),
             HighlightMatchingBracketProcessor(),
         ]
         kwargs["search_field"] = get_app().search_bar
