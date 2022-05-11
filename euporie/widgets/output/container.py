@@ -269,8 +269,8 @@ class CellOutput:
         )
 
         # Sort data first so there is more bling first
-        datum = ""
-        for mime, datum_ in sorted(self.data.items(), key=_calculate_bling):
+        data = ""
+        for mime, data_ in sorted(self.data.items(), key=_calculate_bling):
             mime_path = PurePath(mime)
             format_ = None
             for data_mime, data_format in MIME_FORMATS.items():
@@ -279,7 +279,7 @@ class CellOutput:
                         self.window.style = "fg:red"
                     if find_route(data_format, "formatted_text") is not None:
                         format_ = data_format
-                        datum = datum_
+                        data = data_
                         break
             else:
                 continue
@@ -287,7 +287,7 @@ class CellOutput:
         else:
             if self.data:
                 format_ = "ansi"
-                datum = sorted(self.data.items(), key=_calculate_bling)[-1][1]
+                data = sorted(self.data.items(), key=_calculate_bling)[-1][1]
             else:
                 return
 
@@ -301,7 +301,7 @@ class CellOutput:
         py = mime_meta.get("height")
         if px is None or py is None:
             px, py = data_pixel_size(
-                datum,
+                data,
                 format_,
                 fg=fg_color,
                 bg=bg_color,
@@ -310,7 +310,7 @@ class CellOutput:
 
         # Create the control
         self.window.content = FormattedOutputControl(
-            datum,
+            data,
             format_=format_,
             fg_color=fg_color,
             bg_color=bg_color,
@@ -338,7 +338,7 @@ class CellOutput:
                 content=GraphicWindow(
                     target_window=self.window,
                     content=GraphicControl(
-                        datum,
+                        data,
                         format_=format_,
                         fg_color=fg_color,
                         bg_color=bg_color,

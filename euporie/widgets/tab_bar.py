@@ -36,19 +36,19 @@ class TabBar:
                 self.last_active: "Optional[Tab]" = tab
             elif not any_active:
                 active = tab == self.last_active
-            style = f"class:tab-bar.tab{',active' if active else ''}"
+            style = f"class:app-tab-bar.tab{',active' if active else ''}"
 
             click_to_focus = self.on_click(tab.focus)
             result.extend(
                 [
-                    (f"{style},tab-bar.tab.edge", "▏ ", click_to_focus),
+                    (f"{style},app-tab-bar.tab.edge", "▏ ", click_to_focus),
                     (style, f"{tab.title}", click_to_focus),
                     (
-                        f"{style},tab-bar.tab.close",
+                        f"{style},app-tab-bar.tab.close",
                         " ✖",
                         self.on_click(partial(self.app.close_tab, tab)),
                     ),
-                    (f"{style},tab-bar.tab.edge", "▕", click_to_focus),
+                    (f"{style},app-tab-bar.tab.edge", "▕", click_to_focus),
                     ("", self.bg_char),
                 ]
             )
@@ -71,7 +71,7 @@ class TabBar:
                 [
                     (" ", " "),
                     (
-                        f"class:tab-bar.tab.head{',active' if active else ''}",
+                        f"class:app-tab-bar.tab.head{',active' if active else ''}",
                         self.bg_char * (len(tab.title) + 4 + 1),
                     ),
                 ]
@@ -99,7 +99,7 @@ class TabBar:
                     char=self.bg_char,
                 ),
             ],
-            style="class:tab-bar",
+            style="class:app-tab-bar",
         )
         self.last_active = None
 
@@ -124,7 +124,9 @@ class TabBar:
 """
 Some tab design ideas:
 
-▔▒▒▒▒▔▔▒▒▒▒▔
+▒▒▒▒▒▒▒▒▒▒▒▒
+▒▔▔▔▔▒▒▔▔▔▔▒
+
 ▒▒▒▒▒▒▒▒▒▒▒▒
 
  🬦█████🬓 ▗████▖

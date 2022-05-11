@@ -663,6 +663,24 @@ class GridStyle:
         )
 
 
+InnerEdgeGridStyle = (
+    EighthBlockLowerLeft.top_edge
+    + EighthBlockLowerLeft.right_edge
+    + EighthBlockUpperRight.left_edge
+    + EighthBlockUpperRight.bottom_edge
+    + Thin.inner
+)
+
+
+OuterEdgeGridStyle = (
+    EighthBlockLowerLeft.top_edge
+    + EighthBlockUpperRight.right_edge
+    + EighthBlockUpperRight.bottom_edge
+    + EighthBlockLowerLeft.left_edge
+    + Thin.inner
+)
+
+
 class WeightedLineStyle(NamedTuple):
     """A :class:`LineStyle` with a weight."""
 

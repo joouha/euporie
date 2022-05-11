@@ -524,13 +524,3 @@ def reformat_notebook() -> "None":
     nb = get_app().notebook
     if nb is not None:
         nb.reformat()
-
-
-##########################################
-@add(
-    keys="c-t",
-    group="notebook",
-)
-def kernel_info() -> "None":
-    nb = get_app().notebook
-    nb.kernel.info()

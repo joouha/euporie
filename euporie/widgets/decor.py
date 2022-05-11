@@ -1,16 +1,13 @@
 """Decorative widgets."""
 
 import logging
-from functools import partial
 from typing import TYPE_CHECKING
 
-from prompt_toolkit.filters import Condition, has_focus, to_filter
+from prompt_toolkit.filters import has_focus, to_filter
 from prompt_toolkit.layout.containers import (
     ConditionalContainer,
     Container,
     DynamicContainer,
-    Float,
-    FloatContainer,
     HSplit,
     VSplit,
     Window,
@@ -19,7 +16,6 @@ from prompt_toolkit.layout.containers import (
 from prompt_toolkit.layout.dimension import Dimension
 from prompt_toolkit.layout.mouse_handlers import MouseHandlers
 from prompt_toolkit.layout.screen import Char, Screen, WritePosition
-from prompt_toolkit.widgets import Label
 
 from euporie.border import BorderVisibility, Thin
 from euporie.config import config
@@ -194,7 +190,7 @@ class Border:
     def __init__(
         self,
         body: "AnyContainer",
-        border: "Optional[GridStyle]" = Thin,
+        border: "Optional[GridStyle]" = Thin.grid,
         style: "Union[str, Callable[[], str]]" = "class:frame.border",
         show_borders: "Optional[BorderVisibility]" = None,
     ) -> None:
@@ -213,35 +209,38 @@ class Border:
         if border is not None and any(show_borders):
             self.container = HSplit(
                 [
-                    VSplit(
-                        [
-                            ConditionalContainer(
-                                Window(
-                                    width=1,
-                                    height=1,
-                                    char=border.TOP_LEFT,
-                                    style=self.add_style("class:left,top"),
+                    ConditionalContainer(
+                        VSplit(
+                            [
+                                ConditionalContainer(
+                                    Window(
+                                        width=1,
+                                        height=1,
+                                        char=border.TOP_LEFT,
+                                        style=self.add_style("class:left,top"),
+                                    ),
+                                    filter=border_top & border_left,
                                 ),
-                                filter=border_top & border_left,
-                            ),
-                            ConditionalContainer(
-                                Window(
-                                    char=border.TOP_MID,
-                                    style=self.add_style("class:top"),
+                                ConditionalContainer(
+                                    Window(
+                                        char=border.TOP_MID,
+                                        style=self.add_style("class:top"),
+                                    ),
+                                    filter=border_top,
                                 ),
-                                filter=border_top,
-                            ),
-                            ConditionalContainer(
-                                Window(
-                                    width=1,
-                                    height=1,
-                                    char=border.TOP_RIGHT,
-                                    style=self.add_style("class:right,top"),
+                                ConditionalContainer(
+                                    Window(
+                                        width=1,
+                                        height=1,
+                                        char=border.TOP_RIGHT,
+                                        style=self.add_style("class:right,top"),
+                                    ),
+                                    filter=border_top & border_right,
                                 ),
-                                filter=border_top & border_right,
-                            ),
-                        ],
-                        height=1,
+                            ],
+                            height=1,
+                        ),
+                        filter=border_top,
                     ),
                     VSplit(
                         [
@@ -267,36 +266,39 @@ class Border:
                         ],
                         padding=0,
                     ),
-                    VSplit(
-                        [
-                            ConditionalContainer(
-                                Window(
-                                    width=1,
-                                    height=1,
-                                    char=border.BOTTOM_LEFT,
-                                    style=self.add_style("class:left,bottom"),
+                    ConditionalContainer(
+                        VSplit(
+                            [
+                                ConditionalContainer(
+                                    Window(
+                                        width=1,
+                                        height=1,
+                                        char=border.BOTTOM_LEFT,
+                                        style=self.add_style("class:left,bottom"),
+                                    ),
+                                    filter=border_bottom & border_left,
                                 ),
-                                filter=border_bottom & border_left,
-                            ),
-                            ConditionalContainer(
-                                Window(
-                                    char=border.BOTTOM_MID,
-                                    style=self.add_style("class:bottom"),
+                                ConditionalContainer(
+                                    Window(
+                                        char=border.BOTTOM_MID,
+                                        style=self.add_style("class:bottom"),
+                                    ),
+                                    filter=border_bottom,
                                 ),
-                                filter=border_bottom,
-                            ),
-                            ConditionalContainer(
-                                Window(
-                                    width=1,
-                                    height=1,
-                                    char=border.BOTTOM_RIGHT,
-                                    style=self.add_style("class:right,bottom"),
+                                ConditionalContainer(
+                                    Window(
+                                        width=1,
+                                        height=1,
+                                        char=border.BOTTOM_RIGHT,
+                                        style=self.add_style("class:right,bottom"),
+                                    ),
+                                    filter=border_bottom & border_right,
                                 ),
-                                filter=border_bottom & border_right,
-                            ),
-                        ],
-                        # specifying height here will increase the rendering speed.
-                        height=1,
+                            ],
+                            # specifying height here will increase the rendering speed.
+                            height=1,
+                        ),
+                        filter=border_bottom,
                     ),
                 ],
             )
@@ -319,7 +321,11 @@ class Border:
 class FocusedStyle(Container):
     """Applies a style to child containers when focused."""
 
-    def __init__(self, body: "AnyContainer", style: "str" = "class:focused") -> "None":
+    def __init__(
+        self,
+        body: "AnyContainer",
+        style: "Union[str, Callable[[], str]]" = "class:focused",
+    ) -> "None":
         self.body = body
         self.style = style
         self.has_focus = has_focus(self.body)
@@ -344,15 +350,21 @@ class FocusedStyle(Container):
         erase_bg: "bool",
         z_index: "Optional[int]",
     ) -> "None":
-        style = self.style if self.has_focus() else ""
         return to_container(self.body).write_to_screen(
             screen,
             mouse_handlers,
             write_position,
-            f"{parent_style} {style}",
+            f"{parent_style} {self.get_style()}",
             erase_bg,
             z_index,
         )
+
+    def get_style(self) -> "str":
+        if self.has_focus():
+            style = self.style
+            return style() if callable(style) else style
+        else:
+            return ""
 
     def get_children(self) -> "List[Container]":
         """Return the list of child :class:`.Container` objects."""

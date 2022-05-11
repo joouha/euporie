@@ -8,12 +8,19 @@ from typing import TYPE_CHECKING
 from prompt_toolkit.application.current import get_app
 from prompt_toolkit.buffer import ValidationState
 from prompt_toolkit.cache import SimpleCache
+from prompt_toolkit.completion.base import ConditionalCompleter
+from prompt_toolkit.completion.word_completer import WordCompleter
 from prompt_toolkit.filters import Always, Condition, FilterOrBool, has_focus, to_filter
 from prompt_toolkit.formatted_text.base import to_formatted_text
 from prompt_toolkit.formatted_text.utils import fragment_list_len, fragment_list_width
-from prompt_toolkit.key_binding.key_bindings import KeyBindings, merge_key_bindings
+from prompt_toolkit.key_binding.key_bindings import (
+    ConditionalKeyBindings,
+    KeyBindings,
+    merge_key_bindings,
+)
 from prompt_toolkit.layout.containers import (
     ConditionalContainer,
+    DynamicContainer,
     Float,
     FloatContainer,
     HSplit,
@@ -21,18 +28,16 @@ from prompt_toolkit.layout.containers import (
     Window,
 )
 from prompt_toolkit.layout.controls import FormattedTextControl, UIContent, UIControl
+from prompt_toolkit.layout.dimension import Dimension
+from prompt_toolkit.layout.processors import AfterInput, ConditionalProcessor
 from prompt_toolkit.layout.utils import explode_text_fragments
 from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
 from prompt_toolkit.utils import Event
 from prompt_toolkit.validation import Validator
 from prompt_toolkit.widgets.base import Box, TextArea
 
-from euporie.border import (
-    BorderVisibility,
-    EighthBlockLowerLeft,
-    EighthBlockUpperRight,
-    Thin,
-)
+from euporie.border import BorderVisibility, InnerEdgeGridStyle
+from euporie.convert.base import convert, find_route
 from euporie.formatted_text.utils import (
     FormattedTextAlign,
     add_border,
@@ -41,6 +46,7 @@ from euporie.formatted_text.utils import (
 )
 from euporie.margins import ScrollbarMargin
 from euporie.widgets.decor import Border
+from euporie.widgets.display import Display
 
 if TYPE_CHECKING:
     from numbers import Number
@@ -53,14 +59,6 @@ if TYPE_CHECKING:
     T = TypeVar("T")
 
 log = logging.getLogger(__name__)
-
-WidgetGrid = (
-    EighthBlockLowerLeft.top_edge
-    + EighthBlockLowerLeft.right_edge
-    + EighthBlockUpperRight.left_edge
-    + EighthBlockUpperRight.bottom_edge
-    + Thin.inner
-)
 
 
 class WidgetOrientation(Enum):
@@ -125,15 +123,15 @@ class Button:
         on_mouse_down: "Optional[Callable[[Button], None]]" = None,
         width: "Optional[int]" = None,
         style: "str" = "",
-        border: "Optional[GridStyle]" = WidgetGrid,
-        show_borders: "BorderVisibility" = BorderVisibility(True, True, True, True),
+        border: "Optional[GridStyle]" = InnerEdgeGridStyle,
+        show_borders: "Optional[BorderVisibility]" = None,
         selected: "bool" = False,
         key_bindings: "Optional[KeyBindings]" = None,
     ) -> None:
         self.text = text
         self.on_mouse_down = Event(self, on_mouse_down)
         self.on_click = Event(self, on_click)
-        self.width = width or fragment_list_width(to_formatted_text(self.text)) + 2
+        self._width = width
         self.style = style
         self.selected = selected
         if key_bindings is not None:
@@ -159,6 +157,17 @@ class Button:
             show_borders=show_borders,
             style=lambda: f"{self._get_style()} class:border",
         )
+
+    @property
+    def width(self) -> "int":
+        if self._width is not None:
+            return self._width
+        else:
+            return fragment_list_width(to_formatted_text(self.text)) + 2
+
+    @width.setter
+    def width(self, value: "Optional[int]") -> "None":
+        self._width = value
 
     def mouse_handler(self, mouse_event: "MouseEvent") -> "NotImplementedOrNone":
         if mouse_event.event_type == MouseEventType.MOUSE_DOWN:
@@ -261,26 +270,54 @@ class Text:
         text: "str" = "",
         style: "str" = "",
         height: "int" = 1,
+        min_height: "int" = 1,
+        multiline: "bool" = False,
         width: "Optional[int]" = None,
+        options: "Optional[Union[List[str], Callable[[], List[str]]]]" = None,
         show_borders: "Optional[BorderVisibility]" = None,
         on_text_changed: "Optional[Callable[[Buffer], None]]" = None,
         validation: "Optional[Callable[[str], bool]]" = None,
         accept_handler: "Optional[BufferAcceptHandler]" = None,
+        placeholder: "Optional[str]" = None,
+        input_processors: "Optional[List[Processor]]" = None,
     ):
         self.style = style
+        self.options = options
+
+        self.placeholder = placeholder
+
         self.text_area = TextArea(
             str(text),
-            multiline=height > 1,
-            height=height,
+            multiline=multiline,
+            height=Dimension(min=min_height, max=height, preferred=height),
             width=width,
             focusable=True,
             focus_on_click=True,
             style=f"class:text,text-area {style}",
             validator=Validator.from_callable(validation) if validation else None,
             accept_handler=accept_handler,
+            completer=ConditionalCompleter(
+                WordCompleter(self.options),
+                filter=Condition(lambda: bool(self.options)),
+            ),
+            input_processors=[
+                ConditionalProcessor(
+                    AfterInput(
+                        lambda: self.placeholder, style="class:text,placeholder"
+                    ),
+                    filter=Condition(
+                        lambda: self.placeholder is not None and self.buffer.text == ""
+                    ),
+                ),
+            ]
+            + (input_processors or []),
         )
         self.buffer = self.text_area.buffer
-        if height > 1:
+
+        # Patch text area control's to expand to fill available width
+        self.text_area.control.preferred_width = self.preferred_width
+
+        if multiline:
             self.text_area.window.right_margins += [ScrollbarMargin()]
         if on_text_changed:
             self.text_area.buffer.on_text_changed += on_text_changed
@@ -288,10 +325,21 @@ class Text:
             self.text_area.buffer.validate_while_typing = Always()
         self.container = Border(
             self.text_area,
-            border=WidgetGrid,
+            border=InnerEdgeGridStyle,
             style=self.border_style,
             show_borders=show_borders,
         )
+
+    def preferred_width(self, max_available_width: "int") -> "int":
+        """Ensure text box expands to available width.
+
+        Args:
+            max_available_width: The maximum available width
+
+        Returns:
+            The desired width, which is the maximum available
+        """
+        return max_available_width
 
     def border_style(self):
         if self.text_area.buffer.validation_state == ValidationState.INVALID:
@@ -306,6 +354,32 @@ class Text:
     @text.setter
     def text(self, value: "str") -> "None":
         self.buffer.text = value
+
+    def __pt_container__(self) -> "Container":
+        return self.container
+
+
+class Label:
+    def __init__(self, value: "str", style: "str" = ""):
+        self.value = value
+        self.control = FormattedTextControl(self.get_value, focusable=False)
+        self.container = Window(
+            self.control,
+            style=style,
+            dont_extend_width=True,
+        )
+
+    def get_value(self):
+        value = self.value
+        if callable(value):
+            data = value()
+        else:
+            data = value
+        return convert(
+            data=data,
+            from_="markdown",
+            to="formatted_text",
+        )
 
     def __pt_container__(self) -> "Container":
         return self.container
@@ -882,7 +956,7 @@ class Progress:
                     style=self.add_style("class:progress"),
                     dont_extend_width=self.orientation == WidgetOrientation.VERTICAL,
                 ),
-                border=WidgetGrid,
+                border=InnerEdgeGridStyle,
                 style=self.add_style("class:progress,border"),
             ),
             width=1 if self.orientation == WidgetOrientation.VERTICAL else None,
@@ -909,17 +983,239 @@ class Progress:
         return self.container
 
 
-class Dropdown:
-    """A drop-down selection widget."""
+class SelectMixin:
+    def __init__(
+        self,
+        options: "List[AnyFormattedText]",
+        index: "int" = 0,
+        indices: "Tuple[int]" = (),
+        multiple: "FilterOrBool" = False,
+        on_change: "Optional[Callable[[Dropdown], None]]" = None,
+        style: "str" = "",
+        border: "GridStyle" = InnerEdgeGridStyle,
+        show_borders: "Optional[BorderVisibility]" = None,
+    ):
+        self.options = options
+        self.mask = [False for _ in self.options]
+        if not indices:
+            indices = (index,)
+        self.indices = indices
+        self.multiple = to_filter(multiple)
+        self.on_change = Event(self, on_change)
+        self.style = style
 
-    def _text(self) -> "StyleAndTextTuples":
+        self.hovered = index
+        self.container = self.load_container()
+        self.has_focus = has_focus(self)
+
+    def key_bindings(self) -> "KeyBindings":
+        """Key bindings for the select."""
+        kb = KeyBindings()
+
+        @kb.add("home", filter=~self.multiple)
+        def _(event: "KeyPressEvent") -> "None":
+            self.toggle_item(0)
+
+        @kb.add("up", filter=~self.multiple)
+        def _(event: "KeyPressEvent") -> "None":
+            self.toggle_item(max(0, min((self.index or 0) - 1, len(self.options) - 1)))
+
+        @kb.add("down", filter=~self.multiple)
+        def _(event: "KeyPressEvent") -> "None":
+            self.toggle_item(max(0, min((self.index or 0) + 1, len(self.options) - 1)))
+
+        @kb.add("end", filter=~self.multiple)
+        def _(event: "KeyPressEvent") -> "None":
+            self.toggle_item(len(self.options) - 1)
+
+        @kb.add("enter", filter=self.multiple)
+        @kb.add(" ", filter=self.multiple)
+        def _(event: "KeyPressEvent") -> None:
+            self.toggle_item(self.hovered)
+
+        @kb.add("home", filter=self.multiple)
+        def _(event: "KeyPressEvent") -> None:
+            self.hovered = 0
+
+        @kb.add("up", filter=self.multiple)
+        def _(event: "KeyPressEvent") -> None:
+            self.hovered = max(0, min(self.hovered - 1, len(self.options) - 1))
+
+        @kb.add("down", filter=self.multiple)
+        def _(event: "KeyPressEvent") -> None:
+            self.hovered = max(0, min(self.hovered + 1, len(self.options) - 1))
+
+        @kb.add("end", filter=self.multiple)
+        def _(event: "KeyPressEvent") -> None:
+            self.hovered = len(self.options) - 1
+
+        return kb
+
+    def toggle_item(self, index: "int") -> "None":
+        if not self.multiple() and any(self.mask):
+            self.mask = [False for _ in self.options]
+        self.mask[index] = not self.mask[index]
+        self.on_change.fire()
+
+    @property
+    def index(self) -> "Optional[int]":
+        return next((x for x in self.indices), None)
+
+    @index.setter
+    def index(self, value: "int") -> "None":
+        self.indices = (value,)
+
+    @property
+    def indices(self) -> "Tuple[int]":
+        return tuple(i for i, m in enumerate(self.mask) if m)
+
+    @indices.setter
+    def indices(self, values: "Tuple[int]") -> "None":
+        self.mask = [i in values for i in range(len(self.options))]
+
+    @property
+    def formatted_options(self):
+        return [to_formatted_text(x) for x in self.options]
+
+    def mouse_handler(self, i, mouse_event: "MouseEvent"):
+        if mouse_event.event_type == MouseEventType.MOUSE_MOVE:
+            self.hovered = i
+        elif mouse_event.event_type == MouseEventType.MOUSE_DOWN:
+            get_app().layout.focus(self)
+        elif mouse_event.event_type == MouseEventType.MOUSE_UP:
+            self.toggle_item(i)
+
+
+class Select(SelectMixin):
+    def __init__(
+        self,
+        options: "List[AnyFormattedText]",
+        index: "int" = 0,
+        indices: "Tuple[int]" = (),
+        multiple: "FilterOrBool" = False,
+        on_change: "Optional[Callable[[Dropdown], None]]" = None,
+        style: "str" = "",
+        prefix: "Tuple[str, str]" = ("", ""),
+        border: "GridStyle" = InnerEdgeGridStyle,
+        show_borders: "Optional[BorderVisibility]" = None,
+    ) -> "None":
+        self.prefix = prefix
+        self.border = border
+        self.show_borders = show_borders
+        super().__init__(
+            options=options,
+            index=index,
+            indices=indices,
+            multiple=multiple,
+            on_change=on_change,
+            style=style,
+        )
+
+    def text_fragments(self) -> "StyleAndTextTuples":
+        ft = []
+        formatted_options = self.formatted_options
+        max_width = max(fragment_list_width(x) for x in formatted_options)
+        for i, option in enumerate(formatted_options):
+            option = align(FormattedTextAlign.LEFT, option, width=max_width)
+            cursor = "[SetCursorPosition]" if self.mask[i] else ""
+            style = "class:selection" if self.mask[i] else ""
+            if self.hovered == i and self.multiple() and self.has_focus():
+                style += " class:hovered"
+            ft_option = [
+                (f"class:prefix {cursor}", self.prefix[self.mask[i]]),
+                ("", " "),
+                *option,
+                ("", " "),
+                ("", "\n"),
+            ]
+            handler = partial(self.mouse_handler, i)
+            ft += [
+                (f"{fragment_style} {style}", text, handler)
+                for fragment_style, text, *_ in ft_option
+            ]
+        ft.pop()
+        return ft
+
+    def load_container(self) -> "AnyContainer":
+        return Border(
+            Window(
+                FormattedTextControl(
+                    self.text_fragments,
+                    key_bindings=self.key_bindings(),
+                    focusable=True,
+                    show_cursor=False,
+                ),
+                dont_extend_width=True,
+                dont_extend_height=True,
+                style=f"class:select {self.style}",
+            ),
+            border=self.border,
+            show_borders=self.show_borders,
+            style="class:select,border",
+        )
+
+    def __pt_container__(self) -> "Container":
+        return self.container
+
+
+class Dropdown(SelectMixin):
+    def __init__(
+        self,
+        options: "List[AnyFormattedText]",
+        index: "int" = 0,
+        indices: "Tuple[int]" = (),
+        multiple: "FilterOrBool" = False,
+        on_change: "Optional[Callable[[Dropdown], None]]" = None,
+        style: "str" = "",
+        arrow: "str" = "⯆",
+    ):
+        self.menu_visible = False
+        self.arrow = arrow
+        super().__init__(
+            options=options,
+            index=index,
+            indices=indices,
+            multiple=multiple,
+            on_change=on_change,
+            style=style,
+        )
+
+        self.menu = Float(
+            ConditionalContainer(
+                Window(
+                    FormattedTextControl(
+                        self.menu_fragments,
+                    ),
+                    style=f"class:dropdown,dropdown.menu {self.style}",
+                ),
+                filter=Condition(lambda: self.menu_visible) & self.has_focus,
+            ),
+            xcursor=True,
+            ycursor=True,
+        )
+        get_app().add_float(self.menu)
+
+    def load_container(self) -> "AnyContainer":
+        self.button = Button(
+            self.button_text,
+            on_mouse_down=self.toggle_menu,
+            style=f"class:dropdown {self.style}",
+            key_bindings=self.key_bindings(),
+        )
+        return self.button
+
+    def button_text(self) -> "StyleAndTextTuples":
         formatted_options = self.formatted_options
         max_width = max(fragment_list_width(x) for x in formatted_options)
         ft = align(FormattedTextAlign.LEFT, formatted_options[self.index], max_width)
-        ft += [("", " "), ("class:arrow", self.arrow)]
+        ft += [("", " " if self.arrow else ""), ("class:arrow", self.arrow)]
         return ft
 
-    def _menu_fragments(self) -> "StyleAndTextTuples":
+    def toggle_menu(self, button: "Button"):
+        self.menu_visible = not self.menu_visible
+        self.hovered = self.index
+
+    def menu_fragments(self) -> "StyleAndTextTuples":
         ft = []
         formatted_options = self.formatted_options
         max_width = max(fragment_list_width(x) for x in formatted_options)
@@ -939,15 +1235,20 @@ class Dropdown:
                     ("", "\n"),
                 ]
             )
-        # Remoe the last newline
+        # Remove the last newline
         ft.pop()
         return ft
 
-    def _get_key_bindings(self) -> "KeyBindings":
-        "Key bindings for the Button."
-        kb = KeyBindings()
+    def mouse_handler(self, i, mouse_event: "MouseEvent"):
+        super().mouse_handler(i, mouse_event)
+        if mouse_event.event_type == MouseEventType.MOUSE_UP:
+            self.menu_visible = False
+            self.button.selected = False
+
+    def key_bindings(self) -> "KeyBindings":
 
         menu_visible = Condition(lambda: self.menu_visible)
+        kb = KeyBindings()
 
         @kb.add("enter", filter=menu_visible)
         @kb.add(" ", filter=menu_visible)
@@ -991,210 +1292,74 @@ class Dropdown:
 
         return kb
 
-    def __init__(
-        self,
-        options: "List[AnyFormattedText]",
-        index: "int" = 0,
-        on_change: "Optional[Callable[[Dropdown], None]]" = None,
-        style: "str" = "",
-        arrow: "str" = "⯆",
-    ):
-        self.menu_visible = False
-        self.options = options
-        self.index = index
-        self.on_change = Event(self, on_change)
-        self.hovered = index
-        self.arrow = arrow
-        self.button = Button(
-            self._text,
-            on_mouse_down=self.toggle_menu,
-            style=f"class:dropdown {style}",
-            key_bindings=self._get_key_bindings(),
+    def __pt_container__(self) -> "Container":
+
+        return self.container
+
+
+class ToggleButtons(SelectMixin):
+    def load_container(self) -> "AnyContainer":
+        show_borders_values = [BorderVisibility(True, False, True, True)]
+        if len(self.options) > 1:
+            show_borders_values += [
+                *[
+                    BorderVisibility(True, False, True, False)
+                    for _ in self.options[1:-1]
+                ],
+                BorderVisibility(True, True, True, False),
+            ]
+
+        self.buttons = [
+            ToggleButton(
+                text=option,
+                selected=selected,
+                on_click=partial(lambda index, button: self.toggle_item(index), i),
+                show_borders=show_borders,
+                style=self.style,
+            )
+            for i, (option, selected, show_borders) in enumerate(
+                zip(self.options, self.mask, show_borders_values)
+            )
+        ]
+        self.on_change += self.update_buttons
+        return VSplit(
+            self.buttons,
+            style="class:toggle-buttons",
         )
-        self.container = self.button
-        # self.container = FloatContainer(
-        # content=self.button,
-        # floats=[],
-        # )
-        self.float_ = Float(
-            ConditionalContainer(
-                Window(
-                    FormattedTextControl(self._menu_fragments),
-                    style=f"class:dropdown,dropdown.menu {style}",
-                ),
-                filter=Condition(lambda: self.menu_visible) & has_focus(self),
-            ),
-            xcursor=True,
-            ycursor=True,
-        )
-        get_app().add_float(self.float_)
 
-    def mouse_handler(self, i, mouse_event: "MouseEvent"):
-        if mouse_event.event_type == MouseEventType.MOUSE_MOVE:
-            self.hovered = i
-        if mouse_event.event_type == MouseEventType.MOUSE_UP:
-            self.index = i
-            self.menu_visible = False
-            self.button.selected = False
-            self.on_change.fire()
-
-    @property
-    def formatted_options(self):
-        return [to_formatted_text(x) for x in self.options]
-
-    def toggle_menu(self, button: "Button"):
-        self.menu_visible = not self.menu_visible
-        self.hovered = self.index
+    def update_buttons(self, widget: "Optional[ToggleButtons]" = None):
+        for i, selected in enumerate(self.mask):
+            self.buttons[i].selected = selected
 
     def __pt_container__(self) -> "Container":
         return self.container
 
 
-class Select:
-    def _get_text_fragments(self) -> "StyleAndTextTuples":
-        ft = []
-        formatted_options = self.formatted_options
-        max_width = max(fragment_list_width(x) for x in formatted_options)
-        for i, option in enumerate(formatted_options):
-            option = align(FormattedTextAlign.LEFT, option, width=max_width)
-            cursor = "[SetCursorPosition]" if self.mask[i] else ""
-            style = "class:selection" if self.mask[i] else ""
-            if self.hovered == i and self.multiple() and self.has_focus():
-                style += " class:hovered"
-            ft_option = [
-                (f"class:prefix {cursor}", self.prefix[self.mask[i]]),
-                # Add space between the tickbox and the text
-                ("", " "),
-                *option,
-                ("", " "),
-                ("", "\n"),
-            ]
-            handler = partial(self.mouse_handler, i)
-            ft += [
-                (f"{fragment_style} {style}", text, handler)
-                for fragment_style, text, *_ in ft_option
-            ]
-        ft.pop()
-        return ft
-
-    def _get_key_bindings(self) -> "KeyBindings":
-        """Key bindings for the select."""
-        kb = KeyBindings()
-
-        @kb.add("home", filter=~self.multiple)
-        def _(event: "KeyPressEvent") -> "None":
-            self.toggle_item(0)
-
-        @kb.add("up", filter=~self.multiple)
-        def _(event: "KeyPressEvent") -> "None":
-            self.toggle_item(max(0, min((self.index or 0) - 1, len(self.options) - 1)))
-
-        @kb.add("down", filter=~self.multiple)
-        def _(event: "KeyPressEvent") -> "None":
-            self.toggle_item(max(0, min((self.index or 0) + 1, len(self.options) - 1)))
-
-        @kb.add("end", filter=~self.multiple)
-        def _(event: "KeyPressEvent") -> "None":
-            self.toggle_item(len(self.options) - 1)
-
-        @kb.add("enter", filter=self.multiple)
-        @kb.add(" ", filter=self.multiple)
-        def _(event: "KeyPressEvent") -> None:
-            self.toggle_item(self.hovered)
-
-        @kb.add("home", filter=self.multiple)
-        def _(event: "KeyPressEvent") -> None:
-            self.hovered = 0
-
-        @kb.add("up", filter=self.multiple)
-        def _(event: "KeyPressEvent") -> None:
-            self.hovered = max(0, min(self.hovered - 1, len(self.options) - 1))
-
-        @kb.add("down", filter=self.multiple)
-        def _(event: "KeyPressEvent") -> None:
-            self.hovered = max(0, min(self.hovered + 1, len(self.options) - 1))
-
-        @kb.add("end", filter=self.multiple)
-        def _(event: "KeyPressEvent") -> None:
-            self.hovered = len(self.options) - 1
-
-        return kb
-
+class Swatch:
     def __init__(
         self,
-        options: "List[AnyFormattedText]",
-        index: "int" = 0,
-        indices: "Tuple[int]" = (),
-        on_change: "Optional[Callable[[Dropdown], None]]" = None,
-        style: "str" = "",
-        prefix: "Tuple[str, str]" = ("", ""),  # ○ ◉ 🔘 ⊙ ◎ ▣ □ ◈ ◇
-        multiple: "FilterOrBool" = False,
-        border: "GridStyle" = WidgetGrid,
-        show_borders: "BorderVisibility" = None,
+        color: "Union[str, Callable[[], str]]" = "#FFFFFF",
+        width: "int" = 2,
+        height: "int" = 1,
+        style: "str" = "class:swatch",
+        show_borders: "Optional[BorderVisibility]" = None,
     ):
-        self.menu_visible = False
-        self.options = options
-        self.hovered = index
-        self.multiple = to_filter(multiple)
-        self.mask = [False for _ in self.options]
-        if not indices:
-            indices = (index,)
-        self.indices = indices
-
-        self.on_change = Event(self, on_change)
-        self.prefix = prefix
+        self.color = color
+        self.style = style
 
         self.container = Border(
-            Window(
-                FormattedTextControl(
-                    self._get_text_fragments,
-                    key_bindings=self._get_key_bindings(),
-                    focusable=True,
-                    show_cursor=False,
-                ),
-                dont_extend_width=True,
-                dont_extend_height=True,
-                style=f"class:select {style}",
-            ),
-            border=border,
+            Window(char=" ", style=self.get_style, width=width, height=height),
+            border=InnerEdgeGridStyle,
+            style=f"{self.style} class:border,inset",
             show_borders=show_borders,
-            style="class:select,border",
         )
-        self.has_focus = has_focus(self)
 
-    def toggle_item(self, index) -> "List[bool]":
-        if not self.multiple() and any(self.mask):
-            self.mask = [False for _ in self.options]
-        self.mask[index] = not self.mask[index]
-        self.on_change.fire()
-
-    @property
-    def index(self) -> "Optional[int]":
-        return next((x for x in self.indices), None)
-
-    @index.setter
-    def index(self, value: "int") -> "None":
-        self.indices = (value,)
-
-    @property
-    def indices(self) -> "Tuple[int]":
-        return tuple(i for i, m in enumerate(self.mask) if m)
-
-    @indices.setter
-    def indices(self, values: "Tuple[int]") -> "None":
-        self.mask = [i in values for i in range(len(self.options))]
-
-    @property
-    def formatted_options(self):
-        return [to_formatted_text(x) for x in self.options]
-
-    def mouse_handler(self, i, mouse_event: "MouseEvent"):
-        if mouse_event.event_type == MouseEventType.MOUSE_MOVE:
-            self.hovered = i
-        elif mouse_event.event_type == MouseEventType.MOUSE_DOWN:
-            get_app().layout.focus(self)
-        elif mouse_event.event_type == MouseEventType.MOUSE_UP:
-            self.toggle_item(i)
+    def get_style(self):
+        if callable(self.color):
+            color = self.color()
+        else:
+            color = self.color
+        return f"{self.style} bg:{color} "
 
     def __pt_container__(self) -> "Container":
         return self.container

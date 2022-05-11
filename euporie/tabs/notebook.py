@@ -39,7 +39,7 @@ from euporie.widgets.page import PrintingContainer, ScrollbarControl, ScrollingC
 
 if TYPE_CHECKING:
     from collections.abc import MutableSequence
-    from typing import Callable, Optional, Sequence, Type
+    from typing import Callable, List, Optional, Sequence, Type
 
     from prompt_toolkit.auto_suggest import AutoSuggest
     from prompt_toolkit.completion import Completer
@@ -424,17 +424,16 @@ class KernelNotebook(Notebook):
         log.debug("Kernel status is '%s'", self.kernel.status)
         self.kernel.info(set_kernel_info=self.set_kernel_info, set_status=log.debug)
 
-    def comm_open(self, content) -> "None":
+    def comm_open(self, content, buffers: "List[memoryview]") -> "None":
         comm_id = content.get("comm_id")
-        self.comms[comm_id] = open_comm(nb=self, content=content)
+        self.comms[comm_id] = open_comm(nb=self, content=content, buffers=buffers)
 
-    def comm_msg(self, content) -> "None":
-
+    def comm_msg(self, content, buffers: "List[memoryview]") -> "None":
         comm_id = content.get("comm_id")
         if comm := self.comms.get(comm_id):
-            comm.process_data(content.get("data", {}))
+            comm.process_data(content.get("data", {}), buffers)
 
-    def comm_close(self, content) -> "None":
+    def comm_close(self, content, buffers: "List[memoryview]") -> "None":
         comm_id = content.get("comm_id")
         if comm_id in self.comms:
             del self.comms[comm_id]
@@ -871,7 +870,7 @@ class EditNotebook(KernelNotebook):
         rendered_cells = list(self._rendered_cells.values())
         for index in indices:
             cell = rendered_cells[index]
-            for output in cell.outputs:
+            for output in cell.output_json:
                 data = output.get("data", {})
                 if data:
                     output_strings.append(

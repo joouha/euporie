@@ -83,7 +83,7 @@ class DisplayControl(UIControl):
             focus_on_click: Whether to focus the control when clicked
 
         """
-        self.data = data
+        self._data = data
         self.format_ = format_
         self.fg_color = fg_color
         self.bg_color = bg_color
@@ -104,6 +104,20 @@ class DisplayControl(UIControl):
         self._format_cache: SimpleCache = SimpleCache(maxsize=50)
         self._content_cache: SimpleCache = SimpleCache(maxsize=50)
         self._size_cache: SimpleCache = SimpleCache(maxsize=1)
+
+    def reset(self):
+        self._format_cache.clear()
+        self._size_cache.clear()
+        self._content_cache.clear()
+
+    @property
+    def data(self) -> "Any":
+        return self._data
+
+    @data.setter
+    def data(self, value: "Any") -> "None":
+        self._data = value
+        self.reset()
 
     def get_key_bindings(self) -> "Optional[KeyBindingsBase]":
         return self.key_bindings
@@ -383,32 +397,22 @@ class SixelGraphicControl(DisplayControl):
 
 
 class ItermGraphicControl(DisplayControl):
-    def __init__(
-        self,
-        data: "Any",
-        format_: "str",
-        fg_color: "Optional[str]" = None,
-        bg_color: "Optional[str]" = None,
-        sizing_func: "Optional[Callable]" = None,
-    ) -> "None":
-        super().__init__(
-            data,
-            format_,
-            fg_color,
-            bg_color,
-            sizing_func,
-        )
-        if format_.startswith("base64-"):
-            self.b64data = data
+    def convert_data(self, rows: "int", cols: "int") -> "str":
+        """Converts the graphic's data to base64 data."""
+        if self.format_.startswith("base64-"):
+            b64data = self.data
         else:
-            self.b64data = convert(
-                data=data,
+            b64data = convert(
+                data=self.data,
                 from_=self.format_,
                 to="base64-png",
+                cols=cols,
+                rows=rows,
                 fg=self.fg_color,
                 bg=self.bg_color,
             )
-        self.b64data = self.b64data.replace("\n", "").strip()
+        b64data = b64data.replace("\n", "").strip()
+        return b64data
 
     def get_rendered_lines(
         self, width: "int", height: "int"
@@ -417,7 +421,8 @@ class ItermGraphicControl(DisplayControl):
 
         def render_lines() -> "list[StyleAndTextTuples]":
             """Renders the lines to display in the control."""
-            cmd = f"\x1b]1337;File=inline=1;width={width}:{self.b64data}\a"
+            b64data = self.convert_data(width, height)
+            cmd = f"\x1b]1337;File=inline=1;width={width}:{b64data}\a"
             return list(
                 split_lines(
                     to_formatted_text(
@@ -540,6 +545,7 @@ class KittyGraphicControl(DisplayControl):
                 )
             )
             self.app.output.flush()
+            self.loaded = False
 
     def get_rendered_lines(
         self, width: "int", height: "int"
@@ -584,6 +590,11 @@ class KittyGraphicControl(DisplayControl):
             (width,),
             render_lines,
         )
+
+    def reset(self) -> "None":
+        super().reset()
+        self.hide()
+        self.delete()
 
 
 class GraphicWindow(Window):
@@ -670,6 +681,7 @@ class GraphicFloat(Float):
         filter: "FilterOrBool" = True,
     ):
         self.GraphicControl = None
+        self.control = None
 
         term_info = get_app().term_info
         if term_info.kitty_graphics_status.value and find_route(format_, "base64-png"):
@@ -682,21 +694,33 @@ class GraphicFloat(Float):
             self.GraphicControl = SixelGraphicControl
 
         if self.GraphicControl:
+            self.control = self.GraphicControl(
+                data,
+                format_=format_,
+                fg_color=fg_color,
+                bg_color=bg_color,
+                sizing_func=sizing_func,
+            )
             super().__init__(
                 content=GraphicWindow(
                     target_window=target_window,
-                    content=self.GraphicControl(
-                        data,
-                        format_=format_,
-                        fg_color=fg_color,
-                        bg_color=bg_color,
-                        sizing_func=sizing_func,
-                    ),
+                    content=self.control,
                     filter=to_filter(filter),
                 ),
                 left=0,
                 top=0,
             )
+
+    @property
+    def data(self) -> "Any":
+        return self._data
+
+    @data.setter
+    def data(self, value: "Any") -> "None":
+        self._data = value
+        if self.control is not None:
+            self.control.data = value
+            self.control.reset()
 
 
 class Display:
@@ -704,7 +728,7 @@ class Display:
 
     def __init__(
         self,
-        datum: "Any",
+        data: "Any",
         format_: "str",
         fg_color: "Optional[str]" = None,
         bg_color: "Optional[str]" = None,
@@ -722,7 +746,7 @@ class Display:
         """Instantiate an Output container object.
 
         Args:
-            datum: Raw cell output data
+            data: Raw cell output data
             format_: The conversion format of the data to render
             fg_color: The foreground colour to use when renderin this output
             bg_color: The background colour to use when renderin this output
@@ -742,26 +766,27 @@ class Display:
         self.style = style
 
         # Get data pixel dimensions
-        if px is None or py is None:
-            px, py = data_pixel_size(
-                datum,
-                format_,
-                fg=fg_color,
-                bg=bg_color,
-            )
-        # Create a function to recalculate the data's dimensions
-        sizing_func = partial(pixels_to_cell_size, px, py)
+        self._px = px
+        self._py = py
 
+        sizing_func = self.make_sizing_func(
+            data=data,
+            format_=format_,
+            fg=fg_color,
+            bg=bg_color,
+        )
+
+        self.control = FormattedTextDisplayControl(
+            data,
+            format_=format_,
+            fg_color=fg_color,
+            bg_color=bg_color,
+            sizing_func=sizing_func,
+            focusable=focusable,
+            focus_on_click=focus_on_click,
+        )
         self.window = DisplayWindow(
-            content=FormattedTextDisplayControl(
-                datum,
-                format_=format_,
-                fg_color=fg_color,
-                bg_color=bg_color,
-                sizing_func=sizing_func,
-                focusable=focusable,
-                focus_on_click=focus_on_click,
-            ),
+            content=self.control,
             height=height,
             width=width,
             right_margins=[
@@ -783,7 +808,7 @@ class Display:
 
         # Add graphic
         self.graphic_float = GraphicFloat(
-            data=datum,
+            data=data,
             format_=format_,
             target_window=self.window,
             fg_color=fg_color,
@@ -793,6 +818,56 @@ class Display:
         )
         if self.graphic_float.GraphicControl is not None:
             get_app().add_float(self.graphic_float)
+
+    @property
+    def data(self) -> "Any":
+        return self.control.data
+
+    @data.setter
+    def data(self, value: "Any") -> "None":
+        self.control.data = value
+        self.graphic_float.data = value
+
+    def make_sizing_func(
+        self, data, format_, fg, bg
+    ) -> "Callable[[], tuple[int, float]]":
+        px, py = self.px, self.py
+        if px is None or py is None:
+            px, py = data_pixel_size(data, format_, fg=fg, bg=bg)
+        # Create a function to recalculate the data's dimensions
+        return partial(pixels_to_cell_size, px, py)
+
+    @property
+    def px(self) -> "Optional[int]":
+        return self._px
+
+    @px.setter
+    def px(self, value: "Optional[int]") -> "None":
+        self._px = value
+        self.update_sizing()
+
+    @property
+    def py(self) -> "Optional[int]":
+        return self._py
+
+    @py.setter
+    def py(self, value: "Optional[int]") -> "None":
+        self._py = value
+        self.update_sizing()
+
+    def update_sizing(self) -> "None":
+        sizing_func = self.make_sizing_func(
+            data=self.control.data,
+            format_=self.control.format_,
+            fg=self.control.fg_color,
+            bg=self.control.bg_color,
+        )
+        self.control.sizing_func = sizing_func
+        self.control.reset()
+        if self.graphic_float.control is not None:
+            self.graphic_float.control.sizing_func = sizing_func
+            self.graphic_float.control.reset()
+        log.debug((self.px, self.py))
 
     def __pt_container__(self) -> "AnyContainer":
         """Return the content of this output."""

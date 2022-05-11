@@ -115,7 +115,7 @@ class TerminalQuery:
             self.output.stdout.isatty()
             # Don't send escape codes if this is not a real TTY.
             # We create pseudo-ttys to get colored output, but don't want
-            # any termianl queries to be sent
+            # any terminal queries to be sent
             and not getattr(self.output.stdout, "fake_tty", False)
         )
         if not self.queryable:

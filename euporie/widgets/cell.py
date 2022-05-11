@@ -249,7 +249,8 @@ class ClickArea:
 class Cell:
     """A notebook cell element.
 
-    Contains a transparent clickable overlay, which is not displayed when the cell is focused.
+    Contains a transparent clickable overlay, which is not displayed when the cell is
+    focused.
     """
 
     def __init__(self, index: "int", json: "dict", notebook: "Notebook"):

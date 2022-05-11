@@ -442,13 +442,17 @@ class NotebookKernel:
         # "If the target_name key is not found on the receiving side, then it should
         # immediately reply with a comm_close message to avoid an inconsistent state."
         #
-        self.nb.comm_open(rsp.get("content", {}))
+        self.nb.comm_open(
+            content=rsp.get("content", {}), buffers=rsp.get("buffers", [])
+        )
 
     def on_iopub_comm_msg(self, rsp):
-        self.nb.comm_msg(rsp.get("content", {}))
+        self.nb.comm_msg(content=rsp.get("content", {}), buffers=rsp.get("buffers", []))
 
     def on_iopub_comm_close(self, rsp):
-        self.nb.comm_close(rsp.get("content", {}))
+        self.nb.comm_close(
+            content=rsp.get("content", {}), buffers=rsp.get("buffers", [])
+        )
 
     ####################################
 
@@ -466,7 +470,7 @@ class NotebookKernel:
         self,
         source: "str",
         wait: "bool" = False,
-        **callbacks: "Dict[str, Callable]",
+        **callbacks: "Callable[..., Any]",
     ) -> "None":
         """Run a cell using the notebook kernel and process the responses."""
         if self.kc is None:

@@ -54,6 +54,7 @@ from euporie.key_binding.key_processor import KeyProcessor
 from euporie.key_binding.micro_state import MicroState
 from euporie.log import setup_logs
 from euporie.style import (
+    IPYWIDGET_STYLE,
     LOG_STYLE,
     MARKDOWN_STYLE,
     MIME_STYLE,
@@ -494,6 +495,7 @@ class EuporieApp(Application):
                 Style(MIME_STYLE),
                 Style(MARKDOWN_STYLE),
                 Style(LOG_STYLE),
+                Style(IPYWIDGET_STYLE),
                 app_style,
             ]
         )

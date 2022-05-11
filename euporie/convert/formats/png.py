@@ -32,8 +32,11 @@ def latex_to_png_py_ipython(
     """Converts LaTeX data to PNG bytes with :py:mod:`IPython` & :py:mod:`matplotlib`."""
     from IPython.lib.latextools import latex_to_png  # type: ignore
 
-    return latex_to_png(
-        data, encode=False, backend=backend, **({"color": fg} if fg else {})
+    return (
+        latex_to_png(
+            data, encode=False, backend=backend, **({"color": fg} if fg else {})
+        )
+        or b"error"
     )
 
 

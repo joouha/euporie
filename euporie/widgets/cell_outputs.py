@@ -6,6 +6,7 @@ from pathlib import PurePath
 from typing import TYPE_CHECKING, NamedTuple, cast
 
 from prompt_toolkit.layout.containers import HSplit, Window, to_container
+from prompt_toolkit.widgets.base import Box
 
 from euporie.convert.base import MIME_FORMATS, find_route
 from euporie.widgets.display import Display
@@ -52,7 +53,7 @@ class CellOutputDataElement(CellOutputElement):
                     break
 
         self.container = Display(
-            datum=data,
+            data=data,
             format_=format_,
             fg_color=fg_color,
             bg_color=bg_color,
@@ -79,7 +80,11 @@ class CellOutputWidgetElement(CellOutputElement):
 
         comm = self.cell.nb.comms.get(self.comm_id)
         if comm:
-            self.container = comm.create_view(self.cell)
+            self.container = Box(
+                comm.new_view(self.cell),
+                padding_left=0,
+                style="class:ipywidget",
+            )
         else:
             raise NotImplementedError
 
