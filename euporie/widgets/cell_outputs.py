@@ -12,9 +12,11 @@ from euporie.convert.base import MIME_FORMATS, find_route
 from euporie.widgets.display import Display
 
 if TYPE_CHECKING:
-    from typing import Any, Callable, Dict, List, Literal, Optional, Union
+    from typing import Any, Callable, Dict, List, Literal, Optional, Tuple, Union
 
-    from prompt_toolkit.layout.containers import AnyContainer
+    from prompt_toolkit.layout.containers import AnyContainer, Container
+
+    from euporie.widgets.cell import Cell
 
 log = logging.getLogger(__name__)
 
@@ -25,6 +27,14 @@ class CellOutputElement(metaclass=ABCMeta):
     ) -> "None":
         ...
 
+    def scroll_left(self) -> "None":
+        """Scrolls the output left."""
+        pass
+
+    def scroll_right(self) -> "None":
+        """Scrolls the output right."""
+        pass
+
     @abstractmethod
     def __pt_container__(self) -> "AnyContainer":
         ...
@@ -32,7 +42,7 @@ class CellOutputElement(metaclass=ABCMeta):
 
 class CellOutputDataElement(CellOutputElement):
     def __init__(
-        self, mime: "str", data: "str", metadata: "Dict", cell: "Cell"
+        self, mime: "str", data: "Dict[str, Any]", metadata: "Dict", cell: "Cell"
     ) -> "None":
         """"""
         self.cell = cell
@@ -40,7 +50,7 @@ class CellOutputDataElement(CellOutputElement):
         # Get foreground and background colors
         fg_color = self.cell.nb.app.color_palette.fg.base_hex
         bg_color = {"light": "#FFFFFF", "dark": "#000000"}.get(
-            metadata.get("needs_background")
+            str(metadata.get("needs_background"))
         )
 
         # Get internal format
@@ -67,16 +77,24 @@ class CellOutputDataElement(CellOutputElement):
             style=f"class:cell.output.element.data class:mime.{mime.replace('/','.')}",
         )
 
+    def scroll_left(self) -> "None":
+        """Scrolls the output left."""
+        self.container.window._scroll_left()
+
+    def scroll_right(self) -> "None":
+        """Scrolls the output right."""
+        self.container.window._scroll_right()
+
     def __pt_container__(self) -> "AnyContainer":
         return self.container
 
 
 class CellOutputWidgetElement(CellOutputElement):
     def __init__(
-        self, mime: "str", data: "str", metadata: "Dict", cell: "Cell"
+        self, mime: "str", data: "Dict[str, Any]", metadata: "Dict", cell: "Cell"
     ) -> "None":
         self.cell = cell
-        self.comm_id = data.get("model_id")
+        self.comm_id = str(data.get("model_id"))
 
         comm = self.cell.nb.comms.get(self.comm_id)
         if comm:
@@ -139,11 +157,11 @@ class CellOutput:
         # Select the first mime-type to render
         self.cell = cell
         self._json = json
-        self._selected_mime = None
-        self._containers = {}
+        self._selected_mime: "Optional[str]" = None
+        self._containers: "Dict[str, CellOutputElement]" = {}
 
     @property
-    def selected_mime(self) -> "None":
+    def selected_mime(self) -> "str":
         data = self.data
         # If an mime-type has not been explicitly selected, display the first
         if self._selected_mime not in data:
@@ -184,7 +202,7 @@ class CellOutput:
         return self._containers[self.selected_mime]
 
     @property
-    def data(self) -> "dict[str, str]":
+    def data(self) -> "Dict[str, Any]":
         """Return dictionary of mime types and data for this output.
 
         This generates similarly structured data objects for markdown cells and text
@@ -206,28 +224,36 @@ class CellOutput:
             data = self.json.get("data", {})
         return dict(sorted(data.items(), key=_calculate_mime_rank))
 
+    def scroll_left(self) -> "None":
+        """Scrolls the currently visible output left."""
+        self.container.scroll_left()
+
+    def scroll_right(self) -> "None":
+        """Scrolls the currently visible output right."""
+        self.container.scroll_right()
+
     def __pt_container__(self):
         return self.container
 
 
 class CellOutputArea:
-    def __init__(self, json, cell: "Cell") -> "None":
+    def __init__(self, json: "List[Dict[str, Any]]", cell: "Cell") -> "None":
         self.cell = cell
-        self._rendered_outputs = []
+        self._rendered_outputs: "List[CellOutput]" = []
         self.container = HSplit([])
         self.json = json
 
     @property
-    def json(self) -> "Dict":
+    def json(self) -> "List[Dict[str, Any]]":
         return self._json
 
     @json.setter
-    def json(self, outputs_json: "Dict") -> "None":
+    def json(self, outputs_json: "List[Dict[str, Any]]") -> "None":
         self._json = outputs_json
         self.container.children = self.rendered_outputs
 
     @property
-    def rendered_outputs(self) -> "List[CellOutput]":
+    def rendered_outputs(self) -> "List[Container]":
         """Generates a list of rendered outputs."""
         n_existing_outputs = len(self._rendered_outputs)
         rendered_outputs: "List[CellOutput]" = []
@@ -243,15 +269,13 @@ class CellOutputArea:
 
     def scroll_left(self) -> "None":
         """Scrolls the outputs left."""
-        for output_window in self.container.children:
-            if hasattr(output_window, "_scroll_left"):
-                output_window._scroll_left()
+        for cell_output in self._rendered_outputs:
+            cell_output.scroll_left()
 
     def scroll_right(self) -> "None":
         """Scrolls the outputs right."""
-        for output_window in self.container.children:
-            if hasattr(output_window, "_scroll_right"):
-                output_window._scroll_right()
+        for cell_output in self._rendered_outputs:
+            cell_output.scroll_right()
 
     def __pt_container__(self):
         return self.container

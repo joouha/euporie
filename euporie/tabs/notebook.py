@@ -39,7 +39,7 @@ from euporie.widgets.page import PrintingContainer, ScrollbarControl, ScrollingC
 
 if TYPE_CHECKING:
     from collections.abc import MutableSequence
-    from typing import Callable, List, Optional, Sequence, Type
+    from typing import Callable, Dict, List, Optional, Sequence, Type
 
     from prompt_toolkit.auto_suggest import AutoSuggest
     from prompt_toolkit.completion import Completer
@@ -48,6 +48,7 @@ if TYPE_CHECKING:
 
     from euporie.app.base import EuporieApp
     from euporie.app.edit import EditApp
+    from euporie.comm.base import Comm
     from euporie.kernel import NotebookKernel
     from euporie.widgets.cell import PagerState
 
@@ -90,7 +91,7 @@ class Notebook(Tab, metaclass=ABCMeta):
             self.json["cells"] = [nbformat.v4.new_code_cell()]
 
         # The client-side comm states
-        self.comms = {}
+        self.comms: "Dict[str, Comm]" = {}
 
         self.app = app or get_app()
         self._rendered_cells: "dict[str, Cell]" = {}
@@ -424,7 +425,7 @@ class KernelNotebook(Notebook):
         log.debug("Kernel status is '%s'", self.kernel.status)
         self.kernel.info(set_kernel_info=self.set_kernel_info, set_status=log.debug)
 
-    def comm_open(self, content, buffers: "List[memoryview]") -> "None":
+    def comm_open(self, content, buffers: "Sequence[memoryview]") -> "None":
         comm_id = content.get("comm_id")
         self.comms[comm_id] = open_comm(nb=self, content=content, buffers=buffers)
 

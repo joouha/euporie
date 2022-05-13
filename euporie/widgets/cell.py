@@ -18,7 +18,6 @@ from prompt_toolkit.layout.containers import (
     HSplit,
     VSplit,
     Window,
-    to_container,
 )
 from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.layout.margins import ConditionalMargin
@@ -48,7 +47,7 @@ from euporie.widgets.cell_outputs import CellOutputArea
 
 
 if TYPE_CHECKING:
-    from typing import Any, Callable, Literal, Optional, Union
+    from typing import Any, Callable, Dict, List, Literal, Optional, Tuple, Union
 
     from prompt_toolkit.buffer import Buffer
     from prompt_toolkit.formatted_text.base import AnyFormattedText, StyleAndTextTuples
@@ -71,7 +70,7 @@ log = logging.getLogger(__name__)
 
 
 def get_cell_id(cell_json: "dict") -> "str":
-    """Returns the cell ID field defined in a cell JSON object.
+    """Return the cell ID field defined in a cell JSON object.
 
     If no cell ID is defined (as per ```:mod:`nbformat`<4.5``), then one is generated
     and added to the cell.
@@ -598,7 +597,7 @@ class Cell:
         self.input_box.buffer.cursor_position = cp
 
     @property
-    def output_json(self) -> "list[dict[str, Any]]":
+    def output_json(self) -> "List[Dict[str, Any]]":
         """Retrieve a list of cell outputs from the cell's JSON."""
         if self.cell_type == "markdown":
             return [
@@ -623,10 +622,8 @@ class Cell:
         """Unregisters the cell's output's graphic floats with the applications."""
         return
         for output in self.output_box.children:
-            if graphic_float := cast("CellOutput", output).graphic_float:
-                cast(
-                    "OutputControl", cast("Window", graphic_float.content).content
-                ).hide()
+            if graphic_float := output.graphic_float:
+                graphic_float.content.content.hide()
                 get_app().remove_float(graphic_float)
 
     def remove_outputs(self) -> "None":
@@ -718,6 +715,60 @@ class Cell:
     def __pt_container__(self) -> "Container":
         """Returns the container which represents this cell."""
         return self.container
+
+    def set_execution_count(self, n) -> "None":
+        """"""
+        self.json["execution_count"] = n
+
+    def add_output(self, output_json) -> "None":
+        """"""
+        # Clear the output if we were previously asked to
+        if self.clear_outputs_on_output:
+            self.remove_outputs()
+        # Combine stream outputs with existing stream outputs
+        for output in self.json.get("outputs", []):
+            name = output.get("name")
+            if name is not None and name == output_json.get("name"):
+                output["text"] = output.get("text", "") + output_json.get("text", "")
+                break
+        else:
+            self.json.setdefault("outputs", []).append(output_json)
+        # Update the output area
+        self.output_area.json = self.output_json
+        self.trigger_refresh()
+
+    def clear_output(self, wait: "bool" = False) -> "None":
+        """"""
+        if wait:
+            self.clear_outputs_on_output = True
+        else:
+            self.remove_outputs()
+
+    def set_metadata(self, path: "Tuple[str, ...]", data: "Any") -> "None":
+        """Sets a value in the metadata at an arbitrary path.
+
+        Args:
+            path: A tuple of path level names to create
+            data: The value to add
+
+        """
+        level = self.json["metadata"]
+        for i, key in enumerate(path):
+            if i == len(path) - 1:
+                level[key] = data
+            else:
+                level = level.setdefault(key, {})
+
+    def set_status(self, status: "str") -> "None":
+        """"""
+        pass
+
+    def get_input(
+        self,
+        prompt: "str" = "Please enter a value:",
+        password: "bool" = False,
+    ) -> "None":
+        return None
 
 
 PagerState = NamedTuple(
@@ -847,7 +898,8 @@ class InteractiveCell(Cell):
 
         def _send_input(buf: "Buffer") -> "bool":
             """Send the input to the kernel and hide the input box."""
-            self.nb.kernel.kc.input(buf.text)
+            if self.nb.kernel.kc is not None:
+                self.nb.kernel.kc.input(buf.text)
             # Cleanup
             self._asking_input = False
             get_app().layout.focus(self)
@@ -875,50 +927,4 @@ class InteractiveCell(Cell):
             layout.focus(self.stdin_box)
         finally:
             app.create_background_task(_focus_input())
-
-    def set_execution_count(self, n) -> "None":
-        """"""
-        self.json["execution_count"] = n
-
-    def add_output(self, output_json) -> "None":
-        """"""
-        # Clear the output if we were previously asked to
-        if self.clear_outputs_on_output:
-            self.remove_outputs()
-        # Combine stream outputs with existing stream outputs
-        for output in self.json.get("outputs", []):
-            name = output.get("name")
-            if name is not None and name == output_json.get("name"):
-                output["text"] = output.get("text", "") + output_json.get("text", "")
-                break
-        else:
-            self.json.setdefault("outputs", []).append(output_json)
-        # Update the output area
-        self.output_area.json = self.output_json
-        self.trigger_refresh()
-
-    def clear_output(self, wait: "bool" = False) -> "None":
-        """"""
-        if wait:
-            self.clear_outputs_on_output = True
-        else:
-            self.remove_outputs()
-
-    def set_metadata(self, path: "Tuple[str, ...]", data: "Any") -> "None":
-        """Sets a value in the metadata at an arbitrary path.
-
-        Args:
-            path: A tuple of path level names to create
-            data: The value to add
-
-        """
-        level = self.json["metadata"]
-        for i, key in enumerate(path):
-            if i == len(path) - 1:
-                level[key] = data
-            else:
-                level = level.setdefault(key, {})
-
-    def set_status(self, status: "str") -> "None":
-        """"""
-        pass
+            app.create_background_task(_focus_input())

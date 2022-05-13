@@ -9,7 +9,7 @@ import threading
 from collections import defaultdict
 from functools import partial
 from subprocess import DEVNULL, STDOUT  # noqa S404 - Security implications considered
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 import nbformat  # type: ignore
 from jupyter_client import (  # type: ignore
@@ -21,7 +21,27 @@ from jupyter_client.kernelspec import NoSuchKernel  # type: ignore
 from jupyter_core.paths import jupyter_path  # type: ignore
 
 if TYPE_CHECKING:
-    from typing import Any, AsyncGenerator, Callable, Coroutine, Dict, Optional, Union
+    from typing import (
+        Any,
+        Callable,
+        Coroutine,
+        Dict,
+        List,
+        Optional,
+        Tuple,
+        TypedDict,
+        Union,
+    )
+
+    class MsgCallbacks(TypedDict, total=False):
+        get_input: Optional[Callable[[str, bool], None]]
+        set_execution_count: Optional[Callable[[int], None]]
+        add_output: Optional[Callable[[List[Dict[str, Any]]], None]]
+        clear_output: Optional[Callable[[bool], None]]
+        done: Optional[Callable[[Dict[str, Any]], None]]
+        set_metadata: Optional[Callable[[Tuple[str, ...], Any], None]]
+        set_status: Optional[Callable[[str], None]]
+
 
 __all__ = ["NotebookKernel"]
 
@@ -73,7 +93,7 @@ class NotebookKernel:
         self.coros: "Dict[str, concurrent.futures.Future]" = {}
         self.poll_tasks: "list[asyncio.Task]" = []
 
-        self.msg_id_callbacks = defaultdict(
+        self.msg_id_callbacks: "Dict[str, MsgCallbacks]" = defaultdict(
             lambda: {
                 "get_input": lambda prompt, password: self.nb.cell.get_input(
                     prompt, password
@@ -521,6 +541,7 @@ class NotebookKernel:
 
     def info(self, **callbacks) -> "dict":
         """Request information about the kernel."""
+        callbacks = cast("MsgCallbacks", callbacks)
         msg_id = self.kc.kernel_info()
         if callbacks:
             self.msg_id_callbacks[msg_id].update(callbacks)

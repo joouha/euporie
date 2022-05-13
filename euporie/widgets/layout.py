@@ -13,6 +13,7 @@ from prompt_toolkit.layout.containers import (
     ConditionalContainer,
     DynamicContainer,
     HSplit,
+    VSplit,
     Window,
     to_container,
 )
@@ -25,14 +26,47 @@ from euporie.border import InnerEdgeGridStyle, OuterEdgeGridStyle
 from euporie.widgets.decor import Border, BorderVisibility
 
 if TYPE_CHECKING:
-    from typing import Callable, List, Optional, Union
+    from typing import Any, Callable, List, Optional, Union
 
-    from prompt_toolkit.filters import Filter
+    from prompt_toolkit.filters import FilterOrBool
     from prompt_toolkit.formatted_text.base import AnyFormattedText, StyleAndTextTuples
     from prompt_toolkit.layout.containers import Container
     from prompt_toolkit.mouse_events import MouseEvent, NotImplementedOrNone
 
 log = logging.getLogger(__name__)
+
+
+class ConditionalSplit:
+    """A split container where the orientation depends on a filter."""
+
+    def __init__(
+        self, vertical: "FilterOrBool", *args: "Any", **kwargs: "Any"
+    ) -> "None":
+        """Creates a new conditional split container.
+
+        Args:
+            vertical: A filter which determines if the container should be displayed vertically
+            args: Positional arguments to pass to the split container
+            kwargs: Key-word arguments to pass to the split container
+
+        """
+        self.vertical = to_filter(vertical)
+        self.args = args
+        self.kwargs = kwargs
+        self._cache = SimpleCache(maxsize=2)
+
+    def load_container(self, vertical):
+        if vertical:
+            return HSplit(*self.args, **self.kwargs)
+        else:
+            return VSplit(*self.args, **self.kwargs)
+
+    def container(self):
+        vertical = self.vertical()
+        return self._cache.get(vertical, partial(self.load_container, vertical))
+
+    def __pt_container__(self) -> "AnyContainer":
+        return DynamicContainer(self.container)
 
 
 class ReferencedSplit:
