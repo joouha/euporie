@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 import logging
+from abc import ABCMeta
 from functools import partial
 from math import ceil
-from pathlib import PurePath
 from typing import TYPE_CHECKING
 
 from prompt_toolkit.cache import SimpleCache
@@ -21,7 +21,6 @@ from prompt_toolkit.layout.screen import WritePosition
 from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
 from prompt_toolkit.utils import Event
 
-from euporie.app.current import get_base_app as get_app
 from euporie.app.current import get_edit_app as get_app
 from euporie.convert.base import convert, find_route
 from euporie.convert.util import data_pixel_size, pixels_to_cell_size
@@ -29,12 +28,6 @@ from euporie.filters import has_dialog, has_menus
 from euporie.key_binding.bindings.commands import load_command_bindings
 from euporie.margins import ScrollbarMargin
 from euporie.terminal import tmuxify
-from euporie.widgets.output.control import (
-    FormattedOutputControl,
-    ItermGraphicControl,
-    KittyGraphicControl,
-    SixelGraphicControl,
-)
 
 if TYPE_CHECKING:
     from typing import Any, Callable, Iterable, Optional, Type, Union
@@ -357,7 +350,11 @@ class FormattedTextDisplayControl(DisplayControl):
         return self._format_cache.get(key, render_lines)
 
 
-class SixelGraphicControl(DisplayControl):
+class GraphicControl(DisplayControl, metaclass=ABCMeta):
+    """A base-class for display controls which render terminal graphics."""
+
+
+class SixelGraphicControl(GraphicControl):
     def get_rendered_lines(
         self, width: "int", height: "int"
     ) -> "list[StyleAndTextTuples]":
@@ -396,7 +393,7 @@ class SixelGraphicControl(DisplayControl):
         )
 
 
-class ItermGraphicControl(DisplayControl):
+class ItermGraphicControl(GraphicControl):
     def convert_data(self, rows: "int", cols: "int") -> "str":
         """Converts the graphic's data to base64 data."""
         if self.format_.startswith("base64-"):
@@ -449,7 +446,7 @@ class ItermGraphicControl(DisplayControl):
 _kitty_image_count = 1
 
 
-class KittyGraphicControl(DisplayControl):
+class KittyGraphicControl(GraphicControl):
     def __init__(
         self,
         data: "Any",
@@ -613,7 +610,7 @@ class GraphicWindow(Window):
 
     def __init__(
         self,
-        content: "DisplayControl",
+        content: "GraphicControl",
         target_window: "Window",
         filter: "FilterOrBool",
         *args: "Any",
@@ -680,7 +677,7 @@ class GraphicFloat(Float):
         sizing_func: "Optional[Callable[[], tuple[int, float]]]" = None,
         filter: "FilterOrBool" = True,
     ):
-        self.GraphicControl = None
+        self.GraphicControl: "Optional[Type[GraphicControl]]" = None
         self.control = None
 
         term_info = get_app().term_info

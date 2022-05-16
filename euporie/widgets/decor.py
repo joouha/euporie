@@ -21,7 +21,11 @@ from euporie.border import BorderVisibility, Thin
 from euporie.config import config
 
 if TYPE_CHECKING:
-    from typing import Optional
+    from typing import Callable, List, Optional, Union
+
+    from prompt_toolkit.layout.containers import AnyContainer
+
+    from euporie.border import GridStyle
 
 log = logging.getLogger(__name__)
 
@@ -206,6 +210,7 @@ class Border:
         border_bottom = to_filter(show_borders.bottom)
         border_left = to_filter(show_borders.left)
 
+        self.container: "AnyContainer"
         if border is not None and any(show_borders):
             self.container = HSplit(
                 [
@@ -314,7 +319,7 @@ class Border:
 
         return _style
 
-    def __pt_container__(self) -> Container:
+    def __pt_container__(self) -> "AnyContainer":
         return self.container
 
 

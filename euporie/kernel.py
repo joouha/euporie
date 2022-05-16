@@ -9,7 +9,7 @@ import threading
 from collections import defaultdict
 from functools import partial
 from subprocess import DEVNULL, STDOUT  # noqa S404 - Security implications considered
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, TypedDict, cast
 
 import nbformat  # type: ignore
 from jupyter_client import (  # type: ignore
@@ -21,31 +21,25 @@ from jupyter_client.kernelspec import NoSuchKernel  # type: ignore
 from jupyter_core.paths import jupyter_path  # type: ignore
 
 if TYPE_CHECKING:
-    from typing import (
-        Any,
-        Callable,
-        Coroutine,
-        Dict,
-        List,
-        Optional,
-        Tuple,
-        TypedDict,
-        Union,
-    )
+    from typing import Any, Callable, Coroutine, Dict, List, Optional, Tuple, Union
 
-    class MsgCallbacks(TypedDict, total=False):
-        get_input: Optional[Callable[[str, bool], None]]
-        set_execution_count: Optional[Callable[[int], None]]
-        add_output: Optional[Callable[[List[Dict[str, Any]]], None]]
-        clear_output: Optional[Callable[[bool], None]]
-        done: Optional[Callable[[Dict[str, Any]], None]]
-        set_metadata: Optional[Callable[[Tuple[str, ...], Any], None]]
-        set_status: Optional[Callable[[str], None]]
+    from euporie.tabs.notebook import KernelNotebook
 
 
 __all__ = ["NotebookKernel"]
 
 log = logging.getLogger(__name__)
+
+
+class MsgCallbacks(TypedDict, total=False):
+    get_input: "Optional[Callable[[str, bool], None]]"
+    set_execution_count: "Optional[Callable[[int], None]]"
+    add_output: "Optional[Callable[[List[Dict[str, Any]]], None]]"
+    clear_output: "Optional[Callable[[bool], None]]"
+    done: "Optional[Callable[[Dict[str, Any]], None]]"
+    set_metadata: "Optional[Callable[[Tuple[str, ...], Any], None]]"
+    set_status: "Optional[Callable[[str], None]]"
+    set_kernel_info: "Optional[Callable[[Dict[str, Any]], None]]"
 
 
 class NotebookKernel:
@@ -298,15 +292,12 @@ class NotebookKernel:
         while True:
             # log.debug("Waiting for next %s message", channel)
             rsp = await msg_getter_coro()
-            try:
-                # Run msg type handler
-                msg_type = rsp.get("header", {}).get("msg_type")
-                if callable(handler := getattr(self, f"on_{channel}_{msg_type}", None)):
-                    handler(rsp)
-                else:
-                    self.on_unhandled(channel, rsp)
-            except:
-                log.exception("")
+            # Run msg type handler
+            msg_type = rsp.get("header", {}).get("msg_type")
+            if callable(handler := getattr(self, f"on_{channel}_{msg_type}", None)):
+                handler(rsp)
+            else:
+                self.on_unhandled(channel, rsp)
 
     def on_unhandled(self, channel, rsp):
         log.debug(
@@ -317,14 +308,15 @@ class NotebookKernel:
             rsp.get("content"),
         )
 
-    def on_stdin_input_request(self, rsp) -> "Callable":
+    def on_stdin_input_request(self, rsp) -> "None":
         msg_id = rsp.get("parent_header", {}).get("msg_id")
         content = rsp.get("content", {})
-        get_input = self.msg_id_callbacks[msg_id]["get_input"]
-        get_input(
-            prompt=content.get("prompt", ""),
-            password=content.get("password", False),
-        )
+        get_input = self.msg_id_callbacks[msg_id].get("get_input")
+        if callable(get_input):
+            get_input(
+                content.get("prompt", ""),
+                content.get("password", False),
+            )
 
     def on_shell_status(self, rsp):
         msg_id = rsp.get("parent_header", {}).get("msg_id")
@@ -502,7 +494,17 @@ class NotebookKernel:
                 wait=wait,
             )
 
-    async def run_(self, source: "str", **callbacks: "Dict[str, Callable]") -> "None":
+    async def run_(
+        self,
+        source: "str",
+        get_input: "Optional[Callable[[str, bool], None]]" = None,
+        set_execution_count: "Optional[Callable[[int], None]]" = None,
+        add_output: "Optional[Callable[[List[Dict[str, Any]]], None]]" = None,
+        clear_output: "Optional[Callable[[bool], None]]" = None,
+        done: "Optional[Callable[[Dict[str, Any]], None]]" = None,
+        set_metadata: "Optional[Callable[[Tuple[str, ...], Any], None]]" = None,
+        set_status: "Optional[Callable[[str], None]]" = None,
+    ) -> "None":
         """Runs the code cell and and set the response callbacks, optionally waiting."""
         if self.kc is None:
             return
@@ -513,20 +515,23 @@ class NotebookKernel:
             allow_stdin=self.allow_stdin,
         )
 
-        original_done = callbacks.get("done")
-
         def wrapped_done(content) -> "None":
             # Run the original callback
-            if callable(original_done):
-                original_done(content)
+            if callable(done):
+                done(content)
             # Set the event
             event.set()
 
         self.msg_id_callbacks[msg_id].update(
-            {
-                **callbacks,
-                "done": wrapped_done,
-            }
+            MsgCallbacks(
+                get_input=get_input,
+                set_execution_count=set_execution_count,
+                add_output=add_output,
+                clear_output=clear_output,
+                set_metadata=set_metadata,
+                set_status=set_status,
+                done=wrapped_done,
+            )
         )
         # Wait for "done" callback to be called
         try:
@@ -539,12 +544,17 @@ class NotebookKernel:
         # if msg_id in self.msg_id_callbacks:
         # del self.msg_id_callbacks[msg_id]
 
-    def info(self, **callbacks) -> "dict":
+    def info(
+        self,
+        set_kernel_info: "Optional[Callable[[Dict[str, Any]], None]]" = None,
+        set_status: "Optional[Callable[[str], None]]" = None,
+    ) -> "None":
         """Request information about the kernel."""
-        callbacks = cast("MsgCallbacks", callbacks)
-        msg_id = self.kc.kernel_info()
-        if callbacks:
-            self.msg_id_callbacks[msg_id].update(callbacks)
+        if self.kc is not None:
+            msg_id = self.kc.kernel_info()
+            self.msg_id_callbacks[msg_id].update(
+                MsgCallbacks(set_kernel_info=set_kernel_info, set_status=set_status)
+            )
 
     async def complete_(
         self, code: "str", cursor_pos: "int", timeout: "int" = 60

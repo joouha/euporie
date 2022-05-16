@@ -356,6 +356,15 @@ class KernelNotebook(Notebook):
         self.load_kernel()
         self.dirty = False
 
+    @property
+    @abstractmethod
+    def cell(self) -> "InteractiveCell":
+        """Returns the currently active cell.
+
+        This is used for the default cell execution callbacks by the kernel.
+        """
+        ...
+
     @abstractmethod
     def load_kernel(self) -> "None":
         ...

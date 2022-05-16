@@ -51,7 +51,7 @@ if TYPE_CHECKING:
 
     from prompt_toolkit.buffer import Buffer
     from prompt_toolkit.formatted_text.base import StyleAndTextTuples
-    from prompt_toolkit.layout.containers import _Split
+    from prompt_toolkit.layout.containers import AnyContainer, _Split
 
     from euporie.kernel import MsgCallbacks
     from euporie.widgets.cell import Cell
@@ -175,7 +175,7 @@ class OutputModel(IpyWidgetComm):
 
 
 class LayoutIpyWidgetComm(IpyWidgetComm, metaclass=ABCMeta):
-    def render_children(self, models, cell: "Cell") -> "List[CommView]":
+    def render_children(self, models, cell: "Cell") -> "List[AnyContainer]":
         return [
             self.nb.comms[
                 ipy_model[ipy_model.startswith("IPY_MODEL_") and len("IPY_MODEL_") :]
@@ -665,6 +665,7 @@ class ToggleButtonModel(ToggleableIpyWidgetComm):
             text=self.data["state"].get("description", ""),
             on_click=self.value_changed,
             selected=self.data["state"]["value"],
+            style=self.button_style,
         )
         return CommView(
             FocusedStyle(
@@ -672,6 +673,11 @@ class ToggleButtonModel(ToggleableIpyWidgetComm):
             ),
             setters={"value": partial(setattr, button, "selected")},
         )
+
+    def button_style(self):
+        if style := self.data["state"]["button_style"]:
+            return f"class:{style}"
+        return ""
 
 
 class CheckboxModel(ToggleableIpyWidgetComm):

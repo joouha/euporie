@@ -314,11 +314,15 @@ def add_border(
 
     max_lw = max_line_width(ft)
     if width is None:
-        width = max_lw + padding[1] + padding[3] + 2
+        width = max_lw + (padding.right or 0) + (padding.left or 0) + 2
 
     inner_width = width - 2
     # Ensure all lines are the same length
-    ft = align(FormattedTextAlign.LEFT, ft, width=inner_width - padding[1] - padding[3])
+    ft = align(
+        FormattedTextAlign.LEFT,
+        ft,
+        width=inner_width - (padding.right or 0) - (padding.left or 0),
+    )
 
     result: StyleAndTextTuples = []
 
@@ -338,7 +342,7 @@ def add_border(
             ),
         ]
     )
-    for _ in range(padding[0]):
+    for _ in range(padding.top or 0):
         result.extend(
             [
                 (f"{style} class:left", border.MID_LEFT),
@@ -350,13 +354,13 @@ def add_border(
         result.extend(
             [
                 (f"{style} class:left", border.MID_LEFT),
-                ("", " " * padding.left),
+                ("", " " * (padding.left or 0)),
                 *line,
-                ("", " " * padding.right),
+                ("", " " * (padding.right or 0)),
                 (f"{style} class:right", border.MID_RIGHT + "\n"),
             ]
         )
-    for _ in range(padding[2]):
+    for _ in range(padding.bottom or 0):
         result.extend(
             [
                 (f"{style} class:left", border.MID_LEFT),

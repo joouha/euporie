@@ -27,7 +27,12 @@ from prompt_toolkit.layout.containers import (
     VSplit,
     Window,
 )
-from prompt_toolkit.layout.controls import FormattedTextControl, UIContent, UIControl
+from prompt_toolkit.layout.controls import (
+    BufferControl,
+    FormattedTextControl,
+    UIContent,
+    UIControl,
+)
 from prompt_toolkit.layout.dimension import Dimension
 from prompt_toolkit.layout.processors import AfterInput, ConditionalProcessor
 from prompt_toolkit.layout.utils import explode_text_fragments
@@ -59,6 +64,7 @@ if TYPE_CHECKING:
         Dict,
         List,
         Optional,
+        Sequence,
         Tuple,
         Type,
         TypeVar,
@@ -78,10 +84,9 @@ if TYPE_CHECKING:
     from prompt_toolkit.key_binding.key_processor import KeyPressEvent
     from prompt_toolkit.layout.containers import AnyContainer, Container
     from prompt_toolkit.layout.controls import GetLinePrefixCallable
+    from prompt_toolkit.layout.processors import Processor
 
     from euporie.border import GridStyle
-
-    T = TypeVar("T", str, int, float)
 
 
 log = logging.getLogger(__name__)
@@ -99,113 +104,6 @@ def is_iterable(x):
         return False
     else:
         return True
-
-
-class Button:
-    """Clickable button.
-
-    :param text: The caption for the button.
-    :param handler: `None` or callable. Called when the button is clicked. No
-        parameters are passed to this callable. Use for instance Python's
-        `functools.partial` to pass parameters to this callable if needed.
-    :param width: Width of the button.
-    """
-
-    def _get_style(self) -> str:
-        if callable(self.style):
-            style = self.style()
-        else:
-            style = self.style
-        if self.selected:
-            return f"{style} class:button,selection"
-        else:
-            return f"{style} class:button"
-
-    def _get_text_fragments(self) -> "StyleAndTextTuples":
-        ft = [
-            *to_formatted_text(self.text),
-        ]
-        ft = align(FormattedTextAlign.CENTER, ft, self.width)
-        ft = [(style, text, self.mouse_handler) for style, text, *_ in ft]
-        ft = [("[SetMenuPosition]", ""), *ft]
-        return ft
-
-    def _get_key_bindings(self) -> "KeyBindings":
-        "Key bindings for the Button."
-        kb = KeyBindings()
-
-        @kb.add(" ")
-        @kb.add("enter")
-        def _(event: "KeyPressEvent") -> None:
-            self.on_mouse_down.fire()
-            self.on_click.fire()
-
-        return kb
-
-    def __init__(
-        self,
-        text: "AnyFormattedText",
-        on_click: "Optional[Callable[[Button], None]]" = None,
-        on_mouse_down: "Optional[Callable[[Button], None]]" = None,
-        width: "Optional[int]" = None,
-        style: "Union[str, Callable[[], str]]" = "",
-        border: "Optional[GridStyle]" = InnerEdgeGridStyle,
-        show_borders: "Optional[BorderVisibility]" = None,
-        selected: "bool" = False,
-        key_bindings: "Optional[KeyBindings]" = None,
-    ) -> None:
-        self.text = text
-        self.on_mouse_down = Event(self, on_mouse_down)
-        self.on_click = Event(self, on_click)
-        self._width = width
-        self.style = style
-        self.selected = selected
-        if key_bindings is not None:
-            self.key_bindings = merge_key_bindings(
-                [self._get_key_bindings(), key_bindings]
-            )
-        else:
-            self.key_bindings = self._get_key_bindings()
-        self.container = Border(
-            Window(
-                FormattedTextControl(
-                    self._get_text_fragments,
-                    key_bindings=self.key_bindings,
-                    focusable=True,
-                    show_cursor=False,
-                    style="class:face",
-                ),
-                style=self._get_style,
-                dont_extend_width=True,
-                dont_extend_height=True,
-            ),
-            border=border,
-            show_borders=show_borders,
-            style=lambda: f"{self._get_style()} class:border",
-        )
-
-    @property
-    def width(self) -> "int":
-        if self._width is not None:
-            return self._width
-        else:
-            return fragment_list_width(to_formatted_text(self.text)) + 2
-
-    @width.setter
-    def width(self, value: "Optional[int]") -> "None":
-        self._width = value
-
-    def mouse_handler(self, mouse_event: "MouseEvent") -> "NotImplementedOrNone":
-        if mouse_event.event_type == MouseEventType.MOUSE_DOWN:
-            get_app().layout.focus(self)
-            self.selected = True
-            self.on_mouse_down.fire()
-        elif mouse_event.event_type == MouseEventType.MOUSE_UP:
-            self.selected = False
-            self.on_click.fire()
-
-    def __pt_container__(self) -> "AnyContainer":
-        return self.container
 
 
 class Swatch:
@@ -238,27 +136,137 @@ class Swatch:
         return self.container
 
 
-class ToggleableWidget(metaclass=ABCMeta):
-    def toggle(self):
-        self.selected = not self.selected
-        self.on_click.fire()
+class Button:
+    """Clickable button.
 
-    def _get_key_bindings(self) -> "KeyBindings":
+    :param text: The caption for the button.
+    :param handler: `None` or callable. Called when the button is clicked. No
+        parameters are passed to this callable. Use for instance Python's
+        `functools.partial` to pass parameters to this callable if needed.
+    :param width: Width of the button.
+    """
+
+    def _get_style(self) -> str:
+        if callable(self.style):
+            style = self.style()
+        else:
+            style = self.style
+        if self.selected:
+            return f"{style} class:button,selection"
+        else:
+            return f"{style} class:button"
+
+    def _get_text_fragments(self) -> "StyleAndTextTuples":
+        ft = [
+            *to_formatted_text(self.text),
+        ]
+        ft = align(FormattedTextAlign.CENTER, ft, self.width)
+        ft = [(style, text, self.mouse_handler) for style, text, *_ in ft]
+        ft = [("[SetMenuPosition]", ""), *ft]
+        return ft
+
+    def _get_key_bindings(self) -> "KeyBindingsBase":
         "Key bindings for the Button."
         kb = KeyBindings()
 
         @kb.add(" ")
         @kb.add("enter")
         def _(event: "KeyPressEvent") -> None:
-            self.toggle()
+            self.on_mouse_down.fire()
+            self.on_click.fire()
+
+        return kb
+
+    def _mouse_handler(self, mouse_event: "MouseEvent") -> "NotImplementedOrNone":
+        if mouse_event.event_type == MouseEventType.MOUSE_DOWN:
+            get_app().layout.focus(self)
+            self.selected = True
+            self.on_mouse_down.fire()
+            return None
+        elif mouse_event.event_type == MouseEventType.MOUSE_UP:
+            self.selected = False
+            self.on_click.fire()
+            return None
+        else:
+            return NotImplemented
+
+    def __init__(
+        self,
+        text: "AnyFormattedText",
+        on_click: "Optional[Callable[[Button], None]]" = None,
+        on_mouse_down: "Optional[Callable[[Button], None]]" = None,
+        width: "Optional[int]" = None,
+        style: "Union[str, Callable[[], str]]" = "",
+        border: "Optional[GridStyle]" = InnerEdgeGridStyle,
+        show_borders: "Optional[BorderVisibility]" = None,
+        selected: "bool" = False,
+        key_bindings: "Optional[KeyBindingsBase]" = None,
+        mouse_handler: "Optional[Callable[[MouseEvent], NotImplementedOrNone]]" = None,
+    ) -> None:
+        self.text = text
+        self.on_mouse_down = Event(self, on_mouse_down)
+        self.on_click = Event(self, on_click)
+        self._width = width
+        self.style = style
+        self.selected = selected
+        if key_bindings is not None:
+            self.key_bindings: "KeyBindingsBase" = merge_key_bindings(
+                [self._get_key_bindings(), key_bindings]
+            )
+        else:
+            self.key_bindings = self._get_key_bindings()
+        self.mouse_handler = mouse_handler or self._mouse_handler
+        self.container = Border(
+            Window(
+                FormattedTextControl(
+                    self._get_text_fragments,
+                    key_bindings=self.key_bindings,
+                    focusable=True,
+                    show_cursor=False,
+                    style="class:face",
+                ),
+                style=self._get_style,
+                dont_extend_width=True,
+                dont_extend_height=True,
+            ),
+            border=border,
+            show_borders=show_borders,
+            style=lambda: f"{self._get_style()} class:border",
+        )
+
+    @property
+    def width(self) -> "int":
+        if self._width is not None:
+            return self._width
+        else:
+            return fragment_list_width(to_formatted_text(self.text)) + 2
+
+    @width.setter
+    def width(self, value: "Optional[int]") -> "None":
+        self._width = value
+
+    def __pt_container__(self) -> "AnyContainer":
+        return self.container
+
+
+class ToggleableWidget(metaclass=ABCMeta):
+    container: "AnyContainer"
+
+    def toggle(self):
+        self.selected = not self.selected
+        self.on_click.fire()
 
     def mouse_handler(self, mouse_event: "MouseEvent") -> "NotImplementedOrNone":
         if mouse_event.event_type == MouseEventType.MOUSE_DOWN:
             get_app().layout.focus(self)
+            return None
         elif mouse_event.event_type == MouseEventType.MOUSE_UP:
             self.toggle()
+            return None
+        else:
+            return NotImplemented
 
-    def _get_key_bindings(self) -> "Optional[KeyBindingsBase]":
+    def _get_key_bindings(self) -> "KeyBindingsBase":
         """Key bindings for the Toggler."""
         kb = KeyBindings()
 
@@ -267,33 +275,52 @@ class ToggleableWidget(metaclass=ABCMeta):
         def _(event: "KeyPressEvent") -> None:
             self.toggle()
 
+        return kb
 
-class ToggleButton(Button, ToggleableWidget):
+    @abstractmethod
+    def __pt_container__(self) -> "AnyContainer":
+        return self.container
+
+
+class ToggleButton(ToggleableWidget):
     """"""
 
     def __init__(
         self,
         text: "AnyFormattedText",
-        on_click: "Optional[Callable[[ToggleableWidget], None]]" = None,
-        on_mouse_down: "Optional[Callable[[Button], None]]" = None,
+        on_click: "Optional[Callable[[ToggleButton], None]]" = None,
         width: "Optional[int]" = None,
-        style: "str" = "",
+        style: "Union[str, Callable[[], str]]" = "",
         border: "Optional[GridStyle]" = InnerEdgeGridStyle,
         show_borders: "Optional[BorderVisibility]" = None,
         selected: "bool" = False,
         key_bindings: "Optional[KeyBindings]" = None,
     ) -> None:
-        super().__init__(
+        self.on_click = Event(self, on_click)
+        self.style = style
+
+        self.button = Button(
             text=text,
-            on_click=on_click,
-            on_mouse_down=on_mouse_down,
             width=width,
-            style=style,
+            style=self.style,
             border=border,
             show_borders=show_borders,
             selected=selected,
-            key_bindings=key_bindings,
+            key_bindings=self._get_key_bindings(),
+            mouse_handler=self.mouse_handler,
+            on_click=lambda button: self.on_click.fire(),
         )
+
+    @property
+    def selected(self):
+        return self.button.selected
+
+    @selected.setter
+    def selected(self, value: "bool"):
+        self.button.selected = value
+
+    def __pt_container__(self) -> "AnyContainer":
+        return self.button
 
 
 class Checkbox(ToggleableWidget):
@@ -342,6 +369,19 @@ class Checkbox(ToggleableWidget):
         return self.container
 
 
+class ExpandingBufferControl(BufferControl):
+    def preferred_width(self, max_available_width: "int") -> "int":
+        """Ensure text box expands to available width.
+
+        Args:
+            max_available_width: The maximum available width
+
+        Returns:
+            The desired width, which is the maximum available
+        """
+        return max_available_width
+
+
 class Text:
     """A text input."""
 
@@ -359,10 +399,10 @@ class Text:
         validation: "Optional[Callable[[str], bool]]" = None,
         accept_handler: "Optional[BufferAcceptHandler]" = None,
         placeholder: "Optional[str]" = None,
-        input_processors: "Optional[List[Processor]]" = None,
+        input_processors: "Optional[Sequence[Processor]]" = None,
     ):
         self.style = style
-        self.options = options
+        self.options = options or []
 
         self.placeholder = placeholder
 
@@ -389,16 +429,33 @@ class Text:
                         lambda: self.placeholder is not None and self.buffer.text == ""
                     ),
                 ),
-            ]
-            + (input_processors or []),
+                *(input_processors or []),
+            ],
         )
         self.buffer = self.text_area.buffer
 
         # Patch text area control's to expand to fill available width
-        self.text_area.control.preferred_width = self.preferred_width
+        # Do this without monkey-pathing by sub-classing :class:`BufferControl` and
+        # re-assigning the text-area's control
+        self.text_area.control = ExpandingBufferControl(
+            buffer=self.text_area.control.buffer,
+            input_processors=self.text_area.control.input_processors,
+            include_default_input_processors=self.text_area.control.include_default_input_processors,
+            lexer=self.text_area.control.lexer,
+            preview_search=self.text_area.control.preview_search,
+            focusable=self.text_area.control.focusable,
+            search_buffer_control=self.text_area.control._search_buffer_control,
+            menu_position=self.text_area.control.menu_position,
+            focus_on_click=self.text_area.control.focus_on_click,
+            key_bindings=self.text_area.control.key_bindings,
+        )
+        self.text_area.window.content = self.text_area.control
 
         if multiline:
-            self.text_area.window.right_margins += [ScrollbarMargin()]
+            self.text_area.window.right_margins = [
+                *self.text_area.window.right_margins,
+                ScrollbarMargin(),
+            ]
         if on_text_changed:
             self.text_area.buffer.on_text_changed += on_text_changed
         if validation:
@@ -409,17 +466,6 @@ class Text:
             style=self.border_style,
             show_borders=show_borders,
         )
-
-    def preferred_width(self, max_available_width: "int") -> "int":
-        """Ensure text box expands to available width.
-
-        Args:
-            max_available_width: The maximum available width
-
-        Returns:
-            The desired width, which is the maximum available
-        """
-        return max_available_width
 
     def border_style(self):
         if self.text_area.buffer.validation_state == ValidationState.INVALID:
@@ -513,10 +559,10 @@ class ProgressControl(UIControl):
 
     def __init__(
         self,
-        start: "Number" = 0,
-        stop: "Number" = 100,
-        step: "Number" = 1,
-        value: "Number" = 0,
+        start: "Union[float, int]" = 0,
+        stop: "Union[float, int]" = 100,
+        step: "Union[float, int]" = 1,
+        value: "Union[float, int]" = 0,
         vertical: "FilterOrBool" = False,
     ):
         self.start = start
@@ -574,10 +620,10 @@ class ProgressControl(UIControl):
 class Progress:
     def __init__(
         self,
-        start: "Number" = 0,
-        stop: "Number" = 100,
-        step: "Number" = 1,
-        value: "Number" = 0,
+        start: "Union[float, int]" = 0,
+        stop: "Union[float, int]" = 100,
+        step: "Union[float, int]" = 1,
+        value: "Union[float, int]" = 0,
         vertical: "FilterOrBool" = False,
         style: "Union[str, Callable[[], str]]" = "",
     ) -> "None":
@@ -604,7 +650,7 @@ class Progress:
         )
 
     @property
-    def value(self) -> "Number":
+    def value(self) -> "Union[float, int]":
         return self.control.value
 
     @value.setter
@@ -627,14 +673,14 @@ class Progress:
 class SelectableWidget(metaclass=ABCMeta):
     def __init__(
         self,
-        options: "List[T]",
+        options: "List[Any]",
         index: "int" = 0,
         indices: "Optional[List[int]]" = None,
         multiple: "FilterOrBool" = False,
         on_change: "Optional[Callable[[SelectableWidget], None]]" = None,
         style: "Union[str, Callable[[], str]]" = "",
     ):
-        self.options: "List[T]" = options
+        self.options = options
         self.mask: "List[bool]" = [False for _ in self.options]
         if indices is None:
             indices = [index]
@@ -718,10 +764,10 @@ class SelectableWidget(metaclass=ABCMeta):
 
     @index.setter
     def index(self, value: "int") -> "None":
-        self.indices = (value,)
+        self.indices = [value]
 
     @property
-    def indices(self) -> "List[int, ...]":
+    def indices(self) -> "List[int]":
         return [i for i, m in enumerate(self.mask) if m]
 
     @indices.setter
@@ -748,7 +794,7 @@ class SelectableWidget(metaclass=ABCMeta):
 class Select(SelectableWidget):
     def __init__(
         self,
-        options: "List[T]",
+        options: "List[Any]",
         index: "int" = 0,
         indices: "Optional[List[int]]" = None,
         multiple: "FilterOrBool" = False,
@@ -817,7 +863,7 @@ class Select(SelectableWidget):
 class Dropdown(SelectableWidget):
     def __init__(
         self,
-        options: "List[T]",
+        options: "List[Any]",
         index: "int" = 0,
         indices: "Optional[List[int]]" = None,
         multiple: "FilterOrBool" = False,
@@ -952,7 +998,7 @@ class Dropdown(SelectableWidget):
 class ToggleButtons(SelectableWidget):
     def __init__(
         self,
-        options: "List[T]",
+        options: "List[Any]",
         index: "int" = 0,
         indices: "Optional[List[int]]" = None,
         multiple: "FilterOrBool" = False,
@@ -983,7 +1029,7 @@ class ToggleButtons(SelectableWidget):
 
         self.buttons = [
             ToggleButton(
-                text=option,
+                text=str(option),
                 selected=selected,
                 on_click=partial(lambda index, button: self.toggle_item(index), i),
                 border=self.border,
@@ -1405,14 +1451,14 @@ class Slider(SelectableWidget):
             return True
         return False
 
-    def validate_readout(self, text: "str") -> "Optional[List[T]]":
+    def validate_readout(self, text: "str") -> "Optional[List[Any]]":
         values = [value.strip() for value in text.split("-")]
         valid_values = []
         for value in values:
             for option in self.options:
                 type_ = type(option)
                 try:
-                    typed_value = cast("T", type_(value))
+                    typed_value = type_(value)
                 except Exception:
                     continue
                 else:
