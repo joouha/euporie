@@ -1,7 +1,8 @@
+"""Contains input widgets."""
+
 import asyncio
 import logging
 from abc import ABCMeta, abstractmethod
-from enum import Enum
 from functools import partial
 from math import ceil, floor
 from typing import TYPE_CHECKING, cast
@@ -13,20 +14,8 @@ from prompt_toolkit.completion.word_completer import WordCompleter
 from prompt_toolkit.filters import Always, Condition, FilterOrBool, has_focus, to_filter
 from prompt_toolkit.formatted_text.base import to_formatted_text
 from prompt_toolkit.formatted_text.utils import fragment_list_len, fragment_list_width
-from prompt_toolkit.key_binding.key_bindings import (
-    ConditionalKeyBindings,
-    KeyBindings,
-    merge_key_bindings,
-)
-from prompt_toolkit.layout.containers import (
-    ConditionalContainer,
-    DynamicContainer,
-    Float,
-    FloatContainer,
-    HSplit,
-    VSplit,
-    Window,
-)
+from prompt_toolkit.key_binding.key_bindings import KeyBindings, merge_key_bindings
+from prompt_toolkit.layout.containers import ConditionalContainer, Float, VSplit, Window
 from prompt_toolkit.layout.controls import (
     BufferControl,
     FormattedTextControl,
@@ -43,33 +32,14 @@ from prompt_toolkit.widgets.base import Box, TextArea
 
 from euporie.app.current import get_edit_app as get_app
 from euporie.border import BorderVisibility, InnerEdgeGridStyle
-from euporie.convert.base import convert, find_route
-from euporie.formatted_text.utils import (
-    FormattedTextAlign,
-    add_border,
-    align,
-    apply_style,
-)
+from euporie.convert.base import convert
+from euporie.formatted_text.utils import FormattedTextAlign, align
 from euporie.margins import ScrollbarMargin
 from euporie.widgets.decor import Border
-from euporie.widgets.display import Display
 from euporie.widgets.layout import ConditionalSplit
 
 if TYPE_CHECKING:
-    from numbers import Number
-    from typing import (
-        Any,
-        Callable,
-        ClassVar,
-        Dict,
-        List,
-        Optional,
-        Sequence,
-        Tuple,
-        Type,
-        TypeVar,
-        Union,
-    )
+    from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
     from prompt_toolkit.buffer import Buffer, BufferAcceptHandler
     from prompt_toolkit.formatted_text.base import (
@@ -82,7 +52,7 @@ if TYPE_CHECKING:
         NotImplementedOrNone,
     )
     from prompt_toolkit.key_binding.key_processor import KeyPressEvent
-    from prompt_toolkit.layout.containers import AnyContainer, Container
+    from prompt_toolkit.layout.containers import AnyContainer
     from prompt_toolkit.layout.controls import GetLinePrefixCallable
     from prompt_toolkit.layout.processors import Processor
 
@@ -92,40 +62,41 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 
-class WidgetOrientation(Enum):
-    HORIZONTAL = "horizontal"
-    VERTICAL = "vertical"
-
-
-def is_iterable(x):
-    try:
-        iterator = iter(x)
-    except TypeError:
-        return False
-    else:
-        return True
-
-
 class Swatch:
+    """An widget which displays a given color."""
+
     def __init__(
         self,
         color: "Union[str, Callable[[], str]]" = "#FFFFFF",
         width: "int" = 2,
         height: "int" = 1,
         style: "str" = "class:swatch",
+        border: "GridStyle" = InnerEdgeGridStyle,
         show_borders: "Optional[BorderVisibility]" = None,
-    ):
+    ) -> "None":
+        """Create a new instance of the color swatch.
+
+        Args:
+            color: A function or string which gives color to display
+            width: The width of the color swatch (excluding the border)
+            height: The height of the color swatch (excluding the border)
+            style: Additional style to apply to the color swatch
+            border: The grid style to use for the widget's border
+            show_borders: Determines which borders should be displayed
+
+        """
         self.color = color
         self.style = style
 
         self.container = Border(
             Window(char=" ", style=self.get_style, width=width, height=height),
-            border=InnerEdgeGridStyle,
+            border=border,
             style=f"{self.style} class:border,inset",
             show_borders=show_borders,
         )
 
-    def get_style(self):
+    def get_style(self) -> "str":
+        """Compute the style for the swatch.."""
         if callable(self.color):
             color = self.color()
         else:
@@ -133,18 +104,12 @@ class Swatch:
         return f"{self.style} bg:{color} "
 
     def __pt_container__(self) -> "AnyContainer":
+        """Returns the swatch container."""
         return self.container
 
 
 class Button:
-    """Clickable button.
-
-    :param text: The caption for the button.
-    :param handler: `None` or callable. Called when the button is clicked. No
-        parameters are passed to this callable. Use for instance Python's
-        `functools.partial` to pass parameters to this callable if needed.
-    :param width: Width of the button.
-    """
+    """A clickable button widget."""
 
     def _get_style(self) -> str:
         if callable(self.style):
@@ -166,7 +131,7 @@ class Button:
         return ft
 
     def _get_key_bindings(self) -> "KeyBindingsBase":
-        "Key bindings for the Button."
+        """Key bindings for the Button."""
         kb = KeyBindings()
 
         @kb.add(" ")
@@ -178,6 +143,7 @@ class Button:
         return kb
 
     def _mouse_handler(self, mouse_event: "MouseEvent") -> "NotImplementedOrNone":
+        """Handle mouse events."""
         if mouse_event.event_type == MouseEventType.MOUSE_DOWN:
             get_app().layout.focus(self)
             self.selected = True
@@ -202,7 +168,24 @@ class Button:
         selected: "bool" = False,
         key_bindings: "Optional[KeyBindingsBase]" = None,
         mouse_handler: "Optional[Callable[[MouseEvent], NotImplementedOrNone]]" = None,
-    ) -> None:
+    ) -> "None":
+        """Create a new button widget instance.
+
+        Args:
+            text: The caption for the button.
+            on_click: A callback to run when the mouse is released over the button
+            on_mouse_down: A callback to run when the mouse is pressed on the button
+            width: The width of the button. If :py:const:`None`, the button width is
+                determined by the text
+            style: A style string or callable style to apply to the button
+            border: The grid style to use as the button's border
+            show_borders: Determines which borders should be shown
+            selected: The selection state of the button
+            key_bindings: Additional key_binding to apply to the button
+            mouse_handler: A mouse handler for the button. If unset, the default will be
+                used, which results in the button behaving like a regular click-button
+
+        """
         self.text = text
         self.on_mouse_down = Event(self, on_mouse_down)
         self.on_click = Event(self, on_click)
@@ -236,6 +219,7 @@ class Button:
 
     @property
     def width(self) -> "int":
+        """The width of the button."""
         if self._width is not None:
             return self._width
         else:
@@ -243,20 +227,28 @@ class Button:
 
     @width.setter
     def width(self, value: "Optional[int]") -> "None":
+        """Set the width of the button."""
         self._width = value
 
     def __pt_container__(self) -> "AnyContainer":
+        """Returns the button's container."""
         return self.container
 
 
 class ToggleableWidget(metaclass=ABCMeta):
-    container: "AnyContainer"
+    """Base class for toggleable widgets."""
 
-    def toggle(self):
+    container: "AnyContainer"
+    on_click: "Event"
+    selected: "bool"
+
+    def toggle(self) -> "None":
+        """Toggle the selected state and trigger the "clicked" callback."""
         self.selected = not self.selected
         self.on_click.fire()
 
     def mouse_handler(self, mouse_event: "MouseEvent") -> "NotImplementedOrNone":
+        """Focus on mouse down and toggle state on mouse up."""
         if mouse_event.event_type == MouseEventType.MOUSE_DOWN:
             get_app().layout.focus(self)
             return None
@@ -277,13 +269,13 @@ class ToggleableWidget(metaclass=ABCMeta):
 
         return kb
 
-    @abstractmethod
     def __pt_container__(self) -> "AnyContainer":
+        """Return the toggler's container."""
         return self.container
 
 
 class ToggleButton(ToggleableWidget):
-    """"""
+    """A toggleable button widget."""
 
     def __init__(
         self,
@@ -294,8 +286,18 @@ class ToggleButton(ToggleableWidget):
         border: "Optional[GridStyle]" = InnerEdgeGridStyle,
         show_borders: "Optional[BorderVisibility]" = None,
         selected: "bool" = False,
-        key_bindings: "Optional[KeyBindings]" = None,
     ) -> None:
+        """Create a new toggle-button instance.
+
+        Args:
+            text: The text to display on the button (can be a string or callable)
+            on_click: A callback to run when the button is clicked
+            width: The width of the button
+            style: A style for the button
+            border: The grid style to use as the button's border
+            show_borders: Which borders to display
+            selected: The initial selection state of the button
+        """
         self.on_click = Event(self, on_click)
         self.style = style
 
@@ -310,27 +312,29 @@ class ToggleButton(ToggleableWidget):
             mouse_handler=self.mouse_handler,
             on_click=lambda button: self.on_click.fire(),
         )
+        self.container = self.button
 
-    @property
-    def selected(self):
+    # See mypy issue #4125
+    @property  # type: ignore
+    def selected(self) -> "bool":  # type: ignore
+        """Returns the selection state of the toggle button."""
         return self.button.selected
 
     @selected.setter
-    def selected(self, value: "bool"):
+    def selected(self, value: "bool") -> "None":
+        """Sets the selection state of the toggle button."""
         self.button.selected = value
-
-    def __pt_container__(self) -> "AnyContainer":
-        return self.button
 
 
 class Checkbox(ToggleableWidget):
-    """"""
+    """A toggleable checkbox widget."""
 
     def _get_text_fragments(self) -> "StyleAndTextTuples":
+        """Returns the text fragments to display."""
         selected_style = "class:selection" if self.selected else ""
         ft = [
             (
-                f"[SetCursorPosition] class:checkbox,prefix{',selection' if self.selected else ''}",
+                f"[SetCursorPosition] class:checkbox,prefix {selected_style}",
                 self.prefix[int(self.selected)],
             ),
             # Add space between the tickbox and the text
@@ -348,6 +352,17 @@ class Checkbox(ToggleableWidget):
         style: "str" = "",
         selected: "bool" = False,
     ) -> None:
+        """Create a new checkbox widget instance.
+
+        Args:
+            text: The text to display next to the checkbox
+            on_click: A callback to run when the checkbox is toggled
+            prefix: A tuple of prefix strings to display, representing a checkbox in
+                unchecked and checked state respectively
+            style: Additional style string to apply to the widget
+            selected: The initial selection state of the widget
+
+        """
         self.text = to_formatted_text(text)
         self.on_click = Event(self, on_click)
         self.prefix = prefix
@@ -365,11 +380,10 @@ class Checkbox(ToggleableWidget):
             dont_extend_height=True,
         )
 
-    def __pt_container__(self) -> "AnyContainer":
-        return self.container
-
 
 class ExpandingBufferControl(BufferControl):
+    """A sub-class of :class:`BufferControl` which to the available width."""
+
     def preferred_width(self, max_available_width: "int") -> "int":
         """Ensure text box expands to available width.
 
@@ -383,7 +397,7 @@ class ExpandingBufferControl(BufferControl):
 
 
 class Text:
-    """A text input."""
+    """A text input widget."""
 
     def __init__(
         self,
@@ -400,7 +414,26 @@ class Text:
         accept_handler: "Optional[BufferAcceptHandler]" = None,
         placeholder: "Optional[str]" = None,
         input_processors: "Optional[Sequence[Processor]]" = None,
-    ):
+    ) -> "None":
+        """Create a new text widget instance.
+
+        Args:
+            text: The default value of the text widget
+            style: Additional style string to apply to the widget
+            height: The height of the widget, excluding borders
+            min_height: The minimum height of the widget, excluding borders
+            multiline: Whether the text box accepts multiple lines of text
+            width: The width of the text input. If :py:const:`None`, the widget will
+                expand to the available width
+            options: A list of permitted values
+            show_borders: Which borders to display. By default, all borders are shown
+            on_text_changed: A callback to run when the text is changed
+            validation: A callable used to validate the input
+            accept_handler: A callable which run when the input is accepted (when the
+                :kbd:`Enter` key is pressed on a non-multiline input)
+            placeholder: Text to display when nothing has been entered
+            input_processors: Additional input processors to apply to the text-area
+        """
         self.style = style
         self.options = options or []
 
@@ -440,7 +473,9 @@ class Text:
         self.text_area.control = ExpandingBufferControl(
             buffer=self.text_area.control.buffer,
             input_processors=self.text_area.control.input_processors,
-            include_default_input_processors=self.text_area.control.include_default_input_processors,
+            include_default_input_processors=(
+                self.text_area.control.include_default_input_processors
+            ),
             lexer=self.text_area.control.lexer,
             preview_search=self.text_area.control.preview_search,
             focusable=self.text_area.control.focusable,
@@ -467,7 +502,8 @@ class Text:
             show_borders=show_borders,
         )
 
-    def border_style(self):
+    def border_style(self) -> "str":
+        """Calculate the style to apply to the widget's border."""
         if self.text_area.buffer.validation_state == ValidationState.INVALID:
             return f"{self.style} class:text,border,invalid"
         else:
@@ -475,20 +511,31 @@ class Text:
 
     @property
     def text(self) -> "str":
+        """Returns the input's text value."""
         return self.buffer.text
 
     @text.setter
     def text(self, value: "str") -> "None":
+        """Sets the input's text value."""
         self.buffer.text = value
 
     def __pt_container__(self) -> "AnyContainer":
+        """Return the widget's container."""
         return self.container
 
 
 class Label:
+    """A label widget which displays rich text."""
+
     def __init__(
         self, value: "AnyFormattedText", style: "Union[str, Callable[[], str]]" = ""
-    ):
+    ) -> "None":
+        """Create a new label widget instance.
+
+        Args:
+            value: The value to display
+            style: Additional style to apply to the widget
+        """
         self.value = value
         self.control = FormattedTextControl(self.get_value, focusable=False)
         self.container = Window(
@@ -497,7 +544,8 @@ class Label:
             dont_extend_width=True,
         )
 
-    def get_value(self):
+    def get_value(self) -> "StyleAndTextTuples":
+        """Return the current value of the label, converting to formatted text."""
         value = self.value
         if callable(value):
             data = value()
@@ -510,19 +558,28 @@ class Label:
         )
 
     def __pt_container__(self) -> "AnyContainer":
+        """Returns the widget's container."""
         return self.container
 
 
 class LabelledWidget:
+    """A widget which applies a label to another widget."""
+
     def __init__(
         self,
         body: "AnyContainer",
         label: "AnyFormattedText",
-        height: "Optional[int]" = None,
-        width: "Optional[int]" = None,
         style: "str" = "",
         vertical: "FilterOrBool" = False,
-    ):
+    ) -> "None":
+        """Create a new labelled widget instance.
+
+        Args:
+            body: The widget to label
+            label: The label text to apply
+            style: Additional style string to apply to the label
+            vertical: Determines if the labelled widget should be oriented vertically
+        """
         self.body = body
         self.vertical = to_filter(vertical)
         padding_left = padding_right = lambda: None if self.vertical() else 0
@@ -549,10 +606,12 @@ class LabelledWidget:
         )
 
     def __pt_container__(self) -> "AnyContainer":
+        """Returned the labelled widget container."""
         return self.container
 
 
 class ProgressControl(UIControl):
+    """A control which draws a progress-bar."""
 
     hchars = ("", "▏", "▎", "▍", "▌", "▋", "▊", "▉", "█")
     vchars = ("", "▁", "▂", "▃", "▄", "▅", "▆", "▇", "█")
@@ -564,7 +623,17 @@ class ProgressControl(UIControl):
         step: "Union[float, int]" = 1,
         value: "Union[float, int]" = 0,
         vertical: "FilterOrBool" = False,
-    ):
+    ) -> "None":
+        """Create a new progress-bar control instance.
+
+        Args:
+            start: The lowest value of the progress-bar
+            stop: The highest value of the progress-bar
+            step: The size of each progress interval
+            value: The initial value to display
+            vertical: Determines if the progress-bar should be drawn in a vertical
+                orientation
+        """
         self.start = start
         self.stop = stop
         self.step = step
@@ -574,6 +643,7 @@ class ProgressControl(UIControl):
         self._content_cache: SimpleCache = SimpleCache(maxsize=50)
 
     def preferred_width(self, max_available_width: "int") -> "Optional[int]":
+        """Determine the width of the progress-bar depending on its orientation."""
         return 1 if self.vertical() else max_available_width
 
     def preferred_height(
@@ -583,16 +653,18 @@ class ProgressControl(UIControl):
         wrap_lines: "bool",
         get_line_prefix: "Optional[GetLinePrefixCallable]",
     ) -> "Optional[int]":
+        """Determine the height of the progress-bar depending on its orientation."""
         return min(max_available_height, 10) if self.vertical() else 1
 
-    def render(self, width: int, height: int):
+    def render(self, width: "int", height: "int") -> "List[StyleAndTextTuples]":
+        """Render the progressbar at a given size as lines of formatted text."""
         vertical = self.vertical()
         length = height if vertical else width
         size = int(self.value / (self.stop - self.start) * length * 8) / 8
         remainder = int(size % 1 * 8)
         chars = self.vchars if vertical else self.hchars
 
-        ft = [
+        ft: "StyleAndTextTuples" = [
             ("class:progress", chars[8] * int(size)),
             ("class:progress", chars[remainder]),
             ("class:progress", " " * int(length - size)),
@@ -604,6 +676,8 @@ class ProgressControl(UIControl):
             return [ft]
 
     def create_content(self, width: "int", height: "int") -> "UIContent":
+        """Get or render content for a given output size."""
+
         def get_content() -> UIContent:
             fragment_lines = self.render(width, height)
 
@@ -618,6 +692,8 @@ class ProgressControl(UIControl):
 
 
 class Progress:
+    """A progress-bar widget."""
+
     def __init__(
         self,
         start: "Union[float, int]" = 0,
@@ -627,6 +703,17 @@ class Progress:
         vertical: "FilterOrBool" = False,
         style: "Union[str, Callable[[], str]]" = "",
     ) -> "None":
+        """Create a new progress-bar widget instance.
+
+        Args:
+            start: The lowest permitted value
+            stop: The highest permitted value
+            step: The interval between permitted values
+            value: The initial value
+            vertical: Determines if the progress-bar should be drawn in a vertical
+                orientation
+            style: Additional style string or callable to apply to the widget
+        """
         self.style = style
         self.vertical = to_filter(vertical)
         self.control = ProgressControl(
@@ -651,14 +738,18 @@ class Progress:
 
     @property
     def value(self) -> "Union[float, int]":
+        """Return the current value of the proegress-bar."""
         return self.control.value
 
     @value.setter
-    def value(self, value) -> "None":
+    def value(self, value: "Union[float, int]") -> "None":
+        """Set the current value of the proegress-bar."""
         self.control.value = value
 
-    def add_style(self, extra):
-        def _style():
+    def add_style(self, extra: "str") -> "Callable[[], str]":
+        """Add an additional style to the widget's base style."""
+
+        def _style() -> "str":
             if callable(self.style):
                 return f"{self.style()} {extra}"
             else:
@@ -667,20 +758,38 @@ class Progress:
         return _style
 
     def __pt_container__(self) -> "AnyContainer":
+        """Return the progress-bar's container."""
         return self.container
 
 
 class SelectableWidget(metaclass=ABCMeta):
+    """Base class for widgets where one or more items can be selected."""
+
     def __init__(
         self,
         options: "List[Any]",
+        labels: "Optional[Sequence[AnyFormattedText]]" = None,
         index: "int" = 0,
         indices: "Optional[List[int]]" = None,
         multiple: "FilterOrBool" = False,
         on_change: "Optional[Callable[[SelectableWidget], None]]" = None,
         style: "Union[str, Callable[[], str]]" = "",
     ):
+        """Create a new selectable widget instance.
+
+        Args:
+            options: List of permitted values
+            labels: Optional list of labels for each permitted value
+            index: The index of the initially selected single value
+            indices: List of indices of the initially selected values
+            multiple: Determines whether multiple values can be selected
+            on_change: Callback which is run when the selection changes
+            style: Additional style to apply to the widget
+        """
         self.options = options
+        self.labels: "List[AnyFormattedText]" = list(
+            labels or (str(option) for option in options)
+        )
         self.mask: "List[bool]" = [False for _ in self.options]
         if indices is None:
             indices = [index]
@@ -695,10 +804,12 @@ class SelectableWidget(metaclass=ABCMeta):
 
     @abstractmethod
     def load_container(self) -> "AnyContainer":
+        """Abstract method for loading the widget's container."""
         ...
 
     @property
     def style(self) -> "str":
+        """Returns the widget's style."""
         if callable(self._style):
             return self._style()
         else:
@@ -706,10 +817,11 @@ class SelectableWidget(metaclass=ABCMeta):
 
     @style.setter
     def style(self, value: "Union[str, Callable[[], str]]") -> "None":
+        """Sets the widget's style."""
         self._style = value
 
     def key_bindings(self) -> "KeyBindings":
-        """Key bindings for the select."""
+        """Key bindings for the selectable widget."""
         kb = KeyBindings()
 
         @kb.add("home", filter=~self.multiple)
@@ -753,6 +865,7 @@ class SelectableWidget(metaclass=ABCMeta):
         return kb
 
     def toggle_item(self, index: "int") -> "None":
+        """Toggle the selection status of the option at a given index."""
         if not self.multiple() and any(self.mask):
             self.mask = [False for _ in self.options]
         self.mask[index] = not self.mask[index]
@@ -760,55 +873,83 @@ class SelectableWidget(metaclass=ABCMeta):
 
     @property
     def index(self) -> "Optional[int]":
+        """Return the first selected index."""
         return next((x for x in self.indices), None)
 
     @index.setter
     def index(self, value: "int") -> "None":
+        """Set the selected indices to a single value."""
         self.indices = [value]
 
     @property
     def indices(self) -> "List[int]":
+        """Return a list of the selected indices."""
         return [i for i, m in enumerate(self.mask) if m]
 
     @indices.setter
     def indices(self, values: "Tuple[int]") -> "None":
+        """Set the selected indices."""
         self.mask = [i in values for i in range(len(self.options))]
-        log.debug(values)
 
-    @property
-    def formatted_options(self):
-        return [to_formatted_text(x) for x in self.options]
-
-    def mouse_handler(self, i, mouse_event: "MouseEvent"):
+    def mouse_handler(
+        self, i: "int", mouse_event: "MouseEvent"
+    ) -> "NotImplementedOrNone":
+        """Handle mouse events."""
         if mouse_event.event_type == MouseEventType.MOUSE_MOVE:
             self.hovered = i
         elif mouse_event.event_type == MouseEventType.MOUSE_DOWN:
             get_app().layout.focus(self)
         elif mouse_event.event_type == MouseEventType.MOUSE_UP:
             self.toggle_item(i)
+        else:
+            return NotImplemented
+        return None
 
     def __pt_container__(self) -> "AnyContainer":
+        """Return the widget's container."""
         return self.container
 
 
 class Select(SelectableWidget):
+    """A select widget, which allows one or more items to be selected from a list."""
+
     def __init__(
         self,
         options: "List[Any]",
+        labels: "Optional[Sequence[AnyFormattedText]]" = None,
         index: "int" = 0,
         indices: "Optional[List[int]]" = None,
         multiple: "FilterOrBool" = False,
         on_change: "Optional[Callable[[SelectableWidget], None]]" = None,
         style: "Union[str, Callable[[], str]]" = "",
+        rows: "int" = 3,
         prefix: "Tuple[str, str]" = ("", ""),
         border: "Optional[GridStyle]" = InnerEdgeGridStyle,
         show_borders: "Optional[BorderVisibility]" = None,
     ) -> "None":
+        """Create a new select widget instance.
+
+        Args:
+            options: List of permitted values
+            labels: Optional list of labels for each permitted value
+            index: The index of the initially selected single value
+            indices: List of indices of the initially selected values
+            multiple: Determines whether multiple values can be selected
+            on_change: Callback which is run when the selection changes
+            style: Additional style to apply to the widget
+            rows: The number of rows of options to display
+            prefix: A prefix to add to each row
+            border: The grid style to use for the widget's border
+            show_borders: Which borders to display
+
+        """
+        self.rows = rows
         self.prefix = prefix
         self.border = border
         self.show_borders = show_borders
         super().__init__(
             options=options,
+            labels=labels,
             index=index,
             indices=indices,
             multiple=multiple,
@@ -817,11 +958,12 @@ class Select(SelectableWidget):
         )
 
     def text_fragments(self) -> "StyleAndTextTuples":
+        """Create a list of formatted text fragments to display."""
         ft: "StyleAndTextTuples" = []
-        formatted_options = self.formatted_options
-        max_width = max(fragment_list_width(x) for x in formatted_options)
-        for i, option in enumerate(formatted_options):
-            option = align(FormattedTextAlign.LEFT, option, width=max_width)
+        max_width = max(fragment_list_width(to_formatted_text(x)) for x in self.labels)
+        for i, label in enumerate(self.labels):
+            label = to_formatted_text(label)
+            label = align(FormattedTextAlign.LEFT, label, width=max_width)
             cursor = "[SetCursorPosition]" if self.mask[i] else ""
             style = "class:selection" if self.mask[i] else ""
             if self.hovered == i and self.multiple() and self.has_focus():
@@ -829,11 +971,13 @@ class Select(SelectableWidget):
             ft_option = [
                 (f"class:prefix {cursor}", self.prefix[self.mask[i]]),
                 ("", " "),
-                *option,
+                *label,
                 ("", " "),
                 ("", "\n"),
             ]
-            handler = partial(self.mouse_handler, i)
+            handler = cast(
+                "Callable[[MouseEvent], None]", partial(self.mouse_handler, i)
+            )
             ft += [
                 (f"{fragment_style} {style}", text, handler)
                 for fragment_style, text, *_ in ft_option
@@ -842,6 +986,7 @@ class Select(SelectableWidget):
         return ft
 
     def load_container(self) -> "AnyContainer":
+        """Load the widget's container."""
         return Border(
             Window(
                 FormattedTextControl(
@@ -850,9 +995,11 @@ class Select(SelectableWidget):
                     focusable=True,
                     show_cursor=False,
                 ),
+                height=lambda: self.rows,
                 dont_extend_width=True,
                 dont_extend_height=True,
                 style=f"class:select {self.style}",
+                right_margins=[ScrollbarMargin()],
             ),
             border=self.border,
             show_borders=self.show_borders,
@@ -861,20 +1008,36 @@ class Select(SelectableWidget):
 
 
 class Dropdown(SelectableWidget):
+    """A dropdown widget, allowing selection of an item from a menu of options."""
+
     def __init__(
         self,
         options: "List[Any]",
+        labels: "Optional[Sequence[AnyFormattedText]]" = None,
         index: "int" = 0,
         indices: "Optional[List[int]]" = None,
         multiple: "FilterOrBool" = False,
         on_change: "Optional[Callable[[SelectableWidget], None]]" = None,
         style: "Union[str, Callable[[], str]]" = "",
         arrow: "str" = "⯆",
-    ):
+    ) -> "None":
+        """Create a new drop-down widget instance.
+
+        Args:
+            options: List of permitted values
+            labels: Optional list of labels for each permitted value
+            index: The index of the initially selected single value
+            indices: List of indices of the initially selected values
+            multiple: Determines whether multiple values can be selected
+            on_change: Callback which is run when the selection changes
+            style: Additional style to apply to the widget
+            arrow: The character to use for the dropdown arrow
+        """
         self.menu_visible: "bool" = False
         self.arrow: "str" = arrow
         super().__init__(
             options=options,
+            labels=labels,
             index=index,
             indices=indices,
             multiple=multiple,
@@ -898,6 +1061,7 @@ class Dropdown(SelectableWidget):
         get_app().add_float(self.menu)
 
     def load_container(self) -> "AnyContainer":
+        """Load the widget's container."""
         self.button = Button(
             self.button_text,
             on_mouse_down=self.toggle_menu,
@@ -907,23 +1071,30 @@ class Dropdown(SelectableWidget):
         return self.button
 
     def button_text(self) -> "StyleAndTextTuples":
-        formatted_options = self.formatted_options
-        max_width = max(fragment_list_width(x) for x in formatted_options)
-        ft = align(FormattedTextAlign.LEFT, formatted_options[self.index], max_width)
+        """Return the text to display on the button."""
+        labels = [to_formatted_text(x) for x in self.labels]
+        max_width = max(fragment_list_width(x) for x in labels)
+        ft = align(
+            FormattedTextAlign.LEFT,
+            to_formatted_text(labels[self.index or 0]),
+            max_width,
+        )
         ft += [("", " " if self.arrow else ""), ("class:arrow", self.arrow)]
         return ft
 
     def toggle_menu(self, button: "Button") -> "None":
+        """Show or hide the menu."""
         self.menu_visible = not self.menu_visible
         self.hovered = self.index
 
     def menu_fragments(self) -> "StyleAndTextTuples":
+        """Return formatted text fragment to display in the menu."""
         ft: "StyleAndTextTuples" = []
-        formatted_options = self.formatted_options
-        max_width = max(fragment_list_width(x) for x in formatted_options)
-        for i, option in enumerate(formatted_options):
+        labels = [to_formatted_text(x) for x in self.labels]
+        max_width = max(fragment_list_width(x) for x in labels)
+        for i, label in enumerate(labels):
             # Pad each option
-            option = align(FormattedTextAlign.LEFT, option, width=max_width + 2)
+            formatted_label = align(FormattedTextAlign.LEFT, label, width=max_width + 2)
             item_style = "class:hovered" if i == self.hovered else ""
             handler = partial(self.mouse_handler, i)
             ft.extend(
@@ -931,7 +1102,7 @@ class Dropdown(SelectableWidget):
                     (item_style, " ", handler),
                     *[
                         (f"{item_style} {style}", text, handler)
-                        for style, text, *_ in option
+                        for style, text, *_ in formatted_label
                     ],
                     (item_style, " ", handler),
                     ("", "\n"),
@@ -941,14 +1112,15 @@ class Dropdown(SelectableWidget):
         ft.pop()
         return ft
 
-    def mouse_handler(self, i, mouse_event: "MouseEvent"):
+    def mouse_handler(self, i: "int", mouse_event: "MouseEvent") -> "None":
+        """Handle mouse events."""
         super().mouse_handler(i, mouse_event)
         if mouse_event.event_type == MouseEventType.MOUSE_UP:
             self.menu_visible = False
             self.button.selected = False
 
     def key_bindings(self) -> "KeyBindings":
-
+        """Return key-bindings for the drop-down widget."""
         menu_visible = Condition(lambda: self.menu_visible)
         kb = KeyBindings()
 
@@ -996,19 +1168,35 @@ class Dropdown(SelectableWidget):
 
 
 class ToggleButtons(SelectableWidget):
+    """A widget where an option is selected using mutually exclusive toggle-buttons."""
+
     def __init__(
         self,
         options: "List[Any]",
+        labels: "Optional[Sequence[AnyFormattedText]]" = None,
         index: "int" = 0,
         indices: "Optional[List[int]]" = None,
         multiple: "FilterOrBool" = False,
         on_change: "Optional[Callable[[SelectableWidget], None]]" = None,
         style: "Union[str, Callable[[], str]]" = "",
         border: "GridStyle" = InnerEdgeGridStyle,
-    ):
+    ) -> "None":
+        """Create a new select widget instance.
+
+        Args:
+            options: List of permitted values
+            labels: Optional list of labels for each permitted value
+            index: The index of the initially selected single value
+            indices: List of indices of the initially selected values
+            multiple: Determines whether multiple values can be selected
+            on_change: Callback which is run when the selection changes
+            style: Additional style to apply to the widget
+            border: The grid style to use for the widget's border
+        """
         self.border = border
         super().__init__(
             options=options,
+            labels=labels,
             index=index,
             indices=indices,
             multiple=multiple,
@@ -1017,6 +1205,7 @@ class ToggleButtons(SelectableWidget):
         )
 
     def load_container(self) -> "AnyContainer":
+        """Load the widget's container."""
         show_borders_values = [BorderVisibility(True, False, True, True)]
         if len(self.options) > 1:
             show_borders_values += [
@@ -1029,15 +1218,15 @@ class ToggleButtons(SelectableWidget):
 
         self.buttons = [
             ToggleButton(
-                text=str(option),
+                text=label,
                 selected=selected,
                 on_click=partial(lambda index, button: self.toggle_item(index), i),
                 border=self.border,
                 show_borders=show_borders,
                 style=self.style,
             )
-            for i, (option, selected, show_borders) in enumerate(
-                zip(self.options, self.mask, show_borders_values)
+            for i, (label, selected, show_borders) in enumerate(
+                zip(self.labels, self.mask, show_borders_values)
             )
         ]
         self.on_change += self.update_buttons
@@ -1046,15 +1235,15 @@ class ToggleButtons(SelectableWidget):
             style="class:toggle-buttons",
         )
 
-    def update_buttons(self, widget: "Optional[SelectableWidget]" = None):
+    def update_buttons(self, widget: "Optional[SelectableWidget]" = None) -> "None":
+        """Set the toggle buttons' selection state when the selected index changes."""
         for i, selected in enumerate(self.mask):
             self.buttons[i].selected = selected
 
-    def __pt_container__(self) -> "AnyContainer":
-        return self.container
-
 
 class SliderControl(UIControl):
+    """A control to display a slider."""
+
     def __init__(
         self,
         slider: "Slider",
@@ -1063,7 +1252,20 @@ class SliderControl(UIControl):
         track_char: "Optional[str]" = None,
         selected_track_char: "Optional[str]" = None,
         style: "str" = "",
-    ):
+    ) -> "None":
+        """Create a new slider control instance.
+
+        Args:
+            slider: The slider widget the control belongs to (provides slider data)
+            show_arrows: Whether to show increment / decrement buttons at each end of
+                the slider
+            handle_char: The character to use as the slider handle
+            track_char: The character to use for the slider track
+            selected_track_char: The character to use for the selected section of the
+                slider track
+            style: A style string to apply to the slider
+
+        """
         self.slider = slider
 
         self.track_char = track_char
@@ -1081,6 +1283,7 @@ class SliderControl(UIControl):
         self._content_cache: SimpleCache = SimpleCache(maxsize=50)
 
     def preferred_width(self, max_available_width: "int") -> "Optional[int]":
+        """Return the preferred width of the slider control given its orientation."""
         return 1 if self.slider.vertical() else max_available_width
 
     def preferred_height(
@@ -1090,13 +1293,16 @@ class SliderControl(UIControl):
         wrap_lines: "bool",
         get_line_prefix: "Optional[GetLinePrefixCallable]",
     ) -> "Optional[int]":
+        """Return the preferred height of the slider control given its orientation."""
         return min(max_available_height, 10) if self.slider.vertical() else 1
 
-    def is_focusable(self) -> bool:
+    def is_focusable(self) -> "bool":
         """Tell whether this user control is focusable."""
         return True
 
-    def create_content(self, width: int, height: int) -> "UIContent":
+    def create_content(self, width: "int", height: "int") -> "UIContent":
+        """Create an cache the rendered control fragments."""
+
         def get_content() -> UIContent:
             fragment_lines = self.render_lines(width, height)
 
@@ -1123,6 +1329,7 @@ class SliderControl(UIControl):
         rel: "Optional[int]" = None,
         fire: "bool" = True,
     ) -> "None":
+        """Set the selected index of the slider."""
         assert ab is not None or rel is not None
         if rel is not None:
             ab = self.slider.indices[handle] + rel
@@ -1140,14 +1347,17 @@ class SliderControl(UIControl):
 
     @property
     def selected_handle(self) -> "int":
+        """Return the currently selected slider handle."""
         return self._selected_handle
 
     @selected_handle.setter
-    def selected_handle(self, value: "int"):
+    def selected_handle(self, value: "int") -> "None":
+        """Set the currently selected slider handle."""
         value = max(0, min(value, sum(self.slider.mask)))
         self._selected_handle = value
 
     def _draw_handle(self, n: "int") -> "OneStyleAndTextTuple":
+        """Draw the given slider handle given it's current focus and selection state."""
         selected_style = "class:selection" if self.selected_handle == n else ""
         focused_style = "class:focused" if self.slider.has_focus() else ""
         return (
@@ -1158,6 +1368,7 @@ class SliderControl(UIControl):
     def mouse_handler_handle(
         self, mouse_event: "MouseEvent", handle: "int" = 0
     ) -> "None":
+        """Handle mouse events on the slider's handles."""
         if mouse_event.event_type == MouseEventType.MOUSE_DOWN:
             self.selected_handle = handle
             self.dragging = True
@@ -1166,7 +1377,7 @@ class SliderControl(UIControl):
     def mouse_handler_track(
         self, mouse_event: "MouseEvent", repeated: "bool" = False, index: "int" = 0
     ) -> "None":
-        """Generate a mouse event handler which calls a function on click."""
+        """Handle mouse events on the slider track."""
         if mouse_event.event_type == MouseEventType.MOUSE_DOWN:
             get_app().layout.focus(self)
             handle = self.selected_handle
@@ -1184,7 +1395,7 @@ class SliderControl(UIControl):
     def mouse_handler_arrow(
         self, mouse_event: "MouseEvent", repeated: "bool" = False, n: "int" = 0
     ) -> "None":
-        """Generate a mouse event handler which calls a function on click."""
+        """Handle mouse events on the slider's arrows."""
         if mouse_event.event_type == MouseEventType.MOUSE_DOWN:
             get_app().layout.focus(self)
             self.set_index(self.selected_handle, rel=n)
@@ -1201,6 +1412,7 @@ class SliderControl(UIControl):
     def mouse_handler_scroll(
         self, mouse_event: "MouseEvent", handle: "Optional[int]" = None
     ) -> "NotImplementedOrNone":
+        """Handle mouse scroll events."""
         if handle is None:
             handle = self.selected_handle
         if mouse_event.event_type == MouseEventType.SCROLL_UP:
@@ -1214,7 +1426,7 @@ class SliderControl(UIControl):
     def mouse_handler_(
         self, mouse_event: "MouseEvent", loc: "int"
     ) -> "NotImplementedOrNone":
-        # Handle dragging
+        """Handle mouse events."""
         if self.dragging and mouse_event.event_type == MouseEventType.MOUSE_MOVE:
             n_options = len(self.slider.options)
             pos = loc
@@ -1242,7 +1454,7 @@ class SliderControl(UIControl):
         mouse_event: "MouseEvent",
         handler: "Callable[..., NotImplementedOrNone]",
         timeout: "float" = 0.25,
-        **kwargs,
+        **kwargs: "Any",
     ) -> "None":
         """Repeat a mouse event after a timeout."""
         await asyncio.sleep(timeout)
@@ -1276,7 +1488,7 @@ class SliderControl(UIControl):
         return kb
 
     def render_lines(self, width: "int", height: "int") -> "List[StyleAndTextTuples]":
-
+        """Generate formatted text fragments to display the slider."""
         ft = []
         mouse_handlers: "List[Callable[..., NotImplementedOrNone]]" = []
 
@@ -1367,6 +1579,7 @@ class SliderControl(UIControl):
         return output
 
     def mouse_handler(self, mouse_event: "MouseEvent") -> "NotImplementedOrNone":
+        """Handle mouse events given the slider's orientation."""
         if self.slider.vertical():
             loc = mouse_event.position.y
         else:
@@ -1375,9 +1588,12 @@ class SliderControl(UIControl):
 
 
 class Slider(SelectableWidget):
+    """A slider widget with an optional editable readout."""
+
     def __init__(
         self,
         options: "List[Any]",
+        labels: "Optional[Sequence[AnyFormattedText]]" = None,
         index: "int" = 0,
         indices: "Optional[List[int]]" = None,
         multiple: "FilterOrBool" = False,
@@ -1389,7 +1605,29 @@ class Slider(SelectableWidget):
         show_arrows: "FilterOrBool" = True,
         arrows: "Tuple[AnyFormattedText, AnyFormattedText]" = ("-", "+"),
         show_readout: "FilterOrBool" = True,
-    ):
+    ) -> "None":
+        """Create a new slider widget instance.
+
+        Args:
+            options: A list of available options for the slider
+            labels: An optional list of option names
+            index: The index of the initially selected option if not a multiple
+                selection slider
+            indices: The indices of the start and end of the initially selected ranger
+                of options if a range can be selected
+            multiple: If true, allow a range of options to be selected
+            on_change: An optional function to call when the selection changes
+            style: An optional style to apply to the widget
+            border: The grid style to use for the borders (unused)
+            show_borders: Whether the borders should be displayed (unused)
+            vertical: If true, the slider will be displayed vertically
+            show_arrows: If increment & decrement buttons should be shown at either end
+                of the slider
+            arrows: Strings to use for the increment and decrement buttons
+            show_readout: If true, a read-out text box will be shown displaying the
+                slider's current value
+
+        """
         self.vertical = to_filter(vertical)
         self.arrows = arrows
         self.show_arrows = to_filter(show_arrows)
@@ -1397,16 +1635,14 @@ class Slider(SelectableWidget):
 
         super().__init__(
             options=options,
+            labels=labels,
             index=index,
             indices=indices,
             multiple=multiple,
             on_change=on_change,
             style=style,
         )
-
         self.on_change += self.value_changed
-
-    def load_container(self) -> "AnyContainer":
         self.control = SliderControl(
             slider=self,
             show_arrows=self.show_arrows,
@@ -1418,6 +1654,9 @@ class Slider(SelectableWidget):
             validation=lambda x: self.validate_readout(x) is not None,
             accept_handler=self.accept_handler,
         )
+
+    def load_container(self) -> "AnyContainer":
+        """Build the slider's container."""
         return ConditionalSplit(
             self.vertical,
             [
@@ -1441,6 +1680,7 @@ class Slider(SelectableWidget):
         self.readout.text = self.readout_text(self.indices)
 
     def accept_handler(self, buffer: "Buffer") -> "bool":
+        """Set the index to the value(s) entered in the readout buffer."""
         if values := self.validate_readout(buffer.text):
             for i, value in enumerate(values):
                 self.control.set_index(
@@ -1452,6 +1692,7 @@ class Slider(SelectableWidget):
         return False
 
     def validate_readout(self, text: "str") -> "Optional[List[Any]]":
+        """Confirm the value entered in the readout is value."""
         values = [value.strip() for value in text.split("-")]
         valid_values = []
         for value in values:
@@ -1459,7 +1700,7 @@ class Slider(SelectableWidget):
                 type_ = type(option)
                 try:
                     typed_value = type_(value)
-                except Exception:
+                except ValueError:
                     continue
                 else:
                     if option == typed_value:
@@ -1469,10 +1710,12 @@ class Slider(SelectableWidget):
                 return None
         return valid_values
 
-    def readout_text(self, indices) -> "str":
+    def readout_text(self, indices: "List[int]") -> "str":
+        """Return the readout text area value."""
         return " - ".join(map(str, (self.options[i] for i in indices)))
 
     def readout_len(self) -> "int":
+        """Return the length of the readout text area."""
         return min(
             10,
             len(

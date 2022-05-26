@@ -7,21 +7,18 @@ import concurrent.futures
 import logging
 import threading
 from collections import defaultdict
-from functools import partial
 from subprocess import DEVNULL, STDOUT  # noqa S404 - Security implications considered
-from typing import TYPE_CHECKING, TypedDict, cast
+from typing import TYPE_CHECKING, TypedDict
 
 import nbformat  # type: ignore
-from jupyter_client import (  # type: ignore
-    AsyncKernelManager,
-    KernelClient,
-    KernelManager,
-)
+from jupyter_client import AsyncKernelManager, KernelManager
 from jupyter_client.kernelspec import NoSuchKernel  # type: ignore
 from jupyter_core.paths import jupyter_path  # type: ignore
 
 if TYPE_CHECKING:
-    from typing import Any, Callable, Coroutine, Dict, List, Optional, Tuple, Union
+    from typing import Any, Callable, Coroutine, Dict, Optional, Tuple, Union
+
+    from jupyter_client import KernelClient
 
     from euporie.tabs.notebook import KernelNotebook
 
@@ -32,14 +29,14 @@ log = logging.getLogger(__name__)
 
 
 class MsgCallbacks(TypedDict, total=False):
-    get_input: "Optional[Callable[[str, bool], None]]"
-    set_execution_count: "Optional[Callable[[int], None]]"
-    add_output: "Optional[Callable[[List[Dict[str, Any]]], None]]"
-    clear_output: "Optional[Callable[[bool], None]]"
-    done: "Optional[Callable[[Dict[str, Any]], None]]"
-    set_metadata: "Optional[Callable[[Tuple[str, ...], Any], None]]"
-    set_status: "Optional[Callable[[str], None]]"
-    set_kernel_info: "Optional[Callable[[Dict[str, Any]], None]]"
+    get_input: "Callable[[str, bool], None]|None"
+    set_execution_count: "Callable[[int], None]|None"
+    add_output: "Callable[[Dict[str, Any]], None]|None"
+    clear_output: "Callable[[bool], None]|None"
+    done: "Callable[[Dict[str, Any]], None]|None"
+    set_metadata: "Callable[[Tuple[str, ...], Any], None]|None"
+    set_status: "Callable[[str], None]|None"
+    set_kernel_info: "Callable[[Dict[str, Any]], None]|None"
 
 
 class NotebookKernel:
@@ -62,7 +59,7 @@ class NotebookKernel:
         """Called when the :py:class:`NotebookKernel` is initialized.
 
         Args:
-            name: The name of the kernel to start
+            nb: The notebook this kernel belongs to
             threaded: If :py:const:`True`, run kernel communication in a separate thread
             allow_stdin: Whether the kernel is allowed to request input
 
@@ -246,7 +243,7 @@ class NotebookKernel:
             self.kc.start_channels()
             log.debug("Waiting for kernel to become ready")
             try:
-                await self.kc.wait_for_ready(timeout=10)
+                await self.kc._async_wait_for_ready(timeout=10)
             except RuntimeError as e:
                 log.exception("Error starting kernel")
                 await self.stop_()
@@ -299,7 +296,8 @@ class NotebookKernel:
             else:
                 self.on_unhandled(channel, rsp)
 
-    def on_unhandled(self, channel, rsp):
+    def on_unhandled(self, channel: "str", rsp: "Dict[str, Any]") -> "None":
+        """Report unhandled messages to the debug log."""
         log.debug(
             "Unhandled %s message:\nparent_id = '%s'\ntype = '%s'\ncontent='%s'",
             channel,
@@ -308,17 +306,18 @@ class NotebookKernel:
             rsp.get("content"),
         )
 
-    def on_stdin_input_request(self, rsp) -> "None":
+    def on_stdin_input_request(self, rsp: "Dict[str, Any]") -> "None":
+        """Call ``get_input`` callback for a stdin input request message."""
         msg_id = rsp.get("parent_header", {}).get("msg_id")
         content = rsp.get("content", {})
-        get_input = self.msg_id_callbacks[msg_id].get("get_input")
-        if callable(get_input):
+        if callable(get_input := self.msg_id_callbacks[msg_id].get("get_input")):
             get_input(
                 content.get("prompt", ""),
                 content.get("password", False),
             )
 
-    def on_shell_status(self, rsp):
+    def on_shell_status(self, rsp: "Dict[str, Any]") -> "None":
+        """Call ``set_execution_count`` callback for a shell status response."""
         msg_id = rsp.get("parent_header", {}).get("msg_id")
         content = rsp.get("content", {})
         status = rsp.get("content", {}).get("status", "")
@@ -330,56 +329,64 @@ class NotebookKernel:
             ):
                 set_execution_count(content.get("execution_count"))
 
-    def on_shell_execute_reply(self, rsp):
+    def on_shell_execute_reply(self, rsp: "Dict[str, Any]") -> "None":
+        """Call callbacks for a shell execute reply response."""
         msg_id = rsp.get("parent_header", {}).get("msg_id")
         content = rsp.get("content", {})
 
-        set_metadata = self.msg_id_callbacks[msg_id]["set_metadata"]
-        set_metadata(
-            ("execute", "shell", "execute_reply"),
-            rsp["header"]["date"].isoformat(),
-        )
+        if callable(set_metadata := self.msg_id_callbacks[msg_id]["set_metadata"]):
+            set_metadata(
+                ("execute", "shell", "execute_reply"),
+                rsp["header"]["date"].isoformat(),
+            )
 
-        set_execution_count = self.msg_id_callbacks[msg_id]["set_execution_count"]
-        set_execution_count(content.get("execution_count"))
+        if callable(
+            set_execution_count := self.msg_id_callbacks[msg_id]["set_execution_count"]
+        ):
+            set_execution_count(content.get("execution_count"))
 
         # Show pager output as a cell execution output
         if payloads := content.get("payload", []):
-            add_output = self.msg_id_callbacks[msg_id]["add_output"]
-            for payload in payloads:
-                if data := payload.get("data", {}):
-                    add_output(
-                        nbformat.v4.new_output(
-                            "execute_result",
-                            data=data,
+            if callable(add_output := self.msg_id_callbacks[msg_id]["add_output"]):
+                for payload in payloads:
+                    if data := payload.get("data", {}):
+                        add_output(
+                            nbformat.v4.new_output(
+                                "execute_result",
+                                data=data,
+                            )
                         )
-                    )
 
         if content.get("status") == "ok":
             if callable(done := self.msg_id_callbacks[msg_id].get("done")):
                 done(content)
 
-    def on_shell_kernel_info_reply(self, rsp):
+    def on_shell_kernel_info_reply(self, rsp: "Dict[str, Any]") -> "None":
+        """Call callbacks for a shell kernel info response."""
         msg_id = rsp.get("parent_header", {}).get("msg_id")
         if callable(done := self.msg_id_callbacks[msg_id].get("done")):
             done(rsp.get("content", {}))
 
-    def on_shell_complete_reply(self, rsp):
+    def on_shell_complete_reply(self, rsp: "Dict[str, Any]") -> "None":
+        """Call callbacks for a shell completion reply response."""
         msg_id = rsp.get("parent_header", {}).get("msg_id")
         if callable(done := self.msg_id_callbacks[msg_id].get("done")):
             done(rsp.get("content", {}))
 
-    def on_shell_history_reply(self, rsp):
+    def on_shell_history_reply(self, rsp: "Dict[str, Any]") -> "None":
+        """Call callbacks for a shell history reply response."""
         msg_id = rsp.get("parent_header", {}).get("msg_id")
         if callable(done := self.msg_id_callbacks[msg_id].get("done")):
             done(rsp.get("content", {}))
 
-    def on_shell_inspect_reply(self, rsp):
+    def on_shell_inspect_reply(self, rsp: "Dict[str, Any]") -> "None":
+        """Call callbacks for a shell inspection reply response."""
         msg_id = rsp.get("parent_header", {}).get("msg_id")
         if callable(done := self.msg_id_callbacks[msg_id].get("done")):
             done(rsp.get("content", {}))
 
-    def on_iopub_status(self, rsp):
+    def on_iopub_status(self, rsp: "Dict[str, Any]") -> "None":
+        """Call callbacks for an iopub status response."""
         msg_id = rsp.get("parent_header", {}).get("msg_id")
         status = rsp.get("content", {}).get("execution_state")
 
@@ -405,51 +412,61 @@ class NotebookKernel:
                     rsp["header"]["date"].isoformat(),
                 )
 
-    def on_iopub_execute_input(self, rsp):
+    def on_iopub_execute_input(self, rsp: "Dict[str, Any]") -> "None":
+        """Call callbacks for an iopub execute input response."""
         msg_id = rsp.get("parent_header", {}).get("msg_id")
-        set_metadata = self.msg_id_callbacks[msg_id]["set_metadata"]
-        set_metadata(
-            ("iopub", "execute_input"),
-            rsp["header"]["date"].isoformat(),
-        )
+        if callable(set_metadata := self.msg_id_callbacks[msg_id]["set_metadata"]):
+            set_metadata(
+                ("iopub", "execute_input"),
+                rsp["header"]["date"].isoformat(),
+            )
 
-    def on_iopub_display_data(self, rsp):
+    def on_iopub_display_data(self, rsp: "Dict[str, Any]") -> "None":
+        """Call callbacks for an iopub display data response."""
         msg_id = rsp.get("parent_header", {}).get("msg_id")
-        add_output = self.msg_id_callbacks[msg_id]["add_output"]
-        add_output(nbformat.v4.output_from_msg(rsp))
+        if callable(add_output := self.msg_id_callbacks[msg_id]["add_output"]):
+            add_output(nbformat.v4.output_from_msg(rsp))
 
-    def on_iopub_update_display_data(self, rsp):
+    def on_iopub_update_display_data(self, rsp: "Dict[str, Any]") -> "None":
+        """Call callbacks for an iopub update display data response."""
         msg_id = rsp.get("parent_header", {}).get("msg_id")
-        add_output = self.msg_id_callbacks[msg_id]["add_output"]
-        add_output(nbformat.v4.output_from_msg(rsp))
+        if callable(add_output := self.msg_id_callbacks[msg_id]["add_output"]):
+            add_output(nbformat.v4.output_from_msg(rsp))
 
-    def on_iopub_execute_result(self, rsp):
+    def on_iopub_execute_result(self, rsp: "Dict[str, Any]") -> "None":
+        """Call callbacks for an iopub execute result response."""
         msg_id = rsp.get("parent_header", {}).get("msg_id")
-        add_output = self.msg_id_callbacks[msg_id]["add_output"]
-        add_output(nbformat.v4.output_from_msg(rsp))
+        if callable(add_output := self.msg_id_callbacks[msg_id]["add_output"]):
+            add_output(nbformat.v4.output_from_msg(rsp))
 
-        set_execution_count = self.msg_id_callbacks[msg_id]["set_execution_count"]
-        set_execution_count(rsp.get("content", {}).get("execution_count"))
+        if callable(
+            set_execution_count := self.msg_id_callbacks[msg_id]["set_execution_count"]
+        ):
+            set_execution_count(rsp.get("content", {}).get("execution_count"))
 
-    def on_iopub_error(self, rsp):
-        msg_id = rsp.get("parent_header", {}).get("msg_id")
+    def on_iopub_error(self, rsp: "Dict[str, Dict[str, Any]]") -> "None":
+        """Call callbacks for an iopub error response."""
+        msg_id = rsp.get("parent_header", {}).get("msg_id", "")
         if callable(add_output := self.msg_id_callbacks[msg_id].get("add_output")):
             add_output(nbformat.v4.output_from_msg(rsp))
         if callable(done := self.msg_id_callbacks[msg_id].get("done")):
-            done(rsp.get("content"))
+            done(rsp.get("content", {}))
 
-    def on_iopub_stream(self, rsp):
+    def on_iopub_stream(self, rsp: "Dict[str, Any]") -> "None":
+        """Call callbacks for an iopub stream response."""
         msg_id = rsp.get("parent_header", {}).get("msg_id")
-        add_output = self.msg_id_callbacks[msg_id]["add_output"]
-        add_output(nbformat.v4.output_from_msg(rsp))
+        if callable(add_output := self.msg_id_callbacks[msg_id]["add_output"]):
+            add_output(nbformat.v4.output_from_msg(rsp))
 
-    def on_iopub_clear_output(self, rsp):
+    def on_iopub_clear_output(self, rsp: "Dict[str, Any]") -> "None":
+        """Call callbacks for an iopub clear output response."""
         # Clear cell output, either now or when we get the next output
         msg_id = rsp.get("parent_header", {}).get("msg_id")
-        clear_output = self.msg_id_callbacks[msg_id]["clear_output"]
-        clear_output(rsp.get("content", {}).get("wait", False))
+        if callable(clear_output := self.msg_id_callbacks[msg_id]["clear_output"]):
+            clear_output(rsp.get("content", {}).get("wait", False))
 
-    def on_iopub_comm_open(self, rsp):
+    def on_iopub_comm_open(self, rsp: "Dict[str, Any]") -> "None":
+        """Call callbacks for an comm open response."""
         # TODO
         # "If the target_name key is not found on the receiving side, then it should
         # immediately reply with a comm_close message to avoid an inconsistent state."
@@ -458,25 +475,28 @@ class NotebookKernel:
             content=rsp.get("content", {}), buffers=rsp.get("buffers", [])
         )
 
-    def on_iopub_comm_msg(self, rsp):
+    def on_iopub_comm_msg(self, rsp: "Dict[str, Any]") -> "None":
+        """Call callbacks for an iopub comm message response."""
         self.nb.comm_msg(content=rsp.get("content", {}), buffers=rsp.get("buffers", []))
 
-    def on_iopub_comm_close(self, rsp):
+    def on_iopub_comm_close(self, rsp: "Dict[str, Any]") -> "None":
+        """Call callbacks for an iopub comm close response."""
         self.nb.comm_close(
             content=rsp.get("content", {}), buffers=rsp.get("buffers", [])
         )
 
-    ####################################
-
-    def kc_comm(self, comm_id, data):
+    def kc_comm(self, comm_id: "str", data: "Dict[str, Any]") -> "str":
         """Send a comm message on the shell channel."""
         content = {
             "comm_id": comm_id,
             "data": data,
         }
-        msg = self.kc.session.msg("comm_msg", content)
-        self.kc.shell_channel.send(msg)
-        return msg["header"]["msg_id"]
+        if self.kc is not None:
+            msg = self.kc.session.msg("comm_msg", content)
+            self.kc.shell_channel.send(msg)
+            return msg["header"]["msg_id"]
+        else:
+            raise Exception("Cannot send message when kernel has not started")
 
     def run(
         self,
@@ -499,7 +519,7 @@ class NotebookKernel:
         source: "str",
         get_input: "Optional[Callable[[str, bool], None]]" = None,
         set_execution_count: "Optional[Callable[[int], None]]" = None,
-        add_output: "Optional[Callable[[List[Dict[str, Any]]], None]]" = None,
+        add_output: "Optional[Callable[[Dict[str, Any]], None]]" = None,
         clear_output: "Optional[Callable[[bool], None]]" = None,
         done: "Optional[Callable[[Dict[str, Any]], None]]" = None,
         set_metadata: "Optional[Callable[[Tuple[str, ...], Any], None]]" = None,
@@ -515,7 +535,8 @@ class NotebookKernel:
             allow_stdin=self.allow_stdin,
         )
 
-        def wrapped_done(content) -> "None":
+        def wrapped_done(content: "Dict[str, Any]") -> "None":
+            """Sets the event after the ``done`` callback has completed."""
             # Run the original callback
             if callable(done):
                 done(content)
@@ -566,7 +587,7 @@ class NotebookKernel:
 
         event = asyncio.Event()
 
-        def process_complete_reply(content) -> "None":
+        def process_complete_reply(content: "Dict[str, Any]") -> "None":
             """Process response messages on the ``shell`` channel."""
             status = content.get("status", "")
             if status == "ok":
@@ -638,7 +659,7 @@ class NotebookKernel:
 
         event = asyncio.Event()
 
-        def process_history_reply(content) -> "None":
+        def process_history_reply(content: "Dict[str, Any]") -> "None":
             """Process responses on the shell channel."""
             status = content.get("status", "")
             if status == "ok":
@@ -692,7 +713,7 @@ class NotebookKernel:
 
         event = asyncio.Event()
 
-        def process_inspect_reply(content) -> "None":
+        def process_inspect_reply(content: "Dict[str, Any]") -> "None":
             """Process responses on the shell channel."""
             status = content.get("status", "")
             if status == "ok":

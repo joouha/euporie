@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from functools import partial
-from typing import TYPE_CHECKING, NamedTuple, cast
+from typing import TYPE_CHECKING, NamedTuple
 
 import nbformat  # type: ignore
 from prompt_toolkit.filters import Condition, has_focus, is_done, is_searching
@@ -606,7 +606,7 @@ class Cell:
         else:
             return self.json.setdefault("outputs", [])
 
-    def trigger_refresh(self, now=True) -> "None":
+    def trigger_refresh(self, now: "bool" = True) -> "None":
         """Request that the cell to be re-rendered next time it is drawn."""
         if self.meta:
             self.meta.refresh = True
@@ -716,12 +716,12 @@ class Cell:
         """Returns the container which represents this cell."""
         return self.container
 
-    def set_execution_count(self, n) -> "None":
-        """"""
+    def set_execution_count(self, n: "int") -> "None":
+        """Set the execution count of the cell."""
         self.json["execution_count"] = n
 
-    def add_output(self, output_json) -> "None":
-        """"""
+    def add_output(self, output_json: "Dict[str, Any]") -> "None":
+        """Add a new output to the cell."""
         # Clear the output if we were previously asked to
         if self.clear_outputs_on_output:
             self.remove_outputs()
@@ -738,7 +738,7 @@ class Cell:
         self.trigger_refresh()
 
     def clear_output(self, wait: "bool" = False) -> "None":
-        """"""
+        """Remove the cells output, optionally when new output is generated."""
         if wait:
             self.clear_outputs_on_output = True
         else:
@@ -760,7 +760,7 @@ class Cell:
                 level = level.setdefault(key, {})
 
     def set_status(self, status: "str") -> "None":
-        """"""
+        """Set the execution status of the cell."""
         pass
 
     def get_input(
@@ -768,6 +768,7 @@ class Cell:
         prompt: "str" = "Please enter a value:",
         password: "bool" = False,
     ) -> "None":
+        """Get input from the user for the given cell."""
         return None
 
 

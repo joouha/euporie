@@ -197,7 +197,16 @@ class Border:
         border: "Optional[GridStyle]" = Thin.grid,
         style: "Union[str, Callable[[], str]]" = "class:frame.border",
         show_borders: "Optional[BorderVisibility]" = None,
-    ) -> None:
+    ) -> "None":
+        """Create a new border widget which wraps another container.
+
+        Args:
+            body: The container to surround with a border
+            border: The grid style to use
+            style: The style to apply to the border
+            show_borders: Which of the four borders should be displayed
+
+        """
         self.body = body
         self.style = style
 
@@ -310,8 +319,10 @@ class Border:
         else:
             self.container = body
 
-    def add_style(self, extra):
-        def _style():
+    def add_style(self, extra: "str") -> "Callable[[], str]":
+        """Return a function which adds a style string to the border style."""
+
+        def _style() -> "str":
             if callable(self.style):
                 return f"{self.style()} {extra}"
             else:
@@ -320,6 +331,7 @@ class Border:
         return _style
 
     def __pt_container__(self) -> "AnyContainer":
+        """Return the border widget's container."""
         return self.container
 
 
@@ -331,19 +343,28 @@ class FocusedStyle(Container):
         body: "AnyContainer",
         style: "Union[str, Callable[[], str]]" = "class:focused",
     ) -> "None":
+        """Create a new instance of the widget.
+
+        Args:
+            body: The container to act on
+            style: The style to apply
+        """
         self.body = body
         self.style = style
         self.has_focus = has_focus(self.body)
 
     def reset(self) -> "None":
+        """Reset the wrapped container."""
         to_container(self.body).reset()
 
     def preferred_width(self, max_available_width: "int") -> "Dimension":
+        """Return the wrapped container's preferred width."""
         return to_container(self.body).preferred_width(max_available_width)
 
     def preferred_height(
         self, width: "int", max_available_height: "int"
     ) -> "Dimension":
+        """Return the wrapped container's preferred height."""
         return to_container(self.body).preferred_height(width, max_available_height)
 
     def write_to_screen(
@@ -355,6 +376,7 @@ class FocusedStyle(Container):
         erase_bg: "bool",
         z_index: "Optional[int]",
     ) -> "None":
+        """Draw the wrapped container with the additional style."""
         return to_container(self.body).write_to_screen(
             screen,
             mouse_handlers,
@@ -365,6 +387,7 @@ class FocusedStyle(Container):
         )
 
     def get_style(self) -> "str":
+        """Determine the style to apply depending on the focus status."""
         if self.has_focus():
             style = self.style
             return style() if callable(style) else style

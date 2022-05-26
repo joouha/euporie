@@ -3,16 +3,16 @@
 import logging
 from abc import ABCMeta, abstractmethod
 from pathlib import PurePath
-from typing import TYPE_CHECKING, NamedTuple, cast
+from typing import TYPE_CHECKING
 
-from prompt_toolkit.layout.containers import HSplit, Window, to_container
+from prompt_toolkit.layout.containers import HSplit, to_container
 from prompt_toolkit.widgets.base import Box
 
 from euporie.convert.base import MIME_FORMATS, find_route
 from euporie.widgets.display import Display
 
 if TYPE_CHECKING:
-    from typing import Any, Callable, Dict, List, Literal, Optional, Tuple, Union
+    from typing import Any, Dict, List, Optional, Tuple
 
     from prompt_toolkit.layout.containers import AnyContainer, Container
 
@@ -22,9 +22,20 @@ log = logging.getLogger(__name__)
 
 
 class CellOutputElement(metaclass=ABCMeta):
+    """Base class for the various types of cell outputs (display data or widgets)."""
+
     def __init__(
         self, mime: "str", data: "str", metadata: "Dict", cell: "Cell"
     ) -> "None":
+        """Create a new instances of the output element.
+
+        Args:
+            mime: The mime-type of the data to display
+            data: The data to display
+            metadata: Any metadata relating to the data
+            cell: The cell the output-element is attached to
+
+        """
         ...
 
     def scroll_left(self) -> "None":
@@ -37,14 +48,24 @@ class CellOutputElement(metaclass=ABCMeta):
 
     @abstractmethod
     def __pt_container__(self) -> "AnyContainer":
+        """Return the container representing the cell output element."""
         ...
 
 
 class CellOutputDataElement(CellOutputElement):
+    """A cell output element which display data."""
+
     def __init__(
         self, mime: "str", data: "Dict[str, Any]", metadata: "Dict", cell: "Cell"
     ) -> "None":
-        """"""
+        """Create a new data output element instance.
+
+        Args:
+            mime: The mime-type of the data to display
+            data: The data to display
+            metadata: Any metadata relating to the data
+            cell: The cell the output-element is attached to
+        """
         self.cell = cell
 
         # Get foreground and background colors
@@ -86,13 +107,28 @@ class CellOutputDataElement(CellOutputElement):
         self.container.window._scroll_right()
 
     def __pt_container__(self) -> "AnyContainer":
+        """Return the display container."""
         return self.container
 
 
 class CellOutputWidgetElement(CellOutputElement):
+    """A cell output element which displays ipywidgets."""
+
     def __init__(
         self, mime: "str", data: "Dict[str, Any]", metadata: "Dict", cell: "Cell"
     ) -> "None":
+        """Create a new widget output element instance.
+
+        Args:
+            mime: The mime-type of the data to display:
+                ``application/vnd.jupyter.widget-view+json``
+            data: The data to display (the widget model ID)
+            metadata: Any metadata relating to the data
+            cell: The cell the output-element is attached to
+
+        Raises:
+            NotImplementedError: Raised when an ipywidget cannot be rendered
+        """
         self.cell = cell
         self.comm_id = str(data.get("model_id"))
 
@@ -107,6 +143,7 @@ class CellOutputWidgetElement(CellOutputElement):
             raise NotImplementedError
 
     def __pt_container__(self) -> "AnyContainer":
+        """Return a box container which holds a view of an ipywidget."""
         return self.container
 
 
@@ -153,7 +190,13 @@ class CellOutput:
     TODO - allow the visible mime-type to be rotated.
     """
 
-    def __init__(self, json, cell: "Cell") -> "None":
+    def __init__(self, json: "Dict[str, Any]", cell: "Cell") -> "None":
+        """Creates a new cell output instance.
+
+        Args:
+            json: The cell output's json
+            cell: The cell
+        """
         # Select the first mime-type to render
         self.cell = cell
         self._json = json
@@ -162,6 +205,7 @@ class CellOutput:
 
     @property
     def selected_mime(self) -> "str":
+        """Return the selected mime-type, defaulting to the first."""
         data = self.data
         # If an mime-type has not been explicitly selected, display the first
         if self._selected_mime not in data:
@@ -170,6 +214,7 @@ class CellOutput:
 
     @property
     def json(self) -> "Dict":
+        """Returns the cell output JSON object."""
         return self._json
 
     @json.setter
@@ -180,6 +225,11 @@ class CellOutput:
 
     @property
     def container(self) -> "CellOutputElement":
+        """Creates a container for the cell output mime-type if it doesn't exist.
+
+        Returns:
+            A :class:`OutputElement` container for the currently selected mime-type.
+        """
         if self.selected_mime not in self._containers:
             for mime_pattern, OutputElement in MIME_RENDERERS.items():
                 if PurePath(self.selected_mime).match(mime_pattern):
@@ -233,11 +283,21 @@ class CellOutput:
         self.container.scroll_right()
 
     def __pt_container__(self):
+        """Return the cell output container (an :class:`OutputElement`)."""
         return self.container
 
 
 class CellOutputArea:
+    """An area below a cell where one or more cell outputs can be shown."""
+
     def __init__(self, json: "List[Dict[str, Any]]", cell: "Cell") -> "None":
+        """Creates a new cell output area instance.
+
+        Args:
+            json: The cell's output json
+            cell: The cell
+
+        """
         self.cell = cell
         self._rendered_outputs: "List[CellOutput]" = []
         self.container = HSplit([])
@@ -245,6 +305,7 @@ class CellOutputArea:
 
     @property
     def json(self) -> "List[Dict[str, Any]]":
+        """Returns the output area's JSON data."""
         return self._json
 
     @json.setter
@@ -277,5 +338,6 @@ class CellOutputArea:
         for cell_output in self._rendered_outputs:
             cell_output.scroll_right()
 
-    def __pt_container__(self):
+    def __pt_container__(self) -> "AnyContainer":
+        """Return the cell output area container (an :class:`HSplit`)."""
         return self.container

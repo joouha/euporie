@@ -8,13 +8,13 @@ if TYPE_CHECKING:
     from typing import Any, Dict, Sequence
 
     from euporie.comm.base import Comm
-    from euporie.tabs.notebook import Notebook
+    from euporie.tabs.notebook import KernelNotebook
 
 TARGET_CLASSES = {"jupyter.widget": open_comm_ipywidgets}
 
 
 def open_comm(
-    nb: "Notebook", content: "Dict[str, Any]", buffers: "Sequence[bytes]"
+    nb: "KernelNotebook", content: "Dict[str, Any]", buffers: "Sequence[bytes]"
 ) -> "Comm":
     """Creates a new object respsenting a Comm.
 
@@ -33,7 +33,7 @@ def open_comm(
     target_name = content.get("target_name", "")
     return TARGET_CLASSES.get(target_name, UnimplementedComm)(
         nb=nb,
-        comm_id=content.get("comm_id"),
-        data=content.get("data"),
+        comm_id=str(content.get("comm_id")),
+        data=content.get("data", {}),
         buffers=buffers,
     )

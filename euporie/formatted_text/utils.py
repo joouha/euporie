@@ -296,6 +296,7 @@ def add_border(
         width: The target width including the border and padding
         style: The style to apply to the border
         border: The grid style to use for the border
+        padding: The width of spacing to apply between the content and the border
 
     Returns:
         The indented formatted text

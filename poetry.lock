@@ -1937,7 +1937,7 @@ svg-cairosvg = ["CairoSVG"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "80fdeb5604392bda1d93cf429a50fd5c729f6211ccbdb24c1b7820695ccb348b"
+content-hash = "a20f0b195bcea73463beaf191ed8fca3c4b304a2bd001d2293ae2c70b50f2be7"
 
 [metadata.files]
 aenum = [

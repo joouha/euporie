@@ -434,19 +434,36 @@ class KernelNotebook(Notebook):
         log.debug("Kernel status is '%s'", self.kernel.status)
         self.kernel.info(set_kernel_info=self.set_kernel_info, set_status=log.debug)
 
-    def comm_open(self, content, buffers: "Sequence[memoryview]") -> "None":
-        comm_id = content.get("comm_id")
+    def comm_open(self, content: "Dict", buffers: "Sequence[memoryview]") -> "None":
+        comm_id = str(content.get("comm_id"))
         self.comms[comm_id] = open_comm(nb=self, content=content, buffers=buffers)
 
-    def comm_msg(self, content, buffers: "List[memoryview]") -> "None":
-        comm_id = content.get("comm_id")
+    def comm_msg(self, content: "Dict", buffers: "List[memoryview]") -> "None":
+        comm_id = str(content.get("comm_id"))
         if comm := self.comms.get(comm_id):
             comm.process_data(content.get("data", {}), buffers)
 
-    def comm_close(self, content, buffers: "List[memoryview]") -> "None":
+    def comm_close(self, content: "Dict", buffers: "List[memoryview]") -> "None":
         comm_id = content.get("comm_id")
         if comm_id in self.comms:
             del self.comms[comm_id]
+
+    def save(self) -> "None":
+        """Write the notebook's JSON to the current notebook's file.
+
+        Additionally save the widget state to the notebook metadata.
+        """
+        self.json.setdefault("metadata", {})["widgets"] = {
+            "application/vnd.jupyter.widget-state+json": {
+                "version_major": 2,
+                "version_minor": 0,
+                "state": {
+                    comm_id: comm._get_embed_state()
+                    for comm_id, comm in self.comms.items()
+                },
+            }
+        }
+        super().save()
 
 
 class PreviewKernelNotebook(PreviewNotebook, KernelNotebook):

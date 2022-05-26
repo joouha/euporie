@@ -40,8 +40,6 @@ if TYPE_CHECKING:
     from prompt_toolkit.layout.dimension import AnyDimension
     from prompt_toolkit.layout.screen import Screen
 
-    from euporie.widgets.output.control import OutputControl
-
 
 log = logging.getLogger(__name__)
 
@@ -98,13 +96,15 @@ class DisplayControl(UIControl):
         self._content_cache: SimpleCache = SimpleCache(maxsize=50)
         self._size_cache: SimpleCache = SimpleCache(maxsize=1)
 
-    def reset(self):
+    def reset(self) -> "None":
+        """Clear the display control's caches (required if the control's data changes)."""
         self._format_cache.clear()
         self._size_cache.clear()
         self._content_cache.clear()
 
     @property
     def data(self) -> "Any":
+        """Return the control's display data."""
         return self._data
 
     @data.setter
@@ -113,6 +113,7 @@ class DisplayControl(UIControl):
         self.reset()
 
     def get_key_bindings(self) -> "Optional[KeyBindingsBase]":
+        """Return the control's key bindings."""
         return self.key_bindings
 
     @property
@@ -355,6 +356,8 @@ class GraphicControl(DisplayControl, metaclass=ABCMeta):
 
 
 class SixelGraphicControl(GraphicControl):
+    """A graphic control which displays images as sixels."""
+
     def get_rendered_lines(
         self, width: "int", height: "int"
     ) -> "list[StyleAndTextTuples]":
@@ -394,6 +397,8 @@ class SixelGraphicControl(GraphicControl):
 
 
 class ItermGraphicControl(GraphicControl):
+    """A graphic control which displays images using iTerm's graphics protocol."""
+
     def convert_data(self, rows: "int", cols: "int") -> "str":
         """Converts the graphic's data to base64 data."""
         if self.format_.startswith("base64-"):
@@ -447,6 +452,8 @@ _kitty_image_count = 1
 
 
 class KittyGraphicControl(GraphicControl):
+    """A graphic control which displays images using Kitty's graphics protocol."""
+
     def __init__(
         self,
         data: "Any",
@@ -455,6 +462,7 @@ class KittyGraphicControl(GraphicControl):
         bg_color: "Optional[str]" = None,
         sizing_func: "Optional[Callable]" = None,
     ) -> "None":
+        """Create a new kitty graphic instance."""
         super().__init__(
             data,
             format_,
@@ -589,6 +597,7 @@ class KittyGraphicControl(GraphicControl):
         )
 
     def reset(self) -> "None":
+        """Hide and delete the kitty graphic from the terminal."""
         super().reset()
         self.hide()
         self.delete()
@@ -621,8 +630,9 @@ class GraphicWindow(Window):
         Args:
             content: A control which generates the graphical content to display
             target_window: The window this graphic should position itself over
-            *args: Positional arguments for :py:method:`Window.__init__`
-            **kwargs: Key-word arguments for :py:method:`Window.__init__`
+            filter: A filter which determines if the graphic should be shown
+            args: Positional arguments for :py:method:`Window.__init__`
+            kwargs: Key-word arguments for :py:method:`Window.__init__`
         """
         super().__init__(*args, **kwargs)
         self.target_window = target_window
@@ -667,6 +677,8 @@ class GraphicWindow(Window):
 
 
 class GraphicFloat(Float):
+    """A :py:class:`Float` which displays a graphic."""
+
     def __init__(
         self,
         data: "Any",
@@ -676,7 +688,19 @@ class GraphicFloat(Float):
         bg_color: "Optional[str]" = None,
         sizing_func: "Optional[Callable[[], tuple[int, float]]]" = None,
         filter: "FilterOrBool" = True,
-    ):
+    ) -> "None":
+        """Create a new instance.
+
+        Args:
+            data: The graphical data to be displayed
+            format_: The format of the graphical data
+            target_window: The window above which the graphic should be displayed
+            fg_color: The graphic's foreground color
+            bg_color: The grahpic's background color
+            sizing_func: A callable which returns in the graphic's width in terminal
+                cells and its aspect ratio
+            filter: A filter which is used to hide and show the graphic
+        """
         self.GraphicControl: "Optional[Type[GraphicControl]]" = None
         self.control = None
 
@@ -710,6 +734,7 @@ class GraphicFloat(Float):
 
     @property
     def data(self) -> "Any":
+        """Return the graphic's current data."""
         return self._data
 
     @data.setter
@@ -818,6 +843,7 @@ class Display:
 
     @property
     def data(self) -> "Any":
+        """Return the display's current data."""
         return self.control.data
 
     @data.setter
@@ -826,16 +852,17 @@ class Display:
         self.graphic_float.data = value
 
     def make_sizing_func(
-        self, data, format_, fg, bg
+        self, data: "Any", format_: "str", fg: "Optional[str]", bg: "Optional[str]"
     ) -> "Callable[[], tuple[int, float]]":
+        """Create a function to recalculate the data's dimensions in terminal cells."""
         px, py = self.px, self.py
         if px is None or py is None:
             px, py = data_pixel_size(data, format_, fg=fg, bg=bg)
-        # Create a function to recalculate the data's dimensions
         return partial(pixels_to_cell_size, px, py)
 
     @property
     def px(self) -> "Optional[int]":
+        """Return the displayed data's pixel widget."""
         return self._px
 
     @px.setter
@@ -845,6 +872,7 @@ class Display:
 
     @property
     def py(self) -> "Optional[int]":
+        """Return the displayed data's pixel height."""
         return self._py
 
     @py.setter
@@ -853,6 +881,7 @@ class Display:
         self.update_sizing()
 
     def update_sizing(self) -> "None":
+        """Create a sizing function when the data's pixel size changes."""
         sizing_func = self.make_sizing_func(
             data=self.control.data,
             format_=self.control.format_,
@@ -864,7 +893,6 @@ class Display:
         if self.graphic_float.control is not None:
             self.graphic_float.control.sizing_func = sizing_func
             self.graphic_float.control.reset()
-        log.debug((self.px, self.py))
 
     def __pt_container__(self) -> "AnyContainer":
         """Return the content of this output."""
