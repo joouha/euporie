@@ -1235,6 +1235,17 @@ class ToggleButtons(SelectableWidget):
             style="class:toggle-buttons",
         )
 
+    @property
+    def index(self) -> "Optional[int]":
+        """Return the first selected index."""
+        return next((x for x in self.indices), None)
+
+    @index.setter
+    def index(self, value: "int") -> "None":
+        """Set the selected indices to a single value."""
+        self.indices = [value]
+        self.update_buttons(self)
+
     def update_buttons(self, widget: "Optional[SelectableWidget]" = None) -> "None":
         """Set the toggle buttons' selection state when the selected index changes."""
         for i, selected in enumerate(self.mask):
