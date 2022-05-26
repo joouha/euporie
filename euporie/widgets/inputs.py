@@ -1654,6 +1654,9 @@ class SliderControl(UIControl):
 class Slider(SelectableWidget):
     """A slider widget with an optional editable readout."""
 
+    control: "SliderControl"
+    readout: "Text"
+
     def __init__(
         self,
         options: "List[Any]",
@@ -1707,6 +1710,9 @@ class Slider(SelectableWidget):
             style=style,
         )
         self.on_change += self.value_changed
+
+    def load_container(self) -> "AnyContainer":
+        """Build the slider's container."""
         self.control = SliderControl(
             slider=self,
             show_arrows=self.show_arrows,
@@ -1718,9 +1724,6 @@ class Slider(SelectableWidget):
             validation=lambda x: self.validate_readout(x) is not None,
             accept_handler=self.accept_handler,
         )
-
-    def load_container(self) -> "AnyContainer":
-        """Build the slider's container."""
         return ConditionalSplit(
             self.vertical,
             [

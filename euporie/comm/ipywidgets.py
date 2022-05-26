@@ -16,6 +16,7 @@ from prompt_toolkit.widgets.base import Box
 
 from euporie.border import BorderVisibility
 from euporie.comm.base import Comm, CommView
+from euporie.kernel import MsgCallbacks
 from euporie.widgets.cell_outputs import CellOutputArea
 from euporie.widgets.decor import FocusedStyle
 from euporie.widgets.display import Display
@@ -42,7 +43,6 @@ if TYPE_CHECKING:
     from prompt_toolkit.formatted_text.base import AnyFormattedText
     from prompt_toolkit.layout.containers import AnyContainer, _Split
 
-    from euporie.kernel import MsgCallbacks
     from euporie.tabs.notebook import KernelNotebook
     from euporie.widgets.cell import Cell
     from euporie.widgets.inputs import SelectableWidget, ToggleableWidget
@@ -226,16 +226,12 @@ class OutputModel(IpyWidgetComm):
         super().__init__(nb, comm_id, data, buffers)
         self.clear_output_wait = False
         self.prev_msg_id = ""
-        self.original_callbacks: "MsgCallbacks" = (  # pytype: disable=missing-parameter
-            MsgCallbacks()
-        )
-        self.callbacks: "MsgCallbacks" = (  # pytype: disable=missing-parameter
-            MsgCallbacks(
-                {
-                    "add_output": self.add_output,
-                    "clear_output": self.clear_output,
-                }
-            )
+        self.original_callbacks = MsgCallbacks()
+        self.callbacks: "MsgCallbacks" = MsgCallbacks(
+            {
+                "add_output": self.add_output,
+                "clear_output": self.clear_output,
+            }
         )
 
     def create_view(self, cell: "Cell") -> "CommView":
