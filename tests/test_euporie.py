@@ -5,4 +5,4 @@ from euporie import __version__
 
 def test_version() -> "None":
     """Version is correct."""
-    assert __version__ == "1.6.2"
+    assert __version__ == "2.0.0-dev"
