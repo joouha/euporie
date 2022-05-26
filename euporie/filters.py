@@ -30,6 +30,7 @@ __all__ = [
     "tab_has_focus",
     "notebook_has_focus",
     "cell_has_focus",
+    "deleted_cells",
     "cell_output_has_focus",
     "cell_is_code",
     "cell_is_markdown",
@@ -167,6 +168,15 @@ def multiple_cells_selected() -> "bool":
     nb = get_app().notebook
     if nb is not None:
         return len(nb.page.selected_indices) > 1
+    return False
+
+
+@Condition
+def deleted_cells() -> "bool":
+    """Determine if there ares cell in the undo buffer."""
+    nb = get_app().notebook
+    if nb is not None:
+        return bool(nb.undo_buffer)
     return False
 
 

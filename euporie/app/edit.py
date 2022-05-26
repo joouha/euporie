@@ -628,6 +628,8 @@ class EditApp(EuporieApp):
             MenuItem(
                 "Edit",
                 children=[
+                    get("undelete-cells").menu,
+                    separator,
                     get("cut-cells").menu,
                     get("copy-cells").menu,
                     get("paste-cells").menu,

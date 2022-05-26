@@ -5,6 +5,7 @@ from __future__ import annotations
 import copy
 import logging
 from abc import ABCMeta, abstractmethod
+from collections import deque
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -40,7 +41,7 @@ from euporie.widgets.page import PrintingContainer, ScrollbarControl, ScrollingC
 
 if TYPE_CHECKING:
     from collections.abc import MutableSequence
-    from typing import Callable, Dict, List, Optional, Sequence, Type
+    from typing import Callable, Deque, Dict, List, Optional, Sequence, Tuple, Type
 
     from prompt_toolkit.auto_suggest import AutoSuggest
     from prompt_toolkit.completion import Completer
@@ -102,6 +103,8 @@ class Notebook(Tab, metaclass=ABCMeta):
         self.in_edit_mode = Condition(lambda: self.edit_mode)
 
         self.pager_visible = to_filter(False)
+
+        self.undo_buffer: "Deque[Tuple[int, List[Cell]]]" = deque(maxlen=10)
 
     def refresh(
         self, slice_: "Optional[slice]" = None, scroll: "bool" = True
@@ -222,13 +225,23 @@ class Notebook(Tab, metaclass=ABCMeta):
     def delete(self, slice_: "Optional[slice]" = None) -> "None":
         """Delete a cell from the notebook."""
         if slice_ is not None:
-            index = min(range(*slice_.indices(len(self.json["cells"]))))
+            indices = range(*slice_.indices(len(self.json["cells"])))
+            index = min(indices)
+            cells = [x[1] for x in sorted(zip(indices, self.json["cells"][slice_]))]
+            self.undo_buffer.append((index, cells))
             del self.json["cells"][slice_]
             # Ensure there is always one cell
             if len(self.json["cells"]) == 0:
                 self.add(1)
             self.dirty = True
             self.refresh(slice(index, index + 1), scroll=True)
+
+    def undelete(self) -> "None":
+        """Inserts the last deleted cell(s) back into the notebook."""
+        if self.undo_buffer:
+            index, cells = self.undo_buffer.pop()
+            self.json["cells"][index:index] = cells
+            self.refresh(slice(index, index + len(cells)))
 
     def cut(self, slice_: "slice") -> "None":
         """Remove a cell from the notebook and add it to the `Notebook`'s clipboard."""

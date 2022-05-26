@@ -10,6 +10,7 @@ from euporie.filters import (
     cell_has_focus,
     cell_output_has_focus,
     code_cell_selected,
+    deleted_cells,
     have_formatter,
     kernel_is_python,
     multiple_cells_selected,
@@ -138,6 +139,22 @@ def delete_cells() -> "None":
     nb = get_app().notebook
     if nb is not None:
         nb.delete()
+
+
+@add(
+    keys="z",
+    menu_title="Undo delete cell",
+    filter=notebook_has_focus
+    & ~buffer_has_focus
+    & ~cell_output_has_focus
+    & deleted_cells,
+    group="notebook",
+)
+def undelete_cells() -> "None":
+    """Undelete the last deleted cells."""
+    nb = get_app().notebook
+    if nb is not None:
+        nb.undelete()
 
 
 @add(

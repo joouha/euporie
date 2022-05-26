@@ -11,6 +11,7 @@ Upcoming
 Added
 =====
 
+- Add ability to undo deleting cells
 - Add support for ipywidgets
 
 Changed
