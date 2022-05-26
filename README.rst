@@ -80,6 +80,7 @@ Features
 ********
 
 * Edit and run notebooks in the terminal
+* Jupyter widgets support
 * Displays rich cell outputs, including markdown, tables, images, LaTeX, HTML, SVG, & PDF
 * Print formatted notebooks to the terminal or pager
 * Open multiple notebooks and display them stacked or tiled

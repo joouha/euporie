@@ -23,7 +23,7 @@ from prompt_toolkit.layout.containers import (
 from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.layout.dimension import Dimension
 from prompt_toolkit.mouse_events import MouseEventType
-from prompt_toolkit.widgets import Box, Label, RadioList
+from prompt_toolkit.widgets import Box, Label
 
 from euporie.app.current import get_edit_app as get_app
 from euporie.comm.registry import open_comm
@@ -33,7 +33,8 @@ from euporie.key_binding.bindings.commands import load_command_bindings
 from euporie.suggest import KernelAutoSuggest
 from euporie.tabs.base import Tab
 from euporie.widgets.cell import Cell, InteractiveCell, get_cell_id
-from euporie.widgets.decor import Line, Pattern
+from euporie.widgets.decor import FocusedStyle, Line, Pattern
+from euporie.widgets.inputs import Select
 from euporie.widgets.output.container import CellOutput
 from euporie.widgets.page import PrintingContainer, ScrollbarControl, ScrollingContainer
 
@@ -719,7 +720,7 @@ class EditNotebook(KernelNotebook):
 
         def _change_kernel_cb() -> None:
             assert self.kernel is not None
-            name = options.current_value
+            name = options.options[options.index or 0]
             self.kernel.change(name, self.json.setdefault("metadata", {}))
 
         assert self.kernel is not None
@@ -757,21 +758,24 @@ class EditNotebook(KernelNotebook):
                 )
             return
 
-        options = RadioList(
-            [
-                (
-                    kernel_name,
-                    kernel_spec.get("spec", {}).get("display_name", kernel_name),
-                )
+        options = Select(
+            options=list(kernel_specs.keys()),
+            labels=[
+                kernel_spec.get("spec", {}).get("display_name", kernel_name)
                 for kernel_name, kernel_spec in kernel_specs.items()
-            ]
+            ],
+            style="class:radio-buttons,input",
+            prefix=("○", "◉"),
+            multiple=False,
+            border=None,
         )
+
         self.app.dialog(
             title="Select Kernel",
             body=HSplit(
                 [
                     Label((f"{msg}\n" if msg else "") + "Please select a kernel:\n"),
-                    options,
+                    FocusedStyle(options),
                 ]
             ),
             buttons={

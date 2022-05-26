@@ -1,5 +1,7 @@
 """Contains input widgets."""
 
+from __future__ import annotations
+
 import asyncio
 import logging
 from abc import ABCMeta, abstractmethod
@@ -42,6 +44,7 @@ if TYPE_CHECKING:
     from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
     from prompt_toolkit.buffer import Buffer, BufferAcceptHandler
+    from prompt_toolkit.completion.base import Completer
     from prompt_toolkit.formatted_text.base import (
         AnyFormattedText,
         OneStyleAndTextTuple,
@@ -53,10 +56,18 @@ if TYPE_CHECKING:
     )
     from prompt_toolkit.key_binding.key_processor import KeyPressEvent
     from prompt_toolkit.layout.containers import AnyContainer
-    from prompt_toolkit.layout.controls import GetLinePrefixCallable
+    from prompt_toolkit.layout.controls import (
+        GetLinePrefixCallable,
+        SearchBufferControl,
+    )
     from prompt_toolkit.layout.processors import Processor
+    from prompt_toolkit.lexers import Lexer
 
     from euporie.border import GridStyle
+
+    OptionalSearchBuffer = Optional[
+        Union[SearchBufferControl, Callable[[], SearchBufferControl]]
+    ]
 
 
 log = logging.getLogger(__name__)
@@ -150,8 +161,12 @@ class Button:
             self.on_mouse_down.fire()
             return None
         elif mouse_event.event_type == MouseEventType.MOUSE_UP:
+            if self.selected:
+                self.selected = False
+                self.on_click.fire()
+            return None
+        elif mouse_event.event_type == MouseEventType.MOUSE_MOVE:
             self.selected = False
-            self.on_click.fire()
             return None
         else:
             return NotImplemented
@@ -384,7 +399,36 @@ class Checkbox(ToggleableWidget):
 class ExpandingBufferControl(BufferControl):
     """A sub-class of :class:`BufferControl` which to the available width."""
 
-    def preferred_width(self, max_available_width: "int") -> "int":
+    def __init__(
+        self,
+        buffer: "Optional[Buffer]" = None,
+        input_processors: "Optional[List[Processor]]" = None,
+        include_default_input_processors: "bool" = True,
+        lexer: "Optional[Lexer]" = None,
+        preview_search: "FilterOrBool" = False,
+        focusable: "FilterOrBool" = True,
+        search_buffer_control: "OptionalSearchBuffer" = None,
+        menu_position: "Optional[Callable[[], Optional[int]]]" = None,
+        focus_on_click: "FilterOrBool" = False,
+        key_bindings: "Optional[KeyBindingsBase]" = None,
+        expand: "FilterOrBool" = True,
+    ) -> "None":
+        """Adds an ``expand`` parameter to the buffer control."""
+        super().__init__(
+            buffer=buffer,
+            input_processors=input_processors,
+            include_default_input_processors=include_default_input_processors,
+            lexer=lexer,
+            preview_search=preview_search,
+            focusable=focusable,
+            search_buffer_control=search_buffer_control,
+            menu_position=menu_position,
+            focus_on_click=focus_on_click,
+            key_bindings=key_bindings,
+        )
+        self.expand = to_filter(expand)
+
+    def preferred_width(self, max_available_width: "int") -> "int|None":
         """Ensure text box expands to available width.
 
         Args:
@@ -393,7 +437,10 @@ class ExpandingBufferControl(BufferControl):
         Returns:
             The desired width, which is the maximum available
         """
-        return max_available_width
+        if self.expand():
+            return max_available_width
+        else:
+            return None
 
 
 class Text:
@@ -406,7 +453,9 @@ class Text:
         height: "int" = 1,
         min_height: "int" = 1,
         multiline: "bool" = False,
+        expand: "FilterOrBool" = True,
         width: "Optional[int]" = None,
+        completer: "Optional[Completer]" = None,
         options: "Optional[Union[List[str], Callable[[], List[str]]]]" = None,
         show_borders: "Optional[BorderVisibility]" = None,
         on_text_changed: "Optional[Callable[[Buffer], None]]" = None,
@@ -423,8 +472,10 @@ class Text:
             height: The height of the widget, excluding borders
             min_height: The minimum height of the widget, excluding borders
             multiline: Whether the text box accepts multiple lines of text
+            expand: Determines if the text input should expand to the available width
             width: The width of the text input. If :py:const:`None`, the widget will
                 expand to the available width
+            completer: A completer to use, an alternative to ``options``
             options: A list of permitted values
             show_borders: Which borders to display. By default, all borders are shown
             on_text_changed: A callback to run when the text is changed
@@ -449,7 +500,8 @@ class Text:
             style=f"class:text,text-area {style}",
             validator=Validator.from_callable(validation) if validation else None,
             accept_handler=accept_handler,
-            completer=ConditionalCompleter(
+            completer=completer
+            or ConditionalCompleter(
                 WordCompleter(self.options),
                 filter=Condition(lambda: bool(self.options)),
             ),
@@ -483,6 +535,7 @@ class Text:
             menu_position=self.text_area.control.menu_position,
             focus_on_click=self.text_area.control.focus_on_click,
             key_bindings=self.text_area.control.key_bindings,
+            expand=expand,
         )
         self.text_area.window.content = self.text_area.control
 

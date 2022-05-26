@@ -22,12 +22,13 @@ from prompt_toolkit.layout.controls import UIContent, UIControl
 from prompt_toolkit.layout.dimension import Dimension
 from prompt_toolkit.layout.margins import ScrollbarMargin
 from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
-from prompt_toolkit.widgets.base import Box, Frame, Shadow, TextArea
+from prompt_toolkit.widgets.base import Box, Frame, Shadow
 
 from euporie.app.current import get_edit_app as get_app
 from euporie.commands.base import Command
 from euporie.commands.registry import commands
 from euporie.key_binding.util import format_keys
+from euporie.widgets.inputs import Text
 
 if TYPE_CHECKING:
     from typing import Optional
@@ -188,8 +189,11 @@ class CommandPalette:
             partial(lambda e: self.select(len(self.matches)))
         )
 
-        self.text_area = TextArea(
-            multiline=False, accept_handler=self.accept, style="class:input"
+        self.text_area = Text(
+            multiline=False,
+            accept_handler=self.accept,
+            style="class:input",
+            expand=False,
         )
         self.text_area.buffer.on_text_changed += self.text_changed
         scroll_bar_margin = ScrollbarMargin(display_arrows=True)

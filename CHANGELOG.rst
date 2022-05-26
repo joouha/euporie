@@ -13,6 +13,11 @@ Added
 
 - Add support for ipywidgets
 
+Changed
+=======
+
+- Update widget styling
+
 ----
 
 *********************

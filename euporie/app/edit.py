@@ -27,7 +27,7 @@ from prompt_toolkit.layout import (
 from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.layout.dimension import Dimension
 from prompt_toolkit.layout.menus import CompletionsMenu
-from prompt_toolkit.widgets import Button, Dialog, Label, SearchToolbar, TextArea
+from prompt_toolkit.widgets import Dialog, Label, SearchToolbar
 from pyperclip import determine_clipboard  # type: ignore
 
 from euporie import __app_name__, __copyright__, __logo__, __strapline__, __version__
@@ -37,8 +37,9 @@ from euporie.config import CONFIG_PARAMS, config
 from euporie.enums import TabMode
 from euporie.tabs.log import LogView
 from euporie.tabs.notebook import EditNotebook
-from euporie.widgets.decor import Pattern
+from euporie.widgets.decor import FocusedStyle, Pattern
 from euporie.widgets.formatted_text_area import FormattedTextArea
+from euporie.widgets.inputs import Button, Text
 from euporie.widgets.menu import MenuContainer, MenuItem
 from euporie.widgets.palette import CommandPalette
 from euporie.widgets.tab_bar import TabBar
@@ -329,16 +330,21 @@ class EditApp(EuporieApp):
         kb = KeyBindings()
         kb.add("escape")(lambda event: _make_handler()())
         button_widgets = []
+
+        width = max(map(len, buttons)) + 2
         for text, cb in buttons.items():
             handler = _make_handler(cb)
             button_widgets.append(
-                Button(text, handler, left_symbol="▏", right_symbol="▕")
+                FocusedStyle(
+                    Button(text, on_click=handler, width=width, style="class:input")
+                )
             )
             kb.add(text[:1].lower(), filter=~buffer_has_focus)(handler)
+        # TODO - replace dialog with own widget
         dialog = Dialog(
             title=title,
             body=body,
-            buttons=button_widgets,
+            buttons=button_widgets,  # type: ignore [arg-type]
             modal=True,
             with_background=False,
         )
@@ -398,17 +404,18 @@ class EditApp(EuporieApp):
             buf.complete_state = None
             return True
 
-        filepath = TextArea(
+        filepath = Text(
             text=default,
             multiline=False,
             completer=completer,
             accept_handler=_accept_text,
             style="class:input",
+            width=40,
         )
 
         root_contents: "list[AnyContainer]" = [
             Label("Enter file name:"),
-            filepath,
+            FocusedStyle(filepath),
         ]
         if error:
             root_contents.append(Label(error, style="red"))
@@ -509,6 +516,7 @@ class EditApp(EuporieApp):
                         ("", "\n"),
                         ("class:hr", "─" * 34 + "\n\n"),
                         ("", __copyright__),
+                        ("", "\n"),
                     ]
                 ),
                 dont_extend_height=True,

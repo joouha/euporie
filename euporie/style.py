@@ -55,10 +55,6 @@ IPYWIDGET_STYLE = [
     ("ipywidget", "bg:default"),
     ("ipywidget focused", ""),
     ("ipywidget button face success", "bg:ansigreen"),
-    # ("ipywidget box success", "bg:ansigreen"),
-    # ("ipywidget box info", "bg:ansicyan"),
-    # ("ipywidget box warning", "bg:ansiyellow"),
-    # ("ipywidget box danger", "bg:ansired"),
     ("ipywidget button face", "fg:black bg:#d4d0c8"),
     ("ipywidget button face success", "bg:ansigreen"),
     ("ipywidget button face info", "bg:ansicyan"),
@@ -362,8 +358,8 @@ def build_style(
         "scrollbar.end": f"fg:{cp.bg.more(3/20)} bg:{cp.bg.more(15/20)}",
         # Dialogs
         "dialog.body": f"fg:{cp.fg.base} bg:{cp.bg.darker(2/20)}",
-        "dialog.body text-area": f"fg:{cp.fg.base}",
         "dialog.body scrollbar.button": f"fg:{cp.bg.more(5/20)} bg:{cp.bg.more(15/20)}",
+        "dialog.body text-area last-line": "nounderline",
         # Horizontals rule
         "hr": "fg:ansired",
         # Completions menu
@@ -410,9 +406,6 @@ def build_style(
         "drop-shadow.outer": f"fg:{cp.bg.darker(2/20)} bg:{cp.bg.darker(0.5/20)}",
         # Shadows
         "shadow": f"bg:{cp.bg.darker(0.45)}",
-        # Inputs
-        "input": f"bg:{cp.bg.more(0.05)}",
-        "button": "",
         # Tabbed split
         "tabbed-split tab-bar tab inactive": f"fg:{cp.bg.more(2/20)}",
         "tabbed-split tab-bar tab inactive border": f"fg:{cp.bg.more(3/20)}",
@@ -425,6 +418,28 @@ def build_style(
         "ipywidget slider arrow": f"fg:{cp.fg.darker(0.25)}",
         "ipywidget slider handle": f"fg:{cp.fg.darker(0.25)}",
         "ipywidget accordion border default": f"fg:{cp.bg.more(4/20)}",
+        # Input widgets
+        "input focused": f"bg:{cp.bg.more(0.025)}",
+        "input button face": f"fg:default bg:{cp.bg.less(0.05)}",
+        "input button border right": "fg:#606060",
+        "input button border bottom": "fg:#606060",
+        "input button border left": "fg:#ffffff",
+        "input button border top": "fg:#ffffff",
+        "input selection border right": "fg:#ffffff",
+        "input selection border bottom": "fg:#ffffff",
+        "input selection border top": "fg:#606060",
+        "input selection border left": "fg:#606060",
+        "input text text-area": f"fg:default bg:{cp.bg.less(0.1)}",
+        "input text placeholder": "fg:#AAAAAA bg:white",
+        "input text border right": "fg:#E9E7E3",
+        "input text border top": "fg:#606060",
+        "input text border bottom": "fg:#E9E7E3",
+        "input text border left": "fg:#606060",
+        "input text border top invalid": "fg:ansidarkred",
+        "input text border right invalid": "fg:ansired",
+        "input text border bottom invalid": "fg:ansired",
+        "input text border left invalid": "fg:ansidarkred",
+        "radio-buttons prefix selection": "fg:ansiblue",
     }
 
     # Add shadow combination for every element
