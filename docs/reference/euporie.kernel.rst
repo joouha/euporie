@@ -28,4 +28,5 @@ euporie.kernel
       :toctree:
       :template: class.tpl.rst
 
+      MsgCallbacks
       NotebookKernel

@@ -1,7 +1,7 @@
-euporie.widgets.decor
-=====================
+euporie.comm.base
+=================
 
-.. automodule:: euporie.widgets.decor
+.. automodule:: euporie.comm.base
    :members:
    :undoc-members:
    :inherited-members:
@@ -28,7 +28,6 @@ euporie.widgets.decor
       :toctree:
       :template: class.tpl.rst
 
-      Border
-      FocusedStyle
-      Line
-      Pattern
+      Comm
+      CommView
+      UnimplementedComm

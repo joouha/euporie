@@ -18,6 +18,7 @@ euporie
 
       euporie.app
       euporie.border
+      euporie.comm
       euporie.commands
       euporie.completion
       euporie.config
@@ -31,6 +32,7 @@ euporie
       euporie.keys
       euporie.log
       euporie.margins
+      euporie.reference
       euporie.style
       euporie.suggest
       euporie.tabs

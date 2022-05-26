@@ -17,8 +17,12 @@ euporie.widgets
       :recursive:
 
       euporie.widgets.cell
+      euporie.widgets.cell_outputs
       euporie.widgets.decor
+      euporie.widgets.display
       euporie.widgets.formatted_text_area
+      euporie.widgets.inputs
+      euporie.widgets.layout
       euporie.widgets.menu
       euporie.widgets.output
       euporie.widgets.page

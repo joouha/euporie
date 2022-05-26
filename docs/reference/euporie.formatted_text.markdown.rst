@@ -49,3 +49,4 @@ euporie.formatted\_text.markdown
       :template: class.tpl.rst
 
       Markdown
+      MarkdownParser

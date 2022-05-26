@@ -36,8 +36,6 @@ euporie.formatted\_text.table
       :template: class.tpl.rst
 
       Cell
-      CellBorder
-      CellPadding
       Col
       DummyCell
       DummyCol
@@ -46,7 +44,3 @@ euporie.formatted\_text.table
       Row
       RowCol
       Table
-      WeightedCellBorder
-      WeightedCellPadding
-      WeightedInt
-      WeightedLineStyle

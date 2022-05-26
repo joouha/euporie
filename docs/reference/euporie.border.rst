@@ -35,6 +35,8 @@ euporie.border
       :toctree:
       :template: class.tpl.rst
 
+      BorderLineStyle
+      BorderVisibility
       DirectionFlags
       GridChar
       GridPart
@@ -42,3 +44,8 @@ euporie.border
       LineStyle
       Mask
       Masks
+      Padding
+      WeightedBorderLineStyle
+      WeightedInt
+      WeightedLineStyle
+      WeightedPadding
