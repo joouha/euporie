@@ -739,15 +739,9 @@ class EditNotebook(KernelNotebook):
         assert self.kernel is not None
         kernel_specs = self.kernel.specs
 
-        # Automatically select the only kernel if there is only one
-        if startup and len(kernel_specs) == 1:
-            self.kernel.change(
-                list(kernel_specs)[0], self.json.setdefault("metadata", {})
-            )
-            return
-
+        # Warn the user if no kernels are installed
         if not kernel_specs:
-            if not startup:
+            if startup:
                 self.app.dialog(
                     title="No Kernels Found",
                     body=Window(
@@ -764,6 +758,7 @@ class EditNotebook(KernelNotebook):
                                     "class:md.code.inline",
                                     "$ pip install --user ipykernel",
                                 ),
+                                ("", "\n"),
                             ]
                         )
                     ),
@@ -771,6 +766,14 @@ class EditNotebook(KernelNotebook):
                 )
             return
 
+        # Automatically select the only kernel if there is only one
+        if startup and len(kernel_specs) == 1:
+            self.kernel.change(
+                list(kernel_specs)[0], self.json.setdefault("metadata", {})
+            )
+            return
+
+        # Otherwise prompt the user for the kernel to use
         options = Select(
             options=list(kernel_specs.keys()),
             labels=[
@@ -782,7 +785,6 @@ class EditNotebook(KernelNotebook):
             multiple=False,
             border=None,
         )
-
         self.app.dialog(
             title="Select Kernel",
             body=HSplit(

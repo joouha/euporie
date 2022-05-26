@@ -190,7 +190,7 @@ class NotebookKernel:
 
     @property
     def missing(self) -> "bool":
-        """Returns a list of available kernelspecs."""
+        """Return True if the requested kernel is not found."""
         if self.km:
             try:
                 self.km.kernel_spec
