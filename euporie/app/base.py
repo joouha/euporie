@@ -54,6 +54,7 @@ from euporie.key_binding.key_processor import KeyProcessor
 from euporie.key_binding.micro_state import MicroState
 from euporie.log import setup_logs
 from euporie.style import (
+    DEFAULT_COLORS,
     IPYWIDGET_STYLE,
     LOG_STYLE,
     MARKDOWN_STYLE,
@@ -176,8 +177,8 @@ class EuporieApp(Application):
         )
         # Set the application's style, and update it when the terminal responds
         self.update_style()
-        self.term_info.foreground_color.event += self.update_style
-        self.term_info.background_color.event += self.update_style
+        self.term_info.colors.event += self.update_style
+        # self.term_info.color_blue.event += self.update_style
         # Blocks rendering, but allows input to be processed
         # The first line prevents the display being drawn, and the second line means
         # the key processor continues to process keys. We need this as we need to
@@ -446,26 +447,31 @@ class EuporieApp(Application):
             "dark": {"fg": "#F0F0F0", "bg": "#202020"},
             "white": {"fg": "#000000", "bg": "#FFFFFF"},
             "black": {"fg": "#FFFFFF", "bg": "#000000"},
-            "default": {
-                "fg": self.term_info.foreground_color.value,
-                "bg": self.term_info.background_color.value,
-            },
+            "default": self.term_info.colors.value,
+            # TODO - use config.custom_colors
             "custom": {
                 "fg": config.custom_foreground_color,
                 "bg": config.custom_background_color,
             },
         }
-        base_colors: "dict[str, str]" = theme_colors.get(
-            config.color_scheme, theme_colors["default"]
-        )
+        base_colors: "dict[str, str]" = {
+            **DEFAULT_COLORS,
+            **theme_colors.get(config.color_scheme, theme_colors["default"]),
+        }
 
         # Build a color palette from the fg/bg colors
         self.color_palette = ColorPalette()
-        base_override = "default" if config.color_scheme == "default" else ""
         for name, color in base_colors.items():
             self.color_palette.add_color(
-                name, color or theme_colors["default"][name], base_override
+                name,
+                color or theme_colors["default"][name],
+                "default" if name in ("fg", "bg") else name,
             )
+
+        config_highlight_color = "ansiblue"  # TODO - make highlight color configurable
+        self.color_palette.colors["hl"] = self.color_palette.colors[
+            config_highlight_color
+        ]
 
         # Build app style
         app_style = build_style(
@@ -477,7 +483,9 @@ class EuporieApp(Application):
         self.style_transformation = merge_style_transformations(
             [
                 ConditionalStyleTransformation(
-                    SetDefaultColorStyleTransformation(**base_colors),
+                    SetDefaultColorStyleTransformation(
+                        fg=base_colors["fg"], bg=base_colors["bg"]
+                    ),
                     config.color_scheme != "default",
                 ),
                 ConditionalStyleTransformation(

@@ -18,9 +18,10 @@ from prompt_toolkit.utils import Event
 from euporie.commands.registry import add
 from euporie.config import config
 from euporie.filters import in_tmux
+from euporie.style import DEFAULT_COLORS
 
 if TYPE_CHECKING:
-    from typing import Any, Optional, Type, Union
+    from typing import Any, Dict, Optional, Type, Union
 
     from prompt_toolkit.input import Input
     from prompt_toolkit.input.vt100 import Vt100Input
@@ -191,14 +192,36 @@ class ColorQueryMixin:
         return None
 
 
-class ForegroundColor(ColorQueryMixin, TerminalQuery):
-    """A terminal query to check the terminal's foreground colour."""
+class Colors(TerminalQuery):
+    """A terminal query to retrieve colours as hex codes."""
 
-    default = "#F0F0F0"
+    _color_names = {
+        "10": "fg",
+        "11": "bg",
+        "4;0": "ansiblack",
+        "4;1": "ansired",
+        "4;2": "ansigreen",
+        "4;3": "ansiyellow",
+        "4;4": "ansiblue",
+        "4;5": "ansipurple",
+        "4;6": "ansicyan",
+        "4;7": "ansiwhite",
+        "4;8": "ansirbightblack",
+        "4;9": "ansirbightred",
+        "4;10": "ansirbightgreen",
+        "4;11": "ansirbightyellow",
+        "4;12": "ansirbightblue",
+        "4;13": "ansirbightpurple",
+        "4;14": "ansirbightcyan",
+        "4;15": "ansirbightwhite",
+    }
+    default = DEFAULT_COLORS
     cache = True
-    cmd = "\x1b]11;?\x1b\\"
+    cmd = ("\x1b]10;?\x1b\\" "\x1b]11;?\x1b\\") + "".join(
+        f"\x1b]4;{i};?\x1b\\" for i in range(16)
+    )
     pattern = re.compile(
-        r"^\x1b\]10;rgb:"
+        r"^\x1b\](?P<c>(\d+;)?\d+)+;rgb:"
         "(?P<r>[0-9A-Fa-f]{2,4})/"
         "(?P<g>[0-9A-Fa-f]{2,4})/"
         "(?P<b>[0-9A-Fa-f]{2,4})"
@@ -208,23 +231,22 @@ class ForegroundColor(ColorQueryMixin, TerminalQuery):
     def _cmd(self) -> "str":
         return tmuxify(self.cmd)
 
-
-class BackgroundColor(ColorQueryMixin, TerminalQuery):
-    """A terminal query to check the terminal's background colour."""
-
-    default = "#202020"
-    cache = True
-    cmd = "\x1b]10;?\x1b\\"
-    pattern = re.compile(
-        r"^\x1b\]11;rgb:"
-        "(?P<r>[0-9A-Fa-f]{2,4})/"
-        "(?P<g>[0-9A-Fa-f]{2,4})/"
-        "(?P<b>[0-9A-Fa-f]{2,4})"
-        r"\x1b\\\Z"
-    )
-
-    def _cmd(self) -> "str":
-        return tmuxify(self.cmd)
+    def verify(self, data: "str") -> "Dict[str, str]":
+        """Verifies the response contains a colour."""
+        if match := self.pattern.match(data):
+            if colors := match.groupdict():
+                c = colors["c"]
+                r, g, b = (
+                    colors.get("r", "00"),
+                    colors.get("g", "00"),
+                    colors.get("b", "00"),
+                )
+                output = {
+                    **self.value,
+                    self._color_names.get(c, c): f"#{r[:2]}{g[:2]}{b[:2]}",
+                }
+                return output
+        return self.value
 
 
 class PixelDimensions(TerminalQuery):
@@ -345,8 +367,7 @@ class TerminalInfo:
         self.output = output
         self._queries: "list[TerminalQuery]" = []
 
-        self.foreground_color = self.register(ForegroundColor)
-        self.background_color = self.register(BackgroundColor)
+        self.colors = self.register(Colors)
         self.pixel_dimensions = self.register(PixelDimensions)
         self.sixel_graphics_status = self.register(SixelGraphicsStatus)
         self.kitty_graphics_status = self.register(KittyGraphicsStatus)

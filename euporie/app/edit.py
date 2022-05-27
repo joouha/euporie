@@ -87,8 +87,7 @@ class EditApp(EuporieApp):
         """Repeatedly query the terminal for its background and foreground colours."""
         while config.terminal_polling_interval:
             await asyncio.sleep(config.terminal_polling_interval)
-            self.term_info.background_color.send()
-            self.term_info.foreground_color.send()
+            self.term_info.colors.send()
 
     def load_clipboard(self) -> "None":
         """Determines which clipboard mechanism to use."""
@@ -108,8 +107,6 @@ class EditApp(EuporieApp):
 
         # Load style hooks and start polling terminal style
         if self.using_vt100:
-            self.term_info.background_color.event += self.update_style
-            self.term_info.foreground_color.event += self.update_style
             self.create_background_task(self._poll_terminal_colors())
 
     def format_title(self) -> "StyleAndTextTuples":

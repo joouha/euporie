@@ -1,5 +1,6 @@
 """Style related functions."""
 
+import logging
 from colorsys import hls_to_rgb, rgb_to_hls
 from typing import TYPE_CHECKING
 
@@ -7,12 +8,36 @@ from prompt_toolkit.styles.defaults import default_ui_style
 from prompt_toolkit.styles.style import Style
 
 if TYPE_CHECKING:
-    from typing import Any, Dict, Optional, Tuple
+    from typing import Any, Dict, Tuple
+
+log = logging.getLogger(__name__)
+
+
+DEFAULT_COLORS = {
+    "bg": "#232627",
+    "fg": "#fcfcfc",
+    "ansiblack": "#000000",
+    "ansired": "#cc0403",
+    "ansigreen": "#19cb00",
+    "ansiyellow": "#cecb00",
+    "ansiblue": "#0d73cc",
+    "ansipurple": "#cb1ed1",
+    "ansicyan": "#0dcdcd",
+    "ansiwhite": "#dddddd",
+    "ansirbightblack": "#767676",
+    "ansirbightred": "#f2201f",
+    "ansirbightgreen": "#23fd00",
+    "ansirbightyellow": "#fffd00",
+    "ansirbightblue": "#1a8fff",
+    "ansirbightpurple": "#fd28ff",
+    "ansirbightcyan": "#14ffff",
+    "ansirbightwhite": "#ffffff",
+}
+
 
 MIME_STYLE = [
     ("mime.stream.stderr", "fg:ansired"),
 ]
-
 
 MARKDOWN_STYLE = [
     ("md.h1", "bold underline"),
@@ -253,8 +278,6 @@ class ColorPalette:
     def __init__(self):
         """Creates a new color-palette."""
         self.colors = {}
-        self.add_color("black", "#000000")
-        self.add_color("white", "#FFFFFF")
 
     def add_color(
         self, name: "str", base: "str", _base_override: str = ""
@@ -277,17 +300,14 @@ class ColorPalette:
 
 
 def build_style(
-    cp: "Optional[ColorPalette]",
+    cp: "ColorPalette",
     have_term_colors: "bool" = True,
 ) -> "Style":
     """Create an application style based on the given color palette."""
-    if cp is None:
-        cp = (
-            ColorPalette()
-            .add_color("fg", "#FFFFFF", "default")
-            .add_color("bg", "#000000", "default")
-        )
-
+    log.debug(cp.hl)
+    log.debug(cp.hl.base_hex)
+    log.debug(cp.hl.base)
+    log.debug(cp.hl.more(0))
     style_dict = {
         # The default style is merged at this point so full styles can be
         # overridden. For example, this allows us to switch off the underline
@@ -307,16 +327,16 @@ def build_style(
         # Menus & Menu bar
         "menu-bar": f"fg:{cp.fg.more(1/20)} bg:{cp.bg.more(1/20)}",
         "menu-bar.disabled-item": f"fg:{cp.bg.more(3/20)}",
-        "menu-bar.selected-item": "reverse",
+        # "menu-bar.selected-item": "reverse",
+        "menu-bar.selected-item": f"fg:{cp.hl.more(1)} bg:{cp.hl}",
         "menu-bar.shortcut": f"fg:{cp.fg.more(5/20)}",
-        "menu-bar.selected-item menu-bar.shortcut": (
-            f"fg:{cp.fg.more(1/20)} bg:{cp.bg.more(4/20)}"
-        ),
+        "menu-bar.selected-item menu-bar.shortcut": f"fg:{cp.fg.more(1/20)} bg:{cp.hl}",
+        "menu-bar.selected-item menu-bar.prefix": f"bg:{cp.hl}",
         "menu-bar.disabled-item menu-bar.prefix": f"fg:{cp.bg.more(3/20)}",
         "menu-bar.disabled-item menu-bar.shortcut": f"fg:{cp.bg.more(3/20)}",
         "menu": f"bg:{cp.bg.more(1/20)} fg:{cp.fg.more(1/20)}",
         "menu-border": f"fg:{cp.bg.more(6/20)} bg:{cp.bg.more(1/20)}",
-        "menu-border menu-bar.selected-item": f"fg:{cp.fg.more(1/20)} bg:{cp.bg.more(6/20)} ",
+        "menu-border menu-bar.selected-item": f"bg:{cp.hl}",
         # Tab bar
         "app-tab-bar": f"fg:{cp.bg.more(4/20)} bg:{cp.bg.darker(3/20)}",
         "app-tab-bar.tab": f"fg:{cp.bg.more(2/20)} bg:{cp.bg.more(-3/20)}",
@@ -324,7 +344,7 @@ def build_style(
         "app-tab-bar.tab.edge": f"fg:{cp.bg.more(3/20)} bg:{cp.bg.more(-3/20)}",
         "app-tab-bar.tab.close": "",
         "app-tab-bar.tab active": f"bold fg:{cp.fg.more(0/20)} bg:{cp.bg.base}",
-        "app-tab-bar.tab.head active": f"fg:ansiblue bg:{cp.bg.darker(3/20)}",
+        "app-tab-bar.tab.head active": f"fg:{cp.hl} bg:{cp.bg.darker(3/20)}",
         "app-tab-bar.tab.edge active": f"fg:{cp.bg.more(4/20)} bg:{cp.bg.base}",
         "app-tab-bar.tab.close active": "fg:darkred",
         # Buffer
@@ -393,7 +413,7 @@ def build_style(
         # Palette
         "palette.item": f"fg:{cp.fg.more(1/20)} bg:{cp.bg.more(1/20)}",
         "palette.item.alt": f"bg:{cp.bg.more(3/20)}",
-        "palette.item.selected": "fg:#ffffff bg:ansiblue",
+        "palette.item.selected": f"fg:{cp.hl.more(1)} bg:{cp.hl}",
         # Pager
         "pager": f"bg:{cp.bg.more(1/20)}",
         "pager.border": f"fg:{cp.bg.more(9/20)}",
@@ -420,27 +440,39 @@ def build_style(
         "ipywidget slider handle": f"fg:{cp.fg.darker(0.25)}",
         "ipywidget accordion border default": f"fg:{cp.bg.more(4/20)}",
         # Input widgets
-        "input focused": f"bg:{cp.bg.more(0.025)}",
+        # "input focused": f"bg:{cp.bg.more(0.025)}",
         "input button face": f"fg:default bg:{cp.bg.less(0.05)}",
+        "input button border top": "fg:#ffffff",
         "input button border right": "fg:#606060",
         "input button border bottom": "fg:#606060",
         "input button border left": "fg:#ffffff",
-        "input button border top": "fg:#ffffff",
+        "input button border top focused": f"fg:{cp.hl}",
+        "input button border right focused": f"fg:{cp.hl.darker(0.5)}",
+        "input button border bottom focused": f"fg:{cp.hl.darker(0.5)}",
+        "input button border left focused": f"fg:{cp.hl}",
         "input selection border right": "fg:#ffffff",
         "input selection border bottom": "fg:#ffffff",
         "input selection border top": "fg:#606060",
         "input selection border left": "fg:#606060",
+        "input selection focused border right": f"fg:{cp.hl}",
+        "input selection focused border bottom": f"fg:{cp.hl}",
+        "input selection focused border top": f"fg:{cp.hl.darker(0.5)}",
+        "input selection focused border left": f"fg:{cp.hl.darker(0.5)}",
         "input text text-area": f"fg:default bg:{cp.bg.less(0.1)}",
         "input text placeholder": "fg:#AAAAAA bg:white",
-        "input text border right": "fg:#E9E7E3",
         "input text border top": "fg:#606060",
+        "input text border right": "fg:#E9E7E3",
         "input text border bottom": "fg:#E9E7E3",
         "input text border left": "fg:#606060",
+        "input text border top focused": f"fg:{cp.hl.darker(0.5)}",
+        "input text border right focused": f"fg:{cp.hl}",
+        "input text border bottom focused": f"fg:{cp.hl}",
+        "input text border left focused": f"fg:{cp.hl.darker(0.5)}",
         "input text border top invalid": "fg:ansidarkred",
         "input text border right invalid": "fg:ansired",
         "input text border bottom invalid": "fg:ansired",
         "input text border left invalid": "fg:ansidarkred",
-        "radio-buttons prefix selection": "fg:ansiblue",
+        "radio-buttons prefix selection focused": f"fg:{cp.hl}",
     }
 
     # Add shadow combination for every element
@@ -453,6 +485,7 @@ def build_style(
                 "menu",
                 "menu-border",
                 "menu-bar",
+                "menu-bar.selected-item menu-bar.prefix",
                 "menu-bar.disabled-item menu-bar.prefix",
             )
         }
