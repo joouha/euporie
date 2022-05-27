@@ -102,6 +102,7 @@ class MenuItem(PtkMenuItem):
         self.toggled = toggled
         self.collapse_prefix = collapse_prefix
         self.collapse_suffix = collapse_suffix
+        self._prefix_width = None
         super().__init__(
             text=self.text,
             handler=handler,
@@ -182,8 +183,24 @@ class MenuItem(PtkMenuItem):
         """
         prefix: "StyleAndTextTuples" = []
         if self.toggled is not None:
-            prefix.append(("", "✓ " if self.toggled() else "  "))
+            prefix.append(("class:menu-bar.prefix", "✓ " if self.toggled() else "  "))
         return prefix
+
+    @property
+    def prefix_width(self) -> "int":
+        """The maximum width of the item's children's prefixes."""
+        if self._prefix_width is None:
+            self._prefix_width = max(
+                [
+                    fragment_list_width(child.prefix)
+                    if isinstance(child, MenuItem)
+                    else 0
+                    for child in self.children
+                ]
+                + [0]
+            )
+
+        return self._prefix_width
 
     @property
     def suffix(self) -> "StyleAndTextTuples":
@@ -201,17 +218,6 @@ class MenuItem(PtkMenuItem):
         elif self.shortcut is not None:
             suffix.append(("class:menu-bar.shortcut", f"  {self.shortcut}"))
         return suffix
-
-    @property
-    def prefix_width(self) -> "int":
-        """The maximum width of the item's children's prefixes."""
-        return max(
-            [
-                fragment_list_width(child.prefix) if isinstance(child, MenuItem) else 0
-                for child in self.children
-            ]
-            + [0]
-        )
 
     @property
     def suffix_width(self) -> "int":
@@ -410,16 +416,16 @@ class MenuContainer(PtKMenuContainer):
 
                         else:
                             # Show the right edge
-                            # Set the style and cursor if selected
                             style = ""
+                            # Set the style if disabled
                             if item.disabled:
                                 style += "class:menu-bar.disabled-item"
+                            # Set the style and cursor if selected
                             if i == selected_item:
                                 style += "class:menu-bar.selected-item"
                             yield (f"{style} class:menu-border", self.grid.MID_LEFT)
                             if i == selected_item:
                                 yield ("[SetCursorPosition]", "")
-                            # Set the style if disabled
                             # Construct the menu item contents
                             prefix_padding = " " * (
                                 0

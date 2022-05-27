@@ -312,6 +312,7 @@ def build_style(
         "menu-bar.selected-item menu-bar.shortcut": (
             f"fg:{cp.fg.more(1/20)} bg:{cp.bg.more(4/20)}"
         ),
+        "menu-bar.disabled-item menu-bar.prefix": f"fg:{cp.bg.more(3/20)}",
         "menu-bar.disabled-item menu-bar.shortcut": f"fg:{cp.bg.more(3/20)}",
         "menu": f"bg:{cp.bg.more(1/20)} fg:{cp.fg.more(1/20)}",
         "menu-border": f"fg:{cp.bg.more(6/20)} bg:{cp.bg.more(1/20)}",
@@ -447,7 +448,13 @@ def build_style(
         {
             f"{key} shadow": f"bg:{cp.bg.darker(0.45)}"
             for key in style_dict
-            if key not in ("menu", "menu-border")
+            if key
+            not in (
+                "menu",
+                "menu-border",
+                "menu-bar",
+                "menu-bar.disabled-item menu-bar.prefix",
+            )
         }
     )
 
