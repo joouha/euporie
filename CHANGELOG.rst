@@ -19,6 +19,11 @@ Changed
 
 - Update widget styling
 
+Fixed
+=====
+
+- Fix issue with hyperlinks taking over the screen
+
 ----
 
 *********************

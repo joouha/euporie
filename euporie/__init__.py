@@ -8,3 +8,9 @@ __author__ = "Josiah Outram Halstead"
 __email__ = "josiah@halstead.email"
 __copyright__ = f"© 2022, {__author__}"
 __license__ = "MIT"
+
+
+from euporie.renderer import patch_renderer
+
+# Patch the prompt toolkit renderer
+patch_renderer()
