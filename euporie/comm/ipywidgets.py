@@ -179,17 +179,12 @@ class IpyWidgetComm(Comm, metaclass=ABCMeta):
         buffers: "List[bytes]" = []
         state = _separate_buffers(self.data["state"], [], buffer_paths, buffers)
         assert isinstance(state, dict)
-
-        return {
-            "model_name": self.data["state"]["_model_name"],
-            "model_module": self.data["state"]["_model_module"],
-            "model_module_version": self.data["state"]["_model_module_version"],
+        output = {
+            "model_name": state.get("_model_name"),
+            "model_module": state.get("_model_module"),
+            "model_module_version": state.get("_model_module_version"),
             "state": {
-                **{
-                    key: value
-                    for key, value in state.items()
-                    if not key.startswith("_")
-                },
+                **{key: value for key, value in state.items()},
                 "buffers": [
                     {
                         "encoding": "base64",
@@ -200,6 +195,7 @@ class IpyWidgetComm(Comm, metaclass=ABCMeta):
                 ],
             },
         }
+        return output
 
 
 class UnimplementedModel(IpyWidgetComm):
@@ -297,7 +293,7 @@ class LayoutIpyWidgetComm(IpyWidgetComm, metaclass=ABCMeta):
 
     def box_style(self) -> "str":
         """Convert the ipywidget box_style to a prompt_toolkit style string."""
-        if style := self.data["state"]["box_style"]:
+        if style := self.data["state"].get("box_style", ""):
             return f"class:{style}"
         return "class:default"
 
@@ -445,7 +441,7 @@ class ButtonModel(IpyWidgetComm):
 
     def button_style(self) -> "str":
         """Convert the ipywidget button_style to a prompt_toolkit style string."""
-        if style := self.data["state"]["button_style"]:
+        if style := self.data["state"].get("button_style", ""):
             return f"class:{style}"
         return ""
 
@@ -527,30 +523,28 @@ class IntOptionsMixin:
 
     def normalize(self, x: "Any") -> "Optional[int]":
         """Ensure the selected value is within the permitted range and is a integer."""
-        log.debug(x)
         try:
             value = int(x)
         except ValueError:
             return None
         else:
-            log.debug(value)
             if minimum := self.data.get("state", {}).get("min"):
                 if value < minimum:
                     return None
             if maximum := self.data.get("state", {}).get("max"):
                 if maximum < value:
                     return None
-            log.debug(value)
             return value
 
     @property
     def options(self) -> "List[int]":
         """Generate a list of available options in a range of integers."""
+        step = self.data["state"].get("step", 1)
         return list(
             range(
-                self.data["state"]["min"],
-                self.data["state"]["max"] + self.data["state"]["step"],
-                self.data["state"]["step"],
+                self.data["state"].get("min", 0),
+                self.data["state"].get("max", 100) + step,
+                step,
             )
         )
 
@@ -578,9 +572,9 @@ class FloatOptionsMixin:
     @property
     def options(self) -> "List[Decimal]":
         """Generate a list of available options in a range of floats."""
-        start = Decimal(str(self.data["state"]["min"]))
-        stop = Decimal(str(self.data["state"]["max"] + self.data["state"]["step"]))
-        step = Decimal(str(self.data["state"]["step"]))
+        step = Decimal(str(self.data["state"].get("step", 1)))
+        start = Decimal(str(self.data["state"].get("min", 0)))
+        stop = Decimal(str(self.data["state"].get("max", 100))) + step
         return [start + step * i for i in range(int((stop - start) / step))]
 
 
@@ -592,10 +586,10 @@ class FloatLogOptionsMixin(FloatOptionsMixin):
     @property
     def options(self) -> "List[Decimal]":
         """Generate a list of available options in a range of log values."""
-        base = Decimal(str(self.data["state"]["base"]))
-        start = Decimal(str(self.data["state"]["min"]))
-        stop = Decimal(str(self.data["state"]["max"] + self.data["state"]["step"]))
-        step = Decimal(str(self.data["state"]["step"]))
+        base = Decimal(str(self.data["state"].get("base", 10)))
+        start = Decimal(str(self.data["state"].get("min", 0)))
+        step = Decimal(str(self.data["state"].get("step", 1)))
+        stop = Decimal(str(self.data["state"].get("max") + step))
         return [base ** (start + step * i) for i in range(int((stop - start) / step))]
 
 
@@ -614,7 +608,9 @@ class SliderIpyWidgetComm(IpyWidgetComm, metaclass=ABCMeta):
 
     def create_view(self, cell: "Cell") -> "CommView":
         """Create a new view of the slider ipywidget."""
-        vertical = Condition(lambda: self.data["state"]["orientation"] == "vertical")
+        vertical = Condition(
+            lambda: self.data["state"].get("orientation", "horizontal") == "vertical"
+        )
         options = self.options
         slider = Slider(
             options=options,
@@ -627,7 +623,10 @@ class SliderIpyWidgetComm(IpyWidgetComm, metaclass=ABCMeta):
                 lambda: "⮝" if vertical() else "⮞",
             ),
             show_arrows=True,
-            vertical=Condition(lambda: self.data["state"]["orientation"] == "vertical"),
+            vertical=Condition(
+                lambda: self.data["state"].get("orientation", "horizontal")
+                == "vertical"
+            ),
             disabled=Condition(lambda: self.data["state"].get("disabled", False)),
         )
 
@@ -635,7 +634,10 @@ class SliderIpyWidgetComm(IpyWidgetComm, metaclass=ABCMeta):
             body=slider,
             label=lambda: self.data["state"].get("description", ""),
             style="class:ipywidget",
-            vertical=Condition(lambda: self.data["state"]["orientation"] == "vertical"),
+            vertical=Condition(
+                lambda: self.data["state"].get("orientation", "horizontal")
+                == "vertical"
+            ),
         )
         return CommView(
             FocusedStyle(labelled),
@@ -652,7 +654,9 @@ class SliderIpyWidgetComm(IpyWidgetComm, metaclass=ABCMeta):
     @property
     def indices(self) -> "List[Any]":
         """Return the selected index as a list."""
-        return [self.options.index(value) for value in [self.data["state"]["value"]]]
+        return [
+            self.options.index(value) for value in [self.data["state"].get("value", 0)]
+        ]
 
     def update_value(self, container: "SelectableWidget") -> "None":
         """Send a ``comm_message`` updating the value when it changes."""
@@ -788,12 +792,14 @@ class ProgressIpyWidgetComm(IpyWidgetComm, metaclass=ABCMeta):
 
     def create_view(self, cell: "Cell") -> "CommView":
         """Create a new view of the progress bar."""
-        vertical = Condition(lambda: self.data["state"]["orientation"] == "vertical")
+        vertical = Condition(
+            lambda: self.data["state"].get("orientation", "horizontal") == "vertical"
+        )
         progress = Progress(
-            start=self.data["state"]["min"],
-            stop=self.data["state"]["max"],
+            start=self.data["state"].get("min", 0),
+            stop=self.data["state"].get("max", 100),
             step=self.data["state"].get("step", 1),
-            value=self.data["state"]["value"],
+            value=self.data["state"].get("value", 0),
             vertical=vertical,
             style=self.bar_style,
         )
@@ -815,7 +821,7 @@ class ProgressIpyWidgetComm(IpyWidgetComm, metaclass=ABCMeta):
 
     def bar_style(self) -> "str":
         """Convert the ipywidget ``bar_style`` to a prompt_toolkit style string."""
-        if style := self.data["state"]["bar_style"]:
+        if style := self.data["state"].get("bar_style", ""):
             return f"class:{style}"
         return ""
 
@@ -854,7 +860,7 @@ class ToggleButtonModel(ToggleableIpyWidgetComm):
         button = ToggleButton(
             text=self.text,
             on_click=self.value_changed,
-            selected=self.data["state"]["value"],
+            selected=self.data["state"].get("value", False),
             style=self.button_style,
             disabled=Condition(lambda: self.data["state"].get("disabled", False)),
         )
@@ -876,7 +882,7 @@ class ToggleButtonModel(ToggleableIpyWidgetComm):
 
     def button_style(self) -> "str":
         """Convert the ipywidget button_style to a prompt_toolkit style string."""
-        if style := self.data["state"]["button_style"]:
+        if style := self.data["state"].get("button_style", ""):
             return f"class:{style}"
         return ""
 
@@ -907,7 +913,7 @@ class ValidModel(ToggleableIpyWidgetComm):
         """Create a new view of the validity ipywidget."""
         checkbox = Checkbox(
             on_click=self.value_changed,
-            selected=self.data["state"]["value"],
+            selected=self.data["state"].get("value", False),
             prefix=("❌", "✔️"),
             style="class:valid",
         )
@@ -936,7 +942,7 @@ class DropdownModel(SelectableIpyWidgetComm):
     def create_view(self, cell: "Cell") -> "CommView":
         """Create a new view of the drop-down widget."""
         dropdown = Dropdown(
-            options=self.data["state"]["_options_labels"],
+            options=self.data["state"].get("_options_labels", []),
             index=self.data["state"]["index"],
             on_change=self.update_index,
             style="class:ipywidget",
@@ -963,7 +969,7 @@ class RadioButtonsModel(SelectableIpyWidgetComm):
     def create_view(self, cell: "Cell") -> "CommView":
         """Create a new view of the radio-buttons widget."""
         select = Select(
-            options=self.data["state"]["_options_labels"],
+            options=self.data["state"].get("_options_labels", []),
             index=self.data["state"]["index"],
             on_change=self.update_index,
             style="class:radio-buttons",
@@ -993,12 +999,12 @@ class SelectModel(SelectableIpyWidgetComm):
     def create_view(self, cell: "Cell") -> "CommView":
         """Create a new view of the select widget."""
         select = Select(
-            options=self.data["state"]["_options_labels"],
+            options=self.data["state"].get("_options_labels", []),
             index=self.data["state"]["index"],
             on_change=self.update_index,
             style="class:select,face",
             multiple=False,
-            rows=self.data["state"]["rows"],
+            rows=self.data["state"].get("rows", 5),
             disabled=Condition(lambda: self.data["state"].get("disabled", False)),
         )
         return CommView(
@@ -1023,7 +1029,7 @@ class SelectMultipleModel(IpyWidgetComm):
     def create_view(self, cell: "Cell") -> "CommView":
         """Create a new view of the multiple select widget."""
         select = Select(
-            options=self.data["state"]["_options_labels"],
+            options=self.data["state"].get("_options_labels", []),
             indices=self.data["state"]["index"],
             on_change=self.update_index,
             style="class:select,face",
@@ -1057,7 +1063,7 @@ class SelectionSliderModel(SliderIpyWidgetComm):
     @property
     def options(self) -> "List[str]":
         """Return a list of the available options."""
-        return self.data["state"]["_options_labels"]
+        return self.data["state"].get("_options_labels", [])
 
     @property
     def indices(self) -> "List[int]":
@@ -1081,7 +1087,7 @@ class SelectionRangeSliderModel(RangeSliderIpyWidgetComm):
     @property
     def options(self) -> "List[str]":
         """Return a list of the available options."""
-        return self.data["state"]["_options_labels"]
+        return self.data["state"].get("_options_labels", [])
 
     @property
     def indices(self) -> "List[int]":
@@ -1105,7 +1111,7 @@ class ToggleButtonsModel(IpyWidgetComm):
 
     def get_label(self, index: "int") -> "AnyFormattedText":
         """Returns the label for each toggle button (optionally including the icon)."""
-        label = str(self.data["state"]["_options_labels"][index])
+        label = str(self.data["state"].get("_options_labels", [])[index])
         if index < len(self.data["state"].get("icons", [])):
             if icon := self.data["state"]["icons"][index]:
                 from euporie.reference import FA_ICONS
@@ -1115,7 +1121,7 @@ class ToggleButtonsModel(IpyWidgetComm):
 
     def create_view(self, cell: "Cell") -> "CommView":
         """Create a new view of the toggle button widget."""
-        options = self.data["state"]["_options_labels"]
+        options = self.data["state"].get("_options_labels", [])
         buttons = ToggleButtons(
             options=options,
             labels=[partial(self.get_label, i) for i in range(len(options))],
@@ -1140,14 +1146,14 @@ class ToggleButtonsModel(IpyWidgetComm):
 
     def set_options(self, buttons: "ToggleButtons") -> "None":
         """Set the list of selectable options in the toggle buttons."""
-        options = self.data["state"]["_options_labels"]
+        options = self.data["state"].get("_options_labels", [])
         buttons.options = options
         # Update the button label functions in case the number of options has changed
         buttons.labels = [partial(self.get_label, i) for i in range(len(options))]
 
     def button_style(self) -> "str":
         """Convert the ipywidget button_style to a prompt_toolkit style string."""
-        if style := self.data["state"]["button_style"]:
+        if style := self.data["state"].get("button_style", ""):
             return f"class:{style}"
         return ""
 
@@ -1209,7 +1215,7 @@ class ImageModel(IpyWidgetComm):
     def create_view(self, cell: "Cell") -> "CommView":
         """Create a new view of the image widget."""
         display = Display(
-            data=self.data["state"]["value"],
+            data=self.data["state"].get("value", b""),
             format_="png",
             px=int(self.data["state"].get("width", 0)) or None,
             py=int(self.data["state"].get("height", 0)) or None,

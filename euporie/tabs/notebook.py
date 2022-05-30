@@ -5,6 +5,7 @@ from __future__ import annotations
 import copy
 import logging
 from abc import ABCMeta, abstractmethod
+from base64 import standard_b64decode
 from collections import deque
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -105,6 +106,8 @@ class Notebook(Tab, metaclass=ABCMeta):
         self.pager_visible = to_filter(False)
 
         self.undo_buffer: "Deque[Tuple[int, List[Cell]]]" = deque(maxlen=10)
+
+        self.load_widgets_from_metadata()
 
     def refresh(
         self, slice_: "Optional[slice]" = None, scroll: "bool" = True
@@ -336,6 +339,44 @@ class Notebook(Tab, metaclass=ABCMeta):
         """Leave cell edit mode."""
         self.edit_mode = False
 
+    def load_widgets_from_metadata(self) -> "None":
+        """Loads widgets from state saved in notebook metadata."""
+        for comm_id, comm_data in (
+            self.json.get("metadata", {})
+            .get("widgets", {})
+            .get("application/vnd.jupyter.widget-state+json", {})
+            .get("state")
+        ).items():
+            state = comm_data.get("state", {})
+            # Add _model_* keys to the state
+            for key, value in comm_data.items():
+                if key not in ("state", "buffers"):
+                    state[f"_{key}"] = value
+            # Flag this widget as not linked to a widget in the kernel, so its state
+            # will not be persisted on the next save
+            state["__unlinked__"] = True
+            # Decode base64 encoded buffers and add buffer paths to data
+            buffers = []
+            buffer_paths = []
+            if "buffers" in state:
+                for buffer_data in state.pop("buffers", []):
+                    buffer_paths.append(buffer_data["path"])
+                    log.debug(buffer_paths)
+                    buffers.append(standard_b64decode(buffer_data["data"]))
+            # Add this comm to the notebook's current Comm map
+            self.comms[comm_id] = open_comm(
+                nb=self,
+                content={
+                    "data": {
+                        "state": state,
+                        "buffer_paths": buffer_paths,
+                    },
+                    "comm_id": comm_id,
+                    "target_name": "jupyter.widget",
+                },
+                buffers=buffers,
+            )
+
 
 class PreviewNotebook(Notebook):
     def __init__(
@@ -448,16 +489,16 @@ class KernelNotebook(Notebook):
         log.debug("Kernel status is '%s'", self.kernel.status)
         self.kernel.info(set_kernel_info=self.set_kernel_info, set_status=log.debug)
 
-    def comm_open(self, content: "Dict", buffers: "Sequence[memoryview]") -> "None":
+    def comm_open(self, content: "Dict", buffers: "Sequence[bytes]") -> "None":
         comm_id = str(content.get("comm_id"))
         self.comms[comm_id] = open_comm(nb=self, content=content, buffers=buffers)
 
-    def comm_msg(self, content: "Dict", buffers: "List[memoryview]") -> "None":
+    def comm_msg(self, content: "Dict", buffers: "Sequence[bytes]") -> "None":
         comm_id = str(content.get("comm_id"))
         if comm := self.comms.get(comm_id):
             comm.process_data(content.get("data", {}), buffers)
 
-    def comm_close(self, content: "Dict", buffers: "List[memoryview]") -> "None":
+    def comm_close(self, content: "Dict", buffers: "Sequence[bytes]") -> "None":
         comm_id = content.get("comm_id")
         if comm_id in self.comms:
             del self.comms[comm_id]
@@ -474,6 +515,7 @@ class KernelNotebook(Notebook):
                 "state": {
                     comm_id: comm._get_embed_state()
                     for comm_id, comm in self.comms.items()
+                    if comm.data.get("state", {}).get("__unlinked__") is not True
                 },
             }
         }

@@ -1185,7 +1185,9 @@ class Dropdown(SelectableWidget):
 
     def button_text(self) -> "StyleAndTextTuples":
         """Return the text to display on the button."""
-        labels = [to_formatted_text(x) for x in self.labels]
+        labels = [to_formatted_text(x) for x in self.labels] or [
+            to_formatted_text([("", "")])
+        ]
         max_width = max(fragment_list_width(x) for x in labels)
         ft = align(
             FormattedTextAlign.LEFT,
