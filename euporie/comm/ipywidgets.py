@@ -427,6 +427,7 @@ class ButtonModel(IpyWidgetComm):
             text=self.text,
             on_click=self.click,
             style=self.button_style,
+            disabled=Condition(lambda: self.data["state"].get("disabled", False)),
         )
         return CommView(
             FocusedStyle(button),
@@ -484,6 +485,7 @@ class TextBoxIpyWidgetComm(IpyWidgetComm, metaclass=ABCMeta):
             height=self.data["state"].get("rows") or self.default_rows,
             multiline=self.multiline,
             placeholder=self.data.get("state", {}).get("placeholder"),
+            disabled=Condition(lambda: self.data["state"].get("disabled", False)),
         )
         container = FocusedStyle(
             LabelledWidget(
@@ -525,17 +527,20 @@ class IntOptionsMixin:
 
     def normalize(self, x: "Any") -> "Optional[int]":
         """Ensure the selected value is within the permitted range and is a integer."""
+        log.debug(x)
         try:
             value = int(x)
         except ValueError:
             return None
         else:
+            log.debug(value)
             if minimum := self.data.get("state", {}).get("min"):
                 if value < minimum:
                     return None
             if maximum := self.data.get("state", {}).get("max"):
                 if maximum < value:
                     return None
+            log.debug(value)
             return value
 
     @property
@@ -623,6 +628,7 @@ class SliderIpyWidgetComm(IpyWidgetComm, metaclass=ABCMeta):
             ),
             show_arrows=True,
             vertical=Condition(lambda: self.data["state"]["orientation"] == "vertical"),
+            disabled=Condition(lambda: self.data["state"].get("disabled", False)),
         )
 
         labelled = LabelledWidget(
@@ -631,7 +637,6 @@ class SliderIpyWidgetComm(IpyWidgetComm, metaclass=ABCMeta):
             style="class:ipywidget",
             vertical=Condition(lambda: self.data["state"]["orientation"] == "vertical"),
         )
-
         return CommView(
             FocusedStyle(labelled),
             setters={
@@ -651,7 +656,7 @@ class SliderIpyWidgetComm(IpyWidgetComm, metaclass=ABCMeta):
 
     def update_value(self, container: "SelectableWidget") -> "None":
         """Send a ``comm_message`` updating the value when it changes."""
-        if index := container.index is not None:
+        if (index := container.index) is not None:
             if (value := self.normalize(container.options[index])) is not None:
                 self.set_state("value", value)
 
@@ -708,10 +713,15 @@ class NumberTextBoxIpyWidgetComm(TextBoxIpyWidgetComm, metaclass=ABCMeta):
 
     def create_view(self, cell: "Cell") -> "CommView":
         """Create a new view of the numerical text-box ipywidget."""
+        disabled = disabled = Condition(
+            lambda: self.data["state"].get("disabled", False)
+        )
+
         text = Text(
             text=self.data.get("state", {}).get("value", ""),
             on_text_changed=self.update_value,
             validation=self.validation,
+            disabled=disabled,
         )
         container = FocusedStyle(
             LabelledWidget(
@@ -723,11 +733,13 @@ class NumberTextBoxIpyWidgetComm(TextBoxIpyWidgetComm, metaclass=ABCMeta):
                             "-",
                             show_borders=BorderVisibility(True, False, True, True),
                             on_click=self.decr,
+                            disabled=disabled,
                         ),
                         Button(
                             "+",
                             show_borders=BorderVisibility(True, True, True, False),
                             on_click=self.incr,
+                            disabled=disabled,
                         ),
                     ],
                 ),
@@ -844,6 +856,7 @@ class ToggleButtonModel(ToggleableIpyWidgetComm):
             on_click=self.value_changed,
             selected=self.data["state"]["value"],
             style=self.button_style,
+            disabled=Condition(lambda: self.data["state"].get("disabled", False)),
         )
         return CommView(
             FocusedStyle(
@@ -877,6 +890,7 @@ class CheckboxModel(ToggleableIpyWidgetComm):
             text=self.data["state"].get("description", ""),
             on_click=self.value_changed,
             selected=self.data["state"]["value"],
+            disabled=Condition(lambda: self.data["state"].get("disabled", False)),
         )
         return CommView(
             FocusedStyle(
@@ -926,6 +940,7 @@ class DropdownModel(SelectableIpyWidgetComm):
             index=self.data["state"]["index"],
             on_change=self.update_index,
             style="class:ipywidget",
+            disabled=Condition(lambda: self.data["state"].get("disabled", False)),
         )
         return CommView(
             FocusedStyle(
@@ -955,6 +970,7 @@ class RadioButtonsModel(SelectableIpyWidgetComm):
             prefix=("○", "◉"),
             multiple=False,
             border=None,
+            disabled=Condition(lambda: self.data["state"].get("disabled", False)),
         )
         return CommView(
             FocusedStyle(
@@ -983,6 +999,7 @@ class SelectModel(SelectableIpyWidgetComm):
             style="class:select,face",
             multiple=False,
             rows=self.data["state"]["rows"],
+            disabled=Condition(lambda: self.data["state"].get("disabled", False)),
         )
         return CommView(
             FocusedStyle(
@@ -1012,6 +1029,7 @@ class SelectMultipleModel(IpyWidgetComm):
             style="class:select,face",
             multiple=True,
             rows=self.data["state"]["rows"],
+            disabled=Condition(lambda: self.data["state"].get("disabled", False)),
         )
         return CommView(
             FocusedStyle(
@@ -1105,6 +1123,7 @@ class ToggleButtonsModel(IpyWidgetComm):
             on_change=self.update_index,
             style=self.button_style,
             multiple=False,
+            disabled=Condition(lambda: self.data["state"].get("disabled", False)),
         )
         return CommView(
             FocusedStyle(
@@ -1271,6 +1290,7 @@ class ColorPickerModel(TextBoxIpyWidgetComm):
             placeholder=self.data.get("state", {}).get("placeholder"),
             show_borders=BorderVisibility(True, True, True, False),
             input_processors=[BeforeInput(" ")],
+            disabled=Condition(lambda: self.data["state"].get("disabled", False)),
         )
 
         container = FocusedStyle(

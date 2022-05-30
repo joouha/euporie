@@ -13,10 +13,21 @@ from prompt_toolkit.buffer import ValidationState
 from prompt_toolkit.cache import SimpleCache
 from prompt_toolkit.completion.base import ConditionalCompleter
 from prompt_toolkit.completion.word_completer import WordCompleter
-from prompt_toolkit.filters import Always, Condition, FilterOrBool, has_focus, to_filter
+from prompt_toolkit.filters import (
+    Always,
+    Condition,
+    Filter,
+    FilterOrBool,
+    has_focus,
+    to_filter,
+)
 from prompt_toolkit.formatted_text.base import to_formatted_text
 from prompt_toolkit.formatted_text.utils import fragment_list_len, fragment_list_width
-from prompt_toolkit.key_binding.key_bindings import KeyBindings, merge_key_bindings
+from prompt_toolkit.key_binding.key_bindings import (
+    ConditionalKeyBindings,
+    KeyBindings,
+    merge_key_bindings,
+)
 from prompt_toolkit.layout.containers import ConditionalContainer, Float, VSplit, Window
 from prompt_toolkit.layout.controls import (
     BufferControl,
@@ -122,17 +133,86 @@ class Swatch:
 class Button:
     """A clickable button widget."""
 
-    def _get_style(self) -> str:
+    def __init__(
+        self,
+        text: "AnyFormattedText",
+        on_click: "Optional[Callable[[Button], None]]" = None,
+        on_mouse_down: "Optional[Callable[[Button], None]]" = None,
+        disabled: "FilterOrBool" = False,
+        width: "Optional[int]" = None,
+        style: "Union[str, Callable[[], str]]" = "",
+        border: "Optional[GridStyle]" = InnerEdgeGridStyle,
+        show_borders: "Optional[BorderVisibility]" = None,
+        selected: "bool" = False,
+        key_bindings: "Optional[KeyBindingsBase]" = None,
+        mouse_handler: "Optional[Callable[[MouseEvent], NotImplementedOrNone]]" = None,
+    ) -> "None":
+        """Create a new button widget instance.
+
+        Args:
+            text: The caption for the button.
+            on_click: A callback to run when the mouse is released over the button
+            on_mouse_down: A callback to run when the mouse is pressed on the button
+            disabled: A filter which when evaluated to :py:const:`True` causes the
+                widget to be disabled
+            width: The width of the button. If :py:const:`None`, the button width is
+                determined by the text
+            style: A style string or callable style to apply to the button
+            border: The grid style to use as the button's border
+            show_borders: Determines which borders should be shown
+            selected: The selection state of the button
+            key_bindings: Additional key_binding to apply to the button
+            mouse_handler: A mouse handler for the button. If unset, the default will be
+                used, which results in the button behaving like a regular click-button
+
+        """
+        self.text = text
+        self.on_mouse_down = Event(self, on_mouse_down)
+        self.on_click = Event(self, on_click)
+        self.disabled = to_filter(disabled)
+        self._width = width
+        self.style = style
+        self.selected = selected
+        if key_bindings is not None:
+            self.key_bindings: "KeyBindingsBase" = merge_key_bindings(
+                [self.get_key_bindings(), key_bindings]
+            )
+        else:
+            self.key_bindings = self.get_key_bindings()
+        self.mouse_handler = mouse_handler or self.default_mouse_handler
+        self.container = Border(
+            Window(
+                FormattedTextControl(
+                    self.get_text_fragments,
+                    key_bindings=self.key_bindings,
+                    focusable=True,
+                    show_cursor=False,
+                    style="class:face",
+                ),
+                style=self.get_style,
+                dont_extend_width=True,
+                dont_extend_height=True,
+            ),
+            border=border,
+            show_borders=show_borders,
+            style=lambda: f"{self.get_style()} class:border",
+        )
+
+    def get_style(self) -> str:
+        """Return the style for the button given its current state."""
         if callable(self.style):
             style = self.style()
         else:
             style = self.style
+        style = f"{style} class:button"
         if self.selected:
-            return f"{style} class:button,selection"
-        else:
-            return f"{style} class:button"
+            style = f"{style} class:selection"
+        if self.disabled():
+            style = f"{style} class:disabled"
+        return style
 
-    def _get_text_fragments(self) -> "StyleAndTextTuples":
+    def get_text_fragments(self) -> "StyleAndTextTuples":
+        """Return the list of formatted text fragments which define the button."""
         ft = [
             *to_formatted_text(self.text),
         ]
@@ -141,20 +221,24 @@ class Button:
         ft = [("[SetMenuPosition]", ""), *ft]
         return ft
 
-    def _get_key_bindings(self) -> "KeyBindingsBase":
+    def get_key_bindings(self) -> "KeyBindingsBase":
         """Key bindings for the Button."""
         kb = KeyBindings()
 
-        @kb.add(" ")
-        @kb.add("enter")
+        @kb.add(" ", filter=~self.disabled)
+        @kb.add("enter", filter=~self.disabled)
         def _(event: "KeyPressEvent") -> None:
             self.on_mouse_down.fire()
             self.on_click.fire()
 
         return kb
 
-    def _mouse_handler(self, mouse_event: "MouseEvent") -> "NotImplementedOrNone":
+    def default_mouse_handler(
+        self, mouse_event: "MouseEvent"
+    ) -> "NotImplementedOrNone":
         """Handle mouse events."""
+        if self.disabled():
+            return None
         if mouse_event.event_type == MouseEventType.MOUSE_DOWN:
             get_app().layout.focus(self)
             self.selected = True
@@ -170,67 +254,6 @@ class Button:
             return None
         else:
             return NotImplemented
-
-    def __init__(
-        self,
-        text: "AnyFormattedText",
-        on_click: "Optional[Callable[[Button], None]]" = None,
-        on_mouse_down: "Optional[Callable[[Button], None]]" = None,
-        width: "Optional[int]" = None,
-        style: "Union[str, Callable[[], str]]" = "",
-        border: "Optional[GridStyle]" = InnerEdgeGridStyle,
-        show_borders: "Optional[BorderVisibility]" = None,
-        selected: "bool" = False,
-        key_bindings: "Optional[KeyBindingsBase]" = None,
-        mouse_handler: "Optional[Callable[[MouseEvent], NotImplementedOrNone]]" = None,
-    ) -> "None":
-        """Create a new button widget instance.
-
-        Args:
-            text: The caption for the button.
-            on_click: A callback to run when the mouse is released over the button
-            on_mouse_down: A callback to run when the mouse is pressed on the button
-            width: The width of the button. If :py:const:`None`, the button width is
-                determined by the text
-            style: A style string or callable style to apply to the button
-            border: The grid style to use as the button's border
-            show_borders: Determines which borders should be shown
-            selected: The selection state of the button
-            key_bindings: Additional key_binding to apply to the button
-            mouse_handler: A mouse handler for the button. If unset, the default will be
-                used, which results in the button behaving like a regular click-button
-
-        """
-        self.text = text
-        self.on_mouse_down = Event(self, on_mouse_down)
-        self.on_click = Event(self, on_click)
-        self._width = width
-        self.style = style
-        self.selected = selected
-        if key_bindings is not None:
-            self.key_bindings: "KeyBindingsBase" = merge_key_bindings(
-                [self._get_key_bindings(), key_bindings]
-            )
-        else:
-            self.key_bindings = self._get_key_bindings()
-        self.mouse_handler = mouse_handler or self._mouse_handler
-        self.container = Border(
-            Window(
-                FormattedTextControl(
-                    self._get_text_fragments,
-                    key_bindings=self.key_bindings,
-                    focusable=True,
-                    show_cursor=False,
-                    style="class:face",
-                ),
-                style=self._get_style,
-                dont_extend_width=True,
-                dont_extend_height=True,
-            ),
-            border=border,
-            show_borders=show_borders,
-            style=lambda: f"{self._get_style()} class:border",
-        )
 
     @property
     def width(self) -> "int":
@@ -256,6 +279,7 @@ class ToggleableWidget(metaclass=ABCMeta):
     container: "AnyContainer"
     on_click: "Event"
     selected: "bool"
+    disabled: "Filter"
 
     def toggle(self) -> "None":
         """Toggle the selected state and trigger the "clicked" callback."""
@@ -264,6 +288,8 @@ class ToggleableWidget(metaclass=ABCMeta):
 
     def mouse_handler(self, mouse_event: "MouseEvent") -> "NotImplementedOrNone":
         """Focus on mouse down and toggle state on mouse up."""
+        if self.disabled():
+            return NotImplemented
         if mouse_event.event_type == MouseEventType.MOUSE_DOWN:
             get_app().layout.focus(self)
             return None
@@ -277,8 +303,8 @@ class ToggleableWidget(metaclass=ABCMeta):
         """Key bindings for the Toggler."""
         kb = KeyBindings()
 
-        @kb.add(" ")
-        @kb.add("enter")
+        @kb.add(" ", filter=~self.disabled)
+        @kb.add("enter", filter=~self.disabled)
         def _(event: "KeyPressEvent") -> None:
             self.toggle()
 
@@ -301,6 +327,7 @@ class ToggleButton(ToggleableWidget):
         border: "Optional[GridStyle]" = InnerEdgeGridStyle,
         show_borders: "Optional[BorderVisibility]" = None,
         selected: "bool" = False,
+        disabled: "FilterOrBool" = False,
     ) -> None:
         """Create a new toggle-button instance.
 
@@ -312,9 +339,12 @@ class ToggleButton(ToggleableWidget):
             border: The grid style to use as the button's border
             show_borders: Which borders to display
             selected: The initial selection state of the button
+            disabled: A filter which when evaluated to :py:const:`True` causes the
+                widget to be disabled
         """
         self.on_click = Event(self, on_click)
         self.style = style
+        self.disabled = to_filter(disabled)
 
         self.button = Button(
             text=text,
@@ -326,6 +356,7 @@ class ToggleButton(ToggleableWidget):
             key_bindings=self._get_key_bindings(),
             mouse_handler=self.mouse_handler,
             on_click=lambda button: self.on_click.fire(),
+            disabled=self.disabled,
         )
         self.container = self.button
 
@@ -366,6 +397,7 @@ class Checkbox(ToggleableWidget):
         prefix: "Tuple[str, str]" = ("☐", "☑"),
         style: "str" = "",
         selected: "bool" = False,
+        disabled: "FilterOrBool" = False,
     ) -> None:
         """Create a new checkbox widget instance.
 
@@ -376,6 +408,8 @@ class Checkbox(ToggleableWidget):
                 unchecked and checked state respectively
             style: Additional style string to apply to the widget
             selected: The initial selection state of the widget
+            disabled: A filter which when evaluated to :py:const:`True` causes the
+                widget to be disabled
 
         """
         self.text = to_formatted_text(text)
@@ -383,6 +417,7 @@ class Checkbox(ToggleableWidget):
         self.prefix = prefix
         self.style = style
         self.selected = selected
+        self.disabled = to_filter(disabled)
         self.container = Window(
             FormattedTextControl(
                 self._get_text_fragments,
@@ -390,7 +425,8 @@ class Checkbox(ToggleableWidget):
                 focusable=True,
                 show_cursor=False,
             ),
-            style=f"class:checkbox {style}",
+            style=lambda: f"class:checkbox {style}"
+            f"{' class:disabled' if self.disabled() else ''}",
             dont_extend_width=True,
             dont_extend_height=True,
         )
@@ -463,6 +499,7 @@ class Text:
         accept_handler: "Optional[BufferAcceptHandler]" = None,
         placeholder: "Optional[str]" = None,
         input_processors: "Optional[Sequence[Processor]]" = None,
+        disabled: "FilterOrBool" = False,
     ) -> "None":
         """Create a new text widget instance.
 
@@ -484,9 +521,12 @@ class Text:
                 :kbd:`Enter` key is pressed on a non-multiline input)
             placeholder: Text to display when nothing has been entered
             input_processors: Additional input processors to apply to the text-area
+            disabled: A filter which when evaluated to :py:const:`True` causes the
+                widget to be disabled
         """
         self.style = style
         self.options = options or []
+        self.disabled = to_filter(disabled)
 
         self.placeholder = placeholder
 
@@ -497,6 +537,7 @@ class Text:
             width=width,
             focusable=True,
             focus_on_click=True,
+            read_only=self.disabled,
             style=f"class:text,text-area {style}",
             validator=Validator.from_callable(validation) if validation else None,
             accept_handler=accept_handler,
@@ -827,6 +868,7 @@ class SelectableWidget(metaclass=ABCMeta):
         multiple: "FilterOrBool" = False,
         on_change: "Optional[Callable[[SelectableWidget], None]]" = None,
         style: "Union[str, Callable[[], str]]" = "",
+        disabled: "FilterOrBool" = False,
     ):
         """Create a new selectable widget instance.
 
@@ -838,6 +880,8 @@ class SelectableWidget(metaclass=ABCMeta):
             multiple: Determines whether multiple values can be selected
             on_change: Callback which is run when the selection changes
             style: Additional style to apply to the widget
+            disabled: A filter which when evaluated to :py:const:`True` causes the
+                widget to be disabled
         """
         self.options = options
         self.labels: "List[AnyFormattedText]" = list(
@@ -850,6 +894,7 @@ class SelectableWidget(metaclass=ABCMeta):
         self.multiple = to_filter(multiple)
         self.on_change = Event(self, on_change)
         self._style = style
+        self.disabled = to_filter(disabled)
 
         self.hovered: "Optional[int]" = index
         self.container = self.load_container()
@@ -864,16 +909,19 @@ class SelectableWidget(metaclass=ABCMeta):
     def style(self) -> "str":
         """Returns the widget's style."""
         if callable(self._style):
-            return self._style()
+            style = self._style()
         else:
-            return self._style
+            style = self._style
+        if self.disabled():
+            style = f"{style} class:disabled"
+        return style
 
     @style.setter
     def style(self, value: "Union[str, Callable[[], str]]") -> "None":
         """Sets the widget's style."""
         self._style = value
 
-    def key_bindings(self) -> "KeyBindings":
+    def key_bindings(self) -> "KeyBindingsBase":
         """Key bindings for the selectable widget."""
         kb = KeyBindings()
 
@@ -915,7 +963,7 @@ class SelectableWidget(metaclass=ABCMeta):
         def _(event: "KeyPressEvent") -> None:
             self.hovered = len(self.options) - 1
 
-        return kb
+        return ConditionalKeyBindings(kb, filter=~self.disabled)
 
     def toggle_item(self, index: "int") -> "None":
         """Toggle the selection status of the option at a given index."""
@@ -948,6 +996,8 @@ class SelectableWidget(metaclass=ABCMeta):
         self, i: "int", mouse_event: "MouseEvent"
     ) -> "NotImplementedOrNone":
         """Handle mouse events."""
+        if self.disabled():
+            return None
         if mouse_event.event_type == MouseEventType.MOUSE_MOVE:
             self.hovered = i
         elif mouse_event.event_type == MouseEventType.MOUSE_DOWN:
@@ -979,6 +1029,7 @@ class Select(SelectableWidget):
         prefix: "Tuple[str, str]" = ("", ""),
         border: "Optional[GridStyle]" = InnerEdgeGridStyle,
         show_borders: "Optional[BorderVisibility]" = None,
+        disabled: "FilterOrBool" = False,
     ) -> "None":
         """Create a new select widget instance.
 
@@ -994,6 +1045,8 @@ class Select(SelectableWidget):
             prefix: A prefix to add to each row
             border: The grid style to use for the widget's border
             show_borders: Which borders to display
+            disabled: A filter which when evaluated to :py:const:`True` causes the
+                widget to be disabled
 
         """
         self.rows = rows
@@ -1008,6 +1061,7 @@ class Select(SelectableWidget):
             multiple=multiple,
             on_change=on_change,
             style=style,
+            disabled=disabled,
         )
 
     def text_fragments(self) -> "StyleAndTextTuples":
@@ -1051,7 +1105,8 @@ class Select(SelectableWidget):
                 height=lambda: self.rows,
                 dont_extend_width=True,
                 dont_extend_height=True,
-                style=f"class:select {self.style}",
+                style=f"class:select {self.style}"
+                f"{' class:disabled' if self.disabled() else ''}",
                 right_margins=[ScrollbarMargin()],
             ),
             border=self.border,
@@ -1073,6 +1128,7 @@ class Dropdown(SelectableWidget):
         on_change: "Optional[Callable[[SelectableWidget], None]]" = None,
         style: "Union[str, Callable[[], str]]" = "",
         arrow: "str" = "⯆",
+        disabled: "FilterOrBool" = False,
     ) -> "None":
         """Create a new drop-down widget instance.
 
@@ -1085,6 +1141,8 @@ class Dropdown(SelectableWidget):
             on_change: Callback which is run when the selection changes
             style: Additional style to apply to the widget
             arrow: The character to use for the dropdown arrow
+            disabled: A filter which when evaluated to :py:const:`True` causes the
+                widget to be disabled
         """
         self.menu_visible: "bool" = False
         self.arrow: "str" = arrow
@@ -1096,6 +1154,7 @@ class Dropdown(SelectableWidget):
             multiple=multiple,
             on_change=on_change,
             style=style,
+            disabled=disabled,
         )
 
         self.menu = Float(
@@ -1120,6 +1179,7 @@ class Dropdown(SelectableWidget):
             on_mouse_down=self.toggle_menu,
             style=f"class:dropdown {self.style}",
             key_bindings=self.key_bindings(),
+            disabled=self.disabled,
         )
         return self.button
 
@@ -1167,12 +1227,14 @@ class Dropdown(SelectableWidget):
 
     def mouse_handler(self, i: "int", mouse_event: "MouseEvent") -> "None":
         """Handle mouse events."""
+        if self.disabled():
+            return None
         super().mouse_handler(i, mouse_event)
         if mouse_event.event_type == MouseEventType.MOUSE_UP:
             self.menu_visible = False
             self.button.selected = False
 
-    def key_bindings(self) -> "KeyBindings":
+    def key_bindings(self) -> "KeyBindingsBase":
         """Return key-bindings for the drop-down widget."""
         menu_visible = Condition(lambda: self.menu_visible)
         kb = KeyBindings()
@@ -1217,7 +1279,7 @@ class Dropdown(SelectableWidget):
         def _(event: "KeyPressEvent") -> None:
             self.index = len(self.options) - 1
 
-        return kb
+        return ConditionalKeyBindings(kb, filter=~self.disabled)
 
 
 class ToggleButtons(SelectableWidget):
@@ -1233,6 +1295,7 @@ class ToggleButtons(SelectableWidget):
         on_change: "Optional[Callable[[SelectableWidget], None]]" = None,
         style: "Union[str, Callable[[], str]]" = "",
         border: "GridStyle" = InnerEdgeGridStyle,
+        disabled: "FilterOrBool" = False,
     ) -> "None":
         """Create a new select widget instance.
 
@@ -1245,8 +1308,11 @@ class ToggleButtons(SelectableWidget):
             on_change: Callback which is run when the selection changes
             style: Additional style to apply to the widget
             border: The grid style to use for the widget's border
+            disabled: A filter which when evaluated to :py:const:`True` causes the
+                widget to be disabled
         """
         self.border = border
+        self.disabled = to_filter(disabled)
         super().__init__(
             options=options,
             labels=labels,
@@ -1255,6 +1321,7 @@ class ToggleButtons(SelectableWidget):
             multiple=multiple,
             on_change=on_change,
             style=style,
+            disabled=self.disabled,
         )
 
     def load_container(self) -> "AnyContainer":
@@ -1277,6 +1344,7 @@ class ToggleButtons(SelectableWidget):
                 border=self.border,
                 show_borders=show_borders,
                 style=self.style,
+                disabled=self.disabled,
             )
             for i, (label, selected, show_borders) in enumerate(
                 zip(self.labels, self.mask, show_borders_values)
@@ -1328,7 +1396,6 @@ class SliderControl(UIControl):
             selected_track_char: The character to use for the selected section of the
                 slider track
             style: A style string to apply to the slider
-
         """
         self.slider = slider
 
@@ -1644,6 +1711,8 @@ class SliderControl(UIControl):
 
     def mouse_handler(self, mouse_event: "MouseEvent") -> "NotImplementedOrNone":
         """Handle mouse events given the slider's orientation."""
+        if self.slider.disabled():
+            return None
         if self.slider.vertical():
             loc = mouse_event.position.y
         else:
@@ -1672,6 +1741,7 @@ class Slider(SelectableWidget):
         show_arrows: "FilterOrBool" = True,
         arrows: "Tuple[AnyFormattedText, AnyFormattedText]" = ("-", "+"),
         show_readout: "FilterOrBool" = True,
+        disabled: "FilterOrBool" = False,
     ) -> "None":
         """Create a new slider widget instance.
 
@@ -1693,12 +1763,15 @@ class Slider(SelectableWidget):
             arrows: Strings to use for the increment and decrement buttons
             show_readout: If true, a read-out text box will be shown displaying the
                 slider's current value
+            disabled: A filter which when evaluated to :py:const:`True` causes the
+                widget to be disabled
 
         """
         self.vertical = to_filter(vertical)
         self.arrows = arrows
         self.show_arrows = to_filter(show_arrows)
         self.show_readout = to_filter(show_readout)
+        self.disabled = to_filter(disabled)
 
         super().__init__(
             options=options,
@@ -1708,6 +1781,7 @@ class Slider(SelectableWidget):
             multiple=multiple,
             on_change=on_change,
             style=style,
+            disabled=self.disabled,
         )
         self.on_change += self.value_changed
 
@@ -1723,6 +1797,7 @@ class Slider(SelectableWidget):
             width=self.readout_len(),
             validation=lambda x: self.validate_readout(x) is not None,
             accept_handler=self.accept_handler,
+            disabled=self.disabled,
         )
         return ConditionalSplit(
             self.vertical,

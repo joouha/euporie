@@ -89,6 +89,7 @@ IPYWIDGET_STYLE = [
     ("ipywidget button border bottom", "fg:#606060"),
     ("ipywidget button border left", "fg:#ffffff"),
     ("ipywidget button border top", "fg:#ffffff"),
+    ("ipywidget button face disabled", "fg:#888888"),
     ("ipywidget selection border right", "fg:#ffffff"),
     ("ipywidget selection border bottom", "fg:#ffffff"),
     ("ipywidget selection border left", "fg:#606060"),
@@ -121,9 +122,12 @@ IPYWIDGET_STYLE = [
     ("ipywidget dropdown dropdown.menu hovered", "fg:#ffffff bg:ansiblue"),
     ("ipywidget checkbox selection", "fg:default"),
     ("ipywidget checkbox prefix selection", "fg:ansiblue"),
+    ("ipywidget checkbox disabled", "fg:#888888"),
+    ("ipywidget checkbox prefix selection disabled", "fg:#888888"),
     ("ipywidget valid prefix", "fg:ansired"),
     ("ipywidget valid prefix selection", "fg:ansigreen"),
     ("ipywidget radio-buttons selection", "fg:default"),
+    ("ipywidget radio-buttons selection disabled", "fg:#888888"),
     ("ipywidget radio-buttons prefix selection", "fg:ansiblue"),
     ("ipywidget select face", "fg:black bg:white"),
     ("ipywidget select face selection", "fg:white bg:ansiblue"),
@@ -133,6 +137,8 @@ IPYWIDGET_STYLE = [
     ("ipywidget select border right", "fg:#E9E7E3"),
     ("ipywidget select border bottom", "fg:#E9E7E3"),
     ("ipywidget select border left", "fg:#606060"),
+    ("ipywidget select disabled", "fg:#888888"),
+    ("ipywidget select selection disabled", "fg:#888888"),
     ("ipywidget inset border right", "fg:#E9E7E3"),
     ("ipywidget inset border top", "fg:#606060"),
     ("ipywidget inset border bottom", "fg:#E9E7E3"),
@@ -304,10 +310,6 @@ def build_style(
     have_term_colors: "bool" = True,
 ) -> "Style":
     """Create an application style based on the given color palette."""
-    log.debug(cp.hl)
-    log.debug(cp.hl.base_hex)
-    log.debug(cp.hl.base)
-    log.debug(cp.hl.more(0))
     style_dict = {
         # The default style is merged at this point so full styles can be
         # overridden. For example, this allows us to switch off the underline
