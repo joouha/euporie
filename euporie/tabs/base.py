@@ -6,6 +6,7 @@ import logging
 from abc import ABCMeta
 from typing import TYPE_CHECKING
 
+from prompt_toolkit.layout.containers import Window
 from prompt_toolkit.layout.dimension import Dimension, to_dimension
 
 from euporie.app.current import get_base_app as get_app
@@ -30,6 +31,7 @@ class Tab(metaclass=ABCMeta):
         """Called when the tab is created."""
         self.app = get_app()
         self.app.container_statuses[self] = self.statusbar_fields
+        self.container = Window()
 
     def statusbar_fields(
         self,
