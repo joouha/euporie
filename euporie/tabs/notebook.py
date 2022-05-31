@@ -135,10 +135,10 @@ class Notebook(Tab, metaclass=ABCMeta):
             cell_id = get_cell_id(cell_json)
             if cell_id in self._rendered_cells:
                 cells[cell_id] = self._rendered_cells[cell_id]
-                cells[cell_id].index = i
             else:
                 # Pytype doesn't like this..
                 cells[cell_id] = self.cell_type(i, cell_json, self)  # type: ignore
+            cells[cell_id].index = i
         # Clean up graphic floats from deleted cells
         for cell in set(self._rendered_cells.values()) - set(cells.values()):
             cell.remove_output_graphic_floats()
@@ -345,7 +345,7 @@ class Notebook(Tab, metaclass=ABCMeta):
             self.json.get("metadata", {})
             .get("widgets", {})
             .get("application/vnd.jupyter.widget-state+json", {})
-            .get("state")
+            .get("state", {})
         ).items():
             state = comm_data.get("state", {})
             # Add _model_* keys to the state
