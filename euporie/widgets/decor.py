@@ -129,13 +129,13 @@ class Pattern(Container):
         pass
 
     def preferred_width(self, max_available_width: "int") -> "Dimension":
-        """Return an empty diemension (expand to available width)."""
+        """Return an empty dimension (expand to available width)."""
         return Dimension()
 
     def preferred_height(
         self, width: "int", max_available_height: "int"
     ) -> "Dimension":
-        """Return an empty diemension (expand to available height)."""
+        """Return an empty dimension (expand to available height)."""
         return Dimension()
 
     def write_to_screen(

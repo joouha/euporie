@@ -17,12 +17,14 @@ Added
 Changed
 =======
 
+- Make clicking to select a cell pass the click event to the cell
 - Update widget styling
 
 Fixed
 =====
 
 - Fix issue with hyperlinks taking over the screen
+- Fix bug which prevented mouse scrolling in some circumstances
 
 ----
 

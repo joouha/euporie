@@ -1004,6 +1004,24 @@ class SelectableWidget(metaclass=ABCMeta):
             get_app().layout.focus(self)
         elif mouse_event.event_type == MouseEventType.MOUSE_UP:
             self.toggle_item(i)
+        elif mouse_event.event_type == MouseEventType.SCROLL_UP:
+            if self.multiple():
+                self.hovered = max(
+                    0, min((self.hovered or 0) - 1, len(self.options) - 1)
+                )
+            else:
+                self.toggle_item(
+                    max(0, min((self.index or 0) - 1, len(self.options) - 1))
+                )
+        elif mouse_event.event_type == MouseEventType.SCROLL_DOWN:
+            if self.multiple():
+                self.hovered = max(
+                    0, min((self.hovered or 0) + 1, len(self.options) - 1)
+                )
+            else:
+                self.toggle_item(
+                    max(0, min((self.index or 0) + 1, len(self.options) - 1))
+                )
         else:
             return NotImplemented
         return None
@@ -1071,7 +1089,10 @@ class Select(SelectableWidget):
         for i, label in enumerate(self.labels):
             label = to_formatted_text(label)
             label = align(FormattedTextAlign.LEFT, label, width=max_width)
-            cursor = "[SetCursorPosition]" if self.mask[i] else ""
+            if self.multiple():
+                cursor = "[SetCursorPosition]" if i == self.hovered else ""
+            else:
+                cursor = "[SetCursorPosition]" if self.mask[i] else ""
             style = "class:selection" if self.mask[i] else ""
             if self.hovered == i and self.multiple() and self.has_focus():
                 style += " class:hovered"

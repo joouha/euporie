@@ -146,12 +146,11 @@ class ChildRenderInfo:
         ) -> "Callable[[MouseEvent], object]":
             if handler not in mouse_handler_wrappers:
 
-                def wrapped_mouse_handler(mouse_event: "MouseEvent") -> "None":
-                    if mouse_event.event_type == MouseEventType.SCROLL_DOWN:
-                        self.parent.scroll(-1)
-                    elif mouse_event.event_type == MouseEventType.SCROLL_UP:
-                        self.parent.scroll(1)
-                    elif handler:
+                def wrapped_mouse_handler(
+                    mouse_event: "MouseEvent",
+                ) -> "NotImplementedOrNone":
+                    response: "NotImplementedOrNone" = NotImplemented
+                    if handler:
                         new_event = MouseEvent(
                             position=Point(
                                 x=mouse_event.position.x - left,
@@ -161,7 +160,17 @@ class ChildRenderInfo:
                             button=mouse_event.button,
                             modifiers=mouse_event.modifiers,
                         )
-                        handler(new_event)
+                        response = handler(new_event)
+                    # This would work if windows returned NotImplemented when scrolled
+                    # to the start or end
+                    # if response is NotImplemented:
+                    if mouse_event.event_type == MouseEventType.SCROLL_DOWN:
+                        self.parent.scroll(-1)
+                        response = None
+                    elif mouse_event.event_type == MouseEventType.SCROLL_UP:
+                        self.parent.scroll(1)
+                        response = None
+                    return response
 
                 mouse_handler_wrappers[handler] = wrapped_mouse_handler
             return mouse_handler_wrappers[handler]
@@ -225,7 +234,7 @@ class ScrollingContainer(Container):
             {}
         )  # Holds child container wrappers
         self.visible_indicies: "set[int]" = {0}
-        self.index_positions: "dict[int, int]" = {}
+        self.index_positions: "dict[int, Optional[int]]" = {}
 
         self.last_write_position = WritePosition(0, 0, 0, 0)
 
@@ -357,14 +366,20 @@ class ScrollingContainer(Container):
         """
         self.refresh_children = True
         if n > 0:
-            if min(self.visible_indicies) == 0 and self.index_positions[0] + n > 0:
+            if (
+                min(self.visible_indicies) == 0
+                and self.index_positions[0] is not None
+                and self.index_positions[0] + n > 0
+            ):
                 return
         elif n < 0:
             bottom_index = len(self.children) - 1
             if bottom_index in self.visible_indicies:
                 bottom_child = self.get_child_render_info(bottom_index)
+                bottom_pos = self.index_positions[bottom_index]
                 if (
-                    self.index_positions[bottom_index] + bottom_child.height + n
+                    bottom_pos is not None
+                    and bottom_pos + bottom_child.height + n
                     < self.last_write_position.height
                 ):
                     return
@@ -424,6 +439,9 @@ class ScrollingContainer(Container):
             # TODO - improve performance
             render_info.refresh = True
             self._selected_child_render_infos.append(render_info)
+            # Set this to low to avoid scrolling problems
+            #
+            self.index_positions[index] = None
 
         # Refresh all children if the width has changed
         if (
@@ -621,17 +639,19 @@ class ScrollingContainer(Container):
             elif index == self._selected_slice.start:
                 new_top = self.selected_child_position
             elif index > self._selected_slice.start:
-                last_index = max(self.index_positions)
+                last_index = max(
+                    k for k, v in self.index_positions.items() if v is not None
+                )
                 new_top = max(
                     min(
                         self.last_write_position.height,
-                        self.index_positions[last_index]
+                        (self.index_positions[last_index] or 0)
                         + self.get_child_render_info(last_index).height,
                     ),
                     0,
                 )
 
-        if new_top < 0:
+        if new_top is None or new_top < 0:
             self.selected_child_position = 0
         elif new_top > self.last_write_position.height - child_render_info.height:
             self.selected_child_position = max(

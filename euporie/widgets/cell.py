@@ -9,15 +9,13 @@ from typing import TYPE_CHECKING, NamedTuple
 
 import nbformat  # type: ignore
 from prompt_toolkit.filters import Condition, has_focus, is_done, is_searching
-from prompt_toolkit.formatted_text import to_formatted_text
 from prompt_toolkit.layout.containers import (
     ConditionalContainer,
     Container,
-    Float,
-    FloatContainer,
     HSplit,
     VSplit,
     Window,
+    to_container,
 )
 from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.layout.margins import ConditionalMargin
@@ -47,24 +45,18 @@ from euporie.widgets.cell_outputs import CellOutputArea
 
 
 if TYPE_CHECKING:
-    from typing import Any, Callable, Dict, List, Literal, Optional, Tuple, Union
+    from typing import Any, Callable, Dict, List, Literal, Optional, Tuple
 
     from prompt_toolkit.buffer import Buffer
-    from prompt_toolkit.formatted_text.base import AnyFormattedText, StyleAndTextTuples
+    from prompt_toolkit.key_binding.key_bindings import NotImplementedOrNone
+    from prompt_toolkit.layout.containers import AnyContainer
+    from prompt_toolkit.layout.dimension import Dimension
+    from prompt_toolkit.layout.mouse_handlers import MouseHandlers
+    from prompt_toolkit.layout.screen import Screen, WritePosition
 
     from euporie.tabs.notebook import EditNotebook, Notebook
-
-    # from euporie.widgets.output.control import OutputControl
     from euporie.widgets.page import ChildRenderInfo
 
-__all__ = [
-    "get_cell_id",
-    "Cell",
-    "InteractiveCell",
-    "ClickArea",
-    "CellStdinTextArea",
-    "CellInputTextArea",
-]
 
 log = logging.getLogger(__name__)
 
@@ -191,58 +183,96 @@ class CellStdinTextArea(TextArea):
         return True
 
 
-class ClickArea:
-    """Any empty widget which focuses `target` when clicked.
-
-    Designed to be used as an overlay for clickable widgets in a FloatContainer.
-    """
-
-    def _get_text_fragments(self) -> "StyleAndTextTuples":
-        def handler(mouse_event: MouseEvent) -> "None":
-
-            if mouse_event.event_type == MouseEventType.MOUSE_UP:
-                # Use a set intersection
-                if mouse_event.modifiers & {MouseModifier.SHIFT, MouseModifier.CONTROL}:
-                    self.target.select(extend=True)
-                else:
-                    self.target.select()
-                self.target.focus()
-
-        ft = to_formatted_text(
-            self.text,
-            self.style() if callable(self.style) else self.style,
-        )
-        return [(style, text, handler) for style, text, *_ in ft]
+class ClickToFocus(Container):
+    """Selects a cell when clicked, passing through mouse events."""
 
     def __init__(
         self,
-        target: "Cell",
-        text: "AnyFormattedText",
-        style: "Union[str, Callable[[], str]]",
-    ):
-        """Initiate a click area overlay element, which focuses another element when clicked.
+        cell: "Cell",
+        body: "AnyContainer",
+    ) -> "None":
+        """Create a new instance of the widget.
 
         Args:
-            target: The element to focus on click.
-            text: The formatted text to display in the click overlay
-            style: The style to apply to the text
-
+            cell: The cell to select on click
+            body: The container to act on
         """
-        self.text = text
-        self.target = target
-        self.style = style
-        self.window = Window(
-            FormattedTextControl(
-                self._get_text_fragments,
-                focusable=False,
-            ),
-            dont_extend_width=False,
-            dont_extend_height=False,
+        self.cell = cell
+        self.body = body
+
+    def reset(self) -> "None":
+        """Reset the wrapped container."""
+        to_container(self.body).reset()
+
+    def preferred_width(self, max_available_width: "int") -> "Dimension":
+        """Return the wrapped container's preferred width."""
+        return to_container(self.body).preferred_width(max_available_width)
+
+    def preferred_height(
+        self, width: "int", max_available_height: "int"
+    ) -> "Dimension":
+        """Return the wrapped container's preferred height."""
+        return to_container(self.body).preferred_height(width, max_available_height)
+
+    def write_to_screen(
+        self,
+        screen: "Screen",
+        mouse_handlers: "MouseHandlers",
+        write_position: "WritePosition",
+        parent_style: "str",
+        erase_bg: "bool",
+        z_index: "Optional[int]",
+    ) -> "None":
+        """Draw the wrapped container with the additional style."""
+        output = to_container(self.body).write_to_screen(
+            screen,
+            mouse_handlers,
+            write_position,
+            parent_style,
+            erase_bg,
+            z_index,
         )
 
-    def __pt_container__(self) -> "Container":
-        """Return the `ClickArea`'s window with a blank `FormattedTextControl`."""
-        return self.window
+        mouse_handler_wrappers = {}
+
+        def _wrap_mouse_handler(
+            handler: "Callable",
+        ) -> "Callable[[MouseEvent], object]":
+            if handler not in mouse_handler_wrappers:
+
+                def wrapped_mouse_handler(
+                    mouse_event: "MouseEvent",
+                ) -> "NotImplementedOrNone":
+
+                    if mouse_event.event_type == MouseEventType.MOUSE_DOWN:
+                        # Use a set intersection
+                        if mouse_event.modifiers & {
+                            MouseModifier.SHIFT,
+                            MouseModifier.CONTROL,
+                        }:
+                            self.cell.select(extend=True)
+                        else:
+                            self.cell.select()
+                        self.cell.focus()
+                        get_app().invalidate()
+                    return handler(mouse_event)
+
+                mouse_handler_wrappers[handler] = wrapped_mouse_handler
+            return mouse_handler_wrappers[handler]
+
+        # Copy screen contents
+        wp = write_position
+        for y in range(wp.ypos, wp.ypos + wp.height):
+            for x in range(wp.xpos, wp.xpos + wp.width):
+                mouse_handlers.mouse_handlers[y][x] = _wrap_mouse_handler(
+                    mouse_handlers.mouse_handlers[y][x]
+                )
+
+        return output
+
+    def get_children(self) -> "List[Container]":
+        """Return the list of child :class:`.Container` objects."""
+        return [to_container(self.body)]
 
 
 class Cell:
@@ -462,27 +492,11 @@ class Cell:
             height=1,
         )
 
-        self.container = FloatContainer(
-            content=HSplit(
+        self.container = ClickToFocus(
+            cell=self,
+            body=HSplit(
                 [top_border, input_row, middle_line, output_row, bottom_border],
             ),
-            floats=[
-                Float(
-                    transparent=True,
-                    left=0,
-                    right=0,
-                    top=0,
-                    bottom=0,
-                    content=ConditionalContainer(
-                        ClickArea(
-                            self,
-                            self.border_char("TOP_LEFT"),
-                            style=self.border_style,
-                        ),
-                        filter=~self.is_focused,
-                    ),
-                ),
-            ],
         )
 
     def focus(self, position: "Optional[int]" = None) -> "None":
@@ -812,6 +826,7 @@ class InteractiveCell(Cell):
 
         """
         to_focus = None
+        log.debug(self.nb.edit_mode)
         if self.nb.edit_mode:
             # Select just this cell when editing
             # self.nb.select(self.index)
@@ -830,6 +845,8 @@ class InteractiveCell(Cell):
         # We force focus here, bypassing the layout's checks, as the control we want to
         # focus might be not be in the current layout yet.
         get_app().layout._stack.append(to_focus)
+        # Scroll the currently selected slice into view
+        self.nb.refresh(scroll=True)
 
     async def edit_in_editor(self) -> "None":
         """Edit the cell in $EDITOR."""
