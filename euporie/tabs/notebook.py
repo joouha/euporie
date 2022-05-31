@@ -362,7 +362,6 @@ class Notebook(Tab, metaclass=ABCMeta):
             if "buffers" in state:
                 for buffer_data in state.pop("buffers", []):
                     buffer_paths.append(buffer_data["path"])
-                    log.debug(buffer_paths)
                     buffers.append(standard_b64decode(buffer_data["data"]))
             # Add this comm to the notebook's current Comm map
             self.comms[comm_id] = open_comm(
