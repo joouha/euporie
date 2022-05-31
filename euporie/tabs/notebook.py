@@ -107,6 +107,7 @@ class Notebook(Tab, metaclass=ABCMeta):
 
         self.undo_buffer: "Deque[Tuple[int, List[Cell]]]" = deque(maxlen=10)
 
+        self.kernel: "Optional[NotebookKernel]" = None
         self.load_widgets_from_metadata()
 
     def refresh(

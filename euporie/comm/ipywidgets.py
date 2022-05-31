@@ -43,7 +43,7 @@ if TYPE_CHECKING:
     from prompt_toolkit.formatted_text.base import AnyFormattedText
     from prompt_toolkit.layout.containers import AnyContainer, _Split
 
-    from euporie.tabs.notebook import KernelNotebook
+    from euporie.tabs.notebook import Notebook
     from euporie.widgets.cell import Cell
     from euporie.widgets.inputs import SelectableWidget, ToggleableWidget
     from euporie.widgets.layout import StackedSplit
@@ -124,7 +124,7 @@ class IpyWidgetComm(Comm, metaclass=ABCMeta):
 
     def __init__(
         self,
-        nb: "KernelNotebook",
+        nb: "Notebook",
         comm_id: "str",
         data: "dict",
         buffers: "Sequence[bytes]",
@@ -143,9 +143,11 @@ class IpyWidgetComm(Comm, metaclass=ABCMeta):
         """Send a ``comm_msg`` to the kernel with local state changes."""
         if self.sync:
             self.data.setdefault("state", {})[key] = value
-            self.nb.kernel.kc_comm(
-                comm_id=self.comm_id, data={"method": "update", "state": {key: value}}
-            )
+            if self.nb.kernel:
+                self.nb.kernel.kc_comm(
+                    comm_id=self.comm_id,
+                    data={"method": "update", "state": {key: value}},
+                )
             self.update_views({key: value})
 
     def process_data(self, data: "Dict", buffers: "Sequence[bytes]") -> "None":
@@ -213,7 +215,7 @@ class OutputModel(IpyWidgetComm):
 
     def __init__(
         self,
-        nb: "KernelNotebook",
+        nb: "Notebook",
         comm_id: "str",
         data: "dict",
         buffers: "Sequence[bytes]",
@@ -255,7 +257,7 @@ class OutputModel(IpyWidgetComm):
 
     def process_data(self, data: "Dict", buffers: "Sequence[bytes]") -> "None":
         """Modify the callbacks of a given message to add outputs to this ipywidget."""
-        if data.get("method") == "update":
+        if data.get("method") == "update" and self.nb.kernel:
             if (msg_id := data.get("state", {}).get("msg_id")) is not None:
                 # Replace the kernel callbacks of the given message ID
                 if msg_id:
@@ -447,10 +449,11 @@ class ButtonModel(IpyWidgetComm):
 
     def click(self, button: "Button") -> "None":
         """Send a ``comm_msg`` describing a click event."""
-        self.nb.kernel.kc_comm(
-            comm_id=self.comm_id,
-            data={"method": "custom", "content": {"event": "click"}},
-        )
+        if self.nb.kernel:
+            self.nb.kernel.kc_comm(
+                comm_id=self.comm_id,
+                data={"method": "custom", "content": {"event": "click"}},
+            )
 
 
 class TextBoxIpyWidgetComm(IpyWidgetComm, metaclass=ABCMeta):
@@ -1348,7 +1351,7 @@ class ColorPickerModel(TextBoxIpyWidgetComm):
 
 
 def open_comm_ipywidgets(
-    nb: "KernelNotebook",
+    nb: "Notebook",
     comm_id: "str",
     data: "Dict",
     buffers: "Sequence[bytes]",

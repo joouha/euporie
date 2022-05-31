@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 
     from prompt_toolkit.layout.containers import AnyContainer
 
-    from euporie.tabs.notebook import KernelNotebook
+    from euporie.tabs.notebook import Notebook
     from euporie.widgets.cell import Cell
 
 log = logging.getLogger(__name__)
@@ -60,7 +60,7 @@ class Comm(metaclass=ABCMeta):
 
     def __init__(
         self,
-        nb: "KernelNotebook",
+        nb: "Notebook",
         comm_id: "str",
         data: "dict",
         buffers: "Sequence[bytes]",
