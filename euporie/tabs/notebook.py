@@ -195,6 +195,7 @@ class Notebook(Tab, metaclass=ABCMeta):
                         slice_.step,
                     )
                 )
+            self.dirty = True
 
     def select(
         self,
