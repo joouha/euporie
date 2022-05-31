@@ -10,7 +10,7 @@ from collections import deque
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-import nbformat  # type: ignore
+import nbformat
 from prompt_toolkit.auto_suggest import DummyAutoSuggest
 from prompt_toolkit.clipboard.base import ClipboardData
 from prompt_toolkit.completion import DummyCompleter

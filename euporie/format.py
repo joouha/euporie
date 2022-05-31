@@ -11,7 +11,7 @@ log = logging.getLogger(__name__)
 def format_black(text: "str") -> "str":
     """Format a code string using :py:mod:`black`."""
     try:
-        import black  # type: ignore
+        import black
     except ModuleNotFoundError:
         pass
     else:
@@ -25,7 +25,7 @@ def format_black(text: "str") -> "str":
 def format_isort(text: "str") -> "str":
     """Format a code string using :py:mod:`isort`."""
     try:
-        import isort  # type: ignore
+        import isort
     except ModuleNotFoundError:
         pass
     else:
@@ -36,7 +36,7 @@ def format_isort(text: "str") -> "str":
 def format_ssort(text: "str") -> "str":
     """Format a code string using :py:mod:`ssort`."""
     try:
-        import ssort  # type: ignore
+        import ssort
     except ModuleNotFoundError:
         pass
     else:

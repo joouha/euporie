@@ -9,8 +9,8 @@ from prompt_toolkit.formatted_text.utils import (
     split_lines,
 )
 from prompt_toolkit.utils import get_cwidth
-from pygments.lexers import get_lexer_by_name  # type: ignore
-from pygments.util import ClassNotFound  # type: ignore
+from pygments.lexers import get_lexer_by_name
+from pygments.util import ClassNotFound
 
 from euporie.border import GridStyle, Padding, Thin
 

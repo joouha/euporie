@@ -2,7 +2,7 @@
 
 from typing import TYPE_CHECKING
 
-from aenum import extend_enum  # type: ignore
+from aenum import extend_enum
 from prompt_toolkit.enums import EditingMode
 from prompt_toolkit.key_binding import ConditionalKeyBindings, merge_key_bindings
 

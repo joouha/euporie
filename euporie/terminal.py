@@ -9,7 +9,7 @@ import re
 from functools import lru_cache
 from typing import TYPE_CHECKING, cast
 
-from aenum import extend_enum  # type: ignore
+from aenum import extend_enum
 from prompt_toolkit.input import vt100_parser
 from prompt_toolkit.keys import Keys
 from prompt_toolkit.output import ColorDepth

@@ -11,14 +11,14 @@ from euporie.convert.util import have_modules
 if TYPE_CHECKING:
     from typing import Optional
 
-    from PIL import Image  # type: ignore
+    from PIL import Image
 
 log = logging.getLogger(__name__)
 
 
 def set_background(image: "Image", bg_color: "Optional[str]" = None) -> "bytes":
     """Removes the alpha channel from an image and set the background colour."""
-    from PIL import Image  # type: ignore
+    from PIL import Image
 
     if image.mode in ("RGBA", "LA") or (
         image.mode == "P" and "transparency" in image.info
@@ -48,7 +48,7 @@ def png_to_pil_py(
     """Convert PNG to a pillow image using :py:mod:`PIL`."""
     import io
 
-    from PIL import Image  # type: ignore
+    from PIL import Image
 
     try:
         image = Image.open(io.BytesIO(data))

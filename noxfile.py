@@ -5,8 +5,8 @@ from __future__ import annotations
 from pathlib import Path
 from textwrap import dedent
 
-import nox  # type: ignore
-from nox_poetry import Session, session  # type: ignore
+import nox
+from nox_poetry import Session, session
 
 package = "euporie"
 python_versions = ["3.10", "3.9", "3.8"]

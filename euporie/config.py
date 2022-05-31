@@ -11,9 +11,9 @@ from collections import ChainMap
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-import jsonschema  # type: ignore
-from appdirs import user_config_dir  # type: ignore
-from pygments.styles import STYLE_MAP as pygments_styles  # type: ignore
+import jsonschema
+from appdirs import user_config_dir
+from pygments.styles import STYLE_MAP as pygments_styles
 
 from euporie import __app_name__, __copyright__, __strapline__, __version__
 from euporie.enums import TabMode

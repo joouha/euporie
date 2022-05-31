@@ -44,7 +44,7 @@ from prompt_toolkit.styles import (
     merge_styles,
     style_from_pygments_cls,
 )
-from pygments.styles import get_style_by_name  # type: ignore
+from pygments.styles import get_style_by_name
 
 from euporie.config import config
 from euporie.enums import TabMode

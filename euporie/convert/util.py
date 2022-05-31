@@ -12,7 +12,7 @@ from importlib import import_module
 from shutil import which
 from typing import TYPE_CHECKING
 
-import imagesize  # type: ignore
+import imagesize
 from prompt_toolkit.filters import Condition, to_filter
 
 from euporie.app.current import get_edit_app as get_app

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, cast
 
-from aenum import extend_enum  # type: ignore
+from aenum import extend_enum
 from prompt_toolkit.formatted_text import to_formatted_text
 from prompt_toolkit.input.ansi_escape_sequences import ANSI_SEQUENCES
 from prompt_toolkit.key_binding import KeyBindings

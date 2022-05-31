@@ -73,6 +73,6 @@ def html_to_markdown_py_mtable(
     bg: "Optional[str]" = None,
 ) -> "str":
     """Convert HTML tables to markdown tables using :py:mod:`mtable`."""
-    from mtable import MarkupTable  # type: ignore
+    from mtable import MarkupTable
 
     return "\n\n".join([table.to_md() for table in MarkupTable.from_html(data)])

@@ -5,7 +5,7 @@ from asyncio import get_event_loop
 from typing import TYPE_CHECKING
 
 try:
-    import asyncssh  # type: ignore
+    import asyncssh
 except ModuleNotFoundError as err:
     raise ModuleNotFoundError(
         "Euporie hub requires the the `asyncssh` python package\n"

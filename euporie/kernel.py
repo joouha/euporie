@@ -10,10 +10,10 @@ from collections import defaultdict
 from subprocess import DEVNULL, STDOUT  # noqa S404 - Security implications considered
 from typing import TYPE_CHECKING, TypedDict
 
-import nbformat  # type: ignore
+import nbformat
 from jupyter_client import AsyncKernelManager, KernelManager
-from jupyter_client.kernelspec import NoSuchKernel  # type: ignore
-from jupyter_core.paths import jupyter_path  # type: ignore
+from jupyter_client.kernelspec import NoSuchKernel
+from jupyter_core.paths import jupyter_path
 
 if TYPE_CHECKING:
     from typing import Any, Callable, Coroutine, Dict, Optional, Tuple, Union

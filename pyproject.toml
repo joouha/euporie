@@ -101,3 +101,15 @@ build-backend = "poetry.core.masonry.api"
 pretty = true
 show_error_context = true
 show_error_codes = true
+
+[[tool.mypy.overrides]]
+module = [
+    "aenum", "pygments.*", "jsonschema", "appdirs", "pyperclip", "asyncssh",
+    "mtable",
+    "imagesize", "PIL","timg", "img2unicode", "teimpy", "numpy",
+    "flatlatex", "sympy.*", "pylatexenc.latex2text", "IPython.lib.latextools",
+    "cairosvg",
+    "ssort",
+    "poetry_publish.publish",
+]
+ignore_missing_imports = true

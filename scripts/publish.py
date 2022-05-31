@@ -2,7 +2,7 @@
 """Publishes a new releases of euporie."""
 from pathlib import Path
 
-from poetry_publish.publish import poetry_publish  # type: ignore
+from poetry_publish.publish import poetry_publish
 
 import euporie
 

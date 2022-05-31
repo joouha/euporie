@@ -7,7 +7,7 @@ import logging
 from functools import partial
 from typing import TYPE_CHECKING, NamedTuple
 
-import nbformat  # type: ignore
+import nbformat
 from prompt_toolkit.filters import Condition, has_focus, is_done, is_searching
 from prompt_toolkit.layout.containers import (
     ConditionalContainer,
@@ -30,7 +30,7 @@ from prompt_toolkit.layout.processors import (
 from prompt_toolkit.lexers import DynamicLexer, PygmentsLexer, SimpleLexer
 from prompt_toolkit.mouse_events import MouseEvent, MouseEventType, MouseModifier
 from prompt_toolkit.widgets import Frame, TextArea
-from pygments.lexers import get_lexer_by_name  # type: ignore
+from pygments.lexers import get_lexer_by_name
 
 from euporie.app.current import get_edit_app as get_app
 from euporie.border import Invisible, Thick, Thin
@@ -40,9 +40,6 @@ from euporie.format import format_code
 from euporie.margins import NumberedDiffMargin
 from euporie.suggest import AppendLineAutoSuggestion, ConditionalAutoSuggestAsync
 from euporie.widgets.cell_outputs import CellOutputArea
-
-# from euporie.widgets.output.container import CellOutput
-
 
 if TYPE_CHECKING:
     from typing import Any, Callable, Dict, List, Literal, Optional, Tuple

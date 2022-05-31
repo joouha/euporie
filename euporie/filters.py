@@ -53,7 +53,7 @@ __all__ = [
 def have_black() -> "bool":
     """Determine if black is available."""
     try:
-        import black.const  # type: ignore  # noqa F401
+        import black.const  # noqa F401
     except ModuleNotFoundError:
         return False
     else:
@@ -65,7 +65,7 @@ def have_black() -> "bool":
 def have_isort() -> "bool":
     """Determine if isort is available."""
     try:
-        import isort  # type: ignore  # noqa F401
+        import isort  # noqa F401
     except ModuleNotFoundError:
         return False
     else:
@@ -77,7 +77,7 @@ def have_isort() -> "bool":
 def have_ssort() -> "bool":
     """Determine if ssort is available."""
     try:
-        import ssort  # type: ignore  # noqa F401
+        import ssort  # noqa F401
     except ModuleNotFoundError:
         return False
     else:

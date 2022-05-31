@@ -13,7 +13,7 @@ from euporie.convert.util import call_subproc, commands_exist, have_modules
 if TYPE_CHECKING:
     from typing import Any, Optional
 
-    from PIL import Image  # type: ignore
+    from PIL import Image
 
 
 @register(
@@ -66,7 +66,7 @@ def pil_to_sixel_py_timg(
     bg: "Optional[str]" = None,
 ) -> "str":
     """Convert a pillow image to sixels :py:mod:`timg`."""
-    import timg  # type: ignore
+    import timg
 
     return timg.SixelMethod(data).to_string()
 
@@ -84,7 +84,7 @@ def pil_to_sixel_py_teimpy(
     bg: "Optional[str]" = None,
 ) -> "str":
     """Convert a pillow image to sixels :py:mod:`teimpy`."""
-    import numpy as np  # type: ignore
-    import teimpy  # type: ignore
+    import numpy as np
+    import teimpy
 
     return teimpy.get_drawer(teimpy.Mode.SIXEL).draw(np.asarray(data))

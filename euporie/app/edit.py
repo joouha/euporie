@@ -29,7 +29,7 @@ from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.layout.dimension import Dimension
 from prompt_toolkit.layout.menus import CompletionsMenu
 from prompt_toolkit.widgets import Dialog, Label, SearchToolbar
-from pyperclip import determine_clipboard  # type: ignore
+from pyperclip import determine_clipboard
 
 from euporie import __app_name__, __copyright__, __logo__, __strapline__, __version__
 from euporie.app.base import EuporieApp

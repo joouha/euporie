@@ -16,7 +16,7 @@ from euporie.convert.util import call_subproc, commands_exist, have_modules
 if TYPE_CHECKING:
     from typing import Any, Optional
 
-    from PIL import Image  # type: ignore
+    from PIL import Image
     from rich.console import RenderableType
 
 log = logging.getLogger(__name__)
@@ -175,7 +175,7 @@ def latex_to_ansi_py_flatlatex(
     bg: "Optional[str]" = None,
 ) -> "str":
     """Convert LaTeX to ANSI using :py:mod:`flatlatex`."""
-    import flatlatex  # type: ignore
+    import flatlatex
 
     return flatlatex.converter().convert(data.strip().strip("$").strip())
 
@@ -193,7 +193,7 @@ def latex_to_ansi_py_pylatexenc(
     bg: "Optional[str]" = None,
 ) -> "str":
     """Convert LaTeX to ANSI using :py:mod:`pylatexenc`."""
-    from pylatexenc.latex2text import LatexNodes2Text  # type: ignore
+    from pylatexenc.latex2text import LatexNodes2Text
 
     return LatexNodes2Text().latex_to_text(data.strip().strip("$").strip())
 
@@ -211,9 +211,9 @@ def latex_to_ansi_py_sympy(
     bg: "Optional[str]" = None,
 ) -> "str":
     """Convert LaTeX to ANSI using :py:mod:`sympy`."""
-    from sympy import pretty  # type: ignore
-    from sympy.parsing.latex import parse_latex  # type: ignore
-    from sympy.parsing.latex.errors import LaTeXParsingError  # type: ignore
+    from sympy import pretty
+    from sympy.parsing.latex import parse_latex
+    from sympy.parsing.latex.errors import LaTeXParsingError
 
     from euporie.log import stdout_to_log
 
@@ -238,7 +238,7 @@ def pil_to_ansi_py_timg(
     bg: "Optional[str]" = None,
 ) -> "str":
     """Convert a PIL image to ANSI text using :py:mod:`timg`."""
-    import timg  # type: ignore
+    import timg
 
     w, h = data.size
     if cols is not None:
@@ -265,7 +265,7 @@ def pil_to_ansi_py_img2unicode(
     """Convert a PIL image to ANSI text using :py:mod:`img2unicode`."""
     import io
 
-    from img2unicode import FastQuadDualOptimizer, Renderer  # type: ignore
+    from img2unicode import FastQuadDualOptimizer, Renderer
 
     output = io.StringIO()
     Renderer(FastQuadDualOptimizer(), max_w=cols, max_h=rows).render_terminal(
