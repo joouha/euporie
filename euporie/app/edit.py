@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING, cast
 
@@ -40,9 +41,9 @@ from euporie.tabs.notebook import EditNotebook
 from euporie.widgets.decor import FocusedStyle, Pattern
 from euporie.widgets.formatted_text_area import FormattedTextArea
 from euporie.widgets.inputs import Button, Text
+from euporie.widgets.layout import TabBarControl, TabBarTab
 from euporie.widgets.menu import MenuContainer, MenuItem
 from euporie.widgets.palette import CommandPalette
-from euporie.widgets.tab_bar import TabBar
 
 if TYPE_CHECKING:
     from asyncio import AbstractEventLoop
@@ -157,14 +158,6 @@ class EditApp(EuporieApp):
             output.pop()
         return output
 
-    @property
-    def visible_tabs(self) -> "List[Tab]":
-        """Returns a list of currently visible tabs."""
-        if TabMode(config.tab_mode) == TabMode.STACK:
-            return [self.tabs[self._tab_idx]]
-        else:
-            return self.tabs
-
     def tab_container(self) -> "AnyContainer":
         """Returns a container with all opened tabs.
 
@@ -175,18 +168,20 @@ class EditApp(EuporieApp):
         if self.tabs:
             if TabMode(config.tab_mode) == TabMode.TILE_HORIZONTALLY:
                 return HSplit(
-                    children=self.visible_tabs,
+                    children=self.tabs,
                     padding=1,
                     padding_style="class:tab-padding",
                     padding_char="─",
                 )
-            else:
+            elif TabMode(config.tab_mode) == TabMode.TILE_VERTICALLY:
                 return VSplit(
-                    children=self.visible_tabs,
+                    children=self.tabs,
                     padding=1,
                     padding_style="class:tab-padding",
                     padding_char="│",
                 )
+            else:
+                return DynamicContainer(lambda: self.tabs[self._tab_idx])
         else:
             return Pattern(config.background_character)
 
@@ -215,8 +210,6 @@ class EditApp(EuporieApp):
             ),
             filter=have_tabs,
         )
-
-        tabs = DynamicContainer(self.tab_container)
 
         self.search_bar = SearchToolbar(
             text_if_not_searching="",
@@ -252,15 +245,32 @@ class EditApp(EuporieApp):
             filter=Condition(lambda: config.show_status_bar) & ~is_searching,
         )
 
+        self.tab_bar_control = TabBarControl(
+            tabs=self.tab_bar_tabs,
+            active=lambda: self._tab_idx,
+            closeable=True,
+        )
         tab_bar = ConditionalContainer(
-            TabBar(self),
+            Window(
+                self.tab_bar_control,
+                height=2,
+                style="class:app-tab-bar",
+            ),
             filter=Condition(
                 lambda: (len(self.tabs) > 1 or config.always_show_tab_bar)
                 and TabMode(config.tab_mode) == TabMode.STACK
             ),
         )
 
-        body = HSplit([tab_bar, tabs, self.search_bar, status_bar], style="class:body")
+        body = HSplit(
+            [
+                tab_bar,
+                DynamicContainer(self.tab_container),
+                self.search_bar,
+                status_bar,
+            ],
+            style="class:body",
+        )
 
         self.command_palette = CommandPalette()
 
@@ -283,6 +293,17 @@ class EditApp(EuporieApp):
             right=[self.title_bar],
         )
         return cast("FloatContainer", to_container(self.menu_container))
+
+    def tab_bar_tabs(self) -> "List[TabBarTab]":
+        """Return a list of the current tabs for the tab-bar."""
+        return [
+            TabBarTab(
+                title=partial(lambda x: x.title, tab),
+                on_activate=partial(setattr, self, "tab_idx", i),
+                on_close=partial(self.close_tab, tab),
+            )
+            for i, tab in enumerate(self.tabs)
+        ]
 
     def dialog(
         self,

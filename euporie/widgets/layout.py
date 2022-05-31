@@ -32,7 +32,7 @@ from euporie.border import OuterEdgeGridStyle
 from euporie.widgets.decor import Border, BorderVisibility
 
 if TYPE_CHECKING:
-    from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Type, Union
+    from typing import Any, Callable, Dict, List, Optional, Sequence, Type, Union
 
     from prompt_toolkit.filters import FilterOrBool
     from prompt_toolkit.formatted_text.base import AnyFormattedText, StyleAndTextTuples
@@ -117,7 +117,7 @@ class ReferencedSplit:
         return self.container
 
 
-class Tab(NamedTuple):
+class TabBarTab(NamedTuple):
     """A named tuple represting a tab and it's callbacks."""
 
     title: "AnyFormattedText"
@@ -126,7 +126,7 @@ class Tab(NamedTuple):
     on_close: "Optional[Callable]" = None
 
 
-class TabControl(UIControl):
+class TabBarControl(UIControl):
     """A control which shows a tab bar."""
 
     char_bottom = "▁"
@@ -137,8 +137,8 @@ class TabControl(UIControl):
 
     def __init__(
         self,
-        tabs: "Tuple[Tab, ...]",
-        active: "int",
+        tabs: "Union[Sequence[TabBarTab], Callable[[], Sequence[TabBarTab]]]",
+        active: "Union[int, Callable[[], int]]",
         spacing: "int" = 1,
         closeable: "bool" = False,
     ) -> "None":
@@ -152,15 +152,39 @@ class TabControl(UIControl):
             closeable: Whether to show close buttons the the tabs
 
         """
-        self.tabs = tabs
+        self._tabs = tabs
         self.spacing = spacing
         self.closeable = closeable
-        self.active = active
+        self._active = active
 
         self.mouse_handlers: "Dict[int, Optional[Callable[..., Any]]]" = {}
 
         self._title_cache: SimpleCache = SimpleCache(maxsize=1)
         self._content_cache: SimpleCache = SimpleCache(maxsize=50)
+
+    @property
+    def tabs(self) -> "List[TabBarTab]":
+        """Return the tab-bar's tabs."""
+        if callable(self._tabs):
+            return list(self._tabs())
+        else:
+            return list(self._tabs)
+
+    @tabs.setter
+    def tabs(self, tabs: "Sequence[TabBarTab]") -> "None":
+        self._tabs = tabs
+
+    @property
+    def active(self) -> "int":
+        """Return the index of the active tab."""
+        if callable(self._active):
+            return self._active()
+        else:
+            return self._active
+
+    @active.setter
+    def active(self, active: "Union[int, Callable[[], int]]") -> "None":
+        self._active = active
 
     def preferred_width(self, max_available_width: "int") -> "Optional[int]":
         """Return the preferred width of the tab-bar control, the maximum available."""
@@ -192,7 +216,7 @@ class TabControl(UIControl):
                 show_cursor=False,
             )
 
-        key = (hash(self.tabs), width, self.closeable, self.active)
+        key = (hash(tuple(self.tabs)), width, self.closeable, self.active)
         return self._content_cache.get(key, get_content)
 
     def render(self, width: "int") -> "List[StyleAndTextTuples]":
@@ -237,7 +261,7 @@ class TabControl(UIControl):
                 self.mouse_handlers[i] = tab.on_activate
                 i += 1
                 tab_line += [
-                    ("", " "),
+                    (f"{style} class:tab", " "),
                     (f"{style} class:tab,close", self.char_close),
                 ]
                 self.mouse_handlers[i] = tab.on_close
@@ -276,20 +300,21 @@ class TabControl(UIControl):
                     handler()
                     return None
 
+        tabs = self.tabs
         if mouse_event.event_type == MouseEventType.SCROLL_UP:
             index = max(self.active - 1, 0)
             if index != self.active:
-                if callable(deactivate := self.tabs[self.active].on_deactivate):
+                if callable(deactivate := tabs[self.active].on_deactivate):
                     deactivate()
-                if callable(activate := self.tabs[index].on_activate):
+                if callable(activate := tabs[index].on_activate):
                     activate()
                 return None
         elif mouse_event.event_type == MouseEventType.SCROLL_DOWN:
-            index = max(self.active + 1, len(self.tabs))
+            index = min(self.active + 1, len(tabs) - 1)
             if index != self.active:
-                if callable(deactivate := self.tabs[self.active].on_deactivate):
+                if callable(deactivate := tabs[self.active].on_deactivate):
                     deactivate()
-                if callable(activate := self.tabs[index].on_activate):
+                if callable(activate := tabs[index].on_activate):
                     activate()
                 return None
         return NotImplemented
@@ -404,10 +429,14 @@ class TabbedSplit(StackedSplit):
         Returns:
             The widget's container
         """
-        self.control = TabControl(self.load_tabs(), active=self.active or 0)
+        self.control = TabBarControl(self.load_tabs(), active=self.active or 0)
         return HSplit(
             [
-                Window(self.control, style=partial(self.add_style, "class:tab-bar")),
+                Window(
+                    self.control,
+                    style=partial(self.add_style, "class:tab-bar"),
+                    height=2,
+                ),
                 Border(
                     Box(
                         DynamicContainer(self.active_child),
@@ -429,15 +458,15 @@ class TabbedSplit(StackedSplit):
         if self.active is not None:
             self.control.active = self.active
 
-    def load_tabs(self) -> "Tuple[Tab, ...]":
+    def load_tabs(self) -> "List[TabBarTab]":
         """Return a list of tabs for the current children."""
-        return tuple(
-            Tab(
+        return [
+            TabBarTab(
                 title=title,
                 on_activate=partial(setattr, self, "active", i),
             )
             for i, title in enumerate(self.titles)
-        )
+        ]
 
 
 class AccordionSplit(StackedSplit):
