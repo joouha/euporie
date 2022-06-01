@@ -4,7 +4,7 @@ from random import randint
 from typing import TYPE_CHECKING, Callable, Dict, List, Optional
 from warnings import warn
 
-from prompt_toolkit.application.current import get_app, get_app_session
+from prompt_toolkit.application.current import get_app_session
 from prompt_toolkit.formatted_text.base import StyleAndTextTuples, to_formatted_text
 from prompt_toolkit.formatted_text.utils import to_plain_text
 
@@ -259,11 +259,10 @@ def a(
     href = token.attrs.get("href")
     if href:
         link_id = randint(0, 999999)  # noqa S311
-        style = f"class:link-{get_app().render_counter}"
         return [
-            (f"[ZeroWidthEscape] {style}", f"\x1b]8;id={link_id};{href}\x1b\\"),
+            ("[ZeroWidthEscape]", f"\x1b]8;id={link_id};{href}\x1b\\"),
             *ft,
-            (f"[ZeroWidthEscape] {style}", "\x1b]8;;\x1b\\"),
+            ("[ZeroWidthEscape]", "\x1b]8;;\x1b\\"),
         ]
     else:
         return ft
