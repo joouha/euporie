@@ -723,7 +723,6 @@ class NotebookKernel:
 
         msg_id = self.kc.inspect(code, cursor_pos=cursor_pos, detail_level=detail_level)
         self.msg_id_callbacks[msg_id].update({"done": process_inspect_reply})
-        log.debug(self.msg_id_callbacks[msg_id])
 
         try:
             await asyncio.wait_for(event.wait(), timeout)

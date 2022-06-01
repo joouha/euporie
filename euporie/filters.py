@@ -31,7 +31,7 @@ __all__ = [
     "notebook_has_focus",
     "cell_has_focus",
     "deleted_cells",
-    "cell_output_has_focus",
+    "display_has_focus",
     "cell_is_code",
     "cell_is_markdown",
     "micro_mode",
@@ -152,7 +152,7 @@ def pager_has_focus() -> "bool":
     app = get_app()
     notebook = app.notebook
     if notebook is not None:
-        return app.layout.has_focus(notebook.pager_content)
+        return app.layout.has_focus(notebook.pager)
     return False
 
 
@@ -181,11 +181,11 @@ def deleted_cells() -> "bool":
 
 
 @Condition
-def cell_output_has_focus() -> "bool":
+def display_has_focus() -> "bool":
     """Determine if there is a currently focused cell."""
-    from euporie.widgets.output.control import OutputControl
+    from euporie.widgets.display import DisplayControl
 
-    return isinstance(get_app().layout.current_control, OutputControl)
+    return isinstance(get_app().layout.current_control, DisplayControl)
 
 
 @Condition

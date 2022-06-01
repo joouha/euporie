@@ -875,7 +875,7 @@ class InteractiveCell(Cell):
                 response=response,
             )
             if prev_state != new_state:
-                self.nb.pager_state = new_state
+                self.nb.set_pager_state(new_state)
                 get_app().invalidate()
 
         if self.nb.pager_visible() and self.nb.pager_state is not None:

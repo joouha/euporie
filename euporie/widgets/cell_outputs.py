@@ -25,7 +25,7 @@ class CellOutputElement(metaclass=ABCMeta):
     """Base class for the various types of cell outputs (display data or widgets)."""
 
     def __init__(
-        self, mime: "str", data: "str", metadata: "Dict", cell: "Cell"
+        self, mime: "str", data: "str", metadata: "Dict", cell: "Optional[Cell]"
     ) -> "None":
         """Create a new instances of the output element.
 
@@ -56,7 +56,11 @@ class CellOutputDataElement(CellOutputElement):
     """A cell output element which display data."""
 
     def __init__(
-        self, mime: "str", data: "Dict[str, Any]", metadata: "Dict", cell: "Cell"
+        self,
+        mime: "str",
+        data: "Dict[str, Any]",
+        metadata: "Dict",
+        cell: "Optional[Cell]",
     ) -> "None":
         """Create a new data output element instance.
 
@@ -69,7 +73,9 @@ class CellOutputDataElement(CellOutputElement):
         self.cell = cell
 
         # Get foreground and background colors
-        fg_color = self.cell.nb.app.color_palette.fg.base_hex
+        fg_color = None
+        if cell is not None:
+            fg_color = cell.nb.app.color_palette.fg.base_hex
         bg_color = {"light": "#FFFFFF", "dark": "#000000"}.get(
             str(metadata.get("needs_background"))
         )
@@ -115,7 +121,11 @@ class CellOutputWidgetElement(CellOutputElement):
     """A cell output element which displays ipywidgets."""
 
     def __init__(
-        self, mime: "str", data: "Dict[str, Any]", metadata: "Dict", cell: "Cell"
+        self,
+        mime: "str",
+        data: "Dict[str, Any]",
+        metadata: "Dict",
+        cell: "Optional[Cell]",
     ) -> "None":
         """Create a new widget output element instance.
 
@@ -132,10 +142,9 @@ class CellOutputWidgetElement(CellOutputElement):
         self.cell = cell
         self.comm_id = str(data.get("model_id"))
 
-        comm = self.cell.nb.comms.get(self.comm_id)
-        if comm:
+        if cell is not None and (comm := cell.nb.comms.get(self.comm_id)):
             self.container = Box(
-                comm.new_view(self.cell),
+                comm.new_view(cell),
                 padding_left=0,
                 style="class:ipywidget",
             )
@@ -190,7 +199,7 @@ class CellOutput:
     TODO - allow the visible mime-type to be rotated.
     """
 
-    def __init__(self, json: "Dict[str, Any]", cell: "Cell") -> "None":
+    def __init__(self, json: "Dict[str, Any]", cell: "Optional[Cell]") -> "None":
         """Creates a new cell output instance.
 
         Args:
@@ -271,7 +280,7 @@ class CellOutput:
                 "text/x-python-traceback": "\n".join(self.json.get("traceback", ""))
             }
         else:
-            data = self.json.get("data", {})
+            data = self.json.get("data", {"text/plain": ""})
         return dict(sorted(data.items(), key=_calculate_mime_rank))
 
     def scroll_left(self) -> "None":
@@ -290,7 +299,7 @@ class CellOutput:
 class CellOutputArea:
     """An area below a cell where one or more cell outputs can be shown."""
 
-    def __init__(self, json: "List[Dict[str, Any]]", cell: "Cell") -> "None":
+    def __init__(self, json: "List[Dict[str, Any]]", cell: "Optional[Cell]") -> "None":
         """Creates a new cell output area instance.
 
         Args:

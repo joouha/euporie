@@ -37,8 +37,8 @@ from euporie.tabs.base import Tab
 from euporie.widgets.cell import Cell, InteractiveCell, get_cell_id
 from euporie.widgets.decor import FocusedStyle, Line, Pattern
 from euporie.widgets.inputs import Select
-from euporie.widgets.output.container import CellOutput
 from euporie.widgets.page import PrintingContainer, ScrollbarControl, ScrollingContainer
+from euporie.widgets.pager import Pager
 
 if TYPE_CHECKING:
     from collections.abc import MutableSequence
@@ -577,7 +577,7 @@ class EditNotebook(KernelNotebook):
             lambda: self.pager_state is not None
             and bool(self.pager_state.response.get("found"))
         )
-        self.pager_content = CellOutput({})
+        self.pager = Pager({}, None)
 
         self.cell_type = InteractiveCell
         self.page = ScrollingContainer(
@@ -652,7 +652,7 @@ class EditNotebook(KernelNotebook):
                                 style="class:pager.border",
                             ),
                             Box(
-                                DynamicContainer(self.get_pager_content),
+                                DynamicContainer(lambda: self.pager),
                                 padding=0,
                                 padding_left=1,
                             ),
@@ -666,26 +666,15 @@ class EditNotebook(KernelNotebook):
             ],
         )
 
-    def get_pager_content(self) -> "CellOutput":
-        """Returns the rendered pager content."""
-        if (
-            self.pager_state is not None
-            and self.pager_content.json is not self.pager_state.response
-        ):
-            log.debug(self.pager_state)
-            self.pager_content = CellOutput(
-                self.pager_state.response,
-                show_scrollbar=True,
-                focusable=True,
-                focus_on_click=True,
-                wrap_lines=True,
-                style="class:pager",
-            )
-        return self.pager_content
+    def set_pager_state(self, new_state: "Optional[PagerState]") -> "None":
+        """Updates the pager content."""
+        self.pager_state = new_state
+        if new_state is not None:
+            self.pager.json = new_state.response
 
     def focus_pager(self) -> "None":
         """Focuses the pager."""
-        self.app.layout.focus(self.pager_content)
+        self.app.layout.focus(self.pager)
 
     def hide_pager(self) -> "None":
         """Closes the pager."""
