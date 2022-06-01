@@ -592,7 +592,7 @@ class FloatLogOptionsMixin(FloatOptionsMixin):
         base = Decimal(str(self.data["state"].get("base", 10)))
         start = Decimal(str(self.data["state"].get("min", 0)))
         step = Decimal(str(self.data["state"].get("step", 1)))
-        stop = Decimal(str(self.data["state"].get("max") + step))
+        stop = Decimal(str(self.data["state"].get("max"))) + step
         return [base ** (start + step * i) for i in range(int((stop - start) / step))]
 
 
