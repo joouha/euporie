@@ -26,7 +26,6 @@ prompt-toolkit = "^3.0.27"
 nbformat = "^5"
 jupyter-client = "^7.1"
 appdirs = "^1.4"
-jsonschema = "^4.4"
 pyperclip = "^1.8"
 aenum = "^3.1"
 flatlatex = "~0.15"
@@ -47,8 +46,9 @@ sympy = {version = "^1.9", optional = true}
 antlr4-python3-runtime = {version = "^4.9", optional = true}
 img2unicode = {version = "^0.1a8", optional = true}
 Pygments = "^2.11.2"
-asyncssh = {version = "^2.10.1", extras = ["hub"]}
+asyncssh = {version = "^2.10.1", optional = true}
 typing-extensions = "^4.2.0"
+fastjsonschema = "^2.15.3"
 
 [tool.poetry.extras]
 all = ["black", "isort", "ssort", "CairoSVG", "asyncssh"]
@@ -104,7 +104,7 @@ show_error_codes = true
 
 [[tool.mypy.overrides]]
 module = [
-    "aenum", "pygments.*", "jsonschema", "appdirs", "pyperclip", "asyncssh",
+    "aenum", "pygments.*", "fastjsonschema", "appdirs", "pyperclip", "asyncssh",
     "mtable",
     "imagesize", "PIL","timg", "img2unicode", "teimpy", "numpy",
     "flatlatex", "sympy.*", "pylatexenc.latex2text", "IPython.lib.latextools",

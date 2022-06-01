@@ -376,3 +376,49 @@ class stdout_to_log:
             for line in self.out.readlines():
                 self.log.debug(str(line).strip())
         self.out.close()
+
+
+def default_logs() -> "None":
+    """Default logging configuration to be used before euporie's config is loaded."""
+    logging.config.dictConfig(
+        {
+            "version": 1,
+            "disable_existing_loggers": False,
+            "formatters": {
+                "file_format": {
+                    "format": "{asctime} {levelname:<7} [{name}.{funcName}:{lineno}] {message}",
+                    "style": "{",
+                    "datefmt": "%Y-%m-%d %H:%M:%S",
+                },
+                "stdout_format": {
+                    "()": "euporie.log.StdoutFormatter",
+                },
+                "log_tab_format": {
+                    "()": "euporie.log.LogTabFormatter",
+                },
+            },
+            "handlers": {
+                "stdout": {
+                    "level": "INFO",
+                    "class": "euporie.log.FormattedTextHandler",
+                    "formatter": "stdout_format",
+                    "stream": sys.stdout,
+                },
+                "log_tab": {
+                    "level": "INFO",
+                    "class": "euporie.log.QueueHandler",
+                    "formatter": "log_tab_format",
+                    "queue": LOG_QUEUE,
+                },
+            },
+            "loggers": {
+                "euporie": {
+                    "level": "INFO",
+                    "handlers": ["log_tab", "stdout"],
+                    "propagate": False,
+                },
+            },
+            # Log everything to the internal logger
+            "root": {"handlers": ["log_tab"]},
+        }
+    )  # type: ignore

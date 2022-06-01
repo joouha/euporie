@@ -11,7 +11,7 @@ from collections import ChainMap
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-import jsonschema
+import fastjsonschema
 from appdirs import user_config_dir
 from pygments.styles import STYLE_MAP as pygments_styles
 
@@ -464,10 +464,8 @@ CONFIG_PARAMS: "Dict[str, Dict]" = {
         "schema_": {
             "type": "array",
             "items": {
-                "file": {
-                    "description": "File path",
-                    "type": "string",
-                },
+                "description": "File path",
+                "type": "string",
             },
             "default": [],
         },
@@ -654,10 +652,8 @@ CONFIG_PARAMS: "Dict[str, Dict]" = {
         "schema_": {
             "type": "array",
             "items": {
-                "file": {
-                    "description": "SSH host key file path",
-                    "type": "string",
-                },
+                "description": "SSH host key file path",
+                "type": "string",
             },
         },
         "description_": """
@@ -674,10 +670,8 @@ CONFIG_PARAMS: "Dict[str, Dict]" = {
         "schema_": {
             "type": "array",
             "items": {
-                "file": {
-                    "description": "Path to file containing authorized public keys",
-                    "type": "string",
-                },
+                "description": "Path to file containing authorized public keys",
+                "type": "string",
             },
         },
         "description_": """
@@ -868,8 +862,8 @@ class Config:
                 # Convert to json and back to attain json types
                 json_data = json.loads(_json_encoder.encode({name: value}))
                 try:
-                    jsonschema.validate(instance=json_data, schema=CONFIG_SCHEMA)
-                except jsonschema.ValidationError as error:
+                    fastjsonschema.validate(CONFIG_SCHEMA, json_data)
+                except fastjsonschema.JsonSchemaValueException as error:
                     log.warning(f"Error in command line parameter `{name}`: {error}")
                 else:
                     self.args[name] = value
@@ -904,8 +898,8 @@ class Config:
                 else:
                     json_data = json.loads(_json_encoder.encode({name: value}))
                     try:
-                        jsonschema.validate(instance=json_data, schema=CONFIG_SCHEMA)
-                    except jsonschema.ValidationError as error:
+                        fastjsonschema.validate(CONFIG_SCHEMA, json_data)
+                    except fastjsonschema.JsonSchemaValueException as error:
                         log.error(f"Error in environment variable: `{env}`\n{error}")
                     else:
                         self.env[name] = value
@@ -926,11 +920,10 @@ class Config:
                     self.valid_user = False
                 else:
                     try:
-                        jsonschema.validate(instance=json_data, schema=CONFIG_SCHEMA)
-                    except jsonschema.ValidationError as error:
+                        fastjsonschema.validate(CONFIG_SCHEMA, json_data)
+                    except fastjsonschema.JsonSchemaValueException as error:
                         log.warning(
-                            f"Error in config file: {self.config_file_path}\n"
-                            f"{error}"
+                            f"Error in config file: `{self.config_file_path}`: {error}"
                         )
                         self.valid_user = False
                     else:

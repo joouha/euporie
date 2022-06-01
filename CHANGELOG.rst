@@ -17,6 +17,7 @@ Added
 Changed
 =======
 
+- Use :py:mod:`fastjsonschema` to parse configuration more quickly
 - Reduce memory usage by allowing the garbage collector to remove deleted cells and graphics
 - Make clicking to select a cell pass the click event to the cell
 - Update widget styling
