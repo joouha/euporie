@@ -18,6 +18,14 @@ euporie.config
 
 
 
+   .. rubric:: Functions
+
+   .. autosummary::
+      :toctree:
+
+      literal_eval
+      user_config_dir
+
 
 
 
@@ -30,5 +38,8 @@ euporie.config
 
       ArgumentParser
       BooleanOptionalAction
+      ChainMap
       Config
       JSONEncoderPlus
+      Path
+      TabMode

@@ -18,6 +18,15 @@ euporie.widgets.cell\_outputs
 
 
 
+   .. rubric:: Functions
+
+   .. autosummary::
+      :toctree:
+
+      abstractmethod
+      find_route
+      to_container
+
 
 
 
@@ -28,8 +37,13 @@ euporie.widgets.cell\_outputs
       :toctree:
       :template: class.tpl.rst
 
+      ABCMeta
+      Box
       CellOutput
       CellOutputArea
       CellOutputDataElement
       CellOutputElement
       CellOutputWidgetElement
+      Display
+      HSplit
+      PurePath

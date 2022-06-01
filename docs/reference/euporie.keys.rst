@@ -18,6 +18,13 @@ euporie.keys
 
 
 
+   .. rubric:: Functions
+
+   .. autosummary::
+      :toctree:
+
+      extend_enum
+
 
 
 
@@ -28,4 +35,4 @@ euporie.keys
       :toctree:
       :template: class.tpl.rst
 
-      KeyBindingsInfo
+      Keys

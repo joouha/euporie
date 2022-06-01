@@ -38,4 +38,5 @@ euporie
       euporie.tabs
       euporie.terminal
       euporie.url
+      euporie.utils
       euporie.widgets

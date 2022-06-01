@@ -28,4 +28,9 @@ euporie.completion
       :toctree:
       :template: class.tpl.rst
 
+      CompleteEvent
+      Completer
+      Completion
+      Document
       KernelCompleter
+      NotebookKernel

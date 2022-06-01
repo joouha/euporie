@@ -25,3 +25,17 @@ euporie.convert.formats.formatted\_text
 
       ansi_to_ft
       markdown_to_ft
+      register
+      to_formatted_text
+
+
+
+
+
+   .. rubric:: Classes
+
+   .. autosummary::
+      :toctree:
+      :template: class.tpl.rst
+
+      ANSI

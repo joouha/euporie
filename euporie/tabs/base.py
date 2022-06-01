@@ -19,8 +19,6 @@ if TYPE_CHECKING:
 
 log = logging.getLogger(__name__)
 
-__all__ = ["Tab"]
-
 
 class Tab(metaclass=ABCMeta):
     """Base class for interface tabs."""

@@ -23,7 +23,9 @@ euporie.comm.ipywidgets
    .. autosummary::
       :toctree:
 
+      abstractmethod
       open_comm_ipywidgets
+      standard_b64encode
 
 
 
@@ -35,15 +37,29 @@ euporie.comm.ipywidgets
       :toctree:
       :template: class.tpl.rst
 
+      ABCMeta
       AccordionModel
+      AccordionSplit
+      BeforeInput
+      BorderVisibility
       BoundedFloatTextModel
       BoundedIntTextModel
+      Box
       BoxModel
+      Button
       ButtonModel
+      CellOutputArea
+      Checkbox
       CheckboxModel
       ColorPickerModel
       ComboboxModel
+      Comm
+      CommView
+      Condition
       DatePickerModel
+      Decimal
+      Display
+      Dropdown
       DropdownModel
       FloatLogOptionsMixin
       FloatLogSliderModel
@@ -52,7 +68,9 @@ euporie.comm.ipywidgets
       FloatRangeSliderModel
       FloatSliderModel
       FloatTextModel
+      FocusedStyle
       HBoxModel
+      HSplit
       HTMLMathModel
       HTMLModel
       ImageModel
@@ -62,26 +80,42 @@ euporie.comm.ipywidgets
       IntSliderModel
       IntTextModel
       IpyWidgetComm
+      Label
       LabelModel
+      LabelledWidget
       LayoutIpyWidgetComm
+      MsgCallbacks
       NumberTextBoxIpyWidgetComm
       OutputModel
+      Progress
       ProgressIpyWidgetComm
       RadioButtonsModel
       RangeSliderIpyWidgetComm
+      ReferencedSplit
+      Select
       SelectModel
       SelectMultipleModel
       SelectableIpyWidgetComm
       SelectionRangeSliderModel
       SelectionSliderModel
+      Slider
       SliderIpyWidgetComm
+      Swatch
       TabModel
+      TabbedSplit
+      Text
       TextBoxIpyWidgetComm
       TextModel
       TextareaModel
+      ToggleButton
       ToggleButtonModel
+      ToggleButtons
       ToggleButtonsModel
       ToggleableIpyWidgetComm
       UnimplementedModel
       VBoxModel
+      VSplit
       ValidModel
+      date
+      datetime
+      partial

@@ -13,8 +13,6 @@ from euporie.config import config
 if TYPE_CHECKING:
     from typing import Generator
 
-__all__ = ["ANSI"]
-
 log = logging.getLogger(__name__)
 
 

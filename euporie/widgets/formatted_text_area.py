@@ -24,8 +24,6 @@ if TYPE_CHECKING:
     from prompt_toolkit.formatted_text import AnyFormattedText, StyleAndTextTuples
     from prompt_toolkit.layout.processors import TransformationInput
 
-__all__ = ["FormatTextProcessor", "FormattedTextArea"]
-
 log = logging.getLogger(__name__)
 
 

@@ -23,4 +23,6 @@ euporie.convert.formats.rich
    .. autosummary::
       :toctree:
 
+      have_modules
       markdown_to_rich_py
+      register

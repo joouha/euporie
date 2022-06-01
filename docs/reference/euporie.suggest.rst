@@ -18,6 +18,13 @@ euporie.suggest
 
 
 
+   .. rubric:: Functions
+
+   .. autosummary::
+      :toctree:
+
+      to_filter
+
 
 
 
@@ -28,6 +35,11 @@ euporie.suggest
       :toctree:
       :template: class.tpl.rst
 
+      AppendAutoSuggestion
       AppendLineAutoSuggestion
+      AutoSuggest
+      ConditionalAutoSuggest
       ConditionalAutoSuggestAsync
       KernelAutoSuggest
+      Suggestion
+      Transformation

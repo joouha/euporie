@@ -24,4 +24,20 @@ euporie.commands.completions
       :toctree:
 
       accept_completion
+      add
       cancel_completion
+      get_app
+      menu_complete
+      menu_complete_backward
+
+
+
+
+
+   .. rubric:: Classes
+
+   .. autosummary::
+      :toctree:
+      :template: class.tpl.rst
+
+      Completion

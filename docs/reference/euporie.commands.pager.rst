@@ -23,4 +23,6 @@ euporie.commands.pager
    .. autosummary::
       :toctree:
 
+      add
       close_pager
+      get_app

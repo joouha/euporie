@@ -14,21 +14,6 @@ from pygments.util import ClassNotFound
 
 from euporie.border import GridStyle, Padding, Thin
 
-__all__ = [
-    "FormattedTextAlign",
-    "last_line_length",
-    "max_line_width",
-    "fragment_list_to_words",
-    "apply_style",
-    "strip",
-    "truncate",
-    "wrap",
-    "align",
-    "indent",
-    "add_border",
-    "lex",
-]
-
 
 class FormattedTextAlign(Enum):
     """Alignment of formatted text."""

@@ -27,3 +27,15 @@ euporie.format
       format_code
       format_isort
       format_ssort
+
+
+
+
+
+   .. rubric:: Classes
+
+   .. autosummary::
+      :toctree:
+      :template: class.tpl.rst
+
+      stdout_to_log

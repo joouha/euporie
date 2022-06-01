@@ -18,6 +18,16 @@ euporie.widgets.formatted\_text\_area
 
 
 
+   .. rubric:: Functions
+
+   .. autosummary::
+      :toctree:
+
+      fragment_list_to_text
+      split_lines
+      to_filter
+      to_formatted_text
+
 
 
 
@@ -28,5 +38,12 @@ euporie.widgets.formatted\_text\_area
       :toctree:
       :template: class.tpl.rst
 
+      ConditionalMargin
+      DynamicProcessor
       FormatTextProcessor
       FormattedTextArea
+      NumberedDiffMargin
+      Processor
+      ScrollbarMargin
+      TextArea
+      Transformation

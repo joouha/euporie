@@ -24,3 +24,16 @@ euporie.comm.registry
       :toctree:
 
       open_comm
+      open_comm_ipywidgets
+
+
+
+
+
+   .. rubric:: Classes
+
+   .. autosummary::
+      :toctree:
+      :template: class.tpl.rst
+
+      UnimplementedComm

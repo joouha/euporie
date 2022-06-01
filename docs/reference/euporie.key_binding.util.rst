@@ -25,3 +25,18 @@ euporie.key\_binding.util
 
       dict_bindings
       format_keys
+      get
+
+
+
+
+
+   .. rubric:: Classes
+
+   .. autosummary::
+      :toctree:
+      :template: class.tpl.rst
+
+      KeyBindings
+      KeyBindingsBase
+      Keys

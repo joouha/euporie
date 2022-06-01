@@ -39,6 +39,7 @@ pygments_style = "native"
 
 # Autosummary options
 autosummary_generate = True
+autosummary_imported_members = True
 
 # Intersphinx options
 

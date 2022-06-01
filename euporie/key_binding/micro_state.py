@@ -8,8 +8,6 @@ if TYPE_CHECKING:
 
     from prompt_toolkit.key_binding.key_processor import KeyPress
 
-__all__ = ["InputMode", "MicroState"]
-
 
 class InputMode(str, Enum):
     """Enum to define edit mode state types."""

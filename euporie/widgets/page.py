@@ -36,8 +36,6 @@ if TYPE_CHECKING:
 
 log = logging.getLogger(__name__)
 
-__all__ = ["ChildRenderInfo", "ScrollingContainer", "ScrollbarControl"]
-
 
 class ChildRenderInfo:
     """A class which holds information about a :py:class:`ScrollingContainer` child."""

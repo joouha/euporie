@@ -24,6 +24,9 @@ euporie.style
       :toctree:
 
       build_style
+      default_ui_style
+      hls_to_rgb
+      rgb_to_hls
 
 
 
@@ -37,3 +40,4 @@ euporie.style
 
       ColorPalette
       ColorPaletteColor
+      Style

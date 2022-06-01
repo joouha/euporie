@@ -24,5 +24,7 @@ euporie.convert.formats.common
       :toctree:
 
       base64_to_bytes_py
+      call_subproc
       chafa_convert
+      get_app
       imagemagick_convert

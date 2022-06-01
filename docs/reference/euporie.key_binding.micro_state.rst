@@ -28,5 +28,6 @@ euporie.key\_binding.micro\_state
       :toctree:
       :template: class.tpl.rst
 
+      Enum
       InputMode
       MicroState

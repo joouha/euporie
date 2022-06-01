@@ -23,6 +23,10 @@ euporie.terminal
    .. autosummary::
       :toctree:
 
+      add
+      cast
+      extend_enum
+      lru_cache
       tmuxify
 
 
@@ -35,11 +39,13 @@ euporie.terminal
       :toctree:
       :template: class.tpl.rst
 
-      BackgroundColor
+      ColorDepth
       ColorQueryMixin
+      Colors
       DepthOfColor
-      ForegroundColor
+      Event
       ItermGraphicsStatus
+      Keys
       KittyGraphicsStatus
       PixelDimensions
       SixelGraphicsStatus

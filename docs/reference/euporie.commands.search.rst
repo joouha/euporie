@@ -24,8 +24,25 @@ euporie.commands.search
       :toctree:
 
       accept_search
+      add
       find
       find_next
       find_prev_next
       find_previous
+      get_app
+      start_search
       stop_search
+
+
+
+
+
+   .. rubric:: Classes
+
+   .. autosummary::
+      :toctree:
+      :template: class.tpl.rst
+
+      BufferControl
+      SearchBufferControl
+      SearchDirection

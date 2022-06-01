@@ -23,6 +23,7 @@ euporie.commands.config
    .. autosummary::
       :toctree:
 
+      add
       always_show_tab_bar
       autocomplete
       autoformat
@@ -31,6 +32,7 @@ euporie.commands.config
       format_black
       format_isort
       format_ssort
+      get_app
       run_after_external_edit
       set_edit_mode
       show_cell_borders
@@ -42,3 +44,16 @@ euporie.commands.config
       update_color_scheme
       update_syntax_theme
       use_full_width
+
+
+
+
+
+   .. rubric:: Classes
+
+   .. autosummary::
+      :toctree:
+      :template: class.tpl.rst
+
+      Condition
+      partial

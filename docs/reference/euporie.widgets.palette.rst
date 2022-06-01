@@ -18,6 +18,17 @@ euporie.widgets.palette
 
 
 
+   .. rubric:: Functions
+
+   .. autosummary::
+      :toctree:
+
+      NamedTuple
+      focus_next
+      focus_previous
+      format_keys
+      get_app
+
 
 
 
@@ -28,5 +39,25 @@ euporie.widgets.palette
       :toctree:
       :template: class.tpl.rst
 
+      Box
+      Command
       CommandMenuControl
       CommandPalette
+      Condition
+      ConditionalContainer
+      Dimension
+      Frame
+      HSplit
+      KeyBindings
+      MouseEvent
+      MouseEventType
+      Point
+      ScrollOffsets
+      ScrollbarMargin
+      Shadow
+      Text
+      UIContent
+      UIControl
+      VSplit
+      Window
+      partial

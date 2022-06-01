@@ -24,19 +24,36 @@ euporie.formatted\_text.markdown
       :toctree:
 
       a
+      add_border
+      align
+      amsmath_plugin
+      apply_style
       blockquote
       br
       code
+      dollarmath_plugin
+      get_app
+      get_app_session
       h
       h1
       h2
       hr
       img
+      indent
+      last_line_length
+      lex
       li
       math
       ol
       p
+      randint
+      strip
+      texmath_plugin
+      to_formatted_text
+      to_plain_text
       ul
+      warn
+      wrap
 
 
 
@@ -48,5 +65,9 @@ euporie.formatted\_text.markdown
       :toctree:
       :template: class.tpl.rst
 
+      DummyRow
+      FormattedTextAlign
       Markdown
+      MarkdownIt
       MarkdownParser
+      Table

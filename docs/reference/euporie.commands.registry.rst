@@ -25,3 +25,15 @@ euporie.commands.registry
 
       add
       get
+
+
+
+
+
+   .. rubric:: Classes
+
+   .. autosummary::
+      :toctree:
+      :template: class.tpl.rst
+
+      Command

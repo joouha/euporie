@@ -18,6 +18,14 @@ euporie.margins
 
 
 
+   .. rubric:: Functions
+
+   .. autosummary::
+      :toctree:
+
+      get_app
+      to_filter
+
 
 
 
@@ -28,5 +36,8 @@ euporie.margins
       :toctree:
       :template: class.tpl.rst
 
+      Margin
+      MouseButton
+      MouseEventType
       NumberedDiffMargin
       ScrollbarMargin

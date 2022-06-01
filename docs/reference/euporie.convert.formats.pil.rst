@@ -23,5 +23,7 @@ euporie.convert.formats.pil
    .. autosummary::
       :toctree:
 
+      have_modules
       png_to_pil_py
+      register
       set_background

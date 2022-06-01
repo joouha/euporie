@@ -10,8 +10,6 @@ from prompt_toolkit.document import Document
 
 from euporie.kernel import NotebookKernel
 
-__all__ = ["KernelCompleter"]
-
 log = logging.getLogger(__name__)
 
 

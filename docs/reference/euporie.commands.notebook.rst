@@ -23,6 +23,7 @@ euporie.commands.notebook
    .. autosummary::
       :toctree:
 
+      add
       add_cell_above
       add_cell_below
       cells_to_code
@@ -39,6 +40,7 @@ euporie.commands.notebook
       extend_cell_selection_to_bottom
       extend_cell_selection_to_top
       extend_cell_selection_up
+      get_app
       interrupt_kernel
       merge_cells
       move_cells_down
@@ -63,3 +65,4 @@ euporie.commands.notebook
       select_last_cell
       select_next_cell
       select_previous_cell
+      undelete_cells

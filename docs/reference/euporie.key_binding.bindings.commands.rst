@@ -24,3 +24,15 @@ euporie.key\_binding.bindings.commands
       :toctree:
 
       load_command_bindings
+
+
+
+
+
+   .. rubric:: Classes
+
+   .. autosummary::
+      :toctree:
+      :template: class.tpl.rst
+
+      KeyBindings

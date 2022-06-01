@@ -18,6 +18,14 @@ euporie.tabs.base
 
 
 
+   .. rubric:: Functions
+
+   .. autosummary::
+      :toctree:
+
+      get_app
+      to_dimension
+
 
 
 
@@ -28,4 +36,7 @@ euporie.tabs.base
       :toctree:
       :template: class.tpl.rst
 
+      ABCMeta
+      Dimension
       Tab
+      Window

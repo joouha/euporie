@@ -24,3 +24,19 @@ euporie.url
       :toctree:
 
       load_url
+      memoized
+      urlopen
+      urlparse
+      urlunparse
+
+
+
+
+
+   .. rubric:: Classes
+
+   .. autosummary::
+      :toctree:
+      :template: class.tpl.rst
+
+      ParseResult

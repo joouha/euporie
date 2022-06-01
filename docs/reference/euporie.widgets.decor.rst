@@ -18,6 +18,15 @@ euporie.widgets.decor
 
 
 
+   .. rubric:: Functions
+
+   .. autosummary::
+      :toctree:
+
+      has_focus
+      to_container
+      to_filter
+
 
 
 
@@ -29,6 +38,18 @@ euporie.widgets.decor
       :template: class.tpl.rst
 
       Border
+      BorderVisibility
+      Char
+      ConditionalContainer
+      Container
+      Dimension
+      DynamicContainer
       FocusedStyle
+      HSplit
       Line
+      MouseHandlers
       Pattern
+      Screen
+      VSplit
+      Window
+      WritePosition

@@ -23,6 +23,12 @@ euporie.convert.formats.ansi
    .. autosummary::
       :toctree:
 
+      call_subproc
+      ceil
+      chafa_convert
+      commands_exist
+      get_app
+      have_modules
       html_to_ansi_elinks
       html_to_ansi_links
       html_to_ansi_lynx
@@ -42,3 +48,17 @@ euporie.convert.formats.ansi
       pil_to_ansi_py_timg
       png_to_ansi_img2txt
       png_to_ansi_py_placeholder
+      register
+      set_background
+
+
+
+
+
+   .. rubric:: Classes
+
+   .. autosummary::
+      :toctree:
+      :template: class.tpl.rst
+
+      partial

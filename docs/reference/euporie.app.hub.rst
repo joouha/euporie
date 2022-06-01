@@ -18,6 +18,14 @@ euporie.app.hub
 
 
 
+   .. rubric:: Functions
+
+   .. autosummary::
+      :toctree:
+
+      get_event_loop
+      setup_logs
+
 
 
 
@@ -28,5 +36,7 @@ euporie.app.hub
       :toctree:
       :template: class.tpl.rst
 
+      EditApp
       EuporieSSHServer
       HubApp
+      PromptToolkitSSHSession

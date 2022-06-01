@@ -14,8 +14,6 @@ from euporie.log import LOG_QUEUE, QueueHandler
 from euporie.tabs.base import Tab
 from euporie.widgets.formatted_text_area import FormattedTextArea
 
-__all__ = ["LogView"]
-
 
 class LogView(Tab):
     """A tab which allows you to view log entries."""

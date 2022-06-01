@@ -29,3 +29,31 @@ euporie.commands
       euporie.commands.registry
       euporie.commands.search
       euporie.commands.suggestions
+
+
+
+
+
+
+
+
+
+   .. rubric:: Functions
+
+   .. autosummary::
+      :toctree:
+
+      add
+      get
+
+
+
+
+
+   .. rubric:: Classes
+
+   .. autosummary::
+      :toctree:
+      :template: class.tpl.rst
+
+      Command

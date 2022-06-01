@@ -7,23 +7,6 @@ from typing import TYPE_CHECKING, NamedTuple
 if TYPE_CHECKING:
     from typing import Dict, List, Optional
 
-__all__ = [
-    "Invisible",
-    "Ascii",
-    "AsciiThick",
-    "Thin",
-    "ThinDoubleDashed",
-    "ThinTripleDashed",
-    "ThinQuadrupleDashed",
-    "Rounded",
-    "Thick",
-    "ThinDoubleDashed",
-    "ThinTripleDashed",
-    "ThinQuadrupleDashed",
-    "Double",
-    "grid_char",
-]
-
 
 class GridPart(Enum):
     """Defines the component characters of a grid.
@@ -61,6 +44,8 @@ class GridPart(Enum):
 
 
 class DirectionFlags(NamedTuple):
+    """Flags which indicate the connection of a grid node."""
+
     north: "bool" = False
     east: "bool" = False
     south: "bool" = False
@@ -265,6 +250,11 @@ HalfBlockLowerLeft = LineStyle("HalfBlockLowerLeft", 50, parent=Thin)
 
 
 class GridChar(NamedTuple):
+    """Representation of a grid node character.
+
+    The four compass points represent the line style joining from the given direction.
+    """
+
     north: "LineStyle"
     east: "LineStyle"
     south: "LineStyle"
@@ -576,6 +566,8 @@ def grid_char(key: "GridChar") -> "str":
 
 
 class GridStyle:
+    """A collection of characters which can be used to draw a grid."""
+
     class _BorderLineChars(NamedTuple):
         LEFT: "str"
         MID: "str"
@@ -583,6 +575,12 @@ class GridStyle:
         RIGHT: "str"
 
     def __init__(self, line_style: "LineStyle" = Invisible, mask: "Mask" = Masks.grid):
+        """Creates a new :py:class:`GridStyle` instance.
+
+        Args:
+            line_style: The line style to use to construct the grid
+            mask: A mask which can be used to exclude certain character from the grid
+        """
         self.grid = {
             part: GridChar(*((line_style if x else Invisible) for x in mask.mask[part]))
             for part in GridPart
@@ -590,6 +588,7 @@ class GridStyle:
 
     @property
     def TOP(self) -> "_BorderLineChars":
+        """Allow dotted attribute access to the top grid row."""
         return self._BorderLineChars(
             grid_char(self.grid[GridPart.TOP_LEFT]),
             grid_char(self.grid[GridPart.TOP_MID]),
@@ -599,6 +598,7 @@ class GridStyle:
 
     @property
     def MID(self) -> "_BorderLineChars":
+        """Allow dotted attribute access to the mid grid row."""
         return self._BorderLineChars(
             grid_char(self.grid[GridPart.MID_LEFT]),
             grid_char(self.grid[GridPart.MID_MID]),
@@ -608,6 +608,7 @@ class GridStyle:
 
     @property
     def SPLIT(self) -> "_BorderLineChars":
+        """Allow dotted attribute access to the split grid row."""
         return self._BorderLineChars(
             grid_char(self.grid[GridPart.SPLIT_LEFT]),
             grid_char(self.grid[GridPart.SPLIT_MID]),
@@ -617,6 +618,7 @@ class GridStyle:
 
     @property
     def BOTTOM(self) -> "_BorderLineChars":
+        """Allow dotted attribute access to the bottom grid row."""
         return self._BorderLineChars(
             grid_char(self.grid[GridPart.BOTTOM_LEFT]),
             grid_char(self.grid[GridPart.BOTTOM_MID]),
@@ -624,13 +626,14 @@ class GridStyle:
             grid_char(self.grid[GridPart.BOTTOM_RIGHT]),
         )
 
-    # For compatibility with :class:`prompt_toolkit.widgets.base.Border`
     @property
     def HORIZONTAL(self) -> "str":
+        """For compatibility with :class:`prompt_toolkit.widgets.base.Border`."""
         return self.SPLIT_MID
 
     @property
     def VERTICAL(self) -> "str":
+        """For compatibility with :class:`prompt_toolkit.widgets.base.Border`."""
         return self.MID_SPLIT
 
     def __getattr__(self, value: "str") -> "str":

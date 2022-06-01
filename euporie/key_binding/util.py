@@ -12,8 +12,6 @@ if TYPE_CHECKING:
 
     from euporie.commands.base import AnyKeys
 
-__all__ = ["dict_bindings"]
-
 
 KEY_ALIASES: "Dict[Union[str, Keys], str]" = {
     Keys.ControlH: "backspace",

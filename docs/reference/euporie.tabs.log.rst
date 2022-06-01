@@ -18,6 +18,13 @@ euporie.tabs.log
 
 
 
+   .. rubric:: Functions
+
+   .. autosummary::
+      :toctree:
+
+      has_focus
+
 
 
 
@@ -28,4 +35,12 @@ euporie.tabs.log
       :toctree:
       :template: class.tpl.rst
 
+      Condition
+      FormattedText
+      FormattedTextArea
+      HSplit
       LogView
+      Path
+      QueueHandler
+      SearchToolbar
+      Tab

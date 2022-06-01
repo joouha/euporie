@@ -18,6 +18,14 @@ euporie.kernel
 
 
 
+   .. rubric:: Functions
+
+   .. autosummary::
+      :toctree:
+
+      TypedDict
+      jupyter_path
+
 
 
 
@@ -28,5 +36,19 @@ euporie.kernel
       :toctree:
       :template: class.tpl.rst
 
+      AsyncKernelManager
+      KernelManager
       MsgCallbacks
       NotebookKernel
+      defaultdict
+
+
+
+
+
+   .. rubric:: Exceptions
+
+   .. autosummary::
+      :toctree:
+
+      NoSuchKernel

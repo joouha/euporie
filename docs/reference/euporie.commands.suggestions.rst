@@ -24,4 +24,6 @@ euporie.commands.suggestions
       :toctree:
 
       accept_suggestion
+      add
       fill_sugestion
+      get_app

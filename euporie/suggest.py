@@ -21,8 +21,6 @@ if TYPE_CHECKING:
 
 log = logging.getLogger(__name__)
 
-__all__ = ["KernelAutoSuggest"]
-
 
 class KernelAutoSuggest(AutoSuggest):
     """Suggests line completions from kernel history."""

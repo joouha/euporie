@@ -29,3 +29,4 @@ euporie.formatted\_text.ansi
       :template: class.tpl.rst
 
       ANSI
+      PTANSI

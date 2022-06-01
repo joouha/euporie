@@ -55,8 +55,6 @@ if TYPE_CHECKING:
     from euporie.kernel import NotebookKernel
     from euporie.widgets.cell import PagerState
 
-__all__ = ["Notebook"]
-
 log = logging.getLogger(__name__)
 
 KERNEL_STATUS_REPR = {
@@ -76,7 +74,13 @@ class Notebook(Tab, metaclass=ABCMeta):
         path: "Path",
         app: "Optional[EuporieApp]" = None,
     ):
-        """Instantiate a Notebook container, using a notebook at a given path."""
+        """Instantiate a Notebook container, using a notebook at a given path.
+
+        Args:
+            path: The file path of the notebook
+            app: The euporie application the notebook tab belongs to
+
+        """
         super().__init__()
         self.path: "Path" = Path(path).expanduser()
         self.completer: "Completer" = DummyCompleter()
@@ -382,11 +386,20 @@ class Notebook(Tab, metaclass=ABCMeta):
 
 
 class PreviewNotebook(Notebook):
+    """A notebook class used for previewing files in the terminal."""
+
     def __init__(
         self,
         path: "Path",
         app: "Optional[EuporieApp]" = None,
     ):
+        """Create a new :py:class:`PreviewNotebook` instance.
+
+        Args:
+            path: The file path of the notebook
+            app: The euporie application the notebook tab belongs to
+
+        """
         super().__init__(path, app)
         self.container = VSplit(
             [
@@ -400,7 +413,8 @@ class PreviewNotebook(Notebook):
         )
 
 
-class KernelNotebook(Notebook):
+class KernelNotebook(Notebook, metaclass=ABCMeta):
+    """Base class for notebook tabs with an associated kernel."""
 
     kernel: "NotebookKernel"
 
@@ -408,7 +422,13 @@ class KernelNotebook(Notebook):
         self,
         path: "Path",
         app: "Optional[EuporieApp]" = None,
-    ):
+    ) -> "None":
+        """Create a new :py:class:`KernelNotebook` instance.
+
+        Args:
+            path: The file path of the notebook
+            app: The euporie application the notebook tab belongs to
+        """
         super().__init__(path, app)
         self.autoran = False
         self.load_kernel()
@@ -425,6 +445,7 @@ class KernelNotebook(Notebook):
 
     @abstractmethod
     def load_kernel(self) -> "None":
+        """Abstract method for loading the kernel."""
         ...
 
     def interrupt_kernel(self) -> "None":
@@ -484,24 +505,29 @@ class KernelNotebook(Notebook):
             log.debug("All cells run")
 
     def set_kernel_info(self, info: "dict") -> "None":
+        """Request kernel information from the kernel."""
         self.json.setdefault("metadata", {})["language_info"] = info.get(
             "language_info", {}
         )
 
     def check_kernel(self, result: "None" = None) -> "None":
+        """Query the kernel's info, saving the result to metadata."""
         log.debug("Kernel status is '%s'", self.kernel.status)
         self.kernel.info(set_kernel_info=self.set_kernel_info, set_status=log.debug)
 
     def comm_open(self, content: "Dict", buffers: "Sequence[bytes]") -> "None":
+        """Register a new kernel Comm object in the notebook."""
         comm_id = str(content.get("comm_id"))
         self.comms[comm_id] = open_comm(nb=self, content=content, buffers=buffers)
 
     def comm_msg(self, content: "Dict", buffers: "Sequence[bytes]") -> "None":
+        """Respond to a Comm message from the kernel."""
         comm_id = str(content.get("comm_id"))
         if comm := self.comms.get(comm_id):
             comm.process_data(content.get("data", {}), buffers)
 
     def comm_close(self, content: "Dict", buffers: "Sequence[bytes]") -> "None":
+        """Close a notebook Comm."""
         comm_id = content.get("comm_id")
         if comm_id in self.comms:
             del self.comms[comm_id]
@@ -526,7 +552,10 @@ class KernelNotebook(Notebook):
 
 
 class PreviewKernelNotebook(PreviewNotebook, KernelNotebook):
+    """A notebook class used to run and previewing files in the terminal."""
+
     def check_kernel(self, result: "None" = None) -> "None":
+        """Query the kernel's info, and run all cells when the kernel is idle."""
         super().check_kernel()
         if self.kernel.status == "idle" and config.run:
             self.autoran = True
@@ -534,6 +563,7 @@ class PreviewKernelNotebook(PreviewNotebook, KernelNotebook):
             self.run_all(wait=True)
 
     def load_kernel(self) -> "None":
+        """Start the notebook's kernel."""
         from euporie.kernel import NotebookKernel
 
         self.kernel = NotebookKernel(nb=self, threaded=True)
@@ -554,6 +584,7 @@ class PreviewKernelNotebook(PreviewNotebook, KernelNotebook):
 
 
 class EditNotebook(KernelNotebook):
+    """A notebook tab which runs in the TUI editor."""
 
     app: "EditApp"
 
@@ -561,7 +592,13 @@ class EditNotebook(KernelNotebook):
         self,
         path: "Path",
         app: "Optional[EuporieApp]" = None,
-    ):
+    ) -> "None":
+        """Create a new :py:class:`EditNotebook` instance.
+
+        Args:
+            path: The file path of the notebook to edit
+            app: The euporie application the notebook tab belongs to
+        """
         from euporie.completion import KernelCompleter
 
         super().__init__(path, app)
@@ -739,11 +776,13 @@ class EditNotebook(KernelNotebook):
         self.page._set_selected_slice(slice_, force=True, scroll=scroll)
 
     def add_cell_above(self) -> "None":
+        """Insert a cell above the current selection."""
         index = self.page.selected_slice.start + 0
         self.add(index)
         self.refresh(slice_=slice(index, index + 1), scroll=False)
 
     def add_cell_below(self) -> "None":
+        """Insert a cell below the current selection."""
         index = self.page.selected_slice.start + 1
         self.add(index)
         self.refresh(slice_=slice(index, index + 1), scroll=True)
@@ -853,6 +892,7 @@ class EditNotebook(KernelNotebook):
         self.app.invalidate()
 
     def load_kernel(self) -> "None":
+        """Start the notebook's kernel."""
         from euporie.kernel import NotebookKernel
 
         self.kernel = NotebookKernel(nb=self, threaded=True, allow_stdin=True)
@@ -900,6 +940,7 @@ class EditNotebook(KernelNotebook):
             self.select(index + 1)
 
     def run_cell(self, cell: "Cell", wait: "bool" = False) -> "None":
+        """Run a cell in the notebook's kernel."""
         if cell is None:
             cell = self.cell
         assert isinstance(cell, InteractiveCell)

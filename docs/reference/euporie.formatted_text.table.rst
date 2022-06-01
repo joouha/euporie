@@ -23,7 +23,17 @@ euporie.formatted\_text.table
    .. autosummary::
       :toctree:
 
+      align
+      cast
+      get_app_session
+      grid_char
+      max_line_width
       pairwise
+      split_lines
+      tee
+      to_formatted_text
+      to_plain_text
+      wrap
 
 
 
@@ -35,12 +45,24 @@ euporie.formatted\_text.table
       :toctree:
       :template: class.tpl.rst
 
+      BorderLineStyle
       Cell
       Col
       DummyCell
       DummyCol
       DummyRow
       DummyTable
+      FormattedTextAlign
+      GridChar
+      LineStyle
+      Padding
       Row
       RowCol
       Table
+      WeightedBorderLineStyle
+      WeightedInt
+      WeightedLineStyle
+      WeightedPadding
+      defaultdict
+      partial
+      zip_longest

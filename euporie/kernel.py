@@ -23,12 +23,12 @@ if TYPE_CHECKING:
     from euporie.tabs.notebook import KernelNotebook
 
 
-__all__ = ["NotebookKernel"]
-
 log = logging.getLogger(__name__)
 
 
 class MsgCallbacks(TypedDict, total=False):
+    """Typed dictionary for named message callbacks."""
+
     get_input: "Callable[[str, bool], None]|None"
     set_execution_count: "Callable[[int], None]|None"
     add_output: "Callable[[Dict[str, Any]], None]|None"

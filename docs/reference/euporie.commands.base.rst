@@ -24,7 +24,12 @@ euporie.commands.base
       :toctree:
 
       add
+      cast
       get
+      get_app
+      isawaitable
+      signature
+      to_filter
 
 
 
@@ -36,4 +41,7 @@ euporie.commands.base
       :toctree:
       :template: class.tpl.rst
 
+      Binding
       Command
+      Keys
+      MenuItem

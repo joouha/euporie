@@ -28,4 +28,5 @@ euporie.enums
       :toctree:
       :template: class.tpl.rst
 
+      Enum
       TabMode

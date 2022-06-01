@@ -23,7 +23,13 @@ euporie.widgets.cell
    .. autosummary::
       :toctree:
 
+      NamedTuple
+      format_code
+      get_app
       get_cell_id
+      get_lexer_by_name
+      has_focus
+      to_container
 
 
 
@@ -35,9 +41,36 @@ euporie.widgets.cell
       :toctree:
       :template: class.tpl.rst
 
+      AppendLineAutoSuggestion
+      BeforeInput
       Cell
       CellInputTextArea
+      CellOutputArea
       CellStdinTextArea
-      ClickArea
+      ClickToFocus
+      Condition
+      ConditionalAutoSuggestAsync
+      ConditionalContainer
+      ConditionalMargin
+      ConditionalProcessor
+      Container
+      DisplayMultipleCursors
+      DynamicLexer
+      FormattedTextControl
+      Frame
+      HSplit
+      HighlightIncrementalSearchProcessor
+      HighlightMatchingBracketProcessor
+      HighlightSelectionProcessor
       InteractiveCell
+      MouseEvent
+      MouseEventType
+      MouseModifier
+      NumberedDiffMargin
       PagerState
+      PygmentsLexer
+      SimpleLexer
+      TextArea
+      VSplit
+      Window
+      partial

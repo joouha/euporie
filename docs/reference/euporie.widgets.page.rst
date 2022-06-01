@@ -18,6 +18,17 @@ euporie.widgets.page
 
 
 
+   .. rubric:: Functions
+
+   .. autosummary::
+      :toctree:
+
+      cast
+      get_app
+      split_lines
+      to_container
+      to_dimension
+
 
 
 
@@ -28,7 +39,22 @@ euporie.widgets.page
       :toctree:
       :template: class.tpl.rst
 
+      Char
       ChildRenderInfo
+      Container
+      Dimension
+      MouseEvent
+      MouseEventType
+      MouseHandlers
+      Point
       PrintingContainer
+      Screen
+      ScrollOffsets
       ScrollbarControl
+      ScrollbarMargin
       ScrollingContainer
+      UIContent
+      UIControl
+      Window
+      WindowRenderInfo
+      WritePosition

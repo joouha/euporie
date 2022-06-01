@@ -23,9 +23,11 @@ euporie.convert.base
    .. autosummary::
       :toctree:
 
+      NamedTuple
       convert
       find_route
       register
+      to_filter
 
 
 
@@ -38,3 +40,6 @@ euporie.convert.base
       :template: class.tpl.rst
 
       Converter
+      FastDictCache
+      SimpleCache
+      partial

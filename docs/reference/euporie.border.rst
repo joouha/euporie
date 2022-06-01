@@ -23,7 +23,9 @@ euporie.border
    .. autosummary::
       :toctree:
 
+      NamedTuple
       grid_char
+      total_ordering
 
 
 
@@ -38,6 +40,7 @@ euporie.border
       BorderLineStyle
       BorderVisibility
       DirectionFlags
+      Enum
       GridChar
       GridPart
       GridStyle

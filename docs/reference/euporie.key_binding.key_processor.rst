@@ -18,6 +18,13 @@ euporie.key\_binding.key\_processor
 
 
 
+   .. rubric:: Functions
+
+   .. autosummary::
+      :toctree:
+
+      get_app
+
 
 
 
@@ -29,3 +36,5 @@ euporie.key\_binding.key\_processor
       :template: class.tpl.rst
 
       KeyProcessor
+      Keys
+      PtKeyProcessor

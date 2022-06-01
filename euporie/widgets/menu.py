@@ -40,8 +40,6 @@ if TYPE_CHECKING:
     from euporie.commands.base import Command
 
 
-__all__ = ["MenuContainer", "MenuItem"]
-
 log = logging.getLogger(__name__)
 
 

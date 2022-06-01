@@ -18,6 +18,13 @@ euporie.comm.base
 
 
 
+   .. rubric:: Functions
+
+   .. autosummary::
+      :toctree:
+
+      abstractmethod
+
 
 
 
@@ -28,6 +35,9 @@ euporie.comm.base
       :toctree:
       :template: class.tpl.rst
 
+      ABCMeta
       Comm
       CommView
+      Display
       UnimplementedComm
+      WeakKeyDictionary

@@ -24,3 +24,4 @@ euporie.convert.formats.base64
       :toctree:
 
       bytes_to_base64_py
+      register

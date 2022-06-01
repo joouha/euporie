@@ -24,9 +24,11 @@ euporie.commands.app
       :toctree:
 
       about
+      add
       close_file
       focus_next
       focus_previous
+      get_app
       keyboard_shortcuts
       new_notebook
       next_tab
