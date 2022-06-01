@@ -7,6 +7,7 @@ import logging
 from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING, cast
+from weakref import WeakSet
 
 from prompt_toolkit.application.application import Application, _CombinedRegistry
 from prompt_toolkit.application.current import create_app_session
@@ -65,6 +66,7 @@ from euporie.style import (
 from euporie.tabs.base import Tab
 from euporie.tabs.notebook import Notebook
 from euporie.terminal import TerminalInfo, Vt100Parser
+from euporie.utils import ChainedList
 
 if TYPE_CHECKING:
     from typing import Any, Callable, Dict, List, Optional, Tuple, Type
@@ -150,7 +152,9 @@ class EuporieApp(Application):
         # Load the terminal information system
         self.term_info = TerminalInfo(self.input, self.output)
         # Floats at the app level
-        self.floats: "list[Float]" = []
+        self.graphics: "WeakSet[Float]" = WeakSet()
+        self.dialogs: "List[Float]" = []
+        self.floats = ChainedList(self.graphics, self.dialogs)
         # If a dialog is showing
         self.has_dialog = False
         # Mapping of Containers to status field generating functions
@@ -541,22 +545,3 @@ class EuporieApp(Application):
     def cell(self) -> "Optional[InteractiveCell]":
         """Return the currently active cell."""
         return None
-
-    def add_float(self, float_container: "Float") -> "None":
-        """Adds a float to the application."""
-        if float_container not in self.floats:
-            self.floats.append(float_container)
-        root = self.layout.container
-        assert isinstance(root, FloatContainer)
-        for float_ in self.floats:
-            if root.floats is not None and float_ not in root.floats:
-                root.floats.insert(-1, float_)
-
-    def remove_float(self, float_container: "Float") -> "None":
-        """Removes a float to the application."""
-        if float_container in self.floats:
-            self.floats.remove(float_container)
-        root = self.layout.container
-        assert isinstance(root, FloatContainer)
-        if root.floats is not None and float_container in root.floats:
-            root.floats.remove(float_container)

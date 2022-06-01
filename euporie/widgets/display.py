@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import weakref
 from abc import ABCMeta
 from functools import partial
 from math import ceil
@@ -10,7 +11,7 @@ from typing import TYPE_CHECKING
 
 from prompt_toolkit.cache import SimpleCache
 from prompt_toolkit.data_structures import Point
-from prompt_toolkit.filters import has_completions, to_filter
+from prompt_toolkit.filters import Condition, has_completions, to_filter
 from prompt_toolkit.formatted_text.base import to_formatted_text
 from prompt_toolkit.formatted_text.utils import fragment_list_width, split_lines
 from prompt_toolkit.layout.containers import Float, Window
@@ -264,6 +265,10 @@ class DisplayControl(UIControl):
         """Return the maximum line length of the content."""
         return max(fragment_list_width(line) for line in self.rendered_lines)
 
+    def close(self) -> "None":
+        """Remove the displayed object entirely."""
+        self.hide()
+
 
 class DisplayWindow(Window):
     """A window sub-class which can scroll left and right."""
@@ -347,7 +352,6 @@ class FormattedTextDisplayControl(DisplayControl):
 
         # Re-render if the image width changes, or the terminal character size changes
         key = (width, self.app.term_info.cell_size_px)
-        # log.debug(key)
         return self._format_cache.get(key, render_lines)
 
 
@@ -602,6 +606,11 @@ class KittyGraphicControl(GraphicControl):
         self.hide()
         self.delete()
 
+    def close(self) -> "None":
+        """Remove the displayed object entirely."""
+        super().close()
+        self.delete()
+
 
 class GraphicWindow(Window):
     """A window responsible for displaying terminal graphics content.
@@ -696,7 +705,7 @@ class GraphicFloat(Float):
             format_: The format of the graphical data
             target_window: The window above which the graphic should be displayed
             fg_color: The graphic's foreground color
-            bg_color: The grahpic's background color
+            bg_color: The graphic's background color
             sizing_func: A callable which returns in the graphic's width in terminal
                 cells and its aspect ratio
             filter: A filter which is used to hide and show the graphic
@@ -722,15 +731,19 @@ class GraphicFloat(Float):
                 bg_color=bg_color,
                 sizing_func=sizing_func,
             )
+            weak_self_ref = weakref.ref(self)
             super().__init__(
                 content=GraphicWindow(
                     target_window=target_window,
                     content=self.control,
-                    filter=to_filter(filter),
+                    filter=to_filter(filter)
+                    & Condition(lambda: weak_self_ref() in get_app().graphics),
                 ),
                 left=0,
                 top=0,
             )
+            # Hide the graphic if the float is deleted
+            weakref.finalize(self, self.control.close)
 
     @property
     def data(self) -> "Any":
@@ -829,6 +842,7 @@ class Display:
         )
 
         # Add graphic
+        app = get_app()
         self.graphic_float = GraphicFloat(
             data=data,
             format_=format_,
@@ -839,7 +853,7 @@ class Display:
             filter=~has_completions & ~has_dialog & ~has_menus,
         )
         if self.graphic_float.GraphicControl is not None:
-            get_app().add_float(self.graphic_float)
+            app.graphics.add(self.graphic_float)
 
     @property
     def data(self) -> "Any":

@@ -22,9 +22,10 @@ from prompt_toolkit.widgets.menus import MenuItem as PtkMenuItem
 
 from euporie.app.current import get_base_app as get_app
 from euporie.border import HalfBlockLowerLeft, HalfBlockUpperRight, Thin
+from euporie.utils import ChainedList
 
 if TYPE_CHECKING:
-    from typing import Any, Callable, Iterable, Optional, Sequence, Union
+    from typing import Any, Callable, Iterable, List, Optional, Sequence, Union
 
     from prompt_toolkit.filters import Filter, FilterOrBool
     from prompt_toolkit.formatted_text.base import (
@@ -264,7 +265,7 @@ class MenuContainer(PtKMenuContainer):
         self,
         body: "AnyContainer",
         menu_items: "list[PtkMenuItem]",
-        floats: "Optional[list[Float]]" = None,
+        floats: "Optional[Sequence[Float]]" = None,
         key_bindings: "Optional[KeyBindingsBase]" = None,
         left: "Optional[Sequence[AnyContainer]]" = None,
         right: "Optional[Sequence[AnyContainer]]" = None,
@@ -282,7 +283,7 @@ class MenuContainer(PtKMenuContainer):
             grid: The grid style to use for the menu's borders
 
         """
-        super().__init__(body, menu_items, floats, key_bindings)
+        super().__init__(body, menu_items, None, key_bindings)
 
         assert isinstance(self.container.content, HSplit)
         assert isinstance(self.body, Container)
@@ -292,6 +293,10 @@ class MenuContainer(PtKMenuContainer):
             VSplit([*(left or []), self.window, *(right or [])]),
             self.body,
         ]
+        # Use chained list for floats
+        self.container.floats = cast(
+            "List[Float]", ChainedList(self.container.floats, floats or [])
+        )
 
         get_app().container_statuses[self.window] = self.statusbar_fields
 

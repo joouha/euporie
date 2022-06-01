@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import weakref
 from functools import partial
 from typing import TYPE_CHECKING, NamedTuple
 
@@ -42,7 +43,7 @@ from euporie.suggest import AppendLineAutoSuggestion, ConditionalAutoSuggestAsyn
 from euporie.widgets.cell_outputs import CellOutputArea
 
 if TYPE_CHECKING:
-    from typing import Any, Callable, Dict, List, Literal, Optional, Tuple
+    from typing import Any, Callable, Dict, List, Literal, Optional, Tuple, Union
 
     from prompt_toolkit.buffer import Buffer
     from prompt_toolkit.key_binding.key_bindings import NotImplementedOrNone
@@ -81,50 +82,22 @@ def get_cell_id(cell_json: "dict") -> "str":
 class CellInputTextArea(TextArea):
     """A customized text area for the cell input."""
 
-    def __init__(self, cell: "Cell", *args: "Any", **kwargs: "Any") -> "None":
+    def __init__(
+        self,
+        *args: "Any",
+        on_text_changed: "Optional[Callable[[Buffer], None]]" = None,
+        on_cursor_position_changed: "Optional[Callable[[Buffer], None]]" = None,
+        tempfile_suffix: "Union[str, Callable[[], str]]" = "",
+        **kwargs: "Any",
+    ) -> "None":
         """Initiate the cell input box."""
-        self.cell = cell
-
-        kwargs["text"] = cell.input
-        kwargs["focus_on_click"] = True
-        kwargs["focusable"] = True
-        kwargs["scrollbar"] = cell.scroll_input()
-        kwargs["wrap_lines"] = cell.wrap_input
-        kwargs["lexer"] = DynamicLexer(
-            lambda: (
-                PygmentsLexer(
-                    get_lexer_by_name(cell.language).__class__,
-                    sync_from_start=False,
-                )
-                if cell.cell_type != "raw"
-                else SimpleLexer()
-            )
-        )
-        kwargs["completer"] = cell.nb.completer
-        kwargs["complete_while_typing"] = cell.autocomplete & cell.is_code
-        kwargs["auto_suggest"] = ConditionalAutoSuggestAsync(
-            cell.nb.suggester, filter=cell.is_code & cell.autosuggest
-        )
-        kwargs["style"] = "class:cell.input.box"
-        kwargs["accept_handler"] = self.cell.run_or_render
-        kwargs["input_processors"] = [
-            ConditionalProcessor(
-                HighlightIncrementalSearchProcessor(),
-                filter=is_searching,
-            ),
-            HighlightSelectionProcessor(),
-            DisplayMultipleCursors(),
-            HighlightMatchingBracketProcessor(),
-        ]
-        kwargs["search_field"] = get_app().search_bar
-
         super().__init__(*args, **kwargs)
-
         self.control.include_default_input_processors = False
-
-        self.buffer.tempfile_suffix = self.cell.nb.lang_file_ext
-        self.buffer.on_text_changed += self.on_text_changed
-        self.buffer.on_cursor_position_changed += self.on_cursor_position_changed
+        if on_text_changed:
+            self.buffer.on_text_changed += on_text_changed
+        if on_cursor_position_changed:
+            self.buffer.on_cursor_position_changed += on_cursor_position_changed
+        self.buffer.tempfile_suffix = tempfile_suffix
 
         # Replace the autosuggest processor
         # Skip type checking as PT should use "("Optional[Sequence[Processor]]"
@@ -143,27 +116,7 @@ class CellInputTextArea(TextArea):
             )
         ]
         self.window.cursorline = has_focus(self)
-
         self.has_focus = has_focus(self.buffer)
-
-    def on_text_changed(self, buf: "Buffer") -> "None":
-        """Update cell json when the input buffer has been edited."""
-        self.cell._set_input(buf.text)
-        self.cell.nb.dirty = True
-
-    def on_cursor_position_changed(self, buf: "Buffer") -> "None":
-        """Respond to cursor movements."""
-        from euporie.tabs.notebook import EditNotebook
-
-        # Update contextual help
-        if config.autoinspect and self.cell.is_code():
-            self.cell.inspect()
-        elif self.cell.nb.pager_visible():
-            self.cell.nb.hide_pager()
-
-        # Tell the scrolling container to scroll the cursor into view on the next render
-        assert isinstance(self.cell.nb, EditNotebook)
-        self.cell.nb.page.scroll_to_cursor = True
 
 
 class CellStdinTextArea(TextArea):
@@ -288,8 +241,7 @@ class Cell:
             notebook: The notebook instance this cell belongs to
 
         """
-        self.container: "Container" = Window()
-
+        weak_self = weakref.proxy(self)
         self.index = index
         self.json = json
         self.nb: "Notebook" = notebook
@@ -299,48 +251,141 @@ class Cell:
         self.state = "idle"
         self.meta: "Optional[ChildRenderInfo]" = None
 
-        self.show_input = Condition(
+        show_input = Condition(
             lambda: bool(
-                (self.json.get("cell_type") != "markdown")
-                | ((self.json.get("cell_type") == "markdown") & ~self.rendered)
+                (weak_self.json.get("cell_type") != "markdown")
+                | (
+                    (weak_self.json.get("cell_type") == "markdown")
+                    & ~weak_self.rendered
+                )
             )
         )
-        self.show_output = Condition(
+        show_output = Condition(
             lambda: (
-                (self.json.get("cell_type") != "markdown") & bool(self.output_json)
-                | ((self.json.get("cell_type") == "markdown") & self.rendered)
+                (weak_self.json.get("cell_type") != "markdown")
+                & bool(weak_self.output_json)
+                | ((weak_self.json.get("cell_type") == "markdown") & weak_self.rendered)
             )
         )
-        self.scroll_input = Condition(
-            lambda: bool((self.json.get("cell_type") == "markdown") & ~self.rendered)
+        scroll_input = Condition(
+            lambda: bool(
+                (weak_self.json.get("cell_type") == "markdown") & ~weak_self.rendered
+            )
         )
-        self.autocomplete = Condition(lambda: config.autocomplete)
-        self.autosuggest = Condition(lambda: config.autosuggest)
-        self.wrap_input = Condition(lambda: self.json.get("cell_type") == "markdown")
-        self.show_prompt = Condition(lambda: self.cell_type == "code")
-        self.is_focused = Condition(lambda: self.focused)
-        self.is_code = Condition(lambda: self.json.get("cell_type") == "code")
-        self.show_input_line_numbers = Condition(
-            lambda: config.line_numbers & self.is_code()
-        )
+        autocomplete = Condition(lambda: config.autocomplete)
+        autosuggest = Condition(lambda: config.autosuggest)
+        wrap_input = Condition(lambda: weak_self.json.get("cell_type") == "markdown")
+        show_prompt = Condition(lambda: weak_self.cell_type == "code")
+        self.is_code = Condition(lambda: weak_self.json.get("cell_type") == "code")
         self._asking_input = False
-        self.asking_input = Condition(lambda: self._asking_input)
+        asking_input = Condition(lambda: weak_self._asking_input)
 
-        self.output_area = CellOutputArea(json=self.output_json, cell=self)
+        self.output_area = CellOutputArea(json=self.output_json, cell=weak_self)
 
-        # Generates the main container used to represent a notebook cell
-        self.input_box = CellInputTextArea(self)
+        def on_text_changed(buf: "Buffer") -> "None":
+            """Update cell json when the input buffer has been edited."""
+            weak_self._set_input(buf.text)
+            weak_self.nb.dirty = True
 
-        ft = FormattedTextControl(
-            self.border_char("TOP_LEFT"),
+        def on_cursor_position_changed(buf: "Buffer") -> "None":
+            """Respond to cursor movements."""
+            from euporie.tabs.notebook import EditNotebook
+
+            # Update contextual help
+            if config.autoinspect and weak_self.is_code():
+                weak_self.inspect()
+            elif weak_self.nb.pager_visible():
+                weak_self.nb.hide_pager()
+
+            # Tell the scrolling container to scroll the cursor into view on the next render
+            assert isinstance(weak_self.nb, EditNotebook)
+            weak_self.nb.page.scroll_to_cursor = True
+
+        # Noew we generate the main container used to represent a notebook cell
+
+        self.input_box = CellInputTextArea(
+            text=self.input,
+            scrollbar=scroll_input(),
+            complete_while_typing=autocomplete & self.is_code,
+            auto_suggest=ConditionalAutoSuggestAsync(
+                notebook.suggester, filter=self.is_code & autosuggest
+            ),
+            wrap_lines=wrap_input,
+            focus_on_click=True,
             focusable=True,
-            show_cursor=False,
-        )
-        self.control = Window(
-            ft, width=1, height=0, style=self.border_style, always_hide_cursor=True
+            lexer=DynamicLexer(
+                partial(
+                    lambda cell: (
+                        PygmentsLexer(
+                            get_lexer_by_name(cell.language).__class__,
+                            sync_from_start=False,
+                        )
+                        if cell.cell_type != "raw"
+                        else SimpleLexer()
+                    ),
+                    weakref.proxy(self),
+                )
+            ),
+            completer=self.nb.completer,
+            style="class:cell.input.box",
+            # accept_handler=self.run_or_render,
+            input_processors=[
+                ConditionalProcessor(
+                    HighlightIncrementalSearchProcessor(),
+                    filter=is_searching,
+                ),
+                HighlightSelectionProcessor(),
+                DisplayMultipleCursors(),
+                HighlightMatchingBracketProcessor(),
+            ],
+            search_field=get_app().search_bar,
+            on_text_changed=on_text_changed,
+            on_cursor_position_changed=on_cursor_position_changed,
+            tempfile_suffix=notebook.lang_file_ext,
         )
 
-        fill = partial(Window, style=self.border_style)
+        def border_char(name: "str") -> "Callable[..., str]":
+            """Returns a function which returns the cell border character to display."""
+
+            def _inner() -> "str":
+                grid = Invisible.grid
+                if config.show_cell_borders or weak_self.selected:
+                    if weak_self.focused and multiple_cells_selected():
+                        grid = Thick.outer
+                    else:
+                        grid = Thin.outer
+                return getattr(grid, name.upper())
+
+            return _inner
+
+        def border_style() -> "str":
+            """Determines the style of the cell borders, based on the cell state."""
+            if weak_self.selected:
+                # Enter edit mode if the input has become focused via a mouse click
+                if weak_self.input_box.has_focus():
+                    weak_self.nb.edit_mode = True
+                # Exit edit mode if the stdin box has focus
+                elif get_app().layout.has_focus(weak_self.stdin_box):
+                    weak_self.nb.edit_mode = False
+                if weak_self.nb.edit_mode:
+                    return "class:cell.border.edit"
+                else:
+                    return "class:cell.border.selected"
+            return "class:cell.border"
+
+        self.control = Window(
+            FormattedTextControl(
+                border_char("TOP_LEFT"),
+                focusable=True,
+                show_cursor=False,
+            ),
+            width=1,
+            height=0,
+            style=border_style,
+            always_hide_cursor=True,
+        )
+
+        fill = partial(Window, style=border_style)
 
         # Create textbox for standard input
         def _send_input(buf: "Buffer") -> "bool":
@@ -349,150 +394,149 @@ class Cell:
         self.stdin_box_accept_handler = _send_input
         self.stdin_box = CellStdinTextArea(
             multiline=False,
-            accept_handler=lambda buf: self.stdin_box_accept_handler(buf),
+            accept_handler=lambda buf: weak_self.stdin_box_accept_handler(buf),
             focus_on_click=True,
             prompt="> ",
         )
-
-        # self.output_box = HSplit(
-        # self.render_outputs(),
-        # style="class:cell.output",
-        # )
 
         top_border = VSplit(
             [
                 self.control,
                 ConditionalContainer(
                     content=fill(
-                        char=self.border_char("TOP_MID"),
-                        width=lambda: len(self.prompt),
+                        char=border_char("TOP_MID"),
+                        width=lambda: len(weak_self.prompt),
                         height=1,
                     ),
-                    filter=self.show_prompt,
+                    filter=show_prompt,
                 ),
                 ConditionalContainer(
-                    content=fill(width=1, height=1, char=self.border_char("TOP_SPLIT")),
-                    filter=self.show_prompt,
+                    content=fill(width=1, height=1, char=border_char("TOP_SPLIT")),
+                    filter=show_prompt,
                 ),
-                fill(char=self.border_char("TOP_MID"), height=1),
-                fill(width=1, height=1, char=self.border_char("TOP_RIGHT")),
+                fill(char=border_char("TOP_MID"), height=1),
+                fill(width=1, height=1, char=border_char("TOP_RIGHT")),
             ],
             height=1,
         )
         input_row = ConditionalContainer(
             VSplit(
                 [
-                    fill(width=1, char=self.border_char("MID_LEFT")),
+                    fill(width=1, char=border_char("MID_LEFT")),
                     ConditionalContainer(
                         content=Window(
                             FormattedTextControl(
-                                lambda: self.prompt,
+                                lambda: weak_self.prompt,
                             ),
-                            width=lambda: len(self.prompt),
+                            width=lambda: len(weak_self.prompt),
                             style="class:cell.input.prompt",
                         ),
-                        filter=self.show_prompt,
+                        filter=show_prompt,
                     ),
                     ConditionalContainer(
-                        fill(width=1, char=self.border_char("MID_SPLIT")),
-                        filter=self.show_prompt,
+                        fill(width=1, char=border_char("MID_SPLIT")),
+                        filter=show_prompt,
                     ),
                     self.input_box,
-                    fill(width=1, char=self.border_char("MID_RIGHT")),
+                    fill(width=1, char=border_char("MID_RIGHT")),
                 ],
             ),
-            filter=self.show_input,
+            filter=show_input,
         )
         middle_line = ConditionalContainer(
             content=VSplit(
                 [
-                    fill(width=1, height=1, char=self.border_char("SPLIT_LEFT")),
+                    fill(width=1, height=1, char=border_char("SPLIT_LEFT")),
                     ConditionalContainer(
                         content=fill(
-                            char=self.border_char("SPLIT_MID"),
-                            width=lambda: len(self.prompt),
+                            char=border_char("SPLIT_MID"),
+                            width=lambda: len(weak_self.prompt),
                         ),
-                        filter=self.show_prompt,
+                        filter=show_prompt,
                     ),
                     ConditionalContainer(
                         content=fill(
-                            width=1, height=1, char=self.border_char("SPLIT_SPLIT")
+                            width=1, height=1, char=border_char("SPLIT_SPLIT")
                         ),
-                        filter=self.show_prompt,
+                        filter=show_prompt,
                     ),
-                    fill(char=self.border_char("SPLIT_MID")),
-                    fill(width=1, height=1, char=self.border_char("SPLIT_RIGHT")),
+                    fill(char=border_char("SPLIT_MID")),
+                    fill(width=1, height=1, char=border_char("SPLIT_RIGHT")),
                 ],
                 height=1,
             ),
-            filter=(self.show_input & self.show_output) | self.asking_input,
+            filter=(show_input & show_output) | asking_input,
         )
         output_row = ConditionalContainer(
             VSplit(
                 [
-                    fill(width=1, char=self.border_char("MID_LEFT")),
+                    fill(width=1, char=border_char("MID_LEFT")),
                     ConditionalContainer(
                         content=Window(
                             FormattedTextControl(
-                                lambda: self.prompt,
+                                lambda: weak_self.prompt,
                             ),
-                            width=lambda: len(self.prompt),
+                            width=lambda: len(weak_self.prompt),
                             style="class:cell.output.prompt",
                         ),
-                        filter=self.show_prompt,
+                        filter=show_prompt,
                     ),
                     ConditionalContainer(
-                        content=fill(width=1, char=self.border_char("MID_SPLIT")),
-                        filter=self.show_prompt,
+                        content=fill(width=1, char=border_char("MID_SPLIT")),
+                        filter=show_prompt,
                     ),
                     ConditionalContainer(
-                        fill(width=1, char=self.border_char("MID_MID")),
-                        filter=~self.show_prompt,
+                        fill(width=1, char=border_char("MID_MID")),
+                        filter=~show_prompt,
                     ),
                     HSplit(
                         [
                             self.output_area,
                             ConditionalContainer(
                                 Frame(self.stdin_box),
-                                filter=self.asking_input,
+                                filter=asking_input,
                             ),
                         ]
                     ),
                     ConditionalContainer(
-                        fill(width=1, char=self.border_char("MID_MID")),
-                        filter=~self.show_prompt,
+                        fill(width=1, char=border_char("MID_MID")),
+                        filter=~show_prompt,
                     ),
-                    fill(width=1, char=self.border_char("MID_RIGHT")),
+                    fill(width=1, char=border_char("MID_RIGHT")),
                 ],
             ),
-            filter=self.show_output | self.asking_input,
+            filter=show_output | asking_input,
         )
         bottom_border = VSplit(
             [
-                fill(width=1, height=1, char=self.border_char("BOTTOM_LEFT")),
+                fill(width=1, height=1, char=border_char("BOTTOM_LEFT")),
                 ConditionalContainer(
                     content=fill(
-                        char=self.border_char("BOTTOM_MID"),
-                        width=lambda: len(self.prompt),
+                        char=border_char("BOTTOM_MID"),
+                        width=lambda: len(weak_self.prompt),
                     ),
-                    filter=self.show_prompt,
+                    filter=show_prompt,
                 ),
                 ConditionalContainer(
-                    content=fill(
-                        width=1, height=1, char=self.border_char("BOTTOM_SPLIT")
-                    ),
-                    filter=self.show_prompt,
+                    content=fill(width=1, height=1, char=border_char("BOTTOM_SPLIT")),
+                    filter=show_prompt,
                 ),
-                fill(char=self.border_char("BOTTOM_MID")),
-                fill(width=1, height=1, char=self.border_char("BOTTOM_RIGHT")),
+                fill(char=border_char("BOTTOM_MID")),
+                fill(width=1, height=1, char=border_char("BOTTOM_RIGHT")),
             ],
             height=1,
         )
 
         self.container = ClickToFocus(
-            cell=self,
+            cell=weak_self,
             body=HSplit(
-                [top_border, input_row, middle_line, output_row, bottom_border],
+                [
+                    top_border,
+                    input_row,
+                    middle_line,
+                    output_row,
+                    bottom_border,
+                ],
             ),
         )
 
@@ -524,35 +568,6 @@ class Cell:
 
         """
         self.nb.select(self.index, extend=extend, position=position)
-
-    def border_style(self) -> "str":
-        """Determines the style of the cell borders, based on the cell state."""
-        if self.selected:
-            # Enter edit mode if the input has become focused via a mouse click
-            if self.input_box.has_focus():
-                self.nb.edit_mode = True
-            # Exit edit mode if the stdin box has focus
-            elif get_app().layout.has_focus(self.stdin_box):
-                self.nb.edit_mode = False
-            if self.nb.edit_mode:
-                return "class:cell.border.edit"
-            else:
-                return "class:cell.border.selected"
-        return "class:cell.border"
-
-    def border_char(self, name: "str") -> "Callable[..., str]":
-        """Returns a function which returns the cell border character to display."""
-
-        def _inner() -> "str":
-            grid = Invisible.grid
-            if config.show_cell_borders or self.selected:
-                if self.focused and multiple_cells_selected():
-                    grid = Thick.outer
-                else:
-                    grid = Thin.outer
-            return getattr(grid, name.upper())
-
-        return _inner
 
     @property
     def cell_type(self) -> "str":
@@ -629,18 +644,9 @@ class Cell:
         self.state = "idle"
         self.trigger_refresh()
 
-    def remove_output_graphic_floats(self) -> "None":
-        """Unregisters the cell's output's graphic floats with the applications."""
-        return
-        for output in self.output_box.children:
-            if graphic_float := output.graphic_float:
-                graphic_float.content.content.hide()
-                get_app().remove_float(graphic_float)
-
     def remove_outputs(self) -> "None":
         """Remove all outputs from the cell."""
         self.clear_outputs_on_output = False
-        self.remove_output_graphic_floats()
         if "outputs" in self.json:
             del self.json["outputs"]
 
@@ -823,11 +829,10 @@ class InteractiveCell(Cell):
 
         """
         to_focus = None
-        log.debug(self.nb.edit_mode)
         if self.nb.edit_mode:
             # Select just this cell when editing
             # self.nb.select(self.index)
-            if self.asking_input():
+            if self._asking_input:
                 to_focus = self.stdin_box.window
             else:
                 to_focus = self.input_box.window

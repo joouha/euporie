@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import weakref
 from typing import TYPE_CHECKING, cast
 
 from prompt_toolkit.application.current import get_app
@@ -50,7 +51,7 @@ class ChildRenderInfo:
 
         """
         self.parent = parent
-        self.child = child
+        self.child = weakref.proxy(child)
         child.meta = self
         self.container = to_container(child)
 

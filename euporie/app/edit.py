@@ -274,10 +274,8 @@ class EditApp(EuporieApp):
 
         self.command_palette = CommandPalette()
 
-        self.menu_container = MenuContainer(
-            body=body,
-            menu_items=self.load_menu_items(),  # type: ignore
-            floats=[
+        self.dialogs.extend(
+            [
                 Float(self.command_palette, top=4),
                 Float(
                     content=CompletionsMenu(
@@ -288,10 +286,17 @@ class EditApp(EuporieApp):
                     xcursor=True,
                     ycursor=True,
                 ),
-            ],
+            ]
+        )
+
+        self.menu_container = MenuContainer(
+            body=body,
+            menu_items=self.load_menu_items(),  # type: ignore
+            floats=self.floats,
             left=[self.logo],
             right=[self.title_bar],
         )
+
         return cast("FloatContainer", to_container(self.menu_container))
 
     def tab_bar_tabs(self) -> "List[TabBarTab]":
@@ -333,7 +338,7 @@ class EditApp(EuporieApp):
 
         def _make_handler(cb: "Optional[Callable]" = None) -> "Callable":
             def inner(event: "Optional[KeyPressEvent]" = None) -> "None":
-                self.remove_float(dialog_float)
+                self.dialogs.remove(dialog_float)
                 self.has_dialog = False
                 if focused in self.layout.find_all_controls():
                     try:
@@ -378,7 +383,7 @@ class EditApp(EuporieApp):
             )
         dialog_float = Float(content=dialog)
         # Add to top of the float stack
-        self.add_float(dialog_float)
+        self.dialogs.insert(0, dialog_float)
         self.has_dialog = True
 
         if to_focus is None:

@@ -303,6 +303,10 @@ class CellOutputArea:
         self.container = HSplit([])
         self.json = json
 
+    def reset(self) -> "None":
+        """Clears all outputs from the output area."""
+        self.json = []
+
     @property
     def json(self) -> "List[Dict[str, Any]]":
         """Returns the output area's JSON data."""

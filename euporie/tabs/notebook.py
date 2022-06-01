@@ -130,7 +130,7 @@ class Notebook(Tab, metaclass=ABCMeta):
         )
 
     def rendered_cells(self) -> "list[Cell]":
-        """Return a list of `Cell` generator functions for the notebooks' cells."""
+        """Return a list of rendered notebooks' cells."""
         cells = {}
         for i, cell_json in enumerate(self.json.get("cells", [])):
             cell_id = get_cell_id(cell_json)
@@ -140,9 +140,9 @@ class Notebook(Tab, metaclass=ABCMeta):
                 # Pytype doesn't like this..
                 cells[cell_id] = self.cell_type(i, cell_json, self)  # type: ignore
             cells[cell_id].index = i
-        # Clean up graphic floats from deleted cells
+        # These cells will be removed
         for cell in set(self._rendered_cells.values()) - set(cells.values()):
-            cell.remove_output_graphic_floats()
+            del cell
         self._rendered_cells = cells
         return list(self._rendered_cells.values())
 
@@ -232,8 +232,10 @@ class Notebook(Tab, metaclass=ABCMeta):
         if slice_ is not None:
             indices = range(*slice_.indices(len(self.json["cells"])))
             index = min(indices)
-            cells = [x[1] for x in sorted(zip(indices, self.json["cells"][slice_]))]
-            self.undo_buffer.append((index, cells))
+            cell_jsons = [
+                x[1] for x in sorted(zip(indices, self.json["cells"][slice_]))
+            ]
+            self.undo_buffer.append((index, cell_jsons))
             del self.json["cells"][slice_]
             # Ensure there is always one cell
             if len(self.json["cells"]) == 0:
