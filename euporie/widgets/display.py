@@ -826,12 +826,7 @@ class Display:
             width=width,
             right_margins=[
                 ConditionalMargin(
-                    ScrollbarMargin(
-                        display_arrows=True,
-                        up_arrow_symbol="▲",
-                        down_arrow_symbol="▼",
-                        smooth=True,
-                    ),
+                    ScrollbarMargin(),
                     filter=self.show_scrollbar,
                 ),
             ],
