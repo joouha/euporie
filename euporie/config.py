@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING
 import fastjsonschema
 from appdirs import user_config_dir
 from pygments.styles import STYLE_MAP as pygments_styles
+from upath import UPath
 
 from euporie import __app_name__, __copyright__, __strapline__, __version__
 from euporie.enums import TabMode
@@ -459,7 +460,7 @@ CONFIG_PARAMS: "Dict[str, Dict]" = {
         "apps_": ["edit", "preview", "hub"],
         "flags_": ["files"],
         "nargs": "*",
-        "type": Path,
+        "type": UPath,
         "help": "List of file names to open",
         "schema_": {
             "type": "array",
@@ -731,7 +732,7 @@ class JSONEncoderPlus(json.JSONEncoder):
 
         """
         if isinstance(o, Path):
-            return str(o.expanduser())
+            return str(o)
         return json.JSONEncoder.default(self, o)
 
 

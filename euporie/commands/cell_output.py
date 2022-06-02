@@ -14,20 +14,20 @@ log = logging.getLogger(__name__)
 @add(keys=["left"], filter=display_has_focus, group="cell-output")
 def scroll_left_cell_output() -> "None":
     """Scroll the display up one line."""
-    from euporie.widgets.output.container import OutputWindow
+    from euporie.widgets.display import DisplayWindow
 
     window = get_app().layout.current_window
-    assert isinstance(window, OutputWindow)
+    assert isinstance(window, DisplayWindow)
     window._scroll_left()
 
 
 @add(keys=["right"], filter=display_has_focus, group="cell-output")
 def scroll_right_cell_output() -> "None":
     """Scroll the display down one line."""
-    from euporie.widgets.output.container import OutputWindow
+    from euporie.widgets.display import DisplayWindow
 
     window = get_app().layout.current_window
-    assert isinstance(window, OutputWindow)
+    assert isinstance(window, DisplayWindow)
     window._scroll_right()
 
 

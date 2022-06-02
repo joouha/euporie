@@ -5,7 +5,6 @@ from __future__ import annotations
 import asyncio
 import logging
 from functools import partial
-from pathlib import Path
 from typing import TYPE_CHECKING, cast
 
 from prompt_toolkit.clipboard import InMemoryClipboard
@@ -38,6 +37,7 @@ from euporie.config import CONFIG_PARAMS, config
 from euporie.enums import TabMode
 from euporie.tabs.log import LogView
 from euporie.tabs.notebook import EditNotebook
+from euporie.utils import parse_path
 from euporie.widgets.decor import FocusedStyle, Pattern
 from euporie.widgets.formatted_text_area import FormattedTextArea
 from euporie.widgets.inputs import Button, Text
@@ -394,32 +394,24 @@ class EditApp(EuporieApp):
 
     def ask_file(
         self,
+        callback: "Callable[[Buffer, bool, Optional[Completer]], None]",
         default: "str" = "",
         validate: "bool" = True,
         error: "Optional[str]" = None,
-        completer: "Completer" = None,
+        completer: "Optional[Completer]" = None,
+        title: "str" = "Select file",
     ) -> None:
         """Display a dialog asking for file name input.
 
         Args:
+            callback: The callback to run when the filepath is accepted
             default: The default filename to display in the text entry box
             validate: Whether to disallow files which do not exist
             error: An optional error message to display below the file name
             completer: The completer to use for the input field
+            title: The dialog title
 
         """
-
-        def _open_cb() -> None:
-            path = Path(filepath.text)
-            if not validate or path.expanduser().exists():
-                self.open_file(path)
-            else:
-                self.ask_file(
-                    default=filepath.text,
-                    validate=validate,
-                    error="File not found",
-                    completer=completer,
-                )
 
         def _accept_text(buf: "Buffer") -> "bool":
             """Accepts the text in the file input field and focuses the next field."""
@@ -437,32 +429,75 @@ class EditApp(EuporieApp):
         )
 
         root_contents: "list[AnyContainer]" = [
-            Label("Enter file name:"),
+            Label("Enter file path:"),
             FocusedStyle(filepath),
         ]
         if error:
             root_contents.append(Label(error, style="red"))
         self.dialog(
-            title="Select file",
+            title=title,
             body=HSplit(root_contents),
             buttons={
-                "OK": _open_cb,
+                "OK": partial(callback, filepath.buffer, validate, completer),
                 "Cancel": None,
             },
             to_focus=filepath,
         )
 
+    def _open_file_cb(
+        self,
+        buffer: "Buffer",
+        validate: "bool",
+        completer: "Optional[Completer]" = None,
+    ) -> "None":
+        """Open a file from the "open" or "new" dialogs."""
+        path = parse_path(buffer.text)
+        if not validate or path.exists():
+            self.open_file(path)
+        else:
+            self.ask_file(
+                callback=self._open_file_cb,
+                default=buffer.text,
+                validate=validate,
+                error="File not found",
+                completer=completer,
+                title="Open File",
+            )
+
     def ask_new_file(self) -> "None":
         """Prompts the user to name a file."""
         return self.ask_file(
+            callback=self._open_file_cb,
             validate=False,
             completer=PathCompleter(),
+            title="New File",
         )
 
     def ask_open_file(self) -> "None":
         """Prompts the user to open a file."""
         self.ask_file(
+            callback=self._open_file_cb,
             completer=PathCompleter(),
+            title="Open File",
+        )
+
+    def _save_as_cb(
+        self,
+        buffer: "Buffer",
+        validate: "bool",
+        completer: "Optional[Completer]" = None,
+    ) -> "None":
+        """Change the notebook's path and save it."""
+        if self.notebook:
+            self.notebook.path = parse_path(buffer.text)
+            self.notebook.save()
+
+    def save_as(self) -> "None":
+        """Prompts the user to save the notebook under a new path."""
+        self.ask_file(
+            callback=self._save_as_cb,
+            completer=PathCompleter(),
+            title="Save As",
         )
 
     @staticmethod
@@ -643,6 +678,7 @@ class EditApp(EuporieApp):
                     get("open-file").menu,
                     separator,
                     get("save-notebook").menu,
+                    get("save-as").menu,
                     get("close-file").menu,
                     separator,
                     get("quit").menu,

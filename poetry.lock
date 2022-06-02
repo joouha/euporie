@@ -526,6 +526,37 @@ regex = "*"
 test = ["pytest"]
 
 [[package]]
+name = "fsspec"
+version = "2022.5.0"
+description = "File-system specification"
+category = "main"
+optional = false
+python-versions = ">=3.7"
+
+[package.extras]
+abfs = ["adlfs"]
+adl = ["adlfs"]
+arrow = ["pyarrow (>=1)"]
+dask = ["dask", "distributed"]
+dropbox = ["dropboxdrivefs", "requests", "dropbox"]
+entrypoints = ["importlib-metadata"]
+fuse = ["fusepy"]
+gcs = ["gcsfs"]
+git = ["pygit2"]
+github = ["requests"]
+gs = ["gcsfs"]
+gui = ["panel"]
+hdfs = ["pyarrow (>=1)"]
+http = ["requests", "aiohttp"]
+libarchive = ["libarchive-c"]
+oci = ["ocifs"]
+s3 = ["s3fs"]
+sftp = ["paramiko"]
+smb = ["smbprotocol"]
+ssh = ["paramiko"]
+tqdm = ["tqdm"]
+
+[[package]]
 name = "furo"
 version = "2022.4.7"
 description = "A clean customisable Sphinx documentation theme."
@@ -1868,6 +1899,20 @@ python-versions = ">=3.6"
 test = ["coverage", "pytest", "pytest-cov"]
 
 [[package]]
+name = "universal-pathlib"
+version = "0.0.18"
+description = "Pathlib API extended to use fsspec backends"
+category = "main"
+optional = false
+python-versions = ">=3.7"
+
+[package.dependencies]
+fsspec = "*"
+
+[package.extras]
+test = ["aiohttp", "flake8", "gcsfs", "hadoop-test-cluster", "ipython", "jupyter", "moto", "pyarrow", "pylint", "pytest", "requests", "s3fs"]
+
+[[package]]
 name = "urllib3"
 version = "1.26.9"
 description = "HTTP library with thread-safe connection pooling, file post, and more."
@@ -1938,7 +1983,7 @@ svg-cairosvg = ["CairoSVG"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "70411af6fcdef548d3baf9e7d01bac68c5421f36bc3bb95e11d4aac49de22a28"
+content-hash = "4dd675816f95f78271bb9fff7b4e9c77241bcd0699aa922722ca1955e669a159"
 
 [metadata.files]
 aenum = [
@@ -2200,6 +2245,10 @@ flake8-polyfill = [
 flatlatex = [
     {file = "flatlatex-0.15-py3-none-any.whl", hash = "sha256:4cf3ed9c1b837935fd79468ddbb25ac561325467a3a9dc050805b297eb0b25c6"},
     {file = "flatlatex-0.15.tar.gz", hash = "sha256:5170e1bcd4fccb52bdbdff300b14b68730483bc46f6a2a89f7ae2bb024e4d139"},
+]
+fsspec = [
+    {file = "fsspec-2022.5.0-py3-none-any.whl", hash = "sha256:2c198c50eb541a80bbd03540b07602c4a957366f3fb416a1f270d34bd4ff0926"},
+    {file = "fsspec-2022.5.0.tar.gz", hash = "sha256:7a5459c75c44e760fbe6a3ccb1f37e81e023cde7da8ba20401258d877ec483b4"},
 ]
 furo = [
     {file = "furo-2022.4.7-py3-none-any.whl", hash = "sha256:7f3e3d2fb977483590f8ecb2c2cd511bd82661b79c18efb24de9558bc9cdf2d7"},
@@ -3074,6 +3123,10 @@ typing-extensions = [
 uc-micro-py = [
     {file = "uc-micro-py-1.0.1.tar.gz", hash = "sha256:b7cdf4ea79433043ddfe2c82210208f26f7962c0cfbe3bacb05ee879a7fdb596"},
     {file = "uc_micro_py-1.0.1-py3-none-any.whl", hash = "sha256:316cfb8b6862a0f1d03540f0ae6e7b033ff1fa0ddbe60c12cbe0d4cec846a69f"},
+]
+universal-pathlib = [
+    {file = "universal_pathlib-0.0.18-py3-none-any.whl", hash = "sha256:ddaa3cbfd98d0aef0d018915d1787149b8a77da473ede4245ab0103d85b6784a"},
+    {file = "universal_pathlib-0.0.18.tar.gz", hash = "sha256:b011f68611c1e9f839d86a76a154f3cd4fc17f4a9952cc43ddcd23e2080d74e0"},
 ]
 urllib3 = [
     {file = "urllib3-1.26.9-py2.py3-none-any.whl", hash = "sha256:44ece4d53fb1706f667c9bd1c648f5469a2ec925fcf3a776667042d645472c14"},

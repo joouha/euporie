@@ -6,8 +6,11 @@ from collections.abc import Sequence
 from itertools import chain
 from typing import TYPE_CHECKING, TypeVar, overload
 
+from upath import UPath
+
 if TYPE_CHECKING:
-    from typing import Iterable, List
+    from os import PathLike
+    from typing import Iterable, List, Union
 
 T = TypeVar("T")
 
@@ -39,3 +42,17 @@ class ChainedList(Sequence[T]):
     def __len__(self) -> "int":
         """Returns the length of the chained lists."""
         return len(self.data)
+
+
+def parse_path(path: "Union[str, PathLike]") -> "UPath":
+    """Parse and resolve a path."""
+    upath = UPath(path)
+    try:
+        upath = upath.expanduser()
+    except NotImplementedError:
+        pass
+    try:
+        upath = upath.resolve()
+    except AttributeError:
+        pass
+    return upath

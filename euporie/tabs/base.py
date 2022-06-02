@@ -42,6 +42,9 @@ class Tab(metaclass=ABCMeta):
         """Return the tab title."""
         return ""
 
+    def save(self) -> "None":
+        """Save the tab."""
+
     def close(self, cb: "Optional[Callable]" = None) -> "None":
         """Function to close a tab with a callback.
 

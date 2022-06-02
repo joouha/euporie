@@ -40,6 +40,17 @@ def close_file() -> None:
 
 
 @add(
+    keys=("escape", "c-s"),
+    menu_title="Save As...",
+    filter=tab_has_focus,
+    group="app",
+)
+def save_as() -> None:
+    """Save the current file at a new location."""
+    get_app().save_as()
+
+
+@add(
     keys="c-q",
     name="quit",
     group="app",

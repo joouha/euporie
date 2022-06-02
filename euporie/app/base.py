@@ -5,7 +5,6 @@ from __future__ import annotations
 import asyncio
 import logging
 from functools import partial
-from pathlib import Path
 from typing import TYPE_CHECKING, cast
 from weakref import WeakSet
 
@@ -66,9 +65,10 @@ from euporie.style import (
 from euporie.tabs.base import Tab
 from euporie.tabs.notebook import Notebook
 from euporie.terminal import TerminalInfo, Vt100Parser
-from euporie.utils import ChainedList
+from euporie.utils import ChainedList, parse_path
 
 if TYPE_CHECKING:
+    from os import PathLike
     from typing import Any, Callable, Dict, List, Optional, Tuple, Type
 
     from prompt_toolkit.filters import Filter
@@ -332,7 +332,11 @@ class EuporieApp(Application):
         """
         return FloatContainer(content=Window(), floats=[])
 
-    def open_file(self, path: "Path", read_only: "bool" = False) -> "None":
+    def save_as(self) -> "None":
+        """Prompts the user to save the notebook under a new path."""
+        log.debug("Cannot save file")
+
+    def open_file(self, path: "PathLike", read_only: "bool" = False) -> "None":
         """Creates a tab for a file.
 
         Args:
@@ -340,7 +344,7 @@ class EuporieApp(Application):
             read_only: If true, the file should be opened read_only
 
         """
-        path = Path(path).expanduser()
+        path = parse_path(path)
         log.info(f"Opening file {path}")
         for tab in self.tabs:
             if path == getattr(tab, "path", ""):

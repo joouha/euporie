@@ -34,6 +34,7 @@ from euporie.filters import insert_mode, replace_mode
 from euporie.key_binding.bindings.commands import load_command_bindings
 from euporie.suggest import KernelAutoSuggest
 from euporie.tabs.base import Tab
+from euporie.utils import parse_path
 from euporie.widgets.cell import Cell, InteractiveCell, get_cell_id
 from euporie.widgets.decor import FocusedStyle, Line, Pattern
 from euporie.widgets.inputs import Select
@@ -42,6 +43,7 @@ from euporie.widgets.pager import Pager
 
 if TYPE_CHECKING:
     from collections.abc import MutableSequence
+    from os import PathLike
     from typing import Callable, Deque, Dict, List, Optional, Sequence, Tuple, Type
 
     from prompt_toolkit.auto_suggest import AutoSuggest
@@ -71,7 +73,7 @@ class Notebook(Tab, metaclass=ABCMeta):
 
     def __init__(
         self,
-        path: "Path",
+        path: "PathLike",
         app: "Optional[EuporieApp]" = None,
     ):
         """Instantiate a Notebook container, using a notebook at a given path.
@@ -82,7 +84,7 @@ class Notebook(Tab, metaclass=ABCMeta):
 
         """
         super().__init__()
-        self.path: "Path" = Path(path).expanduser()
+        self.path = parse_path(path)
         self.completer: "Completer" = DummyCompleter()
         self.suggester: "AutoSuggest" = DummyAutoSuggest()
 
@@ -90,7 +92,8 @@ class Notebook(Tab, metaclass=ABCMeta):
 
         # Open json file
         if self.path.exists():
-            self.json = nbformat.read(self.path, as_version=4)
+            with self.path.open() as f:
+                self.json = nbformat.read(f, as_version=4)
         else:
             self.json = nbformat.v4.new_notebook()
         # Ensure there is always at least one cell
@@ -325,11 +328,17 @@ class Notebook(Tab, metaclass=ABCMeta):
         log.debug("Saving notebook..")
         self.saving = True
         self.app.invalidate()
-        nbformat.write(nb=nbformat.from_dict(self.json), fp=self.path)
-        self.dirty = False
-        self.saving = False
-        self.app.invalidate()
-        log.debug("Notebook saved")
+        try:
+            open_file = self.path.open("w")
+        except NotImplementedError:
+            self.app.save_as()
+        else:
+            with open_file as f:
+                nbformat.write(nb=nbformat.from_dict(self.json), fp=f)
+            self.dirty = False
+            self.saving = False
+            self.app.invalidate()
+            log.debug("Notebook saved")
 
     def run_cell(self, cell: "Cell", wait: "bool" = False) -> "None":
         """Runs a cell in the notebook."""
