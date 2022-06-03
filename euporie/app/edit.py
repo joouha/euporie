@@ -76,6 +76,7 @@ class EditApp(EuporieApp):
             **{
                 **{
                     "full_screen": True,
+                    "erase_when_done": True,
                     "mouse_support": True,
                     "editing_mode": self.get_edit_mode(),
                 },
