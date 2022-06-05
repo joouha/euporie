@@ -9,7 +9,7 @@ from euporie.filters import pager_has_focus
 log = logging.getLogger(__name__)
 
 
-@add(keys=["escape", "q"], filter=pager_has_focus, group="pager")
+@add(keys=["escape", "q"], filter=pager_has_focus, groups="pager")
 def close_pager() -> "None":
     """Close the pager."""
     app = get_app()

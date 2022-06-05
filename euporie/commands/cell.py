@@ -14,7 +14,7 @@ log = logging.getLogger(__name__)
 @add(
     keys="e",
     filter=cell_has_focus & ~buffer_has_focus,
-    group="cell",
+    groups="cell",
 )
 async def edit_in_external_editor() -> "None":
     """Edit cell in $EDITOR."""
@@ -26,7 +26,7 @@ async def edit_in_external_editor() -> "None":
 @add(
     keys=["c-\\"],
     filter=cell_has_focus & buffer_has_focus,
-    group="cell",
+    groups="cell",
 )
 def split_cell() -> "None":
     """Split the current cell at the cursor position."""
@@ -38,7 +38,7 @@ def split_cell() -> "None":
 @add(
     keys=["up"],
     filter=cell_has_focus & buffer_has_focus & cursor_on_first_line & ~has_completions,
-    group="cell",
+    groups="cell",
 )
 def edit_previous_cell() -> "None":
     """Move the cursor up to the previous cell."""
@@ -53,7 +53,7 @@ def edit_previous_cell() -> "None":
 @add(
     keys=["down"],
     filter=cell_has_focus & buffer_has_focus & cursor_on_last_line & ~has_completions,
-    group="cell",
+    groups="cell",
 )
 def edit_next_cell() -> "None":
     """Move the cursor down to the next cell."""
@@ -68,7 +68,7 @@ def edit_next_cell() -> "None":
 @add(
     keys=["left"],
     filter=cell_has_focus & ~buffer_has_focus,
-    group="cell",
+    groups="cell",
 )
 def scroll_output_left() -> "None":
     """Scroll the cell output to the left."""
@@ -80,7 +80,7 @@ def scroll_output_left() -> "None":
 @add(
     keys=["right"],
     filter=cell_has_focus & ~buffer_has_focus,
-    group="cell",
+    groups="cell",
 )
 def scroll_output_right() -> "None":
     """Scroll the cell output to the right."""

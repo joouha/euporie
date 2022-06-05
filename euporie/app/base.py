@@ -76,6 +76,7 @@ if TYPE_CHECKING:
     from prompt_toolkit.input import Input
     from prompt_toolkit.input.vt100 import Vt100Input
     from prompt_toolkit.layout.containers import AnyContainer, Float
+    from prompt_toolkit.layout.layout import FocusableElement
     from prompt_toolkit.output import Output
     from prompt_toolkit.widgets import SearchToolbar
 
@@ -163,6 +164,7 @@ class EuporieApp(Application):
         self.command_palette: "Optional[CommandPalette]" = None
         # Continue loading when the application has been launched
         # and an event loop has been creeated
+        self.post_load_callables = []
         self.pre_run_callables = [self.pre_run]
         # Set a long timeout for mappings (e.g. dd)
         self.timeoutlen = 1.0
@@ -170,6 +172,9 @@ class EuporieApp(Application):
         self.ttimeoutlen = 0.0
         # Use a custom key-processor which does not wait after escape keys
         self.key_processor = KeyProcessor(_CombinedRegistry(self))
+
+        self.focused_element: "Optional[FocusableElement]" = None
+        self.output.set_title(self.__class__.__name__)
 
     def pre_run(self, app: "Application" = None) -> "None":
         """Called during the 'pre-run' stage of application loading."""
@@ -196,7 +201,7 @@ class EuporieApp(Application):
             # Load the layout
             # We delay this until we have terminal responses to allow terminal graphics
             # support to be detected first
-            self.layout = Layout(self.load_container())
+            self.layout = Layout(self.load_container(), self.focused_element)
             # Open any files we need to
             self.open_files()
             # Run any additional steps
@@ -204,6 +209,8 @@ class EuporieApp(Application):
             # Resume rendering
             self._is_running = True
             self.renderer._waiting_for_cpr_futures.pop()
+            # Request cursor position
+            self._request_absolute_cursor_position()
             # Sending a repaint trigger
             self.invalidate()
 
@@ -268,7 +275,8 @@ class EuporieApp(Application):
 
     def post_load(self) -> "None":
         """Allows subclasses to define additional loading steps."""
-        pass
+        for cb in self.post_load_callables:
+            cb()
 
     def load_key_bindings(self) -> "None":
         """Loads the application's key bindings."""
@@ -330,7 +338,7 @@ class EuporieApp(Application):
             The root container for this app
 
         """
-        return FloatContainer(content=Window(), floats=[])
+        return FloatContainer(content=Window(), floats=self.floats)
 
     def save_as(self) -> "None":
         """Prompts the user to save the notebook under a new path."""

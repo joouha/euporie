@@ -14,20 +14,22 @@ from prompt_toolkit.key_binding.bindings.named_commands import (
 )
 
 from euporie.commands.registry import add
-from euporie.filters import cell_is_code, cursor_in_leading_ws, insert_mode
+from euporie.filters import buffer_is_code, cursor_in_leading_ws, insert_mode
 
 add(
     keys="c-i",
     filter=buffer_has_focus
     & insert_mode
     & ~has_selection
-    & cell_is_code
+    & buffer_is_code
     & ~cursor_in_leading_ws,
     hidden=True,
     name="next-completion",
-    group="completion",
+    groups="completion",
     description="Show the completion menu and select the next completion.",
 )(menu_complete)
+
+
 add(
     keys="s-tab",
     filter=buffer_has_focus
@@ -37,7 +39,7 @@ add(
     & ~cursor_in_leading_ws,
     hidden=True,
     name="previous-completion",
-    group="completion",
+    groups="completion",
     description="Show the completion menu and select the previous completion.",
 )(menu_complete_backward)
 
@@ -46,7 +48,7 @@ add(
     keys="escape",
     filter=completion_is_selected & has_completions,
     hidden=True,
-    group="completion",
+    groups="completion",
     eager=True,
 )
 def cancel_completion() -> "None":
@@ -54,7 +56,7 @@ def cancel_completion() -> "None":
     get_app().current_buffer.cancel_completion()
 
 
-@add(keys="enter", filter=completion_is_selected, hidden=True, group="completion")
+@add(keys="enter", filter=completion_is_selected, hidden=True, groups="completion")
 def accept_completion() -> "None":
     """Accept a selected completion."""
     buffer = get_app().current_buffer

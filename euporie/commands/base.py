@@ -49,7 +49,7 @@ class Command:
         title: "Optional[str]" = None,
         menu_title: "Optional[str]" = None,
         description: "Optional[str]" = None,
-        group: "Optional[str]" = None,
+        groups: "Optional[Union[str, Sequence[str]]]" = None,
         toggled: "Optional[Filter]" = None,
         keys: "Optional[AnyKeys]" = None,
         eager: "FilterOrBool" = False,
@@ -67,7 +67,7 @@ class Command:
             title: The title of the command for display
             menu_title: The title to display in menus if different
             description: The description of the command to explain it's function
-            group: The group to which this command belongs
+            groups: One or more groups to which this command belongs
             toggled: The toggle state of this command If this command toggles something
             keys: The default keys to which this command should be bound
             eager: When True, ignore potential longer matches for this key binding
@@ -95,7 +95,12 @@ class Command:
             else:
                 description = title or name.capitalize()
         self.description = description
-        self.group = group
+        if isinstance(groups, str):
+            self.groups = {groups}
+        elif groups is None:
+            self.groups = set()
+        else:
+            self.groups = set(groups)
 
         self.toggled = toggled
         self._menu: "Optional[MenuItem]" = None

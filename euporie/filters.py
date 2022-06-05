@@ -170,21 +170,15 @@ def code_cell_selected() -> "bool":
 
 
 @Condition
-def cell_is_code() -> "bool":
-    """Determine if the current cell is a code cell."""
-    cell = get_app().cell
-    if cell is None:
-        return False
-    return cell.cell_type == "code"
+def buffer_is_code() -> "bool":
+    """Determine if the current buffer contains code."""
+    return get_app().current_buffer.name == "code"
 
 
 @Condition
-def cell_is_markdown() -> "bool":
-    """Determine if the current cell is a markdown cell."""
-    cell = get_app().cell
-    if cell is None:
-        return False
-    return cell.cell_type == "markdown"
+def buffer_is_markdown() -> "bool":
+    """Determine if the current buffer contains markdown."""
+    return get_app().current_buffer.name == "code"
 
 
 @Condition

@@ -261,8 +261,10 @@ class OutputModel(IpyWidgetComm):
             if (msg_id := data.get("state", {}).get("msg_id")) is not None:
                 # Replace the kernel callbacks of the given message ID
                 if msg_id:
-                    # Replace the message's callbacks
-                    self.original_callbacks = self.nb.kernel.msg_id_callbacks[msg_id]
+                    # Replace the message's callbacks, saving a copy
+                    self.original_callbacks = MsgCallbacks(
+                        self.nb.kernel.msg_id_callbacks[msg_id]
+                    )
                     del self.nb.kernel.msg_id_callbacks[msg_id]
                     self.nb.kernel.msg_id_callbacks[msg_id].update(self.callbacks)
                 else:

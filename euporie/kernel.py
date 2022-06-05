@@ -7,7 +7,10 @@ import concurrent.futures
 import logging
 import threading
 from collections import defaultdict
-from subprocess import DEVNULL, STDOUT  # noqa S404 - Security implications considered
+from subprocess import (
+    DEVNULL,
+    STDOUT,
+)  # noqa S404 - Security implications considered
 from typing import TYPE_CHECKING, TypedDict
 
 import nbformat
@@ -54,7 +57,11 @@ class NotebookKernel:
         self.loop.run_forever()
 
     def __init__(
-        self, nb: "KernelNotebook", threaded: "bool" = True, allow_stdin: "bool" = False
+        self,
+        nb: "KernelNotebook",
+        threaded: "bool" = True,
+        allow_stdin: "bool" = False,
+        default_callbacks: "Optional[MsgCallbacks]" = None,
     ) -> "None":
         """Called when the :py:class:`NotebookKernel` is initialized.
 
@@ -62,6 +69,7 @@ class NotebookKernel:
             nb: The notebook this kernel belongs to
             threaded: If :py:const:`True`, run kernel communication in a separate thread
             allow_stdin: Whether the kernel is allowed to request input
+            default_callbacks: The default callbacks to use on recipt of a message
 
         """
         self.threaded = threaded
@@ -84,20 +92,23 @@ class NotebookKernel:
         self.coros: "Dict[str, concurrent.futures.Future]" = {}
         self.poll_tasks: "list[asyncio.Task]" = []
 
-        self.msg_id_callbacks: "Dict[str, MsgCallbacks]" = defaultdict(
-            lambda: {
-                "get_input": lambda prompt, password: self.nb.cell.get_input(
-                    prompt, password
-                ),
-                "set_execution_count": lambda n: self.nb.cell.set_execution_count(n),
-                "add_output": lambda output_json: self.nb.cell.add_output(output_json),
-                "clear_output": lambda wait: self.nb.cell.clear_output(wait),
+        self.default_callbacks = MsgCallbacks(
+            {
+                "get_input": None,
+                "set_execution_count": None,
+                "add_output": None,
+                "clear_output": None,
                 "done": None,
-                "set_metadata": lambda path, data: self.nb.cell.set_metadata(
-                    path, data
-                ),
-                "set_status": lambda status: self.nb.cell.set_status(status),
+                "set_metadata": None,
+                "set_status": None,
             }
+        )
+        if default_callbacks is not None:
+            self.default_callbacks.update(default_callbacks)
+
+        self.msg_id_callbacks: "Dict[str, MsgCallbacks]" = defaultdict(
+            # Return a copy of the default callbacks
+            lambda: MsgCallbacks(self.default_callbacks)
         )
 
         # Set the kernel folder list to prevent the default method from running.
@@ -364,8 +375,10 @@ class NotebookKernel:
     def on_shell_kernel_info_reply(self, rsp: "Dict[str, Any]") -> "None":
         """Call callbacks for a shell kernel info response."""
         msg_id = rsp.get("parent_header", {}).get("msg_id")
-        if callable(done := self.msg_id_callbacks[msg_id].get("done")):
-            done(rsp.get("content", {}))
+        if callable(
+            set_kernel_info := self.msg_id_callbacks[msg_id].get("set_kernel_info")
+        ):
+            set_kernel_info(rsp.get("content", {}))
 
     def on_shell_complete_reply(self, rsp: "Dict[str, Any]") -> "None":
         """Call callbacks for a shell completion reply response."""
@@ -384,6 +397,12 @@ class NotebookKernel:
         msg_id = rsp.get("parent_header", {}).get("msg_id")
         if callable(done := self.msg_id_callbacks[msg_id].get("done")):
             done(rsp.get("content", {}))
+
+    def on_shell_is_complete_reply(self, rsp: "Dict[str, Any]") -> "None":
+        """Call callbacks for a shell completness reply response."""
+        msg_id = rsp.get("parent_header", {}).get("msg_id")
+        if callable(completeness_status := self.msg_id_callbacks[msg_id].get("done")):
+            completeness_status(rsp.get("content", {}))
 
     def on_iopub_status(self, rsp: "Dict[str, Any]") -> "None":
         """Call callbacks for an iopub status response."""
@@ -543,16 +562,17 @@ class NotebookKernel:
             # Set the event
             event.set()
 
+        callbacks = {
+            "get_input": get_input,
+            "set_execution_count": set_execution_count,
+            "add_output": add_output,
+            "clear_output": clear_output,
+            "set_metadata": set_metadata,
+            "set_status": set_status,
+            "done": wrapped_done,
+        }
         self.msg_id_callbacks[msg_id].update(
-            MsgCallbacks(
-                get_input=get_input,
-                set_execution_count=set_execution_count,
-                add_output=add_output,
-                clear_output=clear_output,
-                set_metadata=set_metadata,
-                set_status=set_status,
-                done=wrapped_done,
-            )
+            MsgCallbacks(filter(lambda x: x[1] is not None, callbacks.items()))
         )
         # Wait for "done" callback to be called
         try:
@@ -573,8 +593,9 @@ class NotebookKernel:
         """Request information about the kernel."""
         if self.kc is not None:
             msg_id = self.kc.kernel_info()
+            callbacks = {"set_kernel_info": set_kernel_info, "set_status": set_status}
             self.msg_id_callbacks[msg_id].update(
-                MsgCallbacks(set_kernel_info=set_kernel_info, set_status=set_status)
+                MsgCallbacks(filter(lambda x: x[1] is not None, callbacks.items()))
             )
 
     async def complete_(
@@ -755,6 +776,55 @@ class NotebookKernel:
             wait=False,
             callback=callback,
             single=True,
+        )
+
+    async def is_complete_(
+        self,
+        code: "str",
+        timeout: "int" = 0.1,
+    ) -> "dict[str, Any]":
+        """Ask the kernel to determine if code is complete asynchronously."""
+        result = {}
+
+        if not self.kc:
+            return result
+
+        event = asyncio.Event()
+
+        def process_is_complete_reply(content: "Dict[str, Any]") -> "None":
+            """Process responses on the shell channel."""
+            result.update(content)
+            event.set()
+
+        msg_id = self.kc.is_complete(code)
+        self.msg_id_callbacks[msg_id].update(
+            {"completeness_status": process_is_complete_reply}
+        )
+
+        try:
+            await asyncio.wait_for(event.wait(), timeout)
+        except asyncio.TimeoutError:
+            log.debug("Timed out waiting for kernel info response")
+
+        return result
+
+    def is_complete(
+        self,
+        code: "str",
+    ) -> "str":
+        """Request code completeness status from the kernel.
+
+        Args:
+            code: The code string to check the completeness status of
+
+        Returns:
+            A string describing the completeness status
+
+        """
+        return self._aodo(
+            self.is_complete_(code),
+            wait=False,
+            callback=callback,
         )
 
     def interrupt(self) -> "None":

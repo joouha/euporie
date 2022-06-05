@@ -20,7 +20,7 @@ log = logging.getLogger(__name__)
 @add(
     keys="l",
     filter=~buffer_has_focus,
-    group="config",
+    groups="config",
     toggled=Condition(lambda: config.line_numbers),
 )
 def show_line_numbers() -> "None":
@@ -31,7 +31,7 @@ def show_line_numbers() -> "None":
 
 @add(
     filter=~buffer_has_focus,
-    group="config",
+    groups="config",
 )
 def switch_background_pattern() -> "None":
     """Switch between different background patterns."""
@@ -40,7 +40,7 @@ def switch_background_pattern() -> "None":
 
 @add(
     filter=~buffer_has_focus,
-    group="config",
+    groups="config",
     toggled=Condition(lambda: config.show_cell_borders),
 )
 def show_cell_borders() -> "None":
@@ -52,7 +52,7 @@ def show_cell_borders() -> "None":
 @add(
     keys="w",
     filter=~buffer_has_focus,
-    group="config",
+    groups="config",
     toggled=Condition(lambda: config.expand),
 )
 def use_full_width() -> "None":
@@ -115,7 +115,7 @@ def format_ssort() -> "None":
 
 @add(
     title="Suggest lines from history",
-    group="config",
+    groups="config",
     toggled=Condition(lambda: bool(config.autosuggest)),
 )
 def autosuggest() -> "None":
@@ -125,7 +125,7 @@ def autosuggest() -> "None":
 
 @add(
     title="Automatic contextual help",
-    group="config",
+    groups="config",
     toggled=Condition(lambda: bool(config.autoinspect)),
 )
 def autoinspect() -> "None":
@@ -135,7 +135,7 @@ def autoinspect() -> "None":
 
 @add(
     title="Run cell after external edit",
-    group="config",
+    groups="config",
     toggled=Condition(lambda: bool(config.run_after_external_edit)),
 )
 def run_after_external_edit() -> "None":
@@ -144,7 +144,7 @@ def run_after_external_edit() -> "None":
 
 
 @add(
-    group="config",
+    groups="config",
     toggled=Condition(lambda: bool(config.show_status_bar)),
 )
 def show_status_bar() -> "None":
@@ -153,7 +153,7 @@ def show_status_bar() -> "None":
 
 
 @add(
-    group="config",
+    groups="config",
     toggled=Condition(lambda: bool(config.always_show_tab_bar)),
 )
 def always_show_tab_bar() -> "None":
@@ -162,7 +162,7 @@ def always_show_tab_bar() -> "None":
 
 
 @add(
-    group="config",
+    groups="config",
     toggled=Condition(lambda: bool(config.show_scroll_bar)),
 )
 def show_scroll_bar() -> "None":
@@ -172,7 +172,7 @@ def show_scroll_bar() -> "None":
 
 @add(
     title="Enable terminal graphics in tmux",
-    group="config",
+    groups="config",
     hidden=~in_tmux,
     toggled=Condition(lambda: bool(config.tmux_graphics)),
 )
@@ -191,7 +191,7 @@ for choice in config.choices("edit_mode"):
         name=f"set-edit-mode-{choice.lower()}",
         title=f'Set edit mode to "{choice.title()}"',
         menu_title=choice.title(),
-        group="config",
+        groups="config",
         description=f"Set the editing mode key-binding style to '{choice}'.",
         toggled=Condition(
             partial(lambda x: config.edit_mode == x, choice),
@@ -209,7 +209,7 @@ for choice in config.choices("color_scheme"):
         name=f"set-color-scheme-{choice.lower()}",
         title=f'Set color scheme to "{choice.title()}"',
         menu_title=choice.title(),
-        group="config",
+        groups="config",
         description=f"Set the color scheme to '{choice}'.",
         toggled=Condition(
             partial(lambda x: config.color_scheme == x, choice),
@@ -227,7 +227,7 @@ for choice in sorted(CONFIG_PARAMS["syntax_theme"]["schema_"]["enum"]):
         name=f"set-syntax-theme-{choice.lower()}",
         title=f'Set syntax theme to "{choice}"',
         menu_title=choice,
-        group="config",
+        groups="config",
         description=f"Set the syntax highlighting theme to '{choice}'.",
         toggled=Condition(
             partial(lambda x: config.syntax_theme == x, choice),
@@ -240,7 +240,7 @@ for choice in config.choices("tab_mode"):
         name=f"set-tab-mode-{choice.lower()}",
         title=f'Set tab mode to "{choice.title()}"',
         menu_title=choice.replace("_", " ").capitalize(),
-        group="config",
+        groups="config",
         description=f"Set the tab mode to '{choice}'.",
         toggled=Condition(
             partial(lambda x: config.tab_mode == x, choice),

@@ -55,6 +55,15 @@ APPS: "List[Dict]" = [
             launches an instance of the TUI editor for each connected user.
         """,
     },
+    {
+        "name": "console",
+        "help": "Launch euporie console",
+        "class": "euporie.app.console.ConsoleApp",
+        "description": """
+            Launches euporie console, a frontend for Jupyter kernels which displays
+            rich output in the terminal.
+        """,
+    },
 ]
 
 

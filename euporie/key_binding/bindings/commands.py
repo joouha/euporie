@@ -16,8 +16,10 @@ def load_command_bindings(*groups: "Optional[str]") -> "KeyBindingsBase":
     """Loads key-bindings for command belonging to a list of groups."""
     kb = KeyBindings()
     if groups is None:
-        groups = []
+        groups = set()
+    else:
+        groups = set(groups)
     for cmd in commands.values():
-        if not groups or cmd.group in groups:
+        if not groups or cmd.groups & groups:
             kb._bindings += cmd.key_bindings
     return kb

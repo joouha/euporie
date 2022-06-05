@@ -25,9 +25,9 @@ class Tab(metaclass=ABCMeta):
 
     container: "_Split"
 
-    def __init__(self):
+    def __init__(self, app: "Optional[EuporieApp]" = None):
         """Called when the tab is created."""
-        self.app = get_app()
+        self.app = app or get_app()
         self.app.container_statuses[self] = self.statusbar_fields
         self.container = Window()
 

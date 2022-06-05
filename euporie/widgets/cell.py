@@ -43,7 +43,17 @@ from euporie.suggest import AppendLineAutoSuggestion, ConditionalAutoSuggestAsyn
 from euporie.widgets.cell_outputs import CellOutputArea
 
 if TYPE_CHECKING:
-    from typing import Any, Callable, Dict, List, Literal, Optional, Tuple, Union
+    from typing import (
+        Any,
+        Callable,
+        Dict,
+        List,
+        Literal,
+        Optional,
+        Sequence,
+        Tuple,
+        Union,
+    )
 
     from prompt_toolkit.buffer import Buffer
     from prompt_toolkit.key_binding.key_bindings import NotImplementedOrNone
@@ -85,6 +95,8 @@ class CellInputTextArea(TextArea):
     def __init__(
         self,
         *args: "Any",
+        left_margins: "Optional[Sequence[Margin]]" = None,
+        right_margins: "Optional[Sequence[Margin]]" = None,
         on_text_changed: "Optional[Callable[[Buffer], None]]" = None,
         on_cursor_position_changed: "Optional[Callable[[Buffer], None]]" = None,
         tempfile_suffix: "Union[str, Callable[[], str]]" = "",
@@ -109,12 +121,9 @@ class CellInputTextArea(TextArea):
         )
 
         # Add configurable line numbers
-        self.window.left_margins = [
-            ConditionalMargin(
-                NumberedDiffMargin(),
-                Condition(lambda: config.line_numbers),
-            )
-        ]
+        self.window.left_margins = left_margins or []
+        self.window.right_margins = right_margins or []
+
         self.window.cursorline = has_focus(self)
         self.has_focus = has_focus(self.buffer)
 
@@ -339,10 +348,17 @@ class Cell:
                 HighlightMatchingBracketProcessor(),
             ],
             search_field=get_app().search_bar,
+            left_margins=[
+                ConditionalMargin(
+                    NumberedDiffMargin(),
+                    Condition(lambda: config.line_numbers),
+                )
+            ],
             on_text_changed=on_text_changed,
             on_cursor_position_changed=on_cursor_position_changed,
             tempfile_suffix=notebook.lang_file_ext,
         )
+        self.input_box.buffer.name = self.cell_type
 
         def border_char(name: "str") -> "Callable[..., str]":
             """Returns a function which returns the cell border character to display."""
@@ -668,6 +684,7 @@ class Cell:
             del self.json["execution_count"]
         # Record the new cell type
         self.json["cell_type"] = cell_type
+        self.input_box.buffer.name = "cell_type"
         # Update the output-area
         self.output_area.json = self.output_json
         # Force the input box lexer to re-run

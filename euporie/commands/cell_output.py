@@ -11,7 +11,7 @@ from euporie.filters import display_has_focus
 log = logging.getLogger(__name__)
 
 
-@add(keys=["left"], filter=display_has_focus, group="cell-output")
+@add(keys=["left"], filter=display_has_focus, groups="cell-output")
 def scroll_left_cell_output() -> "None":
     """Scroll the display up one line."""
     from euporie.widgets.display import DisplayWindow
@@ -21,7 +21,7 @@ def scroll_left_cell_output() -> "None":
     window._scroll_left()
 
 
-@add(keys=["right"], filter=display_has_focus, group="cell-output")
+@add(keys=["right"], filter=display_has_focus, groups="cell-output")
 def scroll_right_cell_output() -> "None":
     """Scroll the display down one line."""
     from euporie.widgets.display import DisplayWindow
@@ -31,19 +31,19 @@ def scroll_right_cell_output() -> "None":
     window._scroll_right()
 
 
-@add(keys=["up", "k"], filter=display_has_focus, group="cell-output")
+@add(keys=["up", "k"], filter=display_has_focus, groups="cell-output")
 def scroll_up_cell_output() -> "None":
     """Scroll the display up one line."""
     get_app().layout.current_window._scroll_up()
 
 
-@add(keys=["down", "j"], filter=display_has_focus, group="cell-output")
+@add(keys=["down", "j"], filter=display_has_focus, groups="cell-output")
 def scroll_down_cell_output() -> "None":
     """Scroll the display down one line."""
     get_app().layout.current_window._scroll_down()
 
 
-@add(keys="pageup", filter=display_has_focus, group="cell-output")
+@add(keys="pageup", filter=display_has_focus, groups="cell-output")
 def page_up_cell_output() -> "None":
     """Scroll the display up one page."""
     window = get_app().layout.current_window
@@ -52,7 +52,7 @@ def page_up_cell_output() -> "None":
             window._scroll_up()
 
 
-@add(keys="pagedown", filter=display_has_focus, group="cell-output")
+@add(keys="pagedown", filter=display_has_focus, groups="cell-output")
 def page_down_cell_output() -> "None":
     """Scroll the display down one page."""
     window = get_app().layout.current_window
@@ -61,7 +61,7 @@ def page_down_cell_output() -> "None":
             window._scroll_down()
 
 
-@add(keys="home", filter=display_has_focus, group="cell-output")
+@add(keys="home", filter=display_has_focus, groups="cell-output")
 def go_to_start_of_cell_output() -> "None":
     """Scroll the display to the top."""
     from euporie.widgets.display import DisplayControl
@@ -71,7 +71,7 @@ def go_to_start_of_cell_output() -> "None":
         current_control.cursor_position = Point(0, 0)
 
 
-@add(keys="end", filter=display_has_focus, group="cell-output")
+@add(keys="end", filter=display_has_focus, groups="cell-output")
 def go_to_end_of_cell_output() -> "None":
     """Scroll the display down one page."""
     from euporie.widgets.display import DisplayControl

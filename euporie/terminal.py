@@ -408,7 +408,7 @@ class TerminalInfo:
                 title=f"Set terminal {title}",
                 hidden=True,
                 description=f"Sets the terminal's {title} value.",
-                group="terminal",
+                groups="terminal",
                 keys=[key],
             )(query_inst._handle_response)
 

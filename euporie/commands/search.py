@@ -22,7 +22,7 @@ log = logging.getLogger(__name__)
     name="find",
     menu_title="Find in cell",
     filter=in_edit_mode,
-    group="edit-mode",
+    groups="edit-mode",
 )
 def find() -> "None":
     """Enter search mode."""
@@ -44,13 +44,13 @@ def find_prev_next(direction: "SearchDirection") -> "None":
     control.buffer.apply_search(search_state, include_current_position=False, count=1)
 
 
-@add(group="app")
+@add(groups="app")
 def find_next() -> "None":
     """Find the next search match."""
     find_prev_next(SearchDirection.FORWARD)
 
 
-@add(group="edit-mode")
+@add(groups="edit-mode")
 def find_previous() -> "None":
     """Find the previous search match."""
     find_prev_next(SearchDirection.BACKWARD)
@@ -61,7 +61,7 @@ def find_previous() -> "None":
 
 @add(
     filter=is_searching,
-    group="search-mode",
+    groups="search-mode",
 )
 def stop_search() -> "None":
     """Abort the search."""
@@ -81,7 +81,7 @@ def stop_search() -> "None":
 
 @add(
     name="accept-search",
-    group="search-mode",
+    groups="search-mode",
     filter=is_searching,
 )
 def accept_search() -> "None":

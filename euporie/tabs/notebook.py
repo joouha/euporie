@@ -573,9 +573,26 @@ class PreviewKernelNotebook(PreviewNotebook, KernelNotebook):
 
     def load_kernel(self) -> "None":
         """Start the notebook's kernel."""
-        from euporie.kernel import NotebookKernel
+        from euporie.kernel import NotebookKernel, MsgCallbacks
 
-        self.kernel = NotebookKernel(nb=self, threaded=True)
+        self.kernel = NotebookKernel(
+            nb=self,
+            threaded=True,
+            default_callbacks=MsgCallbacks(
+                {
+                    "get_input": lambda prompt, password: self.cell.get_input(
+                        prompt, password
+                    ),
+                    "set_execution_count": lambda n: self.cell.set_execution_count(n),
+                    "add_output": lambda output_json: self.cell.add_output(output_json),
+                    "clear_output": lambda wait: self.cell.clear_output(wait),
+                    "set_metadata": lambda path, data: self.cell.set_metadata(
+                        path, data
+                    ),
+                    "set_status": lambda status: self.cell.set_status(status),
+                }
+            ),
+        )
         self.kernel.start(cb=self.check_kernel, wait=True)
 
     def close(self, cb: "Optional[Callable]" = None) -> "None":
