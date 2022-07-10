@@ -1,6 +1,6 @@
 """Test cases for :py:mod:`euporie.url` module."""
 
-from euporie.url import load_url
+from euporie.core.url import load_url
 
 
 def test_loading_base64_url() -> "None":

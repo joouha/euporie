@@ -1,6 +1,6 @@
 """Test cases for __init__ module."""
 
-from euporie import __version__
+from euporie.core import __version__
 
 
 def test_version() -> "None":
