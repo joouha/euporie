@@ -113,7 +113,6 @@ class CellOutputDataElement(CellOutputElement):
             py=metadata.get("height"),
             focusable=False,
             focus_on_click=False,
-            show_scrollbar=False,
             wrap_lines=False,
             always_hide_cursor=True,
             style=f"class:cell.output.element.data class:mime.{mime.replace('/','.')}",

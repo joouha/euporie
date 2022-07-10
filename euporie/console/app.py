@@ -8,7 +8,13 @@ from typing import TYPE_CHECKING, cast
 from prompt_toolkit.application.current import get_app as ptk_get_app
 from prompt_toolkit.filters import is_done
 from prompt_toolkit.filters.app import renderer_height_is_known
-from prompt_toolkit.layout import ConditionalContainer, Float, FloatContainer, HSplit
+from prompt_toolkit.layout.containers import (
+    ConditionalContainer,
+    Float,
+    FloatContainer,
+    HSplit,
+    Window,
+)
 from prompt_toolkit.layout.menus import CompletionsMenu
 
 from euporie.core.app import EuporieApp, quit
@@ -81,6 +87,7 @@ class ConsoleApp(EuporieApp):
                     ConditionalContainer(
                         HSplit(
                             [
+                                Window(),  # Fill empty space below input
                                 self.pager,
                                 self.search_bar,
                                 StatusBar(),
@@ -92,6 +99,12 @@ class ConsoleApp(EuporieApp):
             ),
             floats=self.floats,  # type: ignore
         )
+
+    def exit(self, **kwargs: "Any") -> "None":
+        """Close all tabs on exit."""
+        for tab in self.tabs:
+            tab.close()
+        super().exit(**kwargs)
 
 
 @add_cmd()

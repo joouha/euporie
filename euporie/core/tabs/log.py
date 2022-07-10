@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 from prompt_toolkit.filters import Condition, has_focus
 from prompt_toolkit.formatted_text.base import FormattedText
 from prompt_toolkit.layout.containers import HSplit
+from prompt_toolkit.layout.dimension import Dimension
 from prompt_toolkit.widgets import SearchToolbar
 
 from euporie.core.config import config
@@ -44,7 +45,11 @@ class LogView(Tab):
             wrap_lines=False,
             dont_extend_width=False,
         )
-        self.container = HSplit([self.text_area, self.search_field])
+        self.container = HSplit(
+            [self.text_area, self.search_field],
+            width=Dimension(weight=1),
+            height=Dimension(weight=1),
+        )
         self.hook_id = QueueHandler.hook(self.add_record)
         # Add text to the textarea
         for record in LOG_QUEUE:

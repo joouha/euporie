@@ -12,7 +12,7 @@ from prompt_toolkit.completion import PathCompleter
 from prompt_toolkit.filters import Condition, buffer_has_focus
 from prompt_toolkit.formatted_text import HTML, fragment_list_to_text
 from prompt_toolkit.key_binding.key_bindings import KeyBindings, merge_key_bindings
-from prompt_toolkit.layout import (
+from prompt_toolkit.layout.containers import (
     ConditionalContainer,
     DynamicContainer,
     Float,
@@ -38,6 +38,7 @@ from euporie.core import (
 from euporie.core.app import EuporieApp
 from euporie.core.commands import add_cmd, get_cmd
 from euporie.core.config import CONFIG_PARAMS, config
+from euporie.core.filters import have_black, have_isort, have_ssort
 from euporie.core.key_binding.registry import register_bindings
 from euporie.core.tabs.log import LogView
 from euporie.core.tabs.notebook import EditNotebook
@@ -840,6 +841,100 @@ def show_scroll_bar() -> "None":
 def always_show_tab_bar() -> "None":
     """Toggle the visibility of the tab bar."""
     config.toggle("always_show_tab_bar")
+
+
+@add_cmd(
+    filter=~buffer_has_focus,
+    groups="config",
+    toggled=Condition(lambda: config.line_numbers),
+)
+def show_line_numbers() -> "None":
+    """Toggle the visibility of line numbers."""
+    config.toggle("line_numbers")
+    get_app().refresh()
+
+
+@add_cmd(
+    title="Autoformat code cells",
+    filter=~buffer_has_focus,
+    toggled=Condition(lambda: bool(config.autoformat)),
+)
+def autoformat() -> "None":
+    """Toggle whether code cells are formatted before they are run."""
+    config.toggle("autoformat")
+
+
+@add_cmd(
+    title="Format code cells using black",
+    menu_title="Use black",
+    filter=~buffer_has_focus & have_black,
+    toggled=Condition(lambda: bool(config.format_black)),
+)
+def format_black() -> "None":
+    """Toggle whether code cells are formatted using black."""
+    config.toggle("format_black")
+
+
+@add_cmd(
+    title="Format code cells using isort",
+    menu_title="Use isort",
+    filter=~buffer_has_focus & have_isort,
+    toggled=Condition(lambda: bool(config.format_isort)),
+)
+def format_isort() -> "None":
+    """Toggle whether code cells are formatted using isort."""
+    config.toggle("format_isort")
+
+
+@add_cmd(
+    title="Format code cells using ssort",
+    menu_title="Use ssort",
+    filter=~buffer_has_focus & have_ssort,
+    toggled=Condition(lambda: bool(config.format_ssort)),
+)
+def format_ssort() -> "None":
+    """Toggle whether code cells are formatted using ssort."""
+    config.toggle("format_ssort")
+
+
+@add_cmd(
+    title="Completions as you type",
+    filter=~buffer_has_focus,
+    toggled=Condition(lambda: bool(config.autocomplete)),
+)
+def autocomplete() -> "None":
+    """Toggle whether completions should be shown automatically."""
+    config.toggle("autocomplete")
+
+
+@add_cmd(
+    title="Suggest lines from history",
+    groups="config",
+    toggled=Condition(lambda: bool(config.autosuggest)),
+)
+def autosuggest() -> "None":
+    """Toggle whether to suggest line completions from the kernel's history."""
+    config.toggle("autosuggest")
+
+
+@add_cmd(
+    title="Automatic contextual help",
+    groups="config",
+    toggled=Condition(lambda: bool(config.autoinspect)),
+)
+def autoinspect() -> "None":
+    """Toggle whether to automatically show contextual help when navigating code cells."""
+    config.toggle("autoinspect")
+
+
+@add_cmd(
+    title="Run cell after external edit",
+    groups="config",
+    toggled=Condition(lambda: bool(config.run_after_external_edit)),
+)
+def run_after_external_edit() -> "None":
+    """Toggle whether cells should run automatically after editing externally."""
+    config.toggle("run_after_external_edit")
 
 
 register_bindings(

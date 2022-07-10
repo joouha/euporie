@@ -325,3 +325,12 @@ def is_searching() -> "bool":
     return (
         app.search_bar is not None and app.search_bar.control in app.layout.search_links
     )
+
+
+@Condition
+def at_end_of_buffer() -> "bool":
+    """Determine if the cursor is at the end of the current buffer."""
+    from prompt_toolkit.application.current import get_app
+
+    buffer = get_app().current_buffer
+    return buffer.cursor_position == len(buffer.text)

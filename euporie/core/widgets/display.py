@@ -16,7 +16,6 @@ from prompt_toolkit.formatted_text.base import to_formatted_text
 from prompt_toolkit.formatted_text.utils import fragment_list_width, split_lines
 from prompt_toolkit.layout.containers import Float, Window
 from prompt_toolkit.layout.controls import GetLinePrefixCallable, UIContent, UIControl
-from prompt_toolkit.layout.margins import ConditionalMargin
 from prompt_toolkit.layout.mouse_handlers import MouseHandlers
 from prompt_toolkit.layout.screen import WritePosition
 from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
@@ -295,6 +294,7 @@ class DisplayWindow(Window):
             parent_style,
             erase_bg,
         )
+        # Set the horizontal scroll offset on the render info
         if self.render_info:
             setattr(self.render_info, "horizontal_scroll", self.horizontal_scroll)
 
@@ -782,7 +782,6 @@ class Display:
         py: "int" = None,
         focusable: "FilterOrBool" = False,
         focus_on_click: "FilterOrBool" = False,
-        show_scrollbar: "FilterOrBool" = False,
         wrap_lines: "FilterOrBool" = False,
         always_hide_cursor: "FilterOrBool" = True,
         style: "Union[str, Callable[[], str]]" = "",
@@ -800,13 +799,11 @@ class Display:
             py: The pixel height of the data if known
             focusable: If the output should be focusable
             focus_on_click: If the output should become focused when clicked
-            show_scrollbar: If the output should have a scrollbar
             wrap_lines: If the output's lines should be wrapped
             always_hide_cursor: When true, the cursor is never shown
             style: The style to apply to the output
 
         """
-        self.show_scrollbar = to_filter(show_scrollbar)
         self.style = style
 
         # Get data pixel dimensions
@@ -833,12 +830,7 @@ class Display:
             content=self.control,
             height=height,
             width=width,
-            right_margins=[
-                ConditionalMargin(
-                    ScrollbarMargin(),
-                    filter=self.show_scrollbar,
-                ),
-            ],
+            right_margins=[ScrollbarMargin()],
             wrap_lines=wrap_lines,
             always_hide_cursor=always_hide_cursor,
             dont_extend_height=False,
@@ -923,8 +915,6 @@ class Display:
 @add_cmd(keys=["left"], filter=display_has_focus)
 def scroll_display_left() -> "None":
     """Scroll the display up one line."""
-    from euporie.core.widgets.display import DisplayWindow
-
     window = get_app().layout.current_window
     assert isinstance(window, DisplayWindow)
     window._scroll_left()
@@ -933,8 +923,6 @@ def scroll_display_left() -> "None":
 @add_cmd(keys=["right"], filter=display_has_focus)
 def scroll_display_right() -> "None":
     """Scroll the display down one line."""
-    from euporie.core.widgets.display import DisplayWindow
-
     window = get_app().layout.current_window
     assert isinstance(window, DisplayWindow)
     window._scroll_right()

@@ -6,8 +6,7 @@ import logging
 from abc import ABCMeta
 from typing import TYPE_CHECKING
 
-from prompt_toolkit.layout.containers import Window, _Split
-from prompt_toolkit.layout.dimension import Dimension, to_dimension
+from prompt_toolkit.layout.containers import Window
 
 from euporie.core.app import get_app
 
@@ -68,15 +67,4 @@ class Tab(metaclass=ABCMeta):
 
     def __pt_container__(self) -> "AnyContainer":
         """Return the main container object."""
-        container = self.container
-        # Ensure tab dimensions are equally weighted
-        if isinstance(container, _Split):
-            d = to_dimension(container.width)
-            container.width = Dimension(
-                min=d.min, max=d.max, preferred=d.preferred, weight=1
-            )
-            d = to_dimension(container.height)
-            container.height = Dimension(
-                min=d.min, max=d.max, preferred=d.preferred, weight=1
-            )
-        return container
+        return self.container

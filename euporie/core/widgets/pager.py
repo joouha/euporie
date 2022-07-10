@@ -71,7 +71,6 @@ class PagerOutputDataElement(CellOutputDataElement):
             format_=format_,
             focusable=True,
             focus_on_click=True,
-            show_scrollbar=True,
             wrap_lines=True,
             always_hide_cursor=True,
             style="class:pager",

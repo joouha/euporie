@@ -18,6 +18,7 @@ from prompt_toolkit.filters import (
     buffer_has_focus,
     has_completions,
     has_selection,
+    to_filter,
     vi_mode,
     vi_navigation_mode,
 )
@@ -127,7 +128,7 @@ class Notebook(Tab, metaclass=ABCMeta):
         self.cell_type: "Type[Cell]" = Cell
 
         self.edit_mode = False
-        self.in_edit_mode = Condition(lambda: self.edit_mode)
+        self.in_edit_mode = to_filter(False)
 
         self.undo_buffer: "Deque[Tuple[int, List[Cell]]]" = deque(maxlen=10)
 
@@ -654,6 +655,8 @@ class EditNotebook(KernelNotebook):
 
         super().__init__(app, path)
 
+        self.in_edit_mode = Condition(self.check_edit_mode)
+
         self.completer = KernelCompleter(self.kernel)
         self.suggester = KernelAutoSuggest(self.kernel)
 
@@ -722,9 +725,11 @@ class EditNotebook(KernelNotebook):
                         ),
                     ],
                     height=Dimension(weight=2),
-                    key_bindings=load_registered_bindings("tabs.notebook"),
                 ),
             ],
+            width=Dimension(weight=1),
+            height=Dimension(weight=1),
+            key_bindings=load_registered_bindings("tabs.notebook"),
         )
 
     def select(
@@ -741,8 +746,8 @@ class EditNotebook(KernelNotebook):
             position: An optional cursor position index to apply to the cell input
 
         """
+        # Update the selected slice if we are extending the cell selection
         if extend:
-            # indices = self.page.selected_indices
             slice_ = self.page._selected_slice
             stop = -1 if slice_.stop is None else slice_.stop
             step = slice_.step
@@ -761,10 +766,17 @@ class EditNotebook(KernelNotebook):
                 stop,
                 step,
             )
+        # Otherwise set the cell selection to the given cell index
         else:
             self.page.selected_slice = slice(cell_index, cell_index + 1)
         # Focus the selected cell - use the current slice in case it did not change
         self.rendered_cells()[self.page.selected_slice.start].focus(position)
+
+    def check_edit_mode(self) -> "bool":
+        """Determine if the notebook is (or should be) in edit mode."""
+        if self.cell.input_box.has_focus():
+            self.edit_mode = True
+        return self.edit_mode
 
     def enter_edit_mode(self) -> "None":
         """Enter cell edit mode."""
@@ -1124,7 +1136,7 @@ class EditNotebook(KernelNotebook):
             A character representing the current mode
         """
         # TODO - sort this out
-        if self.edit_mode:
+        if self.in_edit_mode():
             if insert_mode():
                 return "I"
             elif replace_mode():
@@ -1149,7 +1161,6 @@ def save_notebook() -> "None":
 
 
 @add_cmd(
-    keys="enter",
     filter=cell_has_focus & ~buffer_has_focus,
 )
 def enter_cell_edit_mode() -> "None":

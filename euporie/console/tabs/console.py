@@ -38,7 +38,7 @@ from euporie.core.comm.registry import open_comm
 from euporie.core.commands import add_cmd
 from euporie.core.completion import KernelCompleter
 from euporie.core.config import config
-from euporie.core.filters import buffer_is_code
+from euporie.core.filters import at_end_of_buffer, buffer_is_code
 from euporie.core.format import format_code
 from euporie.core.history import KernelHistory
 from euporie.core.kernel import MsgCallbacks, NotebookKernel
@@ -46,18 +46,17 @@ from euporie.core.key_binding.registry import (
     load_registered_bindings,
     register_bindings,
 )
-from euporie.core.margins import NumberedDiffMargin
+from euporie.core.margins import NumberedDiffMargin, ScrollbarMargin
 from euporie.core.style import KERNEL_STATUS_REPR
 from euporie.core.suggest import ConditionalAutoSuggestAsync, KernelAutoSuggest
 from euporie.core.tabs.base import Tab
 from euporie.core.widgets.cell import CellInputTextArea
 from euporie.core.widgets.cell_outputs import CellOutputArea
-from euporie.core.widgets.page import PrintingContainer  # ScrollingContainer
 from euporie.core.widgets.pager import PagerState
 
 if TYPE_CHECKING:
     from os import PathLike
-    from typing import Any, Dict, Optional, Sequence
+    from typing import Any, Callable, Dict, Optional, Sequence
 
     from prompt_toolkit.formatted_text import AnyFormattedText, StyleAndTextTuples
     from prompt_toolkit.key_binding.key_processor import KeyPressEvent
@@ -115,6 +114,12 @@ class Console(Tab):
         self.history = KernelHistory(self.kernel)
 
         self.container = self.load_container()
+
+    def close(self, cb: "Optional[Callable]" = None) -> "None":
+        """Close the console tab."""
+        # Ensure any output no longer appears interactive
+        self.output.style = "class:disabled"
+        super().close(cb)
 
     def clear_output(self, wait: "bool" = False) -> "None":
         """Remove the last output, optionally when new output is generated."""
@@ -204,9 +209,12 @@ class Console(Tab):
         """Return the file extension for scripts in the notebook's language."""
         return self.lang_info.get("file_extension", ".py")
 
-    def load_container(self) -> "PrintingContainer":
+    def load_container(self) -> "HSplit":
         """Builds the main application layout."""
-        self.output = CellOutputArea([], parent=self)
+        self.output = CellOutputArea(
+            [],
+            parent=self,
+        )
 
         def on_cursor_position_changed(buf: "Buffer") -> "None":
             """Respond to cursor movements."""
@@ -223,13 +231,15 @@ class Console(Tab):
             filter=Condition(
                 lambda: self.input_box.buffer.validation_state
                 != ValidationState.INVALID
-            ),
+            )
+            & at_end_of_buffer,
         )
         def on_enter(event: "KeyPressEvent") -> "None":
             """Accept input if the input is valid, otherwise insert a return."""
             buffer = event.current_buffer
-            valid = buffer.validate(set_cursor=False)
+
             # When the validation succeeded, accept the input.
+            valid = buffer.validate(set_cursor=False)
             if valid:
                 if buffer.accept_handler:
                     keep_text = buffer.accept_handler(buffer)
@@ -238,13 +248,12 @@ class Console(Tab):
                 buffer.append_to_history()
                 if not keep_text:
                     buffer.reset()
-            else:
-                # Process the input as a regular :kbd:`enter` key-press
-                event.key_processor.feed(event.key_sequence[0], first=True)
+                return
+
+            # Process the input as a regular :kbd:`enter` key-press
+            event.key_processor.feed(event.key_sequence[0], first=True)
 
         self.input_box = CellInputTextArea(
-            # multiline=False,
-            # scrollbar=scroll_input(),
             complete_while_typing=Condition(lambda: config.autocomplete),
             auto_suggest=ConditionalAutoSuggestAsync(
                 self.suggester,
@@ -274,9 +283,10 @@ class Console(Tab):
             left_margins=[
                 ConditionalMargin(
                     NumberedDiffMargin(),
-                    Condition(lambda: config.line_numbers),
+                    filter=Condition(lambda: config.line_numbers),
                 )
             ],
+            right_margins=[ScrollbarMargin()],
             search_field=self.app.search_bar,
             on_cursor_position_changed=on_cursor_position_changed,
             # tempfile_suffix=notebook.lang_file_ext,
@@ -291,16 +301,18 @@ class Console(Tab):
             FormattedTextControl(partial(self.prompt, "In ", 1)),
             dont_extend_width=True,
             style="class:cell.input.prompt",
+            height=1,
         )
         output_prompt = Window(
             FormattedTextControl(partial(self.prompt, "Out")),
             dont_extend_width=True,
             style="class:cell.output.prompt",
+            height=1,
         )
 
         have_previous_output = Condition(lambda: bool(self.output.json))
 
-        return PrintingContainer(
+        return HSplit(
             [
                 ConditionalContainer(
                     HSplit(

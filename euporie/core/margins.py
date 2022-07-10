@@ -30,18 +30,19 @@ class ScrollbarMargin(Margin):
 
     """
 
-    window_render_info: "WindowRenderInfo"
-
     eighths = "█▇▆▅▄▃▂▁ "
+    window_render_info: "WindowRenderInfo"
 
     def __init__(
         self,
+        auto_hide: "FilterOrBool" = True,
         display_arrows: "FilterOrBool" = True,
         up_arrow_symbol: "str" = "▴",
         down_arrow_symbol: "str" = "▾",
         smooth: "bool" = True,
     ) -> "None":
         """Creates a new scrollbar instance."""
+        self.auto_hide = to_filter(auto_hide)
         self.display_arrows = to_filter(display_arrows)
         self.up_arrow_symbol = up_arrow_symbol
         self.down_arrow_symbol = down_arrow_symbol
@@ -62,6 +63,12 @@ class ScrollbarMargin(Margin):
         self, window_render_info: "WindowRenderInfo", width: "int", height: "int"
     ) -> "StyleAndTextTuples":
         """Creates the margin's formatted text."""
+        if (
+            self.auto_hide()
+            and window_render_info.content_height <= window_render_info.window_height
+        ):
+            return []
+
         result: StyleAndTextTuples = []
 
         self.window_render_info = window_render_info

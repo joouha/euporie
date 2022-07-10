@@ -9,13 +9,7 @@ from functools import partial
 from typing import TYPE_CHECKING
 
 import nbformat
-from prompt_toolkit.filters import (
-    Condition,
-    buffer_has_focus,
-    has_focus,
-    is_done,
-    is_searching,
-)
+from prompt_toolkit.filters import Condition, has_focus, is_done, is_searching
 from prompt_toolkit.layout.containers import (
     ConditionalContainer,
     Container,
@@ -41,16 +35,10 @@ from pygments.lexers import get_lexer_by_name
 
 from euporie.core.app import get_app
 from euporie.core.border import Invisible, Thick, Thin
-from euporie.core.commands import add_cmd
 from euporie.core.config import config
-from euporie.core.filters import (
-    have_black,
-    have_isort,
-    have_ssort,
-    multiple_cells_selected,
-)
+from euporie.core.filters import multiple_cells_selected
 from euporie.core.format import format_code
-from euporie.core.margins import NumberedDiffMargin
+from euporie.core.margins import NumberedDiffMargin, ScrollbarMargin
 from euporie.core.suggest import AppendLineAutoSuggestion, ConditionalAutoSuggestAsync
 from euporie.core.widgets.cell_outputs import CellOutputArea
 
@@ -128,6 +116,8 @@ class CellInputTextArea(TextArea):
             self.buffer.on_cursor_position_changed += on_cursor_position_changed
         self.buffer.tempfile_suffix = tempfile_suffix
 
+        self.has_focus = has_focus(self)
+
         # Replace the autosuggest processor
         # Skip type checking as PT should use "("Optional[Sequence[Processor]]"
         # instead of "Optional[List[Processor]]"
@@ -141,8 +131,7 @@ class CellInputTextArea(TextArea):
         self.window.left_margins = left_margins or []
         self.window.right_margins = right_margins or []
 
-        self.window.cursorline = has_focus(self)
-        self.has_focus = has_focus(self.buffer)
+        self.window.cursorline = self.has_focus
 
         # Set extra key-bindings
         self.control.key_bindings = key_bindings
@@ -232,8 +221,8 @@ class ClickToFocus(Container):
                             self.cell.select(extend=True)
                         else:
                             self.cell.select()
-                        self.cell.focus()
                         get_app().invalidate()
+
                     return handler(mouse_event)
 
                 mouse_handler_wrappers[handler] = wrapped_mouse_handler
@@ -325,7 +314,7 @@ class Cell:
                 weak_self.nb.inspect()
             else:
                 pager = get_app().pager
-                if pager:
+                if pager and pager.visible():
                     pager.hide()
 
             # Tell the scrolling container to scroll the cursor into view on the next render
@@ -377,6 +366,7 @@ class Cell:
                     Condition(lambda: config.line_numbers),
                 )
             ],
+            right_margins=[ScrollbarMargin()],
             on_text_changed=on_text_changed,
             on_cursor_position_changed=on_cursor_position_changed,
             tempfile_suffix=notebook.lang_file_ext,
@@ -400,13 +390,7 @@ class Cell:
         def border_style() -> "str":
             """Determines the style of the cell borders, based on the cell state."""
             if weak_self.selected:
-                # Enter edit mode if the input has become focused via a mouse click
-                if weak_self.input_box.has_focus():
-                    weak_self.nb.edit_mode = True
-                # Exit edit mode if the stdin box has focus
-                elif get_app().layout.has_focus(weak_self.stdin_box):
-                    weak_self.nb.edit_mode = False
-                if weak_self.nb.edit_mode:
+                if weak_self.nb.in_edit_mode():
                     return "class:cell.border.edit"
                 else:
                     return "class:cell.border.selected"
@@ -964,98 +948,3 @@ class InteractiveCell(Cell):
             layout.focus(self.stdin_box)
         finally:
             app.create_background_task(_focus_input())
-            app.create_background_task(_focus_input())
-
-
-@add_cmd(
-    filter=~buffer_has_focus,
-    groups="config",
-    toggled=Condition(lambda: config.line_numbers),
-)
-def show_line_numbers() -> "None":
-    """Toggle the visibility of line numbers."""
-    config.toggle("line_numbers")
-    get_app().refresh()
-
-
-@add_cmd(
-    title="Autoformat code cells",
-    filter=~buffer_has_focus,
-    toggled=Condition(lambda: bool(config.autoformat)),
-)
-def autoformat() -> "None":
-    """Toggle whether code cells are formatted before they are run."""
-    config.toggle("autoformat")
-
-
-@add_cmd(
-    title="Format code cells using black",
-    menu_title="Use black",
-    filter=~buffer_has_focus & have_black,
-    toggled=Condition(lambda: bool(config.format_black)),
-)
-def format_black() -> "None":
-    """Toggle whether code cells are formatted using black."""
-    config.toggle("format_black")
-
-
-@add_cmd(
-    title="Format code cells using isort",
-    menu_title="Use isort",
-    filter=~buffer_has_focus & have_isort,
-    toggled=Condition(lambda: bool(config.format_isort)),
-)
-def format_isort() -> "None":
-    """Toggle whether code cells are formatted using isort."""
-    config.toggle("format_isort")
-
-
-@add_cmd(
-    title="Format code cells using ssort",
-    menu_title="Use ssort",
-    filter=~buffer_has_focus & have_ssort,
-    toggled=Condition(lambda: bool(config.format_ssort)),
-)
-def format_ssort() -> "None":
-    """Toggle whether code cells are formatted using ssort."""
-    config.toggle("format_ssort")
-
-
-@add_cmd(
-    title="Completions as you type",
-    filter=~buffer_has_focus,
-    toggled=Condition(lambda: bool(config.autocomplete)),
-)
-def autocomplete() -> "None":
-    """Toggle whether completions should be shown automatically."""
-    config.toggle("autocomplete")
-
-
-@add_cmd(
-    title="Suggest lines from history",
-    groups="config",
-    toggled=Condition(lambda: bool(config.autosuggest)),
-)
-def autosuggest() -> "None":
-    """Toggle whether to suggest line completions from the kernel's history."""
-    config.toggle("autosuggest")
-
-
-@add_cmd(
-    title="Automatic contextual help",
-    groups="config",
-    toggled=Condition(lambda: bool(config.autoinspect)),
-)
-def autoinspect() -> "None":
-    """Toggle whether to automatically show contextual help when navigating code cells."""
-    config.toggle("autoinspect")
-
-
-@add_cmd(
-    title="Run cell after external edit",
-    groups="config",
-    toggled=Condition(lambda: bool(config.run_after_external_edit)),
-)
-def run_after_external_edit() -> "None":
-    """Toggle whether cells should run automatically after editing externally."""
-    config.toggle("run_after_external_edit")

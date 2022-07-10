@@ -638,7 +638,7 @@ class EuporieApp(Application):
         self.layout._stack.append(Window())
         # Re-draw the app
         self._redraw(render_as_done=render_as_done)
-        # Ensure the renderer know where the cursor is
+        # Ensure the renderer knows where the cursor is
         self._request_absolute_cursor_position()
         # Remove the focus block
         self.layout._stack.pop()
