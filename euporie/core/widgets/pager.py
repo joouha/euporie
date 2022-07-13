@@ -80,21 +80,18 @@ class PagerOutputDataElement(CellOutputDataElement):
 class PagerOutput(CellOutput):
     """Display pager output."""
 
-    @property
-    def container(self) -> "CellOutputElement":
+    def get_container(self) -> "CellOutputElement":
         """Creates a container for the pager output mime-type if it doesn't exist.
 
         Returns:
             A :class:`PagerOutputDataElement` container for the currently selected mime-type.
         """
-        if self.selected_mime not in self._containers:
-            self._containers[self.selected_mime] = PagerOutputDataElement(
-                mime=self.selected_mime,
-                data=self.data[self.selected_mime],
-                metadata=self.json.get("metadata", {}).get(self.selected_mime, {}),
-                parent=self.parent,
-            )
-        return self._containers[self.selected_mime]
+        return PagerOutputDataElement(
+            mime=self.selected_mime,
+            data=self.data[self.selected_mime],
+            metadata=self.json.get("metadata", {}).get(self.selected_mime, {}),
+            parent=self.parent,
+        )
 
 
 class Pager:
@@ -134,11 +131,14 @@ class Pager:
 
     def hide(self) -> "None":
         """Clear and hide the pager."""
-        self.state = None
-        layout = get_app().layout
-        previous_control = layout.previous_control
-        if previous_control in layout.find_all_controls():
-            layout.focus(previous_control)
+        if self.visible():
+            self.state = None
+            # Focus previous control if this pager has focus
+            layout = get_app().layout
+            if layout.has_focus(self):
+                previous_control = layout.previous_control
+                if previous_control in layout.find_all_controls():
+                    layout.focus(previous_control)
 
     @property
     def state(self) -> "Optional[PagerState]":
@@ -151,6 +151,7 @@ class Pager:
         self._state = new
         if new is not None:
             self.output.json = new.response
+            self.output.update()
 
     def __pt_container__(self):
         """Return the pager container."""

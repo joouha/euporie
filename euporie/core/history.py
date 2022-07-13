@@ -18,14 +18,16 @@ log = logging.getLogger(__name__)
 class KernelHistory(History):
     """Load the kernel's command history."""
 
-    def __init__(self, kernel: "NotebookKernel") -> "None":
+    def __init__(self, kernel: "NotebookKernel", n: "int" = 1000) -> "None":
         """Create a new instance of the kernel history loader."""
         super().__init__()
         self.kernel = kernel
+        # How many items to load
+        self.n = n
 
     def load_history_strings(self) -> "Iterable[str]":
         """Load lines from kernel history."""
-        result = self.kernel.history(n=200, hist_access_type="tail")
+        result = self.kernel.history(n=self.n, hist_access_type="tail")
         for item in reversed(result or []):
             # Each item is a thruple: (session, line_number, input)
             yield item[2]

@@ -4,7 +4,7 @@ import logging
 from typing import TYPE_CHECKING
 
 from prompt_toolkit.application.current import get_app
-from prompt_toolkit.filters import FilterOrBool, to_filter
+from prompt_toolkit.filters import Condition, FilterOrBool, to_filter
 from prompt_toolkit.layout.margins import Margin
 from prompt_toolkit.mouse_events import MouseButton, MouseEventType
 
@@ -31,7 +31,6 @@ class ScrollbarMargin(Margin):
     """
 
     eighths = "█▇▆▅▄▃▂▁ "
-    window_render_info: "WindowRenderInfo"
 
     def __init__(
         self,
@@ -55,23 +54,27 @@ class ScrollbarMargin(Margin):
         self.thumb_top = 0.0
         self.thumb_size = 0.0
 
+        self.window_render_info: "Optional[WindowRenderInfo]" = None
+        self.visible = self.auto_hide & Condition(
+            lambda: self.window_render_info is not None
+            and self.window_render_info.content_height
+            > self.window_render_info.window_height
+        )
+
     def get_width(self, get_ui_content: "Callable[[], UIContent]") -> "int":
         """Return the scrollbar width: always 1."""
-        return 1
+        return 1 if self.visible() else 0
 
     def create_margin(
         self, window_render_info: "WindowRenderInfo", width: "int", height: "int"
     ) -> "StyleAndTextTuples":
         """Creates the margin's formatted text."""
-        if (
-            self.auto_hide()
-            and window_render_info.content_height <= window_render_info.window_height
-        ):
-            return []
-
         result: StyleAndTextTuples = []
 
         self.window_render_info = window_render_info
+
+        if not width or not self.visible():
+            return result
 
         # Show we render the arrow buttons?
         display_arrows = self.display_arrows()
@@ -214,8 +217,9 @@ class ScrollbarMargin(Margin):
             repeated: Set to True if the method is running as a repeated event
 
         """
-        row = mouse_event.position.y
+        assert self.window_render_info is not None
 
+        row = mouse_event.position.y
         content_height = self.window_render_info.content_height
 
         # Handle scroll events on the scrollbar

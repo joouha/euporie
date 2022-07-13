@@ -9,7 +9,13 @@ from functools import partial
 from typing import TYPE_CHECKING
 
 import nbformat
-from prompt_toolkit.filters import Condition, has_focus, is_done, is_searching
+from prompt_toolkit.filters import (
+    Condition,
+    has_focus,
+    is_done,
+    is_searching,
+    to_filter,
+)
 from prompt_toolkit.layout.containers import (
     ConditionalContainer,
     Container,
@@ -56,6 +62,7 @@ if TYPE_CHECKING:
     )
 
     from prompt_toolkit.buffer import Buffer
+    from prompt_toolkit.filters import FilterOrBool
     from prompt_toolkit.key_binding.key_bindings import (
         KeyBindingsBase,
         NotImplementedOrNone,
@@ -105,6 +112,7 @@ class CellInputTextArea(TextArea):
         on_cursor_position_changed: "Optional[Callable[[Buffer], None]]" = None,
         tempfile_suffix: "Union[str, Callable[[], str]]" = "",
         key_bindings: "Optional[KeyBindingsBase]" = None,
+        enable_history_search: "Optional[FilterOrBool]" = False,
         **kwargs: "Any",
     ) -> "None":
         """Initiate the cell input box."""
@@ -115,6 +123,9 @@ class CellInputTextArea(TextArea):
         if on_cursor_position_changed:
             self.buffer.on_cursor_position_changed += on_cursor_position_changed
         self.buffer.tempfile_suffix = tempfile_suffix
+
+        if enable_history_search is not None:
+            self.buffer.enable_history_search = to_filter(enable_history_search)
 
         self.has_focus = has_focus(self)
 
@@ -313,8 +324,7 @@ class Cell:
             if config.autoinspect and weak_self.is_code():
                 weak_self.nb.inspect()
             else:
-                pager = get_app().pager
-                if pager and pager.visible():
+                if pager := get_app().pager:
                     pager.hide()
 
             # Tell the scrolling container to scroll the cursor into view on the next render
@@ -670,8 +680,9 @@ class Cell:
     def remove_outputs(self) -> "None":
         """Remove all outputs from the cell."""
         self.clear_outputs_on_output = False
-        if "outputs" in self.json:
-            del self.json["outputs"]
+        # if "outputs" in self.json:
+        # del self.json["outputs"]
+        self.output_area.reset()
 
     def set_cell_type(
         self, cell_type: "Literal['markdown','code','raw']", clear: "bool" = False
@@ -693,7 +704,7 @@ class Cell:
         self.json["cell_type"] = cell_type
         self.input_box.buffer.name = "cell_type"
         # Update the output-area
-        self.output_area.json = self.output_json
+        # self.output_area.json = self.output_json
         # Force the input box lexer to re-run
         self.input_box.control._fragment_cache.clear()
 
@@ -735,7 +746,7 @@ class Cell:
 
         """
         if self.cell_type == "markdown":
-            self.output_area.json = self.output_json
+            # self.output_area.json = self.output_json
             self.rendered = True
 
         elif self.cell_type == "code":
@@ -760,16 +771,9 @@ class Cell:
         # Clear the output if we were previously asked to
         if self.clear_outputs_on_output:
             self.remove_outputs()
-        # Combine stream outputs with existing stream outputs
-        for output in self.json.get("outputs", []):
-            name = output.get("name")
-            if name is not None and name == output_json.get("name"):
-                output["text"] = output.get("text", "") + output_json.get("text", "")
-                break
-        else:
-            self.json.setdefault("outputs", []).append(output_json)
-        # Update the output area
-        self.output_area.json = self.output_json
+        # Add the new output to the output area
+        self.output_area.add_output(output_json)
+        # Tell the page this cell has been updated
         self.refresh()
 
     def clear_output(self, wait: "bool" = False) -> "None":

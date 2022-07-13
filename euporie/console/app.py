@@ -15,6 +15,7 @@ from prompt_toolkit.layout.containers import (
     HSplit,
     Window,
 )
+from prompt_toolkit.layout.dimension import Dimension
 from prompt_toolkit.layout.menus import CompletionsMenu
 
 from euporie.core.app import EuporieApp, quit
@@ -87,7 +88,9 @@ class ConsoleApp(EuporieApp):
                     ConditionalContainer(
                         HSplit(
                             [
-                                Window(),  # Fill empty space below input
+                                Window(
+                                    height=Dimension(min=1)
+                                ),  # Fill empty space below input
                                 self.pager,
                                 self.search_bar,
                                 StatusBar(),

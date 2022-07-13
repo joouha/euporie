@@ -1,11 +1,14 @@
 """Contains a container for the cell output area."""
 
+import json
 import logging
 from abc import ABCMeta, abstractmethod
+from functools import partial
 from pathlib import PurePath
 from typing import TYPE_CHECKING
 
-from prompt_toolkit.layout.containers import HSplit, to_container
+from prompt_toolkit.cache import SimpleCache
+from prompt_toolkit.layout.containers import DynamicContainer, HSplit, to_container
 from prompt_toolkit.widgets.base import Box
 
 from euporie.core.app import get_app
@@ -15,7 +18,7 @@ from euporie.core.widgets.display import Display
 if TYPE_CHECKING:
     from typing import Any, Dict, List, Optional, Protocol, Tuple
 
-    from prompt_toolkit.layout.containers import AnyContainer, Container
+    from prompt_toolkit.layout.containers import AnyContainer
 
     from euporie.core.comm.base import CommContainer
 
@@ -73,7 +76,7 @@ class CellOutputDataElement(CellOutputElement):
     def __init__(
         self,
         mime: "str",
-        data: "Dict[str, Any]",
+        data: "Any",
         metadata: "Dict",
         parent: "Optional[OutputParent]",
     ) -> "None":
@@ -224,57 +227,45 @@ class CellOutput:
         """
         # Select the first mime-type to render
         self.parent = parent
-        self._json = json
-        self._selected_mime: "Optional[str]" = None
-        self._containers: "Dict[str, CellOutputElement]" = {}
+        self.json = json
+        self.selected_mime = next(x for x in self.data)
+        self._containers: "SimpleCache[str, CellOutputElement]" = SimpleCache(maxsize=3)
 
-    @property
-    def selected_mime(self) -> "str":
-        """Return the selected mime-type, defaulting to the first."""
-        data = self.data
-        # If an mime-type has not been explicitly selected, display the first
-        if self._selected_mime not in data:
-            return next(x for x in self.data)
-        return self._selected_mime
+    def update(self) -> "None":
+        """Update's the output by causing container to be re-created."""
+        self._containers.clear()
 
-    @property
-    def json(self) -> "Dict":
-        """Returns the cell output JSON object."""
-        return self._json
-
-    @json.setter
-    def json(self, outputs_json: "Dict") -> "None":
-        self._json = outputs_json
-        self._containers = {}
-        self._selected_mime = None
-
-    @property
-    def container(self) -> "CellOutputElement":
+    def get_container(self) -> "CellOutputElement":
         """Creates a container for the cell output mime-type if it doesn't exist.
 
         Returns:
             A :class:`OutputElement` container for the currently selected mime-type.
         """
-        if self.selected_mime not in self._containers:
-            for mime_pattern, OutputElement in MIME_RENDERERS.items():
-                if PurePath(self.selected_mime).match(mime_pattern):
-                    try:
-                        element = OutputElement(
-                            mime=self.selected_mime,
-                            data=self.data[self.selected_mime],
-                            metadata=self.json.get("metadata", {}).get(
-                                self.selected_mime, {}
-                            ),
-                            parent=self.parent,
-                        )
-                    except NotImplementedError:
-                        self._selected_mime = list(self.data.keys())[-1]
-                        continue
-                    else:
-                        self._containers[self.selected_mime] = element
-                        return element
+        data = self.data
+        for mime_pattern, OutputElement in MIME_RENDERERS.items():
+            if PurePath(self.selected_mime).match(mime_pattern):
+                try:
+                    element = OutputElement(
+                        mime=self.selected_mime,
+                        data=data[self.selected_mime],
+                        metadata=self.json.get("metadata", {}).get(
+                            self.selected_mime, {}
+                        ),
+                        parent=self.parent,
+                    )
+                except NotImplementedError:
+                    self._selected_mime = list(data.keys())[-1]
+                    continue
+                else:
+                    return element
+        return CellOutputDataElement(
+            "text/plain", "(Cannot display output)", {}, self.parent
+        )
 
-        return self._containers[self.selected_mime]
+    @property
+    def container(self) -> "CellOutputElement":
+        """Return the currently displayed cell element."""
+        return self._containers.get(self.selected_mime, self.get_container)
 
     @property
     def data(self) -> "Dict[str, Any]":
@@ -309,11 +300,15 @@ class CellOutput:
 
     def __pt_container__(self):
         """Return the cell output container (an :class:`OutputElement`)."""
-        return self.container
+        return DynamicContainer(
+            partial(self._containers.get, self.selected_mime, self.get_container)
+        )
 
 
 class CellOutputArea:
     """An area below a cell where one or more cell outputs can be shown."""
+
+    output_cache: "SimpleCache[int, CellOutput]" = SimpleCache()
 
     def __init__(
         self,
@@ -329,50 +324,63 @@ class CellOutputArea:
             style: Additional style to apply to the output
 
         """
+        self.json = json
         self.parent = parent
-        self._rendered_outputs: "List[CellOutput]" = []
         self.style = style
         self.container = HSplit([], style=lambda: self.style)
-        self.json = json
+        self.update()
+
+    @property
+    def _json(self) -> "List[Dict[str, Any]]":
+        result: "List[Dict[str, Any]]" = []
+        # Combine stream outputs
+        for new_output in self.json:
+            name = new_output.get("name")
+            for existing_output in result:
+                if name and name == existing_output.get("name"):
+                    existing_output["text"] += new_output.get("text", "")
+                    break
+            else:
+                result.append(dict(new_output))
+        return result
+
+    @property
+    def rendered_outputs(self) -> "List[CellOutput]":
+        """Retrieve or create rendered outputs."""
+        return [
+            self.output_cache.get(
+                hash(json.dumps(output_json)),
+                partial(CellOutput, output_json, self.parent),
+            )
+            for output_json in self._json
+        ]
+
+    def update(self) -> "None":
+        """Renders the outputs."""
+        self.container.children = [
+            to_container(output) for output in self.rendered_outputs
+        ]
+        get_app().invalidate()
+
+    def add_output(self, output_json: "Dict[str, Any]") -> "None":
+        """Add a new output to the output area."""
+        self.json.append(output_json)
+        self.update()
 
     def reset(self) -> "None":
         """Clears all outputs from the output area."""
         self.style = ""
-        self.json = []
-
-    @property
-    def json(self) -> "List[Dict[str, Any]]":
-        """Returns the output area's JSON data."""
-        return self._json
-
-    @json.setter
-    def json(self, outputs_json: "List[Dict[str, Any]]") -> "None":
-        self._json = outputs_json
-        self.container.children = self.rendered_outputs
-
-    @property
-    def rendered_outputs(self) -> "List[Container]":
-        """Generates a list of rendered outputs."""
-        n_existing_outputs = len(self._rendered_outputs)
-        rendered_outputs: "List[CellOutput]" = []
-        for i, output_json in enumerate(self.json):
-            if i < n_existing_outputs:
-                output = self._rendered_outputs[i]
-                output.json = output_json
-            else:
-                output = CellOutput(output_json, self.parent)
-            rendered_outputs.append(output)
-        self._rendered_outputs = rendered_outputs
-        return [to_container(x) for x in rendered_outputs]
+        self.json.clear()
+        self.rendered_outputs.clear()
 
     def scroll_left(self) -> "None":
         """Scrolls the outputs left."""
-        for cell_output in self._rendered_outputs:
+        for cell_output in self.rendered_outputs:
             cell_output.scroll_left()
 
     def scroll_right(self) -> "None":
         """Scrolls the outputs right."""
-        for cell_output in self._rendered_outputs:
+        for cell_output in self.rendered_outputs:
             cell_output.scroll_right()
 
     def __pt_container__(self) -> "AnyContainer":

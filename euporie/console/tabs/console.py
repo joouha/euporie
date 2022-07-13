@@ -13,6 +13,7 @@ from prompt_toolkit.filters import (
     has_selection,
     is_searching,
 )
+from prompt_toolkit.history import ThreadedHistory
 from prompt_toolkit.key_binding.key_bindings import KeyBindings
 from prompt_toolkit.layout.containers import (
     ConditionalContainer,
@@ -48,7 +49,7 @@ from euporie.core.key_binding.registry import (
 )
 from euporie.core.margins import NumberedDiffMargin, ScrollbarMargin
 from euporie.core.style import KERNEL_STATUS_REPR
-from euporie.core.suggest import ConditionalAutoSuggestAsync, KernelAutoSuggest
+from euporie.core.suggest import ConditionalAutoSuggestAsync, HistoryAutoSuggest
 from euporie.core.tabs.base import Tab
 from euporie.core.widgets.cell import CellInputTextArea
 from euporie.core.widgets.cell_outputs import CellOutputArea
@@ -56,7 +57,7 @@ from euporie.core.widgets.pager import PagerState
 
 if TYPE_CHECKING:
     from os import PathLike
-    from typing import Any, Callable, Dict, Optional, Sequence
+    from typing import Any, Callable, Dict, List, Optional, Sequence
 
     from prompt_toolkit.formatted_text import AnyFormattedText, StyleAndTextTuples
     from prompt_toolkit.key_binding.key_processor import KeyPressEvent
@@ -110,9 +111,10 @@ class Console(Tab):
             partial(self.kernel.start, cb=self.ready, wait=True)
         )
         self.completer = KernelCompleter(self.kernel)
-        self.suggester = KernelAutoSuggest(self.kernel)
-        self.history = KernelHistory(self.kernel)
+        self.history = ThreadedHistory(KernelHistory(self.kernel))
+        self.suggester = HistoryAutoSuggest(self.history)
 
+        self.output_json: "List[Dict[str, Any]]" = []
         self.container = self.load_container()
 
     def close(self, cb: "Optional[Callable]" = None) -> "None":
@@ -165,6 +167,8 @@ class Console(Tab):
         # Run the previous entry
         assert self.kernel is not None
         self.kernel.run(text, wait=False)
+        # Increment this for display purposes until we get the response from the kernel
+        self.execution_count += 1
         # Reset the input & output
         self.output.reset()
         buffer.reset(append_to_history=True)
@@ -176,10 +180,8 @@ class Console(Tab):
         if self.clear_outputs_on_output:
             self.clear_outputs_on_output = False
             self.output.reset()
-
-        self.output.json = self.output.json + [output_json]
-        self.app.layout.focus(self.input_box)
-        self.app.invalidate()
+        # Add the new output
+        self.output.add_output(output_json)
 
     def complete(self, content: "Dict" = None) -> "None":
         """Re-show the prompt."""
@@ -187,10 +189,7 @@ class Console(Tab):
 
     def prompt(self, text: "str", offset: "int" = 0) -> "StyleAndTextTuples":
         """Determine what should be displayed in the prompt of the cell."""
-        if offset and self.kernel and self.kernel._status == "busy":
-            prompt = "*"
-        else:
-            prompt = str(self.execution_count + offset)
+        prompt = str(self.execution_count + offset)
         ft: "StyleAndTextTuples" = [
             ("", f"{text}["),
             ("class:count", prompt),
@@ -211,10 +210,7 @@ class Console(Tab):
 
     def load_container(self) -> "HSplit":
         """Builds the main application layout."""
-        self.output = CellOutputArea(
-            [],
-            parent=self,
-        )
+        self.output = CellOutputArea(self.output_json, parent=self)
 
         def on_cursor_position_changed(buf: "Buffer") -> "None":
             """Respond to cursor movements."""
@@ -293,6 +289,7 @@ class Console(Tab):
             key_bindings=input_kb,
             validator=Validator.from_callable(self.validate_input),
             history=self.history,
+            enable_history_search=True,
         )
         self.input_box.buffer.name = "code"
         self.app.focused_element = self.input_box.buffer
