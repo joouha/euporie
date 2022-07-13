@@ -241,7 +241,7 @@ class Console(Tab):
                     keep_text = buffer.accept_handler(buffer)
                 else:
                     keep_text = False
-                buffer.append_to_history()
+                # buffer.append_to_history()
                 if not keep_text:
                     buffer.reset()
                 return

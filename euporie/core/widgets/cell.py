@@ -380,6 +380,7 @@ class Cell:
             on_text_changed=on_text_changed,
             on_cursor_position_changed=on_cursor_position_changed,
             tempfile_suffix=notebook.lang_file_ext,
+            history=notebook.history,
         )
         self.input_box.buffer.name = self.cell_type
 

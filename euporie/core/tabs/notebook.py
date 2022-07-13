@@ -10,7 +10,6 @@ from collections import deque
 from typing import TYPE_CHECKING
 
 import nbformat
-from prompt_toolkit.auto_suggest import DummyAutoSuggest
 from prompt_toolkit.clipboard.base import ClipboardData
 from prompt_toolkit.completion import DummyCompleter
 from prompt_toolkit.filters import (
@@ -22,6 +21,7 @@ from prompt_toolkit.filters import (
     vi_mode,
     vi_navigation_mode,
 )
+from prompt_toolkit.history import InMemoryHistory, ThreadedHistory
 from prompt_toolkit.layout.containers import (
     ConditionalContainer,
     HSplit,
@@ -52,12 +52,13 @@ from euporie.core.filters import (
     notebook_has_focus,
     replace_mode,
 )
+from euporie.core.history import KernelHistory
 from euporie.core.key_binding.registry import (
     load_registered_bindings,
     register_bindings,
 )
 from euporie.core.style import KERNEL_STATUS_REPR
-from euporie.core.suggest import KernelAutoSuggest
+from euporie.core.suggest import HistoryAutoSuggest
 from euporie.core.tabs.base import Tab
 from euporie.core.utils import parse_path
 from euporie.core.widgets.cell import Cell, InteractiveCell, get_cell_id
@@ -75,9 +76,9 @@ if TYPE_CHECKING:
     from os import PathLike
     from typing import Callable, Deque, Dict, List, Optional, Sequence, Tuple, Type
 
-    from prompt_toolkit.auto_suggest import AutoSuggest
     from prompt_toolkit.completion import Completer
     from prompt_toolkit.formatted_text import AnyFormattedText
+    from prompt_toolkit.history import History
     from prompt_toolkit.mouse_events import MouseEvent
 
     from euporie.core.app import EuporieApp
@@ -106,7 +107,8 @@ class Notebook(Tab, metaclass=ABCMeta):
         super().__init__(app, path)
         self.path = parse_path(path)
         self.completer: "Completer" = DummyCompleter()
-        self.suggester: "AutoSuggest" = DummyAutoSuggest()
+        self.history: "History" = InMemoryHistory()
+        self.suggester = HistoryAutoSuggest(self.history)
 
         log.debug("Loading notebooks %s", self.path)
 
@@ -658,7 +660,6 @@ class EditNotebook(KernelNotebook):
         self.in_edit_mode = Condition(self.check_edit_mode)
 
         self.completer = KernelCompleter(self.kernel)
-        self.suggester = KernelAutoSuggest(self.kernel)
 
         self.clipboard: "list[Cell]" = []
         self.saving = False
@@ -908,8 +909,11 @@ class EditNotebook(KernelNotebook):
                 Label(self.kernel.error.__repr__()),
                 {"OK": None},
             )
-        elif self.kernel.status == "idle" and config.run:
-            self.run_all(wait=False)
+        elif self.kernel.status == "idle":
+            if config.run:
+                self.run_all(wait=False)
+            self.history = ThreadedHistory(KernelHistory(self.kernel))
+            self.suggester.history = self.history
 
         self.app.invalidate()
 

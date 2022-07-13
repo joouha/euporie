@@ -27,6 +27,7 @@ class KernelHistory(History):
 
     def load_history_strings(self) -> "Iterable[str]":
         """Load lines from kernel history."""
+        log.debug("Loading kernel history")
         result = self.kernel.history(n=self.n, hist_access_type="tail")
         for item in reversed(result or []):
             # Each item is a thruple: (session, line_number, input)
