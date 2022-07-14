@@ -751,8 +751,8 @@ class GraphicFloat(Float):
                 top=0,
             )
             # Hide the graphic if the float is deleted if the app is fullscreen
-            if get_app().full_screen:
-                weakref.finalize(self, self.control.close)
+            # if get_app().full_screen:
+            # weakref.finalize(self, self.control.close)
 
     @property
     def data(self) -> "Any":

@@ -805,7 +805,7 @@ class Cell:
 
         """
         if self.cell_type == "markdown":
-            # self.output_area.json = self.output_json
+            self.output_area.json = self.output_json
             self.rendered = True
 
         elif self.cell_type == "code":
@@ -830,6 +830,7 @@ class Cell:
         # Clear the output if we were previously asked to
         if self.clear_outputs_on_output:
             self.remove_outputs()
+        self.json.setdefault("outputs", []).append(output_json)
         # Add the new output to the output area
         self.output_area.add_output(output_json)
         # Tell the page this cell has been updated
