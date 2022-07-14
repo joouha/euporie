@@ -88,7 +88,6 @@ class Console(Tab):
 
         self.lang_info: "Dict[str, Any]" = {}
         self.execution_count = 0
-        self.first_input = True
         self.clear_outputs_on_output = False
 
         self.kernel_name = "python3"
@@ -165,17 +164,17 @@ class Console(Tab):
             self.reformat()
         # Disable existing output
         self.output.style = "class:disabled"
+        # Move to below the current output
         self.app.redraw()
-        # Disable existing output
+        self.app.graphics.clear()
         # Run the previous entry
         assert self.kernel is not None
         self.kernel.run(text, wait=False)
         # Increment this for display purposes until we get the response from the kernel
         self.execution_count += 1
         # Reset the input & output
-        self.output.reset()
         buffer.reset(append_to_history=True)
-        self.first_input = False
+        self.output.reset()
 
     def new_output(self, output_json: "Dict[str, Any]") -> "None":
         """Print the previous output and replace it with the new one."""

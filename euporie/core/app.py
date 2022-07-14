@@ -632,7 +632,7 @@ class EuporieApp(Application):
         return output
 
     def redraw(self, render_as_done: "bool" = True) -> "None":
-        """Re-render the app below the existing output without focus."""
+        """Draw the app without focus, leaving the cursor below the drawn output."""
         self._redrawing = True
         # Ensure nothing in the layout has focus
         self.layout._stack.append(Window())
