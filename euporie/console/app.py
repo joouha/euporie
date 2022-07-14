@@ -89,7 +89,7 @@ class ConsoleApp(EuporieApp):
                         HSplit(
                             [
                                 Window(
-                                    height=Dimension(min=1)
+                                    height=Dimension(min=1), style="class:default"
                                 ),  # Fill empty space below input
                                 self.pager,
                                 self.search_bar,
