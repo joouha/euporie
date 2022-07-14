@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 import logging
 import weakref
 from functools import partial
@@ -27,7 +26,6 @@ from prompt_toolkit.layout.containers import (
 from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.layout.margins import ConditionalMargin
 from prompt_toolkit.layout.processors import (  # HighlightSearchProcessor,
-    BeforeInput,
     ConditionalProcessor,
     DisplayMultipleCursors,
     HighlightIncrementalSearchProcessor,
@@ -36,7 +34,7 @@ from prompt_toolkit.layout.processors import (  # HighlightSearchProcessor,
 )
 from prompt_toolkit.lexers import DynamicLexer, PygmentsLexer, SimpleLexer
 from prompt_toolkit.mouse_events import MouseEvent, MouseEventType, MouseModifier
-from prompt_toolkit.widgets import Frame, TextArea
+from prompt_toolkit.widgets import TextArea
 from pygments.lexers import get_lexer_by_name
 
 from euporie.core.app import get_app
@@ -69,10 +67,12 @@ if TYPE_CHECKING:
     )
     from prompt_toolkit.layout.containers import AnyContainer
     from prompt_toolkit.layout.dimension import Dimension
+    from prompt_toolkit.layout.layout import FocusableElement
     from prompt_toolkit.layout.margins import Margin
     from prompt_toolkit.layout.mouse_handlers import MouseHandlers
     from prompt_toolkit.layout.screen import Screen, WritePosition
 
+    from euporie.core.comm.base import CommContainer
     from euporie.core.tabs.notebook import EditNotebook, Notebook
     from euporie.core.widgets.page import ChildRenderInfo
 
@@ -148,18 +148,87 @@ class CellInputTextArea(TextArea):
         self.control.key_bindings = key_bindings
 
 
-class CellStdinTextArea(TextArea):
-    """A modal text area for user input."""
+class CellStdin:
+    """A widget to accept kernel input."""
 
-    def __init__(self, *args: "Any", **kwargs: "Any"):
-        """Create a cell input text area."""
+    def __init__(self, kernel_tab: "CommContainer") -> "None":
+        """Create a new kernel input box."""
+        from euporie.core.widgets.inputs import LabelledWidget, Text
+
+        self.kernel_tab = kernel_tab
+        self.last_focused: "Optional[FocusableElement]" = None
+
         self.password = False
-        kwargs["password"] = Condition(lambda: self.password)
-        super().__init__(*args, **kwargs)
+        self.prompt: "Optional[str]" = None
+        self.active = False
+        self.visible = Condition(lambda: self.active)
 
-    def is_modal(self) -> "bool":
-        """Returns true, so the input is always modal."""
+        text = Text(
+            multiline=False,
+            accept_handler=self.accept,
+            password=Condition(lambda: self.password),
+            style="class:input",
+        )
+        self.window = text.text_area.window
+        self.container = ConditionalContainer(
+            LabelledWidget(
+                body=text,
+                label=lambda: self.prompt or r"\>>>",
+            ),
+            filter=self.visible,
+        )
+
+    def accept(self, buffer: "Buffer") -> "bool":
+        """Send the input to the kernel and hide the input box."""
+        if self.kernel_tab.kernel.kc is not None:
+            self.kernel_tab.kernel.kc.input(buffer.text)
+        # Cleanup
+        self.active = False
+
+        buffer.text = ""
+        if self.last_focused:
+            try:
+                get_app().layout.focus(self.last_focused)
+            except ValueError:
+                pass
         return True
+
+    def get_input(
+        self,
+        prompt: "str" = "Please enter a value: ",
+        password: "bool" = False,
+    ) -> "None":
+        """Prompts the user for input and sends the result to the kernel."""
+        self.password = password
+        self.prompt = prompt
+
+        # Set this first so the height of the cell includes the input box if it gets
+        # rendered when we scroll to it
+        self.active = True
+        # Remember what was focused before
+        app = get_app()
+        layout = app.layout
+        self.last_focused = layout.current_control
+
+        # Try focusing the input box - we create an asynchronous task which will
+        # probably run after the next render, when the stdin_box is recognised as being
+        # in the layout. This doesn't always work (depending on timing), does usually.
+        try:
+            layout.focus(self)
+        finally:
+
+            async def _focus_input() -> "None":
+                # Focus the input box
+                if self.window in layout.visible_windows:
+                    layout.focus(self)
+                # Redraw the screen to show it as focused
+                app.invalidate()
+
+            app.create_background_task(_focus_input())
+
+    def __pt_container__(self) -> "AnyContainer":
+        """Return the input's container."""
+        return self.container
 
 
 class ClickToFocus(Container):
@@ -306,8 +375,6 @@ class Cell:
         wrap_input = Condition(lambda: weak_self.json.get("cell_type") == "markdown")
         show_prompt = Condition(lambda: weak_self.cell_type == "code")
         self.is_code = Condition(lambda: weak_self.json.get("cell_type") == "code")
-        self._asking_input = False
-        asking_input = Condition(lambda: weak_self._asking_input)
 
         self.output_area = CellOutputArea(json=self.output_json, parent=weak_self)
 
@@ -425,13 +492,7 @@ class Cell:
         def _send_input(buf: "Buffer") -> "bool":
             return False
 
-        self.stdin_box_accept_handler = _send_input
-        self.stdin_box = CellStdinTextArea(
-            multiline=False,
-            accept_handler=lambda buf: weak_self.stdin_box_accept_handler(buf),
-            focus_on_click=True,
-            prompt="> ",
-        )
+        self.stdin_box = CellStdin(self.nb)
 
         top_border = VSplit(
             [
@@ -499,7 +560,7 @@ class Cell:
                 ],
                 height=1,
             ),
-            filter=(show_input & show_output) | asking_input,
+            filter=(show_input & show_output) | self.stdin_box.visible,
         )
         output_row = ConditionalContainer(
             VSplit(
@@ -526,10 +587,7 @@ class Cell:
                     HSplit(
                         [
                             self.output_area,
-                            ConditionalContainer(
-                                Frame(self.stdin_box),
-                                filter=asking_input,
-                            ),
+                            self.stdin_box,
                         ]
                     ),
                     ConditionalContainer(
@@ -539,7 +597,7 @@ class Cell:
                     fill(width=1, char=border_char("MID_RIGHT")),
                 ],
             ),
-            filter=show_output | asking_input,
+            filter=show_output | self.stdin_box.visible,
         )
         bottom_border = VSplit(
             [
@@ -827,8 +885,6 @@ class InteractiveCell(Cell):
         super().__init__(index, json, notebook)
         # Pytype need this re-defining...
         self.nb: "EditNotebook" = notebook
-        self.stdin_event = asyncio.Event()
-        self.inspect_future = None
 
     def run_or_render(
         self,
@@ -868,7 +924,7 @@ class InteractiveCell(Cell):
         if self.nb.edit_mode:
             # Select just this cell when editing
             # self.nb.select(self.index)
-            if self._asking_input:
+            if self.stdin_box.visible():
                 to_focus = self.stdin_box.window
             else:
                 to_focus = self.input_box.window
@@ -903,53 +959,6 @@ class InteractiveCell(Cell):
         prompt: "str" = "Please enter a value:",
         password: "bool" = False,
     ) -> "None":
-        """Prompts the user for input and sends the result to the kernel."""
-        # Set this first so the height of the cell includes the input box if it gets
-        # rendered when we scroll to it
-        self._asking_input = True
-        # Remember what was focused before
-        app = get_app()
-        layout = app.layout
-        focused = layout.current_control
-        # Scroll the current cell into view - this causes the cell to be rendered if it
-        # is not already on screen
+        """Scroll the cell requesting input into view and render it before asking for input."""
         self.nb.page.selected_slice = slice(self.index, self.index + 1)
-        # Set the prompt text for the BeforeInput pre-processor
-        if self.stdin_box.control.input_processors is not None:
-            prompt_processor = self.stdin_box.control.input_processors[2]
-            if isinstance(prompt_processor, BeforeInput):
-                prompt_processor.text = f"{prompt} "
-        # Set the password status of the input box
-        self.stdin_box.password = password
-
-        def _send_input(buf: "Buffer") -> "bool":
-            """Send the input to the kernel and hide the input box."""
-            if self.nb.kernel.kc is not None:
-                self.nb.kernel.kc.input(buf.text)
-            # Cleanup
-            self._asking_input = False
-            get_app().layout.focus(self)
-            self.stdin_box.text = ""
-            if focused in layout.find_all_controls():
-                try:
-                    layout.focus(focused)
-                except ValueError:
-                    pass
-            return True
-
-        self.stdin_box_accept_handler = _send_input
-
-        # Try focusing the input box - we create an asynchronous task which will
-        # probably run after the next render, when the stdin_box is recognised as being
-        # in the layout. This doesn't always work (depending on timing), does usually.
-        async def _focus_input() -> "None":
-            # Focus the input box
-            if self.stdin_box.window in layout.visible_windows:
-                layout.focus(self.stdin_box)
-            # Redraw the screen to show it as focused
-            app.invalidate()
-
-        try:
-            layout.focus(self.stdin_box)
-        finally:
-            app.create_background_task(_focus_input())
+        self.stdin_box.get_input(prompt, password)

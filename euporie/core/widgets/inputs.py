@@ -500,6 +500,8 @@ class Text:
         placeholder: "Optional[str]" = None,
         input_processors: "Optional[Sequence[Processor]]" = None,
         disabled: "FilterOrBool" = False,
+        password: "FilterOrBool" = False,
+        prompt: "Optional[AnyFormattedText]" = None,
     ) -> "None":
         """Create a new text widget instance.
 
@@ -523,6 +525,8 @@ class Text:
             input_processors: Additional input processors to apply to the text-area
             disabled: A filter which when evaluated to :py:const:`True` causes the
                 widget to be disabled
+            password: A filter to determine if the text input is a password field
+            prompt: Text to display before the input
         """
         self.style = style
         self.options = options or []
@@ -557,6 +561,7 @@ class Text:
                 ),
                 *(input_processors or []),
             ],
+            password=password,
         )
         self.buffer = self.text_area.buffer
 

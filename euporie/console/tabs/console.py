@@ -51,7 +51,7 @@ from euporie.core.margins import NumberedDiffMargin, ScrollbarMargin
 from euporie.core.style import KERNEL_STATUS_REPR
 from euporie.core.suggest import ConditionalAutoSuggestAsync, HistoryAutoSuggest
 from euporie.core.tabs.base import Tab
-from euporie.core.widgets.cell import CellInputTextArea
+from euporie.core.widgets.cell import CellInputTextArea, CellStdin
 from euporie.core.widgets.cell_outputs import CellOutputArea
 from euporie.core.widgets.pager import PagerState
 
@@ -95,8 +95,11 @@ class Console(Tab):
         self.kernel: "NotebookKernel" = NotebookKernel(
             nb=self,
             threaded=True,
+            allow_stdin=True,
             default_callbacks=MsgCallbacks(
-                # get_input=self.misc_callback,
+                get_input=lambda prompt, password: self.stdin_box.get_input(
+                    prompt, password
+                ),
                 set_execution_count=partial(setattr, self, "execution_count"),
                 add_output=self.new_output,
                 clear_output=self.clear_output,
@@ -307,10 +310,13 @@ class Console(Tab):
             height=1,
         )
 
+        self.stdin_box = CellStdin(self)
+
         have_previous_output = Condition(lambda: bool(self.output.json))
 
         return HSplit(
             [
+                # Output
                 ConditionalContainer(
                     HSplit(
                         [
@@ -320,6 +326,13 @@ class Console(Tab):
                     ),
                     filter=have_previous_output,
                 ),
+                # StdIn
+                self.stdin_box,
+                ConditionalContainer(
+                    Window(height=1),
+                    filter=self.stdin_box.visible,
+                ),
+                # Input
                 VSplit(
                     [
                         input_prompt,
@@ -330,6 +343,10 @@ class Console(Tab):
             ],
             key_bindings=load_registered_bindings("tabs.console"),
         )
+
+    def accept_stdin(self, buf: "Buffer") -> "bool":
+        """Accept the user's input."""
+        return True
 
     def interrupt_kernel(self) -> "None":
         """Interrupt the current `Notebook`'s kernel."""
