@@ -40,7 +40,7 @@ class HistoryAutoSuggest(AutoSuggest):
     ) -> Optional[Suggestion]:
         """Get a line completion suggestion."""
         result: "Optional[Suggestion]" = None
-        line = document.current_line.strip()
+        line = document.current_line.lstrip()
         if line:
             if line in self.cache:
                 result = self.cache[line]
