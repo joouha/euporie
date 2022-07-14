@@ -78,7 +78,7 @@ class ConsoleApp(EuporieApp):
                     xcursor=True,
                     ycursor=True,
                 ),
-                Float(self.command_palette, top=4),
+                Float(self.command_palette),
             ]
         )
         return FloatContainer(
