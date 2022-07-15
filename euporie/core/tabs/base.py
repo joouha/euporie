@@ -17,7 +17,7 @@ if TYPE_CHECKING:
     from prompt_toolkit.formatted_text import AnyFormattedText
     from prompt_toolkit.layout.containers import AnyContainer
 
-    from euporie.core.app import EuporieApp
+    from euporie.core.app import BaseApp
 
 log = logging.getLogger(__name__)
 
@@ -28,10 +28,10 @@ class Tab(metaclass=ABCMeta):
     container: "AnyContainer"
 
     def __init__(
-        self, app: "Optional[EuporieApp]" = None, path: "Optional[PathLike]" = None
+        self, app: "Optional[BaseApp]" = None, path: "Optional[PathLike]" = None
     ):
         """Called when the tab is created."""
-        self.app: "EuporieApp" = app or get_app()
+        self.app: "BaseApp" = app or get_app()
         self.app.container_statuses[self] = self.statusbar_fields
         self.container = Window()
 

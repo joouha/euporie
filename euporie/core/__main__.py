@@ -1,19 +1,17 @@
 """Main entry point into euporie.core."""
 
-import importlib
 
-
-def main() -> "None":
+def main(name: "str" = "core") -> "None":
     """Loads and launches the application."""
-    from euporie.core.config import config
+    from importlib.metadata import entry_points
 
-    # Load the configuration
-    config.load()
-    # Import the configured app
-    mod_name, _, class_name = config.app.rpartition(".")
-    App = getattr(importlib.import_module(mod_name), class_name)
-    # Launch the app
-    App.launch()
+    entry = {entry.name: entry for entry in entry_points(group="euporie.apps")}.get(
+        name
+    )
+    if entry:
+        return entry.load().launch()
+    else:
+        raise Exception(f"Euporie app `{name}` not installed")
 
 
 if __name__ == "__main__":

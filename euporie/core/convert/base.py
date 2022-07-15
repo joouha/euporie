@@ -127,7 +127,11 @@ def convert(
     bg: "Optional[str]" = None,
 ) -> "Any":
     """Convert between formats."""
-    data_hash = hash(data)
+    try:
+        data_hash = hash(data)
+    except TypeError as error:
+        log.exception("Cannot hash %s", data)
+        raise error
 
     def _convert(
         data: "str",

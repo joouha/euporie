@@ -138,10 +138,10 @@ if __name__ == "__main__":
     from prompt_toolkit.shortcuts.utils import print_formatted_text
     from prompt_toolkit.styles import Style
 
-    from euporie.edit.app import EditApp
+    from euporie.notebook.app import NotebookApp
 
     enable_enchanced_markdown()
-    app = EditApp()
+    app = NotebookApp()
     with set_app(app):
         app.update_style()
         with open(sys.argv[1]) as f:

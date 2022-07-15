@@ -20,14 +20,14 @@ if TYPE_CHECKING:
     from os import PathLike
     from typing import Optional
 
-    from euporie.core.app import EuporieApp
+    from euporie.core.app import BaseApp
 
 
 class LogView(Tab):
     """A tab which allows you to view log entries."""
 
     def __init__(
-        self, app: "Optional[EuporieApp]" = None, path: "Optional[PathLike]" = None
+        self, app: "Optional[BaseApp]" = None, path: "Optional[PathLike]" = None
     ) -> "None":
         """Create a new log view tab instance."""
         super().__init__(app, path)

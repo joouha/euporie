@@ -95,7 +95,7 @@ def has_menus() -> "bool":
     """Determine if a menu is being displayed."""
     from prompt_toolkit.widgets.menus import MenuContainer
 
-    from euporie.edit.app import get_app
+    from euporie.notebook.app import get_app
 
     app = get_app()
     if isinstance(app.layout.container, MenuContainer):

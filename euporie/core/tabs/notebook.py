@@ -81,10 +81,10 @@ if TYPE_CHECKING:
     from prompt_toolkit.history import History
     from prompt_toolkit.mouse_events import MouseEvent
 
-    from euporie.core.app import EuporieApp
+    from euporie.core.app import BaseApp
     from euporie.core.comm.base import Comm
     from euporie.core.kernel import NotebookKernel
-    from euporie.edit.app import EditApp
+    from euporie.notebook.app import NotebookApp
 
 log = logging.getLogger(__name__)
 
@@ -95,7 +95,7 @@ class Notebook(Tab, metaclass=ABCMeta):
     kernel: "NotebookKernel"
 
     def __init__(
-        self, app: "Optional[EuporieApp]" = None, path: "Optional[PathLike]" = None
+        self, app: "Optional[BaseApp]" = None, path: "Optional[PathLike]" = None
     ):
         """Instantiate a Notebook container, using a notebook at a given path.
 
@@ -417,7 +417,7 @@ class PreviewNotebook(Notebook):
     """A notebook class used for previewing files in the terminal."""
 
     def __init__(
-        self, app: "Optional[EuporieApp]" = None, path: "Optional[PathLike]" = None
+        self, app: "Optional[BaseApp]" = None, path: "Optional[PathLike]" = None
     ):
         """Create a new :py:class:`PreviewNotebook` instance.
 
@@ -445,7 +445,7 @@ class KernelNotebook(Notebook, metaclass=ABCMeta):
     kernel: "NotebookKernel"
 
     def __init__(
-        self, app: "Optional[EuporieApp]" = None, path: "Optional[PathLike]" = None
+        self, app: "Optional[BaseApp]" = None, path: "Optional[PathLike]" = None
     ) -> "None":
         """Create a new :py:class:`KernelNotebook` instance.
 
@@ -642,10 +642,10 @@ class PreviewKernelNotebook(PreviewNotebook, KernelNotebook):
 class EditNotebook(KernelNotebook):
     """A notebook tab which runs in the TUI editor."""
 
-    app: "EditApp"
+    app: "NotebookApp"
 
     def __init__(
-        self, app: "Optional[EuporieApp]" = None, path: "Optional[PathLike]" = None
+        self, app: "Optional[BaseApp]" = None, path: "Optional[PathLike]" = None
     ) -> "None":
         """Create a new :py:class:`EditNotebook` instance.
 

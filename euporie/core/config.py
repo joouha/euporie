@@ -17,7 +17,7 @@ from pygments.styles import STYLE_MAP as pygments_styles
 from upath import UPath
 
 from euporie.core import __app_name__, __copyright__, __strapline__, __version__
-from euporie.edit.enums import TabMode
+from euporie.notebook.enums import TabMode
 
 if TYPE_CHECKING:
     from typing import Any, Dict, Iterator, List, Optional, Sequence, Tuple, Union
@@ -27,9 +27,9 @@ log = logging.getLogger(__name__)
 
 APPS: "List[Dict]" = [
     {
-        "name": "edit",
+        "name": "notebook",
         "help": "Interactively edit a notebook file",
-        "class": "euporie.edit.app.EditApp",
+        "class": "euporie.notebook.app.NotebookApp",
         "default": True,
         "description": """
             Launches the interactive TUI notebook editor, allowing you to run and edit
@@ -120,7 +120,7 @@ CONFIG_PARAMS: "Dict[str, Dict]" = {
         """,
     },
     "app": {
-        "default": "euporie.edit.app.EditApp",
+        "default": "euporie.notebook.app.NotebookApp",
         "type": str,
         "choices": [app["class"] for app in APPS],
         "help": "The euporie app to launch",
@@ -128,7 +128,7 @@ CONFIG_PARAMS: "Dict[str, Dict]" = {
             "type": "string",
         },
         "description_": """
-            The dotted import path of the :class:`EuporieApp` to run.
+            The dotted import path of the :class:`BaseApp` to run.
         """,
     },
     "log_file": {
@@ -160,7 +160,7 @@ CONFIG_PARAMS: "Dict[str, Dict]" = {
     },
     # Edit options
     "edit_mode": {
-        "apps_": ["edit"],
+        "apps_": ["notebook"],
         "flags_": ["--edit-mode"],
         "type": str,
         "choices": ["micro", "emacs", "vi"],
@@ -174,7 +174,7 @@ CONFIG_PARAMS: "Dict[str, Dict]" = {
         """,
     },
     "tab_size": {
-        "apps_": ["edit"],
+        "apps_": ["notebook"],
         "flags_": ["--tab-size"],
         "type": int,
         "help": "Spaces per indentation level",
@@ -188,7 +188,7 @@ CONFIG_PARAMS: "Dict[str, Dict]" = {
         """,
     },
     "show_cell_borders": {
-        "apps_": ["edit"],
+        "apps_": ["notebook"],
         "flags_": ["--show-cell-borders"],
         "action": BooleanOptionalAction,
         "type": bool,
@@ -202,7 +202,7 @@ CONFIG_PARAMS: "Dict[str, Dict]" = {
         """,
     },
     "line_numbers": {
-        "apps_": ["edit"],
+        "apps_": ["notebook"],
         "flags_": ["--line-numbers"],
         "action": BooleanOptionalAction,
         "type": bool,
@@ -216,7 +216,7 @@ CONFIG_PARAMS: "Dict[str, Dict]" = {
         """,
     },
     "show_status_bar": {
-        "apps_": ["edit"],
+        "apps_": ["notebook"],
         "flags_": ["--show-status-bar"],
         "action": BooleanOptionalAction,
         "type": bool,
@@ -230,7 +230,7 @@ CONFIG_PARAMS: "Dict[str, Dict]" = {
         """,
     },
     "show_scroll_bar": {
-        "apps_": ["edit"],
+        "apps_": ["notebook"],
         "flags_": ["--show-scroll-bar"],
         "action": BooleanOptionalAction,
         "type": bool,
@@ -244,7 +244,7 @@ CONFIG_PARAMS: "Dict[str, Dict]" = {
         """,
     },
     "tab_mode": {
-        "apps_": ["edit"],
+        "apps_": ["notebook"],
         "flags_": ["--tab-mode"],
         "type": str,
         "choices": [mode.value for mode in TabMode],
@@ -259,7 +259,7 @@ CONFIG_PARAMS: "Dict[str, Dict]" = {
         """,
     },
     "always_show_tab_bar": {
-        "apps_": ["edit"],
+        "apps_": ["notebook"],
         "flags_": ["--always-show-tab-bar"],
         "action": BooleanOptionalAction,
         "type": bool,
@@ -274,7 +274,7 @@ CONFIG_PARAMS: "Dict[str, Dict]" = {
         """,
     },
     "background_pattern": {
-        "apps_": ["edit"],
+        "apps_": ["notebook"],
         "flags_": ["--background-pattern", "--bg-pattern"],
         "type": int,
         "choices": list(range(6)),
@@ -291,7 +291,7 @@ CONFIG_PARAMS: "Dict[str, Dict]" = {
         """,
     },
     "background_character": {
-        "apps_": ["edit"],
+        "apps_": ["notebook"],
         "flags_": ["--background-character", "--bg-char"],
         "type": str,
         "help": "Character for background pattern",
@@ -307,7 +307,7 @@ CONFIG_PARAMS: "Dict[str, Dict]" = {
         """,
     },
     "terminal_polling_interval": {
-        "apps_": ["edit"],
+        "apps_": ["notebook"],
         "flags_": ["--terminal-polling-interval"],
         "type": int,
         "help": "Time between terminal colour queries",
@@ -322,7 +322,7 @@ CONFIG_PARAMS: "Dict[str, Dict]" = {
         """,
     },
     "autocomplete": {
-        "apps_": ["edit"],
+        "apps_": ["notebook"],
         "flags_": ["--autocomplete"],
         "action": BooleanOptionalAction,
         "type": bool,
@@ -336,7 +336,7 @@ CONFIG_PARAMS: "Dict[str, Dict]" = {
         """,
     },
     "autosuggest": {
-        "apps_": ["edit"],
+        "apps_": ["notebook"],
         "flags_": ["--autosuggest"],
         "action": BooleanOptionalAction,
         "type": bool,
@@ -350,7 +350,7 @@ CONFIG_PARAMS: "Dict[str, Dict]" = {
         """,
     },
     "autoinspect": {
-        "apps_": ["edit"],
+        "apps_": ["notebook"],
         "flags_": ["--autoinspect"],
         "action": BooleanOptionalAction,
         "type": bool,
@@ -364,7 +364,7 @@ CONFIG_PARAMS: "Dict[str, Dict]" = {
         """,
     },
     "run_after_external_edit": {
-        "apps_": ["edit"],
+        "apps_": ["notebook"],
         "flags_": ["--run-after-external-edit"],
         "type": bool,
         "help": "Run cells after editing externally",
@@ -377,7 +377,7 @@ CONFIG_PARAMS: "Dict[str, Dict]" = {
         """,
     },
     "autoformat": {
-        "apps_": ["edit"],
+        "apps_": ["notebook"],
         "flags_": ["--autoformat"],
         "action": BooleanOptionalAction,
         "type": bool,
@@ -391,7 +391,7 @@ CONFIG_PARAMS: "Dict[str, Dict]" = {
         """,
     },
     "format_black": {
-        "apps_": ["edit"],
+        "apps_": ["notebook"],
         "flags_": ["--format-black"],
         "action": BooleanOptionalAction,
         "type": bool,
@@ -405,7 +405,7 @@ CONFIG_PARAMS: "Dict[str, Dict]" = {
         """,
     },
     "format_isort": {
-        "apps_": ["edit"],
+        "apps_": ["notebook"],
         "flags_": ["--format-isort"],
         "action": BooleanOptionalAction,
         "type": bool,
@@ -419,7 +419,7 @@ CONFIG_PARAMS: "Dict[str, Dict]" = {
         """,
     },
     "format_ssort": {
-        "apps_": ["edit"],
+        "apps_": ["notebook"],
         "flags_": ["--format-ssort"],
         "action": BooleanOptionalAction,
         "type": bool,
@@ -466,7 +466,7 @@ CONFIG_PARAMS: "Dict[str, Dict]" = {
     },
     # Edit / Preview options
     "files": {
-        "apps_": ["edit", "preview", "hub", "console"],
+        "apps_": ["notebook", "preview", "hub", "console"],
         "flags_": ["files"],
         "nargs": "*",
         "type": UPath,
@@ -484,7 +484,7 @@ CONFIG_PARAMS: "Dict[str, Dict]" = {
         """,
     },
     "run": {
-        "apps_": ["edit", "preview"],
+        "apps_": ["notebook", "preview"],
         "flags_": ["--run"],
         "action": BooleanOptionalAction,
         "type": bool,
@@ -499,7 +499,7 @@ CONFIG_PARAMS: "Dict[str, Dict]" = {
         """,
     },
     "expand": {
-        "apps_": ["edit", "preview"],
+        "apps_": ["notebook", "preview"],
         "flags_": ["--expand"],
         "action": BooleanOptionalAction,
         "type": bool,
@@ -513,7 +513,7 @@ CONFIG_PARAMS: "Dict[str, Dict]" = {
         """,
     },
     "max_notebook_width": {
-        "apps_": ["edit", "preview"],
+        "apps_": ["notebook", "preview"],
         "flags_": ["--max-notebook-width"],
         "type": int,
         "help": "Maximum width of notebooks",
@@ -527,7 +527,7 @@ CONFIG_PARAMS: "Dict[str, Dict]" = {
         """,
     },
     "tmux_graphics": {
-        "apps_": ["edit", "preview"],
+        "apps_": ["notebook", "preview"],
         "flags_": ["--tmux-graphics"],
         "action": BooleanOptionalAction,
         "type": bool,
@@ -548,7 +548,7 @@ CONFIG_PARAMS: "Dict[str, Dict]" = {
         """,
     },
     "color_scheme": {
-        "apps_": ["edit", "preview"],
+        "apps_": ["notebook", "preview"],
         "flags_": ["--color-scheme"],
         "type": str,
         "choices": ["default", "inverse", "light", "dark", "black", "white", "custom"],
@@ -564,7 +564,7 @@ CONFIG_PARAMS: "Dict[str, Dict]" = {
         """,
     },
     "custom_background_color": {
-        "apps_": ["edit", "preview"],
+        "apps_": ["notebook", "preview"],
         "flags_": ["--custom-background-color", "--custom-bg-color", "--bg"],
         "type": str,
         "help": 'Background color for "Custom" color theme',
@@ -579,7 +579,7 @@ CONFIG_PARAMS: "Dict[str, Dict]" = {
         """,
     },
     "custom_foreground_color": {
-        "apps_": ["edit", "preview"],
+        "apps_": ["notebook", "preview"],
         "flags_": ["--custom-foreground-color", "--custom-fg-color", "--fg"],
         "type": str,
         "help": 'Background color for "Custom" color theme',
@@ -594,7 +594,7 @@ CONFIG_PARAMS: "Dict[str, Dict]" = {
         """,
     },
     "syntax_theme": {
-        "apps_": ["edit", "preview"],
+        "apps_": ["notebook", "preview"],
         "flags_": ["--syntax-theme"],
         "type": str,
         # Do not want to print all theme names in --help screen as it looks messy
@@ -609,7 +609,7 @@ CONFIG_PARAMS: "Dict[str, Dict]" = {
         """,
     },
     "color_depth": {
-        "apps_": ["edit", "preview"],
+        "apps_": ["notebook", "preview"],
         "flags_": ["--color-depth"],
         "type": int,
         "choices": [1, 4, 8, 24],

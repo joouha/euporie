@@ -12,11 +12,10 @@ except ModuleNotFoundError as err:
         'Install euporie hub with: "pip install euporie[hub]"'
     ) from err
 
-from prompt_toolkit.contrib.ssh import PromptToolkitSSHSession
-
-from euporie.app.edit import EditApp
+from euporie.app.edit import NotebookApp
 from euporie.config import config
 from euporie.log import setup_logs
+from prompt_toolkit.contrib.ssh import PromptToolkitSSHSession
 
 if TYPE_CHECKING:
     from typing import Awaitable, Callable
@@ -25,9 +24,10 @@ log = logging.getLogger(__name__)
 
 
 class EuporieSSHServer(asyncssh.SSHServer):  # type: ignore
-    """An SSH server which runs a :class:`prompt_toolkit.application.Application`.
+    """Launch euporie hub, which serves a euporie app over SSH.
 
-    Authentication is configuratble.
+    Launches euporie hub, a multi-client SSH server running euporie, which
+    allows multiple users to connect and run instances of a euporie app.
 
     """
 
@@ -49,7 +49,7 @@ class EuporieSSHServer(asyncssh.SSHServer):  # type: ignore
         return PromptToolkitSSHSession(self.interact)
 
 
-class HubApp(EditApp):
+class HubApp(NotebookApp):
     """An app which runs as a multi-user SSH server."""
 
     @classmethod

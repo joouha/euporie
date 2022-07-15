@@ -13,7 +13,7 @@ from prompt_toolkit.output.defaults import create_output
 from prompt_toolkit.output.vt100 import Vt100_Output
 from prompt_toolkit.widgets import HorizontalLine
 
-from euporie.core.app import EuporieApp, get_app
+from euporie.core.app import BaseApp, get_app
 from euporie.core.config import config
 from euporie.core.tabs.notebook import PreviewKernelNotebook, PreviewNotebook
 from euporie.core.widgets.page import PrintingContainer
@@ -67,8 +67,14 @@ class PseudoTTY:
         return getattr(self._underlying, name)
 
 
-class PreviewApp(EuporieApp):
-    """An application which dumps the layout to the output then exits."""
+class PreviewApp(BaseApp):
+    """Preview a notebook file.
+
+    Outputs a formatted notebook file. The formatted output will be written to
+    the the output file path given by `output_file` (the standard output by
+    default).
+
+    """
 
     def __init__(self, **kwargs: "Any") -> "None":
         """Create an app for dumping a prompt-toolkit layout."""

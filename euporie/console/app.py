@@ -18,7 +18,7 @@ from prompt_toolkit.layout.containers import (
 from prompt_toolkit.layout.dimension import Dimension
 from prompt_toolkit.layout.menus import CompletionsMenu
 
-from euporie.core.app import EuporieApp, quit
+from euporie.core.app import BaseApp, quit
 from euporie.core.commands import add_cmd
 from euporie.core.filters import buffer_is_code, buffer_is_empty
 from euporie.core.key_binding.registry import register_bindings
@@ -38,8 +38,13 @@ def get_app() -> "ConsoleApp":
     return cast("ConsoleApp", ptk_get_app())
 
 
-class ConsoleApp(EuporieApp):
-    """A text user interface euporie application."""
+class ConsoleApp(BaseApp):
+    """Launch an interactive console which displays rich & interactive output.
+
+    Launches euporie console, a frontend for Jupyter kernels which displays
+    rich output in the terminal.
+
+    """
 
     def __init__(self, **kwargs: "Any") -> "None":
         """Create a new euporie text user interface application instance."""

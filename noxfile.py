@@ -11,7 +11,15 @@ from nox_poetry import Session, session
 package = "euporie"
 python_versions = ["3.10", "3.9", "3.8"]
 nox.options.sessions = "format_check", "lint", "safety", "tests", "mypy", "pytype"
-locations = "euporie", "tests", "scripts"
+locations = [
+    "euporie/core",
+    "euporie/console",
+    "euporie/notebook",
+    "euporie/preview",
+    "euporie/hub",
+    "tests",
+    "scripts",
+]
 
 
 def activate_virtualenv_in_precommit_hooks(session: "Session") -> "None":
@@ -109,9 +117,13 @@ def format_check(session: "Session") -> None:
 @nox.session(python=python_versions)
 def mypy(session: "Session") -> "None":
     """Type-check using mypy."""
-    args = session.posargs or locations
-    session.install("mypy", "rich", "black", "isort", ".")
-    session.run("mypy", *args)
+    session.install("mypy", "rich", "black", "isort")
+    session.install("-e", ".")
+    if session.posargs:
+        session.run("mypy", *session.posargs)
+    else:
+        modules = sum([["-p", path.replace("/", ".")] for path in locations], start=[])
+        session.run("mypy", "--namespace-packages", *modules)
 
 
 @session(python=python_versions)

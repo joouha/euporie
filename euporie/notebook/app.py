@@ -35,7 +35,7 @@ from euporie.core import (
     __strapline__,
     __version__,
 )
-from euporie.core.app import EuporieApp
+from euporie.core.app import BaseApp
 from euporie.core.commands import add_cmd, get_cmd
 from euporie.core.config import CONFIG_PARAMS, config
 from euporie.core.filters import have_black, have_isort, have_ssort
@@ -52,7 +52,7 @@ from euporie.core.widgets.pager import Pager
 from euporie.core.widgets.palette import CommandPalette
 from euporie.core.widgets.search_bar import SearchBar
 from euporie.core.widgets.status_bar import StatusBar
-from euporie.edit.enums import TabMode
+from euporie.notebook.enums import TabMode
 
 if TYPE_CHECKING:
     from asyncio import AbstractEventLoop
@@ -71,15 +71,17 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 
-def get_app() -> "EditApp":
+def get_app() -> "NotebookApp":
     """Get the current application."""
-    return cast("EditApp", ptk_get_app())
+    return cast("NotebookApp", ptk_get_app())
 
 
-class EditApp(EuporieApp):
-    """A text user interface euporie application."""
+class NotebookApp(BaseApp):
+    """Interactively edit a notebook file.
 
-    menu_container: "MenuContainer"
+    Launches the interactive TUI notebook editor, allowing you to run and edit Jupyter
+    notebooks in the terminal.
+    """
 
     status_default = (
         [HTML("Press <b>Ctrl+n</b> to start a new notebook")],
@@ -98,7 +100,7 @@ class EditApp(EuporieApp):
                 **kwargs,
             }
         )
-        self.bindings_to_load.append("app.edit")
+        self.bindings_to_load.append("app.notebook")
         self.has_dialog = False
 
     def get_file_tab(self, path: "PathLike") -> "Type[Tab]":
@@ -444,7 +446,7 @@ class EditApp(EuporieApp):
 
     @staticmethod
     def _kb_info() -> "Generator":
-        from euporie.commands.format import format_command_attrs
+        from euporie.core.formatted_text.commands import format_command_attrs
 
         data = format_command_attrs(
             attrs=["title", "keys"],
@@ -939,7 +941,7 @@ def run_after_external_edit() -> "None":
 
 register_bindings(
     {
-        "app.edit": {
+        "app.notebook": {
             "new-notebook": "c-n",
             "open-file": "c-o",
             "use-full-width": "w",

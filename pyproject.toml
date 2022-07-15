@@ -20,6 +20,19 @@ classifiers = [
 "Changelog" = "https://euporie.readthedocs.io/en/latest/pages/changelog.html"
 "Bug Tracker" = "https://github.com/joouha/euporie/issues"
 
+[tool.poetry.plugins."euporie.apps"]
+"console" = "euporie.console.app:ConsoleApp"
+"notebook" = "euporie.notebook.app:NotebookApp"
+"preview" = "euporie.preview.app:PreviewApp"
+"hub" = "euporie.Hub.app:hubApp"
+
+[tool.poetry.scripts]
+euporie = 'euporie.core.__main__:main'
+euporie-console = 'euporie.console.__main__:main'
+euporie-notebook = 'euporie.notebook.__main__:main'
+euporie-preview = 'euporie.preview.__main__:main'
+euporie-hub = 'euporie.hub.app.__main__:main'
+
 [tool.poetry.dependencies]
 python = "^3.8"
 prompt-toolkit = "^3.0.27"
@@ -86,9 +99,6 @@ codespell = "^2.1.0"
 pytest = "^7.1.1"
 mypy = "^0.942"
 rich = "^12.2.0"
-
-[tool.poetry.scripts]
-euporie = 'euporie.core.__main__:main'
 
 [tool.isort]
 profile = "black"

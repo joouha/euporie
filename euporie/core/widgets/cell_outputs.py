@@ -294,7 +294,7 @@ class CellOutput:
                         parent=self.parent,
                     )
                 except NotImplementedError:
-                    # self._selected_mime = list(data.keys())[-1]
+                    self.selected_mime = mime = list(data.keys())[-1]
                     continue
                 else:
                     return element

@@ -62,7 +62,7 @@ if TYPE_CHECKING:
     from prompt_toolkit.formatted_text import AnyFormattedText, StyleAndTextTuples
     from prompt_toolkit.key_binding.key_processor import KeyPressEvent
 
-    from euporie.core.app import EuporieApp
+    from euporie.core.app import BaseApp
     from euporie.core.comm.base import Comm, CommContainer
 
 log = logging.getLogger(__name__)
@@ -73,7 +73,7 @@ class Console(Tab):
 
     def __init__(
         self,
-        app: "Optional[EuporieApp]" = None,
+        app: "Optional[BaseApp]" = None,
         path: "Optional[PathLike]" = None,
     ) -> "None":
         """Create a new :py:class:`KernelNotebook` instance.

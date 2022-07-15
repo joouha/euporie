@@ -120,18 +120,19 @@ _COLOR_DEPTHS = {
 }
 
 
-def get_app() -> "EuporieApp":
+def get_app() -> "BaseApp":
     """Get the current application."""
-    return cast("EuporieApp", get_app_ptk())
+    return cast("BaseApp", get_app_ptk())
 
 
-class EuporieApp(Application):
+class BaseApp(Application):
     """The base euporie application class.
 
     This subclasses the `prompt_toolkit.application.Application` class, so application
     wide methods can be easily added.
     """
 
+    # config = Config()
     status_default: "StatusBarFields" = ([], [])
 
     def __init__(self, **kwargs: "Any") -> "None":
@@ -357,8 +358,10 @@ class EuporieApp(Application):
     @classmethod
     def launch(cls) -> "None":
         """Launches the app."""
-        # This configures the logs for euporie
+        # cls.config.load(cls)
+        config.load()
         setup_logs()
+
         with create_app_session(input=cls.load_input(), output=cls.load_output()):
             # Create an instance of the app and run it
             return cls().run()
