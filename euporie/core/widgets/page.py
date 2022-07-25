@@ -389,12 +389,14 @@ class ScrollingContainer(Container):
 
         self.selected_child_position += n
 
-    def mouse_scroll_handler(self, mouse_event: "MouseEvent") -> "None":
+    def mouse_scroll_handler(self, mouse_event: "MouseEvent") -> "NotImplementedOrNone":
         """A mouse handler to scroll the pane."""
         if mouse_event.event_type == MouseEventType.SCROLL_DOWN:
             self.scroll(-1)
         elif mouse_event.event_type == MouseEventType.SCROLL_UP:
             self.scroll(1)
+        else:
+            return NotImplemented
 
     def write_to_screen(
         self,

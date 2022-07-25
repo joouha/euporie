@@ -62,6 +62,7 @@ if TYPE_CHECKING:
     from typing import Deque, Dict, List, MutableSequence, Optional, Sequence, Tuple
 
     from prompt_toolkit.formatted_text.base import AnyFormattedText
+    from prompt_toolkit.key_binding.key_bindings import NotImplementedOrNone
     from prompt_toolkit.layout.containers import AnyContainer
     from prompt_toolkit.mouse_events import MouseEvent
 
@@ -91,10 +92,12 @@ class Notebook(BaseNotebook):
 
     # Tab stuff
 
-    def _statusbar_kernel_handeler(self, event: "MouseEvent") -> "None":
+    def _statusbar_kernel_handeler(self, event: "MouseEvent") -> "NotImplementedOrNone":
         """Event handler for kernel name field in statusbar."""
         if event.event_type == MouseEventType.MOUSE_UP:
             get_cmd("change-kernel").run()
+        else:
+            return NotImplemented
 
     def statusbar_fields(
         self,
