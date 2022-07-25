@@ -1,5 +1,6 @@
 """Buffer processors."""
 
+import logging
 from typing import TYPE_CHECKING
 
 from prompt_toolkit.layout.processors import AppendAutoSuggestion, Transformation
@@ -8,6 +9,9 @@ if TYPE_CHECKING:
     # from typing import Callable
 
     from prompt_toolkit.layout.processors import TransformationInput
+
+
+log = logging.getLogger(__name__)
 
 
 class AppendLineAutoSuggestion(AppendAutoSuggestion):
@@ -25,36 +29,3 @@ class AppendLineAutoSuggestion(AppendAutoSuggestion):
             return Transformation(fragments=ti.fragments + [(self.style, suggestion)])
         else:
             return Transformation(fragments=ti.fragments)
-
-
-'''
-class OverflowProcessor(Processor):
-    """Indicate truncated lines."""
-
-    def __init__(
-        self,
-        char: "str" = ">",
-        style: str = "class:overflow-indicator",
-    ) -> None:
-        self.style = style
-        self.char = char
-
-    def apply_transformation(self, ti: TransformationInput) -> Transformation:
-
-        width = transformation_input.width
-        document = transformation_input.document
-
-        fragments = ti.fragments
-        # Walk through all the fragments.
-        if fragments and fragment_list_to_text(fragments).startswith(" "):
-            t = (self.style, self.get_char())
-            fragments = explode_text_fragments(fragments)
-
-            for i in range(len(fragments)):
-                if fragments[i][1] == " ":
-                    fragments[i] = t
-                else:
-                    break
-
-        return Transformation(fragments)
-'''
