@@ -712,6 +712,11 @@ class Cell:
         await self.input_box.buffer.open_in_editor(
             validate_and_handle=get_app().config.run_after_external_edit
         )
+        if (
+            self.cell_type == "markdown"
+            or self.kernel_tab.app.config.run_after_external_edit
+        ):
+            self.run_or_render()
 
     # ################################### Settings ####################################
 
