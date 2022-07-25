@@ -59,16 +59,7 @@ from euporie.notebook.filters import (
 
 if TYPE_CHECKING:
     from os import PathLike
-    from typing import (
-        Callable,
-        Deque,
-        Dict,
-        List,
-        MutableSequence,
-        Optional,
-        Sequence,
-        Tuple,
-    )
+    from typing import Deque, Dict, List, MutableSequence, Optional, Sequence, Tuple
 
     from prompt_toolkit.formatted_text.base import AnyFormattedText
     from prompt_toolkit.layout.containers import AnyContainer
@@ -128,16 +119,6 @@ class Notebook(BaseNotebook):
         self.json.setdefault("metadata", {})["language_info"] = info.get(
             "language_info", {}
         )
-
-    def run_cell(
-        self,
-        cell: "Cell",
-        wait: "bool" = False,
-        callback: "Optional[Callable[..., None]]" = None,
-    ) -> "None":
-        """Exit edit mode before running a cell."""
-        self.exit_edit_mode()
-        super().run_cell(cell=cell, wait=wait, callback=callback)
 
     # Notebook stuff
 
@@ -553,6 +534,7 @@ class Notebook(BaseNotebook):
             insert: If True, add a new empty cell below the current cell and select it.
 
         """
+        self.exit_edit_mode()
         n_cells = len(self.json["cells"])
         selected_indices = self.page.selected_indices
         cells = {cell.index: cell for cell in self._rendered_cells.values()}
