@@ -337,3 +337,30 @@ class NumberedDiffMargin(Margin):
             last_lineno = lineno
             result.append(("", "\n"))
         return result
+
+
+class OverflowMargin(Margin):
+    """A margin which indicates lines extending beyond the edge of the window."""
+
+    def get_width(self, get_ui_content: "Callable[[], UIContent]") -> "int":
+        """Return the width of the margin."""
+        return 1
+
+    def create_margin(
+        self, window_render_info: "WindowRenderInfo", width: "int", height: "int"
+    ) -> "StyleAndTextTuples":
+        """Generate the margin's content."""
+        from prompt_toolkit.formatted_text.utils import fragment_list_width
+
+        result = []
+
+        for lineno in window_render_info.displayed_lines:
+            line = window_render_info.ui_content.get_line(lineno)
+            if (
+                fragment_list_width(line) - window_render_info.window.horizontal_scroll
+                > window_render_info.window_width + 1
+            ):
+                result.append(("class:input,overflow", "▹"))
+            result.append(("", "\n"))
+
+        return result

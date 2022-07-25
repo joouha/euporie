@@ -38,7 +38,7 @@ from euporie.core.key_binding.registry import (
     load_registered_bindings,
     register_bindings,
 )
-from euporie.core.margins import NumberedDiffMargin, ScrollbarMargin
+from euporie.core.margins import NumberedDiffMargin, OverflowMargin, ScrollbarMargin
 from euporie.core.processors import AppendLineAutoSuggestion
 from euporie.core.suggest import ConditionalAutoSuggestAsync
 from euporie.core.widgets.pager import PagerState
@@ -155,7 +155,10 @@ class KernelInput(TextArea):
                 Condition(lambda: self.kernel_tab.app.config.line_numbers),
             )
         ]
-        self.window.right_margins = right_margins or [ScrollbarMargin()]
+        self.window.right_margins = right_margins or [
+            OverflowMargin(),
+            ScrollbarMargin(),
+        ]
 
         self.window.cursorline = self.has_focus
 

@@ -392,6 +392,8 @@ def build_style(
         "scrollbar.start": "",
         "scrollbar.button": f"fg:{cp.bg.more(15/20)} bg:{cp.bg.more(15/20)}",
         "scrollbar.end": f"fg:{cp.bg.more(3/20)} bg:{cp.bg.more(15/20)}",
+        # Overflow margin
+        "overflow": f"fg:{cp.fg.more(0.5)}",
         # Dialogs
         "dialog title": f"fg:white bg:{cp.hl.darker(0.25)} bold",
         "dialog title border": "fg:ansired",
