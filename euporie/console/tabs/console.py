@@ -4,12 +4,13 @@ from __future__ import annotations
 
 import logging
 from functools import partial
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
 
 from prompt_toolkit.buffer import Buffer, ValidationState
 from prompt_toolkit.filters import (
     Condition,
     buffer_has_focus,
+    has_completions,
     has_selection,
     is_searching,
 )
@@ -34,15 +35,13 @@ from prompt_toolkit.lexers import DynamicLexer, PygmentsLexer
 from prompt_toolkit.validation import Validator
 from pygments.lexers import get_lexer_by_name
 
-from euporie.console.app import get_app
 from euporie.core.comm.registry import open_comm
 from euporie.core.commands import add_cmd
-from euporie.core.completion import KernelCompleter
-from euporie.core.config import config
-from euporie.core.filters import at_end_of_buffer, buffer_is_code
+from euporie.core.config import add_setting
+from euporie.core.filters import at_end_of_buffer, buffer_is_code, kernel_tab_has_focus
 from euporie.core.format import format_code
 from euporie.core.history import KernelHistory
-from euporie.core.kernel import MsgCallbacks, NotebookKernel
+from euporie.core.kernel import MsgCallbacks
 from euporie.core.key_binding.registry import (
     load_registered_bindings,
     register_bindings,
@@ -50,9 +49,9 @@ from euporie.core.key_binding.registry import (
 from euporie.core.margins import NumberedDiffMargin, ScrollbarMargin
 from euporie.core.style import KERNEL_STATUS_REPR
 from euporie.core.suggest import ConditionalAutoSuggestAsync, HistoryAutoSuggest
-from euporie.core.tabs.base import Tab
-from euporie.core.widgets.cell import CellInputTextArea, CellStdin
+from euporie.core.tabs.base import KernelTab
 from euporie.core.widgets.cell_outputs import CellOutputArea
+from euporie.core.widgets.inputs import KernelInput, StdInput
 from euporie.core.widgets.pager import PagerState
 
 if TYPE_CHECKING:
@@ -63,12 +62,12 @@ if TYPE_CHECKING:
     from prompt_toolkit.key_binding.key_processor import KeyPressEvent
 
     from euporie.core.app import BaseApp
-    from euporie.core.comm.base import Comm, CommContainer
+    from euporie.core.comm.base import Comm
 
 log = logging.getLogger(__name__)
 
 
-class Console(Tab):
+class Console(KernelTab):
     """A interactive console container class."""
 
     def __init__(
@@ -82,42 +81,36 @@ class Console(Tab):
             app: The euporie application the console tab belongs to
             path: A file path to open (not used currently)
         """
-        super().__init__(app=app)
+        # Kernel setup
+        self.metadata = {}
+        self.kernel_name = app.config.default_kernel_name
+        self.allow_stdin = True
+        self.default_callbacks = MsgCallbacks(
+            get_input=lambda prompt, password: self.stdin_box.get_input(
+                prompt, password
+            ),
+            set_execution_count=partial(setattr, self, "execution_count"),
+            add_output=self.new_output,
+            clear_output=self.clear_output,
+            # set_metadata=self.misc_callback,
+            set_status=lambda status: self.app.invalidate(),
+            set_kernel_info=self.set_kernel_info,
+            # done=self.complete,
+        )
+        self.kernel_tab = self
 
-        self.nb = cast("CommContainer", self)
+        super().__init__(app=app, path=path, use_kernel_history=True)
 
         self.lang_info: "Dict[str, Any]" = {}
         self.execution_count = 0
         self.clear_outputs_on_output = False
 
-        self.kernel_name = "python3"
-        self.kernel: "NotebookKernel" = NotebookKernel(
-            nb=self,
-            threaded=True,
-            allow_stdin=True,
-            default_callbacks=MsgCallbacks(
-                get_input=lambda prompt, password: self.stdin_box.get_input(
-                    prompt, password
-                ),
-                set_execution_count=partial(setattr, self, "execution_count"),
-                add_output=self.new_output,
-                clear_output=self.clear_output,
-                # set_metadata=self.misc_callback,
-                set_status=lambda status: self.app.invalidate(),
-                set_kernel_info=self.set_kernel_info,
-                # done=self.complete,
-            ),
-        )
-        self.comms: "Dict[str, Comm]" = {}  # The client-side comm states
+        self.output_json: "List[Dict[str, Any]]" = []
+        self.container = self.load_container()
+
         self.app.post_load_callables.append(
             partial(self.kernel.start, cb=self.ready, wait=True)
         )
-        self.completer = KernelCompleter(self.kernel)
-        self.history = ThreadedHistory(KernelHistory(self.kernel))
-        self.suggester = HistoryAutoSuggest(self.history)
-
-        self.output_json: "List[Dict[str, Any]]" = []
-        self.container = self.load_container()
 
     def close(self, cb: "Optional[Callable]" = None) -> "None":
         """Close the console tab."""
@@ -160,13 +153,14 @@ class Console(Tab):
             buffer = self.input_box.buffer
         text = buffer.text
         # Auto-reformat code
-        if config.autoformat:
+        if self.app.config.autoformat:
             self.reformat()
         # Disable existing output
         self.output.style = "class:disabled"
         # Move to below the current output
         self.app.redraw()
-        self.app.graphics.clear()
+        # Prevent displayed graphics on terminal being cleaned up
+        # self.app.graphics.clear()
         # Run the previous entry
         assert self.kernel is not None
         self.kernel.run(text, wait=False)
@@ -217,7 +211,7 @@ class Console(Tab):
         def on_cursor_position_changed(buf: "Buffer") -> "None":
             """Respond to cursor movements."""
             # Update contextual help
-            if config.autoinspect and buf.name == "code":
+            if self.app.config.autoinspect and buf.name == "code":
                 self.inspect()
             elif (pager := self.app.pager) is not None and pager.visible():
                 pager.hide()
@@ -230,7 +224,8 @@ class Console(Tab):
                 lambda: self.input_box.buffer.validation_state
                 != ValidationState.INVALID
             )
-            & at_end_of_buffer,
+            & at_end_of_buffer
+            & ~has_completions,
         )
         def on_enter(event: "KeyPressEvent") -> "None":
             """Accept input if the input is valid, otherwise insert a return."""
@@ -251,47 +246,13 @@ class Console(Tab):
             # Process the input as a regular :kbd:`enter` key-press
             event.key_processor.feed(event.key_sequence[0], first=True)
 
-        self.input_box = CellInputTextArea(
-            complete_while_typing=Condition(lambda: config.autocomplete),
-            auto_suggest=ConditionalAutoSuggestAsync(
-                self.suggester,
-                filter=Condition(lambda: config.autosuggest),
-            ),
-            wrap_lines=False,
-            focus_on_click=True,
-            focusable=True,
-            lexer=DynamicLexer(
-                lambda: PygmentsLexer(
-                    get_lexer_by_name(self.language).__class__,
-                    sync_from_start=False,
-                )
-            ),
-            completer=self.completer,
-            style="class:cell.input.box",
+        self.input_box = KernelInput(
+            kernel_tab=self,
             accept_handler=self.run,
-            input_processors=[
-                ConditionalProcessor(
-                    HighlightIncrementalSearchProcessor(),
-                    filter=is_searching,
-                ),
-                HighlightSelectionProcessor(),
-                DisplayMultipleCursors(),
-                HighlightMatchingBracketProcessor(),
-            ],
-            left_margins=[
-                ConditionalMargin(
-                    NumberedDiffMargin(),
-                    filter=Condition(lambda: config.line_numbers),
-                )
-            ],
-            right_margins=[ScrollbarMargin()],
-            search_field=self.app.search_bar,
             on_cursor_position_changed=on_cursor_position_changed,
-            # tempfile_suffix=notebook.lang_file_ext,
-            key_bindings=input_kb,
             validator=Validator.from_callable(self.validate_input),
-            history=self.history,
             enable_history_search=True,
+            key_bindings=input_kb,
         )
         self.input_box.buffer.name = "code"
         self.app.focused_element = self.input_box.buffer
@@ -309,7 +270,7 @@ class Console(Tab):
             height=1,
         )
 
-        self.stdin_box = CellStdin(self)
+        self.stdin_box = StdInput(self)
 
         have_previous_output = Condition(lambda: bool(self.output.json))
 
@@ -363,25 +324,6 @@ class Console(Tab):
         """Receives and processes kernel metadata."""
         self.lang_info = info.get("language_info", {})
 
-    def comm_open(self, content: "Dict", buffers: "Sequence[bytes]") -> "None":
-        """Register a new kernel Comm object in the notebook."""
-        comm_id = str(content.get("comm_id"))
-        self.comms[comm_id] = open_comm(
-            comm_container=self, content=content, buffers=buffers
-        )
-
-    def comm_msg(self, content: "Dict", buffers: "Sequence[bytes]") -> "None":
-        """Respond to a Comm message from the kernel."""
-        comm_id = str(content.get("comm_id"))
-        if comm := self.comms.get(comm_id):
-            comm.process_data(content.get("data", {}), buffers)
-
-    def comm_close(self, content: "Dict", buffers: "Sequence[bytes]") -> "None":
-        """Close a notebook Comm."""
-        comm_id = content.get("comm_id")
-        if comm_id in self.comms:
-            del self.comms[comm_id]
-
     def refresh(self, now: "bool" = True) -> "None":
         """Request the output is refreshed (does nothing)."""
         pass
@@ -407,7 +349,7 @@ class Console(Tab):
 
     def reformat(self) -> "None":
         """Reformats the input."""
-        self.input_box.text = format_code(self.input_box.text)
+        self.input_box.text = format_code(self.input_box.text, self.app.config)
 
     def inspect(self) -> "None":
         """Get contextual help for the current cursor position in the current cell."""
@@ -432,7 +374,6 @@ class Console(Tab):
                 cursor_pos=cursor_pos,
                 response=response,
             )
-            log.debug(response)
             if prev_state != new_state:
                 self.app.pager.state = new_state
                 self.app.invalidate()
@@ -444,51 +385,98 @@ class Console(Tab):
             callback=_cb,
         )
 
+    # ################################### Commands ####################################
 
-@add_cmd()
-def accept_input() -> "None":
-    """Accept the current console input."""
-    buffer = get_app().current_buffer
-    if buffer:
-        buffer.validate_and_handle()
+    @add_cmd()
+    @staticmethod
+    def accept_input() -> "None":
+        """Accept the current console input."""
+        from euporie.console.app import get_app
 
+        buffer = get_app().current_buffer
+        if buffer:
+            buffer.validate_and_handle()
 
-@add_cmd(
-    filter=~has_selection,
-)
-def clear_input() -> "None":
-    """Clear the console input."""
-    buffer = get_app().current_buffer
-    if buffer.name == "code":
-        buffer.text = ""
+    @add_cmd(
+        filter=~has_selection,
+    )
+    @staticmethod
+    def clear_input() -> "None":
+        """Clear the console input."""
+        from euporie.console.app import get_app
 
+        buffer = get_app().current_buffer
+        if buffer.name == "code":
+            buffer.text = ""
 
-@add_cmd(
-    filter=buffer_is_code & buffer_has_focus,
-)
-def run_input() -> "None":
-    """Run the console input."""
-    console = get_app().tab
-    assert isinstance(console, Console)
-    console.run()
+    @add_cmd(
+        filter=buffer_is_code & buffer_has_focus,
+    )
+    @staticmethod
+    def run_input() -> "None":
+        """Run the console input."""
+        from euporie.console.app import get_app
 
+        console = get_app().tab
+        assert isinstance(console, Console)
+        console.run()
 
-@add_cmd(
-    filter=buffer_is_code & buffer_has_focus & ~has_selection,
-)
-def show_contextual_help() -> "None":
-    """Displays contextual help."""
-    console = get_app().tab
-    assert isinstance(console, Console)
-    console.inspect()
+    @add_cmd(
+        filter=buffer_is_code & buffer_has_focus & ~has_selection,
+    )
+    @staticmethod
+    def show_contextual_help() -> "None":
+        """Displays contextual help."""
+        from euporie.console.app import get_app
 
+        console = get_app().tab
+        assert isinstance(console, Console)
+        console.inspect()
 
-register_bindings(
-    {
-        "tabs.console": {
-            "run-input": ["c-enter", "s-enter", "c-e"],
-            "clear-input": "c-c",
-            "show-contextual-help": "s-tab",
+    @add_cmd(
+        filter=kernel_tab_has_focus,
+    )
+    @staticmethod
+    def _interrupt_kernel() -> "None":
+        """Interrupt the notebook's kernel."""
+        from euporie.console.app import get_app
+
+        if isinstance(kt := get_app().tab, KernelTab):
+            kt.interrupt_kernel()
+
+    @add_cmd(
+        filter=kernel_tab_has_focus,
+    )
+    @staticmethod
+    def _restart_kernel() -> "None":
+        """Restart the notebook's kernel."""
+        from euporie.console.app import get_app
+
+        if isinstance(kt := get_app().tab, KernelTab):
+            kt.restart_kernel()
+
+    # ################################### Settings ####################################
+
+    add_setting(
+        name="default_kernel_name",
+        flags=["--default-kernel-name"],
+        type_=str,
+        help_="The name of the kernel to startlaunch by default.",
+        default="python3",
+        description="""
+            The name of the kernel launched automatically by the console app. If set to
+            an empty string, the user will be asked which kernel to launch.
+        """,
+    )
+
+    # ################################# Key Bindings ##################################
+
+    register_bindings(
+        {
+            "tabs.console": {
+                "run-input": ["c-enter", "s-enter", "c-e"],
+                "clear-input": "c-c",
+                "show-contextual-help": "s-tab",
+            }
         }
-    }
-)
+    )

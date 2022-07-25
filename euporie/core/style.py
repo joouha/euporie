@@ -368,6 +368,8 @@ def build_style(
         "cursor-line incsearch.current": "bg:ansibrightgreen",
         "matching-bracket.cursor": "fg:yellow bold",
         "matching-bracket.other": "fg:yellow bold",
+        "training-whitespace": f"fg:{cp.fg.more(0.66)}",
+        "tab": f"fg:{cp.fg.more(0.66)}",
         # Search
         "search": f"bg:{cp.bg.more(1/20)}",
         "search.current": f"bg:{cp.bg.more(1/20)}",
@@ -377,7 +379,7 @@ def build_style(
         "search-toolbar.title": f"fg:{cp.fg.more(2/20)} bg:{cp.bg.more(2/20)}",
         # Cells
         "cell.border": f"fg:{cp.bg.more(5/20)}",
-        "cell.border.selected": "fg:ansibrightblue",
+        "cell.border.selected": f"fg:{cp.hl.more(0.2)}",
         "cell.border.edit": "fg:ansibrightgreen",
         "cell.input.box": f"fg:default bg:{cp.bg.more(0.02)}",
         "cell.output": "fg:default bg:default",
@@ -391,10 +393,13 @@ def build_style(
         "scrollbar.button": f"fg:{cp.bg.more(15/20)} bg:{cp.bg.more(15/20)}",
         "scrollbar.end": f"fg:{cp.bg.more(3/20)} bg:{cp.bg.more(15/20)}",
         # Dialogs
-        "dialog.body": f"fg:{cp.fg.base} bg:{cp.bg.darker(2/20)}",
-        "dialog.body scrollbar.button": f"fg:{cp.bg.more(5/20)} bg:{cp.bg.more(15/20)}",
-        "dialog.body text-area last-line": "nounderline",
-        "dialog.body frame.border": f"fg:{cp.hl.more(0.25)}",
+        "dialog title": f"fg:white bg:{cp.hl.darker(0.25)} bold",
+        "dialog title border": "fg:ansired",
+        "dialog": f"fg:{cp.fg.base} bg:{cp.bg.darker(0.1)}",
+        "dialog scrollbar.button": f"fg:{cp.bg.more(5/20)} bg:{cp.bg.more(0.75)}",
+        "dialog text-area": f"fg:{cp.fg.base} bg:{cp.bg.lighter(0.05)}",
+        "dialog text-area last-line": "nounderline",
+        "dialog border": f"fg:{cp.bg.darker(0.5)}",
         # Horizontals rule
         "hr": "fg:ansired",
         # Completions menu
@@ -421,7 +426,7 @@ def build_style(
         "log.date": "fg:#00875f",
         # Shortcuts
         "shortcuts.group": f"bg:{cp.bg.more(8/20)} bold underline",
-        "shortcuts.row": f"bg:{cp.bg.base} nobold",
+        # "shortcuts.row": f"bg:{cp.bg.base} nobold",
         "shortcuts.row alt": f"bg:{cp.bg.more(2/20)}",
         "shortcuts.row key": "bold",
         # Palette
@@ -473,7 +478,7 @@ def build_style(
         "input selection focused border top": f"fg:{cp.hl.darker(0.5)}",
         "input selection focused border left": f"fg:{cp.hl.darker(0.5)}",
         "input text text-area": f"fg:default bg:{cp.bg.less(0.1)}",
-        "input text placeholder": "fg:#AAAAAA bg:white",
+        "input text placeholder": f"fg:{cp.fg.more(0.6)}",
         "input text border top": "fg:#606060",
         "input text border right": "fg:#E9E7E3",
         "input text border bottom": "fg:#E9E7E3",

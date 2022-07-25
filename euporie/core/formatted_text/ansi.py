@@ -8,8 +8,6 @@ from typing import TYPE_CHECKING
 
 from prompt_toolkit.formatted_text import ANSI as PTANSI
 
-from euporie.core.config import config
-
 if TYPE_CHECKING:
     from typing import Generator
 
@@ -19,15 +17,17 @@ log = logging.getLogger(__name__)
 class ANSI(PTANSI):
     """Converts ANSI text into formatted text, preserving all control sequences."""
 
-    def __init__(self, value: "str") -> None:
+    def __init__(self, value: "str", tab_size: "int" = 4) -> None:
         """Initiate the ANSI processor instance.
 
         This replaces carriage returns to emulate terminal output.
 
         Args:
             value: The ANSI string to process.
+            tab_size: The number of spaces to use to represent a tab
 
         """
+        self.tab_size = tab_size
         # Replace windows style newlines
         value = value.replace("\r\n", "\n")
         # Remove anything before a carriage return if there is something after it to
@@ -78,7 +78,7 @@ class ANSI(PTANSI):
 
             # Check for tabs
             elif char == "\t":
-                formatted_text.append(("", " " * config.tab_size))
+                formatted_text.append(("", " " * self.tab_size))
                 continue
 
             elif char in ("\x1b", "\x9b"):

@@ -465,6 +465,8 @@ _GRID_CHARS = {
     # HalfBlock Combos
     GridChar(Invisible, HalfBlockUpperRight, HalfBlockLowerLeft, Invisible): "▛",
     GridChar(HalfBlockUpperRight, Invisible, Invisible, HalfBlockLowerLeft): "▟",
+    GridChar(HalfBlockLowerLeft, Invisible, Invisible, HalfBlockUpperRight): "▘",
+    GridChar(Invisible, HalfBlockLowerLeft, HalfBlockUpperRight, Invisible): "▗",
     # Halfblock/Thin combos
     GridChar(HalfBlockLowerLeft, Thin, HalfBlockLowerLeft, Invisible): "▌",
     GridChar(Invisible, HalfBlockLowerLeft, Thin, HalfBlockLowerLeft): "▄",
@@ -680,6 +682,22 @@ OuterEdgeGridStyle = (
     + EighthBlockUpperRight.right_edge
     + EighthBlockUpperRight.bottom_edge
     + EighthBlockLowerLeft.left_edge
+    + Thin.inner
+)
+
+HalfBlockOuterGridStyle = (
+    HalfBlockUpperRight.top_edge
+    + HalfBlockUpperRight.right_edge
+    + HalfBlockLowerLeft.left_edge
+    + HalfBlockLowerLeft.bottom_edge
+    + Thin.inner
+)
+
+HalfBlockInnerGridStyle = (
+    HalfBlockLowerLeft.top_edge
+    + HalfBlockLowerLeft.right_edge
+    + HalfBlockUpperRight.left_edge
+    + HalfBlockUpperRight.bottom_edge
     + Thin.inner
 )
 

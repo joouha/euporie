@@ -25,9 +25,11 @@ from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
 from prompt_toolkit.widgets.base import Box, Frame, Shadow
 
 from euporie.core.app import get_app
-from euporie.core.commands import Command, commands
-from euporie.core.key_binding.format import format_keys
-from euporie.core.widgets.inputs import Text
+from euporie.core.commands import Command, add_cmd, commands
+from euporie.core.key_binding.registry import register_bindings
+from euporie.core.key_binding.util import format_keys
+from euporie.core.widgets.dialog import Dialog
+from euporie.core.widgets.forms import Text
 
 if TYPE_CHECKING:
     from typing import Optional
@@ -150,14 +152,19 @@ class CommandMenuControl(UIControl):
         return None
 
 
-class CommandPalette:
+class CommandPalette(Dialog):
     """A command palette which allows searching the available commands."""
 
     index: "int"
     matches: "list[_CommandMatch]"
 
-    def __init__(self) -> "None":
+    title = "Search for a command"
+    body_padding_top = 0
+    body_padding_bottom = 0
+
+    def __init__(self, app: "BaseApp") -> None:
         """Instantiates a new command palette instance."""
+        super().__init__(app=app)
         self.matches: "list[_CommandMatch]" = []
         self.index = 0
 
@@ -165,7 +172,7 @@ class CommandPalette:
         self._visible = False
         self.visible = Condition(lambda: self._visible)
 
-        self.kb = KeyBindings()
+        # self.kb = KeyBindings()
         self.kb.add("s-tab")(focus_previous)
         self.kb.add("tab")(focus_next)
         self.kb.add("escape")(self.hide)
@@ -193,43 +200,34 @@ class CommandPalette:
             accept_handler=self.accept,
             style="class:input",
             expand=False,
+            placeholder="  Type to search…",
         )
         self.text_area.buffer.on_text_changed += self.text_changed
         scroll_bar_margin = ScrollbarMargin(display_arrows=True)
         scroll_bar_margin.up_arrow_symbol = "▲"
         scroll_bar_margin.down_arrow_symbol = "▼"
 
-        self.container = ConditionalContainer(
-            Shadow(
-                body=Frame(
-                    body=Box(
-                        body=HSplit(
-                            [
-                                VSplit(
-                                    [self.text_area],
-                                    padding=1,
-                                ),
-                                Window(
-                                    CommandMenuControl(self),
-                                    scroll_offsets=ScrollOffsets(bottom=1),
-                                    right_margins=[scroll_bar_margin],
-                                ),
-                            ],
-                        ),
-                        padding=Dimension(preferred=1, max=1),
-                        padding_bottom=0,
-                        padding_top=0,
-                    ),
-                    title="Search for a command",
-                    key_bindings=self.kb,
-                    modal=True,
-                    style="class:dialog.body",
-                )
-            ),
-            filter=self.visible,
+        self.body = HSplit(
+            [
+                VSplit(
+                    [self.text_area],
+                    padding=1,
+                ),
+                Window(
+                    CommandMenuControl(self),
+                    scroll_offsets=ScrollOffsets(bottom=1),
+                    right_margins=[scroll_bar_margin],
+                ),
+            ],
         )
+        self.to_focus = self.text_area
+        self.buttons = {}
 
-        get_app().container_statuses[self] = self.statusbar_fields
+        get_app().container_statuses[self.container] = self.statusbar_fields
+
+    def load(self) -> "None":
+        """The body is already loaded: does nothing."""
+        pass
 
     def statusbar_fields(
         self,
@@ -273,17 +271,6 @@ class CommandPalette:
         # Ensure the selected index is within the list of matches
         self.index = min(len(self.matches) - 1, max(0, self.index))
 
-    def hide(self, event: "KeyPressEvent" = None) -> "None":
-        """Hides the command palette and returns focus to what was focused before."""
-        self._visible = False
-        app = get_app()
-        if (
-            self.last_focused is not None
-            and self.last_focused in app.layout.find_all_controls()
-        ):
-            app.layout.focus(self.last_focused)
-        app.has_dialog = False
-
     def accept(self, buffer: "Optional[Buffer]" = None) -> "bool":
         """Called on :kbd:`enter`: runs the selected command."""
         if self.matches:
@@ -293,22 +280,35 @@ class CommandPalette:
         else:
             return False
 
-    def show(self) -> "None":
-        """Displays and focuses the command palette."""
-        self._visible = True
-        self.text_area.text = ""
-        app = get_app()
-        self.last_focused = app.layout.current_control
-        app.layout.focus(self.text_area)
-        app.has_dialog = True
+    # ################################### Commands ####################################
 
-    def toggle(self) -> "None":
-        """Shows or hides the command palette."""
-        if self._visible:
-            self.hide()
-        else:
-            self.show()
+    @add_cmd()
+    @staticmethod
+    def toggle_command_palette() -> "None":
+        """Show the command palette."""
+        if command_palette := get_app().dialogs.get("command-palette"):
+            command_palette.toggle()
 
-    def __pt_container__(self) -> "ConditionalContainer":
-        """Return the main container object."""
-        return self.container
+    @add_cmd()
+    @staticmethod
+    def show_command_palette() -> "None":
+        """Show the command palette."""
+        if command_palette := get_app().dialogs.get("command-palette"):
+            command_palette.show()
+
+    @add_cmd()
+    @staticmethod
+    def hide_command_palette() -> "None":
+        """Hide the command palette."""
+        if command_palette := get_app().dialogs.get("command-palette"):
+            command_palette.hide()
+
+    # ################################# Key Bindings ##################################
+
+    register_bindings(
+        {
+            "app.base": {
+                "show-command-palette": "c-@",
+            }
+        }
+    )

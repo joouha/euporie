@@ -39,12 +39,13 @@ from pygments.lexers import get_lexer_by_name
 
 from euporie.core.app import get_app
 from euporie.core.border import Invisible, Thick, Thin
-from euporie.core.config import config
+from euporie.core.config import add_setting
 from euporie.core.filters import multiple_cells_selected
 from euporie.core.format import format_code
 from euporie.core.margins import NumberedDiffMargin, ScrollbarMargin
-from euporie.core.suggest import AppendLineAutoSuggestion, ConditionalAutoSuggestAsync
+from euporie.core.suggest import ConditionalAutoSuggestAsync
 from euporie.core.widgets.cell_outputs import CellOutputArea
+from euporie.core.widgets.inputs import KernelInput, StdInput
 
 if TYPE_CHECKING:
     from typing import (
@@ -72,8 +73,8 @@ if TYPE_CHECKING:
     from prompt_toolkit.layout.mouse_handlers import MouseHandlers
     from prompt_toolkit.layout.screen import Screen, WritePosition
 
-    from euporie.core.comm.base import CommContainer
-    from euporie.core.tabs.notebook import EditNotebook, Notebook
+    from euporie.core.tabs.base import KernelTab
+    from euporie.core.tabs.kernel_tab import Editkernel_tab, kernel_tab
     from euporie.core.widgets.page import ChildRenderInfo
 
 
@@ -98,137 +99,6 @@ def get_cell_id(cell_json: "dict") -> "str":
     if not cell_id:
         cell_json["id"] = cell_id = nbformat.v4.new_code_cell().get("id")
     return cell_id
-
-
-class CellInputTextArea(TextArea):
-    """A customized text area for the cell input."""
-
-    def __init__(
-        self,
-        *args: "Any",
-        left_margins: "Optional[Sequence[Margin]]" = None,
-        right_margins: "Optional[Sequence[Margin]]" = None,
-        on_text_changed: "Optional[Callable[[Buffer], None]]" = None,
-        on_cursor_position_changed: "Optional[Callable[[Buffer], None]]" = None,
-        tempfile_suffix: "Union[str, Callable[[], str]]" = "",
-        key_bindings: "Optional[KeyBindingsBase]" = None,
-        enable_history_search: "Optional[FilterOrBool]" = False,
-        **kwargs: "Any",
-    ) -> "None":
-        """Initiate the cell input box."""
-        super().__init__(*args, **kwargs)
-        self.control.include_default_input_processors = False
-        if on_text_changed:
-            self.buffer.on_text_changed += on_text_changed
-        if on_cursor_position_changed:
-            self.buffer.on_cursor_position_changed += on_cursor_position_changed
-        self.buffer.tempfile_suffix = tempfile_suffix
-
-        if enable_history_search is not None:
-            self.buffer.enable_history_search = to_filter(enable_history_search)
-
-        self.has_focus = has_focus(self)
-
-        # Replace the autosuggest processor
-        # Skip type checking as PT should use "("Optional[Sequence[Processor]]"
-        # instead of "Optional[List[Processor]]"
-        # TODO make a PR for this
-        self.control.input_processors[0] = ConditionalProcessor(  # type: ignore
-            AppendLineAutoSuggestion(),
-            has_focus(self.buffer) & ~is_done,
-        )
-
-        # Add configurable line numbers
-        self.window.left_margins = left_margins or []
-        self.window.right_margins = right_margins or []
-
-        self.window.cursorline = self.has_focus
-
-        # Set extra key-bindings
-        self.control.key_bindings = key_bindings
-
-
-class CellStdin:
-    """A widget to accept kernel input."""
-
-    def __init__(self, kernel_tab: "CommContainer") -> "None":
-        """Create a new kernel input box."""
-        from euporie.core.widgets.inputs import LabelledWidget, Text
-
-        self.kernel_tab = kernel_tab
-        self.last_focused: "Optional[FocusableElement]" = None
-
-        self.password = False
-        self.prompt: "Optional[str]" = None
-        self.active = False
-        self.visible = Condition(lambda: self.active)
-
-        text = Text(
-            multiline=False,
-            accept_handler=self.accept,
-            password=Condition(lambda: self.password),
-            style="class:input",
-        )
-        self.window = text.text_area.window
-        self.container = ConditionalContainer(
-            LabelledWidget(
-                body=text,
-                label=lambda: self.prompt or r"\>>>",
-            ),
-            filter=self.visible,
-        )
-
-    def accept(self, buffer: "Buffer") -> "bool":
-        """Send the input to the kernel and hide the input box."""
-        if self.kernel_tab.kernel.kc is not None:
-            self.kernel_tab.kernel.kc.input(buffer.text)
-        # Cleanup
-        self.active = False
-
-        buffer.text = ""
-        if self.last_focused:
-            try:
-                get_app().layout.focus(self.last_focused)
-            except ValueError:
-                pass
-        return True
-
-    def get_input(
-        self,
-        prompt: "str" = "Please enter a value: ",
-        password: "bool" = False,
-    ) -> "None":
-        """Prompts the user for input and sends the result to the kernel."""
-        self.password = password
-        self.prompt = prompt
-
-        # Set this first so the height of the cell includes the input box if it gets
-        # rendered when we scroll to it
-        self.active = True
-        # Remember what was focused before
-        app = get_app()
-        layout = app.layout
-        self.last_focused = layout.current_control
-
-        # Try focusing the input box - we create an asynchronous task which will
-        # probably run after the next render, when the stdin_box is recognised as being
-        # in the layout. This doesn't always work (depending on timing), does usually.
-        try:
-            layout.focus(self)
-        finally:
-
-            async def _focus_input() -> "None":
-                # Focus the input box
-                if self.window in layout.visible_windows:
-                    layout.focus(self)
-                # Redraw the screen to show it as focused
-                app.invalidate()
-
-            app.create_background_task(_focus_input())
-
-    def __pt_container__(self) -> "AnyContainer":
-        """Return the input's container."""
-        return self.container
 
 
 class ClickToFocus(Container):
@@ -324,25 +194,25 @@ class ClickToFocus(Container):
 
 
 class Cell:
-    """A notebook cell element.
+    """A kernel_tab cell element.
 
     Contains a transparent clickable overlay, which is not displayed when the cell is
     focused.
     """
 
-    def __init__(self, index: "int", json: "dict", notebook: "Notebook"):
+    def __init__(self, index: "int", json: "dict", kernel_tab: "BaseNotebook"):
         """Initiate the cell element.
 
         Args:
-            index: The position of this cell in the notebook
+            index: The position of this cell in the kernel_tab
             json: A reference to the cell's json object
-            notebook: The notebook instance this cell belongs to
+            kernel_tab: The kernel_tab instance this cell belongs to
 
         """
         weak_self = weakref.proxy(self)
         self.index = index
         self.json = json
-        self.nb: "Notebook" = notebook
+        self.kernel_tab: "kernel_tab" = kernel_tab
         self.rendered = True
         self.clear_outputs_on_output = False
 
@@ -370,9 +240,6 @@ class Cell:
                 (weak_self.json.get("cell_type") == "markdown") & ~weak_self.rendered
             )
         )
-        autocomplete = Condition(lambda: config.autocomplete)
-        autosuggest = Condition(lambda: config.autosuggest)
-        wrap_input = Condition(lambda: weak_self.json.get("cell_type") == "markdown")
         show_prompt = Condition(lambda: weak_self.cell_type == "code")
         self.is_code = Condition(lambda: weak_self.json.get("cell_type") == "code")
 
@@ -381,35 +248,30 @@ class Cell:
         def on_text_changed(buf: "Buffer") -> "None":
             """Update cell json when the input buffer has been edited."""
             weak_self._set_input(buf.text)
-            weak_self.nb.dirty = True
+            weak_self.kernel_tab.dirty = True
 
         def on_cursor_position_changed(buf: "Buffer") -> "None":
             """Respond to cursor movements."""
-            from euporie.core.tabs.notebook import EditNotebook
-
             # Update contextual help
-            if config.autoinspect and weak_self.is_code():
-                weak_self.nb.inspect()
+            if weak_self.kernel_tab.app.config.autoinspect and weak_self.is_code():
+                weak_self.kernel_tab.inspect()
             else:
                 if pager := get_app().pager:
                     pager.hide()
 
             # Tell the scrolling container to scroll the cursor into view on the next render
-            assert isinstance(weak_self.nb, EditNotebook)
-            weak_self.nb.page.scroll_to_cursor = True
+            weak_self.kernel_tab.page.scroll_to_cursor = True
 
-        # Noew we generate the main container used to represent a notebook cell
+        # Noew we generate the main container used to represent a kernel_tab cell
 
-        self.input_box = CellInputTextArea(
+        self.input_box = KernelInput(
+            kernel_tab=self.kernel_tab,
             text=self.input,
-            scrollbar=scroll_input(),
-            complete_while_typing=autocomplete & self.is_code,
-            auto_suggest=ConditionalAutoSuggestAsync(
-                notebook.suggester, filter=self.is_code & autosuggest
-            ),
-            wrap_lines=wrap_input,
-            focus_on_click=True,
-            focusable=True,
+            complete_while_typing=self.is_code,
+            autosuggest_while_typing=self.is_code,
+            wrap_lines=Condition(lambda: weak_self.json.get("cell_type") == "markdown"),
+            on_text_changed=on_text_changed,
+            on_cursor_position_changed=on_cursor_position_changed,
             lexer=DynamicLexer(
                 partial(
                     lambda cell: (
@@ -423,31 +285,6 @@ class Cell:
                     weakref.proxy(self),
                 )
             ),
-            completer=self.nb.completer,
-            style="class:cell.input.box",
-            # accept_handler=self.run_or_render,
-            input_processors=[
-                ConditionalProcessor(
-                    HighlightIncrementalSearchProcessor(),
-                    filter=is_searching,
-                ),
-                # HighlightSearchProcessor(),
-                HighlightSelectionProcessor(),
-                DisplayMultipleCursors(),
-                HighlightMatchingBracketProcessor(),
-            ],
-            search_field=get_app().search_bar,
-            left_margins=[
-                ConditionalMargin(
-                    NumberedDiffMargin(),
-                    Condition(lambda: config.line_numbers),
-                )
-            ],
-            right_margins=[ScrollbarMargin()],
-            on_text_changed=on_text_changed,
-            on_cursor_position_changed=on_cursor_position_changed,
-            tempfile_suffix=notebook.lang_file_ext,
-            history=notebook.history,
         )
         self.input_box.buffer.name = self.cell_type
 
@@ -456,7 +293,7 @@ class Cell:
 
             def _inner() -> "str":
                 grid = Invisible.grid
-                if config.show_cell_borders or weak_self.selected:
+                if get_app().config.show_cell_borders or weak_self.selected:
                     if weak_self.focused and multiple_cells_selected():
                         grid = Thick.outer
                     else:
@@ -468,7 +305,7 @@ class Cell:
         def border_style() -> "str":
             """Determines the style of the cell borders, based on the cell state."""
             if weak_self.selected:
-                if weak_self.nb.in_edit_mode():
+                if weak_self.kernel_tab.in_edit_mode():
                     return "class:cell.border.edit"
                 else:
                     return "class:cell.border.selected"
@@ -492,7 +329,7 @@ class Cell:
         def _send_input(buf: "Buffer") -> "bool":
             return False
 
-        self.stdin_box = CellStdin(self.nb)
+        self.stdin_box = StdInput(self.kernel_tab)
 
         top_border = VSplit(
             [
@@ -633,8 +470,33 @@ class Cell:
         )
 
     def focus(self, position: "Optional[int]" = None) -> "None":
-        """Focuses this cell."""
-        pass
+        """Focuses the relevant control in this cell.
+
+        Args:
+            position: An optional cursor position index to apply to the input box
+
+        """
+        to_focus = None
+        if self.kernel_tab.edit_mode:
+            # Select just this cell when editing
+            # self.kernel_tab.select(self.index)
+            if self.stdin_box.visible():
+                to_focus = self.stdin_box.window
+            else:
+                to_focus = self.input_box.window
+                self.rendered = False
+            if position is not None:
+                self.input_box.buffer.cursor_position = position % (
+                    len(self.input_box.buffer.text) or 1
+                )
+        else:
+            to_focus = self.kernel_tab.cell.control
+
+        # We force focus here, bypassing the layout's checks, as the control we want to
+        # focus might be not be in the current layout yet.
+        get_app().layout._stack.append(to_focus)
+        # Scroll the currently selected slice into view
+        self.kernel_tab.refresh(scroll=True)
 
     @property
     def focused(self) -> "bool":
@@ -647,7 +509,10 @@ class Cell:
     @property
     def selected(self) -> "bool":
         """Determine if the cell currently is selected."""
-        return False
+        if self.container is not None:
+            return self.index in self.kernel_tab.selected_indices
+        else:
+            return False
 
     def select(
         self, extend: "bool" = False, position: "Optional[int]" = None
@@ -659,7 +524,7 @@ class Cell:
             position: An optional cursor position index to apply to the cell input
 
         """
-        self.nb.select(self.index, extend=extend, position=position)
+        self.kernel_tab.select(self.index, extend=extend, position=position)
 
     @property
     def cell_type(self) -> "str":
@@ -739,8 +604,8 @@ class Cell:
     def remove_outputs(self) -> "None":
         """Remove all outputs from the cell."""
         self.clear_outputs_on_output = False
-        # if "outputs" in self.json:
-        # del self.json["outputs"]
+        if "outputs" in self.json:
+            del self.json["outputs"]
         self.output_area.reset()
 
     def set_cell_type(
@@ -761,7 +626,7 @@ class Cell:
             del self.json["execution_count"]
         # Record the new cell type
         self.json["cell_type"] = cell_type
-        self.input_box.buffer.name = "cell_type"
+        self.input_box.buffer.name = cell_type
         # Update the output-area
         # self.output_area.json = self.output_json
         # Force the input box lexer to re-run
@@ -778,20 +643,22 @@ class Cell:
         if self.cell_type == "markdown":
             return "markdown"
         elif self.cell_type == "code":
-            lang_info = self.nb.json.metadata.get("language_info", {})
+            lang_info = self.kernel_tab.json.metadata.get("language_info", {})
             return lang_info.get("name", lang_info.get("pygments_lexer", "python"))
         else:
             return "raw"
 
     def reformat(self) -> "None":
         """Reformats the cell's input."""
-        self.input = format_code(self.input)
+        config = get_app().config
+        self.input = format_code(self.input, config)
         self.refresh()
 
     def run_or_render(
         self,
         buffer: "Optional[Buffer]" = None,
         wait: "bool" = False,
+        callback: "Optional[Callable[..., None]]" = None,
     ) -> "bool":
         """Placeholder function for running the cell.
 
@@ -804,16 +671,17 @@ class Cell:
             Always returns True
 
         """
+
         if self.cell_type == "markdown":
             self.output_area.json = self.output_json
             self.rendered = True
 
         elif self.cell_type == "code":
-            if config.autoformat:
+            if get_app().config.autoformat:
                 self.reformat()
             self.state = "queued"
             self.refresh()
-            self.nb.run_cell(self, wait=wait)
+            self.kernel_tab.run_cell(self, wait=wait, callback=callback)
 
         return True
 
@@ -860,6 +728,7 @@ class Cell:
 
     def set_status(self, status: "str") -> "None":
         """Set the execution status of the cell."""
+        # log.debug(status)
         pass
 
     def get_input(
@@ -867,99 +736,29 @@ class Cell:
         prompt: "str" = "Please enter a value:",
         password: "bool" = False,
     ) -> "None":
-        """Get input from the user for the given cell."""
-        return None
-
-
-class InteractiveCell(Cell):
-    """An interactive notebook cell."""
-
-    def __init__(self, index: "int", json: "dict", notebook: "EditNotebook") -> "None":
-        """Initiate the interactive cell element.
-
-        Args:
-            index: The position of this cell in the notebook
-            json: A reference to the cell's json object
-            notebook: The notebook instance this cell belongs to
-
-        """
-        super().__init__(index, json, notebook)
-        # Pytype need this re-defining...
-        self.nb: "EditNotebook" = notebook
-
-    def run_or_render(
-        self,
-        buffer: "Optional[Buffer]" = None,
-        wait: "bool" = False,
-    ) -> "bool":
-        """Placeholder function for running the cell.
-
-        Args:
-            buffer: Unused parameter, required when accepting the contents of a cell's
-                input buffer
-            wait: Has no effect
-
-        Returns:
-            Always returns True
-
-        """
-        self.nb.exit_edit_mode()
-        return super().run_or_render(buffer, wait)
-
-    @property
-    def selected(self) -> "bool":
-        """Determine if the cell currently is selected."""
-        if self.container is not None:
-            return self.index in self.nb.page.selected_indices
-        else:
-            return False
-
-    def focus(self, position: "Optional[int]" = None) -> "None":
-        """Focuses the relevant control in this cell.
-
-        Args:
-            position: An optional cursor position index to apply to the input box
-
-        """
-        to_focus = None
-        if self.nb.edit_mode:
-            # Select just this cell when editing
-            # self.nb.select(self.index)
-            if self.stdin_box.visible():
-                to_focus = self.stdin_box.window
-            else:
-                to_focus = self.input_box.window
-                self.rendered = False
-            if position is not None:
-                self.input_box.buffer.cursor_position = position % (
-                    len(self.input_box.buffer.text) or 1
-                )
-        else:
-            to_focus = self.nb.cell.control
-
-        # We force focus here, bypassing the layout's checks, as the control we want to
-        # focus might be not be in the current layout yet.
-        get_app().layout._stack.append(to_focus)
-        # Scroll the currently selected slice into view
-        self.nb.refresh(scroll=True)
+        """Scroll the cell requesting input into view and render it before asking for input."""
+        self.kernel_tab.page.selected_slice = slice(self.index, self.index + 1)
+        self.stdin_box.get_input(prompt, password)
 
     async def edit_in_editor(self) -> "None":
         """Edit the cell in $EDITOR."""
-        self.nb.exit_edit_mode()
+        self.kernel_tab.exit_edit_mode()
         await self.input_box.buffer.open_in_editor(
-            validate_and_handle=config.run_after_external_edit
+            validate_and_handle=get_app().config.run_after_external_edit
         )
 
-    def split(self) -> "None":
-        """Split the cell at the current cursor position."""
-        self.nb.split_cell(self, self.input_box.buffer.cursor_position)
-        self.input_box.buffer.cursor_position = 0
+    # ################################### Settings ####################################
 
-    def get_input(
-        self,
-        prompt: "str" = "Please enter a value:",
-        password: "bool" = False,
-    ) -> "None":
-        """Scroll the cell requesting input into view and render it before asking for input."""
-        self.nb.page.selected_slice = slice(self.index, self.index + 1)
-        self.stdin_box.get_input(prompt, password)
+    add_setting(
+        name="show_cell_borders",
+        flags=["--show-cell-borders"],
+        type_=bool,
+        help_="Show or hide cell borders.",
+        default=False,
+        schema={
+            "type": "boolean",
+        },
+        description="""
+            Whether cell borders should be drawn for unselected cells.
+        """,
+    )

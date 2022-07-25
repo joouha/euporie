@@ -5,6 +5,7 @@ from abc import ABCMeta, abstractmethod
 from pathlib import PurePath
 from typing import TYPE_CHECKING
 
+from prompt_toolkit.cache import SimpleCache
 from prompt_toolkit.layout.containers import DynamicContainer, HSplit, to_container
 from prompt_toolkit.widgets.base import Box
 
@@ -17,12 +18,12 @@ if TYPE_CHECKING:
 
     from prompt_toolkit.layout.containers import AnyContainer
 
-    from euporie.core.comm.base import CommContainer
+    from euporie.core.comm.base import KernelTab
 
     class OutputParent(Protocol):
         """An output's parent."""
 
-        nb: "CommContainer"
+        kernel_tab: "KernelTab"
 
         def refresh(self, now: "bool" = True) -> "None":
             """Update the parent container."""
@@ -169,7 +170,7 @@ class CellOutputWidgetElement(CellOutputElement):
         self.parent = parent
         self.comm_id = str(data.get("model_id"))
 
-        if parent is not None and (comm := parent.nb.comms.get(self.comm_id)):
+        if parent is not None and (comm := parent.kernel_tab.comms.get(self.comm_id)):
             self.container = Box(
                 comm.new_view(parent),
                 padding_left=0,
@@ -266,7 +267,7 @@ class CellOutput:
 
     def update(self) -> "None":
         """Update's the output by updating all child containers."""
-        log.debug("Updating %s", self)
+        # log.debug("Updating %s", self)
         data = self.data
         for mime_type, element in self._elements.items():
             if mime_type in data:
@@ -332,7 +333,7 @@ class CellOutput:
 class CellOutputArea:
     """An area below a cell where one or more cell outputs can be shown."""
 
-    # output_cache: "SimpleCache[int, CellOutput]" = SimpleCache()
+    output_cache: "SimpleCache[str, CellOutput]" = SimpleCache()
 
     def __init__(
         self,
@@ -348,7 +349,7 @@ class CellOutputArea:
             style: Additional style to apply to the output
 
         """
-        self._json: "List[Dict[str, Any]]"
+        self._json: "List[Dict[str, Any]]" = []
         self.parent = parent
         self.style = style
 
@@ -366,31 +367,42 @@ class CellOutputArea:
 
     @json.setter
     def json(self, value: "Any") -> "None":
-        self._json = []
-        self.rendered_outputs = []
-        self.container.children = []
-        for output_json in value:
-            self.add_output(output_json)
+        # Reset if we have lost existing outputs
+        if any(old_output_json not in value for old_output_json in self._json):
+            self.reset()
+        # Add any new outputs we do not already have
+        for new_output_json in value:
+            if new_output_json not in self._json:
+                self.add_output(new_output_json, refresh=False)
+        get_app().invalidate()
 
-    def add_output(self, output_json: "Dict[str, Any]") -> "None":
+    def add_output(
+        self, output_json: "Dict[str, Any]", refresh: "bool" = True
+    ) -> "None":
         """Add a new output to the output area."""
         # Update json
         self._json.append(output_json)
         # Update display json
-        name = output_json.get("name")
-        for i, existing_output in enumerate(self.display_json):
-            if name and name == existing_output.get("name"):
-                existing_output["text"] += output_json.get("text", "")
-                self.rendered_outputs[i].update()
-                break
-        else:
-            # Add this new output to the display json
-            self.display_json.append(output_json)
-            # Create a new output container
-            output = CellOutput(output_json, self.parent)
+        add_output = True
+        if name := output_json.get("name"):
+            for existing_output, rendered_output in zip(
+                self.display_json, self.rendered_outputs
+            ):
+                if name == existing_output.get("name"):
+                    existing_output["text"] += output_json.get("text", "")
+                    rendered_output.update()
+                    add_output = False
+                    break
+        if add_output:
+            # Add a copy to the display json so the original does not get modified
+            output_json_copy = dict(output_json)
+            self.display_json.append(output_json_copy)
+            # Create an output container with the copy
+            output = CellOutput(output_json_copy, self.parent)
             self.rendered_outputs.append(output)
             self.container.children.append(to_container(output))
-        get_app().invalidate()
+        if refresh:
+            get_app().invalidate()
 
     def update(self) -> "None":
         """Update all existing outputs."""
@@ -400,7 +412,7 @@ class CellOutputArea:
     def reset(self) -> "None":
         """Clears all outputs from the output area."""
         self.style = ""
-        self.json.clear()
+        self._json.clear()
         self.display_json.clear()
         self.rendered_outputs.clear()
         self.container.children.clear()

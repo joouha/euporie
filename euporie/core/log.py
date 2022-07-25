@@ -20,7 +20,7 @@ from prompt_toolkit.renderer import (
 from prompt_toolkit.shortcuts.utils import print_formatted_text
 from prompt_toolkit.styles import Style
 
-from euporie.core.config import config
+from euporie.core.config import add_setting
 from euporie.core.formatted_text.utils import indent, lex, wrap
 from euporie.core.style import LOG_STYLE
 
@@ -29,6 +29,8 @@ if TYPE_CHECKING:
     from typing import Any, Callable, Dict, Optional, TextIO, Type
 
     from prompt_toolkit.formatted_text.base import StyleAndTextTuples
+
+    from euporie.core.config import Config
 
 log = logging.getLogger(__name__)
 
@@ -262,7 +264,7 @@ class StdoutFormatter(FtFormatter):
         return FormattedText(output)
 
 
-def setup_logs(extra_config: "Optional[Dict]" = None) -> "None":
+def setup_logs(config: "Config") -> "None":
     """Configures the logger for euporie."""
     log_file_is_stdout = config.log_file in ("-", "/dev/stdout")
 
@@ -286,7 +288,7 @@ def setup_logs(extra_config: "Optional[Dict]" = None) -> "None":
             **(
                 {
                     "file": {
-                        "level": "DEBUG" if config.debug else "ERROR",
+                        "level": config.log_level.upper() or "ERROR",
                         "class": "logging.FileHandler",
                         "filename": Path(config.log_file).expanduser(),
                         "formatter": "file_format",
@@ -296,13 +298,15 @@ def setup_logs(extra_config: "Optional[Dict]" = None) -> "None":
                 else {}
             ),
             "stdout": {
-                "level": "DEBUG" if config.debug and log_file_is_stdout else "CRITICAL",
+                "level": config.log_level.upper()
+                if config.log_level and log_file_is_stdout
+                else "CRITICAL",
                 "class": "euporie.core.log.FormattedTextHandler",
                 "formatter": "stdout_format",
                 "stream": sys.stdout,
             },
             "log_tab": {
-                "level": "DEBUG" if config.debug else "INFO",
+                "level": config.log_level.upper() or "INFO",
                 "class": "euporie.core.log.QueueHandler",
                 "formatter": "log_tab_format",
                 "queue": LOG_QUEUE,
@@ -310,7 +314,7 @@ def setup_logs(extra_config: "Optional[Dict]" = None) -> "None":
         },
         "loggers": {
             "euporie": {
-                "level": "DEBUG" if config.debug else "INFO",
+                "level": config.log_level.upper() or "INFO",
                 "handlers": ["log_tab", "stdout"]
                 + (["file"] if not log_file_is_stdout and config.log_file else []),
                 "propagate": False,
@@ -320,7 +324,10 @@ def setup_logs(extra_config: "Optional[Dict]" = None) -> "None":
         "root": {"handlers": ["log_tab"]},
     }
     # Update log_config based additional config provided
-    if extra_config:
+    if config.log_config:
+        import json
+
+        extra_config = json.loads(config.log_config)
         dict_merge(log_config, extra_config)
     # Configure the logger
     # Pytype used TypedDicts to validate the dictionary structure, but I cannot get
@@ -444,3 +451,45 @@ def default_logs() -> "None":
 
     # Log uncaught exceptions
     sys.excepthook = handle_exception
+
+
+# ################################### Settings ####################################
+
+add_setting(
+    name="log_file",
+    flags=["--log-file"],
+    nargs="?",
+    default="",
+    type_=str,
+    title="the log file path",
+    help_="File path for logs",
+    description="""
+        When set to a file path, the log output will be written to the given path.
+        If no value is given output will be sent to the standard output.
+    """,
+)
+
+add_setting(
+    name="log_level",
+    flags=["--log-level"],
+    type_=str,
+    default="",
+    title="the log level",
+    help_="Set the log level",
+    choices=["debug", "info", "warning", "error", "critical"],
+    description="""
+        When set, logging events at the given level are emitted.
+    """,
+)
+
+add_setting(
+    name="log_config",
+    flags=["--log-config"],
+    type_=str,
+    default=None,
+    title="additional logging configuration",
+    help_="Additional logging configuration",
+    description="""
+        A JSON string specifying additional logging configuration.
+    """,
+)

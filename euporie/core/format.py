@@ -1,9 +1,12 @@
 """Contains functions to automatically format code cell input."""
 
 import logging
+from typing import TYPE_CHECKING
 
-from euporie.core.config import config
 from euporie.core.log import stdout_to_log
+
+if TYPE_CHECKING:
+    from euporie.core.config import Config
 
 log = logging.getLogger(__name__)
 
@@ -52,7 +55,7 @@ def format_ssort(text: "str") -> "str":
     return text
 
 
-def format_code(text: "str") -> "str":
+def format_code(text: "str", config: "Config") -> "str":
     """Format a code string using :py:mod:``."""
     if config.format_ssort:
         text = format_ssort(text)

@@ -16,7 +16,6 @@ from prompt_toolkit.output import ColorDepth
 from prompt_toolkit.utils import Event
 
 from euporie.core.commands import add_cmd
-from euporie.core.config import config
 from euporie.core.filters import in_tmux
 from euporie.core.key_binding.registry import register_bindings
 from euporie.core.style import DEFAULT_COLORS
@@ -28,6 +27,8 @@ if TYPE_CHECKING:
     from prompt_toolkit.input.vt100 import Vt100Input
     from prompt_toolkit.key_binding import KeyPressEvent
     from prompt_toolkit.output import Output
+
+    from euporie.core.config import Config
 
 log = logging.getLogger(__name__)
 
@@ -107,8 +108,9 @@ class TerminalQuery:
     cmd = ""
     pattern: "Optional[re.Pattern]" = None
 
-    def __init__(self, output: "Output") -> "None":
+    def __init__(self, output: "Output", config: "Config") -> "None":
         """Create a new instance of the terminal query."""
+        self.config = config
         self.output = output
         self.waiting = False
         self._value: "Optional[Any]" = None
@@ -278,7 +280,7 @@ class KittyGraphicsStatus(TerminalQuery):
     pattern = re.compile(r"^\x1b_Gi=4294967295;(?P<status>OK)\x1b\\\Z")
 
     def _cmd(self) -> "str":
-        if config.tmux_graphics:
+        if self.config.tmux_graphics:
             return tmuxify(self.cmd)
         else:
             return self.cmd
@@ -302,7 +304,7 @@ class SixelGraphicsStatus(TerminalQuery):
     pattern = re.compile(r"^\x1b\[\?(?:\d+;)*(?P<sixel>4)(?:;\d+)*c\Z")
 
     def _cmd(self) -> "str":
-        if config.tmux_graphics:
+        if self.config.tmux_graphics:
             return tmuxify(self.cmd)
         else:
             return self.cmd
@@ -322,9 +324,9 @@ class ItermGraphicsStatus(TerminalQuery):
     default = False
     cache = True
 
-    def __init__(self, output: "Output") -> "None":
+    def __init__(self, output: "Output", config: "Config") -> "None":
         """Detect the iTerm graphics support based on environment variables."""
-        super().__init__(output)
+        super().__init__(output, config)
         self._value = None
         if (
             os.environ.get("TERM_PROGRAM", "") in {"WezTerm", "iTerm.app"}
@@ -341,9 +343,9 @@ class DepthOfColor(TerminalQuery):
 
     default = ColorDepth.DEPTH_24_BIT
 
-    def __init__(self, output: "Output") -> "None":
+    def __init__(self, output: "Output", config: "Config") -> "None":
         """Detect the terminal's colour support based on environment variables."""
-        super().__init__(output)
+        super().__init__(output, config)
         self._value: "Optional[ColorDepth]" = None
         if os.environ.get("NO_COLOR", "") or os.environ.get("TERM", "") == "dumb":
             self._value = ColorDepth.DEPTH_1_BIT
@@ -363,10 +365,11 @@ class TerminalInfo:
     input: "Input"
     output: "Output"
 
-    def __init__(self, input_: "Input", output: "Output") -> "None":
+    def __init__(self, input_: "Input", output: "Output", config: "Config") -> "None":
         """Instantiates the terminal information class."""
         self.input = input_
         self.output = output
+        self.config = config
         self._queries: "list[TerminalQuery]" = []
 
         self.colors = self.register(Colors)
@@ -379,7 +382,7 @@ class TerminalInfo:
     def register(self, query: "Type[TerminalQuery]") -> "TerminalQuery":
         """Instantiates and registers a query's response with the input parser."""
         # Create an instance of this query
-        query_inst = query(self.output)
+        query_inst = query(self.output, config=self.config)
         self._queries.append(query_inst)
 
         # If the query expects a response from the terminal, we need to add a
@@ -410,10 +413,9 @@ class TerminalInfo:
                 title=f"Set terminal {title}",
                 hidden=True,
                 description=f"Sets the terminal's {title} value.",
-                groups="terminal",
             )(query_inst._handle_response)
             # Add key-binding
-            register_bindings({"app.core": {name: key}})
+            register_bindings({"app.base": {name: key}})
 
         return query_inst
 

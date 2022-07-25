@@ -15,7 +15,7 @@ from prompt_toolkit.layout.margins import ConditionalMargin, ScrollbarMargin
 from prompt_toolkit.layout.processors import DynamicProcessor, Processor, Transformation
 from prompt_toolkit.widgets import TextArea
 
-from euporie.core.margins import NumberedDiffMargin
+from euporie.core.margins import NumberedDiffMargin, ScrollbarMargin
 
 if TYPE_CHECKING:
     from typing import Any
@@ -27,7 +27,7 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 
-class FormatTextProcessor(Processor):
+class FormattedTextProcessor(Processor):
     """Applies formatted text to a TextArea."""
 
     def __init__(self, formatted_text: "StyleAndTextTuples"):
@@ -98,12 +98,9 @@ class FormattedTextArea(TextArea):
                 self.line_numbers,
             )
         ]
+        # Add auto scrollbar
+        self.window.right_margins = self.window.right_margins or [ScrollbarMargin()]
         # Set the formatted text to display
-        for margin in self.window.right_margins:
-            if isinstance(margin, ScrollbarMargin):
-                margin.up_arrow_symbol = "▲"
-                margin.down_arrow_symbol = "▼"
-
         self._set_formatted_text(formatted_text)
 
     @property
@@ -120,6 +117,6 @@ class FormattedTextArea(TextArea):
         """Sets the formatted text."""
         self._set_formatted_text(value)
 
-    def get_processor(self) -> "FormatTextProcessor":
+    def get_processor(self) -> "FormattedTextProcessor":
         """Generate a processor for the formatted text."""
-        return FormatTextProcessor(self.formatted_text)
+        return FormattedTextProcessor(self.formatted_text)

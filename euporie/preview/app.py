@@ -4,37 +4,55 @@ import io
 import logging
 import os
 import sys
+from functools import partial
 from typing import TYPE_CHECKING, cast
 
 from prompt_toolkit import renderer
 from prompt_toolkit.data_structures import Size
-from prompt_toolkit.layout.containers import FloatContainer
+from prompt_toolkit.layout.containers import DynamicContainer, FloatContainer, Window
 from prompt_toolkit.output.defaults import create_output
 from prompt_toolkit.output.vt100 import Vt100_Output
-from prompt_toolkit.widgets import HorizontalLine
+from upath import UPath
 
 from euporie.core.app import BaseApp, get_app
-from euporie.core.config import config
-from euporie.core.tabs.notebook import PreviewKernelNotebook, PreviewNotebook
-from euporie.core.widgets.page import PrintingContainer
+from euporie.core.config import add_setting
+from euporie.core.key_binding.registry import register_bindings
+from euporie.preview.tabs.notebook import PreviewNotebook
 
 if TYPE_CHECKING:
-    from typing import IO, Any, List, Optional, Sequence, TextIO, Tuple, Type, Union
+    from typing import IO, Any, List, Optional, TextIO, Tuple, Type, Union
 
-    from prompt_toolkit.application.application import Application
+    from prompt_toolkit.application.application import _AppResult
     from prompt_toolkit.data_structures import Point
-    from prompt_toolkit.layout.containers import AnyContainer
+    from prompt_toolkit.layout.containers import Float
     from prompt_toolkit.output import Output
-    from upath import UPath
 
     from euporie.core.tabs.base import Tab
 
 log = logging.getLogger(__name__)
 
 
-def get_preview_app() -> "PreviewApp":
-    """Get the current application."""
-    return cast("PreviewApp", get_app())
+# Monkey patch the screen size
+_original_output_screen_diff = renderer._output_screen_diff
+
+
+def _patched_output_screen_diff(
+    *args: "Any", **kwargs: "Any"
+) -> "Tuple[Point, Optional[str]]":
+    """Function used to monkey-patch the renderer to extend the application height."""
+    # Remove ZWE from screen
+    # from collections import defaultdict
+    # args[2].zero_width_escapes = defaultdict(lambda: defaultdict(lambda: ""))
+
+    # Tell the renderer we have one additional column. This is to prevent the use of
+    # carriage returns and cursor movements to write the final character on lines,
+    # which is something the prompt_toolkit does
+    size = kwargs.pop("size")
+    kwargs["size"] = Size(999999, size.columns + 1)
+    return _original_output_screen_diff(*args, **kwargs)
+
+
+renderer._output_screen_diff = _patched_output_screen_diff
 
 
 class PseudoTTY:
@@ -67,6 +85,11 @@ class PseudoTTY:
         return getattr(self._underlying, name)
 
 
+def get_preview_app() -> "PreviewApp":
+    """Get the current application."""
+    return cast("PreviewApp", get_app())
+
+
 class PreviewApp(BaseApp):
     """Preview a notebook file.
 
@@ -79,19 +102,37 @@ class PreviewApp(BaseApp):
     def __init__(self, **kwargs: "Any") -> "None":
         """Create an app for dumping a prompt-toolkit layout."""
         # Initialise the application
-        super().__init__(**{**{"full_screen": False}, **kwargs})
+        super().__init__(
+            **{
+                **{
+                    "full_screen": False,
+                    "max_render_postpone_time": 0,
+                    "min_redraw_interval": 0,
+                    "leave_graphics": True,
+                },
+                **kwargs,
+            }
+        )
         # We want the app to close when rendering is complete
-        self.after_render += self.pre_exit
+        # self.after_render += self.pre_exit
+        # Do not load any key bindings
+        self.bindings_to_load = ["app.preview"]
+        # Select the first tab after files are opened
+        self.pre_run_callables += [partial(setattr, self, "tab_idx", 0)]
 
     def get_file_tab(self, path: "UPath") -> "Type[Tab]":
         """Returns the tab to use for a file path."""
-        return PreviewKernelNotebook if config.run else PreviewNotebook
+        return PreviewNotebook
 
-    def pre_exit(self, app: "Application") -> "None":
-        """Close the app after dumping, optionally piping output to a pager."""
-        self.exit()
+    def exit(
+        self,
+        result: "Optional[_AppResult]" = None,
+        exception: "Optional[Union[BaseException, Type[BaseException]]]" = None,
+        style: "str" = "",
+    ) -> "None":
+        """Optionally pipe the output to a pager on exit."""
         # Display pager if needed
-        if config.page:
+        if self.config.page:
             from pydoc import pager
 
             output_file = getattr(self.output, "output_file")  # noqa B009
@@ -99,31 +140,22 @@ class PreviewApp(BaseApp):
                 output_file.seek(0)
                 data = output_file.read()
                 pager(data)
+        super().exit(result, exception, style)
 
     def load_container(self) -> "FloatContainer":
         """Returns a container with all opened tabs."""
         return FloatContainer(
-            content=PrintingContainer(self.load_tabs),
-            floats=[],
+            DynamicContainer(lambda: self.tab or Window()),
+            floats=cast("List[Float]", self.floats),
         )
 
-    def load_tabs(self) -> "Sequence[AnyContainer]":
-        """Returns the currently opened tabs for the printing container."""
-        # Create a horizontal line that takes up the full width of the display
-        hr = HorizontalLine()
-        hr.window.width = self.output.get_size().columns
-
-        # Add tabs, separated by horizontal lines
-        contents: "List[AnyContainer]" = []
-        for tab in self.tabs:
-            # Wrap each tab in a box so it does not expand beyond its maximum width
-            contents.append(tab)
-            contents.append(hr)
-        # Remove the final horizontal line
-        if self.tabs:
-            contents.pop()
-
-        return contents
+    def cleanup_closed_tab(self, tab: "Optional[Tab]" = None) -> "None":
+        """Exit if all tabs are closed."""
+        super().cleanup_closed_tab(tab)
+        if not self.tabs:
+            self._is_running = False
+            self.exit()
+        self.redraw(render_as_done=True)
 
     @classmethod
     def load_output(cls) -> "Output":
@@ -136,7 +168,7 @@ class PreviewApp(BaseApp):
             A container for notebook output
 
         """
-        if config.page:
+        if cls.config.page:
             # Use a temporary file as display output if we are going to page the output
             from tempfile import TemporaryFile
 
@@ -146,16 +178,16 @@ class PreviewApp(BaseApp):
 
         else:
             # If we are not paging output, determine where to print it
-            if config.output_file is None or str(config.output_file) in (
+            if cls.config.output_file is None or str(cls.config.output_file) in (
                 "-",
                 "/dev/stdout",
             ):
                 output_file = sys.stdout
-            elif str(config.output_file) == "/dev/stderr":
+            elif str(cls.config.output_file) == "/dev/stderr":
                 output_file = sys.stderr
             else:
                 try:
-                    output_file = open(config.output_file, "w+")
+                    output_file = open(cls.config.output_file, "w+")
                 except (
                     FileNotFoundError,
                     PermissionError,
@@ -163,13 +195,13 @@ class PreviewApp(BaseApp):
                 ) as error:
                     log.error(error)
                     log.error(
-                        f"Output file `{config.output_file}` cannot be opened. "
+                        f"Output file `{cls.config.output_file}` cannot be opened. "
                         "Standard output will be used."
                     )
                     output_file = sys.stdout
 
             # Make the output look like a TTY if color-depth has been configureed
-            if not output_file.isatty() and config.color_depth is not None:
+            if not output_file.isatty() and cls.config.color_depth is not None:
                 output_file = cast(
                     "TextIO",
                     PseudoTTY(
@@ -193,29 +225,45 @@ class PreviewApp(BaseApp):
         return output
 
     def _redraw(self, render_as_done: "bool" = False) -> "None":
-        """Ensure the output is drawn once, and the cursor is left after the output."""
-        if self.render_counter < 1:
-            super()._redraw(render_as_done=True)
+        """Always render the output as done - we will be rending one item each time."""
+        # import time
+        # time.sleep(0.1)
+        super()._redraw(render_as_done=True)
 
+    # ################################### Settings ####################################
 
-# Monkey patch the screen size
-_original_output_screen_diff = renderer._output_screen_diff
+    add_setting(
+        name="output_file",
+        flags=["--output-file"],
+        nargs="?",
+        default="-",
+        const="-",
+        type_=UPath,
+        help_="Output path when previewing file",
+        description="""
+            When set to a file path, the formatted output will be written to the
+            given path. If no value is given (or the default "-" is passed) output
+            will be printed to standard output.
+        """,
+    )
 
+    add_setting(
+        name="page",
+        flags=["--page"],
+        type_=bool,
+        help_="Pass output to pager",
+        default=False,
+        description="""
+            Whether to pipe output to the system pager when using ``--dump``.
+        """,
+    )
 
-def _patched_output_screen_diff(
-    *args: "Any", **kwargs: "Any"
-) -> "Tuple[Point, Optional[str]]":
-    """Function used to monkey-patch the renderer to extend the application height."""
-    # Remove ZWE from screen
-    # from collections import defaultdict
-    # args[2].zero_width_escapes = defaultdict(lambda: defaultdict(lambda: ""))
+    # ################################# Key Bindings ##################################
 
-    # Tell the renderer we have one additional column. This is to prevent the use of
-    # carriage returns and cursor movements to write the final character on lines,
-    # which is something the prompt_toolkit does
-    size = kwargs.pop("size")
-    kwargs["size"] = Size(9999999, size.columns + 1)
-    return _original_output_screen_diff(*args, **kwargs)
-
-
-renderer._output_screen_diff = _patched_output_screen_diff
+    register_bindings(
+        {
+            "app.preview": {
+                "quit": ["c-c", "c-q"],
+            }
+        }
+    )

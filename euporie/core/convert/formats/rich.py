@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from euporie.core.config import config
 from euporie.core.convert.base import register
 from euporie.core.convert.util import have_modules
 
@@ -31,6 +30,6 @@ def markdown_to_rich_py(
 
     return Markdown(
         data,
-        code_theme=str(config.syntax_theme),
-        inline_code_theme=str(config.syntax_theme),
+        # code_theme=str(config.syntax_theme),
+        # inline_code_theme=str(config.syntax_theme),
     )

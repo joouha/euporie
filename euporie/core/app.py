@@ -14,7 +14,7 @@ from prompt_toolkit.application.current import get_app as get_app_ptk
 from prompt_toolkit.clipboard import InMemoryClipboard
 from prompt_toolkit.clipboard.pyperclip import PyperclipClipboard
 from prompt_toolkit.enums import EditingMode
-from prompt_toolkit.filters import Condition, buffer_has_focus
+from prompt_toolkit.filters import Condition, buffer_has_focus, to_filter
 from prompt_toolkit.formatted_text import to_formatted_text
 from prompt_toolkit.input.defaults import create_input
 from prompt_toolkit.key_binding.bindings.basic import load_basic_bindings
@@ -48,11 +48,14 @@ from prompt_toolkit.styles import (
     merge_styles,
     style_from_pygments_cls,
 )
+from pygments.styles import STYLE_MAP as pygments_styles
 from pygments.styles import get_style_by_name
 from pyperclip import determine_clipboard
+from upath import UPath
 
+from euporie.core import __version__
 from euporie.core.commands import add_cmd
-from euporie.core.config import CONFIG_PARAMS, config
+from euporie.core.config import Config, add_setting
 from euporie.core.filters import in_tmux, tab_has_focus
 from euporie.core.key_binding.key_processor import KeyProcessor
 from euporie.core.key_binding.micro_state import MicroState
@@ -89,19 +92,20 @@ if TYPE_CHECKING:
     )
 
     from prompt_toolkit.clipboard import Clipboard
-    from prompt_toolkit.filters import Filter
+    from prompt_toolkit.filters import Filter, FilterOrBool
     from prompt_toolkit.formatted_text import AnyFormattedText, StyleAndTextTuples
     from prompt_toolkit.input import Input
     from prompt_toolkit.input.vt100 import Vt100Input
     from prompt_toolkit.layout.containers import AnyContainer, Float
     from prompt_toolkit.layout.layout import FocusableElement
     from prompt_toolkit.output import Output
-    from prompt_toolkit.widgets import SearchToolbar
 
+    from euporie.core.config import Setting
     from euporie.core.tabs.base import Tab
     from euporie.core.terminal import TerminalQuery
     from euporie.core.widgets.pager import Pager
     from euporie.core.widgets.palette import CommandPalette
+    from euporie.core.widgets.search_bar import SearchBar
 
     StatusBarFields = Tuple[Sequence[AnyFormattedText], Sequence[AnyFormattedText]]
     ContainerStatusDict = Dict[
@@ -132,16 +136,20 @@ class BaseApp(Application):
     wide methods can be easily added.
     """
 
-    # config = Config()
+    config = Config()
     status_default: "StatusBarFields" = ([], [])
 
-    def __init__(self, **kwargs: "Any") -> "None":
+    def __init__(
+        self, leave_graphics: "FilterOrBool" = True, **kwargs: "Any"
+    ) -> "None":
         """Instantiates euporie specific application variables.
 
         After euporie specific application variables are instantiated, the application
         instance is initiated.
 
         Args:
+            leave_graphics: A filter which determines if graphics should be cleared
+                from the display when they are no longer active
             **kwargs: The key-word arguments for the :py:class:`Application`
 
         """
@@ -149,7 +157,7 @@ class BaseApp(Application):
         super().__init__(
             **{
                 **{
-                    "color_depth": config.color_depth,
+                    "color_depth": self.config.color_depth,
                     "editing_mode": self.get_edit_mode(),
                 },
                 **kwargs,
@@ -168,23 +176,22 @@ class BaseApp(Application):
         # Contains the opened tab containers
         self.tabs: "List[Tab]" = []
         # Holds the search bar to pass to cell inputs
-        self.search_bar: "Optional[SearchToolbar]" = None
+        self.search_bar: "Optional[SearchBar]" = None
         # Holds the index of the current tab
         self._tab_idx = 0
         # Add state for micro key-bindings
         self.micro_state = MicroState()
         # Load the terminal information system
-        self.term_info = TerminalInfo(self.input, self.output)
+        self.term_info = TerminalInfo(self.input, self.output, self.config)
         # Floats at the app level
+        self.leave_graphics = to_filter(leave_graphics)
         self.graphics: "WeakSet[Float]" = WeakSet()
-        self.dialogs: "List[Float]" = []
-        self.floats = ChainedList(self.graphics, self.dialogs)
+        self.dialogs: "Dict[str, Float]" = {}
+        self.floats = ChainedList(self.graphics, self.dialogs.values())
         # If a dialog is showing
         self.has_dialog = False
         # Mapping of Containers to status field generating functions
         self.container_statuses: "ContainerStatusDict" = {}
-        # Assign command palette variable
-        self.command_palette: "Optional[CommandPalette]" = None
         # Continue loading when the application has been launched
         # and an event loop has been creeated
         self.pre_run_callables = [self.pre_run]
@@ -196,7 +203,7 @@ class BaseApp(Application):
         # Use a custom key-processor which does not wait after escape keys
         self.key_processor = KeyProcessor(_CombinedRegistry(self))
         # List of key-bindings groups to load
-        self.bindings_to_load = ["app.core"]
+        self.bindings_to_load = ["app.base"]
         # Determines which clipboard mechanism to use
         self.clipboard: "Clipboard" = (
             PyperclipClipboard() if determine_clipboard()[0] else InMemoryClipboard()
@@ -210,39 +217,58 @@ class BaseApp(Application):
         self.focused_element: "Optional[FocusableElement]" = None
         self.output.set_title(self.__class__.__name__)
 
+        # Register config hooks
+        self.config.get_item("edit_mode").event += self.update_edit_mode
+        self.config.get_item("syntax_theme").event += self.update_style
+        self.config.get_item("color_scheme").event += self.update_style
+        self.config.get_item("log_level").event += lambda x: setup_logs(self.config)
+        self.config.get_item("log_file").event += lambda x: setup_logs(self.config)
+        self.config.get_item("log_config").event += lambda x: setup_logs(self.config)
+
+    def pause_rendering(self) -> "None":
+        """Blocks rendering, but allows input to be processed.
+
+        The first line prevents the display being drawn, and the second line means
+        the key processor continues to process keys. We need this as we need to
+        wait for the results of terminal queries which come in as key events.
+
+        This is used to prevent flicker when we update the styles based on terminal
+        feedback.
+        """
+        self._is_running = False
+        self.renderer._waiting_for_cpr_futures.append(asyncio.Future())
+
+    def resume_rendering(self) -> "None":
+        """Resume rendering the app."""
+        self._is_running = True
+        self.renderer._waiting_for_cpr_futures.pop()
+
     def pre_run(self, app: "Application" = None) -> "None":
         """Called during the 'pre-run' stage of application loading."""
         # Load key bindings
         self.load_key_bindings()
         # Determine what color depth to use
         self._color_depth = _COLOR_DEPTHS.get(
-            config.color_depth, self.term_info.depth_of_color.value
+            self.config.color_depth, self.term_info.depth_of_color.value
         )
         # Set the application's style, and update it when the terminal responds
         self.update_style()
         self.term_info.colors.event += self.update_style
         # self.term_info.color_blue.event += self.update_style
-        # Blocks rendering, but allows input to be processed
-        # The first line prevents the display being drawn, and the second line means
-        # the key processor continues to process keys. We need this as we need to
-        # wait for the results of terminal queries which come in as key events
-        # This prevents flicker when we update the styles based on terminal feedback
-        self._is_running = False
-        self.renderer._waiting_for_cpr_futures.append(asyncio.Future())
+        self.pause_rendering()
 
         def terminal_ready() -> "None":
             """Commands here depend on the result of terminal queries."""
+            # Open any files we need to
+            self.open_files()
             # Load the layout
             # We delay this until we have terminal responses to allow terminal graphics
             # support to be detected first
             self.layout = Layout(self.load_container(), self.focused_element)
-            # Open any files we need to
-            self.open_files()
             # Run any additional steps
             self.post_load()
             # Resume rendering
-            self._is_running = True
-            self.renderer._waiting_for_cpr_futures.pop()
+            self.resume_rendering()
             # Request cursor position
             self._request_absolute_cursor_position()
             # Sending a repaint trigger
@@ -358,10 +384,11 @@ class BaseApp(Application):
     @classmethod
     def launch(cls) -> "None":
         """Launches the app."""
-        # cls.config.load(cls)
-        config.load()
-        setup_logs()
-
+        # Load the app's configuration
+        cls.config.load(cls)
+        # Configure the logs
+        setup_logs(cls.config)
+        # Run the application
         with create_app_session(input=cls.load_input(), output=cls.load_output()):
             # Create an instance of the app and run it
             return cls().run()
@@ -377,10 +404,6 @@ class BaseApp(Application):
             content=Window(),
             floats=cast("List[Float]", self.floats),
         )
-
-    def save_as(self) -> "None":
-        """Prompts the user to save the notebook under a new path."""
-        log.debug("Cannot save file")
 
     def get_file_tab(self, path: "PathLike") -> "Optional[Type[Tab]]":
         """Returns the tab to use for a file path."""
@@ -407,11 +430,11 @@ class BaseApp(Application):
             else:
                 tab = tab_class(self, ppath)
                 self.tabs.append(tab)
-                tab.focus()
+                self.focused_element = tab
 
     def open_files(self) -> "None":
         """Opens the files defined in the configuration."""
-        for file in config.files:
+        for file in self.config.files:
             self.open_file(file)
 
     @property
@@ -437,8 +460,9 @@ class BaseApp(Application):
     @tab_idx.setter
     def tab_idx(self, value: "int") -> "None":
         """Sets the current tab by index."""
-        self._tab_idx = value % len(self.tabs)
-        self.layout.focus(self.tabs[self._tab_idx])
+        self._tab_idx = value % (len(self.tabs) or 1)
+        if self.tabs:
+            self.layout.focus(self.tabs[self._tab_idx])
 
     def focus_tab(self, tab: "Tab") -> "None":
         """Makes a tab visible and focuses it."""
@@ -489,17 +513,11 @@ class BaseApp(Application):
             "vi": EditingMode.VI,
             "emacs": EditingMode.EMACS,
         }.get(
-            str(config.edit_mode), EditingMode.MICRO  # type: ignore
+            str(self.config.edit_mode), EditingMode.MICRO  # type: ignore
         )
 
-    def set_edit_mode(self, mode: "EditingMode") -> "None":
-        """Sets the keybindings for editing mode.
-
-        Args:
-            mode: One of default, vi, or emacs
-
-        """
-        config.edit_mode = str(mode)
+    def update_edit_mode(self, setting: "Optional[Setting]" = None) -> "None":
+        """Sets the keybindings for editing mode."""
         self.editing_mode = self.get_edit_mode()
         log.debug("Editing mode set to: %s", self.editing_mode)
 
@@ -514,13 +532,13 @@ class BaseApp(Application):
             "default": self.term_info.colors.value,
             # TODO - use config.custom_colors
             "custom": {
-                "fg": config.custom_foreground_color,
-                "bg": config.custom_background_color,
+                "fg": self.config.custom_foreground_color,
+                "bg": self.config.custom_background_color,
             },
         }
         base_colors: "dict[str, str]" = {
             **DEFAULT_COLORS,
-            **theme_colors.get(config.color_scheme, theme_colors["default"]),
+            **theme_colors.get(self.config.color_scheme, theme_colors["default"]),
         }
 
         # Build a color palette from the fg/bg colors
@@ -531,11 +549,8 @@ class BaseApp(Application):
                 color or theme_colors["default"][name],
                 "default" if name in ("fg", "bg") else name,
             )
-
-        config_highlight_color = "ansiblue"  # TODO - make highlight color configurable
-        self.color_palette.colors["hl"] = self.color_palette.colors[
-            config_highlight_color
-        ]
+        # Add accent color
+        self.color_palette.add_color("hl", self.config.accent_color)
 
         # Build app style
         app_style = build_style(
@@ -550,11 +565,11 @@ class BaseApp(Application):
                     SetDefaultColorStyleTransformation(
                         fg=base_colors["fg"], bg=base_colors["bg"]
                     ),
-                    config.color_scheme != "default",
+                    self.config.color_scheme != "default",
                 ),
                 ConditionalStyleTransformation(
                     SwapLightAndDarkStyleTransformation(),
-                    config.color_scheme == "inverse",
+                    self.config.color_scheme == "inverse",
                 ),
             ]
         )
@@ -563,7 +578,7 @@ class BaseApp(Application):
         # the style on the renderer directly when it changes in `self.update_style`
         return merge_styles(
             [
-                style_from_pygments_cls(get_style_by_name(config.syntax_theme)),
+                style_from_pygments_cls(get_style_by_name(self.config.syntax_theme)),
                 Style(MIME_STYLE),
                 Style(MARKDOWN_STYLE),
                 Style(LOG_STYLE),
@@ -574,15 +589,9 @@ class BaseApp(Application):
 
     def update_style(
         self,
-        query: "Optional[TerminalQuery]" = None,
-        pygments_style: "Optional[str]" = None,
-        color_scheme: "Optional[str]" = None,
+        query: "Optional[Union[TerminalQuery, Setting]]" = None,
     ) -> "None":
         """Updates the application's style when the syntax theme is changed."""
-        if pygments_style is not None:
-            config.syntax_theme = pygments_style
-        if color_scheme is not None:
-            config.color_scheme = color_scheme
         self.renderer.style = self.create_merged_style()
 
     def refresh(self) -> "None":
@@ -654,151 +663,294 @@ class BaseApp(Application):
         # Log observed exceptions to the log
         log.exception("An unhandled exception occurred", exc_info=exception)
 
+    # ################################### Commands ####################################
 
-def set_edit_mode(edit_mode: "EditingMode") -> "None":
-    """Set the editing mode key-binding style."""
-    get_app().set_edit_mode(edit_mode)
+    @add_cmd()
+    @staticmethod
+    def quit() -> "None":
+        """Quit euporie."""
+        get_app().exit()
 
+    @add_cmd(
+        name="close-tab",
+        filter=tab_has_focus,
+        menu_title="Close File",
+    )
+    @staticmethod
+    def _close_tab() -> None:
+        """Close the current tab."""
+        get_app().close_tab()
 
-for choice in config.choices("edit_mode"):
-    add_cmd(
-        name=f"set-edit-mode-{choice.lower()}",
-        title=f'Set edit mode to "{choice.title()}"',
-        menu_title=choice.title(),
-        description=f"Set the editing mode key-binding style to '{choice}'.",
-        toggled=Condition(
-            partial(lambda x: config.edit_mode == x, choice),
-        ),
-    )(partial(set_edit_mode, choice))
+    @add_cmd(
+        filter=tab_has_focus,
+    )
+    @staticmethod
+    def next_tab() -> "None":
+        """Switch to the next tab."""
+        get_app().tab_idx += 1
 
+    @add_cmd(
+        filter=tab_has_focus,
+    )
+    @staticmethod
+    def previous_tab() -> "None":
+        """Switch to the previous tab."""
+        get_app().tab_idx -= 1
 
-def update_color_scheme(choice: "str") -> "None":
-    """Updates the application's style."""
-    get_app().update_style(color_scheme=choice)
+    @add_cmd(
+        filter=~buffer_has_focus,
+    )
+    @staticmethod
+    def focus_next() -> "None":
+        """Focus the next control."""
+        get_app().layout.focus_next()
 
+    @add_cmd(
+        filter=~buffer_has_focus,
+    )
+    @staticmethod
+    def focus_previous() -> "None":
+        """Focus the previous control."""
+        get_app().layout.focus_previous()
 
-for choice in config.choices("color_scheme"):
-    add_cmd(
-        name=f"set-color-scheme-{choice.lower()}",
-        title=f'Set color scheme to "{choice.title()}"',
-        menu_title=choice.title(),
-        description=f"Set the color scheme to '{choice}'.",
-        toggled=Condition(
-            partial(lambda x: config.color_scheme == x, choice),
-        ),
-    )(partial(update_color_scheme, choice))
+    # ################################### Settings ####################################
 
+    add_setting(
+        name="version",
+        default=False,
+        flags=["--version", "-V"],
+        action="version",
+        hidden=True,
+        version=f"%(prog)s {__version__}",
+        help_="Show the version number and exit",
+        description="""
+            If set, euporie will print the current version number of the application and exit.
+            All other configuration options will be ignored.
+            
+            .. note::
+            This cannot be set in the configuration file or via an environment variable
+    """,
+    )
 
-def update_syntax_theme(choice: "str") -> "None":
-    """Updates the application's syntax highlighting theme."""
-    get_app().update_style(pygments_style=choice)
+    add_setting(
+        name="files",
+        default=[],
+        flags=["files"],
+        nargs="*",
+        type_=UPath,
+        help_="List of file names to open",
+        schema={
+            "type": "array",
+            "items": {
+                "description": "File path",
+                "type": "string",
+            },
+        },
+        description="""
+            A list of file paths to open when euporie is launched.
+        """,
+    )
 
+    add_setting(
+        name="edit_mode",
+        flags=["--edit-mode"],
+        type_=str,
+        choices=["micro", "emacs", "vi"],
+        help_="Key-binding mode for text editing",
+        default="micro",
+        description="""
+            Key binding mode to use when editing cells.
+        """,
+    )
 
-for choice in sorted(CONFIG_PARAMS["syntax_theme"]["schema_"]["enum"]):
-    add_cmd(
-        name=f"set-syntax-theme-{choice.lower()}",
-        title=f'Set syntax theme to "{choice}"',
-        menu_title=choice,
-        description=f"Set the syntax highlighting theme to '{choice}'.",
-        toggled=Condition(
-            partial(lambda x: config.syntax_theme == x, choice),
-        ),
-    )(partial(update_syntax_theme, choice))
+    add_setting(
+        name="tab_size",
+        flags=["--tab-size"],
+        type_=int,
+        help_="Spaces per indentation level",
+        default=4,
+        schema={
+            "minimum": 1,
+        },
+        description="""
+            The number of spaces to use per indentation level. Should be set to 4.
+        """,
+    )
 
+    add_setting(
+        name="terminal_polling_interval",
+        flags=["--terminal-polling-interval"],
+        type_=int,
+        help_="Time between terminal colour queries",
+        default=0,
+        schema={
+            "min": 0,
+        },
+        description="""
+            Determine how frequently the terminal should be polled for changes to the
+            background / foreground colours. Set to zero to disable terminal polling.
+        """,
+    )
 
-@add_cmd(
-    title="Enable terminal graphics in tmux",
-    hidden=~in_tmux,
-    toggled=Condition(lambda: bool(config.tmux_graphics)),
-)
-def tmux_terminal_graphics() -> "None":
-    """Toggle the use of terminal graphics inside tmux."""
-    config.toggle("tmux_graphics")
+    add_setting(
+        name="autoformat",
+        flags=["--autoformat"],
+        type_=bool,
+        help_="Automatically re-format code cells when run",
+        default=False,
+        description="""
+            Whether to automatically reformat code cells before they are run.
+        """,
+    )
 
+    add_setting(
+        name="format_black",
+        flags=["--format-black"],
+        type_=bool,
+        help_="Use black when re-formatting code cells",
+        default=False,
+        description="""
+            Whether to use :py:mod:`black` when reformatting code cells.
+        """,
+    )
 
-@add_cmd(
-    toggled=Condition(lambda: bool(config.show_status_bar)),
-)
-def show_status_bar() -> "None":
-    """Toggle the visibility of the status bar."""
-    config.toggle("show_status_bar")
+    add_setting(
+        name="format_isort",
+        flags=["--format-isort"],
+        type_=bool,
+        help_="Use isort when re-formatting code cells",
+        default=False,
+        description="""
+            Whether to use :py:mod:`isort` when reformatting code cells.
+        """,
+    )
 
+    add_setting(
+        name="format_ssort",
+        flags=["--format-ssort"],
+        type_=bool,
+        help_="Use ssort when re-formatting code cells",
+        default=False,
+        description="""
+            Whether to use :py:mod:`ssort` when reformatting code cells.
+        """,
+    )
 
-@add_cmd()
-def quit() -> "None":
-    """Quit euporie."""
-    get_app().exit()
+    add_setting(
+        name="syntax_theme",
+        flags=["--syntax-theme"],
+        type_=str,
+        help_="Syntax highlighting theme",
+        default="default",
+        schema={
+            # Do not want to print all theme names in `--help` screen as it looks messy
+            # so we only add them in the scheme, not as setting choices
+            "enum": list(pygments_styles.keys()),
+        },
+        description="""
+            The name of the pygments style to use for syntax highlighting.
+        """,
+    )
 
+    add_setting(
+        name="color_depth",
+        flags=["--color-depth"],
+        type_=int,
+        choices=[1, 4, 8, 24],
+        default=None,
+        help_="The color depth to use",
+        description="""
+            The number of bits to use to represent colors displayable on the screen.
+            If set to None, the supported color depth of the terminal will be detected
+            automatically.
+        """,
+    )
 
-@add_cmd(
-    filter=tab_has_focus,
-    menu_title="Close File",
-)
-def close_tab() -> None:
-    """Close the current tab."""
-    get_app().close_tab()
+    add_setting(
+        name="tmux_graphics",
+        flags=["--tmux-graphics"],
+        type_=bool,
+        help_="Enable terminal graphics in tmux (experimental)",
+        default=False,
+        hidden=~in_tmux,
+        description="""
+            If set, terminal graphics will be used if :program:`tmux` is running by
+            performing terminal escape sequence pass-through. You must restart euporie
+            forthis to take effect.
 
+            .. warning::
 
-@add_cmd(
-    menu_title="Save As...",
-    filter=tab_has_focus,
-)
-def save_as() -> None:
-    """Save the current file at a new location."""
-    get_app().save_as()
+               Terminal graphics in :program:`tmux` is experimental, and is not
+               guaranteed to work. Use at your own risk!
+        """,
+    )
 
+    add_setting(
+        name="color_scheme",
+        flags=["--color-scheme"],
+        type_=str,
+        choices=["default", "inverse", "light", "dark", "black", "white", "custom"],
+        help_="The color scheme to use",
+        default="default",
+        description="""
+            The color scheme to use: `auto` means euporie will try to use your
+            terminal's color scheme, `light` means black text on a white background,
+            and `dark` means white text on a black background.
+        """,
+    )
 
-@add_cmd(
-    filter=tab_has_focus,
-)
-def next_tab() -> "None":
-    """Switch to the next tab."""
-    get_app().tab_idx += 1
+    add_setting(
+        name="custom_background_color",
+        flags=["--custom-background-color", "--custom-bg-color", "--bg"],
+        type_=str,
+        help_='Background color for "Custom" color theme',
+        default="",
+        schema={
+            "maxLength": 7,
+        },
+        description="""
+            The hex code of the color to use for the background in the "Custom" color
+            scheme.
+        """,
+    )
 
+    add_setting(
+        name="custom_foreground_color",
+        flags=["--custom-foreground-color", "--custom-fg-color", "--fg"],
+        type_=str,
+        help_='Background color for "Custom" color theme',
+        default="",
+        schema={
+            "maxLength": 7,
+        },
+        description="""
+            The hex code of the color to use for the foreground in the "Custom" color
+            scheme.
+        """,
+    )
 
-@add_cmd(
-    filter=tab_has_focus,
-)
-def previous_tab() -> "None":
-    """Switch to the previous tab."""
-    get_app().tab_idx -= 1
+    add_setting(
+        name="accent_color",
+        flags=["--accent-color"],
+        type_=str,
+        help_="Accent color to use in the app",
+        default="ansiblue",
+        description="""
+            The hex code of a color to use for the accent color in the application.
+        """,
+    )
 
+    # ################################# Key Bindings ##################################
 
-@add_cmd(
-    filter=~buffer_has_focus,
-)
-def focus_next() -> "None":
-    """Focus the next control."""
-    get_app().layout.focus_next()
-
-
-@add_cmd(
-    filter=~buffer_has_focus,
-)
-def focus_previous() -> "None":
-    """Focus the previous control."""
-    get_app().layout.focus_previous()
-
-
-@add_cmd()
-def show_command_palette() -> "None":
-    """Shows the command palette."""
-    command_palette = get_app().command_palette
-    if command_palette is not None:
-        command_palette.toggle()
-
-
-register_bindings(
-    {
-        "app.core": {
-            "quit": "c-q",
-            "close-tab": "c-w",
-            "save-as": ("escape", "s"),
-            "show-command-palette": "c-@",
-            "next-tab": "c-pagedown",
-            "previous-tab": "c-pageup",
-            "focus-next": "s-tab",
-            "focus-previous": "tab",
+    register_bindings(
+        {
+            "app.base": {
+                "quit": "c-q",
+                "close-tab": "c-w",
+                "next-tab": "c-pagedown",
+                "previous-tab": "c-pageup",
+                "focus-next": "s-tab",
+                "focus-previous": "tab",
+            }
         }
-    }
-)
+    )

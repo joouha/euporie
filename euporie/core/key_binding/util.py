@@ -2,10 +2,14 @@
 
 from typing import TYPE_CHECKING
 
-from prompt_toolkit.keys import Keys
+from prompt_toolkit.key_binding.key_bindings import _parse_key
+
+from euporie.core.keys import Keys
 
 if TYPE_CHECKING:
     from typing import Dict, List, Tuple, Union
+
+    from euporie.key_binding.registry import AnyKeys
 
 
 KEY_ALIASES: "Dict[Union[str, Keys], str]" = {
@@ -15,6 +19,21 @@ KEY_ALIASES: "Dict[Union[str, Keys], str]" = {
     Keys.ControlUnderscore: "c-/",
     Keys.ControlAt: "c-space",
 }
+
+
+def parse_keys(keys: "AnyKeys") -> "List[Keys]":
+    """Parse a list of keys."""
+    output = []
+    if not isinstance(keys, list):
+        keys = [keys]
+    for key in keys:
+        if isinstance(key, Keys):
+            output.append((key,))
+        elif isinstance(key, tuple):
+            output.append(tuple(_parse_key(k) for k in key))
+        else:
+            output.append((_parse_key(key),))
+    return output
 
 
 def _format_key_str(key: "str") -> "str":

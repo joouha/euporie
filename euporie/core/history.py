@@ -8,9 +8,9 @@ from typing import TYPE_CHECKING
 from prompt_toolkit.history import History
 
 if TYPE_CHECKING:
-    from typing import Iterable
+    from typing import AsyncGenerator, Iterable
 
-    from euporie.core.kernel import NotebookKernel
+    from euporie.core.kernel import Kernel
 
 log = logging.getLogger(__name__)
 
@@ -18,21 +18,38 @@ log = logging.getLogger(__name__)
 class KernelHistory(History):
     """Load the kernel's command history."""
 
-    def __init__(self, kernel: "NotebookKernel", n: "int" = 1000) -> "None":
+    def __init__(self, kernel: "Kernel", n: "int" = 1000) -> "None":
         """Create a new instance of the kernel history loader."""
         super().__init__()
         self.kernel = kernel
         # How many items to load
         self.n = n
 
+    async def load(self) -> "AsyncGenerator[str, None]":
+        """Load the history and yield all entries, most recent history first.
+
+        This method can be called multiple times from the `Buffer` to
+        repopulate the history when prompting for a new input. So we are
+        responsible here for both caching, and making sure that strings that
+        were were appended to the history will be incorporated next time this
+        method is called.
+
+        Yields:
+            Each history string
+        """
+        if not self._loaded:
+            items = await self.kernel.history_(n=self.n, hist_access_type="tail")
+            self._loaded_strings = [item[2] for item in items]
+            self._loaded = True
+
+        for item in self._loaded_strings:
+            yield item
+
     def load_history_strings(self) -> "Iterable[str]":
-        """Load lines from kernel history."""
-        log.debug("Loading kernel history")
-        result = self.kernel.history(n=self.n, hist_access_type="tail")
-        for item in reversed(result or []):
-            # Each item is a thruple: (session, line_number, input)
-            yield item[2]
+        """Not used to load history, as we load it asynchronously."""
+        while False:
+            yield
 
     def store_string(self, string: "str") -> "None":
-        """Don't store strings."""
+        """Don't store strings in persistent storage: they are stored by the kernel."""
         pass

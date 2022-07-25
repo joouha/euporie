@@ -209,7 +209,7 @@ def accept_search() -> "None":
 
 register_bindings(
     {
-        "app.core": {
+        "app.base": {
             "find": ["c-f", "f3", "f7"],
             "find-next": "c-g",
             "find-previous": "c-p",

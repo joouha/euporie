@@ -6,8 +6,9 @@ from typing import TYPE_CHECKING, cast
 
 from prompt_toolkit.application import get_app
 from prompt_toolkit.filters import to_filter
-from prompt_toolkit.key_binding.key_bindings import Binding, _parse_key
+from prompt_toolkit.key_binding.key_bindings import Binding
 
+from euporie.core.key_binding.util import parse_keys
 from euporie.core.keys import Keys
 
 if TYPE_CHECKING:
@@ -51,9 +52,7 @@ class Command:
         title: "Optional[str]" = None,
         menu_title: "Optional[str]" = None,
         description: "Optional[str]" = None,
-        groups: "Optional[Union[str, Sequence[str]]]" = None,
         toggled: "Optional[Filter]" = None,
-        keys: "Optional[AnyKeys]" = None,
         eager: "FilterOrBool" = False,
         is_global: "FilterOrBool" = False,
         save_before: "Callable[[KeyPressEvent], bool]" = (lambda event: True),
@@ -69,9 +68,7 @@ class Command:
             title: The title of the command for display
             menu_title: The title to display in menus if different
             description: The description of the command to explain it's function
-            groups: One or more groups to which this command belongs
             toggled: The toggle state of this command If this command toggles something
-            keys: The default keys to which this command should be bound
             eager: When True, ignore potential longer matches for this key binding
             is_global: Make this a global (always active) binding
             save_before: Determines if the buffer should be saved before running
@@ -82,7 +79,7 @@ class Command:
         self.filter = to_filter(filter)
         self.hidden = to_filter(hidden)
         if name is None:
-            name = handler.__name__.replace("_", "-")
+            name = handler.__name__.strip("_").replace("_", "-")
         self.name = name
         if title is None:
             title = name.capitalize().replace("-", " ")
@@ -97,40 +94,19 @@ class Command:
             else:
                 description = title or name.capitalize()
         self.description = description
-        if isinstance(groups, str):
-            self.groups = {groups}
-        elif groups is None:
-            self.groups = set()
-        else:
-            self.groups = set(groups)
 
         self.toggled = toggled
         self._menu: "Optional[MenuItem]" = None
 
-        self.keys: "List[Tuple[Union[str, Keys], ...]]" = []
-        self.add_keys(keys)
         self.eager = to_filter(eager)
         self.is_global = to_filter(is_global)
         self.save_before = save_before
         self.record_in_macro = to_filter(record_in_macro)
 
+        self.keys: "List[Tuple[Keys, ...]]" = []
+
         self.selected_item = 0
         self.children: "Sequence[MenuItem]" = []
-
-    def add_keys(self, keys: "Optional[AnyKeys]") -> "Command":
-        """Adds keyboard shortcuts to the current command."""
-        if keys is None:
-            keys = []
-        if not isinstance(keys, list):
-            keys = [keys]
-        for key in keys:
-            if isinstance(key, Keys):
-                self.keys.append((key,))
-            elif isinstance(key, tuple):
-                self.keys.append(tuple(_parse_key(k) for k in key))
-            else:
-                self.keys.append((_parse_key(key),))
-        return self
 
     def run(self) -> "None":
         """Runs the command's handler."""
@@ -177,25 +153,7 @@ class Command:
 
         return _key_handler
 
-    @property
-    def key_bindings(self) -> "Sequence[Binding]":
-        """Returns a list of key-bindings given to the current command."""
-        return [
-            Binding(
-                key,
-                handler=self.key_handler,
-                filter=self.filter,
-                eager=self.eager,
-                is_global=self.is_global,
-                save_before=self.save_before,
-                record_in_macro=self.record_in_macro,
-            )
-            for key in self.keys
-        ]
-
-    def bind(
-        self, key_bindings: "KeyBindingsBase", keys: "Optional[AnyKeys]" = None
-    ) -> "None":
+    def bind(self, key_bindings: "KeyBindingsBase", keys: "AnyKeys" = None) -> "None":
         """Add the current commands to a set of key bindings.
 
         Args:
@@ -203,9 +161,28 @@ class Command:
             keys: Additional keys to bind to the command
 
         """
-        self.add_keys(keys)
-        for binding in self.key_bindings:
-            key_bindings.bindings.append(binding)
+        for key in parse_keys(keys):
+            self.keys.append(key)
+            key_bindings.bindings.append(
+                Binding(
+                    key,
+                    handler=self.key_handler,
+                    filter=self.filter,
+                    eager=self.eager,
+                    is_global=self.is_global,
+                    save_before=self.save_before,
+                    record_in_macro=self.record_in_macro,
+                )
+            )
+
+    @property
+    def key_str(self) -> "Optional[str]":
+        """Return a string representing the first registered key-binding."""
+        from euporie.core.key_binding.util import format_keys
+
+        if self.keys:
+            return format_keys([self.keys[0]])[0]
+        return None
 
     @property
     def menu_handler(self) -> "Callable[[], None]":
@@ -229,15 +206,6 @@ class Command:
         if self._menu is None:
             self._menu = MenuItem.from_command(self)
         return self._menu
-
-    @property
-    def key_str(self) -> "Optional[str]":
-        """Return a string representing the first registered key-binding."""
-        from euporie.core.key_binding.format import format_keys
-
-        if self.keys:
-            return format_keys([self.keys[0]])[0]
-        return None
 
 
 def add_cmd(**kwargs: "Any") -> "Callable":

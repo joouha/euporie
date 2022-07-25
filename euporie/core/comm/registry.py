@@ -7,13 +7,13 @@ from euporie.core.comm.ipywidgets import open_comm_ipywidgets
 if TYPE_CHECKING:
     from typing import Any, Dict, Sequence
 
-    from euporie.core.comm.base import Comm, CommContainer
+    from euporie.core.comm.base import Comm, KernelTab
 
 TARGET_CLASSES = {"jupyter.widget": open_comm_ipywidgets}
 
 
 def open_comm(
-    comm_container: "CommContainer",
+    comm_container: "KernelTab",
     content: "Dict[str, Any]",
     buffers: "Sequence[bytes]",
 ) -> "Comm":

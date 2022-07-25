@@ -80,8 +80,11 @@ class PagerOutputDataElement(CellOutputDataElement):
 class PagerOutput(CellOutput):
     """Display pager output."""
 
-    def get_container(self) -> "CellOutputElement":
+    def make_element(self, mime: "str") -> "CellOutputElement":
         """Creates a container for the pager output mime-type if it doesn't exist.
+
+        Args:
+            mime: The mime-type to make the container for
 
         Returns:
             A :class:`PagerOutputDataElement` container for the currently selected mime-type.

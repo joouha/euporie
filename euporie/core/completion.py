@@ -8,7 +8,7 @@ from typing import AsyncGenerator, Iterable
 from prompt_toolkit.completion.base import CompleteEvent, Completer, Completion
 from prompt_toolkit.document import Document
 
-from euporie.core.kernel import NotebookKernel
+from euporie.core.kernel import Kernel
 
 log = logging.getLogger(__name__)
 
@@ -16,7 +16,7 @@ log = logging.getLogger(__name__)
 class KernelCompleter(Completer):
     """A prompt_toolkit completer which provides completions from a Jupyter kernel."""
 
-    def __init__(self, kernel: NotebookKernel) -> None:
+    def __init__(self, kernel: Kernel) -> None:
         """Instantiate the completer for a given notebook.
 
         Args:
@@ -35,7 +35,7 @@ class KernelCompleter(Completer):
     async def get_completions_async(
         self, document: Document, complete_event: CompleteEvent
     ) -> "AsyncGenerator[Completion, None]":
-        """Retrieves completions from a :class:`NotebookKernel`."""
+        """Retrieves completions from a :class:`Kernel`."""
         for kwargs in await self.kernel.complete_(
             code=document.text,
             cursor_pos=document.cursor_position,

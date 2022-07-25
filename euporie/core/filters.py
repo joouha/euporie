@@ -112,27 +112,6 @@ def tab_has_focus() -> "bool":
 
 
 @Condition
-def notebook_has_focus() -> "bool":
-    """Determine if there is a currently focused notebook."""
-    from euporie.core.app import get_app
-    from euporie.core.tabs.notebook import Notebook
-
-    return isinstance(get_app().tab, Notebook)
-
-
-@Condition
-def in_edit_mode() -> "bool":
-    """Determine if there is a currently focused notebook."""
-    from euporie.core.app import get_app
-    from euporie.core.tabs.notebook import Notebook
-
-    nb = get_app().tab
-    if isinstance(nb, Notebook):
-        return nb.edit_mode
-    return False
-
-
-@Condition
 def pager_has_focus() -> "bool":
     """Determine if there is a currently focused notebook."""
     from euporie.core.app import get_app
@@ -145,62 +124,12 @@ def pager_has_focus() -> "bool":
 
 
 @Condition
-def cell_has_focus() -> "bool":
-    """Determine if there is a currently focused cell."""
-    from euporie.core.app import get_app
-    from euporie.core.tabs.notebook import EditNotebook
-
-    nb = get_app().tab
-    if isinstance(nb, EditNotebook):
-        return nb.cell is not None
-    return False
-
-
-@Condition
-def multiple_cells_selected() -> "bool":
-    """Determine if there is more than one selected cell."""
-    from euporie.core.app import get_app
-    from euporie.core.tabs.notebook import EditNotebook
-
-    nb = get_app().tab
-    if isinstance(nb, EditNotebook):
-        return len(nb.page.selected_indices) > 1
-    return False
-
-
-@Condition
-def deleted_cells() -> "bool":
-    """Determine if there ares cell in the undo buffer."""
-    from euporie.core.app import get_app
-    from euporie.core.tabs.notebook import EditNotebook
-
-    nb = get_app().tab
-    if isinstance(nb, EditNotebook):
-        return bool(nb.undo_buffer)
-    return False
-
-
-@Condition
 def display_has_focus() -> "bool":
     """Determine if there is a currently focused cell."""
     from euporie.core.app import get_app
     from euporie.core.widgets.display import DisplayControl
 
     return isinstance(get_app().layout.current_control, DisplayControl)
-
-
-@Condition
-def code_cell_selected() -> "bool":
-    """Determine if a code cell is selected."""
-    from euporie.core.app import get_app
-    from euporie.core.tabs.notebook import EditNotebook
-
-    nb = get_app().tab
-    if isinstance(nb, EditNotebook):
-        for cell in nb.cells:
-            if cell.cell_type == "code":
-                return True
-    return False
 
 
 @Condition
@@ -293,22 +222,6 @@ def cursor_on_last_line() -> "bool":
     return get_app().current_buffer.document.on_last_line
 
 
-@Condition
-def kernel_is_python() -> "bool":
-    """Determine if the current notebook has a python kernel."""
-    from euporie.core.app import get_app
-    from euporie.core.tabs.notebook import Notebook
-
-    nb = get_app().tab
-    if isinstance(nb, Notebook):
-        return (
-            nb is not None
-            and nb.json.get("metadata", {}).get("kernelspec", {}).get("language")
-            == "python"
-        )
-    return False
-
-
 """Determine if any binding style is in insert mode."""
 insert_mode = (
     (vi_mode & vi_insert_mode)
@@ -338,3 +251,36 @@ def at_end_of_buffer() -> "bool":
 
     buffer = get_app().current_buffer
     return buffer.cursor_position == len(buffer.text)
+
+
+@Condition
+def kernel_is_python() -> "bool":
+    """Determine if the current notebook has a python kernel."""
+    from euporie.core.app import get_app
+    from euporie.core.tabs.base import KernelTab
+
+    kernel_tab = get_app().tab
+    if isinstance(kernel_tab, KernelTab):
+        return kernel_tab.language == "python"
+    return False
+
+
+@Condition
+def multiple_cells_selected() -> "bool":
+    """Determine if there is more than one selected cell."""
+    from euporie.core.app import get_app
+    from euporie.core.tabs.notebook import BaseNotebook
+
+    nb = get_app().tab
+    if isinstance(nb, BaseNotebook):
+        return len(nb.selected_indices) > 1
+    return False
+
+
+@Condition
+def kernel_tab_has_focus() -> "bool":
+    """Determine if there is a focused kernel tab."""
+    from euporie.core.app import get_app
+    from euporie.core.tabs.base import KernelTab
+
+    return isinstance(get_app().tab, KernelTab)

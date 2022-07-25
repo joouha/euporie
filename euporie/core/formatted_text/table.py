@@ -90,6 +90,7 @@ class Cell:
         text: "AnyFormattedText" = "",
         row: "Optional[Row]" = None,
         col: "Optional[Col]" = None,
+        col_span: "int" = 1,
         align: "Optional[FormattedTextAlign]" = None,
         padding: "Optional[Padding]" = None,
         border: "Optional[Union[LineStyle, BorderLineStyle]]" = None,
@@ -101,6 +102,7 @@ class Cell:
             text: Text or formatted text to display in the cell
             row: The row to which this cell belongs
             col: The column to which this cell belongs
+            col_span: The number of columns this cell spans
             align: How the text in the cell should be aligned
             padding: The padding around the contents of the cell
             border: The type of border line to apply to the cell
@@ -110,6 +112,7 @@ class Cell:
         self._text = text
         self.row = row or DummyRow()
         self.col = col or DummyCol()
+        self.col_span = col_span
         self._align = align
         self._set_padding(padding)
         self._set_border(border)
@@ -159,6 +162,8 @@ class Cell:
     @property
     def total_width(self) -> "int":
         """The width of the cell including padding."""
+        if self.col_span > 1:
+            return 0
         return self.width + (self.padding.left or 0) + (self.padding.right or 0)
 
     @property
@@ -616,7 +621,9 @@ class Table:
         col.table = self
         self._cols[max([-1] + list(self._cols)) + 1] = col
 
-    def calculate_col_widths(self, width: "int") -> "List[int]":
+    def calculate_col_widths(
+        self, width: "int", min_col_width: "int" = 7
+    ) -> "List[int]":
         """Calculate column widths given the available space.
 
         Reduce the widest column until we fit in available width, or expand cells to
@@ -624,6 +631,7 @@ class Table:
 
         Args:
             width: The desired width of the table
+            min_col_width: The minimum width allowed for a column
 
         Returns:
             List of new column widths
@@ -635,11 +643,15 @@ class Table:
             return sum(col_widths) + len(self.cols) + 1
 
         if self.expand:
-            while total_width(col_widths) < max(width, len(col_widths) * 7 + 2):
+            while total_width(col_widths) < max(
+                width, len(col_widths) * min_col_width + 2
+            ):
                 idxmin = min(enumerate(col_widths), key=lambda x: x[1])[0]
                 col_widths[idxmin] += 1
         else:
-            while total_width(col_widths) > max(width, len(col_widths) * 7 + 2):
+            while total_width(col_widths) > max(
+                width, len(col_widths) * min_col_width + 2
+            ):
                 idxmax = max(enumerate(col_widths), key=lambda x: x[1])[0]
                 col_widths[idxmax] -= 1
 
@@ -725,22 +737,38 @@ class Table:
             borders = []
             for e, w in zip([DummyCell(), *row.cells], [*row.cells, DummyCell()]):
                 borders += [(self.border_style, self.get_vertical_edge(e, w))]
+            if self.border_collapse and not "".join([x[1] for x in borders]).strip():
+                borders = [("", "")] * len(borders)
+
+            def _calc_cell_width(
+                cell: "Cell", col: "int", col_widths: "List[int]"
+            ) -> "int":
+                """Calculate a cell's width."""
+                width = 0
+                for i in range(col, col + cell.col_span):
+                    width += col_widths[i]
+                    if i > col:
+                        width += len(borders[i + 1][1])
+                # Remove padding
+                width -= (cell.padding.left or 0) + (cell.padding.right or 0)
+                return width
 
             # Draw row contents line by line
             row_lines = list(
                 zip_longest(
                     *(
-                        cell.lines(
-                            width=col_width
-                            - (cell.padding.left or 0)
-                            - (cell.padding.right or 0)
-                        )
-                        for cell, col_width in zip(row.cells, col_widths)
+                        cell.lines(width=_calc_cell_width(cell, col, col_widths))
+                        for col, cell in enumerate(row.cells)
                     )
                 )
             )
+
             for row_line in row_lines:
+                span_stop = 0
                 for i, (line, cell) in enumerate(zip(row_line, row.cells)):
+                    if span_stop > i:
+                        continue
+                    span_stop = i + cell.col_span
                     output += [borders[i]]
                     if line is not None:
                         output += [

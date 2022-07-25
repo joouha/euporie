@@ -270,7 +270,8 @@ class DisplayControl(UIControl):
 
     def close(self) -> "None":
         """Remove the displayed object entirely."""
-        self.hide()
+        if not self.app.leave_graphics():
+            self.hide()
 
 
 class DisplayWindow(Window):
@@ -617,7 +618,8 @@ class KittyGraphicControl(GraphicControl):
     def close(self) -> "None":
         """Remove the displayed object entirely."""
         super().close()
-        self.delete()
+        if not self.app.leave_graphics():
+            self.delete()
 
 
 class GraphicWindow(Window):
@@ -690,7 +692,8 @@ class GraphicWindow(Window):
                 )
                 return
         # Otherwise hide the content (required for kitty graphics)
-        self.content.hide()
+        if not get_app().leave_graphics():
+            self.content.hide()
 
 
 class GraphicFloat(Float):
@@ -721,7 +724,8 @@ class GraphicFloat(Float):
         self.GraphicControl: "Optional[Type[GraphicControl]]" = None
         self.control = None
 
-        term_info = get_app().term_info
+        app = get_app()
+        term_info = app.term_info
         if term_info.kitty_graphics_status.value and find_route(format_, "base64-png"):
             self.GraphicControl = KittyGraphicControl
         elif term_info.iterm_graphics_status.value and find_route(
@@ -745,14 +749,13 @@ class GraphicFloat(Float):
                     target_window=target_window,
                     content=self.control,
                     filter=to_filter(filter)
-                    & Condition(lambda: weak_self_ref() in get_app().graphics),
+                    & (Condition(lambda: weak_self_ref() in get_app().graphics)),
                 ),
                 left=0,
                 top=0,
             )
             # Hide the graphic if the float is deleted if the app is fullscreen
-            # if get_app().full_screen:
-            # weakref.finalize(self, self.control.close)
+            weakref.finalize(self, self.control.close)
 
     @property
     def data(self) -> "Any":
@@ -912,7 +915,7 @@ class Display:
 # Commands
 
 
-@add_cmd(keys=["left"], filter=display_has_focus)
+@add_cmd(filter=display_has_focus)
 def scroll_display_left() -> "None":
     """Scroll the display up one line."""
     window = get_app().layout.current_window
@@ -920,7 +923,7 @@ def scroll_display_left() -> "None":
     window._scroll_left()
 
 
-@add_cmd(keys=["right"], filter=display_has_focus)
+@add_cmd(filter=display_has_focus)
 def scroll_display_right() -> "None":
     """Scroll the display down one line."""
     window = get_app().layout.current_window
@@ -940,7 +943,7 @@ def scroll_display_down() -> "None":
     get_app().layout.current_window._scroll_down()
 
 
-@add_cmd(keys="pageup", filter=display_has_focus)
+@add_cmd(filter=display_has_focus)
 def page_up_display() -> "None":
     """Scroll the display up one page."""
     window = get_app().layout.current_window
@@ -949,7 +952,7 @@ def page_up_display() -> "None":
             window._scroll_up()
 
 
-@add_cmd(keys="pagedown", filter=display_has_focus)
+@add_cmd(filter=display_has_focus)
 def page_down_display() -> "None":
     """Scroll the display down one page."""
     window = get_app().layout.current_window
@@ -958,7 +961,7 @@ def page_down_display() -> "None":
             window._scroll_down()
 
 
-@add_cmd(keys="home", filter=display_has_focus)
+@add_cmd(filter=display_has_focus)
 def go_to_start_of_display() -> "None":
     """Scroll the display to the top."""
     from euporie.core.widgets.display import DisplayControl
@@ -968,7 +971,7 @@ def go_to_start_of_display() -> "None":
         current_control.cursor_position = Point(0, 0)
 
 
-@add_cmd(keys="end", filter=display_has_focus)
+@add_cmd(filter=display_has_focus)
 def go_to_end_of_display() -> "None":
     """Scroll the display down one page."""
     from euporie.core.widgets.display import DisplayControl

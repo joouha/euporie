@@ -8,7 +8,6 @@ from typing import TYPE_CHECKING
 
 from prompt_toolkit.auto_suggest import AutoSuggest, ConditionalAutoSuggest, Suggestion
 from prompt_toolkit.filters import to_filter
-from prompt_toolkit.layout.processors import AppendAutoSuggestion, Transformation
 
 if TYPE_CHECKING:
     from typing import Deque, Dict, Optional, Union
@@ -17,9 +16,8 @@ if TYPE_CHECKING:
     from prompt_toolkit.document import Document
     from prompt_toolkit.filters import Filter
     from prompt_toolkit.history import History
-    from prompt_toolkit.layout.processors import TransformationInput
 
-    from euporie.core.kernel import NotebookKernel
+    from euporie.core.kernel import Kernel
 
 log = logging.getLogger(__name__)
 
@@ -95,7 +93,7 @@ class HistoryAutoSuggest(AutoSuggest):
 class KernelAutoSuggest(AutoSuggest):
     """Suggests line completions from kernel history."""
 
-    def __init__(self, kernel: "NotebookKernel") -> "None":
+    def __init__(self, kernel: "Kernel") -> "None":
         """Sets the kernel instance in initialization."""
         self.kernel = kernel
 
@@ -150,20 +148,3 @@ class ConditionalAutoSuggestAsync(ConditionalAutoSuggest):
             return await self.auto_suggest.get_suggestion_async(buffer, document)
 
         return None
-
-
-class AppendLineAutoSuggestion(AppendAutoSuggestion):
-    """Append the auto suggestion to the current line of the input."""
-
-    def apply_transformation(self, ti: "TransformationInput") -> "Transformation":
-        """Insert fragments at the end of the current line."""
-        if ti.lineno == ti.document.cursor_position_row:
-            buffer = ti.buffer_control.buffer
-
-            if buffer.suggestion and ti.document.is_cursor_at_the_end_of_line:
-                suggestion = buffer.suggestion.text
-            else:
-                suggestion = ""
-            return Transformation(fragments=ti.fragments + [(self.style, suggestion)])
-        else:
-            return Transformation(fragments=ti.fragments)

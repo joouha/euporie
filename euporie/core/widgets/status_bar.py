@@ -13,7 +13,7 @@ from prompt_toolkit.layout.containers import (
 from prompt_toolkit.layout.controls import FormattedTextControl
 
 from euporie.core.app import get_app
-from euporie.core.config import config
+from euporie.core.config import add_setting
 from euporie.core.filters import is_searching
 
 if TYPE_CHECKING:
@@ -46,7 +46,7 @@ class StatusBar:
                 ],
                 height=1,
             ),
-            filter=Condition(lambda: config.show_status_bar)
+            filter=get_app().config.filter("show_status_bar")
             & ~is_searching
             & to_filter(extra_filter),
         )
@@ -54,3 +54,20 @@ class StatusBar:
     def __pt_container__(self) -> "AnyContainer":
         """Return the widget's container."""
         return self.container
+
+    # ################################### Settings ####################################
+
+    add_setting(
+        name="show_status_bar",
+        flags=["--show-status-bar"],
+        type_=bool,
+        title="the status bar visibility",
+        help_="Show the status bar",
+        default=True,
+        schema={
+            "type": "boolean",
+        },
+        description="""
+            Whether the status bar should be shown at the bottom of the screen.
+        """,
+    )

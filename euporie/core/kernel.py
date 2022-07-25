@@ -15,12 +15,14 @@ from jupyter_client import AsyncKernelManager, KernelManager
 from jupyter_client.kernelspec import NoSuchKernel
 from jupyter_core.paths import jupyter_path
 
+from euporie.core.config import add_setting
+
 if TYPE_CHECKING:
     from typing import Any, Callable, Coroutine, Dict, Optional, Tuple, Union
 
     from jupyter_client import KernelClient
 
-    from euporie.core.comm.base import CommContainer
+    from euporie.core.comm.base import KernelTab
 
 
 log = logging.getLogger(__name__)
@@ -40,7 +42,7 @@ class MsgCallbacks(TypedDict, total=False):
     completeness_status: "Callable[[Dict[str, Any]], None]|None"
 
 
-class NotebookKernel:
+class Kernel:
     """Runs a notebook kernel and communicates with it asynchronously.
 
     Has the ability to run itself in it's own thread.
@@ -56,15 +58,15 @@ class NotebookKernel:
 
     def __init__(
         self,
-        nb: "CommContainer",
+        kernel_tab: "KernelTab",
         threaded: "bool" = True,
         allow_stdin: "bool" = False,
         default_callbacks: "Optional[MsgCallbacks]" = None,
     ) -> "None":
-        """Called when the :py:class:`NotebookKernel` is initialized.
+        """Called when the :py:class:`Kernel` is initialized.
 
         Args:
-            nb: The notebook this kernel belongs to
+            kernel_tab: The notebook this kernel belongs to
             threaded: If :py:const:`True`, run kernel communication in a separate thread
             allow_stdin: Whether the kernel is allowed to request input
             default_callbacks: The default callbacks to use on recipt of a message
@@ -81,9 +83,11 @@ class NotebookKernel:
 
         self.allow_stdin = allow_stdin
 
-        self.nb = nb
+        self.kernel_tab = kernel_tab
         self.kc: "Optional[KernelClient]" = None
-        self.km = AsyncKernelManager(kernel_name=str(nb.kernel_name))
+        self.km = AsyncKernelManager(
+            kernel_name=str(kernel_tab.kernel_name),
+        )
         self._status = "stopped"
         self.error: "Optional[Exception]" = None
 
@@ -117,6 +121,8 @@ class NotebookKernel:
         # displaying LaTex and in the kernel thread to discover kernel paths.
         # Also this speeds up launch since importing IPython is pretty slow.
         self.km.kernel_spec_manager.kernel_dirs = jupyter_path("kernels")
+
+        self.status_change_event = asyncio.Event()
 
     def _aodo(
         self,
@@ -173,7 +179,7 @@ class NotebookKernel:
     def _set_living_status(self, alive: "bool") -> "None":
         """Set the life status of the kernel."""
         if not alive:
-            self._status = "error"
+            self.status = "error"
 
     @property
     def status(self) -> "str":
@@ -196,6 +202,19 @@ class NotebookKernel:
             )
 
         return self._status
+
+    @status.setter
+    def status(self, value) -> "None":
+        self.status_change_event.set()
+        self._status = value
+        self.status_change_event.clear()
+
+    def wait_for_status(self, status="idle") -> "None":
+        async def _wait():
+            while self.status != status:
+                await asyncio.wait_for(self.status_change_event.wait(), timeout=None)
+
+        self._aodo(_wait(), wait=True)
 
     @property
     def missing(self) -> "bool":
@@ -236,37 +255,49 @@ class NotebookKernel:
     async def start_(self) -> "None":
         """Start the kernel asynchronously and set its status."""
         log.debug("Starting kernel")
-        self._status = "starting"
-        try:
-            # TODO - send stdout to log
-            await self.km.start_kernel(stdout=DEVNULL, stderr=STDOUT)
-        except Exception as e:
-            log.exception("Kernel '%s' does not exist", self.km.kernel_name)
-            self._status = "error"
-            self.error = e
-        else:
-            log.debug("Started kernel")
+        self.status = "starting"
 
-        if self.km.has_kernel:
-            self.kc = self.km.client()
+        # If we are connecting to an existing kernel, create a kernel client using
+        # the given connection file
+        if self.kernel_tab.app.config.kernel_connection_file:
+            self.kc = self.km.client_factory(
+                connection_file=self.kernel_tab.app.config.kernel_connection_file
+            )
+            self.kc.load_connection_file()
             self.kc.start_channels()
-            log.debug("Waiting for kernel to become ready")
+
+        # Otherwise, start a new kernel using the kernel manager
+        else:
             try:
-                await self.kc._async_wait_for_ready(timeout=10)
-            except RuntimeError as e:
-                log.exception("Error starting kernel")
-                await self.stop_()
+                # TODO - send stdout to log
+                await self.km.start_kernel(stdout=DEVNULL, stderr=STDOUT)
+            except Exception as e:
+                log.exception("Kernel '%s' does not exist", self.km.kernel_name)
+                self.status = "error"
                 self.error = e
-                self._status = "error"
             else:
-                log.debug("Kernel %s ready", self.id)
-                self._status = "idle"
-                self.error = None
-                self.poll_tasks = [
-                    asyncio.create_task(self.poll("shell")),
-                    asyncio.create_task(self.poll("iopub")),
-                    asyncio.create_task(self.poll("stdin")),
-                ]
+                log.debug("Started kernel")
+                # Create a client for the newly started kernel
+                if self.km.has_kernel:
+                    self.kc = self.km.client()
+
+        log.debug("Waiting for kernel to become ready")
+        try:
+            await self.kc._async_wait_for_ready(timeout=10)
+        except RuntimeError as e:
+            log.exception("Error connecting to kernel")
+            await self.stop_()
+            self.error = e
+            self.status = "error"
+        else:
+            log.debug("Kernel %s ready", self.id)
+            self.status = "idle"
+            self.error = None
+            self.poll_tasks = [
+                asyncio.create_task(self.poll("shell")),
+                asyncio.create_task(self.poll("iopub")),
+                asyncio.create_task(self.poll("stdin")),
+            ]
 
     def start(
         self, cb: "Optional[Callable]" = None, wait: "bool" = False, timeout: "int" = 10
@@ -411,7 +442,7 @@ class NotebookKernel:
         msg_id = rsp.get("parent_header", {}).get("msg_id")
         status = rsp.get("content", {}).get("execution_state")
 
-        self._status = status
+        self.status = status
         if callable(set_status := self.msg_id_callbacks[msg_id].get("set_status")):
             set_status(status)
 
@@ -492,17 +523,19 @@ class NotebookKernel:
         # "If the target_name key is not found on the receiving side, then it should
         # immediately reply with a comm_close message to avoid an inconsistent state."
         #
-        self.nb.comm_open(
+        self.kernel_tab.comm_open(
             content=rsp.get("content", {}), buffers=rsp.get("buffers", [])
         )
 
     def on_iopub_comm_msg(self, rsp: "Dict[str, Any]") -> "None":
         """Call callbacks for an iopub comm message response."""
-        self.nb.comm_msg(content=rsp.get("content", {}), buffers=rsp.get("buffers", []))
+        self.kernel_tab.comm_msg(
+            content=rsp.get("content", {}), buffers=rsp.get("buffers", [])
+        )
 
     def on_iopub_comm_close(self, rsp: "Dict[str, Any]") -> "None":
         """Call callbacks for an iopub comm close response."""
-        self.nb.comm_close(
+        self.kernel_tab.comm_close(
             content=rsp.get("content", {}), buffers=rsp.get("buffers", [])
         )
 
@@ -523,6 +556,7 @@ class NotebookKernel:
         self,
         source: "str",
         wait: "bool" = False,
+        callback: "Optional[Callable[..., None]]" = None,
         **callbacks: "Callable[..., Any]",
     ) -> "None":
         """Run a cell using the notebook kernel and process the responses."""
@@ -533,6 +567,7 @@ class NotebookKernel:
             self._aodo(
                 self.run_(source, **callbacks),
                 wait=wait,
+                callback=callback,
             )
 
     async def run_(
@@ -675,7 +710,7 @@ class NotebookKernel:
 
     async def history_(
         self,
-        pattern: "str",
+        pattern: "str" = "",
         n: "int" = 1,
         hist_access_type: "str" = "search",
         timeout: "int" = 60,
@@ -859,6 +894,7 @@ class NotebookKernel:
 
     async def restart_(self) -> "None":
         """Restart the kernel asyncchronously."""
+        log.debug("Restarting kernel `%s`", self.id)
         await self.km.restart_kernel()
         log.debug("Kernel %s restarted", self.id)
 
@@ -869,20 +905,19 @@ class NotebookKernel:
             wait=wait,
         )
 
-    def change(self, name: "str", metadata_json: "dict") -> "None":
+    def change(self, name: "str") -> "None":
         """Change the kernel.
 
         Args:
             name: The name of the kernel to change to
-            metadata_json: The notebook's metedata, so the kernel notebook's kernelspec
-                metadata can be updated
 
         """
         spec = self.specs.get(name, {}).get("spec", {})
-        metadata_json["kernelspec"] = {
+
+        self.kernel_tab.metadata["kernelspec"] = {
+            "name": name,
             "display_name": spec["display_name"],
             "language": spec["language"],
-            "name": name,
         }
         self.km.kernel_name = name
         if self.km.has_kernel:
@@ -927,7 +962,7 @@ class NotebookKernel:
         """Shutdown the kernel and close the kernel's thread.
 
         This is intended to be run when the notebook is closed: the
-        :py:class:`~euporie.core.tabs.notebook.NotebookKernel` cannot be restarted after this.
+        :py:class:`~euporie.core.tabs.notebook.Kernel` cannot be restarted after this.
 
         Args:
             wait: Whether to block until shutdown completes
@@ -939,3 +974,17 @@ class NotebookKernel:
         )
         if self.threaded:
             self.thread.join(timeout=5)
+
+    # ################################### Settings ####################################
+
+    add_setting(
+        name="kernel_connection_file",
+        flags=["--kernel-connection-file"],
+        type_=str,
+        help_="Attempt to connect to an existing kernel using a JSON connection info file.",
+        default="",
+        description="""
+            Load connection info from JSON dict. This allows euporie to connect to
+            existing kernels.
+        """,
+    )

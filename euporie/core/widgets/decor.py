@@ -1,5 +1,7 @@
 """Decorative widgets."""
 
+from __future__ import annotations
+
 import logging
 from typing import TYPE_CHECKING
 
@@ -18,7 +20,6 @@ from prompt_toolkit.layout.mouse_handlers import MouseHandlers
 from prompt_toolkit.layout.screen import Char, Screen, WritePosition
 
 from euporie.core.border import BorderVisibility, Thin
-from euporie.core.config import config
 
 if TYPE_CHECKING:
     from typing import Callable, List, Optional, Union
@@ -119,10 +120,13 @@ class Line(Container):
 class Pattern(Container):
     """Fill an area with a repeating background pattern."""
 
-    def __init__(self, char: "str") -> "None":
+    def __init__(
+        self, char: "str|Callable[[], str]", pattern: "int|Callable[[], int]" = 1
+    ) -> "None":
         """Initialize the :class:`Pattern`."""
         self.bg = Char(" ", "class:pattern")
-        self.char = Char(char, "class:pattern")
+        self.char = char
+        self.pattern = pattern
 
     def reset(self) -> "None":
         """Resets the pattern. Does nothing."""
@@ -163,6 +167,16 @@ class Pattern(Container):
             z_index: Used for propagating z_index from parent to child.
 
         """
+        bg = self.bg
+        if callable(self.pattern):
+            pattern = self.pattern()
+        else:
+            pattern = self.pattern
+        if callable(self.char):
+            char = Char(self.char(), "class:pattern")
+        else:
+            char = Char(self.char, "class:pattern")
+
         ypos = write_position.ypos
         xpos = write_position.xpos
 
@@ -170,18 +184,15 @@ class Pattern(Container):
             row = screen.data_buffer[y]
             for x in range(xpos, xpos + write_position.width):
                 if (
-                    (config.background_pattern == 1)
-                    or (config.background_pattern == 2 and (x + y) % 2 == 0)
-                    or (config.background_pattern == 3 and (x + 2 * y) % 4 == 0)
-                    or (config.background_pattern == 4 and (x + y) % 3 == 0)
-                    or (
-                        config.background_pattern == 5
-                        and ((x + y % 2 * 3) % 6) % 4 == 0
-                    )
+                    (pattern == 1)
+                    or (pattern == 2 and (x + y) % 2 == 0)
+                    or (pattern == 3 and (x + 2 * y) % 4 == 0)
+                    or (pattern == 4 and (x + y) % 3 == 0)
+                    or (pattern == 5 and ((x + y % 2 * 3) % 6) % 4 == 0)
                 ):
-                    row[x] = self.char
+                    row[x] = char
                 else:
-                    row[x] = self.bg
+                    row[x] = bg
 
     def get_children(self) -> "list":
         """Return an empty list of the container's children."""

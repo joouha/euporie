@@ -9,31 +9,12 @@ from euporie.core.app import get_app
 from euporie.core.widgets.display import Display
 
 if TYPE_CHECKING:
-    from typing import Any, Callable, Dict, Optional, Protocol, Sequence
+    from typing import Any, Callable, Dict, Optional, Sequence
 
     from prompt_toolkit.layout.containers import AnyContainer
 
-    from euporie.core.kernel import NotebookKernel
+    from euporie.core.kernel import Kernel
     from euporie.core.widgets.cell_outputs import OutputParent
-
-    class CommContainer(Protocol):
-        """A container which can process kernel comm objects."""
-
-        kernel: "NotebookKernel"
-        comms: "Dict[str, Comm]"
-        kernel_name: "str"
-
-        def comm_open(self, content: "Dict", buffers: "Sequence[bytes]") -> "None":
-            """Register a new kernel Comm object."""
-            ...
-
-        def comm_msg(self, content: "Dict", buffers: "Sequence[bytes]") -> "None":
-            """Respond to a Comm message from the kernel."""
-            ...
-
-        def comm_close(self, content: "Dict", buffers: "Sequence[bytes]") -> "None":
-            """Close a Comm object."""
-            ...
 
 
 log = logging.getLogger(__name__)
@@ -56,7 +37,7 @@ class CommView:
         """
         self.container = container
         self.setters = setters or {}
-        self.kernel: "Optional[NotebookKernel]" = None
+        self.kernel: "Optional[Kernel]" = None
 
     def update(self, changes: "Dict[str, Any]") -> "None":
         """Updates the view to reflect changes in the Comm.
@@ -82,7 +63,7 @@ class Comm(metaclass=ABCMeta):
 
     def __init__(
         self,
-        comm_container: "CommContainer",
+        comm_container: "KernelTab",
         comm_id: "str",
         data: "dict",
         buffers: "Sequence[bytes]",

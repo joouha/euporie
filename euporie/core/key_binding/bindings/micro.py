@@ -43,7 +43,6 @@ from prompt_toolkit.selection import SelectionState, SelectionType
 
 from euporie.core.app import get_app
 from euporie.core.commands import add_cmd, get_cmd
-from euporie.core.config import config
 from euporie.core.filters import (
     buffer_is_code,
     buffer_is_markdown,
@@ -657,8 +656,8 @@ def dent_buffer(event: "KeyPressEvent", indenting: "bool" = True) -> "None":
         # otherwise it will move by the total change of all lines
         cursor_in_first_line = document.cursor_position_row == start
         diffs = (
-            config.tab_size * total_lines_affected,
-            config.tab_size * lines_affected[start],
+            get_app().config.tab_size * total_lines_affected,
+            get_app().config.tab_size * lines_affected[start],
         )
         # Do not move the cursor or the start of the selection back onto a previous line
         buffer.cursor_position = (

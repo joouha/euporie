@@ -5,21 +5,18 @@ from typing import TYPE_CHECKING
 from prompt_toolkit.key_binding import KeyBindings
 
 from euporie.core.commands import get_cmd
+from euporie.core.keys import Keys
 
 if TYPE_CHECKING:
 
     from typing import Dict, List, Tuple, Union
 
     from prompt_toolkit.key_binding import KeyBindingsBase
-    from prompt_toolkit.keys import Keys
 
-    KeyBindingDefs = Dict[
-        str,
-        Union[
-            List[Union[Tuple[Union[Keys, str], ...], Keys, str]],
-            Union[Tuple[Union[Keys, str], ...], Keys, str],
-        ],
-    ]
+    AnyKey = Union[Tuple[Union[Keys, str], ...], Keys, str]
+    AnyKeys = Union[List[AnyKey], AnyKey]
+
+    KeyBindingDefs = Dict[str, AnyKeys]
 
 BINDINGS: "Dict[str, KeyBindingDefs]" = {}
 

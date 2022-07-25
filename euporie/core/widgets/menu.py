@@ -21,7 +21,7 @@ from prompt_toolkit.widgets.menus import MenuContainer as PtKMenuContainer
 from prompt_toolkit.widgets.menus import MenuItem as PtkMenuItem
 
 from euporie.core.app import get_app
-from euporie.core.border import HalfBlockLowerLeft, HalfBlockUpperRight, Thin
+from euporie.core.border import HalfBlockOuterGridStyle
 from euporie.core.utils import ChainedList
 
 if TYPE_CHECKING:
@@ -41,15 +41,6 @@ if TYPE_CHECKING:
 
 
 log = logging.getLogger(__name__)
-
-
-MenuGrid = (
-    HalfBlockUpperRight.top_edge
-    + HalfBlockUpperRight.right_edge
-    + HalfBlockLowerLeft.left_edge
-    + HalfBlockLowerLeft.bottom_edge
-    + Thin.inner
-)
 
 
 class MenuItem(PtkMenuItem):
@@ -267,7 +258,7 @@ class MenuContainer(PtKMenuContainer):
         key_bindings: "Optional[KeyBindingsBase]" = None,
         left: "Optional[Sequence[AnyContainer]]" = None,
         right: "Optional[Sequence[AnyContainer]]" = None,
-        grid: "GridStyle" = MenuGrid,
+        grid: "GridStyle" = HalfBlockOuterGridStyle,
     ) -> "None":
         """Initiate the menu bar.
 

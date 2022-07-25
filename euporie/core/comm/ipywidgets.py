@@ -21,7 +21,7 @@ from euporie.core.kernel import MsgCallbacks
 from euporie.core.widgets.cell_outputs import CellOutputArea
 from euporie.core.widgets.decor import FocusedStyle
 from euporie.core.widgets.display import Display
-from euporie.core.widgets.inputs import (
+from euporie.core.widgets.forms import (
     Button,
     Checkbox,
     Dropdown,
@@ -44,9 +44,9 @@ if TYPE_CHECKING:
     from prompt_toolkit.formatted_text.base import AnyFormattedText
     from prompt_toolkit.layout.containers import AnyContainer, _Split
 
-    from euporie.core.comm.base import CommContainer
+    from euporie.core.comm.base import KernelTab
     from euporie.core.widgets.cell_outputs import OutputParent
-    from euporie.core.widgets.inputs import SelectableWidget, ToggleableWidget
+    from euporie.core.widgets.forms import SelectableWidget, ToggleableWidget
     from euporie.core.widgets.layout import StackedSplit
 
     JSONType = Union[str, int, float, bool, None, Dict[str, Any], Iterable[Any]]
@@ -125,7 +125,7 @@ class IpyWidgetComm(Comm, metaclass=ABCMeta):
 
     def __init__(
         self,
-        comm_container: "CommContainer",
+        comm_container: "KernelTab",
         comm_id: "str",
         data: "dict",
         buffers: "Sequence[bytes]",
@@ -216,7 +216,7 @@ class OutputModel(IpyWidgetComm):
 
     def __init__(
         self,
-        comm_container: "CommContainer",
+        comm_container: "KernelTab",
         comm_id: "str",
         data: "dict",
         buffers: "Sequence[bytes]",
@@ -1360,7 +1360,7 @@ class ColorPickerModel(TextBoxIpyWidgetComm):
 
 
 def open_comm_ipywidgets(
-    comm_container: "CommContainer",
+    comm_container: "KernelTab",
     comm_id: "str",
     data: "Dict",
     buffers: "Sequence[bytes]",

@@ -13,9 +13,11 @@ Added
 
 - Add euporie console application
 - Add "Save As..." command
-- Allow opening file from remote file systems (e.g. http:, hdfs:, gs:, s3:, etc.)
+- Allow opening file from remote file systems (e.g. ``http:``, ``hdfs:``, ``gs:``, ``s3:``, etc.)
 - Add ability to undo deleting cells
 - Add support for ipywidgets
+- Allow changing app accent color
+- Allow connecting to existing kernels with :option:`kernel_connection_file` config option
 
 Changed
 =======
@@ -30,6 +32,7 @@ Fixed
 
 - Fix issue with hyperlinks taking over the screen
 - Fix bug which prevented mouse scrolling in some circumstances
+- Fix ``--version`` command line flag
 
 ----
 

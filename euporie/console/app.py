@@ -17,11 +17,20 @@ from prompt_toolkit.layout.containers import (
 )
 from prompt_toolkit.layout.dimension import Dimension
 from prompt_toolkit.layout.menus import CompletionsMenu
+from upath import UPath
 
-from euporie.core.app import BaseApp, quit
+from euporie.console.tabs.console import Console
+from euporie.core.app import BaseApp
 from euporie.core.commands import add_cmd
+from euporie.core.config import add_setting
 from euporie.core.filters import buffer_is_code, buffer_is_empty
 from euporie.core.key_binding.registry import register_bindings
+from euporie.core.widgets.dialog import (
+    AboutDialog,
+    NoKernelsDialog,
+    SelectKernelDialog,
+    ShortcutsDialog,
+)
 from euporie.core.widgets.pager import Pager
 from euporie.core.widgets.palette import CommandPalette
 from euporie.core.widgets.search_bar import SearchBar
@@ -48,22 +57,21 @@ class ConsoleApp(BaseApp):
 
     def __init__(self, **kwargs: "Any") -> "None":
         """Create a new euporie text user interface application instance."""
-        from euporie.console.tabs.console import Console
-
         super().__init__(
             **{
                 **{
                     "full_screen": False,
                     "mouse_support": True,
+                    "leave_graphics": True,
                 },
                 **kwargs,
             }
         )
+        self.search_bar = SearchBar()
         self.bindings_to_load += ["app.console"]
 
         self.tabs = [Console(self)]
         self.pager = Pager()
-        self.search_bar = SearchBar()
 
     def load_container(self) -> "FloatContainer":
         """Returns a container with all opened tabs."""
@@ -71,21 +79,21 @@ class ConsoleApp(BaseApp):
         assert self.search_bar is not None
         assert self.tab is not None
 
-        self.command_palette = CommandPalette()
-
-        self.dialogs.extend(
-            [
-                Float(
-                    content=CompletionsMenu(
-                        max_height=16,
-                        scroll_offset=1,
-                    ),
-                    xcursor=True,
-                    ycursor=True,
-                ),
-                Float(self.command_palette),
-            ]
+        self.dialogs["competions-menu"] = Float(
+            content=CompletionsMenu(
+                max_height=16,
+                scroll_offset=1,
+            ),
+            xcursor=True,
+            ycursor=True,
         )
+        self.dialogs["command-palette"] = CommandPalette(self)
+        self.dialogs["about"] = AboutDialog(self)
+        # self.dialogs["save-as"] = SaveAsDialog(self)
+        self.dialogs["no-kernels"] = NoKernelsDialog(self)
+        self.dialogs["change-kernel"] = SelectKernelDialog(self)
+        self.dialogs["shortcuts"] = ShortcutsDialog(self)
+
         return FloatContainer(
             HSplit(
                 [
@@ -114,32 +122,38 @@ class ConsoleApp(BaseApp):
             tab.close()
         super().exit(**kwargs)
 
+    # ################################### Commands ####################################
 
-@add_cmd()
-def clear_screen() -> "None":
-    """Clears the screen and the previous output."""
-    from euporie.console.tabs.console import Console
+    @add_cmd()
+    @staticmethod
+    def clear_screen() -> "None":
+        """Clears the screen and the previous output."""
+        from euporie.console.tabs.console import Console
 
-    app = get_app()
-    tab = app.tab
-    if isinstance(tab, Console):
-        tab.output.reset()
-        tab.focus()
-        app.renderer.clear()
+        app = get_app()
+        tab = app.tab
+        if isinstance(tab, Console):
+            tab.output.reset()
+            tab.focus()
+            app.renderer.clear()
 
+    add_cmd(
+        name="end-of-file",
+        filter=buffer_is_code & buffer_is_empty,
+        description="Signals the end of the input, causing the console to exit.",
+    )(BaseApp.quit)
 
-add_cmd(
-    name="end-of-file",
-    filter=buffer_is_code & buffer_is_empty,
-    description="Signals the end of the input, causing the console to exit.",
-)(quit)
+    # ################################### Settings ####################################
 
+    # ...
 
-register_bindings(
-    {
-        "app.console": {
-            "clear-screen": "c-l",
-            "end-of-file": "c-d",
+    # ################################# Key Bindings ##################################
+
+    register_bindings(
+        {
+            "app.console": {
+                "clear-screen": "c-l",
+                "end-of-file": "c-d",
+            }
         }
-    }
-)
+    )

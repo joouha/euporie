@@ -11,7 +11,6 @@ from prompt_toolkit.layout.containers import HSplit
 from prompt_toolkit.layout.dimension import Dimension
 from prompt_toolkit.widgets import SearchToolbar
 
-from euporie.core.config import config
 from euporie.core.log import LOG_QUEUE, QueueHandler
 from euporie.core.tabs.base import Tab
 from euporie.core.widgets.formatted_text_area import FormattedTextArea
@@ -39,7 +38,7 @@ class LogView(Tab):
             formatted_text=[],
             read_only=True,
             scrollbar=True,
-            line_numbers=Condition(lambda: config.line_numbers),
+            line_numbers=Condition(lambda: self.app.config.line_numbers),
             search_field=self.search_field,
             focus_on_click=True,
             wrap_lines=False,
@@ -71,5 +70,9 @@ class LogView(Tab):
     @property
     def title(self) -> "str":
         """Returns the title of this tab."""
-        suffix = f" ({Path(config.log_file).name})" if config.log_file else ""
+        suffix = (
+            f" ({Path(self.app.config.log_file).name})"
+            if self.app.config.log_file
+            else ""
+        )
         return f"Logs{suffix}"

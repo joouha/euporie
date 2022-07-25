@@ -30,7 +30,6 @@ add_cmd(
     & ~cursor_in_leading_ws,
     hidden=True,
     name="next-completion",
-    groups="completion",
     description="Show the completion menu and select the next completion.",
 )(menu_complete)
 
@@ -43,7 +42,6 @@ add_cmd(
     & ~cursor_in_leading_ws,
     hidden=True,
     name="previous-completion",
-    groups="completion",
     description="Show the completion menu and select the previous completion.",
 )(menu_complete_backward)
 
@@ -71,7 +69,7 @@ def accept_completion() -> "None":
 
 register_bindings(
     {
-        "app.core": {
+        "app.base": {
             "next-completion": "c-i",
             "previous-completion": "s-tab",
             "cancel-completion": "escape",
