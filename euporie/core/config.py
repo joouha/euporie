@@ -18,7 +18,7 @@ from prompt_toolkit.filters.base import Condition
 from prompt_toolkit.utils import Event
 from upath import UPath
 
-from euporie.core import __app_name__, __copyright__, __strapline__, __version__
+from euporie.core import __app_name__, __copyright__
 from euporie.core.commands import add_cmd
 
 if TYPE_CHECKING:
@@ -26,7 +26,6 @@ if TYPE_CHECKING:
         Any,
         Callable,
         Dict,
-        Iterator,
         List,
         Optional,
         Sequence,
@@ -183,8 +182,6 @@ class Config:
                     fastjsonschema.validate(self.schema, json_data)
                 except fastjsonschema.JsonSchemaValueException as error:
                     log.warning(f"Error in command line parameter `{name}`: {error}")
-                except:
-                    print(self.schema)
                 else:
                     result[name] = value
         return result
@@ -450,6 +447,7 @@ class Setting:
 
     @property
     def parser_args(self) -> "Tuple[List, Dict[str, Any]]":
+        """Return arguments for construction of an :class:`argparse.ArgumentParser`."""
         # Do not set defaults for command line arguments, as default values
         # would override values set in the configuration file
         args = self.flags or self.name

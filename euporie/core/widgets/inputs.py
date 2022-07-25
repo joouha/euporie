@@ -3,11 +3,8 @@
 from __future__ import annotations
 
 import logging
-import weakref
-from functools import partial
 from typing import TYPE_CHECKING
 
-import nbformat
 from prompt_toolkit.filters import (
     Condition,
     buffer_has_focus,
@@ -18,15 +15,7 @@ from prompt_toolkit.filters import (
     to_filter,
 )
 from prompt_toolkit.key_binding.key_bindings import merge_key_bindings
-from prompt_toolkit.layout.containers import (
-    ConditionalContainer,
-    Container,
-    HSplit,
-    VSplit,
-    Window,
-    to_container,
-)
-from prompt_toolkit.layout.controls import FormattedTextControl
+from prompt_toolkit.layout.containers import ConditionalContainer
 from prompt_toolkit.layout.margins import ConditionalMargin
 from prompt_toolkit.layout.processors import (  # HighlightSearchProcessor,
     ConditionalProcessor,
@@ -37,17 +26,14 @@ from prompt_toolkit.layout.processors import (  # HighlightSearchProcessor,
     ShowTrailingWhiteSpaceProcessor,
     TabsProcessor,
 )
-from prompt_toolkit.lexers import DynamicLexer, PygmentsLexer, SimpleLexer
-from prompt_toolkit.mouse_events import MouseEvent, MouseEventType, MouseModifier
+from prompt_toolkit.lexers import DynamicLexer, PygmentsLexer
 from prompt_toolkit.widgets import TextArea
 from pygments.lexers import get_lexer_by_name
 
 from euporie.core.app import get_app
-from euporie.core.border import Invisible, Thick, Thin
 from euporie.core.commands import add_cmd
 from euporie.core.config import add_setting
 from euporie.core.filters import buffer_is_code
-from euporie.core.format import format_code
 from euporie.core.key_binding.registry import (
     load_registered_bindings,
     register_bindings,
@@ -58,34 +44,16 @@ from euporie.core.suggest import ConditionalAutoSuggestAsync
 from euporie.core.widgets.pager import PagerState
 
 if TYPE_CHECKING:
-    from typing import (
-        Any,
-        Callable,
-        Dict,
-        List,
-        Literal,
-        Optional,
-        Sequence,
-        Tuple,
-        Union,
-    )
+    from typing import Any, Callable, Optional, Sequence, Union
 
     from prompt_toolkit.buffer import Buffer
     from prompt_toolkit.filters import FilterOrBool
-    from prompt_toolkit.key_binding.key_bindings import (
-        KeyBindingsBase,
-        NotImplementedOrNone,
-    )
+    from prompt_toolkit.key_binding.key_bindings import KeyBindingsBase
     from prompt_toolkit.layout.containers import AnyContainer
-    from prompt_toolkit.layout.dimension import Dimension
     from prompt_toolkit.layout.layout import FocusableElement
     from prompt_toolkit.layout.margins import Margin
-    from prompt_toolkit.layout.mouse_handlers import MouseHandlers
-    from prompt_toolkit.layout.screen import Screen, WritePosition
 
     from euporie.core.tabs.base import KernelTab
-    from euporie.core.tabs.notebook import EditNotebook, Notebook
-    from euporie.core.widgets.page import ChildRenderInfo
 
 
 log = logging.getLogger(__name__)

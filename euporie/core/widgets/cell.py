@@ -8,13 +8,7 @@ from functools import partial
 from typing import TYPE_CHECKING
 
 import nbformat
-from prompt_toolkit.filters import (
-    Condition,
-    has_focus,
-    is_done,
-    is_searching,
-    to_filter,
-)
+from prompt_toolkit.filters import Condition
 from prompt_toolkit.layout.containers import (
     ConditionalContainer,
     Container,
@@ -24,17 +18,8 @@ from prompt_toolkit.layout.containers import (
     to_container,
 )
 from prompt_toolkit.layout.controls import FormattedTextControl
-from prompt_toolkit.layout.margins import ConditionalMargin
-from prompt_toolkit.layout.processors import (  # HighlightSearchProcessor,
-    ConditionalProcessor,
-    DisplayMultipleCursors,
-    HighlightIncrementalSearchProcessor,
-    HighlightMatchingBracketProcessor,
-    HighlightSelectionProcessor,
-)
 from prompt_toolkit.lexers import DynamicLexer, PygmentsLexer, SimpleLexer
 from prompt_toolkit.mouse_events import MouseEvent, MouseEventType, MouseModifier
-from prompt_toolkit.widgets import TextArea
 from pygments.lexers import get_lexer_by_name
 
 from euporie.core.app import get_app
@@ -42,39 +27,20 @@ from euporie.core.border import Invisible, Thick, Thin
 from euporie.core.config import add_setting
 from euporie.core.filters import multiple_cells_selected
 from euporie.core.format import format_code
-from euporie.core.margins import NumberedDiffMargin, ScrollbarMargin
-from euporie.core.suggest import ConditionalAutoSuggestAsync
 from euporie.core.widgets.cell_outputs import CellOutputArea
 from euporie.core.widgets.inputs import KernelInput, StdInput
 
 if TYPE_CHECKING:
-    from typing import (
-        Any,
-        Callable,
-        Dict,
-        List,
-        Literal,
-        Optional,
-        Sequence,
-        Tuple,
-        Union,
-    )
+    from typing import Any, Callable, Dict, List, Literal, Optional, Tuple
 
     from prompt_toolkit.buffer import Buffer
-    from prompt_toolkit.filters import FilterOrBool
-    from prompt_toolkit.key_binding.key_bindings import (
-        KeyBindingsBase,
-        NotImplementedOrNone,
-    )
+    from prompt_toolkit.key_binding.key_bindings import NotImplementedOrNone
     from prompt_toolkit.layout.containers import AnyContainer
     from prompt_toolkit.layout.dimension import Dimension
-    from prompt_toolkit.layout.layout import FocusableElement
-    from prompt_toolkit.layout.margins import Margin
     from prompt_toolkit.layout.mouse_handlers import MouseHandlers
     from prompt_toolkit.layout.screen import Screen, WritePosition
 
-    from euporie.core.tabs.base import KernelTab
-    from euporie.core.tabs.kernel_tab import Editkernel_tab, kernel_tab
+    from euporie.core.tabs.notebook import BaseNotebook
     from euporie.core.widgets.page import ChildRenderInfo
 
 
@@ -235,11 +201,11 @@ class Cell:
                 | ((weak_self.json.get("cell_type") == "markdown") & weak_self.rendered)
             )
         )
-        scroll_input = Condition(
-            lambda: bool(
-                (weak_self.json.get("cell_type") == "markdown") & ~weak_self.rendered
-            )
-        )
+        # scroll_input = Condition(
+        # lambda: bool(
+        # (weak_self.json.get("cell_type") == "markdown") & ~weak_self.rendered
+        # )
+        # )
         show_prompt = Condition(lambda: weak_self.cell_type == "code")
         self.is_code = Condition(lambda: weak_self.json.get("cell_type") == "code")
 
@@ -666,12 +632,12 @@ class Cell:
             buffer: Unused parameter, required when accepting the contents of a cell's
                 input buffer
             wait: Has no effect
+            callback: Callable to run when the kernel has finished running the cell
 
         Returns:
             Always returns True
 
         """
-
         if self.cell_type == "markdown":
             self.output_area.json = self.output_json
             self.rendered = True

@@ -12,9 +12,7 @@ from prompt_toolkit.filters import (
     buffer_has_focus,
     has_completions,
     has_selection,
-    is_searching,
 )
-from prompt_toolkit.history import ThreadedHistory
 from prompt_toolkit.key_binding.key_bindings import KeyBindings
 from prompt_toolkit.layout.containers import (
     ConditionalContainer,
@@ -23,32 +21,18 @@ from prompt_toolkit.layout.containers import (
     Window,
 )
 from prompt_toolkit.layout.controls import FormattedTextControl
-from prompt_toolkit.layout.margins import ConditionalMargin
-from prompt_toolkit.layout.processors import (
-    ConditionalProcessor,
-    DisplayMultipleCursors,
-    HighlightIncrementalSearchProcessor,
-    HighlightMatchingBracketProcessor,
-    HighlightSelectionProcessor,
-)
-from prompt_toolkit.lexers import DynamicLexer, PygmentsLexer
 from prompt_toolkit.validation import Validator
-from pygments.lexers import get_lexer_by_name
 
-from euporie.core.comm.registry import open_comm
 from euporie.core.commands import add_cmd
 from euporie.core.config import add_setting
 from euporie.core.filters import at_end_of_buffer, buffer_is_code, kernel_tab_has_focus
 from euporie.core.format import format_code
-from euporie.core.history import KernelHistory
 from euporie.core.kernel import MsgCallbacks
 from euporie.core.key_binding.registry import (
     load_registered_bindings,
     register_bindings,
 )
-from euporie.core.margins import NumberedDiffMargin, ScrollbarMargin
 from euporie.core.style import KERNEL_STATUS_REPR
-from euporie.core.suggest import ConditionalAutoSuggestAsync, HistoryAutoSuggest
 from euporie.core.tabs.base import KernelTab
 from euporie.core.widgets.cell_outputs import CellOutputArea
 from euporie.core.widgets.inputs import KernelInput, StdInput
@@ -62,7 +46,6 @@ if TYPE_CHECKING:
     from prompt_toolkit.key_binding.key_processor import KeyPressEvent
 
     from euporie.core.app import BaseApp
-    from euporie.core.comm.base import Comm
 
 log = logging.getLogger(__name__)
 

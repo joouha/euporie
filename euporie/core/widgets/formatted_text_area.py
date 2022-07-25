@@ -11,7 +11,7 @@ from prompt_toolkit.formatted_text import (
     split_lines,
     to_formatted_text,
 )
-from prompt_toolkit.layout.margins import ConditionalMargin, ScrollbarMargin
+from prompt_toolkit.layout.margins import ConditionalMargin
 from prompt_toolkit.layout.processors import DynamicProcessor, Processor, Transformation
 from prompt_toolkit.widgets import TextArea
 

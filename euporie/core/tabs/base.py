@@ -6,15 +6,13 @@ import logging
 from abc import ABCMeta
 from typing import TYPE_CHECKING
 
-from prompt_toolkit.filters import buffer_has_focus
-from prompt_toolkit.history import ThreadedHistory
 from prompt_toolkit.layout.containers import Window
 
 from euporie.core.app import get_app
 from euporie.core.comm.registry import open_comm
 from euporie.core.commands import add_cmd
 from euporie.core.completion import KernelCompleter
-from euporie.core.filters import display_has_focus, kernel_tab_has_focus
+from euporie.core.filters import kernel_tab_has_focus
 from euporie.core.history import KernelHistory
 from euporie.core.kernel import Kernel, MsgCallbacks
 from euporie.core.suggest import HistoryAutoSuggest
@@ -24,7 +22,6 @@ if TYPE_CHECKING:
     from typing import Any, Callable, Dict, Optional, Sequence
 
     from prompt_toolkit.formatted_text import AnyFormattedText
-    from prompt_toolkit.history import History
     from prompt_toolkit.layout.containers import AnyContainer
     from upath import UPath
 

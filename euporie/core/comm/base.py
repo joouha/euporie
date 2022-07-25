@@ -14,6 +14,7 @@ if TYPE_CHECKING:
     from prompt_toolkit.layout.containers import AnyContainer
 
     from euporie.core.kernel import Kernel
+    from euporie.core.tabs.base import KernelTab
     from euporie.core.widgets.cell_outputs import OutputParent
 
 

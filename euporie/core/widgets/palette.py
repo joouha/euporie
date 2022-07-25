@@ -10,19 +10,10 @@ from typing import TYPE_CHECKING, NamedTuple
 from prompt_toolkit.data_structures import Point
 from prompt_toolkit.filters import Condition
 from prompt_toolkit.key_binding.bindings.focus import focus_next, focus_previous
-from prompt_toolkit.key_binding.key_bindings import KeyBindings
-from prompt_toolkit.layout.containers import (
-    ConditionalContainer,
-    HSplit,
-    ScrollOffsets,
-    VSplit,
-    Window,
-)
+from prompt_toolkit.layout.containers import HSplit, ScrollOffsets, VSplit, Window
 from prompt_toolkit.layout.controls import UIContent, UIControl
-from prompt_toolkit.layout.dimension import Dimension
 from prompt_toolkit.layout.margins import ScrollbarMargin
 from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
-from prompt_toolkit.widgets.base import Box, Frame, Shadow
 
 from euporie.core.app import get_app
 from euporie.core.commands import Command, add_cmd, commands
@@ -40,7 +31,7 @@ if TYPE_CHECKING:
     from prompt_toolkit.key_binding.key_processor import KeyPressEvent
     from prompt_toolkit.layout.controls import GetLinePrefixCallable
 
-    from euporie.core.app import StatusBarFields
+    from euporie.core.app import BaseApp, StatusBarFields
 
 log = logging.getLogger(__name__)
 
@@ -220,14 +211,13 @@ class CommandPalette(Dialog):
                 ),
             ],
         )
-        self.to_focus = self.text_area
         self.buttons = {}
 
         get_app().container_statuses[self.container] = self.statusbar_fields
 
     def load(self) -> "None":
         """The body is already loaded: does nothing."""
-        pass
+        self.to_focus = self.text_area
 
     def statusbar_fields(
         self,

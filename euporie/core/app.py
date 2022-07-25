@@ -89,6 +89,7 @@ if TYPE_CHECKING:
         Sequence,
         Tuple,
         Type,
+        Union,
     )
 
     from prompt_toolkit.clipboard import Clipboard
@@ -104,7 +105,6 @@ if TYPE_CHECKING:
     from euporie.core.tabs.base import Tab
     from euporie.core.terminal import TerminalQuery
     from euporie.core.widgets.pager import Pager
-    from euporie.core.widgets.palette import CommandPalette
     from euporie.core.widgets.search_bar import SearchBar
 
     StatusBarFields = Tuple[Sequence[AnyFormattedText], Sequence[AnyFormattedText]]
@@ -550,7 +550,9 @@ class BaseApp(Application):
                 "default" if name in ("fg", "bg") else name,
             )
         # Add accent color
-        self.color_palette.add_color("hl", self.config.accent_color)
+        self.color_palette.add_color(
+            "hl", base_colors.get(self.config.accent_color, self.config.accent_color)
+        )
 
         # Build app style
         app_style = build_style(
@@ -726,7 +728,7 @@ class BaseApp(Application):
         description="""
             If set, euporie will print the current version number of the application and exit.
             All other configuration options will be ignored.
-            
+
             .. note::
             This cannot be set in the configuration file or via an environment variable
     """,

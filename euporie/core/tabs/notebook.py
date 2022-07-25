@@ -5,67 +5,27 @@ from __future__ import annotations
 import logging
 from abc import ABCMeta, abstractmethod, abstractproperty
 from base64 import standard_b64decode
-from collections import deque
 from typing import TYPE_CHECKING
 
 import nbformat
-from prompt_toolkit.completion import DummyCompleter
-from prompt_toolkit.filters import (
-    Condition,
-    Never,
-    buffer_has_focus,
-    has_completions,
-    has_selection,
-    to_filter,
-    vi_mode,
-    vi_navigation_mode,
-)
-from prompt_toolkit.history import InMemoryHistory, ThreadedHistory
-from prompt_toolkit.layout.containers import (
-    ConditionalContainer,
-    HSplit,
-    VSplit,
-    Window,
-)
-from prompt_toolkit.layout.controls import FormattedTextControl
-from prompt_toolkit.layout.dimension import Dimension
-from prompt_toolkit.mouse_events import MouseEventType
-from prompt_toolkit.widgets import Label
+from prompt_toolkit.filters import Never, buffer_has_focus
 
-from euporie.core.app import get_app
 from euporie.core.comm.registry import open_comm
-from euporie.core.commands import add_cmd, get_cmd
+from euporie.core.commands import get_cmd
 from euporie.core.config import add_setting
 from euporie.core.kernel import MsgCallbacks
-from euporie.core.key_binding.registry import (
-    load_registered_bindings,
-    register_bindings,
-)
-from euporie.core.style import KERNEL_STATUS_REPR
-from euporie.core.suggest import HistoryAutoSuggest
 from euporie.core.tabs.base import KernelTab
 from euporie.core.utils import parse_path
 from euporie.core.widgets.cell import Cell, get_cell_id
-from euporie.core.widgets.decor import Line, Pattern
-from euporie.core.widgets.forms import Select
-from euporie.core.widgets.pager import PagerState
 
 if TYPE_CHECKING:
-    from collections.abc import MutableSequence
     from os import PathLike
-    from typing import Any, Callable, Deque, Dict, List, Optional, Sequence, Tuple, Type
+    from typing import Any, Callable, Dict, List, Optional
 
-    from prompt_toolkit.completion import Completer
-    from prompt_toolkit.formatted_text import AnyFormattedText
-    from prompt_toolkit.history import History
     from prompt_toolkit.layout.containers import AnyContainer
-    from prompt_toolkit.mouse_events import MouseEvent
     from upath import UPath
 
     from euporie.core.app import BaseApp
-    from euporie.core.comm.base import Comm
-    from euporie.core.kernel import Kernel
-    from euporie.notebook.app import NotebookApp
 
 log = logging.getLogger(__name__)
 

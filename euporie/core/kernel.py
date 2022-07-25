@@ -204,13 +204,16 @@ class Kernel:
         return self._status
 
     @status.setter
-    def status(self, value) -> "None":
+    def status(self, value: "str") -> "None":
+        """Set the kernel status."""
         self.status_change_event.set()
         self._status = value
         self.status_change_event.clear()
 
-    def wait_for_status(self, status="idle") -> "None":
-        async def _wait():
+    def wait_for_status(self, status: "str" = "idle") -> "None":
+        """Block until the kernel reasches a given status value."""
+
+        async def _wait() -> "None":
             while self.status != status:
                 await asyncio.wait_for(self.status_change_event.wait(), timeout=None)
 
@@ -272,7 +275,7 @@ class Kernel:
                 # TODO - send stdout to log
                 await self.km.start_kernel(stdout=DEVNULL, stderr=STDOUT)
             except Exception as e:
-                log.exception("Kernel '%s' does not exist", self.km.kernel_name)
+                log.exception("Kernel '%s' could not start", self.km.kernel_name)
                 self.status = "error"
                 self.error = e
             else:
@@ -281,23 +284,24 @@ class Kernel:
                 if self.km.has_kernel:
                     self.kc = self.km.client()
 
-        log.debug("Waiting for kernel to become ready")
-        try:
-            await self.kc._async_wait_for_ready(timeout=10)
-        except RuntimeError as e:
-            log.exception("Error connecting to kernel")
-            await self.stop_()
-            self.error = e
-            self.status = "error"
-        else:
-            log.debug("Kernel %s ready", self.id)
-            self.status = "idle"
-            self.error = None
-            self.poll_tasks = [
-                asyncio.create_task(self.poll("shell")),
-                asyncio.create_task(self.poll("iopub")),
-                asyncio.create_task(self.poll("stdin")),
-            ]
+        if self.status != "error":
+            log.debug("Waiting for kernel to become ready")
+            try:
+                await self.kc._async_wait_for_ready(timeout=10)
+            except RuntimeError as e:
+                log.exception("Error connecting to kernel")
+                await self.stop_()
+                self.error = e
+                self.status = "error"
+            else:
+                log.debug("Kernel %s ready", self.id)
+                self.status = "idle"
+                self.error = None
+                self.poll_tasks = [
+                    asyncio.create_task(self.poll("shell")),
+                    asyncio.create_task(self.poll("iopub")),
+                    asyncio.create_task(self.poll("stdin")),
+                ]
 
     def start(
         self, cb: "Optional[Callable]" = None, wait: "bool" = False, timeout: "int" = 10

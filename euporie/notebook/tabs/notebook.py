@@ -14,8 +14,6 @@ from prompt_toolkit.filters import (
     Condition,
     buffer_has_focus,
     has_completions,
-    has_selection,
-    to_filter,
     vi_mode,
     vi_navigation_mode,
 )
@@ -27,7 +25,6 @@ from prompt_toolkit.layout.containers import (
 )
 from prompt_toolkit.layout.dimension import Dimension
 from prompt_toolkit.mouse_events import MouseEventType
-from prompt_toolkit.widgets.base import Label
 
 from euporie.core.app import get_app
 from euporie.core.commands import add_cmd, get_cmd
@@ -62,7 +59,22 @@ from euporie.notebook.filters import (
 
 if TYPE_CHECKING:
     from os import PathLike
-    from typing import Deque, List, Optional
+    from typing import (
+        Callable,
+        Deque,
+        Dict,
+        List,
+        MutableSequence,
+        Optional,
+        Sequence,
+        Tuple,
+    )
+
+    from prompt_toolkit.formatted_text.base import AnyFormattedText
+    from prompt_toolkit.layout.containers import AnyContainer
+    from prompt_toolkit.mouse_events import MouseEvent
+
+    from euporie.core.app import BaseApp
 
 log = logging.getLogger(__name__)
 
@@ -95,7 +107,7 @@ class Notebook(BaseNotebook):
 
     def statusbar_fields(
         self,
-    ) -> "tuple[Sequence[AnyFormattedText], Sequence[AnyFormattedText]]":
+    ) -> "Tuple[Sequence[AnyFormattedText], Sequence[AnyFormattedText]]":
         """Generates the formatted text for the statusbar."""
         return (
             [
@@ -112,6 +124,7 @@ class Notebook(BaseNotebook):
     # BaseNotebook stuff
 
     def set_kernel_info(self, info: "dict") -> "None":
+        """Save requested kernel information from the kernel."""
         self.json.setdefault("metadata", {})["language_info"] = info.get(
             "language_info", {}
         )
@@ -122,6 +135,7 @@ class Notebook(BaseNotebook):
         wait: "bool" = False,
         callback: "Optional[Callable[..., None]]" = None,
     ) -> "None":
+        """Exit edit mode before running a cell."""
         self.exit_edit_mode()
         super().run_cell(cell=cell, wait=wait, callback=callback)
 
@@ -133,21 +147,20 @@ class Notebook(BaseNotebook):
         return self.page.selected_indices
 
     async def start_kernel(self) -> "None":
-        self.kernel.start(cb=self.kernel_started, wait=True)
+        """Start the kernel when the app is idle."""
+        self.kernel.start(cb=self.kernel_started)
 
-    def kernel_started(self, result: "Optional[Dict]" = None):
+    def kernel_started(self, result: "Optional[Dict]" = None) -> "None":
+        """Run when the kernel has started."""
         self.kernel.info(set_kernel_info=self.set_kernel_info, set_status=log.debug)
-
         if self.kernel.missing:
             self.change_kernel(
                 msg=f"Kernel '{self.kernel_display_name}' not registered",
                 startup=True,
             )
         elif self.kernel.status == "error":
-            self.app.dialog(
-                "Error Starting Kernel",
-                Label(self.kernel.error.__repr__()),
-                {"OK": None},
+            self.app.dialogs["error"].show(
+                exception=self.kernel.error, when="starting the kernel"
             )
         elif self.kernel.status == "idle":
             if self.app.config.run:
@@ -155,13 +168,8 @@ class Notebook(BaseNotebook):
 
         self.app.invalidate()
 
-    def set_kernel_info(self, info: "dict") -> "None":
-        """Request kernel information from the kernel."""
-        self.json.setdefault("metadata", {})["language_info"] = info.get(
-            "language_info", {}
-        )
-
     def load_container(self) -> "AnyContainer":
+        """Load the main notebook container."""
         self.page = ScrollingContainer(
             self.rendered_cells, width=self.app.config.max_notebook_width
         )
@@ -505,13 +513,7 @@ class Notebook(BaseNotebook):
                 self.dirty = True
 
     def split_cell(self) -> "None":
-        """Splits a cell into two at the given cursor position.
-
-        Args:
-            cell: The rendered cell to split
-            cursor_position: The position at which to split the cell
-
-        """
+        """Splits a cell into two at the cursor position."""
         # Get the current cell
         cell = self.cell
         # Get the cursor position in the cell

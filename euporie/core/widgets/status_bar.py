@@ -2,7 +2,6 @@
 
 from typing import TYPE_CHECKING
 
-from prompt_toolkit.filters.base import Condition
 from prompt_toolkit.filters.utils import to_filter
 from prompt_toolkit.layout.containers import (
     ConditionalContainer,

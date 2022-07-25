@@ -17,12 +17,10 @@ from prompt_toolkit.layout.containers import (
 )
 from prompt_toolkit.layout.dimension import Dimension
 from prompt_toolkit.layout.menus import CompletionsMenu
-from upath import UPath
 
 from euporie.console.tabs.console import Console
 from euporie.core.app import BaseApp
 from euporie.core.commands import add_cmd
-from euporie.core.config import add_setting
 from euporie.core.filters import buffer_is_code, buffer_is_empty
 from euporie.core.key_binding.registry import register_bindings
 from euporie.core.widgets.dialog import (

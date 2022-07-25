@@ -10,10 +10,8 @@ from prompt_toolkit.layout.containers import (
     VSplit,
     Window,
 )
-from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.layout.dimension import Dimension
 from prompt_toolkit.widgets import Box
-from upath import UPath
 
 from euporie.core.config import add_setting
 from euporie.core.tabs.notebook import BaseNotebook
@@ -22,7 +20,7 @@ from euporie.core.widgets.page import PrintingContainer
 
 if TYPE_CHECKING:
     from os import PathLike
-    from typing import Callable, Dict, Optional
+    from typing import Callable, Dict
 
     from prompt_toolkit.layout.containers import AnyContainer
 
@@ -51,7 +49,13 @@ class PreviewNotebook(BaseNotebook):
             self.app.pause_rendering()
             self.kernel.start(self.kernel_started, wait=True)
 
+        # Filter the cells to be shown
+        self.json["cells"] = self.json["cells"][
+            self.app.config.cell_start : self.app.config.cell_stop
+        ]
+
     def print_title(self) -> "None":
+        """Print a notebook's filename."""
         from euporie.core.formatted_text.utils import (
             FormattedTextAlign,
             add_border,
@@ -60,7 +64,7 @@ class PreviewNotebook(BaseNotebook):
         )
 
         width = self.app.output.get_size().columns
-        ft = [("bold", self.path.name)]
+        ft = [("bold", str(self.path))]
         ft = wrap(ft, width - 4)
         ft = align(FormattedTextAlign.CENTER, ft, width=width - 4)
         ft = add_border(ft, width=width)
@@ -109,8 +113,6 @@ class PreviewNotebook(BaseNotebook):
 
     def load_container(self) -> "AnyContainer":
         """Abscract method for loading the notebook's main container."""
-        # return DynamicContainer(lambda: PrintingContainer([self.cell()]))
-        print(self.app.config.max_notebook_width)
         return PrintingContainer(
             [
                 VSplit(
@@ -168,5 +170,27 @@ class PreviewNotebook(BaseNotebook):
         description="""
             If set, the notebook filenames will be printed above each notebook's output
             when multiple notebooks are being previewed.
+        """,
+    )
+
+    add_setting(
+        name="cell_start",
+        flags=["--cell-start"],
+        type_=int,
+        help_="The first cell to include in the preview",
+        default=None,
+        description="""
+            When set, only cells after the given cell index will be shown.
+        """,
+    )
+
+    add_setting(
+        name="cell_stop",
+        flags=["--cell-stop"],
+        type_=int,
+        help_="The last cell to include in the preview",
+        default=None,
+        description="""
+            When set, only cells before the given cell index will be shown.
         """,
     )

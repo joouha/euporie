@@ -27,12 +27,10 @@ from prompt_toolkit.layout.containers import (
     Window,
 )
 from prompt_toolkit.layout.controls import FormattedTextControl
-from prompt_toolkit.layout.dimension import AnyDimension
 from prompt_toolkit.layout.dimension import Dimension
-from prompt_toolkit.layout.dimension import Dimension as D
-from prompt_toolkit.widgets.base import Box, Frame, Label, Shadow
+from prompt_toolkit.widgets.base import Box, Label, Shadow
 
-from euporie.core.border import HalfBlockInnerGridStyle, HalfBlockOuterGridStyle
+from euporie.core.border import HalfBlockOuterGridStyle
 from euporie.core.commands import add_cmd
 from euporie.core.filters import tab_has_focus
 from euporie.core.formatted_text.utils import lex
@@ -42,10 +40,13 @@ from euporie.core.widgets.decor import Border, FocusedStyle
 from euporie.core.widgets.forms import Button, Select, Text
 
 if TYPE_CHECKING:
-    from typing import Optional, Sequence, Union
+    from typing import Any, Callable, Dict, List, Optional
 
     from prompt_toolkit.buffer import Buffer
     from prompt_toolkit.formatted_text.base import FormattedText
+    from prompt_toolkit.key_binding.key_processor import KeyPressEvent
+
+    from euporie.core.app import BaseApp
 
 log = logging.getLogger(__name__)
 
@@ -114,7 +115,7 @@ class Dialog(Float, metaclass=ABCMeta):
         # Create body row with collapsible padding around the body.
         body_row = Box(
             body=DynamicContainer(lambda: self.body),
-            padding=D(preferred=1, max=1),
+            padding=Dimension(preferred=1, max=1),
             padding_top=self.body_padding_top,
             padding_bottom=self.body_padding_bottom,
         )
@@ -127,7 +128,7 @@ class Dialog(Float, metaclass=ABCMeta):
                         self.button_widgets, padding=1, key_bindings=self.buttons_kb
                     )
                 ),
-                height=D(min=1, max=3, preferred=3),
+                height=Dimension(min=1, max=3, preferred=3),
             ),
             filter=Condition(lambda: bool(self.buttons)),
         )
@@ -163,7 +164,10 @@ class Dialog(Float, metaclass=ABCMeta):
             cb()
         self.hide()
 
-    def _load(self):
+    def _load(self) -> "None":
+        """Load body, create buttons, etc."""
+        self.to_focus = None
+
         # Load body & buttons
         self.load()
 
@@ -200,7 +204,7 @@ class Dialog(Float, metaclass=ABCMeta):
     def load(self) -> "None":
         """Load the dialog's body etc."""
 
-    def show(self, **params) -> "None":
+    def show(self, **params: "Any") -> "None":
         """Displays and focuses the dialog."""
         self.params = params
         # Re-draw the body
@@ -469,6 +473,17 @@ class SelectKernelDialog(Dialog):
         }
 
 
+class MsgBoxDialog(Dialog):
+    """A dialog which shows the user a message."""
+
+    title = "Are you sure?"
+
+    def load(self) -> "None":
+        """Load dialog body & buttons."""
+        self.title = self.params.get("title")
+        self.body = Label(self.params.get("message"))
+
+
 class ConfirmDialog(Dialog):
     """A dialog which allows the user to confirm an action."""
 
@@ -504,6 +519,7 @@ class ErrorDialog(Dialog):
         )
 
         exception = self.params.get("exception")
+        when = self.params.get("when")
 
         tb_text = "".join(
             traceback.format_exception(None, exception, exception.__traceback__)
@@ -514,9 +530,11 @@ class ErrorDialog(Dialog):
                 Window(
                     FormattedTextControl(
                         [
-                            ("bold", "An error occurred:"),
+                            ("bold", "An error occurred"),
+                            ("bold", f" when {when}" if when else ""),
+                            ("bold", ":"),
                             ("", "\n\n"),
-                            ("", exception.__repr__()),
+                            ("fg:ansired", exception.__repr__()),
                             ("", "\n"),
                         ]
                     )
@@ -583,6 +601,7 @@ class ShortcutsDialog(Dialog):
     title = "Keyboard Shortcuts"
 
     def __init__(self, app: "BaseApp") -> None:
+        """Create a new shortcuts dialog instance."""
         super().__init__(app)
         self.details = ""
 
@@ -610,7 +629,7 @@ class ShortcutsDialog(Dialog):
 
         from euporie.core.border import Invisible, Padding
         from euporie.core.commands import get_cmd
-        from euporie.core.formatted_text.table import DummyCell, Table
+        from euporie.core.formatted_text.table import Table
         from euporie.core.formatted_text.utils import FormattedTextAlign
         from euporie.core.key_binding.registry import BINDINGS
         from euporie.core.key_binding.util import format_keys, parse_keys

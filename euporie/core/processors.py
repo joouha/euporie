@@ -43,9 +43,9 @@ class OverflowProcessor(Processor):
 
         width = transformation_input.width
         document = transformation_input.document
-    
+
         fragments = ti.fragments
-        # Walk through all te fragments.
+        # Walk through all the fragments.
         if fragments and fragment_list_to_text(fragments).startswith(" "):
             t = (self.style, self.get_char())
             fragments = explode_text_fragments(fragments)
