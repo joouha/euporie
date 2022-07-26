@@ -49,8 +49,7 @@ from euporie.core.widgets.palette import CommandPalette
 from euporie.core.widgets.search_bar import SearchBar
 from euporie.core.widgets.status_bar import StatusBar
 from euporie.notebook.enums import TabMode
-from euporie.notebook.tabs.log import LogView
-from euporie.notebook.tabs.notebook import Notebook
+from euporie.notebook.tabs import Notebook
 
 if TYPE_CHECKING:
     from asyncio import AbstractEventLoop
@@ -253,16 +252,6 @@ class NotebookApp(BaseApp):
             )
             for i, tab in enumerate(self.tabs)
         ]
-
-    def help_logs(self) -> None:
-        """Displays a dialog with logs."""
-        for tab in self.tabs:
-            if isinstance(tab, LogView):
-                break
-        else:
-            tab = LogView()
-            self.tabs.append(tab)
-        tab.focus()
 
     def _handle_exception(
         self, loop: "AbstractEventLoop", context: "Dict[str, Any]"
@@ -471,23 +460,17 @@ class NotebookApp(BaseApp):
 
     # ################################### Commands ####################################
 
-    @add_cmd()
     @staticmethod
-    def new_notebook() -> "None":
+    @add_cmd()
+    def _new_notebook() -> "None":
         """Create a new file."""
         app = get_app()
         app.tabs.append(Notebook(app, None))
         app.tabs[-1].focus()
 
-    @add_cmd()
     @staticmethod
-    def view_logs() -> "None":
-        """Open the logs in a new tab."""
-        get_app().help_logs()
-
     @add_cmd()
-    @staticmethod
-    def view_documentation() -> "None":
+    def _view_documentation() -> "None":
         """Open the documentation in the browser."""
         import webbrowser
 

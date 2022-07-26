@@ -272,23 +272,23 @@ class CommandPalette(Dialog):
 
     # ################################### Commands ####################################
 
-    @add_cmd()
     @staticmethod
-    def toggle_command_palette() -> "None":
+    @add_cmd()
+    def _toggle_command_palette() -> "None":
         """Show the command palette."""
         if command_palette := get_app().dialogs.get("command-palette"):
             command_palette.toggle()
 
-    @add_cmd()
     @staticmethod
-    def show_command_palette() -> "None":
+    @add_cmd()
+    def _show_command_palette() -> "None":
         """Show the command palette."""
         if command_palette := get_app().dialogs.get("command-palette"):
             command_palette.show()
 
-    @add_cmd()
     @staticmethod
-    def hide_command_palette() -> "None":
+    @add_cmd()
+    def _hide_command_palette() -> "None":
         """Hide the command palette."""
         if command_palette := get_app().dialogs.get("command-palette"):
             command_palette.hide()

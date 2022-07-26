@@ -672,51 +672,51 @@ class BaseApp(Application):
 
     # ################################### Commands ####################################
 
-    @add_cmd()
     @staticmethod
-    def quit() -> "None":
+    @add_cmd()
+    def _quit() -> "None":
         """Quit euporie."""
         get_app().exit()
 
+    @staticmethod
     @add_cmd(
         name="close-tab",
         filter=tab_has_focus,
         menu_title="Close File",
     )
-    @staticmethod
     def _close_tab() -> None:
         """Close the current tab."""
         get_app().close_tab()
 
+    @staticmethod
     @add_cmd(
         filter=tab_has_focus,
     )
-    @staticmethod
-    def next_tab() -> "None":
+    def _next_tab() -> "None":
         """Switch to the next tab."""
         get_app().tab_idx += 1
 
+    @staticmethod
     @add_cmd(
         filter=tab_has_focus,
     )
-    @staticmethod
-    def previous_tab() -> "None":
+    def _previous_tab() -> "None":
         """Switch to the previous tab."""
         get_app().tab_idx -= 1
 
+    @staticmethod
     @add_cmd(
         filter=~buffer_has_focus,
     )
-    @staticmethod
-    def focus_next() -> "None":
+    def _focus_next() -> "None":
         """Focus the next control."""
         get_app().layout.focus_next()
 
+    @staticmethod
     @add_cmd(
         filter=~buffer_has_focus,
     )
-    @staticmethod
-    def focus_previous() -> "None":
+    def _focus_previous() -> "None":
         """Focus the previous control."""
         get_app().layout.focus_previous()
 

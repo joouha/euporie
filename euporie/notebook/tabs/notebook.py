@@ -578,108 +578,109 @@ class Notebook(BaseNotebook):
 
     # ################################### Commands ####################################
 
+    @staticmethod
     @add_cmd(
         filter=notebook_has_focus,
     )
-    @staticmethod
     def _save_notebook() -> "None":
         """Save the current notebook."""
         tab = get_app().tab
         if isinstance(tab, Notebook):
             tab.save()
 
+    @staticmethod
     @add_cmd(
         filter=cell_has_focus & ~buffer_has_focus,
     )
-    @staticmethod
     def _enter_cell_edit_mode() -> "None":
         """Enter cell edit mode."""
         nb = get_app().tab
         if isinstance(nb, Notebook):
             nb.enter_edit_mode()
 
+    @staticmethod
     @add_cmd(
         filter=cell_has_focus
         & buffer_has_focus
         & (~vi_mode | (vi_mode & vi_navigation_mode)),
     )
-    @staticmethod
     def _exit_edit_mode() -> "None":
         """Exit cell edit mode."""
         nb = get_app().tab
         if isinstance(nb, Notebook):
             nb.exit_edit_mode()
 
+    @staticmethod
     @add_cmd(
         filter=cell_has_focus,
     )
-    @staticmethod
-    def _run_selected_cells() -> None:
+    def _run_selected_cells() -> "None":
         """Run or render the current cells."""
         nb = get_app().tab
         if isinstance(nb, Notebook):
             nb.run_selected_cells()
 
+    @staticmethod
     @add_cmd(
         filter=cell_has_focus,
     )
-    @staticmethod
-    def _run_selected_cells_and_select_next_cell() -> None:
+    def _run_selected_cells_and_select_next_cell() -> "None":
         """Run or render the current cells and select the next cell."""
         nb = get_app().tab
         if isinstance(nb, Notebook):
             nb.run_selected_cells(advance=True)
 
+    @staticmethod
     @add_cmd(
         filter=cell_has_focus,
     )
-    @staticmethod
-    def _run_cell_and_insert_below() -> None:
+    def _run_cell_and_insert_below() -> "None":
         """Run or render the current cells and insert a new cell below."""
         nb = get_app().tab
         if isinstance(nb, Notebook):
             nb.run_selected_cells(insert=True)
 
+    @staticmethod
     @add_cmd(
         filter=notebook_has_focus,
     )
-    @staticmethod
     def _run_all_cells() -> "None":
         """Run or render all the cells in the current notebook."""
         nb = get_app().tab
         if isinstance(nb, Notebook):
             nb.run_all()
 
+    @staticmethod
     @add_cmd(
         filter=notebook_has_focus & ~buffer_has_focus & ~display_has_focus,
     )
-    @staticmethod
     def _add_cell_above() -> "None":
         """Add a new cell above the current."""
         nb = get_app().tab
         if isinstance(nb, Notebook):
             nb.add_cell_above()
 
+    @staticmethod
     @add_cmd(
         filter=notebook_has_focus & ~buffer_has_focus & ~display_has_focus,
     )
-    @staticmethod
     def _add_cell_below() -> "None":
         """Add a new cell below the current."""
         nb = get_app().tab
         if isinstance(nb, Notebook):
             nb.add_cell_below()
 
+    @staticmethod
     @add_cmd(
         filter=notebook_has_focus & ~buffer_has_focus & ~display_has_focus,
     )
-    @staticmethod
     def _delete_cells() -> "None":
         """Delete the current cells."""
         nb = get_app().tab
         if isinstance(nb, Notebook):
             nb.delete()
 
+    @staticmethod
     @add_cmd(
         menu_title="Undo delete cell",
         filter=notebook_has_focus
@@ -687,177 +688,176 @@ class Notebook(BaseNotebook):
         & ~display_has_focus
         & deleted_cells,
     )
-    @staticmethod
     def _undelete_cells() -> "None":
         """Undelete the last deleted cells."""
         nb = get_app().tab
         if isinstance(nb, Notebook):
             nb.undelete()
 
+    @staticmethod
     @add_cmd(
         filter=notebook_has_focus & ~buffer_has_focus & ~display_has_focus,
     )
-    @staticmethod
     def _cut_cells() -> "None":
         """Cut the current cells."""
         nb = get_app().tab
         if isinstance(nb, Notebook):
             nb.cut()
 
+    @staticmethod
     @add_cmd(
         filter=notebook_has_focus & ~buffer_has_focus & ~display_has_focus,
     )
-    @staticmethod
     def _copy_cells() -> "None":
         """Copy the current cells."""
         nb = get_app().tab
         if isinstance(nb, Notebook):
             nb.copy()
 
+    @staticmethod
     @add_cmd(
         menu_title="Copy cell outputs",
         filter=cell_has_focus & ~buffer_has_focus,
     )
-    @staticmethod
     def _copy_outputs() -> "None":
         """Copy the cell's output to the clipboard."""
         nb = get_app().tab
         if isinstance(nb, Notebook):
             nb.copy_outputs()
 
+    @staticmethod
     @add_cmd(
         filter=notebook_has_focus & ~buffer_has_focus & ~display_has_focus,
     )
-    @staticmethod
     def _paste_cells() -> "None":
         """Paste the previously copied cells."""
         nb = get_app().tab
         if isinstance(nb, Notebook):
             nb.paste()
 
+    @staticmethod
     @add_cmd(
         filter=notebook_has_focus
         & ~buffer_has_focus
         & ~display_has_focus
         & multiple_cells_selected,
     )
-    @staticmethod
     def _merge_cells() -> "None":
         """Merge the selected cells."""
         nb = get_app().tab
         if isinstance(nb, Notebook):
             nb.merge()
 
+    @staticmethod
     @add_cmd(
         filter=notebook_has_focus & ~buffer_has_focus & ~display_has_focus,
     )
     @add_cmd(
         filter=notebook_has_focus,
     )
-    @staticmethod
     def _scroll_up() -> "None":
         """Scroll the page up a line."""
         nb = get_app().tab
         if isinstance(nb, Notebook):
             nb.page.scroll(1)
 
+    @staticmethod
     @add_cmd(
         filter=notebook_has_focus & ~buffer_has_focus & ~display_has_focus,
     )
     @add_cmd(
         filter=notebook_has_focus,
     )
-    @staticmethod
     def _scroll_down() -> "None":
         """Scroll the page down a line."""
         nb = get_app().tab
         if isinstance(nb, Notebook):
             nb.page.scroll(-1)
 
+    @staticmethod
     @add_cmd(
         filter=notebook_has_focus & ~buffer_has_focus & ~display_has_focus,
     )
-    @staticmethod
     def _scroll_up_5_lines() -> "None":
         """Scroll the page up 5 lines."""
         nb = get_app().tab
         if isinstance(nb, Notebook):
             nb.page.scroll(5)
 
+    @staticmethod
     @add_cmd(
         filter=notebook_has_focus & ~buffer_has_focus & ~display_has_focus,
     )
-    @staticmethod
     def _scroll_down_5_lines() -> "None":
         """Scroll the page down 5 lines."""
         nb = get_app().tab
         if isinstance(nb, Notebook):
             nb.page.scroll(-5)
 
+    @staticmethod
     @add_cmd(
         filter=notebook_has_focus & ~buffer_has_focus & ~display_has_focus,
     )
-    @staticmethod
     def _select_first_cell() -> "None":
         """Select the first cell in the notebook."""
         nb = get_app().tab
         if isinstance(nb, Notebook):
             nb.select(0)
 
+    @staticmethod
     @add_cmd(
         filter=notebook_has_focus & ~buffer_has_focus & ~display_has_focus,
     )
-    @staticmethod
     def _select_5th_previous_cell() -> "None":
         """Go up 5 cells."""
         nb = get_app().tab
         if isinstance(nb, Notebook):
             nb.select(nb.page.selected_slice.start - 5)
 
+    @staticmethod
     @add_cmd(
         filter=notebook_has_focus & ~buffer_has_focus & ~display_has_focus,
     )
-    @staticmethod
     def _select_previous_cell() -> "None":
         """Go up one cell."""
         nb = get_app().tab
         if isinstance(nb, Notebook):
             nb.select(nb.page.selected_slice.start - 1)
 
+    @staticmethod
     @add_cmd(
         filter=notebook_has_focus & ~buffer_has_focus & ~display_has_focus,
     )
-    @staticmethod
     def _select_next_cell() -> "None":
         """Select the next cell."""
         nb = get_app().tab
         if isinstance(nb, Notebook):
             nb.select(nb.page.selected_slice.start + 1)
 
+    @staticmethod
     @add_cmd(
         filter=~buffer_has_focus,
     )
-    @staticmethod
     def _select_5th_next_cell() -> "None":
         """Go down 5 cells."""
         nb = get_app().tab
         if isinstance(nb, Notebook):
             nb.select(nb.page.selected_slice.start + 5)
 
+    @staticmethod
     @add_cmd(
         filter=notebook_has_focus & ~buffer_has_focus & ~display_has_focus,
     )
-    @staticmethod
     def _select_last_cell() -> "None":
         """Select the last cell in the notebook."""
         nb = get_app().tab
         if isinstance(nb, Notebook):
             nb.select(len(nb.page.children))
 
+    @staticmethod
     @add_cmd(
         filter=notebook_has_focus & ~buffer_has_focus & ~display_has_focus,
     )
-    @staticmethod
     def _select_all_cells() -> "None":
         """Select all cells in the notebook."""
         nb = get_app().tab
@@ -867,70 +867,70 @@ class Notebook(BaseNotebook):
                 len(nb.page.children) + 1,
             )
 
+    @staticmethod
     @add_cmd(
         filter=notebook_has_focus & ~buffer_has_focus & ~display_has_focus,
     )
-    @staticmethod
     def _extend_cell_selection_to_top() -> "None":
         """Extend the cell selection to the top of the notebook."""
         nb = get_app().tab
         if isinstance(nb, Notebook):
             nb.select(0, extend=True)
 
+    @staticmethod
     @add_cmd(
         filter=notebook_has_focus & ~buffer_has_focus & ~display_has_focus,
     )
-    @staticmethod
     def _extend_cell_selection_up() -> "None":
         """Extend the cell selection up a cell."""
         nb = get_app().tab
         if isinstance(nb, Notebook):
             nb.select(nb.page._selected_slice.start - 1, extend=True)
 
+    @staticmethod
     @add_cmd(
         filter=notebook_has_focus & ~buffer_has_focus & ~display_has_focus,
     )
-    @staticmethod
     def _extend_cell_selection_down() -> "None":
         """Extend the cell selection down a cell."""
         nb = get_app().tab
         if isinstance(nb, Notebook):
             nb.select(nb.page._selected_slice.start + 1, extend=True)
 
+    @staticmethod
     @add_cmd(
         filter=notebook_has_focus & ~buffer_has_focus & ~display_has_focus,
     )
-    @staticmethod
     def _extend_cell_selection_to_bottom() -> "None":
         """Extend the cell selection to the bottom of the notebook."""
         nb = get_app().tab
         if isinstance(nb, Notebook):
             nb.select(len(nb.json["cells"]) - 1, extend=True)
 
+    @staticmethod
     @add_cmd(
         filter=notebook_has_focus & ~buffer_has_focus & ~display_has_focus,
     )
-    @staticmethod
     def _move_cells_up() -> "None":
         """Move selected cells up."""
         nb = get_app().tab
         if isinstance(nb, Notebook):
             nb.move(-1)
 
+    @staticmethod
     @add_cmd(
         filter=notebook_has_focus & ~buffer_has_focus & ~display_has_focus,
     )
-    @staticmethod
     def _move_cells_down() -> "None":
         """Move selected cells down."""
         nb = get_app().tab
         if isinstance(nb, Notebook):
             nb.move(1)
 
+    @staticmethod
     @add_cmd(
         filter=cell_has_focus & ~buffer_has_focus,
     )
-    @staticmethod
     def _cells_to_markdown() -> "None":
         """Change selected cells to markdown cells."""
         nb = get_app().tab
@@ -938,10 +938,10 @@ class Notebook(BaseNotebook):
             for cell in nb.cells:
                 cell.set_cell_type("markdown", clear=True)
 
+    @staticmethod
     @add_cmd(
         filter=cell_has_focus & ~buffer_has_focus,
     )
-    @staticmethod
     def _cells_to_code() -> "None":
         """Change selected cells to code cells."""
         nb = get_app().tab
@@ -949,10 +949,10 @@ class Notebook(BaseNotebook):
             for cell in nb.cells:
                 cell.set_cell_type("code", clear=False)
 
+    @staticmethod
     @add_cmd(
         filter=cell_has_focus & ~buffer_has_focus,
     )
-    @staticmethod
     def _cells_to_raw() -> "None":
         """Change selected cells to raw cells."""
         nb = get_app().tab
@@ -960,6 +960,7 @@ class Notebook(BaseNotebook):
             for cell in nb.cells:
                 cell.set_cell_type("raw", clear=True)
 
+    @staticmethod
     @add_cmd(
         title="Reformat cells",
         filter=have_formatter
@@ -968,7 +969,6 @@ class Notebook(BaseNotebook):
         & cell_has_focus
         & ~buffer_has_focus,
     )
-    @staticmethod
     def _reformat_cells() -> "None":
         """Format the selected code cells."""
         nb = get_app().tab
@@ -977,46 +977,46 @@ class Notebook(BaseNotebook):
                 if cell.cell_type == "code":
                     cell.reformat()
 
+    @staticmethod
     @add_cmd(
         filter=have_formatter
         & kernel_is_python
         & notebook_has_focus
         & ~buffer_has_focus,
     )
-    @staticmethod
     def _reformat_notebook() -> "None":
         """Automatically reformat all code cells in the notebook."""
         nb = get_app().tab
         if isinstance(nb, Notebook):
             nb.reformat()
 
+    @staticmethod
     @add_cmd(
         filter=cell_has_focus & ~buffer_has_focus,
     )
-    @staticmethod
     async def _edit_in_external_editor() -> "None":
         """Edit cell in $EDITOR."""
         nb = get_app().tab
         if isinstance(nb, Notebook):
             await nb.cell.edit_in_editor()
 
+    @staticmethod
     @add_cmd(
         filter=cell_has_focus & buffer_has_focus,
     )
-    @staticmethod
     def _split_cell() -> "None":
         """Split the current cell at the cursor position."""
         nb = get_app().tab
         if isinstance(nb, Notebook):
             nb.split_cell()
 
+    @staticmethod
     @add_cmd(
         filter=cell_has_focus
         & buffer_has_focus
         & cursor_on_first_line
         & ~has_completions,
     )
-    @staticmethod
     def _edit_previous_cell() -> "None":
         """Move the cursor up to the previous cell."""
         nb = get_app().tab
@@ -1026,13 +1026,13 @@ class Notebook(BaseNotebook):
             if 0 <= new_index < len(cells):
                 cells[new_index].select(position=-1)
 
+    @staticmethod
     @add_cmd(
         filter=cell_has_focus
         & buffer_has_focus
         & cursor_on_last_line
         & ~has_completions,
     )
-    @staticmethod
     def _edit_next_cell() -> "None":
         """Move the cursor down to the next cell."""
         nb = get_app().tab
@@ -1042,39 +1042,39 @@ class Notebook(BaseNotebook):
             if 0 <= new_index < len(cells):
                 cells[new_index].select(position=0)
 
+    @staticmethod
     @add_cmd(
         filter=cell_has_focus & ~buffer_has_focus,
     )
-    @staticmethod
     def _scroll_output_left() -> "None":
         """Scroll the cell output to the left."""
         nb = get_app().tab
         if isinstance(nb, Notebook):
             nb.cell.output_area.scroll_left()
 
+    @staticmethod
     @add_cmd(
         filter=cell_has_focus & ~buffer_has_focus,
     )
-    @staticmethod
     def _scroll_output_right() -> "None":
         """Scroll the cell output to the right."""
         nb = get_app().tab
         if isinstance(nb, Notebook):
             nb.cell.output_area.scroll_right()
 
+    @staticmethod
     @add_cmd(
         filter=kernel_tab_has_focus & ~buffer_has_focus & ~display_has_focus,
     )
-    @staticmethod
     def _interrupt_kernel() -> "None":
         """Interrupt the notebook's kernel."""
         if isinstance(kt := get_app().tab, KernelTab):
             kt.interrupt_kernel()
 
+    @staticmethod
     @add_cmd(
         filter=kernel_tab_has_focus & ~buffer_has_focus & ~display_has_focus,
     )
-    @staticmethod
     def _restart_kernel() -> "None":
         """Restart the notebook's kernel."""
         if isinstance(kt := get_app().tab, KernelTab):

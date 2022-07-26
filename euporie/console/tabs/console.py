@@ -370,9 +370,9 @@ class Console(KernelTab):
 
     # ################################### Commands ####################################
 
-    @add_cmd()
     @staticmethod
-    def accept_input() -> "None":
+    @add_cmd()
+    def _accept_input() -> "None":
         """Accept the current console input."""
         from euporie.console.app import get_app
 
@@ -380,11 +380,11 @@ class Console(KernelTab):
         if buffer:
             buffer.validate_and_handle()
 
+    @staticmethod
     @add_cmd(
         filter=~has_selection,
     )
-    @staticmethod
-    def clear_input() -> "None":
+    def _clear_input() -> "None":
         """Clear the console input."""
         from euporie.console.app import get_app
 
@@ -392,11 +392,11 @@ class Console(KernelTab):
         if buffer.name == "code":
             buffer.text = ""
 
+    @staticmethod
     @add_cmd(
         filter=buffer_is_code & buffer_has_focus,
     )
-    @staticmethod
-    def run_input() -> "None":
+    def _run_input() -> "None":
         """Run the console input."""
         from euporie.console.app import get_app
 
@@ -404,11 +404,11 @@ class Console(KernelTab):
         assert isinstance(console, Console)
         console.run()
 
+    @staticmethod
     @add_cmd(
         filter=buffer_is_code & buffer_has_focus & ~has_selection,
     )
-    @staticmethod
-    def show_contextual_help() -> "None":
+    def _show_contextual_help() -> "None":
         """Displays contextual help."""
         from euporie.console.app import get_app
 
@@ -416,10 +416,10 @@ class Console(KernelTab):
         assert isinstance(console, Console)
         console.inspect()
 
+    @staticmethod
     @add_cmd(
         filter=kernel_tab_has_focus,
     )
-    @staticmethod
     def _interrupt_kernel() -> "None":
         """Interrupt the notebook's kernel."""
         from euporie.console.app import get_app
@@ -427,10 +427,10 @@ class Console(KernelTab):
         if isinstance(kt := get_app().tab, KernelTab):
             kt.interrupt_kernel()
 
+    @staticmethod
     @add_cmd(
         filter=kernel_tab_has_focus,
     )
-    @staticmethod
     def _restart_kernel() -> "None":
         """Restart the notebook's kernel."""
         from euporie.console.app import get_app

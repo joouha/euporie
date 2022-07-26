@@ -117,7 +117,7 @@ def format_check(session: "Session") -> None:
 @nox.session(python=python_versions)
 def mypy(session: "Session") -> "None":
     """Type-check using mypy."""
-    session.install("mypy", "rich", "black", "isort")
+    session.install("mypy", "rich", "black", "isort", "importlib_metadata")
     session.install("-e", ".")
     if session.posargs:
         session.run("mypy", *session.posargs)

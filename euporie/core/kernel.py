@@ -118,7 +118,7 @@ class Kernel:
         # purpose of adding the depreciated :file:`.ipython/kernels` folder to the list
         # of kernel search paths. Without this, having IPython installed causes a
         # import race condition error where IPython was imported in the main thread for
-        # displaying LaTex and in the kernel thread to discover kernel paths.
+        # displaying LaTeX and in the kernel thread to discover kernel paths.
         # Also this speeds up launch since importing IPython is pretty slow.
         self.km.kernel_spec_manager.kernel_dirs = jupyter_path("kernels")
 

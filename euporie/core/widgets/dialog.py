@@ -274,9 +274,9 @@ class AboutDialog(Dialog):
 
     # ################################### Commands ####################################
 
-    @add_cmd()
     @staticmethod
-    def about() -> "None":
+    @add_cmd()
+    def _about() -> "None":
         """Show the about dialog."""
         from euporie.core.app import get_app
 
@@ -343,8 +343,8 @@ class OpenFileDialog(FileDialog):
 
     # ################################### Commands ####################################
 
-    @add_cmd(menu_title="Open File…")
     @staticmethod
+    @add_cmd(menu_title="Open File…")
     def _open_file() -> "None":
         """Open a file."""
         from euporie.core.app import get_app
@@ -379,11 +379,11 @@ class SaveAsDialog(FileDialog):
 
     # ################################### Commands ####################################
 
+    @staticmethod
     @add_cmd(
         menu_title="Save As…",
         filter=tab_has_focus,
     )
-    @staticmethod
     def _save_as() -> None:
         """Save the current file at a new location."""
         from euporie.core.app import get_app
@@ -665,9 +665,9 @@ class ShortcutsDialog(Dialog):
 
     # ################################### Commands ####################################
 
-    @add_cmd()
     @staticmethod
-    def keyboard_shortcuts() -> "None":
+    @add_cmd()
+    def _keyboard_shortcuts() -> "None":
         """Displays details of registered key-bindings in a dialog."""
         from euporie.core.app import get_app
 

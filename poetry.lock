@@ -688,7 +688,7 @@ termview = ["urwid"]
 name = "importlib-metadata"
 version = "4.12.0"
 description = "Read metadata from Python packages"
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=3.7"
 
@@ -1998,7 +1998,7 @@ svg-cairosvg = ["CairoSVG"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "bb9d9618ab7d742c6ef8e597ea4df7d9a39d435131b9a0716bcd83afeaecb962"
+content-hash = "ea69c4072799877ca55fb29ee24c894465e2962b3230f227e6563f6ceba5c563"
 
 [metadata.files]
 aenum = [

@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 
-from collections.abc import Sequence
 from itertools import chain
-from typing import TYPE_CHECKING, TypeVar, overload
+from typing import TYPE_CHECKING, Sequence, TypeVar, overload
 
 from upath import UPath
 

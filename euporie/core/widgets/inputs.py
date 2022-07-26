@@ -253,10 +253,10 @@ class KernelInput(TextArea):
 
     # ################################### Commands ####################################
 
+    @staticmethod
     @add_cmd(
         filter=buffer_is_code & buffer_has_focus & ~has_selection,
     )
-    @staticmethod
     def _show_contextual_help() -> "None":
         """Displays contextual help."""
         from euporie.core.tabs.notebook import BaseNotebook

@@ -192,10 +192,10 @@ class KernelTab(Tab, metaclass=ABCMeta):
 
     # ################################### Commands ####################################
 
+    @staticmethod
     @add_cmd(
         filter=kernel_tab_has_focus,
     )
-    @staticmethod
     def _change_kernel() -> "None":
         """Change the notebook's kernel."""
         if isinstance(kt := get_app().tab, KernelTab):

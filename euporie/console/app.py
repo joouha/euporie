@@ -122,9 +122,9 @@ class ConsoleApp(BaseApp):
 
     # ################################### Commands ####################################
 
-    @add_cmd()
     @staticmethod
-    def clear_screen() -> "None":
+    @add_cmd()
+    def _clear_screen() -> "None":
         """Clears the screen and the previous output."""
         from euporie.console.tabs.console import Console
 
