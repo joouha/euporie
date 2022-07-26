@@ -93,6 +93,7 @@ if TYPE_CHECKING:
     )
 
     from prompt_toolkit.clipboard import Clipboard
+    from prompt_toolkit.contrib.ssh import PromptToolkitSSHSession
     from prompt_toolkit.filters import Filter, FilterOrBool
     from prompt_toolkit.formatted_text import AnyFormattedText, StyleAndTextTuples
     from prompt_toolkit.input import Input
@@ -392,6 +393,11 @@ class BaseApp(Application):
         with create_app_session(input=cls.load_input(), output=cls.load_output()):
             # Create an instance of the app and run it
             return cls().run()
+
+    @classmethod
+    async def interact(cls, ssh_session: "PromptToolkitSSHSession") -> None:
+        """Function to run the app asynchronously for the ssh hub server."""
+        await cls().run_async()
 
     def load_container(self) -> "FloatContainer":
         """Loads the root container for this application.

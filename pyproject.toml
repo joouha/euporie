@@ -24,14 +24,14 @@ classifiers = [
 "console" = "euporie.console.app:ConsoleApp"
 "notebook" = "euporie.notebook.app:NotebookApp"
 "preview" = "euporie.preview.app:PreviewApp"
-"hub" = "euporie.Hub.app:hubApp"
+"hub" = "euporie.hub.app:HubApp"
 
 [tool.poetry.scripts]
 euporie = 'euporie.core.__main__:main'
 euporie-console = 'euporie.console.__main__:main'
 euporie-notebook = 'euporie.notebook.__main__:main'
 euporie-preview = 'euporie.preview.__main__:main'
-euporie-hub = 'euporie.hub.app.__main__:main'
+euporie-hub = 'euporie.hub.__main__:main'
 
 [tool.poetry.dependencies]
 python = "^3.8"
