@@ -217,6 +217,7 @@ class CommandPalette(Dialog):
 
     def load(self) -> "None":
         """The body is already loaded: does nothing."""
+        self.text_area.buffer.text = ""
         self.to_focus = self.text_area
 
     def statusbar_fields(
