@@ -21,6 +21,7 @@ classifiers = [
 "Bug Tracker" = "https://github.com/joouha/euporie/issues"
 
 [tool.poetry.plugins."euporie.apps"]
+"core" = "euporie.core.launch:CoreApp"
 "console" = "euporie.console.app:ConsoleApp"
 "notebook" = "euporie.notebook.app:NotebookApp"
 "preview" = "euporie.preview.app:PreviewApp"

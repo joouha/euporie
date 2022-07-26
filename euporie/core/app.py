@@ -53,7 +53,6 @@ from pygments.styles import get_style_by_name
 from pyperclip import determine_clipboard
 from upath import UPath
 
-from euporie.core import __version__
 from euporie.core.commands import add_cmd
 from euporie.core.config import Config, add_setting
 from euporie.core.filters import in_tmux, tab_has_focus
@@ -724,23 +723,6 @@ class BaseApp(Application):
     # ################################### Settings ####################################
 
     add_setting(
-        name="version",
-        default=False,
-        flags=["--version", "-V"],
-        action="version",
-        hidden=True,
-        version=f"%(prog)s {__version__}",
-        help_="Show the version number and exit",
-        description="""
-            If set, euporie will print the current version number of the application and exit.
-            All other configuration options will be ignored.
-
-            .. note::
-            This cannot be set in the configuration file or via an environment variable
-    """,
-    )
-
-    add_setting(
         name="files",
         default=[],
         flags=["files"],
@@ -756,6 +738,45 @@ class BaseApp(Application):
         },
         description="""
             A list of file paths to open when euporie is launched.
+        """,
+    )
+
+    add_setting(
+        name="log_file",
+        flags=["--log-file"],
+        nargs="?",
+        default="",
+        type_=str,
+        title="the log file path",
+        help_="File path for logs",
+        description="""
+            When set to a file path, the log output will be written to the given path.
+            If no value is given output will be sent to the standard output.
+        """,
+    )
+
+    add_setting(
+        name="log_level",
+        flags=["--log-level"],
+        type_=str,
+        default="",
+        title="the log level",
+        help_="Set the log level",
+        choices=["debug", "info", "warning", "error", "critical"],
+        description="""
+            When set, logging events at the given level are emitted.
+        """,
+    )
+
+    add_setting(
+        name="log_config",
+        flags=["--log-config"],
+        type_=str,
+        default=None,
+        title="additional logging configuration",
+        help_="Additional logging configuration",
+        description="""
+            A JSON string specifying additional logging configuration.
         """,
     )
 

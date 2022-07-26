@@ -18,7 +18,7 @@ from prompt_toolkit.filters.base import Condition
 from prompt_toolkit.utils import Event
 from upath import UPath
 
-from euporie.core import __app_name__, __copyright__
+from euporie.core import __app_name__, __copyright__, __version__
 from euporie.core.commands import add_cmd
 
 if TYPE_CHECKING:
@@ -174,7 +174,8 @@ class Config:
     def load_args(self) -> "None":
         """Attempts to load configuration settings from commandline flags."""
         result = {}
-        for name, value in vars(self.load_parser().parse_args()).items():
+        namespace, _ = self.load_parser().parse_known_intermixed_args()
+        for name, value in vars(namespace).items():
             if value is not None:
                 # Convert to json and back to attain json types
                 json_data = json.loads(_json_encoder.encode({name: value}))
@@ -346,14 +347,15 @@ class Setting:
         self.type = type_ or type(default)
         self.action = action or {bool: BooleanOptionalAction}.get(self.type)
         self.flags = flags or [f"--{name.replace('_','-')}"]
-        self.schema = schema or {
+        self.schema = {
             "type": {
                 bool: "boolean",
                 str: "string",
                 int: "integer",
                 float: "float",
                 UPath: "string",
-            }.get(self.type)
+            }.get(self.type),
+            **(schema or {}),
         }
         self.nargs = nargs
         self.hidden = hidden
@@ -505,3 +507,23 @@ def add_setting(
         cmd_filter=cmd_filter,
         **kwargs,
     )
+
+
+# ################################### Settings ####################################
+
+add_setting(
+    name="version",
+    default=False,
+    flags=["--version", "-V"],
+    action="version",
+    hidden=True,
+    version=f"%(prog)s {__version__}",
+    help_="Show the version number and exit",
+    description="""
+        If set, euporie will print the current version number of the application and exit.
+        All other configuration options will be ignored.
+
+        .. note::
+        This cannot be set in the configuration file or via an environment variable
+    """,
+)

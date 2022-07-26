@@ -20,7 +20,6 @@ from prompt_toolkit.renderer import (
 from prompt_toolkit.shortcuts.utils import print_formatted_text
 from prompt_toolkit.styles import Style
 
-from euporie.core.config import add_setting
 from euporie.core.formatted_text.utils import indent, lex, wrap
 from euporie.core.style import LOG_STYLE
 
@@ -451,45 +450,3 @@ def default_logs() -> "None":
 
     # Log uncaught exceptions
     sys.excepthook = handle_exception
-
-
-# ################################### Settings ####################################
-
-add_setting(
-    name="log_file",
-    flags=["--log-file"],
-    nargs="?",
-    default="",
-    type_=str,
-    title="the log file path",
-    help_="File path for logs",
-    description="""
-        When set to a file path, the log output will be written to the given path.
-        If no value is given output will be sent to the standard output.
-    """,
-)
-
-add_setting(
-    name="log_level",
-    flags=["--log-level"],
-    type_=str,
-    default="",
-    title="the log level",
-    help_="Set the log level",
-    choices=["debug", "info", "warning", "error", "critical"],
-    description="""
-        When set, logging events at the given level are emitted.
-    """,
-)
-
-add_setting(
-    name="log_config",
-    flags=["--log-config"],
-    type_=str,
-    default=None,
-    title="additional logging configuration",
-    help_="Additional logging configuration",
-    description="""
-        A JSON string specifying additional logging configuration.
-    """,
-)
