@@ -24,7 +24,6 @@ from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.validation import Validator
 
 from euporie.core.commands import add_cmd
-from euporie.core.config import add_setting
 from euporie.core.filters import at_end_of_buffer, buffer_is_code, kernel_tab_has_focus
 from euporie.core.format import format_code
 from euporie.core.kernel import MsgCallbacks
@@ -441,18 +440,6 @@ class Console(KernelTab):
             kt.restart_kernel()
 
     # ################################### Settings ####################################
-
-    add_setting(
-        name="default_kernel_name",
-        flags=["--default-kernel-name"],
-        type_=str,
-        help_="The name of the kernel to startlaunch by default.",
-        default="python3",
-        description="""
-            The name of the kernel launched automatically by the console app. If set to
-            an empty string, the user will be asked which kernel to launch.
-        """,
-    )
 
     # ################################# Key Bindings ##################################
 

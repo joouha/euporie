@@ -115,17 +115,11 @@ class Notebook(BaseNotebook):
                 "Saving.." if self.saving else "",
             ],
             [
-                [("", self.kernel_display_name, self._statusbar_kernel_handeler)],
+                lambda: [
+                    ("", self.kernel_display_name, self._statusbar_kernel_handeler)
+                ],
                 KERNEL_STATUS_REPR[self.kernel.status] if self.kernel else ".",
             ],
-        )
-
-    # BaseNotebook stuff
-
-    def set_kernel_info(self, info: "dict") -> "None":
-        """Save requested kernel information from the kernel."""
-        self.json.setdefault("metadata", {})["language_info"] = info.get(
-            "language_info", {}
         )
 
     # Notebook stuff
@@ -144,9 +138,13 @@ class Notebook(BaseNotebook):
         self.kernel.info(
             set_kernel_info=self.set_kernel_info
         )  # , set_status=log.debug)
-        if self.kernel.missing:
+        if not self.kernel_name or self.kernel.missing:
+            if not self.kernel_name:
+                msg = "No kernel selected"
+            else:
+                msg = f"Kernel '{self.kernel_display_name}' not installed"
             self.change_kernel(
-                msg=f"Kernel '{self.kernel_display_name}' not registered",
+                msg=msg,
                 startup=True,
             )
         elif self.kernel.status == "error":

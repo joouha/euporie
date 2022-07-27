@@ -399,7 +399,7 @@ def build_style(
         "dialog title border": "fg:ansired",
         "dialog": f"fg:{cp.fg.base} bg:{cp.bg.darker(0.1)}",
         "dialog scrollbar.button": f"fg:{cp.bg.more(5/20)} bg:{cp.bg.more(0.75)}",
-        "dialog select": f"bg:{cp.bg.darker(0.2)}",
+        "dialog select": f"bg:{cp.bg.more(0.001)}",
         "dialog text-area": f"bg:{cp.bg.lighter(0.05)}",
         "dialog text-area last-line": "nounderline",
         "dialog border": f"fg:{cp.bg.darker(0.5)}",

@@ -444,7 +444,7 @@ class Setting:
         }
 
     @property
-    def menu(self, toggle: "bool" = False) -> "MenuItem":
+    def menu(self) -> "MenuItem":
         """Return a menu item for the setting."""
         from euporie.core.widgets.menu import MenuItem
 

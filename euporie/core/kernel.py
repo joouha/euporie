@@ -7,7 +7,7 @@ import concurrent.futures
 import logging
 import threading
 from collections import defaultdict
-from subprocess import DEVNULL, STDOUT  # noqa S404 - Security implications considered
+from subprocess import DEVNULL  # noqa S404 - Security implications considered
 from typing import TYPE_CHECKING, TypedDict
 
 import nbformat
@@ -222,15 +222,12 @@ class Kernel:
     @property
     def missing(self) -> "bool":
         """Return True if the requested kernel is not found."""
-        if self.km:
-            try:
-                self.km.kernel_spec
-            except NoSuchKernel:
-                return True
-            else:
-                return False
+        try:
+            self.km.kernel_spec
+        except NoSuchKernel:
+            return True
         else:
-            return False
+            return self.km.kernel_spec is not None
 
     @property
     def id(self) -> "Optional[str]":
@@ -257,15 +254,17 @@ class Kernel:
 
     async def start_(self) -> "None":
         """Start the kernel asynchronously and set its status."""
+        if self.km.kernel_name is None:
+            self.status = "error"
         log.debug("Starting kernel")
         self.status = "starting"
 
         # If we are connecting to an existing kernel, create a kernel client using
         # the given connection file
         if self.kernel_tab.app.config.kernel_connection_file:
-            kc = self.km.client_factory(
-                connection_file=self.kernel_tab.app.config.kernel_connection_file
-            )
+            connection_file = self.kernel_tab.app.config.kernel_connection_file
+            self.km.load_connection_file(connection_file)
+            kc = self.km.client_factory(connection_file=connection_file)
             kc.load_connection_file()
             kc.start_channels()
             self.kc = kc
@@ -274,9 +273,9 @@ class Kernel:
         else:
             try:
                 # TODO - send stdout to log
-                await self.km.start_kernel(stdout=DEVNULL, stderr=STDOUT)
+                await self.km.start_kernel(stdout=DEVNULL, stderr=DEVNULL)
             except Exception as e:
-                log.exception("Kernel '%s' could not start", self.km.kernel_name)
+                log.error("Kernel '%s' could not start", self.km.kernel_name)
                 self.status = "error"
                 self.error = e
             else:
@@ -284,6 +283,14 @@ class Kernel:
                 # Create a client for the newly started kernel
                 if self.km.has_kernel:
                     self.kc = self.km.client()
+        try:
+            ks = self.km.kernel_spec
+        except NoSuchKernel as e:
+            self.error = e
+            self.status = "error"
+        else:
+            if ks is not None:
+                self.kernel_tab.metadata["kernelspec"] = ks.to_dict()
 
         if self.kc and self.status != "error":
             log.debug("Waiting for kernel to become ready")
@@ -718,7 +725,7 @@ class Kernel:
         pattern: "str" = "",
         n: "int" = 1,
         hist_access_type: "str" = "search",
-        timeout: "int" = 60,
+        timeout: "int" = 1,
     ) -> "Optional[list[tuple[int, int, str]]]":
         """Retrieve history from the kernel asynchronously."""
         await asyncio.sleep(0.1)  # Add a tiny timeout so we don't spam the kernel
@@ -991,5 +998,18 @@ class Kernel:
         description="""
             Load connection info from JSON dict. This allows euporie to connect to
             existing kernels.
+        """,
+    )
+
+    add_setting(
+        name="default_kernel_name",
+        flags=["--default-kernel-name"],
+        type_=str,
+        help_="The name of the kernel to start by default.",
+        default="",
+        description="""
+            The name of the kernel selected automatically by the console app or in new
+            notebooks. If set to an empty string, the user will be asked which kernel
+            to launch.
         """,
     )

@@ -91,9 +91,6 @@ class NotebookApp(BaseApp):
         self.bindings_to_load.append("app.notebook")
         self.has_dialog = False
 
-        log.debug(get_cmd("new-notebook").keys)
-        log.debug(get_cmd("new-notebook").key_str)
-
         self.pre_run_callables.append(self.load_default_statusbar_fields)
 
     def load_default_statusbar_fields(self) -> "None":

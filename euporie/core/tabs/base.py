@@ -132,7 +132,9 @@ class KernelTab(Tab, metaclass=ABCMeta):
     @property
     def kernel_name(self) -> "str":
         """Return the name of the kernel defined in the notebook JSON."""
-        return self.metadata.get("kernelspec", {}).get("name")
+        return self.metadata.get("kernelspec", {}).get(
+            "name", self.app.config.default_kernel_name
+        )
 
     @kernel_name.setter
     def kernel_name(self, value: "str") -> "None":
@@ -147,7 +149,7 @@ class KernelTab(Tab, metaclass=ABCMeta):
     @property
     def kernel_display_name(self) -> "str":
         """Return the display name of the kernel defined in the notebook JSON."""
-        return self.metadata.get("kernelspec", {}).get("display_name", "")
+        return self.metadata.get("kernelspec", {}).get("display_name", self.kernel_name)
 
     @property
     def kernel_lang_file_ext(self) -> "str":
