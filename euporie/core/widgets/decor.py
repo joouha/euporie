@@ -121,7 +121,9 @@ class Pattern(Container):
     """Fill an area with a repeating background pattern."""
 
     def __init__(
-        self, char: "str|Callable[[], str]", pattern: "int|Callable[[], int]" = 1
+        self,
+        char: "Union[str, Callable[[], str]]",
+        pattern: "Union[int, Callable[[], int]]" = 1,
     ) -> "None":
         """Initialize the :class:`Pattern`."""
         self.bg = Char(" ", "class:pattern")

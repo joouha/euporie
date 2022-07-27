@@ -6,7 +6,7 @@ import asyncio
 import logging
 from functools import partial
 from typing import TYPE_CHECKING, cast
-from weakref import WeakSet
+from weakref import WeakSet, WeakValueDictionary
 
 from prompt_toolkit.application.application import Application, _CombinedRegistry
 from prompt_toolkit.application.current import create_app_session
@@ -33,8 +33,9 @@ from prompt_toolkit.key_binding.key_bindings import (
     ConditionalKeyBindings,
     merge_key_bindings,
 )
-from prompt_toolkit.layout import Layout
-from prompt_toolkit.layout.containers import FloatContainer, Window, to_container
+from prompt_toolkit.layout.containers import Float, FloatContainer, Window, to_container
+from prompt_toolkit.layout.layout import Layout
+from prompt_toolkit.layout.menus import CompletionsMenu
 from prompt_toolkit.output import ColorDepth
 from prompt_toolkit.output.defaults import create_output
 from prompt_toolkit.styles import (
@@ -81,6 +82,7 @@ if TYPE_CHECKING:
     from typing import (
         Any,
         Callable,
+        ContextManager,
         Dict,
         List,
         Literal,
@@ -97,13 +99,14 @@ if TYPE_CHECKING:
     from prompt_toolkit.formatted_text import AnyFormattedText, StyleAndTextTuples
     from prompt_toolkit.input import Input
     from prompt_toolkit.input.vt100 import Vt100Input
-    from prompt_toolkit.layout.containers import AnyContainer, Float
+    from prompt_toolkit.layout.containers import AnyContainer
     from prompt_toolkit.layout.layout import FocusableElement
     from prompt_toolkit.output import Output
 
     from euporie.core.config import Setting
     from euporie.core.tabs.base import Tab
     from euporie.core.terminal import TerminalQuery
+    from euporie.core.widgets.dialog import Dialog
     from euporie.core.widgets.pager import Pager
     from euporie.core.widgets.search_bar import SearchBar
 
@@ -186,8 +189,23 @@ class BaseApp(Application):
         # Floats at the app level
         self.leave_graphics = to_filter(leave_graphics)
         self.graphics: "WeakSet[Float]" = WeakSet()
-        self.dialogs: "Dict[str, Float]" = {}
-        self.floats = ChainedList(self.graphics, self.dialogs.values())
+        self.completions_menu_float = Float(
+            content=CompletionsMenu(
+                max_height=16,
+                scroll_offset=1,
+            ),
+            xcursor=True,
+            ycursor=True,
+        )
+        self.dialogs: "Dict[str, Dialog]" = {}
+        self.menus: "WeakValueDictionary[str, Float]" = WeakValueDictionary(
+            {"completions": self.completions_menu_float}
+        )
+        self.floats = ChainedList(
+            self.menus.values(),
+            self.dialogs.values(),
+            self.graphics,
+        )
         # If a dialog is showing
         self.has_dialog = False
         # Mapping of Containers to status field generating functions
@@ -313,12 +331,19 @@ class BaseApp(Application):
             A prompt-toolkit input instance
 
         """
-        from prompt_toolkit.input.base import DummyInput
-
         input_ = create_input(always_prefer_tty=True)
         if stdin := getattr(input_, "stdin", None):
             if not stdin.isatty():
-                input_ = DummyInput()
+                from prompt_toolkit.input.base import DummyInput, _dummy_context_manager
+
+                class IgnoredInput(DummyInput):
+                    def attach(
+                        self, input_ready_callback: "Callable[[], None]"
+                    ) -> "ContextManager[None]":
+                        # Do not call the callback, so the input is never closed
+                        return _dummy_context_manager()
+
+                input_ = IgnoredInput()
         return input_
 
     @classmethod

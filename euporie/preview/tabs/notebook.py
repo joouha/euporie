@@ -19,10 +19,12 @@ from euporie.core.widgets.cell import Cell
 from euporie.core.widgets.page import PrintingContainer
 
 if TYPE_CHECKING:
-    from os import PathLike
-    from typing import Callable, Dict
+    from typing import Any, Callable, Dict, Set, Tuple
 
+    from prompt_toolkit.application.application import Application
+    from prompt_toolkit.formatted_text.base import StyleAndTextTuples
     from prompt_toolkit.layout.containers import AnyContainer
+    from upath import UPath
 
     from euporie.core.app import BaseApp
 
@@ -33,16 +35,21 @@ class PreviewNotebook(BaseNotebook):
     """A notebook tab which renders cells sequentially."""
 
     def __init__(
-        self, app: "Optional[BaseApp]" = None, path: "Optional[PathLike]" = None
-    ):
+        self,
+        app: "BaseApp",
+        path: "Optional[UPath]" = None,
+        use_kernel_history: "bool" = False,
+    ) -> "None":
         """Create a new instance."""
-        super().__init__(app, path)
+        super().__init__(app, path, use_kernel_history=use_kernel_history)
         self.cell_index = 0
         self.app.before_render += self.before_render
         self.app.after_render += self.after_render
-        self.cells = FastDictCache(get_value=self.get_cell)
+        self.cells: "FastDictCache[Tuple[int], Cell]" = FastDictCache(
+            get_value=self.get_cell
+        )
         self.running = False
-        self.ran_cells = set()
+        self.ran_cells: "Set[int]" = set()
 
         # If we are running the notebook, pause rendering util the kernel has started
         if self.app.config.run:
@@ -64,7 +71,7 @@ class PreviewNotebook(BaseNotebook):
         )
 
         width = self.app.output.get_size().columns
-        ft = [("bold", str(self.path))]
+        ft: "StyleAndTextTuples" = [("bold", str(self.path))]
         ft = wrap(ft, width - 4)
         ft = align(FormattedTextAlign.CENTER, ft, width=width - 4)
         ft = add_border(ft, width=width)
@@ -81,7 +88,7 @@ class PreviewNotebook(BaseNotebook):
             self.save()
         super().close(cb)
 
-    def before_render(self, app: "BaseApp") -> "None":
+    def before_render(self, app: "Application[Any]") -> "None":
         """Run the cell before rendering it if needed."""
         if (
             self.app.tab == self
@@ -95,19 +102,19 @@ class PreviewNotebook(BaseNotebook):
             cell.run_or_render(wait=True)
             self.kernel.wait_for_status("idle")
 
-    def after_render(self, app: "BaseApp") -> "None":
+    def after_render(self, app: "Application[Any]") -> "None":
         """Close the tab if all cells have been rendered."""
         if self.app.tab == self:
             if self.cell_index < len(self.json["cells"]) - 1:
                 self.cell_index += 1
             else:
-                app.close_tab(self)
+                self.app.close_tab(self)
 
     def get_cell(self, index: "int") -> "Cell":
         """Render a cell by its index."""
         return Cell(index, self.json["cells"][index], self)
 
-    def cell(self) -> "AnyContainer":
+    def cell(self) -> "Cell":
         """Return the current cell."""
         return self.cells[(self.cell_index,)]
 

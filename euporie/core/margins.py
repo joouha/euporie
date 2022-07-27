@@ -352,7 +352,7 @@ class OverflowMargin(Margin):
         """Generate the margin's content."""
         from prompt_toolkit.formatted_text.utils import fragment_list_width
 
-        result = []
+        result: "StyleAndTextTuples" = []
 
         for lineno in window_render_info.displayed_lines:
             line = window_render_info.ui_content.get_line(lineno)

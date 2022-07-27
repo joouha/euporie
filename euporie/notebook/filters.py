@@ -50,7 +50,7 @@ def cell_has_focus() -> "bool":
 @Condition
 def in_edit_mode() -> "bool":
     """Determine if there is a currently focused notebook."""
-    from euporie.core.tabs.notebook import Notebook
+    from euporie.notebook.tabs.notebook import Notebook
 
     nb = get_app().tab
     if isinstance(nb, Notebook):

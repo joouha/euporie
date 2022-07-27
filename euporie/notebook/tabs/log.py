@@ -27,9 +27,7 @@ if TYPE_CHECKING:
 class LogView(Tab):
     """A tab which allows you to view log entries."""
 
-    def __init__(
-        self, app: "Optional[BaseApp]" = None, path: "Optional[PathLike]" = None
-    ) -> "None":
+    def __init__(self, app: "BaseApp", path: "Optional[PathLike]" = None) -> "None":
         """Create a new log view tab instance."""
         super().__init__(app, path)
         # Build the container
@@ -90,6 +88,6 @@ class LogView(Tab):
             if isinstance(tab, LogView):
                 break
         else:
-            tab = LogView()
+            tab = LogView(app)
             app.tabs.append(tab)
         tab.focus()

@@ -58,13 +58,14 @@ from euporie.notebook.filters import (
 )
 
 if TYPE_CHECKING:
-    from os import PathLike
     from typing import Deque, Dict, List, MutableSequence, Optional, Sequence, Tuple
 
     from prompt_toolkit.formatted_text.base import AnyFormattedText
-    from prompt_toolkit.key_binding.key_bindings import NotImplementedOrNone
+
+    # from prompt_toolkit.key_binding.key_bindings import NotImplementedOrNone
     from prompt_toolkit.layout.containers import AnyContainer
     from prompt_toolkit.mouse_events import MouseEvent
+    from upath import UPath
 
     from euporie.core.app import BaseApp
 
@@ -77,10 +78,13 @@ class Notebook(BaseNotebook):
     allow_stdin = True
 
     def __init__(
-        self, app: "Optional[BaseApp]" = None, path: "Optional[PathLike]" = None
-    ):
+        self,
+        app: "BaseApp",
+        path: "Optional[UPath]" = None,
+        use_kernel_history: "bool" = True,
+    ) -> "None":
         """Load a editable notebook."""
-        super().__init__(app, path)
+        super().__init__(app=app, path=path, use_kernel_history=use_kernel_history)
 
         self.edit_mode = False
         self.in_edit_mode = Condition(self.check_edit_mode)
@@ -92,12 +96,13 @@ class Notebook(BaseNotebook):
 
     # Tab stuff
 
-    def _statusbar_kernel_handeler(self, event: "MouseEvent") -> "NotImplementedOrNone":
+    def _statusbar_kernel_handeler(self, event: "MouseEvent") -> "None":
         """Event handler for kernel name field in statusbar."""
         if event.event_type == MouseEventType.MOUSE_UP:
             get_cmd("change-kernel").run()
-        else:
-            return NotImplemented
+        return None
+        # else:
+        # return NotImplemented
 
     def statusbar_fields(
         self,
@@ -136,7 +141,9 @@ class Notebook(BaseNotebook):
 
     def kernel_started(self, result: "Optional[Dict]" = None) -> "None":
         """Run when the kernel has started."""
-        self.kernel.info(set_kernel_info=self.set_kernel_info, set_status=log.debug)
+        self.kernel.info(
+            set_kernel_info=self.set_kernel_info
+        )  # , set_status=log.debug)
         if self.kernel.missing:
             self.change_kernel(
                 msg=f"Kernel '{self.kernel_display_name}' not registered",

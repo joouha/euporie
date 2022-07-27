@@ -37,11 +37,14 @@ class KernelHistory(History):
         Yields:
             Each history string
         """
-        if not self._loaded:
+        if not self._loaded and self.kernel.kc:
             items = await self.kernel.history_(n=self.n, hist_access_type="tail")
-            self._loaded_strings = [item[2] for item in reversed(items)]
-            self._loaded = True
-            log.debug("Loaded %s items from histroy", len(self._loaded_strings))
+            if items:
+                self._loaded_strings = [item[2] for item in reversed(items)]
+                self._loaded = True
+                log.debug(
+                    "Loaded %s items from kernel history", len(self._loaded_strings)
+                )
 
         for item in self._loaded_strings:
             yield item

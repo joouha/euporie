@@ -397,6 +397,7 @@ class ScrollingContainer(Container):
             self.scroll(1)
         else:
             return NotImplemented
+        return None
 
     def write_to_screen(
         self,

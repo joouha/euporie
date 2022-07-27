@@ -132,7 +132,7 @@ class KernelInput(TextArea):
             self.buffer.on_text_changed += on_text_changed
         if on_cursor_position_changed:
             self.buffer.on_cursor_position_changed += on_cursor_position_changed
-        self.buffer.tempfile_suffix = tempfile_suffix or kernel_tab.lang_file_ext
+        self.buffer.tempfile_suffix = tempfile_suffix or kernel_tab.kernel_lang_file_ext
 
         if enable_history_search is not None:
             self.buffer.enable_history_search = to_filter(enable_history_search)
@@ -182,7 +182,7 @@ class KernelInput(TextArea):
 
         if pager.visible() and pager.state is not None:
             if pager.state.code == code and pager.state.cursor_pos == cursor_pos:
-                self.kernel_tab.app.pager.focus()
+                pager.focus()
                 return
 
         def _cb(response: "dict") -> "None":
@@ -194,8 +194,8 @@ class KernelInput(TextArea):
                 response=response,
             )
             if prev_state != new_state:
-                self.kernel_tab.app.pager.state = new_state
-                get_app().invalidate()
+                pager.state = new_state
+                self.kernel_tab.app.invalidate()
 
         self.kernel_tab.kernel.inspect(
             code=code,

@@ -18,7 +18,6 @@ from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
 from euporie.core.app import get_app
 from euporie.core.commands import Command, add_cmd, commands
 from euporie.core.key_binding.registry import register_bindings
-from euporie.core.key_binding.util import format_keys
 from euporie.core.widgets.dialog import Dialog
 from euporie.core.widgets.forms import Text
 
@@ -75,10 +74,7 @@ class CommandMenuControl(UIControl):
                 prefix = "   "
 
             # Calculate suffix
-            if match.command.keys:
-                suffix = format_keys(match.command.keys)[0] + " "
-            else:
-                suffix = ""
+            suffix = match.command.key_str + " "
 
             # Add prefix with status for toggle commands
             result.append((style, prefix))

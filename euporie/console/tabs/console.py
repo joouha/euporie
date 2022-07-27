@@ -39,11 +39,11 @@ from euporie.core.widgets.inputs import KernelInput, StdInput
 from euporie.core.widgets.pager import PagerState
 
 if TYPE_CHECKING:
-    from os import PathLike
     from typing import Any, Callable, Dict, List, Optional, Sequence
 
     from prompt_toolkit.formatted_text import AnyFormattedText, StyleAndTextTuples
     from prompt_toolkit.key_binding.key_processor import KeyPressEvent
+    from upath import UPath
 
     from euporie.core.app import BaseApp
 
@@ -55,17 +55,19 @@ class Console(KernelTab):
 
     def __init__(
         self,
-        app: "Optional[BaseApp]" = None,
-        path: "Optional[PathLike]" = None,
+        app: "BaseApp",
+        path: "Optional[UPath]" = None,
+        use_kernel_history: "bool" = True,
     ) -> "None":
         """Create a new :py:class:`KernelNotebook` instance.
 
         Args:
             app: The euporie application the console tab belongs to
             path: A file path to open (not used currently)
+            use_kernel_history: If :const:`True`, history will be loaded from the kernel
         """
         # Kernel setup
-        self.metadata = {}
+        self._metadata = {}
         self.kernel_name = app.config.default_kernel_name
         self.allow_stdin = True
         self.default_callbacks = MsgCallbacks(
@@ -82,7 +84,7 @@ class Console(KernelTab):
         )
         self.kernel_tab = self
 
-        super().__init__(app=app, path=path, use_kernel_history=True)
+        super().__init__(app=app, path=path, use_kernel_history=use_kernel_history)
 
         self.lang_info: "Dict[str, Any]" = {}
         self.execution_count = 0

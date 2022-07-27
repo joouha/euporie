@@ -166,6 +166,8 @@ class Cell:
     focused.
     """
 
+    input_box: "KernelInput"
+
     def __init__(self, index: "int", json: "dict", kernel_tab: "BaseNotebook"):
         """Initiate the cell element.
 
@@ -178,7 +180,7 @@ class Cell:
         weak_self = weakref.proxy(self)
         self.index = index
         self.json = json
-        self.kernel_tab: "kernel_tab" = kernel_tab
+        self.kernel_tab: "BaseNotebook" = kernel_tab
         self.rendered = True
         self.clear_outputs_on_output = False
 
@@ -462,7 +464,7 @@ class Cell:
         # focus might be not be in the current layout yet.
         get_app().layout._stack.append(to_focus)
         # Scroll the currently selected slice into view
-        self.kernel_tab.refresh(scroll=True)
+        self.kernel_tab.refresh()
 
     @property
     def focused(self) -> "bool":
@@ -703,12 +705,11 @@ class Cell:
         password: "bool" = False,
     ) -> "None":
         """Scroll the cell requesting input into view and render it before asking for input."""
-        self.kernel_tab.page.selected_slice = slice(self.index, self.index + 1)
+        self.kernel_tab.select(self.index)
         self.stdin_box.get_input(prompt, password)
 
     async def edit_in_editor(self) -> "None":
         """Edit the cell in $EDITOR."""
-        self.kernel_tab.exit_edit_mode()
         await self.input_box.buffer.open_in_editor(
             validate_and_handle=get_app().config.run_after_external_edit
         )

@@ -20,7 +20,7 @@ from euporie.core.key_binding.registry import register_bindings
 from euporie.preview.tabs.notebook import PreviewNotebook
 
 if TYPE_CHECKING:
-    from typing import IO, Any, List, Optional, TextIO, Tuple, Type, Union
+    from typing import IO, Any, Dict, List, Optional, TextIO, Tuple, Type, Union
 
     from prompt_toolkit.application.application import _AppResult
     from prompt_toolkit.data_structures import Point
@@ -102,17 +102,14 @@ class PreviewApp(BaseApp):
     def __init__(self, **kwargs: "Any") -> "None":
         """Create an app for dumping a prompt-toolkit layout."""
         # Initialise the application
-        super().__init__(
-            **{
-                **{
-                    "full_screen": False,
-                    "max_render_postpone_time": 0,
-                    "min_redraw_interval": 0,
-                    "leave_graphics": True,
-                },
-                **kwargs,
-            }
-        )
+        app_kwargs: "Dict[str, Any]" = {
+            "leave_graphics": True,
+            "full_screen": False,
+            "max_render_postpone_time": 0,
+            "min_redraw_interval": 0,
+            **kwargs,
+        }
+        super().__init__(**app_kwargs)
         # We want the app to close when rendering is complete
         # self.after_render += self.pre_exit
         # Do not load any key bindings
@@ -140,7 +137,12 @@ class PreviewApp(BaseApp):
                 output_file.seek(0)
                 data = output_file.read()
                 pager(data)
-        super().exit(result, exception, style)
+        if exception is not None:
+            super().exit(exception=exception, style=style)
+        elif result is not None:
+            super().exit(result=result, style=style)
+        else:
+            super().exit()
 
     def load_container(self) -> "FloatContainer":
         """Returns a container with all opened tabs."""
@@ -149,7 +151,7 @@ class PreviewApp(BaseApp):
             floats=cast("List[Float]", self.floats),
         )
 
-    def cleanup_closed_tab(self, tab: "Optional[Tab]" = None) -> "None":
+    def cleanup_closed_tab(self, tab: "Tab") -> "None":
         """Exit if all tabs are closed."""
         super().cleanup_closed_tab(tab)
         if not self.tabs:

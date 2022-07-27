@@ -10,11 +10,12 @@ from ast import literal_eval
 from collections import ChainMap
 from functools import partial
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Protocol
 
 import fastjsonschema
 from appdirs import user_config_dir
 from prompt_toolkit.filters.base import Condition
+from prompt_toolkit.filters.utils import to_filter
 from prompt_toolkit.utils import Event
 from upath import UPath
 
@@ -22,25 +23,18 @@ from euporie.core import __app_name__, __copyright__, __version__
 from euporie.core.commands import add_cmd
 
 if TYPE_CHECKING:
-    from typing import (
-        Any,
-        Callable,
-        Dict,
-        List,
-        Optional,
-        Sequence,
-        Tuple,
-        Type,
-        TypeVar,
-        Union,
-    )
+    from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Type, Union
 
     from prompt_toolkit.filters.base import Filter, FilterOrBool
 
-    from euporie.core.app import BaseApp
     from euporie.core.widgets.menu import MenuItem
 
-    T = TypeVar("SettingType")
+
+class ConfigurableApp(Protocol):
+    """An application with configuration."""
+
+    config: "Config"
+
 
 log = logging.getLogger(__name__)
 
@@ -82,6 +76,9 @@ class BooleanOptionalAction(argparse.Action):
             setattr(namespace, self.dest, not option_string.startswith("--no-"))
 
 
+TYPE_ACTIONS: "Dict[Type[Any], Type[argparse.Action]]" = {bool: BooleanOptionalAction}
+
+
 class JSONEncoderPlus(json.JSONEncoder):
     """JSON encode class which encodes paths as strings."""
 
@@ -111,8 +108,8 @@ class Config:
 
     def __init__(self) -> "None":
         """Create a new configuration object instance."""
-        self.app_name = None
-        self.app_cls = None
+        self.app_name: "str" = "base"
+        self.app_cls: "Optional[Type[ConfigurableApp]]" = None
 
     def _save(self, setting: "Setting") -> "None":
         """Save settings to user's configuration file."""
@@ -123,7 +120,7 @@ class Config:
             with open(self.config_file_path, "w") as f:
                 json.dump(json_data, f, indent=2)
 
-    def load(self, cls: "BaseApp") -> "None":
+    def load(self, cls: "Type[ConfigurableApp]") -> "None":
         """Loads the command line, environment, and user configuration."""
         self.app_name = cls.__module__.split(".")[1]
         self.app_cls = cls
@@ -171,7 +168,7 @@ class Config:
             parser.add_argument(*args, **kwargs)
         return parser
 
-    def load_args(self) -> "None":
+    def load_args(self) -> "Dict[str, Any]":
         """Attempts to load configuration settings from commandline flags."""
         result = {}
         namespace, _ = self.load_parser().parse_known_intermixed_args()
@@ -187,7 +184,7 @@ class Config:
                     result[name] = value
         return result
 
-    def load_env(self) -> "None":
+    def load_env(self) -> "Dict[str, Any]":
         """Attempt to load configuration settings from environment variables."""
         result = {}
         for name, setting in self.settings.items():
@@ -196,10 +193,11 @@ class Config:
             )
             if env in os.environ:
                 value = os.environ.get(env)
+                parsed_value: "Any" = value
                 # Attempt to parse the value as a literal
                 if value:
                     try:
-                        value = literal_eval(value)
+                        parsed_value = literal_eval(value)
                     except (
                         ValueError,
                         TypeError,
@@ -210,23 +208,23 @@ class Config:
                         pass
                 # Attempt to cast the value to the desired type
                 try:
-                    value = setting.type(value)
+                    parsed_value = setting.type(value)
                 except (ValueError, TypeError):
                     log.warning(
                         f"Environment variable `{env}` not understood"
                         f" - `{setting.type.__name__}` expected"
                     )
                 else:
-                    json_data = json.loads(_json_encoder.encode({name: value}))
+                    json_data = json.loads(_json_encoder.encode({name: parsed_value}))
                     try:
                         fastjsonschema.validate(self.schema, json_data)
                     except fastjsonschema.JsonSchemaValueException as error:
                         log.error(f"Error in environment variable: `{env}`\n{error}")
                     else:
-                        result[name] = value
+                        result[name] = parsed_value
         return result
 
-    def load_config_file(self) -> "None":
+    def load_config_file(self) -> "Dict[str, Any]":
         """Attempt to load JSON configuration file."""
         results = {}
         assert isinstance(self.config_file_path, Path)
@@ -245,13 +243,14 @@ class Config:
                     results.update(json_data)
         return results
 
-    def load_user(self) -> "None":
+    def load_user(self) -> "Dict[str, Any]":
         """Attempt to load JSON configuration file."""
         results = {}
         # Load config file
         json_data = self.load_config_file()
         # Load section for the current app
-        json_data = json_data.get(self.app_name, {})
+        if self.app_name:
+            json_data = json_data.get(self.app_name, {})
         # Validate the configuration file
         try:
             # Validate a copy so the original data is not modified
@@ -311,7 +310,7 @@ class Config:
             value: The value to give the attribute.
 
         """
-        setting = self.settings.get(name)
+        setting = self.settings[name]
         setting.value = value
 
 
@@ -321,17 +320,17 @@ class Setting:
     def __init__(
         self,
         name: "str",
-        default: "T",
+        default: "Any",
         help_: "str",
         description: "str",
-        type_: "Optional[Type[T]]" = None,
+        type_: "Optional[Type[Any]]" = None,
         title: "Optional[str]" = None,
-        choices: "Optional[List[T]]" = None,
-        action: "Optional[argparse.Action|str]" = None,
+        choices: "Optional[List[Any]]" = None,
+        action: "Optional[Union[argparse.Action,str]]" = None,
         flags: "Optional[List[str]]" = None,
         schema: "Optional[Dict[str, Any]]" = None,
         nargs: "Optional[str|int]" = None,
-        hidden: "bool" = False,
+        hidden: "FilterOrBool" = False,
         hooks: "Optional[List[Callable[[Setting], None]]]" = None,
         cmd_filter: "FilterOrBool" = True,
         **kwargs: "Any",
@@ -345,9 +344,9 @@ class Setting:
         self.description = description
         self.choices = choices
         self.type = type_ or type(default)
-        self.action = action or {bool: BooleanOptionalAction}.get(self.type)
+        self.action = action or TYPE_ACTIONS.get(self.type)
         self.flags = flags or [f"--{name.replace('_','-')}"]
-        self.schema = {
+        self._schema: "Dict[str, Any]" = {
             "type": {
                 bool: "boolean",
                 str: "string",
@@ -358,7 +357,7 @@ class Setting:
             **(schema or {}),
         }
         self.nargs = nargs
-        self.hidden = hidden
+        self.hidden = to_filter(hidden)
         self.kwargs = kwargs
         self.cmd_filter = cmd_filter
 
@@ -393,7 +392,7 @@ class Setting:
                 filter=self.cmd_filter,
             )(self.toggle)
 
-        for choice in self.choices or self.schema.get("enum", []):
+        for choice in (self.choices or self.schema.get("enum", [])) or []:
             add_cmd(
                 name=f"set-{name}-{choice}",
                 hidden=self.hidden,
@@ -424,23 +423,24 @@ class Setting:
         self.value = new
 
     @property
-    def value(self) -> "T":
+    def value(self) -> "Any":
         """Return the current value."""
         return self._value
 
     @value.setter
-    def value(self, new: "T") -> "None":
+    def value(self, new: "Any") -> "None":
         """Set the current value."""
         self._value = new
         self.event.fire()
 
+    @property
     def schema(self) -> "Dict[str, Any]":
         """Return a json schema property for the config item."""
         return {
             "description": self.help,
             **({"enum": self.choices} if self.choices is not None else {}),
             **({"default": self.default} if self.default is not None else {}),
-            **self.param["schema_"],
+            **self._schema,
         }
 
     def menu(self, toggle: "bool" = False) -> "MenuItem":
@@ -448,13 +448,13 @@ class Setting:
         pass
 
     @property
-    def parser_args(self) -> "Tuple[List, Dict[str, Any]]":
+    def parser_args(self) -> "Tuple[List[str], Dict[str, Any]]":
         """Return arguments for construction of an :class:`argparse.ArgumentParser`."""
         # Do not set defaults for command line arguments, as default values
         # would override values set in the configuration file
-        args = self.flags or self.name
+        args = self.flags or [self.name]
 
-        kwargs = {
+        kwargs: "Dict[str, Any]" = {
             "action": self.action,
             "help": self.help,
         }
@@ -478,15 +478,15 @@ class Setting:
 
 def add_setting(
     name: "str",
-    default: "Optional[T]",
+    default: "Any",
     help_: "str",
     description: "str",
-    type_: "Optional[Type[T]]" = None,
-    action: "Optional[argparse.Action]" = None,
+    type_: "Optional[Type[Any]]" = None,
+    action: "Optional[Union[argparse.Action,str]]" = None,
     flags: "Optional[List[str]]" = None,
     schema: "Optional[Dict[str, Any]]" = None,
     nargs: "Optional[str|int]" = None,
-    hidden: "bool" = False,
+    hidden: "FilterOrBool" = False,
     hooks: "Optional[List[Callable[[Setting], None]]]" = None,
     cmd_filter: "FilterOrBool" = True,
     **kwargs: "Any",

@@ -19,9 +19,9 @@ from euporie.core.utils import parse_path
 from euporie.core.widgets.cell import Cell, get_cell_id
 
 if TYPE_CHECKING:
-    from os import PathLike
     from typing import Any, Callable, Dict, List, Optional
 
+    from prompt_toolkit.filters import Filter
     from prompt_toolkit.layout.containers import AnyContainer
     from upath import UPath
 
@@ -34,15 +34,20 @@ class BaseNotebook(KernelTab, metaclass=ABCMeta):
     """The main notebook container class."""
 
     allow_stdin = False
+    edit_mode = False
 
     def __init__(
-        self, app: "Optional[BaseApp]" = None, path: "Optional[PathLike]" = None
+        self,
+        app: "BaseApp",
+        path: "Optional[UPath]" = None,
+        use_kernel_history: "bool" = False,
     ):
         """Instantiate a Notebook container, using a notebook at a given path.
 
         Args:
             path: The file path of the notebook
             app: The euporie application the notebook tab belongs to
+            use_kernel_history: If True, load history from the kernel
 
         """
         self.default_callbacks = MsgCallbacks(
@@ -73,13 +78,13 @@ class BaseNotebook(KernelTab, metaclass=ABCMeta):
         if not self.json.setdefault("cells", []):
             self.json["cells"] = [nbformat.v4.new_code_cell()]
 
-        super().__init__(app, path)
+        super().__init__(app, path, use_kernel_history=use_kernel_history)
 
         self._rendered_cells: "dict[str, Cell]" = {}
         self.load_widgets_from_metadata()
         self.dirty = False
         self.saving = False
-        self.multiple_cells_selected = Never
+        self.multiple_cells_selected: "Filter" = Never()
 
         self.container = self.load_container()
 
@@ -154,6 +159,19 @@ class BaseNotebook(KernelTab, metaclass=ABCMeta):
         else:
             return None
         return cell
+
+    def select(
+        self,
+        cell_index: "int",
+        extend: "bool" = False,
+        position: "Optional[int]" = None,
+    ) -> "None":
+        """Select a cell."""
+        pass
+
+    def refresh(self) -> "None":
+        """Refresh the notebook."""
+        pass
 
     def close(self, cb: "Optional[Callable]" = None) -> "None":
         """Check if the user want to save an unsaved notebook, then close the file.

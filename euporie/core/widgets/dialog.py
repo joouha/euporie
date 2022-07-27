@@ -1,4 +1,4 @@
-"""Dialog."""
+"""Dialogs."""
 
 import logging
 import traceback
@@ -18,7 +18,6 @@ from prompt_toolkit.formatted_text import AnyFormattedText
 from prompt_toolkit.key_binding.bindings.focus import focus_next, focus_previous
 from prompt_toolkit.key_binding.key_bindings import KeyBindings
 from prompt_toolkit.layout.containers import (
-    AnyContainer,
     ConditionalContainer,
     DynamicContainer,
     Float,
@@ -43,10 +42,13 @@ if TYPE_CHECKING:
     from typing import Any, Callable, Dict, List, Optional
 
     from prompt_toolkit.buffer import Buffer
-    from prompt_toolkit.formatted_text.base import FormattedText
+    from prompt_toolkit.formatted_text.base import StyleAndTextTuples
     from prompt_toolkit.key_binding.key_processor import KeyPressEvent
+    from prompt_toolkit.layout.containers import AnyContainer
+    from prompt_toolkit.layout.layout import FocusableElement
 
     from euporie.core.app import BaseApp
+    from euporie.core.tabs.base import KernelTab
 
 log = logging.getLogger(__name__)
 
@@ -59,7 +61,7 @@ class Dialog(Float, metaclass=ABCMeta):
 
     title: "Optional[AnyFormattedText]" = None
     body_padding_top = 1
-    body_padding_bottom = 1
+    body_padding_bottom = 0
 
     def __init__(self, app: "BaseApp") -> None:
         """Create a modal dialog.
@@ -76,16 +78,15 @@ class Dialog(Float, metaclass=ABCMeta):
 
         """
         self.app = app
-        self.params = {}
-        self.to_focus = None
-        self.last_focused = None
+        self.to_focus: "Optional[FocusableElement]" = None
+        self.last_focused: "Optional[FocusableElement]" = None
         self._visible = False
         self.visible = Condition(lambda: self._visible)
 
         # Set default body & buttons
-        self.body = Window()
+        self.body: "AnyContainer" = Window()
         self.buttons: "Dict[str, Optional[Callable]]" = {"OK": None}
-        self.button_widgets: "List[Button]" = []
+        self.button_widgets: "List[AnyContainer]" = []
 
         # Create key-bindings
         self.kb = KeyBindings()
@@ -164,15 +165,15 @@ class Dialog(Float, metaclass=ABCMeta):
             cb()
         self.hide()
 
-    def _load(self) -> "None":
+    def _load(self, **params: "Any") -> "None":
         """Load body, create buttons, etc."""
         self.to_focus = None
 
         # Load body & buttons
-        self.load()
+        self.load(**params)
 
         # Create button widgets & callbacks
-        self.button_widgets = []
+        self.button_widgets.clear()
         if self.buttons:
             width = max(map(len, self.buttons)) + 2
             for text in self.buttons:
@@ -206,27 +207,29 @@ class Dialog(Float, metaclass=ABCMeta):
 
     def show(self, **params: "Any") -> "None":
         """Displays and focuses the dialog."""
-        self.params = params
         # Re-draw the body
-        self._load()
+        self._load(**params)
         self.last_focused = self.app.layout.current_control
         self._visible = True
         self.app.has_dialog = True
-        self.app.layout.focus(self.to_focus)
+        if self.to_focus is not None:
+            self.app.layout.focus(self.to_focus)
+        else:
+            try:
+                self.app.layout.focus(self.container)
+            except ValueError:
+                pass
         self.app.layout.focus(self.container)
         self.app.invalidate()
 
     def hide(self, event: "KeyPressEvent" = None) -> "None":
         """Hides the dialog."""
         self._visible = False
-        if (
-            self.last_focused is not None
-            and self.last_focused in self.app.layout.find_all_controls()
-        ):
+        if self.last_focused is not None:
             try:
                 self.app.layout.focus(self.last_focused)
             except ValueError:
-                pass
+                self.app.layout.focus_next()
         self.app.has_dialog = False
 
     def toggle(self) -> "None":
@@ -236,7 +239,7 @@ class Dialog(Float, metaclass=ABCMeta):
         else:
             self.show()
 
-    def __pt_container__(self) -> AnyContainer:
+    def __pt_container__(self) -> "AnyContainer":
         return self.container
 
 
@@ -284,13 +287,15 @@ class AboutDialog(Dialog):
             dialog.toggle()
 
 
-class FileDialog(Dialog):
+class FileDialog(Dialog, metaclass=ABCMeta):
     """A base dialog to prompt the user for a file path."""
 
     title = "Select a File"
     completer = PathCompleter()
 
-    def load(self) -> "None":
+    def load(
+        self, text: "str" = "", tab: "Optional[Tab]" = None, error: "str" = ""
+    ) -> "None":
         """Load the dialog body."""
 
         def _accept_text(buf: "Buffer") -> "bool":
@@ -300,7 +305,7 @@ class FileDialog(Dialog):
             return True
 
         filepath = Text(
-            text=self.params.get("text", ""),
+            text=text,
             multiline=False,
             completer=self.completer,
             accept_handler=_accept_text,
@@ -313,17 +318,21 @@ class FileDialog(Dialog):
                 Label("Enter file path:"),
                 FocusedStyle(filepath),
                 ConditionalContainer(
-                    Label(lambda: self.params.get("error"), style="red"),
-                    filter=Condition(lambda: bool(self.params.get("error"))),
+                    Label(lambda: error, style="red"),
+                    filter=Condition(lambda: bool(error)),
                 ),
             ]
         )
         self.to_focus = filepath
 
         self.buttons = {
-            "OK": partial(self.validate, filepath.buffer),
+            "OK": partial(self.validate, filepath.buffer, tab=tab),
             "Cancel": None,
         }
+
+    def validate(self, buffer: "Buffer", tab: "Tab") -> "None":
+        """Validate the input."""
+        self.hide()
 
 
 class OpenFileDialog(FileDialog):
@@ -331,7 +340,7 @@ class OpenFileDialog(FileDialog):
 
     title = "Select a File to Open"
 
-    def validate(self, buffer: "Buffer") -> "None":
+    def validate(self, buffer: "Buffer", tab: "Tab") -> "None":
         """Validate the the file to open exists."""
         from euporie.core.utils import parse_path
 
@@ -368,12 +377,11 @@ class SaveAsDialog(FileDialog):
 
     title = "Select a Path to Save"
 
-    def validate(self, buffer: "Buffer") -> "None":
+    def validate(self, buffer: "Buffer", tab: "Tab") -> "None":
         """Validate the the file to open exists."""
         from euporie.core.utils import parse_path
 
         path = parse_path(buffer.text)
-        tab = self.params.get("tab")
         if tab and path is not None:
             tab.save(path=path)
 
@@ -435,10 +443,17 @@ class SelectKernelDialog(Dialog):
 
     title = "Select Kernel"
 
-    def load(self) -> "None":
+    def load(
+        self,
+        kernel_specs: "Optional[Dict[str, Any]]" = None,
+        tab: "Optional[KernelTab]" = None,
+        message: "str" = "",
+    ) -> "None":
         """Load dialog body & buttons."""
+        kernel_specs = kernel_specs or {}
+
         options = Select(
-            options=list((kernel_specs := self.params.get("kernel_specs", {})).keys()),
+            options=list(kernel_specs.keys()),
             labels=[
                 kernel_spec.get("spec", {}).get("display_name", kernel_name)
                 for kernel_name, kernel_spec in kernel_specs.items()
@@ -450,20 +465,17 @@ class SelectKernelDialog(Dialog):
             rows=5,
         )
 
-        msg_text = self.params.get("message")
-        message = (
-            lambda: (f"{msg_text}\n" if msg_text else "") + "Please select a kernel:\n"
-        )
+        msg_ft = (f"{message}\n" if message else "") + "Please select a kernel:\n"
 
         self.body = HSplit(
             [
-                Label(message),
+                Label(msg_ft),
                 FocusedStyle(options),
             ]
         )
 
         def _change_kernel() -> "None":
-            tab = self.params.get("tab")
+            assert tab is not None
             name = options.options[options.index or 0]
             tab.kernel.change(name)
 
@@ -476,12 +488,12 @@ class SelectKernelDialog(Dialog):
 class MsgBoxDialog(Dialog):
     """A dialog which shows the user a message."""
 
-    title = "Are you sure?"
+    title = "Message"
 
-    def load(self) -> "None":
+    def load(self, title: "str" = "Message", message: "str" = "") -> "None":
         """Load dialog body & buttons."""
-        self.title = self.params.get("title")
-        self.body = Label(self.params.get("message"))
+        self.title = title
+        self.body = Label(message)
 
 
 class ConfirmDialog(Dialog):
@@ -489,13 +501,17 @@ class ConfirmDialog(Dialog):
 
     title = "Are you sure?"
 
-    def load(self) -> "None":
+    def load(
+        self,
+        message: "str" = "Please confirm",
+        cb: "Optional[Callable[[], None]]" = None,
+    ) -> "None":
         """Load dialog body & buttons."""
-        self.body = Label(self.params.get("message"))
+        self.body = Label(message)
 
         def _callback() -> "None":
-            if callable(callback := self.params.get("cb")):
-                callback()
+            if callable(cb):
+                cb()
 
         self.buttons = {
             "Yes": _callback,
@@ -508,18 +524,18 @@ class ErrorDialog(Dialog):
 
     title = "Error"
 
-    def load(self) -> "None":
+    def load(self, exception: "Optional[Exception]" = None, when: "str" = "") -> "None":
         """Load dialog body & buttons."""
         from euporie.core.widgets.formatted_text_area import FormattedTextArea
         from euporie.core.widgets.forms import Checkbox
+
+        if exception is None:
+            exception = Exception("Unspecified Error")
 
         checkbox = Checkbox(
             text="Show traceback",
             prefix=("⮞", "⮟"),
         )
-
-        exception = self.params.get("exception")
-        when = self.params.get("when")
 
         tb_text = "".join(
             traceback.format_exception(None, exception, exception.__traceback__)
@@ -566,15 +582,17 @@ class UnsavedDialog(Dialog):
 
     title = "Unsaved Changes"
 
-    def load(self) -> "None":
+    def load(
+        self, tab: "Optional[Tab]" = None, cb: "Optional[Callable[[], None]]" = None
+    ) -> "None":
         """Load the dialog body."""
-        tab = self.params.get("tab")
-        cb = self.params.get("cb")
+        tab = tab or self.app.tab
+        assert tab is not None
 
         self.body = Window(
             FormattedTextControl(
                 [
-                    ("bold", tab.path.name),
+                    ("bold", tab.path.name if tab.path else tab.__class__.__name__),
                     ("", " has unsaved changes\n"),
                     ("", "Do you want to save your changes?"),
                 ]
@@ -582,10 +600,12 @@ class UnsavedDialog(Dialog):
         )
 
         def yes_cb() -> "None":
+            assert tab is not None
             tab.save()
             tab.close(cb)
 
         def no_cb() -> "None":
+            assert tab is not None
             Tab.close(tab, cb)
 
         self.buttons = {
@@ -603,27 +623,28 @@ class ShortcutsDialog(Dialog):
     def __init__(self, app: "BaseApp") -> None:
         """Create a new shortcuts dialog instance."""
         super().__init__(app)
-        self.details = ""
+        self.details: "Optional[StyleAndTextTuples]" = None
 
-    def load(self) -> None:
+    def load(self, *args: "Any", **kwargs: "Any") -> "None":
         """Load the dialog body."""
         from euporie.core.formatted_text.utils import max_line_width
         from euporie.core.widgets.formatted_text_area import FormattedTextArea
 
         if not self.details:
             self.details = self.format_key_info()
+        assert self.details is not None
 
         width = max_line_width(self.details) + 1
 
         self.body = FormattedTextArea(
-            formatted_text=lambda: self.details,
+            formatted_text=self.details,
             multiline=True,
             focusable=True,
             wrap_lines=False,
             width=width,
         )
 
-    def format_key_info(self) -> "FormattedText":
+    def format_key_info(self) -> "StyleAndTextTuples":
         """Generate a table with the current key bindings."""
         from prompt_toolkit.formatted_text.base import to_formatted_text
 

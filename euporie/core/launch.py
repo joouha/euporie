@@ -1,9 +1,6 @@
 """Defines a simple app for launching euporie apps."""
 
-try:
-    from importlib_metadata import entry_points
-except ImportError:
-    from importlib.metadata import entry_points
+from importlib.metadata import entry_points
 
 from euporie.core.config import Config, add_setting
 
@@ -33,7 +30,7 @@ class CoreApp:
         type_=str,
         required=False,
         help_="The application to launch",
-        choices=[entry.name for entry in entry_points(group="euporie.apps")],
+        choices=[entry.name for entry in entry_points()["euporie.apps"]],
         description="""
             The name of the application to launch.
         """,

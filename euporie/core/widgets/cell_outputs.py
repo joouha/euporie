@@ -14,16 +14,18 @@ from euporie.core.convert.base import MIME_FORMATS, find_route
 from euporie.core.widgets.display import Display
 
 if TYPE_CHECKING:
-    from typing import Any, Dict, List, Optional, Protocol, Tuple
+    from typing import Any, Dict, List, Optional, Protocol, Tuple, TypeVar
 
     from prompt_toolkit.layout.containers import AnyContainer
 
     from euporie.core.comm.base import KernelTab
 
-    class OutputParent(Protocol):
+    KTParent = TypeVar("KTParent", bound=KernelTab)
+
+    class OutputParent(Protocol[KTParent]):
         """An output's parent."""
 
-        kernel_tab: "KernelTab"
+        kernel_tab: KTParent
 
         def refresh(self, now: "bool" = True) -> "None":
             """Update the parent container."""

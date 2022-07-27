@@ -1,12 +1,14 @@
 """Defines a command object for use in key-bindings, menus, and the command palette."""
 
 import logging
+import weakref
 from inspect import isawaitable, signature
 from typing import TYPE_CHECKING, cast
 
 from prompt_toolkit.application import get_app
 from prompt_toolkit.filters import to_filter
 from prompt_toolkit.key_binding.key_bindings import Binding
+from prompt_toolkit.key_binding.key_processor import KeyPressEvent
 
 from euporie.core.key_binding.util import parse_keys
 from euporie.core.keys import Keys
@@ -14,8 +16,8 @@ from euporie.core.keys import Keys
 if TYPE_CHECKING:
     from typing import (
         Any,
-        Awaitable,
         Callable,
+        Coroutine,
         Dict,
         List,
         Optional,
@@ -25,8 +27,10 @@ if TYPE_CHECKING:
     )
 
     from prompt_toolkit.filters import Filter, FilterOrBool
-    from prompt_toolkit.key_binding import KeyBindingsBase, KeyPressEvent
-    from prompt_toolkit.key_binding.key_bindings import KeyHandlerCallable
+    from prompt_toolkit.key_binding.key_bindings import (
+        KeyBindingsBase,
+        KeyHandlerCallable,
+    )
 
     from euporie.core.widgets.menu import MenuItem
 
@@ -44,7 +48,7 @@ class Command:
 
     def __init__(
         self,
-        handler: "Callable[..., Optional[Awaitable[Any]]]",
+        handler: "Callable[..., Optional[Coroutine[Any, Any, None]]]",
         *,
         filter: "FilterOrBool" = True,
         hidden: "FilterOrBool" = False,
@@ -103,7 +107,7 @@ class Command:
         self.save_before = save_before
         self.record_in_macro = to_filter(record_in_macro)
 
-        self.keys: "List[Tuple[Keys, ...]]" = []
+        self.keys: "List[Tuple[Union[str, Keys], ...]]" = []
 
         self.selected_item = 0
         self.children: "Sequence[MenuItem]" = []
@@ -111,21 +115,15 @@ class Command:
     def run(self) -> "None":
         """Runs the command's handler."""
         if self.filter():
-            sig = signature(self.handler)
-
-            if isawaitable(self.handler):
-                task = cast("Callable[..., Awaitable[None]]", self.handler)()
-                get_app().create_background_task(task)
-            elif sig.parameters:
-
-                class _Event:
-                    app = get_app()
-                    current_buffer = app.layout.current_buffer
-                    arg = 1
-
-                self.handler(_Event)
-            else:
-                self.handler()
+            self.key_handler(
+                KeyPressEvent(
+                    key_processor_ref=weakref.ref(get_app().key_processor),
+                    arg=None,
+                    key_sequence=[],
+                    previous_key_sequence=[],
+                    is_repeat=False,
+                )
+            )
 
     @property
     def key_handler(self) -> "KeyHandlerCallable":
@@ -153,7 +151,7 @@ class Command:
 
         return _key_handler
 
-    def bind(self, key_bindings: "KeyBindingsBase", keys: "AnyKeys" = None) -> "None":
+    def bind(self, key_bindings: "KeyBindingsBase", keys: "AnyKeys") -> "None":
         """Add the current commands to a set of key bindings.
 
         Args:
@@ -176,13 +174,13 @@ class Command:
             )
 
     @property
-    def key_str(self) -> "Optional[str]":
+    def key_str(self) -> "str":
         """Return a string representing the first registered key-binding."""
         from euporie.core.key_binding.util import format_keys
 
         if self.keys:
             return format_keys([self.keys[0]])[0]
-        return None
+        return ""
 
     @property
     def menu_handler(self) -> "Callable[[], None]":

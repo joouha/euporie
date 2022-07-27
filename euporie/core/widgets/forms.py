@@ -1196,7 +1196,7 @@ class Dropdown(SelectableWidget):
             xcursor=True,
             ycursor=True,
         )
-        get_app().dialogs[f"dropdown-menu-{hash(self)}"] = self.menu
+        get_app().menus[f"dropdown-menu-{hash(self)}"] = self.menu
 
     def load_container(self) -> "AnyContainer":
         """Load the widget's container."""

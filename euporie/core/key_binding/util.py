@@ -9,7 +9,7 @@ from euporie.core.keys import Keys
 if TYPE_CHECKING:
     from typing import Dict, List, Tuple, Union
 
-    from euporie.key_binding.registry import AnyKeys
+    from euporie.core.key_binding.registry import AnyKeys
 
 
 KEY_ALIASES: "Dict[Union[str, Keys], str]" = {
@@ -21,9 +21,9 @@ KEY_ALIASES: "Dict[Union[str, Keys], str]" = {
 }
 
 
-def parse_keys(keys: "AnyKeys") -> "List[Keys]":
+def parse_keys(keys: "AnyKeys") -> "List[Tuple[Union[str, Keys], ...]]":
     """Parse a list of keys."""
-    output = []
+    output: "List[Tuple[Union[str, Keys], ...]]" = []
     if not isinstance(keys, list):
         keys = [keys]
     for key in keys:

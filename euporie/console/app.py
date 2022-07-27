@@ -10,13 +10,11 @@ from prompt_toolkit.filters import is_done
 from prompt_toolkit.filters.app import renderer_height_is_known
 from prompt_toolkit.layout.containers import (
     ConditionalContainer,
-    Float,
     FloatContainer,
     HSplit,
     Window,
 )
 from prompt_toolkit.layout.dimension import Dimension
-from prompt_toolkit.layout.menus import CompletionsMenu
 
 from euporie.console.tabs.console import Console
 from euporie.core.app import BaseApp
@@ -77,14 +75,6 @@ class ConsoleApp(BaseApp):
         assert self.search_bar is not None
         assert self.tab is not None
 
-        self.dialogs["competions-menu"] = Float(
-            content=CompletionsMenu(
-                max_height=16,
-                scroll_offset=1,
-            ),
-            xcursor=True,
-            ycursor=True,
-        )
         self.dialogs["command-palette"] = CommandPalette(self)
         self.dialogs["about"] = AboutDialog(self)
         # self.dialogs["save-as"] = SaveAsDialog(self)
@@ -139,7 +129,7 @@ class ConsoleApp(BaseApp):
         name="end-of-file",
         filter=buffer_is_code & buffer_is_empty,
         description="Signals the end of the input, causing the console to exit.",
-    )(BaseApp.quit)
+    )(BaseApp._quit)
 
     # ################################### Settings ####################################
 

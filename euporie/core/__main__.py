@@ -3,12 +3,9 @@
 
 def main(name: "str" = "core") -> "None":
     """Loads and launches the application."""
-    try:
-        from importlib_metadata import entry_points
-    except ImportError:
-        from importlib.metadata import entry_points
+    from importlib.metadata import entry_points
 
-    for entry in entry_points(group="euporie.apps"):
+    for entry in entry_points()["euporie.apps"]:
         if entry.name == name:
             return entry.load().launch()
     else:

@@ -13,7 +13,6 @@ from prompt_toolkit.formatted_text import HTML
 from prompt_toolkit.layout.containers import (
     ConditionalContainer,
     DynamicContainer,
-    Float,
     FloatContainer,
     HSplit,
     VSplit,
@@ -22,7 +21,6 @@ from prompt_toolkit.layout.containers import (
     to_container,
 )
 from prompt_toolkit.layout.controls import FormattedTextControl
-from prompt_toolkit.layout.menus import CompletionsMenu
 
 from euporie.core import __logo__
 from euporie.core.app import BaseApp
@@ -60,7 +58,7 @@ if TYPE_CHECKING:
     from prompt_toolkit.layout.containers import AnyContainer
 
     from euporie.core.tabs.base import Tab
-    from euporie.core.widgets.cell import InteractiveCell
+    from euporie.core.widgets.cell import Cell
 
 log = logging.getLogger(__name__)
 
@@ -201,6 +199,8 @@ class NotebookApp(BaseApp):
 
         self.pager = Pager()
 
+        assert self.search_bar is not None
+
         body = HSplit(
             [
                 tab_bar,
@@ -212,14 +212,6 @@ class NotebookApp(BaseApp):
             style="class:body",
         )
 
-        self.dialogs["completions-menu"] = Float(
-            content=CompletionsMenu(
-                max_height=16,
-                scroll_offset=1,
-            ),
-            xcursor=True,
-            ycursor=True,
-        )
         self.dialogs["command-palette"] = CommandPalette(self)
         self.dialogs["about"] = AboutDialog(self)
         self.dialogs["open-file"] = OpenFileDialog(self)
@@ -258,7 +250,7 @@ class NotebookApp(BaseApp):
     ) -> "None":
         exception = context.get("exception")
         # Also display a dialog to the user
-        self.dialogs.get("error").show(exception=exception)
+        self.dialogs["error"].show(exception=exception)
         # Log observed exceptions to the log
         log.exception("An unhandled exception occurred", exc_info=exception)
 
@@ -321,7 +313,7 @@ class NotebookApp(BaseApp):
         return None
 
     @property
-    def cell(self) -> "Optional[InteractiveCell]":
+    def cell(self) -> "Optional[Cell]":
         """Return the currently active cell."""
         if isinstance(self.tab, Notebook):
             return self.tab.cell

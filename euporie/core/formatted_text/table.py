@@ -92,7 +92,7 @@ class Cell:
         col: "Optional[Col]" = None,
         col_span: "int" = 1,
         align: "Optional[FormattedTextAlign]" = None,
-        padding: "Optional[Padding]" = None,
+        padding: "Optional[Union[Padding, int]]" = None,
         border: "Optional[Union[LineStyle, BorderLineStyle]]" = None,
         style: "str" = "",
     ):
@@ -306,7 +306,7 @@ class RowCol:
         table: "Optional[Table]" = None,
         cells: "Optional[Sequence[Cell]]" = None,
         align: "Optional[FormattedTextAlign]" = None,
-        padding: "Optional[Padding]" = None,
+        padding: "Optional[Union[Padding, int]]" = None,
         border: "Optional[Union[LineStyle, BorderLineStyle]]" = None,
         style: "str" = "",
     ):
@@ -510,7 +510,7 @@ class Table:
         width: "Optional[int]" = None,
         expand: "bool" = False,
         align: "FormattedTextAlign" = FormattedTextAlign.LEFT,
-        padding: "Optional[Padding]" = None,
+        padding: "Optional[Union[Padding, int]]" = None,
         border: "Optional[Union[BorderLineStyle, LineStyle]]" = Thin,
         border_style: "str" = "",
         border_collapse: "bool" = False,

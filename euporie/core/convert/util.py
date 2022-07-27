@@ -28,7 +28,10 @@ log = logging.getLogger(__name__)
 
 def commands_exist(*cmds: "str") -> "Filter":
     """Verifies a list of external commands exist on the system."""
-    filters = [Condition(partial(lambda x: bool(which(cmd)), cmd)) for cmd in cmds]
+    filters = [
+        Condition(partial(lambda x: bool(which(cmd)), cmd))  # noqa: B023
+        for cmd in cmds
+    ]
     return reduce(lambda a, b: a & b, filters, to_filter(True))
 
 

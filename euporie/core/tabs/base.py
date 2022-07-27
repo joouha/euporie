@@ -6,8 +6,8 @@ import logging
 from abc import ABCMeta
 from typing import TYPE_CHECKING
 
-from prompt_toolkit.layout.containers import Window
 from prompt_toolkit.history import InMemoryHistory
+from prompt_toolkit.layout.containers import Window
 
 from euporie.core.app import get_app
 from euporie.core.comm.registry import open_comm
@@ -19,8 +19,7 @@ from euporie.core.kernel import Kernel, MsgCallbacks
 from euporie.core.suggest import HistoryAutoSuggest
 
 if TYPE_CHECKING:
-    from os import PathLike
-    from typing import Any, Callable, Dict, Optional, Sequence
+    from typing import Any, Callable, Dict, Optional, Sequence, Tuple
 
     from prompt_toolkit.formatted_text import AnyFormattedText
     from prompt_toolkit.layout.containers import AnyContainer
@@ -37,17 +36,16 @@ class Tab(metaclass=ABCMeta):
 
     container: "AnyContainer"
 
-    def __init__(
-        self, app: "Optional[BaseApp]" = None, path: "Optional[PathLike]" = None
-    ):
+    def __init__(self, app: "BaseApp", path: "Optional[UPath]" = None):
         """Called when the tab is created."""
-        self.app: "BaseApp" = app or get_app()
+        self.app = app
+        self.path = path
         self.app.container_statuses[self] = self.statusbar_fields
         self.container = Window()
 
     def statusbar_fields(
         self,
-    ) -> "tuple[Sequence[AnyFormattedText], Sequence[AnyFormattedText]]":
+    ) -> "Tuple[Sequence[AnyFormattedText], Sequence[AnyFormattedText]]":
         """Returns a list of statusbar field values shown then this tab is active."""
         return ([], [])
 
@@ -85,20 +83,17 @@ class KernelTab(Tab, metaclass=ABCMeta):
     """A Tab which connects to a kernel."""
 
     kernel: "Kernel"
-    kernel_name: "str"
-    kernel_display_name: "str"
     kernel_language: "str"
-    kernel_lang_file_ext: "str"
-    metadata: "Dict[str, Any]"
+    _metadata: "Dict[str, Any]"
 
     default_callbacks: "MsgCallbacks"
     allow_stdin: "bool"
 
     def __init__(
         self,
-        app: "Optional[BaseApp]" = None,
-        path: "Optional[PathLike]" = None,
-        use_kernel_history: "bool" = None,
+        app: "BaseApp",
+        path: "Optional[UPath]" = None,
+        use_kernel_history: "bool" = False,
     ) -> "None":
         """Create a new instance of a tab with a kernel."""
         super().__init__(app, path)
@@ -130,24 +125,34 @@ class KernelTab(Tab, metaclass=ABCMeta):
             self.kernel.restart()
 
     @property
+    def metadata(self) -> "Dict[str, Any]":
+        """Return a dictionary to hold notebook / kernel metadata."""
+        return self._metadata
+
+    @property
     def kernel_name(self) -> "str":
         """Return the name of the kernel defined in the notebook JSON."""
         return self.metadata.get("kernelspec", {}).get("name")
+
+    @kernel_name.setter
+    def kernel_name(self, value: "str") -> "None":
+        """Return the name of the kernel defined in the notebook JSON."""
+        self.metadata.setdefault("kernelspec", {})["name"] = value
 
     @property
     def language(self) -> "str":
         """Return the name of the kernel defined in the notebook JSON."""
         return self.metadata.get("kernelspec", {}).get("language")
 
-    @kernel_name.setter
-    def kernel_name(self, name: "str") -> "None":
-        """Set the kernel name."""
-        self.metadata.setdefault("kernelspec", {})["name"] = name
-
     @property
     def kernel_display_name(self) -> "str":
         """Return the display name of the kernel defined in the notebook JSON."""
         return self.metadata.get("kernelspec", {}).get("display_name", "")
+
+    @property
+    def kernel_lang_file_ext(self) -> "str":
+        """Return the display name of the kernel defined in the notebook JSON."""
+        return self.metadata.get("language_info", {}).get("file_extension", ".py")
 
     def set_kernel_info(self, info: "dict") -> "None":
         """Handle kernel info requests."""
@@ -167,7 +172,7 @@ class KernelTab(Tab, metaclass=ABCMeta):
 
         # Automatically select the only kernel if there is only one
         if startup and len(kernel_specs) == 1:
-            self.kernel.change(list(kernel_specs)[0], self.metadata)
+            self.kernel.change(list(kernel_specs)[0])
             return
 
         self.app.dialogs["change-kernel"].show(

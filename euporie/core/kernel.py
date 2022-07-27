@@ -263,11 +263,12 @@ class Kernel:
         # If we are connecting to an existing kernel, create a kernel client using
         # the given connection file
         if self.kernel_tab.app.config.kernel_connection_file:
-            self.kc = self.km.client_factory(
+            kc = self.km.client_factory(
                 connection_file=self.kernel_tab.app.config.kernel_connection_file
             )
-            self.kc.load_connection_file()
-            self.kc.start_channels()
+            kc.load_connection_file()
+            kc.start_channels()
+            self.kc = kc
 
         # Otherwise, start a new kernel using the kernel manager
         else:
@@ -284,7 +285,7 @@ class Kernel:
                 if self.km.has_kernel:
                     self.kc = self.km.client()
 
-        if self.status != "error":
+        if self.kc and self.status != "error":
             log.debug("Waiting for kernel to become ready")
             try:
                 await self.kc._async_wait_for_ready(timeout=10)

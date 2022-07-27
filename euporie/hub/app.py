@@ -78,7 +78,7 @@ class HubApp(BaseApp):
 
         # Import the hubbed app
         if entry_point := {
-            entry.name: entry for entry in entry_points(group="euporie.apps")
+            entry.name: entry for entry in entry_points()["euporie.apps"]
         }.get(cls.config.app):
             app_cls = entry_point.load()
         else:
