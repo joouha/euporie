@@ -60,7 +60,7 @@ class StatusBar:
         name="show_status_bar",
         flags=["--show-status-bar"],
         type_=bool,
-        title="the status bar visibility",
+        title="status bar",
         help_="Show the status bar",
         default=True,
         schema={

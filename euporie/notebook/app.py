@@ -9,7 +9,6 @@ from typing import TYPE_CHECKING, cast
 
 from prompt_toolkit.application.current import get_app as ptk_get_app
 from prompt_toolkit.filters import Condition
-from prompt_toolkit.formatted_text import HTML
 from prompt_toolkit.layout.containers import (
     ConditionalContainer,
     DynamicContainer,
@@ -75,11 +74,6 @@ class NotebookApp(BaseApp):
     notebooks in the terminal.
     """
 
-    status_default = (
-        [HTML("Press <b>Ctrl+n</b> to start a new notebook")],
-        [HTML("Press <b>Ctrl+q</b> to quit")],
-    )
-
     def __init__(self, **kwargs: "Any") -> "None":
         """Create a new euporie text user interface application instance."""
         super().__init__(
@@ -96,6 +90,24 @@ class NotebookApp(BaseApp):
         self.search_bar = SearchBar()
         self.bindings_to_load.append("app.notebook")
         self.has_dialog = False
+
+        log.debug(get_cmd("new-notebook").keys)
+        log.debug(get_cmd("new-notebook").key_str)
+
+        self.pre_run_callables.append(self.load_default_statusbar_fields)
+
+    def load_default_statusbar_fields(self) -> "None":
+        """Load the default statusbar fields (run after keybindings are loaded)."""
+        self.status_default = (
+            [
+                [
+                    ("", "Press "),
+                    ("bold", get_cmd("new-notebook").key_str),
+                    ("", " to start a new notebook"),
+                ],
+            ],
+            [[("", "Press "), ("bold", get_cmd("quit").key_str), ("", " to quit")]],
+        )
 
     def get_file_tab(self, path: "PathLike") -> "Type[Tab]":
         """Returns the tab to use for a file path."""
@@ -386,30 +398,10 @@ class NotebookApp(BaseApp):
             MenuItem(
                 "Settings",
                 children=[
-                    MenuItem(
-                        "Editor key bindings",
-                        children=[
-                            # get_cmd(f"set-edit-mode-{choice}").menu
-                            # for choice in config.choices("edit_mode")
-                        ],
-                    ),
+                    self.config.get_item("edit_mode").menu,
                     separator,
-                    MenuItem(
-                        "Color scheme",
-                        children=[
-                            # get_cmd(f"set-color-scheme-{choice}").menu
-                            # for choice in config.choices("color_scheme")
-                        ],
-                    ),
-                    MenuItem(
-                        "Syntax theme",
-                        children=[
-                            # get_cmd(f"set-syntax-theme-{choice}").menu
-                            # for choice in sorted(
-                            # CONFIG_PARAMS["syntax_theme"]["schema_"]["enum"]
-                            # )
-                        ],
-                    ),
+                    self.config.get_item("color_scheme").menu,
+                    self.config.get_item("syntax_theme").menu,
                     get_cmd("toggle-background-pattern").menu,
                     get_cmd("toggle-show-cell-borders").menu,
                     get_cmd("toggle-tmux-graphics").menu,

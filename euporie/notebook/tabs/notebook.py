@@ -584,6 +584,7 @@ class Notebook(BaseNotebook):
 
     add_setting(
         name="show_scroll_bar",
+        title="scroll bar",
         flags=["--show-scroll-bar"],
         type_=bool,
         help_="Show the scroll bar",

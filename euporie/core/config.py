@@ -20,7 +20,7 @@ from prompt_toolkit.utils import Event
 from upath import UPath
 
 from euporie.core import __app_name__, __copyright__, __version__
-from euporie.core.commands import add_cmd
+from euporie.core.commands import add_cmd, get_cmd
 
 if TYPE_CHECKING:
     from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Type, Union
@@ -398,7 +398,7 @@ class Setting:
                 hidden=self.hidden,
                 toggled=Condition(partial(lambda x: self.value == x, choice)),
                 title=f"Set {self.title} to {choice}",
-                menu_title=choice,
+                menu_title=str(choice).replace("_", " ").capitalize(),
                 description=f'Set the value of the "{self.name}" '
                 'configuration option to "{choice}"',
                 filter=self.cmd_filter,
@@ -443,9 +443,24 @@ class Setting:
             **self._schema,
         }
 
+    @property
     def menu(self, toggle: "bool" = False) -> "MenuItem":
         """Return a menu item for the setting."""
-        pass
+        from euporie.core.widgets.menu import MenuItem
+
+        choices = (self.choices or self.schema.get("enum", [])) or []
+        if choices:
+            return MenuItem(
+                self.title.capitalize(),
+                children=[
+                    get_cmd(f"set-{self.name.replace('_', '-')}-{choice}").menu
+                    for choice in choices
+                ],
+            )
+        elif self.type in (bool, int):
+            return get_cmd(f"toggle-{self.name.replace('_', '-')}").menu
+        else:
+            raise NotImplementedError
 
     @property
     def parser_args(self) -> "Tuple[List[str], Dict[str, Any]]":

@@ -810,10 +810,11 @@ class BaseApp(Application):
         flags=["--edit-mode"],
         type_=str,
         choices=["micro", "emacs", "vi"],
+        title="Editor key bindings",
         help_="Key-binding mode for text editing",
         default="micro",
         description="""
-            Key binding mode to use when editing cells.
+            Key binding style to use when editing cells.
         """,
     )
 

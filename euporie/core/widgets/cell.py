@@ -723,6 +723,7 @@ class Cell:
 
     add_setting(
         name="show_cell_borders",
+        title="cell borders",
         flags=["--show-cell-borders"],
         type_=bool,
         help_="Show or hide cell borders.",
