@@ -7,6 +7,7 @@ from abc import ABCMeta
 from typing import TYPE_CHECKING
 
 from prompt_toolkit.layout.containers import Window
+from prompt_toolkit.history import InMemoryHistory
 
 from euporie.core.app import get_app
 from euporie.core.comm.registry import open_comm
@@ -109,7 +110,9 @@ class KernelTab(Tab, metaclass=ABCMeta):
         )
         self.comms: "Dict[str, Comm]" = {}  # The client-side comm states
         self.completer = KernelCompleter(self.kernel)
-        self.history = KernelHistory(self.kernel) if use_kernel_history else None
+        self.history = (
+            KernelHistory(self.kernel) if use_kernel_history else InMemoryHistory()
+        )
         self.suggester = HistoryAutoSuggest(self.history)
 
     def interrupt_kernel(self) -> "None":

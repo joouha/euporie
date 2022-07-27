@@ -150,6 +150,16 @@ class Notebook(BaseNotebook):
             if self.app.config.run:
                 self.run_all(wait=False)
 
+            # Load history
+            async def load_history() -> "None":
+                """Manually load kernel history."""
+                try:
+                    await self.history.load().__anext__()
+                except StopAsyncIteration:
+                    pass
+
+            get_app().create_background_task(load_history())
+
         self.app.invalidate()
 
     def load_container(self) -> "AnyContainer":
