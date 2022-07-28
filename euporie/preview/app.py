@@ -91,7 +91,9 @@ def get_preview_app() -> "PreviewApp":
 
 
 class PreviewApp(BaseApp):
-    """Preview a notebook file.
+    """Preview app.
+
+    Preview notebook files in the terminal.
 
     Outputs a formatted notebook file. The formatted output will be written to
     the the output file path given by `output_file` (the standard output by
@@ -113,7 +115,7 @@ class PreviewApp(BaseApp):
         # We want the app to close when rendering is complete
         # self.after_render += self.pre_exit
         # Do not load any key bindings
-        self.bindings_to_load = ["app.preview"]
+        self.bindings_to_load = ["euporie.preview.app.PreviewApp"]
         # Select the first tab after files are opened
         self.pre_run_callables += [partial(setattr, self, "tab_idx", 0)]
 
@@ -256,7 +258,7 @@ class PreviewApp(BaseApp):
         help_="Pass output to pager",
         default=False,
         description="""
-            Whether to pipe output to the system pager when using ``--dump``.
+            Whether to pipe output to the system pager when previewing a notebook.
         """,
     )
 
@@ -264,7 +266,7 @@ class PreviewApp(BaseApp):
 
     register_bindings(
         {
-            "app.preview": {
+            "euporie.preview.app.PreviewApp": {
                 "quit": ["c-c", "c-q"],
             }
         }

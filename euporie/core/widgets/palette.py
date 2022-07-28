@@ -294,7 +294,7 @@ class CommandPalette(Dialog):
 
     register_bindings(
         {
-            "app.base": {
+            "euporie.core.app.BaseApp": {
                 "show-command-palette": "c-@",
             }
         }

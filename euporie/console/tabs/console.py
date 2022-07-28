@@ -50,7 +50,11 @@ log = logging.getLogger(__name__)
 
 
 class Console(KernelTab):
-    """A interactive console container class."""
+    """Interactive consoles.
+
+    An interactive console which connects to a Jupyter kernel.
+
+    """
 
     def __init__(
         self,
@@ -285,7 +289,9 @@ class Console(KernelTab):
                 ),
                 ConditionalContainer(Window(height=1), filter=self.app.redrawing),
             ],
-            key_bindings=load_registered_bindings("tabs.console"),
+            key_bindings=load_registered_bindings(
+                "euporie.console.tabs.console.Console"
+            ),
         )
 
     def accept_stdin(self, buf: "Buffer") -> "bool":
@@ -445,7 +451,7 @@ class Console(KernelTab):
 
     register_bindings(
         {
-            "tabs.console": {
+            "euporie.console.tabs.console.Console": {
                 "run-input": ["c-enter", "s-enter", "c-e"],
                 "clear-input": "c-c",
                 "show-contextual-help": "s-tab",

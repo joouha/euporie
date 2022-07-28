@@ -415,7 +415,7 @@ class TerminalInfo:
                 description=f"Sets the terminal's {title} value.",
             )(query_inst._handle_response)
             # Add key-binding
-            register_bindings({"app.base": {name: key}})
+            register_bindings({"euporie.core.app.BaseApp": {name: key}})
 
         return query_inst
 

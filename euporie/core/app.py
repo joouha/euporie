@@ -134,7 +134,9 @@ def get_app() -> "BaseApp":
 
 
 class BaseApp(Application):
-    """The base euporie application class.
+    """All euporie apps.
+
+    The base euporie application class.
 
     This subclasses the `prompt_toolkit.application.Application` class, so application
     wide methods can be easily added.
@@ -224,7 +226,7 @@ class BaseApp(Application):
         # Use a custom key-processor which does not wait after escape keys
         self.key_processor = KeyProcessor(_CombinedRegistry(self))
         # List of key-bindings groups to load
-        self.bindings_to_load = ["app.base"]
+        self.bindings_to_load = ["euporie.core.app.BaseApp"]
         # Determines which clipboard mechanism to use
         self.clipboard: "Clipboard" = (
             PyperclipClipboard() if determine_clipboard()[0] else InMemoryClipboard()
@@ -937,7 +939,6 @@ class BaseApp(Application):
             forthis to take effect.
 
             .. warning::
-
                Terminal graphics in :program:`tmux` is experimental, and is not
                guaranteed to work. Use at your own risk!
         """,
@@ -1002,7 +1003,7 @@ class BaseApp(Application):
 
     register_bindings(
         {
-            "app.base": {
+            "euporie.core.app.BaseApp": {
                 "quit": "c-q",
                 "close-tab": "c-w",
                 "next-tab": "c-pagedown",

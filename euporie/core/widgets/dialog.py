@@ -365,7 +365,7 @@ class OpenFileDialog(FileDialog):
 
     register_bindings(
         {
-            "app.base": {
+            "euporie.core.app.BaseApp": {
                 "open-file": "c-o",
             }
         }
@@ -404,7 +404,7 @@ class SaveAsDialog(FileDialog):
 
     register_bindings(
         {
-            "app.base": {
+            "euporie.core.app.BaseApp": {
                 "save-as": ("escape", "s"),
             }
         }
@@ -470,7 +470,7 @@ class SelectKernelDialog(Dialog):
         self.body = HSplit(
             [
                 Label(msg_ft),
-                FocusedStyle(options),
+                FocusedStyle(Box(options, padding_left=0)),
             ]
         )
 
@@ -646,6 +646,9 @@ class ShortcutsDialog(Dialog):
 
     def format_key_info(self) -> "StyleAndTextTuples":
         """Generate a table with the current key bindings."""
+        import importlib
+        from textwrap import dedent
+
         from prompt_toolkit.formatted_text.base import to_formatted_text
 
         from euporie.core.border import Invisible, Padding
@@ -653,15 +656,23 @@ class ShortcutsDialog(Dialog):
         from euporie.core.formatted_text.table import Table
         from euporie.core.formatted_text.utils import FormattedTextAlign
         from euporie.core.key_binding.registry import BINDINGS
-        from euporie.core.key_binding.util import format_keys, parse_keys
+        from euporie.core.key_binding.utils import format_keys, parse_keys
 
         table = Table(padding=0, border=Invisible, border_collapse=True)
 
         for group, bindings in BINDINGS.items():
+            log.info(group)
             if bindings:
+                mod_name, cls_name = group.rsplit(".", maxsplit=1)
+                mod = importlib.import_module(mod_name)
+                app_cls = getattr(mod, cls_name)
+                section_title = (
+                    dedent(app_cls.__doc__).strip().split("\n")[0].rstrip(".")
+                )
+
                 row = table.new_row()
                 row.new_cell(
-                    group,
+                    section_title,
                     align=FormattedTextAlign.CENTER,
                     col_span=2,
                     style="class:shortcuts.group",

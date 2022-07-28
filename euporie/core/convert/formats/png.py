@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 
 from euporie.core.convert.base import register
 from euporie.core.convert.formats.common import base64_to_bytes_py, imagemagick_convert
-from euporie.core.convert.util import commands_exist, have_modules
+from euporie.core.convert.utils import commands_exist, have_modules
 
 if TYPE_CHECKING:
     from typing import Optional

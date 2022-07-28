@@ -51,7 +51,9 @@ class EuporieSSHServer(asyncssh.SSHServer):  # type: ignore
 
 
 class HubApp(BaseApp):
-    """An app which runs as a multi-user SSH server.
+    """Hub App.
+
+    An app which runs as a multi-user SSH server.
 
     This app never actually gets run, but is used to run another app in an SSH server.
     """
@@ -186,6 +188,7 @@ class HubApp(BaseApp):
         default=False,
         description="""
             When set, users will be able to access euporie hub without authentication.
+
             .. warning::
                This option is dangerous, as arbitrary code can be executed through
         """,

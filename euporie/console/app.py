@@ -44,9 +44,9 @@ def get_app() -> "ConsoleApp":
 
 
 class ConsoleApp(BaseApp):
-    """Launch an interactive console which displays rich & interactive output.
+    """Console app.
 
-    Launches euporie console, a frontend for Jupyter kernels which displays
+    An interactive console which connects to Jupyter kernels and displays
     rich output in the terminal.
 
     """
@@ -64,7 +64,7 @@ class ConsoleApp(BaseApp):
             }
         )
         self.search_bar = SearchBar()
-        self.bindings_to_load += ["app.console"]
+        self.bindings_to_load += ["euporie.console.app.ConsoleApp"]
 
         self.tabs = [Console(self)]
         self.pager = Pager()
@@ -139,7 +139,7 @@ class ConsoleApp(BaseApp):
 
     register_bindings(
         {
-            "app.console": {
+            "euporie.console.app.ConsoleApp": {
                 "clear-screen": "c-l",
                 "end-of-file": "c-d",
             }

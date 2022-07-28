@@ -24,7 +24,7 @@ from prompt_toolkit.utils import Event
 from euporie.core.app import get_app
 from euporie.core.commands import add_cmd
 from euporie.core.convert.base import convert, find_route
-from euporie.core.convert.util import data_pixel_size, pixels_to_cell_size
+from euporie.core.convert.utils import data_pixel_size, pixels_to_cell_size
 from euporie.core.filters import display_has_focus, has_dialog, has_menus
 from euporie.core.key_binding.registry import (
     load_registered_bindings,
@@ -84,7 +84,9 @@ class DisplayControl(UIControl):
         self.bg_color = bg_color
         self.focusable = to_filter(focusable)
         self.focus_on_click = to_filter(focus_on_click)
-        self.key_bindings = load_registered_bindings("widgets.display")
+        self.key_bindings = load_registered_bindings(
+            "euporie.core.widgets.display.Display"
+        )
         self.app = get_app()
 
         self.on_cursor_position_changed = Event(self)
@@ -771,7 +773,11 @@ class GraphicFloat(Float):
 
 
 class Display:
-    """A container for displaying rich output data."""
+    """Rich output displays.
+
+    A container for displaying rich output data.
+
+    """
 
     def __init__(
         self,
@@ -911,91 +917,92 @@ class Display:
         """Return the content of this output."""
         return self.window
 
+    # Commands
 
-# Commands
+    @staticmethod
+    @add_cmd(filter=display_has_focus)
+    def _scroll_display_left() -> "None":
+        """Scroll the display up one line."""
+        window = get_app().layout.current_window
+        assert isinstance(window, DisplayWindow)
+        window._scroll_left()
 
+    @staticmethod
+    @add_cmd(filter=display_has_focus)
+    def _scroll_display_right() -> "None":
+        """Scroll the display down one line."""
+        window = get_app().layout.current_window
+        assert isinstance(window, DisplayWindow)
+        window._scroll_right()
 
-@add_cmd(filter=display_has_focus)
-def scroll_display_left() -> "None":
-    """Scroll the display up one line."""
-    window = get_app().layout.current_window
-    assert isinstance(window, DisplayWindow)
-    window._scroll_left()
+    @staticmethod
+    @add_cmd(filter=display_has_focus)
+    def _scroll_display_up() -> "None":
+        """Scroll the display up one line."""
+        get_app().layout.current_window._scroll_up()
 
+    @staticmethod
+    @add_cmd(filter=display_has_focus)
+    def _scroll_display_down() -> "None":
+        """Scroll the display down one line."""
+        get_app().layout.current_window._scroll_down()
 
-@add_cmd(filter=display_has_focus)
-def scroll_display_right() -> "None":
-    """Scroll the display down one line."""
-    window = get_app().layout.current_window
-    assert isinstance(window, DisplayWindow)
-    window._scroll_right()
+    @staticmethod
+    @add_cmd(filter=display_has_focus)
+    def _page_up_display() -> "None":
+        """Scroll the display up one page."""
+        window = get_app().layout.current_window
+        if window.render_info is not None:
+            for _ in range(window.render_info.window_height):
+                window._scroll_up()
 
+    @staticmethod
+    @add_cmd(filter=display_has_focus)
+    def _page_down_display() -> "None":
+        """Scroll the display down one page."""
+        window = get_app().layout.current_window
+        if window.render_info is not None:
+            for _ in range(window.render_info.window_height):
+                window._scroll_down()
 
-@add_cmd(filter=display_has_focus)
-def scroll_display_up() -> "None":
-    """Scroll the display up one line."""
-    get_app().layout.current_window._scroll_up()
+    @staticmethod
+    @add_cmd(filter=display_has_focus)
+    def _go_to_start_of_display() -> "None":
+        """Scroll the display to the top."""
+        from euporie.core.widgets.display import DisplayControl
 
+        current_control = get_app().layout.current_control
+        if isinstance(current_control, DisplayControl):
+            current_control.cursor_position = Point(0, 0)
 
-@add_cmd(filter=display_has_focus)
-def scroll_display_down() -> "None":
-    """Scroll the display down one line."""
-    get_app().layout.current_window._scroll_down()
+    @staticmethod
+    @add_cmd(filter=display_has_focus)
+    def _go_to_end_of_display() -> "None":
+        """Scroll the display down one page."""
+        from euporie.core.widgets.display import DisplayControl
 
+        layout = get_app().layout
+        current_control = layout.current_control
+        window = layout.current_window
+        if (
+            isinstance(current_control, DisplayControl)
+            and window.render_info is not None
+        ):
+            current_control.cursor_position = Point(
+                0, window.render_info.ui_content.line_count - 1
+            )
 
-@add_cmd(filter=display_has_focus)
-def page_up_display() -> "None":
-    """Scroll the display up one page."""
-    window = get_app().layout.current_window
-    if window.render_info is not None:
-        for _ in range(window.render_info.window_height):
-            window._scroll_up()
-
-
-@add_cmd(filter=display_has_focus)
-def page_down_display() -> "None":
-    """Scroll the display down one page."""
-    window = get_app().layout.current_window
-    if window.render_info is not None:
-        for _ in range(window.render_info.window_height):
-            window._scroll_down()
-
-
-@add_cmd(filter=display_has_focus)
-def go_to_start_of_display() -> "None":
-    """Scroll the display to the top."""
-    from euporie.core.widgets.display import DisplayControl
-
-    current_control = get_app().layout.current_control
-    if isinstance(current_control, DisplayControl):
-        current_control.cursor_position = Point(0, 0)
-
-
-@add_cmd(filter=display_has_focus)
-def go_to_end_of_display() -> "None":
-    """Scroll the display down one page."""
-    from euporie.core.widgets.display import DisplayControl
-
-    layout = get_app().layout
-    current_control = layout.current_control
-    window = layout.current_window
-    if isinstance(current_control, DisplayControl) and window.render_info is not None:
-        current_control.cursor_position = Point(
-            0, window.render_info.ui_content.line_count - 1
-        )
-
-
-register_bindings(
-    {
-        "widgets.display": {
-            "scroll-display-left": "left",
-            "scroll-display-right": "right",
-            "scroll-display-up": ["up", "k"],
-            "scroll-display-down": ["down", "j"],
-            "page-up-display": "pageup",
-            "page-down-display": "pagedown",
-            "go-to-start-of-display": "home",
-            "go-to-end-of-display": "end",
+    register_bindings(
+        {
+            "euporie.core.widgets.display.Display": {
+                "scroll-display-left": "left",
+                "scroll-display-right": "right",
+                "scroll-display-up": ["up", "k"],
+                "scroll-display-down": ["down", "j"],
+                "page-up-display": "pageup",
+                "page-down-display": "pagedown",
+                "go-to-start-of-display": "home",
+                "go-to-end-of-display": "end",
+            }
         }
-    }
-)
+    )

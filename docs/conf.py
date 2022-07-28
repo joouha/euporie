@@ -1,13 +1,15 @@
 """Configuration file for the Sphinx documentation builder."""
 
-# Project information
+import subprocess  # noqa: S404
+import sys
+from pathlib import Path
 
+# Project information
 project = "euporie"
 copyright = "2022, Josiah Outram Halstead"
 author = "Josiah Outram Halstead"
 
 # General configuration
-
 extensions: "list[str]" = [
     "sphinx.ext.intersphinx",  # Link to other packages
     "sphinx.ext.napoleon",  # Enable google-style docstring parsing
@@ -17,6 +19,7 @@ extensions: "list[str]" = [
     "sphinx_argparse_cli",  # Command line argument documentation
     "sphinxext.opengraph",  # OGP data
     "sphinx_copybutton",  # Copy button
+    "sphinx_exec_directive",  # Allow generating sections with scripts
 ]
 templates_path = ["_templates"]
 exclude_patterns: "list[str]" = []
@@ -25,7 +28,6 @@ exclude_patterns: "list[str]" = []
 autosectionlabel_prefix_document = True
 
 # Options for HTML output
-
 html_theme = "sphinx_rtd_theme"
 html_static_path = ["_static"]
 html_favicon = "_static/favicon.ico"
@@ -34,7 +36,6 @@ html_css_files = ["custom.css"]
 html_theme_options = {
     "style_nav_header_background": "#1a1c1e",
 }
-
 pygments_style = "native"
 
 # Autosummary options
@@ -42,7 +43,6 @@ autosummary_generate = True
 autosummary_imported_members = True
 
 # Intersphinx options
-
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
     "prompt_toolkit": ("https://python-prompt-toolkit.readthedocs.io/en/master/", None),
@@ -58,3 +58,13 @@ intersphinx_mapping = {
 #  <https://github.com/adzierzanowski/timg>`_
 #  <https://github.com/ar90n/teimpy>`_
 #  <https://github.com/davidbrochart/akernel
+
+# Run scripts to generate rst includes
+docs_dir = Path(__file__).parent
+inc_dir = docs_dir / "_inc"
+script_dir = docs_dir.parent / "scripts"
+inc_dir.mkdir(exist_ok=True)
+for script in script_dir.glob("document_*.py"):
+    name = script.stem.replace("document_", "")
+    with open((inc_dir / name).with_suffix(".rst"), "w") as f:
+        subprocess.call([sys.executable, script], stdout=f)  # noqa: S603

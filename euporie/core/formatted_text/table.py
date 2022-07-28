@@ -95,6 +95,7 @@ class Cell:
         padding: "Optional[Union[Padding, int]]" = None,
         border: "Optional[Union[LineStyle, BorderLineStyle]]" = None,
         style: "str" = "",
+        width: "Optional[int]" = None,
     ):
         """Creates a new table cell.
 
@@ -107,6 +108,7 @@ class Cell:
             padding: The padding around the contents of the cell
             border: The type of border line to apply to the cell
             style: The style to apply to the cell's contents
+            width: The desired width of the cell
 
         """
         self._text = text
@@ -118,6 +120,7 @@ class Cell:
         self._set_border(border)
         self._style = ""
         self.style = style
+        self._width = width
 
     @property
     def text(self) -> "FormattedText":
@@ -157,7 +160,12 @@ class Cell:
     @property
     def width(self) -> "int":
         """The width of the cell excluding padding."""
-        return max_line_width(self.text)
+        return self._width or max_line_width(self.text)
+
+    @width.setter
+    def width(self, value: "Optional[int]") -> "None":
+        """Set the width of the cell."""
+        self._width = value
 
     @property
     def total_width(self) -> "int":

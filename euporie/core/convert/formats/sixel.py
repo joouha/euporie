@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 from euporie.core.app import get_app
 from euporie.core.convert.base import register
 from euporie.core.convert.formats.common import chafa_convert, imagemagick_convert
-from euporie.core.convert.util import call_subproc, commands_exist, have_modules
+from euporie.core.convert.utils import call_subproc, commands_exist, have_modules
 
 if TYPE_CHECKING:
     from typing import Any, Optional

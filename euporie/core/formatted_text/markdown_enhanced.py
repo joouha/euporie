@@ -4,7 +4,7 @@ from math import ceil
 from typing import TYPE_CHECKING
 
 from euporie.core.convert.base import convert
-from euporie.core.convert.util import data_pixel_size, pixels_to_cell_size
+from euporie.core.convert.utils import data_pixel_size, pixels_to_cell_size
 from euporie.core.formatted_text import markdown
 from euporie.core.formatted_text.utils import FormattedTextAlign, align, indent, strip
 from euporie.core.terminal import tmuxify

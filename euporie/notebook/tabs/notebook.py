@@ -73,7 +73,10 @@ log = logging.getLogger(__name__)
 
 
 class Notebook(BaseNotebook):
-    """A tab which allows running and editing a notebook."""
+    """Interactive notebooks.
+
+    A tab which allows running and editing a notebook.
+    """
 
     allow_stdin = True
 
@@ -239,7 +242,9 @@ class Notebook(BaseNotebook):
             ],
             width=Dimension(weight=1),
             height=Dimension(weight=1),
-            key_bindings=load_registered_bindings("tabs.notebook"),
+            key_bindings=load_registered_bindings(
+                "euporie.notebook.tabs.notebook.Notebook"
+            ),
         )
 
     @property
@@ -1100,7 +1105,7 @@ class Notebook(BaseNotebook):
 
     register_bindings(
         {
-            "tabs.notebook": {
+            "euporie.notebook.tabs.notebook.Notebook": {
                 "save-notebook": "c-s",
                 "enter-cell-edit-mode": "enter",
                 "exit-edit-mode": "escape",

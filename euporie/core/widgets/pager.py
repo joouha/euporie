@@ -98,7 +98,11 @@ class PagerOutput(CellOutput):
 
 
 class Pager:
-    """A pager which displays information at the bottom of a tab."""
+    """Interactive help pager.
+
+    A pager which displays information at the bottom of a tab.
+
+    """
 
     def __init__(self) -> "None":
         """Create a new page instance."""
@@ -123,7 +127,9 @@ class Pager:
                 ],
                 height=Dimension(min=5, max=15),
                 style="class:pager",
-                key_bindings=load_registered_bindings("widgets.pager"),
+                key_bindings=load_registered_bindings(
+                    "euporie.core.widgets.pager.Pager"
+                ),
             ),
             filter=self.visible,
         )
@@ -160,19 +166,22 @@ class Pager:
         """Return the pager container."""
         return self.container
 
+    # ################################## Commands #####################################
 
-@add_cmd(filter=pager_has_focus)
-def close_pager() -> "None":
-    """Close the pager."""
-    app = get_app()
-    if app.pager is not None:
-        app.pager.hide()
+    @staticmethod
+    @add_cmd(filter=pager_has_focus)
+    def _close_pager() -> "None":
+        """Close the pager."""
+        app = get_app()
+        if app.pager is not None:
+            app.pager.hide()
 
+    # ################################# Keybindings ###################################
 
-register_bindings(
-    {
-        "widgets.pager": {
-            "close-pager": ["escape", "q"],
+    register_bindings(
+        {
+            "euporie.core.widgets.pager.Pager": {
+                "close-pager": ["escape", "q"],
+            }
         }
-    }
-)
+    )

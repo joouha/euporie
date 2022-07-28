@@ -7,7 +7,7 @@ import logging
 from typing import TYPE_CHECKING
 
 from euporie.core.app import get_app
-from euporie.core.convert.util import call_subproc
+from euporie.core.convert.utils import call_subproc
 
 if TYPE_CHECKING:
     from typing import Any, Optional, Union

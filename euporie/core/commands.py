@@ -10,7 +10,7 @@ from prompt_toolkit.filters import to_filter
 from prompt_toolkit.key_binding.key_bindings import Binding
 from prompt_toolkit.key_binding.key_processor import KeyPressEvent
 
-from euporie.core.key_binding.util import parse_keys
+from euporie.core.key_binding.utils import parse_keys
 from euporie.core.keys import Keys
 
 if TYPE_CHECKING:
@@ -176,7 +176,7 @@ class Command:
     @property
     def key_str(self) -> "str":
         """Return a string representing the first registered key-binding."""
-        from euporie.core.key_binding.util import format_keys
+        from euporie.core.key_binding.utils import format_keys
 
         if self.keys:
             return format_keys([self.keys[0]])[0]

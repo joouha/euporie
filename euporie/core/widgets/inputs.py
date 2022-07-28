@@ -60,7 +60,10 @@ log = logging.getLogger(__name__)
 
 
 class KernelInput(TextArea):
-    """A customized text area for the cell input."""
+    """Kernel input text areas.
+
+    A customized text area for the cell input.
+    """
 
     def __init__(
         self,
@@ -164,7 +167,7 @@ class KernelInput(TextArea):
 
         # Set extra key-bindings
         widgets_key_bindings = load_registered_bindings(
-            "core.widgets.input.kernel-input"
+            "euporie.core.widgets.inputs.KernelInput"
         )
         if key_bindings:
             widgets_key_bindings = merge_key_bindings(
@@ -269,7 +272,7 @@ class KernelInput(TextArea):
 
     register_bindings(
         {
-            "core.widgets.input.kernel-input": {
+            "euporie.core.widgets.inputs.KernelInput": {
                 "show-contextual-help": "s-tab",
             }
         }

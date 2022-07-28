@@ -30,7 +30,10 @@ log = logging.getLogger(__name__)
 
 
 class SearchBar(PtkSearchToolbar):
-    """A search toolbar with custom style and text."""
+    """Search mode.
+
+    A search toolbar with custom style and text.
+    """
 
     def __init__(
         self,
@@ -53,7 +56,9 @@ class SearchBar(PtkSearchToolbar):
                 ("", " "),
             ],
         )
-        self.control.key_bindings = load_registered_bindings("widgets.search_bar")
+        self.control.key_bindings = load_registered_bindings(
+            "euporie.core.widgets.search_bar.SearchBar"
+        )
 
 
 def start_global_search(
@@ -209,12 +214,12 @@ def accept_search() -> "None":
 
 register_bindings(
     {
-        "app.base": {
+        "euporie.core.app.BaseApp": {
             "find": ["c-f", "f3", "f7"],
             "find-next": "c-g",
             "find-previous": "c-p",
         },
-        "widgets.search_bar": {
+        "euporie.core.widgets.search_bar.SearchBar": {
             "accept-search": "enter",
             "stop-search": "escape",
         },

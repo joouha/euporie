@@ -16,27 +16,8 @@ euporie
       :toctree:
       :recursive:
 
-      euporie.app
-      euporie.border
-      euporie.comm
-      euporie.commands
-      euporie.completion
-      euporie.config
-      euporie.convert
-      euporie.enums
-      euporie.filters
-      euporie.format
-      euporie.formatted_text
-      euporie.kernel
-      euporie.key_binding
-      euporie.keys
-      euporie.log
-      euporie.margins
-      euporie.reference
-      euporie.style
-      euporie.suggest
-      euporie.tabs
-      euporie.terminal
-      euporie.url
-      euporie.utils
-      euporie.widgets
+      euporie.console
+      euporie.core
+      euporie.hub
+      euporie.notebook
+      euporie.preview

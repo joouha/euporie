@@ -70,6 +70,10 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 
+class EditMode:
+    """Micro style editor key-bindings."""
+
+
 def if_no_repeat(event: "KeyPressEvent") -> bool:
     """Returns True when the previous event was delivered to another handler."""
     return not event.is_repeat
@@ -81,7 +85,7 @@ extend_enum(EditingMode, "MICRO", "MICRO")
 # Register default bindings for micro edit mode
 register_bindings(
     {
-        "edit_mode.micro": {
+        "euporie.core.key_binding.bindings.micro.EditMode": {
             "type-key": "<any>",
             "move-cursor-right": "right",
             "move-cursor-left": "left",
@@ -183,7 +187,7 @@ register_bindings(
 def load_micro_bindings() -> "KeyBindingsBase":
     """Load editor key-bindings in the style of the ``micro`` text editor."""
     return ConditionalKeyBindings(
-        load_registered_bindings("edit_mode.micro"),
+        load_registered_bindings("euporie.core.key_binding.bindings.micro.EditMode"),
         micro_mode,
     )
 

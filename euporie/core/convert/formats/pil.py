@@ -6,7 +6,7 @@ import logging
 from typing import TYPE_CHECKING
 
 from euporie.core.convert.base import register
-from euporie.core.convert.util import have_modules
+from euporie.core.convert.utils import have_modules
 
 if TYPE_CHECKING:
     from typing import Optional

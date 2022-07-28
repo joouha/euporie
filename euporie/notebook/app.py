@@ -68,7 +68,9 @@ def get_app() -> "NotebookApp":
 
 
 class NotebookApp(BaseApp):
-    """Interactively edit a notebook file.
+    """Notebook app.
+
+    Interactively edit a notebook file.
 
     Launches the interactive TUI notebook editor, allowing you to run and edit Jupyter
     notebooks in the terminal.
@@ -88,7 +90,7 @@ class NotebookApp(BaseApp):
             }
         )
         self.search_bar = SearchBar()
-        self.bindings_to_load.append("app.notebook")
+        self.bindings_to_load.append("euporie.notebook.app.NotebookApp")
         self.has_dialog = False
 
         self.pre_run_callables.append(self.load_default_statusbar_fields)
@@ -546,7 +548,7 @@ class NotebookApp(BaseApp):
 
     register_bindings(
         {
-            "app.notebook": {
+            "euporie.notebook.app.NotebookApp": {
                 "new-notebook": "c-n",
             }
         }
