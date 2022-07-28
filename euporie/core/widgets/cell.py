@@ -687,12 +687,13 @@ class Cell:
             data: The value to add
 
         """
-        level = self.json["metadata"]
-        for i, key in enumerate(path):
-            if i == len(path) - 1:
-                level[key] = data
-            else:
-                level = level.setdefault(key, {})
+        if self.kernel_tab.app.config.record_cell_timing:
+            level = self.json["metadata"]
+            for i, key in enumerate(path):
+                if i == len(path) - 1:
+                    level[key] = data
+                else:
+                    level = level.setdefault(key, {})
 
     def set_status(self, status: "str") -> "None":
         """Set the execution status of the cell."""
@@ -733,5 +734,20 @@ class Cell:
         },
         description="""
             Whether cell borders should be drawn for unselected cells.
+        """,
+    )
+
+    add_setting(
+        name="record_cell_timing",
+        title="cell timing recording",
+        flags=["--record-cell-timing"],
+        type_=bool,
+        help_="Should timing data be recorded in cell metadata.",
+        default=False,
+        schema={
+            "type": "boolean",
+        },
+        description="""
+            When set, execution timing data will be recorded in cell metadata.
         """,
     )
