@@ -63,6 +63,7 @@ from euporie.core.key_binding.registry import (
     load_registered_bindings,
     register_bindings,
 )
+from euporie.core.key_binding.vi_state import ViState
 from euporie.core.log import setup_logs
 from euporie.core.style import (
     DEFAULT_COLORS,
@@ -214,6 +215,8 @@ class BaseApp(Application):
         # and an event loop has been creeated
         self.pre_run_callables = [self.pre_run]
         self.post_load_callables: "List[Callable[[], None]]" = []
+        # Set default vi input mode to navigate
+        self.vi_state = ViState()
         # Set a long timeout for mappings (e.g. dd)
         self.timeoutlen = 1.0
         # Set a short timeout for flushing input

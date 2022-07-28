@@ -11,6 +11,7 @@ Upcoming
 Added
 =====
 
+- Set initial vi mode to navigation
 - Add euporie console application
 - Add "Save As..." command
 - Allow opening file from remote file systems (e.g. ``http:``, ``hdfs:``, ``gs:``, ``s3:``, etc.)
