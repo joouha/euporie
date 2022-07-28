@@ -673,7 +673,8 @@ class GraphicWindow(Window):
     ) -> "None":
         """Draws the graphic window's contents to the screen if required."""
         target_wp = screen.visible_windows_to_write_positions.get(self.target_window)
-        if self.filter() and target_wp:
+        filter_value = self.filter()
+        if filter_value and target_wp:
             assert self.target_window.render_info is not None
             rendered_height = self.target_window.render_info.window_height
             # Only draw if the target window is fully visible
@@ -696,8 +697,8 @@ class GraphicWindow(Window):
                 )
                 return
         # Otherwise hide the content (required for kitty graphics)
-        if not get_app().leave_graphics():
-            self.content.hide()
+        # elif not get_app().leave_graphics():  # and not filter_value:
+        self.content.hide()
 
 
 class GraphicFloat(Float):
@@ -758,7 +759,7 @@ class GraphicFloat(Float):
                 left=0,
                 top=0,
             )
-            # Hide the graphic if the float is deleted if the app is fullscreen
+            # Hide the graphic if the float is deleted
             weakref.finalize(self, self.control.close)
 
     @property

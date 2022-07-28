@@ -151,8 +151,8 @@ class Console(KernelTab):
         self.output.style = "class:disabled"
         # Move to below the current output
         self.app.redraw()
-        # Prevent displayed graphics on terminal being cleaned up
-        # self.app.graphics.clear()
+        # Prevent displayed graphics on terminal being cleaned up (bit of a hack)
+        self.app.graphics.clear()
         # Run the previous entry
         assert self.kernel is not None
         self.kernel.run(text, wait=False)

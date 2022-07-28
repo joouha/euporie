@@ -17,7 +17,6 @@ from prompt_toolkit.layout.containers import (
     VSplit,
     Window,
     WindowAlign,
-    to_container,
 )
 from prompt_toolkit.layout.controls import FormattedTextControl
 
@@ -40,7 +39,7 @@ from euporie.core.widgets.dialog import (
     UnsavedDialog,
 )
 from euporie.core.widgets.layout import TabBarControl, TabBarTab
-from euporie.core.widgets.menu import MenuContainer, MenuItem
+from euporie.core.widgets.menu import MenuBar, MenuItem
 from euporie.core.widgets.pager import Pager
 from euporie.core.widgets.palette import CommandPalette
 from euporie.core.widgets.search_bar import SearchBar
@@ -54,7 +53,7 @@ if TYPE_CHECKING:
     from typing import Any, Callable, Dict, List, Optional, Type
 
     from prompt_toolkit.formatted_text import StyleAndTextTuples
-    from prompt_toolkit.layout.containers import AnyContainer
+    from prompt_toolkit.layout.containers import AnyContainer, Float
 
     from euporie.core.tabs.base import Tab
     from euporie.core.widgets.cell import Cell
@@ -174,9 +173,10 @@ class NotebookApp(BaseApp):
                 [("", f" {__logo__} ")],
                 focusable=~have_tabs,
                 show_cursor=False,
-                style="class:menu-bar,logo",
+                style="class:menu,logo",
             ),
             height=1,
+            width=3,
             dont_extend_width=True,
         )
 
@@ -212,17 +212,6 @@ class NotebookApp(BaseApp):
 
         assert self.search_bar is not None
 
-        body = HSplit(
-            [
-                tab_bar,
-                DynamicContainer(self.tab_container),
-                self.pager,
-                self.search_bar,
-                StatusBar(),
-            ],
-            style="class:body",
-        )
-
         self.dialogs["command-palette"] = CommandPalette(self)
         self.dialogs["about"] = AboutDialog(self)
         self.dialogs["open-file"] = OpenFileDialog(self)
@@ -235,15 +224,27 @@ class NotebookApp(BaseApp):
         self.dialogs["shortcuts"] = ShortcutsDialog(self)
         self.dialogs["msgbox"] = MsgBoxDialog(self)
 
-        self.menu_container = MenuContainer(
-            body=body,
-            menu_items=self.load_menu_items(),  # type: ignore
-            floats=self.floats,
-            left=[self.logo],
-            right=[self.title_bar],
+        self.menu_bar = MenuBar(app=self, menu_items=self.load_menu_items())
+        self.container = FloatContainer(
+            content=HSplit(
+                [
+                    VSplit([self.logo, self.menu_bar, self.title_bar]),
+                    HSplit(
+                        [
+                            tab_bar,
+                            DynamicContainer(self.tab_container),
+                            self.pager,
+                            self.search_bar,
+                            StatusBar(),
+                        ],
+                        style="class:body",
+                    ),
+                ]
+            ),
+            floats=cast("List[Float]", self.floats),
         )
 
-        return cast("FloatContainer", to_container(self.menu_container))
+        return self.container
 
     def tab_bar_tabs(self) -> "List[TabBarTab]":
         """Return a list of the current tabs for the tab-bar."""
