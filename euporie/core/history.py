@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 from prompt_toolkit.history import History
 
 if TYPE_CHECKING:
-    from typing import AsyncGenerator, Iterable
+    from typing import AsyncGenerator, Iterable, List
 
     from euporie.core.kernel import Kernel
 
@@ -24,6 +24,7 @@ class KernelHistory(History):
         self.kernel = kernel
         # How many items to load
         self.n = n
+        self.n_loaded = 0
 
     async def load(self) -> "AsyncGenerator[str, None]":
         """Load the history and yield all entries, most recent history first.
@@ -41,7 +42,14 @@ class KernelHistory(History):
             items = await self.kernel.history_(n=self.n, hist_access_type="tail")
             if items:
                 self._loaded_strings = [item[2] for item in reversed(items)]
+                # Remove sequential duplicates
+                self._loaded_strings = [
+                    v
+                    for i, v in enumerate(self._loaded_strings)
+                    if i == 0 or v != self._loaded_strings[i - 1]
+                ]
                 self._loaded = True
+                self.n_loaded = len(self._loaded_strings)
                 log.debug(
                     "Loaded %s items from kernel history", len(self._loaded_strings)
                 )
@@ -57,3 +65,8 @@ class KernelHistory(History):
     def store_string(self, string: "str") -> "None":
         """Don't store strings in persistent storage: they are stored by the kernel."""
         pass
+
+    @property
+    def recent(self) -> "List[str]":
+        """Return new items added since history was initially loaded."""
+        return self._loaded_strings[: -self.n_loaded]

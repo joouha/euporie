@@ -6,6 +6,7 @@ import logging
 from functools import partial
 from typing import TYPE_CHECKING
 
+import nbformat
 from prompt_toolkit.buffer import Buffer, ValidationState
 from prompt_toolkit.filters import (
     Condition,
@@ -93,6 +94,9 @@ class Console(KernelTab):
         self.execution_count = 0
         self.clear_outputs_on_output = False
 
+        self.json = nbformat.v4.new_notebook()
+        self.json["metadata"] = self._metadata
+
         self.output_json: "List[Dict[str, Any]]" = []
         self.container = self.load_container()
 
@@ -157,6 +161,10 @@ class Console(KernelTab):
         # Reset the input & output
         buffer.reset(append_to_history=True)
         self.output.reset()
+        # Record the input as a cell in the json
+        self.json["cells"].append(
+            nbformat.v4.new_code_cell(source=text, execution_count=self.execution_count)
+        )
 
     def new_output(self, output_json: "Dict[str, Any]") -> "None":
         """Print the previous output and replace it with the new one."""
@@ -166,6 +174,9 @@ class Console(KernelTab):
             self.output.reset()
         # Add the new output
         self.output.add_output(output_json)
+        # Add to record
+        if self.json["cells"]:
+            self.json["cells"][-1]["outputs"].append(output_json)
 
     def complete(self, content: "Dict" = None) -> "None":
         """Re-show the prompt."""

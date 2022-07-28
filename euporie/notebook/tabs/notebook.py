@@ -58,7 +58,16 @@ from euporie.notebook.filters import (
 )
 
 if TYPE_CHECKING:
-    from typing import Deque, Dict, List, MutableSequence, Optional, Sequence, Tuple
+    from typing import (
+        Any,
+        Deque,
+        Dict,
+        List,
+        MutableSequence,
+        Optional,
+        Sequence,
+        Tuple,
+    )
 
     from prompt_toolkit.formatted_text.base import AnyFormattedText
 
@@ -68,6 +77,8 @@ if TYPE_CHECKING:
     from upath import UPath
 
     from euporie.core.app import BaseApp
+    from euporie.core.comm.base import Comm
+    from euporie.core.kernel import Kernel
 
 log = logging.getLogger(__name__)
 
@@ -84,10 +95,20 @@ class Notebook(BaseNotebook):
         self,
         app: "BaseApp",
         path: "Optional[UPath]" = None,
+        kernel: "Optional[Kernel]" = None,
+        comms: "Optional[Dict[str, Comm]]" = None,
         use_kernel_history: "bool" = True,
+        json: "Optional[Dict[str, Any]]" = None,
     ) -> "None":
         """Load a editable notebook."""
-        super().__init__(app=app, path=path, use_kernel_history=use_kernel_history)
+        super().__init__(
+            app=app,
+            path=path,
+            kernel=kernel,
+            comms=comms,
+            use_kernel_history=use_kernel_history,
+            json=json,
+        )
 
         self.edit_mode = False
         self.in_edit_mode = Condition(self.check_edit_mode)
@@ -95,7 +116,8 @@ class Notebook(BaseNotebook):
         self.clipboard: "List[Cell]" = []
         self.undo_buffer: "Deque[Tuple[int, List[Cell]]]" = deque(maxlen=10)
 
-        self.app.create_background_task(self.start_kernel())
+        if self.kernel.status == "stopped":
+            self.app.create_background_task(self.start_kernel())
 
     # Tab stuff
 
@@ -418,16 +440,18 @@ class Notebook(BaseNotebook):
         if cell_jsons:
             self.refresh(slice(index + 1, index + 1 + len(cell_jsons)))
 
-    def add(self, index: "int") -> "None":
+    def add(self, index: "int", source: "str" = "", **kwargs: "Any") -> "None":
         """Creates a new cell at a given index.
 
         Args:
             index: The position at which to insert a new cell
+            source: The contents of the new cell
+            kwargs: Additional parameters for the cell
 
         """
         self.json["cells"].insert(
             index,
-            nbformat.v4.new_code_cell(),
+            nbformat.v4.new_code_cell(source=source, **kwargs),
         )
         self.dirty = True
 

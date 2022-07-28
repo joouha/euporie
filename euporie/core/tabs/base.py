@@ -21,7 +21,10 @@ from euporie.core.suggest import HistoryAutoSuggest
 if TYPE_CHECKING:
     from typing import Any, Callable, Dict, Optional, Sequence, Tuple
 
+    from prompt_toolkit.auto_suggest import AutoSuggest
+    from prompt_toolkit.completion.base import Completer
     from prompt_toolkit.formatted_text import AnyFormattedText
+    from prompt_toolkit.history import History
     from prompt_toolkit.layout.containers import AnyContainer
     from upath import UPath
 
@@ -93,22 +96,28 @@ class KernelTab(Tab, metaclass=ABCMeta):
         self,
         app: "BaseApp",
         path: "Optional[UPath]" = None,
+        kernel: "Optional[Kernel]" = None,
+        comms: "Optional[Dict[str, Comm]]" = None,
         use_kernel_history: "bool" = False,
     ) -> "None":
         """Create a new instance of a tab with a kernel."""
         super().__init__(app, path)
 
-        self.kernel: "Kernel" = Kernel(
-            kernel_tab=self,
-            allow_stdin=self.allow_stdin,
-            default_callbacks=self.default_callbacks,
-        )
-        self.comms: "Dict[str, Comm]" = {}  # The client-side comm states
-        self.completer = KernelCompleter(self.kernel)
-        self.history = (
+        if kernel:
+            self.kernel = kernel
+            self.kernel.default_callbacks = self.default_callbacks
+        else:
+            self.kernel = Kernel(
+                kernel_tab=self,
+                allow_stdin=self.allow_stdin,
+                default_callbacks=self.default_callbacks,
+            )
+        self.comms: "Dict[str, Comm]" = comms or {}  # The client-side comm states
+        self.completer: "Completer" = KernelCompleter(self.kernel)
+        self.history: "History" = (
             KernelHistory(self.kernel) if use_kernel_history else InMemoryHistory()
         )
-        self.suggester = HistoryAutoSuggest(self.history)
+        self.suggester: "AutoSuggest" = HistoryAutoSuggest(self.history)
 
     def interrupt_kernel(self) -> "None":
         """Interrupt the current `Notebook`'s kernel."""

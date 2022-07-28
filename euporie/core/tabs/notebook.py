@@ -26,6 +26,8 @@ if TYPE_CHECKING:
     from upath import UPath
 
     from euporie.core.app import BaseApp
+    from euporie.core.comm.base import Comm
+    from euporie.core.kernel import Kernel
 
 log = logging.getLogger(__name__)
 
@@ -40,14 +42,20 @@ class BaseNotebook(KernelTab, metaclass=ABCMeta):
         self,
         app: "BaseApp",
         path: "Optional[UPath]" = None,
+        kernel: "Optional[Kernel]" = None,
+        comms: "Optional[Dict[str, Comm]]" = None,
         use_kernel_history: "bool" = False,
+        json: "Optional[Dict[str, Any]]" = None,
     ):
         """Instantiate a Notebook container, using a notebook at a given path.
 
         Args:
             path: The file path of the notebook
             app: The euporie application the notebook tab belongs to
+            kernel: An existing kernel instance to use
+            comms: Existing kernel comm object to use
             use_kernel_history: If True, load history from the kernel
+            json: JSON contents of notebook, used if path not given
 
         """
         self.default_callbacks = MsgCallbacks(
@@ -73,12 +81,14 @@ class BaseNotebook(KernelTab, metaclass=ABCMeta):
             with self.path.open() as f:
                 self.json = nbformat.read(f, as_version=4)
         else:
-            self.json = nbformat.v4.new_notebook()
+            self.json = json or nbformat.v4.new_notebook()
         # Ensure there is always at least one cell
         if not self.json.setdefault("cells", []):
             self.json["cells"] = [nbformat.v4.new_code_cell()]
 
-        super().__init__(app, path, use_kernel_history=use_kernel_history)
+        super().__init__(
+            app, path, kernel=kernel, comms=comms, use_kernel_history=use_kernel_history
+        )
 
         self._rendered_cells: "dict[str, Cell]" = {}
         self.load_widgets_from_metadata()

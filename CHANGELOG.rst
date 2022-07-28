@@ -11,6 +11,7 @@ Upcoming
 Added
 =====
 
+- Add ability to convert from console to notebook
 - Set initial vi mode to navigation
 - Add euporie console application
 - Add "Save As..." command

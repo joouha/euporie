@@ -114,6 +114,35 @@ class ConsoleApp(BaseApp):
 
     @staticmethod
     @add_cmd()
+    async def _convert_to_notebook() -> "None":
+        """Convert the current console session to a notebook."""
+        from euporie.notebook.app import NotebookApp
+        from euporie.notebook.tabs.notebook import Notebook
+
+        app = get_app()
+        nb_app = NotebookApp()
+        for tab in app.tabs:
+            if isinstance(tab, Console):
+                nb = Notebook(
+                    app=nb_app,
+                    path=tab.path,
+                    kernel=tab.kernel,
+                    comms=tab.comms,
+                    json=tab.json,
+                )
+                # Set the history to the console's history
+                nb.history = tab.history
+                # Add the current input
+                nb.add(len(nb.json["cells"]) + 1, source=tab.input_box.buffer.text)
+                # Add the new notebook to the notebook app
+                nb_app.tabs.append(nb)
+        app.pause_rendering()
+        await nb_app.run_async()
+        app.resume_rendering()
+        app.exit()
+
+    @staticmethod
+    @add_cmd()
     def _clear_screen() -> "None":
         """Clears the screen and the previous output."""
         from euporie.console.tabs.console import Console
