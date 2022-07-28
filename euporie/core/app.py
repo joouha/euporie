@@ -6,7 +6,7 @@ import asyncio
 import logging
 from functools import partial
 from typing import TYPE_CHECKING, cast
-from weakref import WeakSet, WeakValueDictionary
+from weakref import WeakSet
 
 from prompt_toolkit.application.application import Application, _CombinedRegistry
 from prompt_toolkit.application.current import create_app_session
@@ -192,18 +192,17 @@ class BaseApp(Application):
         # Floats at the app level
         self.leave_graphics = to_filter(leave_graphics)
         self.graphics: "WeakSet[Float]" = WeakSet()
-        self.completions_menu_float = Float(
-            content=CompletionsMenu(
-                max_height=16,
-                scroll_offset=1,
-            ),
-            xcursor=True,
-            ycursor=True,
-        )
         self.dialogs: "Dict[str, Dialog]" = {}
-        self.menus: "WeakValueDictionary[str, Float]" = WeakValueDictionary(
-            {"completions": self.completions_menu_float}
-        )
+        self.menus: "Dict[str, Float]" = {
+            "completions": Float(
+                content=CompletionsMenu(
+                    max_height=16,
+                    scroll_offset=1,
+                ),
+                xcursor=True,
+                ycursor=True,
+            )
+        }
         self.floats = ChainedList(
             self.menus.values(),
             self.dialogs.values(),
