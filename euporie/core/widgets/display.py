@@ -529,6 +529,7 @@ class KittyGraphicControl(GraphicControl):
                 p=1,  # Placement ID
                 q=2,  # No chatback
                 f=100,  # Sending a PNG image
+                C=1,  # Do not move the cursor
                 m=1 if data else 0,  # Data will be chunked
             )
             self.app.output.write_raw(tmuxify(cmd))
@@ -585,20 +586,15 @@ class KittyGraphicControl(GraphicControl):
                 q=2,  # No backchat
                 c=width,
                 r=height,
-                C=1,  # Do not scroll
+                C=1,  # Do move the cursor
                 z=-(2**30) - 1,
             )
             return list(
                 split_lines(
                     to_formatted_text(
                         [
+                            ("[ZeroWidthEscape]", tmuxify(cmd)),
                             ("", "\n".join([" " * width] * height)),
-                            (
-                                "[ZeroWidthEscape]",
-                                tmuxify(
-                                    f"\x1b[s\x1b[{height-1}A\x1b[{width}D{cmd}\x1b[u"
-                                ),
-                            ),
                             # Add zero-width no-break space to work around PTK issue #1651
                             ("", "\uFEFF\n"),
                         ]
@@ -613,9 +609,9 @@ class KittyGraphicControl(GraphicControl):
 
     def reset(self) -> "None":
         """Hide and delete the kitty graphic from the terminal."""
-        super().reset()
         self.hide()
         self.delete()
+        super().reset()
 
     def close(self) -> "None":
         """Remove the displayed object entirely."""
