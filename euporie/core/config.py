@@ -135,8 +135,14 @@ class Config:
 
         set_values = ChainMap(
             self.load_args(),
+            # Load global env vars
             self.load_env(),
+            # Load app specific env vars
+            self.load_env(app_name=self.app_name),
+            # Load global user config
             self.load_user(),
+            # Load app specific user config
+            self.load_user(app_name=self.app_name),
         )
         for name, setting in Config.settings.items():
             if setting.name in set_values:
@@ -184,13 +190,14 @@ class Config:
                     result[name] = value
         return result
 
-    def load_env(self) -> "Dict[str, Any]":
+    def load_env(self, app_name: "str" = "") -> "Dict[str, Any]":
         """Attempt to load configuration settings from environment variables."""
         result = {}
         for name, setting in self.settings.items():
-            env = (
-                f"{__app_name__.upper()}_{self.app_name.upper()}_{setting.name.upper()}"
-            )
+            if app_name:
+                env = f"{__app_name__.upper()}_{self.app_name.upper()}_{setting.name.upper()}"
+            else:
+                env = f"{__app_name__.upper()}_{setting.name.upper()}"
             if env in os.environ:
                 value = os.environ.get(env)
                 parsed_value: "Any" = value
@@ -243,13 +250,13 @@ class Config:
                     results.update(json_data)
         return results
 
-    def load_user(self) -> "Dict[str, Any]":
+    def load_user(self, app_name: "str" = "") -> "Dict[str, Any]":
         """Attempt to load JSON configuration file."""
         results = {}
         # Load config file
         json_data = self.load_config_file()
         # Load section for the current app
-        if self.app_name:
+        if app_name:
             json_data = json_data.get(self.app_name, {})
         # Validate the configuration file
         try:
