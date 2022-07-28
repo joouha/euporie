@@ -177,6 +177,7 @@ class Console(KernelTab):
         # Add to record
         if self.json["cells"]:
             self.json["cells"][-1]["outputs"].append(output_json)
+        self.app.invalidate()
 
     def complete(self, content: "Dict" = None) -> "None":
         """Re-show the prompt."""

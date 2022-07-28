@@ -586,17 +586,23 @@ class KittyGraphicControl(GraphicControl):
                 q=2,  # No backchat
                 c=width,
                 r=height,
-                C=1,  # Do move the cursor
+                C=1,  # 1 = Do move the cursor
                 z=-(2**30) - 1,
             )
             return list(
                 split_lines(
                     to_formatted_text(
                         [
+                            # Move cursor down by image height
+                            ("", "\n" * (height - 1)),
+                            # Save position, then move back up
+                            ("[ZeroWidthEscape]", f"\x1b[s\x1b[{height-1}A"),
+                            # Place the image without moving cursor
                             ("[ZeroWidthEscape]", tmuxify(cmd)),
-                            ("", "\n".join([" " * width] * height)),
+                            # Restore the saved cursor position (at the bottom)
+                            ("[ZeroWidthEscape]", "\x1b[u"),
                             # Add zero-width no-break space to work around PTK issue #1651
-                            ("", "\uFEFF\n"),
+                            ("", "\uFEFF"),
                         ]
                     )
                 )

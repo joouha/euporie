@@ -115,7 +115,7 @@ class PreviewApp(BaseApp):
         # We want the app to close when rendering is complete
         # self.after_render += self.pre_exit
         # Do not load any key bindings
-        self.bindings_to_load = ["euporie.preview.app.PreviewApp"]
+        self.bindings_to_load.append("euporie.preview.app.PreviewApp")
         # Select the first tab after files are opened
         self.pre_run_callables += [partial(setattr, self, "tab_idx", 0)]
 
