@@ -227,7 +227,7 @@ class Kernel:
         except NoSuchKernel:
             return True
         else:
-            return self.km.kernel_spec is not None
+            return self.km.kernel_spec is None
 
     @property
     def id(self) -> "Optional[str]":
@@ -1006,7 +1006,7 @@ class Kernel:
         flags=["--default-kernel-name"],
         type_=str,
         help_="The name of the kernel to start by default.",
-        default="",
+        default="python3",
         description="""
             The name of the kernel selected automatically by the console app or in new
             notebooks. If set to an empty string, the user will be asked which kernel
