@@ -290,7 +290,11 @@ class Kernel:
             self.status = "error"
         else:
             if ks is not None:
-                self.kernel_tab.metadata["kernelspec"] = ks.to_dict()
+                self.kernel_tab.metadata["kernelspec"] = {
+                    "name": self.km.kernel_name,
+                    "display_name": ks.display_name,
+                    "language": ks.language,
+                }
 
         if self.kc and self.status != "error":
             log.debug("Waiting for kernel to become ready")
