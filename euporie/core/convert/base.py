@@ -42,7 +42,7 @@ class Converter(NamedTuple):
 
 converters: "dict[str, dict[str, list[Converter]]]" = {}
 
-_CONVERSION_CACHE: "SimpleCache" = SimpleCache(maxsize=20)
+_CONVERSION_CACHE: "SimpleCache" = SimpleCache(maxsize=2048)
 _FILTER_CACHE: "SimpleCache" = SimpleCache()
 
 
