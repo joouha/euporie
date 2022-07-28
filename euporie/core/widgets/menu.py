@@ -572,7 +572,7 @@ class MenuBar:
             focusable=True,
             show_cursor=False,
         )
-        self.window = Window(
+        self.window: "Window" = Window(
             height=1,
             content=self.control,
             style="class:menu",
