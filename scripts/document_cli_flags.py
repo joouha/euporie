@@ -4,13 +4,17 @@ from __future__ import annotations
 
 import subprocess  # noqa: S404
 import sys
-from importlib.metadata import entry_points
 from textwrap import dedent
 from typing import TYPE_CHECKING, cast
 
 if TYPE_CHECKING:
     import argparse
     from typing import Callable
+
+if sys.version_info[0] >= 3 and sys.version_info[1] >= 10:
+    from importlib.metadata import entry_points
+else:
+    from importlib_metadata import entry_points
 
 
 def format_action(action: "argparse.Action") -> "str":
