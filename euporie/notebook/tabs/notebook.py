@@ -158,11 +158,9 @@ class Notebook(BaseNotebook):
         """Start the kernel when the app is idle."""
         self.kernel.start(cb=self.kernel_started)
 
-    def kernel_started(self, result: "Optional[Dict]" = None) -> "None":
+    def kernel_started(self, result: "Optional[Dict[str, Any]]" = None) -> "None":
         """Run when the kernel has started."""
-        self.kernel.info(
-            set_kernel_info=self.set_kernel_info
-        )  # , set_status=log.debug)
+        super().kernel_started(result)
         if not self.kernel_name or self.kernel.missing:
             if not self.kernel_name:
                 msg = "No kernel selected"
@@ -179,16 +177,6 @@ class Notebook(BaseNotebook):
         elif self.kernel.status == "idle":
             if self.app.config.run:
                 self.run_all(wait=False)
-
-            # Load history
-            async def load_history() -> "None":
-                """Manually load kernel history."""
-                try:
-                    await self.history.load().__anext__()
-                except StopAsyncIteration:
-                    pass
-
-            get_app().create_background_task(load_history())
 
         self.app.invalidate()
 

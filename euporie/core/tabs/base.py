@@ -133,6 +133,13 @@ class KernelTab(Tab, metaclass=ABCMeta):
         else:
             self.kernel.restart()
 
+    def kernel_started(self, result: "Optional[Dict[str, Any]]" = None) -> "None":
+        """Tasks to run when the kernel has started."""
+        # Load widget comm info
+        # self.kernel.comm_info(target_name="jupyter.widget")
+        # Load kernel info
+        self.kernel.info(set_kernel_info=self.set_kernel_info)
+
     @property
     def metadata(self) -> "Dict[str, Any]":
         """Return a dictionary to hold notebook / kernel metadata."""

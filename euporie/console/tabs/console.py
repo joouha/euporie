@@ -101,7 +101,7 @@ class Console(KernelTab):
         self.container = self.load_container()
 
         self.app.post_load_callables.append(
-            partial(self.kernel.start, cb=self.ready, wait=True)
+            partial(self.kernel.start, cb=self.kernel_started, wait=False)
         )
 
     def close(self, cb: "Optional[Callable]" = None) -> "None":
@@ -117,11 +117,16 @@ class Console(KernelTab):
         else:
             self.output.reset()
 
-    def ready(self, result: "None" = None) -> "None":
+    def kernel_started(self, result: "Optional[Dict[str, Any]]" = None) -> "None":
         """Called when the kernel is ready."""
-        assert self.kernel is not None
-        self.kernel.info()
-        self.show_prompt = True
+        super().kernel_started(result)
+
+        if self.kernel.status == "idle":
+
+            # Load history
+            self.input_box.buffer._load_history_task = None
+            self.input_box.buffer.load_history_if_not_yet_loaded()
+
         self.app.invalidate()
 
     def validate_input(self, code: "str") -> "bool":

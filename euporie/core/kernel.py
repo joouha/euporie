@@ -533,6 +533,14 @@ class Kernel:
         if callable(clear_output := self.msg_id_callbacks[msg_id]["clear_output"]):
             clear_output(rsp.get("content", {}).get("wait", False))
 
+    '''
+    def on_iopub_comm_info_reply(self, rsp: "Dict[str, Any]") -> "None":
+        """Call callbacks for an comm open response."""
+        self.kernel_tab.comm_open(
+            content=rsp.get("content", {}), buffers=rsp.get("buffers", [])
+        )
+    '''
+
     def on_iopub_comm_open(self, rsp: "Dict[str, Any]") -> "None":
         """Call callbacks for an comm open response."""
         # TODO
@@ -654,6 +662,11 @@ class Kernel:
                     filter(lambda x: x[1] is not None, callbacks.items())
                 )  # type: ignore # mypy #8890
             )
+
+    def comm_info(self, target_name: "Optional[str]" = None) -> "None":
+        """Request information about the current comms."""
+        if self.kc is not None:
+            self.kc.comm_info(target_name=target_name)
 
     async def complete_(
         self, code: "str", cursor_pos: "int", timeout: "int" = 60
