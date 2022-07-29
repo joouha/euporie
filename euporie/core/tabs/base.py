@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 from abc import ABCMeta
+from collections import deque
 from typing import TYPE_CHECKING
 
 from prompt_toolkit.history import InMemoryHistory
@@ -19,7 +20,7 @@ from euporie.core.kernel import Kernel, MsgCallbacks
 from euporie.core.suggest import HistoryAutoSuggest
 
 if TYPE_CHECKING:
-    from typing import Any, Callable, Dict, Optional, Sequence, Tuple
+    from typing import Any, Callable, Deque, Dict, Optional, Sequence, Tuple
 
     from prompt_toolkit.auto_suggest import AutoSuggest
     from prompt_toolkit.completion.base import Completer
@@ -45,6 +46,7 @@ class Tab(metaclass=ABCMeta):
         self.path = path
         self.app.container_statuses[self] = self.statusbar_fields
         self.container = Window()
+        self.kernel_queue: "Deque[Callable]" = deque()
 
     def statusbar_fields(
         self,
@@ -142,7 +144,14 @@ class KernelTab(Tab, metaclass=ABCMeta):
         self.kernel.info(set_kernel_info=self.set_kernel_info)
         # Load kernel history
         if self.use_kernel_history:
-            get_app().create_background_task(self.load_history())
+            self.app.create_background_task(self.load_history())
+
+        # Run queued kernel tasks when the kernel is idle
+        if self.kernel.status != "idle":
+            self.kernel.wait_for_status("idle")
+        log.debug("Running %d kernel tasks", len(self.kernel_queue))
+        while self.kernel_queue:
+            self.kernel_queue.popleft()()
 
         self.app.invalidate()
 

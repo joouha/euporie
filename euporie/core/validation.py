@@ -1,6 +1,5 @@
 """Custom validators."""
 
-import logging
 from typing import TYPE_CHECKING
 
 from prompt_toolkit.validation import ValidationError, Validator
@@ -9,8 +8,6 @@ if TYPE_CHECKING:
     from prompt_toolkit.document import Document
 
     from euporie.core.kernel import Kernel
-
-log = logging.getLogger(__name__)
 
 
 class KernelValidator(Validator):
@@ -25,7 +22,6 @@ class KernelValidator(Validator):
         completeness_status = self.kernel.is_complete(
             code=document.text, wait=True
         ).get("status", "unknown")
-        log.debug(completeness_status)
         if completeness_status == "incomplete":
             raise ValidationError
 

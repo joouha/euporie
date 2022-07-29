@@ -11,6 +11,7 @@ Upcoming
 Added
 =====
 
+- Queue inputs which are run before kernel starts, and run them once the kernel has started
 - Add ability to convert from console to notebook
 - Set initial vi mode to navigation
 - Add euporie console application

@@ -116,8 +116,9 @@ class Notebook(BaseNotebook):
         self.clipboard: "List[Cell]" = []
         self.undo_buffer: "Deque[Tuple[int, List[Cell]]]" = deque(maxlen=10)
 
-        if self.kernel.status == "stopped":
-            self.app.create_background_task(self.start_kernel())
+        self.app.post_load_callables.append(
+            partial(self.kernel.start, cb=self.kernel_started, wait=False)
+        )
 
     # Tab stuff
 
@@ -154,12 +155,9 @@ class Notebook(BaseNotebook):
         """Return a list of the currently selected cell indices."""
         return self.page.selected_indices
 
-    async def start_kernel(self) -> "None":
-        """Start the kernel when the app is idle."""
-        self.kernel.start(cb=self.kernel_started)
-
     def kernel_started(self, result: "Optional[Dict[str, Any]]" = None) -> "None":
         """Run when the kernel has started."""
+        super().kernel_started(result)
         if not self.kernel_name or self.kernel.missing:
             if not self.kernel_name:
                 msg = "No kernel selected"
@@ -176,7 +174,6 @@ class Notebook(BaseNotebook):
         elif self.kernel.status == "idle":
             if self.app.config.run:
                 self.run_all(wait=False)
-        super().kernel_started(result)
 
     def load_container(self) -> "AnyContainer":
         """Load the main notebook container."""

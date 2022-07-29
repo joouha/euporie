@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 from abc import ABCMeta, abstractmethod, abstractproperty
 from base64 import standard_b64decode
+from functools import partial
 from typing import TYPE_CHECKING
 
 import nbformat
@@ -104,6 +105,10 @@ class BaseNotebook(KernelTab, metaclass=ABCMeta):
     def metadata(self) -> "Dict[str, Any]":
         """Return a dictionary to hold notebook / kernel metadata."""
         return self.json.setdefault("metadata", {})
+
+    def kernel_started(self, result: "Optional[Dict[str, Any]]" = None) -> "None":
+        """Tasks to run when the kernel has started."""
+        super().kernel_started(result)
 
     # Notebook stuff
 
@@ -256,18 +261,23 @@ class BaseNotebook(KernelTab, metaclass=ABCMeta):
         """
         cell.remove_outputs()
         self.dirty = True
-        self.kernel.run(
-            str(cell.json.get("source")),
-            wait=wait,
-            callback=callback,
-            get_input=cell.get_input,
-            set_execution_count=cell.set_execution_count,
-            add_output=cell.add_output,
-            clear_output=cell.clear_output,
-            set_metadata=cell.set_metadata,
-            set_status=cell.set_status,
-            done=cell.ran,
-        )
+        # Queue cell if kernel not yet started
+        if self.kernel.status == "starting":
+            log.debug("Queuing running of cell %s", cell.index)
+            self.kernel_queue.append(partial(self.run_cell, cell, wait, callback))
+        else:
+            self.kernel.run(
+                str(cell.json.get("source")),
+                wait=wait,
+                callback=callback,
+                get_input=cell.get_input,
+                set_execution_count=cell.set_execution_count,
+                add_output=cell.add_output,
+                clear_output=cell.clear_output,
+                set_metadata=cell.set_metadata,
+                set_status=cell.set_status,
+                done=cell.ran,
+            )
 
     def load_widgets_from_metadata(self) -> "None":
         """Loads widgets from state saved in notebook metadata."""

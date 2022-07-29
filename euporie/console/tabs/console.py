@@ -155,8 +155,10 @@ class Console(KernelTab):
         # Prevent displayed graphics on terminal being cleaned up (bit of a hack)
         self.app.graphics.clear()
         # Run the previous entry
-        assert self.kernel is not None
-        self.kernel.run(text, wait=False)
+        if self.kernel.status == "starting":
+            self.kernel_queue.append(partial(self.kernel.run, text, wait=False))
+        else:
+            self.kernel.run(text, wait=False)
         # Increment this for display purposes until we get the response from the kernel
         self.execution_count += 1
         # Reset the input & output
