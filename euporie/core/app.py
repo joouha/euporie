@@ -208,8 +208,6 @@ class BaseApp(Application):
             self.dialogs.values(),
             self.graphics,
         )
-        # If a dialog is showing
-        self.has_dialog = False
         # Mapping of Containers to status field generating functions
         self.container_statuses: "ContainerStatusDict" = {}
         # Continue loading when the application has been launched

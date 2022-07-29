@@ -90,8 +90,6 @@ class NotebookApp(BaseApp):
         )
         self.search_bar = SearchBar()
         self.bindings_to_load.append("euporie.notebook.app.NotebookApp")
-        self.has_dialog = False
-
         self.pre_run_callables.append(self.load_default_statusbar_fields)
 
     def load_default_statusbar_fields(self) -> "None":

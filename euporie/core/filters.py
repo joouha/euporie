@@ -85,9 +85,16 @@ def has_suggestion() -> "bool":
 @Condition
 def has_dialog() -> "bool":
     """Determine if a dialog is being displayed."""
-    from euporie.core.app import get_app
+    from prompt_toolkit.layout.containers import ConditionalContainer
 
-    return get_app().has_dialog
+    from euporie.notebook.app import get_app
+
+    app = get_app()
+    for dialog in app.dialogs.values():
+        if isinstance(dialog.content, ConditionalContainer):
+            if dialog.content.filter():
+                return True
+    return False
 
 
 @Condition

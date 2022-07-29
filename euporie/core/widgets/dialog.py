@@ -211,7 +211,6 @@ class Dialog(Float, metaclass=ABCMeta):
         self._load(**params)
         self.last_focused = self.app.layout.current_control
         self._visible = True
-        self.app.has_dialog = True
         if self.to_focus is not None:
             self.app.layout.focus(self.to_focus)
         else:
@@ -230,7 +229,6 @@ class Dialog(Float, metaclass=ABCMeta):
                 self.app.layout.focus(self.last_focused)
             except ValueError:
                 self.app.layout.focus_next()
-        self.app.has_dialog = False
 
     def toggle(self) -> "None":
         """Shows or hides the dialog."""
