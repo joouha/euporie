@@ -867,7 +867,7 @@ class BaseApp(Application):
         flags=["--format-black"],
         type_=bool,
         help_="Use black when re-formatting code cells",
-        default=False,
+        default=True,
         description="""
             Whether to use :py:mod:`black` when reformatting code cells.
         """,
@@ -878,7 +878,7 @@ class BaseApp(Application):
         flags=["--format-isort"],
         type_=bool,
         help_="Use isort when re-formatting code cells",
-        default=False,
+        default=True,
         description="""
             Whether to use :py:mod:`isort` when reformatting code cells.
         """,
@@ -889,7 +889,7 @@ class BaseApp(Application):
         flags=["--format-ssort"],
         type_=bool,
         help_="Use ssort when re-formatting code cells",
-        default=False,
+        default=True,
         description="""
             Whether to use :py:mod:`ssort` when reformatting code cells.
         """,
