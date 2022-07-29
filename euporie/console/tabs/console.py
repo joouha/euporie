@@ -105,6 +105,13 @@ class Console(KernelTab):
             partial(self.kernel.start, cb=self.kernel_started, wait=False)
         )
 
+    async def load_history(self) -> "None":
+        """Load kernel history."""
+        await super().load_history()
+        # Re-run history load for the input-box
+        self.input_box.buffer._load_history_task = None
+        self.input_box.buffer.load_history_if_not_yet_loaded()
+
     def close(self, cb: "Optional[Callable]" = None) -> "None":
         """Close the console tab."""
         # Ensure any output no longer appears interactive
