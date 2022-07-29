@@ -697,8 +697,8 @@ class GraphicWindow(Window):
                 )
                 return
         # Otherwise hide the content (required for kitty graphics)
-        # elif not get_app().leave_graphics():  # and not filter_value:
-        self.content.hide()
+        if not filter_value or not get_app().leave_graphics():
+            self.content.hide()
 
 
 class GraphicFloat(Float):
