@@ -160,7 +160,6 @@ class Notebook(BaseNotebook):
 
     def kernel_started(self, result: "Optional[Dict[str, Any]]" = None) -> "None":
         """Run when the kernel has started."""
-        super().kernel_started(result)
         if not self.kernel_name or self.kernel.missing:
             if not self.kernel_name:
                 msg = "No kernel selected"
@@ -177,8 +176,7 @@ class Notebook(BaseNotebook):
         elif self.kernel.status == "idle":
             if self.app.config.run:
                 self.run_all(wait=False)
-
-        self.app.invalidate()
+        super().kernel_started(result)
 
     def load_container(self) -> "AnyContainer":
         """Load the main notebook container."""

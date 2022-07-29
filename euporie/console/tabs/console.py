@@ -118,18 +118,6 @@ class Console(KernelTab):
         else:
             self.output.reset()
 
-    def kernel_started(self, result: "Optional[Dict[str, Any]]" = None) -> "None":
-        """Called when the kernel is ready."""
-        super().kernel_started(result)
-
-        if self.kernel.status == "idle":
-
-            # Load history
-            self.input_box.buffer._load_history_task = None
-            self.input_box.buffer.load_history_if_not_yet_loaded()
-
-        self.app.invalidate()
-
     def validate_input(self, code: "str") -> "bool":
         """Determine if the entered code is ready to run."""
         assert self.kernel is not None

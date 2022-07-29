@@ -114,6 +114,7 @@ class KernelTab(Tab, metaclass=ABCMeta):
             )
         self.comms: "Dict[str, Comm]" = comms or {}  # The client-side comm states
         self.completer: "Completer" = KernelCompleter(self.kernel)
+        self.use_kernel_history = use_kernel_history
         self.history: "History" = (
             KernelHistory(self.kernel) if use_kernel_history else InMemoryHistory()
         )
@@ -139,6 +140,18 @@ class KernelTab(Tab, metaclass=ABCMeta):
         # self.kernel.comm_info(target_name="jupyter.widget")
         # Load kernel info
         self.kernel.info(set_kernel_info=self.set_kernel_info)
+        # Load kernel history
+        if self.use_kernel_history:
+            get_app().create_background_task(self.load_history())
+
+        self.app.invalidate()
+
+    async def load_history(self) -> "None":
+        """Load kernel history."""
+        try:
+            await self.history.load().__anext__()
+        except StopAsyncIteration:
+            pass
 
     @property
     def metadata(self) -> "Dict[str, Any]":
