@@ -275,7 +275,7 @@ class Kernel:
                 # TODO - send stdout to log
                 await self.km.start_kernel(stdout=DEVNULL, stderr=DEVNULL)
             except Exception as e:
-                log.error("Kernel '%s' could not start", self.km.kernel_name)
+                log.exception("Kernel '%s' could not start", self.km.kernel_name)
                 self.status = "error"
                 self.error = e
             else:
