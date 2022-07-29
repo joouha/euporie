@@ -80,6 +80,7 @@ class KernelInput(TextArea):
         wrap_lines: "FilterOrBool" = False,
         complete_while_typing: "FilterOrBool" = True,
         autosuggest_while_typing: "FilterOrBool" = True,
+        validate_while_typing: "Optional[FilterOrBool]" = None,
         **kwargs: "Any",
     ) -> "None":
         """Initiate the cell input box."""
@@ -129,6 +130,9 @@ class KernelInput(TextArea):
         ) & to_filter(complete_while_typing)
 
         super().__init__(*args, **kwargs)
+
+        if validate_while_typing:
+            self.buffer.validate_while_typing = to_filter(validate_while_typing)
 
         self.control.include_default_input_processors = False
         if on_text_changed:

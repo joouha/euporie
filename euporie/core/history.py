@@ -25,6 +25,7 @@ class KernelHistory(History):
         # How many items to load
         self.n = n
         self.n_loaded = 0
+        self.loading = False
 
     async def load(self) -> "AsyncGenerator[str, None]":
         """Load the history and yield all entries, most recent history first.
@@ -38,7 +39,8 @@ class KernelHistory(History):
         Yields:
             Each history string
         """
-        if not self._loaded and self.kernel.kc:
+        if not self.loading and not self._loaded and self.kernel.kc:
+            self.loading = True
             items = await self.kernel.history_(n=self.n, hist_access_type="tail")
             if items:
                 self._loaded_strings = [item[2] for item in reversed(items)]
@@ -53,6 +55,7 @@ class KernelHistory(History):
                 log.debug(
                     "Loaded %s items from kernel history", len(self._loaded_strings)
                 )
+            self.loading = False
 
         for item in self._loaded_strings:
             yield item

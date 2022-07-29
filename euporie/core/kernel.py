@@ -191,15 +191,15 @@ class Kernel:
             The kernel status
 
         """
-        # Check kernel is alive
-        if self.km:
-            self._aodo(
-                self.km.is_alive(),
-                timeout=0.2,
-                callback=self._set_living_status,
-                wait=False,
-                warn=False,
-            )
+        # Check kernel is alive - use client rather than manager if we have one, as we
+        # could be connected to a kernel which we was not started by the manager
+        self._aodo(
+            self.km.is_alive(),
+            timeout=0.2,
+            callback=self._set_living_status,
+            wait=False,
+            warn=False,
+        )
 
         return self._status
 
@@ -859,7 +859,7 @@ class Kernel:
     async def is_complete_(
         self,
         code: "str",
-        timeout: "int" = 1,
+        timeout: "Union[int, float]" = 0.1,
     ) -> "Dict[str, Any]":
         """Ask the kernel to determine if code is complete asynchronously."""
         result: "Dict[str, Any]" = {}
@@ -889,6 +889,7 @@ class Kernel:
     def is_complete(
         self,
         code: "str",
+        timeout: "Union[int, float]" = 0.1,
         wait: "bool" = False,
         callback: "Optional[Callable[[dict[str, Any]], None]]" = None,
     ) -> "Dict[str, Any]":
@@ -896,6 +897,7 @@ class Kernel:
 
         Args:
             code: The code string to check the completeness status of
+            timeout: How long to wait for a kernel response
             wait: Whether to wait for the response
             callback: A function to run when the inspection result arrives. The result
                 is passed as an argument.
@@ -905,7 +907,7 @@ class Kernel:
 
         """
         return self._aodo(
-            self.is_complete_(code),
+            self.is_complete_(code, timeout),
             wait=wait,
             callback=callback,
         )

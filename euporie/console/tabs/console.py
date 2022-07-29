@@ -8,12 +8,13 @@ from typing import TYPE_CHECKING
 
 import nbformat
 from prompt_toolkit.buffer import Buffer, ValidationState
-from prompt_toolkit.filters import (
-    Condition,
+from prompt_toolkit.filters.app import (
     buffer_has_focus,
     has_completions,
+    has_focus,
     has_selection,
 )
+from prompt_toolkit.filters.base import Condition
 from prompt_toolkit.key_binding.key_bindings import KeyBindings
 from prompt_toolkit.layout.containers import (
     ConditionalContainer,
@@ -22,7 +23,6 @@ from prompt_toolkit.layout.containers import (
     Window,
 )
 from prompt_toolkit.layout.controls import FormattedTextControl
-from prompt_toolkit.validation import Validator
 
 from euporie.core.commands import add_cmd
 from euporie.core.filters import at_end_of_buffer, buffer_is_code, kernel_tab_has_focus
@@ -34,6 +34,7 @@ from euporie.core.key_binding.registry import (
 )
 from euporie.core.style import KERNEL_STATUS_REPR
 from euporie.core.tabs.base import KernelTab
+from euporie.core.validation import KernelValidator
 from euporie.core.widgets.cell_outputs import CellOutputArea
 from euporie.core.widgets.inputs import KernelInput, StdInput
 from euporie.core.widgets.pager import PagerState
@@ -227,22 +228,38 @@ class Console(KernelTab):
 
         input_kb = KeyBindings()
 
+        @Condition
+        def empty() -> "bool":
+            from euporie.console.app import get_app
+
+            buffer = get_app().current_buffer
+            text = buffer.text
+            return not text.strip()
+
+        @Condition
+        def not_invalid() -> "bool":
+            from euporie.console.app import get_app
+
+            buffer = get_app().current_buffer
+            return buffer.validation_state != ValidationState.INVALID
+
         @input_kb.add(
             "enter",
-            filter=Condition(
-                lambda: self.input_box.buffer.validation_state
-                != ValidationState.INVALID
-            )
+            filter=has_focus("code")
+            & ~empty
+            & not_invalid
             & at_end_of_buffer
             & ~has_completions,
         )
-        def on_enter(event: "KeyPressEvent") -> "None":
+        async def on_enter(event: "KeyPressEvent") -> "None":
             """Accept input if the input is valid, otherwise insert a return."""
             buffer = event.current_buffer
-
-            # When the validation succeeded, accept the input.
-            valid = buffer.validate(set_cursor=False)
-            if valid:
+            # Accept the buffer if there are 2 blank lines
+            accept = buffer.text[-2:] == "\n\n"
+            # Also accept if the input is valid
+            if not accept:
+                accept = buffer.validate(set_cursor=False)
+            if accept:
                 if buffer.accept_handler:
                     keep_text = buffer.accept_handler(buffer)
                 else:
@@ -259,7 +276,10 @@ class Console(KernelTab):
             kernel_tab=self,
             accept_handler=self.run,
             on_cursor_position_changed=on_cursor_position_changed,
-            validator=Validator.from_callable(self.validate_input),
+            validator=KernelValidator(
+                self.kernel
+            ),  # .from_callable(self.validate_input),
+            # validate_while_typing=False,
             enable_history_search=True,
             key_bindings=input_kb,
         )
