@@ -188,9 +188,13 @@ class Console(KernelTab):
         """Re-show the prompt."""
         self.app.invalidate()
 
-    def prompt(self, text: "str", offset: "int" = 0) -> "StyleAndTextTuples":
+    def prompt(
+        self, text: "str", offset: "int" = 0, show_busy: "bool" = False
+    ) -> "StyleAndTextTuples":
         """Determine what should be displayed in the prompt of the cell."""
         prompt = str(self.execution_count + offset)
+        if show_busy and self.kernel.status in ("busy", "queued"):
+            prompt = "*".center(len(prompt))
         ft: "StyleAndTextTuples" = [
             ("", f"{text}["),
             ("class:count", prompt),
@@ -263,13 +267,13 @@ class Console(KernelTab):
         self.app.focused_element = self.input_box.buffer
 
         input_prompt = Window(
-            FormattedTextControl(partial(self.prompt, "In ", 1)),
+            FormattedTextControl(partial(self.prompt, "In ", offset=1)),
             dont_extend_width=True,
             style="class:cell.input.prompt",
             height=1,
         )
         output_prompt = Window(
-            FormattedTextControl(partial(self.prompt, "Out")),
+            FormattedTextControl(partial(self.prompt, "Out", show_busy=True)),
             dont_extend_width=True,
             style="class:cell.output.prompt",
             height=1,
