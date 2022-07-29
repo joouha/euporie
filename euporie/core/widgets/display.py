@@ -599,10 +599,10 @@ class KittyGraphicControl(GraphicControl):
                             ("[ZeroWidthEscape]", f"\x1b[s\x1b[{height-1}A"),
                             # Place the image without moving cursor
                             ("[ZeroWidthEscape]", tmuxify(cmd)),
-                            # Restore the saved cursor position (at the bottom)
-                            ("[ZeroWidthEscape]", "\x1b[u"),
+                            # Restore the last known cursor position (at the bottom)
+                            ("[ZeroWidthEscape]", "\x1b[u "),
                             # Add zero-width no-break space to work around PTK issue #1651
-                            ("", "\uFEFF"),
+                            ("", " \uFEFF"),
                         ]
                     )
                 )
