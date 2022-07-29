@@ -13,6 +13,7 @@ from prompt_toolkit.filters.app import (
     has_completions,
     has_focus,
     has_selection,
+    in_paste_mode,
 )
 from prompt_toolkit.filters.base import Condition
 from prompt_toolkit.key_binding.key_bindings import KeyBindings
@@ -269,6 +270,11 @@ class Console(KernelTab):
             # Process the input as a regular :kbd:`enter` key-press
             event.key_processor.feed(event.key_sequence[0], first=True)
 
+        @input_kb.add("s-enter")
+        def _newline(event: "KeyPressEvent") -> "None":
+            """Force new line on Shift-Enter."""
+            event.current_buffer.newline(copy_margin=not in_paste_mode())
+
         self.input_box = KernelInput(
             kernel_tab=self,
             accept_handler=self.run,
@@ -490,7 +496,7 @@ class Console(KernelTab):
     register_bindings(
         {
             "euporie.console.tabs.console.Console": {
-                "run-input": ["c-enter", "s-enter", "c-e"],
+                "run-input": ["c-enter", "c-e"],
                 "clear-input": "c-c",
                 "show-contextual-help": "s-tab",
             }
