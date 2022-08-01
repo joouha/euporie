@@ -828,12 +828,14 @@ class Progress:
                     self.control,
                     style=self.add_style("class:progress"),
                     dont_extend_width=self.vertical,
+                    # dont_extend_height=~self.vertical,
                     height=lambda: None if self.vertical() else 1,
+                    width=lambda: 1 if self.vertical() else None,
                 ),
                 border=InnerEdgeGridStyle,
                 style=self.add_style("class:progress,border"),
             ),
-            width=lambda: 1 if self.vertical() else None,
+            # width=lambda: 1 if self.vertical() else None,
         )
 
     @property
@@ -1049,7 +1051,7 @@ class Select(SelectableWidget):
         multiple: "FilterOrBool" = False,
         on_change: "Optional[Callable[[SelectableWidget], None]]" = None,
         style: "Union[str, Callable[[], str]]" = "",
-        rows: "int" = 3,
+        rows: "Optional[int]" = 3,
         prefix: "Tuple[str, str]" = ("", ""),
         border: "Optional[GridStyle]" = InnerEdgeGridStyle,
         show_borders: "Optional[BorderVisibility]" = None,

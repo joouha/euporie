@@ -447,7 +447,7 @@ class ButtonModel(IpyWidgetComm):
         if icon := self.data["state"].get("icon", ""):
             from euporie.core.reference import FA_ICONS
 
-            text = f"{FA_ICONS[icon]} {text}"
+            text = f"{FA_ICONS.get(icon, '#')} {text}"
         return text
 
     def button_style(self) -> "str":
@@ -587,7 +587,7 @@ class FloatOptionsMixin:
         step = Decimal(str(self.data["state"].get("step", 1)))
         start = Decimal(str(self.data["state"].get("min", 0)))
         stop = Decimal(str(self.data["state"].get("max", 100))) + step
-        return [start + step * i for i in range(int((stop - start) / step))]
+        return [float(start + step * i) for i in range(int((stop - start) / step))]
 
 
 class FloatLogOptionsMixin(FloatOptionsMixin):
@@ -689,7 +689,11 @@ class RangeSliderIpyWidgetComm(SliderIpyWidgetComm, metaclass=ABCMeta):
     @property
     def indices(self) -> "List[int]":
         """Return the first and last selected indices."""
-        return [self.options.index(value) for value in self.data["state"]["value"]]
+        output = []
+        for value in self.data["state"]["value"]:
+            if value in self.options:
+                output.append(self.options.index(value))
+        return output
 
     def update_value(self, slider: "SelectableWidget") -> "None":
         """Send a ``comm_message`` updating the values when they change."""
@@ -700,7 +704,9 @@ class RangeSliderIpyWidgetComm(SliderIpyWidgetComm, metaclass=ABCMeta):
     def set_value(self, slider: "Slider", values: "Any") -> "None":
         """Set the selected indices when the ipywidget's selected values change."""
         if all(value in slider.options for value in values):
-            slider.indices = [slider.options.index(value) for value in values]
+            slider.indices = [
+                slider.options.index(self.normalize(value)) for value in values
+            ]
             slider.value_changed()
 
 
@@ -889,7 +895,7 @@ class ToggleButtonModel(ToggleableIpyWidgetComm):
         if icon := self.data["state"].get("icon", ""):
             from euporie.core.reference import FA_ICONS
 
-            text = f"{FA_ICONS[icon]} {text}"
+            text = f"{FA_ICONS.get(icon, '#')} {text}"
         return text
 
     def button_style(self) -> "str":
@@ -989,6 +995,7 @@ class RadioButtonsModel(SelectableIpyWidgetComm):
             multiple=False,
             border=None,
             disabled=Condition(lambda: self.data["state"].get("disabled", False)),
+            rows=None,
         )
         return CommView(
             FocusedStyle(
@@ -1128,7 +1135,7 @@ class ToggleButtonsModel(IpyWidgetComm):
             if icon := self.data["state"]["icons"][index]:
                 from euporie.core.reference import FA_ICONS
 
-                label = f"{FA_ICONS[icon]} {label}"
+                label = f"{FA_ICONS.get(icon, '#')} {label}"
         return label
 
     def create_view(self, parent: "OutputParent") -> "CommView":
