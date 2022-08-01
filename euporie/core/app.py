@@ -10,7 +10,6 @@ from weakref import WeakSet
 
 from prompt_toolkit.application.application import Application, _CombinedRegistry
 from prompt_toolkit.application.current import create_app_session
-from prompt_toolkit.application.current import get_app as get_app_ptk
 from prompt_toolkit.clipboard import InMemoryClipboard
 from prompt_toolkit.clipboard.pyperclip import PyperclipClipboard
 from prompt_toolkit.enums import EditingMode
@@ -56,6 +55,7 @@ from upath import UPath
 
 from euporie.core.commands import add_cmd
 from euporie.core.config import Config, add_setting
+from euporie.core.current import get_app
 from euporie.core.filters import in_tmux, tab_has_focus
 from euporie.core.key_binding.key_processor import KeyProcessor
 from euporie.core.key_binding.micro_state import MicroState
@@ -126,11 +126,6 @@ _COLOR_DEPTHS = {
     8: ColorDepth.DEPTH_8_BIT,
     24: ColorDepth.DEPTH_24_BIT,
 }
-
-
-def get_app() -> "BaseApp":
-    """Get the current application."""
-    return cast("BaseApp", get_app_ptk())
 
 
 class BaseApp(Application):
@@ -382,7 +377,7 @@ class BaseApp(Application):
                             # Load basic bindings.
                             load_basic_bindings(),
                             # Load micro bindings
-                            load_micro_bindings(),
+                            load_micro_bindings(config=self.config),
                             # Load emacs bindings.
                             load_emacs_bindings(),
                             load_emacs_search_bindings(),
@@ -401,7 +396,9 @@ class BaseApp(Application):
                 # load_command_bindings("terminal"),
             ]
         )
-        self.key_bindings = load_registered_bindings(*self.bindings_to_load)
+        self.key_bindings = load_registered_bindings(
+            *self.bindings_to_load, config=self.config
+        )
 
     def _on_resize(self) -> "None":
         """Hook the resize event to also query the terminal dimensions."""
@@ -936,6 +933,7 @@ class BaseApp(Application):
             forthis to take effect.
 
             .. warning::
+
                Terminal graphics in :program:`tmux` is experimental, and is not
                guaranteed to work. Use at your own risk!
         """,
@@ -994,6 +992,20 @@ class BaseApp(Application):
         description="""
             The hex code of a color to use for the accent color in the application.
         """,
+    )
+
+    add_setting(
+        name="key_bindings",
+        flags=["--key-bindings"],
+        type_=dict,
+        help_="Additional key binding definitions",
+        default={},
+        description="""
+    A mapping of component names to mappings of command name to key-binding lists.
+    """,
+        schema={
+            "type": "object",
+        },
     )
 
     # ################################# Key Bindings ##################################

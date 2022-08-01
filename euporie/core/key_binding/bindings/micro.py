@@ -63,9 +63,11 @@ from euporie.core.key_binding.registry import (
 )
 
 if TYPE_CHECKING:
-    from typing import Dict, List, Tuple, Union
+    from typing import Dict, List, Optional, Tuple, Union
 
     from prompt_toolkit.key_binding import KeyBindingsBase, KeyPressEvent
+
+    from euporie.core.config import Config
 
 log = logging.getLogger(__name__)
 
@@ -184,10 +186,12 @@ register_bindings(
 )
 
 
-def load_micro_bindings() -> "KeyBindingsBase":
+def load_micro_bindings(config: "Optional[Config]" = None) -> "KeyBindingsBase":
     """Load editor key-bindings in the style of the ``micro`` text editor."""
     return ConditionalKeyBindings(
-        load_registered_bindings("euporie.core.key_binding.bindings.micro.EditMode"),
+        load_registered_bindings(
+            "euporie.core.key_binding.bindings.micro.EditMode", config=config
+        ),
         micro_mode,
     )
 

@@ -11,6 +11,7 @@ Upcoming
 Added
 =====
 
+- Key-bindings can now be edited in the configuration file
 - Queue inputs which are run before kernel starts, and run them once the kernel has started
 - Add ability to convert from console to notebook
 - Set initial vi mode to navigation
