@@ -92,6 +92,9 @@ class NotebookApp(BaseApp):
         self.bindings_to_load.append("euporie.notebook.app.NotebookApp")
         self.pre_run_callables.append(self.load_default_statusbar_fields)
 
+        # Register config hooks
+        self.config.get_item("show_cell_borders").event += lambda x: self.refresh()
+
     def load_default_statusbar_fields(self) -> "None":
         """Load the default statusbar fields (run after keybindings are loaded)."""
         self.status_default = (
