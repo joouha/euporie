@@ -407,7 +407,7 @@ class Setting:
                 title=f"Set {self.title} to {choice}",
                 menu_title=str(choice).replace("_", " ").capitalize(),
                 description=f'Set the value of the "{self.name}" '
-                'configuration option to "{choice}"',
+                f'configuration option to "{choice}"',
                 filter=self.cmd_filter,
             )(partial(setattr, self, "value", choice))
 
@@ -546,6 +546,7 @@ add_setting(
         All other configuration options will be ignored.
 
         .. note::
-        This cannot be set in the configuration file or via an environment variable
+
+           This cannot be set in the configuration file or via an environment variable
     """,
 )
