@@ -828,6 +828,7 @@ class Progress:
                     self.control,
                     style=self.add_style("class:progress"),
                     dont_extend_width=self.vertical,
+                    height=lambda: None if self.vertical() else 1,
                 ),
                 border=InnerEdgeGridStyle,
                 style=self.add_style("class:progress,border"),
