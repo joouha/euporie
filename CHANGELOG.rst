@@ -34,6 +34,7 @@ Changed
 Fixed
 =====
 
+- Clicking on a cell to focus no longer results in a selection if the notebooks has to be scrolled
 - Fix issue with hyperlinks taking over the screen
 - Fix bug which prevented mouse scrolling in some circumstances
 - Fix ``--version`` command line flag

@@ -83,6 +83,7 @@ class ClickToFocus(Container):
         """
         self.cell = cell
         self.body = body
+        self.done_mouse_down = False
 
     def reset(self) -> "None":
         """Reset the wrapped container."""
@@ -128,7 +129,28 @@ class ClickToFocus(Container):
                     mouse_event: "MouseEvent",
                 ) -> "NotImplementedOrNone":
 
-                    if mouse_event.event_type == MouseEventType.MOUSE_DOWN:
+                    if self.cell.kernel_tab.app.layout.has_focus(self.cell):
+                        result = None
+                        # If we just handled a mouse down event, the page may have
+                        # scrolled, resulting in a change in cursor position on the
+                        # next mouse-up event, causing a selection to be created.
+                        # Here we check for this scenario and close the selection, and
+                        # prevent the cursor position moving on mouse up
+                        if (
+                            self.done_mouse_down
+                            and mouse_event.event_type == MouseEventType.MOUSE_UP
+                            and self.cell.kernel_tab.edit_mode
+                        ):
+                            self.cell.kernel_tab.app.current_buffer.exit_selection()
+
+                        else:
+                            # Run the wrapped mouse handler
+                            result = handler(mouse_event)
+
+                        self.done_mouse_down = False
+                        return result
+
+                    elif mouse_event.event_type == MouseEventType.MOUSE_DOWN:
                         # Use a set intersection
                         if mouse_event.modifiers & {
                             MouseModifier.SHIFT,
@@ -137,9 +159,14 @@ class ClickToFocus(Container):
                             self.cell.select(extend=True)
                         else:
                             self.cell.select()
-                        get_app().invalidate()
+                        self.cell.focus(scroll=True)
+                        self.done_mouse_down = True
+                        # Run the wrapped mouse handler
+                        handler(mouse_event)
+                        # Return None for the app is always invalidated
+                        return None
 
-                    return handler(mouse_event)
+                    return NotImplemented
 
                 mouse_handler_wrappers[handler] = wrapped_mouse_handler
             return mouse_handler_wrappers[handler]
@@ -437,11 +464,12 @@ class Cell:
             ),
         )
 
-    def focus(self, position: "Optional[int]" = None) -> "None":
+    def focus(self, position: "Optional[int]" = None, scroll: "bool" = False) -> "None":
         """Focuses the relevant control in this cell.
 
         Args:
             position: An optional cursor position index to apply to the input box
+            scroll: Whether to scroll the page to make the selection visible
 
         """
         to_focus = None
@@ -464,7 +492,7 @@ class Cell:
         # focus might be not be in the current layout yet.
         get_app().layout._stack.append(to_focus)
         # Scroll the currently selected slice into view
-        self.kernel_tab.refresh()
+        self.kernel_tab.refresh(scroll=scroll)
 
     @property
     def focused(self) -> "bool":
@@ -492,7 +520,9 @@ class Cell:
             position: An optional cursor position index to apply to the cell input
 
         """
-        self.kernel_tab.select(self.index, extend=extend, position=position)
+        self.kernel_tab.select(
+            self.index, extend=extend, position=position, scroll=False
+        )
 
     @property
     def cell_type(self) -> "str":

@@ -646,7 +646,10 @@ class ScrollingContainer(Container):
             new_top = self.index_positions[index]
         else:
             if index < self._selected_slice.start:
-                new_top = 0
+                # new_top = 0
+                new_top = max(
+                    0, child_render_info.height - self.last_write_position.height
+                )
             elif index == self._selected_slice.start:
                 new_top = self.selected_child_position
             elif index > self._selected_slice.start:
@@ -663,7 +666,9 @@ class ScrollingContainer(Container):
                 )
 
         if new_top is None or new_top < 0:
-            self.selected_child_position = 0
+            self.selected_child_position = min(
+                0, self.last_write_position.height - child_render_info.height
+            )
         elif new_top > self.last_write_position.height - child_render_info.height:
             self.selected_child_position = max(
                 0,

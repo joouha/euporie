@@ -180,11 +180,14 @@ class BaseNotebook(KernelTab, metaclass=ABCMeta):
         cell_index: "int",
         extend: "bool" = False,
         position: "Optional[int]" = None,
+        scroll: "bool" = False,
     ) -> "None":
         """Select a cell."""
         pass
 
-    def refresh(self) -> "None":
+    def refresh(
+        self, slice_: "Optional[slice]" = None, scroll: "bool" = False
+    ) -> "None":
         """Refresh the notebook."""
         pass
 

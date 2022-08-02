@@ -308,6 +308,7 @@ class Notebook(BaseNotebook):
         cell_index: "int",
         extend: "bool" = False,
         position: "Optional[int]" = None,
+        scroll: "bool" = True,
     ) -> "None":
         """Selects a cell or adds it to the selection.
 
@@ -315,6 +316,7 @@ class Notebook(BaseNotebook):
             cell_index: The index of the cell to select
             extend: If true, the selection will be extended to include the cell
             position: An optional cursor position index to apply to the cell input
+            scroll: Whether to scroll the page
 
         """
         # Update the selected slice if we are extending the cell selection
@@ -332,16 +334,16 @@ class Notebook(BaseNotebook):
             elif step in (1, None) and cell_index >= stop:
                 step = -1
                 stop -= 2
-            self.page.selected_slice = slice(
-                cell_index,
-                stop,
-                step,
-            )
+            self.page._set_selected_slice(slice(cell_index, stop, step), scroll=scroll)
         # Otherwise set the cell selection to the given cell index
         else:
-            self.page.selected_slice = slice(cell_index, cell_index + 1)
+            self.page._set_selected_slice(
+                slice(cell_index, cell_index + 1), scroll=scroll
+            )
         # Focus the selected cell - use the current slice in case it did not change
-        self.rendered_cells()[self.page.selected_slice.start].focus(position)
+        self.rendered_cells()[self.page.selected_slice.start].focus(
+            position, scroll=scroll
+        )
 
     def refresh(
         self, slice_: "Optional[slice]" = None, scroll: "bool" = True
