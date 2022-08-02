@@ -199,9 +199,9 @@ class BaseApp(Application):
             )
         }
         self.floats = ChainedList(
-            self.menus.values(),
-            self.dialogs.values(),
             self.graphics,
+            self.dialogs.values(),
+            self.menus.values(),
         )
         # Mapping of Containers to status field generating functions
         self.container_statuses: "ContainerStatusDict" = {}
