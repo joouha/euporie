@@ -26,7 +26,12 @@ from prompt_toolkit.layout.containers import (
 from prompt_toolkit.layout.controls import FormattedTextControl
 
 from euporie.core.commands import add_cmd
-from euporie.core.filters import at_end_of_buffer, buffer_is_code, kernel_tab_has_focus
+from euporie.core.filters import (
+    at_end_of_buffer,
+    buffer_is_code,
+    buffer_is_empty,
+    kernel_tab_has_focus,
+)
 from euporie.core.format import format_code
 from euporie.core.kernel import MsgCallbacks
 from euporie.core.key_binding.registry import (
@@ -433,7 +438,7 @@ class Console(KernelTab):
 
     @staticmethod
     @add_cmd(
-        filter=~has_selection,
+        filter=buffer_is_code & buffer_has_focus & ~has_selection & ~buffer_is_empty,
     )
     def _clear_input() -> "None":
         """Clear the console input."""
@@ -469,6 +474,11 @@ class Console(KernelTab):
 
     @staticmethod
     @add_cmd(
+        name="cc-interrupt-kernel",
+        hidden=True,
+        filter=buffer_is_code & buffer_has_focus & buffer_is_empty,
+    )
+    @add_cmd(
         filter=kernel_tab_has_focus,
     )
     def _interrupt_kernel() -> "None":
@@ -498,6 +508,7 @@ class Console(KernelTab):
             "euporie.console.tabs.console.Console": {
                 "run-input": ["c-enter", "c-e"],
                 "clear-input": "c-c",
+                "cc-interrupt-kernel": "c-c",
                 "show-contextual-help": "s-tab",
             }
         }
