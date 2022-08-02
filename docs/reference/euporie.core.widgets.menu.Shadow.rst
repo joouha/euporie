@@ -1,6 +1,6 @@
-euporie.core.widgets.menu.HSplit
+euporie.core.widgets.menu.Shadow
 ================================
 
 .. currentmodule:: euporie.core.widgets.menu
 
-.. autoclass:: HSplit
+.. autoclass:: Shadow

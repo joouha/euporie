@@ -47,3 +47,4 @@ euporie.core.tabs.base
       MsgCallbacks
       Tab
       Window
+      deque

@@ -496,7 +496,13 @@ def build_style(
     style_dict.update(
         {
             f"{key} shadow": f"bg:{cp.bg.darker(0.45)}"
-            for key in style_dict
+            for key in {
+                **dict(MIME_STYLE),
+                **dict(MARKDOWN_STYLE),
+                **dict(LOG_STYLE),
+                **dict(IPYWIDGET_STYLE),
+                **style_dict,
+            }
             if key
             not in (
                 "menu",

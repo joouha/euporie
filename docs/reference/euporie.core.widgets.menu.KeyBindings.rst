@@ -1,6 +1,6 @@
-euporie.core.widgets.menu.PtkMenuItem
+euporie.core.widgets.menu.KeyBindings
 =====================================
 
 .. currentmodule:: euporie.core.widgets.menu
 
-.. autoclass:: PtkMenuItem
+.. autoclass:: KeyBindings

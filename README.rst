@@ -11,16 +11,19 @@ euporie
 
 .. content_start
 
-**Euporie is a terminal app for running and editing Jupyter notebooks.**
+**Euporie is a terminal based interactive computing environment for Jupyter.**
 
-The text-based interface is inspired by JupyterLab / Jupyter Notebook, and runs entirely in the terminal.
+Euporie's apps allow you to interact with Jupyter kernels, and run Jupyter notebooks entirely in the terminal.
 
-.. figure:: https://user-images.githubusercontent.com/12154190/165388661-44153d99-a44b-4a4a-98b8-7007158c3fa3.png
-   :target: https://user-images.githubusercontent.com/12154190/165388661-44153d99-a44b-4a4a-98b8-7007158c3fa3.png
+.. figure:: https://user-images.githubusercontent.com/12154190/182201621-9c3e4b04-1b1e-46e3-b852-b43f16adfc7b.png
+   :target: https://user-images.githubusercontent.com/12154190/182201621-9c3e4b04-1b1e-46e3-b852-b43f16adfc7b.png
 
    `View more screenshots here <https://euporie.readthedocs.io/en/latest/pages/gallery.html>`_
 
+
+
 ----
+
 
 *******
 Install
@@ -36,35 +39,58 @@ You can install euporie with `pipx <https://pipxproject.github.io/>`_ (recommend
 
 You can also try euporie online `here <https://mybinder.org/v2/gh/joouha/euporie-binder/HEAD?urlpath=%2Feuporie%2F>`_.
 
+********
+Features
+********
+
+* Edit and run notebooks in the terminal
+* Run code interactively in a console
+* Convert a console session to a notebook
+* Use Jupyter widgets interactively in the terminal
+* Display images using terminal graphics (sixel / iterm / kitty)
+* Render rich kernel output (markdown, tables, images, LaTeX, HTML, SVG, & PDF)
+* Tab-completion, line suggestions  and contextual help
+* Micro / Vim / Emacs style key-bindings
+
 *****
 Usage
 *****
 
-Open a notebook using the ``edit`` subcommand and passing the notebook's file path as a command line argument:
+**Notebooks**
 
-.. code-block:: console
+   You can edit a notebook using ``euporie-notebook``, and passing the notebook's file path or URI as a command line argument:
 
-   $ euporie edit notebook.ipynb
+   .. code-block:: console
 
-Alternatively, launch ``euporie`` and open a notebook file by selecting "Open" from the file menu (*Ctrl+o*).
+      $ euporie-notebook notebook.ipynb
 
-To print a notebook to the terminal, use the ``preview`` subcommand:
+   Alternatively, launch ``euporie-notebooks`` and open a notebook file by selecting "Open" from the file menu (``Ctrl+O``).
 
-.. code-block:: console
+**Console**
 
-   $ euporie preview notebook.ipynb
+   To connect to a Jupyter kernel and run code interactively in a console session, you can run
 
-To view a notebook in the system pager, use the ``--page`` flag:
+   .. code-block:: console
 
-.. code-block:: console
+      $ euporie-console
 
-   $ euporie preview --page notebook.ipynb
+   (You can press ``Ctrl+C`` to open the command palette in ``euporie-console``).
 
-For more information about the available subcommands and command line flags, run:
+**Preview**
 
-.. code-block:: console
+   To preview a notebook to the terminal, use the ``euporie-preview`` subcommand:
 
-   $ euporie --help
+   .. code-block:: console
+
+      $ euporie-preview notebook.ipynb
+
+**Hub**
+
+   To run euporie hub, a multi-user SSH server for euporie apps, run:
+
+   .. code-block:: console
+
+      $ euporie-hub
 
 
 *************
@@ -74,22 +100,6 @@ Documentation
 View the online documentation at: `https://euporie.readthedocs.io/ <https://euporie.readthedocs.io/>`_
 
 The code is available on GitHub at: `https://github.com/joouha/euporie <https://github.com/joouha/euporie>`_
-
-********
-Features
-********
-
-* Edit and run notebooks in the terminal
-* Jupyter widgets support
-* Displays rich cell outputs, including markdown, tables, images, LaTeX, HTML, SVG, & PDF
-* Print formatted notebooks to the terminal or pager
-* Open multiple notebooks and display them stacked or tiled
-* Code completion
-* Line completions from history
-* Contextual help
-* Automatic code formatting
-* Highly configurable
-
 
 *************
 Compatibility

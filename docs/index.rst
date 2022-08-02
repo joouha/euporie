@@ -14,7 +14,8 @@ euporie's documentation
    pages/installation
    pages/gallery
    pages/overview
-   pages/edit
+   pages/notebool
+   pages/console
    pages/preview
    pages/hub
    pages/keybindings

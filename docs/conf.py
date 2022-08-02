@@ -19,7 +19,7 @@ extensions: "list[str]" = [
     "sphinx_argparse_cli",  # Command line argument documentation
     "sphinxext.opengraph",  # OGP data
     "sphinx_copybutton",  # Copy button
-    "sphinx_exec_directive",  # Allow generating sections with scripts
+    "sphinx_design",  # Used for image grids
 ]
 templates_path = ["_templates"]
 exclude_patterns: "list[str]" = []

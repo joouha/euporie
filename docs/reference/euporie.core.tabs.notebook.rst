@@ -48,3 +48,4 @@ euporie.core.tabs.notebook
       MsgCallbacks
       Never
       abstractproperty
+      partial

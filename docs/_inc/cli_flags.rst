@@ -134,6 +134,10 @@ Optional Arguments
 
    Accent color to use in the app
 
+.. option:: --key-bindings <dict>
+
+   Additional key binding definitions
+
 .. option:: --line-numbers, --no-line-numbers
 
    Show or hide line numbers
@@ -254,6 +258,10 @@ Optional Arguments
 .. option:: --accent-color <str>
 
    Accent color to use in the app
+
+.. option:: --key-bindings <dict>
+
+   Additional key binding definitions
 
 .. option:: --app {notebook,console}
 
@@ -381,6 +389,10 @@ Optional Arguments
 
    Accent color to use in the app
 
+.. option:: --key-bindings <dict>
+
+   Additional key binding definitions
+
 .. option:: --kernel-connection-file <str>
 
    Attempt to connect to an existing kernel using a JSON connection info file.
@@ -412,6 +424,10 @@ Optional Arguments
 .. option:: --show-cell-borders, --no-show-cell-borders
 
    Show or hide cell borders.
+
+.. option:: --record-cell-timing, --no-record-cell-timing
+
+   Should timing data be recorded in cell metadata.
 
 .. option:: --save-widget-state, --no-save-widget-state
 
@@ -557,6 +573,10 @@ Optional Arguments
 
    Accent color to use in the app
 
+.. option:: --key-bindings <dict>
+
+   Additional key binding definitions
+
 .. option:: --kernel-connection-file <str>
 
    Attempt to connect to an existing kernel using a JSON connection info file.
@@ -584,6 +604,10 @@ Optional Arguments
 .. option:: --show-cell-borders, --no-show-cell-borders
 
    Show or hide cell borders.
+
+.. option:: --record-cell-timing, --no-record-cell-timing
+
+   Should timing data be recorded in cell metadata.
 
 .. option:: --save-widget-state, --no-save-widget-state
 

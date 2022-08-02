@@ -23,7 +23,6 @@ euporie.core.widgets.menu
    .. autosummary::
       :toctree:
 
-      cast
       fragment_list_to_text
       fragment_list_width
       get_app
@@ -42,16 +41,17 @@ euporie.core.widgets.menu
       :toctree:
       :template: class.tpl.rst
 
-      ChainedList
+      Condition
+      ConditionalContainer
       Container
+      Float
       FormattedTextControl
-      HSplit
+      KeyBindings
       Keys
-      MenuContainer
+      MenuBar
       MenuItem
       MouseEvent
       MouseEventType
-      PtKMenuContainer
-      PtkMenuItem
-      VSplit
+      Shadow
       Window
+      partial

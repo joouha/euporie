@@ -23,6 +23,7 @@ euporie.core.key\_binding.registry
    .. autosummary::
       :toctree:
 
+      get_app
       get_cmd
       load_registered_bindings
       register_bindings
@@ -37,5 +38,6 @@ euporie.core.key\_binding.registry
       :toctree:
       :template: class.tpl.rst
 
+      Config
       KeyBindings
       Keys

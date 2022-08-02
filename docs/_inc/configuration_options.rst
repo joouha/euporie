@@ -10,7 +10,8 @@
    All other configuration options will be ignored.
 
    .. note::
-   This cannot be set in the configuration file or via an environment variable
+
+      This cannot be set in the configuration file or via an environment variable
 
 
 .. option:: kernel_connection_file
@@ -143,7 +144,7 @@
 :flags: :option:`--format-black`
 
 :environment variable: :envvar:`EUPORIE_FORMAT_BLACK`
-:default: ``False``
+:default: ``True``
 :type: :keyword:`boolean`
 :description: Use black when re-formatting code cells
 
@@ -155,7 +156,7 @@
 :flags: :option:`--format-isort`
 
 :environment variable: :envvar:`EUPORIE_FORMAT_ISORT`
-:default: ``False``
+:default: ``True``
 :type: :keyword:`boolean`
 :description: Use isort when re-formatting code cells
 
@@ -167,7 +168,7 @@
 :flags: :option:`--format-ssort`
 
 :environment variable: :envvar:`EUPORIE_FORMAT_SSORT`
-:default: ``False``
+:default: ``True``
 :type: :keyword:`boolean`
 :description: Use ssort when re-formatting code cells
 
@@ -214,6 +215,7 @@
    forthis to take effect.
 
    .. warning::
+
       Terminal graphics in :program:`tmux` is experimental, and is not
       guaranteed to work. Use at your own risk!
 
@@ -269,6 +271,18 @@
 :description: Accent color to use in the app
 
    The hex code of a color to use for the accent color in the application.
+
+
+.. option:: key_bindings
+
+:flags: :option:`--key-bindings`
+
+:environment variable: :envvar:`EUPORIE_KEY_BINDINGS`
+:default: ``{}``
+:type: :keyword:`object`
+:description: Additional key binding definitions
+
+   A mapping of component names to mappings of command name to key-binding lists.
 
 
 .. option:: line_numbers
@@ -406,6 +420,7 @@
    When set, users will be able to access euporie hub without authentication.
 
    .. warning::
+
       This option is dangerous, as arbitrary code can be executed through
 
 
@@ -419,6 +434,18 @@
 :description: Show or hide cell borders.
 
    Whether cell borders should be drawn for unselected cells.
+
+
+.. option:: record_cell_timing
+
+:flags: :option:`--record-cell-timing`
+
+:environment variable: :envvar:`EUPORIE_RECORD_CELL_TIMING`
+:default: ``False``
+:type: :keyword:`boolean`
+:description: Should timing data be recorded in cell metadata.
+
+   When set, execution timing data will be recorded in cell metadata.
 
 
 .. option:: save_widget_state

@@ -32,7 +32,6 @@ euporie.core.app
       create_output
       determine_clipboard
       get_app
-      get_app_ptk
       get_style_by_name
       load_basic_bindings
       load_cpr_bindings
@@ -92,6 +91,5 @@ euporie.core.app
       ViState
       Vt100Parser
       WeakSet
-      WeakValueDictionary
       Window
       partial

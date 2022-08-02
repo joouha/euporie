@@ -178,8 +178,6 @@ Interactive consoles
 +===========================+==================================================+
 | :kbd:`Ctrl+Enter`         | Run the console input.                           |
 |                           |                                                  |
-| :kbd:`Shift+Enter`        |                                                  |
-|                           |                                                  |
 | :kbd:`Ctrl+E`             |                                                  |
 +---------------------------+--------------------------------------------------+
 | :kbd:`Ctrl+C`             | Clear the console input.                         |

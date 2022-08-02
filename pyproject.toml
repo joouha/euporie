@@ -100,6 +100,7 @@ codespell = "^2.1.0"
 pytest = "^7.1.1"
 mypy = "^0.942"
 rich = "^12.2.0"
+sphinx_design = "^0.2.0"
 
 [tool.isort]
 profile = "black"

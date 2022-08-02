@@ -30,7 +30,6 @@ euporie.notebook.app
       get_cmd
       ptk_get_app
       register_bindings
-      to_container
 
 
 
@@ -53,7 +52,7 @@ euporie.notebook.app
       FloatContainer
       FormattedTextControl
       HSplit
-      MenuContainer
+      MenuBar
       MenuItem
       MsgBoxDialog
       NoKernelsDialog

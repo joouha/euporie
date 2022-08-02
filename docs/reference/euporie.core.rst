@@ -23,6 +23,7 @@ euporie.core
       euporie.core.completion
       euporie.core.config
       euporie.core.convert
+      euporie.core.current
       euporie.core.filters
       euporie.core.format
       euporie.core.formatted_text
@@ -41,6 +42,7 @@ euporie.core
       euporie.core.terminal
       euporie.core.url
       euporie.core.utils
+      euporie.core.validation
       euporie.core.widgets
 
 

@@ -190,6 +190,7 @@ class HubApp(BaseApp):
             When set, users will be able to access euporie hub without authentication.
 
             .. warning::
+
                This option is dangerous, as arbitrary code can be executed through
         """,
     )

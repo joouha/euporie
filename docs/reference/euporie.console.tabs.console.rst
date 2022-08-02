@@ -25,6 +25,7 @@ euporie.console.tabs.console
 
       add_cmd
       format_code
+      has_focus
       load_registered_bindings
       register_bindings
 
@@ -47,12 +48,12 @@ euporie.console.tabs.console
       HSplit
       KernelInput
       KernelTab
+      KernelValidator
       KeyBindings
       MsgCallbacks
       PagerState
       StdInput
       VSplit
       ValidationState
-      Validator
       Window
       partial
