@@ -138,17 +138,25 @@ class KernelTab(Tab, metaclass=ABCMeta):
 
     def kernel_started(self, result: "Optional[Dict[str, Any]]" = None) -> "None":
         """Tasks to run when the kernel has started."""
+        # Check kernel has not failed
+        if not self.kernel_name or self.kernel.missing or self.kernel.status == "error":
+            return
+
+        # Wait for an idle kernel
+        if self.kernel.status != "idle":
+            self.kernel.wait_for_status("idle")
+
         # Load widget comm info
         # self.kernel.comm_info(target_name="jupyter.widget")
+
         # Load kernel info
         self.kernel.info(set_kernel_info=self.set_kernel_info)
+
         # Load kernel history
         if self.use_kernel_history:
             self.app.create_background_task(self.load_history())
 
         # Run queued kernel tasks when the kernel is idle
-        if self.kernel.status != "idle":
-            self.kernel.wait_for_status("idle")
         log.debug("Running %d kernel tasks", len(self.kernel_queue))
         while self.kernel_queue:
             self.kernel_queue.popleft()()

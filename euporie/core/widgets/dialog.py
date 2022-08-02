@@ -475,7 +475,7 @@ class SelectKernelDialog(Dialog):
         def _change_kernel() -> "None":
             assert tab is not None
             name = options.options[options.index or 0]
-            tab.kernel.change(name)
+            tab.kernel.change(name, cb=tab.kernel_started)
 
         self.buttons = {
             "Select": _change_kernel,

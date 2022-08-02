@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING, TypedDict
 
 import nbformat
 from jupyter_client import AsyncKernelManager, KernelManager
-from jupyter_client.kernelspec import NoSuchKernel
+from jupyter_client.kernelspec import NATIVE_KERNEL_NAME, NoSuchKernel
 from jupyter_core.paths import jupyter_path
 
 from euporie.core.config import add_setting
@@ -326,6 +326,17 @@ class Kernel:
             timeout: How long to wait until failure is assumed
 
         """
+        # Attempt to import ipykernel if it is installed
+        # ipykernel is imported by jupyter_client, but since starting the kernel runs
+        # in another thread, we do the import here first to prevent import deadlocks,
+        # which sometimes occur as we import ipython elsewhere in the main thread
+        if self.kernel_tab.kernel_name == NATIVE_KERNEL_NAME:
+            try:
+                import ipykernel  # noqa F401
+            except ImportError:
+                pass
+
+        # Start the kernel
         self._aodo(
             self.start_(),
             timeout=timeout,
@@ -929,18 +940,20 @@ class Kernel:
         await self.km.restart_kernel()
         log.debug("Kernel %s restarted", self.id)
 
-    def restart(self, wait: "bool" = False) -> "None":
+    def restart(self, wait: "bool" = False, cb: "Optional[Callable]" = None) -> "None":
         """Restarts the current kernel."""
         self._aodo(
             self.restart_(),
             wait=wait,
+            callback=cb,
         )
 
-    def change(self, name: "str") -> "None":
+    def change(self, name: "str", cb: "Optional[Callable]" = None) -> "None":
         """Change the kernel.
 
         Args:
             name: The name of the kernel to change to
+            cb: Callback to run once restarted
 
         """
         spec = self.specs.get(name, {}).get("spec", {})
@@ -952,9 +965,9 @@ class Kernel:
         }
         self.km.kernel_name = name
         if self.km.has_kernel:
-            self.restart()
+            self.restart(cb=cb)
         else:
-            self.start()
+            self.start(cb=cb)
 
     def stop(self, cb: "Optional[Callable]" = None, wait: "bool" = False) -> "None":
         """Stops the current kernel.
