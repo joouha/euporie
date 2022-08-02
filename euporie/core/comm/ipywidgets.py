@@ -582,7 +582,7 @@ class FloatOptionsMixin:
             return value
 
     @property
-    def options(self) -> "List[Decimal]":
+    def options(self) -> "List[float]":
         """Generate a list of available options in a range of floats."""
         step = Decimal(str(self.data["state"].get("step", 1)))
         start = Decimal(str(self.data["state"].get("min", 0)))
@@ -596,13 +596,15 @@ class FloatLogOptionsMixin(FloatOptionsMixin):
     data: "Dict[str, Any]"
 
     @property
-    def options(self) -> "List[Decimal]":
+    def options(self) -> "List[float]":
         """Generate a list of available options in a range of log values."""
         base = Decimal(str(self.data["state"].get("base", 10)))
         start = Decimal(str(self.data["state"].get("min", 0)))
         step = Decimal(str(self.data["state"].get("step", 1)))
         stop = Decimal(str(self.data["state"].get("max"))) + step
-        return [base ** (start + step * i) for i in range(int((stop - start) / step))]
+        return [
+            float(base ** (start + step * i)) for i in range(int((stop - start) / step))
+        ]
 
 
 class SliderIpyWidgetComm(IpyWidgetComm, metaclass=ABCMeta):
