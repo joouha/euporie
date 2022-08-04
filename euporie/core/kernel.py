@@ -11,6 +11,7 @@ from subprocess import DEVNULL  # noqa S404 - Security implications considered
 from typing import TYPE_CHECKING, TypedDict
 
 import nbformat
+from _frozen_importlib import _DeadlockError
 from jupyter_client import AsyncKernelManager, KernelManager
 from jupyter_client.kernelspec import NATIVE_KERNEL_NAME, NoSuchKernel
 from jupyter_core.paths import jupyter_path
@@ -271,18 +272,23 @@ class Kernel:
 
         # Otherwise, start a new kernel using the kernel manager
         else:
-            try:
-                # TODO - send stdout to log
-                await self.km.start_kernel(stdout=DEVNULL, stderr=DEVNULL)
-            except Exception as e:
-                log.exception("Kernel '%s' could not start", self.km.kernel_name)
-                self.status = "error"
-                self.error = e
-            else:
-                log.debug("Started kernel")
-                # Create a client for the newly started kernel
-                if self.km.has_kernel:
-                    self.kc = self.km.client()
+            while True:
+                try:
+                    # TODO - send stdout to log
+                    await self.km.start_kernel(stdout=DEVNULL, stderr=DEVNULL)
+                except _DeadlockError:
+                    # Keep trying if we get an import deadlock
+                    continue
+                except Exception as e:
+                    log.exception("Kernel '%s' could not start", self.km.kernel_name)
+                    self.status = "error"
+                    self.error = e
+                else:
+                    log.debug("Started kernel")
+                    # Create a client for the newly started kernel
+                    if self.km.has_kernel:
+                        self.kc = self.km.client()
+                break
         try:
             ks = self.km.kernel_spec
         except NoSuchKernel as e:
@@ -332,7 +338,9 @@ class Kernel:
         # which sometimes occur as we import ipython elsewhere in the main thread
         if self.kernel_tab.kernel_name == NATIVE_KERNEL_NAME:
             try:
-                import ipykernel  # noqa F401
+                from ipykernel import kernelspec  # noqa F401
+
+                log.debug("Imported `ipykernel` to prevent import deadlock")
             except ImportError:
                 pass
 

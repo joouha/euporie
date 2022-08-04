@@ -117,7 +117,9 @@ show_error_codes = true
 
 [[tool.mypy.overrides]]
 module = [
+    "_frozen_importlib",
     "upath", "aenum", "pygments.*", "fastjsonschema", "appdirs", "pyperclip", "asyncssh",
+    "ipykernel",
     "mtable",
     "imagesize", "PIL","timg", "img2unicode", "teimpy", "numpy",
     "flatlatex", "sympy.*", "pylatexenc.latex2text", "IPython.lib.latextools",
