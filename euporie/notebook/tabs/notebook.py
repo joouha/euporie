@@ -1110,6 +1110,14 @@ class Notebook(BaseNotebook):
         if isinstance(kt := get_app().tab, KernelTab):
             kt.restart_kernel()
 
+    @staticmethod
+    @add_cmd(
+        filter=~buffer_has_focus,
+    )
+    def _notebook_toggle_line_numbers() -> "None":
+        """Toggles line numbers when a buffer does not have focus."""
+        get_cmd("toggle-line-numbers").run()
+
     # ################################# Key Bindings ##################################
 
     register_bindings(
@@ -1161,7 +1169,7 @@ class Notebook(BaseNotebook):
                 "scroll-output-left": "left",
                 "scroll-output-right": "right",
                 "toggle-expand": "w",
-                "toggle-line-numbers": "l",
+                "notebook-toggle-line-numbers": "l",
             }
         }
     )

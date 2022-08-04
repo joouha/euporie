@@ -221,7 +221,6 @@ class KernelInput(TextArea):
         description="""
             Whether line numbers are shown by default.
         """,
-        cmd_filter=~buffer_has_focus,
         hooks=[lambda x: get_app().refresh()],
     )
 
