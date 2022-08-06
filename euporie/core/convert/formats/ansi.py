@@ -420,7 +420,7 @@ def png_to_ansi_img2txt(
     return call_subproc(data, cmd, use_tempfile=True).decode()
 
 
-@register(from_=("png", "jpeg", "svg"), to="ansi", filter_=True, weight=2)
+@register(from_=("png", "jpeg", "svg"), to="ansi", filter_=True, weight=99)
 def png_to_ansi_py_placeholder(
     data: "bytes",
     cols: "int" = 7,

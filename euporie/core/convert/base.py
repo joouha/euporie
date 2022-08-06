@@ -31,6 +31,19 @@ MIME_FORMATS = {
     "*": "ansi",
 }
 
+FORMAT_EXTENSIONS = {
+    "svg": "svg",
+    "png": "png",
+    "jpeg": "jpeg",
+    "jpg": "jpeg",
+    "pdf": "pdf",
+    "htm": "html",
+    "html": "html",
+    "latex": "latex",
+    "md": "markdown",
+    "txt": "ansi",
+}
+
 
 class Converter(NamedTuple):
     """Holds a conversion function and its weight."""
@@ -148,6 +161,7 @@ def convert(
         # log.debug("Converting from '%s' to '%s' using route: %s", from_, to, route)
         if route is None:
             raise NotImplementedError(f"Cannot convert from `{from_}` to `{to}`")
+        output = data
         for stage_a, stage_b in zip(route, route[1:]):
             # Find converter with lowest weight
             func = sorted(
@@ -159,11 +173,27 @@ def convert(
                 key=lambda x: x.weight,
             )[0].func
             # Add intermediate steps to the cache
-            data = _CONVERSION_CACHE.get(
-                (data_hash, from_, stage_b, cols, rows, fg, bg),
-                partial(func, data, cols, rows, fg, bg),
+            try:
+                output_hash = hash(data)
+            except TypeError as error:
+                log.exception("Cannot hash %s", data)
+                raise error
+            output = _CONVERSION_CACHE.get(
+                (output_hash, from_, stage_b, cols, rows, fg, bg),
+                partial(func, output, cols, rows, fg, bg),
             )
-        return data
+            if output is None:
+                log.error(
+                    "Failed to convert `%s` from `%s`"
+                    " to `%s` using route `%s` at stage `%s`",
+                    data.__repr__()[:10],
+                    from_,
+                    to,
+                    route,
+                    stage_b,
+                )
+                return [("", "(Conversion failed")]
+        return output
 
     data = _CONVERSION_CACHE.get(
         (data_hash, from_, to, cols, rows, fg, bg),

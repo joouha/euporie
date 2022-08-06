@@ -3,7 +3,7 @@
 from math import ceil
 from typing import TYPE_CHECKING
 
-from euporie.core.convert.base import convert
+from euporie.core.convert.base import FORMAT_EXTENSIONS, convert
 from euporie.core.convert.utils import data_pixel_size, pixels_to_cell_size
 from euporie.core.formatted_text import markdown
 from euporie.core.formatted_text.utils import FormattedTextAlign, align, indent, strip
@@ -69,10 +69,12 @@ def img_enhanced(
 ) -> "StyleAndTextTuples":
     """Display images rendered as ANSI art."""
     result: "StyleAndTextTuples" = []
-
-    if data := load_url(str(token.attrs.get("src", ""))):
+    src = str(token.attrs.get("src", ""))
+    if data := load_url(src):
         # Display it graphically
-        cols, aspect = pixels_to_cell_size(*data_pixel_size(data, format_="png"))
+        _, _, suffix = src.rpartition(".")
+        format_ = FORMAT_EXTENSIONS.get(suffix.lower(), "png")
+        cols, aspect = pixels_to_cell_size(*data_pixel_size(data, format_=format_))
         # Manially set a value if we don't have one
         cols = cols or 20
         aspect = aspect or 0.5
@@ -82,7 +84,7 @@ def img_enhanced(
         # Convert the image to formatted-text
         result = convert(
             data,
-            "png",
+            format_,
             "formatted_text",
             cols=cols,
             rows=rows,
