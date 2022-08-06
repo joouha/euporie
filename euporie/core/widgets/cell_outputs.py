@@ -176,6 +176,8 @@ class CellOutputWidgetElement(CellOutputElement):
             self.container = Box(
                 comm.new_view(parent),
                 padding_left=0,
+                padding_top=0,
+                padding_bottom=0,
                 style="class:ipywidget",
             )
         else:

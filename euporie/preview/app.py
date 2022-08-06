@@ -7,8 +7,6 @@ import sys
 from functools import partial
 from typing import TYPE_CHECKING, cast
 
-from prompt_toolkit import renderer
-from prompt_toolkit.data_structures import Size
 from prompt_toolkit.layout.containers import DynamicContainer, FloatContainer, Window
 from prompt_toolkit.output.defaults import create_output
 from prompt_toolkit.output.vt100 import Vt100_Output
@@ -16,14 +14,14 @@ from upath import UPath
 
 from euporie.core.app import BaseApp, get_app
 from euporie.core.config import add_setting
+from euporie.core.io import patch_renderer_diff
 from euporie.core.key_binding.registry import register_bindings
 from euporie.preview.tabs.notebook import PreviewNotebook
 
 if TYPE_CHECKING:
-    from typing import IO, Any, Dict, List, Optional, TextIO, Tuple, Type, Union
+    from typing import IO, Any, Dict, List, Optional, TextIO, Type, Union
 
     from prompt_toolkit.application.application import _AppResult
-    from prompt_toolkit.data_structures import Point
     from prompt_toolkit.layout.containers import Float
     from prompt_toolkit.output import Output
 
@@ -31,28 +29,7 @@ if TYPE_CHECKING:
 
 log = logging.getLogger(__name__)
 
-
-# Monkey patch the screen size
-_original_output_screen_diff = renderer._output_screen_diff
-
-
-def _patched_output_screen_diff(
-    *args: "Any", **kwargs: "Any"
-) -> "Tuple[Point, Optional[str]]":
-    """Function used to monkey-patch the renderer to extend the application height."""
-    # Remove ZWE from screen
-    # from collections import defaultdict
-    # args[2].zero_width_escapes = defaultdict(lambda: defaultdict(lambda: ""))
-
-    # Tell the renderer we have one additional column. This is to prevent the use of
-    # carriage returns and cursor movements to write the final character on lines,
-    # which is something the prompt_toolkit does
-    size = kwargs.pop("size")
-    kwargs["size"] = Size(999999, size.columns + 1)
-    return _original_output_screen_diff(*args, **kwargs)
-
-
-renderer._output_screen_diff = _patched_output_screen_diff
+patch_renderer_diff()
 
 
 class PseudoTTY:
@@ -159,7 +136,7 @@ class PreviewApp(BaseApp):
         if not self.tabs:
             self._is_running = False
             self.exit()
-        self.redraw(render_as_done=True)
+        self.draw(render_as_done=True)
 
     @classmethod
     def load_output(cls) -> "Output":

@@ -845,7 +845,7 @@ class Display:
             right_margins=[ScrollbarMargin()],
             wrap_lines=wrap_lines,
             always_hide_cursor=always_hide_cursor,
-            dont_extend_height=False,
+            dont_extend_height=True,
             style=self.style,
         )
 

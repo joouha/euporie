@@ -75,6 +75,8 @@ class NotebookApp(BaseApp):
     notebooks in the terminal.
     """
 
+    need_mouse_support = True
+
     def __init__(self, **kwargs: "Any") -> "None":
         """Create a new euporie text user interface application instance."""
         super().__init__(
@@ -82,7 +84,6 @@ class NotebookApp(BaseApp):
                 **{
                     "full_screen": True,
                     "erase_when_done": True,
-                    "mouse_support": True,
                     "leave_graphics": False,
                 },
                 **kwargs,

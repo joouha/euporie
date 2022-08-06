@@ -287,7 +287,6 @@ class KittyGraphicsStatus(TerminalQuery):
 
     def verify(self, data: "str") -> "bool":
         """Verifies the terminal response means kitty graphics are supported."""
-        log.debug(data.__repr__())
         if match := self.pattern.match(data):
             if values := match.groupdict():
                 if values.get("status") == "OK":

@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import logging
 from functools import partial
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 import nbformat
+from prompt_toolkit.application.run_in_terminal import in_terminal
 from prompt_toolkit.buffer import Buffer, ValidationState
 from prompt_toolkit.filters.app import (
     buffer_has_focus,
@@ -14,18 +15,21 @@ from prompt_toolkit.filters.app import (
     has_focus,
     has_selection,
     in_paste_mode,
+    renderer_height_is_known,
 )
 from prompt_toolkit.filters.base import Condition
 from prompt_toolkit.key_binding.key_bindings import KeyBindings
 from prompt_toolkit.layout.containers import (
     ConditionalContainer,
+    FloatContainer,
     HSplit,
     VSplit,
     Window,
 )
 from prompt_toolkit.layout.controls import FormattedTextControl
+from prompt_toolkit.layout.layout import Layout
 
-from euporie.core.commands import add_cmd
+from euporie.core.commands import add_cmd, get_cmd
 from euporie.core.filters import (
     at_end_of_buffer,
     buffer_is_code,
@@ -43,13 +47,17 @@ from euporie.core.tabs.base import KernelTab
 from euporie.core.validation import KernelValidator
 from euporie.core.widgets.cell_outputs import CellOutputArea
 from euporie.core.widgets.inputs import KernelInput, StdInput
+from euporie.core.widgets.page import PrintingContainer
 from euporie.core.widgets.pager import PagerState
 
 if TYPE_CHECKING:
     from typing import Any, Callable, Dict, List, Optional, Sequence
 
+    from prompt_toolkit.application.application import Application
     from prompt_toolkit.formatted_text import AnyFormattedText, StyleAndTextTuples
+    from prompt_toolkit.key_binding.key_bindings import NotImplementedOrNone
     from prompt_toolkit.key_binding.key_processor import KeyPressEvent
+    from prompt_toolkit.layout.containers import Float
     from upath import UPath
 
     from euporie.core.app import BaseApp
@@ -91,7 +99,7 @@ class Console(KernelTab):
             # set_metadata=self.misc_callback,
             set_status=lambda status: self.app.invalidate(),
             set_kernel_info=self.set_kernel_info,
-            # done=self.complete,
+            done=self.complete,
         )
         self.kernel_tab = self
 
@@ -104,12 +112,13 @@ class Console(KernelTab):
         self.json = nbformat.v4.new_notebook()
         self.json["metadata"] = self._metadata
 
-        self.output_json: "List[Dict[str, Any]]" = []
         self.container = self.load_container()
 
         self.app.post_load_callables.append(
             partial(self.kernel.start, cb=self.kernel_started, wait=False)
         )
+
+        self.app.before_render += self.render_outputs
 
     async def load_history(self) -> "None":
         """Load kernel history."""
@@ -121,7 +130,9 @@ class Console(KernelTab):
     def close(self, cb: "Optional[Callable]" = None) -> "None":
         """Close the console tab."""
         # Ensure any output no longer appears interactive
-        self.output.style = "class:disabled"
+        self.live_output.style = "class:disabled"
+        # Unregister output renderer
+        self.app.before_render -= self.render_outputs
         super().close(cb)
 
     def clear_output(self, wait: "bool" = False) -> "None":
@@ -129,7 +140,7 @@ class Console(KernelTab):
         if wait:
             self.clear_outputs_on_output = True
         else:
-            self.output.reset()
+            self.live_output.reset()
 
     def validate_input(self, code: "str") -> "bool":
         """Determine if the entered code is ready to run."""
@@ -150,14 +161,15 @@ class Console(KernelTab):
         """Run the code in the input box."""
         if buffer is None:
             buffer = self.input_box.buffer
-        text = buffer.text
         # Auto-reformat code
         if self.app.config.autoformat:
             self.reformat()
+        # Get the code to run
+        text = buffer.text
         # Disable existing output
-        self.output.style = "class:disabled"
-        # Move to below the current output
-        self.app.redraw()
+        self.live_output.style = "class:disabled"
+        # Re-render the app and move to below the current output
+        self.app.draw()
         # Prevent displayed graphics on terminal being cleaned up (bit of a hack)
         self.app.graphics.clear()
         # Run the previous entry
@@ -169,7 +181,9 @@ class Console(KernelTab):
         self.execution_count += 1
         # Reset the input & output
         buffer.reset(append_to_history=True)
-        self.output.reset()
+        # Remove any live outputs and disable mouse support
+        self.live_output.reset()
+        self.app.need_mouse_support = False
         # Record the input as a cell in the json
         self.json["cells"].append(
             nbformat.v4.new_code_cell(source=text, execution_count=self.execution_count)
@@ -180,16 +194,46 @@ class Console(KernelTab):
         # Clear the output if we were previously asked to
         if self.clear_outputs_on_output:
             self.clear_outputs_on_output = False
-            self.output.reset()
-        # Add the new output
-        self.output.add_output(output_json)
+            # Clear the screen
+            get_cmd("clear-screen").run()
+
         # Add to record
         if self.json["cells"]:
             self.json["cells"][-1]["outputs"].append(output_json)
-        self.app.invalidate()
+
+        # Set output
+        if "application/vnd.jupyter.widget-view+json" in output_json.get("data", {}):
+            # Use a live output to display widgets
+            self.live_output.add_output(output_json)
+            # Enable mouse support if we have a live output
+            self.app.need_mouse_support = True
+        else:
+            # Queue the output json
+            self.output.add_output(output_json)
+            # Invalidate the app so the output get printed
+            self.app.invalidate()
+
+    def render_outputs(self, app: "Application[Any]") -> "None":
+        """Request that any unrendered outputs be rendered."""
+        if self.output.json:
+            self.app.create_background_task(self.async_render_outputs())
+
+    async def async_render_outputs(self) -> "None":
+        """Render any unrendered outputs above the application."""
+        if self.output.json:
+            # Run the output app in the terminal
+            async with in_terminal():
+                self.app.renderer.render(self.app, self.output_layout, is_done=True)
+            # Remove the outputs so they do not get rendered again
+            self.output.reset()
+
+    def reset(self) -> "None":
+        """Reset the state of the tab."""
+        self.live_output.reset()
+        self.app.need_mouse_support = False
 
     def complete(self, content: "Dict" = None) -> "None":
-        """Re-show the prompt."""
+        """Re-render any changes."""
         self.app.invalidate()
 
     def prompt(
@@ -219,7 +263,58 @@ class Console(KernelTab):
 
     def load_container(self) -> "HSplit":
         """Builds the main application layout."""
-        self.output = CellOutputArea(self.output_json, parent=self)
+        # Output area
+
+        self.output = CellOutputArea([], parent=self)
+
+        @Condition
+        def first_output() -> "bool":
+            """Check if the current outputs contain the first output."""
+            if self.output.json:
+                for output in self.json["cells"][-1].get("outputs", []):
+                    if output in self.live_output.json:
+                        continue
+                    return output == self.output.json[0]
+            return False
+
+        output_prompt = Window(
+            FormattedTextControl(partial(self.prompt, "Out", show_busy=False)),
+            dont_extend_width=True,
+            style="class:cell.output.prompt",
+            height=1,
+        )
+        output_margin = Window(
+            char=" ", width=lambda: len(str(self.execution_count)) + 7
+        )
+
+        output_area = PrintingContainer(
+            [
+                ConditionalContainer(
+                    Window(height=1, dont_extend_height=True), filter=first_output
+                ),
+                VSplit(
+                    [
+                        ConditionalContainer(output_prompt, filter=first_output),
+                        ConditionalContainer(output_margin, filter=~first_output),
+                        self.output,
+                    ]
+                ),
+            ],
+        )
+        # We need to ensure the output layout also has the application's floats so that
+        # graphics are displayed
+        self.output_layout = Layout(
+            FloatContainer(
+                output_area,
+                floats=cast("List[Float]", self.app.graphics),
+            )
+        )
+
+        # Live output area
+
+        self.live_output = CellOutputArea([], parent=self)
+
+        # Input area
 
         def on_cursor_position_changed(buf: "Buffer") -> "None":
             """Respond to cursor movements."""
@@ -254,7 +349,7 @@ class Console(KernelTab):
             & at_end_of_buffer
             & ~has_completions,
         )
-        async def on_enter(event: "KeyPressEvent") -> "None":
+        async def on_enter(event: "KeyPressEvent") -> "NotImplementedOrNone":
             """Accept input if the input is valid, otherwise insert a return."""
             buffer = event.current_buffer
             # Accept the buffer if there are 2 blank lines
@@ -270,29 +365,17 @@ class Console(KernelTab):
                 # buffer.append_to_history()
                 if not keep_text:
                     buffer.reset()
-                return
+                return NotImplemented
 
             # Process the input as a regular :kbd:`enter` key-press
             event.key_processor.feed(event.key_sequence[0], first=True)
+            # Prevent the app getting invalidated
+            return None
 
         @input_kb.add("s-enter")
         def _newline(event: "KeyPressEvent") -> "None":
             """Force new line on Shift-Enter."""
             event.current_buffer.newline(copy_margin=not in_paste_mode())
-
-        self.input_box = KernelInput(
-            kernel_tab=self,
-            accept_handler=self.run,
-            on_cursor_position_changed=on_cursor_position_changed,
-            validator=KernelValidator(
-                self.kernel
-            ),  # .from_callable(self.validate_input),
-            # validate_while_typing=False,
-            enable_history_search=True,
-            key_bindings=input_kb,
-        )
-        self.input_box.buffer.name = "code"
-        self.app.focused_element = self.input_box.buffer
 
         input_prompt = Window(
             FormattedTextControl(partial(self.prompt, "In ", offset=1)),
@@ -300,48 +383,68 @@ class Console(KernelTab):
             style="class:cell.input.prompt",
             height=1,
         )
-        output_prompt = Window(
-            FormattedTextControl(partial(self.prompt, "Out", show_busy=True)),
-            dont_extend_width=True,
-            style="class:cell.output.prompt",
-            height=1,
+
+        self.input_box = KernelInput(
+            kernel_tab=self,
+            accept_handler=self.run,
+            on_cursor_position_changed=on_cursor_position_changed,
+            validator=KernelValidator(self.kernel),
+            # validate_while_typing=False,
+            enable_history_search=True,
+            key_bindings=input_kb,
         )
+        self.input_box.buffer.name = "code"
+
+        self.app.focused_element = self.input_box.buffer
 
         self.stdin_box = StdInput(self)
 
-        have_previous_output = Condition(lambda: bool(self.output.json))
-
-        return HSplit(
+        self.input_layout = HSplit(
             [
-                # Output
                 ConditionalContainer(
                     HSplit(
                         [
-                            VSplit([output_prompt, self.output]),
-                            Window(height=1),
-                        ],
+                            Window(height=1, dont_extend_height=True),
+                            VSplit([output_margin, self.live_output]),
+                        ]
                     ),
-                    filter=have_previous_output,
+                    filter=Condition(lambda: bool(self.live_output.json)),
                 ),
                 # StdIn
                 self.stdin_box,
                 ConditionalContainer(
-                    Window(height=1),
+                    Window(height=1, dont_extend_height=True),
                     filter=self.stdin_box.visible,
                 ),
-                # Input
-                VSplit(
-                    [
-                        input_prompt,
-                        self.input_box,
-                    ],
+                # Spacing
+                ConditionalContainer(
+                    Window(height=1, dont_extend_height=True),
+                    filter=Condition(lambda: self.execution_count > 0)
+                    & (
+                        (
+                            renderer_height_is_known
+                            & Condition(lambda: self.app.renderer.rows_above_layout > 0)
+                        )
+                        | ~renderer_height_is_known
+                    ),
                 ),
-                ConditionalContainer(Window(height=1), filter=self.app.redrawing),
+                # Input
+                ConditionalContainer(
+                    VSplit(
+                        [
+                            input_prompt,
+                            self.input_box,
+                        ],
+                    ),
+                    filter=~self.stdin_box.visible,
+                ),
             ],
             key_bindings=load_registered_bindings(
                 "euporie.console.tabs.console.Console"
             ),
         )
+
+        return self.input_layout
 
     def accept_stdin(self, buf: "Buffer") -> "bool":
         """Accept the user's input."""
@@ -445,8 +548,7 @@ class Console(KernelTab):
         from euporie.console.app import get_app
 
         buffer = get_app().current_buffer
-        if buffer.name == "code":
-            buffer.text = ""
+        buffer.text = ""
 
     @staticmethod
     @add_cmd(
@@ -476,7 +578,7 @@ class Console(KernelTab):
     @add_cmd(
         name="cc-interrupt-kernel",
         hidden=True,
-        filter=buffer_is_code & buffer_has_focus & buffer_is_empty,
+        filter=buffer_is_code & buffer_is_empty,
     )
     @add_cmd(
         filter=kernel_tab_has_focus,

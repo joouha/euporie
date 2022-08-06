@@ -6,6 +6,7 @@ import logging
 from typing import TYPE_CHECKING, cast
 
 from prompt_toolkit.application.current import get_app as ptk_get_app
+from prompt_toolkit.application.run_in_terminal import in_terminal
 from prompt_toolkit.filters import is_done
 from prompt_toolkit.filters.app import renderer_height_is_known
 from prompt_toolkit.layout.containers import (
@@ -20,6 +21,7 @@ from euporie.console.tabs.console import Console
 from euporie.core.app import BaseApp
 from euporie.core.commands import add_cmd
 from euporie.core.filters import buffer_is_code, buffer_is_empty
+from euporie.core.io import patch_renderer_diff
 from euporie.core.key_binding.registry import register_bindings
 from euporie.core.widgets.dialog import (
     AboutDialog,
@@ -34,6 +36,8 @@ from euporie.core.widgets.status_bar import StatusBar
 
 if TYPE_CHECKING:
     from typing import Any
+
+patch_renderer_diff()
 
 log = logging.getLogger(__name__)
 
@@ -53,11 +57,11 @@ class ConsoleApp(BaseApp):
 
     def __init__(self, **kwargs: "Any") -> "None":
         """Create a new euporie text user interface application instance."""
+        self.need_mouse_support = False
         super().__init__(
             **{
                 **{
                     "full_screen": False,
-                    "mouse_support": True,
                     "leave_graphics": True,
                 },
                 **kwargs,
@@ -136,23 +140,23 @@ class ConsoleApp(BaseApp):
                 nb.add(len(nb.json["cells"]) + 1, source=tab.input_box.buffer.text)
                 # Add the new notebook to the notebook app
                 nb_app.tabs.append(nb)
-        app.pause_rendering()
-        await nb_app.run_async()
-        app.resume_rendering()
+                # Tell notebook that the kernel has already started
+                nb.kernel_started()
+
+        async with in_terminal():
+            await nb_app.run_async()
+
         app.exit()
 
     @staticmethod
     @add_cmd()
     def _clear_screen() -> "None":
         """Clears the screen and the previous output."""
-        from euporie.console.tabs.console import Console
-
         app = get_app()
         tab = app.tab
-        if isinstance(tab, Console):
-            tab.output.reset()
-            tab.focus()
-            app.renderer.clear()
+        app.renderer.clear()
+        if tab is not None:
+            tab.reset()
 
     add_cmd(
         name="end-of-file",

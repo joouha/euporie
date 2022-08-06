@@ -83,7 +83,6 @@ if TYPE_CHECKING:
     from typing import (
         Any,
         Callable,
-        ContextManager,
         Dict,
         List,
         Literal,
@@ -139,6 +138,7 @@ class BaseApp(Application):
 
     config = Config()
     status_default: "StatusBarFields" = ([], [])
+    need_mouse_support: "bool" = False
 
     def __init__(
         self, leave_graphics: "FilterOrBool" = True, **kwargs: "Any"
@@ -154,12 +154,14 @@ class BaseApp(Application):
             **kwargs: The key-word arguments for the :py:class:`Application`
 
         """
+        self.loaded = False
         # Initialise the application
         super().__init__(
             **{
                 **{
                     "color_depth": self.config.color_depth,
                     "editing_mode": self.get_edit_mode(),
+                    "mouse_support": Condition(lambda: self.need_mouse_support),
                 },
                 **kwargs,
             }
@@ -269,7 +271,6 @@ class BaseApp(Application):
         # Set the application's style, and update it when the terminal responds
         self.update_style()
         self.term_info.colors.event += self.update_style
-        # self.term_info.color_blue.event += self.update_style
         self.pause_rendering()
 
         def terminal_ready() -> "None":
@@ -288,6 +289,8 @@ class BaseApp(Application):
             self._request_absolute_cursor_position()
             # Sending a repaint trigger
             self.invalidate()
+            # Flag that the app is loaded
+            self.loaded = True
 
         if self.input.closed:
             # If we do not have an interactive input, just get on with loading the app:
@@ -331,14 +334,7 @@ class BaseApp(Application):
         input_ = create_input(always_prefer_tty=True)
         if stdin := getattr(input_, "stdin", None):
             if not stdin.isatty():
-                from prompt_toolkit.input.base import DummyInput, _dummy_context_manager
-
-                class IgnoredInput(DummyInput):
-                    def attach(
-                        self, input_ready_callback: "Callable[[], None]"
-                    ) -> "ContextManager[None]":
-                        # Do not call the callback, so the input is never closed
-                        return _dummy_context_manager()
+                from euporie.core.io import IgnoredInput
 
                 input_ = IgnoredInput()
         return input_
@@ -674,18 +670,20 @@ class BaseApp(Application):
             output.pop()
         return output
 
-    def redraw(self, render_as_done: "bool" = True) -> "None":
+    def draw(self, render_as_done: "bool" = True) -> "None":
         """Draw the app without focus, leaving the cursor below the drawn output."""
+        # Hide ephemeral containers
         self._redrawing = True
         # Ensure nothing in the layout has focus
         self.layout._stack.append(Window())
         # Re-draw the app
         self._redraw(render_as_done=render_as_done)
-        # Ensure the renderer knows where the cursor is
-        self._request_absolute_cursor_position()
         # Remove the focus block
         self.layout._stack.pop()
+        # Show ephemeral containers
         self._redrawing = False
+        # Ensure the renderer knows where the cursor is
+        self._request_absolute_cursor_position()
 
     def _handle_exception(
         self, loop: "AbstractEventLoop", context: "Dict[str, Any]"

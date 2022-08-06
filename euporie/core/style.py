@@ -503,14 +503,7 @@ def build_style(
                 **dict(IPYWIDGET_STYLE),
                 **style_dict,
             }
-            if key
-            not in (
-                "menu",
-                "menu-border",
-                "menu-bar",
-                "menu-bar.selected-item menu-bar.prefix",
-                "menu-bar.disabled-item menu-bar.prefix",
-            )
+            if "menu" not in key.split()
         }
     )
 
