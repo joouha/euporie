@@ -47,8 +47,9 @@ def format_ssort(text: "str") -> "str":
             output = ""
             try:
                 output = ssort.ssort(text)
-            except Exception:
-                log.warning("Error formatting code with ssort")
+            except Exception:  # noqa S110
+                # log.debug("Error formatting code with ssort")
+                pass
             finally:
                 if output:
                     text = output
