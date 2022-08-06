@@ -131,7 +131,6 @@ class Kernel:
         wait: "bool" = False,
         callback: "Optional[Callable]" = None,
         timeout: "Optional[Union[int, float]]" = None,
-        warn: "bool" = True,
         single: "bool" = False,
     ) -> "Any":
         """Schedules a coroutine in the kernel's event loop.
@@ -145,7 +144,6 @@ class Kernel:
             callback: A function to run when the coroutine completes. The result from
                 the coroutine will be passed as an argument
             timeout: The number of seconds to allow the coroutine to run if waiting
-            warn: If :py:const:`True`, log an error if the coroutine times out
             single: If :py:const:`True`, any futures for previous instances of the
                 coroutine will be cancelled
 
@@ -199,7 +197,6 @@ class Kernel:
             timeout=0.2,
             callback=self._set_living_status,
             wait=False,
-            warn=False,
         )
 
         return self._status
@@ -213,12 +210,15 @@ class Kernel:
 
     def wait_for_status(self, status: "str" = "idle") -> "None":
         """Block until the kernel reasches a given status value."""
+        if self.status != status:
 
-        async def _wait() -> "None":
-            while self.status != status:
-                await asyncio.wait_for(self.status_change_event.wait(), timeout=None)
+            async def _wait() -> "None":
+                while self.status != status:
+                    await asyncio.wait_for(
+                        self.status_change_event.wait(), timeout=None
+                    )
 
-        self._aodo(_wait(), wait=True)
+            self._aodo(_wait(), wait=True)
 
     @property
     def missing(self) -> "bool":

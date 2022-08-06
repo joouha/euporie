@@ -19,7 +19,7 @@ from euporie.core.widgets.cell import Cell
 from euporie.core.widgets.page import PrintingContainer
 
 if TYPE_CHECKING:
-    from typing import Any, Callable, Dict, Set, Tuple
+    from typing import Any, Callable, Dict, Tuple
 
     from prompt_toolkit.application.application import Application
     from prompt_toolkit.formatted_text.base import StyleAndTextTuples
@@ -48,8 +48,6 @@ class PreviewNotebook(BaseNotebook):
         self.cells: "FastDictCache[Tuple[int], Cell]" = FastDictCache(
             get_value=self.get_cell
         )
-        self.running = False
-        self.ran_cells: "Set[int]" = set()
 
         # If we are running the notebook, pause rendering util the kernel has started
         if self.app.config.run:
@@ -100,7 +98,7 @@ class PreviewNotebook(BaseNotebook):
         if self.app.config.run:
             cell = self.cell()
             cell.run_or_render(wait=True)
-            self.kernel.wait_for_status("idle")
+            # self.kernel.wait_for_status("idle")
 
     def after_render(self, app: "Application[Any]") -> "None":
         """Close the tab if all cells have been rendered."""
