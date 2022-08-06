@@ -2,13 +2,15 @@
 
 import logging
 from colorsys import hls_to_rgb, rgb_to_hls
+from functools import partial
 from typing import TYPE_CHECKING
 
+from prompt_toolkit.cache import SimpleCache
 from prompt_toolkit.styles.defaults import default_ui_style
 from prompt_toolkit.styles.style import Style
 
 if TYPE_CHECKING:
-    from typing import Any, Dict, Tuple
+    from typing import Any, Tuple
 
 log = logging.getLogger(__name__)
 
@@ -190,6 +192,10 @@ IPYWIDGET_STYLE = [
 class ColorPaletteColor:
     """A representation of a color with adjustment methods."""
 
+    _cache: "SimpleCache[Tuple[str, float, float, float, bool], ColorPaletteColor]" = (
+        SimpleCache()
+    )
+
     def __init__(self, name: "str", base: "str", _base_override: str = "") -> "None":
         """Creates a new color."""
         self.name = name
@@ -209,22 +215,20 @@ class ColorPaletteColor:
 
         self.is_light = self.brightness > 0.5
 
-        self._cache: "Dict[Tuple[float, float, float, bool], str]" = {}
-
     def _adjust_abs(
         self, hue: "float" = 0.0, brightness: "float" = 0.0, saturation: "float" = 0.0
-    ) -> "str":
+    ) -> "ColorPaletteColor":
         hue = max(min(1, self.hue + hue), 0)
         brightness = max(min(1, self.brightness + brightness), 0)
         saturation = max(min(1, self.saturation + saturation), 0)
 
         r, g, b = hls_to_rgb(hue, brightness, saturation)
         new_color = f"#{int(r * 255):02x}{int(g * 255):02x}{int(b * 255):02x}"
-        return new_color
+        return ColorPaletteColor(new_color, new_color)
 
     def _adjust_rel(
         self, hue: "float" = 0.0, brightness: "float" = 0.0, saturation: "float" = 0.0
-    ) -> "str":
+    ) -> "ColorPaletteColor":
         hue = min(max(0, hue), 1)
         brightness = min(max(-1, brightness), 1)
         saturation = min(max(-1, saturation), 1)
@@ -251,7 +255,7 @@ class ColorPaletteColor:
 
         r, g, b = hls_to_rgb(new_hue, new_brightness, new_saturation)
         new_color = f"#{int(r * 255):02x}{int(g * 255):02x}{int(b * 255):02x}"
-        return new_color
+        return ColorPaletteColor(new_color, new_color)
 
     def _adjust(
         self,
@@ -259,7 +263,7 @@ class ColorPaletteColor:
         brightness: "float" = 0.0,
         saturation: "float" = 0.0,
         rel: "bool" = True,
-    ) -> "str":
+    ) -> "ColorPaletteColor":
         """Performs a relative of absolute color adjustment."""
         if rel:
             return self._adjust_rel(hue, brightness, saturation)
@@ -272,29 +276,28 @@ class ColorPaletteColor:
         brightness: "float" = 0.0,
         saturation: "float" = 0.0,
         rel: "bool" = True,
-    ) -> "str":
+    ) -> "ColorPaletteColor":
         """Adjust the hue, saturation, or brightness of the color."""
-        key = (hue, brightness, saturation, rel)
-        if key in self._cache:
-            return self._cache[key]
-        else:
-            return self._cache.setdefault(key, self._adjust(*key))
+        key = (self.base_hex, hue, brightness, saturation, rel)
+        return self._cache.get(
+            key, partial(self._adjust, hue, brightness, saturation, rel)
+        )
 
-    def lighter(self, amount: "float", rel: "bool" = True) -> "str":
+    def lighter(self, amount: "float", rel: "bool" = True) -> "ColorPaletteColor":
         """Makes the color lighter."""
         return self.adjust(brightness=amount, rel=rel)
 
-    def darker(self, amount: "float", rel: "bool" = True) -> "str":
+    def darker(self, amount: "float", rel: "bool" = True) -> "ColorPaletteColor":
         """Makes the color darker."""
         return self.adjust(brightness=-amount, rel=rel)
 
-    def more(self, amount: "float", rel: "bool" = True) -> "str":
+    def more(self, amount: "float", rel: "bool" = True) -> "ColorPaletteColor":
         """Makes bright colors darker and dark colors brighter."""
         if self.is_light:
             amount *= -1
         return self.adjust(brightness=amount, rel=rel)
 
-    def less(self, amount: "float", rel: "bool" = True) -> "str":
+    def less(self, amount: "float", rel: "bool" = True) -> "ColorPaletteColor":
         """Makes bright colors brighter and dark colors darker."""
         if self.is_light:
             amount *= -1
@@ -414,8 +417,9 @@ def build_style(
         "dialog": f"fg:{cp.fg.base} bg:{cp.bg.darker(0.1)}",
         "dialog scrollbar.button": f"fg:{cp.bg.more(5/20)} bg:{cp.bg.more(0.75)}",
         "dialog text-area": f"bg:{cp.bg.lighter(0.05)}",
+        "dialog input text text-area": f"fg:default bg:{cp.bg.less(0.1)}",
         "dialog text-area last-line": "nounderline",
-        "dialog border": f"fg:{cp.bg.darker(0.15)}",
+        "dialog border": f"fg:{cp.bg.darker(0.1).more(0.1)}",
         # Horizontals rule
         "hr": "fg:ansired",
         # Completions menu
@@ -476,15 +480,20 @@ def build_style(
         "ipywidget accordion border default": f"fg:{cp.bg.more(4/20)}",
         # Input widgets
         # "input focused": f"bg:{cp.bg.more(0.025)}",
-        "input button face": f"fg:default bg:{cp.bg.less(0.05)}",
-        "input button border top": "fg:#ffffff",
-        "input button border right": "fg:#606060",
-        "input button border bottom": "fg:#606060",
-        "input button border left": "fg:#ffffff",
-        "input button border top focused": f"fg:{cp.hl}",
+        # "input button face": f"fg:default bg:{cp.bg.more(0.05)}",
+        # "input button face focused": f"fg:default bg:{cp.hl.darker(0.75)}",
+        # "input button border top": "fg:#ffffff",
+        # "input button border right": "fg:#606060",
+        # "input button border bottom": "fg:#606060",
+        # "input button border left": "fg:#ffffff",
+        "input button border top": f"fg:{cp.bg.lighter(0.5)}",
+        "input button border right": f"fg:{cp.bg.darker(0.25)}",
+        "input button border bottom": f"fg:{cp.bg.darker(0.25)}",
+        "input button border left": f"fg:{cp.bg.lighter(0.5)}",
+        "input button border top focused": f"fg:{cp.hl.lighter(0.5)}",
         "input button border right focused": f"fg:{cp.hl.darker(0.5)}",
         "input button border bottom focused": f"fg:{cp.hl.darker(0.5)}",
-        "input button border left focused": f"fg:{cp.hl}",
+        "input button border left focused": f"fg:{cp.hl.lighter(0.5)}",
         "input selection border right": "fg:#ffffff",
         "input selection border bottom": "fg:#ffffff",
         "input selection border top": "fg:#606060",
@@ -493,15 +502,19 @@ def build_style(
         "input selection focused border bottom": f"fg:{cp.hl}",
         "input selection focused border top": f"fg:{cp.hl.darker(0.5)}",
         "input selection focused border left": f"fg:{cp.hl.darker(0.5)}",
-        "input text text-area": f"fg:default bg:{cp.bg.less(0.1)}",
         "input text placeholder": f"fg:{cp.fg.more(0.6)}",
-        "input text border top": "fg:#606060",
-        "input text border right": "fg:#E9E7E3",
-        "input text border bottom": "fg:#E9E7E3",
-        "input text border left": "fg:#606060",
+        # "input text border top": "fg:#606060",
+        # "input text border right": "fg:#E9E7E3",
+        # "input text border bottom": "fg:#E9E7E3",
+        # "input text border left": "fg:#606060",
+        "input text text-area": f"bg:{cp.bg.lighter(0.1)}",
+        "input text border top": f"fg:{cp.bg.darker(0.5)}",
+        "input text border right": f"fg:{cp.bg.lighter(0.25)}",
+        "input text border bottom": f"fg:{cp.bg.lighter(0.25)}",
+        "input text border left": f"fg:{cp.bg.darker(0.5)}",
         "input text border top focused": f"fg:{cp.hl.darker(0.5)}",
-        "input text border right focused": f"fg:{cp.hl}",
-        "input text border bottom focused": f"fg:{cp.hl}",
+        "input text border right focused": f"fg:{cp.hl.lighter(0.5)}",
+        "input text border bottom focused": f"fg:{cp.hl.lighter(0.5)}",
         "input text border left focused": f"fg:{cp.hl.darker(0.5)}",
         "input text border top invalid": "fg:ansidarkred",
         "input text border right invalid": "fg:ansired",
