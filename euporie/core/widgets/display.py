@@ -674,8 +674,7 @@ class GraphicWindow(Window):
         """Draws the graphic window's contents to the screen if required."""
         target_wp = screen.visible_windows_to_write_positions.get(self.target_window)
         filter_value = self.filter()
-        if filter_value and target_wp:
-            assert self.target_window.render_info is not None
+        if filter_value and target_wp and self.target_window.render_info is not None:
             rendered_height = self.target_window.render_info.window_height
             # Only draw if the target window is fully visible
             if target_wp.height == rendered_height:
