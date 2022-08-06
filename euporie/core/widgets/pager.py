@@ -10,7 +10,6 @@ from prompt_toolkit.layout.containers import (
     DynamicContainer,
     HSplit,
 )
-from prompt_toolkit.layout.dimension import Dimension
 from prompt_toolkit.widgets import Box
 
 from euporie.core.app import get_app
@@ -27,6 +26,8 @@ from euporie.core.widgets.display import Display
 
 if TYPE_CHECKING:
     from typing import Any, Dict, Optional
+
+    from prompt_toolkit.layout.dimension import AnyDimension
 
     from euporie.core.widgets.cell_outputs import CellOutputElement, OutputParent
 
@@ -104,13 +105,14 @@ class Pager:
 
     """
 
-    def __init__(self) -> "None":
+    def __init__(self, height: "Optional[AnyDimension]" = None) -> "None":
         """Create a new page instance."""
         self._state: "Optional[PagerState]" = None
         self.visible = Condition(
             lambda: self.state is not None and bool(self.state.response.get("found"))
         )
         self.output = PagerOutput({}, None)
+
         self.container = ConditionalContainer(
             HSplit(
                 [
@@ -125,7 +127,7 @@ class Pager:
                         padding_left=1,
                     ),
                 ],
-                height=Dimension(min=5, max=15),
+                height=height or (lambda: get_app().output.get_size().rows // 3),
                 style="class:pager",
                 key_bindings=load_registered_bindings(
                     "euporie.core.widgets.pager.Pager"
