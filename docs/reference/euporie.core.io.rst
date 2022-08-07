@@ -1,7 +1,7 @@
-euporie.core.style
-==================
+euporie.core.io
+===============
 
-.. automodule:: euporie.core.style
+.. automodule:: euporie.core.io
    :members:
    :undoc-members:
    :inherited-members:
@@ -23,10 +23,7 @@ euporie.core.style
    .. autosummary::
       :toctree:
 
-      build_style
-      default_ui_style
-      hls_to_rgb
-      rgb_to_hls
+      patch_renderer_diff
 
 
 
@@ -38,8 +35,6 @@ euporie.core.style
       :toctree:
       :template: class.tpl.rst
 
-      ColorPalette
-      ColorPaletteColor
-      SimpleCache
-      Style
-      partial
+      DummyInput
+      IgnoredInput
+      Size

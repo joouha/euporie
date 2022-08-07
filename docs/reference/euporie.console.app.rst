@@ -26,6 +26,8 @@ euporie.console.app
       add_cmd
       cast
       get_app
+      in_terminal
+      patch_renderer_diff
       ptk_get_app
       register_bindings
 

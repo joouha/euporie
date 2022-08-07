@@ -28,6 +28,7 @@ euporie.core
       euporie.core.format
       euporie.core.formatted_text
       euporie.core.history
+      euporie.core.io
       euporie.core.kernel
       euporie.core.key_binding
       euporie.core.keys

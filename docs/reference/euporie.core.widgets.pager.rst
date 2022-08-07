@@ -45,7 +45,6 @@ euporie.core.widgets.pager
       CellOutputDataElement
       Condition
       ConditionalContainer
-      Dimension
       Display
       DynamicContainer
       HSplit

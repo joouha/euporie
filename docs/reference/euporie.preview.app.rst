@@ -28,6 +28,7 @@ euporie.preview.app
       create_output
       get_app
       get_preview_app
+      patch_renderer_diff
       register_bindings
 
 
@@ -46,7 +47,6 @@ euporie.preview.app
       PreviewApp
       PreviewNotebook
       PseudoTTY
-      Size
       UPath
       Vt100_Output
       Window

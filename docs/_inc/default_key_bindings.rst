@@ -154,8 +154,8 @@ Interactive notebooks
 | :kbd:`W`                  | Toggle the value of the "expand" configuration   |
 |                           | option.                                          |
 +---------------------------+--------------------------------------------------+
-| :kbd:`L`                  | Toggle the value of the "line_numbers"           |
-|                           | configuration option.                            |
+| :kbd:`L`                  | Toggles line numbers when a buffer does not have |
+|                           | focus.                                           |
 +---------------------------+--------------------------------------------------+
 
 Console app
@@ -181,6 +181,8 @@ Interactive consoles
 | :kbd:`Ctrl+E`             |                                                  |
 +---------------------------+--------------------------------------------------+
 | :kbd:`Ctrl+C`             | Clear the console input.                         |
++---------------------------+--------------------------------------------------+
+| :kbd:`Ctrl+C`             | Interrupt the notebook's kernel.                 |
 +---------------------------+--------------------------------------------------+
 | :kbd:`Shift+Tab`          | Displays contextual help.                        |
 +---------------------------+--------------------------------------------------+

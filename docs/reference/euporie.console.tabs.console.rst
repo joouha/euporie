@@ -24,8 +24,11 @@ euporie.console.tabs.console
       :toctree:
 
       add_cmd
+      cast
       format_code
+      get_cmd
       has_focus
+      in_terminal
       load_registered_bindings
       register_bindings
 
@@ -44,14 +47,17 @@ euporie.console.tabs.console
       Condition
       ConditionalContainer
       Console
+      FloatContainer
       FormattedTextControl
       HSplit
       KernelInput
       KernelTab
       KernelValidator
       KeyBindings
+      Layout
       MsgCallbacks
       PagerState
+      PrintingContainer
       StdInput
       VSplit
       ValidationState
