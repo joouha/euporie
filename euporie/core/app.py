@@ -455,7 +455,10 @@ class BaseApp(Application):
             else:
                 tab = tab_class(self, ppath)
                 self.tabs.append(tab)
+                # Ensure the opened tab is focused at app start
                 self.focused_element = tab
+                # Ensure the newly opened tab is selected
+                self.tab_idx = len(self.tabs) - 1
 
     def open_files(self) -> "None":
         """Opens the files defined in the configuration."""
