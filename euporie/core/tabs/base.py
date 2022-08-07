@@ -14,6 +14,7 @@ from euporie.core.app import get_app
 from euporie.core.comm.registry import open_comm
 from euporie.core.commands import add_cmd
 from euporie.core.completion import KernelCompleter
+from euporie.core.config import add_setting
 from euporie.core.filters import kernel_tab_has_focus
 from euporie.core.history import KernelHistory
 from euporie.core.kernel import Kernel, MsgCallbacks
@@ -259,3 +260,18 @@ class KernelTab(Tab, metaclass=ABCMeta):
         """Change the notebook's kernel."""
         if isinstance(kt := get_app().tab, KernelTab):
             kt.change_kernel()
+
+    # ################################### Settings ####################################
+
+    add_setting(
+        name="default_kernel_name",
+        flags=["--default-kernel-name"],
+        type_=str,
+        help_="The name of the kernel to start by default.",
+        default="python3",
+        description="""
+            The name of the kernel selected automatically by the console app or in new
+            notebooks. If set to an empty string, the user will be asked which kernel
+            to launch.
+        """,
+    )

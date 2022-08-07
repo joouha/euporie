@@ -68,7 +68,7 @@ class BaseNotebook(KernelTab, metaclass=ABCMeta):
                 "add_output": lambda output_json: self.cell.add_output(output_json),
                 "clear_output": lambda wait: self.cell.clear_output(wait),
                 "set_metadata": lambda path, data: self.cell.set_metadata(path, data),
-                "set_status": lambda status: self.cell.set_status(status),
+                "set_status": self.set_status,
                 "set_kernel_info": self.set_kernel_info,
             }
         )
@@ -111,6 +111,11 @@ class BaseNotebook(KernelTab, metaclass=ABCMeta):
         super().kernel_started(result)
 
     # Notebook stuff
+
+    def set_status(self, status: "Dict[str, Any]") -> "None":
+        """Called when kernel status changes."""
+        self.cell.set_status(status)
+        self.app.invalidate()
 
     @property
     def selected_indices(self) -> "List[int]":

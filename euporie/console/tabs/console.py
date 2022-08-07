@@ -66,7 +66,7 @@ log = logging.getLogger(__name__)
 
 
 class Console(KernelTab):
-    """Interactive consoles.
+    """Interactive console.
 
     An interactive console which connects to a Jupyter kernel.
 
@@ -114,9 +114,7 @@ class Console(KernelTab):
 
         self.container = self.load_container()
 
-        self.app.post_load_callables.append(
-            partial(self.kernel.start, cb=self.kernel_started, wait=False)
-        )
+        self.kernel.start(cb=self.kernel_started, wait=False)
 
         self.app.before_render += self.render_outputs
 

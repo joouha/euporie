@@ -117,9 +117,7 @@ class Notebook(BaseNotebook):
         self.undo_buffer: "Deque[Tuple[int, List[Cell]]]" = deque(maxlen=10)
 
         if not kernel:
-            self.app.post_load_callables.append(
-                partial(self.kernel.start, cb=self.kernel_started, wait=False)
-            )
+            self.kernel.start(cb=self.kernel_started, wait=False)
 
     # Tab stuff
 
