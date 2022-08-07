@@ -241,6 +241,9 @@ class BaseApp(Application):
         self.config.get_item("log_level").event += lambda x: setup_logs(self.config)
         self.config.get_item("log_file").event += lambda x: setup_logs(self.config)
         self.config.get_item("log_config").event += lambda x: setup_logs(self.config)
+        self.config.get_item("color_depth").event += lambda x: setattr(
+            self, "_color_depth", _COLOR_DEPTHS[x.value]
+        )
 
     def pause_rendering(self) -> "None":
         """Blocks rendering, but allows input to be processed.

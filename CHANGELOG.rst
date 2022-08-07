@@ -11,6 +11,7 @@ Upcoming
 Added
 =====
 
+- Allow changing color depth on the fly
 - Key-bindings can now be edited in the configuration file
 - Queue inputs which are run before kernel starts, and run them once the kernel has started
 - Add ability to convert from console to notebook
@@ -26,10 +27,11 @@ Added
 Changed
 =======
 
+- Apps are now individually configurable
+- Allow creating new notebooks without first passing a file path
 - Use :py:mod:`fastjsonschema` to parse configuration more quickly
 - Reduce memory usage by allowing the garbage collector to remove deleted cells and graphics
 - Make clicking to select a cell pass the click event to the cell
-- Update widget styling
 
 Fixed
 =====
