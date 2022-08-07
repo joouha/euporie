@@ -55,9 +55,15 @@ class PreviewNotebook(BaseNotebook):
             self.kernel.start(self.kernel_started, wait=True)
 
         # Filter the cells to be shown
-        self.json["cells"] = self.json["cells"][
-            self.app.config.cell_start : self.app.config.cell_stop
-        ]
+        n_cells = len(self.json["cells"]) - 1
+        start: "Optional[int]" = None
+        stop: "Optional[int]" = None
+        if self.app.config.cell_start is not None:
+            start = min(max(self.app.config.cell_start, -n_cells), n_cells)
+        if self.app.config.cell_stop is not None:
+            stop = min(max(self.app.config.cell_stop, -n_cells), n_cells)
+        log.debug("Showing cells %s to %s", start, stop)
+        self.json["cells"] = self.json["cells"][start:stop]
 
     def print_title(self) -> "None":
         """Print a notebook's filename."""
@@ -95,7 +101,12 @@ class PreviewNotebook(BaseNotebook):
         ):
             self.print_title()
 
-        if self.app.config.run:
+        if not self.json["cells"]:
+            log.error("No cells")
+            self.app.print_text([("", "(No cells to display)\n")])
+            self.app.close_tab(self)
+
+        elif self.app.config.run:
             cell = self.cell()
             cell.run_or_render(wait=True)
             # self.kernel.wait_for_status("idle")
@@ -110,7 +121,10 @@ class PreviewNotebook(BaseNotebook):
 
     def get_cell(self, index: "int") -> "Cell":
         """Render a cell by its index."""
-        return Cell(index, self.json["cells"][index], self)
+        if index < len(self.json["cells"]):
+            return Cell(index, self.json["cells"][index], self)
+        else:
+            return Cell(0, {}, self)
 
     def cell(self) -> "Cell":
         """Return the current cell."""
