@@ -114,7 +114,7 @@ class Config:
     def _save(self, setting: "Setting") -> "None":
         """Save settings to user's configuration file."""
         json_data = self.load_config_file()
-        json_data.setdefault(self.app_name, {}).update({setting.name: setting.value})
+        json_data.setdefault(self.app_name, {})[setting.name] = setting.value
         if self.valid_user:
             log.debug("Saving setting `%s`", setting)
             with open(self.config_file_path, "w") as f:
@@ -135,14 +135,14 @@ class Config:
 
         set_values = ChainMap(
             self.load_args(),
-            # Load global env vars
-            self.load_env(),
             # Load app specific env vars
             self.load_env(app_name=self.app_name),
-            # Load global user config
-            self.load_user(),
+            # Load global env vars
+            self.load_env(),
             # Load app specific user config
             self.load_user(app_name=self.app_name),
+            # Load global user config
+            self.load_user(),
         )
         for name, setting in Config.settings.items():
             if setting.name in set_values:
