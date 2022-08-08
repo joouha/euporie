@@ -29,6 +29,7 @@ Added
 Changed
 =======
 
+- Improve quality of copied outputs
 - Cells are now displayed as soon as they are rendered in ``preview``
 - Added the ``--save`` option in ``preview``, which saves the notebook if ``--run`` is used
 - Apps are now individually configurable

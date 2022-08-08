@@ -437,3 +437,16 @@ class CellOutputArea:
     def __pt_container__(self) -> "AnyContainer":
         """Return the cell output area container (an :class:`HSplit`)."""
         return self.container
+
+    def to_plain_text(self) -> "str":
+        """Convert the contents of the output to plain text."""
+        from prompt_toolkit.formatted_text.utils import to_plain_text
+
+        outputs = []
+        for cell_output in self.rendered_outputs:
+            if isinstance(cell_output.element, CellOutputDataElement):
+                for line in cell_output.element.container.control.get_rendered_lines(
+                    width=88, height=99999999
+                ):
+                    outputs.append(to_plain_text(line))
+        return "\n".join(outputs)

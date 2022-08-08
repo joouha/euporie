@@ -383,21 +383,14 @@ class Notebook(BaseNotebook):
         if slice_ is None:
             slice_ = self.page.selected_slice
         output_strings = []
+
         indices = sorted(range(*slice_.indices(len(self.json["cells"]))))
         rendered_cells = list(self._rendered_cells.values())
+
         for index in indices:
             cell = rendered_cells[index]
-            for output in cell.output_json:
-                data = output.get("data", {})
-                if data:
-                    output_strings.append(
-                        data.get("text/markdown", "")
-                        or data.get("text/x-markdown", "")
-                        or data.get("text/latex", "")
-                        or data.get("text/x-python-traceback", "")
-                        or data.get("text/stderr", "") + data.get("text/stdout", "")
-                        or data.get("text/plain", "")
-                    )
+            output_strings.append(cell.output_area.to_plain_text())
+
         if output_strings:
             self.app.clipboard.set_data(ClipboardData("\n\n".join(output_strings)))
 
