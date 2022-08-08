@@ -651,9 +651,10 @@ class Notebook(BaseNotebook):
 
     @staticmethod
     @add_cmd(
+        title="Run selected cells and select next cell",
         filter=cell_has_focus,
     )
-    def _run_selected_cells_and_select_next_cell() -> "None":
+    def _run_and_select_next() -> "None":
         """Run or render the current cells and select the next cell."""
         nb = get_app().tab
         if isinstance(nb, Notebook):
@@ -1126,7 +1127,7 @@ class Notebook(BaseNotebook):
                 "enter-cell-edit-mode": "enter",
                 "exit-edit-mode": "escape",
                 "run-selected-cells": ["c-enter", "c-e"],
-                "run-selected-cells-and-select-next-cell": ["s-enter", "c-r"],
+                "run-and-select-next": ["s-enter", "c-r"],
                 "run-cell-and-insert-below": ("escape", "enter"),
                 "add-cell-above": "a",
                 "add-cell-below": "b",

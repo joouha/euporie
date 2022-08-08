@@ -1755,6 +1755,17 @@ lint = ["flake8", "mypy", "docutils-stubs"]
 test = ["pytest"]
 
 [[package]]
+name = "sphinxcontrib-video"
+version = "0.0.1.dev3"
+description = "Allows embedding of HTML5 videos in sphinx"
+category = "dev"
+optional = false
+python-versions = "*"
+
+[package.dependencies]
+pbr = "*"
+
+[[package]]
 name = "sphinxext-opengraph"
 version = "0.6.3"
 description = "Sphinx Extension to enable OGP support"
@@ -2003,7 +2014,7 @@ svg-cairosvg = ["CairoSVG"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "cf5558108de963336ce3971f38298fde99f90850a546bf210767889682d98a43"
+content-hash = "a97f1829efa4f25128d9a9108b5a2aba47d0e018ea25e5d5642420cde92a8323"
 
 [metadata.files]
 aenum = [
@@ -3082,6 +3093,10 @@ sphinxcontrib-qthelp = [
 sphinxcontrib-serializinghtml = [
     {file = "sphinxcontrib-serializinghtml-1.1.5.tar.gz", hash = "sha256:aa5f6de5dfdf809ef505c4895e51ef5c9eac17d0f287933eb49ec495280b6952"},
     {file = "sphinxcontrib_serializinghtml-1.1.5-py2.py3-none-any.whl", hash = "sha256:352a9a00ae864471d3a7ead8d7d79f5fc0b57e8b3f95e9867eb9eb28999b92fd"},
+]
+sphinxcontrib-video = [
+    {file = "sphinxcontrib-video-0.0.1.dev3.tar.gz", hash = "sha256:dc866c65a39a5ce0ab4f5c4ca14cf4e463261f7a5f7bddf951cb168ce34463a3"},
+    {file = "sphinxcontrib_video-0.0.1.dev3-py2.py3-none-any.whl", hash = "sha256:fe319afdab7ee44f34397f1165fa5e2e9196217ea43cfa4fc41d0edb968f3c5a"},
 ]
 sphinxext-opengraph = [
     {file = "sphinxext-opengraph-0.6.3.tar.gz", hash = "sha256:cd89e13cc7a44739f81b64ee57c1c20ef0c05dda5d1d8201d31ec2f34e4c29db"},

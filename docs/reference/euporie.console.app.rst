@@ -24,6 +24,7 @@ euporie.console.app
       :toctree:
 
       add_cmd
+      add_setting
       cast
       get_app
       in_terminal
@@ -52,6 +53,7 @@ euporie.console.app
       HSplit
       NoKernelsDialog
       Pager
+      SaveAsDialog
       SearchBar
       SelectKernelDialog
       ShortcutsDialog

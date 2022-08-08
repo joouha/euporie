@@ -20,6 +20,7 @@ extensions: "list[str]" = [
     "sphinxext.opengraph",  # OGP data
     "sphinx_copybutton",  # Copy button
     "sphinx_design",  # Used for image grids
+    "sphinxcontrib.video",  # Video embedding
 ]
 templates_path = ["_templates"]
 exclude_patterns: "list[str]" = []
@@ -49,6 +50,7 @@ intersphinx_mapping = {
     "rich": ("https://rich.readthedocs.io/en/stable/", None),
     "commonmark": ("https://commonmarkpy.readthedocs.io/en/latest/", None),
     "sympy": ("https://docs.sympy.org/latest/", None),
+    "ipywidgets": ("https://ipywidgets.readthedocs.io/latest/", None),
 }
 
 # "https://github.com/jb-leger/flatlatex"

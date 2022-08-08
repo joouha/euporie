@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import subprocess  # noqa: S404
 import sys
-from textwrap import dedent
+from textwrap import dedent, indent
 from typing import TYPE_CHECKING, cast
 
 if TYPE_CHECKING:
@@ -42,11 +42,16 @@ def format_parser(
     title: "str", parser: "argparse.ArgumentParser", description: "str" = ""
 ) -> "str":
     """Formats a parser's arguments as RST."""
-    s = "\n"
-    s += "----\n\n"
-    s += ("*" * len(title)) + "\n" + title + "\n" + ("*" * len(title)) + "\n\n"
-    s += description or dedent(parser.description or "").strip()
-    s += "\n\n"
+    s = ""
+    # s = "\n"
+    # s += ("*" * len(title)) + "\n" + title + "\n" + ("*" * len(title)) + "\n\n"
+    # s += description or dedent(parser.description or "").strip()
+    # s += "\n\n"
+
+    s += "\nUsage\n=====\n\n"
+    s += ".. code-block:: console\n\n"
+    s += indent("$ " + parser.format_usage().removeprefix("usage: "), "   ")
+    s += "\n"
 
     positionals = [action for action in parser._actions if not action.option_strings]
     if positionals:
@@ -77,13 +82,17 @@ if __name__ == "__main__":
                     for app in entry_points(group="euporie.apps"):
                         if app.value.split(".")[:2] == script.value.split(".")[:2]:
                             App = app.load()
+                            parser = App.config.load_parser()
+                            parser.prog = script.name
+                            print(f".. _cli-{script.name}-start:")
                             print(
                                 format_parser(
                                     f":command:`{script.name}`",
-                                    App.config.load_parser(),
+                                    parser,
                                     description=dedent("    " + App.__doc__),
                                 )
                             )
+                            print(f".. _cli-{script.name}-end:")
                             break
                     break
             else:

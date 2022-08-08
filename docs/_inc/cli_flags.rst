@@ -1,16 +1,16 @@
+.. _cli-euporie-start:
 
-----
+Usage
+=====
 
-******************
-:command:`euporie`
-******************
+.. code-block:: console
 
-Launch a euporie application.
+   $ euporie [-h] [--version] {preview,edit,hub,console,notebook}
 
 Positional Arguments
 ====================
 
-.. option:: {console,core,hub,notebook,preview}
+.. option:: {preview,edit,hub,console,notebook}
 
    The application to launch
 
@@ -26,19 +26,37 @@ Optional Arguments
    Show the version number and exit
 
 
+.. _cli-euporie-end:
+.. _cli-euporie-console-start:
 
-----
+Usage
+=====
 
-**************************
-:command:`euporie-console`
-**************************
+.. code-block:: console
 
-Console app.
-
-An interactive console which connects to Jupyter kernels and displays
-rich output in the terminal.
-
-
+   $ euporie-console [-h] [--version] [--kernel-connection-file str]
+                          [--log-file [str]]
+                          [--log-level {debug,info,warning,error,critical}]
+                          [--log-config str] [--edit-mode {micro,emacs,vi}]
+                          [--tab-size int] [--terminal-polling-interval int]
+                          [--autoformat | --no-autoformat]
+                          [--format-black | --no-format-black]
+                          [--format-isort | --no-format-isort]
+                          [--format-ssort | --no-format-ssort]
+                          [--syntax-theme str] [--color-depth {1,4,8,24}]
+                          [--tmux-graphics | --no-tmux-graphics]
+                          [--color-scheme {default,inverse,light,dark,black,white,custom}]
+                          [--custom-background-color str]
+                          [--custom-foreground-color str] [--accent-color str]
+                          [--key-bindings loads] [--default-kernel-name str]
+                          [--line-numbers | --no-line-numbers]
+                          [--autocomplete | --no-autocomplete]
+                          [--autosuggest | --no-autosuggest]
+                          [--autoinspect | --no-autoinspect]
+                          [--max-stored-outputs int]
+                          [--show-status-bar | --no-show-status-bar]
+                          [--mouse-support | --no-mouse-support]
+                          [UPath ...]
 
 Positional Arguments
 ====================
@@ -60,11 +78,7 @@ Optional Arguments
 
 .. option:: --kernel-connection-file <str>
 
-   Attempt to connect to an existing kernel using a JSON connection info file.
-
-.. option:: --default-kernel-name <str>
-
-   The name of the kernel to start by default.
+   Attempt to connect to an existing kernel using a JSON connection info file
 
 .. option:: --log-file <str>
 
@@ -134,9 +148,13 @@ Optional Arguments
 
    Accent color to use in the app
 
-.. option:: --key-bindings <dict>
+.. option:: --key-bindings <loads>
 
    Additional key binding definitions
+
+.. option:: --default-kernel-name <str>
+
+   The name of the kernel to start by default
 
 .. option:: --line-numbers, --no-line-numbers
 
@@ -154,24 +172,44 @@ Optional Arguments
 
    Display contextual help automatically
 
+.. option:: --max-stored-outputs <int>
+
+   The number of inputs / outputs to store in an in-memory notebook
+
 .. option:: --show-status-bar, --no-show-status-bar
 
    Show the status bar
 
+.. option:: --mouse-support, --no-mouse-support
+
+   Enable or disable mouse support
 
 
-----
+.. _cli-euporie-console-end:
+.. _cli-euporie-hub-start:
 
-**********************
-:command:`euporie-hub`
-**********************
+Usage
+=====
 
-Hub App.
+.. code-block:: console
 
-An app which runs as a multi-user SSH server.
-
-This app never actually gets run, but is used to run another app in an SSH server.
-
+   $ euporie-hub [-h] [--version] [--log-file [str]]
+                      [--log-level {debug,info,warning,error,critical}]
+                      [--log-config str] [--edit-mode {micro,emacs,vi}]
+                      [--tab-size int] [--terminal-polling-interval int]
+                      [--autoformat | --no-autoformat]
+                      [--format-black | --no-format-black]
+                      [--format-isort | --no-format-isort]
+                      [--format-ssort | --no-format-ssort] [--syntax-theme str]
+                      [--color-depth {1,4,8,24}]
+                      [--tmux-graphics | --no-tmux-graphics]
+                      [--color-scheme {default,inverse,light,dark,black,white,custom}]
+                      [--custom-background-color str]
+                      [--custom-foreground-color str] [--accent-color str]
+                      [--key-bindings loads] [--app {notebook,console}]
+                      [--host str] [--port int] [--host-keys [UPath ...]]
+                      [--client-keys [UPath ...]] [--no-auth | --no-no-auth]
+                      [UPath ...]
 
 Positional Arguments
 ====================
@@ -259,7 +297,7 @@ Optional Arguments
 
    Accent color to use in the app
 
-.. option:: --key-bindings <dict>
+.. option:: --key-bindings <loads>
 
    Additional key binding definitions
 
@@ -288,20 +326,46 @@ Optional Arguments
    Allow unauthenticated access to euporie hub
 
 
+.. _cli-euporie-hub-end:
+.. _cli-euporie-notebook-start:
 
-----
+Usage
+=====
 
-***************************
-:command:`euporie-notebook`
-***************************
+.. code-block:: console
 
-Notebook app.
-
-Interactively edit a notebook file.
-
-Launches the interactive TUI notebook editor, allowing you to run and edit Jupyter
-notebooks in the terminal.
-
+   $ euporie-notebook [-h] [--version] [--log-file [str]]
+                           [--log-level {debug,info,warning,error,critical}]
+                           [--log-config str] [--edit-mode {micro,emacs,vi}]
+                           [--tab-size int] [--terminal-polling-interval int]
+                           [--autoformat | --no-autoformat]
+                           [--format-black | --no-format-black]
+                           [--format-isort | --no-format-isort]
+                           [--format-ssort | --no-format-ssort]
+                           [--syntax-theme str] [--color-depth {1,4,8,24}]
+                           [--tmux-graphics | --no-tmux-graphics]
+                           [--color-scheme {default,inverse,light,dark,black,white,custom}]
+                           [--custom-background-color str]
+                           [--custom-foreground-color str] [--accent-color str]
+                           [--key-bindings loads] [--kernel-connection-file str]
+                           [--default-kernel-name str]
+                           [--show-status-bar | --no-show-status-bar]
+                           [--line-numbers | --no-line-numbers]
+                           [--autocomplete | --no-autocomplete]
+                           [--autosuggest | --no-autosuggest]
+                           [--autoinspect | --no-autoinspect]
+                           [--show-cell-borders | --no-show-cell-borders]
+                           [--record-cell-timing | --no-record-cell-timing]
+                           [--save-widget-state | --no-save-widget-state]
+                           [--max-notebook-width int] [--expand | --no-expand]
+                           [--show-scroll-bar | --no-show-scroll-bar]
+                           [--tab-mode {stack,tile_horizontally,tile_vertically}]
+                           [--always-show-tab-bar | --no-always-show-tab-bar]
+                           [--background-pattern {0,1,2,3,4,5}]
+                           [--background-character str]
+                           [--run-after-external-edit | --no-run-after-external-edit]
+                           [--run | --no-run]
+                           [UPath ...]
 
 Positional Arguments
 ====================
@@ -389,17 +453,17 @@ Optional Arguments
 
    Accent color to use in the app
 
-.. option:: --key-bindings <dict>
+.. option:: --key-bindings <loads>
 
    Additional key binding definitions
 
 .. option:: --kernel-connection-file <str>
 
-   Attempt to connect to an existing kernel using a JSON connection info file.
+   Attempt to connect to an existing kernel using a JSON connection info file
 
 .. option:: --default-kernel-name <str>
 
-   The name of the kernel to start by default.
+   The name of the kernel to start by default
 
 .. option:: --show-status-bar, --no-show-status-bar
 
@@ -470,22 +534,42 @@ Optional Arguments
    Run the notebook files when loaded
 
 
+.. _cli-euporie-notebook-end:
+.. _cli-euporie-preview-start:
 
-----
+Usage
+=====
 
-**************************
-:command:`euporie-preview`
-**************************
+.. code-block:: console
 
-Preview app.
-
-Preview notebook files in the terminal.
-
-Outputs a formatted notebook file. The formatted output will be written to
-the the output file path given by `output_file` (the standard output by
-default).
-
-
+   $ euporie-preview [-h] [--version] [--log-file [str]]
+                          [--log-level {debug,info,warning,error,critical}]
+                          [--log-config str] [--edit-mode {micro,emacs,vi}]
+                          [--tab-size int] [--terminal-polling-interval int]
+                          [--autoformat | --no-autoformat]
+                          [--format-black | --no-format-black]
+                          [--format-isort | --no-format-isort]
+                          [--format-ssort | --no-format-ssort]
+                          [--syntax-theme str] [--color-depth {1,4,8,24}]
+                          [--tmux-graphics | --no-tmux-graphics]
+                          [--color-scheme {default,inverse,light,dark,black,white,custom}]
+                          [--custom-background-color str]
+                          [--custom-foreground-color str] [--accent-color str]
+                          [--key-bindings loads] [--kernel-connection-file str]
+                          [--default-kernel-name str]
+                          [--line-numbers | --no-line-numbers]
+                          [--autocomplete | --no-autocomplete]
+                          [--autosuggest | --no-autosuggest]
+                          [--autoinspect | --no-autoinspect]
+                          [--show-cell-borders | --no-show-cell-borders]
+                          [--record-cell-timing | --no-record-cell-timing]
+                          [--save-widget-state | --no-save-widget-state]
+                          [--max-notebook-width int] [--expand | --no-expand]
+                          [--run | --no-run] [--save | --no-save]
+                          [--show-filenames | --no-show-filenames]
+                          [--cell-start int] [--cell-stop int]
+                          [--output-file [UPath]] [--page | --no-page]
+                          [UPath ...]
 
 Positional Arguments
 ====================
@@ -573,17 +657,17 @@ Optional Arguments
 
    Accent color to use in the app
 
-.. option:: --key-bindings <dict>
+.. option:: --key-bindings <loads>
 
    Additional key binding definitions
 
 .. option:: --kernel-connection-file <str>
 
-   Attempt to connect to an existing kernel using a JSON connection info file.
+   Attempt to connect to an existing kernel using a JSON connection info file
 
 .. option:: --default-kernel-name <str>
 
-   The name of the kernel to start by default.
+   The name of the kernel to start by default
 
 .. option:: --line-numbers, --no-line-numbers
 
@@ -648,3 +732,6 @@ Optional Arguments
 .. option:: --page, --no-page
 
    Pass output to pager
+
+
+.. _cli-euporie-preview-end:

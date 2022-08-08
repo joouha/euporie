@@ -1033,7 +1033,7 @@ class Kernel:
         name="kernel_connection_file",
         flags=["--kernel-connection-file"],
         type_=str,
-        help_="Attempt to connect to an existing kernel using a JSON connection info file.",
+        help_="Attempt to connect to an existing kernel using a JSON connection info file",
         default="",
         description="""
             Load connection info from JSON dict. This allows euporie to connect to

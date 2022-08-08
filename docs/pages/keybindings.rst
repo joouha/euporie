@@ -6,9 +6,57 @@ Key Bindings
 Editing Modes
 *************
 
-The key-bindings used when editing a cell are determined by the :option:`edit_mode` configuration variable. This can be set to ``micro``, ``emacs`` or ``vim`` to use key-bindings in the style of the respective text editor.
+The key-bindings used when editing a cell or in the console are determined by the :option:`edit_mode` configuration variable. This can be set to ``micro``, ``emacs`` or ``vim`` to use key-bindings in the style of the respective text editor.
 
-.. note:: The ``vim`` and ``emacs`` key-bindings are defined by the :py:mod:`prompt_toolkit` package and are largely untested, so your results may vary!
+*******************
+Custom Key Bindings
+*******************
+
+Key bindings can be customized by setting the :option:`key_bindings` configuration parameter.
+
+This parameter takes the form of a mapping, where they keys are references to modes or components to which a set of key-bindings apply, and the values are mapping of command names to lists of keys.
+
+Key bindings set in the configuration will entirely over-ride the default binding, so if you want to add an additional binding for a command while retaining the default, you will need to include the default binding in the configuration.
+
+Below is an example :ref:`pages/configuration:configuration file` showing how the key-bindings can be set:
+
+.. code-block:: javascript
+   :emphasize-lines: 5-10
+
+   {
+     "notebook": {
+       "autoformat": false,
+       "expand": true,
+       "key_bindings": {
+         "euporie.notebook.app.NotebookApp": {
+           "quit": ["c-q", "c-p"],
+           "new-notebook": []
+         }
+       },
+     }
+   }
+
+This example sets two key-bindings in the :doc:`Notebook <../apps/notebook>` app for the :command:`quit` command: :kbd:`Ctrl+Q` and :kbd:`Ctrl+P`. It also unsets any key-bindings for the :command:`new-notebook` command.
+
+Custom key-binding configuration can also be passed on the command line in the form of a JSON string:
+
+.. code-block:: console
+
+   $ euporie-notebook --key-bindings='{"euporie.notebook.app.NotebookApp": {"new-notebook": [],"quit": ["c-q", "c-p"]}}'
+
+Valid component names include:
+
+* ``euporie.core.app.BaseApp``
+* ``euporie.core.widgets.pager.Pager``
+* ``euporie.core.widgets.inputs.KernelInput``
+* ``euporie.core.key_binding.bindings.micro.EditMod``
+* ``euporie.notebook.app.NotebookApp``
+* ``euporie.notebook.tabs.notebook.Notebook``
+* ``euporie.console.app.ConsoleApp``
+* ``euporie.console.tabs.console.Console``
+* ``euporie.preview.app.PreviewApp``
+
+Most command names are listed in `Default Key Bindings Reference`_.
 
 
 *************

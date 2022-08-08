@@ -12,70 +12,70 @@ v2.x.x
 
    .. grid-item::
 
-      .. figure:: https://user-images.githubusercontent.com/12154190/183269737-d11cb5a5-f06e-48ea-8c05-03f73c411841.png
+      .. figure:: https://user-images.githubusercontent.com/12154190/183280627-a658a3fe-ee70-4b65-a115-ef8e274e01ca.png
          :target: https://user-images.githubusercontent.com/12154190/183269755-6b521580-f32b-4205-94dc-b34c67f1ab0f.png
 
          Ipywidget support
 
    .. grid-item::
 
-      .. figure:: https://user-images.githubusercontent.com/12154190/183269734-337be942-2b72-4205-b05c-7fd589bde437.png
+      .. figure:: https://user-images.githubusercontent.com/12154190/183280623-83114cb2-5ec9-4dd7-bac1-8ac39e257aad.png
          :target: https://user-images.githubusercontent.com/12154190/183269752-f14e2c05-64a8-4de3-a55f-a905a782ec37.png
 
          Command palette
 
    .. grid-item::
 
-      .. figure:: https://user-images.githubusercontent.com/12154190/183269736-f7097dd4-02b3-4acd-8c31-8614402a1b06.png
+      .. figure:: https://user-images.githubusercontent.com/12154190/183280625-f5fd099e-d7f0-49be-aa30-01ace39bed0b.png
          :target: https://user-images.githubusercontent.com/12154190/183269754-dbe4d7d7-6d3e-48c7-9435-d29a2ff1919c.png
 
          Search
 
    .. grid-item::
 
-      .. figure:: https://user-images.githubusercontent.com/12154190/183269735-268f6636-607e-47d0-a895-5c5bdd481b0d.png
+      .. figure:: https://user-images.githubusercontent.com/12154190/183280624-b6ea8191-0572-45f4-a912-721f2118a81c.png
          :target: https://user-images.githubusercontent.com/12154190/183269753-56368f3c-d863-4b5e-9425-3d49be1e1727.png
 
          Markdown cell rendering
 
    .. grid-item::
 
-      .. figure:: https://user-images.githubusercontent.com/12154190/183269730-70152cf6-d3f9-4a9d-b7bb-b53f7c06b8ca.png
+      .. figure:: https://user-images.githubusercontent.com/12154190/183280619-d48b30d2-ab15-44a4-bf8b-81e16b89ffd3.png
          :target: https://user-images.githubusercontent.com/12154190/183269747-4125e94b-152a-4c8b-97e8-309d28f1fa6d.png
 
          Dark color scheme
 
    .. grid-item::
 
-      .. figure:: https://user-images.githubusercontent.com/12154190/183269732-cd22b9c8-eece-432e-9c80-cf25ca436bff.png
+      .. figure:: https://user-images.githubusercontent.com/12154190/183280621-688f8d15-6c61-46e8-9414-b45784d036cd.png
          :target: https://user-images.githubusercontent.com/12154190/183269750-8621b4ce-f765-4812-ba2e-4189b9b0d16c.png
 
          Light color scheme
 
    .. grid-item::
 
-      .. figure:: https://user-images.githubusercontent.com/12154190/183269727-2f54d1d2-1b04-4437-8d41-40d85aecc99a.png
+      .. figure:: https://user-images.githubusercontent.com/12154190/183280616-dce3cb37-0829-48fd-a447-95eac8261255.png
          :target: https://user-images.githubusercontent.com/12154190/183269745-ef66184c-ce1d-484a-9456-53b7c9405258.png
 
          Black color scheme
 
    .. grid-item::
 
-      .. figure:: https://user-images.githubusercontent.com/12154190/183269733-5b1d1658-1011-4afa-978c-aeeb6799aca8.png
+      .. figure:: https://user-images.githubusercontent.com/12154190/183280622-0776b6de-2559-4ac6-9b90-6a13df625ddf.png
          :target: https://user-images.githubusercontent.com/12154190/183269751-736ba047-cb6d-4a6a-8c76-13350dcb7467.png
 
          White color scheme
 
    .. grid-item::
 
-      .. figure:: https://user-images.githubusercontent.com/12154190/183269731-b21142bd-4348-4017-8dcb-f8c5619c388b.png
+      .. figure:: https://user-images.githubusercontent.com/12154190/183280620-f5c1e8af-c6c9-4956-9fc1-3bd2c809cc5c.png
          :target: https://user-images.githubusercontent.com/12154190/183269748-1687183c-7d2d-431b-834c-27e5832f5664.png
 
          Inverse color scheme
 
    .. grid-item::
 
-      .. figure:: https://user-images.githubusercontent.com/12154190/183269729-47bc316f-16b5-4ccf-8d6c-9afd353df4f0.png
+      .. figure:: https://user-images.githubusercontent.com/12154190/183280617-d1995bc7-fdfe-44b6-a744-772f9cff9f54.png
          :target: https://user-images.githubusercontent.com/12154190/183269746-fc1637f5-6f44-480e-9558-456109f77e0c.png
 
          Custom color schemes
@@ -83,7 +83,7 @@ v2.x.x
 
    .. grid-item::
 
-      .. figure:: https://user-images.githubusercontent.com/12154190/183269726-a6aa8909-6ee9-42ff-a80a-ca91f3cfa570.png
+      .. figure:: https://user-images.githubusercontent.com/12154190/183280613-6d3baf5c-a87f-4560-bd7c-789deb2689fa.png
          :target: https://user-images.githubusercontent.com/12154190/183269744-4947a4d4-d1c8-4d79-a846-f400c44e9cf3.png
 
          Running in a terminal in Jupyter Lab
@@ -102,28 +102,28 @@ v1.x.x
 
    .. grid-item::
 
-      .. figure:: https://user-images.githubusercontent.com/12154190/183270216-cc805508-7c64-48fb-959c-07267eb4c04a.png
+      .. figure:: https://user-images.githubusercontent.com/12154190/183280273-e3031c2e-9b81-41d2-9cab-6ca974267876.png
          :target: https://user-images.githubusercontent.com/12154190/160244007-cfde84ea-cddd-47f3-964a-96a10d60fb06.png
 
          Displaying multiple notebooks side-by-side
 
    .. grid-item::
 
-      .. figure:: https://user-images.githubusercontent.com/12154190/183270048-cbe1e46c-1805-4c28-acb3-bda84810715c.png
+      .. figure:: https://user-images.githubusercontent.com/12154190/183280279-e8d8f259-1c60-4489-b9ab-e4bfc0f2342b.png
          :target: https://user-images.githubusercontent.com/12154190/151829345-80b40ac3-eb71-41d4-9be5-61ca52de2c4d.png
 
          Tab completion
 
    .. grid-item::
 
-      .. figure:: https://user-images.githubusercontent.com/12154190/183270190-380b3786-d12c-4dcb-a273-d175deef1df6.png
+      .. figure:: https://user-images.githubusercontent.com/12154190/183280272-9538d525-b700-4092-ae49-f796dff242ee.png
          :target: https://user-images.githubusercontent.com/12154190/159142291-64267d3d-b8ca-4142-a939-b9525c13cd35.png
 
          Displaying contextual help
 
    .. grid-item::
 
-      .. figure:: https://user-images.githubusercontent.com/12154190/183270104-9c7f29ea-4740-4f79-a5fd-3d428ba260f1.png
+      .. figure:: https://user-images.githubusercontent.com/12154190/183280269-89c85ce9-a922-44b5-a02d-157fd1f81e6e.png
          :target: https://user-images.githubusercontent.com/12154190/156740297-9550954e-6bba-4a35-a791-8183da409654.png
          :width: 200 px
 
@@ -131,28 +131,28 @@ v1.x.x
 
    .. grid-item::
 
-      .. figure:: https://user-images.githubusercontent.com/12154190/183270045-299afdb1-5d86-4ff1-b8f5-3ac6c3af9007.png
+      .. figure:: https://user-images.githubusercontent.com/12154190/183280276-6f234787-9d15-4e90-b8ce-a5dbbf6c0691.png
          :target: https://user-images.githubusercontent.com/12154190/151831328-023d70a3-98cf-4916-b5d6-b5d7b06ff659.png
 
          Display LaTeX formulae in markdown cells with SymPy
 
    .. grid-item::
 
-      .. figure:: https://user-images.githubusercontent.com/12154190/183270047-79afa136-f443-48ce-95f7-f5f51319de20.png
+      .. figure:: https://user-images.githubusercontent.com/12154190/183280278-61979f80-9a29-406c-965e-648055c53b37.png
          :target: https://user-images.githubusercontent.com/12154190/151828689-8eb5a46d-3bbb-4e93-9909-5fd12bc69520.png
 
          Adapting to terminal colour theme
 
    .. grid-item::
 
-      .. figure:: https://user-images.githubusercontent.com/12154190/183270049-edfe0690-94fa-4ca0-92e8-3cb4c8c1ab4b.png
+      .. figure:: https://user-images.githubusercontent.com/12154190/183280281-2d9843d1-5112-4046-b52e-2844cac5bfb9.png
          :target: https://user-images.githubusercontent.com/12154190/151821390-255dcec6-433d-41e3-8ee9-17e4ab59570f.png
 
          Running on Windows
 
    .. grid-item::
 
-      .. figure:: https://user-images.githubusercontent.com/12154190/183270044-0150eb3b-b0eb-4896-b13f-352d51509403.png
+      .. figure:: https://user-images.githubusercontent.com/12154190/183280275-de486487-35af-4628-aea1-aa1d8631564e.png
          :target: https://user-images.githubusercontent.com/12154190/160244358-14f01325-ed33-4e09-9356-09723ca4385d.png
 
          Running inside JupyterLab

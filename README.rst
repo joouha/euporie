@@ -15,15 +15,21 @@ euporie
 
 Euporie's apps allow you to interact with Jupyter kernels, and run Jupyter notebooks entirely in the terminal.
 
+.. list-table::
+   :align: center
+   :widths: 25 25 25 25
+   :class: text-center
+
+   * - `Notebook <https://euporie.readthedocs.io/en/latest/apps/notebook.html>`_
+     - `Console <https://euporie.readthedocs.io/en/latest/apps/console.html>`_
+     - `Preview <https://euporie.readthedocs.io/en/latest/apps/preview.html>`_
+     - `Hub <https://euporie.readthedocs.io/en/latest/apps/hub.html>`_
+
 .. figure:: https://user-images.githubusercontent.com/12154190/182201621-9c3e4b04-1b1e-46e3-b852-b43f16adfc7b.png
    :target: https://user-images.githubusercontent.com/12154190/182201621-9c3e4b04-1b1e-46e3-b852-b43f16adfc7b.png
 
    `View more screenshots here <https://euporie.readthedocs.io/en/latest/pages/gallery.html>`_
-
-
-
 ----
-
 
 *******
 Install
@@ -44,6 +50,7 @@ Features
 ********
 
 * Edit and run notebooks in the terminal
+* Vim / Emacs / Micro style key-bindings
 * Run code interactively in a console
 * Convert a console session to a notebook
 * Use Jupyter widgets interactively in the terminal
@@ -90,8 +97,9 @@ Usage
 
    .. code-block:: console
 
-      $ euporie-hub
+      $ euporie-hub --port 8022 --host-keys=ssh_host_ed25519_key --client-keys=authorized_keys
 
+   where ``ssh_host_ed25519_key`` is the path to your host key file, and ``authorized_keys`` is a file containing SSH public keys allowed to connect.
 
 *************
 Documentation

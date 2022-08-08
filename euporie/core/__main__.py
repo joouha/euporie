@@ -1,7 +1,7 @@
 """Main entry point into euporie.core."""
 
 
-def main(name: "str" = "core") -> "None":
+def main(name: "str" = "launch") -> "None":
     """Loads and launches the application."""
     from importlib.metadata import entry_points
 

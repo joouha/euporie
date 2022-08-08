@@ -21,7 +21,7 @@ classifiers = [
 "Bug Tracker" = "https://github.com/joouha/euporie/issues"
 
 [tool.poetry.plugins."euporie.apps"]
-"core" = "euporie.core.launch:CoreApp"
+"launch" = "euporie.core.launch:CoreApp"
 "console" = "euporie.console.app:ConsoleApp"
 "notebook" = "euporie.notebook.app:NotebookApp"
 "preview" = "euporie.preview.app:PreviewApp"
@@ -101,6 +101,7 @@ pytest = "^7.1.1"
 mypy = "^0.942"
 rich = "^12.2.0"
 sphinx_design = "^0.2.0"
+sphinxcontrib-video = "^0.0.1-alpha.3"
 
 [tool.isort]
 profile = "black"

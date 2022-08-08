@@ -18,6 +18,13 @@ Notebook Editors
 `jpterm <https://github.com/davidbrochart/jpterm>`_
    A Jupyter HTTP client with a TUI using Textual (currently a work in progress)
 
+********
+Consoles
+********
+
+`jupyter-console <https://github.com/jupyter/jupyter_console>`
+   A terminal-based console frontend for Jupyter kernels.
+
 ****************
 Notebook Viewers
 ****************

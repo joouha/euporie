@@ -6,7 +6,7 @@ Configuration
 Configuring Euporie
 *******************
 
-Euporie has a ranger of configurable options which affect euporie's behaviour and appearance.
+Euporie has a range of configurable options which affect euporie's behaviour and appearance.
 
 Options are validated at application startup, so if an option is set to an invalid value, it will be ignored.
 
@@ -21,16 +21,23 @@ Euporie can be configured by passing flags (and sometimes values) on the command
 
    $ euporie --color-scheme=light --no-show-cell-borders --expand notebook.ipynb
 
+Optionals set on the command line are not persisted, and only apply to the application which is being run.
+
 Options set on the command line will override those set via an environment variable, in the configuration file, and the default values.
 
 Environment Variables
 =====================
 
-Euporie can be configured by setting environment variables. Each option can be set by assigning a value to an environment variable with uppercase option name, prefixed with ``EUPORIE_``.
+Euporie can be configured by setting environment variables. Each option can be set by assigning a value to an environment variable with uppercase option name, prefixed with :envvar:`EUPORIE_` for global configuration settings.
 
-.. code-block:: console
+To set a configuration option for an individual app, the environment variable should additionally be prefixed with the app's name: as :envvar:`EUPORIE_NOTEBOOK_`, :envvar:`EUPORIE_CONSOLE_`, :envvar:`EUPORIE_PREVIEW_`, or :envvar:`EUPORIE_HUB_` .
 
-   $ EUPORIE_COLOR_SCHEME=light EUPORIE_SHOW_CELL_BORDERS=False EUPORIE_EXPAND=True euporie notebook.ipynb
+The global version of each configuration option's environment variable are listed in :ref:`configuration-options`.
+
+Example
+   .. code-block:: console
+
+      $ EUPORIE_COLOR_SCHEME=light EUPORIE_SHOW_CELL_BORDERS=False EUPORIE_EXPAND=True euporie-notebook notebook.ipynb
 
 Setting boolean values to an empty string will cause them to evaluate to :py:keyword:`False`.
 
@@ -39,7 +46,9 @@ Options set in via an environment variable will override those set in the config
 Configuration File
 ==================
 
-Euporie can be configured using a JSON configuration file. The file takes the form of *key: value* pairs, where the key is one of the options listed in :ref:`configuration-options`
+Euporie can be configured using a JSON configuration file. The file takes the form of *key: value* pairs, where the key is one of the options listed in :ref:`configuration-options`.
+
+Settings can be applied to an individual application be specifying them under that application's name.
 
 .. warning::
    The configuration file is read when euporie is launched, and modifying options from the :menuselection:`Settings` menu in euporie will cause the configuration file to be updated. Thus, any changes made to the configuration file while euporie is running may be lost, so this is not recommended.
@@ -50,8 +59,18 @@ Example
       {
         "color_scheme": "light",
         "syntax_theme": "native",
-        "show_cell_borders": false,
-        "expand": true
+        "notebook": {
+          "expand": false,
+          "always_show_tab_bar": true,
+          "show_cell_borders": false
+        },
+        "console": {
+          "color_scheme": "default",
+          "syntax_theme": "dracula"
+        },
+        "preview": {
+          "show_cell_borders": true
+        }
       }
 
 File Location

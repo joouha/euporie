@@ -21,24 +21,10 @@
 :environment variable: :envvar:`EUPORIE_KERNEL_CONNECTION_FILE`
 :default: ``''``
 :type: :keyword:`string`
-:description: Attempt to connect to an existing kernel using a JSON connection info file.
+:description: Attempt to connect to an existing kernel using a JSON connection info file
 
    Load connection info from JSON dict. This allows euporie to connect to
    existing kernels.
-
-
-.. option:: default_kernel_name
-
-:flags: :option:`--default-kernel-name`
-
-:environment variable: :envvar:`EUPORIE_DEFAULT_KERNEL_NAME`
-:default: ``'python3'``
-:type: :keyword:`string`
-:description: The name of the kernel to start by default.
-
-   The name of the kernel selected automatically by the console app or in new
-   notebooks. If set to an empty string, the user will be asked which kernel
-   to launch.
 
 
 .. option:: files
@@ -285,6 +271,20 @@
    A mapping of component names to mappings of command name to key-binding lists.
 
 
+.. option:: default_kernel_name
+
+:flags: :option:`--default-kernel-name`
+
+:environment variable: :envvar:`EUPORIE_DEFAULT_KERNEL_NAME`
+:default: ``'python3'``
+:type: :keyword:`string`
+:description: The name of the kernel to start by default
+
+   The name of the kernel selected automatically by the console app or in new
+   notebooks. If set to an empty string, the user will be asked which kernel
+   to launch.
+
+
 .. option:: line_numbers
 
 :flags: :option:`--line-numbers`
@@ -333,6 +333,19 @@
    Whether to automatically display contextual help when navigating through code cells.
 
 
+.. option:: max_stored_outputs
+
+:flags: :option:`--max-stored-outputs`
+
+:environment variable: :envvar:`EUPORIE_MAX_STORED_OUTPUTS`
+:default: ``100``
+:type: :keyword:`integer`
+:description: The number of inputs / outputs to store in an in-memory notebook
+
+   Defines the maximum number of executed "cells" to store in case the console
+   session is saved to a file or converted into a notebook.
+
+
 .. option:: show_status_bar
 
 :flags: :option:`--show-status-bar`
@@ -345,17 +358,28 @@
    Whether the status bar should be shown at the bottom of the screen.
 
 
+.. option:: mouse_support
+
+:flags: :option:`--mouse-support`
+
+:environment variable: :envvar:`EUPORIE_MOUSE_SUPPORT`
+:type: :keyword:`boolean`
+:description: Enable or disable mouse support
+
+   When set to True, mouse support is enabled. When set to False, mouse
+   support is disabled.
+
+
 .. option:: app
 
-:flags: :option:`--app`
 
 :environment variable: :envvar:`EUPORIE_APP`
 :default: ``'notebook'``
 :type: :keyword:`string`
-:options: [``'notebook'``, ``'console'``]
-:description: App to run under euporie hub
+:options: [``'edit'``, ``'hub'``, ``'console'``, ``'preview'``, ``'notebook'``]
+:description: The application to launch
 
-   Determine which euporie app should be launched under euporie hub.
+   The name of the application to launch.
 
 
 .. option:: host
@@ -422,6 +446,7 @@
    .. warning::
 
       This option is dangerous, as arbitrary code can be executed through
+      euporie apps.
 
 
 .. option:: show_cell_borders

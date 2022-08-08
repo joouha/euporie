@@ -47,7 +47,6 @@ euporie.core.widgets.menu
       Float
       FormattedTextControl
       KeyBindings
-      Keys
       MenuBar
       MenuItem
       MouseEvent

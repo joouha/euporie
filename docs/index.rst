@@ -1,5 +1,5 @@
 #######################
-euporie's documentation
+Euporie's Documentation
 #######################
 
 .. include:: ../README.rst
@@ -14,19 +14,23 @@ euporie's documentation
    pages/installation
    pages/gallery
    pages/overview
-   pages/notebool
-   pages/console
-   pages/preview
-   pages/hub
    pages/keybindings
-   pages/cli
    pages/configuration
    pages/changelog
    pages/related
 
 .. toctree::
    :maxdepth: 2
-   :caption: Reference
+   :caption: Applications
+
+   apps/notebook
+   apps/console
+   apps/preview
+   apps/hub
+
+.. toctree::
+   :maxdepth: 2
+   :caption: API Reference
    :hidden:
 
    reference/euporie

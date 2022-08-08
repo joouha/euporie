@@ -24,6 +24,7 @@ euporie.core.tabs.base
       :toctree:
 
       add_cmd
+      add_setting
       get_app
       open_comm
 

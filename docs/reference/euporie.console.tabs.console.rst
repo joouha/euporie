@@ -24,6 +24,7 @@ euporie.console.tabs.console
       :toctree:
 
       add_cmd
+      add_setting
       cast
       format_code
       get_cmd

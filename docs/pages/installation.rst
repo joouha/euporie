@@ -32,7 +32,7 @@ You can use :program:`pipx` to try euporie before installing it:
 
 .. code-block:: console
 
-   $ pipx run --spec 'euporie[all]' euporie
+   $ pipx run --spec 'euporie[all]' euporie notebook
 
 You can also try euporie online here:
 

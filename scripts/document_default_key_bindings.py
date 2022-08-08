@@ -5,11 +5,13 @@ from __future__ import annotations
 import importlib
 from textwrap import dedent
 
+from prompt_toolkit.formatted_text.base import to_formatted_text
 from prompt_toolkit.shortcuts.utils import print_formatted_text
 
 from euporie.core.border import Ascii, AsciiThick, BorderLineStyle
 from euporie.core.commands import get_cmd
 from euporie.core.formatted_text.table import Table
+from euporie.core.formatted_text.utils import indent
 from euporie.core.key_binding.registry import BINDINGS
 from euporie.core.key_binding.utils import format_keys, parse_keys
 
@@ -35,14 +37,15 @@ for group in groups:
 
     table = Table(border=Ascii)
     head = table.new_row(style="bold", border=BorderLineStyle(bottom=AsciiThick))
-    head.new_cell("Command")
     head.new_cell("Keys")
+    head.new_cell("Description")
+    head.new_cell("Command")
     for cmd_name, raw_keys in BINDINGS.get(group, {}).items():
         cmd = get_cmd(cmd_name)
         row = table.new_row()
 
         formatted_keys = [
-            key.replace("`", r"\`").replace("\\", "\\\\")
+            key.replace("\\", "\\\\").replace("`", r"\`")
             for key in format_keys(parse_keys(raw_keys))
         ]
         row.new_cell("\n\n".join(f":kbd:`{key}`" for key in formatted_keys))
@@ -51,6 +54,8 @@ for group in groups:
         cmd_desc = cmd.description.replace("`", r"\`")
         # row.new_cell(f":abbr:`{cmd_title}\n({cmd_desc})`")
         row.new_cell(cmd_desc)
+
+        row.new_cell(f":command:`{cmd_name}`")
 
     sections[section_title] = table
 
@@ -69,6 +74,12 @@ for title, table in sections.items():
         f"""
 {title}
 {"=" * len(title)}
+
+.. table::
+   :width: 133%
+   :widths: 25,75,33
+
 """
     )
-    print_formatted_text(table)
+    ft = table.render(width=999999)
+    print_formatted_text(to_formatted_text(indent(ft, "   ")))
