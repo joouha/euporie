@@ -148,7 +148,7 @@ class KernelInput(TextArea):
 
         # Replace the autosuggest processor
         # Skip type checking as PT should use "("Optional[Sequence[Processor]]"
-        # instead of "Optional[List[Processor]]"
+        # instead of "Optional[list[Processor]]"
         # TODO make a PR for this
         self.control.input_processors[0] = ConditionalProcessor(  # type: ignore
             AppendLineAutoSuggestion(),

@@ -10,7 +10,7 @@ from prompt_toolkit.cache import FastDictCache, SimpleCache
 from prompt_toolkit.filters import to_filter
 
 if TYPE_CHECKING:
-    from typing import Any, Callable, Dict, Iterable, List, Optional, Union
+    from typing import Any, Callable, Iterable, Optional, Union
 
     from prompt_toolkit.filters import Filter, FilterOrBool
 
@@ -93,7 +93,7 @@ def find_route(from_: "str", to: "str") -> "Optional[list]":
     def find(start: "str", chain: "list[str]") -> "None":
         if chain[0] == start:
             chains.append(chain)
-        sources: "Dict[str, List[Converter]]" = converters.get(chain[0], {})
+        sources: "dict[str, list[Converter]]" = converters.get(chain[0], {})
         for link in sources:
             if link not in chain:
                 if any(

@@ -1,5 +1,7 @@
 """Style related functions."""
 
+from __future__ import annotations
+
 import logging
 from colorsys import hls_to_rgb, rgb_to_hls
 from functools import partial
@@ -10,7 +12,7 @@ from prompt_toolkit.styles.defaults import default_ui_style
 from prompt_toolkit.styles.style import Style
 
 if TYPE_CHECKING:
-    from typing import Any, Tuple
+    from typing import Any
 
 log = logging.getLogger(__name__)
 
@@ -192,7 +194,7 @@ IPYWIDGET_STYLE = [
 class ColorPaletteColor:
     """A representation of a color with adjustment methods."""
 
-    _cache: "SimpleCache[Tuple[str, float, float, float, bool], ColorPaletteColor]" = (
+    _cache: "SimpleCache[tuple[str, float, float, float, bool], ColorPaletteColor]" = (
         SimpleCache()
     )
 

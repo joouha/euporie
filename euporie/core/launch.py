@@ -1,5 +1,7 @@
 """Defines a simple app for launching euporie apps."""
 
+from __future__ import annotations
+
 from importlib.metadata import entry_points
 
 from euporie.core.config import Config, add_setting

@@ -1,5 +1,7 @@
 """Custom validators."""
 
+from __future__ import annotations
+
 from typing import TYPE_CHECKING
 
 from prompt_toolkit.validation import ValidationError, Validator

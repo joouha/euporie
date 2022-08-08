@@ -1,5 +1,7 @@
 """Run euporie as a multi-client SSH server."""
 
+from __future__ import annotations
+
 import logging
 from asyncio import get_event_loop
 from importlib.metadata import entry_points

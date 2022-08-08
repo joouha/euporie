@@ -86,7 +86,6 @@ if TYPE_CHECKING:
         Any,
         Callable,
         Dict,
-        List,
         Literal,
         Optional,
         Sequence,
@@ -179,7 +178,7 @@ class BaseApp(Application):
                 self.input.vt100_parser.feed_key_callback
             )
         # Contains the opened tab containers
-        self.tabs: "List[Tab]" = []
+        self.tabs: "list[Tab]" = []
         # Holds the search bar to pass to cell inputs
         self.search_bar: "Optional[SearchBar]" = None
         # Holds the index of the current tab
@@ -191,8 +190,8 @@ class BaseApp(Application):
         # Floats at the app level
         self.leave_graphics = to_filter(leave_graphics)
         self.graphics: "WeakSet[Float]" = WeakSet()
-        self.dialogs: "Dict[str, Dialog]" = {}
-        self.menus: "Dict[str, Float]" = {
+        self.dialogs: "dict[str, Dialog]" = {}
+        self.menus: "dict[str, Float]" = {
             "completions": Float(
                 content=Shadow(
                     CompletionsMenu(
@@ -214,7 +213,7 @@ class BaseApp(Application):
         # Continue loading when the application has been launched
         # and an event loop has been creeated
         self.pre_run_callables = [self.pre_run]
-        self.post_load_callables: "List[Callable[[], None]]" = []
+        self.post_load_callables: "list[Callable[[], None]]" = []
         # Set default vi input mode to navigate
         self.vi_state = ViState()
         # Set a long timeout for mappings (e.g. dd)
@@ -434,7 +433,7 @@ class BaseApp(Application):
         """
         return FloatContainer(
             content=Window(),
-            floats=cast("List[Float]", self.floats),
+            floats=cast("list[Float]", self.floats),
         )
 
     def get_file_tab(self, path: "PathLike") -> "Optional[Type[Tab]]":
@@ -696,7 +695,7 @@ class BaseApp(Application):
         self._request_absolute_cursor_position()
 
     def _handle_exception(
-        self, loop: "AbstractEventLoop", context: "Dict[str, Any]"
+        self, loop: "AbstractEventLoop", context: "dict[str, Any]"
     ) -> "None":
         exception = context.get("exception")
         # Log observed exceptions to the log

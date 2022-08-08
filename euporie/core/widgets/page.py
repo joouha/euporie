@@ -26,7 +26,7 @@ from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
 from euporie.core.margins import ScrollbarMargin
 
 if TYPE_CHECKING:
-    from typing import Callable, List, Optional, Sequence, Union
+    from typing import Callable, Optional, Sequence, Union
 
     from prompt_toolkit.formatted_text import AnyFormattedText, StyleAndTextTuples
     from prompt_toolkit.key_binding.key_bindings import (
@@ -606,7 +606,7 @@ class ScrollingContainer(Container):
             wrap_lines=False,
         )
 
-    def get_children(self) -> List["Container"]:
+    def get_children(self) -> list["Container"]:
         """Return the list of currently visible children to include in the layout."""
         return [
             self.get_child_render_info(i).container

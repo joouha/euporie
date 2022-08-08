@@ -9,7 +9,7 @@ from upath import UPath
 
 if TYPE_CHECKING:
     from os import PathLike
-    from typing import Iterable, List, Optional, Union
+    from typing import Iterable, Optional, Union
 
 T = TypeVar("T")
 
@@ -22,7 +22,7 @@ class ChainedList(Sequence[T]):
         self.lists = lists
 
     @property
-    def data(self) -> "List[T]":
+    def data(self) -> "list[T]":
         """Return the list data."""
         return list(chain.from_iterable(self.lists))
 

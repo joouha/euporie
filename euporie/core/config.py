@@ -23,7 +23,7 @@ from euporie.core import __app_name__, __copyright__, __version__
 from euporie.core.commands import add_cmd, get_cmd
 
 if TYPE_CHECKING:
-    from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Type, Union
+    from typing import Any, Callable, Optional, Sequence, Type, Union
 
     from prompt_toolkit.filters.base import Filter, FilterOrBool
 
@@ -76,7 +76,7 @@ class BooleanOptionalAction(argparse.Action):
             setattr(namespace, self.dest, not option_string.startswith("--no-"))
 
 
-TYPE_ACTIONS: "Dict[Callable[[Any], Any], Type[argparse.Action]]" = {
+TYPE_ACTIONS: "dict[Callable[[Any], Any], Type[argparse.Action]]" = {
     bool: BooleanOptionalAction
 }
 
@@ -105,7 +105,7 @@ _json_encoder = JSONEncoderPlus()
 class Config:
     """A configuration store."""
 
-    settings: "Dict[str, Setting]" = {}
+    settings: "dict[str, Setting]" = {}
     conf_file_name = "config.json"
 
     def __init__(self) -> "None":
@@ -153,7 +153,7 @@ class Config:
             setting.event += self._save
 
     @property
-    def schema(self) -> "Dict[str, Any]":
+    def schema(self) -> "dict[str, Any]":
         """Return a JSON schema for the config."""
         return {
             "title": "Euporie Configuration",
@@ -176,7 +176,7 @@ class Config:
             parser.add_argument(*args, **kwargs)
         return parser
 
-    def load_args(self) -> "Dict[str, Any]":
+    def load_args(self) -> "dict[str, Any]":
         """Attempts to load configuration settings from commandline flags."""
         result = {}
         namespace, _ = self.load_parser().parse_known_intermixed_args()
@@ -192,7 +192,7 @@ class Config:
                     result[name] = value
         return result
 
-    def load_env(self, app_name: "str" = "") -> "Dict[str, Any]":
+    def load_env(self, app_name: "str" = "") -> "dict[str, Any]":
         """Attempt to load configuration settings from environment variables."""
         result = {}
         for name, setting in self.settings.items():
@@ -233,7 +233,7 @@ class Config:
                         result[name] = parsed_value
         return result
 
-    def load_config_file(self) -> "Dict[str, Any]":
+    def load_config_file(self) -> "dict[str, Any]":
         """Attempt to load JSON configuration file."""
         results = {}
         assert isinstance(self.config_file_path, Path)
@@ -252,7 +252,7 @@ class Config:
                     results.update(json_data)
         return results
 
-    def load_user(self, app_name: "str" = "") -> "Dict[str, Any]":
+    def load_user(self, app_name: "str" = "") -> "dict[str, Any]":
         """Attempt to load JSON configuration file."""
         results = {}
         # Load config file
@@ -334,13 +334,13 @@ class Setting:
         description: "str",
         type_: "Optional[Callable[[Any], Any]]" = None,
         title: "Optional[str]" = None,
-        choices: "Optional[List[Any]]" = None,
+        choices: "Optional[list[Any]]" = None,
         action: "Optional[Union[argparse.Action,str]]" = None,
-        flags: "Optional[List[str]]" = None,
-        schema: "Optional[Dict[str, Any]]" = None,
+        flags: "Optional[list[str]]" = None,
+        schema: "Optional[dict[str, Any]]" = None,
         nargs: "Optional[str|int]" = None,
         hidden: "FilterOrBool" = False,
-        hooks: "Optional[List[Callable[[Setting], None]]]" = None,
+        hooks: "Optional[list[Callable[[Setting], None]]]" = None,
         cmd_filter: "FilterOrBool" = True,
         **kwargs: "Any",
     ) -> "None":
@@ -355,7 +355,7 @@ class Setting:
         self.type = type_ or type(default)
         self.action = action or TYPE_ACTIONS.get(self.type)
         self.flags = flags or [f"--{name.replace('_','-')}"]
-        self._schema: "Dict[str, Any]" = {
+        self._schema: "dict[str, Any]" = {
             "type": {
                 bool: "boolean",
                 str: "string",
@@ -443,7 +443,7 @@ class Setting:
         self.event.fire()
 
     @property
-    def schema(self) -> "Dict[str, Any]":
+    def schema(self) -> "dict[str, Any]":
         """Return a json schema property for the config item."""
         return {
             "description": self.help,
@@ -472,13 +472,13 @@ class Setting:
             raise NotImplementedError
 
     @property
-    def parser_args(self) -> "Tuple[List[str], Dict[str, Any]]":
+    def parser_args(self) -> "tuple[list[str], dict[str, Any]]":
         """Return arguments for construction of an :class:`argparse.ArgumentParser`."""
         # Do not set defaults for command line arguments, as default values
         # would override values set in the configuration file
         args = self.flags or [self.name]
 
-        kwargs: "Dict[str, Any]" = {
+        kwargs: "dict[str, Any]" = {
             "action": self.action,
             "help": self.help,
         }
@@ -507,11 +507,11 @@ def add_setting(
     description: "str",
     type_: "Optional[Callable[[Any], Any]]" = None,
     action: "Optional[Union[argparse.Action,str]]" = None,
-    flags: "Optional[List[str]]" = None,
-    schema: "Optional[Dict[str, Any]]" = None,
+    flags: "Optional[list[str]]" = None,
+    schema: "Optional[dict[str, Any]]" = None,
     nargs: "Optional[str|int]" = None,
     hidden: "FilterOrBool" = False,
-    hooks: "Optional[List[Callable[[Setting], None]]]" = None,
+    hooks: "Optional[list[Callable[[Setting], None]]]" = None,
     cmd_filter: "FilterOrBool" = True,
     **kwargs: "Any",
 ) -> "None":

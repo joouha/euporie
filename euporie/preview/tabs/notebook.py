@@ -1,5 +1,7 @@
 """A notebook which renders cells one cell at a time."""
 
+from __future__ import annotations
+
 import logging
 from typing import TYPE_CHECKING, Optional
 
@@ -19,7 +21,7 @@ from euporie.core.widgets.cell import Cell
 from euporie.core.widgets.page import PrintingContainer
 
 if TYPE_CHECKING:
-    from typing import Any, Callable, Dict, Tuple
+    from typing import Any, Callable
 
     from prompt_toolkit.application.application import Application
     from prompt_toolkit.formatted_text.base import StyleAndTextTuples
@@ -45,7 +47,7 @@ class PreviewNotebook(BaseNotebook):
         self.cell_index = 0
         self.app.before_render += self.before_render
         self.app.after_render += self.after_render
-        self.cells: "FastDictCache[Tuple[int], Cell]" = FastDictCache(
+        self.cells: "FastDictCache[tuple[int], Cell]" = FastDictCache(
             get_value=self.get_cell
         )
 
@@ -81,7 +83,7 @@ class PreviewNotebook(BaseNotebook):
         ft = add_border(ft, width=width)
         self.app.print_text(ft)
 
-    def kernel_started(self, result: "Optional[Dict]" = None) -> "None":
+    def kernel_started(self, result: "Optional[dict]" = None) -> "None":
         """Resumes rendering the app when the kernel has started."""
         self.app.resume_rendering()
 

@@ -52,7 +52,7 @@ from euporie.core.widgets.decor import Border
 from euporie.core.widgets.layout import ConditionalSplit
 
 if TYPE_CHECKING:
-    from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
+    from typing import Any, Callable, Optional, Sequence, Union
 
     from prompt_toolkit.buffer import Buffer, BufferAcceptHandler
     from prompt_toolkit.completion.base import Completer
@@ -394,7 +394,7 @@ class Checkbox(ToggleableWidget):
         self,
         text: "AnyFormattedText" = "",
         on_click: "Optional[Callable[[ToggleableWidget], None]]" = None,
-        prefix: "Tuple[str, str]" = ("☐", "☑"),
+        prefix: "tuple[str, str]" = ("☐", "☑"),
         style: "str" = "",
         selected: "bool" = False,
         disabled: "FilterOrBool" = False,
@@ -438,7 +438,7 @@ class ExpandingBufferControl(BufferControl):
     def __init__(
         self,
         buffer: "Optional[Buffer]" = None,
-        input_processors: "Optional[List[Processor]]" = None,
+        input_processors: "Optional[list[Processor]]" = None,
         include_default_input_processors: "bool" = True,
         lexer: "Optional[Lexer]" = None,
         preview_search: "FilterOrBool" = False,
@@ -492,7 +492,7 @@ class Text:
         expand: "FilterOrBool" = True,
         width: "Optional[int]" = None,
         completer: "Optional[Completer]" = None,
-        options: "Optional[Union[List[str], Callable[[], List[str]]]]" = None,
+        options: "Optional[Union[list[str], Callable[[], list[str]]]]" = None,
         show_borders: "Optional[BorderVisibility]" = None,
         on_text_changed: "Optional[Callable[[Buffer], None]]" = None,
         validation: "Optional[Callable[[str], bool]]" = None,
@@ -755,7 +755,7 @@ class ProgressControl(UIControl):
         """Determine the height of the progress-bar depending on its orientation."""
         return min(max_available_height, 10) if self.vertical() else 1
 
-    def render(self, width: "int", height: "int") -> "List[StyleAndTextTuples]":
+    def render(self, width: "int", height: "int") -> "list[StyleAndTextTuples]":
         """Render the progressbar at a given size as lines of formatted text."""
         vertical = self.vertical()
         length = height if vertical else width
@@ -869,10 +869,10 @@ class SelectableWidget(metaclass=ABCMeta):
 
     def __init__(
         self,
-        options: "List[Any]",
+        options: "list[Any]",
         labels: "Optional[Sequence[AnyFormattedText]]" = None,
         index: "int" = 0,
-        indices: "Optional[List[int]]" = None,
+        indices: "Optional[list[int]]" = None,
         multiple: "FilterOrBool" = False,
         on_change: "Optional[Callable[[SelectableWidget], None]]" = None,
         style: "Union[str, Callable[[], str]]" = "",
@@ -892,10 +892,10 @@ class SelectableWidget(metaclass=ABCMeta):
                 widget to be disabled
         """
         self.options = options
-        self.labels: "List[AnyFormattedText]" = list(
+        self.labels: "list[AnyFormattedText]" = list(
             labels or (str(option) for option in options)
         )
-        self.mask: "List[bool]" = [False for _ in self.options]
+        self.mask: "list[bool]" = [False for _ in self.options]
         if indices is None:
             indices = [index]
         self.indices = indices
@@ -991,12 +991,12 @@ class SelectableWidget(metaclass=ABCMeta):
         self.indices = [value]
 
     @property
-    def indices(self) -> "List[int]":
+    def indices(self) -> "list[int]":
         """Return a list of the selected indices."""
         return [i for i, m in enumerate(self.mask) if m]
 
     @indices.setter
-    def indices(self, values: "Tuple[int]") -> "None":
+    def indices(self, values: "tuple[int]") -> "None":
         """Set the selected indices."""
         self.mask = [i in values for i in range(len(self.options))]
 
@@ -1044,15 +1044,15 @@ class Select(SelectableWidget):
 
     def __init__(
         self,
-        options: "List[Any]",
+        options: "list[Any]",
         labels: "Optional[Sequence[AnyFormattedText]]" = None,
         index: "int" = 0,
-        indices: "Optional[List[int]]" = None,
+        indices: "Optional[list[int]]" = None,
         multiple: "FilterOrBool" = False,
         on_change: "Optional[Callable[[SelectableWidget], None]]" = None,
         style: "Union[str, Callable[[], str]]" = "",
         rows: "Optional[int]" = 3,
-        prefix: "Tuple[str, str]" = ("", ""),
+        prefix: "tuple[str, str]" = ("", ""),
         border: "Optional[GridStyle]" = InnerEdgeGridStyle,
         show_borders: "Optional[BorderVisibility]" = None,
         disabled: "FilterOrBool" = False,
@@ -1149,10 +1149,10 @@ class Dropdown(SelectableWidget):
 
     def __init__(
         self,
-        options: "List[Any]",
+        options: "list[Any]",
         labels: "Optional[Sequence[AnyFormattedText]]" = None,
         index: "int" = 0,
-        indices: "Optional[List[int]]" = None,
+        indices: "Optional[list[int]]" = None,
         multiple: "FilterOrBool" = False,
         on_change: "Optional[Callable[[SelectableWidget], None]]" = None,
         style: "Union[str, Callable[[], str]]" = "",
@@ -1318,10 +1318,10 @@ class ToggleButtons(SelectableWidget):
 
     def __init__(
         self,
-        options: "List[Any]",
+        options: "list[Any]",
         labels: "Optional[Sequence[AnyFormattedText]]" = None,
         index: "int" = 0,
-        indices: "Optional[List[int]]" = None,
+        indices: "Optional[list[int]]" = None,
         multiple: "FilterOrBool" = False,
         on_change: "Optional[Callable[[SelectableWidget], None]]" = None,
         style: "Union[str, Callable[[], str]]" = "",
@@ -1438,7 +1438,7 @@ class SliderControl(UIControl):
         self.selected_handle = 0
         self.track_len = 0
 
-        self.mouse_handlers: "Dict[int, Callable[..., NotImplementedOrNone]]" = {}
+        self.mouse_handlers: "dict[int, Callable[..., NotImplementedOrNone]]" = {}
         self.dragging = False
         self.repeat_task: "Optional[asyncio.Task[None]]" = None
 
@@ -1649,10 +1649,10 @@ class SliderControl(UIControl):
 
         return kb
 
-    def render_lines(self, width: "int", height: "int") -> "List[StyleAndTextTuples]":
+    def render_lines(self, width: "int", height: "int") -> "list[StyleAndTextTuples]":
         """Generate formatted text fragments to display the slider."""
         ft = []
-        mouse_handlers: "List[Callable[..., NotImplementedOrNone]]" = []
+        mouse_handlers: "list[Callable[..., NotImplementedOrNone]]" = []
 
         vertical = self.slider.vertical()
         size = height if vertical else width
@@ -1759,10 +1759,10 @@ class Slider(SelectableWidget):
 
     def __init__(
         self,
-        options: "List[Any]",
+        options: "list[Any]",
         labels: "Optional[Sequence[AnyFormattedText]]" = None,
         index: "int" = 0,
-        indices: "Optional[List[int]]" = None,
+        indices: "Optional[list[int]]" = None,
         multiple: "FilterOrBool" = False,
         on_change: "Optional[Callable[[SelectableWidget], None]]" = None,
         style: "Union[str, Callable[[], str]]" = "",
@@ -1770,7 +1770,7 @@ class Slider(SelectableWidget):
         show_borders: "Optional[BorderVisibility]" = None,
         vertical: "FilterOrBool" = False,
         show_arrows: "FilterOrBool" = True,
-        arrows: "Tuple[AnyFormattedText, AnyFormattedText]" = ("-", "+"),
+        arrows: "tuple[AnyFormattedText, AnyFormattedText]" = ("-", "+"),
         show_readout: "FilterOrBool" = True,
         disabled: "FilterOrBool" = False,
     ) -> "None":
@@ -1864,7 +1864,7 @@ class Slider(SelectableWidget):
             return True
         return False
 
-    def validate_readout(self, text: "str") -> "Optional[List[Any]]":
+    def validate_readout(self, text: "str") -> "Optional[list[Any]]":
         """Confirm the value entered in the readout is value."""
         values = [value.strip() for value in text.split("-")]
         valid_values = []
@@ -1883,7 +1883,7 @@ class Slider(SelectableWidget):
                 return None
         return valid_values
 
-    def readout_text(self, indices: "List[int]") -> "str":
+    def readout_text(self, indices: "list[int]") -> "str":
         """Return the readout text area value."""
         return " - ".join(map(str, (self.options[i] for i in indices)))
 

@@ -1,5 +1,7 @@
 """Defines editor key-bindings and commands for input completions."""
 
+from __future__ import annotations
+
 import logging
 
 from prompt_toolkit.application import get_app

@@ -1,5 +1,7 @@
 """Defines the base class for a Comm object and it's representation."""
 
+from __future__ import annotations
+
 import logging
 from abc import ABCMeta, abstractmethod
 from typing import TYPE_CHECKING
@@ -9,7 +11,7 @@ from euporie.core.app import get_app
 from euporie.core.widgets.display import Display
 
 if TYPE_CHECKING:
-    from typing import Any, Callable, Dict, Optional, Sequence
+    from typing import Any, Callable, Optional, Sequence
 
     from prompt_toolkit.layout.containers import AnyContainer
 
@@ -27,7 +29,7 @@ class CommView:
     def __init__(
         self,
         container: "AnyContainer",
-        setters: "Optional[Dict[str, Callable[..., None]]]" = None,
+        setters: "Optional[dict[str, Callable[..., None]]]" = None,
     ) -> "None":
         """Creates a new instance of the Comm vieew.
 
@@ -40,7 +42,7 @@ class CommView:
         self.setters = setters or {}
         self.kernel: "Optional[Kernel]" = None
 
-    def update(self, changes: "Dict[str, Any]") -> "None":
+    def update(self, changes: "dict[str, Any]") -> "None":
         """Updates the view to reflect changes in the Comm.
 
         Calls any setter functions defined for the changed keys with the changed values
@@ -80,16 +82,16 @@ class Comm(metaclass=ABCMeta):
         """
         self.comm_container = comm_container
         self.comm_id = comm_id
-        self.data: "Dict[str, Any]" = {}
+        self.data: "dict[str, Any]" = {}
         self.buffers: "Sequence[bytes]" = []
         self.views: "WeakKeyDictionary[CommView, OutputParent]" = WeakKeyDictionary()
         self.process_data(data, buffers)
 
     @abstractmethod
-    def process_data(self, data: "Dict", buffers: "Sequence[bytes]") -> "None":
+    def process_data(self, data: "dict", buffers: "Sequence[bytes]") -> "None":
         """Processes a comm_msg data / buffers."""
 
-    def _get_embed_state(self) -> "Dict":
+    def _get_embed_state(self) -> "dict":
         return {}
 
     def create_view(self, parent: "OutputParent") -> "CommView":
@@ -102,7 +104,7 @@ class Comm(metaclass=ABCMeta):
         self.views[view] = parent
         return view
 
-    def update_views(self, changes: "Dict") -> "None":
+    def update_views(self, changes: "dict") -> "None":
         """Update all the active views of this Comm."""
         for view, parent in self.views.items():
             view.update(changes)
@@ -113,6 +115,6 @@ class Comm(metaclass=ABCMeta):
 class UnimplementedComm(Comm):
     """Represents a Comm object which is not implemented in euporie.core."""
 
-    def process_data(self, data: "Dict", buffers: "Sequence[bytes]") -> "None":
+    def process_data(self, data: "dict", buffers: "Sequence[bytes]") -> "None":
         """Does nothing when data is received."""
         return None

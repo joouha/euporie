@@ -1,5 +1,7 @@
 """Defines editor key-bindings and commands for the micro editing mode."""
 
+from __future__ import annotations
+
 import logging
 import re
 from functools import partial
@@ -63,7 +65,7 @@ from euporie.core.key_binding.registry import (
 )
 
 if TYPE_CHECKING:
-    from typing import Dict, List, Optional, Tuple, Union
+    from typing import Optional, Union
 
     from prompt_toolkit.key_binding import KeyBindingsBase, KeyPressEvent
 
@@ -459,7 +461,7 @@ def wrap_selection_cmd(left: "str", right: "str") -> "None":
     buffer.selection_state = selection_state
 
 
-WRAP_PAIRS: "Dict[str, List[str]]" = {
+WRAP_PAIRS: "dict[str, list[str]]" = {
     "code": [
         '""',
         "''",
@@ -807,7 +809,7 @@ def unshift_move(event: "KeyPressEvent") -> "None":
         return
 
     # the other keys are handled through their readline command
-    key_to_command: "Dict[Tuple[Union[Keys, str], ...], str]" = {
+    key_to_command: "dict[tuple[Union[Keys, str], ...], str]" = {
         (Keys.ShiftLeft,): "move-cursor-left",
         (Keys.ShiftRight,): "move-cursor-right",
         (Keys.ShiftHome,): "go-to-start-of-line",

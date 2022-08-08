@@ -1,5 +1,7 @@
 """Defines widget for defining layouts."""
 
+from __future__ import annotations
+
 import logging
 from abc import ABCMeta, abstractmethod
 from functools import partial
@@ -32,7 +34,7 @@ from euporie.core.border import OuterEdgeGridStyle
 from euporie.core.widgets.decor import Border, BorderVisibility
 
 if TYPE_CHECKING:
-    from typing import Any, Callable, Dict, List, Optional, Sequence, Type, Union
+    from typing import Any, Callable, Optional, Sequence, Type, Union
 
     from prompt_toolkit.filters import FilterOrBool
     from prompt_toolkit.formatted_text.base import AnyFormattedText, StyleAndTextTuples
@@ -102,12 +104,12 @@ class ReferencedSplit:
         self.children = list(children)
 
     @property
-    def children(self) -> "List[AnyContainer]":
+    def children(self) -> "list[AnyContainer]":
         """Convert the referenced children to containers."""
         return self._children
 
     @children.setter
-    def children(self, children: "List[AnyContainer]") -> "None":
+    def children(self, children: "list[AnyContainer]") -> "None":
         """Set the containers children."""
         self._children = children
         self.container.children = [to_container(x) for x in self._children]
@@ -157,13 +159,13 @@ class TabBarControl(UIControl):
         self.closeable = closeable
         self._active = active
 
-        self.mouse_handlers: "Dict[int, Optional[Callable[..., Any]]]" = {}
+        self.mouse_handlers: "dict[int, Optional[Callable[..., Any]]]" = {}
 
         self._title_cache: SimpleCache = SimpleCache(maxsize=1)
         self._content_cache: SimpleCache = SimpleCache(maxsize=50)
 
     @property
-    def tabs(self) -> "List[TabBarTab]":
+    def tabs(self) -> "list[TabBarTab]":
         """Return the tab-bar's tabs."""
         if callable(self._tabs):
             return list(self._tabs())
@@ -219,7 +221,7 @@ class TabBarControl(UIControl):
         key = (hash(tuple(self.tabs)), width, self.closeable, self.active)
         return self._content_cache.get(key, get_content)
 
-    def render(self, width: "int") -> "List[StyleAndTextTuples]":
+    def render(self, width: "int") -> "list[StyleAndTextTuples]":
         """Render the tab-bar as linest of formatted text."""
         top_line: "StyleAndTextTuples" = []
         tab_line: "StyleAndTextTuples" = []
@@ -383,7 +385,7 @@ class StackedSplit(metaclass=ABCMeta):
                     pass
 
     @property
-    def children(self) -> "List[AnyContainer]":
+    def children(self) -> "list[AnyContainer]":
         """Return a list of the widget's child containers."""
         return self._children
 
@@ -398,7 +400,7 @@ class StackedSplit(metaclass=ABCMeta):
         return self.children[self.active or 0]
 
     @property
-    def titles(self) -> "List[AnyFormattedText]":
+    def titles(self) -> "list[AnyFormattedText]":
         """Return the titles of the child containers."""
         return self._titles
 
@@ -458,7 +460,7 @@ class TabbedSplit(StackedSplit):
         if self.active is not None:
             self.control.active = self.active
 
-    def load_tabs(self) -> "List[TabBarTab]":
+    def load_tabs(self) -> "list[TabBarTab]":
         """Return a list of tabs for the current children."""
         return [
             TabBarTab(

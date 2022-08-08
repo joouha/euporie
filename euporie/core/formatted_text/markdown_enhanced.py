@@ -1,5 +1,7 @@
 """Add enhanced display capabilities the the markdown renderer."""
 
+from __future__ import annotations
+
 from math import ceil
 from typing import TYPE_CHECKING
 

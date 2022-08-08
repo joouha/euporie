@@ -19,7 +19,7 @@ from jupyter_core.paths import jupyter_path
 from euporie.core.config import add_setting
 
 if TYPE_CHECKING:
-    from typing import Any, Callable, Coroutine, Dict, Optional, Tuple, Union
+    from typing import Any, Callable, Coroutine, Optional, Union
 
     from jupyter_client import KernelClient
 
@@ -34,13 +34,13 @@ class MsgCallbacks(TypedDict, total=False):
 
     get_input: "Callable[[str, bool], None]|None"
     set_execution_count: "Callable[[int], None]|None"
-    add_output: "Callable[[Dict[str, Any]], None]|None"
+    add_output: "Callable[[dict[str, Any]], None]|None"
     clear_output: "Callable[[bool], None]|None"
-    done: "Callable[[Dict[str, Any]], None]|None"
-    set_metadata: "Callable[[Tuple[str, ...], Any], None]|None"
+    done: "Callable[[dict[str, Any]], None]|None"
+    set_metadata: "Callable[[tuple[str, ...], Any], None]|None"
     set_status: "Callable[[str], None]|None"
-    set_kernel_info: "Callable[[Dict[str, Any]], None]|None"
-    completeness_status: "Callable[[Dict[str, Any]], None]|None"
+    set_kernel_info: "Callable[[dict[str, Any]], None]|None"
+    completeness_status: "Callable[[dict[str, Any]], None]|None"
 
 
 class Kernel:
@@ -92,7 +92,7 @@ class Kernel:
         self._status = "stopped"
         self.error: "Optional[Exception]" = None
 
-        self.coros: "Dict[str, concurrent.futures.Future]" = {}
+        self.coros: "dict[str, concurrent.futures.Future]" = {}
         self.poll_tasks: "list[asyncio.Task]" = []
 
         self.default_callbacks = MsgCallbacks(
@@ -109,7 +109,7 @@ class Kernel:
         if default_callbacks is not None:
             self.default_callbacks.update(default_callbacks)
 
-        self.msg_id_callbacks: "Dict[str, MsgCallbacks]" = defaultdict(
+        self.msg_id_callbacks: "dict[str, MsgCallbacks]" = defaultdict(
             # Return a copy of the default callbacks
             lambda: MsgCallbacks(dict(self.default_callbacks))  # type: ignore # mypy #8890
         )
@@ -371,7 +371,7 @@ class Kernel:
             else:
                 self.on_unhandled(channel, rsp)
 
-    def on_unhandled(self, channel: "str", rsp: "Dict[str, Any]") -> "None":
+    def on_unhandled(self, channel: "str", rsp: "dict[str, Any]") -> "None":
         """Report unhandled messages to the debug log."""
         log.debug(
             "Unhandled %s message:\nparent_id = '%s'\ntype = '%s'\ncontent='%s'",
@@ -381,7 +381,7 @@ class Kernel:
             rsp.get("content"),
         )
 
-    def on_stdin_input_request(self, rsp: "Dict[str, Any]") -> "None":
+    def on_stdin_input_request(self, rsp: "dict[str, Any]") -> "None":
         """Call ``get_input`` callback for a stdin input request message."""
         msg_id = rsp.get("parent_header", {}).get("msg_id")
         content = rsp.get("content", {})
@@ -391,7 +391,7 @@ class Kernel:
                 content.get("password", False),
             )
 
-    def on_shell_status(self, rsp: "Dict[str, Any]") -> "None":
+    def on_shell_status(self, rsp: "dict[str, Any]") -> "None":
         """Call ``set_execution_count`` callback for a shell status response."""
         msg_id = rsp.get("parent_header", {}).get("msg_id")
         content = rsp.get("content", {})
@@ -404,7 +404,7 @@ class Kernel:
             ):
                 set_execution_count(content.get("execution_count"))
 
-    def on_shell_execute_reply(self, rsp: "Dict[str, Any]") -> "None":
+    def on_shell_execute_reply(self, rsp: "dict[str, Any]") -> "None":
         """Call callbacks for a shell execute reply response."""
         msg_id = rsp.get("parent_header", {}).get("msg_id")
         content = rsp.get("content", {})
@@ -436,7 +436,7 @@ class Kernel:
             if callable(done := self.msg_id_callbacks[msg_id].get("done")):
                 done(content)
 
-    def on_shell_kernel_info_reply(self, rsp: "Dict[str, Any]") -> "None":
+    def on_shell_kernel_info_reply(self, rsp: "dict[str, Any]") -> "None":
         """Call callbacks for a shell kernel info response."""
         msg_id = rsp.get("parent_header", {}).get("msg_id")
         if callable(
@@ -444,25 +444,25 @@ class Kernel:
         ):
             set_kernel_info(rsp.get("content", {}))
 
-    def on_shell_complete_reply(self, rsp: "Dict[str, Any]") -> "None":
+    def on_shell_complete_reply(self, rsp: "dict[str, Any]") -> "None":
         """Call callbacks for a shell completion reply response."""
         msg_id = rsp.get("parent_header", {}).get("msg_id")
         if callable(done := self.msg_id_callbacks[msg_id].get("done")):
             done(rsp.get("content", {}))
 
-    def on_shell_history_reply(self, rsp: "Dict[str, Any]") -> "None":
+    def on_shell_history_reply(self, rsp: "dict[str, Any]") -> "None":
         """Call callbacks for a shell history reply response."""
         msg_id = rsp.get("parent_header", {}).get("msg_id")
         if callable(done := self.msg_id_callbacks[msg_id].get("done")):
             done(rsp.get("content", {}))
 
-    def on_shell_inspect_reply(self, rsp: "Dict[str, Any]") -> "None":
+    def on_shell_inspect_reply(self, rsp: "dict[str, Any]") -> "None":
         """Call callbacks for a shell inspection reply response."""
         msg_id = rsp.get("parent_header", {}).get("msg_id")
         if callable(done := self.msg_id_callbacks[msg_id].get("done")):
             done(rsp.get("content", {}))
 
-    def on_shell_is_complete_reply(self, rsp: "Dict[str, Any]") -> "None":
+    def on_shell_is_complete_reply(self, rsp: "dict[str, Any]") -> "None":
         """Call callbacks for a shell completeness reply response."""
         msg_id = rsp.get("parent_header", {}).get("msg_id")
         if callable(
@@ -472,7 +472,7 @@ class Kernel:
         ):
             completeness_status(rsp.get("content", {}))
 
-    def on_iopub_status(self, rsp: "Dict[str, Any]") -> "None":
+    def on_iopub_status(self, rsp: "dict[str, Any]") -> "None":
         """Call callbacks for an iopub status response."""
         msg_id = rsp.get("parent_header", {}).get("msg_id")
         status = rsp.get("content", {}).get("execution_state")
@@ -499,7 +499,7 @@ class Kernel:
                     rsp["header"]["date"].isoformat(),
                 )
 
-    def on_iopub_execute_input(self, rsp: "Dict[str, Any]") -> "None":
+    def on_iopub_execute_input(self, rsp: "dict[str, Any]") -> "None":
         """Call callbacks for an iopub execute input response."""
         msg_id = rsp.get("parent_header", {}).get("msg_id")
         if callable(set_metadata := self.msg_id_callbacks[msg_id]["set_metadata"]):
@@ -508,19 +508,19 @@ class Kernel:
                 rsp["header"]["date"].isoformat(),
             )
 
-    def on_iopub_display_data(self, rsp: "Dict[str, Any]") -> "None":
+    def on_iopub_display_data(self, rsp: "dict[str, Any]") -> "None":
         """Call callbacks for an iopub display data response."""
         msg_id = rsp.get("parent_header", {}).get("msg_id")
         if callable(add_output := self.msg_id_callbacks[msg_id]["add_output"]):
             add_output(nbformat.v4.output_from_msg(rsp))
 
-    def on_iopub_update_display_data(self, rsp: "Dict[str, Any]") -> "None":
+    def on_iopub_update_display_data(self, rsp: "dict[str, Any]") -> "None":
         """Call callbacks for an iopub update display data response."""
         msg_id = rsp.get("parent_header", {}).get("msg_id")
         if callable(add_output := self.msg_id_callbacks[msg_id]["add_output"]):
             add_output(nbformat.v4.output_from_msg(rsp))
 
-    def on_iopub_execute_result(self, rsp: "Dict[str, Any]") -> "None":
+    def on_iopub_execute_result(self, rsp: "dict[str, Any]") -> "None":
         """Call callbacks for an iopub execute result response."""
         msg_id = rsp.get("parent_header", {}).get("msg_id")
         if callable(add_output := self.msg_id_callbacks[msg_id]["add_output"]):
@@ -531,7 +531,7 @@ class Kernel:
         ):
             set_execution_count(rsp.get("content", {}).get("execution_count"))
 
-    def on_iopub_error(self, rsp: "Dict[str, Dict[str, Any]]") -> "None":
+    def on_iopub_error(self, rsp: "dict[str, dict[str, Any]]") -> "None":
         """Call callbacks for an iopub error response."""
         msg_id = rsp.get("parent_header", {}).get("msg_id", "")
         if callable(add_output := self.msg_id_callbacks[msg_id].get("add_output")):
@@ -539,13 +539,13 @@ class Kernel:
         if callable(done := self.msg_id_callbacks[msg_id].get("done")):
             done(rsp.get("content", {}))
 
-    def on_iopub_stream(self, rsp: "Dict[str, Any]") -> "None":
+    def on_iopub_stream(self, rsp: "dict[str, Any]") -> "None":
         """Call callbacks for an iopub stream response."""
         msg_id = rsp.get("parent_header", {}).get("msg_id")
         if callable(add_output := self.msg_id_callbacks[msg_id]["add_output"]):
             add_output(nbformat.v4.output_from_msg(rsp))
 
-    def on_iopub_clear_output(self, rsp: "Dict[str, Any]") -> "None":
+    def on_iopub_clear_output(self, rsp: "dict[str, Any]") -> "None":
         """Call callbacks for an iopub clear output response."""
         # Clear cell output, either now or when we get the next output
         msg_id = rsp.get("parent_header", {}).get("msg_id")
@@ -553,14 +553,14 @@ class Kernel:
             clear_output(rsp.get("content", {}).get("wait", False))
 
     '''
-    def on_iopub_comm_info_reply(self, rsp: "Dict[str, Any]") -> "None":
+    def on_iopub_comm_info_reply(self, rsp: "dict[str, Any]") -> "None":
         """Call callbacks for an comm open response."""
         self.kernel_tab.comm_open(
             content=rsp.get("content", {}), buffers=rsp.get("buffers", [])
         )
     '''
 
-    def on_iopub_comm_open(self, rsp: "Dict[str, Any]") -> "None":
+    def on_iopub_comm_open(self, rsp: "dict[str, Any]") -> "None":
         """Call callbacks for an comm open response."""
         # TODO
         # "If the target_name key is not found on the receiving side, then it should
@@ -570,19 +570,19 @@ class Kernel:
             content=rsp.get("content", {}), buffers=rsp.get("buffers", [])
         )
 
-    def on_iopub_comm_msg(self, rsp: "Dict[str, Any]") -> "None":
+    def on_iopub_comm_msg(self, rsp: "dict[str, Any]") -> "None":
         """Call callbacks for an iopub comm message response."""
         self.kernel_tab.comm_msg(
             content=rsp.get("content", {}), buffers=rsp.get("buffers", [])
         )
 
-    def on_iopub_comm_close(self, rsp: "Dict[str, Any]") -> "None":
+    def on_iopub_comm_close(self, rsp: "dict[str, Any]") -> "None":
         """Call callbacks for an iopub comm close response."""
         self.kernel_tab.comm_close(
             content=rsp.get("content", {}), buffers=rsp.get("buffers", [])
         )
 
-    def kc_comm(self, comm_id: "str", data: "Dict[str, Any]") -> "str":
+    def kc_comm(self, comm_id: "str", data: "dict[str, Any]") -> "str":
         """Send a comm message on the shell channel."""
         content = {
             "comm_id": comm_id,
@@ -618,10 +618,10 @@ class Kernel:
         source: "str",
         get_input: "Optional[Callable[[str, bool], None]]" = None,
         set_execution_count: "Optional[Callable[[int], None]]" = None,
-        add_output: "Optional[Callable[[Dict[str, Any]], None]]" = None,
+        add_output: "Optional[Callable[[dict[str, Any]], None]]" = None,
         clear_output: "Optional[Callable[[bool], None]]" = None,
-        done: "Optional[Callable[[Dict[str, Any]], None]]" = None,
-        set_metadata: "Optional[Callable[[Tuple[str, ...], Any], None]]" = None,
+        done: "Optional[Callable[[dict[str, Any]], None]]" = None,
+        set_metadata: "Optional[Callable[[tuple[str, ...], Any], None]]" = None,
         set_status: "Optional[Callable[[str], None]]" = None,
     ) -> "None":
         """Runs the code cell and and set the response callbacks, optionally waiting."""
@@ -634,7 +634,7 @@ class Kernel:
             allow_stdin=self.allow_stdin,
         )
 
-        def wrapped_done(content: "Dict[str, Any]") -> "None":
+        def wrapped_done(content: "dict[str, Any]") -> "None":
             """Sets the event after the ``done`` callback has completed."""
             # Run the original callback
             if callable(done):
@@ -669,7 +669,7 @@ class Kernel:
 
     def info(
         self,
-        set_kernel_info: "Optional[Callable[[Dict[str, Any]], None]]" = None,
+        set_kernel_info: "Optional[Callable[[dict[str, Any]], None]]" = None,
         set_status: "Optional[Callable[[str], None]]" = None,
     ) -> "None":
         """Request information about the kernel."""
@@ -697,7 +697,7 @@ class Kernel:
 
         event = asyncio.Event()
 
-        def process_complete_reply(content: "Dict[str, Any]") -> "None":
+        def process_complete_reply(content: "dict[str, Any]") -> "None":
             """Process response messages on the ``shell`` channel."""
             status = content.get("status", "")
             if status == "ok":
@@ -773,7 +773,7 @@ class Kernel:
 
         event = asyncio.Event()
 
-        def process_history_reply(content: "Dict[str, Any]") -> "None":
+        def process_history_reply(content: "dict[str, Any]") -> "None":
             """Process responses on the shell channel."""
             status = content.get("status", "")
             if status == "ok":
@@ -830,7 +830,7 @@ class Kernel:
 
         event = asyncio.Event()
 
-        def process_inspect_reply(content: "Dict[str, Any]") -> "None":
+        def process_inspect_reply(content: "dict[str, Any]") -> "None":
             """Process responses on the shell channel."""
             status = content.get("status", "")
             if status == "ok":
@@ -879,16 +879,16 @@ class Kernel:
         self,
         code: "str",
         timeout: "Union[int, float]" = 0.1,
-    ) -> "Dict[str, Any]":
+    ) -> "dict[str, Any]":
         """Ask the kernel to determine if code is complete asynchronously."""
-        result: "Dict[str, Any]" = {}
+        result: "dict[str, Any]" = {}
 
         if not self.kc:
             return result
 
         event = asyncio.Event()
 
-        def process_is_complete_reply(content: "Dict[str, Any]") -> "None":
+        def process_is_complete_reply(content: "dict[str, Any]") -> "None":
             """Process responses on the shell channel."""
             result.update(content)
             event.set()
@@ -911,7 +911,7 @@ class Kernel:
         timeout: "Union[int, float]" = 0.1,
         wait: "bool" = False,
         callback: "Optional[Callable[[dict[str, Any]], None]]" = None,
-    ) -> "Dict[str, Any]":
+    ) -> "dict[str, Any]":
         """Request code completeness status from the kernel.
 
         Args:

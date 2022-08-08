@@ -1,5 +1,7 @@
 """Utility functions for formatting key-bindings."""
 
+from __future__ import annotations
+
 from typing import TYPE_CHECKING
 
 from prompt_toolkit.key_binding.key_bindings import _parse_key
@@ -7,12 +9,12 @@ from prompt_toolkit.key_binding.key_bindings import _parse_key
 from euporie.core.keys import Keys
 
 if TYPE_CHECKING:
-    from typing import Dict, List, Tuple, Union
+    from typing import Union
 
     from euporie.core.key_binding.registry import AnyKeys
 
 
-KEY_ALIASES: "Dict[Union[str, Keys], str]" = {
+KEY_ALIASES: "dict[Union[str, Keys], str]" = {
     Keys.ControlH: "backspace",
     Keys.ControlM: "enter",
     Keys.ControlI: "tab",
@@ -21,9 +23,9 @@ KEY_ALIASES: "Dict[Union[str, Keys], str]" = {
 }
 
 
-def parse_keys(keys: "AnyKeys") -> "List[Tuple[Union[str, Keys], ...]]":
+def parse_keys(keys: "AnyKeys") -> "list[tuple[Union[str, Keys], ...]]":
     """Parse a list of keys."""
-    output: "List[Tuple[Union[str, Keys], ...]]" = []
+    output: "list[tuple[Union[str, Keys], ...]]" = []
     if not isinstance(keys, list):
         keys = [keys]
     for key in keys:
@@ -46,12 +48,12 @@ def _format_key_str(key: "str") -> "str":
     return key.title()
 
 
-def format_keys(keys: "List[Tuple[Union[str, Keys], ...]]") -> "List[str]":
+def format_keys(keys: "list[tuple[Union[str, Keys], ...]]") -> "list[str]":
     """Converts a list of tuples of keys to a string."""
-    s: "List[str]" = []
+    s: "list[str]" = []
 
     # Add duplicate key aliases to the list
-    keys_: "List[Tuple[Union[str, Keys], ...]]" = []
+    keys_: "list[tuple[Union[str, Keys], ...]]" = []
     for key in keys:
         if len(key) == 1 and key[0] in KEY_ALIASES:
             keys_.append((KEY_ALIASES[key[0]],))

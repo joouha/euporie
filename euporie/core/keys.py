@@ -1,5 +1,7 @@
 """Defines KeyBindings wrapper which keeps track of key binding descriptions."""
 
+from __future__ import annotations
+
 from aenum import extend_enum
 from prompt_toolkit.input.ansi_escape_sequences import ANSI_SEQUENCES
 from prompt_toolkit.keys import Keys

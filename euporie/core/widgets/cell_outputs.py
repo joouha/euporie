@@ -1,5 +1,7 @@
 """Contains a container for the cell output area."""
 
+from __future__ import annotations
+
 import logging
 from abc import ABCMeta, abstractmethod
 from pathlib import PurePath
@@ -14,7 +16,7 @@ from euporie.core.convert.base import MIME_FORMATS, find_route
 from euporie.core.widgets.display import Display
 
 if TYPE_CHECKING:
-    from typing import Any, Dict, List, Optional, Protocol, Tuple, TypeVar
+    from typing import Any, Optional, Protocol, TypeVar
 
     from prompt_toolkit.layout.containers import AnyContainer
 
@@ -44,7 +46,7 @@ class CellOutputElement(metaclass=ABCMeta):
         self,
         mime: "str",
         data: "Any",
-        metadata: "Dict",
+        metadata: "dict",
         parent: "Optional[OutputParent]",
     ) -> "None":
         """Create a new instances of the output element.
@@ -79,7 +81,7 @@ class CellOutputDataElement(CellOutputElement):
         self,
         mime: "str",
         data: "Any",
-        metadata: "Dict",
+        metadata: "dict",
         parent: "Optional[OutputParent]",
     ) -> "None":
         """Create a new data output element instance.
@@ -153,8 +155,8 @@ class CellOutputWidgetElement(CellOutputElement):
     def __init__(
         self,
         mime: "str",
-        data: "Dict[str, Any]",
-        metadata: "Dict",
+        data: "dict[str, Any]",
+        metadata: "dict",
         parent: "Optional[OutputParent]",
     ) -> "None":
         """Create a new widget output element instance.
@@ -208,7 +210,7 @@ MIME_ORDER = [
 ]
 
 
-def _calculate_mime_rank(mime_data: "Tuple[str, Any]") -> "int":
+def _calculate_mime_rank(mime_data: "tuple[str, Any]") -> "int":
     """Scores the richness of mime output types."""
     mime, data = mime_data
     for i, ranked_mime in enumerate(MIME_ORDER):
@@ -232,7 +234,7 @@ class CellOutput:
     """
 
     def __init__(
-        self, json: "Dict[str, Any]", parent: "Optional[OutputParent]"
+        self, json: "dict[str, Any]", parent: "Optional[OutputParent]"
     ) -> "None":
         """Creates a new cell output instance.
 
@@ -244,10 +246,10 @@ class CellOutput:
         self.parent = parent
         self.json = json
         self.selected_mime = next(x for x in self.data)
-        self._elements: "Dict[str, CellOutputElement]" = {}
+        self._elements: "dict[str, CellOutputElement]" = {}
 
     @property
-    def data(self) -> "Dict[str, Any]":
+    def data(self) -> "dict[str, Any]":
         """Return dictionary of mime types and data for this output.
 
         This generates similarly structured data objects for markdown cells and text
@@ -341,7 +343,7 @@ class CellOutputArea:
 
     def __init__(
         self,
-        json: "List[Dict[str, Any]]",
+        json: "list[dict[str, Any]]",
         parent: "Optional[OutputParent]",
         style: "str" = "",
     ) -> "None":
@@ -353,13 +355,13 @@ class CellOutputArea:
             style: Additional style to apply to the output
 
         """
-        self._json: "List[Dict[str, Any]]" = []
+        self._json: "list[dict[str, Any]]" = []
         self.parent = parent
         self.style = style
 
-        self.display_json: "List[Dict[str, Any]]" = []
+        self.display_json: "list[dict[str, Any]]" = []
 
-        self.rendered_outputs: "List[CellOutput]" = []
+        self.rendered_outputs: "list[CellOutput]" = []
         self.container = HSplit([], style=lambda: self.style)
 
         self.json = json
@@ -381,7 +383,7 @@ class CellOutputArea:
         get_app().invalidate()
 
     def add_output(
-        self, output_json: "Dict[str, Any]", refresh: "bool" = True
+        self, output_json: "dict[str, Any]", refresh: "bool" = True
     ) -> "None":
         """Add a new output to the output area."""
         # Update json

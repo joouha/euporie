@@ -1,5 +1,7 @@
 """Dialogs."""
 
+from __future__ import annotations
+
 import logging
 import traceback
 from abc import ABCMeta, abstractmethod
@@ -39,7 +41,7 @@ from euporie.core.widgets.decor import Border, FocusedStyle
 from euporie.core.widgets.forms import Button, Select, Text
 
 if TYPE_CHECKING:
-    from typing import Any, Callable, Dict, List, Optional
+    from typing import Any, Callable, Optional
 
     from prompt_toolkit.buffer import Buffer
     from prompt_toolkit.formatted_text.base import StyleAndTextTuples
@@ -85,8 +87,8 @@ class Dialog(Float, metaclass=ABCMeta):
 
         # Set default body & buttons
         self.body: "AnyContainer" = Window()
-        self.buttons: "Dict[str, Optional[Callable]]" = {"OK": None}
-        self.button_widgets: "List[AnyContainer]" = []
+        self.buttons: "dict[str, Optional[Callable]]" = {"OK": None}
+        self.button_widgets: "list[AnyContainer]" = []
 
         # Create key-bindings
         self.kb = KeyBindings()
@@ -443,7 +445,7 @@ class SelectKernelDialog(Dialog):
 
     def load(
         self,
-        kernel_specs: "Optional[Dict[str, Any]]" = None,
+        kernel_specs: "Optional[dict[str, Any]]" = None,
         tab: "Optional[KernelTab]" = None,
         message: "str" = "",
     ) -> "None":

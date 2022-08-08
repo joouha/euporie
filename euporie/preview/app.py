@@ -1,5 +1,7 @@
 """Concerns dumping output."""
 
+from __future__ import annotations
+
 import io
 import logging
 import os
@@ -19,7 +21,7 @@ from euporie.core.key_binding.registry import register_bindings
 from euporie.preview.tabs.notebook import PreviewNotebook
 
 if TYPE_CHECKING:
-    from typing import IO, Any, Dict, List, Optional, TextIO, Type, Union
+    from typing import IO, Any, Optional, TextIO, Type, Union
 
     from prompt_toolkit.application.application import _AppResult
     from prompt_toolkit.layout.containers import Float
@@ -81,7 +83,7 @@ class PreviewApp(BaseApp):
     def __init__(self, **kwargs: "Any") -> "None":
         """Create an app for dumping a prompt-toolkit layout."""
         # Initialise the application
-        app_kwargs: "Dict[str, Any]" = {
+        app_kwargs: "dict[str, Any]" = {
             "leave_graphics": True,
             "full_screen": False,
             "max_render_postpone_time": 0,
@@ -127,7 +129,7 @@ class PreviewApp(BaseApp):
         """Returns a container with all opened tabs."""
         return FloatContainer(
             DynamicContainer(lambda: self.tab or Window()),
-            floats=cast("List[Float]", self.floats),
+            floats=cast("list[Float]", self.floats),
         )
 
     def cleanup_closed_tab(self, tab: "Tab") -> "None":

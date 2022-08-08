@@ -1,10 +1,12 @@
 """Defines the state of the micro editing mode."""
 
+from __future__ import annotations
+
 from enum import Enum
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from typing import List, Optional
+    from typing import Optional
 
     from prompt_toolkit.key_binding.key_processor import KeyPress
 
@@ -22,8 +24,8 @@ class MicroState:
 
     def __init__(self) -> "None":
         """Initiates the editing mode state."""
-        self.macro: "Optional[List[KeyPress]]" = []
-        self.current_recording: "Optional[List[KeyPress]]" = None
+        self.macro: "Optional[list[KeyPress]]" = []
+        self.current_recording: "Optional[list[KeyPress]]" = None
         self.input_mode: "MicroInputMode" = MicroInputMode.INSERT
 
     def reset(self) -> "None":

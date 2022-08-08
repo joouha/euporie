@@ -22,7 +22,7 @@ from prompt_toolkit.layout.screen import Char, Screen, WritePosition
 from euporie.core.border import BorderVisibility, Thin
 
 if TYPE_CHECKING:
-    from typing import Callable, List, Optional, Union
+    from typing import Callable, Optional, Union
 
     from prompt_toolkit.layout.containers import AnyContainer
 
@@ -407,6 +407,6 @@ class FocusedStyle(Container):
         else:
             return ""
 
-    def get_children(self) -> "List[Container]":
+    def get_children(self) -> "list[Container]":
         """Return the list of child :class:`.Container` objects."""
         return [to_container(self.body)]

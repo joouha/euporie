@@ -1,7 +1,9 @@
 """Contains a markdown to formatted text parser."""
 
+from __future__ import annotations
+
 from random import randint
-from typing import TYPE_CHECKING, Callable, Dict, List, Optional
+from typing import TYPE_CHECKING, Callable, Optional
 from warnings import warn
 
 from prompt_toolkit.application.current import get_app_session
@@ -300,7 +302,7 @@ def img(
 
 # Maps HTML tag names to formatting functions. Functionality can be extended by
 # modifying this dictionary
-TAG_RULES: Dict[
+TAG_RULES: dict[
     str,
     Callable[
         [StyleAndTextTuples, int, int, "Token"],
@@ -378,7 +380,7 @@ class Markdown:
             )
 
     def render(
-        self, tokens: List["Token"], width: int = 80, left: int = 0
+        self, tokens: list["Token"], width: int = 80, left: int = 0
     ) -> "StyleAndTextTuples":
         """Render a list of parsed markdown tokens.
 
@@ -445,7 +447,7 @@ class Markdown:
 
     def render_block(
         self,
-        tokens: List["Token"],
+        tokens: list["Token"],
         width: int,
         left: int = 0,
     ) -> "StyleAndTextTuples":
@@ -494,7 +496,7 @@ class Markdown:
 
     def render_ordered_list(
         self,
-        tokens: List["Token"],
+        tokens: list["Token"],
         width: int,
         left: int = 0,
     ) -> "StyleAndTextTuples":
@@ -520,7 +522,7 @@ class Markdown:
 
     def render_table(
         self,
-        tokens: List["Token"],
+        tokens: list["Token"],
         width: int,
         left: int = 0,
         border: "GridStyle" = Thin.grid,

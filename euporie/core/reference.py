@@ -1,5 +1,7 @@
 """Contains data reference dictionaries for value lookups."""
 
+from __future__ import annotations
+
 NAMED_COLORS = {
     "aliceblue": "#f0f8ff",
     "antiquewhite": "#faebd7",

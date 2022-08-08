@@ -21,7 +21,7 @@ from euporie.core.key_binding.registry import register_bindings
 from euporie.core.style import DEFAULT_COLORS
 
 if TYPE_CHECKING:
-    from typing import Any, Dict, Optional, Type, Union
+    from typing import Any, Optional, Type, Union
 
     from prompt_toolkit.input import Input
     from prompt_toolkit.input.vt100 import Vt100Input
@@ -234,7 +234,7 @@ class Colors(TerminalQuery):
     def _cmd(self) -> "str":
         return tmuxify(self.cmd)
 
-    def verify(self, data: "str") -> "Dict[str, str]":
+    def verify(self, data: "str") -> "dict[str, str]":
         """Verifies the response contains a colour."""
         if match := self.pattern.match(data):
             if colors := match.groupdict():

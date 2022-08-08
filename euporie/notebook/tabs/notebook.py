@@ -58,16 +58,7 @@ from euporie.notebook.filters import (
 )
 
 if TYPE_CHECKING:
-    from typing import (
-        Any,
-        Deque,
-        Dict,
-        List,
-        MutableSequence,
-        Optional,
-        Sequence,
-        Tuple,
-    )
+    from typing import Any, Deque, MutableSequence, Optional, Sequence
 
     from prompt_toolkit.formatted_text.base import AnyFormattedText
 
@@ -96,9 +87,9 @@ class Notebook(BaseNotebook):
         app: "BaseApp",
         path: "Optional[UPath]" = None,
         kernel: "Optional[Kernel]" = None,
-        comms: "Optional[Dict[str, Comm]]" = None,
+        comms: "Optional[dict[str, Comm]]" = None,
         use_kernel_history: "bool" = True,
-        json: "Optional[Dict[str, Any]]" = None,
+        json: "Optional[dict[str, Any]]" = None,
     ) -> "None":
         """Load a editable notebook."""
         super().__init__(
@@ -113,8 +104,8 @@ class Notebook(BaseNotebook):
         self.edit_mode = False
         self.in_edit_mode = Condition(self.check_edit_mode)
         self.multiple_cells_selected = multiple_cells_selected
-        self.clipboard: "List[Cell]" = []
-        self.undo_buffer: "Deque[Tuple[int, List[Cell]]]" = deque(maxlen=10)
+        self.clipboard: "list[Cell]" = []
+        self.undo_buffer: "Deque[tuple[int, list[Cell]]]" = deque(maxlen=10)
 
         if not kernel:
             self.kernel.start(cb=self.kernel_started, wait=False)
@@ -131,7 +122,7 @@ class Notebook(BaseNotebook):
 
     def statusbar_fields(
         self,
-    ) -> "Tuple[Sequence[AnyFormattedText], Sequence[AnyFormattedText]]":
+    ) -> "tuple[Sequence[AnyFormattedText], Sequence[AnyFormattedText]]":
         """Generates the formatted text for the statusbar."""
         return (
             [
@@ -150,11 +141,11 @@ class Notebook(BaseNotebook):
     # Notebook stuff
 
     @property
-    def selected_indices(self) -> "List[int]":
+    def selected_indices(self) -> "list[int]":
         """Return a list of the currently selected cell indices."""
         return self.page.selected_indices
 
-    def kernel_started(self, result: "Optional[Dict[str, Any]]" = None) -> "None":
+    def kernel_started(self, result: "Optional[dict[str, Any]]" = None) -> "None":
         """Run when the kernel has started."""
         super().kernel_started(result)
         if not self.kernel_name or self.kernel.missing:

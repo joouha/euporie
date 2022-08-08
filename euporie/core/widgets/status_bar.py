@@ -1,5 +1,7 @@
 """Defines a status-bar widget."""
 
+from __future__ import annotations
+
 from typing import TYPE_CHECKING
 
 from prompt_toolkit.filters.utils import to_filter

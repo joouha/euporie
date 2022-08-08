@@ -52,7 +52,7 @@ from euporie.core.widgets.page import PrintingContainer
 from euporie.core.widgets.pager import PagerState
 
 if TYPE_CHECKING:
-    from typing import Any, Callable, Dict, List, Optional, Sequence
+    from typing import Any, Callable, Optional, Sequence
 
     from prompt_toolkit.application.application import Application
     from prompt_toolkit.formatted_text import AnyFormattedText, StyleAndTextTuples
@@ -106,7 +106,7 @@ class Console(KernelTab):
 
         super().__init__(app=app, path=path, use_kernel_history=use_kernel_history)
 
-        self.lang_info: "Dict[str, Any]" = {}
+        self.lang_info: "dict[str, Any]" = {}
         self.execution_count = 0
         self.clear_outputs_on_output = False
 
@@ -194,7 +194,7 @@ class Console(KernelTab):
         ):
             del self.json["cells"][0]
 
-    def new_output(self, output_json: "Dict[str, Any]") -> "None":
+    def new_output(self, output_json: "dict[str, Any]") -> "None":
         """Print the previous output and replace it with the new one."""
         # Clear the output if we were previously asked to
         if self.clear_outputs_on_output:
@@ -239,7 +239,7 @@ class Console(KernelTab):
         if self.app.config.mouse_support is None:
             self.app.need_mouse_support = False
 
-    def complete(self, content: "Dict" = None) -> "None":
+    def complete(self, content: "dict" = None) -> "None":
         """Re-render any changes."""
         self.app.invalidate()
 
@@ -313,7 +313,7 @@ class Console(KernelTab):
         self.output_layout = Layout(
             FloatContainer(
                 output_area,
-                floats=cast("List[Float]", self.app.graphics),
+                floats=cast("list[Float]", self.app.graphics),
             )
         )
 

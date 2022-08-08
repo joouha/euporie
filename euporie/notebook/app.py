@@ -50,7 +50,7 @@ from euporie.notebook.tabs import Notebook
 if TYPE_CHECKING:
     from asyncio import AbstractEventLoop
     from os import PathLike
-    from typing import Any, Callable, Dict, List, Optional, Type
+    from typing import Any, Callable, Optional, Type
 
     from prompt_toolkit.formatted_text import StyleAndTextTuples
     from prompt_toolkit.layout.containers import AnyContainer, Float
@@ -243,12 +243,12 @@ class NotebookApp(BaseApp):
                     ),
                 ]
             ),
-            floats=cast("List[Float]", self.floats),
+            floats=cast("list[Float]", self.floats),
         )
 
         return self.container
 
-    def tab_bar_tabs(self) -> "List[TabBarTab]":
+    def tab_bar_tabs(self) -> "list[TabBarTab]":
         """Return a list of the current tabs for the tab-bar."""
         return [
             TabBarTab(
@@ -260,7 +260,7 @@ class NotebookApp(BaseApp):
         ]
 
     def _handle_exception(
-        self, loop: "AbstractEventLoop", context: "Dict[str, Any]"
+        self, loop: "AbstractEventLoop", context: "dict[str, Any]"
     ) -> "None":
         exception = context.get("exception")
         # Also display a dialog to the user

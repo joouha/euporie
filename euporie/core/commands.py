@@ -1,5 +1,7 @@
 """Defines a command object for use in key-bindings, menus, and the command palette."""
 
+from __future__ import annotations
+
 import logging
 import weakref
 from inspect import isawaitable, signature
@@ -14,17 +16,7 @@ from euporie.core.key_binding.utils import parse_keys
 from euporie.core.keys import Keys
 
 if TYPE_CHECKING:
-    from typing import (
-        Any,
-        Callable,
-        Coroutine,
-        Dict,
-        List,
-        Optional,
-        Sequence,
-        Tuple,
-        Union,
-    )
+    from typing import Any, Callable, Coroutine, List, Optional, Sequence, Tuple, Union
 
     from prompt_toolkit.filters import Filter, FilterOrBool
     from prompt_toolkit.key_binding.key_bindings import (
@@ -40,7 +32,7 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 
-commands: "Dict[str, Command]" = {}
+commands: "dict[str, Command]" = {}
 
 
 class Command:
@@ -107,7 +99,7 @@ class Command:
         self.save_before = save_before
         self.record_in_macro = to_filter(record_in_macro)
 
-        self.keys: "List[Tuple[Union[str, Keys], ...]]" = []
+        self.keys: "list[tuple[Union[str, Keys], ...]]" = []
 
         self.selected_item = 0
         self.children: "Sequence[MenuItem]" = []

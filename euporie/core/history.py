@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 from prompt_toolkit.history import History
 
 if TYPE_CHECKING:
-    from typing import AsyncGenerator, Iterable, List
+    from typing import AsyncGenerator, Iterable
 
     from euporie.core.kernel import Kernel
 
@@ -70,6 +70,6 @@ class KernelHistory(History):
         pass
 
     @property
-    def recent(self) -> "List[str]":
+    def recent(self) -> "list[str]":
         """Return new items added since history was initially loaded."""
         return self._loaded_strings[: -self.n_loaded]

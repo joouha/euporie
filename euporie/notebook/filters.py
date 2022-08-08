@@ -1,4 +1,7 @@
 """Defines filters used in the notebook app."""
+
+from __future__ import annotations
+
 from prompt_toolkit.filters import Condition
 
 from euporie.core.app import get_app

@@ -21,7 +21,7 @@ from euporie.core.kernel import Kernel, MsgCallbacks
 from euporie.core.suggest import HistoryAutoSuggest
 
 if TYPE_CHECKING:
-    from typing import Any, Callable, Deque, Dict, Optional, Sequence, Tuple
+    from typing import Any, Callable, Deque, Optional, Sequence
 
     from prompt_toolkit.auto_suggest import AutoSuggest
     from prompt_toolkit.completion.base import Completer
@@ -51,7 +51,7 @@ class Tab(metaclass=ABCMeta):
 
     def statusbar_fields(
         self,
-    ) -> "Tuple[Sequence[AnyFormattedText], Sequence[AnyFormattedText]]":
+    ) -> "tuple[Sequence[AnyFormattedText], Sequence[AnyFormattedText]]":
         """Returns a list of statusbar field values shown then this tab is active."""
         return ([], [])
 
@@ -93,7 +93,7 @@ class KernelTab(Tab, metaclass=ABCMeta):
 
     kernel: "Kernel"
     kernel_language: "str"
-    _metadata: "Dict[str, Any]"
+    _metadata: "dict[str, Any]"
 
     default_callbacks: "MsgCallbacks"
     allow_stdin: "bool"
@@ -103,7 +103,7 @@ class KernelTab(Tab, metaclass=ABCMeta):
         app: "BaseApp",
         path: "Optional[UPath]" = None,
         kernel: "Optional[Kernel]" = None,
-        comms: "Optional[Dict[str, Comm]]" = None,
+        comms: "Optional[dict[str, Comm]]" = None,
         use_kernel_history: "bool" = False,
     ) -> "None":
         """Create a new instance of a tab with a kernel."""
@@ -118,7 +118,7 @@ class KernelTab(Tab, metaclass=ABCMeta):
                 allow_stdin=self.allow_stdin,
                 default_callbacks=self.default_callbacks,
             )
-        self.comms: "Dict[str, Comm]" = comms or {}  # The client-side comm states
+        self.comms: "dict[str, Comm]" = comms or {}  # The client-side comm states
         self.completer: "Completer" = KernelCompleter(self.kernel)
         self.use_kernel_history = use_kernel_history
         self.history: "History" = (
@@ -140,7 +140,7 @@ class KernelTab(Tab, metaclass=ABCMeta):
         else:
             self.kernel.restart()
 
-    def kernel_started(self, result: "Optional[Dict[str, Any]]" = None) -> "None":
+    def kernel_started(self, result: "Optional[dict[str, Any]]" = None) -> "None":
         """Tasks to run when the kernel has started."""
         # Check kernel has not failed
         if not self.kernel_name or self.kernel.missing or self.kernel.status == "error":
@@ -175,7 +175,7 @@ class KernelTab(Tab, metaclass=ABCMeta):
             pass
 
     @property
-    def metadata(self) -> "Dict[str, Any]":
+    def metadata(self) -> "dict[str, Any]":
         """Return a dictionary to hold notebook / kernel metadata."""
         return self._metadata
 
@@ -231,20 +231,20 @@ class KernelTab(Tab, metaclass=ABCMeta):
             tab=self, message=msg, kernel_specs=kernel_specs
         )
 
-    def comm_open(self, content: "Dict", buffers: "Sequence[bytes]") -> "None":
+    def comm_open(self, content: "dict", buffers: "Sequence[bytes]") -> "None":
         """Register a new kernel Comm object in the notebook."""
         comm_id = str(content.get("comm_id"))
         self.comms[comm_id] = open_comm(
             comm_container=self, content=content, buffers=buffers
         )
 
-    def comm_msg(self, content: "Dict", buffers: "Sequence[bytes]") -> "None":
+    def comm_msg(self, content: "dict", buffers: "Sequence[bytes]") -> "None":
         """Respond to a Comm message from the kernel."""
         comm_id = str(content.get("comm_id"))
         if comm := self.comms.get(comm_id):
             comm.process_data(content.get("data", {}), buffers)
 
-    def comm_close(self, content: "Dict", buffers: "Sequence[bytes]") -> "None":
+    def comm_close(self, content: "dict", buffers: "Sequence[bytes]") -> "None":
         """Close a notebook Comm."""
         comm_id = content.get("comm_id")
         if comm_id in self.comms:

@@ -31,7 +31,7 @@ from euporie.core.widgets.cell_outputs import CellOutputArea
 from euporie.core.widgets.inputs import KernelInput, StdInput
 
 if TYPE_CHECKING:
-    from typing import Any, Callable, Dict, List, Literal, Optional, Tuple
+    from typing import Any, Callable, Literal, Optional
 
     from prompt_toolkit.buffer import Buffer
     from prompt_toolkit.key_binding.key_bindings import NotImplementedOrNone
@@ -181,7 +181,7 @@ class ClickToFocus(Container):
 
         return output
 
-    def get_children(self) -> "List[Container]":
+    def get_children(self) -> "list[Container]":
         """Return the list of child :class:`.Container` objects."""
         return [to_container(self.body)]
 
@@ -578,7 +578,7 @@ class Cell:
         self.input_box.buffer.cursor_position = cp
 
     @property
-    def output_json(self) -> "List[Dict[str, Any]]":
+    def output_json(self) -> "list[dict[str, Any]]":
         """Retrieve a list of cell outputs from the cell's JSON."""
         if self.cell_type == "markdown":
             return [
@@ -594,7 +594,7 @@ class Cell:
         if now:
             get_app().invalidate()
 
-    def ran(self, content: "Dict" = None) -> "None":
+    def ran(self, content: "dict" = None) -> "None":
         """Callback which runs when the cell has finished running."""
         self.state = "idle"
         self.refresh()
@@ -691,7 +691,7 @@ class Cell:
         """Set the execution count of the cell."""
         self.json["execution_count"] = n
 
-    def add_output(self, output_json: "Dict[str, Any]") -> "None":
+    def add_output(self, output_json: "dict[str, Any]") -> "None":
         """Add a new output to the cell."""
         # Clear the output if we were previously asked to
         if self.clear_outputs_on_output:
@@ -709,7 +709,7 @@ class Cell:
         else:
             self.remove_outputs()
 
-    def set_metadata(self, path: "Tuple[str, ...]", data: "Any") -> "None":
+    def set_metadata(self, path: "tuple[str, ...]", data: "Any") -> "None":
         """Sets a value in the metadata at an arbitrary path.
 
         Args:

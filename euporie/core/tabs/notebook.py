@@ -20,7 +20,7 @@ from euporie.core.utils import parse_path
 from euporie.core.widgets.cell import Cell, get_cell_id
 
 if TYPE_CHECKING:
-    from typing import Any, Callable, Dict, List, Optional
+    from typing import Any, Callable, Optional
 
     from prompt_toolkit.filters import Filter
     from prompt_toolkit.layout.containers import AnyContainer
@@ -44,9 +44,9 @@ class BaseNotebook(KernelTab, metaclass=ABCMeta):
         app: "BaseApp",
         path: "Optional[UPath]" = None,
         kernel: "Optional[Kernel]" = None,
-        comms: "Optional[Dict[str, Comm]]" = None,
+        comms: "Optional[dict[str, Comm]]" = None,
         use_kernel_history: "bool" = False,
-        json: "Optional[Dict[str, Any]]" = None,
+        json: "Optional[dict[str, Any]]" = None,
     ):
         """Instantiate a Notebook container, using a notebook at a given path.
 
@@ -102,11 +102,11 @@ class BaseNotebook(KernelTab, metaclass=ABCMeta):
     # KernelTab stuff
 
     @property
-    def metadata(self) -> "Dict[str, Any]":
+    def metadata(self) -> "dict[str, Any]":
         """Return a dictionary to hold notebook / kernel metadata."""
         return self.json.setdefault("metadata", {})
 
-    def kernel_started(self, result: "Optional[Dict[str, Any]]" = None) -> "None":
+    def kernel_started(self, result: "Optional[dict[str, Any]]" = None) -> "None":
         """Tasks to run when the kernel has started."""
         super().kernel_started(result)
 
@@ -118,7 +118,7 @@ class BaseNotebook(KernelTab, metaclass=ABCMeta):
         self.app.invalidate()
 
     @property
-    def selected_indices(self) -> "List[int]":
+    def selected_indices(self) -> "list[int]":
         """Return a list of the currently selected cell indices."""
         return []
 

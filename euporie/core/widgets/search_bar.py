@@ -1,6 +1,5 @@
 """Defines the global search toolbar and related search functions."""
 
-
 from __future__ import annotations
 
 import logging
@@ -20,7 +19,7 @@ from euporie.core.key_binding.registry import (
 )
 
 if TYPE_CHECKING:
-    from typing import List, Optional
+    from typing import Optional
 
     from prompt_toolkit.buffer import Buffer
     from prompt_toolkit.filters import FilterOrBool
@@ -80,7 +79,7 @@ def start_global_search(
     else:
         return
     # Find all searchable controls
-    searchable_controls: "List[BufferControl]" = []
+    searchable_controls: "list[BufferControl]" = []
     next_control_index = 0
     for control in layout.find_all_controls():
         # Find the index of the next searchable control so we can link the search

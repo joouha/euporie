@@ -1,5 +1,7 @@
 """Defines default key-bindings."""
 
+from __future__ import annotations
+
 from typing import TYPE_CHECKING
 
 from prompt_toolkit.key_binding import KeyBindings
@@ -20,10 +22,10 @@ if TYPE_CHECKING:
 
     KeyBindingDefs = Dict[str, AnyKeys]
 
-BINDINGS: "Dict[str, KeyBindingDefs]" = {}
+BINDINGS: "dict[str, KeyBindingDefs]" = {}
 
 
-def register_bindings(bindings: "Dict[str, KeyBindingDefs]") -> "None":
+def register_bindings(bindings: "dict[str, KeyBindingDefs]") -> "None":
     """Updates the key-binding registry."""
     for group, items in bindings.items():
         if group not in BINDINGS:

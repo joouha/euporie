@@ -1,5 +1,7 @@
 """Contains a container for the cell output area."""
 
+from __future__ import annotations
+
 import logging
 from pathlib import PurePath
 from typing import TYPE_CHECKING, NamedTuple
@@ -25,7 +27,7 @@ from euporie.core.widgets.decor import Line
 from euporie.core.widgets.display import Display
 
 if TYPE_CHECKING:
-    from typing import Any, Dict, Optional
+    from typing import Any, Optional
 
     from prompt_toolkit.layout.dimension import AnyDimension
 
@@ -46,8 +48,8 @@ class PagerOutputDataElement(CellOutputDataElement):
     def __init__(
         self,
         mime: "str",
-        data: "Dict[str, Any]",
-        metadata: "Dict",
+        data: "dict[str, Any]",
+        metadata: "dict",
         parent: "Optional[OutputParent]",
     ) -> "None":
         """Create a new data output element instance.

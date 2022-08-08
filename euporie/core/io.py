@@ -1,12 +1,14 @@
 """Defines custom inputs and outputs, and related methods."""
 
+from __future__ import annotations
+
 from typing import TYPE_CHECKING
 
 from prompt_toolkit.data_structures import Size
 from prompt_toolkit.input.base import DummyInput, _dummy_context_manager
 
 if TYPE_CHECKING:
-    from typing import Any, Callable, ContextManager, Optional, Tuple
+    from typing import Any, Callable, ContextManager, Optional
 
     from prompt_toolkit.data_structures import Point
 
@@ -30,7 +32,7 @@ def patch_renderer_diff() -> "None":
 
     def _patched_output_screen_diff(
         *args: "Any", **kwargs: "Any"
-    ) -> "Tuple[Point, Optional[str]]":
+    ) -> "tuple[Point, Optional[str]]":
         """Function used to monkey-patch the renderer to extend the application height."""
         # Remove ZWE from screen
         # from collections import defaultdict

@@ -1,11 +1,14 @@
 """Contains a registry of Comm target classes."""
+
+from __future__ import annotations
+
 from typing import TYPE_CHECKING
 
 from euporie.core.comm.base import UnimplementedComm
 from euporie.core.comm.ipywidgets import open_comm_ipywidgets
 
 if TYPE_CHECKING:
-    from typing import Any, Dict, Sequence
+    from typing import Any, Sequence
 
     from euporie.core.comm.base import Comm, KernelTab
 
@@ -14,7 +17,7 @@ TARGET_CLASSES = {"jupyter.widget": open_comm_ipywidgets}
 
 def open_comm(
     comm_container: "KernelTab",
-    content: "Dict[str, Any]",
+    content: "dict[str, Any]",
     buffers: "Sequence[bytes]",
 ) -> "Comm":
     """Creates a new object respsenting a Comm.

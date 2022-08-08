@@ -1,5 +1,7 @@
 """Allows drawing tables as :class:`FormattedText`."""
 
+from __future__ import annotations
+
 from collections import defaultdict
 from functools import partial
 from itertools import tee, zip_longest
@@ -30,17 +32,7 @@ from euporie.core.formatted_text.utils import (
 )
 
 if TYPE_CHECKING:
-    from typing import (
-        Any,
-        Iterable,
-        Iterator,
-        List,
-        Optional,
-        Sequence,
-        Tuple,
-        TypeVar,
-        Union,
-    )
+    from typing import Any, Iterable, Iterator, Optional, Sequence, TypeVar, Union
 
     from prompt_toolkit.formatted_text.base import (
         AnyFormattedText,
@@ -51,7 +43,7 @@ if TYPE_CHECKING:
     PairT = TypeVar("PairT")
 
 
-def pairwise(iterable: "Iterable[PairT]") -> "Iterator[Tuple[PairT, PairT]]":
+def pairwise(iterable: "Iterable[PairT]") -> "Iterator[tuple[PairT, PairT]]":
     """Returns successiver overlapping pairs from an iterable."""
     a, b = tee(iterable)
     next(b, None)
@@ -342,7 +334,7 @@ class RowCol:
         self.style = style
 
     @property
-    def cells(self) -> "List[Cell]":
+    def cells(self) -> "list[Cell]":
         """Lists the cells in the row/column."""
         return [self._cells[i] for i in range(len(self._cells))]
 
@@ -366,7 +358,7 @@ class RowCol:
             self.table.sync_cols_to_rows()
 
     @property
-    def widths(self) -> "List[int]":
+    def widths(self) -> "list[int]":
         """A list of the width of cell (excluding horizontal padding)."""
         return [cell.width for cell in self.cells]
 
@@ -379,7 +371,7 @@ class RowCol:
             return 0
 
     @property
-    def total_widths(self) -> "List[int]":
+    def total_widths(self) -> "list[int]":
         """A list of cell widths (including horizontal padding)."""
         return [cell.total_width for cell in self.cells]
 
@@ -584,12 +576,12 @@ class Table:
         self._set_padding(padding)
 
     @property
-    def rows(self) -> "List[Row]":
+    def rows(self) -> "list[Row]":
         """A list of rows in the table."""
         return [self._rows[i] for i in range(len(self._rows))]
 
     @property
-    def cols(self) -> "List[Col]":
+    def cols(self) -> "list[Col]":
         """A list of columns in the table."""
         return [self._cols[i] for i in range(len(self._cols))]
 
@@ -631,7 +623,7 @@ class Table:
 
     def calculate_col_widths(
         self, width: "int", min_col_width: "int" = 7
-    ) -> "List[int]":
+    ) -> "list[int]":
         """Calculate column widths given the available space.
 
         Reduce the widest column until we fit in available width, or expand cells to
@@ -647,7 +639,7 @@ class Table:
         """
         col_widths = [col.max_total_width for col in self.cols]
 
-        def total_width(col_widths: "List[int]") -> "int":
+        def total_width(col_widths: "list[int]") -> "int":
             return sum(col_widths) + len(self.cols) + 1
 
         if self.expand:
@@ -698,7 +690,7 @@ class Table:
         self,
         row_above: "Optional[Row]",
         row_below: "Optional[Row]",
-        col_widths: "List[int]",
+        col_widths: "list[int]",
     ) -> "StyleAndTextTuples":
         """Draws a border line separating two rows in the table."""
         output: "StyleAndTextTuples" = []
@@ -736,7 +728,7 @@ class Table:
     def draw_table_row(
         self,
         row: "Optional[RowCol]",
-        col_widths: "List[int]",
+        col_widths: "list[int]",
     ) -> "StyleAndTextTuples":
         """Draws a row in the table."""
         output: "StyleAndTextTuples" = []
@@ -749,7 +741,7 @@ class Table:
                 borders = [("", "")] * len(borders)
 
             def _calc_cell_width(
-                cell: "Cell", col: "int", col_widths: "List[int]"
+                cell: "Cell", col: "int", col_widths: "list[int]"
             ) -> "int":
                 """Calculate a cell's width."""
                 width = 0

@@ -1,11 +1,13 @@
 """Defines border styles."""
 
+from __future__ import annotations
+
 from enum import Enum
 from functools import total_ordering
 from typing import TYPE_CHECKING, NamedTuple
 
 if TYPE_CHECKING:
-    from typing import Dict, List, Optional
+    from typing import Optional
 
 
 class GridPart(Enum):
@@ -58,7 +60,7 @@ class Mask:
     Masks can be combined to construct more complex masks.
     """
 
-    def __init__(self, mask: "Dict[GridPart, DirectionFlags]") -> "None":
+    def __init__(self, mask: "dict[GridPart, DirectionFlags]") -> "None":
         """Create a new grid mask.
 
         Args:
@@ -185,7 +187,7 @@ class LineStyle:
         """
         self.name = name
         self.rank = rank
-        self.children: "Dict[str, LineStyle]" = {}
+        self.children: "dict[str, LineStyle]" = {}
         self.parent = parent
         if parent:
             parent.children[name] = self
@@ -212,7 +214,7 @@ class LineStyle:
         else:
             raise AttributeError(f"No such attribute `{value}`")
 
-    def __dir__(self) -> "List[str]":
+    def __dir__(self) -> "list[str]":
         """Lists the public attributes."""
         return [x for x in Masks.__dict__ if not x.startswith("_")]
 
@@ -643,7 +645,7 @@ class GridStyle:
         key = getattr(GridPart, value)
         return grid_char(self.grid[key])
 
-    def __dir__(self) -> "List":
+    def __dir__(self) -> "list":
         """List the public attributes of the grid style."""
         return [x.name for x in GridPart] + ["TOP", "MID", "SPLIT", "BOTTOM"]
 

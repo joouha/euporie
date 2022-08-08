@@ -1,5 +1,7 @@
 """Modify the KeyProcessor to remove any timeout after an escape key press."""
 
+from __future__ import annotations
+
 import asyncio
 import logging
 from typing import TYPE_CHECKING

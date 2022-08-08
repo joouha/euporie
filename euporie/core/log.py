@@ -25,7 +25,7 @@ from euporie.core.style import LOG_STYLE
 
 if TYPE_CHECKING:
     from types import TracebackType
-    from typing import Any, Callable, Dict, Optional, TextIO, Type
+    from typing import Any, Callable, Optional, TextIO, Type
 
     from prompt_toolkit.formatted_text.base import StyleAndTextTuples
 
@@ -36,7 +36,7 @@ log = logging.getLogger(__name__)
 LOG_QUEUE: "deque" = deque(maxlen=1000)
 
 
-def dict_merge(target_dict: "Dict", input_dict: "Dict") -> "None":
+def dict_merge(target_dict: "dict", input_dict: "dict") -> "None":
     """Merge the second dictionary onto the first."""
     for k in input_dict:
         if k in target_dict:
