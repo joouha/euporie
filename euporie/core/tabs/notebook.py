@@ -112,7 +112,7 @@ class BaseNotebook(KernelTab, metaclass=ABCMeta):
 
     # Notebook stuff
 
-    def set_status(self, status: "Dict[str, Any]") -> "None":
+    def set_status(self, status: "str") -> "None":
         """Called when kernel status changes."""
         self.cell.set_status(status)
         self.app.invalidate()
