@@ -102,11 +102,11 @@ class NotebookApp(BaseApp):
             [
                 [
                     ("", "Press "),
-                    ("bold", get_cmd("new-notebook").key_str),
+                    ("bold", get_cmd("new-notebook").key_str()),
                     ("", " to start a new notebook"),
                 ],
             ],
-            [[("", "Press "), ("bold", get_cmd("quit").key_str), ("", " to quit")]],
+            [[("", "Press "), ("bold", get_cmd("quit").key_str()), ("", " to quit")]],
         )
 
     def get_file_tab(self, path: "PathLike") -> "Type[Tab]":

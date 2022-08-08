@@ -192,5 +192,6 @@ class HubApp(BaseApp):
             .. warning::
 
                This option is dangerous, as arbitrary code can be executed through
+               euporie apps.
         """,
     )

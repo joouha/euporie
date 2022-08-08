@@ -13,7 +13,6 @@ from prompt_toolkit.formatted_text.utils import (
     to_plain_text,
 )
 from prompt_toolkit.key_binding.key_bindings import KeyBindings
-from prompt_toolkit.keys import Keys
 from prompt_toolkit.layout.containers import (
     ConditionalContainer,
     Container,
@@ -29,7 +28,7 @@ from euporie.core.app import get_app
 from euporie.core.border import HalfBlockOuterGridStyle
 
 if TYPE_CHECKING:
-    from typing import Any, Callable, Iterable, Optional, Sequence, Union
+    from typing import Any, Callable, Iterable, Optional, Sequence
 
     from prompt_toolkit.filters import Filter, FilterOrBool
     from prompt_toolkit.formatted_text.base import (
@@ -61,7 +60,7 @@ class MenuItem:
         separator: "bool" = False,
         handler: "Optional[Callable[[], None]]" = None,
         children: "Optional[list[MenuItem]]" = None,
-        shortcut: "Optional[Sequence[Union[Keys, str]]]" = None,
+        shortcut: "AnyFormattedText" = "",
         hidden: "FilterOrBool" = False,
         disabled: "FilterOrBool" = False,
         toggled: "Optional[Filter]" = None,
@@ -208,7 +207,8 @@ class MenuItem:
         if self.children:
             suffix.append(("", "›"))
         elif self.shortcut is not None:
-            suffix.append(("class:menu,shortcut", f"  {self.shortcut}"))
+            suffix += [("class:menu", "  ")]
+            suffix += to_formatted_text(self.shortcut, style="class:menu,shortcut")
         return suffix
 
     @property

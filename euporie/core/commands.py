@@ -173,7 +173,6 @@ class Command:
                 )
             )
 
-    @property
     def key_str(self) -> "str":
         """Return a string representing the first registered key-binding."""
         from euporie.core.key_binding.utils import format_keys
