@@ -30,6 +30,7 @@ from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.layout.layout import Layout
 
 from euporie.core.commands import add_cmd, get_cmd
+from euporie.core.config import add_setting
 from euporie.core.filters import (
     at_end_of_buffer,
     buffer_is_code,
@@ -187,6 +188,11 @@ class Console(KernelTab):
         self.json["cells"].append(
             nbformat.v4.new_code_cell(source=text, execution_count=self.execution_count)
         )
+        if (
+            self.app.config.max_stored_outputs
+            and len(self.json["cells"]) > self.app.config.max_stored_outputs
+        ):
+            del self.json["cells"][0]
 
     def new_output(self, output_json: "Dict[str, Any]") -> "None":
         """Print the previous output and replace it with the new one."""
@@ -603,6 +609,21 @@ class Console(KernelTab):
             kt.restart_kernel()
 
     # ################################### Settings ####################################
+
+    add_setting(
+        name="max_stored_outputs",
+        flags=["--max-stored-outputs"],
+        type_=int,
+        help_="The number of inputs / outputs to store in an in-memory notebook",
+        default=100,
+        schema={
+            "minimum": 0,
+        },
+        description="""
+            Defines the maximum number of executed "cells" to store in case the console
+            session is saved to a file or converted into a notebook.
+        """,
+    )
 
     # ################################# Key Bindings ##################################
 
