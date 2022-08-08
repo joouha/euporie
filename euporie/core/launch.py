@@ -38,7 +38,7 @@ class CoreApp:
         type_=str,
         required=False,
         help_="The application to launch",
-        choices=list(
+        choices=sorted(
             {entry.name for entry in entry_points()["euporie.apps"]} - {"launch"}
             | APP_ALIASES.keys()
         ),
