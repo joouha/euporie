@@ -43,6 +43,7 @@ def format_parser(
 ) -> "str":
     """Formats a parser's arguments as RST."""
     s = ""
+
     # s = "\n"
     # s += ("*" * len(title)) + "\n" + title + "\n" + ("*" * len(title)) + "\n\n"
     # s += description or dedent(parser.description or "").strip()
@@ -50,7 +51,9 @@ def format_parser(
 
     s += "\nUsage\n=====\n\n"
     s += ".. code-block:: console\n\n"
-    s += indent("$ " + parser.format_usage().removeprefix("usage: "), "   ")
+    usage = parser.format_usage()
+    usage = usage[usage.startswith("usage: ") and len("usage: ") :]
+    s += indent(f"$ {usage}", "   ")
     s += "\n"
 
     positionals = [action for action in parser._actions if not action.option_strings]

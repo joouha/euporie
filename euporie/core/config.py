@@ -76,7 +76,9 @@ class BooleanOptionalAction(argparse.Action):
             setattr(namespace, self.dest, not option_string.startswith("--no-"))
 
 
-TYPE_ACTIONS: "Dict[Type[Any], Type[argparse.Action]]" = {bool: BooleanOptionalAction}
+TYPE_ACTIONS: "Dict[Callable[[Any], Any], Type[argparse.Action]]" = {
+    bool: BooleanOptionalAction
+}
 
 
 class JSONEncoderPlus(json.JSONEncoder):
@@ -330,7 +332,7 @@ class Setting:
         default: "Any",
         help_: "str",
         description: "str",
-        type_: "Optional[Type[Any]]" = None,
+        type_: "Optional[Callable[[Any], Any]]" = None,
         title: "Optional[str]" = None,
         choices: "Optional[List[Any]]" = None,
         action: "Optional[Union[argparse.Action,str]]" = None,
@@ -503,7 +505,7 @@ def add_setting(
     default: "Any",
     help_: "str",
     description: "str",
-    type_: "Optional[Type[Any]]" = None,
+    type_: "Optional[Callable[[Any], Any]]" = None,
     action: "Optional[Union[argparse.Action,str]]" = None,
     flags: "Optional[List[str]]" = None,
     schema: "Optional[Dict[str, Any]]" = None,
