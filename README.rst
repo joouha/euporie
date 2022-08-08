@@ -13,15 +13,15 @@ euporie
 
 **Euporie is a terminal based interactive computing environment for Jupyter.**
 
-Euporie's apps allow you to interact with Jupyter kernels, and run Jupyter notebooks entirely in the terminal.
+Euporie's apps allow you to interact with Jupyter kernels, and run Jupyter notebooks - entirely from the terminal.
 
 .. list-table::
    :align: center
    :widths: 25 25 25 25
    :class: text-center
 
-   * - `Notebook <https://euporie.readthedocs.io/en/latest/apps/notebook.html>`_
-     - `Console <https://euporie.readthedocs.io/en/latest/apps/console.html>`_
+   * - `Console <https://euporie.readthedocs.io/en/latest/apps/console.html>`_
+     - `Notebook <https://euporie.readthedocs.io/en/latest/apps/notebook.html>`_
      - `Preview <https://euporie.readthedocs.io/en/latest/apps/preview.html>`_
      - `Hub <https://euporie.readthedocs.io/en/latest/apps/hub.html>`_
 

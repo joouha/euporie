@@ -27,7 +27,12 @@ Added
 Changed
 =======
 
+- Cells are now displayed as soon as they are rendered in ``preview``
+- Added the ``--save`` option in ``preview``, which saves the notebook if ``--run`` is used
 - Apps are now individually configurable
+- The ``edit`` app is not called ``notebook``
+- The preferred method of launching apps is now using the ``euporie-*`` commands
+- The style of the applications and widgets has been refresh
 - Allow creating new notebooks without first passing a file path
 - Use :py:mod:`fastjsonschema` to parse configuration more quickly
 - Reduce memory usage by allowing the garbage collector to remove deleted cells and graphics
