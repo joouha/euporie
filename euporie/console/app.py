@@ -20,6 +20,7 @@ from prompt_toolkit.layout.dimension import Dimension
 from euporie.console.tabs.console import Console
 from euporie.core.app import BaseApp
 from euporie.core.commands import add_cmd
+from euporie.core.config import add_setting
 from euporie.core.filters import buffer_is_code, buffer_is_empty
 from euporie.core.io import patch_renderer_diff
 from euporie.core.key_binding.registry import register_bindings
@@ -58,6 +59,8 @@ class ConsoleApp(BaseApp):
     def __init__(self, **kwargs: "Any") -> "None":
         """Create a new euporie text user interface application instance."""
         self.need_mouse_support = False
+        if self.config.mouse_support is not None:
+            self.need_mouse_support = self.config.mouse_support
         super().__init__(
             **{
                 **{
@@ -72,6 +75,10 @@ class ConsoleApp(BaseApp):
 
         self.tabs = [Console(self)]
         self.pager = Pager()
+
+        self.config.get_item("mouse_support").event += lambda x: setattr(
+            self, "need_mouse_support", x.value
+        )
 
     def load_container(self) -> "FloatContainer":
         """Returns a container with all opened tabs."""
@@ -166,7 +173,17 @@ class ConsoleApp(BaseApp):
 
     # ################################### Settings ####################################
 
-    # ...
+    add_setting(
+        name="mouse_support",
+        flags=["--mouse-support"],
+        type_=bool,
+        help_="Enable or disable mouse support",
+        default=None,
+        description="""
+            When set to True, mouse support is enabled. When set to False, mouse
+            support is disabled.
+        """,
+    )
 
     # ################################# Key Bindings ##################################
 

@@ -181,7 +181,8 @@ class Console(KernelTab):
         buffer.reset(append_to_history=True)
         # Remove any live outputs and disable mouse support
         self.live_output.reset()
-        self.app.need_mouse_support = False
+        if self.app.config.mouse_support is None:
+            self.app.need_mouse_support = False
         # Record the input as a cell in the json
         self.json["cells"].append(
             nbformat.v4.new_code_cell(source=text, execution_count=self.execution_count)
@@ -204,7 +205,8 @@ class Console(KernelTab):
             # Use a live output to display widgets
             self.live_output.add_output(output_json)
             # Enable mouse support if we have a live output
-            self.app.need_mouse_support = True
+            if self.app.config.mouse_support is None:
+                self.app.need_mouse_support = True
         else:
             # Queue the output json
             self.output.add_output(output_json)
@@ -228,7 +230,8 @@ class Console(KernelTab):
     def reset(self) -> "None":
         """Reset the state of the tab."""
         self.live_output.reset()
-        self.app.need_mouse_support = False
+        if self.app.config.mouse_support is None:
+            self.app.need_mouse_support = False
 
     def complete(self, content: "Dict" = None) -> "None":
         """Re-render any changes."""
