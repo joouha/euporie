@@ -176,21 +176,35 @@ class Dialog(Float, metaclass=ABCMeta):
 
         # Create button widgets & callbacks
         self.button_widgets.clear()
+
         if self.buttons:
             width = max(map(len, self.buttons)) + 2
+            used_keys = set()
+            # Add each button
             for text in self.buttons:
+                # Use the first letter as a key-binding if it's not already used
+                if (key := text[0]) not in used_keys:
+                    rest = text[1:]
+                    used_keys |= {key}
+                else:
+                    key = ""
+                    rest = text
+                # Add a button with a handler
                 handler = partial(self._button_handler, text)
                 self.button_widgets.append(
                     FocusedStyle(
                         Button(
-                            text,
+                            [("underline", key), ("", rest)],
                             on_click=handler,
                             width=width,
                             style="class:input",
                         )
                     )
                 )
-                self.kb.add(text[:1].lower(), filter=~buffer_has_focus)(handler)
+                # Add a key-handler
+                if key:
+                    self.buttons_kb.add(key, filter=~buffer_has_focus)(handler)
+                    self.kb.add("escape", key, filter=~buffer_has_focus)(handler)
 
         # When a button is selected, handle left/right key bindings.
         if len(self.button_widgets) > 1:

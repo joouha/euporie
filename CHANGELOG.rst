@@ -11,6 +11,7 @@ Upcoming
 Added
 =====
 
+- Added shortcut key hints in menus and buttons
 - Added a shadow under the completions menu
 - Allow changing color depth on the fly
 - Key-bindings can now be edited in the configuration file

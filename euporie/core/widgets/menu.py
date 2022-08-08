@@ -21,6 +21,7 @@ from prompt_toolkit.layout.containers import (
     Window,
 )
 from prompt_toolkit.layout.controls import FormattedTextControl
+from prompt_toolkit.layout.utils import explode_text_fragments
 from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
 from prompt_toolkit.utils import get_cwidth
 from prompt_toolkit.widgets.base import Shadow
@@ -288,8 +289,19 @@ class MenuBar:
                 self.selected_menu = [index]
 
         results: "StyleAndTextTuples" = []
+        used_keys = set()
 
         for i, item in enumerate(self.menu_items):
+
+            # Add shortcut key hints
+            key = to_plain_text(item.formatted_text)[0].lower()
+            if key not in used_keys:
+                ft = explode_text_fragments(item.formatted_text)
+                ft[0] = (f"underline {ft[0][0]}", *ft[0][1:])
+                used_keys |= {key}
+            else:
+                ft = item.formatted_text
+
             mh = partial(mouse_handler, i)
             selected = i == self.selected_menu[0] and focused
             style = "class:selection" if selected else ""
@@ -298,10 +310,7 @@ class MenuBar:
             results.extend(
                 [
                     (first_style, " ", mh),
-                    *[
-                        (f"{style} {style_}", text, mh)
-                        for style_, text, *_ in item.formatted_text
-                    ],
+                    *[(f"{style} {style_}", text, mh) for style_, text, *_ in ft],
                     (style, " ", mh),
                 ]
             )
@@ -565,6 +574,19 @@ class MenuBar:
             if item.handler:
                 event.app.layout.focus_last()
                 item.handler()
+
+        # Add menu shortcuts
+        used_keys = set()
+        for i, item in enumerate(menu_items):
+            key = to_plain_text(item.formatted_text)[0].lower()
+            if key not in used_keys:
+                used_keys |= {key}
+
+                @kb.add("escape", key, is_global=True)
+                def _open_menu(event: "KeyPressEvent", index: "int" = i) -> "None":
+                    """Open the  menu item."""
+                    self.selected_menu = [index]
+                    event.app.layout.focus(self.window)
 
         # Controls.
         self.control = FormattedTextControl(
