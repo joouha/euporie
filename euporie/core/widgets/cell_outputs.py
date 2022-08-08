@@ -264,9 +264,10 @@ class CellOutput:
         if output_type == "stream":
             data = {f'stream/{self.json.get("name")}': self.json.get("text", "")}
         elif output_type == "error":
-            data = {
-                "text/x-python-traceback": "\n".join(self.json.get("traceback", ""))
-            }
+            ename = self.json.get("ename", "")
+            evalue = self.json.get("evalue", "")
+            traceback = "\n".join(self.json.get("traceback", ""))
+            data = {"text/x-python-traceback": f"{ename}: {evalue}\n{traceback}"}
         else:
             data = self.json.get("data", {"text/plain": ""})
         return dict(sorted(data.items(), key=_calculate_mime_rank))
