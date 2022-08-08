@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 from functools import partial
 from typing import TYPE_CHECKING, cast
@@ -1001,7 +1002,7 @@ class BaseApp(Application):
     add_setting(
         name="key_bindings",
         flags=["--key-bindings"],
-        type_=dict,
+        type_=json.loads,
         help_="Additional key binding definitions",
         default={},
         description="""
