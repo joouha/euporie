@@ -295,9 +295,10 @@ class MenuBar:
 
             # Add shortcut key hints
             key = to_plain_text(item.formatted_text)[0].lower()
+            ft: "StyleAndTextTuples"
             if key not in used_keys:
                 ft = explode_text_fragments(item.formatted_text)
-                ft[0] = (f"underline {ft[0][0]}", *ft[0][1:])
+                ft = [(f"underline {ft[0][0]}", ft[0][1]), *ft[1:]]
                 used_keys |= {key}
             else:
                 ft = item.formatted_text
