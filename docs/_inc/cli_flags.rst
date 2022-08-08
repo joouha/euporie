@@ -5,12 +5,12 @@ Usage
 
 .. code-block:: console
 
-   $ euporie [-h] [--version] {preview,edit,hub,console,notebook}
+   $ euporie [-h] [--version] {preview,console,edit,notebook,hub}
 
 Positional Arguments
 ====================
 
-.. option:: {preview,edit,hub,console,notebook}
+.. option:: {preview,console,edit,notebook,hub}
 
    The application to launch
 

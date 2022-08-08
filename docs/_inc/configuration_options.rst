@@ -376,7 +376,7 @@
 :environment variable: :envvar:`EUPORIE_APP`
 :default: ``'notebook'``
 :type: :keyword:`string`
-:options: [``'edit'``, ``'hub'``, ``'console'``, ``'preview'``, ``'notebook'``]
+:options: [``'preview'``, ``'console'``, ``'edit'``, ``'notebook'``, ``'hub'``]
 :description: The application to launch
 
    The name of the application to launch.
