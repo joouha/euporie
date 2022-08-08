@@ -49,6 +49,7 @@ from prompt_toolkit.styles import (
     merge_styles,
     style_from_pygments_cls,
 )
+from prompt_toolkit.widgets.base import Shadow
 from pygments.styles import STYLE_MAP as pygments_styles
 from pygments.styles import get_style_by_name
 from pyperclip import determine_clipboard
@@ -193,9 +194,11 @@ class BaseApp(Application):
         self.dialogs: "Dict[str, Dialog]" = {}
         self.menus: "Dict[str, Float]" = {
             "completions": Float(
-                content=CompletionsMenu(
-                    max_height=16,
-                    scroll_offset=1,
+                content=Shadow(
+                    CompletionsMenu(
+                        max_height=16,
+                        scroll_offset=1,
+                    )
                 ),
                 xcursor=True,
                 ycursor=True,

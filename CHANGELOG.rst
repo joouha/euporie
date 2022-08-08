@@ -11,6 +11,7 @@ Upcoming
 Added
 =====
 
+- Added a shadow under the completions menu
 - Allow changing color depth on the fly
 - Key-bindings can now be edited in the configuration file
 - Queue inputs which are run before kernel starts, and run them once the kernel has started
