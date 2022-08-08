@@ -27,6 +27,7 @@ from euporie.core.key_binding.registry import register_bindings
 from euporie.core.widgets.dialog import (
     AboutDialog,
     NoKernelsDialog,
+    SaveAsDialog,
     SelectKernelDialog,
     ShortcutsDialog,
 )
@@ -88,7 +89,7 @@ class ConsoleApp(BaseApp):
 
         self.dialogs["command-palette"] = CommandPalette(self)
         self.dialogs["about"] = AboutDialog(self)
-        # self.dialogs["save-as"] = SaveAsDialog(self)
+        self.dialogs["save-as"] = SaveAsDialog(self)
         self.dialogs["no-kernels"] = NoKernelsDialog(self)
         self.dialogs["change-kernel"] = SelectKernelDialog(self)
         self.dialogs["shortcuts"] = ShortcutsDialog(self)
