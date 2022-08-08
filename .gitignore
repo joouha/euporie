@@ -74,6 +74,8 @@ instance/
 
 # Sphinx documentation
 docs/_build/
+docs/_inc/
+docs/reference/euporie*.rst
 
 # PyBuilder
 .pybuilder/
