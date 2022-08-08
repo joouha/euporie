@@ -4,6 +4,9 @@ import subprocess  # noqa: S404
 import sys
 from pathlib import Path
 
+# Add the docs folder to the path for local extensions
+sys.path.append(str(Path(__file__).parent.absolute()))
+
 # Project information
 project = "euporie"
 copyright = "2022, Josiah Outram Halstead"
@@ -11,16 +14,26 @@ author = "Josiah Outram Halstead"
 
 # General configuration
 extensions: "list[str]" = [
-    "sphinx.ext.intersphinx",  # Link to other packages
-    "sphinx.ext.napoleon",  # Enable google-style docstring parsing
-    "sphinx.ext.autodoc",  # Document modules
-    "sphinx.ext.autosummary",  # Generate API documentation
-    "sphinx.ext.autosectionlabel",  # Automatically label sections
-    "sphinx_argparse_cli",  # Command line argument documentation
-    "sphinxext.opengraph",  # OGP data
-    "sphinx_copybutton",  # Copy button
-    "sphinx_design",  # Used for image grids
-    "sphinxcontrib.video",  # Video embedding
+    # Link to other packages
+    "sphinx.ext.intersphinx",
+    # Enable google-style docstring parsing
+    "sphinx.ext.napoleon",
+    # Document modules
+    "sphinx.ext.autodoc",
+    # Generate API documentation
+    "sphinx.ext.autosummary",
+    # Automatically label sections
+    "sphinx.ext.autosectionlabel",
+    # Command line argument documentation
+    "sphinx_argparse_cli",
+    # OGP data
+    "sphinxext.opengraph",
+    # Copy button
+    "sphinx_copybutton",
+    # Used for image grids
+    "sphinx_design",
+    # Video embedding
+    "_extensions.video",
 ]
 templates_path = ["_templates"]
 exclude_patterns: "list[str]" = []
@@ -39,6 +52,9 @@ html_theme_options = {
 }
 pygments_style = "native"
 
+# Options for LaTeX output
+latex_engine = "lualatex"
+
 # Autosummary options
 autosummary_generate = True
 autosummary_imported_members = True
@@ -50,7 +66,7 @@ intersphinx_mapping = {
     "rich": ("https://rich.readthedocs.io/en/stable/", None),
     "commonmark": ("https://commonmarkpy.readthedocs.io/en/latest/", None),
     "sympy": ("https://docs.sympy.org/latest/", None),
-    "ipywidgets": ("https://ipywidgets.readthedocs.io/latest/", None),
+    # "ipywidgets": ("https://ipywidgets.readthedocs.io/latest/", None),
 }
 
 # "https://github.com/jb-leger/flatlatex"
