@@ -127,5 +127,6 @@ module = [
     "cairosvg",
     "ssort",
     "poetry_publish.publish",
+    "bs4",
 ]
 ignore_missing_imports = true

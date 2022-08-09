@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
 MARKDOWN_ENHANCED = False
 
-
+'''
 @register(
     from_="markdown",
     to="formatted_text",
@@ -41,6 +41,24 @@ def markdown_to_ft(
     from euporie.core.formatted_text.markdown import Markdown
 
     return to_formatted_text(Markdown(data, width=width))
+'''
+
+
+@register(
+    from_="html",
+    to="formatted_text",
+)
+def html_to_ft(
+    data: "str",
+    width: "Optional[int]" = None,
+    height: "Optional[int]" = None,
+    fg: "Optional[str]" = None,
+    bg: "Optional[str]" = None,
+) -> "StyleAndTextTuples":
+    """Converts markdown to formatted text."""
+    from euporie.core.formatted_text.html import HTML
+
+    return to_formatted_text(HTML(data, width=width))
 
 
 @register(

@@ -69,6 +69,7 @@ from euporie.core.key_binding.vi_state import ViState
 from euporie.core.log import setup_logs
 from euporie.core.style import (
     DEFAULT_COLORS,
+    HTML_STYLE,
     IPYWIDGET_STYLE,
     LOG_STYLE,
     MARKDOWN_STYLE,
@@ -247,6 +248,10 @@ class BaseApp(Application):
         self.config.get_item("color_depth").event += lambda x: setattr(
             self, "_color_depth", _COLOR_DEPTHS[x.value]
         )
+
+        self.color_palette = ColorPalette()
+        self.color_palette.add_color("fg", "#ffffff" "default")
+        self.color_palette.add_color("bg", "#000000" "default")
 
     def pause_rendering(self) -> "None":
         """Blocks rendering, but allows input to be processed.
@@ -617,6 +622,7 @@ class BaseApp(Application):
                 style_from_pygments_cls(get_style_by_name(self.config.syntax_theme)),
                 Style(MIME_STYLE),
                 Style(MARKDOWN_STYLE),
+                Style(HTML_STYLE),
                 Style(LOG_STYLE),
                 Style(IPYWIDGET_STYLE),
                 app_style,
