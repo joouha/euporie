@@ -9,7 +9,11 @@ from typing import TYPE_CHECKING, cast
 
 from prompt_toolkit.application.current import get_app_session
 from prompt_toolkit.formatted_text.base import to_formatted_text
-from prompt_toolkit.formatted_text.utils import split_lines, to_plain_text
+from prompt_toolkit.formatted_text.utils import (
+    fragment_list_width,
+    split_lines,
+    to_plain_text,
+)
 
 from euporie.core.border import (
     BorderLineStyle,
@@ -89,8 +93,6 @@ class Cell:
         border: "Optional[Union[LineStyle, BorderLineStyle]]" = None,
         style: "str" = "",
         width: "Optional[int]" = None,
-        _expands: "Optional[Cell]" = None,
-        _span_index: "Optional[int]" = 0,
     ):
         """Creates a new table cell.
 
@@ -686,9 +688,18 @@ class Table:
 
         self._set_padding(padding)
         self._set_border(border)
-        self.border_style = border_style
-        self.border_collapse = border_collapse
+        self.border_style = f"class:border {border_style}"
+        self._border_collapse = border_collapse
         self.style = style
+
+    @property
+    def border_collapse(self) -> "bool":
+        """Turn off border-collapse if any cells have a border."""
+        for row in self._rows.values():
+            for cell in row._cells.values():
+                if any(x != Invisible for x in cell.border):
+                    return False
+        return self._border_collapse
 
     @property
     def border(self) -> "BorderLineStyle":
@@ -795,7 +806,7 @@ class Table:
         self._cols[index] = col
 
     def calculate_col_widths(
-        self, width: "int", min_col_width: "int" = 7
+        self, width: "int", min_col_width: "int" = 10
     ) -> "list[int]":
         """Calculate column widths given the available space.
 
@@ -864,6 +875,7 @@ class Table:
         row_above: "Optional[Row]",
         row_below: "Optional[Row]",
         col_widths: "list[int]",
+        border_collapse: "bool",
     ) -> "StyleAndTextTuples":
         """Draws a border line separating two rows in the table."""
         output: "StyleAndTextTuples" = []
@@ -891,9 +903,13 @@ class Table:
             if i < len(col_widths):
                 edge = self.get_horizontal_edge(ne, se)
                 edges += edge
-                output += [(self.border_style, edge * (col_widths[i]))]
+                style = self.border_style
+                # Use cell style for borders in colspans
+                if isinstance(se, SpacerCell) and se.expands.rowspan > 1:
+                    style = se.expands.style
+                output += [(style, edge * (col_widths[i]))]
         # Do not draw border row if border collapse is on and all parts are invisible
-        if self.border_collapse and not edges.strip():
+        if border_collapse and not edges.strip():
             return []
         output += [("", "\n")]
         return output
@@ -902,6 +918,7 @@ class Table:
         self,
         row: "Optional[RowCol]",
         col_widths: "list[int]",
+        border_collapse: "bool",
     ) -> "StyleAndTextTuples":
         """Draws a row in the table."""
         output: "StyleAndTextTuples" = []
@@ -926,21 +943,25 @@ class Table:
                 # Expand if colspan
                 for i in range(col + 1, col + cell.colspan):
                     width += col_widths[i]
+                    if not border_collapse:
+                        if borders[col]:
+                            width += 1
 
                 return width
 
             # Draw row contents line by line
-            row_lines = list(
-                zip_longest(
-                    *(
-                        cell.lines(width=_calc_cell_width(cell, col, col_widths))
-                        for col, cell in enumerate(row.cells)
-                    )
+            row_lines = zip_longest(
+                *(
+                    cell.lines(width=_calc_cell_width(cell, col, col_widths))
+                    for col, cell in enumerate(row.cells)
                 )
             )
 
             for row_line in row_lines:
                 for i, (line, cell) in enumerate(zip(row_line, row.cells)):
+                    # Skip spacer cells
+                    if isinstance(cell, SpacerCell) and cell.expands.colspan > 1:
+                        continue
                     output += [borders[i]]
                     if line is not None:
                         output += [
@@ -948,10 +969,13 @@ class Table:
                             *line,
                             (cell.style, " " * (row.cells[i].padding.right or 0)),
                         ]
-                    # If there is no line, fill space at the bottom of the cell
-                    elif not isinstance(cell, SpacerCell):
-                        for col in range(i, i + cell.colspan):
-                            output += [(cell.style, " " * (col_widths[col]))]
+                    # Ensure last line of a cell is fill with spaces
+                    else:
+                        width = sum(col_widths[i : i + cell.colspan])
+                        if line:
+                            width -= fragment_list_width(line)
+                        output.append((cell.style, " " * width))
+
                 output += [borders[i + 1]]
                 output += [("", "\n")]
 
@@ -963,10 +987,14 @@ class Table:
         col_widths = self.calculate_col_widths(width)
         output = []
 
-        for row_above, row_below in zip([None, *self.rows], [*self.rows, None]):
-            output += self.draw_border_row(row_above, row_below, col_widths)
-            output += self.draw_table_row(row_below, col_widths)
-        output.pop()
+        if self.rows:
+            border_collapse = self.border_collapse
+            for row_above, row_below in zip([None, *self.rows], [*self.rows, None]):
+                output += self.draw_border_row(
+                    row_above, row_below, col_widths, border_collapse
+                )
+                output += self.draw_table_row(row_below, col_widths, border_collapse)
+            output.pop()
 
         return output
 

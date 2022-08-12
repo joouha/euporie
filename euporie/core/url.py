@@ -5,7 +5,7 @@ import binascii
 import logging
 from typing import TYPE_CHECKING
 from urllib.parse import ParseResult, urlparse, urlunparse
-from urllib.request import urlopen
+from urllib.request import Request, urlopen
 
 from prompt_toolkit.cache import memoized
 
@@ -45,9 +45,12 @@ def load_url(url: "str") -> "Optional[bytes]":
             except binascii.Error:
                 data = None
     else:
+        request = Request(
+            url, headers={"User-Agent": "euporie", "Host": parsed_url.netloc}
+        )
         try:
             # The use of 'file:' scheme is intended
-            data = urlopen(url, timeout=4).read()  # noqa S310
+            data = urlopen(request, timeout=4).read().decode()  # noqa S310
         except Exception:
             log.debug("Failed to load `%s`", url)
 

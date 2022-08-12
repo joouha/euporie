@@ -213,6 +213,7 @@ def align(
         The aligned formatted text
 
     """
+    style = f"{style} nounderline"
     lines = split_lines(ft)
     if width is None:
         lines = [strip(line) for line in split_lines(ft)]
@@ -311,22 +312,25 @@ def add_border(
         FormattedTextAlign.LEFT,
         ft,
         width=inner_width - (padding.right or 0) - (padding.left or 0),
+        style=style,
     )
 
     result: StyleAndTextTuples = []
 
+    style = f"{style} nounderline"
+
     result.extend(
         [
             (
-                f"{style} class:left,top",
+                f"{style} class:border,left,top",
                 border.TOP_LEFT,
             ),
             (
-                f"{style} class:top",
+                f"{style} class:border,top",
                 border.TOP_MID * inner_width,
             ),
             (
-                f"{style} class:right,top",
+                f"{style} class:border,right,top",
                 border.TOP_RIGHT + "\n",
             ),
         ]
@@ -334,41 +338,41 @@ def add_border(
     for _ in range(padding.top or 0):
         result.extend(
             [
-                (f"{style} class:left", border.MID_LEFT),
-                ("", " " * inner_width),
-                (f"{style} class:right", border.MID_RIGHT + "\n"),
+                (f"{style} class:border,left", border.MID_LEFT),
+                (style, " " * inner_width),
+                (f"{style} class:border,right", border.MID_RIGHT + "\n"),
             ]
         )
     for line in split_lines(ft):
         result.extend(
             [
-                (f"{style} class:left", border.MID_LEFT),
-                ("", " " * (padding.left or 0)),
+                (f"{style} class:border,left", border.MID_LEFT),
+                (style, " " * (padding.left or 0)),
                 *line,
-                ("", " " * (padding.right or 0)),
-                (f"{style} class:right", border.MID_RIGHT + "\n"),
+                (style, " " * (padding.right or 0)),
+                (f"{style} class:border,right", border.MID_RIGHT + "\n"),
             ]
         )
     for _ in range(padding.bottom or 0):
         result.extend(
             [
-                (f"{style} class:left", border.MID_LEFT),
-                ("", " " * inner_width),
-                (f"{style} class:right", border.MID_RIGHT + "\n"),
+                (f"{style} class:border,left", border.MID_LEFT),
+                (style, " " * inner_width),
+                (f"{style} class:border,right", border.MID_RIGHT + "\n"),
             ]
         )
     result.extend(
         [
             (
-                f"{style} class:left,bottom",
+                f"{style} class:border,left,bottom",
                 border.BOTTOM_LEFT,
             ),
             (
-                f"{style} class:bottom",
+                f"{style} class:border,bottom",
                 border.BOTTOM_MID * inner_width,
             ),
             (
-                f"{style} class:right,bottom",
+                f"{style} class:border,right,bottom",
                 border.BOTTOM_RIGHT + "\n",
             ),
         ]
