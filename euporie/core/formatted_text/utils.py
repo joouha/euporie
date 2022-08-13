@@ -144,6 +144,7 @@ def wrap(
     width: int,
     style: str = "",
     placeholder: str = "…",
+    left: "int" = 0,
 ) -> StyleAndTextTuples:
     """Wraps formatted text at a given width.
 
@@ -161,10 +162,11 @@ def wrap(
     result: StyleAndTextTuples = []
     lines = list(split_lines(ft))
     for i, line in enumerate(lines):
-        if fragment_list_width(line) <= width:
+        if fragment_list_width(line) <= width - left:
             result += line
             if i < len(lines) - 1:
                 result.append(("", "\n"))
+                left = 0
         else:
             used_width = 0
             for item in fragment_list_to_words(line):
@@ -172,17 +174,18 @@ def wrap(
                     get_cwidth(c) for c in item[1] if "[ZeroWidthEscape]" not in item[0]
                 )
                 # Start a new line we are at the end
-                if used_width + fragment_width > width and used_width > 0:
+                if used_width + fragment_width > width - left and used_width > 0:
                     # Remove trailing whitespace
                     result = strip(result, left=False)
                     result.append(("", "\n"))
+                    left = 0
                     used_width = 0
                 # Truncate words longer than a line
-                if fragment_width > width and used_width == 0:
-                    result += truncate([item], width, style, placeholder)
+                if fragment_width > width - left and used_width == 0:
+                    result += truncate([item], width - left, style, placeholder)
                     used_width += fragment_width
-                # Left-strip words at the start of a line
-                elif used_width == 0:
+                # Left-strip words at the start of a line (except the first line)
+                elif i != 0 and used_width == 0:
                     result += strip([item], right=False)
                     used_width += fragment_width
                 # Otherwise just add the word to the line

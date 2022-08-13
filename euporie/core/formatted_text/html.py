@@ -9,7 +9,7 @@ from functools import lru_cache
 from math import ceil
 from random import randint
 from textwrap import indent as str_indent
-from typing import TYPE_CHECKING, Any, Dict, Callable, Optional
+from typing import TYPE_CHECKING, Any, Callable, Dict, Optional
 from warnings import warn
 
 from prompt_toolkit.application.current import get_app_session
@@ -51,9 +51,9 @@ if TYPE_CHECKING:
     from euporie.core.border import GridStyle
     from euporie.core.formatted_text.table import Row
 
-import bs4
 from html.parser import HTMLParser
 
+import bs4
 
 # Prefer 6-digit hex-colors over 3-digit ones
 _COLOR_RE = re.compile("#([a-fA-F0-9]{6}|[a-fA-F0-9]{3})")
@@ -624,6 +624,14 @@ class HTML:
                 parent_theme=parent_theme,
             )
 
+            # Wrap inline elements
+            if element.name not in self._INLINE_ELEMENTS:
+                last_line_len = last_line_length(ft)
+                theme = self.get_element_theme(element, parent_theme)
+                rendering = wrap(
+                    rendering, width, style=theme["style"], left=last_line_len
+                )
+
             # Draw block element bottom margin, ensuring block elements end on a new
             # line, and that margins collapse
             if block:
@@ -693,17 +701,15 @@ class HTML:
             if element.name not in self._INLINE_ELEMENTS:
                 from prompt_toolkit.formatted_text.utils import fragment_list_width
 
-                ft = wrap(ft, width)
                 filled_output = []
 
                 # Remove one trailing newline
-                ft = strip(ft, left=False, right=True, char="\n")
-                for i, frag in enumerate(reversed(ft)):
+                for i, frag in enumerate(reversed(ft), start=1):
                     if not frag[1]:
                         continue
                     if frag[1].endswith("\n"):
                         ft[-i] = (frag[0], frag[1][:-1])
-                        break
+                    break
 
                 # Format the remainder of each line
                 for line in split_lines(ft):
@@ -719,6 +725,7 @@ class HTML:
         else:
             # Strip the text
             text = element.text
+
             if not preformatted:
                 strippable = True
                 for i in text:
@@ -744,6 +751,24 @@ class HTML:
 
         return ft
 
+    def render_ul(
+        self,
+        element: "PageElement",
+        width: "int",
+        left: "int" == 0,
+        preformatted: "bool" = False,
+        parent_theme: "Optional[dict]" = None,
+    ) -> "StyleAndTextTuples":
+        ft = self.render_block(
+            element,
+            width=width,
+            left=left,
+            preformatted=preformatted,
+            parent_theme=parent_theme,
+        )
+        ft.append(("", "\n"))
+        return ft
+
     def render_ol(
         self,
         element: "PageElement",
@@ -758,15 +783,8 @@ class HTML:
         for i, item in enumerate(items, start=1):
             item.attrs["data-margin"] = str(i).rjust(margin_width) + "."
             item.attrs["data-list-type"] = "ol"
-        # Render as normal
-        ft = self.render_block(
-            element,
-            width=width,
-            left=left,
-            preformatted=preformatted,
-            parent_theme=self.get_element_theme(element, parent_theme),
-        )
-        return ft
+        # Render as a <ul>
+        return self.render_ul(element, width, left, preformatted, parent_theme)
 
     def render_li(
         self,
@@ -795,7 +813,7 @@ class HTML:
             parent_theme=theme,
         )
         # Wrap the list item
-        ft = wrap(ft, width - bullet_width)
+        ft = wrap(ft, width - bullet_width, style=theme["style"])
         # Add the bullet
         ft = [(f"{theme['style']} class:{list_type}.bullet", bullet_str), *ft]
         # Indent subsequent lines
@@ -950,6 +968,18 @@ class HTML:
     # Tag formatting methods
 
     @staticmethod
+    def format_div(
+        ft: "StyleAndTextTuples",
+        width: "int",
+        left: "int",
+        element: "PageElement",
+        theme: "dict",
+    ) -> "StyleAndTextTuples":
+        """Format a horizontal rule."""
+        # ft = wrap(ft, width, style=theme["style"])
+        return ft
+
+    @staticmethod
     def format_hr(
         ft: "StyleAndTextTuples",
         width: "int",
@@ -970,7 +1000,7 @@ class HTML:
         theme: "dict",
     ) -> "StyleAndTextTuples":
         """Format a top-level heading wrapped and centered with a full width double border."""
-        ft = wrap(ft, width - 4)
+        ft = wrap(ft, width - 4, style=theme["style"])
         ft = align(FormattedTextAlign.CENTER, ft, width=width - 4, style=theme["style"])
         ft = add_border(
             ft,
@@ -989,7 +1019,7 @@ class HTML:
         theme: "dict",
     ) -> "StyleAndTextTuples":
         """Format a 2nd-level headding wrapped and centered with a double border."""
-        ft = wrap(ft, width=width - 4)
+        ft = wrap(ft, width=width - 4, style=theme["style"])
         ft = align(FormattedTextAlign.CENTER, ft)
         ft = add_border(
             ft,
@@ -1008,7 +1038,7 @@ class HTML:
         theme: "dict",
     ) -> "StyleAndTextTuples":
         """Format headings wrapped and centeredr."""
-        ft = wrap(ft, width)
+        ft = wrap(ft, width, style=theme["style"])
         ft = align(FormattedTextAlign.CENTER, ft, width=width)
         return ft
 
@@ -1021,7 +1051,7 @@ class HTML:
         theme: "dict",
     ) -> "StyleAndTextTuples":
         """Format paragraphs wrapped."""
-        ft = wrap(ft, width, style=theme["style"])
+        # ft = wrap(ft, width, style=theme["style"])
         return ft
 
     @staticmethod
@@ -1150,7 +1180,7 @@ class HTML:
                 rows=rows,
             )
             # Remove trailing new-lines
-            result = strip(result, char="\n")
+            result = strip(result, char="\n", left=False)
             # Optionally add a border
             if try_eval(element.attrs.get("border")):
                 result = add_border(
@@ -1159,7 +1189,9 @@ class HTML:
                     style="class:md.img.border",
                 )
             # Indent for line continuation as images are inline
-            result = indent(result, " " * left, skip_first=True)
+            result = indent(
+                result, " " * left, skip_first=True, style=parent_theme["style"]
+            )
 
         # Fallback to formatting the title if we still don't have image formatted-text data
         if not result:
@@ -1176,13 +1208,13 @@ class HTML:
                 ft = [("class:md.img", title)]
             # Add the sunrise emoji to represent an image. I would use :framed_picture:, but it
             # requires multiple code-points and causes breakage in many terminals
-            result = [("class:html.img", "🌄 "), *ft]
-            result = apply_style(result, style="class:html.img")
+            result = [(theme["style"], "🌄 "), *ft]
             result = [
-                ("class:html.img.border", f"{bounds[0]}"),
+                ("reverse", f"{bounds[0]}"),
                 *result,
-                ("class:html.img.border", f"{bounds[1]}"),
+                ("reverse", f"{bounds[1]}"),
             ]
+            result = apply_style(result, style=theme["style"])
 
         return result
 
@@ -1198,9 +1230,10 @@ class HTML:
         return [
             ("class:html.summary.arrow", " ⮟ "),
             *indent(
-                wrap(ft, width=width),
+                wrap(ft, width=width, style=theme["style"]),
                 margin="   ",
                 skip_first=True,
+                style=theme["style"],
             ),
         ]
 
@@ -1239,7 +1272,4 @@ if __name__ == "__main__":
     from euporie.core.style import HTML_STYLE
 
     with UPath(sys.argv[1]).open() as f:
-        html = f.read()
-        # parser.parse(html)
-        print_formatted_text(HTML(html), style=Style(HTML_STYLE))
-        # print(bs4.BeautifulSoup(html, "html.parser").contents)
+        print_formatted_text(HTML(f.read()), style=Style(HTML_STYLE))
