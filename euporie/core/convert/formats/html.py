@@ -61,6 +61,7 @@ def markdown_to_html_markdown_it(
     bg: "Optional[str]" = None,
 ) -> "str":
     """Convert markdown to HTML using :py:mod:`markdownit_py`."""
+    assert markdown_parser is not None
     # Give markdown tables borders
     html = "<style>table{border-width:1}th{border-width:3;font-weight:bold}</style>"
     html += markdown_parser.render(data)

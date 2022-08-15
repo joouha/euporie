@@ -75,7 +75,7 @@ _BORDER_WIDTHS = {
 }
 
 # The default theme to apply to various elements
-_ELEMENT_BASE_THEMES = defaultdict(
+_ELEMENT_BASE_THEMES: "defaultdict[str, dict[str, Any]]" = defaultdict(
     dict,
     {
         # Default theme for a tag
@@ -230,17 +230,17 @@ class PageElement:
 
     def __init__(
         self,
-        name: "Optional[str]",
+        name: "str",
         parent: "Optional[PageElement]",
-        attrs: "dict[str, str]",
+        attrs: "list[tuple[str, Optional[str]]]",
         text: "str" = "",
     ) -> "None":
         """Create a new page element."""
         self.name = name
         self.parent = parent
         self.text = text
-        self.attrs = attrs
-        self.contents = []
+        self.attrs: "dict[str, Any]" = {k: v for k, v in attrs if v is not None}
+        self.contents: "list[PageElement]" = []
         self.closed = False
 
         self.attrs["class"] = self.attrs.get("class", "").split()
@@ -250,7 +250,7 @@ class PageElement:
         return [element for element in self.contents if element.name == tag]
 
     @property
-    def descendents(self) -> "Generator[PageElement]":
+    def descendents(self) -> "Generator[PageElement, None, None]":
         """Yields all descendent elements."""
         for child in self.contents:
             yield child
@@ -278,18 +278,20 @@ class CustomHTMLParser(HTMLParser):
     def __init__(self) -> "None":
         """Create a new parser instance."""
         super().__init__()
-        self.curr = self.soup = PageElement(name="html", parent=None, attrs={})
+        self.curr = self.soup = PageElement(name="html", parent=None, attrs=[])
 
     def parse(self, markup: "str") -> "PageElement":
         """Parse HTML markup."""
-        self.curr = self.soup = PageElement(name="html", parent=None, attrs={})
+        self.curr = self.soup = PageElement(name="html", parent=None, attrs=[])
         self.feed(markup)
         return self.soup
 
-    def handle_starttag(self, tag: "str", attrs: "list[tuple[str, str]]") -> "None":
+    def handle_starttag(
+        self, tag: "str", attrs: "list[tuple[str, Optional[str]]]"
+    ) -> "None":
         """Open a new element."""
         self.autoclose()
-        element = PageElement(name=tag, parent=self.curr, attrs=dict(attrs))
+        element = PageElement(name=tag, parent=self.curr, attrs=attrs)
         self.curr.contents.append(element)
         self.curr = element
 
@@ -297,13 +299,14 @@ class CustomHTMLParser(HTMLParser):
         """Automatically close void elements."""
         if not self.curr.closed and self.curr.name in _VOID_ELEMENTS:
             self.curr.closed = True
-            self.curr = self.curr.parent
+            if self.curr.parent:
+                self.curr = self.curr.parent
 
     def handle_data(self, data: "str") -> "None":
         """Create data (text) elements."""
         self.autoclose()
         self.curr.contents.append(
-            PageElement(name="text", parent=self.curr, text=data, attrs={})
+            PageElement(name="text", parent=self.curr, text=data, attrs=[])
         )
 
     def handle_endtag(self, tag: "str") -> "None":
@@ -320,7 +323,7 @@ parser = CustomHTMLParser()
 
 def parse_css_content(content: "str") -> "dict[str, Any]":
     """Convert CSS declarations into the internals style representation."""
-    output = {}
+    output: "dict[str, Any]" = {}
 
     for declaration in content.split(";"):
         name, _, value = declaration.partition(":")
@@ -396,7 +399,7 @@ class HTML:
         self.width = width or get_app_session().output.get_size().columns
         self.strip_trailing_lines = strip_trailing_lines
 
-        self.css = {
+        self.css: "dict[str, dict[str, Any]]" = {
             ".dataframe": {
                 "border": BorderLineStyle(Invisible, Invisible, Invisible, Invisible),
                 "border_collapse": True,
@@ -404,7 +407,9 @@ class HTML:
             }
         }
 
-        self.element_theme_cache: "SimpleCache[dict]" = SimpleCache()
+        self.element_theme_cache: "SimpleCache[PageElement, dict[str, Any]]" = (
+            SimpleCache()
+        )
 
         # Parse the markup
         soup = parser.parse(markup)
@@ -415,6 +420,7 @@ class HTML:
         # Render the markup
         self.formatted_text = self.render_element(
             soup,
+            parent_theme={},
             width=self.width,
         )
 
@@ -427,7 +433,7 @@ class HTML:
 
     def parse_styles(self, soup: "PageElement") -> "dict[str, dict[str, str]]":
         """Collect all CSS styles from style tags."""
-        rules = {}
+        rules: "dict[str, dict[str, str]]" = {}
         for child in soup.descendents:
             css_str = ""
 
@@ -437,7 +443,8 @@ class HTML:
                 and child.attrs.get("rel") == "stylesheet"
                 and (href := child.attrs.get("href"))
             ):
-                css_str = load_url(href, self.base).decode() or ""
+                if css_bytes := load_url(href, self.base):
+                    css_str = css_bytes.decode()
 
             # In case of a <style> tab, load first child's text
             elif child.name == "style":
@@ -467,7 +474,7 @@ class HTML:
         return rules
 
     def element_theme(
-        self, element: "PageElement", parent_theme: "Optional[dict]" = None
+        self, element: "PageElement", parent_theme: "dict[str, Any]"
     ) -> "dict":
         """Get an element's theme from the cache, or calculate it."""
         return self.element_theme_cache.get(
@@ -477,14 +484,14 @@ class HTML:
     def calc_element_theme(
         self,
         element: "PageElement",
-        parent_theme: "Optional[dict]" = None,
-    ) -> "ChainMap":
+        parent_theme: "dict[str, Any]",
+    ) -> "dict[str, Any]":
         """Compute the theme of an element."""
         element_id = element.attrs.get("id")
 
         # Add extra attributes
-        extras = {}
-        styles = {}
+        extras: "dict[str, Any]" = {}
+        styles: "dict[str, Any]" = {}
 
         # -> border
         if border_attr := element.attrs.get("border"):
@@ -530,7 +537,7 @@ class HTML:
             # Element base style
             _ELEMENT_BASE_THEMES[element.name],
             # Parent theme
-            dict(parent_theme) if parent_theme else {},
+            dict(parent_theme),
             # Add an element class
             {"style_classes": [element.name]},
             # Default element style
@@ -552,39 +559,36 @@ class HTML:
         if bg := theme.get("style_bg"):
             styles["style"] += f" bg:{bg}"
 
-        return theme
+        return dict(theme)
 
     def render_contents(
         self,
         contents: "list[PageElement]",
+        parent_theme: "dict[str, Any]",
         width: "int" = 80,
         left: "int" = 0,
         preformatted: "bool" = False,
-        parent_theme: "Optional[dict]" = None,
     ) -> "StyleAndTextTuples":
         """Render a list of parsed markdown elements.
 
         Args:
             contents: The list of parsed elements to render
+            parent_theme: The theme of the element's parent element
             width: The width at which to render the elements
             left: The position on the current line at which to render the output - used
                 to indent subsequent lines when rendering inline blocks like images
             preformatted: If True, whitespace will not be stripped from the element's
                 text
-            parent_theme: The theme of the element's parent element
 
         Returns:
             Formatted text
 
         """
-        if parent_theme is None:
-            parent_theme = _ELEMENT_BASE_THEMES["default"]
-
-        ft = []
+        ft: "StyleAndTextTuples" = []
 
         def _draw_margin(
             ft: "StyleAndTextTuples", element: "PageElement", index: "int"
-        ) -> "None":
+        ) -> "StyleAndTextTuples":
             """Draw the vertical margins for an element."""
             theme = self.element_theme(element, parent_theme)
             margin = theme["margin"][index]
@@ -645,10 +649,10 @@ class HTML:
             # Render the element
             rendering = render_func(
                 element,
+                parent_theme=parent_theme,
                 width=width,
                 left=left,
                 preformatted=_preformatted,
-                parent_theme=parent_theme,
             )
 
             # Draw block element bottom margin, ensuring block elements end on a new
@@ -663,21 +667,21 @@ class HTML:
     def render_element(
         self,
         element: "PageElement",
+        parent_theme: "dict[str, Any]",
         width: "int",
         left: "int" = 0,
         preformatted: "bool" = False,
-        parent_theme: "Optional[dict]" = None,
     ) -> "StyleAndTextTuples":
         """Render a list of parsed markdown elements representing a block element.
 
         Args:
             element: The list of parsed elements to render
+            parent_theme: The theme of the element's parent element
             width: The width at which to render the elements
             left: The position on the current line at which to render the output - used
                 to indent subsequent lines when rendering inline blocks like images
             preformatted: When True, whitespace in the the element's text is not
                 collapsed
-            parent_theme: The theme of the element's parent element
 
         Returns:
             Formatted text
@@ -689,10 +693,10 @@ class HTML:
         # Render the contents
         ft = self.render_contents(
             element.contents,
-            inner_width,
-            left,
-            preformatted,
-            theme,
+            parent_theme=theme,
+            width=inner_width,
+            left=left,
+            preformatted=preformatted,
         )
 
         # Apply tag formatting
@@ -741,30 +745,28 @@ class HTML:
     def render_text(
         self,
         element: "PageElement",
+        parent_theme: "dict[str, Any]",
         width: "int",
         left: "int" = 0,
         preformatted: "bool" = False,
-        parent_theme: "Optional[dict]" = None,
     ) -> "StyleAndTextTuples":
         """Render a text element.
 
         Args:
             element: The page element to render
+            parent_theme: The theme of the element's parent element
             width: The width at which to render the elements
             left: The position on the current line at which to render the output - used
                 to indent subsequent lines when rendering inline blocks like images
             preformatted: When True, whitespace in the the element's text is not
                 collapsed
-            parent_theme: The theme of the element's parent element
 
         Returns:
             Formatted text
 
         """
         ft: "StyleAndTextTuples" = []
-
         text = element.text
-
         style = parent_theme["style"]
 
         # Ensure hidden text is blank and not underlined
@@ -798,10 +800,10 @@ class HTML:
     def render_ol(
         self,
         element: "PageElement",
+        parent_theme: "dict[str, Any]",
         width: "int",
-        left: "int" == 0,
+        left: "int" = 0,
         preformatted: "bool" = False,
-        parent_theme: "Optional[dict]" = None,
     ) -> "StyleAndTextTuples":
         """Render order lists, adding item numbers to child <li> elements."""
         items = [li for li in element.contents if li.name == "li"]
@@ -810,15 +812,15 @@ class HTML:
             item.attrs["data-margin"] = str(i).rjust(margin_width) + "."
             item.attrs["data-list-type"] = "ol"
         # Render as normal
-        return self.render_element(element, width, left, preformatted, parent_theme)
+        return self.render_element(element, parent_theme, width, left, preformatted)
 
     def render_li(
         self,
         element: "PageElement",
+        parent_theme: "dict[str, Any]",
         width: "int",
-        left: "int" == 0,
+        left: "int" = 0,
         preformatted: "bool" = False,
-        parent_theme: "Optional[dict]" = None,
     ) -> "StyleAndTextTuples":
         """Render a list element."""
         # Get the element's theme
@@ -832,11 +834,11 @@ class HTML:
         # Render the contents of the list item
         ft = self.render_contents(
             element.contents,
+            parent_theme=theme,
             # Restrict the available width by the margin width
             width=width - bullet_width,
             left=left,
             preformatted=preformatted,
-            parent_theme=theme,
         )
         # Wrap the list item
         ft = wrap(ft, width - bullet_width, style=theme["style"])
@@ -852,21 +854,21 @@ class HTML:
     def render_table(
         self,
         element: "PageElement",
+        parent_theme: "dict[str, Any]",
         width: "int",
-        left: "int" == 0,
+        left: "int" = 0,
         preformatted: "bool" = False,
-        parent_theme: "Optional[dict]" = None,
     ) -> "StyleAndTextTuples":
         """Render a list of parsed markdown elements representing a table element.
 
         Args:
             element: The list of parsed elements to render
             width: The width at which to render the elements
+            parent_theme: The theme of the parent element
             left: The position on the current line at which to render the output - used
                 to indent subsequent lines when rendering inline blocks like images
             preformatted: When True, whitespace in the the element's text is not
                 collapsed
-            parent_theme: The theme of the parent element
 
         Returns:
             Formatted text
@@ -886,7 +888,7 @@ class HTML:
         )
 
         # Stack the elements in the shape of the table
-        def render_rows(elements: "list[element]") -> "None":
+        def render_rows(elements: "list[PageElement]") -> "None":
             for tr in elements:
                 if tr.name == "tr":
                     tr_theme = self.element_theme(tr, table_theme)
@@ -902,10 +904,10 @@ class HTML:
                             row.new_cell(
                                 text=self.render_contents(
                                     td.contents,
+                                    parent_theme=td_theme,
                                     width=width,
                                     left=0,
                                     preformatted=preformatted,
-                                    parent_theme=td_theme,
                                 ),
                                 padding=td_theme["padding"],
                                 border=td_theme["border"],
@@ -934,7 +936,7 @@ class HTML:
             table_width = max_line_width(ft_table)
             for child in captions:
                 ft_caption = self.render_contents(
-                    child.contents, table_width, left, preformatted, table_theme
+                    child.contents, table_theme, table_width, left, preformatted
                 )
                 caption_theme = self.element_theme(element, parent_theme)
                 if ft_caption:
@@ -956,26 +958,31 @@ class HTML:
     def render_details(
         self,
         element: "PageElement",
+        parent_theme: "dict[str, Any]",
         width: "int",
-        left: "int" == 0,
+        left: "int" = 0,
         preformatted: "bool" = False,
-        parent_theme: "Optional[dict]" = None,
     ) -> "StyleAndTextTuples":
         """Render an expand summary / details."""
+        parent_theme = parent_theme or {}
         theme = self.element_theme(element, parent_theme)
         # Restrict width if necessary
         width -= _ELEMENT_INSETS.get(element.name, 0)
 
         summary_elements = element.find_all("summary", recursive=False)
         ft = self.render_contents(
-            summary_elements, width=width, preformatted=preformatted, parent_theme=theme
+            summary_elements, parent_theme=theme, width=width, preformatted=preformatted
         )
 
         detail_elements = [e for e in element.contents if e.name != "summary"]
         ft.extend(
             self.format_details(
                 self.render_contents(
-                    detail_elements, width, left, preformatted, parent_theme=theme
+                    detail_elements,
+                    parent_theme=theme,
+                    width=width,
+                    left=left,
+                    preformatted=preformatted,
                 ),
                 width,
                 left,
@@ -988,10 +995,10 @@ class HTML:
     def render_img(
         self,
         element: "PageElement",
+        parent_theme: "dict[str, Any]",
         width: "int",
-        left: "int" == 0,
+        left: "int" = 0,
         preformatted: "bool" = False,
-        parent_theme: "Optional[dict]" = None,
     ) -> "StyleAndTextTuples":
         """Display images rendered as ANSI art."""
         result: "StyleAndTextTuples" = []
@@ -1019,10 +1026,10 @@ class HTML:
             # Remove trailing new-lines
             result = strip(result, char="\n", left=False)
             # Optionally add a border
-            if try_eval(element.attrs.get("border")):
+            if try_eval(element.attrs.get("border", "")):
                 result = add_border(
                     result,
-                    border=Rounded,
+                    border=Rounded.grid,
                     style="class:md.img.border",
                 )
             # Indent for line continuation as images are inline
@@ -1032,7 +1039,7 @@ class HTML:
             return result
         # Otherwise, display the image title
         else:
-            return self.render_element(element, width, left, preformatted, parent_theme)
+            return self.render_element(element, parent_theme, width, left, preformatted)
 
     ###
 
