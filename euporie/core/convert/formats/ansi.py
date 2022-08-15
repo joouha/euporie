@@ -276,14 +276,14 @@ def pil_to_ansi_py_img2unicode(
 
 
 register(
-    from_=("png", "jpeg", "svg", "pdf"),
+    from_=("png", "jpeg", "svg", "pdf", "gif"),
     to="ansi",
     filter_=commands_exist("chafa"),
 )(partial(chafa_convert, "symbols"))
 
 
 @register(
-    from_=("png", "jpeg", "pdf"),
+    from_=("png", "jpeg", "pdf", "gif"),
     to="ansi",
     filter_=commands_exist("timg") & ~have_modules("timg"),
 )

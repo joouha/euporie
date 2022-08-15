@@ -34,7 +34,7 @@ def set_background(image: "Image", bg_color: "Optional[str]" = None) -> "bytes":
 
 
 @register(
-    from_=("png", "jpeg"),
+    from_=("png", "jpeg", "gif"),
     to="pil",
     filter_=have_modules("PIL"),
 )
