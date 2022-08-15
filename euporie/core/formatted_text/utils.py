@@ -43,11 +43,11 @@ def max_line_width(ft: StyleAndTextTuples) -> int:
 
 
 def fragment_list_to_words(
-    fragments: StyleAndTextTuples,
+    fragments: "StyleAndTextTuples", sep: "str" = " "
 ) -> "Iterable[OneStyleAndTextTuple]":
     """Split formatted text into word fragments."""
     for style, string, *mouse_handler in fragments:
-        parts = string.split(" ")
+        parts = string.split(sep)
         for part in parts[:-1]:
             yield cast("OneStyleAndTextTuple", (style, part, *mouse_handler))
             yield cast("OneStyleAndTextTuple", (style, " ", *mouse_handler))
@@ -145,6 +145,7 @@ def wrap(
     style: str = "",
     placeholder: str = "…",
     left: "int" = 0,
+    truncate_long_words: "bool" = True,
 ) -> StyleAndTextTuples:
     """Wraps formatted text at a given width.
 
@@ -155,43 +156,51 @@ def wrap(
         width: The width at which to wrap the text
         style: The style to apply to the truncation placeholder
         placeholder: The string that will appear at the end of a truncated line
+        left: The starting position within the first list
+        truncate_long_words: If :const:`True` words longer than a line will be
+            truncated
 
     Returns:
         The wrapped formatted text
     """
     result: StyleAndTextTuples = []
     lines = list(split_lines(ft))
+    output_line = 0
     for i, line in enumerate(lines):
         if fragment_list_width(line) <= width - left:
             result += line
             if i < len(lines) - 1:
                 result.append(("", "\n"))
-                left = 0
+            output_line += 1
+            left = 0
         else:
-            used_width = 0
             for item in fragment_list_to_words(line):
+                # Skip empty fragments
+                if item[1] == "":
+                    continue
                 fragment_width = sum(
                     get_cwidth(c) for c in item[1] if "[ZeroWidthEscape]" not in item[0]
                 )
-                # Start a new line we are at the end
-                if used_width + fragment_width > width - left and used_width > 0:
+                # Start a new line - we are at the end of the current output line
+                if left + fragment_width > width and left > 0:
                     # Remove trailing whitespace
                     result = strip(result, left=False)
                     result.append(("", "\n"))
+                    output_line += 1
                     left = 0
-                    used_width = 0
+                # Strip left-hand whitespace from a word at the start of a line
+                # if output_line != 0 and left == 0:
+                if left == 0:
+                    item = (item[0], item[1].lstrip(" "))
                 # Truncate words longer than a line
-                if fragment_width > width - left and used_width == 0:
+                if truncate and left == 0 and fragment_width > width - left:
                     result += truncate([item], width - left, style, placeholder)
-                    used_width += fragment_width
-                # Left-strip words at the start of a line (except the first line)
-                elif i != 0 and used_width == 0:
-                    result += strip([item], right=False)
-                    used_width += fragment_width
+                    left += fragment_width
                 # Otherwise just add the word to the line
                 else:
                     result.append(item)
-                    used_width += fragment_width
+                    left += fragment_width
+
     return result
 
 

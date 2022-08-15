@@ -5,16 +5,16 @@ from __future__ import annotations
 import re
 from ast import literal_eval
 from collections import ChainMap, defaultdict
-from functools import lru_cache
+from functools import partial
+from html.parser import HTMLParser
 from math import ceil
 from random import randint
-from textwrap import indent as str_indent
-from typing import TYPE_CHECKING, Any, Callable, Dict, Optional
-from warnings import warn
+from typing import TYPE_CHECKING
 
 from prompt_toolkit.application.current import get_app_session
-from prompt_toolkit.formatted_text.base import StyleAndTextTuples, to_formatted_text
-from prompt_toolkit.formatted_text.utils import split_lines, to_plain_text
+from prompt_toolkit.cache import SimpleCache
+from prompt_toolkit.formatted_text.base import StyleAndTextTuples
+from prompt_toolkit.formatted_text.utils import split_lines
 
 from euporie.core.border import (
     BorderLineStyle,
@@ -27,7 +27,7 @@ from euporie.core.border import (
 )
 from euporie.core.convert.base import FORMAT_EXTENSIONS, convert
 from euporie.core.convert.utils import data_pixel_size, pixels_to_cell_size
-from euporie.core.formatted_text.table import DummyRow, Table
+from euporie.core.formatted_text.table import Table
 from euporie.core.formatted_text.utils import (
     FormattedTextAlign,
     add_border,
@@ -44,19 +44,145 @@ from euporie.core.terminal import tmuxify
 from euporie.core.url import load_url
 
 if TYPE_CHECKING:
-    from typing import Any, Union
+    from typing import Any, Generator, Optional, Union
 
-    from bs4.element import PageElement
-
-    from euporie.core.border import GridStyle
-    from euporie.core.formatted_text.table import Row
-
-from html.parser import HTMLParser
-
-import bs4
 
 # Prefer 6-digit hex-colors over 3-digit ones
 _COLOR_RE = re.compile("#([a-fA-F0-9]{6}|[a-fA-F0-9]{3})")
+
+# List of elements which might not have a close tag
+_VOID_ELEMENTS = (
+    "area",
+    "base",
+    "br",
+    "col",
+    "embed",
+    "hr",
+    "img",
+    "input",
+    "link",
+    "meta",
+    "source",
+    "track",
+    "wbr",
+)
+
+
+_BORDER_WIDTHS = {
+    "0": BorderLineStyle(Invisible, Invisible, Invisible, Invisible),
+    "1": BorderLineStyle(Thin, Thin, Thin, Thin),
+    "2": BorderLineStyle(Thick, Thick, Thick, Thick),
+}
+
+# The default theme to apply to various elements
+_ELEMENT_BASE_THEMES = defaultdict(
+    dict,
+    {
+        # Default theme for a tag
+        "default": {
+            "padding": None,
+            "margin": Padding(0, 0, 0, 0),
+            "align": FormattedTextAlign.LEFT,
+            "border": None,
+            "border_collapse": True,
+            "language": None,
+            "style": "",
+            "invisilble": False,
+            "skip": False,
+            "block": True,
+            "inline": False,
+            # Styles
+            "style_classes": [],
+        },
+        # "Special" tags (not real HTML tags, just used for rendering)
+        "text": {"inline": True, "block": False},  # Use for rendering text
+        # Metadata elements which should be hidden
+        "head": {"skip": True},
+        "base": {"skip": True},
+        "command": {"skip": True},
+        "link": {"skip": True},
+        "meta": {"skip": True},
+        "noscript": {"skip": True, "block": False},
+        "script": {"skip": True, "block": False},
+        "style": {"skip": True},
+        "title": {"skip": True},
+        # Inline tags
+        "a": {"inline": True, "block": False},
+        "abbr": {"inline": True, "block": False},
+        "acronym": {"inline": True, "block": False},
+        "audio": {"inline": True, "block": False},
+        "b": {"inline": True, "block": False},
+        "bdi": {"inline": True, "block": False},
+        "bdo": {"inline": True, "block": False},
+        "big": {"inline": True, "block": False},
+        "br": {"inline": True, "block": False},
+        "button": {"inline": True, "block": False},
+        "canvas": {"inline": True, "block": False},
+        "cite": {"inline": True, "block": False},
+        "code": {"inline": True, "block": False},
+        "data": {"inline": True, "block": False},
+        "datalist": {"inline": True, "block": False},
+        "del": {"inline": True, "block": False},
+        "dfn": {"inline": True, "block": False},
+        "em": {"inline": True, "block": False},
+        "embed": {"inline": True, "block": False},
+        "i": {"inline": True, "block": False},
+        "iframe": {"inline": True, "block": False},
+        "img": {"inline": True, "block": False},
+        "input": {"inline": True, "block": False},
+        "ins": {"inline": True, "block": False},
+        "kbd": {"inline": True, "block": False},
+        "label": {"inline": True, "block": False},
+        "map": {"inline": True, "block": False},
+        "mark": {"inline": True, "block": False},
+        "math": {"inline": True, "block": False, "margin": Padding(1, 0, 1, 0)},
+        "meter": {"inline": True, "block": False},
+        "object": {"inline": True, "block": False},
+        "output": {"inline": True, "block": False},
+        "picture": {"inline": True, "block": False},
+        "progress": {"inline": True, "block": False},
+        "q": {"inline": True, "block": False},
+        "ruby": {"inline": True, "block": False},
+        "s": {"inline": True, "block": False},
+        "samp": {"inline": True, "block": False},
+        "select": {"inline": True, "block": False},
+        "slot": {"inline": True, "block": False},
+        "small": {"inline": True, "block": False},
+        "span": {"inline": True, "block": False},
+        "strong": {"inline": True, "block": False},
+        "sub": {"inline": True, "block": False},
+        "sup": {"inline": True, "block": False},
+        "svg": {"inline": True, "block": False},
+        "template": {"inline": True, "block": False},
+        "textarea": {"inline": True, "block": False},
+        "time": {"inline": True, "block": False},
+        "u": {"inline": True, "block": False},
+        "tt": {"inline": True, "block": False},
+        "var": {"inline": True, "block": False},
+        "video": {"inline": True, "block": False},
+        "wbr": {"inline": True, "block": False},
+        # Table elements
+        "table": {"padding": Padding(0, 1, 0, 1)},
+        "td": {"block": False},
+        "th": {"block": False, "style": "bold"},
+        # Forms & related elements
+        "option": {"skip": True},
+        # Custom default styles
+        "blockquote": {"margin": Padding(1, 0, 1, 0)},
+        "hr": {"margin": Padding(1, 0, 1, 0)},
+        "p": {"margin": Padding(1, 0, 1, 0)},
+        "pre": {"margin": Padding(1, 0, 1, 0)},
+        "details": {"margin": Padding(1, 0, 1, 0)},
+        "summary": {"margin": Padding(0, 0, 1, 0)},
+        "caption": {"align": FormattedTextAlign.CENTER},
+    },
+)
+
+_ELEMENT_INSETS = {
+    "blockquote": 2,
+    "details": 3,
+    "summary": 3,
+}
 
 
 def try_eval(value: "str", default: "Any" = None) -> "Any":
@@ -75,32 +201,41 @@ def try_eval(value: "str", default: "Any" = None) -> "Any":
     return parsed_value
 
 
-def get_digits(value: "str") -> "str":
-    for c in value.partition(".")[0].split():
-        if c.isdigit():
-            return c.lstrip("0")
-    else:
-        return ""
+def get_integer(value: "str") -> "str":
+    """Extract the first integer from a string."""
+    for word in value.split(" "):
+        for c in word.partition(".")[0].split():
+            if c.isdigit():
+                return c.lstrip("0")
+    return ""
 
 
 def get_color(value: "str") -> "str":
+    """Extract a hex color from a string."""
     color = ""
     if match := re.search(_COLOR_RE, value):
         hexes = match.group(1)
         if len(hexes) == 3:
             hexes = "".join(2 * s for s in hexes)
         color = f"#{hexes}"
+    else:
+        from euporie.core.reference import NAMED_COLORS
+
+        color = NAMED_COLORS.get(value, "")
     return color
 
 
 class PageElement:
+    """Represents an HTML element."""
+
     def __init__(
         self,
         name: "Optional[str]",
         parent: "Optional[PageElement]",
         attrs: "dict[str, str]",
         text: "str" = "",
-    ):
+    ) -> "None":
+        """Create a new page element."""
         self.name = name
         self.parent = parent
         self.text = text
@@ -110,7 +245,7 @@ class PageElement:
 
         self.attrs["class"] = self.attrs.get("class", "").split()
 
-    def find_all(self, tag: "str", recursive: "bool" = False):
+    def find_all(self, tag: "str", recursive: "bool" = False) -> "list[PageElement]":
         """Find all child elements of a given tag type."""
         return [element for element in self.contents if element.name == tag]
 
@@ -121,7 +256,7 @@ class PageElement:
             yield child
             yield from child.descendents
 
-    def __repr__(self, d: "int" = 0):
+    def __repr__(self, d: "int" = 0) -> "str":
         dd = " " * d
         s = ""
         if self.name:
@@ -138,52 +273,41 @@ class PageElement:
 
 
 class CustomHTMLParser(HTMLParser):
+    """An HTML parser."""
 
-    _VOID_ELEMENTS = (
-        "area",
-        "base",
-        "br",
-        "col",
-        "embed",
-        "hr",
-        "img",
-        "input",
-        "link",
-        "meta",
-        "source",
-        "track",
-        "wbr",
-    )
-
-    def __init__(self):
+    def __init__(self) -> "None":
+        """Create a new parser instance."""
         super().__init__()
-        self.curr = self.soup = PageElement(name="soup", parent=None, attrs={})
+        self.curr = self.soup = PageElement(name="html", parent=None, attrs={})
 
-    def parse(self, markup):
-        self.curr = self.soup = PageElement(name="soup", parent=None, attrs={})
+    def parse(self, markup: "str") -> "PageElement":
+        """Parse HTML markup."""
+        self.curr = self.soup = PageElement(name="html", parent=None, attrs={})
         self.feed(markup)
         return self.soup
 
-    def handle_starttag(self, tag: "str", attrs: "list[tuple[str, str]]"):
+    def handle_starttag(self, tag: "str", attrs: "list[tuple[str, str]]") -> "None":
+        """Open a new element."""
         self.autoclose()
         element = PageElement(name=tag, parent=self.curr, attrs=dict(attrs))
         self.curr.contents.append(element)
         self.curr = element
 
-    def autoclose(self):
-        # Automatically close void elements
-        if not self.curr.closed and self.curr.name in self._VOID_ELEMENTS:
+    def autoclose(self) -> "None":
+        """Automatically close void elements."""
+        if not self.curr.closed and self.curr.name in _VOID_ELEMENTS:
             self.curr.closed = True
             self.curr = self.curr.parent
 
-    def handle_data(self, data):
+    def handle_data(self, data: "str") -> "None":
+        """Create data (text) elements."""
         self.autoclose()
-
         self.curr.contents.append(
-            PageElement(name=None, parent=self.curr, text=data, attrs={})
+            PageElement(name="text", parent=self.curr, text=data, attrs={})
         )
 
-    def handle_endtag(self, tag):
+    def handle_endtag(self, tag: "str") -> "None":
+        """Handle end tags: close the currently opened element."""
         if tag != self.curr.name:
             self.autoclose()
         self.curr.closed = True
@@ -194,141 +318,65 @@ class CustomHTMLParser(HTMLParser):
 parser = CustomHTMLParser()
 
 
+def parse_css_content(content: "str") -> "dict[str, Any]":
+    """Convert CSS declarations into the internals style representation."""
+    output = {}
+
+    for declaration in content.split(";"):
+        name, _, value = declaration.partition(":")
+        name, value = name.strip(), value.strip()
+
+        if name == "color":
+            if color := get_color(value):
+                output.setdefault("style_fg", "")
+                output["style_fg"] = color
+
+        elif name in ("background", "background-color"):
+            if color := get_color(value):
+                output.setdefault("style_bg", "")
+                output["style_bg"] = color
+
+        elif name == "font-weight":
+            if value in ("bold", "bolder") or (
+                (digits := get_integer(value)) and int(digits) > 700
+            ):
+                output.setdefault("style_attrs", [])
+                output["style_attrs"].append("bold")
+
+        elif name == "text-decoration":
+            if value == "underline":
+                output.setdefault("style_attrs", [])
+                output["style_attrs"].append("underline")
+
+        elif name == "text-align":
+            output["align"] = FormattedTextAlign(value.upper())
+
+        elif name == "border-width":
+            if digits := get_integer(value):
+                output["border"] = _BORDER_WIDTHS.get(
+                    digits,
+                    BorderLineStyle(Thick, Thick, Thick, Thick),
+                )
+
+        elif name == "visibility":
+            output["hidden"] = value == "hidden"
+
+        elif name == "display":
+            output["skip"] = value == "none"
+
+    return output
+
+
 class HTML:
     """A HTML formatted text renderer.
 
     Accepts a HTML string and renders it at a given width.
     """
 
-    # Maps css side values to alignment enums
-    _SIDES = {
-        "left": FormattedTextAlign.LEFT,
-        "right": FormattedTextAlign.RIGHT,
-        "center": FormattedTextAlign.CENTER,
-    }
-
-    _METADATA_ELEMENTS = (
-        "head",
-        "base",
-        "command",
-        "link",
-        "meta",
-        "noscript",
-        "script",
-        "style",
-        "title",
-    )
-
-    # A list of HTML elements which are rendered as "in0line" elements
-    _INLINE_ELEMENTS = (
-        "a",
-        "abbr",
-        "acronym",
-        "audio",
-        "b",
-        "bdi",
-        "bdo",
-        "big",
-        "br",
-        "button",
-        "canvas",
-        "cite",
-        "code",
-        "data",
-        "datalist",
-        "del",
-        "dfn",
-        "em",
-        "embed",
-        "i",
-        "iframe",
-        "img",
-        "input",
-        "ins",
-        "kbd",
-        "label",
-        "map",
-        "mark",
-        "math",
-        "meter",
-        "noscript",
-        "object",
-        "output",
-        "picture",
-        "progress",
-        "q",
-        "ruby",
-        "s",
-        "samp",
-        "script",
-        "select",
-        "slot",
-        "small",
-        "span",
-        "strong",
-        "sub",
-        "sup",
-        "svg",
-        "template",
-        "textarea",
-        "time",
-        "u",
-        "tt",
-        "var",
-        "video",
-        "wbr",
-        #
-        "td",
-        "th",
-    )
-
-    # Mapping showing how much width the formatting of block elements used. This is used to
-    # reduce the available width when rendering child elements
-    _TAG_INSETS = {
-        # "li": 3,
-        "blockquote": 2,
-        "summary": 3,
-        "details": 3,
-    }
-
-    _BORDER_WIDTHS = {
-        "0": BorderLineStyle(Invisible, Invisible, Invisible, Invisible),
-        "1": BorderLineStyle(Thin, Thin, Thin, Thin),
-        "2": BorderLineStyle(Double, Double, Double, Double),
-        "3": BorderLineStyle(Thick, Thick, Thick, Thick),
-    }
-
-    # The default theme to apply to various elements
-    _ELEMENT_BASE_THEMES = defaultdict(
-        dict,
-        {
-            "default": {
-                "padding": None,
-                "margin": Padding(0, 0, 0, 0),
-                "align": FormattedTextAlign.LEFT,
-                "border": None,
-                "border_collapse": True,
-                "language": None,
-                "style": "",
-                "invisilble": False,
-                "skip": False,
-            },
-            "blockquote": {"margin": Padding(1, 0, 1, 0)},
-            "hr": {"margin": Padding(1, 0, 1, 0)},
-            "p": {"margin": Padding(1, 0, 1, 0)},
-            "pre": {"margin": Padding(1, 0, 1, 0)},
-            "math": {"margin": Padding(1, 0, 1, 0)},
-            "details": {"margin": Padding(1, 0, 1, 0)},
-            "summary": {"margin": Padding(0, 0, 1, 0)},
-            "caption": {"align": FormattedTextAlign.CENTER},
-            "th": {"style": "bold"},
-            "table": {"padding": Padding(0, 1, 0, 1)},
-        },
-    )
-
     def __init__(
         self,
         markup: "str",
+        base: "Optional[Union[UPath, str]]" = None,
         width: "Optional[int]" = None,
         strip_trailing_lines: "bool" = True,
     ) -> None:
@@ -336,6 +384,7 @@ class HTML:
 
         Args:
             markup: The markdown text to render
+            base: The base url for the HTML document
             width: The width in characters available for rendering. If :py:const:`None`
                 the terminal width will be used
             strip_trailing_lines: If :py:const:`True`, empty lines at the end of the
@@ -343,6 +392,7 @@ class HTML:
 
         """
         self.markup = markup
+        self.base = base
         self.width = width or get_app_session().output.get_size().columns
         self.strip_trailing_lines = strip_trailing_lines
 
@@ -350,20 +400,21 @@ class HTML:
             ".dataframe": {
                 "border": BorderLineStyle(Invisible, Invisible, Invisible, Invisible),
                 "border_collapse": True,
-                "style_classes": "class:dataframe",
+                "style_classes": ["dataframe"],
             }
         }
 
+        self.element_theme_cache: "SimpleCache[dict]" = SimpleCache()
+
         # Parse the markup
-        # soup = bs4.BeautifulSoup(markup, "html.parser")
         soup = parser.parse(markup)
 
         # Parse the styles
         self.css.update(self.parse_styles(soup))
 
         # Render the markup
-        self.formatted_text = self.render(
-            soup.contents,
+        self.formatted_text = self.render_element(
+            soup,
             width=self.width,
         )
 
@@ -386,7 +437,7 @@ class HTML:
                 and child.attrs.get("rel") == "stylesheet"
                 and (href := child.attrs.get("href"))
             ):
-                css_str = load_url(href) or ""
+                css_str = load_url(href, self.base).decode() or ""
 
             # In case of a <style> tab, load first child's text
             elif child.name == "style":
@@ -404,10 +455,10 @@ class HTML:
                         selector, _, content = rule.partition("{")
                         selector = selector.strip()
                         # For now, only parse single element and ID selectors
-                        # TODO - more complex rules
-                        if len(selector.split()) == 1:
+                        # TODO - more CSS matching complex rules
+                        if len(selector.split()) <= 2:
                             content = content.strip().rstrip(";")
-                            rule_content = self.parse_css_content(content)
+                            rule_content = parse_css_content(content)
                             if selector in rules:
                                 rules[selector].update(rule_content)
                             else:
@@ -415,63 +466,29 @@ class HTML:
 
         return rules
 
-    def parse_css_content(self, content: "str") -> "dict[str, Any]":
-        """Convert CSS declarations into the internals style representation."""
-        output = {}
-
-        for declaration in content.split(";"):
-            name, _, value = declaration.partition(":")
-            name, value = name.strip(), value.strip()
-
-            if name == "color":
-                if color := get_color(value):
-                    output.setdefault("style_fg", "")
-                    output["style_fg"] = color
-
-            elif name in ("background", "background-color"):
-                if color := get_color(value):
-                    output.setdefault("style_bg", "")
-                    output["style_bg"] = color
-
-            elif name == "font-weight":
-                if value in ("bold", "bolder") or (
-                    (digits := get_digits(value)) and int(digits) > 700
-                ):
-                    output.setdefault("style_attrs", "")
-                    output["style_attrs"] += " bold"
-
-            elif name == "text-decoration":
-                if value == "underline":
-                    output.setdefault("style_attrs", "")
-                    output["style_attrs"] += " underline"
-
-            elif name == "text-align":
-                output["align"] = FormattedTextAlign(value.upper())
-
-            elif name == "border-width":
-                if digits := get_digits(value):
-                    output["border"] = self._BORDER_WIDTHS.get(digits)
-
-            elif name == "visibility":
-                output["hidden"] = value == "hidden"
-
-            elif name == "display":
-                output["skip"] = value == "none"
-
-        return output
-
-    def get_element_theme(
+    def element_theme(
         self, element: "PageElement", parent_theme: "Optional[dict]" = None
+    ) -> "dict":
+        """Get an element's theme from the cache, or calculate it."""
+        return self.element_theme_cache.get(
+            element, partial(self.calc_element_theme, element, parent_theme)
+        )
+
+    def calc_element_theme(
+        self,
+        element: "PageElement",
+        parent_theme: "Optional[dict]" = None,
     ) -> "ChainMap":
         """Compute the theme of an element."""
         element_id = element.attrs.get("id")
 
         # Add extra attributes
         extras = {}
+        styles = {}
 
         # -> border
         if border_attr := element.attrs.get("border"):
-            extras["border"] = self._BORDER_WIDTHS.get(
+            extras["border"] = _BORDER_WIDTHS.get(
                 border_attr,
                 BorderLineStyle(Thick, Thick, Thick, Thick),
             )
@@ -483,7 +500,7 @@ class HTML:
         # -> cellpadding
         # TODO
 
-        # Check for lanaguage highlighting classes
+        # Check for language highlighting classes
         for class_name in element.attrs.get("class", []):
             if class_name.startswith("language-"):
                 extras["language"] = class_name[9:]
@@ -494,8 +511,10 @@ class HTML:
 
         # Chain themes from various levels
         theme = ChainMap(
+            # Computed combined styles
+            styles,
             # Tag styles
-            self.parse_css_content(element.attrs.get("style", "")),
+            parse_css_content(element.attrs.get("style", "")),
             # Tag rules
             self.css.get(element.name, {}),
             # Class rules
@@ -509,35 +528,35 @@ class HTML:
             # Tag attributes
             extras,
             # Element base style
-            self._ELEMENT_BASE_THEMES[element.name],
+            _ELEMENT_BASE_THEMES[element.name],
             # Parent theme
             dict(parent_theme) if parent_theme else {},
             # Add an element class
-            {"style_classes": f"class:html,{element.name}" if element.name else ""},
+            {"style_classes": [element.name]},
             # Default element style
-            self._ELEMENT_BASE_THEMES["default"],
+            _ELEMENT_BASE_THEMES["default"],
         )
 
         # Concatenate styles
-        style_classes = ""
-        style_attrs = ""
-        for mapping in theme.maps:
-            if style_class := mapping.get("style_classes"):
-                style_classes = f"{style_classes} {style_class}"
-            if style_attr := mapping.get("style_attrs"):
-                style_attrs = f"{style_attrs} {style_attr}"
-        style_str = f"{style_classes} {style_attrs}"
+        styles["style_classes"] = sum(
+            (mapping.get("style_classes", []) for mapping in theme.maps), start=[]
+        )
+        styles["style_attrs"] = sum(
+            (mapping.get("style_attrs", []) for mapping in theme.maps), start=[]
+        )
+        style_classes_str = "class:" + ",".join(styles["style_classes"])
+        style_attrs_str = " ".join(styles["style_attrs"])
+        styles["style"] = f"{style_classes_str} {style_attrs_str}"
         if fg := theme.get("style_fg"):
-            style_str = f"{style_str} fg:{fg}"
+            styles["style"] += f" fg:{fg}"
         if bg := theme.get("style_bg"):
-            style_str = f"{style_str} bg:{bg}"
-        extras["style"] = style_str
+            styles["style"] += f" bg:{bg}"
 
         return theme
 
-    def render(
+    def render_contents(
         self,
-        elements: "list[PageElement]",
+        contents: "list[PageElement]",
         width: "int" = 80,
         left: "int" = 0,
         preformatted: "bool" = False,
@@ -546,19 +565,20 @@ class HTML:
         """Render a list of parsed markdown elements.
 
         Args:
-            elements: The list of parsed elements to render
+            contents: The list of parsed elements to render
             width: The width at which to render the elements
             left: The position on the current line at which to render the output - used
                 to indent subsequent lines when rendering inline blocks like images
             preformatted: If True, whitespace will not be stripped from the element's
                 text
+            parent_theme: The theme of the element's parent element
 
         Returns:
             Formatted text
 
         """
         if parent_theme is None:
-            parent_theme = self._ELEMENT_BASE_THEMES["default"]
+            parent_theme = _ELEMENT_BASE_THEMES["default"]
 
         ft = []
 
@@ -566,7 +586,7 @@ class HTML:
             ft: "StyleAndTextTuples", element: "PageElement", index: "int"
         ) -> "None":
             """Draw the vertical margins for an element."""
-            theme = self.get_element_theme(element, parent_theme)
+            theme = self.element_theme(element, parent_theme)
             margin = theme["margin"][index]
             # Find how much of this margin has already been drawn
             i = -1
@@ -579,31 +599,34 @@ class HTML:
                 else:
                     continue
                 break
-            return [
-                (
-                    # self.get_element_theme(element)["style"],
-                    parent_theme["style"] if parent_theme else "",
-                    "\n" * (max(0, margin - i)),
-                )
-            ]
+            if n_new_lines := max(0, margin - i):
+                return [
+                    (
+                        parent_theme["style"] if parent_theme else "",
+                        "\n" * n_new_lines,
+                    )
+                ]
+            return []
 
-        for element in elements:
+        for element in contents:
 
-            # Do not render metadata tags
-            if element.name in self._METADATA_ELEMENTS:
+            # Convert tags with "math" class to <math> tag
+            if element.name and "math" in element.attrs.get("class", []):
+                element.name = "math"
+
+            theme = self.element_theme(element, parent_theme)
+
+            # Do not render tags with "skip" set in theme
+            if theme["skip"]:
                 continue
 
             # Is the current element a block element?
-            block = element.name and element.name not in self._INLINE_ELEMENTS
+            block = theme["block"]
 
             # Set preformatted flag for <pre> tags
             _preformatted = preformatted
             if element.name == "pre":
                 _preformatted = True
-
-            # Convert tags with "math" class to <math> tag
-            if element.name and "math" in element.attrs.get("class", []):
-                element.name = "math"
 
             # Render block element margins. We want to ensure block elements always
             # start on a new line, and that margins collapse.
@@ -612,25 +635,21 @@ class HTML:
                 ft.extend(_draw_margin(ft, element, 0))
 
             # If there is a special method for rendering the block, use it; otherwise
-            # use the generic `render_block` function
-            render_func = getattr(self, f"render_{element.name}", self.render_block)
+            # use the generic `render_element` function
+            render_func = getattr(self, f"render_{element.name}", self.render_element)
+
+            # Recalculate the left offset if we have rendered output
+            if ft:
+                left = last_line_length(ft)
 
             # Render the element
             rendering = render_func(
                 element,
                 width=width,
-                left=last_line_length(ft),
+                left=left,
                 preformatted=_preformatted,
                 parent_theme=parent_theme,
             )
-
-            # Wrap inline elements
-            if element.name not in self._INLINE_ELEMENTS:
-                last_line_len = last_line_length(ft)
-                theme = self.get_element_theme(element, parent_theme)
-                rendering = wrap(
-                    rendering, width, style=theme["style"], left=last_line_len
-                )
 
             # Draw block element bottom margin, ensuring block elements end on a new
             # line, and that margins collapse
@@ -641,11 +660,11 @@ class HTML:
 
         return ft
 
-    def render_block(
+    def render_element(
         self,
         element: "PageElement",
         width: "int",
-        left: "int" == 0,
+        left: "int" = 0,
         preformatted: "bool" = False,
         parent_theme: "Optional[dict]" = None,
     ) -> "StyleAndTextTuples":
@@ -658,115 +677,122 @@ class HTML:
                 to indent subsequent lines when rendering inline blocks like images
             preformatted: When True, whitespace in the the element's text is not
                 collapsed
+            parent_theme: The theme of the element's parent element
 
         Returns:
             Formatted text
 
         """
-        ft = []
+        theme = self.element_theme(element, parent_theme)
+        inner_width = width - _ELEMENT_INSETS.get(element.name, 0)
 
-        theme = self.get_element_theme(element, parent_theme)
+        # Render the contents
+        ft = self.render_contents(
+            element.contents,
+            inner_width,
+            left,
+            preformatted,
+            theme,
+        )
 
-        # Render a tag
-        if element.name:
-            # Restrict width if necessary
-            inner_width = width - self._TAG_INSETS.get(element.name, 0)
-
-            ft.extend(
-                self.render(
-                    element.contents,
-                    inner_width,
-                    left,
-                    preformatted,
-                    parent_theme=theme,
-                )
+        # Apply tag formatting
+        if format_func := getattr(self, f"format_{element.name}", None):
+            ft = format_func(
+                ft,
+                inner_width,
+                left,
+                element,
+                theme,
             )
 
-            # Apply tag formatting
-            if format_func := getattr(self, f"format_{element.name}", None):
-                ft = format_func(
-                    ft,
-                    inner_width,
-                    left,
-                    element,
-                    theme,
-                )
+        # Lex the text
+        if language := theme["language"]:
+            ft = strip(ft, left=False, right=True, char="\n")
+            ft = lex(ft, lexer_name=language)
 
-            # Lex the text
-            if language := theme["language"]:
-                ft = strip(ft, left=False, right=True, char="\n")
-                ft = lex(ft, lexer_name=language)
+        # Fill space around block elements so they fill the width
+        if theme["block"]:
+            from prompt_toolkit.formatted_text.utils import fragment_list_width
 
-            # Fill space around an element
-            if element.name not in self._INLINE_ELEMENTS:
-                from prompt_toolkit.formatted_text.utils import fragment_list_width
+            # Remove one trailing newline if there is one
+            for i in range(len(ft) - 1, -1, -1):
+                frag = ft[i]
+                if not frag[1]:
+                    continue
+                if frag[1] == "\n":
+                    del ft[i]
+                elif frag[1].endswith("\n"):
+                    ft[i] = (frag[0], frag[1][:-1])
+                break
 
-                filled_output = []
-
-                # Remove one trailing newline
-                for i, frag in enumerate(reversed(ft), start=1):
-                    if not frag[1]:
-                        continue
-                    if frag[1].endswith("\n"):
-                        ft[-i] = (frag[0], frag[1][:-1])
-                    break
-
-                # Format the remainder of each line
-                for line in split_lines(ft):
-                    filled_output.extend(line)
-                    remaining = width - fragment_list_width(line)
+            # Format the remainder of each line
+            filled_output = []
+            for line in split_lines(ft):
+                filled_output.extend(line)
+                if remaining := width - fragment_list_width(line):
                     filled_output.append((theme["style"], (" " * remaining)))
                     # filled_output.append((theme["style"], ("·" * remaining)))
-                    filled_output.append(("", "\n"))
-
-                ft = filled_output
-
-        # Render a text element
-        else:
-            # Strip the text
-            text = element.text
-
-            if not preformatted:
-                strippable = True
-                for i in text:
-                    if i not in "\x20\x0a\x09\x0c\x0d":
-                        strippable = False
-                        break
-                if strippable:
-                    if "\n" in text:
-                        text = "\n"
-                    else:
-                        text = " "
-                text = re.sub(r"\s+", " ", text.replace("\n", ""))
-
-            style = parent_theme["style"]
-
-            if parent_theme.get("hidden"):
-                text = " " * len(text)
-                style = f"{style} nounderline"
-
-            # Render the text
-            if text:
-                ft.append((style, text))
+                if filled_output and not filled_output[-1][1].endswith("\n"):
+                    filled_output.append((theme["style"], "\n"))
+            ft = filled_output
 
         return ft
 
-    def render_ul(
+    def render_text(
         self,
         element: "PageElement",
         width: "int",
-        left: "int" == 0,
+        left: "int" = 0,
         preformatted: "bool" = False,
         parent_theme: "Optional[dict]" = None,
     ) -> "StyleAndTextTuples":
-        ft = self.render_block(
-            element,
-            width=width,
-            left=left,
-            preformatted=preformatted,
-            parent_theme=parent_theme,
-        )
-        ft.append(("", "\n"))
+        """Render a text element.
+
+        Args:
+            element: The page element to render
+            width: The width at which to render the elements
+            left: The position on the current line at which to render the output - used
+                to indent subsequent lines when rendering inline blocks like images
+            preformatted: When True, whitespace in the the element's text is not
+                collapsed
+            parent_theme: The theme of the element's parent element
+
+        Returns:
+            Formatted text
+
+        """
+        ft: "StyleAndTextTuples" = []
+
+        text = element.text
+
+        style = parent_theme["style"]
+
+        # Ensure hidden text is blank and not underlined
+        if parent_theme.get("hidden"):
+            text = " " * len(text)
+            style = f"{style} nounderline"
+
+        # Strip whitespace
+        if not preformatted:
+            strippable = True
+            for i in text:
+                if i not in "\x20\x0a\x09\x0c\x0d":
+                    strippable = False
+                    break
+            if strippable:
+                if "\n" in text:
+                    text = "\n"
+                else:
+                    text = " "
+            text = re.sub(r"\s+", " ", text.strip("\n").replace("\n", " "))
+
+        if text:
+            ft = [(style, text)]
+
+        # Wrap non-pre-formatted text
+        if not preformatted:
+            ft = wrap(ft, width, left=left, style=style)
+
         return ft
 
     def render_ol(
@@ -783,8 +809,8 @@ class HTML:
         for i, item in enumerate(items, start=1):
             item.attrs["data-margin"] = str(i).rjust(margin_width) + "."
             item.attrs["data-list-type"] = "ol"
-        # Render as a <ul>
-        return self.render_ul(element, width, left, preformatted, parent_theme)
+        # Render as normal
+        return self.render_element(element, width, left, preformatted, parent_theme)
 
     def render_li(
         self,
@@ -796,7 +822,7 @@ class HTML:
     ) -> "StyleAndTextTuples":
         """Render a list element."""
         # Get the element's theme
-        theme = self.get_element_theme(element, parent_theme)
+        theme = self.element_theme(element, parent_theme)
         # Is this a <ol> or a <ul> list?
         list_type = element.attrs.get("data-list-type", "ul")
         # Get the bullet details
@@ -804,7 +830,7 @@ class HTML:
         bullet_str = f" {bullet} "
         bullet_width = len(bullet_str)
         # Render the contents of the list item
-        ft = self.render(
+        ft = self.render_contents(
             element.contents,
             # Restrict the available width by the margin width
             width=width - bullet_width,
@@ -840,6 +866,7 @@ class HTML:
                 to indent subsequent lines when rendering inline blocks like images
             preformatted: When True, whitespace in the the element's text is not
                 collapsed
+            parent_theme: The theme of the parent element
 
         Returns:
             Formatted text
@@ -847,7 +874,7 @@ class HTML:
         """
         ft = []
 
-        table_theme = self.get_element_theme(element, parent_theme)
+        table_theme = self.element_theme(element, parent_theme)
         table = Table(
             align=table_theme["align"],
             style=table_theme["style"],
@@ -862,24 +889,23 @@ class HTML:
         def render_rows(elements: "list[element]") -> "None":
             for tr in elements:
                 if tr.name == "tr":
-                    tr_theme = self.get_element_theme(tr, table_theme)
-
+                    tr_theme = self.element_theme(tr, table_theme)
                     row = table.new_row(
                         align=tr_theme["align"],
-                        # padding=tr_theme["padding"],
+                        padding=tr_theme["padding"],
                         border=tr_theme["border"],
                         style=tr_theme["style"],
                     )
                     for td in tr.contents:
                         if td.name in ("th", "td"):
-                            td_theme = self.get_element_theme(td, tr_theme)
+                            td_theme = self.element_theme(td, parent_theme)
                             row.new_cell(
-                                text=self.render_block(
-                                    td,
+                                text=self.render_contents(
+                                    td.contents,
                                     width=width,
                                     left=0,
                                     preformatted=preformatted,
-                                    parent_theme=tr_theme,
+                                    parent_theme=td_theme,
                                 ),
                                 padding=td_theme["padding"],
                                 border=td_theme["border"],
@@ -907,10 +933,10 @@ class HTML:
         if captions:
             table_width = max_line_width(ft_table)
             for child in captions:
-                ft_caption = self.render(
+                ft_caption = self.render_contents(
                     child.contents, table_width, left, preformatted, table_theme
                 )
-                caption_theme = self.get_element_theme(child, table_theme)
+                caption_theme = self.element_theme(element, parent_theme)
                 if ft_caption:
                     # TODO - rely on CSS default styling here
                     ft.extend(
@@ -936,19 +962,19 @@ class HTML:
         parent_theme: "Optional[dict]" = None,
     ) -> "StyleAndTextTuples":
         """Render an expand summary / details."""
-        theme = self.get_element_theme(element, parent_theme)
+        theme = self.element_theme(element, parent_theme)
         # Restrict width if necessary
-        width -= self._TAG_INSETS.get(element.name, 0)
+        width -= _ELEMENT_INSETS.get(element.name, 0)
 
         summary_elements = element.find_all("summary", recursive=False)
-        ft = self.render(
+        ft = self.render_contents(
             summary_elements, width=width, preformatted=preformatted, parent_theme=theme
         )
 
         detail_elements = [e for e in element.contents if e.name != "summary"]
         ft.extend(
             self.format_details(
-                self.render(
+                self.render_contents(
                     detail_elements, width, left, preformatted, parent_theme=theme
                 ),
                 width,
@@ -959,6 +985,55 @@ class HTML:
         )
         return ft
 
+    def render_img(
+        self,
+        element: "PageElement",
+        width: "int",
+        left: "int" == 0,
+        preformatted: "bool" = False,
+        parent_theme: "Optional[dict]" = None,
+    ) -> "StyleAndTextTuples":
+        """Display images rendered as ANSI art."""
+        result: "StyleAndTextTuples" = []
+        src = str(element.attrs.get("src", ""))
+        # Attempt to load the image url
+        if data := load_url(src, self.base):
+            # Display it graphically
+            _, _, suffix = src.rpartition(".")
+            format_ = FORMAT_EXTENSIONS.get(suffix.lower(), "png")
+            cols, aspect = pixels_to_cell_size(*data_pixel_size(data, format_=format_))
+            # Manially set a value if we don't have one
+            cols = cols or 20
+            aspect = aspect or 0.5
+            # Scale down the image to fit to width
+            cols = min(width, cols)
+            rows = ceil(cols * aspect)
+            # Convert the image to formatted-text
+            result = convert(
+                data,
+                format_,
+                "formatted_text",
+                cols=cols,
+                rows=rows,
+            )
+            # Remove trailing new-lines
+            result = strip(result, char="\n", left=False)
+            # Optionally add a border
+            if try_eval(element.attrs.get("border")):
+                result = add_border(
+                    result,
+                    border=Rounded,
+                    style="class:md.img.border",
+                )
+            # Indent for line continuation as images are inline
+            result = indent(
+                result, " " * left, skip_first=True, style=parent_theme["style"]
+            )
+            return result
+        # Otherwise, display the image title
+        else:
+            return self.render_element(element, width, left, preformatted, parent_theme)
+
     ###
 
     def __pt_formatted_text__(self) -> "StyleAndTextTuples":
@@ -966,6 +1041,36 @@ class HTML:
         return self.formatted_text
 
     # Tag formatting methods
+
+    @staticmethod
+    def format_img(
+        ft: "StyleAndTextTuples",
+        width: "int",
+        left: "int",
+        element: "PageElement",
+        theme: "dict",
+    ) -> "StyleAndTextTuples":
+        """Fallback to formatting an image as title text if nothing loaded."""
+        if not ft:
+            bounds = ("", "")
+            # Add fallback text if there is no image title
+            title = str(element.attrs.get("alt"))
+            # Try getting the filename
+            if not title:
+                src = str(element.attrs.get("src", ""))
+                if not src.startswith("data:"):
+                    title = src.rsplit("/", 1)[-1]
+            if not title:
+                title = "Image"
+            # Add the sunrise emoji to represent an image. I would use :framed_picture:, but it
+            # requires multiple code-points and causes breakage in many terminals
+            ft = [
+                ("reverse", f"{bounds[0]}"),
+                ("", f"🌄 {title} "),
+                ("reverse", f"{bounds[1]}"),
+            ]
+            ft = apply_style(ft, theme["style"])
+        return ft
 
     @staticmethod
     def format_div(
@@ -1079,22 +1184,6 @@ class HTML:
         return ft
 
     @staticmethod
-    def format_code(
-        ft: "StyleAndTextTuples",
-        width: "int",
-        left: "int",
-        element: "PageElement",
-        theme: "dict",
-    ) -> "StyleAndTextTuples":
-        """Format lexes code blocks."""
-        # for class_name in element.attrs.get("class", []):
-        # if class_name.startswith("language-"):
-        # language = class_name[9:]
-        # ft = strip(ft, left=False, right=True, char="\n")
-        # ft = lex(ft, lexer_name=language)
-        return ft
-
-    @staticmethod
     def format_pre(
         ft: "StyleAndTextTuples",
         width: "int",
@@ -1150,75 +1239,6 @@ class HTML:
         return result
 
     @staticmethod
-    def format_img(
-        ft: "StyleAndTextTuples",
-        width: "int",
-        left: "int",
-        element: "PageElement",
-        theme: "dict",
-    ) -> "StyleAndTextTuples":
-        """Display images rendered as ANSI art."""
-        result: "StyleAndTextTuples" = []
-        src = str(element.attrs.get("src", ""))
-        if data := load_url(src):
-            # Display it graphically
-            _, _, suffix = src.rpartition(".")
-            format_ = FORMAT_EXTENSIONS.get(suffix.lower(), "png")
-            cols, aspect = pixels_to_cell_size(*data_pixel_size(data, format_=format_))
-            # Manially set a value if we don't have one
-            cols = cols or 20
-            aspect = aspect or 0.5
-            # Scale down the image to fit to width
-            cols = min(width, cols)
-            rows = ceil(cols * aspect)
-            # Convert the image to formatted-text
-            result = convert(
-                data,
-                format_,
-                "formatted_text",
-                cols=cols,
-                rows=rows,
-            )
-            # Remove trailing new-lines
-            result = strip(result, char="\n", left=False)
-            # Optionally add a border
-            if try_eval(element.attrs.get("border")):
-                result = add_border(
-                    result,
-                    border=Rounded,
-                    style="class:md.img.border",
-                )
-            # Indent for line continuation as images are inline
-            result = indent(
-                result, " " * left, skip_first=True, style=parent_theme["style"]
-            )
-
-        # Fallback to formatting the title if we still don't have image formatted-text data
-        if not result:
-            bounds = ("", "")
-            if not to_plain_text(ft):
-                # Add fallback text if there is no image title
-                title = str(element.attrs.get("alt"))
-                # Try getting the filename
-                src = str(element.attrs.get("src", ""))
-                if not title and not src.startswith("data:"):
-                    title = src.rsplit("/", 1)[-1]
-                if not title:
-                    title = "Image"
-                ft = [("class:md.img", title)]
-            # Add the sunrise emoji to represent an image. I would use :framed_picture:, but it
-            # requires multiple code-points and causes breakage in many terminals
-            result = [(theme["style"], "🌄 "), *ft]
-            result = [
-                ("reverse", f"{bounds[0]}"),
-                *result,
-                ("reverse", f"{bounds[1]}"),
-            ]
-            result = apply_style(result, style=theme["style"])
-
-        return result
-
-    @staticmethod
     def format_summary(
         ft: "StyleAndTextTuples",
         width: "int",
@@ -1271,5 +1291,10 @@ if __name__ == "__main__":
 
     from euporie.core.style import HTML_STYLE
 
-    with UPath(sys.argv[1]).open() as f:
-        print_formatted_text(HTML(f.read()), style=Style(HTML_STYLE))
+    path = UPath(sys.argv[1])
+
+    with path.open() as f:
+        print_formatted_text(
+            HTML(path.open().read(), base=path),
+            style=Style(HTML_STYLE),
+        )
