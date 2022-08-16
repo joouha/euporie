@@ -11,6 +11,7 @@ Upcoming
 Added
 =====
 
+- Added new HTML renderer
 - Added shortcut key hints in menus and buttons
 - Added a shadow under the completions menu
 - Allow changing color depth on the fly
