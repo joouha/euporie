@@ -1038,7 +1038,7 @@ class Notebook(BaseNotebook):
             new_index = nb.cell.index - 1
             cells = nb.rendered_cells()
             if 0 <= new_index < len(cells):
-                cells[new_index].select(position=-1)
+                cells[new_index].select(position=-1, scroll=True)
 
     @staticmethod
     @add_cmd(
@@ -1054,7 +1054,7 @@ class Notebook(BaseNotebook):
             new_index = nb.cell.index + 1
             cells = nb.rendered_cells()
             if 0 <= new_index < len(cells):
-                cells[new_index].select(position=0)
+                cells[new_index].select(position=0, scroll=True)
 
     @staticmethod
     @add_cmd(
