@@ -21,7 +21,7 @@ from euporie.console.tabs.console import Console
 from euporie.core.app import BaseApp
 from euporie.core.commands import add_cmd
 from euporie.core.config import add_setting
-from euporie.core.filters import buffer_is_code, buffer_is_empty
+from euporie.core.filters import buffer_is_code, buffer_is_empty, has_dialog
 from euporie.core.io import patch_renderer_diff
 from euporie.core.key_binding.registry import register_bindings
 from euporie.core.widgets.dialog import (
@@ -81,6 +81,11 @@ class ConsoleApp(BaseApp):
             self, "need_mouse_support", x.value
         )
 
+    def _get_reserved_height(self) -> "Dimension":
+        if has_dialog():
+            return Dimension(min=15)
+        return Dimension(min=1)
+
     def load_container(self) -> "FloatContainer":
         """Returns a container with all opened tabs."""
         assert self.pager is not None
@@ -101,9 +106,11 @@ class ConsoleApp(BaseApp):
                     ConditionalContainer(
                         HSplit(
                             [
+                                # Fill empty space below input
                                 Window(
-                                    height=Dimension(min=1), style="class:default"
-                                ),  # Fill empty space below input
+                                    height=self._get_reserved_height,
+                                    style="class:default",
+                                ),
                                 self.pager,
                                 self.search_bar,
                                 StatusBar(),
