@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "euporie"
 version = "2.0.0-dev"
-description = "Euporie is a text-based user interface for running and editing Jupyter notebooks"
+description = "Euporie is a suite of terminal applications for interacting with Jupyter kernels"
 authors = ["Josiah Outram Halstead <josiah@halstead.email>"]
 license = "MIT"
 readme = "README.rst"
