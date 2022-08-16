@@ -217,6 +217,7 @@ def _calculate_mime_rank(mime_data: "tuple[str, Any]") -> "int":
         # Uprank plain text with escape sequences
         if mime == "text/plain" and "\x1b[" in data:
             i -= 2
+        # Downrank html with no tags
         if mime == "text/html" and "<" not in data:
             i += 2
         if PurePath(mime).match(ranked_mime):
