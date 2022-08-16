@@ -1,4 +1,4 @@
-"""Contains a markdown to formatted text parser."""
+"""Contains a HTML to formatted text parser."""
 
 from __future__ import annotations
 
