@@ -397,12 +397,13 @@ class Kernel:
         content = rsp.get("content", {})
         status = rsp.get("content", {}).get("status", "")
         if status == "ok":
-            if callable(
-                set_execution_count := self.msg_id_callbacks[msg_id].get(
-                    "set_execution_count"
-                )
-            ):
-                set_execution_count(content.get("execution_count"))
+            if execution_count := content.get("execution_count"):
+                if callable(
+                    set_execution_count := self.msg_id_callbacks[msg_id].get(
+                        "set_execution_count"
+                    )
+                ):
+                    set_execution_count(execution_count)
 
     def on_shell_execute_reply(self, rsp: "dict[str, Any]") -> "None":
         """Call callbacks for a shell execute reply response."""
@@ -415,10 +416,13 @@ class Kernel:
                 rsp["header"]["date"].isoformat(),
             )
 
-        if callable(
-            set_execution_count := self.msg_id_callbacks[msg_id]["set_execution_count"]
-        ):
-            set_execution_count(content.get("execution_count"))
+        if execution_count := content.get("execution_count"):
+            if callable(
+                set_execution_count := self.msg_id_callbacks[msg_id][
+                    "set_execution_count"
+                ]
+            ):
+                set_execution_count(execution_count)
 
         # Show pager output as a cell execution output
         if payloads := content.get("payload", []):
@@ -526,10 +530,13 @@ class Kernel:
         if callable(add_output := self.msg_id_callbacks[msg_id]["add_output"]):
             add_output(nbformat.v4.output_from_msg(rsp))
 
-        if callable(
-            set_execution_count := self.msg_id_callbacks[msg_id]["set_execution_count"]
-        ):
-            set_execution_count(rsp.get("content", {}).get("execution_count"))
+        if execution_count := rsp.get("content", {}).get("execution_count"):
+            if callable(
+                set_execution_count := self.msg_id_callbacks[msg_id][
+                    "set_execution_count"
+                ]
+            ):
+                set_execution_count(execution_count)
 
     def on_iopub_error(self, rsp: "dict[str, dict[str, Any]]") -> "None":
         """Call callbacks for an iopub error response."""
