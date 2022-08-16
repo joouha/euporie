@@ -22,7 +22,7 @@ Notebook Editors
 Consoles
 ********
 
-`jupyter-console <https://github.com/jupyter/jupyter_console>`
+`jupyter-console <https://github.com/jupyter/jupyter_console>`_
    A terminal-based console frontend for Jupyter kernels.
 
 ****************
