@@ -473,6 +473,7 @@ WRAP_PAIRS: "dict[str, list[str]]" = {
         "``",
         "**",
         "__",
+        "<>",
     ],
 }
 
@@ -480,7 +481,6 @@ for pair in WRAP_PAIRS["code"]:
     left, right = list(pair)
     add_cmd(
         name=f"wrap-selection-{pair}",
-        # keys=sorted(set(pair)),
         title=f"Wrap selection in {pair}",
         description=f"Wraps the current selection with: {pair}",
         filter=buffer_has_focus & has_selection & buffer_is_code,
@@ -703,12 +703,16 @@ def newline(event: "KeyPressEvent") -> "None":
     buffer.cut_selection()
     buffer.newline(copy_margin=not in_paste_mode())
     if buffer_is_code():
-        pre = document.current_line_before_cursor
-        if pre.rstrip()[-1:] in (":", "(", "[", "{"):
+        pre = document.current_line_before_cursor.rstrip()
+        post = document.current_line_after_cursor.lstrip()
+        if post and post.strip()[0] in (")", "]", "}"):
+            buffer.insert_text(
+                "\n" + buffer.document.leading_whitespace_in_current_line,
+                move_cursor=False,
+                fire_event=False,
+            )
+        if pre and pre[-1:] in (":", "(", "[", "{"):
             dent_buffer(event)
-    # TODO
-    # post = buffer.document.text_after_cursor
-    # if post.lstrip()[0:1] in (")", "]", "}"):
 
 
 @add_cmd(
