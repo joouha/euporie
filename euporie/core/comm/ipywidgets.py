@@ -497,19 +497,20 @@ class TextBoxIpyWidgetComm(IpyWidgetComm, metaclass=ABCMeta):
             placeholder=self.data.get("state", {}).get("placeholder"),
             disabled=Condition(lambda: self.data["state"].get("disabled", False)),
         )
-        container = FocusedStyle(
-            LabelledWidget(
-                body=text,
-                label=lambda: self.data.get("state", {}).get("description", ""),
-                style="class:ipywidget",
-            )
+        labelled_widget = LabelledWidget(
+            body=text,
+            label=lambda: self.data.get("state", {}).get("description", ""),
+            style="class:ipywidget",
+            html=self.data.get("state", {}).get("description_allow_html", False),
         )
+        container = FocusedStyle(labelled_widget)
         return CommView(
             container,
             setters={
                 "value": lambda x: setattr(text.buffer, "text", str(x)),
                 "rows": partial(setattr, text.text_area.window, "height"),
                 "placeholder": partial(setattr, text, "placeholder"),
+                "description_allow_html": partial(setattr, labelled_widget, "html"),
             },
         )
 

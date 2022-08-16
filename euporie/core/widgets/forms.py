@@ -627,20 +627,26 @@ class Label:
     """A label widget which displays rich text."""
 
     def __init__(
-        self, value: "AnyFormattedText", style: "Union[str, Callable[[], str]]" = ""
+        self,
+        value: "AnyFormattedText",
+        style: "Union[str, Callable[[], str]]" = "",
+        html: "FilterOrBool" = False,
     ) -> "None":
         """Create a new label widget instance.
 
         Args:
             value: The value to display
             style: Additional style to apply to the widget
+            html: Whether to render the label as HTML
         """
         self.value = value
         self.control = FormattedTextControl(self.get_value, focusable=False)
+        self.html = to_filter(html)
         self.container = Window(
             self.control,
             style=style,
             dont_extend_width=True,
+            dont_extend_height=True,
         )
 
     def get_value(self) -> "StyleAndTextTuples":
@@ -650,11 +656,13 @@ class Label:
             data = value()
         else:
             data = value
-        return convert(
-            data=data,
-            from_="markdown",
-            to="formatted_text",
-        )
+        if self.html():
+            return convert(
+                data=data,
+                from_="html",
+                to="formatted_text",
+            )
+        return data
 
     def __pt_container__(self) -> "AnyContainer":
         """Returns the widget's container."""
@@ -670,6 +678,7 @@ class LabelledWidget:
         label: "AnyFormattedText",
         style: "str" = "",
         vertical: "FilterOrBool" = False,
+        html: "FilterOrBool" = False,
     ) -> "None":
         """Create a new labelled widget instance.
 
@@ -678,9 +687,12 @@ class LabelledWidget:
             label: The label text to apply
             style: Additional style string to apply to the label
             vertical: Determines if the labelled widget should be oriented vertically
+            html: Whether to render the label as HTML
         """
         self.body = body
         self.vertical = to_filter(vertical)
+        self._html = to_filter(html)
+        self.label = Label(label, style=style, html=self.html)
         padding_left = padding_right = lambda: None if self.vertical() else 0
         padding_top = padding_bottom = lambda: 0 if self.vertical() else None
         self.container = ConditionalSplit(
@@ -688,7 +700,7 @@ class LabelledWidget:
             [
                 ConditionalContainer(
                     Box(
-                        Label(label, style=style),
+                        self.label,
                         padding_top=padding_top,
                         padding_right=padding_right,
                         padding_bottom=padding_bottom,
@@ -703,6 +715,17 @@ class LabelledWidget:
             padding=1,
             style=style,
         )
+
+    @property
+    def html(self) -> "Filter":
+        """Get the HTML filter value."""
+        return self._html
+
+    @html.setter
+    def html(self, value: "FilterOrBool") -> "None":
+        """Set the HTML filter value."""
+        self._html = to_filter(value)
+        self.label.html = self._html
 
     def __pt_container__(self) -> "AnyContainer":
         """Returned the labelled widget container."""

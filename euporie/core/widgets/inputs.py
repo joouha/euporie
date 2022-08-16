@@ -307,7 +307,7 @@ class StdInput:
         self.container = ConditionalContainer(
             LabelledWidget(
                 body=text,
-                label=lambda: self.prompt or r"\>>>",
+                label=lambda: self.prompt or ">>>",
             ),
             filter=self.visible,
         )
