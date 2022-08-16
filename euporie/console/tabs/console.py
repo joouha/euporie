@@ -88,7 +88,7 @@ class Console(KernelTab):
         """
         # Kernel setup
         self._metadata = {}
-        self.kernel_name = app.config.default_kernel_name
+        self.kernel_name = app.config.kernel_name
         self.allow_stdin = True
         self.default_callbacks = MsgCallbacks(
             get_input=lambda prompt, password: self.stdin_box.get_input(

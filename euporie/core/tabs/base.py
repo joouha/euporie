@@ -183,7 +183,7 @@ class KernelTab(Tab, metaclass=ABCMeta):
     def kernel_name(self) -> "str":
         """Return the name of the kernel defined in the notebook JSON."""
         return self.metadata.get("kernelspec", {}).get(
-            "name", self.app.config.default_kernel_name
+            "name", self.app.config.kernel_name
         )
 
     @kernel_name.setter
@@ -264,8 +264,8 @@ class KernelTab(Tab, metaclass=ABCMeta):
     # ################################### Settings ####################################
 
     add_setting(
-        name="default_kernel_name",
-        flags=["--default-kernel-name"],
+        name="kernel_name",
+        flags=["--kernel-name"],
         type_=str,
         help_="The name of the kernel to start by default",
         default="python3",
