@@ -607,7 +607,7 @@ class Cell:
         """Remove all outputs from the cell."""
         self.clear_outputs_on_output = False
         if "outputs" in self.json:
-            del self.json["outputs"]
+            self.json["outputs"].clear()
         self.output_area.reset()
 
     def set_cell_type(
