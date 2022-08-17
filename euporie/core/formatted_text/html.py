@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING
 from prompt_toolkit.application.current import get_app_session
 from prompt_toolkit.cache import SimpleCache
 from prompt_toolkit.formatted_text.base import StyleAndTextTuples
-from prompt_toolkit.formatted_text.utils import split_lines
+from prompt_toolkit.formatted_text.utils import fragment_list_width, split_lines
 
 from euporie.core.border import (
     BorderLineStyle,
@@ -382,6 +382,7 @@ class HTML:
         base: "Optional[Union[UPath, str]]" = None,
         width: "Optional[int]" = None,
         strip_trailing_lines: "bool" = True,
+        pad: "bool" = True,
     ) -> None:
         """Initialize the markdown formatter.
 
@@ -392,12 +393,14 @@ class HTML:
                 the terminal width will be used
             strip_trailing_lines: If :py:const:`True`, empty lines at the end of the
                 rendered output will be removed
+            pad: When :py:const:`True`, the output is padded to fill the width
 
         """
         self.markup = markup
         self.base = base
         self.width = width or get_app_session().output.get_size().columns
         self.strip_trailing_lines = strip_trailing_lines
+        self.pad = pad
 
         self.css: "dict[str, dict[str, Any]]" = {
             ".dataframe": {
@@ -724,8 +727,7 @@ class HTML:
             ft = lex(ft, lexer_name=language)
 
         # Fill space around block elements so they fill the width
-        if theme["block"]:
-            from prompt_toolkit.formatted_text.utils import fragment_list_width
+        if self.pad and theme["block"]:
 
             # Remove one trailing newline if there is one
             for i in range(len(ft) - 1, -1, -1):
@@ -1096,7 +1098,7 @@ class HTML:
             # requires multiple code-points and causes breakage in many terminals
             ft = [
                 ("reverse", f"{bounds[0]}"),
-                ("", f"🌄 {title} "),
+                ("", f"🌄 {title}"),
                 ("reverse", f"{bounds[1]}"),
             ]
             ft = apply_style(ft, theme["style"])
@@ -1325,6 +1327,6 @@ if __name__ == "__main__":
 
     with path.open() as f:
         print_formatted_text(
-            HTML(path.open().read(), base=path),
+            HTML(path.open().read(), base=path, pad=True),
             style=Style(HTML_STYLE),
         )

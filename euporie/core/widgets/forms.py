@@ -45,7 +45,6 @@ from prompt_toolkit.widgets.base import Box, TextArea
 
 from euporie.core.app import get_app
 from euporie.core.border import BorderVisibility, InnerEdgeGridStyle
-from euporie.core.convert.base import convert
 from euporie.core.formatted_text.utils import FormattedTextAlign, align
 from euporie.core.margins import ScrollbarMargin
 from euporie.core.widgets.decor import Border
@@ -649,7 +648,7 @@ class Label:
             dont_extend_height=True,
         )
 
-    def get_value(self) -> "StyleAndTextTuples":
+    def get_value(self) -> "AnyFormattedText":
         """Return the current value of the label, converting to formatted text."""
         value = self.value
         if callable(value):
@@ -657,11 +656,9 @@ class Label:
         else:
             data = value
         if self.html():
-            return convert(
-                data=data,
-                from_="html",
-                to="formatted_text",
-            )
+            from euporie.core.formatted_text.html import HTML
+
+            return HTML(data, pad=False)
         return data
 
     def __pt_container__(self) -> "AnyContainer":
