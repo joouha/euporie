@@ -576,7 +576,7 @@ class ErrorDialog(Dialog):
                     FormattedTextArea(
                         lex([("", tb_text)], "pytb"),
                         width=80,
-                        height=20,
+                        height=Dimension(min=10),
                         wrap_lines=False,
                         style="",
                     ),
