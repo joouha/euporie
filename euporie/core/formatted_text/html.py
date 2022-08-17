@@ -412,14 +412,14 @@ class HTML:
         )
 
         # Parse the markup
-        soup = parser.parse(markup)
+        self.soup = parser.parse(markup.strip())
 
         # Parse the styles
-        self.css.update(self.parse_styles(soup))
+        self.css.update(self.parse_styles(self.soup))
 
         # Render the markup
         self.formatted_text = self.render_element(
-            soup,
+            self.soup,
             parent_theme={},
             width=self.width,
         )
@@ -586,7 +586,7 @@ class HTML:
         """
         ft: "StyleAndTextTuples" = []
 
-        def _draw_margin(
+        def _draw_y_margin(
             ft: "StyleAndTextTuples", element: "PageElement", index: "int"
         ) -> "StyleAndTextTuples":
             """Draw the vertical margins for an element."""
@@ -603,6 +603,7 @@ class HTML:
                 else:
                     continue
                 break
+            # Draw remaining margin lines
             if n_new_lines := max(0, margin - i):
                 return [
                     (
@@ -612,7 +613,7 @@ class HTML:
                 ]
             return []
 
-        for element in contents:
+        for i, element in enumerate(contents):
 
             # Convert tags with "math" class to <math> tag
             if element.name and "math" in element.attrs.get("class", []):
@@ -635,8 +636,8 @@ class HTML:
             # Render block element margins. We want to ensure block elements always
             # start on a new line, and that margins collapse.
             # Do not draw a margin if this is the first element of the render list.
-            if block and ft:
-                ft.extend(_draw_margin(ft, element, 0))
+            if block and parent_theme["block"] and ft:
+                ft.extend(_draw_y_margin(ft, element, 0))
 
             # If there is a special method for rendering the block, use it; otherwise
             # use the generic `render_element` function
@@ -657,8 +658,16 @@ class HTML:
 
             # Draw block element bottom margin, ensuring block elements end on a new
             # line, and that margins collapse
-            if block:
-                rendering.extend(_draw_margin(rendering, element, 2))
+            if (
+                block
+                and parent_theme["block"]
+                and any(
+                    element.name != "text"
+                    or (element.name == "text" and element.text.strip())
+                    for element in contents[i + 1 :]
+                )
+            ):
+                rendering.extend(_draw_y_margin(rendering, element, 2))
 
             ft.extend(rendering)
 
@@ -849,6 +858,7 @@ class HTML:
             ft, margin=" " * bullet_width, skip_first=True, style=theme["style"]
         )
         ft = strip(ft, left=False, right=True)
+        ft.append(("", "\n"))
         return ft
 
     def render_table(
@@ -964,23 +974,35 @@ class HTML:
         preformatted: "bool" = False,
     ) -> "StyleAndTextTuples":
         """Render an expand summary / details."""
-        parent_theme = parent_theme or {}
+        ft: "StyleAndTextTuples" = []
         theme = self.element_theme(element, parent_theme)
-        # Restrict width if necessary
-        width -= _ELEMENT_INSETS.get(element.name, 0)
 
-        summary_elements = element.find_all("summary", recursive=False)
-        ft = self.render_contents(
-            summary_elements, parent_theme=theme, width=width, preformatted=preformatted
-        )
+        summary_element = None
+        for child in element.contents:
+            if child.name == "summary":
+                summary_element = child
+                break
 
-        detail_elements = [e for e in element.contents if e.name != "summary"]
+        if summary_element is not None:
+            ft.extend(
+                self.render_element(
+                    summary_element,
+                    parent_theme=theme,
+                    width=width,
+                    left=left,
+                    preformatted=preformatted,
+                )
+            )
+            ft.append(("", "\n"))
+
+        detail_elements = [e for e in element.contents if e is not summary_element]
+
         ft.extend(
             self.format_details(
                 self.render_contents(
                     detail_elements,
                     parent_theme=theme,
-                    width=width,
+                    width=width - _ELEMENT_INSETS["details"],
                     left=left,
                     preformatted=preformatted,
                 ),
@@ -990,6 +1012,7 @@ class HTML:
                 theme,
             )
         )
+        ft.append(("", "\n"))
         return ft
 
     def render_img(

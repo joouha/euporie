@@ -61,8 +61,8 @@ def test_inline_element_wrapping() -> "None":
 def test_enclosed_paragraph_newlines() -> "None":
     """Enclosed an unenclosed paragraph margins are consistent."""
     data = "<p>a</p><p>b</b><p>c</p>"
-    expected = to_plain_text(HTML(f"<div>{data}</div> ", width=3)).replace(" ", "")
-    result = to_plain_text(HTML(f"{data} ", width=3)).replace(" ", "")
+    expected = to_plain_text(HTML(f"<div>{data}</div>", width=3))
+    result = to_plain_text(HTML(f"{data}", width=3))
     assert result == expected
 
 
@@ -71,3 +71,27 @@ def test_parent_style_class_inherited() -> "None":
     data = "<section><div><p>pp</p></div></section>"
     result = HTML(data, width=5).formatted_text
     assert "html,section,div,p" in result[0][0]
+
+
+def test_single_hr() -> "None":
+    """A single <hr> has its margins stripped."""
+    data = "<hr>"
+    expected = "───"
+    result = to_plain_text(HTML(data, width=3))
+    assert result == expected
+
+
+def test_nested_block_margins() -> "None":
+    """Margins are stripped from blocks at the start and end of blocks."""
+    data = "<hr><div><hr></div><hr>"
+    expected = "─\n \n─\n \n─"
+    result = to_plain_text(HTML(data, width=1))
+    assert result == expected
+
+
+def test_details_summary() -> "None":
+    """A <summary> renders as expected."""
+    data = "<details><summary>a a a</summary>b b b</details>"
+    expected = " ⮟ a a \n   a   \n       \n   b b \n   b   "
+    result = to_plain_text(HTML(data, width=7))
+    assert result == expected

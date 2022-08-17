@@ -101,6 +101,7 @@ mypy = "^0.942"
 rich = "^12.2.0"
 sphinx_design = "^0.2.0"
 sphinxcontrib-video = "^0.0.1-alpha.3"
+html2text = "^2020.1.16"
 
 [tool.isort]
 profile = "black"
