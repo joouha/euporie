@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, cast
 
-from prompt_toolkit.application.current import get_app_or_none
+from prompt_toolkit.application.current import get_app as ptk_get_app
 
 if TYPE_CHECKING:
     from euporie.core.app import BaseApp
@@ -12,9 +12,5 @@ if TYPE_CHECKING:
 
 def get_app() -> "BaseApp":
     """Get the current application."""
-    app = get_app_or_none()
-    if app is None:
-        from euporie.core.app import BaseApp
-
-        app = BaseApp()
+    app = ptk_get_app()
     return cast("BaseApp", app)

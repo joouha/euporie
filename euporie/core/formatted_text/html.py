@@ -1317,16 +1317,19 @@ class HTML:
 if __name__ == "__main__":
     import sys
 
+    from prompt_toolkit.application.current import set_app
     from prompt_toolkit.shortcuts.utils import print_formatted_text
     from prompt_toolkit.styles.style import Style
     from upath import UPath
 
+    from euporie.core.app import BaseApp
     from euporie.core.style import HTML_STYLE
 
     path = UPath(sys.argv[1])
 
-    with path.open() as f:
-        print_formatted_text(
-            HTML(path.open().read(), base=path, pad=True),
-            style=Style(HTML_STYLE),
-        )
+    with set_app(BaseApp()):
+        with path.open() as f:
+            print_formatted_text(
+                HTML(path.open().read(), base=path, pad=True),
+                style=Style(HTML_STYLE),
+            )
