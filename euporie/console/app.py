@@ -193,6 +193,7 @@ class ConsoleApp(BaseApp):
         app.renderer.clear()
         if tab is not None:
             tab.reset()
+            app.layout.focus(tab.input_box)
 
     add_cmd(
         name="end-of-file",
