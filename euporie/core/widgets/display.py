@@ -11,7 +11,9 @@ from typing import TYPE_CHECKING
 
 from prompt_toolkit.cache import SimpleCache
 from prompt_toolkit.data_structures import Point
-from prompt_toolkit.filters import Condition, has_completions, to_filter
+from prompt_toolkit.filters.app import has_completions
+from prompt_toolkit.filters.base import Condition
+from prompt_toolkit.filters.utils import to_filter
 from prompt_toolkit.formatted_text.base import to_formatted_text
 from prompt_toolkit.formatted_text.utils import fragment_list_width, split_lines
 from prompt_toolkit.layout.containers import Float, Window
