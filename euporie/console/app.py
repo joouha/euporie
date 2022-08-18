@@ -13,11 +13,13 @@ from prompt_toolkit.layout.containers import (
     ConditionalContainer,
     FloatContainer,
     HSplit,
+    VSplit,
     Window,
 )
 from prompt_toolkit.layout.dimension import Dimension
 
 from euporie.console.tabs.console import Console
+from euporie.core import __logo__
 from euporie.core.app import BaseApp
 from euporie.core.commands import add_cmd
 from euporie.core.config import add_setting
@@ -59,9 +61,11 @@ class ConsoleApp(BaseApp):
 
     def __init__(self, **kwargs: "Any") -> "None":
         """Create a new euporie text user interface application instance."""
+        # Setup mouse support
         self.need_mouse_support = False
         if self.config.mouse_support is not None:
             self.need_mouse_support = self.config.mouse_support
+
         super().__init__(
             **{
                 **{
@@ -113,7 +117,18 @@ class ConsoleApp(BaseApp):
                                 ),
                                 self.pager,
                                 self.search_bar,
-                                StatusBar(),
+                                VSplit(
+                                    [
+                                        Window(
+                                            char=f" {__logo__} ",
+                                            height=1,
+                                            width=3,
+                                            style="class:menu,logo",
+                                            dont_extend_width=True,
+                                        ),
+                                        StatusBar(),
+                                    ]
+                                ),
                             ],
                         ),
                         filter=~self.redrawing & ~is_done & renderer_height_is_known,
