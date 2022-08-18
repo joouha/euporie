@@ -1167,11 +1167,11 @@ testing = ["pytest", "pytest-benchmark"]
 
 [[package]]
 name = "poetry-publish"
-version = "0.4.1"
+version = "0.5.0"
 description = "Helper to build and upload a project that used poetry to PyPi, with prechecks"
 category = "dev"
 optional = false
-python-versions = ">=3.6,<4.0.0"
+python-versions = ">=3.7,<4.0.0"
 
 [package.dependencies]
 python-creole = "*"
@@ -2014,7 +2014,7 @@ svg-cairosvg = ["CairoSVG"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "3a5de03ca9848769c9d5129c4ed74ef963bb7451228826239930eb89c703caae"
+content-hash = "6404b273051287799d71dd8f7cb6ca8be2ee5366d164ad34edd1d15a352ea632"
 
 [metadata.files]
 aenum = [
@@ -2631,8 +2631,8 @@ pluggy = [
     {file = "pluggy-1.0.0.tar.gz", hash = "sha256:4224373bacce55f955a878bf9cfa763c1e360858e330072059e10bad68531159"},
 ]
 poetry-publish = [
-    {file = "poetry-publish-0.4.1.tar.gz", hash = "sha256:24b4c14ae910b52539d23a9103f3f9b052559141fd90ad921b4be8e1a36080d5"},
-    {file = "poetry_publish-0.4.1-py3-none-any.whl", hash = "sha256:c7825a45549f2cd75c93bc997b2256f80d3cb6732f1c0a0b54be50bc15ec0dfc"},
+    {file = "poetry-publish-0.5.0.tar.gz", hash = "sha256:7ebc7782ee318c099715518177446122e3a752347cebf8883828e110b7da0e9d"},
+    {file = "poetry_publish-0.5.0-py3-none-any.whl", hash = "sha256:41db2e004595051b4bc0ccd09017f5f81e0fa9b5673bb718ab3d26c2da5dd8f3"},
 ]
 prompt-toolkit = [
     {file = "prompt_toolkit-3.0.30-py3-none-any.whl", hash = "sha256:d8916d3f62a7b67ab353a952ce4ced6a1d2587dfe9ef8ebc30dd7c386751f289"},

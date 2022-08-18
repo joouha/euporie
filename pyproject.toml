@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "euporie"
-version = "2.0.0-dev"
+version = "2.0.0"
 description = "Euporie is a suite of terminal applications for interacting with Jupyter kernels"
 authors = ["Josiah Outram Halstead <josiah@halstead.email>"]
 license = "MIT"
@@ -76,7 +76,7 @@ images-img2unicode = ["img2unicode"]
 [tool.poetry.dev-dependencies]
 isort = "^5.8.0"
 flake8 = "^4.0.1"
-poetry-publish = "^0.4.1"
+poetry-publish = "^0.5.0"
 flake8-black = "^0.3.2"
 flake8-bugbear = "^22.3.23"
 flake8-bandit = "^3.0.0"

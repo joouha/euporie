@@ -4,14 +4,14 @@ from pathlib import Path
 
 from poetry_publish.publish import poetry_publish
 
-import euporie
+import euporie.core
 from euporie.core import __version__
 
 
 def publish() -> "None":
     """Publishes a new release of euporie to pypi.org."""
     poetry_publish(
-        package_root=Path(euporie.__file__).parent.parent,
+        package_root=Path(euporie.core.__file__).parent.parent.parent,
         version=__version__,
     )
 
