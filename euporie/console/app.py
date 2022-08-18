@@ -7,8 +7,11 @@ from typing import TYPE_CHECKING, cast
 
 from prompt_toolkit.application.current import get_app as ptk_get_app
 from prompt_toolkit.application.run_in_terminal import in_terminal
-from prompt_toolkit.filters import is_done
-from prompt_toolkit.filters.app import renderer_height_is_known
+from prompt_toolkit.filters.app import (
+    has_completions,
+    is_done,
+    renderer_height_is_known,
+)
 from prompt_toolkit.layout.containers import (
     ConditionalContainer,
     FloatContainer,
@@ -88,7 +91,10 @@ class ConsoleApp(BaseApp):
     def _get_reserved_height(self) -> "Dimension":
         if has_dialog():
             return Dimension(min=15)
-        return Dimension(min=1)
+        elif has_completions():
+            return Dimension(min=5)
+        else:
+            return Dimension(min=1)
 
     def load_container(self) -> "FloatContainer":
         """Returns a container with all opened tabs."""
