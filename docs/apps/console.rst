@@ -2,7 +2,7 @@
 Euporie Console
 ###############
 
-Euporie console is a terminal terminal frontend for Jupyter kernels, allowing code to be executed interactively and rich output to be displayed.
+Euporie console is a terminal frontend for Jupyter kernels, allowing code to be executed interactively and rich output to be displayed.
 
 
 .. video:: https://user-images.githubusercontent.com/12154190/185399185-55af7414-26ce-403d-b47f-7dda4d74f053.webm
@@ -10,7 +10,7 @@ Euporie console is a terminal terminal frontend for Jupyter kernels, allowing co
 
 |
 
-Euporie console will make use of terminal graphics capabilities to display images, and will render markdown, LaTeX, and :py:mod:`ipywidgets`.
+Euporie console makes use of terminal graphics capabilities to display images, and will render markdown, LaTeX, and :py:mod:`ipywidgets`.
 
 The command palette can be summoned with :kbd:`Ctrl+Space`, which provides access to settings and various operations from within the console.
 
