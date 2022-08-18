@@ -5,6 +5,15 @@ Changelog
 Notable changes to this project will be documented in this file.
 
 *****
+2.0.1
+*****
+
+Fixed
+=====
+
+- Fixed bug with rendering LaTeX maths in markdown cells
+
+*****
 2.0.0
 *****
 

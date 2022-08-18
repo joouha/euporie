@@ -135,7 +135,12 @@ _ELEMENT_BASE_THEMES: "defaultdict[str, dict[str, Any]]" = defaultdict(
         "label": {"inline": True, "block": False},
         "map": {"inline": True, "block": False},
         "mark": {"inline": True, "block": False},
-        "math": {"inline": True, "block": False, "margin": Padding(1, 0, 1, 0)},
+        "math": {
+            "inline": True,
+            "block": False,
+            "align": FormattedTextAlign.CENTER,
+            "margin": Padding(1, 0, 1, 0),
+        },
         "meter": {"inline": True, "block": False},
         "object": {"inline": True, "block": False},
         "output": {"inline": True, "block": False},
@@ -366,6 +371,8 @@ def parse_css_content(content: "str") -> "dict[str, Any]":
 
         elif name == "display":
             output["skip"] = value == "none"
+            if value == "block":
+                output["block"] = True
 
     return output
 
@@ -407,7 +414,8 @@ class HTML:
                 "border": BorderLineStyle(Invisible, Invisible, Invisible, Invisible),
                 "border_collapse": True,
                 "style_classes": ["dataframe"],
-            }
+            },
+            ".block": {"block": True},
         }
 
         self.element_theme_cache: "SimpleCache[PageElement, dict[str, Any]]" = (
@@ -619,7 +627,7 @@ class HTML:
         for i, element in enumerate(contents):
 
             # Convert tags with "math" class to <math> tag
-            if element.name and "math" in element.attrs.get("class", []):
+            if "math" in element.attrs.get("class", []):
                 element.name = "math"
 
             theme = self.element_theme(element, parent_theme)
@@ -659,18 +667,15 @@ class HTML:
                 preformatted=_preformatted,
             )
 
-            # Draw block element bottom margin, ensuring block elements end on a new
-            # line, and that margins collapse
-            if (
-                block
-                and parent_theme["block"]
-                and any(
+            if block:
+                # Draw block element bottom margin, ensuring block elements end on a new
+                # line, and that margins collapse
+                if parent_theme["block"] and any(
                     element.name != "text"
                     or (element.name == "text" and element.text.strip())
                     for element in contents[i + 1 :]
-                )
-            ):
-                rendering.extend(_draw_y_margin(rendering, element, 2))
+                ):
+                    rendering.extend(_draw_y_margin(rendering, element, 2))
 
             ft.extend(rendering)
 
@@ -726,30 +731,36 @@ class HTML:
             ft = strip(ft, left=False, right=True, char="\n")
             ft = lex(ft, lexer_name=language)
 
-        # Fill space around block elements so they fill the width
-        if self.pad and theme["block"]:
+        if theme["block"]:
 
-            # Remove one trailing newline if there is one
-            for i in range(len(ft) - 1, -1, -1):
-                frag = ft[i]
-                if not frag[1]:
-                    continue
-                if frag[1] == "\n":
-                    del ft[i]
-                elif frag[1].endswith("\n"):
-                    ft[i] = (frag[0], frag[1][:-1])
-                break
+            # Align the output
+            if theme["align"] != FormattedTextAlign.LEFT:
+                ft = align(theme["align"], ft, width=width, style=theme["style"])
 
-            # Format the remainder of each line
-            filled_output = []
-            for line in split_lines(ft):
-                filled_output.extend(line)
-                if remaining := width - fragment_list_width(line):
-                    filled_output.append((theme["style"], (" " * remaining)))
-                    # filled_output.append((theme["style"], ("·" * remaining)))
-                if filled_output and not filled_output[-1][1].endswith("\n"):
-                    filled_output.append((theme["style"], "\n"))
-            ft = filled_output
+            # Fill space around block elements so they fill the width
+            if self.pad:
+
+                # Remove one trailing newline if there is one
+                for i in range(len(ft) - 1, -1, -1):
+                    frag = ft[i]
+                    if not frag[1]:
+                        continue
+                    if frag[1] == "\n":
+                        del ft[i]
+                    elif frag[1].endswith("\n"):
+                        ft[i] = (frag[0], frag[1][:-1])
+                    break
+
+                # Format the remainder of each line
+                filled_output = []
+                for line in split_lines(ft):
+                    filled_output.extend(line)
+                    if remaining := width - fragment_list_width(line):
+                        filled_output.append((theme["style"], (" " * remaining)))
+                        # filled_output.append((theme["style"], ("·" * remaining)))
+                    if filled_output and not filled_output[-1][1].endswith("\n"):
+                        filled_output.append((theme["style"], "\n"))
+                ft = filled_output
 
         return ft
 
@@ -947,21 +958,11 @@ class HTML:
         if captions:
             table_width = max_line_width(ft_table)
             for child in captions:
-                ft_caption = self.render_contents(
-                    child.contents, table_theme, table_width, left, preformatted
+                ft_caption = self.render_element(
+                    child, table_theme, table_width, left, preformatted
                 )
-                caption_theme = self.element_theme(element, parent_theme)
                 if ft_caption:
-                    # TODO - rely on CSS default styling here
-                    ft.extend(
-                        align(
-                            FormattedTextAlign.CENTER,
-                            ft_caption,
-                            width=table_width,
-                            style=caption_theme["style"],
-                        )
-                    )
-                    ft.append(("", "\n"))
+                    ft.extend(ft_caption)
 
         ft.extend(ft_table)
 
@@ -1065,6 +1066,23 @@ class HTML:
         # Otherwise, display the image title
         else:
             return self.render_element(element, parent_theme, width, left, preformatted)
+
+    def render_math(
+        self,
+        element: "PageElement",
+        parent_theme: "dict[str, Any]",
+        width: "int",
+        left: "int" = 0,
+        preformatted: "bool" = False,
+    ) -> "StyleAndTextTuples":
+        """Display LaTeX maths rendered as unicode text."""
+        text = "".join(desc.text for desc in element.descendents)
+        for desc in element.descendents:
+            if desc.name == "text":
+                desc.text = convert(text, "latex", "ansi")
+        return self.render_element(
+            element, parent_theme, width, left, preformatted=True
+        )
 
     ###
 
@@ -1248,27 +1266,6 @@ class HTML:
             ]
         else:
             return ft
-
-    @staticmethod
-    def format_math(
-        ft: "StyleAndTextTuples",
-        width: "int",
-        left: "int",
-        element: "PageElement",
-        theme: "dict",
-    ) -> "StyleAndTextTuples":
-        """Display LaTeX maths rendered as unicode text."""
-        result: "StyleAndTextTuples" = []
-        for (style, value, *_) in ft:
-            result.append(
-                (
-                    style,
-                    convert(value, "latex", "ansi"),
-                )
-            )
-        if "block" in element.attrs.get("class", []):
-            result = align(FormattedTextAlign.CENTER, result, width=width)
-        return result
 
     @staticmethod
     def format_summary(
