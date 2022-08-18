@@ -5,7 +5,7 @@ Euporie Console
 Euporie console is a terminal terminal frontend for Jupyter kernels, allowing code to be executed interactively and rich output to be displayed.
 
 
-.. video:: https://user-images.githubusercontent.com/12154190/183321184-a283f7dd-b9e3-4bec-a6ee-862280ee7e4f.webm
+.. video:: https://user-images.githubusercontent.com/12154190/185399185-55af7414-26ce-403d-b47f-7dda4d74f053.webm
    :width: 100%
 
 |
