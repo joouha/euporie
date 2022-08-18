@@ -561,7 +561,7 @@ class Console(KernelTab):
         from euporie.console.app import get_app
 
         buffer = get_app().current_buffer
-        buffer.text = ""
+        buffer.reset()
 
     @staticmethod
     @add_cmd(
