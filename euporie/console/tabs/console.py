@@ -636,10 +636,12 @@ class Console(KernelTab):
     register_bindings(
         {
             "euporie.console.tabs.console.Console": {
-                "run-input": ["c-enter", "c-e"],
-                "clear-input": "c-c",
                 "cc-interrupt-kernel": "c-c",
                 "show-contextual-help": "s-tab",
-            }
+            },
+            "euporie.console.app.ConsoleApp": {
+                "clear-input": "c-c",
+                "run-input": ["c-enter", "c-e"],
+            },
         }
     )
