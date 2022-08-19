@@ -6,7 +6,7 @@ Euporie consists of four applications, each providing different functionality:
 
 
 :doc:`Euporie Notebook <../apps/notebook>`
-   This is an interactive TUI Jupyter Notebook editor, which runs in the terminal and allows you to view, edit and run Jupyter Notebooks. It makes full use of Jupyter's `rich output system <https://ipython.readthedocs.io/en/stable/interactive/plotting.html#rich-outputs>`, and is able to render a range of media in the terminal.
+   This is an interactive TUI Jupyter Notebook editor, which runs in the terminal and allows you to view, edit and run Jupyter Notebooks. It makes full use of Jupyter's `rich output system <https://ipython.readthedocs.io/en/stable/interactive/plotting.html#rich-outputs>`_, and is able to render a range of media in the terminal.
 
 :doc:`Euporie Console <../apps/console>`
    This is a terminal frontend for kernels using the Jupyter protocol, which makes use of euporie's rich display system for kernel output. It is capable for displaying interactive widgets using :py:mod:`ipywidgets`. You can convert the history of a console session to a notebook.
