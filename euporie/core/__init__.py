@@ -1,7 +1,7 @@
 """This package defines the euporie application and its components."""
 
 __app_name__ = "euporie"
-__version__ = "2.0.1"
+__version__ = "2.0.2"
 __logo__ = "⚈"
 __strapline__ = "Jupyter in the terminal"
 __author__ = "Josiah Outram Halstead"
