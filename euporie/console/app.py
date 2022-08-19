@@ -191,7 +191,7 @@ class ConsoleApp(BaseApp):
         app = get_app()
         tab = app.tab
         app.renderer.clear()
-        if tab is not None:
+        if isinstance(tab, Console):
             tab.reset()
             app.layout.focus(tab.input_box)
 
