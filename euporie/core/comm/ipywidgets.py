@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import bisect
 import logging
 import re
 from abc import ABCMeta, abstractmethod
@@ -577,26 +578,59 @@ class FloatOptionsMixin:
             return None
         else:
             if minimum := self.data.get("state", {}).get("min"):
-                if value < minimum:
+                if value <= minimum:
                     return None
             if maximum := self.data.get("state", {}).get("max"):
-                if maximum < value:
+                if maximum <= value:
                     return None
             return value
 
     @property
     def options(self) -> "list[float]":
         """Generate a list of available options in a range of floats."""
-        step = Decimal(str(self.data["state"].get("step", 1)))
+        step = Decimal(str(self.data["state"].get("step", 0.1)))
         start = Decimal(str(self.data["state"].get("min", 0)))
         stop = Decimal(str(self.data["state"].get("max", 100))) + step
-        return [float(start + step * i) for i in range(int((stop - start) / step))]
+        options = [float(start + step * i) for i in range(int((stop - start) / step))]
+        # Ensure value is in list of options
+        value = self.data["state"].get("value", 0.0)
+        if value not in options:
+            bisect.insort(options, value)
+        return options
+
+    def set_value(self, slider: "Slider", value: "Any") -> "None":
+        """Any float value is permitted - we might need to add an option."""
+        value = self.normalize(value)
+        if value is not None:
+
+            # Ensure value is in list of options
+            if value not in slider.options:
+                bisect.insort(slider.options, value)
+
+            slider.index = slider.options.index(value)
+            slider.value_changed()
 
 
 class FloatLogOptionsMixin(FloatOptionsMixin):
     """A mixin for ipywidgets which accept a value from range of exponents."""
 
     data: "dict[str, Any]"
+
+    def normalize(self, x: "Any") -> "Optional[float]":
+        """Ensure the selected value is within the permitted range and is a float."""
+        try:
+            value = float(x)
+        except ValueError:
+            return None
+        else:
+            base = Decimal(str(self.data["state"].get("base", 10)))
+            start = Decimal(str(self.data["state"].get("min", 0)))
+            if value <= base**start:
+                return None
+            stop = Decimal(str(self.data["state"].get("max", 4)))
+            if base**stop <= value:
+                return None
+            return value
 
     @property
     def options(self) -> "list[float]":
@@ -605,9 +639,14 @@ class FloatLogOptionsMixin(FloatOptionsMixin):
         start = Decimal(str(self.data["state"].get("min", 0)))
         step = Decimal(str(self.data["state"].get("step", 1)))
         stop = Decimal(str(self.data["state"].get("max"))) + step
-        return [
+        options = [
             float(base ** (start + step * i)) for i in range(int((stop - start) / step))
         ]
+        # Ensure value is in list of options
+        value = self.data["state"].get("value", 0.0)
+        if value not in options:
+            bisect.insort(options, value)
+        return options
 
 
 class SliderIpyWidgetComm(IpyWidgetComm, metaclass=ABCMeta):
