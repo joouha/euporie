@@ -357,7 +357,13 @@ def parse_css_content(content: "str") -> "dict[str, Any]":
                 output["style_attrs"].append("underline")
 
         elif name == "text-align":
-            output["align"] = FormattedTextAlign(value.upper())
+            value = value.upper()
+            if "LEFT" in value:
+                output["align"] = FormattedTextAlign.LEFT
+            if "CENTER" in value:
+                output["align"] = FormattedTextAlign.CENTER
+            if "RIGHT" in value:
+                output["align"] = FormattedTextAlign.RIGHT
 
         elif name == "border-width":
             if digits := get_integer(value):
