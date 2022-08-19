@@ -5,6 +5,16 @@ Changelog
 Notable changes to this project will be documented in this file.
 
 *****
+2.0.2
+*****
+
+Fixed
+=====
+
+- Fixed bug where rendering LaTeX in HTML would sometime fail
+- Fixed bug where ipywidget float log sliders would not accept intermediate values
+
+*****
 2.0.1
 *****
 
