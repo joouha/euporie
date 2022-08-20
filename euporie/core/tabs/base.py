@@ -218,7 +218,7 @@ class KernelTab(Tab, metaclass=ABCMeta):
 
         # Warn the user if no kernels are installed
         if not kernel_specs:
-            if startup and "no-kernels" not in self.app.dialogs:
+            if startup and "no-kernels" in self.app.dialogs:
                 self.app.dialogs["no-kernels"].show()
             return
 
