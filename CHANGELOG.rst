@@ -4,6 +4,15 @@ Changelog
 
 Notable changes to this project will be documented in this file.
 
+********
+Upcoming
+********
+
+Fixed
+=====
+
+- Prevent excessive re-rendering of cells
+
 *****
 2.0.3
 *****

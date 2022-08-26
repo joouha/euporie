@@ -342,6 +342,7 @@ class Notebook(BaseNotebook):
         if slice_ is None:
             slice_ = self.page._selected_slice
         self.page.reset()
+        # This triggers another redraw of the selected cell
         self.page._set_selected_slice(slice_, force=True, scroll=scroll)
 
     def add_cell_above(self) -> "None":

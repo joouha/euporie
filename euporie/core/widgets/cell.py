@@ -492,8 +492,10 @@ class Cell:
         # We force focus here, bypassing the layout's checks, as the control we want to
         # focus might be not be in the current layout yet.
         get_app().layout._stack.append(to_focus)
+
         # Scroll the currently selected slice into view
-        self.kernel_tab.refresh(scroll=scroll)
+        if scroll:
+            self.kernel_tab.page.scroll_to(self.kernel_tab.page._selected_slice.start)
 
     @property
     def focused(self) -> "bool":

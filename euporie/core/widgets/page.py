@@ -80,6 +80,7 @@ class ChildRenderInfo:
 
         """
         if self.refresh:
+            # log.debug("Re-rendering cell %s", self.child.index)
             self.refresh = False
             self.height = self.container.preferred_height(
                 available_width, available_height
@@ -299,7 +300,8 @@ class ScrollingContainer(Container):
                 self.scroll_to(new_slice.start)
             # Request a refresh of the previously selected children
             for render_info in self._selected_child_render_infos:
-                render_info.refresh = True
+                if render_info:
+                    render_info.refresh = True
             # Get the first selected child and focus it
             child = self.children[new_slice.start]
             app = get_app()
