@@ -123,7 +123,9 @@ class ClickToFocus(Container):
         def _wrap_mouse_handler(
             handler: "Callable",
         ) -> "Callable[[MouseEvent], object]":
-            if handler not in mouse_handler_wrappers:
+            if not (
+                wrapped_mouse_handler := mouse_handler_wrappers.get(handler)
+            ) and not getattr(handler, "wrapped", None):
 
                 def wrapped_mouse_handler(
                     mouse_event: "MouseEvent",
@@ -169,8 +171,10 @@ class ClickToFocus(Container):
 
                     return NotImplemented
 
+                # Set a flag on this handler so we won't re-wrap it
+                setattr(wrapped_mouse_handler, "wrapped", True)
                 mouse_handler_wrappers[handler] = wrapped_mouse_handler
-            return mouse_handler_wrappers[handler]
+            return wrapped_mouse_handler
 
         # Copy screen contents
         wp = write_position
