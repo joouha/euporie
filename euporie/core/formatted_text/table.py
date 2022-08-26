@@ -101,15 +101,12 @@ class Cell:
             row: The row to which this cell belongs
             col: The column to which this cell belongs
             colspan: The number of columns this cell spans
-            rolspan: The number of row this cell spans
+            rowspan: The number of row this cell spans
             align: How the text in the cell should be aligned
             padding: The padding around the contents of the cell
             border: The type of border line to apply to the cell
             style: The style to apply to the cell's contents
             width: The desired width of the cell
-            _expands: When a dummy cell is used to fill space in a colspan / rowspan, a
-                this should be reference to the spanning cell
-            _span_index: The index of a dummy cell inside a colspan / rowspan
 
         """
         self._text = text
@@ -233,7 +230,6 @@ class Cell:
     @property
     def weighted_border(self) -> "WeightedBorderLineStyle":
         """The cell's borders with inheritance weights."""
-
         values = [
             WeightedLineStyle(
                 2
@@ -289,6 +285,8 @@ class Cell:
 
 
 class SpacerCell(Cell):
+    """A dummy cell to virtually occupy space when ``colspan`` or ``rowspan`` are used."""
+
     def __init__(
         self,
         expands: "Cell",
@@ -313,7 +311,7 @@ class SpacerCell(Cell):
             row: The row to which this cell belongs
             col: The column to which this cell belongs
             colspan: The number of columns this cell spans
-            rolspan: The number of row this cell spans
+            rowspan: The number of row this cell spans
             align: How the text in the cell should be aligned
             padding: The padding around the contents of the cell
             border: The type of border line to apply to the cell
