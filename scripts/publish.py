@@ -1,5 +1,5 @@
-# -*- coding: utf-8 -*-
 """Publishes a new releases of euporie."""
+
 from pathlib import Path
 
 from poetry_publish.publish import poetry_publish
