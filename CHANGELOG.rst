@@ -5,6 +5,17 @@ Changelog
 Notable changes to this project will be documented in this file.
 
 *****
+2.0.3
+*****
+
+Fixed
+=====
+
+- Handle deleted cells in cell mouse handle wrapper
+- Fixed bug in `euporie-notebook` where cursor remains hidden when the app exits
+- Fix inverted missing kernel logic
+
+*****
 2.0.2
 *****
 

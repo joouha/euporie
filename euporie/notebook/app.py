@@ -83,7 +83,6 @@ class NotebookApp(BaseApp):
             **{
                 **{
                     "full_screen": True,
-                    "erase_when_done": True,
                     "leave_graphics": False,
                 },
                 **kwargs,
@@ -268,7 +267,7 @@ class NotebookApp(BaseApp):
         # Log observed exceptions to the log
         log.exception("An unhandled exception occurred", exc_info=exception)
 
-    def exit(self, **kwargs: "Any") -> "None":
+    def exit(self, *args: "Any", **kwargs: "Any") -> "None":
         """Check for unsaved files before closing.
 
         Creates a chain of close file commands, where the callback for each triggers
@@ -276,7 +275,8 @@ class NotebookApp(BaseApp):
         the chain.
 
         Args:
-            **kwargs: Unused key word arguments
+            *args: Positional arguments
+            **kwargs: Key word arguments
 
         """
         really_close = super().exit
@@ -285,7 +285,7 @@ class NotebookApp(BaseApp):
             def final_cb() -> "None":
                 """Really exit after the last tab in the chain is closed."""
                 self.cleanup_closed_tab(self.tabs[0])
-                really_close()
+                really_close(*args, **kwargs)
 
             def create_cb(
                 close_tab: "Tab", cleanup_tab: "Tab", cb: "Callable"
@@ -317,7 +317,7 @@ class NotebookApp(BaseApp):
                 cb = create_cb(close_tab, cleanup_tab, cb)
             self.tabs[-1].close(cb)
         else:
-            really_close()
+            really_close(*args, **kwargs)
 
     @property
     def notebook(self) -> "Optional[Notebook]":
