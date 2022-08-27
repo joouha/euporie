@@ -10,7 +10,7 @@ from ast import literal_eval
 from collections import ChainMap
 from functools import partial
 from pathlib import Path
-from typing import TYPE_CHECKING, Protocol
+from typing import TYPE_CHECKING, Protocol, TextIO, cast
 
 import fastjsonschema
 from appdirs import user_config_dir
@@ -23,7 +23,7 @@ from euporie.core import __app_name__, __copyright__, __version__
 from euporie.core.commands import add_cmd, get_cmd
 
 if TYPE_CHECKING:
-    from typing import Any, Callable, Optional, Sequence, Type, Union
+    from typing import IO, Any, Callable, Optional, Sequence, Type, Union
 
     from prompt_toolkit.filters.base import Filter, FilterOrBool
 
@@ -37,6 +37,34 @@ class ConfigurableApp(Protocol):
 
 
 log = logging.getLogger(__name__)
+
+
+class ArgumentParser(argparse.ArgumentParser):
+    """An argument parser which lexes and formats the help message before printing it."""
+
+    def _print_message(
+        self, message: "str", file: "Optional[IO[str]]" = None
+    ) -> "None":
+        from prompt_toolkit.formatted_text.base import FormattedText
+        from prompt_toolkit.lexers.pygments import _token_cache
+        from prompt_toolkit.shortcuts.utils import print_formatted_text
+        from prompt_toolkit.styles.pygments import style_from_pygments_cls
+
+        from euporie.core.pygments import ArgparseLexer, EuporiePygmentsStyle
+
+        if message:
+            file = cast("Optional[TextIO]", file)
+            print_formatted_text(
+                FormattedText(
+                    [
+                        (_token_cache[t], v)
+                        for _, t, v in ArgparseLexer().get_tokens_unprocessed(message)
+                    ]
+                ),
+                file=file,
+                style=style_from_pygments_cls(EuporiePygmentsStyle),
+                include_default_pygments_style=False,
+            )
 
 
 class BooleanOptionalAction(argparse.Action):
@@ -164,7 +192,7 @@ class Config:
 
     def load_parser(self) -> "argparse.ArgumentParser":
         """Constructs an :py:class:`ArgumentParser`."""
-        parser = argparse.ArgumentParser(
+        parser = ArgumentParser(
             description=self.app_cls.__doc__,
             epilog=__copyright__,
             allow_abbrev=True,

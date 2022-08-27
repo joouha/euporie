@@ -8,14 +8,21 @@ Notable changes to this project will be documented in this file.
 Upcoming
 ********
 
+Added
+=====
+
+- Add colorful command line help text
+
 Fixed
 =====
 
 - Prevent excessive re-rendering of cells
 
-*****
-2.0.3
-*****
+----
+
+*********************
+v2.0.3 - (2022-08-16)
+*********************
 
 Fixed
 =====
@@ -24,9 +31,11 @@ Fixed
 - Fixed bug in `euporie-notebook` where cursor remains hidden when the app exits
 - Fix inverted missing kernel logic
 
-*****
-2.0.2
-*****
+----
+
+*********************
+v2.0.2 - (2022-08-19)
+*********************
 
 Fixed
 =====
@@ -34,18 +43,22 @@ Fixed
 - Fixed bug where rendering LaTeX in HTML would sometime fail
 - Fixed bug where ipywidget float log sliders would not accept intermediate values
 
-*****
-2.0.1
-*****
+----
+
+*********************
+v2.0.1 - (2022-08-18)
+*********************
 
 Fixed
 =====
 
 - Fixed bug with rendering LaTeX maths in markdown cells
 
-*****
-2.0.0
-*****
+----
+
+*********************
+v2.0.0 - (2022-08-18)
+*********************
 
 Added
 =====
@@ -100,6 +113,8 @@ Changed
 =======
 
 - Display multiple cursors in vi multi-cursor mode
+
+----
 
 *********************
 v1.6.1 - (2022-05-08)

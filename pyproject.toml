@@ -27,6 +27,12 @@ classifiers = [
 "preview" = "euporie.preview.app:PreviewApp"
 "hub" = "euporie.hub.app:HubApp"
 
+[tool.poetry.plugins."pygments.lexers"]
+argparse = 'euporie.core.pygments:ArgparseLexer'
+
+[tool.poetry.plugins."pygments.styles"]
+euporie = 'euporie.core.pygments:EuporiePygmentsStyle'
+
 [tool.poetry.scripts]
 euporie = 'euporie.core.__main__:main'
 euporie-console = 'euporie.console.__main__:main'

@@ -907,7 +907,7 @@ class BaseApp(Application):
         flags=["--syntax-theme"],
         type_=str,
         help_="Syntax highlighting theme",
-        default="default",
+        default="euporie",
         schema={
             # Do not want to print all theme names in `--help` screen as it looks messy
             # so we only add them in the scheme, not as setting choices
