@@ -335,6 +335,10 @@ class Notebook(BaseNotebook):
             position, scroll=scroll
         )
 
+    def scroll_to(self, index: "int") -> "None":
+        """Scroll to a cell by index."""
+        self.page.scroll_to(index)
+
     def refresh(
         self, slice_: "Optional[slice]" = None, scroll: "bool" = True
     ) -> "None":

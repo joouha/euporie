@@ -118,14 +118,18 @@ class ClickToFocus(Container):
             z_index,
         )
 
-        mouse_handler_wrappers = {}
+        mouse_handler_wrappers: "dict[Callable, Callable[[MouseEvent], object]]" = {}
 
         def _wrap_mouse_handler(
             handler: "Callable",
         ) -> "Callable[[MouseEvent], object]":
-            if not (
-                wrapped_mouse_handler := mouse_handler_wrappers.get(handler)
-            ) and not getattr(handler, "wrapped", None):
+            if (mouse_handler := mouse_handler_wrappers.get(handler)) is not None:
+                return mouse_handler
+
+            elif getattr(handler, "wrapped", None) is not None:
+                return handler
+
+            else:
 
                 def wrapped_mouse_handler(
                     mouse_event: "MouseEvent",
@@ -174,7 +178,7 @@ class ClickToFocus(Container):
                 # Set a flag on this handler so we won't re-wrap it
                 setattr(wrapped_mouse_handler, "wrapped", True)
                 mouse_handler_wrappers[handler] = wrapped_mouse_handler
-            return wrapped_mouse_handler
+                return wrapped_mouse_handler
 
         # Copy screen contents
         wp = write_position
@@ -499,7 +503,7 @@ class Cell:
 
         # Scroll the currently selected slice into view
         if scroll:
-            self.kernel_tab.page.scroll_to(self.kernel_tab.page._selected_slice.start)
+            self.kernel_tab.scroll_to(self.index)
 
     @property
     def focused(self) -> "bool":

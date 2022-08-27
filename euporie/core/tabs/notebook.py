@@ -190,6 +190,10 @@ class BaseNotebook(KernelTab, metaclass=ABCMeta):
         """Select a cell."""
         pass
 
+    def scroll_to(self, index: "int") -> "None":
+        """Scroll to a cell by index."""
+        pass
+
     def refresh(
         self, slice_: "Optional[slice]" = None, scroll: "bool" = False
     ) -> "None":
