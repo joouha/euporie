@@ -52,31 +52,6 @@ MIME_STYLE = [
     ("mime.stream.stderr", "fg:ansired"),
 ]
 
-MARKDOWN_STYLE = [
-    ("md.h1", "bold underline"),
-    ("md.h1.border", "fg:ansiyellow nounderline"),
-    ("md.h2", "bold"),
-    ("md.h2.border", "fg:grey nobold"),
-    ("md.h3", "bold"),
-    ("md.h4", "bold italic"),
-    ("md.h5", "underline"),
-    ("md.h6", "italic"),
-    ("md.code.inline", "bg:#333"),
-    ("md.strong", "bold"),
-    ("md.em", "italic"),
-    ("md.hr", "fg:ansired"),
-    ("md.ul.margin", "fg:ansiyellow"),
-    ("md.ol.margin", "fg:ansicyan"),
-    ("md.blockquote", "fg:ansipurple"),
-    ("md.blockquote.margin", "fg:grey"),
-    ("md.th", "bold"),
-    ("md.a", "underline fg:ansibrightblue"),
-    ("md.s", "strike"),
-    ("md.img", "bg:cyan fg:black"),
-    ("md.img.border", "fg:cyan bg:default"),
-    ("md.math", "italic"),
-]
-
 HTML_STYLE = [
     ("html h1", "bold underline"),
     ("html h1 border", "fg:ansiyellow nounderline"),
@@ -496,10 +471,10 @@ def build_style(
         "pager": f"bg:{cp.bg.more(1/20)}",
         "pager.border": f"fg:{cp.bg.more(9/20)}",
         # Markdown
-        "md.code.inline": f"bg:{cp.bg.more(3/20)}",
-        "md.code.block": f"bg:{cp.bg.less(0.2)}",
-        "md.code.block.border": f"fg:{cp.bg.more(5/20)}",
-        "md.table.border": f"fg:{cp.bg.more(15/20)}",
+        "html code": f"bg:{cp.bg.more(3/20)}",
+        "html code block": f"bg:{cp.bg.less(0.2)}",
+        "html pre border": f"fg:{cp.bg.more(5/20)}",
+        "html table border": f"fg:{cp.bg.more(15/20)}",
         # Drop-shadow
         "drop-shadow.inner": f"fg:{cp.bg.darker(3/20)}",
         "drop-shadow.outer": f"fg:{cp.bg.darker(2/20)} bg:{cp.bg.darker(0.5/20)}",
@@ -571,7 +546,7 @@ def build_style(
             f"{key} shadow": f"bg:{cp.bg.darker(0.45)}"
             for key in {
                 **dict(MIME_STYLE),
-                **dict(MARKDOWN_STYLE),
+                **dict(HTML_STYLE),
                 **dict(LOG_STYLE),
                 **dict(IPYWIDGET_STYLE),
                 **style_dict,

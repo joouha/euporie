@@ -71,7 +71,6 @@ from euporie.core.style import (
     HTML_STYLE,
     IPYWIDGET_STYLE,
     LOG_STYLE,
-    MARKDOWN_STYLE,
     MIME_STYLE,
     ColorPalette,
     build_style,
@@ -620,7 +619,6 @@ class BaseApp(Application):
             [
                 style_from_pygments_cls(get_style_by_name(self.config.syntax_theme)),
                 Style(MIME_STYLE),
-                Style(MARKDOWN_STYLE),
                 Style(HTML_STYLE),
                 Style(LOG_STYLE),
                 Style(IPYWIDGET_STYLE),
