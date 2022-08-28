@@ -6,7 +6,7 @@ import logging
 from collections import deque
 from copy import deepcopy
 from functools import partial
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 import nbformat
 from prompt_toolkit.clipboard.base import ClipboardData
@@ -60,9 +60,8 @@ from euporie.notebook.filters import (
 if TYPE_CHECKING:
     from typing import Any, Deque, MutableSequence, Optional, Sequence
 
-    from prompt_toolkit.formatted_text.base import AnyFormattedText
-
-    # from prompt_toolkit.key_binding.key_bindings import NotImplementedOrNone
+    from prompt_toolkit.formatted_text.base import AnyFormattedText, StyleAndTextTuples
+    from prompt_toolkit.key_binding.key_bindings import NotImplementedOrNone
     from prompt_toolkit.layout.containers import AnyContainer
     from prompt_toolkit.mouse_events import MouseEvent
     from upath import UPath
@@ -112,13 +111,13 @@ class Notebook(BaseNotebook):
 
     # Tab stuff
 
-    def _statusbar_kernel_handeler(self, event: "MouseEvent") -> "None":
+    def _statusbar_kernel_handeler(self, event: "MouseEvent") -> "NotImplementedOrNone":
         """Event handler for kernel name field in statusbar."""
         if event.event_type == MouseEventType.MOUSE_UP:
             get_cmd("change-kernel").run()
-        return None
-        # else:
-        # return NotImplemented
+            return None
+        else:
+            return NotImplemented
 
     def statusbar_fields(
         self,
@@ -133,9 +132,10 @@ class Notebook(BaseNotebook):
                 "Saving…" if self.saving else "",
             ],
             [
-                lambda: [
-                    ("", self.kernel_display_name, self._statusbar_kernel_handeler)
-                ],
+                lambda: cast(
+                    "StyleAndTextTuples",
+                    [("", self.kernel_display_name, self._statusbar_kernel_handeler)],
+                ),
                 KERNEL_STATUS_REPR[self.kernel.status] if self.kernel else ".",
             ],
         )

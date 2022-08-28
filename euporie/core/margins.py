@@ -210,8 +210,10 @@ class ScrollbarMargin(Margin):
                 ("class:scrollbar.arrow", self.down_arrow_symbol, self.mouse_handler),
             ]
 
-        if self.style:
-            result = [(f"{self.style} {style}", *rest) for style, *rest in result]
+        # if self.style:
+        # result = [
+        # (f"{self.style} {style}", text, *cb) for style, text, *cb in result
+        # ]
 
         return result
 
