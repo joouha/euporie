@@ -18,7 +18,9 @@ from prompt_toolkit.renderer import (
     print_formatted_text as renderer_print_formatted_text,
 )
 from prompt_toolkit.shortcuts.utils import print_formatted_text
-from prompt_toolkit.styles import Style
+from prompt_toolkit.styles.pygments import style_from_pygments_cls
+from prompt_toolkit.styles.style import Style, merge_styles
+from pygments.styles import get_style_by_name
 
 from euporie.core.formatted_text.utils import indent, lex, wrap
 from euporie.core.style import LOG_STYLE
@@ -28,6 +30,7 @@ if TYPE_CHECKING:
     from typing import Any, Callable, Optional, TextIO, Type
 
     from prompt_toolkit.formatted_text.base import StyleAndTextTuples
+    from prompt_toolkit.styles.base import BaseStyle
 
     from euporie.core.config import Config
 
@@ -58,14 +61,20 @@ class FormattedTextHandler(logging.StreamHandler):
     def __init__(
         self,
         *args: "Any",
-        style: "Optional[Style]" = None,
         share_stream: "bool" = True,
+        style: "Optional[BaseStyle]" = None,
+        pygments_theme: "str" = "euporie",
         **kwargs: "Any",
     ) -> "None":
         """Creates a new log handler instance."""
         super().__init__(*args, **kwargs)
         self.output = create_output(stdout=self.stream)
-        self.style = style or Style(LOG_STYLE)
+        self.style = style or merge_styles(
+            [
+                style_from_pygments_cls(get_style_by_name(pygments_theme)),
+                style or Style(LOG_STYLE),
+            ]
+        )
         self.share_stream = share_stream
 
     def ft_format(self, record: "logging.LogRecord") -> "FormattedText":
@@ -80,10 +89,18 @@ class FormattedTextHandler(logging.StreamHandler):
         try:
             msg = self.ft_format(record)
             if self.share_stream:
-                print_formatted_text(msg, end="", style=self.style, output=self.output)
+                print_formatted_text(
+                    msg,
+                    end="",
+                    style=self.style,
+                    output=self.output,
+                    include_default_pygments_style=False,
+                )
             else:
                 renderer_print_formatted_text(
-                    output=self.output, formatted_text=msg, style=self.style
+                    output=self.output,
+                    formatted_text=msg,
+                    style=self.style,
                 )
 
         except RecursionError:
@@ -184,13 +201,16 @@ class LogTabFormatter(FtFormatter):
         """Formats a log record as formatted text."""
         record = self.prepare(record)
         output: "StyleAndTextTuples" = [
-            ("class:log.date", f"{record.asctime}"),
+            ("class:pygments.literal.date", f"{record.asctime}"),
             ("", " "),
             (f"class:log.level.{record.levelname}", f"{record.levelname}"),
             ("", " " * (10 - len(record.levelname))),
-            ("class:log.msg", record.message),
+            ("class:log,msg", record.message),
             ("", " "),
-            ("class:log.ref", f"{record.name}.{record.funcName}:{record.lineno}"),
+            (
+                "class:pygments.comment",
+                f"{record.name}.{record.funcName}:{record.lineno}",
+            ),
             ("", "\n"),
         ]
         if record.exc_text:
@@ -235,21 +255,21 @@ class StdoutFormatter(FtFormatter):
         )
 
         output: "StyleAndTextTuples" = [
-            ("class:log.date", date),
+            ("class:pygments.literal.date", date),
             ("", " " * (9 - len(record.levelname))),
             (f"class:log.level.{record.levelname}", record.levelname),
             ("", " "),
             (
-                "class:log.msg",
+                "class:pygments.text",
                 msg_lines[0].strip().ljust(width - msg_pad_1st_line),
             ),
             ("", " "),
-            ("class:log.ref", ref),
+            ("class:pygments.comment", ref),
         ]
         for line in msg_lines[1:]:
             output += [
                 ("", "\n"),
-                ("class:log.msg", line),
+                ("class:log,msg", line),
             ]
         if record.exc_text:
             output += indent(
@@ -301,6 +321,7 @@ def setup_logs(config: "Config") -> "None":
                 if config.log_level and log_file_is_stdout
                 else "CRITICAL",
                 "class": "euporie.core.log.FormattedTextHandler",
+                "pygments_theme": config.syntax_theme,
                 "formatter": "stdout_format",
                 "stream": sys.stdout,
             },

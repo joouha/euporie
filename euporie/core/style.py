@@ -91,14 +91,12 @@ HTML_STYLE = [
 
 
 LOG_STYLE = [
-    ("log.level.nonset", "fg:grey"),
-    ("log.level.debug", "fg:green"),
-    ("log.level.info", "fg:blue"),
-    ("log.level.warning", "fg:yellow"),
-    ("log.level.error", "fg:red"),
-    ("log.level.critical", "fg:white bg:red bold"),
-    ("log.ref", "fg:grey italic"),
-    ("log.date", "fg:ansiblue"),
+    ("log.level.nonset", "fg:ansigray"),
+    ("log.level.debug", "fg:ansigreen"),
+    ("log.level.info", "fg:ansiblue"),
+    ("log.level.warning", "fg:ansiyellow"),
+    ("log.level.error", "fg:ansired"),
+    ("log.level.critical", "fg:ansiwhite bg:ansired bold"),
 ]
 
 IPYWIDGET_STYLE = [

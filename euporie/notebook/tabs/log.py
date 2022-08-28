@@ -19,7 +19,7 @@ from euporie.core.widgets.formatted_text_area import FormattedTextArea
 
 if TYPE_CHECKING:
     from os import PathLike
-    from typing import Optional
+    from typing import Callable, Optional
 
     from euporie.core.app import BaseApp
 
@@ -76,6 +76,11 @@ class LogView(Tab):
             else ""
         )
         return f"Logs{suffix}"
+
+    def close(self, cb: "Optional[Callable]" = None) -> "None":
+        """Remove log queue handler hook on close."""
+        QueueHandler.unhook(self.hook_id)
+        super().close(cb=cb)
 
     # ################################### Commands ####################################
 
