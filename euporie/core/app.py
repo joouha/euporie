@@ -955,7 +955,10 @@ class BaseApp(Application):
         description="""
             If set, terminal graphics will be used if :program:`tmux` is running by
             performing terminal escape sequence pass-through. You must restart euporie
-            forthis to take effect.
+            for this to take effect.
+
+            You will also need to ensure that ``allow-passthrough`` is set to ``on`` in
+            your :program:`tmux` configuration.
 
             .. warning::
 
