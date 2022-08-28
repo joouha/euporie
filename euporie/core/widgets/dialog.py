@@ -648,7 +648,7 @@ class ShortcutsDialog(Dialog):
             self.details = self.format_key_info()
         assert self.details is not None
 
-        width = max_line_width(self.details) + 1
+        width = max_line_width(self.details)
 
         self.body = FormattedTextArea(
             formatted_text=self.details,
@@ -688,7 +688,7 @@ class ShortcutsDialog(Dialog):
                 row.new_cell(
                     section_title,
                     align=FormattedTextAlign.CENTER,
-                    col_span=2,
+                    colspan=2,
                     style="class:shortcuts.group",
                 )
                 row.new_cell("")
