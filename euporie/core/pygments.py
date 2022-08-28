@@ -54,6 +54,7 @@ class EuporiePygmentsStyle(Style):
         Comment.Special: "noitalic bold #e50808 bg:#520000",
         Keyword: "bold #6ebf26",
         Keyword.Pseudo: "nobold",
+        Keyword.Constant: "nobold #ff3d3d",
         Operator.Word: "bold #6ebf26",
         String: "#ed9d13",
         String.Other: "#ffa500",
