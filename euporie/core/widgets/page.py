@@ -420,27 +420,6 @@ class ScrollingContainer(Container):
         """
         # Very basic scrolling acceleration
         n = self.scrolling = self.scrolling + n
-
-        self.refresh_children = True
-        if n > 0:
-            if (
-                min(self.visible_indicies) == 0
-                and self.index_positions[0] is not None
-                and self.index_positions[0] + n > 0
-            ):
-                return
-        elif n < 0:
-            bottom_index = len(self.children) - 1
-            if bottom_index in self.visible_indicies:
-                bottom_child = self.get_child_render_info(bottom_index)
-                bottom_pos = self.index_positions[bottom_index]
-                if (
-                    bottom_pos is not None
-                    and bottom_pos + bottom_child.height + n
-                    < self.last_write_position.height
-                ):
-                    return
-
         self.selected_child_position += n
 
     def mouse_scroll_handler(self, mouse_event: "MouseEvent") -> "NotImplementedOrNone":
