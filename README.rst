@@ -25,10 +25,10 @@ Euporie's apps allow you to interact with Jupyter kernels, and run Jupyter noteb
      - `Preview <https://euporie.readthedocs.io/en/latest/apps/preview.html>`_
      - `Hub <https://euporie.readthedocs.io/en/latest/apps/hub.html>`_
 
-.. figure:: https://user-images.githubusercontent.com/12154190/182201621-9c3e4b04-1b1e-46e3-b852-b43f16adfc7b.png
+.. image:: https://user-images.githubusercontent.com/12154190/182201621-9c3e4b04-1b1e-46e3-b852-b43f16adfc7b.png
    :target: https://user-images.githubusercontent.com/12154190/182201621-9c3e4b04-1b1e-46e3-b852-b43f16adfc7b.png
 
-   `View more screenshots here <https://euporie.readthedocs.io/en/latest/pages/gallery.html>`_
+`View more screenshots here <https://euporie.readthedocs.io/en/latest/pages/gallery.html>`_
 
 ----
 
@@ -51,13 +51,12 @@ Features
 ********
 
 * Edit and run notebooks in the terminal
-* Vim / Emacs / Micro style key-bindings
 * Run code interactively in a console
-* Convert a console session to a notebook
-* Use Jupyter widgets interactively in the terminal
 * Display images using terminal graphics (sixel / iterm / kitty)
+* Use Jupyter widgets interactively in the terminal
 * Render rich kernel output (markdown, tables, images, LaTeX, HTML, SVG, & PDF)
 * Tab-completion, line suggestions  and contextual help
+* Convert a console session to a notebook
 * Micro / Vim / Emacs style key-bindings
 
 *****
