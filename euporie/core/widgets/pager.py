@@ -77,6 +77,8 @@ class PagerOutputDataElement(CellOutputDataElement):
             wrap_lines=True,
             always_hide_cursor=True,
             style="class:pager",
+            scrollbar_autohide=False,
+            dont_extend_height=False,
         )
 
 

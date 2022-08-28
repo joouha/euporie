@@ -1165,7 +1165,7 @@ class Select(SelectableWidget):
                 dont_extend_height=True,
                 style=f"class:select {self.style}"
                 f"{' class:disabled' if self.disabled() else ''}",
-                right_margins=[ScrollbarMargin()],
+                right_margins=[ScrollbarMargin(style=self.style)],
             ),
             border=self.border,
             show_borders=self.show_borders,

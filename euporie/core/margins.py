@@ -37,18 +37,20 @@ class ScrollbarMargin(Margin):
 
     def __init__(
         self,
-        auto_hide: "FilterOrBool" = True,
         display_arrows: "FilterOrBool" = True,
         up_arrow_symbol: "str" = "▴",
         down_arrow_symbol: "str" = "▾",
+        autohide: "FilterOrBool" = True,
         smooth: "bool" = True,
+        style: "str" = "",
     ) -> "None":
         """Creates a new scrollbar instance."""
-        self.auto_hide = to_filter(auto_hide)
+        self.autohide = to_filter(autohide)
         self.display_arrows = to_filter(display_arrows)
         self.up_arrow_symbol = up_arrow_symbol
         self.down_arrow_symbol = down_arrow_symbol
         self.smooth = smooth
+        self.style = style
 
         self.repeat_task: "Optional[asyncio.Task[None]]" = None
         self.dragging = False
@@ -58,11 +60,17 @@ class ScrollbarMargin(Margin):
         self.thumb_size = 0.0
 
         self.window_render_info: "Optional[WindowRenderInfo]" = None
-        self.visible = self.auto_hide & Condition(
-            lambda: self.window_render_info is not None
-            and self.window_render_info.content_height
-            > self.window_render_info.window_height
-        )
+        self.visible = (
+            self.autohide
+            & Condition(
+                lambda: self.window_render_info is None
+                or (
+                    self.window_render_info is not None
+                    and self.window_render_info.content_height
+                    > self.window_render_info.window_height
+                )
+            )
+        ) | ~self.autohide
 
     def get_width(self, get_ui_content: "Callable[[], UIContent]") -> "int":
         """Return the scrollbar width: always 1."""
@@ -201,6 +209,9 @@ class ScrollbarMargin(Margin):
             result += [
                 ("class:scrollbar.arrow", self.down_arrow_symbol, self.mouse_handler),
             ]
+
+        if self.style:
+            result = [(f"{self.style} {style}", *rest) for style, *rest in result]
 
         return result
 

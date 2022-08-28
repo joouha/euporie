@@ -797,6 +797,8 @@ class Display:
         focus_on_click: "FilterOrBool" = False,
         wrap_lines: "FilterOrBool" = False,
         always_hide_cursor: "FilterOrBool" = True,
+        scrollbar_autohide: "FilterOrBool" = True,
+        dont_extend_height: "FilterOrBool" = True,
         style: "Union[str, Callable[[], str]]" = "",
     ) -> "None":
         """Instantiate an Output container object.
@@ -814,6 +816,8 @@ class Display:
             focus_on_click: If the output should become focused when clicked
             wrap_lines: If the output's lines should be wrapped
             always_hide_cursor: When true, the cursor is never shown
+            scrollbar_autohide: Whether to automatically hide the scrollbar
+            dont_extend_height: Whether the window should fill the available height
             style: The style to apply to the output
 
         """
@@ -843,10 +847,10 @@ class Display:
             content=self.control,
             height=height,
             width=width,
-            right_margins=[ScrollbarMargin()],
+            right_margins=[ScrollbarMargin(autohide=scrollbar_autohide)],
             wrap_lines=wrap_lines,
             always_hide_cursor=always_hide_cursor,
-            dont_extend_height=True,
+            dont_extend_height=dont_extend_height,
             style=self.style,
         )
 
