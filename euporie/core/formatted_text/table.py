@@ -962,10 +962,11 @@ class Table:
                         continue
                     output += [borders[i]]
                     if line is not None:
+                        padding_style = f"{cell.style} nounderline"
                         output += [
-                            (cell.style, " " * (row.cells[i].padding.left or 0)),
+                            (padding_style, " " * (row.cells[i].padding.left or 0)),
                             *line,
-                            (cell.style, " " * (row.cells[i].padding.right or 0)),
+                            (padding_style, " " * (row.cells[i].padding.right or 0)),
                         ]
                     # Ensure last line of a cell is fill with spaces
                     else:
