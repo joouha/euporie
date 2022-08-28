@@ -4,19 +4,19 @@ Changelog
 
 Notable changes to this project will be documented in this file.
 
-********
-Upcoming
-********
+*******************
+v2.0.4 (2022-08-24)
+*******************
 
 Added
 =====
 
 - Add colorful command line help text
 
-
 Changed
 =======
 
+- Pre-render cells in background thread when notebook is loaded
 - Make scrolling the notebook significantly less janky
 
 Fixed

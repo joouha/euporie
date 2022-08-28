@@ -124,11 +124,13 @@ class Notebook(BaseNotebook):
         self,
     ) -> "tuple[Sequence[AnyFormattedText], Sequence[AnyFormattedText]]":
         """Generates the formatted text for the statusbar."""
+        rendered = self.page.pre_rendered
         return (
             [
                 self.mode(),
                 f"Cell {self.page.selected_slice.start+1}",
-                "Saving.." if self.saving else "",
+                f"Rendering… ({rendered:.0%})" if rendered < 1 else "",
+                "Saving…" if self.saving else "",
             ],
             [
                 lambda: [

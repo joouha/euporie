@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import asyncio
+import contextvars
 import logging
 import weakref
 from typing import TYPE_CHECKING, cast
@@ -82,8 +84,8 @@ class ChildRenderInfo:
 
         """
         if self.refresh:
-            # log.debug("Re-rendering cell %s", self.child.index)
             self.refresh = False
+            # log.debug("Re-rendering cell %s", self.child.index)
             self.height = self.container.preferred_height(
                 available_width, available_height
             ).preferred
@@ -242,6 +244,7 @@ class ScrollingContainer(Container):
         self.children_func = children_func
         self._children: "list[Cell]" = []
         self.refresh_children = True
+        self.pre_rendered = 0.0
 
         self._selected_slice = slice(
             0, 1
@@ -263,6 +266,36 @@ class ScrollingContainer(Container):
 
         self.scroll_to_cursor = False
         self.scrolling = 0
+
+    def pre_render_children(self, width: "int", height: "int") -> "None":
+        """Render all unrendered children in a background thread."""
+        # Copy the current context so ``get_app()`` works in the thread
+        ctx = contextvars.copy_context()
+
+        def render_in_thread() -> "None":
+            """Create a new event loop in the thread."""
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+
+            async def render_run_in_loop() -> "None":
+                """Render all children sequentially."""
+                n_children = len(self.children)
+                for i in range(n_children):
+                    self.get_child_render_info(i).render(width, height)
+                    self.pre_rendered = i / n_children
+                    get_app().invalidate()
+                self.pre_rendered = 1.0
+                get_app().invalidate()
+
+            loop.run_until_complete(render_run_in_loop())
+
+        async def trigger_render() -> "None":
+            """Use an executor thread from the current event loop."""
+            await asyncio.get_event_loop().run_in_executor(
+                None, ctx.run, render_in_thread
+            )
+
+        get_app().create_background_task(trigger_render())
 
     def reset(self) -> "None":
         """Reset the state of this container and all the children."""
@@ -454,6 +487,9 @@ class ScrollingContainer(Container):
         xpos = write_position.xpos
         available_width = write_position.width
         available_height = write_position.height
+
+        if not self.pre_rendered:
+            self.pre_render_children(available_width, available_height)
 
         # Record children which are currently visible
         visible_indicies = set()

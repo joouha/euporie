@@ -704,6 +704,21 @@ class BaseApp(Application):
         # Log observed exceptions to the log
         log.exception("An unhandled exception occurred", exc_info=exception)
 
+    async def cancel_and_wait_for_background_tasks(self) -> None:
+        """Cancel all background tasks, and wait for the cancellation to be done.
+
+        Ignore :py:`RuntimeError`s, which result when tasks are attached to a different
+        event loop.
+        """
+        for task in self.background_tasks:
+            task.cancel()
+
+        for task in self.background_tasks:
+            try:
+                await task
+            except (asyncio.CancelledError, RuntimeError):
+                pass
+
     # ################################### Commands ####################################
 
     @staticmethod
