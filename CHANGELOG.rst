@@ -16,6 +16,7 @@ Added
 Fixed
 =====
 
+- Scroll the selected cell into view when entering cell edit mode
 - Prevent excessive re-rendering of cells
 
 ----

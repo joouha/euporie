@@ -266,6 +266,7 @@ class Notebook(BaseNotebook):
         """Enter cell edit mode."""
         self.edit_mode = True
         self.cell.select()
+        self.scroll_to(self.cell.index)
 
     def exit_edit_mode(self) -> "None":
         """Leave cell edit mode."""
