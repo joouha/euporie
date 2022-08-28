@@ -38,6 +38,8 @@ if TYPE_CHECKING:
 
     from euporie.core.widgets.cell import Cell
 
+    MouseHandler = Callable[[MouseEvent], object]
+
 log = logging.getLogger(__name__)
 
 
@@ -143,12 +145,14 @@ class ChildRenderInfo:
                 ),
             )
 
-        mouse_handler_wrappers = {}
+        mouse_handler_wrappers: "dict[MouseHandler, MouseHandler]" = {}
 
         def _wrap_mouse_handler(
             handler: "Callable",
-        ) -> "Callable[[MouseEvent], object]":
-            if handler not in mouse_handler_wrappers:
+        ) -> "MouseHandler":
+            if mouse_handler := mouse_handler_wrappers.get(handler):
+                return mouse_handler
+            else:
 
                 def wrapped_mouse_handler(
                     mouse_event: "MouseEvent",
@@ -177,21 +181,32 @@ class ChildRenderInfo:
                     return response
 
                 mouse_handler_wrappers[handler] = wrapped_mouse_handler
-            return mouse_handler_wrappers[handler]
+                return wrapped_mouse_handler
 
         # Copy screen contents
+        input_db = self.screen.data_buffer
+        input_zwes = self.screen.zero_width_escapes
+        input_mhs = self.mouse_handlers.mouse_handlers
+
+        output_dbs = screen.data_buffer
+        output_zwes = screen.zero_width_escapes
+        output_mhs = mouse_handlers.mouse_handlers
         for y in range(max(0, rows.start), min(rows.stop, self.height)):
+            output_dbs_row = output_dbs[top + y]
+            output_zwes_row = output_zwes[top + y]
+            output_mhs_row = output_mhs[top + y]
+
+            input_db_row = input_db[y]
+            input_zwes_row = input_zwes[y]
+            input_mhs_row = input_mhs[y]
             for x in range(max(0, cols.start), min(cols.stop, self.width)):
                 # Data
-                screen.data_buffer[top + y][left + x] = self.screen.data_buffer[y][x]
+                output_dbs_row[left + x] = input_db_row[x]
                 # Escape sequences
-                screen.zero_width_escapes[top + y][
-                    left + x
-                ] = self.screen.zero_width_escapes[y][x]
+                output_zwes_row[left + x] = input_zwes_row[x]
                 # Mouse handlers
-                mouse_handlers.mouse_handlers[top + y][left + x] = _wrap_mouse_handler(
-                    self.mouse_handlers.mouse_handlers[y][x]
-                )
+                output_mhs_row[left + x] = _wrap_mouse_handler(input_mhs_row[x])
+
         # Copy cursors
         if self.screen.show_cursor:
             for window, point in self.screen.cursor_positions.items():
@@ -247,6 +262,7 @@ class ScrollingContainer(Container):
         self.style = style
 
         self.scroll_to_cursor = False
+        self.scrolling = 0
 
     def reset(self) -> "None":
         """Reset the state of this container and all the children."""
@@ -369,6 +385,9 @@ class ScrollingContainer(Container):
             n: The number of rows to scroll, negative for up, positive for down
 
         """
+        # Very basic scrolling acceleration
+        n = self.scrolling = self.scrolling + n
+
         self.refresh_children = True
         if n > 0:
             if (
@@ -445,10 +464,9 @@ class ScrollingContainer(Container):
         for index in selected_indices:
             render_info = self.get_child_render_info(index)
             # TODO - improve performance
-            render_info.refresh = True
+            if not self.scrolling:
+                render_info.refresh = True
             self._selected_child_render_infos.append(render_info)
-            # Set this to low to avoid scrolling problems
-            #
             self.index_positions[index] = None
 
         # Refresh all children if the width has changed
@@ -484,6 +502,26 @@ class ScrollingContainer(Container):
                     self.selected_child_position -= cursor_row - available_height + 1
             # Set this to false again, allowing us to scroll the cursor out of view
             self.scroll_to_cursor = False
+
+        # Prevent overscrolling at the top of the document
+        heights_above = sum(
+            self.get_child_render_info(index).height
+            for index in range(self._selected_slice.start)
+        )
+        overscroll = heights_above - self.selected_child_position
+        if overscroll < 0:
+            self.selected_child_position += overscroll
+        elif overscroll > 0:
+            heights_below = sum(
+                # Ensure unrendered cells have at least some height
+                self.get_child_render_info(index).height or 1
+                for index in range(self._selected_slice.start, len(self._children))
+            )
+            underscroll = (
+                self.selected_child_position + heights_below - available_height
+            )
+            if underscroll < 0:
+                self.selected_child_position -= underscroll
 
         # Blit first selected child and those below it that are on screen
         line = self.selected_child_position
@@ -607,6 +645,8 @@ class ScrollingContainer(Container):
             y_offset=0,
             wrap_lines=False,
         )
+        # Signal that we are scrolling, so we do not re-render the current child
+        self.scrolling = 0
 
     def get_children(self) -> list["Container"]:
         """Return the list of currently visible children to include in the layout."""
@@ -686,7 +726,8 @@ class ScrollingContainer(Container):
         for i, child in enumerate(self.children):
             child_hash = hash(child)
             if child_render_info := self.child_render_infos.get(child_hash):
-                sizes[i] = child_render_info.height
+                if child_render_info.height:
+                    sizes[i] = child_render_info.height
         return sizes
 
     def _scroll_up(self) -> "None":

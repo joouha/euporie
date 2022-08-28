@@ -13,6 +13,12 @@ Added
 
 - Add colorful command line help text
 
+
+Changed
+=======
+
+- Make scrolling the notebook significantly less janky
+
 Fixed
 =====
 
