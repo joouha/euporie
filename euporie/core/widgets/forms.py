@@ -893,6 +893,7 @@ class SelectableWidget(metaclass=ABCMeta):
         labels: "Optional[Sequence[AnyFormattedText]]" = None,
         index: "int" = 0,
         indices: "Optional[list[int]]" = None,
+        n_values: "Optional[int]" = None,
         multiple: "FilterOrBool" = False,
         on_change: "Optional[Callable[[SelectableWidget], None]]" = None,
         style: "Union[str, Callable[[], str]]" = "",
@@ -905,6 +906,7 @@ class SelectableWidget(metaclass=ABCMeta):
             labels: Optional list of labels for each permitted value
             index: The index of the initially selected single value
             indices: List of indices of the initially selected values
+            n_values: The number of values which are selectable
             multiple: Determines whether multiple values can be selected
             on_change: Callback which is run when the selection changes
             style: Additional style to apply to the widget
@@ -919,6 +921,7 @@ class SelectableWidget(metaclass=ABCMeta):
         if indices is None:
             indices = [index]
         self.indices = indices
+        self.n_values = n_values
         self.multiple = to_filter(multiple)
         self.on_change = Event(self, on_change)
         self._style = style
@@ -1013,7 +1016,11 @@ class SelectableWidget(metaclass=ABCMeta):
     @property
     def indices(self) -> "list[int]":
         """Return a list of the selected indices."""
-        return [i for i, m in enumerate(self.mask) if m]
+        output = [i for i, m in enumerate(self.mask) if m]
+        if self.n_values is not None:
+            if len(output) < self.n_values:
+                output = (output * self.n_values)[: self.n_values]
+        return output
 
     @indices.setter
     def indices(self, values: "tuple[int]") -> "None":
@@ -1068,6 +1075,7 @@ class Select(SelectableWidget):
         labels: "Optional[Sequence[AnyFormattedText]]" = None,
         index: "int" = 0,
         indices: "Optional[list[int]]" = None,
+        n_values: "Optional[int]" = None,
         multiple: "FilterOrBool" = False,
         on_change: "Optional[Callable[[SelectableWidget], None]]" = None,
         style: "Union[str, Callable[[], str]]" = "",
@@ -1084,6 +1092,7 @@ class Select(SelectableWidget):
             labels: Optional list of labels for each permitted value
             index: The index of the initially selected single value
             indices: List of indices of the initially selected values
+            n_values: The number of values which are selectable
             multiple: Determines whether multiple values can be selected
             on_change: Callback which is run when the selection changes
             style: Additional style to apply to the widget
@@ -1173,6 +1182,7 @@ class Dropdown(SelectableWidget):
         labels: "Optional[Sequence[AnyFormattedText]]" = None,
         index: "int" = 0,
         indices: "Optional[list[int]]" = None,
+        n_values: "Optional[int]" = None,
         multiple: "FilterOrBool" = False,
         on_change: "Optional[Callable[[SelectableWidget], None]]" = None,
         style: "Union[str, Callable[[], str]]" = "",
@@ -1186,6 +1196,7 @@ class Dropdown(SelectableWidget):
             labels: Optional list of labels for each permitted value
             index: The index of the initially selected single value
             indices: List of indices of the initially selected values
+            n_values: The number of values which are selectable
             multiple: Determines whether multiple values can be selected
             on_change: Callback which is run when the selection changes
             style: Additional style to apply to the widget
@@ -1342,6 +1353,7 @@ class ToggleButtons(SelectableWidget):
         labels: "Optional[Sequence[AnyFormattedText]]" = None,
         index: "int" = 0,
         indices: "Optional[list[int]]" = None,
+        n_values: "Optional[int]" = None,
         multiple: "FilterOrBool" = False,
         on_change: "Optional[Callable[[SelectableWidget], None]]" = None,
         style: "Union[str, Callable[[], str]]" = "",
@@ -1355,6 +1367,7 @@ class ToggleButtons(SelectableWidget):
             labels: Optional list of labels for each permitted value
             index: The index of the initially selected single value
             indices: List of indices of the initially selected values
+            n_values: The number of values which are selectable
             multiple: Determines whether multiple values can be selected
             on_change: Callback which is run when the selection changes
             style: Additional style to apply to the widget
@@ -1783,6 +1796,7 @@ class Slider(SelectableWidget):
         labels: "Optional[Sequence[AnyFormattedText]]" = None,
         index: "int" = 0,
         indices: "Optional[list[int]]" = None,
+        n_values: "Optional[int]" = None,
         multiple: "FilterOrBool" = False,
         on_change: "Optional[Callable[[SelectableWidget], None]]" = None,
         style: "Union[str, Callable[[], str]]" = "",
@@ -1803,6 +1817,7 @@ class Slider(SelectableWidget):
                 selection slider
             indices: The indices of the start and end of the initially selected ranger
                 of options if a range can be selected
+            n_values: The number of values which are selectable
             multiple: If true, allow a range of options to be selected
             on_change: An optional function to call when the selection changes
             style: An optional style to apply to the widget
@@ -1824,11 +1839,15 @@ class Slider(SelectableWidget):
         self.show_readout = to_filter(show_readout)
         self.disabled = to_filter(disabled)
 
+        if n_values is None and indices:
+            n_values = len(indices)
+
         super().__init__(
             options=options,
             labels=labels,
             index=index,
             indices=indices,
+            n_values=n_values,
             multiple=multiple,
             on_change=on_change,
             style=style,

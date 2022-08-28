@@ -595,20 +595,13 @@ class FloatOptionsMixin:
         # Ensure value is in list of options
         value = self.data["state"].get("value", 0.0)
         if value not in options:
-            bisect.insort(options, value)
+            if isinstance(value, list):
+                values = value
+            else:
+                values = [value]
+            for value in values:
+                bisect.insort(options, value)
         return options
-
-    def set_value(self, slider: "Slider", value: "Any") -> "None":
-        """Any float value is permitted - we might need to add an option."""
-        value = self.normalize(value)
-        if value is not None:
-
-            # Ensure value is in list of options
-            if value not in slider.options:
-                bisect.insort(slider.options, value)
-
-            slider.index = slider.options.index(value)
-            slider.value_changed()
 
 
 class FloatLogOptionsMixin(FloatOptionsMixin):
@@ -727,7 +720,7 @@ class SliderIpyWidgetComm(IpyWidgetComm, metaclass=ABCMeta):
             slider.value_changed()
 
 
-class RangeSliderIpyWidgetComm(SliderIpyWidgetComm, metaclass=ABCMeta):
+class RangeSliderIpyWidgetComm(SliderIpyWidgetComm):
     """Base class for range slider ipywidgets."""
 
     @property
@@ -746,12 +739,16 @@ class RangeSliderIpyWidgetComm(SliderIpyWidgetComm, metaclass=ABCMeta):
         )
 
     def set_value(self, slider: "Slider", values: "Any") -> "None":
-        """Set the selected indices when the ipywidget's selected values change."""
-        if all(value in slider.options for value in values):
-            slider.indices = [
-                slider.options.index(self.normalize(value)) for value in values
-            ]
-            slider.value_changed()
+        """Any float value is permitted - we might need to add an option."""
+        indices = slider.indices
+        norm_values = [self.normalize(value) for value in values]
+        for i, value in enumerate(norm_values):
+            # Ensure value is in list of options
+            if value not in slider.options:
+                bisect.insort(slider.options, value)
+            indices[i] = slider.options.index(value)
+        slider.indices = indices
+        slider.value_changed()
 
 
 class IntSliderModel(IntOptionsMixin, SliderIpyWidgetComm):
@@ -1144,7 +1141,7 @@ class SelectionSliderModel(SliderIpyWidgetComm):
         self.sync = True
 
 
-class SelectionRangeSliderModel(RangeSliderIpyWidgetComm):
+class SelectionRangeSliderModel(SliderIpyWidgetComm):
     """A slider ipywidget where one or more of a list of options can be selected."""
 
     @property

@@ -4,6 +4,17 @@ Changelog
 
 Notable changes to this project will be documented in this file.
 
+********
+Upcoming
+********
+
+Fixed
+=====
+
+- Fixed issue with range sliders which caused a crash on notebook load
+
+----
+
 *******************
 v2.0.4 (2022-08-24)
 *******************
