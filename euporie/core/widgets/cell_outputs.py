@@ -14,9 +14,10 @@ from prompt_toolkit.widgets.base import Box
 from euporie.core.app import get_app
 from euporie.core.convert.base import MIME_FORMATS, find_route
 from euporie.core.widgets.display import Display
+from euporie.core.widgets.tree import JsonView
 
 if TYPE_CHECKING:
-    from typing import Any, Optional, Protocol, TypeVar
+    from typing import Any, Optional, Protocol, Type, TypeVar
 
     from prompt_toolkit.layout.containers import AnyContainer
 
@@ -190,13 +191,43 @@ class CellOutputWidgetElement(CellOutputElement):
         return self.container
 
 
-MIME_RENDERERS = {
+class CellOutputJsonElement(CellOutputElement):
+    """A cell output element which displays JSON."""
+
+    def __init__(
+        self,
+        mime: "str",
+        data: "dict[str, Any]",
+        metadata: "dict",
+        parent: "Optional[OutputParent]",
+    ) -> "None":
+        """Create a new widget output element instance.
+
+        Args:
+            mime: The mime-type of the data to display: ``application/json``
+            data: The data to display (a JSON object)
+            metadata: Any metadata relating to the data
+            parent: The parent container the output-element is attached to
+        """
+        self.parent = parent
+        self.container = JsonView(
+            data, title=metadata.get("root"), expanded=metadata.get("expanded", True)
+        )
+
+    def __pt_container__(self) -> "AnyContainer":
+        """Return a box container which holds a view of an ipywidget."""
+        return self.container
+
+
+MIME_RENDERERS: "dict[str, Type[CellOutputElement]]" = {
     "application/vnd.jupyter.widget-view+json": CellOutputWidgetElement,
+    "application/json": CellOutputJsonElement,
     "*": CellOutputDataElement,
 }
 
 MIME_ORDER = [
     "application/vnd.jupyter.widget-view+json",
+    "application/json",
     "image/*",
     "application/pdf",
     "text/latex",
