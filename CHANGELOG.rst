@@ -16,6 +16,7 @@ Added
 Fixed
 =====
 
+- Prevent jumping when scrollig if document is less than one page long
 - Fixed issue with range sliders which caused a crash on notebook load
 
 ----

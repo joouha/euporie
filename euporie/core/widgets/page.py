@@ -518,25 +518,29 @@ class ScrollingContainer(Container):
             # Set this to false again, allowing us to scroll the cursor out of view
             self.scroll_to_cursor = False
 
-        # Prevent overscrolling at the top of the document
-        heights_above = sum(
-            self.get_child_render_info(index).height
-            for index in range(self._selected_slice.start)
-        )
-        overscroll = heights_above - self.selected_child_position
-        if overscroll < 0:
-            self.selected_child_position += overscroll
-        elif overscroll > 0:
-            heights_below = sum(
-                # Ensure unrendered cells have at least some height
-                self.get_child_render_info(index).height or 1
-                for index in range(self._selected_slice.start, len(self._children))
-            )
-            underscroll = (
-                self.selected_child_position + heights_below - available_height
-            )
-            if underscroll < 0:
-                self.selected_child_position -= underscroll
+        # Adjust scrolling offset
+        heights = [
+            # Ensure unrendered cells have at least some height
+            self.get_child_render_info(index).height or 1
+            for index in range(len(self._children))
+        ]
+        heights_above = sum(heights[: self._selected_slice.start])
+        # Do not allow scrolling if there is no overflow
+        if sum(heights) < available_height:
+            self.selected_child_position = heights_above
+        else:
+            # Prevent overscrolling at the top of the document
+            overscroll = heights_above - self.selected_child_position
+            if overscroll < 0:
+                self.selected_child_position += overscroll
+            # Prevent underscrolling at the bottom
+            elif overscroll > 0:
+                heights_below = sum(heights[self._selected_slice.start :])
+                underscroll = (
+                    self.selected_child_position + heights_below - available_height
+                )
+                if underscroll < 0:
+                    self.selected_child_position -= underscroll
 
         # Blit first selected child and those below it that are on screen
         line = self.selected_child_position
