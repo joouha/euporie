@@ -18,6 +18,7 @@ from prompt_toolkit.formatted_text.base import to_formatted_text
 from prompt_toolkit.formatted_text.utils import fragment_list_width, split_lines
 from prompt_toolkit.layout.containers import Float, Window
 from prompt_toolkit.layout.controls import GetLinePrefixCallable, UIContent, UIControl
+from prompt_toolkit.layout.margins import ConditionalMargin
 from prompt_toolkit.layout.mouse_handlers import MouseHandlers
 from prompt_toolkit.layout.screen import WritePosition
 from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
@@ -797,6 +798,7 @@ class Display:
         focus_on_click: "FilterOrBool" = False,
         wrap_lines: "FilterOrBool" = False,
         always_hide_cursor: "FilterOrBool" = True,
+        scrollbar: "FilterOrBool" = True,
         scrollbar_autohide: "FilterOrBool" = True,
         dont_extend_height: "FilterOrBool" = True,
         style: "Union[str, Callable[[], str]]" = "",
@@ -816,6 +818,7 @@ class Display:
             focus_on_click: If the output should become focused when clicked
             wrap_lines: If the output's lines should be wrapped
             always_hide_cursor: When true, the cursor is never shown
+            scrollbar: Whether to show a scrollbar
             scrollbar_autohide: Whether to automatically hide the scrollbar
             dont_extend_height: Whether the window should fill the available height
             style: The style to apply to the output
@@ -847,7 +850,12 @@ class Display:
             content=self.control,
             height=height,
             width=width,
-            right_margins=[ScrollbarMargin(autohide=scrollbar_autohide)],
+            right_margins=[
+                ConditionalMargin(
+                    ScrollbarMargin(autohide=scrollbar_autohide),
+                    filter=to_filter(scrollbar),
+                )
+            ],
             wrap_lines=wrap_lines,
             always_hide_cursor=always_hide_cursor,
             dont_extend_height=dont_extend_height,

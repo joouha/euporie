@@ -125,6 +125,7 @@ class CellOutputDataElement(CellOutputElement):
             wrap_lines=False,
             always_hide_cursor=True,
             style=f"class:cell.output.element.data class:mime.{mime.replace('/','.')}",
+            scrollbar=False,
         )
 
     @property
