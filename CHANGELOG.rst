@@ -4,9 +4,9 @@ Changelog
 
 Notable changes to this project will be documented in this file.
 
-********
-Upcoming
-********
+*******************
+v2.0.5 (2022-08-29)
+*******************
 
 Added
 =====
@@ -16,13 +16,15 @@ Added
 Fixed
 =====
 
-- Prevent jumping when scrollig if document is less than one page long
+- Sort configuration sub-menus
+- Prevent crash when opening key-binding dialog
+- Prevent jumping when scrolling if document is less than one page long
 - Fixed issue with range sliders which caused a crash on notebook load
 
 ----
 
 *******************
-v2.0.4 (2022-08-24)
+v2.0.4 (2022-08-28)
 *******************
 
 Added
@@ -45,7 +47,7 @@ Fixed
 ----
 
 *********************
-v2.0.3 - (2022-08-16)
+v2.0.3 - (2022-08-26)
 *********************
 
 Fixed
