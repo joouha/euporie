@@ -490,8 +490,14 @@ class Setting:
             return MenuItem(
                 self.title.capitalize(),
                 children=[
-                    get_cmd(f"set-{self.name.replace('_', '-')}-{choice}").menu
-                    for choice in choices
+                    cmd.menu
+                    for cmd in sorted(
+                        (
+                            get_cmd(f"set-{self.name.replace('_', '-')}-{choice}")
+                            for choice in choices
+                        ),
+                        key=lambda x: x.menu_title,
+                    )
                 ],
             )
         elif self.type in (bool, int):
