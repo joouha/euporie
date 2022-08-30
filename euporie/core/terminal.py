@@ -426,6 +426,8 @@ class TerminalInfo:
 
     def send_all(self) -> "None":
         """Sends the command for all queries."""
+        # Ensure line wrapping is off before sending queries
+        self.output.disable_autowrap()
         for query in self._queries:
             query.send()
 

@@ -4,6 +4,15 @@ Changelog
 
 Notable changes to this project will be documented in this file.
 
+********
+Upcoming
+********
+
+Fixed
+=====
+
+- Disable line wrapping before probing terminal to prevent unrecognised APCs moving the cursor to the next line
+
 *******************
 v2.0.6 (2022-08-30)
 *******************
@@ -15,6 +24,8 @@ Fixed
 - Fix ubiqitous hyperlink issue
 - Fix graphics detection for Konsole
 - Hide kitty detection APC sequence in terminals which do not support APC codes
+
+----
 
 *******************
 v2.0.5 (2022-08-29)
