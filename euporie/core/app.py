@@ -267,7 +267,8 @@ class BaseApp(Application):
     def resume_rendering(self) -> "None":
         """Resume rendering the app."""
         self._is_running = True
-        self.renderer._waiting_for_cpr_futures.pop()
+        if futures := self.renderer._waiting_for_cpr_futures:
+            futures.pop()
 
     def pre_run(self, app: "Application" = None) -> "None":
         """Called during the 'pre-run' stage of application loading."""
