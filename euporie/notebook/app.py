@@ -79,15 +79,10 @@ class NotebookApp(BaseApp):
 
     def __init__(self, **kwargs: "Any") -> "None":
         """Create a new euporie text user interface application instance."""
-        super().__init__(
-            **{
-                **{
-                    "full_screen": True,
-                    "leave_graphics": False,
-                },
-                **kwargs,
-            }
-        )
+        kwargs.setdefault("title", "euporie-notebook")
+        kwargs.setdefault("full_screen", True)
+        kwargs.setdefault("leave_graphics", True)
+        super().__init__(**kwargs)
         self.search_bar = SearchBar()
         self.bindings_to_load.append("euporie.notebook.app.NotebookApp")
         self.pre_run_callables.append(self.load_default_statusbar_fields)

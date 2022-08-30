@@ -392,15 +392,13 @@ class SixelGraphicControl(GraphicControl):
                 split_lines(
                     to_formatted_text(
                         [
-                            ("", "\n".join([" " * width] * (height))[:-1]),
+                            ("", "\n".join([" " * width] * (height))),
                             (
                                 "[ZeroWidthEscape]",
                                 tmuxify(
-                                    f"\x1b[s\x1b[{height-1}A\x1b[{width-1}D{cmd}\x1b[u"
+                                    f"\x1b[s\x1b[{height-1}A\x1b[{width}D{cmd}\x1b[u"
                                 ),
                             ),
-                            # Add zero-width no-break space to work around PTK issue #1651
-                            ("", "\uFEFF"),
                         ]
                     )
                 )
@@ -693,7 +691,8 @@ class GraphicWindow(Window):
                     MouseHandlers(),  # Do not let the float add mouse events
                     new_write_position,
                     # Ensure the float is always updated by constantly changing style
-                    parent_style + f" class:graphic-{get_app().render_counter}",
+                    # parent_style + f" class:graphic-{get_app().render_counter}",
+                    parent_style,
                     erase_bg=True,
                     z_index=z_index,
                 )

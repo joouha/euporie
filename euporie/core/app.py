@@ -66,6 +66,7 @@ from euporie.core.key_binding.registry import (
 )
 from euporie.core.key_binding.vi_state import ViState
 from euporie.core.log import setup_logs
+from euporie.core.renderer import Renderer
 from euporie.core.style import (
     DEFAULT_COLORS,
     HTML_STYLE,
@@ -141,7 +142,13 @@ class BaseApp(Application):
     need_mouse_support: "bool" = False
 
     def __init__(
-        self, leave_graphics: "FilterOrBool" = True, **kwargs: "Any"
+        self,
+        title: "Optional[str]" = None,
+        set_title: "bool" = True,
+        leave_graphics: "FilterOrBool" = True,
+        extend_renderer_height: "FilterOrBool" = False,
+        extend_renderer_width: "FilterOrBool" = False,
+        **kwargs: "Any",
     ) -> "None":
         """Instantiates euporie specific application variables.
 
@@ -149,8 +156,14 @@ class BaseApp(Application):
         instance is initiated.
 
         Args:
+            title: The title string to set in the terminal
+            set_title: Whether to set the terminal title
             leave_graphics: A filter which determines if graphics should be cleared
                 from the display when they are no longer active
+            extend_renderer_height: Whether the renderer height should be extended
+                beyond the height of the display
+            extend_renderer_width: Whether the renderer width should be extended
+                beyond the height of the display
             **kwargs: The key-word arguments for the :py:class:`Application`
 
         """
@@ -165,6 +178,17 @@ class BaseApp(Application):
                 },
                 **kwargs,
             }
+        )
+
+        # Use custom renderer
+        self.renderer = Renderer(
+            self._merged_style,
+            self.output,
+            full_screen=self.full_screen,
+            mouse_support=self.mouse_support,
+            cpr_not_supported_callback=self.cpr_not_supported_callback,
+            extend_height=extend_renderer_height,
+            extend_width=extend_renderer_width,
         )
         # Use a custom vt100 parser to allow querying the terminal
         self.using_vt100 = self.input.__class__.__name__ in (
@@ -234,7 +258,9 @@ class BaseApp(Application):
         self.pager: "Optional[Pager]" = None
 
         self.focused_element: "Optional[FocusableElement]" = None
-        self.output.set_title(self.__class__.__name__)
+
+        self.set_title = to_filter(set_title)
+        self.title = title or self.__class__.__name__
 
         # Register config hooks
         self.config.get_item("edit_mode").event += self.update_edit_mode
@@ -250,6 +276,18 @@ class BaseApp(Application):
         self.color_palette = ColorPalette()
         self.color_palette.add_color("fg", "#ffffff" "default")
         self.color_palette.add_color("bg", "#000000" "default")
+
+    @property
+    def title(self) -> "str":
+        """The application's title."""
+        return self._title
+
+    @title.setter
+    def title(self, value: "str") -> "None":
+        """Set the terminal title."""
+        self._title = value
+        if self.set_title():
+            self.output.set_title(value)
 
     def pause_rendering(self) -> "None":
         """Blocks rendering, but allows input to be processed.

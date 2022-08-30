@@ -777,11 +777,12 @@ class Notebook(BaseNotebook):
     @add_cmd(
         filter=notebook_has_focus,
     )
-    def _scroll_up() -> "None":
+    def _scroll_up() -> "NotImplementedOrNone":
         """Scroll the page up a line."""
         nb = get_app().tab
         if isinstance(nb, Notebook):
-            nb.page.scroll(1)
+            return nb.page.scroll(1)
+        return None
 
     @staticmethod
     @add_cmd(
@@ -790,11 +791,12 @@ class Notebook(BaseNotebook):
     @add_cmd(
         filter=notebook_has_focus,
     )
-    def _scroll_down() -> "None":
+    def _scroll_down() -> "NotImplementedOrNone":
         """Scroll the page down a line."""
         nb = get_app().tab
         if isinstance(nb, Notebook):
-            nb.page.scroll(-1)
+            return nb.page.scroll(-1)
+        return None
 
     @staticmethod
     @add_cmd(

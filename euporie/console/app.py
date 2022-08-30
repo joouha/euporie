@@ -27,7 +27,6 @@ from euporie.core.app import BaseApp
 from euporie.core.commands import add_cmd
 from euporie.core.config import add_setting
 from euporie.core.filters import buffer_is_code, buffer_is_empty, has_dialog
-from euporie.core.io import patch_renderer_diff
 from euporie.core.key_binding.registry import register_bindings
 from euporie.core.widgets.dialog import (
     AboutDialog,
@@ -43,8 +42,6 @@ from euporie.core.widgets.status_bar import StatusBar
 
 if TYPE_CHECKING:
     from typing import Any
-
-patch_renderer_diff()
 
 log = logging.getLogger(__name__)
 
@@ -69,15 +66,11 @@ class ConsoleApp(BaseApp):
         if self.config.mouse_support is not None:
             self.need_mouse_support = self.config.mouse_support
 
-        super().__init__(
-            **{
-                **{
-                    "full_screen": False,
-                    "leave_graphics": True,
-                },
-                **kwargs,
-            }
-        )
+        kwargs.setdefault("extend_renderer_height", True)
+        kwargs.setdefault("title", "euporie-console")
+        kwargs.setdefault("full_screen", False)
+        kwargs.setdefault("leave_graphics", True)
+        super().__init__(**kwargs)
         self.search_bar = SearchBar()
         self.bindings_to_load += ["euporie.console.app.ConsoleApp"]
 

@@ -175,11 +175,9 @@ class ChildRenderInfo:
                     # to the start or end
                     # if response is NotImplemented:
                     if mouse_event.event_type == MouseEventType.SCROLL_DOWN:
-                        self.parent.scroll(-1)
-                        response = None
+                        response = self.parent.scroll(-1)
                     elif mouse_event.event_type == MouseEventType.SCROLL_UP:
-                        self.parent.scroll(1)
-                        response = None
+                        response = self.parent.scroll(1)
                     return response
 
                 mouse_handler_wrappers[handler] = wrapped_mouse_handler
@@ -411,23 +409,47 @@ class ScrollingContainer(Container):
             child_render_info = self.child_render_infos[child_hash]
         return child_render_info
 
-    def scroll(self, n: "int") -> "None":
+    def scroll(self, n: "int") -> "NotImplementedOrNone":
         """Scrolls up or down a number of rows.
 
         Args:
             n: The number of rows to scroll, negative for up, positive for down
 
+        Returns:
+            :py:const:`NotImplemented` is scrolling is not allowed, otherwise
+                :py:const:`None`
+
         """
+        # self.refresh_children = True
+        if n > 0:
+            if (
+                min(self.visible_indicies) == 0
+                and self.index_positions[0] is not None
+                and self.index_positions[0] + self.scrolling + n > 0
+            ):
+                return NotImplemented
+        elif n < 0:
+            bottom_index = len(self.children) - 1
+            if bottom_index in self.visible_indicies:
+                bottom_child = self.get_child_render_info(bottom_index)
+                bottom_pos = self.index_positions[bottom_index]
+                if (
+                    bottom_pos is not None
+                    and bottom_pos + bottom_child.height + self.scrolling + n
+                    < self.last_write_position.height
+                ):
+                    return NotImplemented
+
         # Very basic scrolling acceleration
-        n = self.scrolling = self.scrolling + n
-        self.selected_child_position += n
+        self.scrolling += n
+        return None
 
     def mouse_scroll_handler(self, mouse_event: "MouseEvent") -> "NotImplementedOrNone":
         """A mouse handler to scroll the pane."""
         if mouse_event.event_type == MouseEventType.SCROLL_DOWN:
-            self.scroll(-1)
+            return self.scroll(-1)
         elif mouse_event.event_type == MouseEventType.SCROLL_UP:
-            self.scroll(1)
+            return self.scroll(1)
         else:
             return NotImplemented
         return None
@@ -478,7 +500,7 @@ class ScrollingContainer(Container):
         self._selected_child_render_infos = []
         for index in selected_indices:
             render_info = self.get_child_render_info(index)
-            # TODO - improve performance
+            # Do not bother to re-render children if we are scrolling
             if not self.scrolling:
                 render_info.refresh = True
             self._selected_child_render_infos.append(render_info)
@@ -525,22 +547,22 @@ class ScrollingContainer(Container):
             for index in range(len(self._children))
         ]
         heights_above = sum(heights[: self._selected_slice.start])
+        new_child_position = self.selected_child_position + self.scrolling
         # Do not allow scrolling if there is no overflow
         if sum(heights) < available_height:
             self.selected_child_position = heights_above
         else:
             # Prevent overscrolling at the top of the document
-            overscroll = heights_above - self.selected_child_position
+            overscroll = heights_above - new_child_position
             if overscroll < 0:
-                self.selected_child_position += overscroll
+                self.scrolling = 0
             # Prevent underscrolling at the bottom
             elif overscroll > 0:
                 heights_below = sum(heights[self._selected_slice.start :])
-                underscroll = (
-                    self.selected_child_position + heights_below - available_height
-                )
+                underscroll = new_child_position + heights_below - available_height
                 if underscroll < 0:
-                    self.selected_child_position -= underscroll
+                    self.scrolling = 0
+        self.selected_child_position += self.scrolling
 
         # Blit first selected child and those below it that are on screen
         line = self.selected_child_position
@@ -664,7 +686,7 @@ class ScrollingContainer(Container):
             y_offset=0,
             wrap_lines=False,
         )
-        # Signal that we are scrolling, so we do not re-render the current child
+        # Signal that we are no longer scrolling
         self.scrolling = 0
 
     def get_children(self) -> list["Container"]:

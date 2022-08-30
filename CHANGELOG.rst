@@ -4,13 +4,15 @@ Changelog
 
 Notable changes to this project will be documented in this file.
 
-********
-Upcoming
-********
+*******************
+v2.0.6 (2022-08-30)
+*******************
 
 Fixed
 =====
 
+- Prevent last cell of SIXEL images being overwritten
+- Fix ubiqitous hyperlink issue
 - Fix graphics detection for Konsole
 - Hide kitty detection APC sequence in terminals which do not support APC codes
 

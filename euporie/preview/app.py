@@ -16,7 +16,6 @@ from upath import UPath
 
 from euporie.core.app import BaseApp, get_app
 from euporie.core.config import add_setting
-from euporie.core.io import patch_renderer_diff
 from euporie.core.key_binding.registry import register_bindings
 from euporie.preview.tabs.notebook import PreviewNotebook
 
@@ -30,8 +29,6 @@ if TYPE_CHECKING:
     from euporie.core.tabs.base import Tab
 
 log = logging.getLogger(__name__)
-
-patch_renderer_diff()
 
 
 class PseudoTTY:
@@ -82,15 +79,19 @@ class PreviewApp(BaseApp):
 
     def __init__(self, **kwargs: "Any") -> "None":
         """Create an app for dumping a prompt-toolkit layout."""
+        # Set default arguments
+        kwargs.setdefault("title", "euporie-preview")
+        kwargs.setdefault("leave_graphics", True)
+        kwargs.setdefault("full_screen", False)
+        kwargs.setdefault("max_render_postpone_time", 0)
+        kwargs.setdefault("min_redraw_interval", 0)
+        kwargs.setdefault("extend_renderer_height", True)
+        # Adjust options if we are paging output
+        if self.config.page:
+            kwargs.setdefault("set_title", False)
+            kwargs.setdefault("extend_renderer_width", True)
         # Initialise the application
-        app_kwargs: "dict[str, Any]" = {
-            "leave_graphics": True,
-            "full_screen": False,
-            "max_render_postpone_time": 0,
-            "min_redraw_interval": 0,
-            **kwargs,
-        }
-        super().__init__(**app_kwargs)
+        super().__init__(**kwargs)
         # We want the app to close when rendering is complete
         # self.after_render += self.pre_exit
         # Do not load any key bindings
