@@ -4,6 +4,16 @@ Changelog
 
 Notable changes to this project will be documented in this file.
 
+********
+Upcoming
+********
+
+Fixed
+=====
+
+- Fix graphics detection for Konsole
+- Hide kitty detection APC sequence in terminals which do not support APC codes
+
 *******************
 v2.0.5 (2022-08-29)
 *******************
