@@ -225,9 +225,9 @@ class Colors(TerminalQuery):
     )
     pattern = re.compile(
         r"^\x1b\](?P<c>(\d+;)?\d+)+;rgb:"
-        "(?P<r>[0-9A-Fa-f]{2,4})/"
-        "(?P<g>[0-9A-Fa-f]{2,4})/"
-        "(?P<b>[0-9A-Fa-f]{2,4})"
+        r"(?P<r>[0-9A-Fa-f]{2,4})\/"
+        r"(?P<g>[0-9A-Fa-f]{2,4})\/"
+        r"(?P<b>[0-9A-Fa-f]{2,4})"
         r"\x1b\\\Z"
     )
 
@@ -276,8 +276,9 @@ class KittyGraphicsStatus(TerminalQuery):
 
     default = False
     cache = True
-    cmd = "\x1b_Gi=4294967295,s=1,v=1,a=q,t=d,f=24;AAAA\x1b\\"
-    pattern = re.compile(r"^\x1b_Gi=4294967295;(?P<status>OK)\x1b\\\Z")
+    cmd = "\x1b[s\x1b_Gi=4294967295,s=1,v=1,a=q,t=d,f=24;AAAA\x1b\\\x1b[u\x1b[2K"
+    # Konsole responds with 'i=0' - I'll allow it
+    pattern = re.compile(r"^\x1b_Gi=(4294967295|0);(?P<status>OK)\x1b\\\Z")
 
     def _cmd(self) -> "str":
         if self.config.tmux_graphics:
@@ -330,6 +331,10 @@ class ItermGraphicsStatus(TerminalQuery):
         if (
             os.environ.get("TERM_PROGRAM", "") in {"WezTerm", "iTerm.app"}
             or os.environ.get("MLTERM") is not None
+            or (
+                os.environ.get("KONSOLE_DBUS_WINDOW") is not None
+                and int(os.environ.get("KONSOLE_VERSION", 0)) > 220370
+            )
         ) and self.queryable:
             self._value = True
 
