@@ -228,7 +228,8 @@ class Colors(TerminalQuery):
         r"(?P<r>[0-9A-Fa-f]{2,4})\/"
         r"(?P<g>[0-9A-Fa-f]{2,4})\/"
         r"(?P<b>[0-9A-Fa-f]{2,4})"
-        r"\x1b\\\Z"
+        # Allow BEL or ST as terminator
+        r"(\x1b\\\Z|\0x7)"
     )
 
     def _cmd(self) -> "str":
