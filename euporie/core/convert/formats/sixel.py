@@ -16,6 +16,13 @@ if TYPE_CHECKING:
     from PIL import Image
 
 
+register(
+    from_=("png", "jpeg", "svg", "pdf"),
+    to="ansi",
+    filter_=commands_exist("chafa"),
+)(partial(chafa_convert, "sixel"))
+
+
 @register(
     from_=("png", "jpeg"),
     to="sixel",
@@ -30,20 +37,13 @@ def png_to_sixel_img2sixel(
 ) -> "str":
     """Converts PNG data to sixels :command:`img2sixel`."""
     bg = bg or get_app().color_palette.bg.base_hex
-    cmd: "list[Any]" = ["img2sixel"]
+    cmd: "list[Any]" = ["img2sixel", "-I"]
     if bg:
         cmd += [f"--bgcolor={bg}"]
     if cols is not None:
         px, _ = get_app().term_info.cell_size_px
         cmd += [f"--width={int(cols * px)}"]
     return call_subproc(data, cmd).decode()
-
-
-register(
-    from_=("png", "jpeg", "svg", "pdf"),
-    to="ansi",
-    filter_=commands_exist("chafa"),
-)(partial(chafa_convert, "sixel"))
 
 
 register(

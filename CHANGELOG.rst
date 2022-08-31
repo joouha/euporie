@@ -4,14 +4,17 @@ Changelog
 
 Notable changes to this project will be documented in this file.
 
-********
-Upcoming
-********
+*******************
+v2.0.7 (2022-08-31)
+*******************
 
 Fixed
 =====
 
+- Fix various graphics rendering glitches
 - Disable line wrapping before probing terminal to prevent unrecognised APCs moving the cursor to the next line
+
+----
 
 *******************
 v2.0.6 (2022-08-30)

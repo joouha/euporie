@@ -20,7 +20,7 @@ from prompt_toolkit.layout.containers import Float, Window
 from prompt_toolkit.layout.controls import GetLinePrefixCallable, UIContent, UIControl
 from prompt_toolkit.layout.margins import ConditionalMargin
 from prompt_toolkit.layout.mouse_handlers import MouseHandlers
-from prompt_toolkit.layout.screen import WritePosition
+from prompt_toolkit.layout.screen import Char, WritePosition
 from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
 from prompt_toolkit.utils import Event
 
@@ -392,13 +392,20 @@ class SixelGraphicControl(GraphicControl):
                 split_lines(
                     to_formatted_text(
                         [
-                            ("", "\n".join([" " * width] * (height))),
+                            # Move cursor down and across by image height and width
+                            (
+                                f"class:render-{get_app().render_counter}",
+                                "\n".join((height) * [" " * (width)]),
+                            ),
+                            # Save position, then move back
                             (
                                 "[ZeroWidthEscape]",
-                                tmuxify(
-                                    f"\x1b[s\x1b[{height-1}A\x1b[{width}D{cmd}\x1b[u"
-                                ),
+                                f"\x1b[s\x1b[{height-1}A\x1b[{width}D",
                             ),
+                            # Place the image without moving cursor
+                            ("[ZeroWidthEscape]", tmuxify(cmd)),
+                            # Restore the last known cursor position (at the bottom)
+                            ("[ZeroWidthEscape]", "\x1b[u"),
                         ]
                     )
                 )
@@ -443,15 +450,20 @@ class ItermGraphicControl(GraphicControl):
                 split_lines(
                     to_formatted_text(
                         [
-                            ("", "\n".join([" " * width] * (height))),
+                            # Move cursor down and across by image height and width
+                            (
+                                f"class:render-{get_app().render_counter}",
+                                "\n".join((height) * [" " * (width)]),
+                            ),
+                            # Save position, then move back
                             (
                                 "[ZeroWidthEscape]",
-                                tmuxify(
-                                    f"\x1b[s\x1b[{height-1}A\x1b[{width}D{cmd}\x1b[u"
-                                ),
+                                f"\x1b[s\x1b[{height-1}A\x1b[{width}D",
                             ),
-                            # Add zero-width no-break space to work around PTK issue #1651
-                            ("", "\uFEFF\n"),
+                            # Place the image without moving cursor
+                            ("[ZeroWidthEscape]", tmuxify(cmd)),
+                            # Restore the last known cursor position (at the bottom)
+                            ("[ZeroWidthEscape]", "\x1b[u"),
                         ]
                     )
                 )
@@ -594,16 +606,20 @@ class KittyGraphicControl(GraphicControl):
                 split_lines(
                     to_formatted_text(
                         [
-                            # Move cursor down by image height
-                            ("", "\n" * (height - 1)),
-                            # Save position, then move back up
-                            ("[ZeroWidthEscape]", f"\x1b[s\x1b[{height-1}A"),
+                            # Move cursor down and acoss by image height and width
+                            (
+                                f"class:render-{get_app().render_counter}",
+                                "\n".join((height) * [" " * (width)]),
+                            ),
+                            # Save position, then move back
+                            (
+                                "[ZeroWidthEscape]",
+                                f"\x1b[s\x1b[{height-1}A\x1b[{width}D",
+                            ),
                             # Place the image without moving cursor
                             ("[ZeroWidthEscape]", tmuxify(cmd)),
                             # Restore the last known cursor position (at the bottom)
-                            ("[ZeroWidthEscape]", "\x1b[u "),
-                            # Add zero-width no-break space to work around PTK issue #1651
-                            ("", " \uFEFF"),
+                            ("[ZeroWidthEscape]", "\x1b[u"),
                         ]
                     )
                 )
@@ -678,6 +694,7 @@ class GraphicWindow(Window):
         if filter_value and target_wp and self.target_window.render_info is not None:
             rendered_height = self.target_window.render_info.window_height
             # Only draw if the target window is fully visible
+            log.debug((target_wp.height, rendered_height))
             if target_wp.height == rendered_height:
                 cpos = screen.get_menu_position(self.target_window)
                 new_write_position = WritePosition(
@@ -690,8 +707,6 @@ class GraphicWindow(Window):
                     screen,
                     MouseHandlers(),  # Do not let the float add mouse events
                     new_write_position,
-                    # Ensure the float is always updated by constantly changing style
-                    # parent_style + f" class:graphic-{get_app().render_counter}",
                     parent_style,
                     erase_bg=True,
                     z_index=z_index,
@@ -700,6 +715,23 @@ class GraphicWindow(Window):
         # Otherwise hide the content (required for kitty graphics)
         if not filter_value or not get_app().leave_graphics():
             self.content.hide()
+
+    def _fill_bg(
+        self, screen: Screen, write_position: WritePosition, erase_bg: bool
+    ) -> None:
+        """Erase/fill the background."""
+        char: Optional[str]
+        if callable(self.char):
+            char = self.char()
+        else:
+            char = self.char
+        if erase_bg or char:
+            wp = write_position
+            char_obj = Char(char or " ", f"class:render-{get_app().render_counter}")
+            for y in range(wp.ypos, wp.ypos + wp.height):
+                row = screen.data_buffer[y]
+                for x in range(wp.xpos, wp.xpos + wp.width):
+                    row[x] = char_obj
 
 
 class GraphicFloat(Float):
@@ -859,6 +891,7 @@ class Display:
             always_hide_cursor=always_hide_cursor,
             dont_extend_height=dont_extend_height,
             style=self.style,
+            char=" ",
         )
 
         # Add graphic
