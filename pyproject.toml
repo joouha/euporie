@@ -69,6 +69,7 @@ html5lib = {version = "^1.1", optional = true}
 sympy = {version = "^1.9", optional = true}
 antlr4-python3-runtime = {version = "^4.9", optional = true}
 img2unicode = {version = "^0.1a8", optional = true}
+fsspec = {extras = ["http"], version = "^2022.8.0"}
 
 [tool.poetry.extras]
 all = ["black", "isort", "ssort", "CairoSVG", "asyncssh"]
