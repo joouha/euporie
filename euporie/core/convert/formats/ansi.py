@@ -448,7 +448,7 @@ def png_to_ansi_py_placeholder(
     to="ansi",
     filter_=have_modules("rich"),
 )
-def markdown_to_rich_py(
+def rich_to_ansi_py(
     data: "RenderableType",
     width: "Optional[int]" = None,
     height: "Optional[int]" = None,
