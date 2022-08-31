@@ -8,7 +8,15 @@ Notable changes to this project will be documented in this file.
 Upcoming
 ********
 
+Added
+=====
+
 - Use cursor shapes to show the current input mode
+
+Fixed
+=====
+
+- Do not clear a cell's output when converting a cell to markdown
 
 ----
 

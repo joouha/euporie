@@ -631,7 +631,7 @@ class Cell:
             clear: If True, cell outputs will be cleared
 
         """
-        if clear:
+        if clear and cell_type != "markdown":
             self.remove_outputs()
         if cell_type == "code":
             self.json.setdefault("execution_count", None)
