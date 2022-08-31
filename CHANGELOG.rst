@@ -4,6 +4,14 @@ Changelog
 
 Notable changes to this project will be documented in this file.
 
+********
+Upcoming
+********
+
+- Use cursor shapes to show the current input mode
+
+----
+
 *******************
 v2.0.7 (2022-08-31)
 *******************

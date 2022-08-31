@@ -12,6 +12,7 @@ from prompt_toolkit.application.application import Application, _CombinedRegistr
 from prompt_toolkit.application.current import create_app_session
 from prompt_toolkit.clipboard import InMemoryClipboard
 from prompt_toolkit.clipboard.pyperclip import PyperclipClipboard
+from prompt_toolkit.cursor_shapes import CursorShape, CursorShapeConfig
 from prompt_toolkit.enums import EditingMode
 from prompt_toolkit.filters import Condition, buffer_has_focus, to_filter
 from prompt_toolkit.formatted_text import to_formatted_text
@@ -57,7 +58,7 @@ from upath import UPath
 from euporie.core.commands import add_cmd
 from euporie.core.config import Config, add_setting
 from euporie.core.current import get_app
-from euporie.core.filters import in_tmux, tab_has_focus
+from euporie.core.filters import in_tmux, insert_mode, replace_mode, tab_has_focus
 from euporie.core.key_binding.key_processor import KeyProcessor
 from euporie.core.key_binding.micro_state import MicroState
 from euporie.core.key_binding.registry import (
@@ -128,6 +129,38 @@ _COLOR_DEPTHS = {
 }
 
 
+class CursorConfig(CursorShapeConfig):
+    """Determines which cursor mode to use."""
+
+    def get_cursor_shape(self, app: "Application[Any]") -> "CursorShape":
+        """Return the cursor shape to be used in the current state."""
+        if isinstance(app, BaseApp):
+            if insert_mode():
+                if app.config.cursor_blink:
+                    return CursorShape.BLINKING_BEAM
+                else:
+                    return CursorShape.BEAM
+            elif replace_mode():
+                if app.config.cursor_blink:
+                    return CursorShape.BLINKING_UNDERLINE
+                else:
+                    return CursorShape.UNDERLINE
+        return CursorShape.BLOCK
+
+    # ################################### Settings ####################################w
+
+    add_setting(
+        name="cursor_blink",
+        flags=["--cursor-blink"],
+        type_=bool,
+        default=False,
+        help_="Whether to blink the cursor",
+        description="""
+            When set to True, the cursor will blink.
+    """,
+    )
+
+
 class BaseApp(Application):
     """All euporie apps.
 
@@ -175,6 +208,7 @@ class BaseApp(Application):
                     "color_depth": self.config.color_depth,
                     "editing_mode": self.get_edit_mode(),
                     "mouse_support": Condition(lambda: self.need_mouse_support),
+                    "cursor": CursorConfig(),
                 },
                 **kwargs,
             }
@@ -808,7 +842,7 @@ class BaseApp(Application):
         """Focus the previous control."""
         get_app().layout.focus_previous()
 
-    # ################################### Settings ####################################
+    # ################################### Settings ####################################w
 
     add_setting(
         name="files",
@@ -1068,7 +1102,7 @@ class BaseApp(Application):
         help_="Additional key binding definitions",
         default={},
         description="""
-    A mapping of component names to mappings of command name to key-binding lists.
+            A mapping of component names to mappings of command name to key-binding lists.
     """,
         schema={
             "type": "object",
