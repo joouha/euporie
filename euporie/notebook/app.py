@@ -176,7 +176,7 @@ class NotebookApp(BaseApp):
             dont_extend_width=True,
         )
 
-        self.title_bar = ConditionalContainer(
+        title_bar = ConditionalContainer(
             Window(
                 content=FormattedTextControl(self.format_title, show_cursor=False),
                 height=1,
@@ -220,22 +220,28 @@ class NotebookApp(BaseApp):
         self.dialogs["shortcuts"] = ShortcutsDialog(self)
         self.dialogs["msgbox"] = MsgBoxDialog(self)
 
-        self.menu_bar = MenuBar(app=self, menu_items=self.load_menu_items())
+        top_bar = ConditionalContainer(
+            content=VSplit(
+                [
+                    self.logo,
+                    MenuBar(app=self, menu_items=self.load_menu_items()),
+                    title_bar,
+                ]
+            ),
+            filter=self.config.filter("show_top_bar"),
+        )
+
         self.container = FloatContainer(
             content=HSplit(
                 [
-                    VSplit([self.logo, self.menu_bar, self.title_bar]),
-                    HSplit(
-                        [
-                            tab_bar,
-                            DynamicContainer(self.tab_container),
-                            self.pager,
-                            self.search_bar,
-                            StatusBar(),
-                        ],
-                        style="class:body",
-                    ),
-                ]
+                    top_bar,
+                    tab_bar,
+                    DynamicContainer(self.tab_container),
+                    self.pager,
+                    self.search_bar,
+                    StatusBar(),
+                ],
+                style="class:body",
             ),
             floats=cast("list[Float]", self.floats),
         )
@@ -542,12 +548,26 @@ class NotebookApp(BaseApp):
         """,
     )
 
+    add_setting(
+        name="show_top_bar",
+        flags=["--show-top-bar"],
+        type_=bool,
+        title="top bar",
+        help_="Show the top bar",
+        default=True,
+        schema={"type": "boolean"},
+        description="""
+            Whether the top bar should be shown at the top of the screen.
+        """,
+    )
+
     # ################################# Key Bindings ##################################
 
     register_bindings(
         {
             "euporie.notebook.app.NotebookApp": {
                 "new-notebook": "c-n",
+                "toggle-show-top-bar": ("escape", "m"),
             }
         }
     )

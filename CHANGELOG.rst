@@ -11,6 +11,7 @@ Upcoming
 Added
 =====
 
+- Add ability to toggle top bar visibility
 - Use cursor shapes to show the current input mode
 
 Fixed
