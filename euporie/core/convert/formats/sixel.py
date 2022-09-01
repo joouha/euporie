@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 
 register(
     from_=("png", "jpeg", "svg", "pdf"),
-    to="ansi",
+    to="sixel",
     filter_=commands_exist("chafa"),
 )(partial(chafa_convert, "sixel"))
 

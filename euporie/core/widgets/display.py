@@ -393,10 +393,7 @@ class SixelGraphicControl(GraphicControl):
                     to_formatted_text(
                         [
                             # Move cursor down and across by image height and width
-                            (
-                                f"class:render-{get_app().render_counter}",
-                                "\n".join((height) * [" " * (width)]),
-                            ),
+                            ("", "\n".join((height) * [" " * (width)])),
                             # Save position, then move back
                             (
                                 "[ZeroWidthEscape]",
@@ -451,10 +448,7 @@ class ItermGraphicControl(GraphicControl):
                     to_formatted_text(
                         [
                             # Move cursor down and across by image height and width
-                            (
-                                f"class:render-{get_app().render_counter}",
-                                "\n".join((height) * [" " * (width)]),
-                            ),
+                            ("", "\n".join((height) * [" " * (width)])),
                             # Save position, then move back
                             (
                                 "[ZeroWidthEscape]",
@@ -607,10 +601,7 @@ class KittyGraphicControl(GraphicControl):
                     to_formatted_text(
                         [
                             # Move cursor down and acoss by image height and width
-                            (
-                                f"class:render-{get_app().render_counter}",
-                                "\n".join((height) * [" " * (width)]),
-                            ),
+                            ("", "\n".join((height) * [" " * (width)])),
                             # Save position, then move back
                             (
                                 "[ZeroWidthEscape]",
@@ -707,7 +698,8 @@ class GraphicWindow(Window):
                     screen,
                     MouseHandlers(),  # Do not let the float add mouse events
                     new_write_position,
-                    parent_style,
+                    # Fore refreshes by constantly changing the style
+                    f"class:render-{get_app().render_counter}",
                     erase_bg=True,
                     z_index=z_index,
                 )

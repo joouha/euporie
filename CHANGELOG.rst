@@ -17,6 +17,7 @@ Added
 Fixed
 =====
 
+- Even more graphics rendering adjustments, including enabling sixel rendering with :command:`chafa`
 - Do not clear a cell's output when converting a cell to markdown
 
 ----

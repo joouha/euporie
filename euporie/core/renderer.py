@@ -180,7 +180,7 @@ def _output_screen_diff(
                 if c != current_pos.x or y != current_pos.y:
                     current_pos = move_cursor(Point(x=c, y=y))
 
-                if diff_zwe:
+                if diff_char or diff_zwe:
                     # Send injected escape sequences to output.
                     write_raw(new_zwe)
 
