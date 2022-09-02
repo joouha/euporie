@@ -165,6 +165,8 @@ class Console(KernelTab):
             self.reformat()
         # Get the code to run
         text = buffer.text
+        # Remove any selections from input
+        self.input_box.buffer.selection_state = None
         # Disable existing output
         self.live_output.style = "class:disabled"
         # Re-render the app and move to below the current output
