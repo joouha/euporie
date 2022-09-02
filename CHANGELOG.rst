@@ -11,6 +11,7 @@ Upcoming
 Added
 =====
 
+- Clear selection in console before printing input
 - Add ability to toggle top bar visibility
 - Use cursor shapes to show the current input mode
 
