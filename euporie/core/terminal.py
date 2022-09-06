@@ -7,10 +7,9 @@ import logging
 import os
 import re
 from functools import lru_cache
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
 
 from aenum import extend_enum
-from prompt_toolkit.input import vt100_parser
 from prompt_toolkit.keys import Keys
 from prompt_toolkit.output import ColorDepth
 from prompt_toolkit.utils import Event
@@ -21,27 +20,15 @@ from euporie.core.key_binding.registry import register_bindings
 from euporie.core.style import DEFAULT_COLORS
 
 if TYPE_CHECKING:
-    from typing import Any, Optional, Type, Union
+    from typing import Any, Optional, Type
 
     from prompt_toolkit.input import Input
-    from prompt_toolkit.input.vt100 import Vt100Input
     from prompt_toolkit.key_binding import KeyPressEvent
     from prompt_toolkit.output import Output
 
     from euporie.core.config import Config
 
 log = logging.getLogger(__name__)
-
-_response_prefix_re = re.compile(
-    r"""^\x1b(
-        \][^\\\x07]*  # Operating System Commands
-        |
-        _[^\\]*  # Application Program Command
-        |
-        \[\?[\d;]*  # Primary device attribute responses
-    )\Z""",
-    re.VERBOSE,
-)
 
 
 @lru_cache
@@ -54,38 +41,6 @@ def _have_termios_tty_fcntl() -> "bool":
         return False
     else:
         return True
-
-
-class _IsPrefixOfLongerMatchCache(vt100_parser._IsPrefixOfLongerMatchCache):
-    def __missing__(self, prefix: "str") -> "bool":
-        """Check if the response might match an OSC or APC code, or DA response."""
-        result = super().__missing__(prefix)
-        if not result:
-            if _response_prefix_re.match(prefix):
-                result = True
-                self[prefix] = result
-        return result
-
-
-# Monkey patch the prefix cache
-vt100_parser._IS_PREFIX_OF_LONGER_MATCH_CACHE = _IsPrefixOfLongerMatchCache()
-
-
-class Vt100Parser(vt100_parser.Vt100Parser):
-    """A Vt100Parser which checks input against additional key patterns."""
-
-    def __init__(self, *args: "Any", **kwargs: "Any") -> "None":
-        """Create a new VT100 parser."""
-        super().__init__(*args, **kwargs)
-        self.queries: "dict[Keys, re.Pattern]" = {}
-
-    def _get_match(self, prefix: "str") -> "Union[None, Keys, tuple[Keys, ...]]":
-        """Checks for additional key matches first."""
-        for key, pattern in self.queries.items():
-            if pattern.match(prefix):
-                return key
-
-        return super()._get_match(prefix)
 
 
 def tmuxify(cmd: "str") -> "str":
@@ -364,6 +319,23 @@ class DepthOfColor(TerminalQuery):
             return
 
 
+class SgrPixelStatus(TerminalQuery):
+    """A terminal query to check for Pixel SGR support."""
+
+    default = False
+    cache = True
+    cmd = "\x1b[?1016$p"
+    pattern = re.compile(r"^\x1b\[\?1016;(?P<Pm>\d)\$\Z")
+
+    def verify(self, data: "str") -> "bool":
+        """Verifies the terminal response means sixel graphics are supported."""
+        if match := self.pattern.match(data):
+            if values := match.groupdict():
+                if values.get("Pm") != 0:
+                    return True
+        return False
+
+
 class TerminalInfo:
     """A class to gather and hold information about the terminal."""
 
@@ -383,6 +355,7 @@ class TerminalInfo:
         self.kitty_graphics_status = self.register(KittyGraphicsStatus)
         self.iterm_graphics_status = self.register(ItermGraphicsStatus)
         self.depth_of_color = self.register(DepthOfColor)
+        self.sgr_pixel_status = self.register(SgrPixelStatus)
 
     def register(self, query: "Type[TerminalQuery]") -> "TerminalQuery":
         """Instantiates and registers a query's response with the input parser."""
@@ -404,13 +377,10 @@ class TerminalInfo:
                 extend_enum(Keys, key_name, key_code)
             key = getattr(Keys, key_name)
 
-            # Register this key with the parser
-            if hasattr(self.input, "vt100_parser"):
-                # Ensure mypy knows the current types
-                self.input = cast("Vt100Input", self.input)
-                self.input.vt100_parser = cast("Vt100Parser", self.input.vt100_parser)
+            # Register this key with the parser if supported
+            if parser := getattr(self.input, "vt100_parser", None):
                 # Register the key
-                self.input.vt100_parser.queries[key] = query.pattern
+                parser.queries[key] = query.pattern
 
             # Add a command for the query's key-binding
             add_cmd(

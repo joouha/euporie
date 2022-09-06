@@ -24,7 +24,9 @@ from prompt_toolkit.key_binding.bindings.emacs import (
     load_emacs_search_bindings,
     load_emacs_shift_selection_bindings,
 )
-from prompt_toolkit.key_binding.bindings.mouse import load_mouse_bindings
+from prompt_toolkit.key_binding.bindings.mouse import (
+    load_mouse_bindings as load_ptk_mouse_bindings,
+)
 from prompt_toolkit.key_binding.bindings.vi import (
     load_vi_bindings,
     load_vi_search_bindings,
@@ -38,6 +40,7 @@ from prompt_toolkit.layout.layout import Layout
 from prompt_toolkit.layout.menus import CompletionsMenu
 from prompt_toolkit.output import ColorDepth
 from prompt_toolkit.output.defaults import create_output
+from prompt_toolkit.output.vt100 import Vt100_Output as PtkVt100_Output
 from prompt_toolkit.styles import (
     BaseStyle,
     ConditionalStyleTransformation,
@@ -59,6 +62,7 @@ from euporie.core.commands import add_cmd
 from euporie.core.config import Config, add_setting
 from euporie.core.current import get_app
 from euporie.core.filters import in_tmux, insert_mode, replace_mode, tab_has_focus
+from euporie.core.io import Vt100_Output, Vt100Parser
 from euporie.core.key_binding.key_processor import KeyProcessor
 from euporie.core.key_binding.micro_state import MicroState
 from euporie.core.key_binding.registry import (
@@ -77,7 +81,7 @@ from euporie.core.style import (
     ColorPalette,
     build_style,
 )
-from euporie.core.terminal import TerminalInfo, Vt100Parser
+from euporie.core.terminal import TerminalInfo
 from euporie.core.utils import ChainedList, parse_path
 
 if TYPE_CHECKING:
@@ -100,9 +104,9 @@ if TYPE_CHECKING:
     from prompt_toolkit.filters import Filter, FilterOrBool
     from prompt_toolkit.formatted_text import AnyFormattedText, StyleAndTextTuples
     from prompt_toolkit.input import Input
-    from prompt_toolkit.input.vt100 import Vt100Input
     from prompt_toolkit.layout.containers import AnyContainer
     from prompt_toolkit.layout.layout import FocusableElement
+    from prompt_toolkit.layout.screen import WritePosition
     from prompt_toolkit.output import Output
 
     from euporie.core.config import Setting
@@ -224,16 +228,6 @@ class BaseApp(Application):
             extend_height=extend_renderer_height,
             extend_width=extend_renderer_width,
         )
-        # Use a custom vt100 parser to allow querying the terminal
-        self.using_vt100 = self.input.__class__.__name__ in (
-            "Vt100Input",
-            "PosixPipeInput",
-        )
-        if self.using_vt100:
-            self.input = cast("Vt100Input", self.input)
-            self.input.vt100_parser = Vt100Parser(
-                self.input.vt100_parser.feed_key_callback
-            )
         # Contains the opened tab containers
         self.tabs: "list[Tab]" = []
         # Holds the search bar to pass to cell inputs
@@ -311,6 +305,9 @@ class BaseApp(Application):
         self.color_palette.add_color("fg", "#ffffff" "default")
         self.color_palette.add_color("bg", "#000000" "default")
 
+        # Set to a write position to limit mouse events to a particular region
+        self.mouse_limits: "Optional[WritePosition]" = None
+
     @property
     def title(self) -> "str":
         """The application's title."""
@@ -385,7 +382,10 @@ class BaseApp(Application):
             async def await_terminal_feedback() -> "None":
                 try:
                     # Send queries to the terminal if supported
-                    if self.using_vt100:
+                    if self.input.__class__.__name__ in (
+                        "Vt100Input",
+                        "PosixPipeInput",
+                    ):
                         self.term_info.send_all()
                         # Give the terminal a chance to respond
                         await asyncio.sleep(0.1)
@@ -419,6 +419,15 @@ class BaseApp(Application):
                 from euporie.core.io import IgnoredInput
 
                 input_ = IgnoredInput()
+
+        # Use a custom vt100 parser to allow querying the terminal
+        if parser := getattr(input_, "vt100_parser", None):
+            setattr(
+                input_,
+                "vt100_parser",
+                Vt100Parser(parser.feed_key_callback),
+            )
+
         return input_
 
     @classmethod
@@ -431,7 +440,18 @@ class BaseApp(Application):
             A prompt-toolkit output instance
 
         """
-        return create_output(always_prefer_tty=True)
+        output = create_output(always_prefer_tty=True)
+
+        if isinstance(output, PtkVt100_Output):
+            output = Vt100_Output(
+                stdout=output.stdout,
+                get_size=output._get_size,
+                term=output.term,
+                default_color_depth=output.default_color_depth,
+                enable_bell=output.enable_bell,
+            )
+
+        return output
 
     def post_load(self) -> "None":
         """Allows subclasses to define additional loading steps."""
@@ -442,6 +462,7 @@ class BaseApp(Application):
     def load_key_bindings(self) -> "None":
         """Loads the application's key bindings."""
         from euporie.core.key_binding.bindings.micro import load_micro_bindings
+        from euporie.core.key_binding.bindings.mouse import load_mouse_bindings
 
         self._default_bindings = merge_key_bindings(
             [
@@ -468,8 +489,10 @@ class BaseApp(Application):
                     buffer_has_focus,
                 ),
                 # Active, even when no buffer has been focused.
-                load_mouse_bindings(),
+                load_ptk_mouse_bindings(),
                 load_cpr_bindings(),
+                # Load extra mouse bindings
+                load_mouse_bindings(),
                 # Load terminal query response key bindings
                 # load_command_bindings("terminal"),
             ]

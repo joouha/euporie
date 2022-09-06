@@ -11,7 +11,6 @@ from typing import TYPE_CHECKING, cast
 from prompt_toolkit.application.current import get_app
 from prompt_toolkit.data_structures import Point
 from prompt_toolkit.filters import is_searching
-from prompt_toolkit.formatted_text.utils import split_lines
 from prompt_toolkit.layout.containers import (
     Container,
     ScrollOffsets,
@@ -19,18 +18,15 @@ from prompt_toolkit.layout.containers import (
     WindowRenderInfo,
     to_container,
 )
-from prompt_toolkit.layout.controls import UIContent, UIControl
+from prompt_toolkit.layout.controls import UIContent
 from prompt_toolkit.layout.dimension import Dimension, to_dimension
 from prompt_toolkit.layout.mouse_handlers import MouseHandlers
 from prompt_toolkit.layout.screen import Char, Screen, WritePosition
 from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
 
-from euporie.core.margins import ScrollbarMargin
-
 if TYPE_CHECKING:
     from typing import Callable, Optional, Sequence, Union
 
-    from prompt_toolkit.formatted_text import AnyFormattedText, StyleAndTextTuples
     from prompt_toolkit.key_binding.key_bindings import (
         KeyBindingsBase,
         NotImplementedOrNone,
@@ -541,28 +537,31 @@ class ScrollingContainer(Container):
             self.scroll_to_cursor = False
 
         # Adjust scrolling offset
-        heights = [
-            # Ensure unrendered cells have at least some height
-            self.get_child_render_info(index).height or 1
-            for index in range(len(self._children))
-        ]
-        heights_above = sum(heights[: self._selected_slice.start])
-        new_child_position = self.selected_child_position + self.scrolling
-        # Do not allow scrolling if there is no overflow
-        if sum(heights) < available_height:
-            self.selected_child_position = heights_above
-        else:
-            # Prevent overscrolling at the top of the document
-            overscroll = heights_above - new_child_position
-            if overscroll < 0:
-                self.scrolling = 0
-            # Prevent underscrolling at the bottom
-            elif overscroll > 0:
-                heights_below = sum(heights[self._selected_slice.start :])
-                underscroll = new_child_position + heights_below - available_height
-                if underscroll < 0:
-                    self.scrolling = 0
-        self.selected_child_position += self.scrolling
+        if self.scrolling:
+            heights = [
+                # Ensure unrendered cells have at least some height
+                self.get_child_render_info(index).height or 1
+                for index in range(len(self._children))
+            ]
+            heights_above = sum(heights[: self._selected_slice.start])
+            new_child_position = self.selected_child_position + self.scrolling
+            # Do not allow scrolling if there is no overflow
+            if sum(heights) < available_height:
+                self.selected_child_position = heights_above
+            else:
+                # Prevent overscrolling at the top of the document
+                overscroll = heights_above - new_child_position
+                if overscroll < 0:
+                    # Scroll as far as we are able without overscrolling
+                    self.scrolling = max(0, self.scrolling + overscroll)
+                # Prevent underscrolling at the bottom
+                elif overscroll > 0:
+                    heights_below = sum(heights[self._selected_slice.start :])
+                    underscroll = new_child_position + heights_below - available_height
+                    if underscroll < 0:
+                        # Scroll as far as we are able without underscrolling
+                        self.scrolling = min(0, self.scrolling - underscroll)
+            self.selected_child_position += self.scrolling
 
         # Blit first selected child and those below it that are on screen
         line = self.selected_child_position
@@ -666,30 +665,40 @@ class ScrollingContainer(Container):
                 sizes[i] = int(avg_size)
         content_height = max(sum(sizes.values()), 1)
 
-        vertical_scroll = (
-            sum(list(sizes.values())[: self._selected_slice.start])
-            - self.selected_child_position
-        )
-
         # Mock up a WindowRenderInfo so we can draw a scrollbar margin
         self.render_info = WindowRenderInfo(
             window=cast("Window", self),
             ui_content=UIContent(line_count=content_height),
             horizontal_scroll=0,
-            vertical_scroll=vertical_scroll,
+            vertical_scroll=self.vertical_scroll,
             window_width=available_width,
             window_height=available_height,
             configured_scroll_offsets=ScrollOffsets(),
             visible_line_to_row_col={i: (i, 0) for i in range(available_height)},
             rowcol_to_yx={},
-            x_offset=0,
-            y_offset=0,
+            x_offset=xpos,
+            y_offset=ypos,
             wrap_lines=False,
         )
         # Signal that we are no longer scrolling
         self.scrolling = 0
 
-    def get_children(self) -> list["Container"]:
+    @property
+    def vertical_scroll(self) -> "int":
+        """The best guess at the absolute vertical scroll position."""
+        return (
+            sum(list(self.known_sizes.values())[: self._selected_slice.start])
+            - self.selected_child_position
+        )
+
+    @vertical_scroll.setter
+    def vertical_scroll(self, value: "int") -> "None":
+        """Set the absolute vertical scroll position."""
+        self.selected_child_position = (
+            sum(list(self.known_sizes.values())[: self._selected_slice.start]) - value
+        )
+
+    def get_children(self) -> "list[Container]":
         """Return the list of currently visible children to include in the layout."""
         return [
             self.get_child_render_info(i).container
@@ -778,67 +787,6 @@ class ScrollingContainer(Container):
     def _scroll_down(self) -> "None":
         """Scroll down one line: for compatibility with :py:class:`Window`."""
         self.scroll(-1)
-
-
-class ScrollbarControl(UIControl):
-    """A control which displays a :py:class:`ScrollbarMargin` for another container."""
-
-    def __init__(self, target: "ScrollingContainer") -> "None":
-        """Create a varical scrollbar for a :py:class:`ScrollingContainer` instance."""
-        self.target = target
-        self.margin = ScrollbarMargin()
-        self.lines: "list[StyleAndTextTuples]" = []
-
-    def preferred_width(self, max_available_width: "int") -> "int":
-        """Return the preferred width of this scrollbar."""
-        return 1
-
-    def preferred_height(
-        self,
-        width: "int",
-        max_available_height: "int",
-        wrap_lines: "bool",
-        get_line_prefix: "Optional[Callable[[int, int], AnyFormattedText]]",
-    ) -> "Optional[int]":
-        """Get the preferred height of the scrollbar: all of the height available."""
-        return max_available_height
-
-    def create_content(self, width: "int", height: "int") -> "UIContent":
-        """Generates the scrollbar's content."""
-        self.lines = list(
-            split_lines(
-                self.margin.create_margin(
-                    window_render_info=self.target.render_info,
-                    width=width,
-                    height=height,
-                )
-            )
-        )
-        return UIContent(
-            self.lines.__getitem__,
-            line_count=len(self.lines),
-            show_cursor=False,
-        )
-
-    def mouse_handler(self, mouse_event: MouseEvent) -> "NotImplementedOrNone":
-        """Handle mouse events."""
-        if self.lines:
-            fragments = self.lines[max(0, min(len(self.lines), mouse_event.position.y))]
-            # Find position in the fragment list.
-            xpos = mouse_event.position.x
-            # Find mouse handler for this character.
-            count = 0
-            for item in fragments:
-                count += len(item[1])
-                if count > xpos:
-                    if len(item) >= 3:
-                        # Call the handler and return its result
-                        handler = item[2]  # type: ignore
-                        return handler(mouse_event)
-                    else:
-                        break
-        # Otherwise, don't handle here.
-        return NotImplemented
 
 
 class PrintingContainer(Container):
