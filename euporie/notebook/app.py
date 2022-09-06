@@ -121,7 +121,9 @@ class NotebookApp(BaseApp):
             self.tab.focus()
 
         # Load style hooks and start polling terminal style
-        if self.using_vt100:
+        if self.config.terminal_polling_interval and hasattr(
+            self.input, "vt100_parser"
+        ):
             self.create_background_task(self._poll_terminal_colors())
 
     def format_title(self) -> "StyleAndTextTuples":

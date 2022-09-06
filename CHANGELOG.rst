@@ -11,6 +11,7 @@ Upcoming
 Added
 =====
 
+- Use SGR-pixel position for greater scrolling resolution when dragging scrollbar
 - Clear selection in console before printing input
 - Add ability to toggle top bar visibility
 - Use cursor shapes to show the current input mode

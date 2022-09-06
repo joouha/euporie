@@ -685,7 +685,6 @@ class GraphicWindow(Window):
         if filter_value and target_wp and self.target_window.render_info is not None:
             rendered_height = self.target_window.render_info.window_height
             # Only draw if the target window is fully visible
-            log.debug((target_wp.height, rendered_height))
             if target_wp.height == rendered_height:
                 cpos = screen.get_menu_position(self.target_window)
                 new_write_position = WritePosition(

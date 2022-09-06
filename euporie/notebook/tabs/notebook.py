@@ -17,12 +17,7 @@ from prompt_toolkit.filters import (
     vi_mode,
     vi_navigation_mode,
 )
-from prompt_toolkit.layout.containers import (
-    ConditionalContainer,
-    HSplit,
-    VSplit,
-    Window,
-)
+from prompt_toolkit.layout.containers import ConditionalContainer, HSplit, VSplit
 from prompt_toolkit.layout.dimension import Dimension
 from prompt_toolkit.mouse_events import MouseEventType
 
@@ -44,12 +39,13 @@ from euporie.core.key_binding.registry import (
     load_registered_bindings,
     register_bindings,
 )
+from euporie.core.margins import MarginContainer, ScrollbarMargin
 from euporie.core.style import KERNEL_STATUS_REPR
 from euporie.core.tabs.base import KernelTab
 from euporie.core.tabs.notebook import BaseNotebook
 from euporie.core.widgets.cell import Cell
 from euporie.core.widgets.decor import Line, Pattern
-from euporie.core.widgets.page import ScrollbarControl, ScrollingContainer
+from euporie.core.widgets.page import ScrollingContainer
 from euporie.notebook.filters import (
     cell_has_focus,
     code_cell_selected,
@@ -226,11 +222,7 @@ class Notebook(BaseNotebook):
                             filter=~expand,
                         ),
                         ConditionalContainer(
-                            Window(
-                                ScrollbarControl(self.page),
-                                width=1,
-                                style="class:scrollbar",
-                            ),
+                            MarginContainer(ScrollbarMargin(), target=self.page),
                             filter=Condition(lambda: self.app.config.show_scroll_bar),
                         ),
                     ],

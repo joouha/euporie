@@ -49,7 +49,7 @@ class EuporieSSHServer(asyncssh.SSHServer):  # type: ignore
 
     def session_requested(self) -> "PromptToolkitSSHSession":
         """Return an SSH session."""
-        return PromptToolkitSSHSession(self.app_cls.interact)
+        return PromptToolkitSSHSession(self.app_cls.interact, enable_cpr=True)
 
 
 class HubApp(BaseApp):
