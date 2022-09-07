@@ -230,13 +230,13 @@ MIME_ORDER = [
     "application/vnd.jupyter.widget-view+json",
     "application/json",
     "image/*",
-    "application/pdf",
-    "text/latex",
+    "text/html",
     "text/markdown",
     "text/x-markdown",
+    "application/pdf",
+    "text/latex",
     "text/x-python-traceback",
     "text/stderr",
-    "text/html",
     "text/*",
     "*",
 ]
@@ -248,10 +248,7 @@ def _calculate_mime_rank(mime_data: "tuple[str, Any]") -> "int":
     for i, ranked_mime in enumerate(MIME_ORDER):
         # Uprank plain text with escape sequences
         if mime == "text/plain" and "\x1b[" in data:
-            i -= 2
-        # Downrank html with no tags
-        if mime == "text/html" and "<" not in data:
-            i += 2
+            i -= 7
         if PurePath(mime).match(ranked_mime):
             return i
     else:
