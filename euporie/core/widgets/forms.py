@@ -37,6 +37,7 @@ from prompt_toolkit.layout.controls import (
 )
 from prompt_toolkit.layout.dimension import Dimension
 from prompt_toolkit.layout.processors import AfterInput, ConditionalProcessor
+from prompt_toolkit.layout.screen import WritePosition
 from prompt_toolkit.layout.utils import explode_text_fragments
 from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
 from prompt_toolkit.utils import Event
@@ -179,19 +180,20 @@ class Button:
         else:
             self.key_bindings = self.get_key_bindings()
         self.mouse_handler = mouse_handler or self.default_mouse_handler
-        self.container = Border(
-            Window(
-                FormattedTextControl(
-                    self.get_text_fragments,
-                    key_bindings=self.key_bindings,
-                    focusable=True,
-                    show_cursor=False,
-                    style="class:face",
-                ),
-                style=self.get_style,
-                dont_extend_width=True,
-                dont_extend_height=True,
+        self.window = Window(
+            FormattedTextControl(
+                self.get_text_fragments,
+                key_bindings=self.key_bindings,
+                focusable=True,
+                show_cursor=False,
+                style="class:face",
             ),
+            style=self.get_style,
+            dont_extend_width=True,
+            dont_extend_height=True,
+        )
+        self.container = Border(
+            self.window,
             border=border,
             show_borders=show_borders,
             style=lambda: f"{self.get_style()} class:border",
@@ -238,9 +240,16 @@ class Button:
         """Handle mouse events."""
         if self.disabled():
             return None
+        get_app().mouse_limits = None
         if mouse_event.event_type == MouseEventType.MOUSE_DOWN:
             get_app().layout.focus(self)
             self.selected = True
+            if (render_info := self.window.render_info) is not None:
+                y_min, x_min = min(render_info._rowcol_to_yx.values())
+                y_max, x_max = max(render_info._rowcol_to_yx.values())
+                get_app().mouse_limits = WritePosition(
+                    xpos=x_min, ypos=y_min, width=x_max - x_min, height=y_max - y_min
+                )
             self.on_mouse_down.fire()
             return None
         elif mouse_event.event_type == MouseEventType.MOUSE_UP:

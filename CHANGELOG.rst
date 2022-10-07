@@ -4,6 +4,17 @@ Changelog
 
 Notable changes to this project will be documented in this file.
 
+********
+Upcoming
+********
+
+Fixed
+=====
+
+- Reset button selection status on any global mouse event
+
+----
+
 *******************
 v2.0.8 (2022-10-04)
 *******************
