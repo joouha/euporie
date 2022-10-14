@@ -404,6 +404,7 @@ class NotebookApp(BaseApp):
                 "Settings",
                 children=[
                     self.config.get_item("edit_mode").menu,
+                    self.config.get_item("set_cursor_shape").menu,
                     separator,
                     self.config.get_item("color_scheme").menu,
                     self.config.get_item("syntax_theme").menu,

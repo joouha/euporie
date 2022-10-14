@@ -425,6 +425,7 @@ class Setting:
                 toggled=toggled_filter,
                 hidden=self.hidden,
                 title=f"Toggle {self.title}",
+                menu_title=self.kwargs.get("menu_title"),
                 description=f'Toggle the value of the "{self.name}" configuration option.',
                 filter=self.cmd_filter,
             )(self.toggle)

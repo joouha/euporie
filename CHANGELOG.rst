@@ -8,6 +8,11 @@ Notable changes to this project will be documented in this file.
 Upcoming
 ********
 
+Added
+=====
+
+- Make changing cursor shapes to showing editing mode configurable
+
 Fixed
 =====
 

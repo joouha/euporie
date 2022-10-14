@@ -138,7 +138,7 @@ class CursorConfig(CursorShapeConfig):
 
     def get_cursor_shape(self, app: "Application[Any]") -> "CursorShape":
         """Return the cursor shape to be used in the current state."""
-        if isinstance(app, BaseApp):
+        if isinstance(app, BaseApp) and app.config.set_cursor_shape:
             if insert_mode():
                 if app.config.cursor_blink:
                     return CursorShape.BLINKING_BEAM
@@ -153,6 +153,18 @@ class CursorConfig(CursorShapeConfig):
 
     # ################################### Settings ####################################w
 
+    add_setting(
+        name="set_cursor_shape",
+        flags=["--set-cursor-shape"],
+        type_=bool,
+        default=True,
+        menu_title="Change cursor shape",
+        help_="Whether to set the shape of the cursor depending on the editing mode",
+        description="""
+            When set to True, the euporie will set the shape of the terminal's cursor
+            to a beam in insert mode and and underline in replace mode when editing.
+    """,
+    )
     add_setting(
         name="cursor_blink",
         flags=["--cursor-blink"],
