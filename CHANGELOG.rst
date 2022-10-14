@@ -16,6 +16,7 @@ Added
 Fixed
 =====
 
+- Highlight selected trailing whitespace
 - Reset button selection status on any global mouse event
 
 ----

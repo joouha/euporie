@@ -23,7 +23,6 @@ from prompt_toolkit.layout.processors import (  # HighlightSearchProcessor,
     HighlightIncrementalSearchProcessor,
     HighlightMatchingBracketProcessor,
     HighlightSelectionProcessor,
-    ShowTrailingWhiteSpaceProcessor,
     TabsProcessor,
 )
 from prompt_toolkit.lexers import DynamicLexer, PygmentsLexer
@@ -39,7 +38,10 @@ from euporie.core.key_binding.registry import (
     register_bindings,
 )
 from euporie.core.margins import NumberedDiffMargin, OverflowMargin, ScrollbarMargin
-from euporie.core.processors import AppendLineAutoSuggestion
+from euporie.core.processors import (
+    AppendLineAutoSuggestion,
+    ShowTrailingWhiteSpaceProcessor,
+)
 from euporie.core.suggest import ConditionalAutoSuggestAsync
 from euporie.core.widgets.pager import PagerState
 
