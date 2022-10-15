@@ -42,7 +42,7 @@ class ShowTrailingWhiteSpaceProcessor(Processor):
     def __init__(
         self,
         char: "str" = "·",
-        style: "str" = "class:training-whitespace",
+        style: "str" = "class:trailing-whitespace",
     ) -> "None":
         """Create a new processor instance."""
         self.char = char

@@ -397,7 +397,7 @@ def build_style(
         "cursor-line incsearch.current": "bg:ansibrightgreen",
         "matching-bracket.cursor": "fg:yellow bold",
         "matching-bracket.other": "fg:yellow bold",
-        "training-whitespace": f"fg:{cp.fg.more(0.66)}",
+        "trailing-whitespace": f"fg:{cp.fg.more(0.66)}",
         "tab": f"fg:{cp.fg.more(0.66)}",
         # Search
         "search": f"bg:{cp.bg.more(1/20)}",
