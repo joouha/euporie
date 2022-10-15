@@ -438,6 +438,7 @@ class Cell:
             lambda: self.json["metadata"]
             .get("jupyter", {})
             .get("outputs_hidden", False)
+            or self.json["metadata"].get("collapsed", False)
         )
 
         output_row = ConditionalContainer(
@@ -813,10 +814,12 @@ class Cell:
     def show_output(self) -> "None":
         """Set the cell outputs to visible."""
         self.set_metadata(("jupyter", "outputs_hidden"), False)
+        self.set_metadata(("collapsed",), False)
 
     def hide_output(self) -> "None":
         """Set the cell outputs to visible."""
         self.set_metadata(("jupyter", "outputs_hidden"), True)
+        self.set_metadata(("collapsed",), True)
 
     def toggle_output(self) -> "None":
         """Toggle the visibility of the cell outputs."""
