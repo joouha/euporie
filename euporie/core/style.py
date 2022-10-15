@@ -493,6 +493,8 @@ def build_style(
         "ipywidget slider handle": f"fg:{cp.fg.darker(0.25)}",
         "ipywidget accordion border default": f"fg:{cp.bg.more(4/20)}",
         # Input widgets
+        "text-area selected": "noreverse",
+        "text-area selected focused": "reverse",
         # "input focused": f"bg:{cp.bg.more(0.025)}",
         # "input button face": f"fg:default bg:{cp.bg.more(0.05)}",
         # "input button face focused": f"fg:default bg:{cp.hl.darker(0.75)}",

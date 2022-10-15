@@ -157,6 +157,12 @@ class KernelInput(TextArea):
             has_focus(self.buffer) & ~is_done,
         )
 
+        # Set style
+        style = kwargs.get("style", "")
+        self.window.style = lambda: (
+            f"class:text-area,{style}," + ("focused" if self.has_focus() else "")
+        )
+
         # Add configurable line numbers
         self.window.left_margins = left_margins or [
             ConditionalMargin(

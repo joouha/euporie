@@ -11,6 +11,7 @@ Upcoming
 Added
 =====
 
+- Do not show text selection when cell input is not focused
 - Allow menus to be closed with :kbd:`Escape` and opened with :kbd:`F10`
 - Enable cell inputs and outputs to be collapsed
 - Make changing cursor shapes to showing editing mode configurable
