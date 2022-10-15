@@ -516,7 +516,7 @@ def duplicate_line() -> "None":
     filter=buffer_has_focus & has_selection,
 )
 def duplicate_selection() -> "None":
-    """Duplicate the current line."""
+    """Duplicate the current selection."""
     buffer = get_app().current_buffer
     selection_state = buffer.selection_state
     from_, to = buffer.document.selection_range()
