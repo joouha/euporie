@@ -576,6 +576,20 @@ class MenuBar:
                 event.app.layout.focus_last()
                 item.handler()
 
+        @kb.add("escape")
+        def _close(event: "KeyPressEvent") -> "None":
+            """Close the current menu."""
+            if len(self.selected_menu) > 1:
+                self.selected_menu = self.selected_menu[:-1]
+            else:
+                app.layout.focus_previous()
+
+        # Add global CUA menu shortcut
+        @kb.add("f10", is_global=True)
+        def _open_menu_default(event: "KeyPressEvent") -> "None":
+            self.selected_menu = [0]
+            event.app.layout.focus(self.window)
+
         # Add menu shortcuts
         used_keys = set()
         for i, item in enumerate(menu_items):
