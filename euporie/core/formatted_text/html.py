@@ -1320,7 +1320,7 @@ class HTML:
 if __name__ == "__main__":
     import sys
 
-    from prompt_toolkit.application.current import set_app
+    from prompt_toolkit.application.current import create_app_session, set_app
     from prompt_toolkit.shortcuts.utils import print_formatted_text
     from prompt_toolkit.styles.style import Style
     from upath import UPath
@@ -1330,9 +1330,10 @@ if __name__ == "__main__":
 
     path = UPath(sys.argv[1])
 
-    with set_app(BaseApp()):
-        with path.open() as f:
-            print_formatted_text(
-                HTML(path.open().read(), base=path, pad=True),
-                style=Style(HTML_STYLE),
-            )
+    with create_app_session(input=BaseApp.load_input(), output=BaseApp.load_output()):
+        with set_app(BaseApp()):
+            with path.open() as f:
+                print_formatted_text(
+                    HTML(path.open().read(), base=path, pad=True),
+                    style=Style(HTML_STYLE),
+                )
