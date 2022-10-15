@@ -978,6 +978,76 @@ class Notebook(BaseNotebook):
 
     @staticmethod
     @add_cmd(
+        filter=cell_has_focus & ~buffer_has_focus,
+        title="Expand cell inputs",
+    )
+    def _show_cell_inputs() -> "None":
+        """Expand the selected cells' inputs."""
+        nb = get_app().tab
+        if isinstance(nb, Notebook):
+            for cell in nb.cells:
+                cell.show_input()
+
+    @staticmethod
+    @add_cmd(
+        filter=cell_has_focus & ~buffer_has_focus,
+        title="Collapse cell inputs",
+    )
+    def _hide_cell_inputs() -> "None":
+        """Collapse the selected cells' inputs."""
+        nb = get_app().tab
+        if isinstance(nb, Notebook):
+            for cell in nb.cells:
+                cell.hide_input()
+
+    @staticmethod
+    @add_cmd(
+        filter=cell_has_focus & ~buffer_has_focus,
+    )
+    def _toggle_cell_inputs() -> "None":
+        """Toggle the visibility of the selected cells' inputs."""
+        nb = get_app().tab
+        if isinstance(nb, Notebook):
+            for cell in nb.cells:
+                cell.toggle_input()
+
+    @staticmethod
+    @add_cmd(
+        filter=cell_has_focus & ~buffer_has_focus,
+        title="Expand cell outputs",
+    )
+    def _show_cell_outputs() -> "None":
+        """Expand the selected cells' outputs."""
+        nb = get_app().tab
+        if isinstance(nb, Notebook):
+            for cell in nb.cells:
+                cell.show_output()
+
+    @staticmethod
+    @add_cmd(
+        filter=cell_has_focus & ~buffer_has_focus,
+        title="Collapse cell outputs",
+    )
+    def _hide_cell_outputs() -> "None":
+        """Collapse the selected cells' outputs."""
+        nb = get_app().tab
+        if isinstance(nb, Notebook):
+            for cell in nb.cells:
+                cell.hide_output()
+
+    @staticmethod
+    @add_cmd(
+        filter=cell_has_focus & ~buffer_has_focus,
+    )
+    def _toggle_cell_outputs() -> "None":
+        """Toggle the visibility of the selected cells' outputs."""
+        nb = get_app().tab
+        if isinstance(nb, Notebook):
+            for cell in nb.cells:
+                cell.toggle_output()
+
+    @staticmethod
+    @add_cmd(
         title="Reformat cells",
         filter=have_formatter
         & code_cell_selected

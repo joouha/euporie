@@ -410,9 +410,11 @@ class Kernel:
         msg_id = rsp.get("parent_header", {}).get("msg_id")
         content = rsp.get("content", {})
 
-        if callable(set_metadata := self.msg_id_callbacks[msg_id]["set_metadata"]):
+        if self.kernel_tab.app.config.record_cell_timing and callable(
+            set_metadata := self.msg_id_callbacks[msg_id]["set_metadata"]
+        ):
             set_metadata(
-                ("execute", "shell", "execute_reply"),
+                ("execution", "shell.execute_reply"),
                 rsp["header"]["date"].isoformat(),
             )
 
@@ -486,29 +488,31 @@ class Kernel:
             set_status(status)
 
         if status == "idle":
-            if callable(
+            if self.kernel_tab.app.config.record_cell_timing and callable(
                 set_metadata := self.msg_id_callbacks[msg_id].get("set_metadata")
             ):
                 set_metadata(
-                    ("iopub", "status", "idle"),
+                    ("execution", "iopub.status.idle"),
                     rsp["header"]["date"].isoformat(),
                 )
 
         elif status == "busy":
-            if callable(
+            if self.kernel_tab.app.config.record_cell_timing and callable(
                 set_metadata := self.msg_id_callbacks[msg_id].get("set_metadata")
             ):
                 set_metadata(
-                    ("iopub", "status", "busy"),
+                    ("execution", "iopub.status.busy"),
                     rsp["header"]["date"].isoformat(),
                 )
 
     def on_iopub_execute_input(self, rsp: "dict[str, Any]") -> "None":
         """Call callbacks for an iopub execute input response."""
         msg_id = rsp.get("parent_header", {}).get("msg_id")
-        if callable(set_metadata := self.msg_id_callbacks[msg_id]["set_metadata"]):
+        if self.kernel_tab.app.config.record_cell_timing and callable(
+            set_metadata := self.msg_id_callbacks[msg_id]["set_metadata"]
+        ):
             set_metadata(
-                ("iopub", "execute_input"),
+                ("execution", "iopub", "execute_input"),
                 rsp["header"]["date"].isoformat(),
             )
 

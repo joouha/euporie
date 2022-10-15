@@ -414,6 +414,8 @@ def build_style(
         "cell.output": "fg:default bg:default",
         "cell.input.prompt": "fg:blue",
         "cell.output.prompt": "fg:red",
+        "cell show outputs": "bg:#888",
+        "cell show inputs": "bg:#888",
         # Scrollbars
         "scrollbar": f"fg:{cp.bg.more(15/20)} bg:{cp.bg.more(3/20)}",
         "scrollbar.background": f"fg:{cp.bg.more(15/20)} bg:{cp.bg.more(3/20)}",

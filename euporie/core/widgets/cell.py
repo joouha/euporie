@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 import weakref
 from functools import partial
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 import nbformat
 from prompt_toolkit.filters import Condition
@@ -27,6 +27,7 @@ from euporie.core.border import Invisible, Thick, Thin
 from euporie.core.config import add_setting
 from euporie.core.filters import multiple_cells_selected
 from euporie.core.format import format_code
+from euporie.core.utils import on_click
 from euporie.core.widgets.cell_outputs import CellOutputArea
 from euporie.core.widgets.inputs import KernelInput, StdInput
 
@@ -34,6 +35,7 @@ if TYPE_CHECKING:
     from typing import Any, Callable, Literal, Optional
 
     from prompt_toolkit.buffer import Buffer
+    from prompt_toolkit.formatted_text.base import OneStyleAndTextTuple
     from prompt_toolkit.key_binding.key_bindings import NotImplementedOrNone
     from prompt_toolkit.layout.containers import AnyContainer
     from prompt_toolkit.layout.dimension import Dimension
@@ -355,6 +357,11 @@ class Cell:
             ],
             height=1,
         )
+
+        source_hidden = Condition(
+            lambda: self.json["metadata"].get("jupyter", {}).get("source_hidden", False)
+        )
+
         input_row = ConditionalContainer(
             VSplit(
                 [
@@ -362,7 +369,13 @@ class Cell:
                     ConditionalContainer(
                         content=Window(
                             FormattedTextControl(
-                                lambda: weak_self.prompt,
+                                lambda: [
+                                    (
+                                        "",
+                                        weak_self.prompt,
+                                        on_click(self.toggle_input),
+                                    )
+                                ],
                             ),
                             width=lambda: len(weak_self.prompt),
                             style="class:cell.input.prompt",
@@ -373,7 +386,24 @@ class Cell:
                         fill(width=1, char=border_char("MID_SPLIT")),
                         filter=show_prompt,
                     ),
-                    self.input_box,
+                    ConditionalContainer(self.input_box, filter=~source_hidden),
+                    ConditionalContainer(
+                        Window(
+                            FormattedTextControl(
+                                [
+                                    cast(
+                                        "OneStyleAndTextTuple",
+                                        (
+                                            "class:cell,show,inputs",
+                                            " … ",
+                                            on_click(self.show_input),
+                                        ),
+                                    )
+                                ]
+                            )
+                        ),
+                        filter=source_hidden,
+                    ),
                     fill(width=1, char=border_char("MID_RIGHT")),
                 ],
             ),
@@ -403,6 +433,13 @@ class Cell:
             ),
             filter=(show_input & show_output) | self.stdin_box.visible,
         )
+
+        outputs_hidden = Condition(
+            lambda: self.json["metadata"]
+            .get("jupyter", {})
+            .get("outputs_hidden", False)
+        )
+
         output_row = ConditionalContainer(
             VSplit(
                 [
@@ -410,7 +447,13 @@ class Cell:
                     ConditionalContainer(
                         content=Window(
                             FormattedTextControl(
-                                lambda: weak_self.prompt,
+                                lambda: [
+                                    (
+                                        "",
+                                        weak_self.prompt,
+                                        on_click(self.toggle_output),
+                                    )
+                                ],
                             ),
                             width=lambda: len(weak_self.prompt),
                             style="class:cell.output.prompt",
@@ -427,7 +470,27 @@ class Cell:
                     ),
                     HSplit(
                         [
-                            self.output_area,
+                            ConditionalContainer(
+                                self.output_area,
+                                filter=~outputs_hidden,
+                            ),
+                            ConditionalContainer(
+                                Window(
+                                    FormattedTextControl(
+                                        [
+                                            cast(
+                                                "OneStyleAndTextTuple",
+                                                (
+                                                    "class:cell,show,outputs",
+                                                    " … ",
+                                                    on_click(self.show_output),
+                                                ),
+                                            ),
+                                        ]
+                                    )
+                                ),
+                                filter=outputs_hidden,
+                            ),
                             self.stdin_box,
                         ]
                     ),
@@ -488,6 +551,7 @@ class Cell:
             if self.stdin_box.visible():
                 to_focus = self.stdin_box.window
             else:
+                self.show_input()
                 to_focus = self.input_box.window
                 self.rendered = False
             if position is not None:
@@ -620,6 +684,8 @@ class Cell:
         if "outputs" in self.json:
             self.json["outputs"].clear()
         self.output_area.reset()
+        # Ensure the cell output area is visible
+        self.show_output()
 
     def set_cell_type(
         self, cell_type: "Literal['markdown','code','raw']", clear: "bool" = False
@@ -724,6 +790,41 @@ class Cell:
         else:
             self.remove_outputs()
 
+    def show_input(self) -> "None":
+        """Set the cell inputs to visible."""
+        self.set_metadata(("jupyter", "source_hidden"), False)
+
+    def hide_input(self) -> "None":
+        """Set the cell inputs to visible."""
+        # Exit edit mode
+        self.kernel_tab.edit_mode = False
+        # Un-focus the cell input
+        self.focus()
+        # Set the input to hidden
+        self.set_metadata(("jupyter", "source_hidden"), True)
+
+    def toggle_input(self) -> "None":
+        """Toggle the visibility of the cell input."""
+        if self.json["metadata"].get("jupyter", {}).get("source_hidden", False):
+            self.show_input()
+        else:
+            self.hide_input()
+
+    def show_output(self) -> "None":
+        """Set the cell outputs to visible."""
+        self.set_metadata(("jupyter", "outputs_hidden"), False)
+
+    def hide_output(self) -> "None":
+        """Set the cell outputs to visible."""
+        self.set_metadata(("jupyter", "outputs_hidden"), True)
+
+    def toggle_output(self) -> "None":
+        """Toggle the visibility of the cell outputs."""
+        if self.json["metadata"].get("jupyter", {}).get("outputs_hidden", False):
+            self.show_output()
+        else:
+            self.hide_output()
+
     def set_metadata(self, path: "tuple[str, ...]", data: "Any") -> "None":
         """Sets a value in the metadata at an arbitrary path.
 
@@ -732,13 +833,12 @@ class Cell:
             data: The value to add
 
         """
-        if self.kernel_tab.app.config.record_cell_timing:
-            level = self.json["metadata"]
-            for i, key in enumerate(path):
-                if i == len(path) - 1:
-                    level[key] = data
-                else:
-                    level = level.setdefault(key, {})
+        level = self.json["metadata"]
+        for i, key in enumerate(path):
+            if i == len(path) - 1:
+                level[key] = data
+            else:
+                level = level.setdefault(key, {})
 
     def set_status(self, status: "str") -> "None":
         """Set the execution status of the cell."""

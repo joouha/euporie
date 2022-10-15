@@ -11,6 +11,7 @@ Upcoming
 Added
 =====
 
+- Enable cell inputs and outputs to be collapsed
 - Make changing cursor shapes to showing editing mode configurable
 
 Fixed
