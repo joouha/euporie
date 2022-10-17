@@ -406,11 +406,12 @@ def build_style(
         "incsearch.current": "bg:ansibrightgreen",
         "search-toolbar": f"fg:{cp.fg.more(1/20)} bg:{cp.bg.more(1/20)}",
         "search-toolbar.title": f"fg:{cp.fg.more(2/20)} bg:{cp.bg.more(2/20)}",
+        # Inputs
+        "kernel-input": f"fg:default bg:{cp.bg.more(0.02)}",
         # Cells
         "cell.border": f"fg:{cp.bg.more(5/20)}",
         "cell.border.selected": f"fg:{cp.hl.more(0.2)}",
         "cell.border.edit": "fg:ansibrightgreen",
-        "cell.input.box": f"fg:default bg:{cp.bg.more(0.02)}",
         "cell.output": "fg:default bg:default",
         "cell.input.prompt": "fg:blue",
         "cell.output.prompt": "fg:red",

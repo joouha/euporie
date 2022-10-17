@@ -19,6 +19,7 @@ Added
 Fixed
 =====
 
+- Re-apply style to cell input background
 - Highlight selected trailing whitespace
 - Reset button selection status on any global mouse event
 

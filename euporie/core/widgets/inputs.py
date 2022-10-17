@@ -90,7 +90,7 @@ class KernelInput(TextArea):
         app = kernel_tab.app
 
         kwargs.setdefault("wrap_lines", wrap_lines)
-        kwargs.setdefault("style", "class:cell.input.box")
+        kwargs.setdefault("style", "class:kernel-input")
         kwargs.setdefault("history", kernel_tab.history)
         kwargs.setdefault("search_field", app.search_bar)
         kwargs.setdefault("focus_on_click", True)
@@ -160,7 +160,7 @@ class KernelInput(TextArea):
         # Set style
         style = kwargs.get("style", "")
         self.window.style = lambda: (
-            f"class:text-area,{style}," + ("focused" if self.has_focus() else "")
+            "class:text-area " + ("class:focused " if self.has_focus() else "") + style
         )
 
         # Add configurable line numbers
