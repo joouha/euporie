@@ -340,9 +340,9 @@ class Notebook(BaseNotebook):
         """Refresh the rendered contents of this notebook."""
         if slice_ is None:
             slice_ = self.page._selected_slice
-        self.page.reset()
         # This triggers another redraw of the selected cell
         self.page._set_selected_slice(slice_, force=True, scroll=scroll)
+        self.page.reset()
 
     def add_cell_above(self) -> "None":
         """Insert a cell above the current selection."""
@@ -470,7 +470,7 @@ class Notebook(BaseNotebook):
             if len(self.json["cells"]) == 0:
                 self.add(1)
             self.dirty = True
-            self.refresh(slice(index, index + 1), scroll=True)
+            self.refresh(slice(slice_.start, slice_.start + 1), scroll=True)
 
     def undelete(self) -> "None":
         """Inserts the last deleted cell(s) back into the notebook."""

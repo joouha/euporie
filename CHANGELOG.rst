@@ -14,6 +14,11 @@ Added
 - Allow configuring the external editor
 - Add ability to inject cell position into external editor command (this allows and external editor to be run in a tmux popup)
 
+Fixed
+=====
+
+- Prevent ``IndexError`` when deleting a selection of cells including the last cell
+
 *******************
 v2.0.9 (2022-10-26)
 *******************
