@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import logging
+import os
 import weakref
 from functools import partial
 from typing import TYPE_CHECKING, cast
 
 import nbformat
+from prompt_toolkit.document import Document
 from prompt_toolkit.filters import Condition
 from prompt_toolkit.layout.containers import (
     ConditionalContainer,
@@ -291,6 +293,7 @@ class Cell:
                     weakref.proxy(self),
                 )
             ),
+            accept_handler=lambda buffer: self.run_or_render() or True,
         )
         self.input_box.buffer.name = self.cell_type
 
@@ -859,14 +862,80 @@ class Cell:
 
     async def edit_in_editor(self) -> "None":
         """Edit the cell in $EDITOR."""
-        await self.input_box.buffer.open_in_editor(
-            validate_and_handle=get_app().config.run_after_external_edit
-        )
-        if (
-            self.cell_type == "markdown"
-            or self.kernel_tab.app.config.run_after_external_edit
-        ):
-            self.run_or_render()
+        buffer = self.input_box.buffer
+        app = get_app()
+        edit_in_fg = False
+
+        # Save VISUAL environment variable
+        visual = os.environ.get("VISUAL")
+
+        if editor := app.config.external_editor:
+
+            if "{left}" in editor:
+                win = self.input_box.window
+
+                if (info := win.render_info) is not None:
+                    edit_in_fg = True
+
+                    margin_left = sum(
+                        [win._get_margin_width(m) for m in win.left_margins]
+                    )
+                    margin_right = sum(
+                        [win._get_margin_width(m) for m in win.right_margins]
+                    )
+                    top = info._y_offset
+                    left = info._x_offset - margin_left
+                    width = info.window_width + margin_left + margin_right
+                    height = min(app.output.get_size().rows, info.window_height)
+
+                else:
+                    left = top = 0
+                    height, width = app.output.get_size()
+
+                editor = editor.format(
+                    top=top,
+                    left=left,
+                    width=width,
+                    height=height,
+                    bottom=top + height,
+                    right=left + width,
+                )
+
+            # Override VISUAL environment variable
+            os.environ["VISUAL"] = editor
+
+        if edit_in_fg:
+            # Create a tempfile
+            if buffer.tempfile:
+                filename, cleanup_func = buffer._editor_complex_tempfile()
+            else:
+                filename, cleanup_func = buffer._editor_simple_tempfile()
+            try:
+                # Edit the temp file
+                success = buffer._open_file_in_editor(filename)
+                # Read content again.
+                if success:
+                    with open(filename, "rb") as f:
+                        text = f.read().decode("utf-8")
+                        # Drop trailing newline
+                        if text.endswith("\n"):
+                            text = text[:-1]
+                        buffer.document = Document(text=text, cursor_position=len(text))
+                    # Run the cell if configured
+                    if app.config.run_after_external_edit:
+                        buffer.validate_and_handle()
+            finally:
+                # Clean up temp dir/file.
+                cleanup_func()
+
+        else:
+            await buffer.open_in_editor(
+                validate_and_handle=app.config.run_after_external_edit
+            )
+
+        # Restore VISUAL environment variable
+        if visual is not None:
+            os.environ["VISUAL"] = visual
 
     # ################################### Settings ####################################
 
@@ -882,6 +951,35 @@ class Cell:
         },
         description="""
             Whether cell borders should be drawn for unselected cells.
+        """,
+    )
+
+    add_setting(
+        name="external_editor",
+        flags=["--external-editor"],
+        type_=str,
+        help_="Set the external editor to use.",
+        default=None,
+        description="""
+            A command to run when editing cells externally. The following strings in
+            the command will be replaced with values which locate the cell being
+            edited:
+
+            * ``{top}``
+            * ``{left}``
+            * ``{bottom}``
+            * ``{right}``
+            * ``{width}``
+            * ``{height}``
+
+            This is useful if you run euporie inside a tmux session, and wish to launch
+            your editor in a pop-up pane. This can be achieved by setting this parameter
+            to something like the following:
+
+            .. code-block::
+
+               "tmux display-popup -x {left} -y {bottom} -w {width} -h {height} -B -E micro"
+
         """,
     )
 

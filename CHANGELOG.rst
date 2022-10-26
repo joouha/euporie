@@ -4,6 +4,16 @@ Changelog
 
 Notable changes to this project will be documented in this file.
 
+********
+Upcoming
+********
+
+Added
+=====
+
+- Allow configuring the external editor
+- Add ability to inject cell position into external editor command (this allows and external editor to be run in a tmux popup)
+
 *******************
 v2.0.9 (2022-10-26)
 *******************

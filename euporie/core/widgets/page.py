@@ -124,13 +124,13 @@ class ChildRenderInfo:
                 handelers to
             left: The left-most column in which to start placing the data
             top: The upper row in which to start placing the data
-            cols: The number of columns top copy
-            rows: The number of rows to copy
+            cols: The columns to copy
+            rows: The rows to copy
 
         """
         # Copy write positions
         for win, wp in self.screen.visible_windows_to_write_positions.items():
-            screen.visible_windows_to_write_positions[win] = WritePosition(
+            new_wp = WritePosition(
                 xpos=wp.xpos + left,
                 ypos=wp.ypos + top,
                 width=wp.width,
@@ -142,6 +142,23 @@ class ChildRenderInfo:
                     ),
                 ),
             )
+            screen.visible_windows_to_write_positions[win] = new_wp
+
+            # Modify render info
+            if (info := win.render_info) is not None:
+                info._x_offset += left
+                info._y_offset += top
+
+                # info.visible_line_to_row_col = {
+                # line: (y + info._y_offset, new_wp.xpos + info._x_offset)
+                # for line, y in enumerate(
+                # range(new_wp.ypos, new_wp.ypos + new_wp.height)
+                # )
+                # }
+                # info._rowcol_to_yx = {
+                # (row, col): (y + top, x + left)
+                # for (row, col), (y, x) in info._rowcol_to_yx.items()
+                # }
 
         mouse_handler_wrappers: "dict[MouseHandler, MouseHandler]" = {}
 
