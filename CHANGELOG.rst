@@ -19,6 +19,7 @@ Added
 Fixed
 =====
 
+- Fixed issue where graphics are not displayed in console but are in notebook
 - Re-apply style to cell input background
 - Highlight selected trailing whitespace
 - Reset button selection status on any global mouse event

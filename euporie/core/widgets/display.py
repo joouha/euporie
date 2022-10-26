@@ -693,12 +693,13 @@ class GraphicWindow(Window):
                     width=target_wp.width,
                     height=target_wp.height,
                 )
+
                 super().write_to_screen(
                     screen,
                     MouseHandlers(),  # Do not let the float add mouse events
                     new_write_position,
-                    # Fore refreshes by constantly changing the style
-                    f"class:render-{get_app().render_counter}",
+                    # Force renderer refreshes by constantly changing the style
+                    f"{parent_style} class:render-{get_app().render_counter}",
                     erase_bg=True,
                     z_index=z_index,
                 )

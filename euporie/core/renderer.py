@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING
 
 from prompt_toolkit.data_structures import Point, Size
@@ -22,6 +23,8 @@ if TYPE_CHECKING:
 
 
 __all__ = ["Renderer"]
+
+log = logging.getLogger(__name__)
 
 
 def _output_screen_diff(
@@ -110,15 +113,17 @@ def _output_screen_diff(
             write(char.char)
             last_style = char.style
 
-    def get_max_column_index(row: Dict[int, Char]) -> int:
+    def get_max_column_index(row: Dict[int, Char], zwe_row: Dict[int, str]) -> int:
         """Return max used column index, ignoring trailing unstyled whitespace."""
-        numbers = [
-            index
-            for index, cell in row.items()
-            if cell.char != " " or style_string_has_style[cell.style]
-        ]
-        numbers.append(0)
-        return max(numbers)
+        return max(
+            {
+                index
+                for index, cell in row.items()
+                if cell.char != " " or style_string_has_style[cell.style]
+            }
+            | zwe_row.keys()
+            | {0}
+        )
 
     # Render for the first time: reset styling.
     if not previous_screen:
@@ -154,39 +159,48 @@ def _output_screen_diff(
     for y in range(row_count):
         new_row = screen.data_buffer[y]
         previous_row = previous_screen.data_buffer[y]
-        zero_width_escapes_row = screen.zero_width_escapes[y]
+        zwe_row = screen.zero_width_escapes[y]
+        previous_zwe_row = previous_screen.zero_width_escapes[y]
 
-        new_max_line_len = min(width - 1, get_max_column_index(new_row))
-        previous_max_line_len = min(width - 1, get_max_column_index(previous_row))
+        new_max_line_len = min(width - 1, get_max_column_index(new_row, zwe_row))
+        previous_max_line_len = min(
+            width - 1, get_max_column_index(previous_row, previous_zwe_row)
+        )
 
         # Loop over the columns.
         c = 0
-        while c <= new_max_line_len:
+
+        prev_diff_char = False
+
+        # We might have a ZWE sequence just beyond the end of the line
+        while c <= new_max_line_len + 1:
             new_char = new_row[c]
             old_char = previous_row[c]
-            new_zwe = zero_width_escapes_row[c]
+            new_zwe = zwe_row[c]
             char_width = new_char.width or 1
 
             # When the old and new character at this position are different,
-            # or the zero-width escape sequences at this position differ,
             # draw the output. (Because of the performance, we don't call
             # `Char.__ne__`, but inline the same expression.)
             diff_char = (
                 new_char.char != old_char.char or new_char.style != old_char.style
             )
-            diff_zwe = new_zwe != previous_screen.zero_width_escapes[y][c]
-            if diff_char or diff_zwe:
+
+            # Redraw escape sequences if the escape sequence at this position changed,
+            # or if the current or previous character changed
+            if new_zwe != previous_zwe_row[c] or diff_char or prev_diff_char:
+                # Send injected escape sequences to output.
+                write_raw(new_zwe)
+
+            if diff_char:
                 # Don't move the cursor if it is already in the correct position
                 if c != current_pos.x or y != current_pos.y:
                     current_pos = move_cursor(Point(x=c, y=y))
 
-                if diff_char or diff_zwe:
-                    # Send injected escape sequences to output.
-                    write_raw(new_zwe)
+                output_char(new_char)
+                current_pos = Point(x=current_pos.x + char_width, y=current_pos.y)
 
-                if diff_char:
-                    output_char(new_char)
-                    current_pos = Point(x=current_pos.x + char_width, y=current_pos.y)
+            prev_diff_char = diff_char
 
             c += char_width
 

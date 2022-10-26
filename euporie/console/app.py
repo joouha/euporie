@@ -66,11 +66,15 @@ class ConsoleApp(BaseApp):
         if self.config.mouse_support is not None:
             self.need_mouse_support = self.config.mouse_support
 
+        # Set default application options
         kwargs.setdefault("extend_renderer_height", True)
         kwargs.setdefault("title", "euporie-console")
         kwargs.setdefault("full_screen", False)
         kwargs.setdefault("leave_graphics", True)
+
+        # Initialize the application
         super().__init__(**kwargs)
+
         self.search_bar = SearchBar()
         self.bindings_to_load += ["euporie.console.app.ConsoleApp"]
 
