@@ -173,7 +173,7 @@ def _output_screen_diff(
         prev_diff_char = False
 
         # We might have a ZWE sequence just beyond the end of the line
-        while c <= new_max_line_len + 1:
+        while c <= new_max_line_len:
             new_char = new_row[c]
             old_char = previous_row[c]
             new_zwe = zwe_row[c]
