@@ -8,15 +8,18 @@ from abc import ABCMeta, abstractmethod
 from functools import partial
 from typing import TYPE_CHECKING
 
+from prompt_toolkit.cache import SimpleCache
 from prompt_toolkit.clipboard import ClipboardData
 from prompt_toolkit.completion import PathCompleter
+from prompt_toolkit.data_structures import Point
 from prompt_toolkit.filters import (
     Condition,
     buffer_has_focus,
     has_completions,
     has_focus,
 )
-from prompt_toolkit.formatted_text import AnyFormattedText
+from prompt_toolkit.formatted_text import AnyFormattedText, to_formatted_text
+from prompt_toolkit.formatted_text.utils import split_lines
 from prompt_toolkit.key_binding.bindings.focus import focus_next, focus_previous
 from prompt_toolkit.key_binding.key_bindings import KeyBindings
 from prompt_toolkit.layout.containers import (
@@ -27,32 +30,119 @@ from prompt_toolkit.layout.containers import (
     VSplit,
     Window,
 )
-from prompt_toolkit.layout.controls import FormattedTextControl
+from prompt_toolkit.layout.controls import FormattedTextControl, UIContent, UIControl
 from prompt_toolkit.layout.dimension import Dimension
+from prompt_toolkit.layout.screen import WritePosition
+from prompt_toolkit.mouse_events import MouseButton, MouseEventType
 from prompt_toolkit.widgets.base import Box, Label, Shadow
 
 from euporie.core.border import HalfBlockOuterGridStyle
 from euporie.core.commands import add_cmd
 from euporie.core.filters import tab_has_focus
-from euporie.core.formatted_text.utils import lex
+from euporie.core.formatted_text.utils import FormattedTextAlign, align, lex
 from euporie.core.key_binding.registry import register_bindings
 from euporie.core.tabs.base import Tab
 from euporie.core.widgets.decor import Border, FocusedStyle
 from euporie.core.widgets.forms import Button, Select, Text
 
 if TYPE_CHECKING:
-    from typing import Any, Callable, Optional
+    from typing import Any, Callable, Hashable, Optional
 
     from prompt_toolkit.buffer import Buffer
     from prompt_toolkit.formatted_text.base import StyleAndTextTuples
+    from prompt_toolkit.key_binding.key_bindings import NotImplementedOrNone
     from prompt_toolkit.key_binding.key_processor import KeyPressEvent
     from prompt_toolkit.layout.containers import AnyContainer
     from prompt_toolkit.layout.layout import FocusableElement
+    from prompt_toolkit.mouse_events import MouseEvent
 
     from euporie.core.app import BaseApp
     from euporie.core.tabs.base import KernelTab
 
 log = logging.getLogger(__name__)
+
+
+class DialogTitleControl(UIControl):
+    """A draggable dialog titlebar."""
+
+    def __init__(
+        self, title: "AnyFormattedText", dialog: "Dialog", window: "Window"
+    ) -> "None":
+        """Initialize a new dialog titlebar."""
+        self.title = title
+        self.dialog = dialog
+        self.window = window
+        self.drag_start: "Optional[Point]" = None
+        self._content_cache: "SimpleCache[Hashable, UIContent]" = SimpleCache(
+            maxsize=18
+        )
+
+    def create_content(self, width: "int", height: "Optional[int]") -> "UIContent":
+        """Create the title text content."""
+
+        def get_content() -> "UIContent":
+            lines = list(
+                split_lines(
+                    align(
+                        FormattedTextAlign.CENTER, to_formatted_text(self.title), width
+                    )
+                )
+            )
+            return UIContent(
+                get_line=lambda i: lines[i],
+                line_count=len(lines),
+                show_cursor=False,
+            )
+
+        return self._content_cache.get((width,), get_content)
+
+    def mouse_handler(self, mouse_event: "MouseEvent") -> "NotImplementedOrNone":
+        """Move the dialog when the titlebar is dragged."""
+        if (info := self.window.render_info) is not None:
+            # Get the global mouse position
+            app = self.dialog.app
+            gx, gy = app.mouse_position
+            if mouse_event.button == MouseButton.LEFT:
+                if mouse_event.event_type == MouseEventType.MOUSE_DOWN:
+                    # Start the drag event
+                    self.drag_start = mouse_event.position
+                    # Send all mouse events to this position
+                    y_min, x_min = min(info._rowcol_to_yx.values())
+                    y_max, x_max = max(info._rowcol_to_yx.values())
+                    app.mouse_limits = WritePosition(
+                        xpos=x_min,
+                        ypos=y_min,
+                        width=x_max - x_min,
+                        height=y_max - y_min,
+                    )
+                    return NotImplemented
+                elif mouse_event.event_type == MouseEventType.MOUSE_MOVE:
+                    if self.drag_start is not None:
+                        # Get available space
+                        max_y, max_x = app.output.get_size()
+                        # Calculate dialog dimensions
+                        dl_width = self.dialog.content.preferred_width(max_x).preferred
+                        dl_height = self.dialog.content.preferred_height(
+                            dl_width, max_y
+                        ).preferred
+                        # Calculate new dialog position
+                        new_x = max(1, min(gx - self.drag_start.x, max_x - dl_width))
+                        new_y = max(1, min(gy - self.drag_start.y, max_y - dl_height))
+                        # Move dialog
+                        self.dialog.left = new_x - 1
+                        self.dialog.top = new_y - 1
+                        # change the mouse capture position
+                        if app.mouse_limits is not None:
+                            app.mouse_limits.xpos = new_x
+                            app.mouse_limits.ypos = new_y
+                        log.debug((gx, gy, self.dialog.left, self.dialog.top))
+                        return None
+
+            # End the drag event
+            self.drag_start = None
+            # Stop capturing all mouse events
+            app.mouse_limits = None
+        return NotImplemented
 
 
 class Dialog(Float, metaclass=ABCMeta):
@@ -98,21 +188,12 @@ class Dialog(Float, metaclass=ABCMeta):
         self.buttons_kb = KeyBindings()
 
         # Create title row
+        title_window = Window(height=1, style="class:dialog,title")
+        title_window.content = DialogTitleControl(
+            lambda: self.title, self, title_window
+        )
         title_row = ConditionalContainer(
-            VSplit(
-                [
-                    Window(char=" ", height=1),
-                    Window(
-                        FormattedTextControl(lambda: self.title),
-                        dont_extend_width=True,
-                        height=1,
-                    ),
-                    Window(char=" ", height=1),
-                ],
-                style="class:dialog,title",
-                height=1,
-            ),
-            filter=Condition(lambda: bool(self.title)),
+            title_window, filter=Condition(lambda: bool(self.title))
         )
 
         # Create body row with collapsible padding around the body.
@@ -223,6 +304,8 @@ class Dialog(Float, metaclass=ABCMeta):
 
     def show(self, **params: "Any") -> "None":
         """Displays and focuses the dialog."""
+        # Reset position
+        self.top = self.left = None
         # Re-draw the body
         self._load(**params)
         self.last_focused = self.app.layout.current_control
@@ -245,6 +328,8 @@ class Dialog(Float, metaclass=ABCMeta):
                 self.app.layout.focus(self.last_focused)
             except ValueError:
                 self.app.layout.focus_next()
+        # Stop any drag events
+        self.app.mouse_limits = None
 
     def toggle(self) -> "None":
         """Shows or hides the dialog."""

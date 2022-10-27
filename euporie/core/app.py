@@ -13,6 +13,7 @@ from prompt_toolkit.application.current import create_app_session
 from prompt_toolkit.clipboard import InMemoryClipboard
 from prompt_toolkit.clipboard.pyperclip import PyperclipClipboard
 from prompt_toolkit.cursor_shapes import CursorShape, CursorShapeConfig
+from prompt_toolkit.data_structures import Point
 from prompt_toolkit.enums import EditingMode
 from prompt_toolkit.filters import Condition, buffer_has_focus, to_filter
 from prompt_toolkit.formatted_text import to_formatted_text
@@ -319,6 +320,7 @@ class BaseApp(Application):
 
         # Set to a write position to limit mouse events to a particular region
         self.mouse_limits: "Optional[WritePosition]" = None
+        self.mouse_position = Point(0, 0)
 
     @property
     def title(self) -> "str":

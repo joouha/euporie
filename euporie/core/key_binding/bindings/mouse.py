@@ -152,6 +152,9 @@ def load_mouse_bindings() -> "KeyBindings":
             except HeightIsUnknownError:
                 return NotImplemented
 
+            # Save global mouse position
+            event.app.mouse_position = Point(x=x, y=y)
+
             # Apply limits to mouse position if enabled
             if (mouse_limits := event.app.mouse_limits) is not None:
                 x = max(
