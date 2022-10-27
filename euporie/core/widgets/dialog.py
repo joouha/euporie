@@ -390,7 +390,11 @@ class FileDialog(Dialog, metaclass=ABCMeta):
     completer = PathCompleter()
 
     def load(
-        self, text: "str" = "", tab: "Optional[Tab]" = None, error: "str" = ""
+        self,
+        text: "str" = "",
+        tab: "Optional[Tab]" = None,
+        error: "str" = "",
+        cb: "Optional[Callable]" = None,
     ) -> "None":
         """Load the dialog body."""
 
@@ -422,11 +426,13 @@ class FileDialog(Dialog, metaclass=ABCMeta):
         self.to_focus = filepath
 
         self.buttons = {
-            "OK": partial(self.validate, filepath.buffer, tab=tab),
+            "OK": partial(self.validate, filepath.buffer, tab=tab, cb=cb),
             "Cancel": None,
         }
 
-    def validate(self, buffer: "Buffer", tab: "Tab") -> "None":
+    def validate(
+        self, buffer: "Buffer", tab: "Tab", cb: "Optional[Callable]" = None
+    ) -> "None":
         """Validate the input."""
         self.hide()
 
@@ -436,16 +442,22 @@ class OpenFileDialog(FileDialog):
 
     title = "Select a File to Open"
 
-    def validate(self, buffer: "Buffer", tab: "Tab") -> "None":
+    def validate(
+        self, buffer: "Buffer", tab: "Tab", cb: "Optional[Callable]" = None
+    ) -> "None":
         """Validate the the file to open exists."""
         from euporie.core.utils import parse_path
 
         path = parse_path(buffer.text)
         if path is not None:
             if not path.exists():
-                self.show(error="The file path specified does not exist")
+                self.show(
+                    error="The file path specified does not exist", text=buffer.text
+                )
             elif path.is_dir():
-                self.show(error="The file path specified is a directory")
+                self.show(
+                    error="The file path specified is a directory", text=buffer.text
+                )
             elif path.is_file():
                 self.hide()
                 self.app.open_file(path)
@@ -477,7 +489,9 @@ class SaveAsDialog(FileDialog):
 
     title = "Select a Path to Save"
 
-    def validate(self, buffer: "Buffer", tab: "Tab") -> "None":
+    def validate(
+        self, buffer: "Buffer", tab: "Tab", cb: "Optional[Callable]" = None
+    ) -> "None":
         """Validate the the file to open exists."""
         from euporie.core.utils import parse_path
 
@@ -485,6 +499,8 @@ class SaveAsDialog(FileDialog):
         if tab and path is not None:
             tab.save(path=path)
             self.hide()
+            if callable(cb):
+                cb()
 
     # ################################### Commands ####################################
 
@@ -703,14 +719,13 @@ class UnsavedDialog(Dialog):
         )
 
         def yes_cb() -> "None":
-            self.hide()
             assert tab is not None
-            tab.save()
-            tab.close(cb)
+            self.hide()
+            tab.save(cb=partial(tab.close, cb))
 
         def no_cb() -> "None":
-            self.hide()
             assert tab is not None
+            self.hide()
             Tab.close(tab, cb)
 
         self.buttons = {

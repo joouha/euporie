@@ -536,7 +536,7 @@ class Console(KernelTab):
             callback=_cb,
         )
 
-    def save(self, path: "UPath" = None) -> "None":
+    def save(self, path: "UPath" = None, cb: "Optional[Callable]" = None) -> "None":
         """Save the console as a notebook."""
         from euporie.core.tabs.notebook import BaseNotebook
 

@@ -215,13 +215,14 @@ class BaseNotebook(KernelTab, metaclass=ABCMeta):
         else:
             super().close(cb)
 
-    def save(self, path: "UPath" = None) -> "None":
+    def save(self, path: "UPath" = None, cb: "Optional[Callable]" = None) -> "None":
         """Write the notebook's JSON to the current notebook's file.
 
         Additionally save the widget state to the notebook metadata.
 
         Args:
             path: An optional new path at which to save the tab
+            cb: A callback to run if after saving the notebook.
 
         """
         if path is not None:
@@ -239,7 +240,9 @@ class BaseNotebook(KernelTab, metaclass=ABCMeta):
                 }
             }
         if self.path is None:
-            get_cmd("save-as").run()
+            # get_cmd("save-as").run()
+            if dialog := self.app.dialogs.get("save-as"):
+                dialog.show(tab=self, cb=cb)
         else:
             log.debug("Saving notebook..")
             self.saving = True
@@ -255,6 +258,9 @@ class BaseNotebook(KernelTab, metaclass=ABCMeta):
                 self.saving = False
                 self.app.invalidate()
                 log.debug("Notebook saved")
+            # Run the callback
+            if callable(cb):
+                cb()
 
     def run_cell(
         self,
