@@ -321,7 +321,9 @@ class DisplayWindow(Window):
         info = self.render_info
         if info is None:
             return
-        horizontal_scroll = getattr(self.render_info, "horizontal_scroll")  # noqa B009
+        horizontal_scroll = getattr(
+            self.render_info, "horizontal_scroll", 0
+        )  # noqa B009
         if horizontal_scroll > 0:
             if (
                 info.cursor_position.x
