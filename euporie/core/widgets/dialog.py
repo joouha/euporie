@@ -245,7 +245,8 @@ class Dialog(Float, metaclass=ABCMeta):
     ) -> "None":
         if callable(cb := self.buttons.get(button)):
             cb()
-        self.hide()
+        else:
+            self.hide()
 
     def _load(self, **params: "Any") -> "None":
         """Load body, create buttons, etc."""
@@ -443,10 +444,14 @@ class OpenFileDialog(FileDialog):
         from euporie.core.utils import parse_path
 
         path = parse_path(buffer.text)
-        if path is not None and path.exists():
-            self.app.open_file(path)
-        else:
-            self.show(error="The file path specified does not exist")
+        if path is not None:
+            if not path.exists():
+                self.show(error="The file path specified does not exist")
+            elif path.is_dir():
+                self.show(error="The file path specified is a directory")
+            elif path.is_file():
+                self.hide()
+                self.app.open_file(path)
 
     # ################################### Commands ####################################
 
@@ -482,6 +487,7 @@ class SaveAsDialog(FileDialog):
         path = parse_path(buffer.text)
         if tab and path is not None:
             tab.save(path=path)
+            self.hide()
 
     # ################################### Commands ####################################
 
@@ -573,6 +579,7 @@ class SelectKernelDialog(Dialog):
         )
 
         def _change_kernel() -> "None":
+            self.hide()
             assert tab is not None
             name = options.options[options.index or 0]
             tab.kernel.change(name, cb=tab.kernel_started)
@@ -610,6 +617,7 @@ class ConfirmDialog(Dialog):
         def _callback() -> "None":
             if callable(cb):
                 cb()
+            self.hide()
 
         self.buttons = {
             "Yes": _callback,
@@ -698,11 +706,13 @@ class UnsavedDialog(Dialog):
         )
 
         def yes_cb() -> "None":
+            self.hide()
             assert tab is not None
             tab.save()
             tab.close(cb)
 
         def no_cb() -> "None":
+            self.hide()
             assert tab is not None
             Tab.close(tab, cb)
 
