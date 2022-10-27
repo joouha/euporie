@@ -12,16 +12,11 @@ from prompt_toolkit.cache import SimpleCache
 from prompt_toolkit.clipboard import ClipboardData
 from prompt_toolkit.completion import PathCompleter
 from prompt_toolkit.data_structures import Point
-from prompt_toolkit.filters import (
-    Condition,
-    buffer_has_focus,
-    has_completions,
-    has_focus,
-)
+from prompt_toolkit.filters import Condition, has_completions, has_focus
 from prompt_toolkit.formatted_text import AnyFormattedText, to_formatted_text
 from prompt_toolkit.formatted_text.utils import split_lines
 from prompt_toolkit.key_binding.bindings.focus import focus_next, focus_previous
-from prompt_toolkit.key_binding.key_bindings import KeyBindings
+from prompt_toolkit.key_binding.key_bindings import DynamicKeyBindings, KeyBindings
 from prompt_toolkit.layout.containers import (
     ConditionalContainer,
     DynamicContainer,
@@ -208,7 +203,9 @@ class Dialog(Float, metaclass=ABCMeta):
             Box(
                 body=DynamicContainer(
                     lambda: VSplit(
-                        self.button_widgets, padding=1, key_bindings=self.buttons_kb
+                        self.button_widgets,
+                        padding=1,
+                        key_bindings=DynamicKeyBindings(lambda: self.buttons_kb),
                     )
                 ),
                 height=Dimension(min=1, max=3, preferred=3),
@@ -251,6 +248,7 @@ class Dialog(Float, metaclass=ABCMeta):
     def _load(self, **params: "Any") -> "None":
         """Load body, create buttons, etc."""
         self.to_focus = None
+        self.buttons_kb = KeyBindings()
 
         # Load body & buttons
         self.load(**params)
@@ -284,8 +282,7 @@ class Dialog(Float, metaclass=ABCMeta):
                 )
                 # Add a key-handler
                 if key:
-                    self.buttons_kb.add(key, filter=~buffer_has_focus)(handler)
-                    self.kb.add("escape", key, filter=~buffer_has_focus)(handler)
+                    self.buttons_kb.add("escape", key.lower(), is_global=True)(handler)
 
         # When a button is selected, handle left/right key bindings.
         if len(self.button_widgets) > 1:

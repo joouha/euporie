@@ -18,6 +18,7 @@ Added
 Fixed
 =====
 
+- Fix dialog button shortcut keys
 - Display error messages in file open dialog
 - Fixed broken mouse events in button widgets
 - Prevent ``IndexError`` when deleting a selection of cells including the last cell
