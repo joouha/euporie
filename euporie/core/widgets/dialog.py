@@ -135,7 +135,6 @@ class DialogTitleControl(UIControl):
                         if app.mouse_limits is not None:
                             app.mouse_limits.xpos = new_x
                             app.mouse_limits.ypos = new_y
-                        log.debug((gx, gy, self.dialog.left, self.dialog.top))
                         return None
 
             # End the drag event

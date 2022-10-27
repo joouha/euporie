@@ -18,6 +18,7 @@ Added
 Fixed
 =====
 
+- Fixed broken mouse events in button widgets
 - Prevent ``IndexError`` when deleting a selection of cells including the last cell
 
 *******************

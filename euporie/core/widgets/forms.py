@@ -39,10 +39,10 @@ from prompt_toolkit.layout.dimension import Dimension
 from prompt_toolkit.layout.processors import AfterInput, ConditionalProcessor
 from prompt_toolkit.layout.screen import WritePosition
 from prompt_toolkit.layout.utils import explode_text_fragments
-from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
+from prompt_toolkit.mouse_events import MouseButton, MouseEvent, MouseEventType
 from prompt_toolkit.utils import Event
 from prompt_toolkit.validation import Validator
-from prompt_toolkit.widgets.base import Box, TextArea
+from prompt_toolkit.widgets.base import Box, Shadow, TextArea
 
 from euporie.core.app import get_app
 from euporie.core.border import BorderVisibility, InnerEdgeGridStyle
@@ -239,29 +239,43 @@ class Button:
     ) -> "NotImplementedOrNone":
         """Handle mouse events."""
         if self.disabled():
-            return None
-        get_app().mouse_limits = None
-        if mouse_event.event_type == MouseEventType.MOUSE_DOWN:
-            get_app().layout.focus(self)
-            self.selected = True
-            if (render_info := self.window.render_info) is not None:
-                y_min, x_min = min(render_info._rowcol_to_yx.values())
-                y_max, x_max = max(render_info._rowcol_to_yx.values())
-                get_app().mouse_limits = WritePosition(
-                    xpos=x_min, ypos=y_min, width=x_max - x_min, height=y_max - y_min
-                )
-            self.on_mouse_down.fire()
-            return None
-        elif mouse_event.event_type == MouseEventType.MOUSE_UP:
-            if self.selected:
-                self.selected = False
-                self.on_click.fire()
-            return None
-        elif mouse_event.event_type == MouseEventType.MOUSE_MOVE:
-            self.selected = False
-            return None
-        else:
             return NotImplemented
+        if mouse_event.button == MouseButton.LEFT:
+            if mouse_event.event_type == MouseEventType.MOUSE_DOWN:
+                get_app().layout.focus(self)
+                self.selected = True
+                if (render_info := self.window.render_info) is not None:
+                    y_min, x_min = min(render_info._rowcol_to_yx.values())
+                    y_max, x_max = max(render_info._rowcol_to_yx.values())
+                    get_app().mouse_limits = WritePosition(
+                        xpos=x_min,
+                        ypos=y_min,
+                        width=x_max - x_min,
+                        height=y_max - y_min,
+                    )
+                self.on_mouse_down.fire()
+                return None
+
+            elif mouse_event.event_type == MouseEventType.MOUSE_UP:
+                get_app().mouse_limits = None
+                if self.selected:
+                    self.selected = False
+                    self.on_click.fire()
+                return None
+
+            elif mouse_event.event_type == MouseEventType.MOUSE_MOVE:
+                # Unselect the button if the mouse is moved outside of the button
+                if (info := self.window.render_info) is not None:
+                    if (
+                        info._x_offset + mouse_event.position.x,
+                        info._y_offset + mouse_event.position.y,
+                    ) != get_app().mouse_position:
+                        self.selected = False
+                return None
+
+        get_app().mouse_limits = None
+        self.selected = False
+        return NotImplemented
 
     @property
     def width(self) -> "int":
@@ -1228,11 +1242,13 @@ class Dropdown(SelectableWidget):
 
         self.menu = Float(
             ConditionalContainer(
-                Window(
-                    FormattedTextControl(
-                        self.menu_fragments,
-                    ),
-                    style=f"class:dropdown,dropdown.menu {self.style}",
+                Shadow(
+                    Window(
+                        FormattedTextControl(
+                            self.menu_fragments,
+                        ),
+                        style=f"class:dropdown,dropdown.menu {self.style}",
+                    )
                 ),
                 filter=Condition(lambda: self.menu_visible) & self.has_focus,
             ),

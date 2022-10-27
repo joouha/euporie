@@ -65,6 +65,8 @@ class ChildRenderInfo:
 
         self.refresh = True
 
+        self.win_render_infos: "dict[Window, WindowRenderInfo]" = {}
+
     def render(
         self,
         available_width: "int",
@@ -145,20 +147,31 @@ class ChildRenderInfo:
             screen.visible_windows_to_write_positions[win] = new_wp
 
             # Modify render info
-            if (info := win.render_info) is not None:
-                info._x_offset += left
-                info._y_offset += top
-
+            if win.render_info is not None:
+                info = self.win_render_infos.setdefault(win, win.render_info)
                 # info.visible_line_to_row_col = {
                 # line: (y + info._y_offset, new_wp.xpos + info._x_offset)
                 # for line, y in enumerate(
                 # range(new_wp.ypos, new_wp.ypos + new_wp.height)
                 # )
                 # }
-                # info._rowcol_to_yx = {
-                # (row, col): (y + top, x + left)
-                # for (row, col), (y, x) in info._rowcol_to_yx.items()
-                # }
+                win.render_info = WindowRenderInfo(
+                    window=win,
+                    ui_content=info.ui_content,
+                    horizontal_scroll=0,
+                    vertical_scroll=info.vertical_scroll,
+                    window_width=info.window_width,
+                    window_height=info.window_height,
+                    configured_scroll_offsets=info.configured_scroll_offsets,
+                    visible_line_to_row_col=info.visible_line_to_row_col,
+                    rowcol_to_yx={
+                        (row, col): (y + top, x + left)
+                        for (row, col), (y, x) in info._rowcol_to_yx.items()
+                    },
+                    x_offset=info._x_offset + left,
+                    y_offset=info._y_offset + top,
+                    wrap_lines=info.wrap_lines,
+                )
 
         mouse_handler_wrappers: "dict[MouseHandler, MouseHandler]" = {}
 
