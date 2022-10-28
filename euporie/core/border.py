@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from enum import Enum
-from functools import total_ordering
+from functools import cache, total_ordering
 from typing import TYPE_CHECKING, NamedTuple
 
 if TYPE_CHECKING:
@@ -735,6 +735,12 @@ class WeightedBorderLineStyle(NamedTuple):
     bottom: "WeightedLineStyle"
     left: "WeightedLineStyle"
 
+    @property  # type: ignore
+    @cache  # noqa: B019
+    def border_line_style(self) -> "BorderLineStyle":
+        """Get the unweighted border line style."""
+        return BorderLineStyle(*(x.value for x in self))
+
 
 class Padding(NamedTuple):
     """A weighted description of a cell padding: weighted values for each edge."""
@@ -752,6 +758,12 @@ class WeightedPadding(NamedTuple):
     right: "WeightedInt"
     bottom: "WeightedInt"
     left: "WeightedInt"
+
+    @property  # type: ignore
+    @cache  # noqa: B019
+    def padding(self) -> "Padding":
+        """Get the padding without weights."""
+        return Padding(*(x.value for x in self))
 
 
 class BorderVisibility(NamedTuple):

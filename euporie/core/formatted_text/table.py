@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from functools import partial
+from functools import lru_cache, partial
 from itertools import tee, zip_longest
 from typing import TYPE_CHECKING, cast
 
 from prompt_toolkit.application.current import get_app_session
+from prompt_toolkit.cache import SimpleCache
 from prompt_toolkit.formatted_text.base import to_formatted_text
 from prompt_toolkit.formatted_text.utils import (
     fragment_list_width,
@@ -36,7 +37,16 @@ from euporie.core.formatted_text.utils import (
 )
 
 if TYPE_CHECKING:
-    from typing import Any, Iterable, Iterator, Optional, Sequence, TypeVar, Union
+    from typing import (
+        Any,
+        Hashable,
+        Iterable,
+        Iterator,
+        Optional,
+        Sequence,
+        TypeVar,
+        Union,
+    )
 
     from prompt_toolkit.formatted_text.base import (
         AnyFormattedText,
@@ -121,6 +131,13 @@ class Cell:
         self.style = style
         self._width = width
 
+        self._weighted_border_cache: "SimpleCache[Hashable, WeightedBorderLineStyle]" = (
+            SimpleCache()
+        )
+        self._weighted_padding_cache: "SimpleCache[Hashable, WeightedPadding]" = (
+            SimpleCache()
+        )
+
     @property
     def text(self) -> "FormattedText":
         """The cell's input, converted to :class:`FormattedText`."""
@@ -140,14 +157,15 @@ class Cell:
         Returns:
             A list of lines of formatted text
         """
+        padding = self.padding
         return split_lines(
             align(
                 self.align,
                 wrap(
                     [
-                        ("", "\n" * (self.padding.top or 0)),
+                        ("", "\n" * (padding.top or 0)),
                         *self.text,
-                        ("", "\n" * (self.padding.bottom or 0)),
+                        ("", "\n" * (padding.bottom or 0)),
                     ],
                     width=width,
                 ),
@@ -173,7 +191,8 @@ class Cell:
         """The width of the cell including padding."""
         if self.colspan > 1:
             return 0
-        return self.width + (self.padding.left or 0) + (self.padding.right or 0)
+        padding = self.padding
+        return self.width + (padding.left or 0) + (padding.right or 0)
 
     @property
     def height(self) -> "int":
@@ -198,29 +217,40 @@ class Cell:
     @property
     def weighted_padding(self) -> "WeightedPadding":
         """The cell's padding with inheritance weights."""
-        return WeightedPadding(
-            *(
-                WeightedInt(
-                    2
-                    if x is not None
-                    else max(
-                        self.row.weighted_padding[i],
-                        self.col.weighted_padding[i],
-                    ).weight,
-                    max(
-                        self.row.weighted_padding[i], self.col.weighted_padding[i]
-                    ).value
-                    if x is None
-                    else x,
-                )
-                for i, x in enumerate(self._padding)
-            )
+
+        def _get_weighted_padding() -> "WeightedPadding":
+            weights = []
+            for i, x in enumerate(self._padding):
+                if x is None:
+                    weights.append(
+                        WeightedInt(
+                            max(
+                                self.row.weighted_padding[i],
+                                self.col.weighted_padding[i],
+                            ).weight,
+                            max(
+                                self.row.weighted_padding[i],
+                                self.col.weighted_padding[i],
+                            ).value,
+                        )
+                    )
+                else:
+                    weights.append(WeightedInt(2, x))
+            return WeightedPadding(*weights)
+
+        return self._weighted_padding_cache.get(
+            (
+                self._padding,
+                self.row.weighted_padding,
+                self.col.weighted_padding,
+            ),
+            _get_weighted_padding,
         )
 
     @property
     def padding(self) -> "Padding":
         """The cell's padding."""
-        return Padding(*(x.value for x in self.weighted_padding))
+        return cast("Padding", self.weighted_padding.padding)
 
     @padding.setter
     def padding(self, padding: "Optional[Union[Padding, int]]") -> "None":
@@ -230,30 +260,46 @@ class Cell:
     @property
     def weighted_border(self) -> "WeightedBorderLineStyle":
         """The cell's borders with inheritance weights."""
-        values = [
-            WeightedLineStyle(
-                2
-                if x
-                else max(
-                    self.row.weighted_border[i], self.col.weighted_border[i]
-                ).weight,
-                x
-                or max(self.row.weighted_border[i], self.col.weighted_border[i]).value,
-            )
-            for i, x in enumerate(self._border)
-        ]
-        if self.colspan > 1:
-            # Set right edge to invisible
-            values[1] = WeightedLineStyle(3, Invisible)
-        if self.rowspan > 1:
-            # Set bottom edge to invisible
-            values[2] = WeightedLineStyle(3, Invisible)
-        return WeightedBorderLineStyle(*values)
+
+        def _get_weighted_border() -> "WeightedBorderLineStyle":
+            values = []
+            for i, x in enumerate(self._border):
+                if i == 1 and self.colspan > 1:
+                    # Set right edge to invisible
+                    values.append(WeightedLineStyle(3, Invisible))
+                elif i == 2 and self.rowspan > 1:
+                    # Set bottom edge to invisible
+                    values.append(WeightedLineStyle(3, Invisible))
+                elif x:
+                    values.append(WeightedLineStyle(2, x))
+                else:
+                    values.append(
+                        WeightedLineStyle(
+                            max(
+                                self.row.weighted_border[i], self.col.weighted_border[i]
+                            ).weight,
+                            max(
+                                self.row.weighted_border[i], self.col.weighted_border[i]
+                            ).value,
+                        )
+                    )
+            return WeightedBorderLineStyle(*values)
+
+        return self._weighted_border_cache.get(
+            (
+                self._border,
+                self.row.weighted_border,
+                self.col.weighted_border,
+                self.colspan,
+                self.rowspan,
+            ),
+            _get_weighted_border,
+        )
 
     @property
     def border(self) -> "BorderLineStyle":
         """The cell's border."""
-        return BorderLineStyle(*(x.value for x in self.weighted_border))
+        return cast("BorderLineStyle", self.weighted_border.border_line_style)
 
     @border.setter
     def border(self, border: "Optional[Union[LineStyle, BorderLineStyle]]") -> "None":
@@ -424,6 +470,13 @@ class RowCol:
         self._style = ""
         self.style = style
 
+        self._weighted_border_cache: "SimpleCache[Hashable, WeightedBorderLineStyle]" = (
+            SimpleCache()
+        )
+        self._weighted_padding_cache: "SimpleCache[Hashable, WeightedPadding]" = (
+            SimpleCache()
+        )
+
     @property
     def cells(self) -> "list[Cell]":
         """Lists the cells in the row/column."""
@@ -446,44 +499,69 @@ class RowCol:
         self._cells[index] = cell
 
         if self.type_ == "row":
+            assert isinstance(self, Row)
             cell.row = cast("Row", self)
             cell.col = self.table._cols[index]
 
+            row_index = self.table.rows.index(self)
+            col_index = index
+
+            cell.col._cells[row_index] = cell
+
             if cell.colspan > 1:
                 for i in range(1, cell.colspan):
-                    cell.row._cells[index + i] = SpacerCell(
-                        expands=cell, span_index=i, row=cell.row
+                    spacer = SpacerCell(
+                        expands=cell,
+                        span_index=i,
+                        row=cell.row,
+                        col=self.table._cols[col_index + i],
                     )
-
-            self.table.sync_rows_to_cols()
+                    self._cells[col_index + i] = spacer
+                    spacer.col._cells[row_index] = spacer
 
             if cell.rowspan > 1:
-                index = max(cell.col._cells.keys())
                 for i in range(1, cell.rowspan):
-                    cell.col._cells[index + i] = SpacerCell(
-                        expands=cell, span_index=i, col=cell.col
+                    spacer = SpacerCell(
+                        expands=cell,
+                        span_index=i,
+                        row=self.table._rows[row_index + i],
+                        col=cell.col,
                     )
-                self.table.sync_cols_to_rows()
+                    cell.col._cells[row_index + i] = spacer
+                    spacer.row._cells[col_index] = spacer
 
         elif self.type_ == "col":
+            assert isinstance(self, Col)
             cell.row = self.table._rows[index]
             cell.col = cast("Col", self)
 
+            row_index = index
+            col_index = self.table.cols.index(self)
+
+            cell.row._cells[col_index] = cell
+
             if cell.rowspan > 1:
                 for i in range(1, cell.rowspan):
-                    cell.col._cells[index + i] = SpacerCell(
-                        expands=cell, span_index=i, col=cell.col
+                    spacer = SpacerCell(
+                        expands=cell,
+                        span_index=i,
+                        row=self.table._rows[index + i],
+                        col=cell.col,
                     )
-
-            self.table.sync_cols_to_rows()
+                    self._cells[row_index + i] = spacer
+                    spacer.row._cells[col_index] = spacer
 
             if cell.colspan > 1:
                 index = max(cell.row._cells.keys())
                 for i in range(1, cell.colspan):
-                    cell.row._cells[index + i] = SpacerCell(
-                        expands=cell, span_index=i, row=cell.row
+                    spacer = SpacerCell(
+                        expands=cell,
+                        span_index=i,
+                        row=cell.row,
+                        col=self.table._cols[col_index + i],
                     )
-                self.table.sync_rows_to_cols()
+                    cell.row._cells[col_index + i] = spacer
+                    spacer.col._cells[row_index] = spacer
 
     @property
     def widths(self) -> "list[int]":
@@ -524,20 +602,26 @@ class RowCol:
     @property
     def weighted_padding(self) -> "WeightedPadding":
         """The default padding for cells in the row/column with inheritance weights."""
-        return WeightedPadding(
-            *(
-                WeightedInt(
-                    1 if x is not None else 0,
-                    x if x is not None else self.table.padding[i] or 0,
+
+        def _get_weighted_padding() -> "WeightedPadding":
+            return WeightedPadding(
+                *(
+                    WeightedInt(
+                        1 if x is not None else 0,
+                        x if x is not None else self.table.padding[i] or 0,
+                    )
+                    for i, x in enumerate(self._padding)
                 )
-                for i, x in enumerate(self._padding)
             )
+
+        return self._weighted_padding_cache.get(
+            (self._padding, self.table.padding), _get_weighted_padding
         )
 
     @property
     def padding(self) -> "Padding":
         """The default padding for cells in the row/column."""
-        return Padding(*(x.value for x in self.weighted_padding))
+        return cast("Padding", self.weighted_padding.padding)
 
     @padding.setter
     def padding(self, padding: "Optional[Union[Padding, int]]") -> "None":
@@ -547,20 +631,26 @@ class RowCol:
     @property
     def weighted_border(self) -> "WeightedBorderLineStyle":
         """The cell's borders with inheritance weights."""
-        return WeightedBorderLineStyle(
-            *(
-                WeightedLineStyle(
-                    1 if x is not None else 0,
-                    x if x is not None else self.table.border[i] or Thin,
+
+        def _get_weighted_border() -> "WeightedBorderLineStyle":
+            return WeightedBorderLineStyle(
+                *(
+                    WeightedLineStyle(
+                        1 if x is not None else 0,
+                        x if x is not None else self.table.border[i] or Thin,
+                    )
+                    for i, x in enumerate(self._border)
                 )
-                for i, x in enumerate(self._border)
             )
+
+        return self._weighted_border_cache.get(
+            (self._border, self.table.border), _get_weighted_border
         )
 
     @property
     def border(self) -> "BorderLineStyle":
         """The default border style for cells in the row/column."""
-        return BorderLineStyle(*(x.value for x in self.weighted_border))
+        return cast("BorderLineStyle", self.weighted_border.border_line_style)
 
     @border.setter
     def border(self, border: "Optional[Union[LineStyle, BorderLineStyle]]") -> "None":
@@ -690,14 +780,20 @@ class Table:
         self._border_collapse = border_collapse
         self.style = style
 
+        self._border_collapse_cache: "SimpleCache[Hashable, bool]" = SimpleCache()
+
     @property
     def border_collapse(self) -> "bool":
         """Turn off border-collapse if any cells have a border."""
-        for row in self._rows.values():
-            for cell in row._cells.values():
-                if any(x != Invisible for x in cell.border):
-                    return False
-        return self._border_collapse
+
+        def _get_border_collapse() -> "bool":
+            for row in self._rows.values():
+                for cell in row._cells.values():
+                    if any(x != Invisible for x in cell.border):
+                        return False
+            return self._border_collapse
+
+        return self._border_collapse_cache.get(tuple(self.rows), _get_border_collapse)
 
     @property
     def border(self) -> "BorderLineStyle":
@@ -729,17 +825,19 @@ class Table:
 
     def sync_rows_to_cols(self) -> "None":
         """Ensure cells in rows are present in the relevant columns."""
+        cols = self._cols
         for i, row in self._rows.items():
             for j, cell in row._cells.items():
-                cell.col = self._cols[j]
-                self._cols[j]._cells[i] = cell
+                cell.col = cols[j]
+                cols[j]._cells[i] = cell
 
     def sync_cols_to_rows(self) -> "None":
         """Ensure cells in columns are present in the relevant rows."""
+        rows = self._rows
         for i, col in self._cols.items():
             for j, cell in col._cells.items():
-                cell.row = self._rows[j]
-                self._rows[j]._cells[i] = cell
+                cell.row = rows[j]
+                rows[j]._cells[i] = cell
 
     def new_row(self, *args: "Any", **kwargs: "Any") -> "Row":
         """Creates a new row in the table."""
@@ -819,6 +917,7 @@ class Table:
             List of new column widths
 
         """
+        # TODO - this function is too slow
         col_widths = [col.max_total_width for col in self.cols]
 
         def total_width(col_widths: "list[int]") -> "int":
@@ -840,32 +939,39 @@ class Table:
         return col_widths
 
     @staticmethod
+    @lru_cache
     def get_node(
-        nw: "Cell",
-        ne: "Cell",
-        se: "Cell",
-        sw: "Cell",
+        nw_wb: "WeightedBorderLineStyle",
+        ne_wb: "WeightedBorderLineStyle",
+        se_wb: "WeightedBorderLineStyle",
+        sw_wb: "WeightedBorderLineStyle",
     ) -> "str":
         """Calculate which character to use at the intersection of four cells."""
         return grid_char(
             GridChar(
-                max(nw.weighted_border.right, ne.weighted_border.left).value,
-                max(ne.weighted_border.bottom, se.weighted_border.top).value,
-                max(se.weighted_border.left, sw.weighted_border.right).value,
-                max(sw.weighted_border.top, nw.weighted_border.bottom).value,
+                max(nw_wb.right, ne_wb.left).value,
+                max(ne_wb.bottom, se_wb.top).value,
+                max(se_wb.left, sw_wb.right).value,
+                max(sw_wb.top, nw_wb.bottom).value,
             )
         )
 
     @staticmethod
-    def get_horizontal_edge(n: "Cell", s: "Cell") -> "str":
+    @lru_cache
+    def get_horizontal_edge(
+        n_wb: "WeightedBorderLineStyle", s_wb: "WeightedBorderLineStyle"
+    ) -> "str":
         """Calculate which character to use to divide horizontally adjacent cells."""
-        line_style = max(n.weighted_border.bottom, s.weighted_border.top).value
+        line_style = max(n_wb.bottom, s_wb.top).value
         return grid_char(GridChar(Invisible, line_style, Invisible, line_style))
 
     @staticmethod
-    def get_vertical_edge(e: "Cell", w: "Cell") -> "str":
+    @lru_cache
+    def get_vertical_edge(
+        e_wb: "WeightedBorderLineStyle", w_wb: "WeightedBorderLineStyle"
+    ) -> "str":
         """Calculate which character to use to divide vertically adjacent cells."""
-        line_style = max(e.weighted_border.right, w.weighted_border.left).value
+        line_style = max(e_wb.right, w_wb.left).value
         return grid_char(GridChar(line_style, Invisible, line_style, Invisible))
 
     def draw_border_row(
@@ -897,9 +1003,19 @@ class Table:
                 pairwise(cells_below),
             )
         ):
-            output += [(self.border_style, self.get_node(nw, ne, se, sw))]
+            output += [
+                (
+                    self.border_style,
+                    self.get_node(
+                        nw.weighted_border,
+                        ne_wb := ne.weighted_border,
+                        se_wb := se.weighted_border,
+                        sw.weighted_border,
+                    ),
+                )
+            ]
             if i < len(col_widths):
-                edge = self.get_horizontal_edge(ne, se)
+                edge = self.get_horizontal_edge(ne_wb, se_wb)
                 edges += edge
                 style = self.border_style
                 # Use cell style for borders in colspans
@@ -924,7 +1040,12 @@ class Table:
             # Calculate borders
             borders = []
             for e, w in zip([DummyCell(), *row.cells], [*row.cells, DummyCell()]):
-                borders += [(self.border_style, self.get_vertical_edge(e, w))]
+                borders += [
+                    (
+                        self.border_style,
+                        self.get_vertical_edge(e.weighted_border, w.weighted_border),
+                    )
+                ]
             if self.border_collapse and not "".join([x[1] for x in borders]).strip():
                 borders = [("", "")] * len(borders)
 
@@ -936,7 +1057,8 @@ class Table:
                     return 0
                 width = col_widths[col]
                 # Remove padding
-                width -= (cell.padding.left or 0) + (cell.padding.right or 0)
+                padding = cell.padding
+                width -= (padding.left or 0) + (padding.right or 0)
 
                 # Expand if colspan
                 for i in range(col + 1, col + cell.colspan):
@@ -963,10 +1085,11 @@ class Table:
                     output += [borders[i]]
                     if line is not None:
                         padding_style = f"{cell.style} nounderline"
+                        padding = cell.padding
                         output += [
-                            (padding_style, " " * (row.cells[i].padding.left or 0)),
+                            (padding_style, " " * (padding.left or 0)),
                             *line,
-                            (padding_style, " " * (row.cells[i].padding.right or 0)),
+                            (padding_style, " " * (padding.right or 0)),
                         ]
                     # Ensure last line of a cell is fill with spaces
                     else:

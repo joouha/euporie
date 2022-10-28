@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import re
 from ast import literal_eval
 from collections import ChainMap, defaultdict
@@ -44,8 +45,9 @@ from euporie.core.terminal import tmuxify
 from euporie.core.url import load_url
 
 if TYPE_CHECKING:
-    from typing import Any, Generator, Optional, Union
+    from typing import Any, Generator, Hashable, Optional, Union
 
+log = logging.getLogger(__name__)
 
 # Prefer 6-digit hex-colors over 3-digit ones
 _COLOR_RE = re.compile("#([a-fA-F0-9]{6}|[a-fA-F0-9]{3})")
@@ -424,7 +426,7 @@ class HTML:
             ".block": {"block": True},
         }
 
-        self.element_theme_cache: "SimpleCache[PageElement, dict[str, Any]]" = (
+        self.element_theme_cache: "SimpleCache[Hashable, dict[str, Any]]" = (
             SimpleCache()
         )
 
@@ -494,7 +496,13 @@ class HTML:
     ) -> "dict":
         """Get an element's theme from the cache, or calculate it."""
         return self.element_theme_cache.get(
-            element, partial(self.calc_element_theme, element, parent_theme)
+            (
+                element.name,
+                element.attrs.get("id"),
+                tuple(element.attrs.get("class", [])),
+                element.attrs.get("style"),
+            ),
+            partial(self.calc_element_theme, element, parent_theme),
         )
 
     def calc_element_theme(

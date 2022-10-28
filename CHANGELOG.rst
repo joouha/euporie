@@ -20,6 +20,7 @@ Added
 Fixed
 =====
 
+- Significant performance improvements when rendering HTML tables
 - Close file after prompting to save a new file when euporie is closed
 - Fix dialog button shortcut keys
 - Display error messages in file open dialog
