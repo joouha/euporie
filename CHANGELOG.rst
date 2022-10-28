@@ -11,6 +11,7 @@ Upcoming
 Added
 =====
 
+- Add ability to parse comma-separated CSS selectors to HTML parser
 - Make dialogs draggable
 - Allow configuring the external editor
 - Add ability to inject cell position into external editor command (this allows and external editor to be run in a tmux popup)

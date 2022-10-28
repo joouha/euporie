@@ -476,17 +476,16 @@ class HTML:
                 css_str = css_str.replace("\n", "").strip()
                 if css_str:
                     for rule in css_str.rstrip("}").split("}"):
-                        selector, _, content = rule.partition("{")
-                        selector = selector.strip()
-                        # For now, only parse single element and ID selectors
+                        selectors, _, content = rule.partition("{")
                         # TODO - more CSS matching complex rules
-                        if len(selector.split()) <= 2:
-                            content = content.strip().rstrip(";")
-                            rule_content = parse_css_content(content)
-                            if selector in rules:
-                                rules[selector].update(rule_content)
-                            else:
-                                rules[selector] = rule_content
+                        for selector in map(str.strip, selectors.split(",")):
+                            if len(selector.split()) <= 2:
+                                content = content.strip().rstrip(";")
+                                rule_content = parse_css_content(content)
+                                if selector in rules:
+                                    rules[selector].update(rule_content)
+                                else:
+                                    rules[selector] = rule_content
 
         return rules
 

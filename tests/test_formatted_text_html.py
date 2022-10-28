@@ -95,3 +95,12 @@ def test_details_summary() -> "None":
     expected = " ⮟ a a \n   a   \n       \n   b b \n   b   "
     result = to_plain_text(HTML(data, width=7))
     assert result == expected
+
+
+def test_multiple_css_selectors() -> "None":
+    """Comma separated CSS selectors are interpreted."""
+    data = '<style>.a,.b{color:red}</style><i class="a">a</i><i class="b">b</i>'
+    expected = [("class:html,i  fg:#ff0000", "a"), ("class:html,i  fg:#ff0000", "b")]
+    result = to_formatted_text(HTML(data, width=2))
+    print(result.__repr__())
+    assert result == expected
