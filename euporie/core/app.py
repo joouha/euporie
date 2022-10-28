@@ -80,6 +80,7 @@ from euporie.core.style import (
     LOG_STYLE,
     MIME_STYLE,
     ColorPalette,
+    ShadowStyle,
     build_style,
 )
 from euporie.core.terminal import TerminalInfo
@@ -669,7 +670,15 @@ class BaseApp(Application):
         log.debug("Editing mode set to: %s", self.editing_mode)
 
     def create_merged_style(self) -> "BaseStyle":
-        """Generate a new merged style for the application."""
+        """Generate a new merged style for the application.
+
+        Using a dynamic style has serious performance issues, so instead we update
+        the style on the renderer directly when it changes in `self.update_style`
+
+        Returns:
+            Return a combined style to use for the application
+
+        """
         # Get foreground and background colors based on the configured colour scheme
         theme_colors = {
             "light": {"fg": "#202020", "bg": "#F0F0F0"},
@@ -702,10 +711,7 @@ class BaseApp(Application):
         )
 
         # Build app style
-        app_style = build_style(
-            self.color_palette,
-            # have_term_colors=bool(self.term_info.foreground_color.value),
-        )
+        app_style = build_style(self.color_palette)
 
         # Apply style transformations based on the configured color scheme
         self.style_transformation = merge_style_transformations(
@@ -723,17 +729,20 @@ class BaseApp(Application):
             ]
         )
 
-        # Using a dynamic style has serious performance issues, so instead we update
-        # the style on the renderer directly when it changes in `self.update_style`
-        return merge_styles(
-            [
-                style_from_pygments_cls(get_style_by_name(self.config.syntax_theme)),
-                Style(MIME_STYLE),
-                Style(HTML_STYLE),
-                Style(LOG_STYLE),
-                Style(IPYWIDGET_STYLE),
-                app_style,
-            ]
+        return ShadowStyle(
+            style=merge_styles(
+                [
+                    style_from_pygments_cls(
+                        get_style_by_name(self.config.syntax_theme)
+                    ),
+                    Style(MIME_STYLE),
+                    Style(HTML_STYLE),
+                    Style(LOG_STYLE),
+                    Style(IPYWIDGET_STYLE),
+                    app_style,
+                ]
+            ),
+            color_palette=self.color_palette,
         )
 
     def update_style(

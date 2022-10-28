@@ -8,11 +8,15 @@ from functools import partial
 from typing import TYPE_CHECKING
 
 from prompt_toolkit.cache import SimpleCache
+from prompt_toolkit.styles.base import DEFAULT_ATTRS, BaseStyle
 from prompt_toolkit.styles.defaults import default_ui_style
-from prompt_toolkit.styles.style import Style
+from prompt_toolkit.styles.style import Style, _parse_style_str, merge_styles
 
 if TYPE_CHECKING:
-    from typing import Any
+    from typing import Any, Hashable, Optional
+
+    from prompt_toolkit.styles.base import Attrs
+    from prompt_toolkit.styles.style import _MergedStyle
 
 log = logging.getLogger(__name__)
 
@@ -35,16 +39,19 @@ DEFAULT_COLORS = {
     "ansiyellow": "#cecb00",
     "ansiblue": "#0d73cc",
     "ansipurple": "#cb1ed1",
+    "ansimagenta": "#cb1ed1",
     "ansicyan": "#0dcdcd",
     "ansiwhite": "#dddddd",
-    "ansirbightblack": "#767676",
-    "ansirbightred": "#f2201f",
-    "ansirbightgreen": "#23fd00",
-    "ansirbightyellow": "#fffd00",
-    "ansirbightblue": "#1a8fff",
-    "ansirbightpurple": "#fd28ff",
-    "ansirbightcyan": "#14ffff",
-    "ansirbightwhite": "#ffffff",
+    "ansibrightblack": "#767676",
+    "ansigray": "#767676",
+    "ansibrightred": "#f2201f",
+    "ansibrightgreen": "#23fd00",
+    "ansibrightyellow": "#fffd00",
+    "ansibrightblue": "#1a8fff",
+    "ansibrightpurple": "#fd28ff",
+    "ansibrightmagenta": "#fd28ff",
+    "ansibrightcyan": "#14ffff",
+    "ansibrightwhite": "#ffffff",
 }
 
 
@@ -208,13 +215,12 @@ class ColorPaletteColor:
         SimpleCache()
     )
 
-    def __init__(self, name: "str", base: "str", _base_override: str = "") -> "None":
+    def __init__(self, base: "str", _base_override: str = "") -> "None":
         """Creates a new color."""
-        self.name = name
-        self.base_hex = base
+        self.base_hex = DEFAULT_COLORS.get(base, base)
         self.base = _base_override or base
 
-        color = base.lstrip("#")
+        color = self.base_hex.lstrip("#")
         self.red, self.green, self.blue = (
             int(color[0:2], 16) / 255,
             int(color[2:4], 16) / 255,
@@ -236,7 +242,7 @@ class ColorPaletteColor:
 
         r, g, b = hls_to_rgb(hue, brightness, saturation)
         new_color = f"#{int(r * 255):02x}{int(g * 255):02x}{int(b * 255):02x}"
-        return ColorPaletteColor(new_color, new_color)
+        return ColorPaletteColor(new_color)
 
     def _adjust_rel(
         self, hue: "float" = 0.0, brightness: "float" = 0.0, saturation: "float" = 0.0
@@ -267,7 +273,7 @@ class ColorPaletteColor:
 
         r, g, b = hls_to_rgb(new_hue, new_brightness, new_saturation)
         new_color = f"#{int(r * 255):02x}{int(g * 255):02x}{int(b * 255):02x}"
-        return ColorPaletteColor(new_color, new_color)
+        return ColorPaletteColor(new_color)
 
     def _adjust(
         self,
@@ -315,6 +321,17 @@ class ColorPaletteColor:
             amount *= -1
         return self.adjust(brightness=-amount, rel=rel)
 
+    def towards(
+        self, other: "ColorPaletteColor", amount: "float"
+    ) -> "ColorPaletteColor":
+        """Interpolate between two colors."""
+        amount = min(max(0, amount), 1)
+        r = (other.red - self.red) * amount + self.red
+        g = (other.green - self.green) * amount + self.green
+        b = (other.blue - self.blue) * amount + self.blue
+        new_color = f"#{int(r * 255):02x}{int(g * 255):02x}{int(b * 255):02x}"
+        return ColorPaletteColor(new_color)
+
     def __repr__(self) -> "str":
         """Returns a string representation of the color."""
         return self.base
@@ -331,7 +348,7 @@ class ColorPalette:
         self, name: "str", base: "str", _base_override: str = ""
     ) -> "ColorPalette":
         """Adds a color to the palette."""
-        self.colors[name] = ColorPaletteColor(name, base, _base_override)
+        self.colors[name] = ColorPaletteColor(base, _base_override)
         return self
 
     def __getattr__(self, name: "str") -> "Any":
@@ -363,31 +380,34 @@ def build_style(
         # Pattern
         "pattern": f"fg:{cp.bg.more(0.075)}",
         # Chrome
-        "chrome": f"fg:{cp.fg.more(1/20)} bg:{cp.bg.more(1/20)}",
-        "tab-padding": f"fg:{cp.bg.more(4/20)} bg:{cp.bg.base}",
+        "chrome": f"fg:{cp.fg.more(0.05)} bg:{cp.bg.more(0.05)}",
+        "tab-padding": f"fg:{cp.bg.more(0.2)} bg:{cp.bg.base}",
         # Statusbar
-        "status": f"fg:{cp.fg.more(1/20)} bg:{cp.bg.more(1/20)}",
-        "status.field": f"fg:{cp.fg.more(2/20)} bg:{cp.bg.more(2/20)}",
+        "status": f"fg:{cp.fg.more(0.05)} bg:{cp.bg.more(0.05)}",
+        "status.field": f"fg:{cp.fg.more(0.1)} bg:{cp.bg.more(0.1)}",
         # Menus & Menu bar
-        "menu": f"fg:{cp.fg.more(1/20)} bg:{cp.bg.more(1/20)}",
-        "menu disabled": f"fg:{cp.bg.more(3/20)}",
+        "menu": f"fg:{cp.fg.more(0.05)} bg:{cp.bg.more(0.05)}",
+        "menu disabled": f"fg:{cp.fg.more(0.05).towards(cp.bg, 0.75)}",
+        "menu shortcut": f"fg:{cp.fg.more(0.4)}",
+        "menu shortcut disabled": f"fg:{cp.fg.more(0.4).towards(cp.bg, 0.5)}",
+        "menu prefix": f"fg:{cp.fg.more(0.2)}",
+        "menu prefix disabled": f"fg:{cp.fg.more(0.2).towards(cp.bg, 0.5)}",
         "menu selection": f"fg:{cp.hl.more(1)} bg:{cp.hl}",
-        "menu shortcut": f"fg:{cp.fg.more(5/20)}",
-        "menu selection shortcut": f"fg:{cp.fg.more(1/20)} bg:{cp.hl}",
-        "menu selection prefix": f"bg:{cp.hl} fg:{cp.bg.more(3/20)}",
-        "menu border": f"fg:{cp.bg.more(0.15)} bg:{cp.bg.more(1/20)}",
+        "menu selection shortcut": f"fg:{cp.hl.more(1).more(0.05)} bg:{cp.hl}",
+        "menu selection prefix": f"fg:{cp.hl.more(1).more(0.05)} bg:{cp.hl}",
+        "menu border": f"fg:{cp.bg.more(0.15)} bg:{cp.bg.more(0.05)}",
         "menu border selection": f"bg:{cp.hl}",
         # Tab bar
-        "app-tab-bar": f"bg:{cp.bg.less(3/20)}",
-        "app-tab-bar border": f"fg:{cp.bg.more(2/20)}",
+        "app-tab-bar": f"bg:{cp.bg.less(0.15)}",
+        "app-tab-bar border": f"fg:{cp.bg.more(0.1)}",
         "app-tab-bar tab inactive": f"fg:{cp.fg.more(0.5)}",
-        "app-tab-bar tab inactive border": f"fg:{cp.bg.more(3/20)}",
+        "app-tab-bar tab inactive border": f"fg:{cp.bg.more(0.15)}",
         "app-tab-bar tab active": "bold fg:default bg:default",
         "app-tab-bar tab active close": "fg:darkred",
-        "app-tab-bar tab active border top": f"fg:{cp.hl} bg:{cp.bg.less(3/20)}",
+        "app-tab-bar tab active border top": f"fg:{cp.hl} bg:{cp.bg.less(0.15)}",
         # Buffer
-        "line-number": f"fg:{cp.fg.more(10/20)} bg:{cp.bg.more(1/20)}",
-        "line-number.current": f"bold orange bg:{cp.bg.more(2/20)}",
+        "line-number": f"fg:{cp.fg.more(0.5)} bg:{cp.bg.more(0.05)}",
+        "line-number.current": f"bold orange bg:{cp.bg.more(0.1)}",
         "line-number edge": f"fg:{cp.bg.darker(0.1)}",
         "line-number.current edge": f"fg:{cp.bg.darker(0.1)}",
         "cursor-line": f"bg:{cp.bg.more(0.05)}",
@@ -400,16 +420,16 @@ def build_style(
         "trailing-whitespace": f"fg:{cp.fg.more(0.66)}",
         "tab": f"fg:{cp.fg.more(0.66)}",
         # Search
-        "search": f"bg:{cp.bg.more(1/20)}",
-        "search.current": f"bg:{cp.bg.more(1/20)}",
+        "search": f"bg:{cp.bg.more(0.05)}",
+        "search.current": f"bg:{cp.bg.more(0.05)}",
         "incsearch": "bg:ansibrightyellow",
         "incsearch.current": "bg:ansibrightgreen",
-        "search-toolbar": f"fg:{cp.fg.more(1/20)} bg:{cp.bg.more(1/20)}",
-        "search-toolbar.title": f"fg:{cp.fg.more(2/20)} bg:{cp.bg.more(2/20)}",
+        "search-toolbar": f"fg:{cp.fg.more(0.05)} bg:{cp.bg.more(0.05)}",
+        "search-toolbar.title": f"fg:{cp.fg.more(0.1)} bg:{cp.bg.more(0.1)}",
         # Inputs
         "kernel-input": f"fg:default bg:{cp.bg.more(0.02)}",
         # Cells
-        "cell.border": f"fg:{cp.bg.more(5/20)}",
+        "cell.border": f"fg:{cp.bg.more(0.25)}",
         "cell.border.selected": f"fg:{cp.hl.more(0.2)}",
         "cell.border.edit": "fg:ansibrightgreen",
         "cell.output": "fg:default bg:default",
@@ -418,19 +438,19 @@ def build_style(
         "cell show outputs": "bg:#888",
         "cell show inputs": "bg:#888",
         # Scrollbars
-        "scrollbar": f"fg:{cp.bg.more(15/20)} bg:{cp.bg.more(3/20)}",
-        "scrollbar.background": f"fg:{cp.bg.more(15/20)} bg:{cp.bg.more(3/20)}",
-        "scrollbar.arrow": f"fg:{cp.bg.more(15/20)} bg:{cp.bg.more(3/20)}",
+        "scrollbar": f"fg:{cp.bg.more(10.25)} bg:{cp.bg.more(0.15)}",
+        "scrollbar.background": f"fg:{cp.bg.more(10.25)} bg:{cp.bg.more(0.15)}",
+        "scrollbar.arrow": f"fg:{cp.bg.more(10.25)} bg:{cp.bg.more(0.15)}",
         "scrollbar.start": "",
-        "scrollbar.button": f"fg:{cp.bg.more(15/20)} bg:{cp.bg.more(15/20)}",
-        "scrollbar.end": f"fg:{cp.bg.more(3/20)} bg:{cp.bg.more(15/20)}",
+        "scrollbar.button": f"fg:{cp.bg.more(10.25)} bg:{cp.bg.more(10.25)}",
+        "scrollbar.end": f"fg:{cp.bg.more(0.15)} bg:{cp.bg.more(10.25)}",
         # Overflow margin
         "overflow": f"fg:{cp.fg.more(0.5)}",
         # Dialogs
         "dialog title": f"fg:white bg:{cp.hl.darker(0.25)} bold",
         "dialog title border": "fg:ansired",
         "dialog": f"fg:{cp.fg.base} bg:{cp.bg.darker(0.1)}",
-        "dialog scrollbar.button": f"fg:{cp.bg.more(5/20)} bg:{cp.bg.more(0.75)}",
+        "dialog scrollbar.button": f"fg:{cp.bg.more(0.25)} bg:{cp.bg.more(0.75)}",
         "dialog text-area": f"bg:{cp.bg.lighter(0.05)}",
         "dialog input text text-area": f"fg:default bg:{cp.bg.less(0.1)}",
         "dialog text-area last-line": "nounderline",
@@ -460,39 +480,37 @@ def build_style(
         "log.ref": "fg:grey",
         "log.date": "fg:#00875f",
         # Shortcuts
-        "shortcuts.group": f"bg:{cp.bg.more(8/20)} bold underline",
+        "shortcuts.group": f"bg:{cp.bg.more(0.4)} bold underline",
         # "shortcuts.row": f"bg:{cp.bg.base} nobold",
-        "shortcuts.row alt": f"bg:{cp.bg.more(2/20)}",
+        "shortcuts.row alt": f"bg:{cp.bg.more(0.1)}",
         "shortcuts.row key": "bold",
         # Palette
-        "palette.item": f"fg:{cp.fg.more(1/20)} bg:{cp.bg.more(1/20)}",
-        "palette.item.alt": f"bg:{cp.bg.more(3/20)}",
+        "palette.item": f"fg:{cp.fg.more(0.05)} bg:{cp.bg.more(0.05)}",
+        "palette.item.alt": f"bg:{cp.bg.more(0.15)}",
         "palette.item.selected": f"fg:{cp.hl.more(1)} bg:{cp.hl}",
         # Pager
-        "pager": f"bg:{cp.bg.more(1/20)}",
-        "pager.border": f"fg:{cp.bg.more(9/20)}",
+        "pager": f"bg:{cp.bg.more(0.05)}",
+        "pager.border": f"fg:{cp.bg.more(0.45)}",
         # Markdown
-        "html code": f"bg:{cp.bg.more(3/20)}",
+        "html code": f"bg:{cp.bg.more(0.15)}",
         "html code block": f"bg:{cp.bg.less(0.2)}",
-        "html pre border": f"fg:{cp.bg.more(5/20)}",
-        "html table border": f"fg:{cp.bg.more(15/20)}",
+        "html pre border": f"fg:{cp.bg.more(0.25)}",
+        "html table border": f"fg:{cp.bg.more(10.25)}",
         # Drop-shadow
-        "drop-shadow.inner": f"fg:{cp.bg.darker(3/20)}",
-        "drop-shadow.outer": f"fg:{cp.bg.darker(2/20)} bg:{cp.bg.darker(0.5/20)}",
-        # Shadows
-        "shadow": f"bg:{cp.bg.darker(0.45)}",
+        "drop-shadow.inner": f"fg:{cp.bg.darker(0.15)}",
+        "drop-shadow.outer": f"fg:{cp.bg.darker(0.1)} bg:{cp.bg.darker(0.025)}",
         # Tabbed split
-        "tabbed-split tab-bar tab inactive": f"fg:{cp.bg.more(2/20)}",
-        "tabbed-split tab-bar tab inactive border": f"fg:{cp.bg.more(3/20)}",
-        "tabbed-split tab-bar tab active": f"bold fg:{cp.fg.more(0/20)}",
+        "tabbed-split tab-bar tab inactive": f"fg:{cp.bg.more(0.1)}",
+        "tabbed-split tab-bar tab inactive border": f"fg:{cp.bg.more(0.15)}",
+        "tabbed-split tab-bar tab active": f"bold fg:{cp.fg}",
         "tabbed-split tab-bar tab active close": "fg:darkred",
-        "tabbed-split border": f"fg:{cp.bg.more(4/20)}",
+        "tabbed-split border": f"fg:{cp.bg.more(0.2)}",
         # Ipywidgets
         "ipywidget focused": f"bg:{cp.bg.more(0.05)}",
         "ipywidget slider track": f"fg:{cp.fg.darker(0.5)}",
         "ipywidget slider arrow": f"fg:{cp.fg.darker(0.25)}",
         "ipywidget slider handle": f"fg:{cp.fg.darker(0.25)}",
-        "ipywidget accordion border default": f"fg:{cp.bg.more(4/20)}",
+        "ipywidget accordion border default": f"fg:{cp.bg.more(0.2)}",
         # Input widgets
         "text-area selected": "noreverse",
         "text-area selected focused": "reverse",
@@ -543,19 +561,77 @@ def build_style(
         "html table dataframe th": f"bg:{cp.bg.more(0.1)}",
     }
 
-    # Add shadow combination for every element
-    style_dict.update(
-        {
-            f"{key} shadow": f"bg:{cp.bg.darker(0.45)}"
-            for key in {
-                **dict(MIME_STYLE),
-                **dict(HTML_STYLE),
-                **dict(LOG_STYLE),
-                **dict(IPYWIDGET_STYLE),
-                **style_dict,
-            }
-            if "menu" not in key.split()
-        }
-    )
-
     return Style.from_dict(style_dict)
+
+
+class ShadowStyle(BaseStyle):
+    """Wraps a :py:class:`BaseStyle`, and generates opaque shadow styles for each rule."""
+
+    def __init__(
+        self,
+        style: "BaseStyle",
+        color_palette: "ColorPalette",
+        opacity: "float" = 0.5,
+        color: "Optional[ColorPaletteColor]" = None,
+    ) -> "None":
+        """The constructor accepts a style."""
+        self.cp = color_palette
+        self.color = color or color_palette.bg.darker(0.5)
+        self.opacity = opacity
+        self.base_style = style
+        self._style: "SimpleCache[Hashable, _MergedStyle]" = SimpleCache(maxsize=1)
+
+    @property
+    def _merged_style(self) -> "_MergedStyle":
+        """The `Style` object that has the other styles merged together."""
+
+        def get() -> "_MergedStyle":
+            return merge_styles([self.base_style, Style(self.shadow_rules)])
+
+        return self._style.get(self.base_style.invalidation_hash(), get)
+
+    @property
+    def shadow_rules(self) -> "list[tuple[str, str]]":
+        """Generate new shadow rules."""
+        color = self.color
+        opacity = self.opacity
+
+        default_fg = self.cp.fg.towards(self.color, opacity)
+        default_bg = self.cp.bg.towards(self.color, opacity)
+
+        new_rules = [("shadow", f"fg:{default_fg} bg:{default_bg}")]
+        for rule, style_str in self.base_style.style_rules:
+            style_attrs = _parse_style_str(style_str)
+            if "shadow" in rule.split():
+                continue
+            new_style_str = ""
+            old_fg = style_attrs.color
+            old_bg = style_attrs.bgcolor
+            new_fg = (
+                ColorPaletteColor(old_fg).towards(color, opacity)
+                if old_fg and old_fg not in ("default", "ansidefault")
+                else default_fg
+            )
+            new_bg = (
+                ColorPaletteColor(old_bg).towards(color, opacity)
+                if old_bg and old_bg not in ("default", "ansidefault")
+                else default_bg
+            )
+            new_style_str += f"fg:{new_fg} bg:{new_bg}"
+            new_rules.append((f"{rule} shadow", new_style_str))
+        return new_rules
+
+    @property
+    def style_rules(self) -> "list[tuple[str, str]]":
+        """The list of style rules, used to create this style."""
+        return self._merged_style.style_rules
+
+    def get_attrs_for_style_str(
+        self, style_str: "str", default: "Attrs" = DEFAULT_ATTRS
+    ) -> "Attrs":
+        """Return :class:`.Attrs` for the given style string."""
+        return self._merged_style.get_attrs_for_style_str(style_str, default)
+
+    def invalidation_hash(self) -> "Hashable":
+        """Invalidation hash for the style, which redraws everything on a change."""
+        return self.base_style.invalidation_hash()

@@ -11,6 +11,7 @@ Upcoming
 Added
 =====
 
+- Make shadows under menus and dialogs semi-transparent
 - Add ability to parse comma-separated CSS selectors to HTML parser
 - Make dialogs draggable
 - Allow configuring the external editor
