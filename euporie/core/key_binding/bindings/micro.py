@@ -22,7 +22,6 @@ from prompt_toolkit.key_binding import ConditionalKeyBindings
 from prompt_toolkit.key_binding.bindings.named_commands import (
     accept_line,
     backward_delete_char,
-    backward_kill_word,
     backward_word,
     beginning_of_buffer,
     delete_char,
@@ -157,7 +156,7 @@ register_bindings(
             "undo": "c-z",
             "redo": "c-y",
             "copy-selection": "c-c",
-            "cut-selection": "c-x",
+            "cut-selection": ["c-x", "s-delete"],
             "cut-line": "c-k",
             "duplicate-line": "c-d",
             "duplicate-selection": "c-d",
@@ -265,7 +264,24 @@ add_cmd(
 add_cmd(
     title="Delete character", name="delete", filter=buffer_has_focus & ~has_selection
 )(delete_char)
-add_cmd(title="Delete previous word", filter=buffer_has_focus)(backward_kill_word)
+
+
+@add_cmd(title="Delete previous word", filter=buffer_has_focus)
+def backward_kill_word(event: "KeyPressEvent") -> "None":
+    """Delete the word behind the cursor, using whitespace as a word boundary."""
+    buff = event.current_buffer
+    pos = buff.document.find_start_of_previous_word()
+
+    # Delete until the start of the document if nothing is found
+    if pos is None:
+        pos = -buff.cursor_position
+    # Delete the word
+    if pos:
+        buff.delete_before_cursor(count=-pos)
+    else:
+        # Nothing to delete. Bell.
+        event.app.output.bell()
+
 
 # Navigation
 

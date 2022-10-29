@@ -4,6 +4,15 @@ Changelog
 
 Notable changes to this project will be documented in this file.
 
+********
+Upcoming
+********
+
+Fixed
+=====
+
+- Do not cut when deleting word in micro edit mode
+
 *******************
 v2.1.0 (2022-10-29)
 *******************
