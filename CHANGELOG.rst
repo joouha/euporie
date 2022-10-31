@@ -4,15 +4,17 @@ Changelog
 
 Notable changes to this project will be documented in this file.
 
-********
-Upcoming
-********
+*******************
+v2.1.1 (2022-10-31)
+*******************
 
 Fixed
 =====
 
 - Ensure select uses available width in kernel selection dialog
 - Do not cut when deleting word in micro edit mode
+
+----
 
 *******************
 v2.1.0 (2022-10-29)
@@ -36,6 +38,8 @@ Fixed
 - Display error messages in file open dialog
 - Fixed broken mouse events in button widgets
 - Prevent ``IndexError`` when deleting a selection of cells including the last cell
+
+----
 
 *******************
 v2.0.9 (2022-10-26)
