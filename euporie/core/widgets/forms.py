@@ -1107,6 +1107,8 @@ class Select(SelectableWidget):
         border: "Optional[GridStyle]" = InnerEdgeGridStyle,
         show_borders: "Optional[BorderVisibility]" = None,
         disabled: "FilterOrBool" = False,
+        dont_extend_width: "FilterOrBool" = True,
+        dont_extend_height: "FilterOrBool" = True,
     ) -> "None":
         """Create a new select widget instance.
 
@@ -1125,12 +1127,18 @@ class Select(SelectableWidget):
             show_borders: Which borders to display
             disabled: A filter which when evaluated to :py:const:`True` causes the
                 widget to be disabled
+            dont_extend_width: When ``True``, don't take up more width then the
+                preferred width reported by the control.
+            dont_extend_height: When ``True``, don't take up more width then the
+                preferred height reported by the control.
 
         """
         self.rows = rows
         self.prefix = prefix
         self.border = border
         self.show_borders = show_borders
+        self.dont_extend_width = dont_extend_width
+        self.dont_extend_height = dont_extend_height
         super().__init__(
             options=options,
             labels=labels,
@@ -1184,8 +1192,8 @@ class Select(SelectableWidget):
                     show_cursor=False,
                 ),
                 height=lambda: self.rows,
-                dont_extend_width=True,
-                dont_extend_height=True,
+                dont_extend_width=self.dont_extend_width,
+                dont_extend_height=self.dont_extend_height,
                 style=f"class:select {self.style}"
                 f"{' class:disabled' if self.disabled() else ''}",
                 right_margins=[ScrollbarMargin(style=self.style)],

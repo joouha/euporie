@@ -11,6 +11,7 @@ Upcoming
 Fixed
 =====
 
+- Ensure select uses available width in kernel selection dialog
 - Do not cut when deleting word in micro edit mode
 
 *******************

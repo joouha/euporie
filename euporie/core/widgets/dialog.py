@@ -580,6 +580,7 @@ class SelectKernelDialog(Dialog):
             multiple=False,
             border=None,
             rows=5,
+            dont_extend_width=False,
         )
 
         msg_ft = (f"{message}\n" if message else "") + "Please select a kernel:\n"
@@ -587,7 +588,7 @@ class SelectKernelDialog(Dialog):
         self.body = HSplit(
             [
                 Label(msg_ft),
-                FocusedStyle(Box(options, padding_left=0)),
+                FocusedStyle(options),
             ]
         )
 
