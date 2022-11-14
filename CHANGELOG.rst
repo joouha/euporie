@@ -5,6 +5,17 @@ Changelog
 Notable changes to this project will be documented in this file.
 
 *******************
+v2.1.2 (2022-11-14)
+*******************
+
+Fixed
+=====
+
+- Prevent crash on Python 3.8
+
+----
+
+*******************
 v2.1.1 (2022-10-31)
 *******************
 
