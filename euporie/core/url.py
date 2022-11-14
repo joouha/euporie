@@ -4,7 +4,7 @@ import base64
 import binascii
 import logging
 from typing import TYPE_CHECKING
-from urllib.parse import ParseResult, urljoin, urlparse, urlunparse
+from urllib.parse import urljoin, urlparse, urlunparse
 from urllib.request import Request, urlopen
 
 from prompt_toolkit.cache import memoized
@@ -32,18 +32,10 @@ def load_url(
 
     # If not scheme given, assume it is a local file
     if not parsed_url.scheme:
-        parsed_url = ParseResult(
-            scheme="file",
-            netloc=parsed_url.netloc,
-            path=parsed_url.path,
-            params=parsed_url.params,
-            query=parsed_url.query,
-            fragment=parsed_url.fragment,
-            *parsed_url[6:],
-        )
+        parsed_url = parsed_url._replace(scheme="file")
         url = urlunparse(parsed_url)
 
-    if parsed_url.scheme == "data":
+    elif parsed_url.scheme == "data":
         _mime, _, url_data = parsed_url.path.partition(";")
         data_format, _, encoded_data = url_data.partition(",")
         if data_format == "base64":
