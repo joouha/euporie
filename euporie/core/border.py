@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from enum import Enum
-from functools import cache, total_ordering
+from functools import lru_cache, total_ordering
 from typing import TYPE_CHECKING, NamedTuple
 
 if TYPE_CHECKING:
@@ -735,8 +735,10 @@ class WeightedBorderLineStyle(NamedTuple):
     bottom: "WeightedLineStyle"
     left: "WeightedLineStyle"
 
+    # We cannot use :py:func:`functools.cached_property` here as it does not work with
+    # :py:Class:`NamedTuple`s.
     @property  # type: ignore
-    @cache  # noqa: B019
+    @lru_cache(maxsize=1)  # noqa: B019
     def border_line_style(self) -> "BorderLineStyle":
         """Get the unweighted border line style."""
         return BorderLineStyle(*(x.value for x in self))
@@ -759,8 +761,10 @@ class WeightedPadding(NamedTuple):
     bottom: "WeightedInt"
     left: "WeightedInt"
 
+    # We cannot use :py:func:`functools.cached_property` here as it does not work with
+    # :py:Class:`NamedTuple`s.
     @property  # type: ignore
-    @cache  # noqa: B019
+    @lru_cache(maxsize=1)  # noqa: B019
     def padding(self) -> "Padding":
         """Get the padding without weights."""
         return Padding(*(x.value for x in self))
