@@ -20,6 +20,7 @@ from prompt_toolkit.layout.containers import (
     to_container,
 )
 from prompt_toolkit.layout.controls import FormattedTextControl
+from prompt_toolkit.layout.dimension import Dimension
 from prompt_toolkit.lexers import DynamicLexer, PygmentsLexer, SimpleLexer
 from prompt_toolkit.mouse_events import MouseEvent, MouseEventType, MouseModifier
 from pygments.lexers import get_lexer_by_name
@@ -40,7 +41,6 @@ if TYPE_CHECKING:
     from prompt_toolkit.formatted_text.base import OneStyleAndTextTuple
     from prompt_toolkit.key_binding.key_bindings import NotImplementedOrNone
     from prompt_toolkit.layout.containers import AnyContainer
-    from prompt_toolkit.layout.dimension import Dimension
     from prompt_toolkit.layout.mouse_handlers import MouseHandlers
     from prompt_toolkit.layout.screen import Screen, WritePosition
 
@@ -376,11 +376,16 @@ class Cell:
                                     (
                                         "",
                                         weak_self.prompt,
+                                    ),
+                                    (
+                                        "",
+                                        "\n ",
                                         on_click(self.toggle_input),
-                                    )
+                                    ),
                                 ],
                             ),
                             width=lambda: len(weak_self.prompt),
+                            height=Dimension(preferred=1),
                             style="class:cell.input.prompt",
                         ),
                         filter=show_prompt,
@@ -455,11 +460,16 @@ class Cell:
                                     (
                                         "",
                                         weak_self.prompt,
+                                    ),
+                                    (
+                                        "",
+                                        "\n ",
                                         on_click(self.toggle_output),
-                                    )
+                                    ),
                                 ],
                             ),
                             width=lambda: len(weak_self.prompt),
+                            height=Dimension(preferred=1),
                             style="class:cell.output.prompt",
                         ),
                         filter=show_prompt,
