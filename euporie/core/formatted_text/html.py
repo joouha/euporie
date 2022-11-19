@@ -846,7 +846,7 @@ class HTML:
         # TODO
 
         # Check for language highlighting classes
-        for class_name in element.attrs.get("class", []):
+        for class_name in element.attrs.get("class", "").split():
             if class_name.startswith("language-"):
                 extras["language"] = class_name[9:]
                 break
