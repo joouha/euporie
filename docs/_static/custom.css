@@ -1,3 +1,6 @@
+.wy-side-nav-search > a {
+  display: block;
+}
 .wy-menu-vertical header,
 .wy-menu-vertical p.caption {
   color: #f00;
