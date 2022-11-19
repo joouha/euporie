@@ -316,8 +316,8 @@ class BaseApp(Application):
         )
 
         self.color_palette = ColorPalette()
-        self.color_palette.add_color("fg", "#ffffff" "default")
-        self.color_palette.add_color("bg", "#000000" "default")
+        self.color_palette.add_color("fg", "#ffffff", "default")
+        self.color_palette.add_color("bg", "#000000", "default")
 
         # Set to a write position to limit mouse events to a particular region
         self.mouse_limits: "Optional[WritePosition]" = None
