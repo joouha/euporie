@@ -168,6 +168,7 @@ class Cell:
                         ("", "\n" * (padding.bottom or 0)),
                     ],
                     width=width,
+                    strip_trailing_ws=True,
                 ),
                 width=width,
                 style=self.style,
@@ -1116,7 +1117,8 @@ class Table:
                     row_above, row_below, col_widths, border_collapse
                 )
                 output += self.draw_table_row(row_below, col_widths, border_collapse)
-            output.pop()
+            if output:
+                output.pop()
 
         return output
 

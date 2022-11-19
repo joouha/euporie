@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from enum import Enum
 from typing import Iterable, Optional, cast
 
@@ -47,11 +48,9 @@ def fragment_list_to_words(
 ) -> "Iterable[OneStyleAndTextTuple]":
     """Split formatted text into word fragments."""
     for style, string, *mouse_handler in fragments:
-        parts = string.split(sep)
-        for part in parts[:-1]:
+        # for part in re.split(r"\b", string):
+        for part in re.split(r"(?=\s)", string):
             yield cast("OneStyleAndTextTuple", (style, part, *mouse_handler))
-            yield cast("OneStyleAndTextTuple", (style, " ", *mouse_handler))
-        yield cast("OneStyleAndTextTuple", (style, parts[-1], *mouse_handler))
 
 
 def apply_style(ft: StyleAndTextTuples, style: str) -> StyleAndTextTuples:
@@ -72,6 +71,7 @@ def strip(
     left: bool = True,
     right: bool = True,
     char: Optional[str] = None,
+    only_unstyled: bool = False,
 ) -> StyleAndTextTuples:
     """Strip whitespace (or a given character) from the ends of formatted text.
 
@@ -80,6 +80,7 @@ def strip(
         left: If :py:const:`True`, strip from the left side of the input
         right: If :py:const:`True`, strip from the right side of the input
         char: The character to strip. If :py:const:`None`, strips whitespace
+        only_unstyled: If :py:const:`True`, only strip unstyled fragments
 
     Returns:
         The stripped formatted text
@@ -146,6 +147,7 @@ def wrap(
     placeholder: str = "…",
     left: "int" = 0,
     truncate_long_words: "bool" = True,
+    strip_trailing_ws: "bool" = False,
 ) -> StyleAndTextTuples:
     """Wraps formatted text at a given width.
 
@@ -159,6 +161,8 @@ def wrap(
         left: The starting position within the first list
         truncate_long_words: If :const:`True` words longer than a line will be
             truncated
+        strip_trailing_ws: If :const:`True`, trailing whitespace will be removed from
+            the ends of lines
 
     Returns:
         The wrapped formatted text
@@ -183,11 +187,24 @@ def wrap(
                 )
                 # Start a new line - we are at the end of the current output line
                 if left + fragment_width > width and left > 0:
+
+                    # Add as much trailing whitespace as we can
+                    if not strip_trailing_ws and (trailing_ws := (not item[1].strip())):
+                        result.append((item[0], item[1][: width - left]))
+
                     # Remove trailing whitespace
-                    result = strip(result, left=False)
+                    if strip_trailing_ws:
+                        result = strip(result, left=False)
+
+                    # Start new line
                     result.append(("", "\n"))
                     output_line += 1
                     left = 0
+
+                    # If we added trailing whitespace, process the next fragment
+                    if not strip_trailing_ws and trailing_ws:
+                        continue
+
                 # Strip left-hand whitespace from a word at the start of a line
                 # if output_line != 0 and left == 0:
                 if left == 0:
@@ -200,6 +217,9 @@ def wrap(
                 else:
                     result.append(item)
                     left += fragment_width
+
+    if strip_trailing_ws:
+        result = strip(result, left=False)
 
     return result
 
@@ -392,7 +412,7 @@ def add_border(
     return result
 
 
-def lex(ft: StyleAndTextTuples, lexer_name: str) -> StyleAndTextTuples:
+def lex(ft: "StyleAndTextTuples", lexer_name: "str") -> "StyleAndTextTuples":
     """Format formatted text using a named :py:mod:`pygments` lexer."""
     from prompt_toolkit.lexers.pygments import _token_cache
 
@@ -403,3 +423,42 @@ def lex(ft: StyleAndTextTuples, lexer_name: str) -> StyleAndTextTuples:
         return ft
     else:
         return [(_token_cache[t], v) for _, t, v in lexer.get_tokens_unprocessed(text)]
+
+
+def paste(
+    ft_bottom: "StyleAndTextTuples",
+    ft_top: "StyleAndTextTuples",
+    row: "int" = 0,
+    col: "int" = 0,
+) -> "StyleAndTextTuples":
+    """Paste formatted text on top of other formatted text."""
+    ft: "StyleAndTextTuples" = []
+
+    top_lines = dict(enumerate(split_lines(ft_top), start=row))
+    for y, line_b in enumerate(split_lines(ft_bottom)):
+        if y in top_lines:
+            x = 0
+            line_t = top_lines[y]
+            line_t_width = fragment_list_width(line_t)
+            done = False
+            for frag in line_b:
+                fragment_width = sum(
+                    get_cwidth(c) for c in frag[1] if "[ZeroWidthEscape]" not in frag[0]
+                )
+                if x < col:
+                    remaining = col - x
+                    ft.append((frag[0], frag[1][:remaining], *frag[2:]))
+                elif x == col and not done:
+                    ft += line_t
+                    done = True
+                elif x >= col + line_t_width:
+                    ft.append(frag)
+                x += fragment_width
+        else:
+            ft += line_b
+        ft.append(("", "\n"))
+
+    if ft:
+        ft.pop()
+
+    return ft
