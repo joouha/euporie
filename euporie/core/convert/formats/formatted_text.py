@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+from functools import partial
 from typing import TYPE_CHECKING
 
+from prompt_toolkit.cache import SimpleCache
 from prompt_toolkit.formatted_text import to_formatted_text
 
 from euporie.core.convert.base import register
@@ -13,6 +15,9 @@ if TYPE_CHECKING:
     from typing import Optional
 
     from prompt_toolkit.formatted_text.base import StyleAndTextTuples
+    from upath import UPath
+
+_html_cache = SimpleCache(maxsize=20)
 
 
 @register(
@@ -25,11 +30,15 @@ def html_to_ft(
     height: "Optional[int]" = None,
     fg: "Optional[str]" = None,
     bg: "Optional[str]" = None,
+    path: "Optional[UPath]" = None,
 ) -> "StyleAndTextTuples":
     """Converts markdown to formatted text."""
     from euporie.core.formatted_text.html import HTML
 
-    return to_formatted_text(HTML(data, width=width))
+    html = _html_cache.get(hash(data), partial(HTML, data, width=width, base=path))
+    if html.width != width or html.height != height:
+        html.render(width, height)
+    return to_formatted_text(HTML(data, width=width, base=path))
 
 
 @register(
@@ -42,6 +51,7 @@ def ansi_to_ft(
     height: "Optional[int]" = None,
     fg: "Optional[str]" = None,
     bg: "Optional[str]" = None,
+    path: "Optional[UPath]" = None,
 ) -> "StyleAndTextTuples":
     """Converts ANSI text to formatted text."""
     return to_formatted_text(ANSI(data.strip()))

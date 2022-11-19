@@ -11,6 +11,7 @@ if TYPE_CHECKING:
     from typing import Optional
 
     from rich.markdown import Markdown
+    from upath import UPath
 
 
 @register(
@@ -24,6 +25,7 @@ def markdown_to_rich_py(
     height: "Optional[int]" = None,
     fg: "Optional[str]" = None,
     bg: "Optional[str]" = None,
+    path: "Optional[UPath]" = None,
 ) -> "Markdown":
     """Converts base64 encoded data to bytes."""
     from rich.markdown import Markdown

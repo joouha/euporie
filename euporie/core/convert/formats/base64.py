@@ -10,6 +10,8 @@ from euporie.core.convert.base import register
 if TYPE_CHECKING:
     from typing import Optional, Union
 
+    from upath import UPath
+
 
 @register(
     from_="png",
@@ -37,6 +39,7 @@ def bytes_to_base64_py(
     height: "Optional[int]" = None,
     fg: "Optional[str]" = None,
     bg: "Optional[str]" = None,
+    path: "Optional[UPath]" = None,
 ) -> "str":
     """Converts bytes to base64 encoded data."""
     if isinstance(data, str):

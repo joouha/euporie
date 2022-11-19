@@ -12,7 +12,7 @@ from prompt_toolkit.layout.containers import DynamicContainer, HSplit, to_contai
 from prompt_toolkit.widgets.base import Box
 
 from euporie.core.app import get_app
-from euporie.core.convert.base import MIME_FORMATS, find_route
+from euporie.core.convert.base import BASE64_FORMATS, MIME_FORMATS, find_route
 from euporie.core.widgets.display import Display
 from euporie.core.widgets.tree import JsonView
 
@@ -107,10 +107,12 @@ class CellOutputDataElement(CellOutputElement):
         # Get internal format
         format_ = "ansi"
         mime_path = PurePath(mime)
-        for format_mime, mime_format in MIME_FORMATS.items():
-            if mime_path.match(format_mime):
-                if find_route(mime_format, "formatted_text") is not None:
-                    format_ = mime_format
+        for mime_type, data_format in MIME_FORMATS.items():
+            if mime_path.match(mime_type):
+                if data_format in BASE64_FORMATS:
+                    data_format = f"base64-{data_format}"
+                if find_route(data_format, "formatted_text") is not None:
+                    format_ = data_format
                     break
 
         self.container = Display(

@@ -159,17 +159,21 @@ def data_pixel_size(
             pass
     if isinstance(data, str):
         data = data.encode()
-    px_calc, py_calc = imagesize.get(io.BytesIO(data))
-    if px_calc > 0:
-        px = px_calc
-    if py_calc > 0:
-        py = py_calc
+    try:
+        px_calc, py_calc = imagesize.get(io.BytesIO(data))
+    except ValueError:
+        pass
+    else:
+        if px_calc > 0:
+            px = px_calc
+        if py_calc > 0:
+            py = py_calc
     return px, py
 
 
 def pixels_to_cell_size(
-    px: "Optional[int]",
-    py: "Optional[int]",
+    px: "Optional[int]" = None,
+    py: "Optional[int]" = None,
 ) -> "tuple[int, float]":
     """Get the cell width and aspect ration of a pixel dimension.
 

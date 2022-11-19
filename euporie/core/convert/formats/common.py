@@ -12,6 +12,8 @@ from euporie.core.convert.utils import call_subproc
 if TYPE_CHECKING:
     from typing import Any, Optional, Union
 
+    from upath import UPath
+
 log = logging.getLogger(__name__)
 
 
@@ -21,6 +23,7 @@ def base64_to_bytes_py(
     height: "Optional[int]" = None,
     fg: "Optional[str]" = None,
     bg: "Optional[str]" = None,
+    path: "Optional[UPath]" = None,
 ) -> "bytes":
     """Converts base64 encoded data to bytes."""
     return base64.b64decode(data)
@@ -33,6 +36,7 @@ def imagemagick_convert(
     rows: "Optional[int]" = None,
     fg: "Optional[str]" = None,
     bg: "Optional[str]" = None,
+    path: "Optional[UPath]" = None,
 ) -> "Union[str, bytes]":
     """Converts image data to PNG bytes using ``imagemagick``."""
     cmd: "list[Any]" = ["convert"]
@@ -56,6 +60,7 @@ def chafa_convert(
     rows: "Optional[int]" = None,
     fg: "Optional[str]" = None,
     bg: "Optional[str]" = None,
+    path: "Optional[UPath]" = None,
 ) -> "Union[str, bytes]":
     """Converts image data to ANSI text using :command:`chafa`."""
     cmd: "list[Any]" = ["chafa", f"--format={output_format}"]

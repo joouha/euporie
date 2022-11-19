@@ -12,6 +12,7 @@ if TYPE_CHECKING:
     from typing import Optional
 
     from PIL import Image
+    from upath import UPath
 
 log = logging.getLogger(__name__)
 
@@ -44,6 +45,7 @@ def png_to_pil_py(
     rows: "Optional[int]" = None,
     fg: "Optional[str]" = None,
     bg: "Optional[str]" = None,
+    path: "Optional[UPath]" = None,
 ) -> "Image":
     """Convert PNG to a pillow image using :py:mod:`PIL`."""
     import io

@@ -3,11 +3,14 @@
 from __future__ import annotations
 
 import logging
+import mimetypes
 from functools import partial
 from typing import TYPE_CHECKING, NamedTuple
 
 from prompt_toolkit.cache import FastDictCache, SimpleCache
 from prompt_toolkit.filters import to_filter
+from upath import UPath
+from upath.implementations.http import HTTPPath
 
 if TYPE_CHECKING:
     from typing import Any, Callable, Iterable, Optional, Union
@@ -19,11 +22,13 @@ log = logging.getLogger(__name__)
 
 MIME_FORMATS = {
     "image/svg+xml": "svg",
-    "image/png": "base64-png",
-    "image/jpeg": "base64-jpeg",
-    "application/pdf": "base64-pdf",
+    "image/png": "png",
+    "image/jpeg": "jpeg",
+    "image/gif": "gif",
+    "application/pdf": "pdf",
     "text/html": "html",
     "text/latex": "latex",
+    "application/x-latex": "latex",
     "text/markdown": "markdown",
     "text/x-markdown": "markdown",
     "text/*": "ansi",
@@ -31,18 +36,20 @@ MIME_FORMATS = {
     "*": "ansi",
 }
 
-FORMAT_EXTENSIONS = {
-    "svg": "svg",
-    "png": "png",
-    "jpeg": "jpeg",
-    "jpg": "jpeg",
-    "pdf": "pdf",
-    "htm": "html",
-    "html": "html",
-    "latex": "latex",
-    "md": "markdown",
-    "txt": "ansi",
-}
+BASE64_FORMATS = {"png", "jepg", "pdf", "gif"}
+
+
+def get_format(path: "UPath|str", default: "str" = "") -> "str":
+    """Attempt to guess the format of a path."""
+    if isinstance(path, str):
+        path = UPath(path)
+    if not default:
+        if isinstance(path, HTTPPath):
+            default = "html"
+        else:
+            default = "ansi"
+    mime, _ = mimetypes.guess_type(path)
+    return MIME_FORMATS.get(mime, default)
 
 
 class Converter(NamedTuple):
@@ -138,6 +145,7 @@ def convert(
     rows: "Optional[int]" = None,
     fg: "Optional[str]" = None,
     bg: "Optional[str]" = None,
+    path: "Optional[UPath]" = None,
 ) -> "Any":
     """Convert between formats."""
     try:
@@ -154,6 +162,7 @@ def convert(
         rows: "Optional[int]" = None,
         fg: "Optional[str]" = None,
         bg: "Optional[str]" = None,
+        path: "Optional[UPath]" = None,
     ) -> "Any":
         if from_ == to:
             return data
@@ -179,8 +188,8 @@ def convert(
                 log.exception("Cannot hash %s", data)
                 raise error
             output = _CONVERSION_CACHE.get(
-                (output_hash, from_, stage_b, cols, rows, fg, bg),
-                partial(func, output, cols, rows, fg, bg),
+                (output_hash, from_, stage_b, cols, rows, fg, bg, path),
+                partial(func, output, cols, rows, fg, bg, path),
             )
             if output is None:
                 log.error(
@@ -196,8 +205,8 @@ def convert(
         return output
 
     data = _CONVERSION_CACHE.get(
-        (data_hash, from_, to, cols, rows, fg, bg),
-        partial(_convert, data, from_, to, cols, rows, fg, bg),
+        (data_hash, from_, to, cols, rows, fg, bg, path),
+        partial(_convert, data, from_, to, cols, rows, fg, bg, path),
     )
 
     return data

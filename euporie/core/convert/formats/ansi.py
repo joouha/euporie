@@ -18,6 +18,7 @@ if TYPE_CHECKING:
 
     from PIL import Image
     from rich.console import RenderableType
+    from upath import UPath
 
 log = logging.getLogger(__name__)
 
@@ -33,6 +34,7 @@ def html_to_ansi_w3m(
     height: "Optional[int]" = None,
     fg: "Optional[str]" = None,
     bg: "Optional[str]" = None,
+    path: "Optional[UPath]" = None,
 ) -> "str":
     """Converts HTML text to formatted ANSI using :command:`w3m`."""
     cmd: "list[Any]" = ["w3m", "-T", "text/html"]
@@ -52,6 +54,7 @@ def html_to_ansi_elinks(
     height: "Optional[int]" = None,
     fg: "Optional[str]" = None,
     bg: "Optional[str]" = None,
+    path: "Optional[UPath]" = None,
 ) -> "str":
     """Converts HTML text to formatted ANSI using :command:`elinks`."""
     cmd: "list[Any]" = [
@@ -79,6 +82,7 @@ def html_to_ansi_lynx(
     height: "Optional[int]" = None,
     fg: "Optional[str]" = None,
     bg: "Optional[str]" = None,
+    path: "Optional[UPath]" = None,
 ) -> "str":
     """Converts HTML text to formatted ANSI using :command:`lynx`."""
     cmd: "list[Any]" = ["lynx", "-dump", "-stdin"]
@@ -98,6 +102,7 @@ def html_to_ansi_links(
     height: "Optional[int]" = None,
     fg: "Optional[str]" = None,
     bg: "Optional[str]" = None,
+    path: "Optional[UPath]" = None,
 ) -> "str":
     """Converts HTML text to formatted ANSI using :command:`links`."""
     cmd: "list[Any]" = ["links", "-dump"]
@@ -117,6 +122,7 @@ def html_to_ansi_py_htmlparser(
     height: "Optional[int]" = None,
     fg: "Optional[str]" = None,
     bg: "Optional[str]" = None,
+    path: "Optional[UPath]" = None,
 ) -> "str":
     """Convert HTML tables to ANSI text using :py:mod:`HTMLParser`."""
     import io
@@ -173,6 +179,7 @@ def latex_to_ansi_py_flatlatex(
     height: "Optional[int]" = None,
     fg: "Optional[str]" = None,
     bg: "Optional[str]" = None,
+    path: "Optional[UPath]" = None,
 ) -> "str":
     """Convert LaTeX to ANSI using :py:mod:`flatlatex`."""
     import flatlatex
@@ -191,6 +198,7 @@ def latex_to_ansi_py_pylatexenc(
     height: "Optional[int]" = None,
     fg: "Optional[str]" = None,
     bg: "Optional[str]" = None,
+    path: "Optional[UPath]" = None,
 ) -> "str":
     """Convert LaTeX to ANSI using :py:mod:`pylatexenc`."""
     from pylatexenc.latex2text import LatexNodes2Text
@@ -209,6 +217,7 @@ def latex_to_ansi_py_sympy(
     height: "Optional[int]" = None,
     fg: "Optional[str]" = None,
     bg: "Optional[str]" = None,
+    path: "Optional[UPath]" = None,
 ) -> "str":
     """Convert LaTeX to ANSI using :py:mod:`sympy`."""
     from sympy import pretty
@@ -236,6 +245,7 @@ def pil_to_ansi_py_timg(
     rows: "Optional[int]" = None,
     fg: "Optional[str]" = None,
     bg: "Optional[str]" = None,
+    path: "Optional[UPath]" = None,
 ) -> "str":
     """Convert a PIL image to ANSI text using :py:mod:`timg`."""
     import timg
@@ -261,6 +271,7 @@ def pil_to_ansi_py_img2unicode(
     rows: "Optional[int]" = None,
     fg: "Optional[str]" = None,
     bg: "Optional[str]" = None,
+    path: "Optional[UPath]" = None,
 ) -> "str":
     """Convert a PIL image to ANSI text using :py:mod:`img2unicode`."""
     import io
@@ -293,6 +304,7 @@ def image_to_ansi_timg(
     rows: "Optional[int]" = None,
     fg: "Optional[str]" = None,
     bg: "Optional[str]" = None,
+    path: "Optional[UPath]" = None,
 ) -> "str":
     """Converts image data to ANSI text using :command:`timg`."""
     cmd: "list[Any]" = ["timg"]
@@ -313,6 +325,7 @@ def image_to_ansi_catimg(
     rows: "Optional[int]" = None,
     fg: "Optional[str]" = None,
     bg: "Optional[str]" = None,
+    path: "Optional[UPath]" = None,
 ) -> "str":
     """Converts image data to ANSI text using :command:`catimg`."""
     cmd: "list[Any]" = ["catimg"]
@@ -333,6 +346,7 @@ def image_to_ansi_icat(
     rows: "Optional[int]" = None,
     fg: "Optional[str]" = None,
     bg: "Optional[str]" = None,
+    path: "Optional[UPath]" = None,
 ) -> "str":
     """Converts image data to ANSI text using :command:`icat`."""
     cmd: "list[Any]" = ["icat"]
@@ -353,6 +367,7 @@ def image_to_ansi_tiv(
     rows: "Optional[int]" = None,
     fg: "Optional[str]" = None,
     bg: "Optional[str]" = None,
+    path: "Optional[UPath]" = None,
 ) -> "str":
     """Converts image data to ANSI text using :command:`tiv`."""
     cmd: "list[Any]" = ["tiv"]
@@ -372,6 +387,7 @@ def image_to_ansi_viu(
     rows: "Optional[int]" = None,
     fg: "Optional[str]" = None,
     bg: "Optional[str]" = None,
+    path: "Optional[UPath]" = None,
 ) -> "str":
     """Converts image data to ANSI text using :command:`viu`."""
     cmd: "list[Any]" = ["viu"]
@@ -392,6 +408,7 @@ def image_to_ansi_jp2a(
     rows: "Optional[int]" = None,
     fg: "Optional[str]" = None,
     bg: "Optional[str]" = None,
+    path: "Optional[UPath]" = None,
 ) -> "str":
     """Converts image data to ANSI text using :command:`jp2a`."""
     cmd: "list[Any]" = ["jp2a", "--color"]
@@ -412,6 +429,7 @@ def png_to_ansi_img2txt(
     rows: "Optional[int]" = None,
     fg: "Optional[str]" = None,
     bg: "Optional[str]" = None,
+    path: "Optional[UPath]" = None,
 ) -> "str":
     """Converts PNG data to ANSI text using :command:`img2txt`."""
     cmd: "list[Any]" = ["img2txt"]
@@ -427,6 +445,7 @@ def png_to_ansi_py_placeholder(
     rows: "int" = 3,
     fg: "Optional[str]" = None,
     bg: "Optional[str]" = None,
+    path: "Optional[UPath]" = None,
 ) -> "str":
     """Draw placeholder ANSI text."""
     from euporie.core.border import Rounded
@@ -454,6 +473,7 @@ def rich_to_ansi_py(
     height: "Optional[int]" = None,
     fg: "Optional[str]" = None,
     bg: "Optional[str]" = None,
+    path: "Optional[UPath]" = None,
 ) -> "str":
     """Converts rich objects to formatted ANSI text."""
     import rich

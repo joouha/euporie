@@ -13,6 +13,7 @@ if TYPE_CHECKING:
     from typing import Optional
 
     from PIL import Image
+    from upath import UPath
 
 
 register(
@@ -28,6 +29,7 @@ def latex_to_png_py_ipython(
     height: "Optional[int]" = None,
     fg: "Optional[str]" = None,
     bg: "Optional[str]" = None,
+    path: "Optional[UPath]" = None,
 ) -> "bytes":
     """Converts LaTeX data to PNG bytes with :py:mod:`IPython` & :py:mod:`matplotlib`."""
     from IPython.lib.latextools import latex_to_png

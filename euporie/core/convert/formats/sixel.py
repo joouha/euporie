@@ -14,6 +14,7 @@ if TYPE_CHECKING:
     from typing import Any, Optional
 
     from PIL import Image
+    from upath import UPath
 
 
 register(
@@ -34,6 +35,7 @@ def png_to_sixel_img2sixel(
     rows: "Optional[int]" = None,
     fg: "Optional[str]" = None,
     bg: "Optional[str]" = None,
+    path: "Optional[UPath]" = None,
 ) -> "str":
     """Converts PNG data to sixels :command:`img2sixel`."""
     bg = bg or get_app().color_palette.bg.base_hex
@@ -64,6 +66,7 @@ def pil_to_sixel_py_timg(
     rows: "Optional[int]" = None,
     fg: "Optional[str]" = None,
     bg: "Optional[str]" = None,
+    path: "Optional[UPath]" = None,
 ) -> "str":
     """Convert a pillow image to sixels :py:mod:`timg`."""
     import timg
@@ -82,6 +85,7 @@ def pil_to_sixel_py_teimpy(
     rows: "Optional[int]" = None,
     fg: "Optional[str]" = None,
     bg: "Optional[str]" = None,
+    path: "Optional[UPath]" = None,
 ) -> "str":
     """Convert a pillow image to sixels :py:mod:`teimpy`."""
     import numpy as np

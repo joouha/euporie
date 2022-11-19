@@ -46,6 +46,7 @@ if TYPE_CHECKING:
     from prompt_toolkit.layout.containers import AnyContainer
     from prompt_toolkit.layout.dimension import AnyDimension
     from prompt_toolkit.layout.screen import Screen
+    from upath import UPath
 
 
 log = logging.getLogger(__name__)
@@ -62,6 +63,7 @@ class DisplayControl(UIControl):
         self,
         data: "Any",
         format_: "str",
+        path: "Optional[UPath]" = None,
         fg_color: "Optional[str]" = None,
         bg_color: "Optional[str]" = None,
         sizing_func: "Optional[Callable[[], tuple[int, float]]]" = None,
@@ -73,6 +75,7 @@ class DisplayControl(UIControl):
         Args:
             data: Raw cell output data
             format_: The conversion format of the data to render
+            path: The path to the data's original location
             fg_color: The foreground colour to use when renderin this output
             bg_color: The background colour to use when renderin this output
             sizing_func: Function which returns the maximum width and aspect ratio of
@@ -83,6 +86,7 @@ class DisplayControl(UIControl):
         """
         self._data = data
         self.format_ = format_
+        self.path = path
         self.fg_color = fg_color
         self.bg_color = bg_color
         self.focusable = to_filter(focusable)
@@ -358,6 +362,7 @@ class FormattedTextDisplayControl(DisplayControl):
                         rows=height,
                         fg=self.fg_color,
                         bg=self.bg_color,
+                        path=self.path,
                     )
                 )
             )
@@ -389,6 +394,7 @@ class SixelGraphicControl(GraphicControl):
                 rows=height,
                 fg=self.fg_color,
                 bg=self.bg_color,
+                path=self.path,
             )
             return list(
                 split_lines(
@@ -432,6 +438,7 @@ class ItermGraphicControl(GraphicControl):
                 rows=rows,
                 fg=self.fg_color,
                 bg=self.bg_color,
+                path=self.path,
             )
         b64data = b64data.replace("\n", "").strip()
         return b64data
@@ -506,6 +513,7 @@ class KittyGraphicControl(GraphicControl):
             rows=rows,
             fg=self.fg_color,
             bg=self.bg_color,
+            path=self.path,
         ).replace("\n", "")
 
     @staticmethod
@@ -733,9 +741,10 @@ class GraphicFloat(Float):
 
     def __init__(
         self,
+        target_window: "Window",
         data: "Any",
         format_: "str",
-        target_window: "Window",
+        path: "Optional[UPath]" = None,
         fg_color: "Optional[str]" = None,
         bg_color: "Optional[str]" = None,
         sizing_func: "Optional[Callable[[], tuple[int, float]]]" = None,
@@ -746,6 +755,7 @@ class GraphicFloat(Float):
         Args:
             data: The graphical data to be displayed
             format_: The format of the graphical data
+            path: The path to the data's original location
             target_window: The window above which the graphic should be displayed
             fg_color: The graphic's foreground color
             bg_color: The graphic's background color
@@ -813,6 +823,7 @@ class Display:
         self,
         data: "Any",
         format_: "str",
+        path: "Optional[UPath]" = None,
         fg_color: "Optional[str]" = None,
         bg_color: "Optional[str]" = None,
         height: "AnyDimension" = None,
@@ -833,6 +844,7 @@ class Display:
         Args:
             data: Raw cell output data
             format_: The conversion format of the data to render
+            path: The path to the data's original location
             fg_color: The foreground colour to use when renderin this output
             bg_color: The background colour to use when renderin this output
             height: The height of the output
@@ -865,6 +877,7 @@ class Display:
         self.control = FormattedTextDisplayControl(
             data,
             format_=format_,
+            path=path,
             fg_color=fg_color,
             bg_color=bg_color,
             sizing_func=sizing_func,
@@ -891,9 +904,10 @@ class Display:
         # Add graphic
         app = get_app()
         self.graphic_float = GraphicFloat(
+            target_window=self.window,
             data=data,
             format_=format_,
-            target_window=self.window,
+            path=path,
             fg_color=fg_color,
             bg_color=bg_color,
             sizing_func=sizing_func,

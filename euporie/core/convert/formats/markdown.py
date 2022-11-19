@@ -11,6 +11,8 @@ from euporie.core.convert.utils import have_modules
 if TYPE_CHECKING:
     from typing import Optional
 
+    from upath import UPath
+
 log = logging.getLogger(__name__)
 
 _HTML2TEXT_TABLE_RE = r"(?:(?:.*\|)+[^|]*?(?:\n|$))+"
@@ -27,6 +29,7 @@ def html_to_markdown_py_html2text(
     height: "Optional[int]" = None,
     fg: "Optional[str]" = None,
     bg: "Optional[str]" = None,
+    path: "Optional[UPath]" = None,
 ) -> "str":
     """Convert HTML to markdown tables using :py:mod:`html2text`."""
     import re
@@ -71,6 +74,7 @@ def html_to_markdown_py_mtable(
     height: "Optional[int]" = None,
     fg: "Optional[str]" = None,
     bg: "Optional[str]" = None,
+    path: "Optional[UPath]" = None,
 ) -> "str":
     """Convert HTML tables to markdown tables using :py:mod:`mtable`."""
     from mtable import MarkupTable

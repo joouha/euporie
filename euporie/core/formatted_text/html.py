@@ -26,7 +26,7 @@ from euporie.core.border import (
     Thick,
     Thin,
 )
-from euporie.core.convert.base import FORMAT_EXTENSIONS, convert
+from euporie.core.convert.base import get_format, convert
 from euporie.core.convert.utils import data_pixel_size, pixels_to_cell_size
 from euporie.core.formatted_text.table import Table
 from euporie.core.formatted_text.utils import (
