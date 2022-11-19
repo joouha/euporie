@@ -150,9 +150,9 @@ class Config:
             with open(self.config_file_path, "w") as f:
                 json.dump(json_data, f, indent=2)
 
-    def load(self, cls: "Type[ConfigurableApp]") -> "None":
+    def load(self, cls: "Type[ConfigurableApp]", app_name: "str" = "") -> "None":
         """Loads the command line, environment, and user configuration."""
-        self.app_name = cls.__module__.split(".")[1]
+        self.app_name = app_name or cls.__module__.split(".")[-1]
         self.app_cls = cls
         log.debug("Loading config for %s", self.app_name)
 
