@@ -1226,6 +1226,7 @@ class Notebook(BaseNotebook):
                 "scroll-output-right": "right",
                 "toggle-expand": "w",
                 "notebook-toggle-line-numbers": "l",
+                "reset-tab": "f5",
             }
         }
     )

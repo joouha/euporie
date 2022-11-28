@@ -77,15 +77,7 @@ class BaseNotebook(KernelTab, metaclass=ABCMeta):
         self.path = parse_path(path)
         log.debug("Loading notebooks %s", self.path)
 
-        # Open json file
-        if self.path is not None and self.path.exists():
-            with self.path.open() as f:
-                self.json = nbformat.read(f, as_version=4)
-        else:
-            self.json = json or nbformat.v4.new_notebook()
-        # Ensure there is always at least one cell
-        if not self.json.setdefault("cells", []):
-            self.json["cells"] = [nbformat.v4.new_code_cell()]
+        self.load(json)
 
         super().__init__(
             app, path, kernel=kernel, comms=comms, use_kernel_history=use_kernel_history
@@ -99,6 +91,15 @@ class BaseNotebook(KernelTab, metaclass=ABCMeta):
 
         self.container = self.load_container()
 
+    # Tab stuff
+
+    def reset(self) -> "None":
+        """Reload the notebook file from the disk and re-render."""
+        # Restore selection after reset
+        if self.path is not None:
+            self.load()
+        self.refresh()
+
     # KernelTab stuff
 
     @property
@@ -111,6 +112,18 @@ class BaseNotebook(KernelTab, metaclass=ABCMeta):
         super().kernel_started(result)
 
     # Notebook stuff
+
+    def load(self, json: "Optional[dict[str, Any]]" = None) -> "None":
+        """Load the notebook file from the file-system."""
+        # Open json file, or load from passed json object
+        if self.path is not None and self.path.exists():
+            with self.path.open() as f:
+                self.json = nbformat.read(f, as_version=4)
+        else:
+            self.json = json or nbformat.v4.new_notebook()
+        # Ensure there is always at least one cell
+        if not self.json.setdefault("cells", []):
+            self.json["cells"] = [nbformat.v4.new_code_cell()]
 
     def set_status(self, status: "str") -> "None":
         """Called when kernel status changes."""

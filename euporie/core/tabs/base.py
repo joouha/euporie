@@ -15,7 +15,7 @@ from euporie.core.comm.registry import open_comm
 from euporie.core.commands import add_cmd
 from euporie.core.completion import KernelCompleter
 from euporie.core.config import add_setting
-from euporie.core.filters import kernel_tab_has_focus
+from euporie.core.filters import kernel_tab_has_focus, tab_has_focus
 from euporie.core.history import KernelHistory
 from euporie.core.kernel import Kernel, MsgCallbacks
 from euporie.core.suggest import HistoryAutoSuggest
@@ -86,6 +86,15 @@ class Tab(metaclass=ABCMeta):
     def __pt_container__(self) -> "AnyContainer":
         """Return the main container object."""
         return self.container
+
+    # ################################### Commands ####################################
+
+    @staticmethod
+    @add_cmd(filter=tab_has_focus, title="Reset the current tab")
+    def _reset_tab() -> "None":
+        """Reset the current tab, reloading contents from source."""
+        if (tab := get_app().tab) is not None:
+            tab.reset()
 
 
 class KernelTab(Tab, metaclass=ABCMeta):
@@ -253,9 +262,7 @@ class KernelTab(Tab, metaclass=ABCMeta):
     # ################################### Commands ####################################
 
     @staticmethod
-    @add_cmd(
-        filter=kernel_tab_has_focus,
-    )
+    @add_cmd(filter=kernel_tab_has_focus)
     def _change_kernel() -> "None":
         """Change the notebook's kernel."""
         if isinstance(kt := get_app().tab, KernelTab):

@@ -4,6 +4,17 @@ Changelog
 
 Notable changes to this project will be documented in this file.
 
+********
+Upcoming
+********
+
+Added
+=====
+
+- New command to reset tabs, causing notebooks to be reloaded from the filesystem
+
+----
+
 *******************
 v2.1.2 (2022-11-14)
 *******************
