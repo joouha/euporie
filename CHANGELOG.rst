@@ -4,14 +4,23 @@ Changelog
 
 Notable changes to this project will be documented in this file.
 
-********
-Upcoming
-********
+*******************
+v2.1.3 (2022-11-29)
+*******************
 
 Added
 =====
 
 - New command to reset tabs, causing notebooks to be reloaded from the filesystem
+- Improvements to the HTML renderer
+
+Fixed
+=====
+
+- Use valid defaults for foreground and background colors for applications
+- Do not collapse cell when clicking on prompt itself, only the area below
+- Ensure logo is visible in the documentation
+- Fix code block language detection in HTML renderer
 
 ----
 
