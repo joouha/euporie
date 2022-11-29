@@ -58,7 +58,7 @@ mdit-py-plugins = "^0.3.0"
 flatlatex = "~0.15"
 timg = "^1.1"
 Pillow = "^9.0"
-universal-pathlib = "^0.0.19"
+universal-pathlib = "~0.0.19"
 asyncssh = {version = "^2.10.1", optional = true}
 black = {version = ">=19.3b0", optional = true}
 isort = {version = "^5.10.1", optional = true}
