@@ -5,6 +5,17 @@ Changelog
 Notable changes to this project will be documented in this file.
 
 *******************
+v2.1.4 (2022-11-29)
+*******************
+
+Fixed
+=====
+
+- Ensure all cells are re-rendered when a notebook tab is reset
+
+----
+
+*******************
 v2.1.3 (2022-11-29)
 *******************
 

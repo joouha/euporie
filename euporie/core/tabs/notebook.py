@@ -97,6 +97,7 @@ class BaseNotebook(KernelTab, metaclass=ABCMeta):
         """Reload the notebook file from the disk and re-render."""
         # Restore selection after reset
         if self.path is not None:
+            self._rendered_cells = {}
             self.load()
         self.refresh()
 
