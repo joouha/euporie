@@ -4,6 +4,17 @@ Changelog
 
 Notable changes to this project will be documented in this file.
 
+********
+Upcoming
+********
+
+Fixed
+=====
+
+- Prevent error when adding a cell during initial render
+
+----
+
 *******************
 v2.1.4 (2022-11-29)
 *******************

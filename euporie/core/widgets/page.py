@@ -323,7 +323,8 @@ class ScrollingContainer(Container):
 
     def reset(self) -> "None":
         """Reset the state of this container and all the children."""
-        for meta in self.child_render_infos.values():
+        meta_data = list(self.child_render_infos.values())
+        for meta in meta_data:
             meta.container.reset()
             meta.refresh = True
 
