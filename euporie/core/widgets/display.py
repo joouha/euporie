@@ -169,7 +169,7 @@ class DisplayControl(UIControl):
     def size(self) -> "None":
         """Load the maximum cell width and apect ratio of the output."""
         self._max_cols, self._aspect = self._size_cache.get(
-            (self.app.render_counter,), self.sizing_func
+            self.app.render_counter, self.sizing_func
         )
 
     def hide(self) -> "None":
@@ -232,7 +232,7 @@ class DisplayControl(UIControl):
         rows = ceil(cols * self.aspect) if self.aspect else height
 
         def get_content() -> "dict[str, Any]":
-            rendered_lines = self.get_rendered_lines(cols, rows)
+            rendered_lines = self.get_rendered_lines(width=cols, height=rows)
             self.rendered_lines = rendered_lines[:]
             line_count = len(rendered_lines)
 
@@ -243,7 +243,7 @@ class DisplayControl(UIControl):
                     line += rendered_lines[i]
                 # Add a space at the end, because that is a possible cursor position.
                 # This is what PTK does, and fixes a nasty bug which took me ages to
-                # track down the source of where scrolling would stop working when the
+                # track down the source of, where scrolling would stop working when the
                 # cursor was on an empty line.
                 line += [("", " ")]
                 return line
@@ -255,9 +255,10 @@ class DisplayControl(UIControl):
             }
 
         # Re-render if the image width changes, or the terminal character size changes
+        key = (cols, self.app.term_info.cell_size_px)
         return UIContent(
             cursor_position=self.cursor_position,
-            **self._content_cache.get((width,), get_content),
+            **self._content_cache.get(key, get_content),
         )
 
     def mouse_handler(self, mouse_event: "MouseEvent") -> "NotImplementedOrNone":
@@ -416,10 +417,8 @@ class SixelGraphicControl(GraphicControl):
                 )
             )
 
-        return self._format_cache.get(
-            (width,),
-            render_lines,
-        )
+        key = (width, self.app.term_info.cell_size_px)
+        return self._format_cache.get(key, render_lines)
 
 
 class ItermGraphicControl(GraphicControl):
@@ -450,7 +449,7 @@ class ItermGraphicControl(GraphicControl):
 
         def render_lines() -> "list[StyleAndTextTuples]":
             """Renders the lines to display in the control."""
-            b64data = self.convert_data(width, height)
+            b64data = self.convert_data(cols=width, rows=height)
             cmd = f"\x1b]1337;File=inline=1;width={width}:{b64data}\a"
             return list(
                 split_lines(
@@ -472,10 +471,8 @@ class ItermGraphicControl(GraphicControl):
                 )
             )
 
-        return self._format_cache.get(
-            (width,),
-            render_lines,
-        )
+        key = (width, self.app.term_info.cell_size_px)
+        return self._format_cache.get(key, render_lines)
 
 
 _kitty_image_count = 1
@@ -488,17 +485,23 @@ class KittyGraphicControl(GraphicControl):
         self,
         data: "Any",
         format_: "str",
+        path: "Optional[UPath]" = None,
         fg_color: "Optional[str]" = None,
         bg_color: "Optional[str]" = None,
-        sizing_func: "Optional[Callable]" = None,
+        sizing_func: "Optional[Callable[[], tuple[int, float]]]" = None,
+        focusable: "FilterOrBool" = False,
+        focus_on_click: "FilterOrBool" = False,
     ) -> "None":
         """Create a new kitty graphic instance."""
         super().__init__(
-            data,
-            format_,
-            fg_color,
-            bg_color,
-            sizing_func,
+            data=data,
+            format_=format_,
+            path=path,
+            fg_color=fg_color,
+            bg_color=bg_color,
+            sizing_func=sizing_func,
+            focusable=focusable,
+            focus_on_click=focus_on_click,
         )
         self.kitty_image_id = 0
         self.loaded = False
@@ -531,7 +534,7 @@ class KittyGraphicControl(GraphicControl):
         """Sends the graphic to the terminal without displaying it."""
         global _kitty_image_count
 
-        data = self.convert_data(rows, cols)
+        data = self.convert_data(rows=rows, cols=cols)
         self.kitty_image_id = _kitty_image_count
         _kitty_image_count += 1
 
@@ -591,7 +594,7 @@ class KittyGraphicControl(GraphicControl):
         # TODO - wezterm does not scale kitty graphics, so we might want to resize
         # images at this point rather than just loading them once
         if not self.loaded:
-            self.load(width, height)
+            self.load(cols=width, rows=height)
 
         def render_lines() -> "list[StyleAndTextTuples]":
             """Renders the lines to display in the control."""
@@ -626,10 +629,8 @@ class KittyGraphicControl(GraphicControl):
                 )
             )
 
-        return self._format_cache.get(
-            (width,),
-            render_lines,
-        )
+        key = (width, self.app.term_info.cell_size_px)
+        return self._format_cache.get(key, render_lines)
 
     def reset(self) -> "None":
         """Hide and delete the kitty graphic from the terminal."""
@@ -690,12 +691,15 @@ class GraphicWindow(Window):
         z_index: "Optional[int]",
     ) -> "None":
         """Draws the graphic window's contents to the screen if required."""
-        target_wp = screen.visible_windows_to_write_positions.get(self.target_window)
         filter_value = self.filter()
+        target_wp = screen.visible_windows_to_write_positions.get(self.target_window)
         if filter_value and target_wp and self.target_window.render_info is not None:
+            # NOTE - using `render_info` here means `rendered_height` is potentially one
+            # render cycle behind the `write_position`'s height. This only really
+            # matters when the terminal is resized
             rendered_height = self.target_window.render_info.window_height
             # Only draw if the target window is fully visible
-            if target_wp.height == rendered_height:
+            if target_wp.height >= rendered_height:
                 cpos = screen.get_menu_position(self.target_window)
                 new_write_position = WritePosition(
                     xpos=cpos.x,
@@ -781,6 +785,7 @@ class GraphicFloat(Float):
             self.control = self.GraphicControl(
                 data,
                 format_=format_,
+                path=path,
                 fg_color=fg_color,
                 bg_color=bg_color,
                 sizing_func=sizing_func,
@@ -973,7 +978,7 @@ class Display:
         """Return the content of this output."""
         return self.window
 
-    # Commands
+    # ################################### Commands ####################################
 
     @staticmethod
     @add_cmd(filter=display_has_focus)
@@ -1047,6 +1052,8 @@ class Display:
             current_control.cursor_position = Point(
                 0, window.render_info.ui_content.line_count - 1
             )
+
+    # ################################# Key Bindings ##################################
 
     register_bindings(
         {
