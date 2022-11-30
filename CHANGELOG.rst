@@ -11,6 +11,7 @@ Upcoming
 Fixed
 =====
 
+- Prevent ``background_tasks`` error with ``prompt_toolkit==3.0.30``
 - Prevent error when adding a cell during initial render
 
 ----

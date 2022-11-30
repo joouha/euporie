@@ -17,7 +17,9 @@ if TYPE_CHECKING:
     from prompt_toolkit.formatted_text.base import StyleAndTextTuples
     from upath import UPath
 
-_html_cache = SimpleCache(maxsize=20)
+    from euporie.core.formatted_text.html import HTML
+
+_html_cache: "SimpleCache[int, HTML]" = SimpleCache(maxsize=20)
 
 
 @register(
@@ -36,7 +38,11 @@ def html_to_ft(
     from euporie.core.formatted_text.html import HTML
 
     html = _html_cache.get(hash(data), partial(HTML, data, width=width, base=path))
-    if html.width != width or html.height != height:
+    if (
+        width is not None
+        and height is not None
+        and (html.width != width or html.height != height)
+    ):
         html.render(width, height)
     return to_formatted_text(HTML(data, width=width, base=path))
 

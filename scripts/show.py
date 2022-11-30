@@ -1,6 +1,6 @@
 """A application to show files on the command line."""
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from prompt_toolkit.application.current import set_app
 
@@ -10,7 +10,7 @@ from euporie.core.convert.base import convert, get_format
 if TYPE_CHECKING:
     from typing import Any, Callable, Optional
 
-    from prompt_toolkit.application.base import _AppResult
+    from prompt_toolkit.application.application import _AppResult
 
 
 class ShowApp(BaseApp):
@@ -50,6 +50,7 @@ class ShowApp(BaseApp):
                     ),
                     style=self.create_merged_style(),
                 )
+        return cast("_AppResult", None)
 
 
 if __name__ == "__main__":
