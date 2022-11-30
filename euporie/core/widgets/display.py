@@ -306,6 +306,7 @@ class DisplayWindow(Window):
             erase_bg,
         )
         # Set the horizontal scroll offset on the render info
+        # TODO - fix this upstream
         if self.render_info:
             setattr(self.render_info, "horizontal_scroll", self.horizontal_scroll)
 
@@ -326,10 +327,7 @@ class DisplayWindow(Window):
         info = self.render_info
         if info is None:
             return
-        horizontal_scroll = getattr(
-            self.render_info, "horizontal_scroll", 0
-        )  # noqa B009
-        if horizontal_scroll > 0:
+        if self.horizontal_scroll > 0:
             if (
                 info.cursor_position.x
                 >= info.window_width - 1 - info.configured_scroll_offsets.left
