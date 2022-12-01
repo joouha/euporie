@@ -11,6 +11,18 @@ Upcoming
 Fixed
 =====
 
+- Second attempt to fix cell output left scroll issue
+
+----
+
+*******************
+v2.1.5 (2022-12-01)
+*******************
+
+Fixed
+=====
+
+- Attempt fix for cell output left scroll issue
 - Prevent ``background_tasks`` error with ``prompt_toolkit==3.0.30``
 - Prevent error when adding a cell during initial render
 

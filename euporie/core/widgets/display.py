@@ -307,7 +307,7 @@ class DisplayWindow(Window):
         )
         # Set the horizontal scroll offset on the render info
         # TODO - fix this upstream
-        if self.render_info:
+        if self.render_info is not None:
             setattr(self.render_info, "horizontal_scroll", self.horizontal_scroll)
 
     def _scroll_right(self) -> None:
@@ -319,7 +319,6 @@ class DisplayWindow(Window):
         if self.horizontal_scroll < content_width - info.window_width:
             if info.cursor_position.y <= info.configured_scroll_offsets.right:
                 self.content.move_cursor_right()
-
             self.horizontal_scroll += 1
 
     def _scroll_left(self) -> None:
@@ -327,13 +326,11 @@ class DisplayWindow(Window):
         info = self.render_info
         if info is None:
             return
-        if self.horizontal_scroll > 0:
-            if (
-                info.cursor_position.x
-                >= info.window_width - 1 - info.configured_scroll_offsets.left
-            ):
-                self.content.move_cursor_left()
-
+        horizontal_scroll = getattr(
+            self.render_info, "horizontal_scroll", 0
+        )  # noqa B009
+        if horizontal_scroll > 0:
+            self.content.move_cursor_left()
             self.horizontal_scroll -= 1
 
 

@@ -147,7 +147,8 @@ class ChildRenderInfo:
             screen.visible_windows_to_write_positions[win] = new_wp
 
             # Modify render info
-            if win.render_info is not None:
+            win_render_info = win.render_info
+            if win_render_info is not None:
                 info = self.win_render_infos.setdefault(win, win.render_info)
                 # info.visible_line_to_row_col = {
                 # line: (y + info._y_offset, new_wp.xpos + info._x_offset)
@@ -172,6 +173,13 @@ class ChildRenderInfo:
                     y_offset=info._y_offset + top,
                     wrap_lines=info.wrap_lines,
                 )
+                # Set horizontal scroll offset - TODO - fix this upstream
+                if (
+                    horizontal_scroll := getattr(
+                        win_render_info, "horizontal_scroll", None
+                    )
+                ) is not None:
+                    setattr(win.render_info, "horizontal_scroll", horizontal_scroll)
 
         mouse_handler_wrappers: "dict[MouseHandler, MouseHandler]" = {}
 
