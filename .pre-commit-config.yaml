@@ -8,68 +8,62 @@ repos:
     hooks:
       - id: fix-byte-order-marker
         name: Fix Byte Order Marker
-        entry: fix-byte-order-marker
+        entry: hatch run check:fix-byte-order-marker
         language: system
         types: [text]
       - id: check-added-large-files
         name: Check for added large files
-        entry: check-added-large-files
+        entry: hatch run check:check-added-large-files
         language: system
       - id: check-toml
         name: Check Toml
-        entry: check-toml
+        entry: hatch run check:check-toml
         language: system
         types: [toml]
       - id: check-yaml
         name: Check Yaml
-        entry: check-yaml
+        entry: hatch run check:check-yaml
         language: system
         types: [yaml]
       - id: trailing-whitespace
         name: Trim Trailing Whitespace
-        entry: trailing-whitespace-fixer
+        entry: hatch run check:trailing-whitespace-fixer
         language: system
         types: [text]
         stages: [commit, push, manual]
       - id: end-of-file-fixer
         name: Fix End of Files
-        entry: end-of-file-fixer
+        entry: hatch run check:end-of-file-fixer
         language: system
         types: [text]
         stages: [commit, push, manual]
       - id: ssort
         name: ssort
-        entry: poetry run ssort
+        entry: hatch run check:ssort
         language: system
         types: [python]
         require_serial: true
       - id: black
         name: black
-        entry: black
+        entry: hatch run check:black
         language: system
         types: [python]
         require_serial: true
-      - id: isort
-        name: isort
-        entry: poetry run isort
-        args: ["--profile", "black", "--filter-files"]
+      - id: ruff
+        name: ruff
+        entry: hatch run check:ruff
+        args: ["--fix"]
         language: system
         types: [python]
+        require_serial: true
       - id: codespell
         name: codespell
         description: Checks for common misspellings in text files.
-        entry: codespell
+        entry: hatch run check:codespell
         language: system
         types: [text]
-      - id: flake8
-        name: flake8
-        entry: flake8
-        language: system
-        types: [python]
-        require_serial: true
-      - id: pytest-check
-        name: pytest-check
-        entry: pytest
+      - id: tests
+        name: tests
+        entry: hatch run test:run
         language: system
         pass_filenames: false
-        always_run: true

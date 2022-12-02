@@ -1,138 +1,210 @@
-[tool.poetry]
+[build-system]
+requires = ["hatchling", "hatch-regex-commit"]
+build-backend = "hatchling.build"
+
+[project]
 name = "euporie"
-version = "2.1.5"
-description = "Euporie is a suite of terminal applications for interacting with Jupyter kernels"
-authors = ["Josiah Outram Halstead <josiah@halstead.email>"]
-license = "MIT"
+description = 'Euporie is a suite of terminal applications for interacting with Jupyter kernels'
 readme = "README.rst"
-homepage = "https://github.com/joouha/euporie"
-documentation = "https://euporie.readthedocs.io/en/latest"
-keywords = ["jupyter", "ipython", "markdown", "terminal", "notebook"]
+requires-python = ">=3.8"
+# license = "MIT"
+keywords = ["euporie", "jupyter", "ipython", "markdown", "terminal", "notebook"]
+authors = [
+  { name = "Josiah Outram Halstead", email = "josiah@halstead.email" },
+]
+dynamic = ["version"]
 classifiers = [
-    "Development Status :: 4 - Beta",
-    "Environment :: Console",
-    "Framework :: Jupyter",
-    "Topic :: Scientific/Engineering",
-    "Programming Language :: Python :: 3.8",
+  "Development Status :: 4 - Beta",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: Implementation :: CPython",
+  "Programming Language :: Python :: Implementation :: PyPy",
+  "Environment :: Console",
+  "Framework :: Jupyter",
+  "Topic :: Scientific/Engineering",
+]
+dependencies = [
+  "prompt-toolkit~=3.0.27",
+  "Pygments~=2.11.2",
+  "nbformat~=5.0",
+  "jupyter_client~=7.1",
+  "aenum~=3.1",
+  "typing-extensions~=4.2.0",
+  "fastjsonschema~=2.15.3",
+  "appdirs~=1.4",
+  "pyperclip~=1.8",
+  "imagesize~=1.3.0",
+  "markdown-it-py~=2.1.0",
+  "linkify-it-py~=1.0",
+  "mdit-py-plugins~=0.3.0",
+  "flatlatex~=0.15",
+  "timg~=1.1",
+  "Pillow~=9.0",
+  "universal-pathlib~=0.0.19",
+  "fsspec[http]>=2022.8.0",
 ]
 
-[tool.poetry.urls]
-"Changelog" = "https://euporie.readthedocs.io/en/latest/pages/changelog.html"
-"Bug Tracker" = "https://github.com/joouha/euporie/issues"
+[project.optional-dependencies]
+hub = [
+  "asyncssh~=2.10.1",
+]
+format = [
+  "black>=19.3.b0",
+  "isort~=5.10.1",
+  "ssort~=0.11.6",
+]
 
-[tool.poetry.plugins."euporie.apps"]
-"launch" = "euporie.core.launch:CoreApp"
-"console" = "euporie.console.app:ConsoleApp"
-"notebook" = "euporie.notebook.app:NotebookApp"
-"preview" = "euporie.preview.app:PreviewApp"
-"hub" = "euporie.hub.app:HubApp"
+[project.urls]
+Documentation = "https://euporie.readthedocs.io/en/latest"
+Issues = "https://github.com/unknown/euporie/issues"
+Source = "https://github.com/unknown/euporie"
+Changelog = "https://euporie.readthedocs.io/en/latest/pages/changelog.html"
 
-[tool.poetry.plugins."pygments.lexers"]
+[project.scripts]
+euporie = "euporie.core.__main__:main"
+euporie-console = "euporie.console.__main__:main"
+euporie-notebook = "euporie.notebook.__main__:main"
+euporie-preview = "euporie.preview.__main__:main"
+euporie-hub = "euporie.hub.__main__:main"
+
+[project.entry-points."euporie.apps"]
+launch = "euporie.core.launch:CoreApp"
+console = "euporie.console.app:ConsoleApp"
+notebook = "euporie.notebook.app:NotebookApp"
+preview = "euporie.preview.app:PreviewApp"
+hub = "euporie.hub.app:HubApp"
+
+[project.entry-points."pygments.lexers"]
 argparse = 'euporie.core.pygments:ArgparseLexer'
 
-[tool.poetry.plugins."pygments.styles"]
+[project.entry-points."pygments.styles"]
 euporie = 'euporie.core.pygments:EuporiePygmentsStyle'
 
-[tool.poetry.scripts]
-euporie = 'euporie.core.__main__:main'
-euporie-console = 'euporie.console.__main__:main'
-euporie-notebook = 'euporie.notebook.__main__:main'
-euporie-preview = 'euporie.preview.__main__:main'
-euporie-hub = 'euporie.hub.__main__:main'
 
-[tool.poetry.dependencies]
-python = "^3.8"
-prompt-toolkit = "^3.0.27"
-Pygments = "^2.11.2"
-nbformat = "^5"
-jupyter-client = "^7.1"
-aenum = "^3.1"
-typing-extensions = "^4.2.0"
-fastjsonschema = "^2.15.3"
-appdirs = "^1.4"
-pyperclip = "^1.8"
-imagesize = "^1.3.0"
-markdown-it-py = {extras = ["linkify"], version = "^2.1.0"}
-linkify-it-py = "^1"
-mdit-py-plugins = "^0.3.0"
-flatlatex = "~0.15"
-timg = "^1.1"
-Pillow = "^9.0"
-universal-pathlib = "~0.0.19"
-asyncssh = {version = "^2.10.1", optional = true}
-black = {version = ">=19.3b0", optional = true}
-isort = {version = "^5.10.1", optional = true}
-ssort = {version = "^0.11.6", optional = true}
-mtable = {version = "^0.1", optional = true}
-CairoSVG = {version = "^2.5", optional = true}
-html5lib = {version = "^1.1", optional = true}
-sympy = {version = "^1.9", optional = true}
-antlr4-python3-runtime = {version = "^4.9", optional = true}
-img2unicode = {version = "^0.1a8", optional = true}
-fsspec = {extras = ["http"], version = "^2022.8.0"}
+[tool.hatch.version]
+source = "regex_commit"
+path = "euporie/core/__init__.py"
 
-[tool.poetry.extras]
-all = ["black", "isort", "ssort", "CairoSVG", "asyncssh"]
-hub = ["asyncssh"]
-formatters = ["black", "isort", "ssort"]
-svg-cairosvg = ["CairoSVG"]
-latex-sympy = ["sympy", "antlr4-python3-runtime"]
-html-mtable = ["mtable", "html5lib"]
-images-img2unicode = ["img2unicode"]
+[tool.hatch.build]
+packages = ["euporie"]
 
-[tool.poetry.dev-dependencies]
-isort = "^5.8.0"
-flake8 = "^4.0.1"
-poetry-publish = "^0.5.0"
-flake8-black = "^0.3.2"
-flake8-bugbear = "^22.3.23"
-flake8-bandit = "^3.0.0"
-flake8-annotations = "^2.6.2"
-flake8-docstrings = "^1.6.0"
-flake8-isort = "^4.0.0"
-darglint = "^1.8.0"
-nox-poetry = "^0.9.0"
-Sphinx = "^4.4.0"
-sphinx-autobuild = "^2021.3.14"
-sphinx-rtd-theme = "^1.0.0"
-furo = "^2022.3.4"
-black = "^22.1.0"
-ssort = "^0.11.0"
-flake8-comprehensions = "^3.8.0"
-sphinx-argparse-cli = "^1.8.3"
-sphinxext-opengraph = "^0.6.2"
-sphinx-copybutton = "^0.5.0"
-codespell = "^2.1.0"
-pytest = "^7.1.1"
-mypy = "^0.942"
-rich = "^12.2.0"
-sphinx_design = "^0.2.0"
-html2text = "^2020.1.16"
+[tool.hatch.envs.default]
+dev-mode = true
+features = [
+  "hub",
+  "format",
+]
 
-[tool.isort]
-profile = "black"
-multi_line_output = 3
+[tool.hatch.envs.multi]
+[[tool.hatch.envs.multi.matrix]]
+python = ["3.8", "3.9", "3.10", "3.11", "pypy3"]
 
-[build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
+[tool.hatch.envs.check]
+description = "Check and lint the codebase."
+detached = true
+dependencies = [
+  "pre-commit",
+  "ssort",
+  "black",
+  "ruff",
+  "codespell", "tomli",
+]
+
+[tool.hatch.envs.check.scripts]
+check = [
+    "ssort --check {args:euporie tests scripts}",
+    "black --check {args:euporie tests scripts}",
+    "codespell {args:euporie tests scripts}",
+    "ruff {args:euporie tests scripts}",
+]
+fix = [
+    "ssort {args:euporie tests scripts}",
+    "black {args:euporie tests scripts}",
+    "codespell {args:-- euporie tests scripts}",
+    "ruff --fix {args:euporie tests scripts}",
+]
+
+[tool.hatch.envs.type]
+description = "Type check the codebase."
+dependencies = [
+  "mypy",
+  # Dependencies
+  "types-appdirs", "importlib_metadata", "types-Pillow",
+  # Optional dependencies
+  "rich", "black", "isort", "ssort", "ipython",
+  # Non-dependencies
+  "html2text", "sympy"
+]
+
+[tool.hatch.envs.type.scripts]
+run = "mypy {args:--namespace-packages -p euporie -p tests -p scripts}"
+
+[tool.hatch.envs.test]
+description = "Run tests."
+detached = false
+dependencies = [
+  "pytest",
+  # Optional non-dependencies
+  "html2text"
+]
+[[tool.hatch.envs.test.matrix]]
+python = ["3.8", "3.9", "3.10", "3.11", "pypy3"]
+
+[tool.hatch.envs.test.scripts]
+run = "pytest {args}"
+cov = "coverage run --parallel -m pytest {args}"
+
+[tool.hatch.envs.docs]
+description = "Build documentation."
+dependencies = [
+  "Sphinx~=4.4.0",
+  "sphinx-autobuild~=2021.3.14",
+  "sphinx-rtd-theme~=1.0.0",
+  "sphinx-argparse-cli~=1.8.3",
+  "sphinxext-opengraph~=0.6.2",
+  "sphinx-copybutton~=0.5.0",
+  "sphinx-design~=0.2.0",
+]
+[tool.hatch.envs.docs.scripts]
+build = "sphinx-build docs docs/_build/html"
+serve = "python -m http.server --directory docs/_build/html/"
+autobuild = "sphinx-autobuild docs docs/_build/html"
+
+[tool.ruff]
+line-length = 88
+select = ["ANN", "B", "C", "D", "E", "F", "I", "Q", "S", "T", "U"]
+ignore = [
+    # Annotations on `self` and `cls`
+    "ANN101", "ANN102",
+    # Function too complex
+    "C901",
+    # Use of assert
+    "S101",
+    # Line to long
+    "E501",
+    # Google style docstrings
+    "D203", "D204", "D213", "D215", "D400", "D404", "D406", "D407", "D408", "D409", "D413",
+    # Allow empty functions in ABCs
+    "B027",
+]
+
+[tool.codespell]
+ignore-words-list = "iterm"
+skip = "euporie/core/reference.py,.*"
+
 
 [tool.mypy]
-pretty = true
-show_error_context = true
+# pretty = true
 show_error_codes = true
 
 [[tool.mypy.overrides]]
 module = [
-    "_frozen_importlib",
-    "upath", "aenum", "pygments.*", "fastjsonschema", "appdirs", "pyperclip", "asyncssh",
-    "ipykernel",
-    "mtable",
-    "imagesize", "PIL","timg", "img2unicode", "teimpy", "numpy",
-    "flatlatex", "sympy.*", "pylatexenc.latex2text", "IPython.lib.latextools",
-    "cairosvg",
-    "ssort",
-    "poetry_publish.publish",
-    "bs4",
+  "_frozen_importlib", "ipykernel", "fastjsonschema",
+  "pyperclip", "upath.*", "timg", "pylatexenc.*", "aenum", "pygments.*",
+  "ssort",
+  "flatlatex", "timg", "img2unicode", "cairosvg", "teimpy", "IPython.*", "numpy", "mtable", "imagesize",
 ]
 ignore_missing_imports = true
