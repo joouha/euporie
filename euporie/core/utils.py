@@ -59,7 +59,7 @@ def parse_path(path: "Optional[Union[str, PathLike]]") -> "Optional[UPath]":
         pass
     try:
         upath = upath.resolve()
-    except AttributeError:
+    except (AttributeError, NotImplementedError):
         pass
     return upath
 
