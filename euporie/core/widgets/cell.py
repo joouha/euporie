@@ -262,7 +262,7 @@ class Cell:
             """Respond to cursor movements."""
             # Update contextual help
             if weak_self.kernel_tab.app.config.autoinspect and weak_self.is_code():
-                weak_self.kernel_tab.inspect()
+                weak_self.input_box.inspect()
             else:
                 if pager := get_app().pager:
                     pager.hide()

@@ -11,6 +11,7 @@ Upcoming
 Fixed
 =====
 
+- Fix automatic contextual help
 - Second attempt to fix cell output left scroll issue
 
 ----
