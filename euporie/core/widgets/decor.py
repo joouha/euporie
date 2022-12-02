@@ -10,6 +10,8 @@ from prompt_toolkit.layout.containers import (
     ConditionalContainer,
     Container,
     DynamicContainer,
+    Float,
+    FloatContainer,
     HSplit,
     VSplit,
     Window,
@@ -19,7 +21,9 @@ from prompt_toolkit.layout.dimension import Dimension
 from prompt_toolkit.layout.mouse_handlers import MouseHandlers
 from prompt_toolkit.layout.screen import Char, Screen, WritePosition
 
+from euporie.core.app import get_app
 from euporie.core.border import BorderVisibility, Thin
+from euporie.core.config import add_setting
 
 if TYPE_CHECKING:
     from typing import Callable, Optional, Union
@@ -410,3 +414,64 @@ class FocusedStyle(Container):
     def get_children(self) -> "list[Container]":
         """Return the list of child :class:`.Container` objects."""
         return [to_container(self.body)]
+
+
+class Shadow:
+    """Draw a shadow underneath/behind this container.
+
+    This is a globally configurable version of the
+    :py:class:`prompt_toolkit.widows.base.Shadow` class.
+    """
+
+    def __init__(self, body: "AnyContainer") -> "None":
+        """Initialize a new drop-shadow container.
+
+        Args:
+            body: Another container object.
+        """
+        filter_ = get_app().config.filter("show_shadows")
+        shadow = FloatContainer(
+            content=body,
+            floats=[
+                Float(
+                    bottom=-1,
+                    height=1,
+                    left=1,
+                    right=-1,
+                    transparent=True,
+                    content=Window(style="class:shadow"),
+                ),
+                Float(
+                    bottom=-1,
+                    top=1,
+                    width=1,
+                    right=-1,
+                    transparent=True,
+                    content=Window(style="class:shadow"),
+                ),
+            ],
+        )
+
+        def get_contents() -> "AnyContainer":
+            if filter_():
+                return shadow
+            else:
+                return body
+
+        self.container = DynamicContainer(get_contents)
+
+    def __pt_container__(self) -> "AnyContainer":
+        return self.container
+
+    # ################################### Settings ####################################
+
+    add_setting(
+        name="show_shadows",
+        flags=["--show-shadows"],
+        type_=bool,
+        help_="Show or hide shadows under menus and dialogs",
+        default=True,
+        description="""
+            Sets whether shadows are shown under dialogs and popup-menus.
+        """,
+    )

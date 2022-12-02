@@ -42,13 +42,13 @@ from prompt_toolkit.layout.utils import explode_text_fragments
 from prompt_toolkit.mouse_events import MouseButton, MouseEvent, MouseEventType
 from prompt_toolkit.utils import Event
 from prompt_toolkit.validation import Validator
-from prompt_toolkit.widgets.base import Box, Shadow, TextArea
+from prompt_toolkit.widgets.base import Box, TextArea
 
 from euporie.core.app import get_app
 from euporie.core.border import BorderVisibility, InnerEdgeGridStyle
 from euporie.core.formatted_text.utils import FormattedTextAlign, align
 from euporie.core.margins import ScrollbarMargin
-from euporie.core.widgets.decor import Border
+from euporie.core.widgets.decor import Border, Shadow
 from euporie.core.widgets.layout import ConditionalSplit
 
 if TYPE_CHECKING:

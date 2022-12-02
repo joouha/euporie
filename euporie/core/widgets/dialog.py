@@ -29,7 +29,7 @@ from prompt_toolkit.layout.controls import FormattedTextControl, UIContent, UICo
 from prompt_toolkit.layout.dimension import Dimension
 from prompt_toolkit.layout.screen import WritePosition
 from prompt_toolkit.mouse_events import MouseButton, MouseEventType
-from prompt_toolkit.widgets.base import Box, Label, Shadow
+from prompt_toolkit.widgets.base import Box, Label
 
 from euporie.core.border import HalfBlockOuterGridStyle
 from euporie.core.commands import add_cmd
@@ -37,7 +37,7 @@ from euporie.core.filters import tab_has_focus
 from euporie.core.formatted_text.utils import FormattedTextAlign, align, lex
 from euporie.core.key_binding.registry import register_bindings
 from euporie.core.tabs.base import Tab
-from euporie.core.widgets.decor import Border, FocusedStyle
+from euporie.core.widgets.decor import Border, FocusedStyle, Shadow
 from euporie.core.widgets.forms import Button, Select, Text
 
 if TYPE_CHECKING:

@@ -24,10 +24,10 @@ from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.layout.utils import explode_text_fragments
 from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
 from prompt_toolkit.utils import get_cwidth
-from prompt_toolkit.widgets.base import Shadow
 
 from euporie.core.app import get_app
 from euporie.core.border import HalfBlockOuterGridStyle
+from euporie.core.widgets.decor import Shadow
 
 if TYPE_CHECKING:
     from typing import Any, Callable, Iterable, Optional, Sequence

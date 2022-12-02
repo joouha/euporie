@@ -53,7 +53,6 @@ from prompt_toolkit.styles import (
     merge_styles,
     style_from_pygments_cls,
 )
-from prompt_toolkit.widgets.base import Shadow
 from pygments.styles import STYLE_MAP as pygments_styles
 from pygments.styles import get_style_by_name
 from pyperclip import determine_clipboard
@@ -85,6 +84,7 @@ from euporie.core.style import (
 )
 from euporie.core.terminal import TerminalInfo
 from euporie.core.utils import ChainedList, parse_path
+from euporie.core.widgets.decor import Shadow
 
 if TYPE_CHECKING:
     from asyncio import AbstractEventLoop
@@ -231,7 +231,6 @@ class BaseApp(Application):
                 **kwargs,
             }
         )
-
         # Use custom renderer
         self.renderer = Renderer(
             self._merged_style,
@@ -256,18 +255,7 @@ class BaseApp(Application):
         self.leave_graphics = to_filter(leave_graphics)
         self.graphics: "WeakSet[Float]" = WeakSet()
         self.dialogs: "dict[str, Dialog]" = {}
-        self.menus: "dict[str, Float]" = {
-            "completions": Float(
-                content=Shadow(
-                    CompletionsMenu(
-                        max_height=16,
-                        scroll_offset=1,
-                    )
-                ),
-                xcursor=True,
-                ycursor=True,
-            )
-        }
+        self.menus: "dict[str, Float]" = {}
         self.floats = ChainedList(
             self.graphics,
             self.dialogs.values(),
@@ -298,12 +286,11 @@ class BaseApp(Application):
         self.redrawing = Condition(lambda: self._redrawing)
         # Add an optional pager
         self.pager: "Optional[Pager]" = None
-
+        # Stores the initially focused element
         self.focused_element: "Optional[FocusableElement]" = None
-
+        # Set the terminal title
         self.set_title = to_filter(set_title)
         self.title = title or self.__class__.__name__
-
         # Register config hooks
         self.config.get_item("edit_mode").event += self.update_edit_mode
         self.config.get_item("syntax_theme").event += self.update_style
@@ -314,12 +301,11 @@ class BaseApp(Application):
         self.config.get_item("color_depth").event += lambda x: setattr(
             self, "_color_depth", _COLOR_DEPTHS[x.value]
         )
-
+        # Set up the color palette
         self.color_palette = ColorPalette()
         self.color_palette.add_color("fg", "#ffffff", "default")
         self.color_palette.add_color("bg", "#000000", "default")
-
-        # Set to a write position to limit mouse events to a particular region
+        # Set up a write position to limit mouse events to a particular region
         self.mouse_limits: "Optional[WritePosition]" = None
         self.mouse_position = Point(0, 0)
 
@@ -366,6 +352,18 @@ class BaseApp(Application):
         self.update_style()
         self.term_info.colors.event += self.update_style
         self.pause_rendering()
+        # Load completions menu. This must be done after the app is initialized, because
+        # :py:func:`get_app` is needed to access the config
+        self.menus["completions"] = Float(
+            content=Shadow(
+                CompletionsMenu(
+                    max_height=16,
+                    scroll_offset=1,
+                )
+            ),
+            xcursor=True,
+            ycursor=True,
+        )
 
         def terminal_ready() -> "None":
             """Commands here depend on the result of terminal queries."""
