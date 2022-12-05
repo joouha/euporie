@@ -4,14 +4,19 @@ Changelog
 
 Notable changes to this project will be documented in this file.
 
-********
-Upcoming
-********
+*******************
+v2.1.5 (2022-12-01)
+*******************
 
 Added
 =====
 
 - Make drop-shadows configurable
+
+Changed
+=======
+
+- Changed to hatch for package build system
 
 Fixed
 =====
