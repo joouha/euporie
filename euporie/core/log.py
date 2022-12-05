@@ -411,7 +411,7 @@ def handle_exception(
     Args:
         exc_type: The type of the exception
         exc_value: The exception instance
-        exc_traceback: The assiciated traceback
+        exc_traceback: The associated traceback
     """
     # Check the exception is not a keyboard interrupt (Ctrl+C) - if so, so not log it
     if issubclass(exc_type, KeyboardInterrupt):

@@ -35,7 +35,7 @@ class HistoryAutoSuggest(AutoSuggest):
 
     def get_suggestion(
         self, buffer: "Buffer", document: "Document"
-    ) -> Optional[Suggestion]:
+    ) -> Suggestion | None:
         """Get a line completion suggestion."""
         result: "Optional[Suggestion]" = None
         line = document.current_line.lstrip()
@@ -99,7 +99,7 @@ class KernelAutoSuggest(AutoSuggest):
 
     def get_suggestion(
         self, buffer: "Buffer", document: "Document"
-    ) -> Optional[Suggestion]:
+    ) -> Suggestion | None:
         """Does nothing."""
         return None
 

@@ -13,9 +13,8 @@ from prompt_toolkit.layout.containers import Container, Window
 from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.layout.dimension import Dimension
 from prompt_toolkit.layout.margins import Margin
-from prompt_toolkit.mouse_events import MouseButton
+from prompt_toolkit.mouse_events import MouseButton, MouseEventType
 from prompt_toolkit.mouse_events import MouseEvent as PtkMouseEvent
-from prompt_toolkit.mouse_events import MouseEventType
 
 from euporie.core.current import get_app
 from euporie.core.key_binding.bindings.mouse import MouseEvent, RelativePosition
@@ -92,7 +91,7 @@ class MarginContainer(Window):
         write_position: "WritePosition",
         parent_style: str,
         erase_bg: bool,
-        z_index: Optional[int],
+        z_index: int | None,
     ) -> None:
         """Write the actual content to the screen."""
         self.write_position = write_position
@@ -465,7 +464,7 @@ class ScrollbarMargin(ClickableMargin):
                     func = render_info.window._scroll_up
                 elif offset > 0:
                     func = render_info.window._scroll_down
-                if func:
+                if func is not None:
                     # Scroll the window multiple times to scroll by the offset
                     for _ in range(abs(int(offset))):
                         func()

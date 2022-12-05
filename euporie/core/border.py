@@ -1,4 +1,4 @@
-"""Defines border styles."""
+r"""Defines border styles."""
 
 from __future__ import annotations
 
@@ -578,7 +578,9 @@ class GridStyle:
         SPLIT: "str"
         RIGHT: "str"
 
-    def __init__(self, line_style: "LineStyle" = Invisible, mask: "Mask" = Masks.grid):
+    def __init__(
+        self, line_style: "LineStyle" = Invisible, mask: "Mask" = Masks.grid
+    ) -> "None":
         """Creates a new :py:class:`GridStyle` instance.
 
         Args:

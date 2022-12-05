@@ -14,6 +14,7 @@ APP_ALIASES = {
 class CoreApp:
     """Launch a euporie application."""
 
+    name = "launch"
     config = Config()
 
     @classmethod

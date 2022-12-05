@@ -180,7 +180,7 @@ class ClickToFocus(Container):
                     return NotImplemented
 
                 # Set a flag on this handler so we won't re-wrap it
-                setattr(wrapped_mouse_handler, "wrapped", True)
+                setattr(wrapped_mouse_handler, "wrapped", True)  # noqa B010
                 mouse_handler_wrappers[handler] = wrapped_mouse_handler
                 return wrapped_mouse_handler
 
@@ -208,7 +208,9 @@ class Cell:
 
     input_box: "KernelInput"
 
-    def __init__(self, index: "int", json: "dict", kernel_tab: "BaseNotebook"):
+    def __init__(
+        self, index: "int", json: "dict", kernel_tab: "BaseNotebook"
+    ) -> "None":
         """Initiate the cell element.
 
         Args:
@@ -687,7 +689,7 @@ class Cell:
         if now:
             get_app().invalidate()
 
-    def ran(self, content: "dict" = None) -> "None":
+    def ran(self, content: "dict|None" = None) -> "None":
         """Callback which runs when the cell has finished running."""
         self.state = "idle"
         self.refresh()

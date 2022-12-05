@@ -54,7 +54,7 @@ class PreviewNotebook(BaseNotebook):
         # If we are running the notebook, pause rendering util the kernel has started
         if self.app.config.run:
             self.app.pause_rendering()
-            self.kernel.start(self.kernel_started, wait=True)
+            self.kernel.start(cb=self.kernel_started, wait=True)
 
         # Filter the cells to be shown
         n_cells = len(self.json["cells"]) - 1
@@ -109,7 +109,7 @@ class PreviewNotebook(BaseNotebook):
             self.app.close_tab(self)
 
         elif self.app.config.run:
-            cell = self.cell()
+            cell = self.cell
             cell.run_or_render(wait=True)
             # self.kernel.wait_for_status("idle")
 
@@ -128,6 +128,7 @@ class PreviewNotebook(BaseNotebook):
         else:
             return Cell(0, {}, self)
 
+    @property
     def cell(self) -> "Cell":
         """Return the current cell."""
         return self.cells[(self.cell_index,)]
@@ -142,7 +143,7 @@ class PreviewNotebook(BaseNotebook):
                             Window(), filter=~self.app.config.filter("expand")
                         ),
                         Box(
-                            body=DynamicContainer(lambda: self.cell()),
+                            body=DynamicContainer(lambda: self.cell),
                             padding=0,
                             width=Dimension(
                                 preferred=self.app.config.max_notebook_width

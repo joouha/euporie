@@ -59,7 +59,7 @@ class CellOutputElement(metaclass=ABCMeta):
             parent: The cell the output-element is attached to
 
         """
-        ...
+        pass
 
     def scroll_left(self) -> "None":
         """Scrolls the output left."""
@@ -137,6 +137,7 @@ class CellOutputDataElement(CellOutputElement):
 
     @data.setter
     def data(self, value: "Any") -> "None":
+        """Set the cell output's data."""
         self._data = value
         self.container.data = value
 
@@ -356,7 +357,7 @@ class CellOutput:
         """Get the element for the currently selected mime type."""
         return self.get_element(self.selected_mime)
 
-    def __pt_container__(self):
+    def __pt_container__(self) -> "AnyContainer":
         """Return the cell output container (an :class:`OutputElement`)."""
         return DynamicContainer(lambda: self.element)
 
@@ -406,6 +407,7 @@ class CellOutputArea:
 
     @json.setter
     def json(self, value: "Any") -> "None":
+        """Set the cell output area JSON data."""
         # Reset if we have lost existing outputs
         if any(old_output_json not in value for old_output_json in self._json):
             self.reset()

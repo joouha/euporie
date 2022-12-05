@@ -16,7 +16,7 @@ from euporie.core.convert.utils import call_subproc, commands_exist, have_module
 if TYPE_CHECKING:
     from typing import Any, Optional
 
-    from PIL import Image
+    from PIL.Image import Image as PilImage
     from rich.console import RenderableType
     from upath import UPath
 
@@ -132,7 +132,7 @@ def html_to_ansi_py_htmlparser(
     class HTMLStripper(HTMLParser):
         """Very basic HTML parser which strips style and script tags."""
 
-        def __init__(self):
+        def __init__(self) -> "None":
             super().__init__()
             self.reset()
             self.strict = False
@@ -240,7 +240,7 @@ def latex_to_ansi_py_sympy(
     filter_=have_modules("timg"),
 )
 def pil_to_ansi_py_timg(
-    data: "Image",
+    data: "PilImage",
     cols: "Optional[int]" = None,
     rows: "Optional[int]" = None,
     fg: "Optional[str]" = None,
@@ -266,7 +266,7 @@ def pil_to_ansi_py_timg(
     filter_=have_modules("img2unicode"),
 )
 def pil_to_ansi_py_img2unicode(
-    data: "Image",
+    data: "PilImage",
     cols: "Optional[int]" = None,
     rows: "Optional[int]" = None,
     fg: "Optional[str]" = None,

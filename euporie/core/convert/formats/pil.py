@@ -11,13 +11,13 @@ from euporie.core.convert.utils import have_modules
 if TYPE_CHECKING:
     from typing import Optional
 
-    from PIL import Image
+    from PIL.Image import Image as PilImage
     from upath import UPath
 
 log = logging.getLogger(__name__)
 
 
-def set_background(image: "Image", bg_color: "Optional[str]" = None) -> "bytes":
+def set_background(image: "PilImage", bg_color: "Optional[str]" = None) -> "PilImage":
     """Removes the alpha channel from an image and set the background colour."""
     from PIL import Image
 
@@ -25,11 +25,11 @@ def set_background(image: "Image", bg_color: "Optional[str]" = None) -> "bytes":
         image.mode == "P" and "transparency" in image.info
     ):
         alpha = image.convert("RGBA").getchannel("A")
-        bg = Image.new("RGBA", image.size, bg_color)
+        bg = Image.new("RGBA", image.size, bg_color or "#000")
         bg.paste(image, mask=alpha)
         image = bg
-    image = image.convert("P", palette=Image.ADAPTIVE, colors=16).convert(
-        "RGB", palette=Image.ADAPTIVE, colors=16
+    image = image.convert("P", palette=Image.Palette.ADAPTIVE, colors=16).convert(
+        "RGB", palette=Image.Palette.ADAPTIVE, colors=16
     )
     return image
 
@@ -46,7 +46,7 @@ def png_to_pil_py(
     fg: "Optional[str]" = None,
     bg: "Optional[str]" = None,
     path: "Optional[UPath]" = None,
-) -> "Image":
+) -> "PilImage":
     """Convert PNG to a pillow image using :py:mod:`PIL`."""
     import io
 
@@ -56,5 +56,6 @@ def png_to_pil_py(
         image = Image.open(io.BytesIO(data))
     except IOError:
         log.error("Could not load image.")
+        return PilImage()
     else:
         return image

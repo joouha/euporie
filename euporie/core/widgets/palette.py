@@ -35,10 +35,10 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 
-_CommandMatch = NamedTuple(
-    "_CommandMatch",
-    [("length", int), ("position", int), ("command", Command)],
-)
+class _CommandMatch(NamedTuple):
+    length: int
+    position: int
+    command: Command
 
 
 class CommandMenuControl(UIControl):
@@ -225,7 +225,7 @@ class CommandPalette(Dialog):
         else:
             return ([], [])
 
-    def select(self, n: "int", event: "KeyPressEvent" = None) -> "None":
+    def select(self, n: "int", event: "KeyPressEvent|None" = None) -> "None":
         """Change the index of the selected command.
 
         Args:

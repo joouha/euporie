@@ -665,4 +665,5 @@ class MenuBar:
             return (["", ""], [])
 
     def __pt_container__(self) -> "Container":
+        """Return the menu bar container's content."""
         return self.window

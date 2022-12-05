@@ -14,7 +14,7 @@ from prompt_toolkit.renderer import Renderer as PtkRenderer
 from prompt_toolkit.renderer import _StyleStringHasStyleCache, _StyleStringToAttrsCache
 
 if TYPE_CHECKING:
-    from typing import Any, Callable, Dict, Optional, Tuple
+    from typing import Any, Callable, Optional, Tuple
 
     from prompt_toolkit.application import Application
     from prompt_toolkit.filters import FilterOrBool
@@ -113,7 +113,7 @@ def _output_screen_diff(
             write(char.char)
             last_style = char.style
 
-    def get_max_column_index(row: Dict[int, Char], zwe_row: Dict[int, str]) -> int:
+    def get_max_column_index(row: dict[int, Char], zwe_row: dict[int, str]) -> int:
         """Return max used column index, ignoring trailing unstyled whitespace."""
         return max(
             {

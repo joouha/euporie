@@ -461,6 +461,7 @@ class Shadow:
         self.container = DynamicContainer(get_contents)
 
     def __pt_container__(self) -> "AnyContainer":
+        """Return the container's content."""
         return self.container
 
     # ################################### Settings ####################################

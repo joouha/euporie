@@ -41,7 +41,7 @@ from euporie.core.widgets.forms import (
 from euporie.core.widgets.layout import AccordionSplit, ReferencedSplit, TabbedSplit
 
 if TYPE_CHECKING:
-    from typing import Any, Dict, Iterable, Optional, Sequence, Type, Union
+    from typing import Any, Iterable, Optional, Sequence, Type, Union
 
     from prompt_toolkit.buffer import Buffer
     from prompt_toolkit.formatted_text.base import AnyFormattedText
@@ -52,7 +52,7 @@ if TYPE_CHECKING:
     from euporie.core.widgets.forms import SelectableWidget, ToggleableWidget
     from euporie.core.widgets.layout import StackedSplit
 
-    JSONType = Union[str, int, float, bool, None, Dict[str, Any], Iterable[Any]]
+    JSONType = str | int | float | bool | None | dict[str, Any] | Iterable[Any]
 
 log = logging.getLogger(__name__)
 
@@ -137,7 +137,7 @@ class IpyWidgetComm(Comm, metaclass=ABCMeta):
         super().__init__(comm_container, comm_id, data, buffers)
         self.sync = True
 
-    def __init_subclass__(cls, **kwargs: "Any"):
+    def __init_subclass__(cls, **kwargs: "Any") -> "None":
         """Add ipywidget model classes to a registry when they are created."""
         super().__init_subclass__(**kwargs)
         if cls.__name__.endswith("Model"):
@@ -1277,8 +1277,8 @@ class ImageModel(IpyWidgetComm):
         display = Display(
             data=self.data["state"].get("value", b""),
             format_="png",
-            px=int(self.data["state"].get("width", 0)) or None,
-            py=int(self.data["state"].get("height", 0)) or None,
+            px=int(self.data["state"].get("width", 0)),
+            py=int(self.data["state"].get("height", 0)),
         )
         box = Box(
             display,

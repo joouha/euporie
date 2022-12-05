@@ -102,5 +102,4 @@ def test_multiple_css_selectors() -> "None":
     data = '<style>.a,.b{color:red}</style><i class="a">a</i><i class="b">b</i>'
     expected = [("class:html,i  fg:#ff0000", "a"), ("class:html,i  fg:#ff0000", "b")]
     result = to_formatted_text(HTML(data, width=2))
-    print(result.__repr__())
     assert result == expected

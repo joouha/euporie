@@ -13,7 +13,7 @@ from euporie.core.convert.utils import call_subproc, commands_exist, have_module
 if TYPE_CHECKING:
     from typing import Any, Optional
 
-    from PIL import Image
+    from PIL.Image import Image as PilImage
     from upath import UPath
 
 
@@ -61,7 +61,7 @@ register(
     filter_=have_modules("timg"),
 )
 def pil_to_sixel_py_timg(
-    data: "Image",
+    data: "PilImage",
     cols: "Optional[int]" = None,
     rows: "Optional[int]" = None,
     fg: "Optional[str]" = None,
@@ -80,7 +80,7 @@ def pil_to_sixel_py_timg(
     filter_=have_modules("teimpy", "numpy"),
 )
 def pil_to_sixel_py_teimpy(
-    data: "Image",
+    data: "PilImage",
     cols: "Optional[int]" = None,
     rows: "Optional[int]" = None,
     fg: "Optional[str]" = None,

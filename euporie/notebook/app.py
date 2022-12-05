@@ -75,6 +75,7 @@ class NotebookApp(BaseApp):
     notebooks in the terminal.
     """
 
+    name = "notebook"
     need_mouse_support = True
 
     def __init__(self, **kwargs: "Any") -> "None":
@@ -278,8 +279,8 @@ class NotebookApp(BaseApp):
         the chain.
 
         Args:
-            *args: Positional arguments
-            **kwargs: Key word arguments
+            args: Positional arguments
+            kwargs: Key word arguments
 
         """
         really_close = super().exit

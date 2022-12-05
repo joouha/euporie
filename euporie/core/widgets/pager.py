@@ -29,6 +29,7 @@ from euporie.core.widgets.display import Display
 if TYPE_CHECKING:
     from typing import Any, Optional
 
+    from prompt_toolkit.layout.containers import AnyContainer
     from prompt_toolkit.layout.dimension import AnyDimension
 
     from euporie.core.widgets.cell_outputs import CellOutputElement, OutputParent
@@ -36,10 +37,12 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 
-PagerState = NamedTuple(
-    "PagerState",
-    [("code", str), ("cursor_pos", int), ("response", dict)],
-)
+class PagerState(NamedTuple):
+    """A named tuple which describes the state of a pager."""
+
+    code: str
+    cursor_pos: int
+    response: dict
 
 
 class PagerOutputDataElement(CellOutputDataElement):
@@ -170,7 +173,7 @@ class Pager:
             self.output.json = new.response
             self.output.update()
 
-    def __pt_container__(self):
+    def __pt_container__(self) -> "AnyContainer":
         """Return the pager container."""
         return self.container
 

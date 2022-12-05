@@ -174,6 +174,7 @@ class TabBarControl(UIControl):
 
     @tabs.setter
     def tabs(self, tabs: "Sequence[TabBarTab]") -> "None":
+        """Set the tab bar's current tabs."""
         self._tabs = tabs
 
     @property
@@ -186,6 +187,7 @@ class TabBarControl(UIControl):
 
     @active.setter
     def active(self, active: "Union[int, Callable[[], int]]") -> "None":
+        """Set the currently active tab."""
         self._active = active
 
     def preferred_width(self, max_available_width: "int") -> "Optional[int]":

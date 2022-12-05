@@ -1,4 +1,5 @@
 """Contains the main Application class which runs euporie.core."""
+
 from __future__ import annotations
 
 import asyncio
@@ -89,17 +90,7 @@ from euporie.core.widgets.decor import Shadow
 if TYPE_CHECKING:
     from asyncio import AbstractEventLoop
     from os import PathLike
-    from typing import (
-        Any,
-        Callable,
-        Dict,
-        Literal,
-        Optional,
-        Sequence,
-        Tuple,
-        Type,
-        Union,
-    )
+    from typing import Any, Callable, Literal, Optional, Sequence, Type, Union
 
     from prompt_toolkit.clipboard import Clipboard
     from prompt_toolkit.contrib.ssh import PromptToolkitSSHSession
@@ -118,8 +109,8 @@ if TYPE_CHECKING:
     from euporie.core.widgets.pager import Pager
     from euporie.core.widgets.search_bar import SearchBar
 
-    StatusBarFields = Tuple[Sequence[AnyFormattedText], Sequence[AnyFormattedText]]
-    ContainerStatusDict = Dict[
+    StatusBarFields = tuple[Sequence[AnyFormattedText], Sequence[AnyFormattedText]]
+    ContainerStatusDict = dict[
         AnyContainer,
         Callable[[], StatusBarFields],
     ]
@@ -188,6 +179,7 @@ class BaseApp(Application):
     wide methods can be easily added.
     """
 
+    name: str
     config = Config()
     status_default: "StatusBarFields" = ([], [])
     need_mouse_support: "bool" = False
@@ -215,7 +207,7 @@ class BaseApp(Application):
                 beyond the height of the display
             extend_renderer_width: Whether the renderer width should be extended
                 beyond the height of the display
-            **kwargs: The key-word arguments for the :py:class:`Application`
+            kwargs: The key-word arguments for the :py:class:`Application`
 
         """
         self.loaded = False
@@ -340,7 +332,7 @@ class BaseApp(Application):
         if futures := self.renderer._waiting_for_cpr_futures:
             futures.pop()
 
-    def pre_run(self, app: "Application" = None) -> "None":
+    def pre_run(self, app: "Application|None" = None) -> "None":
         """Called during the 'pre-run' stage of application loading."""
         # Load key bindings
         self.load_key_bindings()
@@ -435,11 +427,7 @@ class BaseApp(Application):
 
         # Use a custom vt100 parser to allow querying the terminal
         if parser := getattr(input_, "vt100_parser", None):
-            setattr(
-                input_,
-                "vt100_parser",
-                Vt100Parser(parser.feed_key_callback),
-            )
+            input_.vt100_parser = Vt100Parser(parser.feed_key_callback)  # noqa B010
 
         return input_
 
@@ -756,7 +744,7 @@ class BaseApp(Application):
             to_container(tab).reset()
 
     def _create_merged_style(
-        self, include_default_pygments_style: "Filter" = None
+        self, include_default_pygments_style: "Filter|None" = None
     ) -> "BaseStyle":
         """Block default style loading."""
         return DummyStyle()
@@ -820,6 +808,20 @@ class BaseApp(Application):
         exception = context.get("exception")
         # Log observed exceptions to the log
         log.exception("An unhandled exception occurred", exc_info=exception)
+
+    # async def cancel_and_wait_for_background_tasks(self) -> "None":
+    # """Cancel background tasks, ignoring exceptions."""
+    # # try:
+    # # await super().cancel_and_wait_for_background_tasks()
+    # # except ValueError as e:
+    # # for task in self._background_tasks:
+    # # print(task)
+    # # raise e
+    #
+    # for task in self._background_tasks:
+    # print(task)
+    # print(task.get_loop())
+    # await asyncio.wait([task])
 
     # ################################### Commands ####################################
 

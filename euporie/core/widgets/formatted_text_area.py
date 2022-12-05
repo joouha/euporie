@@ -30,7 +30,7 @@ log = logging.getLogger(__name__)
 class FormattedTextProcessor(Processor):
     """Applies formatted text to a TextArea."""
 
-    def __init__(self, formatted_text: "StyleAndTextTuples"):
+    def __init__(self, formatted_text: "StyleAndTextTuples") -> "None":
         """Initiate the processor.
 
         Args:
@@ -70,14 +70,14 @@ class FormattedTextArea(TextArea):
         *args: "Any",
         line_numbers: "FilterOrBool" = False,
         **kwargs: "Any",
-    ):
+    ) -> "None":
         """Initialise a `FormattedTextArea` instance.
 
         Args:
             formatted_text: A list of `(style, text)` tuples to display.
             line_numbers: Determines if line numbers are shown,
-            *args: Arguments to pass to `prompt_toolkit.widgets.TextArea`.
-            **kwargs: Key-word arguments to pass to `prompt_toolkit.widgets.TextArea`.
+            args: Arguments to pass to `prompt_toolkit.widgets.TextArea`.
+            kwargs: Key-word arguments to pass to `prompt_toolkit.widgets.TextArea`.
 
         """
         self._formatted_text = formatted_text

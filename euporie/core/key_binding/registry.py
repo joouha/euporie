@@ -13,14 +13,14 @@ from euporie.core.keys import Keys
 
 if TYPE_CHECKING:
 
-    from typing import Dict, List, Optional, Tuple, Union
+    from typing import Optional
 
     from prompt_toolkit.key_binding import KeyBindingsBase
 
-    AnyKey = Union[Tuple[Union[Keys, str], ...], Keys, str]
-    AnyKeys = Union[List[AnyKey], AnyKey]
+    AnyKey = tuple[Keys | str, ...] | Keys | str
+    AnyKeys = list[AnyKey] | AnyKey
 
-    KeyBindingDefs = Dict[str, AnyKeys]
+    KeyBindingDefs = dict[str, AnyKeys]
 
 BINDINGS: "dict[str, KeyBindingDefs]" = {}
 

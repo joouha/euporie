@@ -122,6 +122,7 @@ class DisplayControl(UIControl):
 
     @data.setter
     def data(self, value: "Any") -> "None":
+        """Set the control's data."""
         self._data = value
         self.reset()
 
@@ -167,7 +168,7 @@ class DisplayControl(UIControl):
         return self.focusable()
 
     def size(self) -> "None":
-        """Load the maximum cell width and apect ratio of the output."""
+        """Load the maximum cell width and aspect ratio of the output."""
         self._max_cols, self._aspect = self._size_cache.get(
             self.app.render_counter, self.sizing_func
         )
@@ -208,7 +209,7 @@ class DisplayControl(UIControl):
         width: "int",
         max_available_height: "int",
         wrap_lines: "bool",
-        get_line_prefix: Optional[GetLinePrefixCallable],
+        get_line_prefix: GetLinePrefixCallable | None,
     ) -> "int":
         """Returns the number of lines in the rendered content."""
         if self.aspect:
@@ -308,7 +309,7 @@ class DisplayWindow(Window):
         # Set the horizontal scroll offset on the render info
         # TODO - fix this upstream
         if self.render_info is not None:
-            setattr(self.render_info, "horizontal_scroll", self.horizontal_scroll)
+            self.render_info.horizontal_scroll = self.horizontal_scroll  # noqa B010
 
     def _scroll_right(self) -> None:
         """Scroll window right."""
@@ -661,7 +662,7 @@ class GraphicWindow(Window):
         filter: "FilterOrBool",
         *args: "Any",
         **kwargs: "Any",
-    ):
+    ) -> "None":
         """Initiates a new :py:class:`GraphicWindow` object.
 
         Args:
@@ -721,7 +722,7 @@ class GraphicWindow(Window):
         self, screen: Screen, write_position: WritePosition, erase_bg: bool
     ) -> None:
         """Erase/fill the background."""
-        char: Optional[str]
+        char: str | None
         if callable(self.char):
             char = self.char()
         else:
@@ -806,6 +807,7 @@ class GraphicFloat(Float):
 
     @data.setter
     def data(self, value: "Any") -> "None":
+        """Set the graphic float's data."""
         self._data = value
         if self.control is not None:
             self.control.data = value
@@ -824,12 +826,12 @@ class Display:
         data: "Any",
         format_: "str",
         path: "Optional[UPath]" = None,
-        fg_color: "Optional[str]" = None,
-        bg_color: "Optional[str]" = None,
+        fg_color: "str|None" = None,
+        bg_color: "str|None" = None,
         height: "AnyDimension" = None,
         width: "AnyDimension" = None,
-        px: "int" = None,
-        py: "int" = None,
+        px: "int|None" = None,
+        py: "int|None" = None,
         focusable: "FilterOrBool" = False,
         focus_on_click: "FilterOrBool" = False,
         wrap_lines: "FilterOrBool" = False,
@@ -923,6 +925,7 @@ class Display:
 
     @data.setter
     def data(self, value: "Any") -> "None":
+        """Set the display container's data."""
         self.control.data = value
         self.graphic_float.data = value
 
@@ -942,6 +945,7 @@ class Display:
 
     @px.setter
     def px(self, value: "Optional[int]") -> "None":
+        """Set the display container's width in pixels."""
         self._px = value
         self.update_sizing()
 
@@ -952,6 +956,7 @@ class Display:
 
     @py.setter
     def py(self, value: "Optional[int]") -> "None":
+        """Set the display container's height in pixels."""
         self._py = value
         self.update_sizing()
 

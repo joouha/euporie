@@ -23,7 +23,7 @@ from euporie.core.config import add_setting
 from euporie.core.log import setup_logs
 
 if TYPE_CHECKING:
-    from typing import Type
+    from typing import Awaitable, Type
 
 log = logging.getLogger(__name__)
 
@@ -36,11 +36,11 @@ class EuporieSSHServer(asyncssh.SSHServer):  # type: ignore
 
     """
 
-    def __init__(self, app_cls: "Type[BaseApp]") -> None:
+    def __init__(self, app_cls: "Type[BaseApp]") -> "None":
         """Sets the interaction function for the SSH session."""
         self.app_cls = app_cls
 
-    def begin_auth(self, username: str) -> bool:
+    def begin_auth(self, username: "str") -> "bool | Awaitable[bool]":
         """Perform authentication in the SSH server."""
         if self.app_cls.config.no_auth:
             # No authentication.
@@ -62,6 +62,8 @@ class HubApp(BaseApp):
 
     This app never actually gets run, but is used to run another app in an SSH server.
     """
+
+    name = "hub"
 
     @classmethod
     def launch(cls) -> "None":

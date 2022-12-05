@@ -36,10 +36,10 @@ class ChainedList(Sequence[T]):
         ...
 
     @overload
-    def __getitem__(self, i: "slice"):
+    def __getitem__(self, i: "slice") -> "list[T]":
         ...
 
-    def __getitem__(self, i):
+    def __getitem__(self, i):  # noqa ANN001 ANN204
         """Get an item from the chained lists."""
         return self.data[i]
 

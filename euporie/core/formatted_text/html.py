@@ -341,6 +341,7 @@ class PageElement:
         return s
 
     def __repr__(self, d: "int" = 0) -> "str":
+        """String representation of the element."""
         return self._outer_html(attrs=False)
 
 
@@ -429,7 +430,7 @@ def css_dimension(value: "str", vertical: "bool" = False) -> "Optional[int|float
     # Calculate size based on units
     if vertical:
         if units == "px":
-            cols, aspect = pixels_to_cell_size(px=number, py=number)
+            cols, aspect = pixels_to_cell_size(px=int(number), py=int(number))
             # Add 0.5 to round to nearest whole number
             return int((cols * aspect) + 0.5)
         elif units == "%":
@@ -439,7 +440,7 @@ def css_dimension(value: "str", vertical: "bool" = False) -> "Optional[int|float
 
     else:
         if units == "px":
-            cols, _ = pixels_to_cell_size(px=number, py=1)
+            cols, _ = pixels_to_cell_size(px=int(number), py=1)
             return cols
         elif units == "%":
             return number / 100
@@ -539,24 +540,27 @@ def parse_css_content(content: "str") -> "dict[str, Any]":
                 output["position"] = Position(**{**current, **{name: dim}})
 
         elif name == "padding":
-            top = right = bottom = left = 0
             values = value.split()
             if len(values) == 1:
-                top = bottom = css_dimension(values[0], vertical=True) or 0
-                right = left = css_dimension(values[0], vertical=False) or 0
-            if len(values) == 2:
-                top = bottom = css_dimension(values[0], vertical=True) or 0
-                left = right = css_dimension(values[1], vertical=False) or 0
+                top = right = bottom = left = values[0]
+            elif len(values) == 2:
+                top = bottom = values[0]
+                left = right = values[1]
             elif len(values) == 3:
-                top = css_dimension(values[0], vertical=True) or 0
-                right = left = css_dimension(values[1], vertical=False) or 0
-                bottom = css_dimension(values[2], vertical=True) or 0
-            elif len(values) == 4:
-                top = css_dimension(values[0], vertical=True) or 0
-                right = css_dimension(values[1], vertical=False) or 0
-                bottom = css_dimension(values[2], vertical=True) or 0
-                left = css_dimension(values[3], vertical=False) or 0
-            output["padding"] = Padding(top, right, bottom, left)
+                top = values[0]
+                right = left = values[1]
+                bottom = values[2]
+            elif len(values) >= 4:
+                top, right, bottom, left, *_ = values
+            else:
+                top = right = bottom = left = "0"
+
+            output["padding"] = Padding(
+                int(css_dimension(top, vertical=True) or 0),
+                int(css_dimension(right, vertical=False) or 0),
+                int(css_dimension(bottom, vertical=True) or 0),
+                int(css_dimension(left, vertical=False) or 0),
+            )
 
         elif name.startswith("padding-"):
             prop = name[8:]
@@ -566,10 +570,9 @@ def parse_css_content(content: "str") -> "dict[str, Any]":
                     output["padding"] = Padding(**{**current, **{prop: dim}})
 
         elif name == "margin":
-            top = right = bottom = left = 0
             values = value.split()
             if len(values) == 1:
-                top = bottom = right = left = values[0]
+                top = right = bottom = left = values[0]
             elif len(values) == 2:
                 top = bottom = values[0]
                 left = right = values[1]
@@ -577,8 +580,10 @@ def parse_css_content(content: "str") -> "dict[str, Any]":
                 top = values[0]
                 right = left = values[1]
                 bottom = values[2]
-            elif len(values) == 4:
-                top, right, bottom, left = values
+            elif len(values) >= 4:
+                top, right, bottom, left, *_ = values
+            else:
+                top = right = bottom = left = "0"
 
             # Align to center if margin-x is auto
             if left == "auto" and right == "auto":
@@ -589,10 +594,10 @@ def parse_css_content(content: "str") -> "dict[str, Any]":
                 output["align"] = FormattedTextAlign.LEFT
 
             output["margin"] = Padding(
-                css_dimension(top, vertical=True) or 0,
-                css_dimension(right, vertical=False) or 0,
-                css_dimension(bottom, vertical=True) or 0,
-                css_dimension(left, vertical=False) or 0,
+                int(css_dimension(top, vertical=True) or 0),
+                int(css_dimension(right, vertical=False) or 0),
+                int(css_dimension(bottom, vertical=True) or 0),
+                int(css_dimension(left, vertical=False) or 0),
             )
 
         elif name.startswith("margin-"):
@@ -628,6 +633,8 @@ class HTML:
     Accepts a HTML string and renders it at a given width.
     """
 
+    formatted_text: "StyleAndTextTuples"
+
     def _render_list(
         self,
         element: "PageElement",
@@ -659,9 +666,9 @@ class HTML:
     def __init__(
         self,
         markup: "str",
-        base: "Optional[Union[UPath, str]]" = None,
-        width: "Optional[int]" = None,
-        height: "Optional[int]" = None,
+        base: "Union[UPath, str]|None" = None,
+        width: "int|None" = None,
+        height: "int|None" = None,
         strip_trailing_lines: "bool" = True,
         pad: "bool" = True,
     ) -> None:
@@ -715,7 +722,7 @@ class HTML:
                 char="\n",
             )
 
-    def render(self, width: "int", height: "int") -> "StyleAndTextTuples":
+    def render(self, width: "int|None", height: "int|None") -> "None":
         """Render the current markup at a given size."""
         if not width or not height:
             size = get_app_session().output.get_size()
@@ -992,7 +999,6 @@ class HTML:
             styles["style"] += f" bg:{bg}"
 
         # Flatten chained dict
-        return theme
         return dict(theme)
 
     def render_contents(
@@ -1050,7 +1056,7 @@ class HTML:
                 ]
             return []
 
-        outputs = []
+        outputs: "list[StyleAndTextTuples]" = []
         floats = {}
 
         for i, element in enumerate(contents):
@@ -1622,21 +1628,24 @@ class HTML:
         available_width: "int",
         available_height: "int",
         left: "int" = 0,
-    ) -> "Optional[StyleAndTextTuples]":
+    ) -> "StyleAndTextTuples":
         cols, aspect = pixels_to_cell_size(*data_pixel_size(data, format_=format_))
-        # Manially set a value if we don't have one
+        # Manually set a value if we don't have one
         cols = cols or 20
         aspect = aspect or 0.5
         # Scale down the image to fit to width
         cols = min(available_width, cols)
         rows = ceil(cols * aspect)
         # Convert the image to formatted-text
-        result = convert(
-            data,
-            format_,
-            "formatted_text",
-            cols=cols,
-            rows=rows,
+        result = (
+            convert(
+                data,
+                format_,
+                "formatted_text",
+                cols=cols,
+                rows=rows,
+            )
+            or []
         )
         # Remove trailing new-lines
         result = strip(result, char="\n", left=False)

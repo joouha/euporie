@@ -19,6 +19,7 @@ if TYPE_CHECKING:
 
     from prompt_toolkit.formatted_text import StyleAndTextTuples
     from prompt_toolkit.key_binding.key_bindings import NotImplementedOrNone
+    from prompt_toolkit.layout.containers import AnyContainer
 
 
 class JsonView:
@@ -106,5 +107,6 @@ class JsonView:
             ],
         )
 
-    def __pt_container__(self):
+    def __pt_container__(self) -> "AnyContainer":
+        """Return the tree-view container's content."""
         return self.container

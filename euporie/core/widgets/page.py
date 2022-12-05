@@ -149,7 +149,7 @@ class ChildRenderInfo:
             # Modify render info
             win_render_info = win.render_info
             if win_render_info is not None:
-                info = self.win_render_infos.setdefault(win, win.render_info)
+                info = self.win_render_infos.setdefault(win, win_render_info)
                 # info.visible_line_to_row_col = {
                 # line: (y + info._y_offset, new_wp.xpos + info._x_offset)
                 # for line, y in enumerate(
@@ -179,7 +179,7 @@ class ChildRenderInfo:
                         win_render_info, "horizontal_scroll", None
                     )
                 ) is not None:
-                    setattr(win.render_info, "horizontal_scroll", horizontal_scroll)
+                    win.render_info.horizontal_scroll = horizontal_scroll  # noqa B010
 
         mouse_handler_wrappers: "dict[MouseHandler, MouseHandler]" = {}
 
@@ -194,17 +194,16 @@ class ChildRenderInfo:
                     mouse_event: "MouseEvent",
                 ) -> "NotImplementedOrNone":
                     response: "NotImplementedOrNone" = NotImplemented
-                    if handler:
-                        new_event = MouseEvent(
-                            position=Point(
-                                x=mouse_event.position.x - left,
-                                y=mouse_event.position.y - top,
-                            ),
-                            event_type=mouse_event.event_type,
-                            button=mouse_event.button,
-                            modifiers=mouse_event.modifiers,
-                        )
-                        response = handler(new_event)
+                    new_event = MouseEvent(
+                        position=Point(
+                            x=mouse_event.position.x - left,
+                            y=mouse_event.position.y - top,
+                        ),
+                        event_type=mouse_event.event_type,
+                        button=mouse_event.button,
+                        modifiers=mouse_event.modifiers,
+                    )
+                    response = handler(new_event)
                     # This would work if windows returned NotImplemented when scrolled
                     # to the start or end
                     # if response is NotImplemented:
@@ -271,7 +270,7 @@ class ScrollingContainer(Container):
         height: "AnyDimension" = None,
         width: "AnyDimension" = None,
         style: "Union[str, Callable[[], str]]" = "",
-    ):
+    ) -> "None":
         """Initiates the `ScrollingContainer`."""
         self.children_func = children_func
         self._children: "list[Cell]" = []
@@ -496,7 +495,7 @@ class ScrollingContainer(Container):
         write_position: "WritePosition",
         parent_style: str,
         erase_bg: bool,
-        z_index: Optional[int],
+        z_index: int | None,
     ) -> "None":
         """Write the actual content to the screen.
 
@@ -836,14 +835,14 @@ class PrintingContainer(Container):
         children: "Union[Callable, Sequence[AnyContainer]]",
         width: "AnyDimension" = None,
         key_bindings: "Optional[KeyBindingsBase]" = None,
-    ):
+    ) -> "None":
         """Initiate the container."""
         self.width = width
         self.rendered = False
         self._children = children
         self.key_bindings = key_bindings
 
-    def get_key_bindings(self) -> Optional[KeyBindingsBase]:
+    def get_key_bindings(self) -> KeyBindingsBase | None:
         """Return the container's key bindings."""
         return self.key_bindings
 

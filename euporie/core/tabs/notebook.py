@@ -47,7 +47,7 @@ class BaseNotebook(KernelTab, metaclass=ABCMeta):
         comms: "Optional[dict[str, Comm]]" = None,
         use_kernel_history: "bool" = False,
         json: "Optional[dict[str, Any]]" = None,
-    ):
+    ) -> "None":
         """Instantiate a Notebook container, using a notebook at a given path.
 
         Args:

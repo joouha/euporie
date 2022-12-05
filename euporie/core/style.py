@@ -340,9 +340,9 @@ class ColorPaletteColor:
 class ColorPalette:
     """Defines a collection of colors."""
 
-    def __init__(self):
+    def __init__(self) -> "None":
         """Creates a new color-palette."""
-        self.colors = {}
+        self.colors: "dict[str, ColorPaletteColor]" = {}
 
     def add_color(
         self, name: "str", base: "str", _base_override: str = ""

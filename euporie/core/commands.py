@@ -16,7 +16,7 @@ from euporie.core.key_binding.utils import parse_keys
 from euporie.core.keys import Keys
 
 if TYPE_CHECKING:
-    from typing import Any, Callable, Coroutine, List, Optional, Sequence, Tuple, Union
+    from typing import Any, Callable, Coroutine, Optional, Sequence, Union
 
     from prompt_toolkit.filters import Filter, FilterOrBool
     from prompt_toolkit.key_binding.key_bindings import (
@@ -26,8 +26,8 @@ if TYPE_CHECKING:
 
     from euporie.core.widgets.menu import MenuItem
 
-    AnyKey = Union[Tuple[Union[Keys, str], ...], Union[Keys, str]]
-    AnyKeys = Union[List[AnyKey], AnyKey]
+    AnyKey = tuple[Keys | str, ...] | Keys | str
+    AnyKeys = list[AnyKey] | AnyKey
 
 log = logging.getLogger(__name__)
 
@@ -53,7 +53,7 @@ class Command:
         is_global: "FilterOrBool" = False,
         save_before: "Callable[[KeyPressEvent], bool]" = (lambda event: True),
         record_in_macro: "FilterOrBool" = True,
-    ):
+    ) -> "None":
         """Creates a new instance of a command.
 
         Args:

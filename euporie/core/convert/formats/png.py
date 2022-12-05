@@ -12,7 +12,7 @@ from euporie.core.convert.utils import commands_exist, have_modules
 if TYPE_CHECKING:
     from typing import Optional
 
-    from PIL import Image
+    from PIL.Image import Image as PilImage
     from upath import UPath
 
 
@@ -69,7 +69,7 @@ register(
     filter_=have_modules("PIL"),
 )
 def pil_to_png_py_pil(
-    data: "Image",
+    data: "PilImage",
     cols: "Optional[int]" = None,
     rows: "Optional[int]" = None,
     fg: "Optional[str]" = None,

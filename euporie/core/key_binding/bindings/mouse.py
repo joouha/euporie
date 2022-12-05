@@ -9,19 +9,16 @@ from prompt_toolkit.key_binding.bindings.mouse import (
     UNKNOWN_BUTTON,
     UNKNOWN_MODIFIER,
     KeyBindings,
-)
-from prompt_toolkit.key_binding.bindings.mouse import (
-    load_mouse_bindings as load_ptk_mouse_bindings,
-)
-from prompt_toolkit.key_binding.bindings.mouse import (
     typical_mouse_events,
     urxvt_mouse_events,
     xterm_sgr_mouse_events,
 )
+from prompt_toolkit.key_binding.bindings.mouse import (
+    load_mouse_bindings as load_ptk_mouse_bindings,
+)
 from prompt_toolkit.keys import Keys
-from prompt_toolkit.mouse_events import MouseButton
+from prompt_toolkit.mouse_events import MouseButton, MouseEventType, MouseModifier
 from prompt_toolkit.mouse_events import MouseEvent as PtkMouseEvent
-from prompt_toolkit.mouse_events import MouseEventType, MouseModifier
 
 from euporie.core.app import BaseApp
 

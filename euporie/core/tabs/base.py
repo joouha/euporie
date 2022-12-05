@@ -41,7 +41,7 @@ class Tab(metaclass=ABCMeta):
 
     container: "AnyContainer"
 
-    def __init__(self, app: "BaseApp", path: "Optional[UPath]" = None):
+    def __init__(self, app: "BaseApp", path: "Optional[UPath]" = None) -> "None":
         """Called when the tab is created."""
         self.app = app
         self.path = path
@@ -60,8 +60,9 @@ class Tab(metaclass=ABCMeta):
         """Return the tab title."""
         return ""
 
-    def reset(self) -> "None":
+    def reset(self) -> "None":  # noqa B027
         """Reset the state of the tab."""
+        pass
 
     def close(self, cb: "Optional[Callable]" = None) -> "None":
         """Function to close a tab with a callback.
@@ -168,6 +169,10 @@ class KernelTab(Tab, metaclass=ABCMeta):
         # Load kernel history
         if self.use_kernel_history:
             self.app.create_background_task(self.load_history())
+            # async def _do_history_load():
+            # self.app.create_background_task(self.load_history())
+            #
+            # self.app.loop.create_task(_do_history_load())
 
         # Run queued kernel tasks when the kernel is idle
         log.debug("Running %d kernel tasks", len(self.kernel_queue))

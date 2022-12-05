@@ -70,7 +70,7 @@ def strip(
     ft: StyleAndTextTuples,
     left: bool = True,
     right: bool = True,
-    char: Optional[str] = None,
+    char: str | None = None,
     only_unstyled: bool = False,
 ) -> StyleAndTextTuples:
     """Strip whitespace (or a given character) from the ends of formatted text.
@@ -210,7 +210,7 @@ def wrap(
                 if left == 0:
                     item = (item[0], item[1].lstrip(" "))
                 # Truncate words longer than a line
-                if truncate and left == 0 and fragment_width > width - left:
+                if truncate_long_words and left == 0 and fragment_width > width - left:
                     result += truncate([item], width - left, style, placeholder)
                     left += fragment_width
                 # Otherwise just add the word to the line
@@ -227,7 +227,7 @@ def wrap(
 def align(
     how: FormattedTextAlign,
     ft: StyleAndTextTuples,
-    width: Optional[int] = None,
+    width: int | None = None,
     style: str = "",
     placeholder: str = "…",
 ) -> StyleAndTextTuples:
@@ -447,7 +447,12 @@ def paste(
                 )
                 if x < col:
                     remaining = col - x
-                    ft.append((frag[0], frag[1][:remaining], *frag[2:]))
+                    ft.append(
+                        cast(
+                            "OneStyleAndTextTuple",
+                            (frag[0], frag[1][:remaining], *frag[2:]),
+                        )
+                    )
                 elif x == col and not done:
                     ft += line_t
                     done = True

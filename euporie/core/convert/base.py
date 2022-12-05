@@ -49,7 +49,7 @@ def get_format(path: "UPath|str", default: "str" = "") -> "str":
         else:
             default = "ansi"
     mime, _ = mimetypes.guess_type(path)
-    return MIME_FORMATS.get(mime, default)
+    return MIME_FORMATS.get(mime or "*", default)
 
 
 class Converter(NamedTuple):

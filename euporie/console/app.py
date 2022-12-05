@@ -59,6 +59,8 @@ class ConsoleApp(BaseApp):
 
     """
 
+    name = "console"
+
     def __init__(self, **kwargs: "Any") -> "None":
         """Create a new euporie text user interface application instance."""
         # Setup mouse support

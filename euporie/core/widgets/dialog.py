@@ -317,7 +317,7 @@ class Dialog(Float, metaclass=ABCMeta):
         self.app.layout.focus(self.container)
         self.app.invalidate()
 
-    def hide(self, event: "KeyPressEvent" = None) -> "None":
+    def hide(self, event: "KeyPressEvent|None" = None) -> "None":
         """Hides the dialog."""
         self._visible = False
         if self.last_focused is not None:
@@ -336,6 +336,7 @@ class Dialog(Float, metaclass=ABCMeta):
             self.show()
 
     def __pt_container__(self) -> "AnyContainer":
+        """Return the container's content."""
         return self.container
 
 

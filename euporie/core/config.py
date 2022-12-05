@@ -34,6 +34,7 @@ class ConfigurableApp(Protocol):
     """An application with configuration."""
 
     config: "Config"
+    name: "str"
 
 
 log = logging.getLogger(__name__)
@@ -73,7 +74,9 @@ class BooleanOptionalAction(argparse.Action):
     Included because `argparse.BooleanOptionalAction` is not present in `python<=3.9`.
     """
 
-    def __init__(self, option_strings: "list[str]", *args: "Any", **kwargs: "Any"):
+    def __init__(
+        self, option_strings: "list[str]", *args: "Any", **kwargs: "Any"
+    ) -> "None":
         """Initiate the Action, as per `argparse.BooleanOptionalAction`."""
         _option_strings = list(option_strings)
         for option_string in option_strings:
@@ -150,13 +153,13 @@ class Config:
             with open(self.config_file_path, "w") as f:
                 json.dump(json_data, f, indent=2)
 
-    def load(self, cls: "Type[ConfigurableApp]", app_name: "str" = "") -> "None":
+    def load(self, cls: "Type[ConfigurableApp]") -> "None":
         """Loads the command line, environment, and user configuration."""
-        self.app_name = app_name or cls.__module__.split(".")[-1]
         self.app_cls = cls
+        self.app_name = cls.name
         log.debug("Loading config for %s", self.app_name)
 
-        user_conf_dir = Path(user_config_dir(__app_name__, appauthor=False))
+        user_conf_dir = Path(user_config_dir(__app_name__, appauthor=None))
         user_conf_dir.mkdir(exist_ok=True, parents=True)
         self.config_file_path = (user_conf_dir / self.conf_file_name).with_suffix(
             ".json"
@@ -266,7 +269,7 @@ class Config:
         results = {}
         assert isinstance(self.config_file_path, Path)
         if self.valid_user and self.config_file_path.exists():
-            with open(self.config_file_path, "r") as f:
+            with open(self.config_file_path) as f:
                 try:
                     json_data = json.load(f)
                 except json.decoder.JSONDecodeError:
@@ -531,7 +534,8 @@ class Setting:
 
         return args, kwargs
 
-    def __repr__(self):
+    def __repr__(self) -> "str":
+        """String representation of the Setting."""
         return f"<Setting {self.name}={self.value.__repr__()}>"
 
 

@@ -241,7 +241,7 @@ class Console(KernelTab):
         if self.app.config.mouse_support is None:
             self.app.need_mouse_support = False
 
-    def complete(self, content: "dict" = None) -> "None":
+    def complete(self, content: "dict|None" = None) -> "None":
         """Re-render any changes."""
         self.app.invalidate()
 

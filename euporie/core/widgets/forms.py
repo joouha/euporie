@@ -76,9 +76,9 @@ if TYPE_CHECKING:
 
     from euporie.core.border import GridStyle
 
-    OptionalSearchBuffer = Optional[
-        Union[SearchBufferControl, Callable[[], SearchBufferControl]]
-    ]
+    OptionalSearchBuffer = (
+        SearchBufferControl | Callable[[], SearchBufferControl] | None
+    )
 
 
 log = logging.getLogger(__name__)
@@ -921,7 +921,7 @@ class SelectableWidget(metaclass=ABCMeta):
         on_change: "Optional[Callable[[SelectableWidget], None]]" = None,
         style: "Union[str, Callable[[], str]]" = "",
         disabled: "FilterOrBool" = False,
-    ):
+    ) -> "None":
         """Create a new selectable widget instance.
 
         Args:

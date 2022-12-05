@@ -45,9 +45,6 @@ class PseudoTTY:
             underlying: The underlying output stream
             isatty: The value to return from :py:method:`PseudoTTY.isatty`.
 
-        Result:
-            Returns :py:const:`True` or :py:const:`False`
-
         """
         self._underlying = underlying
         self._isatty = isatty
@@ -76,6 +73,8 @@ class PreviewApp(BaseApp):
     default).
 
     """
+
+    name = "preview"
 
     def __init__(self, **kwargs: "Any") -> "None":
         """Create an app for dumping a prompt-toolkit layout."""
@@ -201,11 +200,14 @@ class PreviewApp(BaseApp):
         # Create a default output - this detects the terminal type
         # Do not use stderr instead of stdout if stdout is not a tty
         output = create_output(cast("TextIO", output_file), always_prefer_tty=False)
+
         # Use the width and height of stderr (this gives us the terminal size even if
         # output is being piped to a non-tty)
-        setattr(output, "get_size", create_output(stdout=sys.stderr).get_size)
+        # output.get_size = create_output(stdout=sys.stderr).get_size
+        output.get_size = create_output(stdout=sys.stderr).get_size  # noqa B010
         # Attach the output file to the output in case we need to page it
-        setattr(output, "output_file", output_file)
+        setattr(output, "output_file", output_file)  # noqa B010
+
         return output
 
     def _redraw(self, render_as_done: "bool" = False) -> "None":

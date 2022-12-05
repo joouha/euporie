@@ -103,7 +103,7 @@ class Cell:
         border: "Optional[Union[LineStyle, BorderLineStyle]]" = None,
         style: "str" = "",
         width: "Optional[int]" = None,
-    ):
+    ) -> "None":
         """Creates a new table cell.
 
         Args:
@@ -447,7 +447,7 @@ class RowCol:
         padding: "Optional[Union[Padding, int]]" = None,
         border: "Optional[Union[LineStyle, BorderLineStyle]]" = None,
         style: "str" = "",
-    ):
+    ) -> "None":
         """Create a new row/column.
 
         Args:
@@ -655,6 +655,7 @@ class RowCol:
 
     @border.setter
     def border(self, border: "Optional[Union[LineStyle, BorderLineStyle]]") -> "None":
+        """Set the Row or Column's border."""
         self._set_border(border)
 
     @property
@@ -690,6 +691,7 @@ class DummyCell(Cell):
     """A dummy cell with not content, padding or borders."""
 
     def __repr__(self) -> "str":
+        """String representation of the cell."""
         return f"{self.__class__.__name__}()"
 
 
@@ -803,6 +805,7 @@ class Table:
 
     @border.setter
     def border(self, border: "Optional[Union[LineStyle, BorderLineStyle]]") -> "None":
+        """Set the Table's border."""
         self._set_border(border)
 
     @property
@@ -812,6 +815,7 @@ class Table:
 
     @padding.setter
     def padding(self, padding: "Optional[Union[Padding, int]]") -> "None":
+        """Set the table's padding."""
         self._set_padding(padding)
 
     @property
@@ -908,7 +912,7 @@ class Table:
         """Calculate column widths given the available space.
 
         Reduce the widest column until we fit in available width, or expand cells to
-        to fill the available witdth.
+        to fill the available width.
 
         Args:
             width: The desired width of the table
@@ -1146,7 +1150,7 @@ class DummyCol(Col):
 class DummyTable(Table):
     """A dummy table - created to hold rows and columns without an assigned table."""
 
-    def __init__(self, *args: "Any", **kwargs: "Any"):
+    def __init__(self, *args: "Any", **kwargs: "Any") -> "None":
         """Create a new dummy table."""
         kwargs["border"] = Invisible
         super().__init__(*args, **kwargs)
