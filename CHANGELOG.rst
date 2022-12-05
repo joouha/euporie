@@ -5,7 +5,7 @@ Changelog
 Notable changes to this project will be documented in this file.
 
 *******************
-v2.1.5 (2022-12-01)
+v2.2.0 (2022-12-01)
 *******************
 
 Added

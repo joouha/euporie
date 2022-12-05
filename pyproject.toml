@@ -87,6 +87,7 @@ euporie = 'euporie.core.pygments:EuporiePygmentsStyle'
 [tool.hatch.version]
 source = "regex_commit"
 path = "euporie/core/__init__.py"
+tag_sign = false
 
 [tool.hatch.build]
 packages = ["euporie"]
