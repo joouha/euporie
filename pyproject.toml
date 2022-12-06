@@ -1,5 +1,5 @@
 [build-system]
-requires = ["hatchling", "hatch-regex-commit"]
+requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
@@ -85,9 +85,7 @@ euporie = 'euporie.core.pygments:EuporiePygmentsStyle'
 
 
 [tool.hatch.version]
-source = "regex_commit"
 path = "euporie/core/__init__.py"
-tag_sign = false
 
 [tool.hatch.build]
 packages = ["euporie"]
@@ -98,6 +96,7 @@ features = [
   "hub",
   "format",
 ]
+
 
 [tool.hatch.envs.multi]
 [[tool.hatch.envs.multi.matrix]]
