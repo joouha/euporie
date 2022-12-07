@@ -189,6 +189,8 @@ ignore = [
     "D203", "D204", "D213", "D215", "D400", "D404", "D406", "D407", "D408", "D409", "D413",
     # Allow empty functions in ABCs
     "B027",
+    # zip() without an explicit strict= parameter
+    "B905",
 ]
 
 [tool.codespell]

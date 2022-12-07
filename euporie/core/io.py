@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import re
 from typing import TYPE_CHECKING
 
@@ -14,6 +15,8 @@ if TYPE_CHECKING:
 
     from prompt_toolkit.keys import Keys
 
+log = logging.getLogger(__name__)
+
 _response_prefix_re = re.compile(
     r"""^\x1b(
         \][^\\\x07]*  # Operating System Commands
@@ -21,6 +24,8 @@ _response_prefix_re = re.compile(
         _[^\\]*  # Application Program Command
         |
         \[\?[\d;]*  # Primary device attribute responses
+        |
+        P[ -~]*(\x1b|x1b\\)?
     )\Z""",
     re.VERBOSE,
 )

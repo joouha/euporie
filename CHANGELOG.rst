@@ -8,6 +8,11 @@ Notable changes to this project will be documented in this file.
 v2.2.1 (2022-12-07)
 *******************
 
+Added
+=====
+
+- Add a setting for graphics protocol preference
+
 Fixed
 =====
 

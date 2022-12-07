@@ -1142,6 +1142,18 @@ class BaseApp(Application):
         },
     )
 
+    add_setting(
+        name="preferred_graphics_protocol",
+        flags=["--preferred-graphics-protocol"],
+        choices=["sixel", "kitty", "iterm"],
+        type_=str,
+        default=None,
+        help_="The preferred graphics protocol",
+        description="""
+            The graphics protocol to use, if supported by the terminal.
+    """,
+    )
+
     # ################################# Key Bindings ##################################
 
     register_bindings(

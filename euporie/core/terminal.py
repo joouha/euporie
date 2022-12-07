@@ -214,7 +214,7 @@ class PixelDimensions(TerminalQuery):
     default = (0, 0)
     cmd = "\x1b[14t"
     cache = True
-    pattern = re.compile(r"^\x1b\[4;(?P<y>\d+);(?P<x>\d+)t\Z")
+    pattern = re.compile(r"^\x1b\[4;(?P<y>\d+);(?P<x>\d+)t\x1b\\")
 
     def verify(self, data: "str") -> "Optional[tuple[int, int]]":
         """Verifies the terminal responded with pixel dimensions."""
@@ -279,20 +279,27 @@ class ItermGraphicsStatus(TerminalQuery):
 
     default = False
     cache = True
+    cmd = "\x1b[>q"
+    pattern = re.compile(r"^\x1bP>\|(?P<term>[^\x1b]+)\x1b\\")
 
-    def __init__(self, output: "Output", config: "Config") -> "None":
-        """Detect the iTerm graphics support based on environment variables."""
-        super().__init__(output, config)
-        self._value = None
-        if (
-            os.environ.get("TERM_PROGRAM", "") in {"WezTerm", "iTerm.app"}
-            or os.environ.get("MLTERM") is not None
-            or (
-                os.environ.get("KONSOLE_DBUS_WINDOW") is not None
-                and int(os.environ.get("KONSOLE_VERSION", 0)) > 220370
-            )
-        ) and self.queryable:
-            self._value = True
+    def _cmd(self) -> "str":
+        if self.config.tmux_graphics:
+            return tmuxify(self.cmd)
+        else:
+            return self.cmd
+
+    def verify(self, data: "str") -> "bool":
+        """Verifies iterm graphics are supported by the terminal."""
+        if match := self.pattern.match(data):
+            if values := match.groupdict():
+                if term := values.get("term"):
+                    if (
+                        term.startswith("WezTerm")
+                        or term.startswith("Konsole")
+                        or term.startswith("mlterm")
+                    ):
+                        return True
+        return False
 
 
 class DepthOfColor(TerminalQuery):
@@ -383,12 +390,7 @@ class TerminalInfo:
                 parser.queries[key] = query.pattern
 
             # Add a command for the query's key-binding
-            add_cmd(
-                name=name,
-                title=f"Set terminal {title}",
-                hidden=True,
-                description=f"Sets the terminal's {title} value.",
-            )(query_inst._handle_response)
+            add_cmd(name=name, title=title, hidden=True)(query_inst._handle_response)
             # Add key-binding
             register_bindings({"euporie.core.app.BaseApp": {name: key}})
 
