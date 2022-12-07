@@ -2,7 +2,12 @@
 Installation
 ############
 
-Euporie is on `pypi <https://pypi.org/project/euporie/>`_, so can be installed using `pip <https://pip.pypa.io/en/stable/>`_ or `pipx <https://pipxproject.github.io/pipx/>`_. On Linux, you may need to first install `gcc-11`.
+Euporie is on `pypi <https://pypi.org/project/euporie/>`_, so can be installed using `pip <https://pip.pypa.io/en/stable/>`_ or `pipx <https://pipxproject.github.io/pipx/>`_.
+
+.. note::
+   Although euporie itself is written in pure Python and does not have any compiled components, some of its dependencies may require compilation as part of their build steps, depending on the availability of binary wheels. 
+   
+   If this is the case, you may need to install the relevant build tools for your distribution, such as `python-dev` and `gcc` or equivalent.
 
 To install euporie globally, run:
 
