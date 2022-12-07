@@ -203,8 +203,9 @@ class PreviewApp(BaseApp):
 
         # Use the width and height of stderr (this gives us the terminal size even if
         # output is being piped to a non-tty)
-        # output.get_size = create_output(stdout=sys.stderr).get_size
-        output.get_size = create_output(stdout=sys.stderr).get_size  # noqa B010
+        setattr(  # noqa B010
+            output, "get_size", create_output(stdout=sys.stderr).get_size
+        )
         # Attach the output file to the output in case we need to page it
         setattr(output, "output_file", output_file)  # noqa B010
 

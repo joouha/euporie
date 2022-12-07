@@ -179,7 +179,9 @@ class ChildRenderInfo:
                         win_render_info, "horizontal_scroll", None
                     )
                 ) is not None:
-                    win.render_info.horizontal_scroll = horizontal_scroll  # noqa B010
+                    setattr(  # noqa B010
+                        win.render_info, "horizontal_scroll", horizontal_scroll
+                    )
 
         mouse_handler_wrappers: "dict[MouseHandler, MouseHandler]" = {}
 

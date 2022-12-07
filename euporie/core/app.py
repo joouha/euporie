@@ -427,7 +427,9 @@ class BaseApp(Application):
 
         # Use a custom vt100 parser to allow querying the terminal
         if parser := getattr(input_, "vt100_parser", None):
-            input_.vt100_parser = Vt100Parser(parser.feed_key_callback)  # noqa B010
+            setattr(  # noqa B010
+                input_, "vt100_parser", Vt100Parser(parser.feed_key_callback)
+            )
 
         return input_
 

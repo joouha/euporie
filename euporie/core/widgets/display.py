@@ -309,7 +309,9 @@ class DisplayWindow(Window):
         # Set the horizontal scroll offset on the render info
         # TODO - fix this upstream
         if self.render_info is not None:
-            self.render_info.horizontal_scroll = self.horizontal_scroll  # noqa B010
+            setattr(  # noqa B010
+                self.render_info, "horizontal_scroll", self.horizontal_scroll
+            )
 
     def _scroll_right(self) -> None:
         """Scroll window right."""
