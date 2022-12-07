@@ -5,6 +5,17 @@ Changelog
 Notable changes to this project will be documented in this file.
 
 *******************
+v2.2.1 (2022-12-07)
+*******************
+
+Fixed
+=====
+
+- Fix PIL import error
+
+----
+
+*******************
 v2.2.0 (2022-12-01)
 *******************
 
