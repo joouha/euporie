@@ -14,6 +14,8 @@ if TYPE_CHECKING:
 class ShowApp(BaseApp):
     """An app to show files."""
 
+    name = "show"
+
     def __init__(self, **kwargs: "Any") -> "None":
         """Create an app to preview files."""
         super().__init__(**kwargs)
