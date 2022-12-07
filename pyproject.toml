@@ -27,7 +27,7 @@ classifiers = [
   "Topic :: Scientific/Engineering",
 ]
 dependencies = [
-  "prompt-toolkit~=3.0.27",
+  "prompt-toolkit~=3.0.36",
   "Pygments~=2.11.2",
   "nbformat~=5.0",
   "jupyter_client~=7.1",
