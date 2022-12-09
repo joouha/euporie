@@ -109,8 +109,8 @@ def main() -> "bool":
     check_output("git", "tag", "-a", git_tag, "-m", f"Release version {version}")
     status("PASS")
 
-    error("Push tag to server")
-    check_output("git", "push", "--tags")
+    item("Push tag to server")
+    check_output("git", "push", "--tags", "-q")
     status("PASS")
 
     return True
