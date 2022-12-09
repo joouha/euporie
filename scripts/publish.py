@@ -95,7 +95,7 @@ def main() -> "bool":
     git_tag = f"v{version}"
 
     item("Checking version does not yet exist in git")
-    if git_tag in check_output("twine", "check", "dist/*.*").split("\n"):
+    if git_tag in check_output("git", "tag").split("\n"):
         status("FAIL")
         error(f"Tag `{git_tag}` already exists")
         return False
