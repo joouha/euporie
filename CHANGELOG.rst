@@ -4,8 +4,19 @@ Changelog
 
 Notable changes to this project will be documented in this file.
 
+********
+Upcoming
+********
+
+Fixed
+=====
+
+- Relaxed dependency specification constraints
+
+----
+
 *******************
-v2.2.1 (2022-12-07)
+v2.2.1 (2022-12-09)
 *******************
 
 Added
