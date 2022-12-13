@@ -8,6 +8,11 @@ Notable changes to this project will be documented in this file.
 Upcoming
 ********
 
+Added
+=====
+
+- Partially obscured images are now rendered using terminal graphics
+
 Fixed
 =====
 
