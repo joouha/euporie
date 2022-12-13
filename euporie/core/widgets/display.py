@@ -549,12 +549,15 @@ class ItermGraphicControl(GraphicControl):
                 bg=self.bg_color,
                 path=self.path,
             )
+            cell_size_x, cell_size_y = self.app.term_info.cell_size_px
+            # Downscale image to fit target region for precise cropping
+            image.thumbnail((full_width * cell_size_x, full_height * cell_size_y))
             image = image.crop(
                 (
-                    int(self.px * self.bbox.left / full_width),  # left
-                    int(self.py * self.bbox.top / full_height),  # upper
-                    int(self.px * (self.bbox.left + cols) / full_width),  # right
-                    int(self.py * (self.bbox.top + rows) / full_height),  # lower
+                    self.bbox.left * cell_size_x,  # left
+                    self.bbox.top * cell_size_y,  # top
+                    (self.bbox.left + cols) * cell_size_x,  # right
+                    (self.bbox.top + rows) * cell_size_y,  # bottom
                 )
             )
             with io.BytesIO() as output:
