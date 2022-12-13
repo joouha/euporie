@@ -43,6 +43,7 @@ dependencies = [
   "flatlatex~=0.15",
   "timg~=1.1",
   "Pillow~=9.0",
+  "sixelcrop~=0.1.3",
   "universal-pathlib~=0.0.19",
   "fsspec[http]>=2022.8.0",
 ]
@@ -132,7 +133,7 @@ description = "Type check the codebase."
 dependencies = [
   "mypy",
   # Dependencies
-  "types-appdirs", "importlib_metadata", "types-Pillow",
+  "types-appdirs", "importlib_metadata", "types-Pillow", "sixelcrop",
   # Optional dependencies
   "rich", "black", "isort", "ssort", "ipython",
   # Non-dependencies
