@@ -24,6 +24,8 @@ from prompt_toolkit.layout.mouse_handlers import MouseHandlers
 from prompt_toolkit.layout.screen import Char, Screen, WritePosition
 from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
 
+from euporie.core.data_structures import BoxSize
+
 if TYPE_CHECKING:
     from typing import Callable, Optional, Sequence, Union
 
@@ -39,6 +41,31 @@ if TYPE_CHECKING:
     MouseHandler = Callable[[MouseEvent], object]
 
 log = logging.getLogger(__name__)
+
+
+class BoundedWritePosition(WritePosition):
+    """A write position which also hold bounding box information."""
+
+    def __init__(
+        self,
+        xpos: "int",
+        ypos: "int",
+        width: "int",
+        height: "int",
+        bbox: "BoxSize",
+    ) -> "None":
+        """Create a new instance of the write position."""
+        super().__init__(xpos, ypos, width, height)
+        self.bbox = bbox
+
+    def __repr__(self) -> "str":
+        """Return a string representation of the write position."""
+        return (
+            f"{self.__class__.__name__}("
+            f"x={self.xpos}, y={self.ypos=}, "
+            f"w={self.width}, h={self.height}, "
+            f"bbox={self.bbox})"
+        )
 
 
 class ChildRenderInfo:
@@ -132,16 +159,16 @@ class ChildRenderInfo:
         """
         # Copy write positions
         for win, wp in self.screen.visible_windows_to_write_positions.items():
-            new_wp = WritePosition(
+            new_wp = BoundedWritePosition(
                 xpos=wp.xpos + left,
                 ypos=wp.ypos + top,
                 width=wp.width,
-                height=max(
-                    0,
-                    min(
-                        wp.height + wp.ypos - max(wp.ypos, rows.start),
-                        min(wp.height + wp.ypos, rows.stop) - wp.ypos,
-                    ),
+                height=wp.height,
+                bbox=BoxSize(
+                    top=max(0, rows.start - wp.ypos),
+                    right=max(0, wp.width - cols.stop),
+                    bottom=max(0, wp.height - (rows.stop - wp.ypos)),
+                    left=max(0, wp.width - (cols.stop - wp.xpos)),
                 ),
             )
             screen.visible_windows_to_write_positions[win] = new_wp
@@ -222,7 +249,6 @@ class ChildRenderInfo:
         input_db = self.screen.data_buffer
         input_zwes = self.screen.zero_width_escapes
         input_mhs = self.mouse_handlers.mouse_handlers
-
         output_dbs = screen.data_buffer
         output_zwes = screen.zero_width_escapes
         output_mhs = mouse_handlers.mouse_handlers
@@ -230,7 +256,6 @@ class ChildRenderInfo:
             output_dbs_row = output_dbs[top + y]
             output_zwes_row = output_zwes[top + y]
             output_mhs_row = output_mhs[top + y]
-
             input_db_row = input_db[y]
             input_zwes_row = input_zwes[y]
             input_mhs_row = input_mhs[y]

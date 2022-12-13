@@ -28,6 +28,7 @@ from euporie.core.app import get_app
 from euporie.core.commands import add_cmd
 from euporie.core.convert.base import convert, find_route
 from euporie.core.convert.utils import data_pixel_size, pixels_to_cell_size
+from euporie.core.data_structures import BoxSize
 from euporie.core.filters import display_has_focus, has_dialog, has_menus
 from euporie.core.key_binding.registry import (
     load_registered_bindings,
@@ -35,9 +36,10 @@ from euporie.core.key_binding.registry import (
 )
 from euporie.core.margins import ScrollbarMargin
 from euporie.core.terminal import tmuxify
+from euporie.core.widgets.page import BoundedWritePosition
 
 if TYPE_CHECKING:
-    from typing import Any, Callable, Iterable, Optional, Type, Union
+    from typing import Any, Callable, Iterable, Type, Union
 
     from prompt_toolkit.filters import FilterOrBool
     from prompt_toolkit.formatted_text import StyleAndTextTuples
@@ -63,10 +65,10 @@ class DisplayControl(UIControl):
         self,
         data: "Any",
         format_: "str",
-        path: "Optional[UPath]" = None,
-        fg_color: "Optional[str]" = None,
-        bg_color: "Optional[str]" = None,
-        sizing_func: "Optional[Callable[[], tuple[int, float]]]" = None,
+        path: "UPath|None" = None,
+        fg_color: "str|None" = None,
+        bg_color: "str|None" = None,
+        sizing_func: "Callable[[], tuple[int, float]]|None" = None,
         focusable: "FilterOrBool" = False,
         focus_on_click: "FilterOrBool" = False,
     ) -> "None":
@@ -126,7 +128,7 @@ class DisplayControl(UIControl):
         self._data = value
         self.reset()
 
-    def get_key_bindings(self) -> "Optional[KeyBindingsBase]":
+    def get_key_bindings(self) -> "KeyBindingsBase|None":
         """Return the control's key bindings."""
         return self.key_bindings
 
@@ -189,7 +191,7 @@ class DisplayControl(UIControl):
         self.size()
         return self._aspect
 
-    def preferred_width(self, max_available_width: "int") -> "Optional[int]":
+    def preferred_width(self, max_available_width: "int") -> "int|None":
         """Returns the width of the rendered content."""
         self.max_available_width = max_available_width
         return (
@@ -292,11 +294,11 @@ class DisplayWindow(Window):
 
     def _write_to_screen_at_index(
         self,
-        screen: Screen,
-        mouse_handlers: MouseHandlers,
-        write_position: WritePosition,
-        parent_style: str,
-        erase_bg: bool,
+        screen: "Screen",
+        mouse_handlers: "MouseHandlers",
+        write_position: "WritePosition",
+        parent_style: "str",
+        erase_bg: "bool",
     ) -> None:
         """Ensure the :attr:`horizontal_scroll` is recorded."""
         super()._write_to_screen_at_index(
@@ -374,6 +376,87 @@ class FormattedTextDisplayControl(DisplayControl):
 class GraphicControl(DisplayControl, metaclass=ABCMeta):
     """A base-class for display controls which render terminal graphics."""
 
+    def __init__(
+        self,
+        data: "Any",
+        format_: "str",
+        path: "UPath|None" = None,
+        fg_color: "str|None" = None,
+        bg_color: "str|None" = None,
+        sizing_func: "Callable[[], tuple[int, float]]|None" = None,
+        focusable: "FilterOrBool" = False,
+        focus_on_click: "FilterOrBool" = False,
+        scale: "float" = 0,
+        bbox: "BoxSize|None" = None,
+    ) -> "None":
+        """Initialize the graphic control."""
+        super().__init__(
+            data,
+            format_,
+            path,
+            fg_color,
+            bg_color,
+            sizing_func,
+            focusable,
+            focus_on_click,
+        )
+        self.bbox = bbox or BoxSize(0, 0, 0, 0)
+
+        # Record the original pixel size of the imge
+        px, py = data_pixel_size(data, format_, fg=fg_color, bg=bg_color)
+        if not px or not py:
+            log.warning("Cannot determine image size")
+            px, py = px or 100, py or 100
+        self.px, self.py = px, py
+
+    def create_content(self, width: "int", height: "int") -> "UIContent":
+        """Generates rendered output at a given size.
+
+        Args:
+            width: The desired output width
+            height: The desired output height
+
+        Returns:
+            `UIContent` for the given output size.
+
+        """
+        cols = min(self.max_cols, width) if self.max_cols else width
+        rows = (
+            ceil(cols * self.aspect) - self.bbox.top - self.bbox.bottom
+            if self.aspect
+            else height
+        )
+
+        def get_content() -> "dict[str, Any]":
+            rendered_lines = self.get_rendered_lines(width=cols, height=rows)
+            self.rendered_lines = rendered_lines[:]
+            line_count = len(rendered_lines)
+
+            def get_line(i: "int") -> "StyleAndTextTuples":
+                # Return blank lines if the renderer expects more content than we have
+                line = []
+                if i < line_count:
+                    line += rendered_lines[i]
+                # Add a space at the end, because that is a possible cursor position.
+                # This is what PTK does, and fixes a nasty bug which took me ages to
+                # track down the source of, where scrolling would stop working when the
+                # cursor was on an empty line.
+                line += [("", " ")]
+                return line
+
+            return {
+                "get_line": get_line,
+                "line_count": line_count,
+                "menu_position": Point(0, 0),
+            }
+
+        # Re-render if the image width changes, or the terminal character size changes
+        key = (cols, rows, self.app.term_info.cell_size_px, self.bbox)
+        return UIContent(
+            cursor_position=self.cursor_position,
+            **self._content_cache.get(key, get_content),
+        )
+
 
 class SixelGraphicControl(GraphicControl):
     """A graphic control which displays images as sixels."""
@@ -382,19 +465,37 @@ class SixelGraphicControl(GraphicControl):
         self, width: "int", height: "int"
     ) -> "list[StyleAndTextTuples]":
         """Get rendered lines from the cache, or generate them."""
+        cell_size_x, cell_size_y = self.app.term_info.cell_size_px
 
         def render_lines() -> "list[StyleAndTextTuples]":
             """Renders the lines to display in the control."""
+            full_width = width + self.bbox.left + self.bbox.right
+            full_height = height + self.bbox.top + self.bbox.bottom
             cmd = convert(
                 data=self.data,
                 from_=self.format_,
                 to="sixel",
-                cols=width,
-                rows=height,
+                cols=full_width,
+                rows=full_height,
                 fg=self.fg_color,
                 bg=self.bg_color,
                 path=self.path,
             )
+            if any(self.bbox):
+                from sixelcrop import sixelcrop
+
+                cmd = sixelcrop(
+                    data=cmd,
+                    # Horizontal pixel offset of the displayed image region
+                    x=self.bbox.left * cell_size_x,
+                    # Vertical pixel offset of the displayed image region
+                    y=self.bbox.top * cell_size_y,
+                    # Pixel width of the displayed image region
+                    w=width * cell_size_x,
+                    # Pixel height of the displayed image region
+                    h=height * cell_size_y,
+                )
+
             return list(
                 split_lines(
                     to_formatted_text(
@@ -402,10 +503,14 @@ class SixelGraphicControl(GraphicControl):
                             # Move cursor down and across by image height and width
                             ("", "\n".join((height) * [" " * (width)])),
                             # Save position, then move back
-                            (
-                                "[ZeroWidthEscape]",
-                                f"\x1b[s\x1b[{height-1}A\x1b[{width}D",
+                            ("[ZeroWidthEscape]", "\x1b[s"),
+                            # Move cursor up if there is more than one line to display
+                            *(
+                                [("[ZeroWidthEscape]", f"\x1b[{height-1}A")]
+                                if height > 1
+                                else []
                             ),
+                            ("[ZeroWidthEscape]", f"\x1b[{width}D"),
                             # Place the image without moving cursor
                             ("[ZeroWidthEscape]", tmuxify(cmd)),
                             # Restore the last known cursor position (at the bottom)
@@ -415,7 +520,7 @@ class SixelGraphicControl(GraphicControl):
                 )
             )
 
-        key = (width, self.app.term_info.cell_size_px)
+        key = (width, self.bbox, (cell_size_x, cell_size_y))
         return self._format_cache.get(key, render_lines)
 
 
@@ -424,15 +529,48 @@ class ItermGraphicControl(GraphicControl):
 
     def convert_data(self, rows: "int", cols: "int") -> "str":
         """Converts the graphic's data to base64 data."""
-        if self.format_.startswith("base64-"):
-            b64data = self.data
+        data = self.data
+        format_ = self.format_
+
+        full_width = cols + self.bbox.left + self.bbox.right
+        full_height = rows + self.bbox.top + self.bbox.bottom
+
+        # Crop image if necessary
+        if any(self.bbox):
+            import io
+
+            image = convert(
+                data=data,
+                from_=format_,
+                to="pil",
+                cols=full_width,
+                rows=full_height,
+                fg=self.fg_color,
+                bg=self.bg_color,
+                path=self.path,
+            )
+            image = image.crop(
+                (
+                    int(self.px * self.bbox.left / full_width),  # left
+                    int(self.py * self.bbox.top / full_height),  # upper
+                    int(self.px * (self.bbox.left + cols) / full_width),  # right
+                    int(self.py * (self.bbox.top + rows) / full_height),  # lower
+                )
+            )
+            with io.BytesIO() as output:
+                image.save(output, format="PNG")
+                data = output.getvalue()
+            format_ = "png"
+
+        if format_.startswith("base64-"):
+            b64data = data
         else:
             b64data = convert(
-                data=self.data,
-                from_=self.format_,
+                data=data,
+                from_=format_,
                 to="base64-png",
-                cols=cols,
-                rows=rows,
+                cols=full_width,
+                rows=full_height,
                 fg=self.fg_color,
                 bg=self.bg_color,
                 path=self.path,
@@ -456,10 +594,14 @@ class ItermGraphicControl(GraphicControl):
                             # Move cursor down and across by image height and width
                             ("", "\n".join((height) * [" " * (width)])),
                             # Save position, then move back
-                            (
-                                "[ZeroWidthEscape]",
-                                f"\x1b[s\x1b[{height-1}A\x1b[{width}D",
+                            ("[ZeroWidthEscape]", "\x1b[s"),
+                            # Move cursor up if there is more than one line to display
+                            *(
+                                [("[ZeroWidthEscape]", f"\x1b[{height-1}A")]
+                                if height > 1
+                                else []
                             ),
+                            ("[ZeroWidthEscape]", f"\x1b[{width}D"),
                             # Place the image without moving cursor
                             ("[ZeroWidthEscape]", tmuxify(cmd)),
                             # Restore the last known cursor position (at the bottom)
@@ -469,7 +611,7 @@ class ItermGraphicControl(GraphicControl):
                 )
             )
 
-        key = (width, self.app.term_info.cell_size_px)
+        key = (width, self.bbox, self.app.term_info.cell_size_px)
         return self._format_cache.get(key, render_lines)
 
 
@@ -483,12 +625,14 @@ class KittyGraphicControl(GraphicControl):
         self,
         data: "Any",
         format_: "str",
-        path: "Optional[UPath]" = None,
-        fg_color: "Optional[str]" = None,
-        bg_color: "Optional[str]" = None,
-        sizing_func: "Optional[Callable[[], tuple[int, float]]]" = None,
+        path: "UPath|None" = None,
+        fg_color: "str|None" = None,
+        bg_color: "str|None" = None,
+        sizing_func: "Callable[[], tuple[int, float]]|None" = None,
         focusable: "FilterOrBool" = False,
         focus_on_click: "FilterOrBool" = False,
+        scale: "float" = 0,
+        bbox: "BoxSize|None" = None,
     ) -> "None":
         """Create a new kitty graphic instance."""
         super().__init__(
@@ -500,6 +644,8 @@ class KittyGraphicControl(GraphicControl):
             sizing_func=sizing_func,
             focusable=focusable,
             focus_on_click=focus_on_click,
+            scale=scale,
+            bbox=bbox,
         )
         self.kitty_image_id = 0
         self.loaded = False
@@ -596,6 +742,8 @@ class KittyGraphicControl(GraphicControl):
 
         def render_lines() -> "list[StyleAndTextTuples]":
             """Renders the lines to display in the control."""
+            full_width = width + self.bbox.left + self.bbox.right
+            full_height = height + self.bbox.top + self.bbox.bottom
             cmd = self._kitty_cmd(
                 a="p",  # Display a previously transmitted image
                 i=self.kitty_image_id,
@@ -605,6 +753,14 @@ class KittyGraphicControl(GraphicControl):
                 c=width,
                 r=height,
                 C=1,  # 1 = Do move the cursor
+                # Horizontal pixel offset of the displayed image region
+                x=int(self.px * self.bbox.left / full_width),
+                # Vertical pixel offset of the displayed image region
+                y=int(self.py * self.bbox.top / full_height),
+                # Pixel width of the displayed image region
+                w=int(self.px * width / full_width),
+                # Pixel height of the displayed image region
+                h=int(self.py * height / full_height),
                 z=-(2**30) - 1,
             )
             return list(
@@ -614,10 +770,14 @@ class KittyGraphicControl(GraphicControl):
                             # Move cursor down and acoss by image height and width
                             ("", "\n".join((height) * [" " * (width)])),
                             # Save position, then move back
-                            (
-                                "[ZeroWidthEscape]",
-                                f"\x1b[s\x1b[{height-1}A\x1b[{width}D",
+                            ("[ZeroWidthEscape]", "\x1b[s"),
+                            # Move cursor up if there is more than one line to display
+                            *(
+                                [("[ZeroWidthEscape]", f"\x1b[{height-1}A")]
+                                if height > 1
+                                else []
                             ),
+                            ("[ZeroWidthEscape]", f"\x1b[{width}D"),
                             # Place the image without moving cursor
                             ("[ZeroWidthEscape]", tmuxify(cmd)),
                             # Restore the last known cursor position (at the bottom)
@@ -627,7 +787,7 @@ class KittyGraphicControl(GraphicControl):
                 )
             )
 
-        key = (width, self.app.term_info.cell_size_px)
+        key = (width, height, self.bbox, self.app.term_info.cell_size_px)
         return self._format_cache.get(key, render_lines)
 
     def reset(self) -> "None":
@@ -655,7 +815,7 @@ class GraphicWindow(Window):
     - the output it attached to is fully in view
     """
 
-    content: "DisplayControl"
+    content: "GraphicControl"
 
     def __init__(
         self,
@@ -686,24 +846,25 @@ class GraphicWindow(Window):
         write_position: "WritePosition",
         parent_style: "str",
         erase_bg: "bool",
-        z_index: "Optional[int]",
+        z_index: "int|None",
     ) -> "None":
         """Draws the graphic window's contents to the screen if required."""
         filter_value = self.filter()
         target_wp = screen.visible_windows_to_write_positions.get(self.target_window)
         if filter_value and target_wp and self.target_window.render_info is not None:
-            # NOTE - using `render_info` here means `rendered_height` is potentially one
-            # render cycle behind the `write_position`'s height. This only really
-            # matters when the terminal is resized
-            rendered_height = self.target_window.render_info.window_height
-            # Only draw if the target window is fully visible
-            if target_wp.height >= rendered_height:
+
+            bbox = BoxSize(0, 0, 0, 0)
+            if isinstance(target_wp, BoundedWritePosition):
+                bbox = target_wp.bbox
+            self.content.bbox = bbox
+
+            if display_height := max(0, target_wp.height - bbox.top - bbox.bottom):
                 cpos = screen.get_menu_position(self.target_window)
                 new_write_position = WritePosition(
-                    xpos=cpos.x,
-                    ypos=cpos.y,
-                    width=target_wp.width,
-                    height=target_wp.height,
+                    xpos=cpos.x + bbox.left,
+                    ypos=cpos.y + bbox.top,
+                    width=max(0, target_wp.width - bbox.left - bbox.right),
+                    height=display_height,
                 )
 
                 super().write_to_screen(
@@ -746,10 +907,10 @@ class GraphicFloat(Float):
         target_window: "Window",
         data: "Any",
         format_: "str",
-        path: "Optional[UPath]" = None,
-        fg_color: "Optional[str]" = None,
-        bg_color: "Optional[str]" = None,
-        sizing_func: "Optional[Callable[[], tuple[int, float]]]" = None,
+        path: "UPath|None" = None,
+        fg_color: "str|None" = None,
+        bg_color: "str|None" = None,
+        sizing_func: "Callable[[], tuple[int, float]]|None" = None,
         filter: "FilterOrBool" = True,
     ) -> "None":
         """Create a new instance.
@@ -765,7 +926,7 @@ class GraphicFloat(Float):
                 cells and its aspect ratio
             filter: A filter which is used to hide and show the graphic
         """
-        self.GraphicControl: "Optional[Type[GraphicControl]]" = None
+        self.GraphicControl: "Type[GraphicControl]|None" = None
         self.control = None
 
         app = get_app()
@@ -796,10 +957,12 @@ class GraphicFloat(Float):
             and SixelGraphicControl in useable_graphics_controls
         ):
             self.GraphicControl = SixelGraphicControl
-        elif useable_graphics_controls:
+
+        if self.GraphicControl is None and useable_graphics_controls:
             self.GraphicControl = useable_graphics_controls[0]
 
         if self.GraphicControl:
+            log.debug(self.GraphicControl)
             self.control = self.GraphicControl(
                 data,
                 format_=format_,
@@ -811,8 +974,8 @@ class GraphicFloat(Float):
             weak_self_ref = weakref.ref(self)
             super().__init__(
                 content=GraphicWindow(
-                    target_window=target_window,
                     content=self.control,
+                    target_window=target_window,
                     filter=to_filter(filter)
                     & (Condition(lambda: weak_self_ref() in get_app().graphics)),
                 ),
@@ -847,7 +1010,7 @@ class Display:
         self,
         data: "Any",
         format_: "str",
-        path: "Optional[UPath]" = None,
+        path: "UPath|None" = None,
         fg_color: "str|None" = None,
         bg_color: "str|None" = None,
         height: "AnyDimension" = None,
@@ -952,7 +1115,7 @@ class Display:
         self.graphic_float.data = value
 
     def make_sizing_func(
-        self, data: "Any", format_: "str", fg: "Optional[str]", bg: "Optional[str]"
+        self, data: "Any", format_: "str", fg: "str|None", bg: "str|None"
     ) -> "Callable[[], tuple[int, float]]":
         """Create a function to recalculate the data's dimensions in terminal cells."""
         px, py = self.px, self.py
@@ -961,23 +1124,23 @@ class Display:
         return partial(pixels_to_cell_size, px, py)
 
     @property
-    def px(self) -> "Optional[int]":
+    def px(self) -> "int|None":
         """Return the displayed data's pixel widget."""
         return self._px
 
     @px.setter
-    def px(self, value: "Optional[int]") -> "None":
+    def px(self, value: "int|None") -> "None":
         """Set the display container's width in pixels."""
         self._px = value
         self.update_sizing()
 
     @property
-    def py(self) -> "Optional[int]":
+    def py(self) -> "int|None":
         """Return the displayed data's pixel height."""
         return self._py
 
     @py.setter
-    def py(self, value: "Optional[int]") -> "None":
+    def py(self, value: "int|None") -> "None":
         """Set the display container's height in pixels."""
         self._py = value
         self.update_sizing()
