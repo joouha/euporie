@@ -140,7 +140,7 @@ class Button:
         on_mouse_down: "Optional[Callable[[Button], None]]" = None,
         disabled: "FilterOrBool" = False,
         width: "Optional[int]" = None,
-        style: "Union[str, Callable[[], str]]" = "",
+        style: "Union[str, Callable[[], str]]" = "class:input",
         border: "Optional[GridStyle]" = InnerEdgeGridStyle,
         show_borders: "Optional[BorderVisibility]" = None,
         selected: "bool" = False,
@@ -349,7 +349,7 @@ class ToggleButton(ToggleableWidget):
         text: "AnyFormattedText",
         on_click: "Optional[Callable[[ToggleButton], None]]" = None,
         width: "Optional[int]" = None,
-        style: "Union[str, Callable[[], str]]" = "",
+        style: "Union[str, Callable[[], str]]" = "class:input",
         border: "Optional[GridStyle]" = InnerEdgeGridStyle,
         show_borders: "Optional[BorderVisibility]" = None,
         selected: "bool" = False,
@@ -421,7 +421,7 @@ class Checkbox(ToggleableWidget):
         text: "AnyFormattedText" = "",
         on_click: "Optional[Callable[[ToggleableWidget], None]]" = None,
         prefix: "tuple[str, str]" = ("☐", "☑"),
-        style: "str" = "",
+        style: "str" = "class:input",
         selected: "bool" = False,
         disabled: "FilterOrBool" = False,
     ) -> None:
@@ -511,7 +511,7 @@ class Text:
     def __init__(
         self,
         text: "str" = "",
-        style: "str" = "",
+        style: "str" = "class:input",
         height: "int" = 1,
         min_height: "int" = 1,
         multiline: "bool" = False,
@@ -655,7 +655,7 @@ class Label:
     def __init__(
         self,
         value: "AnyFormattedText",
-        style: "Union[str, Callable[[], str]]" = "",
+        style: "Union[str, Callable[[], str]]" = "class:input",
         html: "FilterOrBool" = False,
     ) -> "None":
         """Create a new label widget instance.
@@ -700,7 +700,7 @@ class LabelledWidget:
         self,
         body: "AnyContainer",
         label: "AnyFormattedText",
-        style: "str" = "",
+        style: "str" = "class:input",
         vertical: "FilterOrBool" = False,
         html: "FilterOrBool" = False,
     ) -> "None":
@@ -847,7 +847,7 @@ class Progress:
         step: "Union[float, int]" = 1,
         value: "Union[float, int]" = 0,
         vertical: "FilterOrBool" = False,
-        style: "Union[str, Callable[[], str]]" = "",
+        style: "Union[str, Callable[[], str]]" = "class:input",
     ) -> "None":
         """Create a new progress-bar widget instance.
 
@@ -923,7 +923,7 @@ class SelectableWidget(metaclass=ABCMeta):
         n_values: "Optional[int]" = None,
         multiple: "FilterOrBool" = False,
         on_change: "Optional[Callable[[SelectableWidget], None]]" = None,
-        style: "Union[str, Callable[[], str]]" = "",
+        style: "Union[str, Callable[[], str]]" = "class:input",
         disabled: "FilterOrBool" = False,
     ) -> "None":
         """Create a new selectable widget instance.
@@ -1105,7 +1105,7 @@ class Select(SelectableWidget):
         n_values: "Optional[int]" = None,
         multiple: "FilterOrBool" = False,
         on_change: "Optional[Callable[[SelectableWidget], None]]" = None,
-        style: "Union[str, Callable[[], str]]" = "",
+        style: "Union[str, Callable[[], str]]" = "class:input",
         rows: "Optional[int]" = 3,
         prefix: "tuple[str, str]" = ("", ""),
         border: "Optional[GridStyle]" = InnerEdgeGridStyle,
@@ -1220,7 +1220,7 @@ class Dropdown(SelectableWidget):
         n_values: "Optional[int]" = None,
         multiple: "FilterOrBool" = False,
         on_change: "Optional[Callable[[SelectableWidget], None]]" = None,
-        style: "Union[str, Callable[[], str]]" = "",
+        style: "Union[str, Callable[[], str]]" = "class:input",
         arrow: "str" = "⯆",
         disabled: "FilterOrBool" = False,
     ) -> "None":
@@ -1393,7 +1393,7 @@ class ToggleButtons(SelectableWidget):
         n_values: "Optional[int]" = None,
         multiple: "FilterOrBool" = False,
         on_change: "Optional[Callable[[SelectableWidget], None]]" = None,
-        style: "Union[str, Callable[[], str]]" = "",
+        style: "Union[str, Callable[[], str]]" = "class:input",
         border: "GridStyle" = InnerEdgeGridStyle,
         disabled: "FilterOrBool" = False,
     ) -> "None":
@@ -1484,7 +1484,7 @@ class SliderControl(UIControl):
         handle_char: "str" = "●",
         track_char: "Optional[str]" = None,
         selected_track_char: "Optional[str]" = None,
-        style: "str" = "",
+        style: "str" = "class:input",
     ) -> "None":
         """Create a new slider control instance.
 
@@ -1836,7 +1836,7 @@ class Slider(SelectableWidget):
         n_values: "Optional[int]" = None,
         multiple: "FilterOrBool" = False,
         on_change: "Optional[Callable[[SelectableWidget], None]]" = None,
-        style: "Union[str, Callable[[], str]]" = "",
+        style: "Union[str, Callable[[], str]]" = "class:input",
         border: "GridStyle" = InnerEdgeGridStyle,
         show_borders: "Optional[BorderVisibility]" = None,
         vertical: "FilterOrBool" = False,
