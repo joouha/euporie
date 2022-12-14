@@ -22,7 +22,7 @@ from prompt_toolkit.layout.controls import UIContent
 from prompt_toolkit.layout.dimension import Dimension, to_dimension
 from prompt_toolkit.layout.mouse_handlers import MouseHandlers
 from prompt_toolkit.layout.screen import Char, Screen, WritePosition
-from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
+from prompt_toolkit.mouse_events import MouseEvent, MouseEventType, MouseModifier
 
 from euporie.core.data_structures import BoxSize
 
@@ -232,9 +232,14 @@ class ChildRenderInfo:
 
                     # Select the clicked child if clicked
                     if mouse_event.event_type == MouseEventType.MOUSE_DOWN:
-                        self.parent.selected_slice = slice(
-                            index := self.parent._children.index(self.child), index + 1
-                        )
+                        index = self.parent._children.index(self.child)
+                        if mouse_event.modifiers & {
+                            MouseModifier.SHIFT,
+                            MouseModifier.CONTROL,
+                        }:
+                            self.parent.select(index, extend=True)
+                        else:
+                            self.parent.select(index, extend=False)
                         get_app().invalidate()
 
                     response = handler(new_event)
@@ -495,6 +500,41 @@ class ScrollingContainer(Container):
         else:
             child_render_info = self.child_render_infos[child_hash]
         return child_render_info
+
+    def select(
+        self,
+        index: "int",
+        extend: "bool" = False,
+        position: "Optional[int]" = None,
+        scroll: "bool" = True,
+    ) -> "None":
+        """Selects a child or adds it to the selection.
+
+        Args:
+            index: The index of the cell to select
+            extend: If true, the selection will be extended to include the cell
+            position: An optional cursor position index to apply to the cell input
+            scroll: Whether to scroll the page
+        """
+        # Update the selected slice if we are extending the child selection
+        if extend:
+            slice_ = self._selected_slice
+            stop = -1 if slice_.stop is None else slice_.stop
+            step = slice_.step
+            if step == -1 and index <= stop:
+                stop += 2
+                step = 1
+            elif step == -1 and index >= stop:
+                pass
+            elif step in (1, None) and index < stop:
+                step = 1
+            elif step in (1, None) and index >= stop:
+                step = -1
+                stop -= 2
+            self._set_selected_slice(slice(index, stop, step), scroll=scroll)
+        # Otherwise set the cell selection to the given cell index
+        else:
+            self._set_selected_slice(slice(index, index + 1), scroll=scroll)
 
     def scroll(self, n: "int") -> "NotImplementedOrNone":
         """Scrolls up or down a number of rows.

@@ -462,24 +462,6 @@ class Cell:
         else:
             return False
 
-    def select(
-        self,
-        extend: "bool" = False,
-        position: "Optional[int]" = None,
-        scroll: "bool" = False,
-    ) -> "None":
-        """Selects this cell or adds it to the selection.
-
-        Args:
-            extend: If true, the selection will be extended to include this cell
-            position: An optional cursor position index to apply to the cell input
-            scroll: Whether to change the position of the selected cell
-
-        """
-        self.kernel_tab.select(
-            self.index, extend=extend, position=position, scroll=scroll
-        )
-
     @property
     def cell_type(self) -> "str":
         """Determine the current cell type."""

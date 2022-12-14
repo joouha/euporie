@@ -263,13 +263,13 @@ class Notebook(BaseNotebook):
     def enter_edit_mode(self) -> "None":
         """Enter cell edit mode."""
         self.edit_mode = True
-        self.cell.select()
+        self.select(self.cell.index)
         self.scroll_to(self.cell.index)
 
     def exit_edit_mode(self) -> "None":
         """Leave cell edit mode."""
         self.edit_mode = False
-        self.cell.select()
+        self.select(self.cell.index)
 
     def mode(self) -> "str":
         """Returns a symbol representing the current mode.
@@ -294,7 +294,7 @@ class Notebook(BaseNotebook):
 
     def select(
         self,
-        cell_index: "int",
+        index: "int",
         extend: "bool" = False,
         position: "Optional[int]" = None,
         scroll: "bool" = True,
@@ -302,33 +302,13 @@ class Notebook(BaseNotebook):
         """Selects a cell or adds it to the selection.
 
         Args:
-            cell_index: The index of the cell to select
+            index: The index of the cell to select
             extend: If true, the selection will be extended to include the cell
             position: An optional cursor position index to apply to the cell input
             scroll: Whether to scroll the page
 
         """
-        # Update the selected slice if we are extending the cell selection
-        if extend:
-            slice_ = self.page._selected_slice
-            stop = -1 if slice_.stop is None else slice_.stop
-            step = slice_.step
-            if step == -1 and cell_index <= stop:
-                stop += 2
-                step = 1
-            elif step == -1 and cell_index >= stop:
-                pass
-            elif step in (1, None) and cell_index < stop:
-                step = 1
-            elif step in (1, None) and cell_index >= stop:
-                step = -1
-                stop -= 2
-            self.page._set_selected_slice(slice(cell_index, stop, step), scroll=scroll)
-        # Otherwise set the cell selection to the given cell index
-        else:
-            self.page._set_selected_slice(
-                slice(cell_index, cell_index + 1), scroll=scroll
-            )
+        self.page.select(index=index, extend=extend, position=position, scroll=scroll)
         # Focus the selected cell - use the current slice in case it did not change
         self.rendered_cells()[self.page.selected_slice.start].focus(
             position, scroll=scroll
@@ -1118,7 +1098,7 @@ class Notebook(BaseNotebook):
             new_index = nb.cell.index - 1
             cells = nb.rendered_cells()
             if 0 <= new_index < len(cells):
-                cells[new_index].select(position=-1, scroll=True)
+                nb.select(index=new_index, position=-1, scroll=True)
 
     @staticmethod
     @add_cmd(
@@ -1134,7 +1114,7 @@ class Notebook(BaseNotebook):
             new_index = nb.cell.index + 1
             cells = nb.rendered_cells()
             if 0 <= new_index < len(cells):
-                cells[new_index].select(position=0, scroll=True)
+                nb.select(index=new_index, position=0, scroll=True)
 
     @staticmethod
     @add_cmd(
