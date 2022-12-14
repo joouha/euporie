@@ -17,12 +17,10 @@ from prompt_toolkit.layout.containers import (
     HSplit,
     VSplit,
     Window,
-    to_container,
 )
 from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.layout.dimension import Dimension
 from prompt_toolkit.lexers import DynamicLexer, PygmentsLexer, SimpleLexer
-from prompt_toolkit.mouse_events import MouseEvent, MouseEventType, MouseModifier
 from pygments.lexers import get_lexer_by_name
 
 from euporie.core.app import get_app
@@ -39,13 +37,8 @@ if TYPE_CHECKING:
 
     from prompt_toolkit.buffer import Buffer
     from prompt_toolkit.formatted_text.base import OneStyleAndTextTuple
-    from prompt_toolkit.key_binding.key_bindings import NotImplementedOrNone
-    from prompt_toolkit.layout.containers import AnyContainer
-    from prompt_toolkit.layout.mouse_handlers import MouseHandlers
-    from prompt_toolkit.layout.screen import Screen, WritePosition
 
     from euporie.core.tabs.notebook import BaseNotebook
-    from euporie.core.widgets.page import ChildRenderInfo
 
 
 log = logging.getLogger(__name__)
@@ -69,134 +62,6 @@ def get_cell_id(cell_json: "dict") -> "str":
     if not cell_id:
         cell_json["id"] = cell_id = nbformat.v4.new_code_cell().get("id")
     return cell_id
-
-
-class ClickToFocus(Container):
-    """Selects a cell when clicked, passing through mouse events."""
-
-    def __init__(
-        self,
-        cell: "Cell",
-        body: "AnyContainer",
-    ) -> "None":
-        """Create a new instance of the widget.
-
-        Args:
-            cell: The cell to select on click
-            body: The container to act on
-        """
-        self.cell = cell
-        self.body = body
-        self.done_mouse_down = False
-
-    def reset(self) -> "None":
-        """Reset the wrapped container."""
-        to_container(self.body).reset()
-
-    def preferred_width(self, max_available_width: "int") -> "Dimension":
-        """Return the wrapped container's preferred width."""
-        return to_container(self.body).preferred_width(max_available_width)
-
-    def preferred_height(
-        self, width: "int", max_available_height: "int"
-    ) -> "Dimension":
-        """Return the wrapped container's preferred height."""
-        return to_container(self.body).preferred_height(width, max_available_height)
-
-    def write_to_screen(
-        self,
-        screen: "Screen",
-        mouse_handlers: "MouseHandlers",
-        write_position: "WritePosition",
-        parent_style: "str",
-        erase_bg: "bool",
-        z_index: "Optional[int]",
-    ) -> "None":
-        """Draw the wrapped container with the additional style."""
-        output = to_container(self.body).write_to_screen(
-            screen,
-            mouse_handlers,
-            write_position,
-            parent_style,
-            erase_bg,
-            z_index,
-        )
-
-        mouse_handler_wrappers: "dict[Callable, Callable[[MouseEvent], object]]" = {}
-
-        def _wrap_mouse_handler(
-            handler: "Callable",
-        ) -> "Callable[[MouseEvent], object]":
-            if (mouse_handler := mouse_handler_wrappers.get(handler)) is not None:
-                return mouse_handler
-
-            elif getattr(handler, "wrapped", None) is not None:
-                return handler
-
-            else:
-
-                def wrapped_mouse_handler(
-                    mouse_event: "MouseEvent",
-                ) -> "NotImplementedOrNone":
-
-                    if self.cell:
-                        if self.cell.kernel_tab.app.layout.has_focus(self.cell):
-                            result = None
-                            # If we just handled a mouse down event, the page may have
-                            # scrolled, resulting in a change in cursor position on the
-                            # next mouse-up event, causing a selection to be created.
-                            # Here we check for this scenario and close the selection, and
-                            # prevent the cursor position moving on mouse up
-                            if (
-                                self.done_mouse_down
-                                and mouse_event.event_type == MouseEventType.MOUSE_UP
-                                and self.cell.kernel_tab.edit_mode
-                            ):
-                                self.cell.kernel_tab.app.current_buffer.exit_selection()
-
-                            else:
-                                # Run the wrapped mouse handler
-                                result = handler(mouse_event)
-
-                            self.done_mouse_down = False
-                            return result
-
-                        elif mouse_event.event_type == MouseEventType.MOUSE_DOWN:
-                            # Use a set intersection
-                            if mouse_event.modifiers & {
-                                MouseModifier.SHIFT,
-                                MouseModifier.CONTROL,
-                            }:
-                                self.cell.select(extend=True)
-                            else:
-                                self.cell.select()
-                            self.cell.focus(scroll=True)
-                            self.done_mouse_down = True
-                            # Run the wrapped mouse handler
-                            handler(mouse_event)
-                            # Return None for the app is always invalidated
-                            return None
-
-                    return NotImplemented
-
-                # Set a flag on this handler so we won't re-wrap it
-                setattr(wrapped_mouse_handler, "wrapped", True)  # noqa B010
-                mouse_handler_wrappers[handler] = wrapped_mouse_handler
-                return wrapped_mouse_handler
-
-        # Copy screen contents
-        wp = write_position
-        for y in range(wp.ypos, wp.ypos + wp.height):
-            for x in range(wp.xpos, wp.xpos + wp.width):
-                mouse_handlers.mouse_handlers[y][x] = _wrap_mouse_handler(
-                    mouse_handlers.mouse_handlers[y][x]
-                )
-
-        return output
-
-    def get_children(self) -> "list[Container]":
-        """Return the list of child :class:`.Container` objects."""
-        return [to_container(self.body)]
 
 
 class Cell:
@@ -227,7 +92,6 @@ class Cell:
         self.clear_outputs_on_output = False
 
         self.state = "idle"
-        self.meta: "Optional[ChildRenderInfo]" = None
 
         show_input = Condition(
             lambda: bool(
@@ -539,17 +403,14 @@ class Cell:
             height=1,
         )
 
-        self.container = ClickToFocus(
-            cell=weak_self,
-            body=HSplit(
-                [
-                    top_border,
-                    input_row,
-                    middle_line,
-                    output_row,
-                    bottom_border,
-                ],
-            ),
+        self.container = HSplit(
+            [
+                top_border,
+                input_row,
+                middle_line,
+                output_row,
+                bottom_border,
+            ],
         )
 
     def focus(self, position: "Optional[int]" = None, scroll: "bool" = False) -> "None":
@@ -684,8 +545,7 @@ class Cell:
 
     def refresh(self, now: "bool" = True) -> "None":
         """Request that the cell to be re-rendered next time it is drawn."""
-        if self.meta:
-            self.meta.refresh = True
+        self.kernel_tab.refresh_cell(self)
         if now:
             get_app().invalidate()
 

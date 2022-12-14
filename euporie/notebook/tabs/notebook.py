@@ -248,7 +248,11 @@ class Notebook(BaseNotebook):
     @property
     def cells(self) -> "Sequence[Cell]":
         """Returns the currently selected `Cells` in this `Notebook`."""
-        return self.page.children[self.page.selected_slice]
+        return [
+            child
+            for child in self.page.children[self.page.selected_slice]
+            if isinstance(child, Cell)
+        ]
 
     def check_edit_mode(self) -> "bool":
         """Determine if the notebook is (or should be) in edit mode."""
@@ -343,6 +347,10 @@ class Notebook(BaseNotebook):
         # This triggers another redraw of the selected cell
         self.page._set_selected_slice(slice_, force=True, scroll=scroll)
         self.page.reset()
+
+    def refresh_cell(self, cell: "Cell") -> "None":
+        """Trigger the refresh of a notebook cell."""
+        self.page.get_child_render_info(cell.index).refresh = True
 
     def add_cell_above(self) -> "None":
         """Insert a cell above the current selection."""

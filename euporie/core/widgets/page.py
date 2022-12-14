@@ -36,8 +36,6 @@ if TYPE_CHECKING:
     from prompt_toolkit.layout.containers import AnyContainer
     from prompt_toolkit.layout.dimension import AnyDimension
 
-    from euporie.core.widgets.cell import Cell
-
     MouseHandler = Callable[[MouseEvent], object]
 
 log = logging.getLogger(__name__)
@@ -71,7 +69,7 @@ class BoundedWritePosition(WritePosition):
 class ChildRenderInfo:
     """A class which holds information about a :py:class:`ScrollingContainer` child."""
 
-    def __init__(self, parent: "ScrollingContainer", child: "Cell") -> "None":
+    def __init__(self, parent: "ScrollingContainer", child: "AnyContainer") -> "None":
         """Initiates the :py:class:`ChildRenderInfo` object.
 
         Args:
@@ -81,7 +79,6 @@ class ChildRenderInfo:
         """
         self.parent = parent
         self.child = weakref.proxy(child)
-        child.meta = self
         self.container = to_container(child)
 
         self.screen = Screen(default_char=Char(char=" "))
@@ -232,6 +229,14 @@ class ChildRenderInfo:
                         button=mouse_event.button,
                         modifiers=mouse_event.modifiers,
                     )
+
+                    # Select the clicked child if clicked
+                    if mouse_event.event_type == MouseEventType.MOUSE_DOWN:
+                        self.parent.selected_slice = slice(
+                            index := self.parent._children.index(self.child), index + 1
+                        )
+                        get_app().invalidate()
+
                     response = handler(new_event)
                     # This would work if windows returned NotImplemented when scrolled
                     # to the start or end
@@ -293,14 +298,23 @@ class ScrollingContainer(Container):
 
     def __init__(
         self,
-        children_func: "Callable",
+        children: "Callable[[], Sequence[AnyContainer]]|Sequence[AnyContainer]",
         height: "AnyDimension" = None,
         width: "AnyDimension" = None,
         style: "Union[str, Callable[[], str]]" = "",
     ) -> "None":
         """Initiates the `ScrollingContainer`."""
-        self.children_func = children_func
-        self._children: "list[Cell]" = []
+        if callable(children):
+            _children_func = children
+        else:
+
+            def _children_func() -> "Sequence[AnyContainer]":
+                """Return the pass sequence of children."""
+                assert not callable(children)
+                return children
+
+        self.children_func = _children_func
+        self._children: "list[AnyContainer]" = []
         self.refresh_children = True
         self.pre_rendered = 0.0
 
@@ -377,10 +391,10 @@ class ScrollingContainer(Container):
     @property
     def children(
         self,
-    ) -> "Sequence[Cell]":  # Sequence[Union[Container, MagicContainer]]":
+    ) -> "Sequence[AnyContainer]":  # Sequence[Union[Container, MagicContainer]]":
         """Return the current children of this container instance."""
         if self.refresh_children:
-            self._children = self.children_func()
+            self._children = list(self.children_func())
             self.refresh_children = False
             # Clean up metacache
             for child_hash in set(self.child_render_infos) - set(
@@ -400,6 +414,7 @@ class ScrollingContainer(Container):
     ) -> None:
         # Only update the selected child if it was not selected before
         if force or new_slice != self._selected_slice:
+            app = get_app()
             self.refresh_children = True
             # Ensure new selected slice is valid
             new_slice = self.validate_slice(new_slice)
@@ -407,14 +422,25 @@ class ScrollingContainer(Container):
             if scroll:
                 self.scroll_to(new_slice.start)
             # Request a refresh of the previously selected children
+            render_info: "Optional[ChildRenderInfo]"
             for render_info in self._selected_child_render_infos:
                 if render_info:
                     render_info.refresh = True
+            # If a child currently has focus, request to refresh it
+            for child in self.children:
+                if (
+                    render_info := self.child_render_infos.get(hash(child))
+                ) is not None:
+                    if app.layout.has_focus(render_info.child):
+                        render_info.refresh = True
+                        break
             # Get the first selected child and focus it
             child = self.children[new_slice.start]
-            app = get_app()
             if not app.layout.has_focus(child):
-                app.layout.focus(child)
+                try:
+                    app.layout.focus(child)
+                except ValueError:
+                    pass
             # Track which child was selected
             self._selected_slice = new_slice
 

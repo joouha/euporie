@@ -214,6 +214,10 @@ class BaseNotebook(KernelTab, metaclass=ABCMeta):
         """Refresh the notebook."""
         pass
 
+    def refresh_cell(self, cell: "Cell") -> "None":
+        """Trigger the refresh of a notebook cell."""
+        pass
+
     def close(self, cb: "Optional[Callable]" = None) -> "None":
         """Check if the user want to save an unsaved notebook, then close the file.
 
