@@ -192,11 +192,15 @@ class Button:
             dont_extend_width=True,
             dont_extend_height=True,
         )
-        self.container = Border(
-            self.window,
-            border=border,
-            show_borders=show_borders,
-            style=lambda: f"{self.get_style()} class:border",
+        self.container = Box(
+            Border(
+                self.window,
+                border=border,
+                show_borders=show_borders,
+                style=lambda: f"{self.get_style()} class:border",
+            ),
+            padding=0,
+            style=self.get_style(),
         )
 
     def get_style(self) -> str:
