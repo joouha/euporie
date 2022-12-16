@@ -524,9 +524,11 @@ class Text:
         validation: "Optional[Callable[[str], bool]]" = None,
         accept_handler: "Optional[BufferAcceptHandler]" = None,
         placeholder: "Optional[str]" = None,
+        lexer: "Optional[Lexer]" = None,
         input_processors: "Optional[Sequence[Processor]]" = None,
         disabled: "FilterOrBool" = False,
         password: "FilterOrBool" = False,
+        wrap_lines: "FilterOrBool" = False,
         prompt: "Optional[AnyFormattedText]" = None,
     ) -> "None":
         """Create a new text widget instance.
@@ -548,11 +550,14 @@ class Text:
             accept_handler: A callable which run when the input is accepted (when the
                 :kbd:`Enter` key is pressed on a non-multiline input)
             placeholder: Text to display when nothing has been entered
+            lexer: :class:`~prompt_toolkit.lexers.Lexer` instance for syntax
+                highlighting
             input_processors: Additional input processors to apply to the text-area
             disabled: A filter which when evaluated to :py:const:`True` causes the
                 widget to be disabled
             password: A filter to determine if the text input is a password field
             prompt: Text to display before the input
+            wrap_lines: Whether to wrap lines wider than the text area
         """
         self.style = style
         self.options = options or []
@@ -576,6 +581,7 @@ class Text:
                 WordCompleter(self.options),
                 filter=Condition(lambda: bool(self.options)),
             ),
+            lexer=lexer,
             input_processors=[
                 ConditionalProcessor(
                     AfterInput(
@@ -588,6 +594,7 @@ class Text:
                 *(input_processors or []),
             ],
             password=password,
+            wrap_lines=wrap_lines,
         )
         self.buffer = self.text_area.buffer
 
