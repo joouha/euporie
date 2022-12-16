@@ -82,7 +82,7 @@ class MarginContainer(Window):
         self, width: "int", max_available_height: "int"
     ) -> "Dimension":
         """Return a thedesired height for this container."""
-        return Dimension(max_available_height)
+        return Dimension()
 
     def write_to_screen(
         self,

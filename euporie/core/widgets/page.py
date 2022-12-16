@@ -238,9 +238,10 @@ class ChildRenderInfo:
                             MouseModifier.CONTROL,
                         }:
                             self.parent.select(index, extend=True)
+                            get_app().invalidate()
                         else:
                             self.parent.select(index, extend=False)
-                        get_app().invalidate()
+                            get_app().invalidate()
 
                     response = handler(new_event)
                     # This would work if windows returned NotImplemented when scrolled
@@ -337,8 +338,8 @@ class ScrollingContainer(Container):
 
         self.last_write_position = WritePosition(0, 0, 0, 0)
 
-        self.height = to_dimension(height).preferred
         self.width = to_dimension(width).preferred
+        self.height = to_dimension(height).preferred
         self.style = style
 
         self.scroll_to_cursor = False
@@ -385,13 +386,13 @@ class ScrollingContainer(Container):
         """Do not provide a preferred width - grow to fill the available space."""
         if self.width is not None:
             return Dimension(min=1, preferred=self.width, weight=1)
-        return Dimension()
+        return Dimension(weight=1)
 
     def preferred_height(self, width: int, max_available_height: int) -> "Dimension":
         """Return the preferred height only if one is provided."""
         if self.height is not None:
-            return Dimension(min=1, preferred=self.height)
-        return Dimension()
+            return Dimension(min=1, preferred=self.height, weight=1)
+        return Dimension(weight=1)
 
     @property
     def children(
@@ -613,11 +614,16 @@ class ScrollingContainer(Container):
         """
         ypos = write_position.ypos
         xpos = write_position.xpos
+
         available_width = write_position.width
         available_height = write_position.height
 
+        # Trigger pre-rendering of children
         if not self.pre_rendered:
             self.pre_render_children(available_width, available_height)
+
+        # Update screen height
+        screen.height = max(screen.height, ypos + write_position.height)
 
         # Record children which are currently visible
         visible_indicies = set()

@@ -17,7 +17,7 @@ from prompt_toolkit.filters import (
     vi_mode,
     vi_navigation_mode,
 )
-from prompt_toolkit.layout.containers import ConditionalContainer, HSplit, VSplit
+from prompt_toolkit.layout.containers import ConditionalContainer, VSplit
 from prompt_toolkit.layout.dimension import Dimension
 from prompt_toolkit.mouse_events import MouseEventType
 
@@ -176,61 +176,56 @@ class Notebook(BaseNotebook):
             partial(getattr, self.app.config, "background_pattern"),
         )
 
-        return HSplit(
+        return VSplit(
             [
-                VSplit(
-                    [
-                        ConditionalContainer(
-                            VSplit(
-                                [
-                                    pattern,
-                                    Line(
-                                        char="▋",  # 5/8
-                                        width=1,
-                                        collapse=True,
-                                        style="class:drop-shadow.outer reverse",
-                                    ),
-                                    Line(
-                                        char="▎",  # 2/8
-                                        width=1,
-                                        collapse=True,
-                                        style="class:drop-shadow.inner",
-                                    ),
-                                ]
+                ConditionalContainer(
+                    VSplit(
+                        [
+                            pattern,
+                            Line(
+                                char="▋",  # 5/8
+                                width=1,
+                                collapse=True,
+                                style="class:drop-shadow.outer reverse",
                             ),
-                            filter=~expand,
-                        ),
-                        self.page,
-                        ConditionalContainer(
-                            VSplit(
-                                [
-                                    Line(
-                                        char="▊",  # 6/8
-                                        width=1,
-                                        collapse=True,
-                                        style="class:drop-shadow.inner reverse",
-                                    ),
-                                    Line(
-                                        char="▍",  # 3/8
-                                        width=1,
-                                        collapse=True,
-                                        style="class:drop-shadow.outer",
-                                    ),
-                                    pattern,
-                                ]
+                            Line(
+                                char="▎",  # 2/8
+                                width=1,
+                                collapse=True,
+                                style="class:drop-shadow.inner",
                             ),
-                            filter=~expand,
-                        ),
-                        ConditionalContainer(
-                            MarginContainer(ScrollbarMargin(), target=self.page),
-                            filter=Condition(lambda: self.app.config.show_scroll_bar),
-                        ),
-                    ],
-                    height=Dimension(weight=2),
+                        ]
+                    ),
+                    filter=~expand,
+                ),
+                self.page,
+                ConditionalContainer(
+                    VSplit(
+                        [
+                            Line(
+                                char="▊",  # 6/8
+                                width=1,
+                                collapse=True,
+                                style="class:drop-shadow.inner reverse",
+                            ),
+                            Line(
+                                char="▍",  # 3/8
+                                width=1,
+                                collapse=True,
+                                style="class:drop-shadow.outer",
+                            ),
+                            pattern,
+                        ]
+                    ),
+                    filter=~expand,
+                ),
+                ConditionalContainer(
+                    MarginContainer(ScrollbarMargin(), target=self.page),
+                    filter=Condition(lambda: self.app.config.show_scroll_bar),
                 ),
             ],
             width=Dimension(weight=1),
-            height=Dimension(weight=1),
+            height=Dimension(weight=2),
             key_bindings=load_registered_bindings(
                 "euporie.notebook.tabs.notebook.Notebook"
             ),
