@@ -562,6 +562,8 @@ def build_style(
         "input slider handle": f"fg:{cp.fg.darker(0.25)}",
         "input slider handle focused": f"fg:{cp.fg}",
         "input slider handle selection focused": f"fg:{cp.hl}",
+        "input dropdown dropdown.menu": f"bg:{cp.bg.more(0.05)}",
+        "input dropdown dropdown.menu hovered": f"bg:{cp.hl}",
         # Dataframes
         "html table dataframe border": f"fg:{cp.bg.more(0.25)} bg:{cp.bg.more(0.05)}",
         "html table dataframe th": f"bg:{cp.bg.more(0.1)}",
