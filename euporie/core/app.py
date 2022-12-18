@@ -668,12 +668,12 @@ class BaseApp(Application):
 
         """
         # Get foreground and background colors based on the configured colour scheme
-        theme_colors = {
+        theme_colors: "dict[str, dict[str, str]]" = {
+            "default": {},
             "light": {"fg": "#202020", "bg": "#F0F0F0"},
             "dark": {"fg": "#F0F0F0", "bg": "#202020"},
             "white": {"fg": "#000000", "bg": "#FFFFFF"},
             "black": {"fg": "#FFFFFF", "bg": "#000000"},
-            "default": self.term_info.colors.value,
             # TODO - use config.custom_colors
             "custom": {
                 "fg": self.config.custom_foreground_color,
@@ -682,6 +682,7 @@ class BaseApp(Application):
         }
         base_colors: "dict[str, str]" = {
             **DEFAULT_COLORS,
+            **self.term_info.colors.value,
             **theme_colors.get(self.config.color_scheme, theme_colors["default"]),
         }
 

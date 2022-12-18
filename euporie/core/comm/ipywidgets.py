@@ -456,8 +456,8 @@ class ButtonModel(IpyWidgetComm):
     def button_style(self) -> "str":
         """Convert the ipywidget button_style to a prompt_toolkit style string."""
         if style := self.data["state"].get("button_style", ""):
-            return f"class:{style}"
-        return ""
+            return f"class:ipywidget,{style}"
+        return "class:ipywidget"
 
     def click(self, button: "Button") -> "None":
         """Send a ``comm_msg`` describing a click event."""
@@ -497,6 +497,7 @@ class TextBoxIpyWidgetComm(IpyWidgetComm, metaclass=ABCMeta):
             multiline=self.multiline,
             placeholder=self.data.get("state", {}).get("placeholder"),
             disabled=Condition(lambda: self.data["state"].get("disabled", False)),
+            style="class:ipywidget",
         )
         labelled_widget = LabelledWidget(
             body=text,
@@ -785,6 +786,7 @@ class NumberTextBoxIpyWidgetComm(TextBoxIpyWidgetComm, metaclass=ABCMeta):
             on_text_changed=self.update_value,
             validation=self.validation,
             disabled=disabled,
+            style="class:ipywidget",
         )
         container = FocusedStyle(
             LabelledWidget(
@@ -797,12 +799,14 @@ class NumberTextBoxIpyWidgetComm(TextBoxIpyWidgetComm, metaclass=ABCMeta):
                             show_borders=BorderVisibility(True, False, True, True),
                             on_click=self.decr,
                             disabled=disabled,
+                            style="class:ipywidget",
                         ),
                         Button(
                             "+",
                             show_borders=BorderVisibility(True, True, True, False),
                             on_click=self.incr,
                             disabled=disabled,
+                            style="class:ipywidget",
                         ),
                     ],
                 ),
@@ -867,6 +871,7 @@ class ProgressIpyWidgetComm(IpyWidgetComm, metaclass=ABCMeta):
                 body=progress,
                 vertical=vertical,
                 label=lambda: self.data.get("state", {}).get("description", ""),
+                style="class:ipywidget",
             ),
         )
         return CommView(
@@ -942,8 +947,8 @@ class ToggleButtonModel(ToggleableIpyWidgetComm):
     def button_style(self) -> "str":
         """Convert the ipywidget button_style to a prompt_toolkit style string."""
         if style := self.data["state"].get("button_style", ""):
-            return f"class:{style}"
-        return ""
+            return f"class:ipywidget,{style}"
+        return "class:ipywidget"
 
 
 class CheckboxModel(ToggleableIpyWidgetComm):
@@ -1031,7 +1036,7 @@ class RadioButtonsModel(SelectableIpyWidgetComm):
             options=self.data["state"].get("_options_labels", []),
             index=self.data["state"]["index"],
             on_change=self.update_index,
-            style="class:radio-buttons",
+            style="class:ipywidget,radio-buttons",
             prefix=("○", "◉"),
             multiple=False,
             border=None,
@@ -1062,7 +1067,7 @@ class SelectModel(SelectableIpyWidgetComm):
             options=self.data["state"].get("_options_labels", []),
             index=self.data["state"]["index"],
             on_change=self.update_index,
-            style="class:ipywidget,face",
+            style="class:ipywidget",
             multiple=False,
             rows=self.data["state"].get("rows", 5),
             disabled=Condition(lambda: self.data["state"].get("disabled", False)),
@@ -1196,6 +1201,7 @@ class ToggleButtonsModel(IpyWidgetComm):
                 LabelledWidget(
                     buttons,
                     label=lambda: self.data["state"].get("description", ""),
+                    style="class:ipywidget",
                 )
             ),
             setters={
@@ -1214,8 +1220,8 @@ class ToggleButtonsModel(IpyWidgetComm):
     def button_style(self) -> "str":
         """Convert the ipywidget button_style to a prompt_toolkit style string."""
         if style := self.data["state"].get("button_style", ""):
-            return f"class:{style}"
-        return ""
+            return f"class:ipywidget,{style}"
+        return "class:ipywidget"
 
     def update_index(self, container: "SelectableWidget") -> "None":
         """Set the selected index be sending a comm update message."""
@@ -1357,6 +1363,7 @@ class ColorPickerModel(TextBoxIpyWidgetComm):
             show_borders=BorderVisibility(True, True, True, False),
             input_processors=[BeforeInput(" ")],
             disabled=Condition(lambda: self.data["state"].get("disabled", False)),
+            style="class:ipywidget",
         )
 
         container = FocusedStyle(

@@ -576,7 +576,7 @@ class SelectKernelDialog(Dialog):
                 kernel_spec.get("spec", {}).get("display_name", kernel_name)
                 for kernel_name, kernel_spec in kernel_specs.items()
             ],
-            style="class:radio-buttons,input",
+            style="class:input,radio-buttons",
             prefix=("○", "◉"),
             multiple=False,
             border=None,

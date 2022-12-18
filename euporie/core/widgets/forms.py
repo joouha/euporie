@@ -375,7 +375,7 @@ class ToggleButton(ToggleableWidget):
         self.button = Button(
             text=text,
             width=width,
-            style=self.style,
+            style=style,
             border=border,
             show_borders=show_borders,
             selected=selected,
@@ -573,7 +573,7 @@ class Text:
             focusable=True,
             focus_on_click=True,
             read_only=self.disabled,
-            style=f"class:text,text-area {style}",
+            style=f"{style} class:text,text-area",
             validator=Validator.from_callable(validation) if validation else None,
             accept_handler=accept_handler,
             completer=completer
@@ -1112,7 +1112,7 @@ class Select(SelectableWidget):
         n_values: "Optional[int]" = None,
         multiple: "FilterOrBool" = False,
         on_change: "Optional[Callable[[SelectableWidget], None]]" = None,
-        style: "Union[str, Callable[[], str]]" = "class:input",
+        style: "Union[str, Callable[[], str]]" = "class:input,select",
         rows: "Optional[int]" = 3,
         prefix: "tuple[str, str]" = ("", ""),
         border: "Optional[GridStyle]" = InnerEdgeGridStyle,
@@ -1194,24 +1194,28 @@ class Select(SelectableWidget):
 
     def load_container(self) -> "AnyContainer":
         """Load the widget's container."""
-        return Border(
-            Window(
-                FormattedTextControl(
-                    self.text_fragments,
-                    key_bindings=self.key_bindings(),
-                    focusable=True,
-                    show_cursor=False,
+        return Box(
+            Border(
+                Window(
+                    FormattedTextControl(
+                        self.text_fragments,
+                        key_bindings=self.key_bindings(),
+                        focusable=True,
+                        show_cursor=False,
+                    ),
+                    height=lambda: self.rows,
+                    dont_extend_width=self.dont_extend_width,
+                    dont_extend_height=self.dont_extend_height,
+                    style=f"class:face"
+                    f"{' class:disabled' if self.disabled() else ''}",
+                    right_margins=[ScrollbarMargin(style=self.style)],
                 ),
-                height=lambda: self.rows,
-                dont_extend_width=self.dont_extend_width,
-                dont_extend_height=self.dont_extend_height,
-                style=f"class:select {self.style}"
-                f"{' class:disabled' if self.disabled() else ''}",
-                right_margins=[ScrollbarMargin(style=self.style)],
+                border=self.border,
+                show_borders=self.show_borders,
+                style="class:inset,border",
             ),
-            border=self.border,
-            show_borders=self.show_borders,
-            style="class:select,border",
+            padding=0,
+            style=self.style,
         )
 
 
@@ -1434,16 +1438,13 @@ class ToggleButtons(SelectableWidget):
 
     def load_container(self) -> "AnyContainer":
         """Load the widget's container."""
-        show_borders_values = [BorderVisibility(True, False, True, True)]
-        if len(self.options) > 1:
-            show_borders_values += [
-                *[
-                    BorderVisibility(True, False, True, False)
-                    for _ in self.options[1:-1]
-                ],
-                BorderVisibility(True, True, True, False),
-            ]
-
+        show_borders_values = [
+            BorderVisibility(True, False, True, False) for _ in self.options
+        ]
+        show_borders_values[0] = BorderVisibility(*show_borders_values[0][:-1], True)
+        show_borders_values[-1] = BorderVisibility(
+            show_borders_values[0][0], True, *show_borders_values[-1][2:]
+        )
         self.buttons = [
             ToggleButton(
                 text=label,
@@ -1912,6 +1913,7 @@ class Slider(SelectableWidget):
             validation=lambda x: self.validate_readout(x) is not None,
             accept_handler=self.accept_handler,
             disabled=self.disabled,
+            style=self.style,
         )
         return ConditionalSplit(
             self.vertical,
