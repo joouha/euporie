@@ -89,8 +89,6 @@ class ChildRenderInfo:
 
         self.refresh = True
 
-        self.win_render_infos: "dict[Window, WindowRenderInfo]" = {}
-
     def render(
         self,
         available_width: "int",
@@ -171,15 +169,14 @@ class ChildRenderInfo:
             screen.visible_windows_to_write_positions[win] = new_wp
 
             # Modify render info
-            win_render_info = win.render_info
-            if win_render_info is not None:
-                info = self.win_render_infos.setdefault(win, win_render_info)
-                # info.visible_line_to_row_col = {
-                # line: (y + info._y_offset, new_wp.xpos + info._x_offset)
-                # for line, y in enumerate(
-                # range(new_wp.ypos, new_wp.ypos + new_wp.height)
-                # )
-                # }
+            info = win.render_info
+            if info is not None:
+                visible_line_to_row_col = {
+                    line: (y + info._y_offset, new_wp.xpos + info._x_offset)
+                    for line, y in enumerate(
+                        range(new_wp.ypos, new_wp.ypos + new_wp.height)
+                    )
+                }
                 win.render_info = WindowRenderInfo(
                     window=win,
                     ui_content=info.ui_content,
@@ -188,7 +185,8 @@ class ChildRenderInfo:
                     window_width=info.window_width,
                     window_height=info.window_height,
                     configured_scroll_offsets=info.configured_scroll_offsets,
-                    visible_line_to_row_col=info.visible_line_to_row_col,
+                    # visible_line_to_row_col=info.visible_line_to_row_col,
+                    visible_line_to_row_col=visible_line_to_row_col,
                     rowcol_to_yx={
                         (row, col): (y + top, x + left)
                         for (row, col), (y, x) in info._rowcol_to_yx.items()
@@ -199,9 +197,7 @@ class ChildRenderInfo:
                 )
                 # Set horizontal scroll offset - TODO - fix this upstream
                 if (
-                    horizontal_scroll := getattr(
-                        win_render_info, "horizontal_scroll", None
-                    )
+                    horizontal_scroll := getattr(info, "horizontal_scroll", None)
                 ) is not None:
                     setattr(  # noqa B010
                         win.render_info, "horizontal_scroll", horizontal_scroll
@@ -230,6 +226,21 @@ class ChildRenderInfo:
                         modifiers=mouse_event.modifiers,
                     )
 
+                    response = handler(new_event)
+
+                    # Refresh the child if there was a response
+                    if response is None:
+                        self.refresh = True
+                        return response
+
+                    # This would work if windows returned NotImplemented when scrolled
+                    # to the start or end
+                    if response is NotImplemented:
+                        if mouse_event.event_type == MouseEventType.SCROLL_DOWN:
+                            response = self.parent.scroll(-1)
+                        elif mouse_event.event_type == MouseEventType.SCROLL_UP:
+                            response = self.parent.scroll(1)
+
                     # Select the clicked child if clicked
                     if mouse_event.event_type == MouseEventType.MOUSE_DOWN:
                         index = self.parent._children.index(self.child)
@@ -238,19 +249,11 @@ class ChildRenderInfo:
                             MouseModifier.CONTROL,
                         }:
                             self.parent.select(index, extend=True)
-                            get_app().invalidate()
                         else:
                             self.parent.select(index, extend=False)
-                            get_app().invalidate()
+                        response = None
+                        self.refresh = True
 
-                    response = handler(new_event)
-                    # This would work if windows returned NotImplemented when scrolled
-                    # to the start or end
-                    # if response is NotImplemented:
-                    if mouse_event.event_type == MouseEventType.SCROLL_DOWN:
-                        response = self.parent.scroll(-1)
-                    elif mouse_event.event_type == MouseEventType.SCROLL_UP:
-                        response = self.parent.scroll(1)
                     return response
 
                 mouse_handler_wrappers[handler] = wrapped_mouse_handler
@@ -640,10 +643,7 @@ class ScrollingContainer(Container):
             self.index_positions[index] = None
 
         # Refresh all children if the width has changed
-        if (
-            self.last_write_position is not None
-            and self.last_write_position.width != write_position.width
-        ):
+        if self.last_write_position.width != write_position.width:
             for child_render_info in self.child_render_infos.values():
                 child_render_info.refresh = True
 

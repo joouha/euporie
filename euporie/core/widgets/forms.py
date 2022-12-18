@@ -316,7 +316,7 @@ class ToggleableWidget(metaclass=ABCMeta):
         """Focus on mouse down and toggle state on mouse up."""
         if self.disabled():
             return NotImplemented
-        if mouse_event.event_type == MouseEventType.MOUSE_DOWN:
+        elif mouse_event.event_type == MouseEventType.MOUSE_DOWN:
             get_app().layout.focus(self)
             return None
         elif mouse_event.event_type == MouseEventType.MOUSE_UP:
@@ -997,6 +997,7 @@ class SelectableWidget(metaclass=ABCMeta):
         @kb.add("up", filter=~self.multiple)
         def _(event: "KeyPressEvent") -> "None":
             self.toggle_item(max(0, min((self.index or 0) - 1, len(self.options) - 1)))
+            get_app().invalidate()
 
         @kb.add("down", filter=~self.multiple)
         def _(event: "KeyPressEvent") -> "None":
@@ -1066,34 +1067,45 @@ class SelectableWidget(metaclass=ABCMeta):
     ) -> "NotImplementedOrNone":
         """Handle mouse events."""
         if self.disabled():
-            return None
+            return NotImplemented
         if mouse_event.event_type == MouseEventType.MOUSE_MOVE:
             self.hovered = i
+            return None
         elif mouse_event.event_type == MouseEventType.MOUSE_DOWN:
             get_app().layout.focus(self)
+            return None
         elif mouse_event.event_type == MouseEventType.MOUSE_UP:
             self.toggle_item(i)
+            return None
         elif mouse_event.event_type == MouseEventType.SCROLL_UP:
             if self.multiple():
-                self.hovered = max(
-                    0, min((self.hovered or 0) - 1, len(self.options) - 1)
-                )
+                hovered = max(0, min((self.hovered or 0) - 1, len(self.options) - 1))
+                if self.hovered == hovered:
+                    return NotImplemented
+                else:
+                    self.hovered = hovered
+                    return None
             else:
                 self.toggle_item(
-                    max(0, min((self.index or 0) - 1, len(self.options) - 1))
+                    item := max(0, min((self.index or 0) - 1, len(self.options) - 1))
                 )
+                return NotImplemented if item == 0 else None
         elif mouse_event.event_type == MouseEventType.SCROLL_DOWN:
             if self.multiple():
-                self.hovered = max(
-                    0, min((self.hovered or 0) + 1, len(self.options) - 1)
-                )
+                hovered = max(0, min((self.hovered or 0) + 1, len(self.options) - 1))
+                if self.hovered == hovered:
+                    return NotImplemented
+                else:
+                    self.hovered = hovered
+                    return None
             else:
                 self.toggle_item(
-                    max(0, min((self.index or 0) + 1, len(self.options) - 1))
+                    item := max(0, min((self.index or 0) + 1, len(self.options) - 1))
                 )
+                return NotImplemented if item == len(self.options) - 1 else None
+            return NotImplemented
         else:
             return NotImplemented
-        return None
 
     def __pt_container__(self) -> "AnyContainer":
         """Return the widget's container."""
@@ -1568,7 +1580,7 @@ class SliderControl(UIControl):
         ab: "Optional[int]" = None,
         rel: "Optional[int]" = None,
         fire: "bool" = True,
-    ) -> "None":
+    ) -> "NotImplementedOrNone":
         """Set the selected index of the slider."""
         assert ab is not None or rel is not None
         if rel is not None:
@@ -1584,6 +1596,9 @@ class SliderControl(UIControl):
             ]
             if fire:
                 self.slider.on_change.fire()
+            return None
+        else:
+            return NotImplemented
 
     @property
     def selected_handle(self) -> "int":
@@ -1616,7 +1631,7 @@ class SliderControl(UIControl):
 
     def mouse_handler_track(
         self, mouse_event: "MouseEvent", repeated: "bool" = False, index: "int" = 0
-    ) -> "None":
+    ) -> "NotImplementedOrNone":
         """Handle mouse events on the slider track."""
         if mouse_event.event_type == MouseEventType.MOUSE_DOWN:
             get_app().layout.focus(self)
@@ -1627,10 +1642,11 @@ class SliderControl(UIControl):
                 elif handle == 1 and index < self.slider.indices[0]:
                     self.selected_handle = 0
             self.set_index(self.selected_handle, ab=index)
+            return None
         else:
-            self.mouse_handler_scroll(mouse_event)
             if self.repeat_task is not None:
                 self.repeat_task.cancel()
+            return self.mouse_handler_scroll(mouse_event)
 
     def mouse_handler_arrow(
         self, mouse_event: "MouseEvent", repeated: "bool" = False, n: "int" = 0
@@ -1653,15 +1669,14 @@ class SliderControl(UIControl):
         self, mouse_event: "MouseEvent", handle: "Optional[int]" = None
     ) -> "NotImplementedOrNone":
         """Handle mouse scroll events."""
-        if handle is None:
-            handle = self.selected_handle
-        if mouse_event.event_type == MouseEventType.SCROLL_UP:
-            self.set_index(handle, rel=1)
-        elif mouse_event.event_type == MouseEventType.SCROLL_DOWN:
-            self.set_index(handle, rel=-1)
-        else:
-            return NotImplemented
-        return None
+        if self.slider.has_focus():
+            if handle is None:
+                handle = self.selected_handle
+            if mouse_event.event_type == MouseEventType.SCROLL_UP:
+                return self.set_index(handle, rel=1)
+            elif mouse_event.event_type == MouseEventType.SCROLL_DOWN:
+                return self.set_index(handle, rel=-1)
+        return NotImplemented
 
     def mouse_handler_(
         self, mouse_event: "MouseEvent", loc: "int"
