@@ -200,7 +200,6 @@ class Button:
                 style=lambda: f"{self.get_style()} class:border",
             ),
             padding=0,
-            style=self.get_style(),
         )
 
     def get_style(self) -> str:
@@ -925,7 +924,7 @@ class SelectableWidget(metaclass=ABCMeta):
         self,
         options: "list[Any]",
         labels: "Optional[Sequence[AnyFormattedText]]" = None,
-        index: "int" = 0,
+        index: "Optional[int]" = None,
         indices: "Optional[list[int]]" = None,
         n_values: "Optional[int]" = None,
         multiple: "FilterOrBool" = False,
@@ -952,11 +951,17 @@ class SelectableWidget(metaclass=ABCMeta):
             labels or (str(option) for option in options)
         )
         self.mask: "list[bool]" = [False for _ in self.options]
+        self.multiple = to_filter(multiple)
+
+        if index is None and indices is None:
+            if self.multiple():
+                indices = []
+            else:
+                indices = [0]
         if indices is None:
             indices = [index]
         self.indices = indices
         self.n_values = n_values
-        self.multiple = to_filter(multiple)
         self.on_change = Event(self, on_change)
         self._style = style
         self.disabled = to_filter(disabled)
@@ -1119,7 +1124,7 @@ class Select(SelectableWidget):
         self,
         options: "list[Any]",
         labels: "Optional[Sequence[AnyFormattedText]]" = None,
-        index: "int" = 0,
+        index: "Optional[int]" = None,
         indices: "Optional[list[int]]" = None,
         n_values: "Optional[int]" = None,
         multiple: "FilterOrBool" = False,
@@ -1238,7 +1243,7 @@ class Dropdown(SelectableWidget):
         self,
         options: "list[Any]",
         labels: "Optional[Sequence[AnyFormattedText]]" = None,
-        index: "int" = 0,
+        index: "Optional[int]" = None,
         indices: "Optional[list[int]]" = None,
         n_values: "Optional[int]" = None,
         multiple: "FilterOrBool" = False,
@@ -1411,7 +1416,7 @@ class ToggleButtons(SelectableWidget):
         self,
         options: "list[Any]",
         labels: "Optional[Sequence[AnyFormattedText]]" = None,
-        index: "int" = 0,
+        index: "Optional[int]" = None,
         indices: "Optional[list[int]]" = None,
         n_values: "Optional[int]" = None,
         multiple: "FilterOrBool" = False,
@@ -1854,7 +1859,7 @@ class Slider(SelectableWidget):
         self,
         options: "list[Any]",
         labels: "Optional[Sequence[AnyFormattedText]]" = None,
-        index: "int" = 0,
+        index: "Optional[int]" = None,
         indices: "Optional[list[int]]" = None,
         n_values: "Optional[int]" = None,
         multiple: "FilterOrBool" = False,

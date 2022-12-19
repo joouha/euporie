@@ -1067,7 +1067,7 @@ class SelectModel(SelectableIpyWidgetComm):
             options=self.data["state"].get("_options_labels", []),
             index=self.data["state"]["index"],
             on_change=self.update_index,
-            style="class:ipywidget",
+            style="class:select",
             multiple=False,
             rows=self.data["state"].get("rows", 5),
             disabled=Condition(lambda: self.data["state"].get("disabled", False)),
