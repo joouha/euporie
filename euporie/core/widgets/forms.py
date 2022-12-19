@@ -8,6 +8,7 @@ from abc import ABCMeta, abstractmethod
 from functools import partial
 from math import ceil, floor
 from typing import TYPE_CHECKING, cast
+from weakref import finalize
 
 from prompt_toolkit.buffer import ValidationState
 from prompt_toolkit.cache import SimpleCache
@@ -305,6 +306,7 @@ class ToggleableWidget(metaclass=ABCMeta):
     on_click: "Event"
     selected: "bool"
     disabled: "Filter"
+    key_bindings: "Optional[KeyBindingsBase]"
 
     def toggle(self) -> "None":
         """Toggle the selected state and trigger the "clicked" callback."""
@@ -333,7 +335,7 @@ class ToggleableWidget(metaclass=ABCMeta):
         def _(event: "KeyPressEvent") -> None:
             self.toggle()
 
-        return kb
+        return merge_key_bindings([kb, self.key_bindings])
 
     def __pt_container__(self) -> "AnyContainer":
         """Return the toggler's container."""
@@ -353,6 +355,7 @@ class ToggleButton(ToggleableWidget):
         show_borders: "Optional[BorderVisibility]" = None,
         selected: "bool" = False,
         disabled: "FilterOrBool" = False,
+        key_bindings: "Optional[KeyBindingsBase]" = None,
     ) -> None:
         """Create a new toggle-button instance.
 
@@ -366,10 +369,12 @@ class ToggleButton(ToggleableWidget):
             selected: The initial selection state of the button
             disabled: A filter which when evaluated to :py:const:`True` causes the
                 widget to be disabled
+            key_bindings: Additional key_binding to apply to the button
         """
         self.on_click = Event(self, on_click)
         self.style = style
         self.disabled = to_filter(disabled)
+        self.key_bindings = key_bindings or KeyBindings()
 
         self.button = Button(
             text=text,
@@ -1295,13 +1300,20 @@ class Dropdown(SelectableWidget):
             xcursor=True,
             ycursor=True,
         )
-        get_app().menus[f"dropdown-menu-{hash(self)}"] = self.menu
+        menu_name = f"dropdown-menu-{hash(self)}"
+        app = get_app()
+        app.menus[menu_name] = self.menu
+
+        def _cleanup_menu() -> "None":
+            del app.menus[menu_name]
+
+        finalize(self, _cleanup_menu)
 
     def load_container(self) -> "AnyContainer":
         """Load the widget's container."""
-        self.button = Button(
+        self.button = ToggleButton(
             self.button_text,
-            on_mouse_down=self.toggle_menu,
+            on_click=self.toggle_menu,
             style=f"class:dropdown {self.style}",
             key_bindings=self.key_bindings(),
             disabled=self.disabled,
@@ -1326,6 +1338,7 @@ class Dropdown(SelectableWidget):
         """Show or hide the menu."""
         self.menu_visible = not self.menu_visible
         self.hovered = self.index
+        get_app().invalidate()
 
     def menu_fragments(self) -> "StyleAndTextTuples":
         """Return formatted text fragment to display in the menu."""
@@ -1373,6 +1386,11 @@ class Dropdown(SelectableWidget):
             self.menu_visible = False
             self.button.selected = False
             self.on_change.fire()
+
+        @kb.add("escape", filter=menu_visible)
+        def _(event: "KeyPressEvent") -> None:
+            self.menu_visible = False
+            self.button.selected = False
 
         @kb.add("home", filter=menu_visible)
         def _(event: "KeyPressEvent") -> None:
