@@ -8,7 +8,7 @@ from abc import ABCMeta
 from typing import TYPE_CHECKING, cast
 
 from prompt_toolkit.data_structures import Point
-from prompt_toolkit.filters import Condition, FilterOrBool, to_filter
+from prompt_toolkit.filters import FilterOrBool, to_filter
 from prompt_toolkit.layout.containers import Container, Window
 from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.layout.dimension import Dimension
@@ -193,7 +193,6 @@ class ScrollbarMargin(ClickableMargin):
         style: "str" = "",
     ) -> "None":
         """Creates a new scrollbar instance."""
-        self.autohide = to_filter(autohide)
         self.display_arrows = to_filter(display_arrows)
         self.up_arrow_symbol = up_arrow_symbol
         self.down_arrow_symbol = down_arrow_symbol
@@ -211,21 +210,9 @@ class ScrollbarMargin(ClickableMargin):
         self.window_render_info: "Optional[WindowRenderInfo]" = None
         self.write_position: "Optional[WritePosition]" = None
 
-        self.visible = (
-            self.autohide
-            & Condition(
-                lambda: self.window_render_info is None
-                or (
-                    self.window_render_info is not None
-                    and self.window_render_info.content_height
-                    > self.window_render_info.window_height
-                )
-            )
-        ) | ~self.autohide
-
     def get_width(self, get_ui_content: "Callable[[], UIContent]") -> "int":
         """Return the scrollbar width: always 1."""
-        return 1 if self.visible() else 0
+        return 1
 
     def create_margin(
         self,
@@ -240,7 +227,7 @@ class ScrollbarMargin(ClickableMargin):
         self.window_render_info = window_render_info
         self.margin_render_info = margin_render_info
 
-        if not width or not self.visible():
+        if not width:
             return result
 
         # Show we render the arrow buttons?

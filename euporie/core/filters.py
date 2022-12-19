@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 from functools import lru_cache
+from typing import TYPE_CHECKING
 
 from prompt_toolkit.enums import EditingMode
 from prompt_toolkit.filters import (
@@ -17,6 +18,10 @@ from prompt_toolkit.filters import (
 )
 
 from euporie.core.key_binding.micro_state import MicroInputMode
+
+if TYPE_CHECKING:
+    from prompt_toolkit.filters import Filter
+    from prompt_toolkit.layout.containers import Window
 
 
 @Condition
@@ -295,3 +300,13 @@ def kernel_tab_has_focus() -> "bool":
     from euporie.core.tabs.base import KernelTab
 
     return isinstance(get_app().tab, KernelTab)
+
+
+def scrollable(window: "Window") -> "Filter":
+    """Return a filter which indicates if a window is scrollable."""
+    return Condition(
+        lambda: (
+            window.render_info is not None
+            and window.render_info.content_height > window.render_info.window_height
+        )
+    )

@@ -32,7 +32,7 @@ from pygments.lexers import get_lexer_by_name
 from euporie.core.app import get_app
 from euporie.core.commands import add_cmd
 from euporie.core.config import add_setting
-from euporie.core.filters import buffer_is_code
+from euporie.core.filters import buffer_is_code, scrollable
 from euporie.core.key_binding.registry import (
     load_registered_bindings,
     register_bindings,
@@ -172,7 +172,7 @@ class KernelInput(TextArea):
         ]
         self.window.right_margins = right_margins or [
             OverflowMargin(),
-            ScrollbarMargin(),
+            ConditionalMargin(ScrollbarMargin(), filter=scrollable(self.window)),
         ]
 
         self.window.cursorline = self.has_focus

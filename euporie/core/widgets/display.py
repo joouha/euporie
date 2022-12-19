@@ -29,7 +29,7 @@ from euporie.core.commands import add_cmd
 from euporie.core.convert.base import convert, find_route
 from euporie.core.convert.utils import data_pixel_size, pixels_to_cell_size
 from euporie.core.data_structures import BoxSize
-from euporie.core.filters import display_has_focus, has_dialog, has_menus
+from euporie.core.filters import display_has_focus, has_dialog, has_menus, scrollable
 from euporie.core.key_binding.registry import (
     load_registered_bindings,
     register_bindings,
@@ -965,7 +965,6 @@ class GraphicFloat(Float):
             self.GraphicControl = useable_graphics_controls[0]
 
         if self.GraphicControl:
-            log.debug(self.GraphicControl)
             self.control = self.GraphicControl(
                 data,
                 format_=format_,
@@ -1074,22 +1073,28 @@ class Display:
             focusable=focusable,
             focus_on_click=focus_on_click,
         )
+
         self.window = DisplayWindow(
             content=self.control,
             height=height,
             width=width,
-            right_margins=[
-                ConditionalMargin(
-                    ScrollbarMargin(autohide=scrollbar_autohide),
-                    filter=to_filter(scrollbar),
-                )
-            ],
             wrap_lines=wrap_lines,
             always_hide_cursor=always_hide_cursor,
             dont_extend_height=dont_extend_height,
             style=self.style,
             char=" ",
         )
+
+        self.window.right_margins = [
+            ConditionalMargin(
+                ScrollbarMargin(),
+                filter=to_filter(scrollbar)
+                & (
+                    ~to_filter(scrollbar_autohide)
+                    | (to_filter(scrollbar_autohide) & scrollable(self.window))
+                ),
+            )
+        ]
 
         # Add graphic
         app = get_app()
