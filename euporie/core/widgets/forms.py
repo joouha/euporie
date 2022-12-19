@@ -246,7 +246,6 @@ class Button:
             return NotImplemented
         if mouse_event.button == MouseButton.LEFT:
             if mouse_event.event_type == MouseEventType.MOUSE_DOWN:
-                get_app().layout.focus(self)
                 self.selected = True
                 if (render_info := self.window.render_info) is not None:
                     y_min, x_min = min(render_info._rowcol_to_yx.values())
@@ -258,7 +257,13 @@ class Button:
                         height=y_max - y_min,
                     )
                 self.on_mouse_down.fire()
-                return None
+
+                if not self.has_focus():
+                    get_app().layout.focus(self)
+                    # We want this event to bubble if unfocused
+                    return NotImplemented
+                else:
+                    return None
 
             elif mouse_event.event_type == MouseEventType.MOUSE_UP:
                 get_app().mouse_limits = None
@@ -318,8 +323,12 @@ class ToggleableWidget(metaclass=ABCMeta):
         if self.disabled():
             return NotImplemented
         elif mouse_event.event_type == MouseEventType.MOUSE_DOWN:
-            get_app().layout.focus(self)
-            return None
+            layout = get_app().layout
+            if not layout.has_focus(self):
+                get_app().layout.focus(self)
+                return NotImplemented
+            else:
+                return None
         elif mouse_event.event_type == MouseEventType.MOUSE_UP:
             self.toggle()
             return None
@@ -335,7 +344,10 @@ class ToggleableWidget(metaclass=ABCMeta):
         def _(event: "KeyPressEvent") -> None:
             self.toggle()
 
-        return merge_key_bindings([kb, self.key_bindings])
+        if self.key_bindings is None:
+            return kb
+        else:
+            return merge_key_bindings([kb, self.key_bindings])
 
     def __pt_container__(self) -> "AnyContainer":
         """Return the toggler's container."""
@@ -374,7 +386,7 @@ class ToggleButton(ToggleableWidget):
         self.on_click = Event(self, on_click)
         self.style = style
         self.disabled = to_filter(disabled)
-        self.key_bindings = key_bindings or KeyBindings()
+        self.key_bindings = key_bindings
 
         self.button = Button(
             text=text,
@@ -428,6 +440,7 @@ class Checkbox(ToggleableWidget):
         style: "str" = "class:input",
         selected: "bool" = False,
         disabled: "FilterOrBool" = False,
+        key_bindings: "Optional[KeyBindingsBase]" = None,
     ) -> None:
         """Create a new checkbox widget instance.
 
@@ -440,6 +453,7 @@ class Checkbox(ToggleableWidget):
             selected: The initial selection state of the widget
             disabled: A filter which when evaluated to :py:const:`True` causes the
                 widget to be disabled
+            key_bindings: Additional key_binding to apply to the button
 
         """
         self.text = to_formatted_text(text)
@@ -448,6 +462,7 @@ class Checkbox(ToggleableWidget):
         self.style = style
         self.selected = selected
         self.disabled = to_filter(disabled)
+        self.key_bindings = key_bindings
         self.container = Window(
             FormattedTextControl(
                 self._get_text_fragments,
@@ -1046,6 +1061,7 @@ class SelectableWidget(metaclass=ABCMeta):
         if not self.multiple() and any(self.mask):
             self.mask = [False for _ in self.options]
         self.mask[index] = not self.mask[index]
+        self.hovered = index
         self.on_change.fire()
 
     @property
@@ -1082,8 +1098,12 @@ class SelectableWidget(metaclass=ABCMeta):
             self.hovered = i
             return None
         elif mouse_event.event_type == MouseEventType.MOUSE_DOWN:
-            get_app().layout.focus(self)
-            return None
+            if not self.has_focus():
+                get_app().layout.focus(self)
+                # We want this event to bubble if unfocused
+                return NotImplemented
+            else:
+                return None
         elif mouse_event.event_type == MouseEventType.MOUSE_UP:
             self.toggle_item(i)
             return None
@@ -1221,9 +1241,9 @@ class Select(SelectableWidget):
                 Window(
                     FormattedTextControl(
                         self.text_fragments,
-                        key_bindings=self.key_bindings(),
                         focusable=True,
                         show_cursor=False,
+                        key_bindings=self.key_bindings(),
                     ),
                     height=lambda: self.rows,
                     dont_extend_width=self.dont_extend_width,
@@ -1487,7 +1507,7 @@ class ToggleButtons(SelectableWidget):
                 on_click=partial(lambda index, button: self.toggle_item(index), i),
                 border=self.border,
                 show_borders=show_borders,
-                style=self.style,
+                style=self.get_button_style(i),
                 disabled=self.disabled,
             )
             for i, (label, selected, show_borders) in enumerate(
@@ -1498,7 +1518,20 @@ class ToggleButtons(SelectableWidget):
         return VSplit(
             self.buttons,
             style="class:toggle-buttons",
+            key_bindings=self.key_bindings(),
         )
+
+    def get_button_style(self, index: "int") -> "Callable[[], str]":
+        """Return the current button style."""
+
+        def _get_style() -> "str":
+            style = self.style() if callable(self.style) else self.style
+            if self.hovered == index:
+                return f"{style} class:hover"
+            else:
+                return style
+
+        return _get_style
 
     @property
     def index(self) -> "Optional[int]":
@@ -1515,6 +1548,49 @@ class ToggleButtons(SelectableWidget):
         """Set the toggle buttons' selection state when the selected index changes."""
         for i, selected in enumerate(self.mask):
             self.buttons[i].selected = selected
+
+    def key_bindings(self) -> "KeyBindingsBase":
+        """Return key-bindings for the drop-down widget."""
+        multiple = self.multiple
+        kb = KeyBindings()
+
+        @kb.add("left", filter=~multiple)
+        def _(event: "KeyPressEvent") -> None:
+            self.index = max(0, min((self.index or 0) - 1, len(self.options) - 1))
+
+        @kb.add("right", filter=~multiple)
+        def _(event: "KeyPressEvent") -> None:
+            self.index = max(0, min((self.index or 0) + 1, len(self.options) - 1))
+
+        @kb.add("home", filter=~multiple)
+        def _(event: "KeyPressEvent") -> None:
+            self.index = 0
+
+        @kb.add("end", filter=~multiple)
+        def _(event: "KeyPressEvent") -> None:
+            self.index = len(self.options) - 1
+
+        @kb.add("left", filter=multiple)
+        def _(event: "KeyPressEvent") -> None:
+            self.hovered = max(0, min((self.hovered or 0) - 1, len(self.options) - 1))
+            get_app().layout.focus(self.buttons[self.hovered])
+
+        @kb.add("right", filter=multiple)
+        def _(event: "KeyPressEvent") -> None:
+            self.hovered = max(0, min((self.hovered or 0) + 1, len(self.options) - 1))
+            get_app().layout.focus(self.buttons[self.hovered])
+
+        @kb.add("home", filter=multiple)
+        def _(event: "KeyPressEvent") -> None:
+            self.hovered = 0
+            get_app().layout.focus(self.buttons[self.hovered])
+
+        @kb.add("end", filter=multiple)
+        def _(event: "KeyPressEvent") -> None:
+            self.hovered = len(self.options) - 1
+            get_app().layout.focus(self.buttons[self.hovered])
+
+        return kb
 
 
 class SliderControl(UIControl):

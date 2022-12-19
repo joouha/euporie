@@ -551,6 +551,11 @@ def build_style(
         "selection info face": f"bg:{cp.ansicyan.darker(0.05)}",
         "selection warning face": f"bg:{cp.ansiyellow.darker(0.05)}",
         "selection danger face": f"bg:{cp.ansired.darker(0.05)}",
+        # Hovered faces
+        "focused hover success face": f"bg:{cp.ansigreen.lighter(0.05)}",
+        "focused hover info face": f"bg:{cp.ansicyan.lighter(0.05)}",
+        "focused hover warning face": f"bg:{cp.ansiyellow.lighter(0.05)}",
+        "focused hover danger face": f"bg:{cp.ansired.lighter(0.05)}",
         # Input widgets
         "text-area focused": "noreverse",
         "text-area selected": "noreverse",
