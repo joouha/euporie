@@ -20,7 +20,7 @@ if TYPE_CHECKING:
     filter_=have_modules("rich"),
 )
 def markdown_to_rich_py(
-    data: "str",
+    data: "str|bytes",
     width: "Optional[int]" = None,
     height: "Optional[int]" = None,
     fg: "Optional[str]" = None,
@@ -30,8 +30,9 @@ def markdown_to_rich_py(
     """Converts base64 encoded data to bytes."""
     from rich.markdown import Markdown
 
+    markup = data.decode() if isinstance(data, bytes) else data
     return Markdown(
-        data,
+        markup,
         # code_theme=str(config.syntax_theme),
         # inline_code_theme=str(config.syntax_theme),
     )

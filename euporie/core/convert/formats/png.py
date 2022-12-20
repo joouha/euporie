@@ -24,7 +24,7 @@ register(
 
 def latex_to_png_py_ipython(
     backend: "str",
-    data: "str",
+    data: "str|bytes",
     width: "Optional[int]" = None,
     height: "Optional[int]" = None,
     fg: "Optional[str]" = None,
@@ -34,9 +34,10 @@ def latex_to_png_py_ipython(
     """Converts LaTeX data to PNG bytes with :py:mod:`IPython` & :py:mod:`matplotlib`."""
     from IPython.lib.latextools import latex_to_png
 
+    markup = data.decode() if isinstance(data, bytes) else data
     return (
         latex_to_png(
-            data, encode=False, backend=backend, **({"color": fg} if fg else {})
+            markup, encode=False, backend=backend, **({"color": fg} if fg else {})
         )
         or b"error"
     )
@@ -90,7 +91,7 @@ def pil_to_png_py_pil(
     filter_=have_modules("cairosvg"),
 )
 def svg_to_png_py_cairosvg(
-    data: "str",
+    data: "str|bytes",
     width: "Optional[int]" = None,
     height: "Optional[int]" = None,
     fg: "Optional[str]" = None,
@@ -99,4 +100,5 @@ def svg_to_png_py_cairosvg(
     """Convert SVG to PNG using :py:mod:`cairosvg`."""
     import cairosvg
 
-    return cairosvg.surface.PNGSurface.convert(data, write_to=None)
+    markup = data.decode() if isinstance(data, bytes) else data
+    return cairosvg.surface.PNGSurface.convert(markup, write_to=None)

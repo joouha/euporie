@@ -24,7 +24,7 @@ _HTML2TEXT_TABLE_RE = r"(?:(?:.*\|)+[^|]*?(?:\n|$))+"
     filter_=have_modules("html2text"),
 )
 def html_to_markdown_py_html2text(
-    data: "str",
+    data: "str|bytes",
     width: "Optional[int]" = None,
     height: "Optional[int]" = None,
     fg: "Optional[str]" = None,
@@ -37,7 +37,8 @@ def html_to_markdown_py_html2text(
     from html2text import HTML2Text
 
     parser = HTML2Text(bodywidth=0)
-    result = parser.handle(data)
+    markup = data.decode() if isinstance(data, bytes) else data
+    result = parser.handle(markup)
 
     # Fix for html2text issue with empty first cells in table rows
     remaining_result = result
@@ -69,7 +70,7 @@ def html_to_markdown_py_html2text(
     filter_=have_modules("mtable", "html5lib"),
 )
 def html_to_markdown_py_mtable(
-    data: "str",
+    data: "str|bytes",
     width: "Optional[int]" = None,
     height: "Optional[int]" = None,
     fg: "Optional[str]" = None,
@@ -79,4 +80,5 @@ def html_to_markdown_py_mtable(
     """Convert HTML tables to markdown tables using :py:mod:`mtable`."""
     from mtable import MarkupTable
 
-    return "\n\n".join([table.to_md() for table in MarkupTable.from_html(data)])
+    markup = data.decode() if isinstance(data, bytes) else data
+    return "\n\n".join([table.to_md() for table in MarkupTable.from_html(markup)])

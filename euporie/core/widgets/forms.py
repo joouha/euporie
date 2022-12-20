@@ -980,7 +980,7 @@ class SelectableWidget(metaclass=ABCMeta):
             else:
                 indices = [0]
         if indices is None:
-            indices = [index]
+            indices = [index or 0]
         self.indices = indices
         self.n_values = n_values
         self.on_change = Event(self, on_change)
@@ -1355,7 +1355,7 @@ class Dropdown(SelectableWidget):
         ft += [("", " " if self.arrow else ""), ("class:arrow", self.arrow)]
         return ft
 
-    def toggle_menu(self, button: "Button") -> "None":
+    def toggle_menu(self, button: "ToggleButton") -> "None":
         """Show or hide the menu."""
         self.menu_visible = not self.menu_visible
         self.hovered = self.index
@@ -1724,7 +1724,7 @@ class SliderControl(UIControl):
 
     def mouse_handler_handle(
         self, mouse_event: "MouseEvent", handle: "int" = 0
-    ) -> "None":
+    ) -> "NotImplementedOrNone":
         """Handle mouse events on the slider's handles."""
         if mouse_event.event_type == MouseEventType.MOUSE_DOWN:
             self.selected_handle = handle
@@ -1778,6 +1778,7 @@ class SliderControl(UIControl):
                 )
             else:
                 self.repeatable = True
+            return None
         else:
             # Stop any repeated tasks
             self.repeatable = False

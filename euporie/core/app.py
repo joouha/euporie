@@ -89,7 +89,6 @@ from euporie.core.widgets.decor import Shadow
 
 if TYPE_CHECKING:
     from asyncio import AbstractEventLoop
-    from os import PathLike
     from typing import Any, Callable, Literal, Optional, Sequence, Type, Union
 
     from prompt_toolkit.clipboard import Clipboard
@@ -538,11 +537,11 @@ class BaseApp(Application):
             floats=cast("list[Float]", self.floats),
         )
 
-    def get_file_tab(self, path: "PathLike") -> "Optional[Type[Tab]]":
+    def get_file_tab(self, path: "UPath") -> "Optional[Type[Tab]]":
         """Returns the tab to use for a file path."""
         return None
 
-    def open_file(self, path: "PathLike", read_only: "bool" = False) -> "None":
+    def open_file(self, path: "UPath", read_only: "bool" = False) -> "None":
         """Creates a tab for a file.
 
         Args:
@@ -598,7 +597,10 @@ class BaseApp(Application):
         """Sets the current tab by index."""
         self._tab_idx = value % (len(self.tabs) or 1)
         if self.tabs:
-            self.layout.focus(self.tabs[self._tab_idx])
+            try:
+                self.layout.focus(self.tabs[self._tab_idx])
+            except ValueError:
+                pass
 
     def focus_tab(self, tab: "Tab") -> "None":
         """Makes a tab visible and focuses it."""

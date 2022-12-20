@@ -27,7 +27,7 @@ _html_cache: "SimpleCache[int, HTML]" = SimpleCache(maxsize=20)
     to="formatted_text",
 )
 def html_to_ft(
-    data: "str",
+    data: "str|bytes",
     width: "Optional[int]" = None,
     height: "Optional[int]" = None,
     fg: "Optional[str]" = None,
@@ -37,14 +37,15 @@ def html_to_ft(
     """Converts markdown to formatted text."""
     from euporie.core.formatted_text.html import HTML
 
-    html = _html_cache.get(hash(data), partial(HTML, data, width=width, base=path))
+    markup = data.decode() if isinstance(data, bytes) else data
+    html = _html_cache.get(hash(markup), partial(HTML, markup, width=width, base=path))
     if (
         width is not None
         and height is not None
         and (html.width != width or html.height != height)
     ):
         html.render(width, height)
-    return to_formatted_text(HTML(data, width=width, base=path))
+    return to_formatted_text(html)
 
 
 @register(
@@ -52,7 +53,7 @@ def html_to_ft(
     to="formatted_text",
 )
 def ansi_to_ft(
-    data: "str",
+    data: "str|bytes",
     width: "Optional[int]" = None,
     height: "Optional[int]" = None,
     fg: "Optional[str]" = None,
@@ -60,4 +61,5 @@ def ansi_to_ft(
     path: "Optional[UPath]" = None,
 ) -> "StyleAndTextTuples":
     """Converts ANSI text to formatted text."""
-    return to_formatted_text(ANSI(data.strip()))
+    markup = data.decode() if isinstance(data, bytes) else data
+    return to_formatted_text(ANSI(markup.strip()))

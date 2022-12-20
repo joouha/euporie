@@ -18,7 +18,7 @@ log = logging.getLogger(__name__)
 
 
 def base64_to_bytes_py(
-    data: "str",
+    data: "str|bytes",
     width: "Optional[int]" = None,
     height: "Optional[int]" = None,
     fg: "Optional[str]" = None,
@@ -26,12 +26,13 @@ def base64_to_bytes_py(
     path: "Optional[UPath]" = None,
 ) -> "bytes":
     """Converts base64 encoded data to bytes."""
-    return base64.b64decode(data)
+    data_str = data.decode() if isinstance(data, bytes) else data
+    return base64.b64decode(data_str)
 
 
 def imagemagick_convert(
     output_format: "str",
-    data: "Union[str, bytes]",
+    data: "str|bytes",
     cols: "Optional[int]" = None,
     rows: "Optional[int]" = None,
     fg: "Optional[str]" = None,
@@ -55,7 +56,7 @@ def imagemagick_convert(
 
 def chafa_convert(
     output_format: "str",
-    data: "Union[bytes, str]",
+    data: "str|bytes",
     cols: "Optional[int]" = None,
     rows: "Optional[int]" = None,
     fg: "Optional[str]" = None,

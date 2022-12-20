@@ -56,7 +56,7 @@ else:
 
 @register(from_="markdown", to="html", filter_=have_modules("markdown_it"))
 def markdown_to_html_markdown_it(
-    data: "str",
+    data: "str|bytes",
     width: "Optional[int]" = None,
     height: "Optional[int]" = None,
     fg: "Optional[str]" = None,
@@ -65,7 +65,8 @@ def markdown_to_html_markdown_it(
 ) -> "str":
     """Convert markdown to HTML using :py:mod:`markdownit_py`."""
     assert markdown_parser is not None
+    markup = data.decode() if isinstance(data, bytes) else data
     # Give markdown tables borders
     html = "<style>table{border-width:1}th{border-width:3;font-weight:bold}</style>"
-    html += markdown_parser.render(data)
+    html += markdown_parser.render(markup)
     return html

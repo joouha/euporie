@@ -49,11 +49,11 @@ from euporie.notebook.tabs import Notebook
 
 if TYPE_CHECKING:
     from asyncio import AbstractEventLoop
-    from os import PathLike
     from typing import Any, Callable, Optional, Type
 
     from prompt_toolkit.formatted_text import StyleAndTextTuples
     from prompt_toolkit.layout.containers import AnyContainer, Float
+    from upath import UPath
 
     from euporie.core.tabs.base import Tab
     from euporie.core.widgets.cell import Cell
@@ -104,9 +104,14 @@ class NotebookApp(BaseApp):
             [[("", "Press "), ("bold", get_cmd("quit").key_str()), ("", " to quit")]],
         )
 
-    def get_file_tab(self, path: "PathLike") -> "Type[Tab]":
+    def get_file_tab(self, path: "UPath") -> "Type[Tab]":
         """Returns the tab to use for a file path."""
-        return Notebook
+        if path.suffix == ".ipynb":
+            return Notebook
+        else:
+            from euporie.core.tabs.display import DisplayTab
+
+            return DisplayTab
 
     async def _poll_terminal_colors(self) -> "None":
         """Repeatedly query the terminal for its background and foreground colours."""

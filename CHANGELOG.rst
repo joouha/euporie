@@ -11,6 +11,7 @@ Upcoming
 Added
 =====
 
+- Add file display tab
 - Minor ussability improvements to widgets
 - Partially obscured images are now rendered using terminal graphics
 

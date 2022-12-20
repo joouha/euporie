@@ -47,7 +47,6 @@ class Tab(metaclass=ABCMeta):
         self.path = path
         self.app.container_statuses[self] = self.statusbar_fields
         self.container = Window()
-        self.kernel_queue: "Deque[Callable]" = deque()
 
     def statusbar_fields(
         self,
@@ -118,6 +117,8 @@ class KernelTab(Tab, metaclass=ABCMeta):
     ) -> "None":
         """Create a new instance of a tab with a kernel."""
         super().__init__(app, path)
+
+        self.kernel_queue: "Deque[Callable]" = deque()
 
         if kernel:
             self.kernel = kernel
