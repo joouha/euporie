@@ -438,11 +438,11 @@ class Notebook(BaseNotebook):
             self.dirty = True
 
     def delete(self, slice_: "Optional[slice]" = None) -> "None":
-        """Delete a cell from the notebook."""
+        """Delete cells from the notebook."""
         if slice_ is None:
             slice_ = self.page.selected_slice
         if slice_ is not None:
-            indices = range(*slice_.indices(len(self.json["cells"])))
+            indices = sorted(range(*slice_.indices(len(self.json["cells"]))))
             index = min(indices)
             cell_jsons = [
                 x[1] for x in sorted(zip(indices, self.json["cells"][slice_]))
@@ -452,8 +452,10 @@ class Notebook(BaseNotebook):
             # Ensure there is always one cell
             if len(self.json["cells"]) == 0:
                 self.add(1)
+            # Get top cell of deleted range or cell above it
+            slice_top = max(0, min(index, len(self.json["cells"]) - 2))
+            self.refresh(slice(slice_top, slice_top + 1), scroll=True)
             self.dirty = True
-            self.refresh(slice(slice_.start, slice_.start + 1), scroll=True)
 
     def undelete(self) -> "None":
         """Inserts the last deleted cell(s) back into the notebook."""
@@ -489,6 +491,8 @@ class Notebook(BaseNotebook):
                 self.json["cells"].insert(new_index, new_cell_json)
                 # Delete the selected slice
                 self.delete(slice_)
+                # Select the new cell
+                self.select(indices[0])
                 self.dirty = True
 
     def split_cell(self) -> "None":

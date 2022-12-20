@@ -362,8 +362,9 @@ class ScrollingContainer(Container):
                 """Render all children sequentially."""
                 n_children = len(self.children)
                 for i in range(n_children):
-                    self.get_child_render_info(i).render(width, height)
-                    self.pre_rendered = i / n_children
+                    if i < len(self.children):
+                        self.get_child_render_info(i).render(width, height)
+                        self.pre_rendered = i / n_children
                     get_app().invalidate()
                 self.pre_rendered = 1.0
                 get_app().invalidate()
@@ -867,9 +868,6 @@ class ScrollingContainer(Container):
 
         """
         child_render_info = self.get_child_render_info(index)
-        child_render_info.render(
-            self.last_write_position.width, self.last_write_position.height
-        )
 
         if index in self.visible_indicies:
             new_top = self.index_positions[index]

@@ -11,11 +11,13 @@ Upcoming
 Added
 =====
 
+- Minor ussability improvements to widgets
 - Partially obscured images are now rendered using terminal graphics
 
 Fixed
 =====
 
+- Fixed crash when merging last two cells in a notebook
 - Relaxed dependency specification constraints
 
 ----
