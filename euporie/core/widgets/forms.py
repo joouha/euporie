@@ -1861,6 +1861,14 @@ class SliderControl(UIControl):
             def _(event: "KeyPressEvent") -> None:
                 self.set_index(self.selected_handle, rel=1)
 
+        @kb.add("home")
+        def _(event: "KeyPressEvent") -> None:
+            self.set_index(self.selected_handle, ab=0)
+
+        @kb.add("end")
+        def _(event: "KeyPressEvent") -> None:
+            self.set_index(self.selected_handle, ab=len(self.slider.options))
+
         return kb
 
     def render_lines(self, width: "int", height: "int") -> "list[StyleAndTextTuples]":
