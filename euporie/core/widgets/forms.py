@@ -1630,9 +1630,11 @@ class SliderControl(UIControl):
 
         self.mouse_handlers: "dict[int, Callable[..., NotImplementedOrNone]]" = {}
         self.dragging = False
+        self.repeatable = True
         self.repeat_task: "Optional[asyncio.Task[None]]" = None
 
         self._content_cache: SimpleCache = SimpleCache(maxsize=50)
+        self.window: "Optional[Window]" = None
 
     def preferred_width(self, max_available_width: "int") -> "Optional[int]":
         """Return the preferred width of the slider control given its orientation."""
@@ -1727,10 +1729,24 @@ class SliderControl(UIControl):
         if mouse_event.event_type == MouseEventType.MOUSE_DOWN:
             self.selected_handle = handle
             self.dragging = True
-        self.mouse_handler_scroll(mouse_event)
+
+            # Set global mouse capture
+            if (
+                self.window is not None
+                and (render_info := self.window.render_info) is not None
+            ):
+                y_min, x_min = min(render_info._rowcol_to_yx.values())
+                y_max, x_max = max(render_info._rowcol_to_yx.values())
+                get_app().mouse_limits = WritePosition(
+                    xpos=x_min,
+                    ypos=y_min,
+                    width=x_max - x_min,
+                    height=y_max - y_min,
+                )
+        return self.mouse_handler_scroll(mouse_event)
 
     def mouse_handler_track(
-        self, mouse_event: "MouseEvent", repeated: "bool" = False, index: "int" = 0
+        self, mouse_event: "MouseEvent", index: "int" = 0
     ) -> "NotImplementedOrNone":
         """Handle mouse events on the slider track."""
         if mouse_event.event_type == MouseEventType.MOUSE_DOWN:
@@ -1749,21 +1765,25 @@ class SliderControl(UIControl):
             return self.mouse_handler_scroll(mouse_event)
 
     def mouse_handler_arrow(
-        self, mouse_event: "MouseEvent", repeated: "bool" = False, n: "int" = 0
-    ) -> "None":
+        self, mouse_event: "MouseEvent", n: "int" = 0
+    ) -> "NotImplementedOrNone":
         """Handle mouse events on the slider's arrows."""
         if mouse_event.event_type == MouseEventType.MOUSE_DOWN:
             get_app().layout.focus(self)
             self.set_index(self.selected_handle, rel=n)
             # Trigger this mouse event to be repeated
-            self.repeat_task = get_app().create_background_task(
-                self.repeat(mouse_event, handler=self.mouse_handler_arrow, n=n)
-            )
+            if self.repeatable:
+                self.repeat_task = get_app().create_background_task(
+                    self.repeat(mouse_event, handler=self.mouse_handler_arrow, n=n)
+                )
+            else:
+                self.repeatable = True
         else:
             # Stop any repeated tasks
+            self.repeatable = False
             if self.repeat_task is not None:
                 self.repeat_task.cancel()
-            self.mouse_handler_scroll(mouse_event)
+            return self.mouse_handler_scroll(mouse_event)
 
     def mouse_handler_scroll(
         self, mouse_event: "MouseEvent", handle: "Optional[int]" = None
@@ -1798,6 +1818,7 @@ class SliderControl(UIControl):
             return None
         else:
             self.dragging = False
+            get_app().mouse_limits = None
             # Call the underlying mouse handler
             if handler := self.mouse_handlers.get(loc):
                 return handler(mouse_event)
@@ -1813,7 +1834,7 @@ class SliderControl(UIControl):
     ) -> "None":
         """Repeat a mouse event after a timeout."""
         await asyncio.sleep(timeout)
-        handler(mouse_event, repeated=True, **kwargs)
+        handler(mouse_event, **kwargs)
         get_app().invalidate()
 
     def get_key_bindings(self) -> "Optional[KeyBindingsBase]":
@@ -2017,10 +2038,9 @@ class Slider(SelectableWidget):
 
     def load_container(self) -> "AnyContainer":
         """Build the slider's container."""
-        self.control = SliderControl(
-            slider=self,
-            show_arrows=self.show_arrows,
-        )
+        self.control = SliderControl(slider=self, show_arrows=self.show_arrows)
+        window = Window(self.control, style=lambda: f"class:slider {self.style}")
+        self.control.window = window
         self.readout = Text(
             text=self.readout_text(self.indices),
             height=1,
@@ -2033,12 +2053,7 @@ class Slider(SelectableWidget):
         return ConditionalSplit(
             self.vertical,
             [
-                Box(
-                    Window(
-                        self.control,
-                        style=lambda: f"class:slider {self.style}",
-                    ),
-                ),
+                Box(window),
                 ConditionalContainer(
                     Box(self.readout, padding=0),
                     filter=self.show_readout,

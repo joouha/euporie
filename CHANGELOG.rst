@@ -17,6 +17,7 @@ Added
 Fixed
 =====
 
+- Add global dragging to slider widgets
 - Fixed crash when merging last two cells in a notebook
 - Relaxed dependency specification constraints
 
