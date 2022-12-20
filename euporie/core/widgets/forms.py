@@ -202,6 +202,7 @@ class Button:
             ),
             padding=0,
         )
+        self.has_focus = has_focus(self)
 
     def get_style(self) -> str:
         """Return the style for the button given its current state."""
