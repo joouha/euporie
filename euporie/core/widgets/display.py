@@ -854,20 +854,58 @@ class GraphicWindow(Window):
         """Draws the graphic window's contents to the screen if required."""
         filter_value = self.filter()
         target_wp = screen.visible_windows_to_write_positions.get(self.target_window)
-        if filter_value and target_wp and self.target_window.render_info is not None:
+        if (
+            filter_value
+            and target_wp
+            and (render_info := self.target_window.render_info) is not None
+        ):
 
-            bbox = BoxSize(0, 0, 0, 0)
+            xpos = target_wp.xpos
+            ypos = target_wp.ypos
+            content_height = render_info.ui_content.line_count
+            content_width = target_wp.width  # TODO - get the actual content width
+
+            # Calculate the cropping box in case the window is scrolled
+            bbox = BoxSize(
+                top=render_info.vertical_scroll,
+                right=max(
+                    0,
+                    content_height
+                    - target_wp.width
+                    - getattr(render_info, "horizontal_scroll", 0),
+                ),
+                bottom=max(
+                    0,
+                    content_height - target_wp.height - render_info.vertical_scroll,
+                ),
+                left=getattr(render_info, "horizontal_scroll", 0),
+            )
+
+            # If the target is within a scrolling container, we might need to adjust
+            # the position of the cropped region so the float covers only the visible
+            # part of the target window
             if isinstance(target_wp, BoundedWritePosition):
-                bbox = target_wp.bbox
+                bbox = bbox._replace(
+                    top=bbox.top + target_wp.bbox.top,
+                    right=bbox.right + target_wp.bbox.right,
+                    bottom=bbox.bottom + target_wp.bbox.bottom,
+                    left=bbox.left + target_wp.bbox.left,
+                )
+                xpos += bbox.left
+                ypos += bbox.top
+                content_height -= bbox.top + bbox.bottom
+                content_width -= bbox.left + bbox.right
+
+            # Inform the graphic control of the calculated cropping region
             self.content.bbox = bbox
 
-            if display_height := max(0, target_wp.height - bbox.top - bbox.bottom):
-                cpos = screen.get_menu_position(self.target_window)
+            if content_height and content_width:
+                # Adjust the write position of the output
                 new_write_position = WritePosition(
-                    xpos=cpos.x + bbox.left,
-                    ypos=cpos.y + bbox.top,
-                    width=max(0, target_wp.width - bbox.left - bbox.right),
-                    height=display_height,
+                    xpos=xpos,
+                    ypos=ypos,
+                    width=max(0, content_width),
+                    height=max(0, content_height),
                 )
 
                 super().write_to_screen(

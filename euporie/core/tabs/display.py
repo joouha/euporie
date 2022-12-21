@@ -12,7 +12,6 @@ from euporie.core.convert.base import get_format
 from euporie.core.margins import MarginContainer, ScrollbarMargin
 from euporie.core.tabs.base import Tab
 from euporie.core.widgets.display import Display
-from euporie.core.widgets.page import ScrollingContainer
 
 if TYPE_CHECKING:
     from typing import Optional, Sequence
@@ -52,23 +51,21 @@ class DisplayTab(Tab):
     def load_container(self) -> "AnyContainer":
         """Abscract method for loading the notebook's main container."""
         assert self.path is not None
+
+        self.display = Display(
+            data=self.path.read_bytes(),
+            format_=get_format(self.path),
+            path=self.path,
+            focusable=True,
+            focus_on_click=True,
+            always_hide_cursor=True,
+            dont_extend_height=False,
+            scrollbar=False,
+        )
         return VSplit(
             [
-                page := ScrollingContainer(
-                    [
-                        Display(
-                            data=self.path.read_bytes(),
-                            format_=get_format(self.path),
-                            path=self.path,
-                            focusable=True,
-                            focus_on_click=True,
-                            always_hide_cursor=True,
-                            dont_extend_height=False,
-                            scrollbar=False,
-                        )
-                    ]
-                ),
-                MarginContainer(ScrollbarMargin(), target=page),
+                self.display,
+                MarginContainer(ScrollbarMargin(), target=self.display.window),
             ],
             width=Dimension(weight=1),
             height=Dimension(weight=1),
