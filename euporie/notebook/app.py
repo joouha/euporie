@@ -120,7 +120,7 @@ class NotebookApp(BaseApp):
 
                 return EditorTab
             else:
-                from euporie.core.tabs.display import DisplayTab
+                from euporie.notebook.tab.display import DisplayTab
 
                 return DisplayTab
 
