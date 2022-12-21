@@ -143,7 +143,7 @@ class NotebookApp(BaseApp):
         """Returns a container with all opened tabs.
 
         Returns:
-            A vertical split containing the opened tab containers.
+            A layout displaying the opened tab containers.
 
         """
         if self.tabs:
