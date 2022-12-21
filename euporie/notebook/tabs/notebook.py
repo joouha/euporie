@@ -453,7 +453,7 @@ class Notebook(BaseNotebook):
             if len(self.json["cells"]) == 0:
                 self.add(1)
             # Get top cell of deleted range or cell above it
-            slice_top = max(0, min(index, len(self.json["cells"]) - 2))
+            slice_top = max(0, min(index, len(self.json["cells"]) - 1))
             self.refresh(slice(slice_top, slice_top + 1), scroll=True)
             self.dirty = True
 
