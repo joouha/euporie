@@ -392,12 +392,10 @@ class CellOutputArea:
         self._json: "list[dict[str, Any]]" = []
         self.parent = parent
         self.style = style
-
         self.display_json: "list[dict[str, Any]]" = []
-
         self.rendered_outputs: "list[CellOutput]" = []
         self.container = HSplit([], style=lambda: self.style)
-
+        self.children = self.container.children
         self.json = json
 
     @property
@@ -441,7 +439,7 @@ class CellOutputArea:
             # Create an output container with the copy
             output = CellOutput(output_json_copy, self.parent)
             self.rendered_outputs.append(output)
-            self.container.children.append(to_container(output))
+            self.children.append(to_container(output))
         if refresh:
             get_app().invalidate()
 
@@ -456,7 +454,7 @@ class CellOutputArea:
         self._json.clear()
         self.display_json.clear()
         self.rendered_outputs.clear()
-        self.container.children.clear()
+        self.children.clear()
 
     def scroll_left(self) -> "None":
         """Scrolls the outputs left."""
