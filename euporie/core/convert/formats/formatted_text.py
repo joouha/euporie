@@ -62,4 +62,39 @@ def ansi_to_ft(
 ) -> "StyleAndTextTuples":
     """Converts ANSI text to formatted text."""
     markup = data.decode() if isinstance(data, bytes) else data
-    return to_formatted_text(ANSI(markup.strip()))
+    if "\x1b" in markup:
+        return to_formatted_text(ANSI(markup.strip()))
+    else:
+
+        from prompt_toolkit.lexers.pygments import _token_cache
+        from pygments.lexers import (
+            get_lexer_for_filename,
+            guess_lexer,
+            guess_lexer_for_filename,
+        )
+        from pygments.util import ClassNotFound
+
+        lexer = None
+
+        if path is not None:
+            try:
+                lexer = get_lexer_for_filename(path)
+            except ClassNotFound:
+                try:
+                    lexer = guess_lexer_for_filename(path, markup)
+                except ClassNotFound:
+                    pass
+        if lexer is None:
+            try:
+                lexer = guess_lexer(markup)
+            except ClassNotFound:
+                pass
+
+        if lexer is not None:
+            ft = [
+                (_token_cache[t], v) for _, t, v in lexer.get_tokens_unprocessed(markup)
+            ]
+        else:
+            ft = to_formatted_text(markup)
+
+        return ft
