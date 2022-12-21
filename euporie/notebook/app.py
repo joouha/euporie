@@ -109,9 +109,20 @@ class NotebookApp(BaseApp):
         if path.suffix == ".ipynb":
             return Notebook
         else:
-            from euporie.core.tabs.display import DisplayTab
+            import mimetypes
 
-            return DisplayTab
+            from euporie.core.convert.base import MIME_FORMATS
+
+            mime, _ = mimetypes.guess_type(path)
+            log.debug("File %s has mime type: %s", path, mime)
+            if (mime or "").startswith("text/") and mime not in MIME_FORMATS:
+                from euporie.notebook.tabs.edit import EditorTab
+
+                return EditorTab
+            else:
+                from euporie.core.tabs.display import DisplayTab
+
+                return DisplayTab
 
     async def _poll_terminal_colors(self) -> "None":
         """Repeatedly query the terminal for its background and foreground colours."""

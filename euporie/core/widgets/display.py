@@ -45,7 +45,7 @@ if TYPE_CHECKING:
     from prompt_toolkit.formatted_text import StyleAndTextTuples
     from prompt_toolkit.key_binding import KeyBindingsBase
     from prompt_toolkit.key_binding.key_bindings import NotImplementedOrNone
-    from prompt_toolkit.layout.containers import AnyContainer
+    from prompt_toolkit.layout.containers import AnyContainer, WindowRenderInfo
     from prompt_toolkit.layout.dimension import AnyDimension
     from prompt_toolkit.layout.screen import Screen
     from upath import UPath
@@ -291,6 +291,8 @@ class DisplayWindow(Window):
     """A window sub-class which can scroll left and right."""
 
     content: "DisplayControl"
+    render_info: "WindowRenderInfo"
+    vertical_scroll: "int"
 
     def _write_to_screen_at_index(
         self,
