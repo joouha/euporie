@@ -25,9 +25,9 @@ from prompt_toolkit.layout.processors import (  # HighlightSearchProcessor,
     HighlightSelectionProcessor,
     TabsProcessor,
 )
-from prompt_toolkit.lexers import DynamicLexer, PygmentsLexer
+from prompt_toolkit.lexers import DynamicLexer, PygmentsLexer, SimpleLexer
 from prompt_toolkit.widgets import TextArea
-from pygments.lexers import get_lexer_by_name
+from pygments.lexers import ClassNotFound, get_lexer_by_name
 
 from euporie.core.app import get_app
 from euporie.core.commands import add_cmd
@@ -54,6 +54,7 @@ if TYPE_CHECKING:
     from prompt_toolkit.layout.containers import AnyContainer
     from prompt_toolkit.layout.layout import FocusableElement
     from prompt_toolkit.layout.margins import Margin
+    from prompt_toolkit.lexers.base import Lexer
 
     from euporie.core.tabs.base import KernelTab
 
@@ -110,15 +111,18 @@ class KernelInput(TextArea):
             ],
         )
         kwargs.setdefault("completer", kernel_tab.completer)
-        kwargs.setdefault(
-            "lexer",
-            DynamicLexer(
-                lambda: PygmentsLexer(
-                    get_lexer_by_name(self.kernel_tab.language).__class__,
-                    sync_from_start=False,
-                )
-            ),
-        )
+
+        def _get_lexer() -> "Lexer":
+            try:
+                pygments_lexer_class = get_lexer_by_name(
+                    self.kernel_tab.language
+                ).__class__
+            except ClassNotFound:
+                return SimpleLexer()
+            else:
+                return PygmentsLexer(pygments_lexer_class, sync_from_start=False)
+
+        kwargs.setdefault("lexer", DynamicLexer(_get_lexer))
         kwargs.setdefault(
             "auto_suggest",
             ConditionalAutoSuggestAsync(

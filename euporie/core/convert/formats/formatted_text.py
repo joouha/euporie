@@ -10,6 +10,7 @@ from prompt_toolkit.formatted_text import to_formatted_text
 
 from euporie.core.convert.base import register
 from euporie.core.formatted_text.ansi import ANSI
+from euporie.core.lexers import detect_lexer
 
 if TYPE_CHECKING:
     from typing import Optional
@@ -62,39 +63,13 @@ def ansi_to_ft(
 ) -> "StyleAndTextTuples":
     """Converts ANSI text to formatted text."""
     markup = data.decode() if isinstance(data, bytes) else data
+    ft: "StyleAndTextTuples"
     if "\x1b" in markup:
-        return to_formatted_text(ANSI(markup.strip()))
-    else:
-
+        ft = to_formatted_text(ANSI(markup.strip()))
+    elif (lexer := detect_lexer(markup, path)) is not None:
         from prompt_toolkit.lexers.pygments import _token_cache
-        from pygments.lexers import (
-            get_lexer_for_filename,
-            guess_lexer,
-            guess_lexer_for_filename,
-        )
-        from pygments.util import ClassNotFound
 
-        lexer = None
-
-        if path is not None:
-            try:
-                lexer = get_lexer_for_filename(path)
-            except ClassNotFound:
-                try:
-                    lexer = guess_lexer_for_filename(path, markup)
-                except ClassNotFound:
-                    pass
-        if lexer is None:
-            try:
-                lexer = guess_lexer(markup)
-            except ClassNotFound:
-                pass
-
-        if lexer is not None:
-            ft = [
-                (_token_cache[t], v) for _, t, v in lexer.get_tokens_unprocessed(markup)
-            ]
-        else:
-            ft = to_formatted_text(markup)
-
-        return ft
+        ft = [(_token_cache[t], v) for _, t, v in lexer.get_tokens_unprocessed(markup)]
+    else:
+        ft = to_formatted_text(markup)
+    return ft
