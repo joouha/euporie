@@ -186,13 +186,13 @@ class Notebook(BaseNotebook):
                                 char="▋",  # 5/8
                                 width=1,
                                 collapse=True,
-                                style="class:drop-shadow.outer reverse",
+                                style="class:drop-shadow,outer reverse",
                             ),
                             Line(
                                 char="▎",  # 2/8
                                 width=1,
                                 collapse=True,
-                                style="class:drop-shadow.inner",
+                                style="class:drop-shadow,inner",
                             ),
                         ]
                     ),
@@ -206,13 +206,13 @@ class Notebook(BaseNotebook):
                                 char="▊",  # 6/8
                                 width=1,
                                 collapse=True,
-                                style="class:drop-shadow.inner reverse",
+                                style="class:drop-shadow,inner reverse",
                             ),
                             Line(
                                 char="▍",  # 3/8
                                 width=1,
                                 collapse=True,
-                                style="class:drop-shadow.outer",
+                                style="class:drop-shadow,outer",
                             ),
                             pattern,
                         ]

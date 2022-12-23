@@ -554,6 +554,7 @@ class BaseApp(Application):
         for tab in self.tabs:
             if ppath == getattr(tab, "path", ""):
                 log.info(f"File {path} already open, activating")
+                self.layout.focus(tab)
                 break
         else:
             tab_class = self.get_file_tab(path)

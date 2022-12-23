@@ -212,7 +212,7 @@ class Border:
         self,
         body: "AnyContainer",
         border: "Optional[GridStyle]" = Thin.grid,
-        style: "Union[str, Callable[[], str]]" = "class:frame.border",
+        style: "Union[str, Callable[[], str]]" = "class:border",
         show_borders: "Optional[BorderVisibility]" = None,
     ) -> "None":
         """Create a new border widget which wraps another container.

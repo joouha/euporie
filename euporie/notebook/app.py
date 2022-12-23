@@ -19,6 +19,7 @@ from prompt_toolkit.layout.containers import (
     WindowAlign,
 )
 from prompt_toolkit.layout.controls import FormattedTextControl
+from prompt_toolkit.layout.dimension import Dimension
 
 from euporie.core import __logo__
 from euporie.core.app import BaseApp
@@ -38,6 +39,7 @@ from euporie.core.widgets.dialog import (
     ShortcutsDialog,
     UnsavedDialog,
 )
+from euporie.core.widgets.file_browser import FileBrowser
 from euporie.core.widgets.layout import TabBarControl, TabBarTab
 from euporie.core.widgets.menu import MenuBar, MenuItem
 from euporie.core.widgets.pager import Pager
@@ -46,10 +48,11 @@ from euporie.core.widgets.search_bar import SearchBar
 from euporie.core.widgets.status_bar import StatusBar
 from euporie.notebook.enums import TabMode
 from euporie.notebook.tabs import Notebook
+from euporie.notebook.widgets.sidebar import Sidebar
 
 if TYPE_CHECKING:
     from asyncio import AbstractEventLoop
-    from typing import Any, Callable, Optional, Type
+    from typing import Any, Callable, Optional, Sequence, Type
 
     from prompt_toolkit.formatted_text import StyleAndTextTuples
     from prompt_toolkit.layout.containers import AnyContainer, Float
@@ -120,7 +123,7 @@ class NotebookApp(BaseApp):
 
                 return EditorTab
             else:
-                from euporie.notebook.tab.display import DisplayTab
+                from euporie.notebook.tabs.display import DisplayTab
 
                 return DisplayTab
 
@@ -250,13 +253,39 @@ class NotebookApp(BaseApp):
             filter=self.config.filter("show_top_bar"),
         )
 
+        titles: "Sequence[str]"
+        icons: "Sequence[str]"
+        panels: "Sequence[AnyContainer]"
+        titles, icons, panels = list(
+            zip(
+                *[
+                    (
+                        "File Browser",
+                        "",
+                        FileBrowser(width=25, on_open=self.open_file),
+                    )
+                ]
+            ),
+        )
+        self.sidebar = Sidebar(titles, icons, panels)
+
         self.container = FloatContainer(
             content=HSplit(
                 [
                     top_bar,
-                    tab_bar,
-                    DynamicContainer(self.tab_container),
-                    self.pager,
+                    VSplit(
+                        [
+                            self.sidebar,
+                            HSplit(
+                                [
+                                    tab_bar,
+                                    DynamicContainer(self.tab_container),
+                                    self.pager,
+                                ],
+                                width=Dimension(weight=1),
+                            ),
+                        ]
+                    ),
                     self.search_bar,
                     StatusBar(),
                 ],

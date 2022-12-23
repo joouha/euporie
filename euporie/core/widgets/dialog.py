@@ -451,7 +451,10 @@ class OpenFileDialog(FileDialog):
 
         path = parse_path(buffer.text)
         if path is not None:
-            if not path.exists():
+            if str(path).startswith("http") or path.is_file():
+                self.hide()
+                self.app.open_file(path)
+            elif not path.exists():
                 self.show(
                     error="The file path specified does not exist", text=buffer.text
                 )
@@ -459,9 +462,6 @@ class OpenFileDialog(FileDialog):
                 self.show(
                     error="The file path specified is a directory", text=buffer.text
                 )
-            elif path.is_file():
-                self.hide()
-                self.app.open_file(path)
 
     # ################################### Commands ####################################
 
