@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import subprocess  # noqa: S404
 import sys
-from textwrap import indent
+from textwrap import dedent, indent
 from typing import TYPE_CHECKING, cast
 
 if TYPE_CHECKING:
@@ -87,6 +87,15 @@ if __name__ == "__main__":
                             App = app.load()
                             parser = App.config.load_parser()
                             parser.prog = script.name
+                            print(f".. _cli-{script.name}-start:")
+                            print(
+                                format_parser(
+                                    f":command:`{script.name}`",
+                                    parser,
+                                    description=dedent("    " + App.__doc__),
+                                )
+                            )
+                            print(f".. _cli-{script.name}-end:")
                             break
                     break
             else:
