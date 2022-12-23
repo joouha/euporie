@@ -388,6 +388,7 @@ def build_style(
         "status.field": f"fg:{cp.fg.more(0.1)} bg:{cp.bg.more(0.1)}",
         # Menus & Menu bar
         "menu": f"fg:{cp.fg.more(0.05)} bg:{cp.bg.more(0.05)}",
+        "menu bar": f"bg:{cp.bg.less(0.15)}",
         "menu disabled": f"fg:{cp.fg.more(0.05).towards(cp.bg, 0.75)}",
         "menu shortcut": f"fg:{cp.fg.more(0.4)}",
         "menu shortcut disabled": f"fg:{cp.fg.more(0.4).towards(cp.bg, 0.5)}",
@@ -480,6 +481,12 @@ def build_style(
         "log.level.critical": "fg:red bold",
         "log.ref": "fg:grey",
         "log.date": "fg:#00875f",
+        # File browser
+        "file-browser border": f"fg:{cp.bg.more(0.5)}",
+        "file-browser face": f"bg:{cp.bg.lighter(0.1)}",
+        "file-browser face row alt-row": f"bg:{cp.bg.lighter(0.1).more(0.01)}",
+        "file-browser face row hovered": f"bg:{cp.bg.more(0.2)}",
+        "file-browser face row selection": f"bg:{cp.hl}",
         # Shortcuts
         "shortcuts.group": f"bg:{cp.bg.more(0.4)} bold underline",
         # "shortcuts.row": f"bg:{cp.bg.base} nobold",
@@ -498,8 +505,20 @@ def build_style(
         "html pre border": f"fg:{cp.bg.more(0.25)}",
         "html table border": f"fg:{cp.bg.more(0.75)}",
         # Drop-shadow
-        "drop-shadow.inner": f"fg:{cp.bg.darker(0.15)}",
-        "drop-shadow.outer": f"fg:{cp.bg.darker(0.1)} bg:{cp.bg.darker(0.025)}",
+        "drop-shadow inner": f"fg:{cp.bg.towards(cp.ansiblack, 0.3)}",
+        "drop-shadow outer": f"fg:{cp.bg.towards(cp.ansiblack, 0.2)} bg:{cp.bg.towards(cp.ansiblack, 0.05)}",
+        # Sidebar
+        "sidebar": f"bg:{cp.bg.less(0.15)}",
+        "sidebar title": f"fg:{cp.hl}",
+        "sidebar title text": f"fg:default bg:{cp.bg.less(0.15).more(0.01)}",
+        "sidebar border": f"fg:{cp.bg.towards(cp.ansiblack, 0.3)}",
+        "sidebar border outer": f"bg:{cp.bg}",
+        "sidebar buttons": f"bg:{cp.bg.less(0.15)}",
+        "sidebar buttons hovered": f"fg:{cp.hl}",
+        "sidebar buttons selection": f"fg:{cp.fg} bg:{cp.hl}",
+        "sidebar buttons separator": f"fg:{cp.bg.less(0.15)} bg:{cp.bg.less(0.15)}",
+        "sidebar buttons separator selection before": f"fg:{cp.bg.less(0.15)} bg:{cp.hl}",
+        "sidebar buttons separator selection after": f"fg:{cp.hl} bg:{cp.bg.less(0.15)}",
         # Tabbed split
         "tabbed-split tab-bar tab inactive": f"fg:{cp.bg.more(0.1)}",
         "tabbed-split tab-bar tab inactive border": f"fg:{cp.bg.more(0.15)}",
@@ -552,10 +571,10 @@ def build_style(
         "selection warning face": f"bg:{cp.ansiyellow.darker(0.05)}",
         "selection danger face": f"bg:{cp.ansired.darker(0.05)}",
         # Hovered faces
-        "focused hover success face": f"bg:{cp.ansigreen.lighter(0.05)}",
-        "focused hover info face": f"bg:{cp.ansicyan.lighter(0.05)}",
-        "focused hover warning face": f"bg:{cp.ansiyellow.lighter(0.05)}",
-        "focused hover danger face": f"bg:{cp.ansired.lighter(0.05)}",
+        "focused hovered success face": f"bg:{cp.ansigreen.lighter(0.05)}",
+        "focused hovered info face": f"bg:{cp.ansicyan.lighter(0.05)}",
+        "focused hovered warning face": f"bg:{cp.ansiyellow.lighter(0.05)}",
+        "focused hovered danger face": f"bg:{cp.ansired.lighter(0.05)}",
         # Input widgets
         "text-area focused": "noreverse",
         "text-area selected": "noreverse",

@@ -40,7 +40,10 @@ if TYPE_CHECKING:
     from prompt_toolkit.formatted_text.base import AnyFormattedText, StyleAndTextTuples
     from prompt_toolkit.key_binding.key_bindings import NotImplementedOrNone
     from prompt_toolkit.layout.containers import AnyContainer, Container, _Split
+    from prompt_toolkit.layout.dimension import AnyDimension
     from prompt_toolkit.mouse_events import MouseEvent
+
+    from euporie.core.border import GridStyle
 
 log = logging.getLogger(__name__)
 
@@ -334,6 +337,8 @@ class StackedSplit(metaclass=ABCMeta):
         active: "int" = 0,
         style: "Union[str, Callable[[], str]]" = "class:tab-split",
         on_change: "Optional[Callable[[StackedSplit], None]]" = None,
+        width: "AnyDimension" = None,
+        height: "AnyDimension" = None,
     ) -> "None":
         """Create a new tabbed container instance.
 
@@ -343,12 +348,16 @@ class StackedSplit(metaclass=ABCMeta):
             active: The index of the active tab
             style: A style to apply to the tabbed container
             on_change: Callback to run when the selected tab changes
+            width: The width of the split container
+            height: The height of the split container
         """
         self._children = list(children)
         self._titles = list(titles)
         self._active: "Optional[int]" = active
         self.style = style
         self.on_change = Event(self, on_change)
+        self.width = width
+        self.height = height
 
         self.container = self.load_container()
 
@@ -424,6 +433,31 @@ class StackedSplit(metaclass=ABCMeta):
 class TabbedSplit(StackedSplit):
     """A container which switches between children using tabs."""
 
+    def __init__(
+        self,
+        children: "Sequence[AnyContainer]",
+        titles: "Sequence[AnyFormattedText]",
+        active: "int" = 0,
+        style: "Union[str, Callable[[], str]]" = "class:tab-split",
+        on_change: "Optional[Callable[[StackedSplit], None]]" = None,
+        width: "AnyDimension" = None,
+        height: "AnyDimension" = None,
+        border: "GridStyle" = OuterEdgeGridStyle,
+        show_borders: "Optional[BorderVisibility]" = None,
+    ) -> "None":
+        """Initialize a new tabbed container."""
+        self.border = border
+        self.show_borders = show_borders or BorderVisibility(False, True, True, True)
+        super().__init__(
+            children=children,
+            titles=titles,
+            active=active,
+            style=style,
+            on_change=on_change,
+            width=width,
+            height=height,
+        )
+
     def load_container(self) -> "AnyContainer":
         """Create the tabbed widget's container.
 
@@ -448,12 +482,13 @@ class TabbedSplit(StackedSplit):
                         padding_top=1,
                         padding_bottom=1,
                     ),
-                    border=OuterEdgeGridStyle,
-                    show_borders=BorderVisibility(False, True, True, True),
-                    style="class:border",
+                    border=self.border,
+                    show_borders=self.show_borders,
                 ),
             ],
             style="class:tabbed-split",
+            width=self.width,
+            height=self.height,
         )
 
     def refresh(self) -> "None":

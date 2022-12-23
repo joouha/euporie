@@ -613,7 +613,7 @@ class MenuBar:
         self.window: "Window" = Window(
             height=1,
             content=self.control,
-            style="class:menu",
+            style="class:menu,bar",
         )
 
         submenu = self._submenu(0)

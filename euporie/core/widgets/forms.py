@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from abc import ABCMeta, abstractmethod
+from collections import deque
 from functools import partial
 from math import ceil, floor
 from typing import TYPE_CHECKING, cast
@@ -29,7 +30,7 @@ from prompt_toolkit.key_binding.key_bindings import (
     KeyBindings,
     merge_key_bindings,
 )
-from prompt_toolkit.layout.containers import ConditionalContainer, Float, VSplit, Window
+from prompt_toolkit.layout.containers import ConditionalContainer, Float, Window
 from prompt_toolkit.layout.controls import (
     BufferControl,
     FormattedTextControl,
@@ -80,7 +81,6 @@ if TYPE_CHECKING:
     OptionalSearchBuffer = (
         SearchBufferControl | Callable[[], SearchBufferControl] | None
     )
-
 
 log = logging.getLogger(__name__)
 
@@ -938,6 +938,42 @@ class Progress:
         return self.container
 
 
+class SizedMask(dict[int, bool]):
+    """Mask with restricted number of True items."""
+
+    def __init__(self, size: "int|None" = None) -> "None":
+        """Initialize a new sized default dict."""
+        self.size = size
+        self._keys: "deque[int]" = deque()
+
+    def clear(self) -> "None":
+        """Clear the dict's items."""
+        self._keys.clear()
+        super().clear()
+
+    def __setitem__(self, key: "int", value: "bool") -> "None":
+        """Remove the oldest key when the size is exceeded."""
+        if value:
+            super().__setitem__(key, value)
+        else:
+            if key in self:
+                del self[key]
+            if key in self._keys:
+                self._keys.remove(key)
+
+        if self.size:
+            if len(self._keys) >= self.size:
+                key_to_remove = self._keys.popleft()
+                if key_to_remove in self:
+                    del self[key_to_remove]
+            if value:
+                self._keys.append(key)
+
+    def __missing__(self, key: "int") -> "bool":
+        """Return ``False`` for unknown items."""
+        return False
+
+
 class SelectableWidget(metaclass=ABCMeta):
     """Base class for widgets where one or more items can be selected."""
 
@@ -949,6 +985,7 @@ class SelectableWidget(metaclass=ABCMeta):
         indices: "Optional[list[int]]" = None,
         n_values: "Optional[int]" = None,
         multiple: "FilterOrBool" = False,
+        max_count: "int|None" = None,
         on_change: "Optional[Callable[[SelectableWidget], None]]" = None,
         style: "Union[str, Callable[[], str]]" = "class:input",
         disabled: "FilterOrBool" = False,
@@ -962,6 +999,7 @@ class SelectableWidget(metaclass=ABCMeta):
             indices: List of indices of the initially selected values
             n_values: The number of values which are selectable
             multiple: Determines whether multiple values can be selected
+            max_count: The maximum number of selectable items
             on_change: Callback which is run when the selection changes
             style: Additional style to apply to the widget
             disabled: A filter which when evaluated to :py:const:`True` causes the
@@ -971,7 +1009,7 @@ class SelectableWidget(metaclass=ABCMeta):
         self.labels: "list[AnyFormattedText]" = list(
             labels or (str(option) for option in options)
         )
-        self.mask: "list[bool]" = [False for _ in self.options]
+        self._selected = SizedMask(size=max_count)
         self.multiple = to_filter(multiple)
 
         if index is None and indices is None:
@@ -1059,11 +1097,16 @@ class SelectableWidget(metaclass=ABCMeta):
 
     def toggle_item(self, index: "int") -> "None":
         """Toggle the selection status of the option at a given index."""
-        if not self.multiple() and any(self.mask):
-            self.mask = [False for _ in self.options]
-        self.mask[index] = not self.mask[index]
+        if not self.multiple() and any(self._selected.values()):
+            self._selected.clear()
+        self._selected[index] = not self._selected[index]
         self.hovered = index
         self.on_change.fire()
+
+    @property
+    def mask(self) -> "list[bool]":
+        """Get mask of selected options."""
+        return [self._selected[i] for i in range(len(self.options))]
 
     @property
     def index(self) -> "Optional[int]":
@@ -1087,7 +1130,9 @@ class SelectableWidget(metaclass=ABCMeta):
     @indices.setter
     def indices(self, values: "tuple[int]") -> "None":
         """Set the selected indices."""
-        self.mask = [i in values for i in range(len(self.options))]
+        self._selected.clear()
+        for i in range(len(self.options)):
+            self._selected[i] = i in values
 
     def mouse_handler(
         self, i: "int", mouse_event: "MouseEvent"
@@ -1154,6 +1199,7 @@ class Select(SelectableWidget):
         indices: "Optional[list[int]]" = None,
         n_values: "Optional[int]" = None,
         multiple: "FilterOrBool" = False,
+        max_count: "int|None" = None,
         on_change: "Optional[Callable[[SelectableWidget], None]]" = None,
         style: "Union[str, Callable[[], str]]" = "class:input,select",
         rows: "Optional[int]" = 3,
@@ -1173,6 +1219,7 @@ class Select(SelectableWidget):
             indices: List of indices of the initially selected values
             n_values: The number of values which are selectable
             multiple: Determines whether multiple values can be selected
+            max_count: The maximum number of selectable items
             on_change: Callback which is run when the selection changes
             style: Additional style to apply to the widget
             rows: The number of rows of options to display
@@ -1199,6 +1246,7 @@ class Select(SelectableWidget):
             index=index,
             indices=indices,
             multiple=multiple,
+            max_count=max_count,
             on_change=on_change,
             style=style,
             disabled=disabled,
@@ -1273,6 +1321,7 @@ class Dropdown(SelectableWidget):
         indices: "Optional[list[int]]" = None,
         n_values: "Optional[int]" = None,
         multiple: "FilterOrBool" = False,
+        max_count: "int|None" = None,
         on_change: "Optional[Callable[[SelectableWidget], None]]" = None,
         style: "Union[str, Callable[[], str]]" = "class:input",
         arrow: "str" = "⯆",
@@ -1287,6 +1336,7 @@ class Dropdown(SelectableWidget):
             indices: List of indices of the initially selected values
             n_values: The number of values which are selectable
             multiple: Determines whether multiple values can be selected
+            max_count: The maximum number of selectable items
             on_change: Callback which is run when the selection changes
             style: Additional style to apply to the widget
             arrow: The character to use for the dropdown arrow
@@ -1301,6 +1351,7 @@ class Dropdown(SelectableWidget):
             index=index,
             indices=indices,
             multiple=multiple,
+            max_count=max_count,
             on_change=on_change,
             style=style,
             disabled=disabled,
@@ -1459,10 +1510,12 @@ class ToggleButtons(SelectableWidget):
         indices: "Optional[list[int]]" = None,
         n_values: "Optional[int]" = None,
         multiple: "FilterOrBool" = False,
+        max_count: "int|None" = None,
         on_change: "Optional[Callable[[SelectableWidget], None]]" = None,
         style: "Union[str, Callable[[], str]]" = "class:input",
-        border: "GridStyle" = InnerEdgeGridStyle,
+        border: "GridStyle|None" = InnerEdgeGridStyle,
         disabled: "FilterOrBool" = False,
+        vertical: "FilterOrBool" = False,
     ) -> "None":
         """Create a new select widget instance.
 
@@ -1473,20 +1526,24 @@ class ToggleButtons(SelectableWidget):
             indices: List of indices of the initially selected values
             n_values: The number of values which are selectable
             multiple: Determines whether multiple values can be selected
+            max_count: The maximum number of selectable items
             on_change: Callback which is run when the selection changes
             style: Additional style to apply to the widget
             border: The grid style to use for the widget's border
             disabled: A filter which when evaluated to :py:const:`True` causes the
                 widget to be disabled
+            vertical: Determines if the toggle buttons should be arranged vertically
         """
         self.border = border
         self.disabled = to_filter(disabled)
+        self.vertical = to_filter(vertical)
         super().__init__(
             options=options,
             labels=labels,
             index=index,
             indices=indices,
             multiple=multiple,
+            max_count=max_count,
             on_change=on_change,
             style=style,
             disabled=self.disabled,
@@ -1494,13 +1551,18 @@ class ToggleButtons(SelectableWidget):
 
     def load_container(self) -> "AnyContainer":
         """Load the widget's container."""
-        show_borders_values = [
-            BorderVisibility(True, False, True, False) for _ in self.options
-        ]
-        show_borders_values[0] = BorderVisibility(*show_borders_values[0][:-1], True)
-        show_borders_values[-1] = BorderVisibility(
-            show_borders_values[0][0], True, *show_borders_values[-1][2:]
-        )
+        if self.vertical():
+            show_borders_values = [
+                BorderVisibility(False, True, False, True) for _ in self.options
+            ]
+            show_borders_values[0] = show_borders_values[0]._replace(top=True)
+            show_borders_values[-1] = show_borders_values[-1]._replace(bottom=True)
+        else:
+            show_borders_values = [
+                BorderVisibility(True, False, True, False) for _ in self.options
+            ]
+            show_borders_values[0] = show_borders_values[0]._replace(left=True)
+            show_borders_values[-1] = show_borders_values[-1]._replace(right=True)
         self.buttons = [
             ToggleButton(
                 text=label,
@@ -1512,11 +1574,16 @@ class ToggleButtons(SelectableWidget):
                 disabled=self.disabled,
             )
             for i, (label, selected, show_borders) in enumerate(
-                zip(self.labels, self.mask, show_borders_values)
+                zip(
+                    self.labels,
+                    self.mask,
+                    show_borders_values,
+                )
             )
         ]
         self.on_change += self.update_buttons
-        return VSplit(
+        return ConditionalSplit(
+            self.vertical,
             self.buttons,
             style="class:toggle-buttons",
             key_bindings=self.key_bindings(),
@@ -1528,7 +1595,7 @@ class ToggleButtons(SelectableWidget):
         def _get_style() -> "str":
             style = self.style() if callable(self.style) else self.style
             if self.hovered == index:
-                return f"{style} class:hover"
+                return f"{style} class:hovered"
             else:
                 return style
 
@@ -1688,14 +1755,16 @@ class SliderControl(UIControl):
         if rel is not None:
             ab = self.slider.indices[handle] + rel
         assert ab is not None
+        # Restrict set value to permitted range
         ab = min(len(self.slider.options) - 1, max(0, ab))
-        indices = dict(enumerate(self.slider.indices))
+
         # Do not allow both handles to have the same value
+        indices = dict(enumerate(self.slider.indices))
         if ab not in indices.values():
+            # Set the handle's value
             indices.update({handle: ab})
-            self.slider.mask = [
-                i in sorted(indices.values()) for i in range(len(self.slider.options))
-            ]
+            # Update the slider
+            self.slider.indices = [index for handle, index in sorted(indices.items())]
             if fire:
                 self.slider.on_change.fire()
             return None
@@ -1988,6 +2057,7 @@ class Slider(SelectableWidget):
         indices: "Optional[list[int]]" = None,
         n_values: "Optional[int]" = None,
         multiple: "FilterOrBool" = False,
+        max_count: "int|None" = None,
         on_change: "Optional[Callable[[SelectableWidget], None]]" = None,
         style: "Union[str, Callable[[], str]]" = "class:input",
         border: "GridStyle" = InnerEdgeGridStyle,
@@ -2009,6 +2079,7 @@ class Slider(SelectableWidget):
                 of options if a range can be selected
             n_values: The number of values which are selectable
             multiple: If true, allow a range of options to be selected
+            max_count: The maximum number of selectable items
             on_change: An optional function to call when the selection changes
             style: An optional style to apply to the widget
             border: The grid style to use for the borders (unused)
@@ -2039,6 +2110,7 @@ class Slider(SelectableWidget):
             indices=indices,
             n_values=n_values,
             multiple=multiple,
+            max_count=max_count,
             on_change=on_change,
             style=style,
             disabled=self.disabled,
