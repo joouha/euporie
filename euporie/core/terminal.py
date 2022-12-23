@@ -237,10 +237,7 @@ class KittyGraphicsStatus(TerminalQuery):
     pattern = re.compile(r"^\x1b_Gi=(4294967295|0);(?P<status>OK)\x1b\\\Z")
 
     def _cmd(self) -> "str":
-        if self.config.tmux_graphics:
-            return tmuxify(self.cmd)
-        else:
-            return self.cmd
+        return tmuxify(self.cmd)
 
     def verify(self, data: "str") -> "bool":
         """Verifies the terminal response means kitty graphics are supported."""
