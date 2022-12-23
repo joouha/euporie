@@ -175,7 +175,7 @@ autobuild = "sphinx-autobuild docs docs/_build/html"
 
 [tool.ruff]
 line-length = 88
-select = ["ANN", "B", "C", "D", "E", "F", "I", "Q", "S", "T", "U"]
+select = ["ANN", "B", "C", "D", "E", "F", "I", "Q", "S", "T", "UP"]
 ignore = [
     # Annotations on `self` and `cls`
     "ANN101", "ANN102",
@@ -193,8 +193,11 @@ ignore = [
     "B905",
 ]
 
+[tool.ruff.per-file-ignores]
+"scripts/*.py" = ["T201"]
+
 [tool.codespell]
-ignore-words-list = "iterm"
+ignore-words-list = "iterm,edn"
 skip = "euporie/core/reference.py,.*"
 
 
