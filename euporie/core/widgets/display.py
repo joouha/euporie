@@ -974,35 +974,38 @@ class GraphicFloat(Float):
 
         app = get_app()
         term_info = app.term_info
-        preferred_graphics_protocol = app.config.preferred_graphics_protocol
+        preferred_graphics_protocol = app.config.graphics
         useable_graphics_controls: "list[Type[GraphicControl]]" = []
 
-        if term_info.iterm_graphics_status.value and find_route(format_, "base64-png"):
-            useable_graphics_controls.append(ItermGraphicControl)
-        if (
-            preferred_graphics_protocol == "iterm"
-            and ItermGraphicControl in useable_graphics_controls
-        ):
-            self.GraphicControl = ItermGraphicControl
-        elif term_info.kitty_graphics_status.value and find_route(
-            format_, "base64-png"
-        ):
-            useable_graphics_controls.append(KittyGraphicControl)
-        if (
-            preferred_graphics_protocol == "kitty"
-            and KittyGraphicControl in useable_graphics_controls
-        ):
-            self.GraphicControl = KittyGraphicControl
-        elif term_info.sixel_graphics_status.value and find_route(format_, "sixel"):
-            useable_graphics_controls.append(SixelGraphicControl)
-        if (
-            preferred_graphics_protocol == "sixel"
-            and SixelGraphicControl in useable_graphics_controls
-        ):
-            self.GraphicControl = SixelGraphicControl
+        if preferred_graphics_protocol != "none":
+            if term_info.iterm_graphics_status.value and find_route(
+                format_, "base64-png"
+            ):
+                useable_graphics_controls.append(ItermGraphicControl)
+            if (
+                preferred_graphics_protocol == "iterm"
+                and ItermGraphicControl in useable_graphics_controls
+            ):
+                self.GraphicControl = ItermGraphicControl
+            elif term_info.kitty_graphics_status.value and find_route(
+                format_, "base64-png"
+            ):
+                useable_graphics_controls.append(KittyGraphicControl)
+            if (
+                preferred_graphics_protocol == "kitty"
+                and KittyGraphicControl in useable_graphics_controls
+            ):
+                self.GraphicControl = KittyGraphicControl
+            elif term_info.sixel_graphics_status.value and find_route(format_, "sixel"):
+                useable_graphics_controls.append(SixelGraphicControl)
+            if (
+                preferred_graphics_protocol == "sixel"
+                and SixelGraphicControl in useable_graphics_controls
+            ):
+                self.GraphicControl = SixelGraphicControl
 
-        if self.GraphicControl is None and useable_graphics_controls:
-            self.GraphicControl = useable_graphics_controls[0]
+            if self.GraphicControl is None and useable_graphics_controls:
+                self.GraphicControl = useable_graphics_controls[0]
 
         if self.GraphicControl:
             self.control = self.GraphicControl(
