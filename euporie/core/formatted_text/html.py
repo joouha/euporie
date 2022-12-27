@@ -480,7 +480,7 @@ def parse_css_content(content: "str") -> "dict[str, Any]":
             output.setdefault("style_attrs", [])
             if value == "underline":
                 output["style_attrs"].append("underline")
-            if value == "none":
+            elif value == "none":
                 output["style_attrs"].append("nounderline")
 
         elif name == "text-align":
@@ -505,9 +505,9 @@ def parse_css_content(content: "str") -> "dict[str, Any]":
         elif name == "display":
             if value == "flex":
                 output["flex"] = True
-            if value == "block":
+            elif value == "block":
                 output["block"] = True
-            if value == "inline-block":
+            elif value == "inline-block":
                 output["block"] = True
                 output["inline"] = True
             elif value == "none":
