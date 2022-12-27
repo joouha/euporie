@@ -120,6 +120,7 @@ _ELEMENT_BASE_THEMES: "defaultdict[str, dict[str, Any]]" = defaultdict(
             "zindex": 0,
             "position": Position(None, None, None, None),
             "inline": False,
+            "preformatted": False,
             # Styles
             "style_classes": [],
         },
@@ -217,7 +218,7 @@ _ELEMENT_BASE_THEMES: "defaultdict[str, dict[str, Any]]" = defaultdict(
         "blockquote": {"margin": Padding(1, 0, 1, 0)},
         "hr": {"margin": Padding(1, 0, 1, 0)},
         "p": {"margin": Padding(1, 0, 1, 0)},
-        "pre": {"margin": Padding(1, 0, 1, 0)},
+        "pre": {"margin": Padding(1, 0, 1, 0), "preformatted": True},
         "details": {"margin": Padding(1, 0, 1, 0)},
         "summary": {"margin": Padding(0, 0, 1, 0)},
         "caption": {"align": FormattedTextAlign.CENTER},
@@ -642,7 +643,6 @@ class HTML:
         available_width: "int",
         available_height: "int",
         left: "int" = 0,
-        preformatted: "bool" = False,
     ) -> "StyleAndTextTuples":
         """Render lists, adding item numbers to child <li> elements."""
         theme = self.element_theme(element, parent_theme)
@@ -657,7 +657,6 @@ class HTML:
             available_width,
             available_height,
             left,
-            preformatted,
         )
 
     render_ul = _render_list
@@ -1010,7 +1009,6 @@ class HTML:
         available_width: "int" = 80,
         available_height: "int" = 999999999,
         left: "int" = 0,
-        preformatted: "bool" = False,
     ) -> "StyleAndTextTuples":
         """Render a list of parsed markdown elements.
 
@@ -1021,8 +1019,6 @@ class HTML:
             available_height: The height available for rendering the elements
             left: The position on the current line at which to render the output - used
                 to indent subsequent lines when rendering inline blocks like images
-            preformatted: If True, whitespace will not be stripped from the element's
-                text
 
         Returns:
             Formatted text
@@ -1077,11 +1073,6 @@ class HTML:
             block = theme["block"]
             inline = theme["inline"]
 
-            # Set preformatted flag for <pre> tags
-            _preformatted = preformatted
-            if element.name == "pre":
-                _preformatted = True
-
             # Render block element margins. We want to ensure block elements always
             # start on a new line, and that margins collapse.
             # Do not draw a margin if this is the first element of the render list.
@@ -1103,7 +1094,6 @@ class HTML:
                 available_width=available_width,
                 available_height=available_height,
                 left=left,
-                preformatted=_preformatted,
             )
 
             if block:
@@ -1167,7 +1157,6 @@ class HTML:
         available_width: "int",
         available_height: "int",
         left: "int" = 0,
-        preformatted: "bool" = False,
     ) -> "StyleAndTextTuples":
         """Render a list of parsed markdown elements representing a block element.
 
@@ -1178,8 +1167,6 @@ class HTML:
             available_height: The height available for rendering the elements
             left: The position on the current line at which to render the output - used
                 to indent subsequent lines when rendering inline blocks like images
-            preformatted: When True, whitespace in the the element's text is not
-                collapsed
 
         Returns:
             Formatted text
@@ -1223,7 +1210,6 @@ class HTML:
             available_width=inner_width,
             available_height=inner_height,
             left=left,
-            preformatted=preformatted,
         )
 
         # If an element should not overflow it's width / height, truncate it
@@ -1254,13 +1240,14 @@ class HTML:
             ft = strip(ft, left=False, right=True, char="\n")
             ft = lex(ft, lexer_name=language)
 
-        if theme["block"] and not preformatted:
+        if theme["block"]:
 
-            # Align the output
-            if theme["align"] != FormattedTextAlign.LEFT:
-                ft = align(
-                    theme["align"], ft, width=available_width, style=theme["style"]
-                )
+            if not theme["preformatted"]:
+                # Align the output
+                if theme["align"] != FormattedTextAlign.LEFT:
+                    ft = align(
+                        theme["align"], ft, width=available_width, style=theme["style"]
+                    )
 
             # Add left margin
             if margin and (margin_left := margin.left):
@@ -1317,7 +1304,6 @@ class HTML:
         available_width: "int",
         available_height: "int",
         left: "int" = 0,
-        preformatted: "bool" = False,
     ) -> "StyleAndTextTuples":
         """Render a text element.
 
@@ -1328,8 +1314,6 @@ class HTML:
             available_height: The height available for rendering the element
             left: The position on the current line at which to render the output - used
                 to indent subsequent lines when rendering inline blocks like images
-            preformatted: When True, whitespace in the the element's text is not
-                collapsed
 
         Returns:
             Formatted text
@@ -1345,7 +1329,7 @@ class HTML:
             style = f"{style} nounderline"
 
         # Strip whitespace
-        if not preformatted:
+        if not (preformatted := parent_theme["preformatted"]):
             strippable = True
             for i in text:
                 if i not in "\x20\x0a\x09\x0c\x0d":
@@ -1374,7 +1358,6 @@ class HTML:
         available_width: "int",
         available_height: "int",
         left: "int" = 0,
-        preformatted: "bool" = False,
     ) -> "StyleAndTextTuples":
         """Render a list item."""
         # Get the element's theme
@@ -1406,7 +1389,6 @@ class HTML:
             available_width=available_width - margin_len,
             available_height=available_height,
             left=left,  # + margin_len,
-            preformatted=preformatted,
         )
         # Indent using margin
         ft = [(f"{theme['style']} class:bullet", margin), *ft]
@@ -1420,7 +1402,6 @@ class HTML:
         available_width: "int",
         available_height: "int",
         left: "int" = 0,
-        preformatted: "bool" = False,
     ) -> "StyleAndTextTuples":
         """Render a list element."""
         # Get the element's theme
@@ -1437,7 +1418,6 @@ class HTML:
             available_width=available_width - bullet_width,
             available_height=available_height,
             left=left,
-            preformatted=preformatted,
         )
         # Wrap the list item
         ft = wrap(
@@ -1463,7 +1443,6 @@ class HTML:
         available_width: "int",
         available_height: "int",
         left: "int" = 0,
-        preformatted: "bool" = False,
     ) -> "StyleAndTextTuples":
         """Render a list of parsed markdown elements representing a table element.
 
@@ -1474,8 +1453,6 @@ class HTML:
             parent_theme: The theme of the parent element
             left: The position on the current line at which to render the output - used
                 to indent subsequent lines when rendering inline blocks like images
-            preformatted: When True, whitespace in the the element's text is not
-                collapsed
 
         Returns:
             Formatted text
@@ -1538,7 +1515,6 @@ class HTML:
                                     available_width=available_width,
                                     available_height=available_height,
                                     left=0,
-                                    preformatted=preformatted,
                                 ),
                                 padding=td_theme["padding"],
                                 border=td_theme["border"],
@@ -1566,9 +1542,7 @@ class HTML:
         if captions:
             table_width = max_line_width(ft_table)
             for child in captions:
-                ft_caption = self.render_element(
-                    child, table_theme, table_width, left, preformatted
-                )
+                ft_caption = self.render_element(child, table_theme, table_width, left)
                 if ft_caption:
                     ft.extend(ft_caption)
 
@@ -1583,7 +1557,6 @@ class HTML:
         available_width: "int",
         available_height: "int",
         left: "int" = 0,
-        preformatted: "bool" = False,
     ) -> "StyleAndTextTuples":
         """Render an expand summary / details."""
         ft: "StyleAndTextTuples" = []
@@ -1603,7 +1576,6 @@ class HTML:
                     available_width=available_width,
                     available_height=available_height,
                     left=left,
-                    preformatted=preformatted,
                 )
             )
             ft.append(("", "\n"))
@@ -1618,7 +1590,6 @@ class HTML:
                     available_width=available_width - _ELEMENT_INSETS["details"],
                     available_height=available_height,
                     left=left,
-                    preformatted=preformatted,
                 ),
                 available_width,
                 available_height,
@@ -1681,7 +1652,6 @@ class HTML:
         available_width: "int",
         available_height: "int",
         left: "int" = 0,
-        preformatted: "bool" = False,
     ) -> "StyleAndTextTuples":
         """Display images rendered as ANSI art."""
         src = str(element.attrs.get("src", ""))
@@ -1707,7 +1677,6 @@ class HTML:
                 available_width,
                 available_height,
                 left,
-                preformatted,
             )
 
     def render_svg(
@@ -1717,7 +1686,6 @@ class HTML:
         available_width: "int",
         available_height: "int",
         left: "int" = 0,
-        preformatted: "bool" = False,
     ) -> "StyleAndTextTuples":
         """Display images rendered as ANSI art."""
         # Ensure xml namespace is set
@@ -1735,7 +1703,6 @@ class HTML:
         available_width: "int",
         available_height: "int",
         left: "int" = 0,
-        preformatted: "bool" = False,
     ) -> "StyleAndTextTuples":
         """Display LaTeX maths rendered as unicode text."""
         text = "".join(desc.text for desc in element.descendents)
@@ -1748,7 +1715,6 @@ class HTML:
             available_width,
             available_height,
             left,
-            preformatted=True,
         )
 
     ###
