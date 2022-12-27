@@ -1073,6 +1073,7 @@ class HTML:
 
             # Is the current element a block element?
             block = theme["block"]
+            inline = theme["inline"]
 
             # Set preformatted flag for <pre> tags
             _preformatted = preformatted
@@ -1082,7 +1083,7 @@ class HTML:
             # Render block element margins. We want to ensure block elements always
             # start on a new line, and that margins collapse.
             # Do not draw a margin if this is the first element of the render list.
-            if block and ft:
+            if block and ft and not inline:
                 ft.extend(_draw_y_margin(ft, element, 0))
 
             # If there is a special method for rendering the block, use it; otherwise
@@ -1104,9 +1105,17 @@ class HTML:
             )
 
             if block:
+                # Indent inline block elements by the left offset of the current line
+                if inline:
+                    rendering = indent(
+                        rendering,
+                        " " * left,
+                        skip_first=True,
+                        style=parent_theme["style"],
+                    )
                 # Draw block element bottom margin, ensuring block elements end on a new
                 # line, and that margins collapse
-                if parent_theme["block"] and any(
+                elif parent_theme["block"] and any(
                     element.name != "text"
                     or (element.name == "text" and element.text.strip())
                     for element in contents[i + 1 :]
