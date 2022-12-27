@@ -946,17 +946,19 @@ class HTML:
 
         css_rules = {}
         for selectors, rule in reversed(self.css.items()):
-            split_selectors = selectors.split()
-            parent_selectors = split_selectors[:-1]
-            element_selector = split_selectors[-1]
-            for selector in parent_selectors:
-                for parent in element.parents:
-                    if _match_selector(selector, parent):
+            split_selectors = selectors.split()[::-1]
+            # Last element in the selector should match the current element
+            if _match_selector(split_selectors[0], element):
+                # All of the parent selectors should match a separate parent in order
+                unmatched_parents = element.parents[::-1]
+                for selector in split_selectors[1:]:
+                    for i, parent in enumerate(unmatched_parents):
+                        if _match_selector(selector, parent):
+                            unmatched_parents = unmatched_parents[i + 1 :]
+                            break
+                    else:
                         break
                 else:
-                    break
-            else:
-                if _match_selector(element_selector, element):
                     css_rules[selectors] = rule
 
         # Chain themes from various levels
