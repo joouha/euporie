@@ -932,7 +932,15 @@ class Table:
             while total_width(col_widths) < max(
                 width, len(col_widths) * min_col_width + 2
             ):
-                idxmin = min(enumerate(col_widths), key=lambda x: x[1])[0]
+                # Expand only columns which do not have a width set if possible
+                col_index_widths = [
+                    (i, col_widths[i])
+                    for i, col in enumerate(self.cols)
+                    if all(cell._width is None for cell in col.cells)
+                ]
+                if not col_index_widths:
+                    col_index_widths = enumerate(col_widths)
+                idxmin = min(col_index_widths, key=lambda x: x[1])[0]
                 col_widths[idxmin] += 1
         else:
             while total_width(col_widths) > max(
