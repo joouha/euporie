@@ -25,6 +25,10 @@ from euporie.core.border import (
     Rounded,
     Thick,
     Thin,
+    ThinDoubleDashed,
+    ThinQuadrupleDashed,
+    ThickDoubleDashed,
+    ThickQuadrupleDashed,
 )
 from euporie.core.convert.base import convert, get_format
 from euporie.core.convert.utils import data_pixel_size, pixels_to_cell_size
@@ -96,9 +100,67 @@ _BORDER_WIDTHS = {
 }
 
 
+_BORDER_WIDTH_STYLES = {
+    ("0", "none"): Invisible,
+    ("0", "hidden"): Invisible,
+    ("0", "dotted"): Invisible,
+    ("0", "dashed"): Invisible,
+    ("0", "solid"): Invisible,
+    ("0", "double"): Invisible,
+    ("1", "none"): Invisible,
+    ("1", "hidden"): Invisible,
+    ("1", "dotted"): ThinQuadrupleDashed,
+    ("1", "dashed"): ThinDoubleDashed,
+    ("1", "solid"): Thin,
+    ("1", "double"): Double,
+    ("2", "none"): Invisible,
+    ("2", "hidden"): Invisible,
+    ("2", "dotted"): ThinQuadrupleDashed,
+    ("2", "dashed"): ThinDoubleDashed,
+    ("2", "solid"): Thin,
+    ("2", "double"): Double,
+    ("3", "none"): Invisible,
+    ("3", "hidden"): Invisible,
+    ("3", "dotted"): ThickQuadrupleDashed,
+    ("3", "dashed"): ThickDoubleDashed,
+    ("3", "solid"): Thick,
+    ("3", "double"): Double,
+    ("thin", "none"): Invisible,
+    ("thin", "hidden"): Invisible,
+    ("thin", "dotted"): ThinQuadrupleDashed,
+    ("thin", "dashed"): ThinDoubleDashed,
+    ("thin", "solid"): Thin,
+    ("thin", "double"): Double,
+    ("medium", "none"): Invisible,
+    ("medium", "hidden"): Invisible,
+    ("medium", "dotted"): ThinQuadrupleDashed,
+    ("medium", "dashed"): ThinDoubleDashed,
+    ("medium", "solid"): Thin,
+    ("medium", "double"): Double,
+    ("thick", "none"): Invisible,
+    ("thick", "hidden"): Invisible,
+    ("thick", "dotted"): ThickQuadrupleDashed,
+    ("thick", "dashed"): ThickDoubleDashed,
+    ("thick", "solid"): Thick,
+    ("thick", "double"): Double,
+}
+
+
 def _inline_default() -> "dict[str, Any]":
     return {"inline": True, "block": False, "margin": Padding(0, 0, 0, 0)}
 
+
+_HERITABLE_PROPS = {
+    "align",
+    "invisible",
+    "skip",
+    "zindex",
+    "preformatted",
+    "style",
+    "style_fg",
+    "style_bg",
+    "style_classes",
+}
 
 # The default theme to apply to various elements
 _ELEMENT_BASE_THEMES: "defaultdict[str, dict[str, Any]]" = defaultdict(
@@ -500,6 +562,27 @@ def parse_css_content(content: "str") -> "dict[str, Any]":
                     BorderLineStyle(Thick, Thick, Thick, Thick),
                 )
 
+        elif name == "border":
+            width_value = style_value = color_value = None
+            for each_value in value.split():
+                if color := get_color(each_value):
+                    color_value = color
+                elif (width := css_dimension(each_value)) is not None:
+                    width_value = width
+                else:
+                    style_value = each_value
+            line_style = _BORDER_WIDTH_STYLES.get(
+                (width_value or "1", style_value or "none")
+            )
+            output["border"] = BorderLineStyle(
+                line_style, line_style, line_style, line_style
+            )
+            output["border-color"] = color_value
+
+        elif name == "border-radius":
+            if get_integer(value):
+                output["border"] = BorderLineStyle(Rounded, Rounded, Rounded, Rounded)
+
         elif name == "visibility":
             output["hidden"] = value == "hidden"
 
@@ -643,6 +726,8 @@ class HTML:
         available_width: "int",
         available_height: "int",
         left: "int" = 0,
+        pad: "bool" = True,
+        align_content: "bool" = True,
     ) -> "StyleAndTextTuples":
         """Render lists, adding item numbers to child <li> elements."""
         theme = self.element_theme(element, parent_theme)
@@ -657,6 +742,7 @@ class HTML:
             available_width,
             available_height,
             left,
+            pad,
         )
 
     render_ul = _render_list
@@ -733,6 +819,7 @@ class HTML:
             parent_theme={},
             available_width=self.width,
             available_height=self.height,
+            pad=self.pad,
         )
 
     def parse_styles(self, soup: "PageElement") -> "dict[str, dict[str, str]]":
@@ -856,9 +943,9 @@ class HTML:
             if class_name.startswith("language-"):
                 extras["language"] = class_name[9:]
                 break
-            elif class_name.startswith("highlight-"):
-                extras["language"] = class_name[10:]
-                break
+            # elif class_name.startswith("highlight-"):
+            # extras["language"] = class_name[10:]
+            # break
 
         # for class_name in element.attrs.get("class", []):
         # if (rule := self.css.get(f"{element.name}.{class_name}")) is not None:
@@ -976,8 +1063,9 @@ class HTML:
             extras,
             # Element base style
             _ELEMENT_BASE_THEMES.get(element.name, _ELEMENT_BASE_THEMES["default"]),
-            # Parent theme
-            dict(parent_theme),
+            # Parent theme (only inherit heritable style properties)
+            # dict(parent_theme),
+            {k: v for k, v in parent_theme.items() if k in _HERITABLE_PROPS},
             # Add an element class
             {"style_classes": [element.name]},
             # Default element style
@@ -1009,6 +1097,8 @@ class HTML:
         available_width: "int" = 80,
         available_height: "int" = 999999999,
         left: "int" = 0,
+        pad: "bool" = True,
+        align_content: "bool" = True,
     ) -> "StyleAndTextTuples":
         """Render a list of parsed markdown elements.
 
@@ -1094,6 +1184,8 @@ class HTML:
                 available_width=available_width,
                 available_height=available_height,
                 left=left,
+                pad=pad,
+                align_content=align_content,
             )
 
             if block:
@@ -1157,6 +1249,8 @@ class HTML:
         available_width: "int",
         available_height: "int",
         left: "int" = 0,
+        pad: "bool" = True,
+        align_content: "bool" = True,
     ) -> "StyleAndTextTuples":
         """Render a list of parsed markdown elements representing a block element.
 
@@ -1203,6 +1297,15 @@ class HTML:
                 else:
                     inner_width -= padding_size or 0
 
+        if (border_line_style := theme.get("border")) is not None:
+            grid_style = (
+                (border_line_style.top or Invisible).top_edge
+                + (border_line_style.right or Invisible).right_edge
+                + (border_line_style.bottom or Invisible).bottom_edge
+                + (border_line_style.left or Invisible).left_edge
+            )
+            inner_width -= 2
+
         # Render the contents
         ft = self.render_contents(
             element.contents,
@@ -1210,7 +1313,17 @@ class HTML:
             available_width=inner_width,
             available_height=inner_height,
             left=left,
+            pad=pad,
+            align_content=align_content,
         )
+
+        # if border_line_style is not None:
+        # ft = add_border(
+        # ft,
+        # inner_width + 2,
+        # border=grid_style,
+        # style=theme.get("border-style", ""),
+        # )
 
         # If an element should not overflow it's width / height, truncate it
         if trunc := theme.get("truncate"):
@@ -1245,9 +1358,13 @@ class HTML:
             if not theme["preformatted"]:
                 # Align the output
                 if theme["align"] != FormattedTextAlign.LEFT:
-                    ft = align(
-                        theme["align"], ft, width=available_width, style=theme["style"]
-                    )
+                    if align_content:
+                        ft = align(
+                            theme["align"],
+                            ft,
+                            width=available_width,
+                            style=theme["style"],
+                        )
 
             # Add left margin
             if margin and (margin_left := margin.left):
@@ -1262,7 +1379,7 @@ class HTML:
                 ft = indent(ft, margin=" " * padding_left, style=theme["style"])
 
             # Fill space around block elements so they fill the width
-            if self.pad and not theme["inline"]:
+            if pad and not theme["inline"]:
 
                 # Remove one trailing newline if there is one
                 for i in range(len(ft) - 1, -1, -1):
@@ -1279,7 +1396,12 @@ class HTML:
                 filled_output = []
                 for line in split_lines(ft):
                     filled_output.extend(line)
-                    if remaining := inner_width - fragment_list_width(line):
+                    if (
+                        remaining := inner_width
+                        - fragment_list_width(line)
+                        + (padding.left or 0)
+                        + (padding.right or 0)
+                    ):
                         filled_output.append((theme["style"], (" " * remaining)))
                         # filled_output.append((theme["style"], ("·" * remaining)))
                     if filled_output and not filled_output[-1][1].endswith("\n"):
@@ -1304,6 +1426,8 @@ class HTML:
         available_width: "int",
         available_height: "int",
         left: "int" = 0,
+        pad: "bool" = True,
+        align_content: "bool" = True,
     ) -> "StyleAndTextTuples":
         """Render a text element.
 
@@ -1329,7 +1453,11 @@ class HTML:
             style = f"{style} nounderline"
 
         # Strip whitespace
-        if not (preformatted := parent_theme["preformatted"]):
+        if preformatted := parent_theme["preformatted"]:
+            # Remove up to one newline
+            if text.endswith("\n"):
+                text = text[:-1]
+        else:
             strippable = True
             for i in text:
                 if i not in "\x20\x0a\x09\x0c\x0d":
@@ -1358,6 +1486,8 @@ class HTML:
         available_width: "int",
         available_height: "int",
         left: "int" = 0,
+        pad: "bool" = True,
+        align_content: "bool" = True,
     ) -> "StyleAndTextTuples":
         """Render a list item."""
         # Get the element's theme
@@ -1389,6 +1519,8 @@ class HTML:
             available_width=available_width - margin_len,
             available_height=available_height,
             left=left,  # + margin_len,
+            pad=pad,
+            align_content=align_content,
         )
         # Indent using margin
         ft = [(f"{theme['style']} class:bullet", margin), *ft]
@@ -1402,6 +1534,8 @@ class HTML:
         available_width: "int",
         available_height: "int",
         left: "int" = 0,
+        pad: "bool" = True,
+        align_content: "bool" = True,
     ) -> "StyleAndTextTuples":
         """Render a list element."""
         # Get the element's theme
@@ -1418,6 +1552,8 @@ class HTML:
             available_width=available_width - bullet_width,
             available_height=available_height,
             left=left,
+            pad=pad,
+            align_content=align_content,
         )
         # Wrap the list item
         ft = wrap(
@@ -1443,6 +1579,8 @@ class HTML:
         available_width: "int",
         available_height: "int",
         left: "int" = 0,
+        pad: "bool" = True,
+        align_content: "bool" = True,
     ) -> "StyleAndTextTuples":
         """Render a list of parsed markdown elements representing a table element.
 
@@ -1484,14 +1622,17 @@ class HTML:
                 else:
                     inner_width -= padding_size or 0
 
+        table_expand = table_theme.get("width") is not None
         table = Table(
             align=table_theme["align"],
             style=table_theme["style"],
             padding=table_theme["padding"],
-            border_style=table_theme["style"],
+            border_style=table_theme.get("border-style", table_theme["style"]),
             # Use invisible borders by default
             border=table_theme["border"] or Invisible,
             border_collapse=table_theme["border_collapse"],
+            width=inner_width,
+            expand=table_expand,
         )
 
         # Stack the elements in the shape of the table
@@ -1503,26 +1644,55 @@ class HTML:
                         align=tr_theme["align"],
                         padding=tr_theme["padding"],
                         border=tr_theme["border"],
+                        # border_style=tr_theme.get("border-style"),
                         style=tr_theme["style"],
                     )
                     for td in tr.contents:
                         if td.name in ("th", "td"):
                             td_theme = self.element_theme(td, tr_theme)
-                            row.new_cell(
-                                text=self.render_contents(
-                                    td.contents,
-                                    parent_theme=td_theme,
-                                    available_width=available_width,
-                                    available_height=available_height,
-                                    left=0,
-                                ),
+                            if (td_width := td_theme.get("width")) is not None:
+                                if isinstance(td_width, float) and 0 < td_width <= 1:
+                                    td_width = int(inner_width * td_width + 0.5)
+
+                            cell = row.new_cell(
                                 padding=td_theme["padding"],
                                 border=td_theme["border"],
+                                # border_style=td_theme.get("border-style"),
                                 align=td_theme["align"],
                                 colspan=try_eval(td.attrs.get("colspan", 1)),
                                 rowspan=try_eval(td.attrs.get("rowspan", 1)),
                                 style=td_theme["style"] + " nounderline",
+                                width=td_width,
                             )
+
+                            content_renderer = partial(
+                                self.render_contents,
+                                td.contents,
+                                parent_theme=td_theme,
+                                available_height=available_height,
+                                left=0,
+                            )
+
+                            if td_width is None:
+                                content_width = max(
+                                    [
+                                        fragment_list_width(line)
+                                        for line in split_lines(
+                                            content_renderer(
+                                                pad=False,
+                                                align_content=False,
+                                                available_width=inner_width,
+                                            )
+                                        )
+                                    ]
+                                )
+                                cell.text = content_renderer(
+                                    available_width=content_width
+                                    + cell.padding.left
+                                    + cell.padding.right
+                                )
+                            else:
+                                cell.text = content_renderer()
 
         # Render the table head
         for child in element.find_all("thead", recursive=False):
@@ -1542,7 +1712,7 @@ class HTML:
         if captions:
             table_width = max_line_width(ft_table)
             for child in captions:
-                ft_caption = self.render_element(child, table_theme, table_width, left)
+                ft_caption = self.render_element(child, table_theme, table_width)
                 if ft_caption:
                     ft.extend(ft_caption)
 
@@ -1557,6 +1727,8 @@ class HTML:
         available_width: "int",
         available_height: "int",
         left: "int" = 0,
+        pad: "bool" = True,
+        align_content: "bool" = True,
     ) -> "StyleAndTextTuples":
         """Render an expand summary / details."""
         ft: "StyleAndTextTuples" = []
@@ -1576,6 +1748,7 @@ class HTML:
                     available_width=available_width,
                     available_height=available_height,
                     left=left,
+                    pad=pad,
                 )
             )
             ft.append(("", "\n"))
@@ -1590,6 +1763,7 @@ class HTML:
                     available_width=available_width - _ELEMENT_INSETS["details"],
                     available_height=available_height,
                     left=left,
+                    pad=pad,
                 ),
                 available_width,
                 available_height,
@@ -1610,6 +1784,8 @@ class HTML:
         available_width: "int",
         available_height: "int",
         left: "int" = 0,
+        pad: "bool" = True,
+        align_content: "bool" = True,
     ) -> "StyleAndTextTuples":
         cols, aspect = pixels_to_cell_size(*data_pixel_size(data, format_=format_))
         # Manually set a value if we don't have one
@@ -1652,6 +1828,8 @@ class HTML:
         available_width: "int",
         available_height: "int",
         left: "int" = 0,
+        pad: "bool" = True,
+        align_content: "bool" = True,
     ) -> "StyleAndTextTuples":
         """Display images rendered as ANSI art."""
         src = str(element.attrs.get("src", ""))
@@ -1662,21 +1840,25 @@ class HTML:
             ft = self._render_image(
                 data,
                 format_,
-                element,
-                parent_theme,
-                available_width,
-                available_height,
-                left,
+                element=element,
+                parent_theme=parent_theme,
+                available_width=available_width,
+                available_height=available_height,
+                left=left,
+                pad=pad,
+                align_content=align_content,
             )
             return ft
         # Otherwise, display the image title
         else:
             return self.render_element(
-                element,
-                parent_theme,
-                available_width,
-                available_height,
-                left,
+                element=element,
+                parent_theme=parent_theme,
+                available_width=available_width,
+                available_height=available_height,
+                left=left,
+                pad=pad,
+                align_content=align_content,
             )
 
     def render_svg(
@@ -1686,6 +1868,8 @@ class HTML:
         available_width: "int",
         available_height: "int",
         left: "int" = 0,
+        pad: "bool" = True,
+        align_content: "bool" = True,
     ) -> "StyleAndTextTuples":
         """Display images rendered as ANSI art."""
         # Ensure xml namespace is set
@@ -1693,7 +1877,15 @@ class HTML:
         element.attrs.setdefault("xmlns:xlink", "http://www.w3.org/1999/xlink")
         data = element._outer_html()
         return self._render_image(
-            data, "svg", element, parent_theme, available_width, available_height, left
+            data,
+            "svg",
+            element,
+            parent_theme,
+            available_width,
+            available_height,
+            left,
+            pad,
+            align_content=align_content,
         )
 
     def render_math(
@@ -1703,6 +1895,8 @@ class HTML:
         available_width: "int",
         available_height: "int",
         left: "int" = 0,
+        pad: "bool" = True,
+        align_content: "bool" = True,
     ) -> "StyleAndTextTuples":
         """Display LaTeX maths rendered as unicode text."""
         text = "".join(desc.text for desc in element.descendents)
@@ -1715,6 +1909,8 @@ class HTML:
             available_width,
             available_height,
             left,
+            pad,
+            align_content=align_content,
         )
 
     ###
