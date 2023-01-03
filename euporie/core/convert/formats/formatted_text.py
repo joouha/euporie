@@ -64,7 +64,7 @@ def ansi_to_ft(
     """Converts ANSI text to formatted text."""
     markup = data.decode() if isinstance(data, bytes) else data
     ft: "StyleAndTextTuples"
-    if "\x1b" in markup:
+    if "\x1b" in markup or "\r" in markup:
         ft = to_formatted_text(ANSI(markup.strip()))
     elif (lexer := detect_lexer(markup, path)) is not None:
         from prompt_toolkit.lexers.pygments import _token_cache
