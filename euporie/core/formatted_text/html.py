@@ -564,7 +564,7 @@ def parse_css_content(content: "str") -> "dict[str, Any]":
 
         elif name == "border":
             width_value = style_value = color_value = None
-            for each_value in value.split():
+            for each_value in value.split(maxsplit=2):
                 if color := get_color(each_value):
                     color_value = color
                 elif (width := css_dimension(each_value)) is not None:
@@ -1708,11 +1708,19 @@ class HTML:
         ft_table = table.render(inner_width)
 
         # Render the caption
+        # TODO - support "caption-side" css
         captions = element.find_all("caption", recursive=False)
         if captions:
             table_width = max_line_width(ft_table)
             for child in captions:
-                ft_caption = self.render_element(child, table_theme, table_width)
+                ft_caption = self.render_element(
+                    child,
+                    parent_theme=table_theme,
+                    available_width=table_width,
+                    available_height=available_height,
+                    left=0,
+                    pad=True,
+                )
                 if ft_caption:
                     ft.extend(ft_caption)
 
