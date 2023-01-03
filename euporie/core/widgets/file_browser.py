@@ -10,9 +10,15 @@ from prompt_toolkit.buffer import Buffer
 from prompt_toolkit.cache import FastDictCache
 from prompt_toolkit.completion import PathCompleter
 from prompt_toolkit.data_structures import Point
+from prompt_toolkit.filters.utils import to_filter
 from prompt_toolkit.key_binding.key_bindings import KeyBindings, KeyBindingsBase
 from prompt_toolkit.key_binding.key_processor import KeyPressEvent
-from prompt_toolkit.layout.containers import HSplit, VSplit, Window
+from prompt_toolkit.layout.containers import (
+    ConditionalContainer,
+    HSplit,
+    VSplit,
+    Window,
+)
 from prompt_toolkit.layout.controls import UIContent, UIControl
 from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
 from prompt_toolkit.utils import Event
@@ -26,6 +32,7 @@ from euporie.core.widgets.forms import Button, Text
 if TYPE_CHECKING:
     from typing import Callable
 
+    from prompt_toolkit.filters.base import FilterOrBool
     from prompt_toolkit.formatted_text import StyleAndTextTuples
     from prompt_toolkit.key_binding.key_bindings import NotImplementedOrNone
     from prompt_toolkit.layout.containers import AnyContainer
@@ -36,6 +43,10 @@ log = logging.getLogger(__name__)
 
 
 FILE_ICONS = {
+    # default
+    "file": "",
+    "dir": "",
+    # file extensions (vim-devicons)
     ".styl": "",
     ".sass": "",
     ".scss": "",
@@ -73,13 +84,6 @@ FILE_ICONS = {
     ".toml": "",
     ".bat": "",
     ".mk": "",
-    ".jpg": "",
-    ".jpeg": "",
-    ".bmp": "",
-    ".png": "",
-    ".webp": "",
-    ".gif": "",
-    ".ico": "",
     ".twig": "",
     ".cpp": "",
     ".c++": "",
@@ -139,6 +143,7 @@ FILE_ICONS = {
     ".exs": "",
     ".eex": "",
     ".leex": "",
+    ".heex": "",
     ".vim": "",
     ".ai": "",
     ".psd": "",
@@ -156,6 +161,191 @@ FILE_ICONS = {
     ".rproj": "鉶",
     ".sol": "ﲹ",
     ".pem": "",
+    # file names (vim-devicons) (case-insensitive not supported in lf)
+    "gruntfile.coffee": "",
+    "gruntfile.js": "",
+    "gruntfile.ls": "",
+    "gulpfile.coffee": "",
+    "gulpfile.js": "",
+    "gulpfile.ls": "",
+    "mix.lock": "",
+    "dropbox": "",
+    ".ds_store": "",
+    ".gitconfig": "",
+    ".gitignore": "",
+    ".gitattributes": "",
+    ".gitlab-ci.yml": "",
+    ".bashrc": "",
+    ".zshrc": "",
+    ".zshenv": "",
+    ".zprofile": "",
+    ".vimrc": "",
+    ".gvimrc": "",
+    "_vimrc": "",
+    "_gvimrc": "",
+    ".bashprofile": "",
+    "favicon.ico": "",
+    "license": "",
+    "node_modules": "",
+    "react.jsx": "",
+    "procfile": "",
+    "dockerfile": "",
+    "docker-compose.yml": "",
+    "rakefile": "",
+    "config.ru": "",
+    "gemfile": "",
+    "makefile": "",
+    "cmakelists.txt": "",
+    "robots.txt": "ﮧ",
+    # file names (case-sensitive adaptations)
+    "Gruntfile.coffee": "",
+    "Gruntfile.js": "",
+    "Gruntfile.ls": "",
+    "Gulpfile.coffee": "",
+    "Gulpfile.js": "",
+    "Gulpfile.ls": "",
+    "Dropbox": "",
+    ".DS_Store": "",
+    "LICENSE": "",
+    "React.jsx": "",
+    "Procfile": "",
+    "Dockerfile": "",
+    "Docker-compose.yml": "",
+    "Rakefile": "",
+    "Gemfile": "",
+    "Makefile": "",
+    "CMakeLists.txt": "",
+    # file patterns (file name adaptations)
+    "jquery.min.js": "",
+    "angular.min.js": "",
+    "backbone.min.js": "",
+    "require.min.js": "",
+    "materialize.min.js": "",
+    "materialize.min.css": "",
+    "mootools.min.js": "",
+    "vimrc": "",
+    "Vagrantfile": "",
+    # archives or compressed (extensions from dircolors defaults)
+    ".tar": "",
+    ".tgz": "",
+    ".arc": "",
+    ".arj": "",
+    ".taz": "",
+    ".lha": "",
+    ".lz4": "",
+    ".lzh": "",
+    ".lzma": "",
+    ".tlz": "",
+    ".txz": "",
+    ".tzo": "",
+    ".t7z": "",
+    ".zip": "",
+    ".z": "",
+    ".dz": "",
+    ".gz": "",
+    ".lrz": "",
+    ".lz": "",
+    ".lzo": "",
+    ".xz": "",
+    ".zst": "",
+    ".tzst": "",
+    ".bz2": "",
+    ".bz": "",
+    ".tbz": "",
+    ".tbz2": "",
+    ".tz": "",
+    ".deb": "",
+    ".rpm": "",
+    ".jar": "",
+    ".war": "",
+    ".ear": "",
+    ".sar": "",
+    ".rar": "",
+    ".alz": "",
+    ".ace": "",
+    ".zoo": "",
+    ".cpio": "",
+    ".7z": "",
+    ".rz": "",
+    ".cab": "",
+    ".wim": "",
+    ".swm": "",
+    ".dwm": "",
+    ".esd": "",
+    # image formats (extensions from dircolors defaults)
+    ".jpg": "",
+    ".jpeg": "",
+    ".mjpg": "",
+    ".mjpeg": "",
+    ".webp": "",
+    ".ico": "",
+    ".gif": "",
+    ".bmp": "",
+    ".pbm": "",
+    ".pgm": "",
+    ".ppm": "",
+    ".tga": "",
+    ".xbm": "",
+    ".xpm": "",
+    ".tif": "",
+    ".tiff": "",
+    ".png": "",
+    ".svg": "",
+    ".svgz": "",
+    ".mng": "",
+    ".pcx": "",
+    ".mov": "",
+    ".mpg": "",
+    ".mpeg": "",
+    ".m2v": "",
+    ".mkv": "",
+    ".webm": "",
+    ".ogm": "",
+    ".mp4": "",
+    ".m4v": "",
+    ".mp4v": "",
+    ".vob": "",
+    ".qt": "",
+    ".nuv": "",
+    ".wmv": "",
+    ".asf": "",
+    ".rm": "",
+    ".rmvb": "",
+    ".flc": "",
+    ".avi": "",
+    ".fli": "",
+    ".flv": "",
+    ".gl": "",
+    ".dl": "",
+    ".xcf": "",
+    ".xwd": "",
+    ".yuv": "",
+    ".cgm": "",
+    ".emf": "",
+    ".ogv": "",
+    ".ogx": "",
+    # audio formats (extensions from dircolors defaults)
+    ".aac": "",
+    ".au": "",
+    ".flac": "",
+    ".m4a": "",
+    ".mid": "",
+    ".midi": "",
+    ".mka": "",
+    ".mp3": "",
+    ".mpc": "",
+    ".ogg": "",
+    ".ra": "",
+    ".wav": "",
+    ".oga": "",
+    ".opus": "",
+    ".spx": "",
+    ".xspf": "",
+    # documents
+    ".pdf": "",
+    ".doc": "",
+    ".docx": "",
+    ".ipynb": "ﴬ",
 }
 
 
@@ -175,6 +365,7 @@ class FileBrowserControl(UIControl):
         self,
         path: "UPath" = None,
         on_chdir: "Callable[[FileBrowserControl], None]|None" = None,
+        on_select: "Callable[[FileBrowserControl], None]|None" = None,
         on_open: "Callable[[FileBrowserControl], None]|None" = None,
     ) -> "None":
         """Initialize a new file browser instance."""
@@ -184,6 +375,7 @@ class FileBrowserControl(UIControl):
         self._dir_cache: "FastDictCache[UPath, list[tuple[bool, UPath]]]" = (
             FastDictCache(get_value=self.load_path, size=1)
         )
+        self.on_select = Event(self, on_select)
         self.on_chdir = Event(self, on_chdir)
         self.on_open = Event(self, on_open)
 
@@ -216,8 +408,8 @@ class FileBrowserControl(UIControl):
         @kb.add("space")
         @kb.add("enter")
         @kb.add("right")
-        def _ipen(event: "KeyPressEvent") -> "None":
-            return None
+        def _open(event: "KeyPressEvent") -> "None":
+            return self.open_path()
 
     @property
     def contents(self) -> "list[tuple[bool, UPath]]":
@@ -271,7 +463,13 @@ class FileBrowserControl(UIControl):
             if i > len(paths) - 1:
                 return []
             is_dir, child = paths[i]
-            icon = "" if is_dir else FILE_ICONS.get(child.suffix, "")
+            icon = (
+                FILE_ICONS["dir"]
+                if is_dir
+                else FILE_ICONS.get(child.suffix)
+                or FILE_ICONS.get(child.name)
+                or FILE_ICONS["file"]
+            )
             style = "class:row"
             if i % 2:
                 style += " class:alt-row"
@@ -308,6 +506,7 @@ class FileBrowserControl(UIControl):
         row = min(max(0, row), len(self.contents) - 1)
         if self.selected != row:
             self.selected = row
+            self.on_select.fire()
         elif open_file:
             self.open_path()
         return None
@@ -367,11 +566,13 @@ class FileBrowser:
     def __init__(
         self,
         path: "UPath" = None,
+        on_select: "Callable[[UPath], None]|None" = None,
         on_open: "Callable[[UPath], None]|None" = None,
         on_chdir: "Callable[[UPath], None]|None" = None,
         width: "AnyDimension" = None,
         height: "AnyDimension" = None,
         style: "str" = "",
+        show_address_bar: "FilterOrBool" = True,
     ) -> "None":
         """Create a new instance."""
 
@@ -387,29 +588,39 @@ class FileBrowser:
             accept_handler=_accept_path,
             completer=self.completer,
         )
-        control = FileBrowserControl(
+        self.control = control = FileBrowserControl(
             path=path,
             on_open=lambda x: log.debug(x.path),
             on_chdir=lambda x: setattr(text, "text", str(x.dir)),
         )
+        if on_select is not None:
+            control.on_select += (
+                lambda x: on_select(x.path) if callable(on_select) else None
+            )
         if on_chdir is not None:
             control.on_chdir += (
                 lambda x: on_chdir(x.path) if callable(on_chdir) else None
             )
         if on_open is not None:
             control.on_open += lambda x: on_open(x.path) if callable(on_open) else None
+
         self.container = HSplit(
             [
-                VSplit(
-                    [
-                        FocusedStyle(text),
-                        FocusedStyle(
-                            Button(
-                                "Go",
-                                on_click=lambda x: setattr(control, "dir", text.text),
-                            )
-                        ),
-                    ]
+                ConditionalContainer(
+                    VSplit(
+                        [
+                            FocusedStyle(text),
+                            FocusedStyle(
+                                Button(
+                                    "Go",
+                                    on_click=lambda x: setattr(
+                                        control, "dir", text.text
+                                    ),
+                                )
+                            ),
+                        ]
+                    ),
+                    filter=to_filter(show_address_bar),
                 ),
                 Border(
                     FocusedStyle(

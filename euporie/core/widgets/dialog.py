@@ -38,7 +38,8 @@ from euporie.core.formatted_text.utils import FormattedTextAlign, align, lex
 from euporie.core.key_binding.registry import register_bindings
 from euporie.core.tabs.base import Tab
 from euporie.core.widgets.decor import Border, FocusedStyle, Shadow
-from euporie.core.widgets.forms import Button, Select, Text
+from euporie.core.widgets.file_browser import FileBrowser
+from euporie.core.widgets.forms import Button, LabelledWidget, Select, Text
 
 if TYPE_CHECKING:
     from typing import Any, Callable, Hashable, Optional
@@ -149,7 +150,7 @@ class Dialog(Float, metaclass=ABCMeta):
     body_padding_top = 1
     body_padding_bottom = 0
 
-    def __init__(self, app: "BaseApp") -> None:
+    def __init__(self, app: "BaseApp") -> "None":
         """Create a modal dialog.
 
         title: The title of the dialog. Can be formatted text.
@@ -388,7 +389,44 @@ class FileDialog(Dialog, metaclass=ABCMeta):
     """A base dialog to prompt the user for a file path."""
 
     title = "Select a File"
-    completer = PathCompleter()
+
+    def __init__(self, app: "BaseApp") -> "None":
+        """Set up the dialog components on dialog initialization."""
+        super().__init__(app)
+
+        def _accept_text(buf: "Buffer") -> "bool":
+            """Accepts the text in the file input field and focuses the next field."""
+            self.app.layout.focus_next()
+            buf.complete_state = None
+            return True
+
+        completer = PathCompleter()
+        self.filepath = Text(
+            multiline=False,
+            completer=completer,
+            accept_handler=_accept_text,
+            style="class:input",
+            width=30,
+        )
+        self.file_browser = FileBrowser(
+            height=Dimension(preferred=20),
+            show_address_bar=False,
+            on_select=lambda path: setattr(self.filepath, "text", path.name),
+        )
+        completer.get_paths = lambda: [self.file_browser.control.dir, "."]
+        self.error = ""
+
+        self.body = HSplit(
+            [
+                self.file_browser,
+                FocusedStyle(LabelledWidget(self.filepath, "File name:")),
+                ConditionalContainer(
+                    Label(lambda: self.error, style="red"),
+                    filter=Condition(lambda: bool(self.error)),
+                ),
+            ]
+        )
+        self.to_focus = self.filepath
 
     def load(
         self,
@@ -398,38 +436,16 @@ class FileDialog(Dialog, metaclass=ABCMeta):
         cb: "Optional[Callable]" = None,
     ) -> "None":
         """Load the dialog body."""
-
-        def _accept_text(buf: "Buffer") -> "bool":
-            """Accepts the text in the file input field and focuses the next field."""
-            self.app.layout.focus_next()
-            buf.complete_state = None
-            return True
-
-        filepath = Text(
-            text=text,
-            multiline=False,
-            completer=self.completer,
-            accept_handler=_accept_text,
-            style="class:input",
-            width=40,
-        )
-
-        self.body = HSplit(
-            [
-                Label("Enter file path:"),
-                FocusedStyle(filepath),
-                ConditionalContainer(
-                    Label(lambda: error, style="red"),
-                    filter=Condition(lambda: bool(error)),
-                ),
-            ]
-        )
-        self.to_focus = filepath
-
+        self.filepath.text = text
         self.buttons = {
-            "OK": partial(self.validate, filepath.buffer, tab=tab, cb=cb),
+            "OK": partial(self.validate, self.filepath.buffer, tab=tab, cb=cb),
             "Cancel": None,
         }
+        self.file_browser.control.on_open._handlers.clear()
+        self.file_browser.control.on_open += lambda path: self.validate(
+            self.filepath.buffer, tab=tab, cb=cb
+        )
+        self.error = error
 
     def validate(
         self, buffer: "Buffer", tab: "Tab", cb: "Optional[Callable]" = None
@@ -449,7 +465,7 @@ class OpenFileDialog(FileDialog):
         """Validate the the file to open exists."""
         from euporie.core.utils import parse_path
 
-        path = parse_path(buffer.text)
+        path = parse_path(self.file_browser.control.dir / buffer.text)
         if path is not None:
             if str(path).startswith("http") or path.is_file():
                 self.hide()
@@ -459,9 +475,7 @@ class OpenFileDialog(FileDialog):
                     error="The file path specified does not exist", text=buffer.text
                 )
             elif path.is_dir():
-                self.show(
-                    error="The file path specified is a directory", text=buffer.text
-                )
+                self.file_browser.control.dir = path
 
     # ################################### Commands ####################################
 
@@ -496,12 +510,15 @@ class SaveAsDialog(FileDialog):
         """Validate the the file to open exists."""
         from euporie.core.utils import parse_path
 
-        path = parse_path(buffer.text)
+        path = parse_path(self.file_browser.control.dir / buffer.text)
         if tab and path is not None:
-            tab.save(path=path)
-            self.hide()
-            if callable(cb):
-                cb()
+            if path.is_dir():
+                self.file_browser.control.dir = path
+            else:
+                tab.save(path=path)
+                self.hide()
+                if callable(cb):
+                    cb()
 
     # ################################### Commands ####################################
 
