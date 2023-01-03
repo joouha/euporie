@@ -48,7 +48,7 @@ from euporie.core.widgets.search_bar import SearchBar
 from euporie.core.widgets.status_bar import StatusBar
 from euporie.notebook.enums import TabMode
 from euporie.notebook.tabs import Notebook
-from euporie.notebook.widgets.sidebar import Sidebar
+from euporie.notebook.widgets.side_bar import SideBar
 
 if TYPE_CHECKING:
     from asyncio import AbstractEventLoop
@@ -267,7 +267,7 @@ class NotebookApp(BaseApp):
                 ]
             ),
         )
-        self.sidebar = Sidebar(titles, icons, panels)
+        self.side_bar = SideBar(titles, icons, panels)
 
         self.container = FloatContainer(
             content=HSplit(
@@ -275,7 +275,7 @@ class NotebookApp(BaseApp):
                     top_bar,
                     VSplit(
                         [
-                            self.sidebar,
+                            self.side_bar,
                             HSplit(
                                 [
                                     tab_bar,
@@ -284,7 +284,8 @@ class NotebookApp(BaseApp):
                                 ],
                                 width=Dimension(weight=1),
                             ),
-                        ]
+                        ],
+                        height=Dimension(min=1),
                     ),
                     self.search_bar,
                     StatusBar(),
@@ -460,9 +461,15 @@ class NotebookApp(BaseApp):
                     separator,
                     get_cmd("toggle-expand").menu,
                     get_cmd("toggle-line-numbers").menu,
-                    get_cmd("toggle-show-status-bar").menu,
-                    get_cmd("toggle-show-scroll-bar").menu,
-                    get_cmd("toggle-always-show-tab-bar").menu,
+                    MenuItem(
+                        "UI Elements",
+                        children=[
+                            get_cmd("toggle-always-show-tab-bar").menu,
+                            get_cmd("toggle-show-side-bar").menu,
+                            get_cmd("toggle-show-status-bar").menu,
+                            get_cmd("toggle-show-scroll-bar").menu,
+                        ],
+                    ),
                     separator,
                     MenuItem(
                         "Cell formatting",
