@@ -108,6 +108,7 @@ description = "Check and lint the codebase."
 detached = true
 dependencies = [
   "pre-commit",
+  "pre-commit-hooks",
   "ssort",
   "black",
   "ruff",
