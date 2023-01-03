@@ -186,3 +186,14 @@ Command Line Interface
 .. include:: ../_inc/cli_flags.rst
    :start-after: .. _cli-euporie-notebook-start:
    :end-before: .. _cli-euporie-notebook-end:
+
+----
+
+
+******************
+Available Commands
+******************
+
+.. toctree::
+
+   notebook_commands
