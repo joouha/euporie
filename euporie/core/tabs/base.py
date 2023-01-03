@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 from abc import ABCMeta
 from collections import deque
+from functools import partial
 from typing import TYPE_CHECKING
 
 from prompt_toolkit.history import InMemoryHistory
@@ -141,15 +142,20 @@ class KernelTab(Tab, metaclass=ABCMeta):
         """Interrupt the current `Notebook`'s kernel."""
         self.kernel.interrupt()
 
-    def restart_kernel(self) -> "None":
+    def restart_kernel(self, cb: "Callable|None" = None) -> "None":
         """Restarts the current `Notebook`'s kernel."""
+
+        def _cb(result: "dict[str, Any]") -> "None":
+            if callable(cb):
+                cb()
+
         if confirm := self.app.dialogs.get("confirm"):
             confirm.show(
                 message="Are you sure you want to restart the kernel?",
-                cb=self.kernel.restart,
+                cb=partial(self.kernel.restart, cb=_cb),
             )
         else:
-            self.kernel.restart()
+            self.kernel.restart(cb=_cb)
 
     def kernel_started(self, result: "Optional[dict[str, Any]]" = None) -> "None":
         """Tasks to run when the kernel has started."""

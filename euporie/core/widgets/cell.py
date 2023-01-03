@@ -541,9 +541,11 @@ class Cell:
         self.clear_outputs_on_output = False
         if "outputs" in self.json:
             self.json["outputs"].clear()
-        self.output_area.reset()
+        if self.cell_type != "markdown":
+            self.output_area.reset()
         # Ensure the cell output area is visible
         self.show_output()
+        self.refresh()
 
     def set_cell_type(
         self, cell_type: "Literal['markdown','code','raw']", clear: "bool" = False
