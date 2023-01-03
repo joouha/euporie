@@ -554,23 +554,26 @@ class ScrollingContainer(Container):
         """
         # self.refresh_children = True
         if n > 0:
-            if (
-                min(self.visible_indicies) == 0
-                and self.index_positions[0] is not None
-                and self.index_positions[0] + self.scrolling + n > 0
-            ):
-                return NotImplemented
+            if min(self.visible_indicies) == 0 and self.index_positions[0] is not None:
+                n = min(n, 0 - self.index_positions[0] - self.scrolling)
+                if self.index_positions[0] + self.scrolling + n > 0:
+                    return NotImplemented
         elif n < 0:
             bottom_index = len(self.children) - 1
             if bottom_index in self.visible_indicies:
                 bottom_child = self.get_child_render_info(bottom_index)
                 bottom_pos = self.index_positions[bottom_index]
-                if (
-                    bottom_pos is not None
-                    and bottom_pos + bottom_child.height + self.scrolling + n
-                    < self.last_write_position.height
-                ):
-                    return NotImplemented
+                if bottom_pos is not None:
+                    n = max(
+                        n,
+                        self.last_write_position.height
+                        - (bottom_pos + bottom_child.height + self.scrolling),
+                    )
+                    if (
+                        bottom_pos + bottom_child.height + self.scrolling + n
+                        < self.last_write_position.height
+                    ):
+                        return NotImplemented
 
         # Very basic scrolling acceleration
         self.scrolling += n

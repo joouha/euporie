@@ -11,7 +11,8 @@ Upcoming
 Added
 =====
 
-- Open and Save As dialogs now include a file browser
+- The ``scroll-up-5-lines`` and ``scroll-down-5-lines`` commands now scroll to the top or bottom of the document if less than 5 lines remain
+- "Open" and "Save As" dialogs now include a file browser
 - Added a side-bar, which currently shows a file browser
 - Add file display tab
 - Minor ussability improvements to widgets
