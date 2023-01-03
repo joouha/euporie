@@ -54,7 +54,7 @@ def png_to_pil_py(
 
     try:
         image = Image.open(io.BytesIO(data))
-    except IOError:
+    except OSError:
         log.error("Could not load image.")
         return Image.new(mode="P", size=(1, 1))
     else:

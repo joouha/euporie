@@ -24,11 +24,11 @@ from euporie.core.border import (
     Padding,
     Rounded,
     Thick,
+    ThickDoubleDashed,
+    ThickQuadrupleDashed,
     Thin,
     ThinDoubleDashed,
     ThinQuadrupleDashed,
-    ThickDoubleDashed,
-    ThickQuadrupleDashed,
 )
 from euporie.core.convert.base import convert, get_format
 from euporie.core.convert.utils import data_pixel_size, pixels_to_cell_size
