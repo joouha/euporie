@@ -49,3 +49,13 @@ Command Line Interface
 .. include:: ../_inc/cli_flags.rst
    :start-after: .. _cli-euporie-console-start:
    :end-before: .. _cli-euporie-console-end:
+
+----
+
+******************
+Available Commands
+******************
+
+.. toctree::
+
+   console_commands

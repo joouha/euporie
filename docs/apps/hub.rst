@@ -37,3 +37,13 @@ Command Line Interface
 .. include:: ../_inc/cli_flags.rst
    :start-after: .. _cli-euporie-hub-start:
    :end-before: .. _cli-euporie-hub-end:
+
+----
+
+******************
+Available Commands
+******************
+
+.. toctree::
+
+   hub_commands
