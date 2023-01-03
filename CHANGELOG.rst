@@ -11,6 +11,8 @@ Upcoming
 Added
 =====
 
+- Open and Save As dialogs now include a file browser
+- Added a side-bar, which currently shows a file browser
 - Add file display tab
 - Minor ussability improvements to widgets
 - Partially obscured images are now rendered using terminal graphics
