@@ -225,7 +225,7 @@ class Notebook(BaseNotebook):
                 ),
             ],
             width=Dimension(weight=1),
-            height=Dimension(weight=2),
+            height=Dimension(min=1, weight=2),
             key_bindings=load_registered_bindings(
                 "euporie.notebook.tabs.notebook.Notebook"
             ),
