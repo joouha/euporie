@@ -426,7 +426,6 @@ class FileDialog(Dialog, metaclass=ABCMeta):
                 ),
             ]
         )
-        self.to_focus = self.filepath
 
     def load(
         self,
@@ -446,6 +445,7 @@ class FileDialog(Dialog, metaclass=ABCMeta):
             self.filepath.buffer, tab=tab, cb=cb
         )
         self.error = error
+        self.to_focus = self.filepath
 
     def validate(
         self, buffer: "Buffer", tab: "Tab", cb: "Optional[Callable]" = None
