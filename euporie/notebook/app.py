@@ -410,6 +410,7 @@ class NotebookApp(BaseApp):
                     get_cmd("paste-cells").menu,
                     separator,
                     get_cmd("copy-outputs").menu,
+                    get_cmd("clear-cell-outputs").menu,
                     separator,
                     get_cmd("find").menu,
                     separator,
