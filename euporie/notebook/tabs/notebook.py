@@ -966,6 +966,28 @@ class Notebook(BaseNotebook):
     @staticmethod
     @add_cmd(
         filter=cell_has_focus & ~buffer_has_focus,
+    )
+    def _clear_cell_outputs() -> "None":
+        """Clear the outputs of the selected cells."""
+        nb = get_app().tab
+        if isinstance(nb, Notebook):
+            for cell in nb.cells:
+                cell.remove_outputs()
+
+    @staticmethod
+    @add_cmd(
+        filter=cell_has_focus & ~buffer_has_focus,
+    )
+    def _clear_all_outputs() -> "None":
+        """Clear the outputs of the selected cells."""
+        nb = get_app().tab
+        if isinstance(nb, Notebook):
+            for cell in nb._rendered_cells.values():
+                cell.remove_outputs()
+
+    @staticmethod
+    @add_cmd(
+        filter=cell_has_focus & ~buffer_has_focus,
         title="Expand cell inputs",
     )
     def _show_cell_inputs() -> "None":
@@ -1152,6 +1174,15 @@ class Notebook(BaseNotebook):
         """Restart the notebook's kernel."""
         if isinstance(kt := get_app().tab, KernelTab):
             kt.restart_kernel()
+
+    @staticmethod
+    @add_cmd(
+        filter=kernel_tab_has_focus & ~buffer_has_focus & ~display_has_focus,
+    )
+    def _restart_kernel_and_clear_all_outputs() -> "None":
+        """Restart the notebook's kernel and clear all cell output."""
+        if isinstance(nb := get_app().tab, Notebook):
+            nb.restart_kernel(cb=Notebook._clear_all_outputs)
 
     @staticmethod
     @add_cmd(
