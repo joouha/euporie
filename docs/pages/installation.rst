@@ -177,4 +177,4 @@ Euporie will render LaTeX in markdown and cell output using unicode text, using 
    :py:mod:`flatlatex` is a dependency of euporie, so will be installed by default
 
 .. note::
-   :py:mod:`ipython` and :command:`dvipng` are both equired to display rendered LaTeX as graphics
+   :py:mod:`ipython` and :command:`dvipng` are both required to display rendered LaTeX as graphics
