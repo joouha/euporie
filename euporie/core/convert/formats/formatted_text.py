@@ -39,7 +39,10 @@ def html_to_ft(
     from euporie.core.formatted_text.html import HTML
 
     markup = data.decode() if isinstance(data, bytes) else data
-    html = _html_cache.get(hash(markup), partial(HTML, markup, width=width, base=path))
+    html = _html_cache.get(
+        hash(markup),
+        partial(HTML, markup, width=width, base=path, collapse_root_margin=True),
+    )
     if (
         width is not None
         and height is not None

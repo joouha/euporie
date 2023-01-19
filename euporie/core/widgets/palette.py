@@ -242,7 +242,7 @@ class CommandPalette(Dialog):
 
         # Lookahead regex to manage overlapping matches
         regex = re.compile(
-            "(?=({0}))".format(".*?".join(map(re.escape, buffer.text))), re.IGNORECASE
+            "(?=({}))".format(".*?".join(map(re.escape, buffer.text))), re.IGNORECASE
         )
         for cmd in commands.values():
             if not cmd.hidden():

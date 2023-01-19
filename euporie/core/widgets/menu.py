@@ -26,7 +26,7 @@ from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
 from prompt_toolkit.utils import get_cwidth
 
 from euporie.core.app import get_app
-from euporie.core.border import HalfBlockOuterGridStyle
+from euporie.core.border import OuterHalfGrid
 from euporie.core.widgets.decor import Shadow
 
 if TYPE_CHECKING:
@@ -459,7 +459,7 @@ class MenuBar:
         self,
         app: "BaseApp",
         menu_items: "Sequence[MenuItem]",
-        grid: "GridStyle" = HalfBlockOuterGridStyle,
+        grid: "GridStyle" = OuterHalfGrid,
     ) -> "None":
         """Initiate the menu bar.
 

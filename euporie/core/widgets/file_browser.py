@@ -24,7 +24,7 @@ from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
 from prompt_toolkit.utils import Event
 from upath import UPath
 
-from euporie.core.border import InnerEdgeGridStyle
+from euporie.core.border import InnerEigthGrid
 from euporie.core.margins import ScrollbarMargin
 from euporie.core.widgets.decor import Border, FocusedStyle
 from euporie.core.widgets.forms import Button, Text
@@ -630,7 +630,7 @@ class FileBrowser:
                             right_margins=[ScrollbarMargin()],
                         )
                     ),
-                    border=InnerEdgeGridStyle,
+                    border=InnerEigthGrid,
                     style="class:input,inset,border",
                 ),
             ],

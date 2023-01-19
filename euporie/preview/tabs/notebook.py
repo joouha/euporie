@@ -79,7 +79,7 @@ class PreviewNotebook(BaseNotebook):
         width = self.app.output.get_size().columns
         ft: "StyleAndTextTuples" = [("bold", str(self.path))]
         ft = wrap(ft, width - 4)
-        ft = align(FormattedTextAlign.CENTER, ft, width=width - 4)
+        ft = align(ft, how=FormattedTextAlign.CENTER, width=width - 4)
         ft = add_border(ft, width=width)
         self.app.print_text(ft)
 

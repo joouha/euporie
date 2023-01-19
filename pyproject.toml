@@ -212,6 +212,6 @@ module = [
   "_frozen_importlib", "ipykernel", "fastjsonschema",
   "pyperclip", "upath.*", "timg", "pylatexenc.*", "aenum", "pygments.*",
   "ssort",
-  "flatlatex", "timg", "img2unicode", "cairosvg", "teimpy", "IPython.*", "numpy", "mtable", "imagesize",
+  "flatlatex.*", "timg", "img2unicode", "cairosvg", "teimpy", "IPython.*", "numpy", "mtable", "imagesize",
 ]
 ignore_missing_imports = true

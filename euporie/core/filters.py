@@ -94,7 +94,7 @@ def has_dialog() -> "bool":
     """Determine if a dialog is being displayed."""
     from prompt_toolkit.layout.containers import ConditionalContainer
 
-    from euporie.notebook.app import get_app
+    from euporie.core.current import get_app
 
     app = get_app()
     for dialog in app.dialogs.values():
@@ -109,7 +109,7 @@ def has_menus() -> "bool":
     """Determine if a menu is being displayed."""
     from prompt_toolkit.layout.containers import ConditionalContainer
 
-    from euporie.notebook.app import get_app
+    from euporie.notebook.current import get_app
 
     app = get_app()
     for menu in app.menus.values():

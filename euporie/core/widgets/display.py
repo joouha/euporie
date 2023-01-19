@@ -28,7 +28,7 @@ from euporie.core.app import get_app
 from euporie.core.commands import add_cmd
 from euporie.core.convert.base import convert, find_route
 from euporie.core.convert.utils import data_pixel_size, pixels_to_cell_size
-from euporie.core.data_structures import BoxSize
+from euporie.core.data_structures import DiInt
 from euporie.core.filters import display_has_focus, has_dialog, has_menus, scrollable
 from euporie.core.key_binding.registry import (
     load_registered_bindings,
@@ -389,7 +389,7 @@ class GraphicControl(DisplayControl, metaclass=ABCMeta):
         focusable: "FilterOrBool" = False,
         focus_on_click: "FilterOrBool" = False,
         scale: "float" = 0,
-        bbox: "BoxSize|None" = None,
+        bbox: "DiInt|None" = None,
     ) -> "None":
         """Initialize the graphic control."""
         super().__init__(
@@ -402,7 +402,7 @@ class GraphicControl(DisplayControl, metaclass=ABCMeta):
             focusable,
             focus_on_click,
         )
-        self.bbox = bbox or BoxSize(0, 0, 0, 0)
+        self.bbox = bbox or DiInt(0, 0, 0, 0)
 
         # Record the original pixel size of the imge
         px, py = data_pixel_size(data, format_, fg=fg_color, bg=bg_color)
@@ -637,7 +637,7 @@ class KittyGraphicControl(GraphicControl):
         focusable: "FilterOrBool" = False,
         focus_on_click: "FilterOrBool" = False,
         scale: "float" = 0,
-        bbox: "BoxSize|None" = None,
+        bbox: "DiInt|None" = None,
     ) -> "None":
         """Create a new kitty graphic instance."""
         super().__init__(
@@ -868,7 +868,7 @@ class GraphicWindow(Window):
             content_width = target_wp.width  # TODO - get the actual content width
 
             # Calculate the cropping box in case the window is scrolled
-            bbox = BoxSize(
+            bbox = DiInt(
                 top=render_info.vertical_scroll,
                 right=max(
                     0,

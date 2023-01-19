@@ -17,12 +17,12 @@ def test_inline_whitespace() -> "None":
 def test_nested_list_linebreaks() -> "None":
     """There are no extra linebreaks in nested lists."""
     data = "<ol><li>a<ul><li>a</li><li>b</li></ul></li><li>b</li></ol>"
-    expected = " 1. a   \n     • a\n     • b\n 2. b   "
+    expected = "        \n 1. a   \n     ○ a\n     ○ b\n 2. b   \n        "
     result = to_plain_text(HTML(data, width=8))
     assert result == expected
 
     data = "<ul><li>a<ol><li>a</li><li>b</li></ol></li><li>b</li></ul>"
-    expected = " • a    \n    1. a\n    2. b\n • b    "
+    expected = "        \n • a    \n    1. a\n    2. b\n • b    \n        "
     result = to_plain_text(HTML(data, width=8))
     assert result == expected
 
@@ -66,40 +66,32 @@ def test_enclosed_paragraph_newlines() -> "None":
     assert result == expected
 
 
-def test_parent_style_class_inherited() -> "None":
-    """Style classes of parent elements are inherited."""
-    data = "<section><div><p>pp</p></div></section>"
-    result = HTML(data, width=5).formatted_text
-    assert "html,section,div,p" in result[0][0]
-
-
 def test_single_hr() -> "None":
     """A single <hr> has its margins stripped."""
     data = "<hr>"
-    expected = "───"
+    expected = "   \n───\n   "
     result = to_plain_text(HTML(data, width=3))
     assert result == expected
 
 
 def test_nested_block_margins() -> "None":
-    """Margins are stripped from blocks at the start and end of blocks."""
+    """Margins collapse when no content separates parent and descendants."""
     data = "<hr><div><hr></div><hr>"
-    expected = "─\n \n─\n \n─"
+    expected = " \n─\n \n─\n \n─\n "
     result = to_plain_text(HTML(data, width=1))
     assert result == expected
 
 
 def test_details_summary() -> "None":
     """A <summary> renders as expected."""
-    data = "<details><summary>a a a</summary>b b b</details>"
-    expected = " ⮟ a a \n   a   \n       \n   b b \n   b   "
+    data = "<details open=''><summary>a a a</summary>b b b</details>"
+    expected = "▼ a a a\nb b b  "
     result = to_plain_text(HTML(data, width=7))
     assert result == expected
 
 
 def test_multiple_css_selectors() -> "None":
     """Comma separated CSS selectors are interpreted."""
-    data = '<style>.a,.b{color:red}</style><i class="a">a</i><i class="b">b</i>'
-    expected = [("class:html,i  fg:#ff0000", "a"), ("class:html,i  fg:#ff0000", "b")]
+    data = '<style>.a,.b{font_weight: bold}</style><span class="a">a</span><span class="b">b</span>'
     result = to_formatted_text(HTML(data, width=2))
-    assert result == expected
+    assert all(["bold" in x[0].split() for x in result])

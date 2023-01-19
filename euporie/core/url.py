@@ -49,8 +49,13 @@ def load_url(
         )
         try:
             # The use of 'file:' scheme is intended
-            data = urlopen(request, timeout=4).read()  # noqa S310
+            response = urlopen(request, timeout=4)
+            log.debug(response)
+            data = response.read()  # noqa S310
+
         except Exception:
             log.debug("Failed to load `%s`", url)
+
+    # Get mime type from response
 
     return data
