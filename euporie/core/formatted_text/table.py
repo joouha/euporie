@@ -304,7 +304,12 @@ class Cell:
 
         row = self.row
         col = self.col
-        table = row.table
+        table = col.table
+
+        if row not in table._rows:
+            # The table has not yet been fully constructed
+            return DiInt.from_value(1)
+
         row_index = table.rows.index(row)
         col_index = table.cols.index(col)
 
