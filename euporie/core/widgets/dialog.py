@@ -31,7 +31,11 @@ from prompt_toolkit.layout.screen import WritePosition
 from prompt_toolkit.mouse_events import MouseButton, MouseEventType
 from prompt_toolkit.widgets.base import Box, Label
 
-from euporie.core.border import OuterHalfGrid
+from euporie.core.border import (
+    FullLine,
+    LowerLeftHalfLine,
+    UpperRightHalfLine,
+)
 from euporie.core.commands import add_cmd
 from euporie.core.filters import tab_has_focus
 from euporie.core.formatted_text.utils import FormattedTextAlign, align, lex
@@ -56,6 +60,14 @@ if TYPE_CHECKING:
     from euporie.core.tabs.base import KernelTab
 
 log = logging.getLogger(__name__)
+
+
+DialogGrid = (
+    FullLine.left_edge
+    + FullLine.right_edge
+    + LowerLeftHalfLine.bottom_edge
+    + UpperRightHalfLine.top_edge
+)
 
 
 class DialogTitleControl(UIControl):
@@ -228,7 +240,7 @@ class Dialog(Float, metaclass=ABCMeta):
                         key_bindings=self.kb,
                         modal=True,
                     ),
-                    border=OuterHalfGrid,
+                    border=DialogGrid,
                     style="class:dialog,border",
                 ),
             ),

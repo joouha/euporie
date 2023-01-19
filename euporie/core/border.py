@@ -199,6 +199,7 @@ class LineStyle:
         if parent:
             parent.children[name] = self
 
+    @lru_cache  # noqa B019
     def __getattr__(self, value: "str") -> "GridStyle":
         """Defines attribute access.
 
@@ -266,6 +267,8 @@ ThickDoubleDashedLine = LineStyle("DoubleDashed", (3, 3), parent=ThickLine)
 
 UpperRightHalfLine = LineStyle("UpperRightHalfLine", (4, 1), parent=ThickLine)
 LowerLeftHalfLine = LineStyle("LowerLeftHalfLine", (4, 1), parent=ThickLine)
+
+FullLine = LineStyle("FullLine", (5, 1), parent=ThickLine)
 
 
 class GridChar(NamedTuple):
@@ -436,6 +439,47 @@ _GRID_CHARS = {
     GridChar(ThinLine,              ThickLine,              ThickLine,              ThickLine       ): "╈",
     GridChar(ThickLine,             ThinLine,               ThickLine,              ThickLine       ): "╉",
     GridChar(ThickLine,             ThickLine,              ThinLine,               ThickLine       ): "╇",
+    # UpperRightEighthLine
+    GridChar(UpperRightEighthLine, NoLine, UpperRightEighthLine, NoLine): "▕",
+    GridChar(NoLine, UpperRightEighthLine, NoLine, UpperRightEighthLine): "▔",
+    GridChar(UpperRightEighthLine, UpperRightEighthLine, NoLine, NoLine): " ",
+    GridChar(NoLine, UpperRightEighthLine, UpperRightEighthLine, NoLine): "▕",
+    GridChar(NoLine, NoLine, UpperRightEighthLine, UpperRightEighthLine): "╲",
+    GridChar(UpperRightEighthLine, NoLine, NoLine, UpperRightEighthLine): "▔",
+    GridChar(UpperRightEighthLine, UpperRightEighthLine, UpperRightEighthLine, NoLine): "▕",
+    GridChar(NoLine, UpperRightEighthLine, UpperRightEighthLine, UpperRightEighthLine): "▔",
+    GridChar(UpperRightEighthLine,  NoLine,                 UpperRightEighthLine,   UpperRightEighthLine): "▕",
+    GridChar(UpperRightEighthLine,  UpperRightEighthLine,   NoLine,                 UpperRightEighthLine): "▔",
+    GridChar(UpperRightEighthLine,  UpperRightEighthLine,   UpperRightEighthLine,   UpperRightEighthLine): "▕",
+    # LowerLeftEighthLine
+    GridChar(LowerLeftEighthLine,   NoLine,                 LowerLeftEighthLine,    NoLine              ): "▏",
+    GridChar(NoLine,                LowerLeftEighthLine,    NoLine,                 LowerLeftEighthLine ): "▁",
+    GridChar(LowerLeftEighthLine,   LowerLeftEighthLine,    NoLine,                 NoLine              ): "╲",
+    GridChar(NoLine,                LowerLeftEighthLine,    LowerLeftEighthLine,    NoLine              ): "▁",
+    GridChar(NoLine,                NoLine,                 LowerLeftEighthLine,    LowerLeftEighthLine ): " ",
+    GridChar(LowerLeftEighthLine,   NoLine,                 NoLine,                 LowerLeftEighthLine ): "▏",
+    GridChar(LowerLeftEighthLine,   LowerLeftEighthLine,    LowerLeftEighthLine,    NoLine              ): "▏",
+    GridChar(NoLine,                LowerLeftEighthLine,    LowerLeftEighthLine,    LowerLeftEighthLine ): "▁",
+    GridChar(LowerLeftEighthLine,   NoLine,                 LowerLeftEighthLine,    LowerLeftEighthLine ): "▏",
+    GridChar(LowerLeftEighthLine,   LowerLeftEighthLine,    NoLine,                 LowerLeftEighthLine ): "▁",
+    GridChar(LowerLeftEighthLine,   LowerLeftEighthLine,    LowerLeftEighthLine,    LowerLeftEighthLine ): "▏",
+    # Eighth Combos
+    GridChar(NoLine,                LowerLeftEighthLine,    UpperRightEighthLine,   NoLine              ): " ",
+    GridChar(LowerLeftEighthLine,   NoLine,                 NoLine,                 UpperRightEighthLine): " ",
+    GridChar(NoLine,                UpperRightEighthLine,   LowerLeftEighthLine,    NoLine              ): "╱",
+    GridChar(UpperRightEighthLine,  NoLine,                 NoLine,                 LowerLeftEighthLine ): "╱",
+
+    # Eighth/ThinLine combos
+    GridChar(LowerLeftEighthLine,   ThinLine,               LowerLeftEighthLine,    NoLine              ): "▏",
+    GridChar(NoLine,                LowerLeftEighthLine,    ThinLine,               LowerLeftEighthLine ): "▁",
+    GridChar(LowerLeftEighthLine,   NoLine,                 LowerLeftEighthLine,    ThinLine            ): "▏",
+    GridChar(ThinLine,              LowerLeftEighthLine,    NoLine,                 LowerLeftEighthLine ): "▁",
+    GridChar(UpperRightEighthLine,  ThinLine,               UpperRightEighthLine,   NoLine              ): "▕",
+    GridChar(NoLine,                UpperRightEighthLine,   ThinLine,               UpperRightEighthLine): "▔",
+    GridChar(UpperRightEighthLine,  NoLine,                 UpperRightEighthLine,   ThinLine            ): "▕",
+    GridChar(ThinLine,              UpperRightEighthLine,   NoLine,                 UpperRightEighthLine): "▔",
+    GridChar(NoLine,                NoLine,                 UpperRightEighthLine,   LowerLeftEighthLine ): "▁",
+    GridChar(LowerLeftEighthLine,   UpperRightEighthLine,   NoLine,                 NoLine              ): "▔",
     # UpperRightHalfLine
     GridChar(UpperRightHalfLine, NoLine, UpperRightHalfLine, NoLine): "▐",
     GridChar(NoLine, UpperRightHalfLine, NoLine, UpperRightHalfLine): "▀",
@@ -474,49 +518,47 @@ _GRID_CHARS = {
     GridChar(NoLine, UpperRightHalfLine, ThinLine, UpperRightHalfLine): "▀",
     GridChar(UpperRightHalfLine, NoLine, UpperRightHalfLine, ThinLine): "▐",
     GridChar(ThinLine, UpperRightHalfLine, NoLine, UpperRightHalfLine): "▀",
-    # UpperRightEighthLine
-    GridChar(UpperRightEighthLine, NoLine, UpperRightEighthLine, NoLine): "▕",
-    GridChar(NoLine, UpperRightEighthLine, NoLine, UpperRightEighthLine): "▔",
-    GridChar(UpperRightEighthLine, UpperRightEighthLine, NoLine, NoLine): " ",
-    GridChar(NoLine, UpperRightEighthLine, UpperRightEighthLine, NoLine): "▕",
-    GridChar(NoLine, NoLine, UpperRightEighthLine, UpperRightEighthLine): "▕",
-    GridChar(UpperRightEighthLine, NoLine, NoLine, UpperRightEighthLine): "▔",
-    GridChar(UpperRightEighthLine, UpperRightEighthLine, UpperRightEighthLine, NoLine): "▕",
-    GridChar(NoLine, UpperRightEighthLine, UpperRightEighthLine, UpperRightEighthLine): "▔",
-    GridChar(UpperRightEighthLine,  NoLine,                 UpperRightEighthLine,   UpperRightEighthLine): "▕",
-    GridChar(UpperRightEighthLine,  UpperRightEighthLine,   NoLine,                 UpperRightEighthLine): "▔",
-    GridChar(UpperRightEighthLine,  UpperRightEighthLine,   UpperRightEighthLine,   UpperRightEighthLine): "▕",
-    # LowerLeftEighthLine
-    GridChar(LowerLeftEighthLine,   NoLine,                 LowerLeftEighthLine,    NoLine              ): "▏",
-    GridChar(NoLine,                LowerLeftEighthLine,    NoLine,                 LowerLeftEighthLine ): "▁",
-    GridChar(LowerLeftEighthLine,   LowerLeftEighthLine,    NoLine,                 NoLine              ): "▏",
-    GridChar(NoLine,                LowerLeftEighthLine,    LowerLeftEighthLine,    NoLine              ): "▁",
-    GridChar(NoLine,                NoLine,                 LowerLeftEighthLine,    LowerLeftEighthLine ): " ",
-    GridChar(LowerLeftEighthLine,   NoLine,                 NoLine,                 LowerLeftEighthLine ): "▏",
-    GridChar(LowerLeftEighthLine,   LowerLeftEighthLine,    LowerLeftEighthLine,    NoLine              ): "▏",
-    GridChar(NoLine,                LowerLeftEighthLine,    LowerLeftEighthLine,    LowerLeftEighthLine ): "▁",
-    GridChar(LowerLeftEighthLine,   NoLine,                 LowerLeftEighthLine,    LowerLeftEighthLine ): "▏",
-    GridChar(LowerLeftEighthLine,   LowerLeftEighthLine,    NoLine,                 LowerLeftEighthLine ): "▁",
-    GridChar(LowerLeftEighthLine,   LowerLeftEighthLine,    LowerLeftEighthLine,    LowerLeftEighthLine ): "▏",
-    # Eighth Combos
-    GridChar(NoLine,                LowerLeftEighthLine,    UpperRightEighthLine,   NoLine              ): " ",
-    GridChar(LowerLeftEighthLine,   NoLine,                 NoLine,                 UpperRightEighthLine): " ",
-    # Eighth/ThinLine combos
-    GridChar(LowerLeftEighthLine,   ThinLine,               LowerLeftEighthLine,    NoLine              ): "▏",
-    GridChar(NoLine,                LowerLeftEighthLine,    ThinLine,               LowerLeftEighthLine ): "▁",
-    GridChar(LowerLeftEighthLine,   NoLine,                 LowerLeftEighthLine,    ThinLine            ): "▏",
-    GridChar(ThinLine,              LowerLeftEighthLine,    NoLine,                 LowerLeftEighthLine ): "▁",
-    GridChar(UpperRightEighthLine,  ThinLine,               UpperRightEighthLine,   NoLine              ): "▕",
-    GridChar(NoLine,                UpperRightEighthLine,   ThinLine,               UpperRightEighthLine): "▔",
-    GridChar(UpperRightEighthLine,  NoLine,                 UpperRightEighthLine,   ThinLine            ): "▕",
-    GridChar(ThinLine,              UpperRightEighthLine,   NoLine,                 UpperRightEighthLine): "▔",
-    GridChar(NoLine,                NoLine,                 UpperRightEighthLine,   LowerLeftEighthLine ): "▁",
-    GridChar(LowerLeftEighthLine,   UpperRightEighthLine,   NoLine,                 NoLine              ): "▔",
+    # FullLine
+    GridChar(FullLine, NoLine, NoLine, NoLine): "▀",
+    GridChar(NoLine, FullLine, NoLine, NoLine): "▐",
+    GridChar(NoLine, NoLine, FullLine, NoLine): "▄",
+    GridChar(NoLine, NoLine, NoLine, FullLine): "▌",
+
+    GridChar(FullLine, NoLine, FullLine, NoLine): "█",
+    GridChar(NoLine, FullLine, NoLine, FullLine): "█",
+    GridChar(FullLine, FullLine, NoLine, NoLine): "█",
+    GridChar(NoLine, FullLine, FullLine, NoLine): "█",
+    GridChar(NoLine, NoLine, FullLine, FullLine): "█",
+    GridChar(FullLine, NoLine, NoLine, FullLine): "█",
+    GridChar(FullLine, FullLine, FullLine, NoLine): "█",
+    GridChar(NoLine, FullLine, FullLine, FullLine): "█",
+    GridChar(FullLine, NoLine, FullLine, FullLine): "█",
+    GridChar(FullLine, FullLine, NoLine, FullLine): "█",
+    GridChar(FullLine, FullLine, FullLine, FullLine): "█",
+    # Full + Halves
+    GridChar(FullLine, NoLine, NoLine, LowerLeftHalfLine): "█",
+    GridChar(FullLine, LowerLeftHalfLine, NoLine, NoLine): "█",
+    GridChar(NoLine, UpperRightHalfLine, FullLine, NoLine): "█",
+    GridChar(NoLine, NoLine, FullLine, UpperRightHalfLine): "█",
+    GridChar(FullLine, NoLine, NoLine, UpperRightHalfLine): "▀",
+    GridChar(FullLine, UpperRightHalfLine, NoLine, NoLine): "▀",
+    GridChar(NoLine, LowerLeftHalfLine, FullLine, NoLine): "▄",
+    GridChar(NoLine, NoLine, FullLine, LowerLeftHalfLine): "▄",
+
+    GridChar(NoLine, UpperRightHalfLine, FullLine, UpperRightHalfLine): "█",
+    GridChar(UpperRightHalfLine, NoLine, UpperRightHalfLine, FullLine): "█",
+    GridChar(FullLine, LowerLeftHalfLine, NoLine, LowerLeftHalfLine): "█",
+    GridChar(LowerLeftHalfLine, FullLine, LowerLeftHalfLine, NoLine): "█",
+    # Full + Eighths
+    GridChar(NoLine, UpperRightEighthLine, FullLine, UpperRightEighthLine): "█",
+    GridChar(UpperRightEighthLine, NoLine, UpperRightEighthLine, FullLine): "█",
+    GridChar(FullLine, LowerLeftEighthLine, NoLine, LowerLeftEighthLine): "█",
+    GridChar(LowerLeftEighthLine, FullLine, LowerLeftEighthLine, NoLine): "█",
 }
 # fmt: off
 
 @lru_cache
-def grid_char(key: "GridChar") -> "str":
+def get_grid_char(key: "GridChar") -> "str":
     """Return the character represented by a combination of :class:`LineStyles`."""
     if key in _GRID_CHARS:
         return _GRID_CHARS[key]
@@ -548,7 +590,7 @@ class GridStyle:
         RIGHT: "str"
 
     def __init__(
-        self, line_style: "LineStyle" = InvisibleLine, mask: "Mask" = Masks.grid
+        self, line_style: "LineStyle" = NoLine, mask: "Mask" = Masks.grid
     ) -> "None":
         """Creates a new :py:class:`GridStyle` instance.
 
@@ -568,40 +610,40 @@ class GridStyle:
     def TOP(self) -> "_BorderLineChars":
         """Allow dotted attribute access to the top grid row."""
         return self._BorderLineChars(
-            grid_char(self.grid[GridPart.TOP_LEFT]),
-            grid_char(self.grid[GridPart.TOP_MID]),
-            grid_char(self.grid[GridPart.TOP_SPLIT]),
-            grid_char(self.grid[GridPart.TOP_RIGHT]),
+            get_grid_char(self.grid[GridPart.TOP_LEFT]),
+            get_grid_char(self.grid[GridPart.TOP_MID]),
+            get_grid_char(self.grid[GridPart.TOP_SPLIT]),
+            get_grid_char(self.grid[GridPart.TOP_RIGHT]),
         )
 
     @property
     def MID(self) -> "_BorderLineChars":
         """Allow dotted attribute access to the mid grid row."""
         return self._BorderLineChars(
-            grid_char(self.grid[GridPart.MID_LEFT]),
-            grid_char(self.grid[GridPart.MID_MID]),
-            grid_char(self.grid[GridPart.MID_SPLIT]),
-            grid_char(self.grid[GridPart.MID_RIGHT]),
+            get_grid_char(self.grid[GridPart.MID_LEFT]),
+            get_grid_char(self.grid[GridPart.MID_MID]),
+            get_grid_char(self.grid[GridPart.MID_SPLIT]),
+            get_grid_char(self.grid[GridPart.MID_RIGHT]),
         )
 
     @property
     def SPLIT(self) -> "_BorderLineChars":
         """Allow dotted attribute access to the split grid row."""
         return self._BorderLineChars(
-            grid_char(self.grid[GridPart.SPLIT_LEFT]),
-            grid_char(self.grid[GridPart.SPLIT_MID]),
-            grid_char(self.grid[GridPart.SPLIT_SPLIT]),
-            grid_char(self.grid[GridPart.SPLIT_RIGHT]),
+            get_grid_char(self.grid[GridPart.SPLIT_LEFT]),
+            get_grid_char(self.grid[GridPart.SPLIT_MID]),
+            get_grid_char(self.grid[GridPart.SPLIT_SPLIT]),
+            get_grid_char(self.grid[GridPart.SPLIT_RIGHT]),
         )
 
     @property
     def BOTTOM(self) -> "_BorderLineChars":
         """Allow dotted attribute access to the bottom grid row."""
         return self._BorderLineChars(
-            grid_char(self.grid[GridPart.BOTTOM_LEFT]),
-            grid_char(self.grid[GridPart.BOTTOM_MID]),
-            grid_char(self.grid[GridPart.BOTTOM_SPLIT]),
-            grid_char(self.grid[GridPart.BOTTOM_RIGHT]),
+            get_grid_char(self.grid[GridPart.BOTTOM_LEFT]),
+            get_grid_char(self.grid[GridPart.BOTTOM_MID]),
+            get_grid_char(self.grid[GridPart.BOTTOM_SPLIT]),
+            get_grid_char(self.grid[GridPart.BOTTOM_RIGHT]),
         )
 
     @property
@@ -617,12 +659,13 @@ class GridStyle:
     def __getattr__(self, value: "str") -> "str":
         """Allows the parts of the grid to be accessed as attributes by name."""
         key = getattr(GridPart, value)
-        return grid_char(self.grid[key])
+        return get_grid_char(self.grid[key])
 
     def __dir__(self) -> "list":
         """List the public attributes of the grid style."""
         return [x.name for x in GridPart] + ["TOP", "MID", "SPLIT", "BOTTOM"]
 
+    @lru_cache  # noqa B019
     def __add__(self, other: "GridStyle") -> "GridStyle":
         """Combine two grid styles."""
         grid_style = GridStyle()
@@ -637,12 +680,11 @@ class GridStyle:
         """Returns a string representation of the grid style."""
         return "\n".join(
             "".join(
-                grid_char(char_key)
+                get_grid_char(char_key)
                 for char_key in list(self.grid.values())[i * 4 : (i + 1) * 4]
             )
             for i in range(4)
         )
-
 
 ThinGrid = ThinLine.grid
 

@@ -19,7 +19,7 @@ from euporie.core.border import (
     LineStyle,
     NoLine,
     ThinLine,
-    grid_char,
+    get_grid_char,
 )
 from euporie.core.data_structures import (
     DiBool,
@@ -1000,7 +1000,7 @@ class Table:
         sw_bl: "DiLineStyle",
     ) -> "str":
         """Calculate which character to use at the intersection of four cells."""
-        return grid_char(
+        return get_grid_char(
             GridChar(
                 max(nw_bl.right, ne_bl.left),
                 max(ne_bl.bottom, se_bl.top),
@@ -1014,14 +1014,14 @@ class Table:
     def get_horizontal_edge(n_bl: "DiLineStyle", s_bl: "DiLineStyle") -> "str":
         """Calculate which character to use to divide horizontally adjacent cells."""
         line_style = max(n_bl.bottom, s_bl.top)
-        return grid_char(GridChar(NoLine, line_style, NoLine, line_style))
+        return get_grid_char(GridChar(NoLine, line_style, NoLine, line_style))
 
     @staticmethod
     @lru_cache
     def get_vertical_edge(w_bl: "DiLineStyle", e_bl: "DiLineStyle") -> "str":
         """Calculate which character to use to divide vertically adjacent cells."""
         line_style = max(w_bl.right, e_bl.left)
-        return grid_char(GridChar(line_style, NoLine, line_style, NoLine))
+        return get_grid_char(GridChar(line_style, NoLine, line_style, NoLine))
 
     def draw_border_row(
         self,
