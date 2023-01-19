@@ -22,8 +22,9 @@ from prompt_toolkit.layout.mouse_handlers import MouseHandlers
 from prompt_toolkit.layout.screen import Char, Screen, WritePosition
 
 from euporie.core.app import get_app
-from euporie.core.border import BorderVisibility, Thin
+from euporie.core.border import ThinLine
 from euporie.core.config import add_setting
+from euporie.core.data_structures import DiBool
 
 if TYPE_CHECKING:
     from typing import Callable, Optional, Union
@@ -66,7 +67,7 @@ class Line(Container):
         self.width = width
         self.height = height
         if char is None:
-            char = Thin.grid.VERTICAL if width else Thin.grid.HORIZONTAL
+            char = ThinLine.grid.VERTICAL if width else ThinLine.grid.HORIZONTAL
         self.char = Char(char, style)
         self.collapse = collapse
 
@@ -211,9 +212,9 @@ class Border:
     def __init__(
         self,
         body: "AnyContainer",
-        border: "Optional[GridStyle]" = Thin.grid,
+        border: "Optional[GridStyle]" = ThinLine.grid,
         style: "Union[str, Callable[[], str]]" = "class:border",
-        show_borders: "Optional[BorderVisibility]" = None,
+        show_borders: "Optional[DiBool]" = None,
     ) -> "None":
         """Create a new border widget which wraps another container.
 
@@ -228,9 +229,9 @@ class Border:
         self.style = style
 
         if show_borders:
-            show_borders = BorderVisibility(*show_borders)
+            show_borders = DiBool(*show_borders)
         else:
-            show_borders = BorderVisibility(True, True, True, True)
+            show_borders = DiBool(True, True, True, True)
         border_top = to_filter(show_borders.top)
         border_right = to_filter(show_borders.right)
         border_bottom = to_filter(show_borders.bottom)

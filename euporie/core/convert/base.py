@@ -39,6 +39,21 @@ MIME_FORMATS = {
 BASE64_FORMATS = {"png", "jepg", "pdf", "gif"}
 
 
+# def get_mime(path: "UPath") -> "str":
+# If http, do HEAD request and check "content-type" header
+# If data:// uri, mime is given in the path
+# If file has extension, guess from filename
+# Else try using python-magic
+# >>> import magic
+# >>> magic.from_file("testdata/test.pdf")
+# 'PDF document, version 1.2'
+# # recommend using at least the first 2048 bytes, as less can produce incorrect identification
+# >>> magic.from_buffer(open("testdata/test.pdf", "rb").read(2048))
+# 'PDF document, version 1.2'
+# >>> magic.from_file("testdata/test.pdf", mime=True)
+# 'application/pdf'
+
+
 def get_format(path: "UPath|str", default: "str" = "") -> "str":
     """Attempt to guess the format of a path."""
     if isinstance(path, str):

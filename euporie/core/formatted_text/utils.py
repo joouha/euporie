@@ -7,35 +7,74 @@ from enum import Enum
 from typing import Iterable, Optional, cast
 
 from prompt_toolkit.formatted_text.base import OneStyleAndTextTuple, StyleAndTextTuples
-from prompt_toolkit.formatted_text.utils import (
-    fragment_list_to_text,
-    fragment_list_width,
-    split_lines,
-)
+from prompt_toolkit.formatted_text.utils import fragment_list_to_text, split_lines
 from prompt_toolkit.utils import get_cwidth
 from pygments.lexers import get_lexer_by_name
 from pygments.util import ClassNotFound
 
-from euporie.core.border import GridStyle, Padding, Thin
+from euporie.core.border import GridStyle, ThinGrid
+from euporie.core.data_structures import DiBool, DiInt, DiStr
+
+_ZERO_WIDTH_FRAGMENTS = ("[ZeroWidthEscape]", "[ReverseOverwrite]")
 
 
 class FormattedTextAlign(Enum):
     """Alignment of formatted text."""
 
-    LEFT = "LEFT"
-    RIGHT = "RIGHT"
-    CENTER = "CENTER"
+    LEFT = "left"
+    RIGHT = "right"
+    CENTER = "center"
 
 
-def last_line_length(ft: StyleAndTextTuples) -> int:
+class FormattedTextVerticalAlign(Enum):
+    """Vertical alignment of formatted text."""
+
+    TOP = "top"
+    MIDDLE = "middle"
+    BOTTOM = "bottom"
+
+
+def fragment_list_width(fragments: StyleAndTextTuples) -> "int":
+    """Return the character width of this text fragment list.
+
+    Takes double width characters into account, and ignore special fragments:
+    * ZeroWidthEscape
+    * ReverseOverwrite
+
+    Args:
+        fragments: List of ``(style_str, text)`` or
+            ``(style_str, text, mouse_handler)`` tuples.
+
+    Returns:
+        The width of the fragment list
+    """
+    return sum(
+        get_cwidth(c)
+        for item in (
+            frag
+            for frag in fragments
+            if not any(x in frag[0] for x in _ZERO_WIDTH_FRAGMENTS)
+        )
+        for c in item[1]
+    )
+
+
+def last_line_length(ft: "StyleAndTextTuples", rows: "int" = 1) -> "int":
     """Calculate the length of the last line in formatted text."""
-    line: StyleAndTextTuples = []
-    for style, text, *_ in ft[::-1]:
-        index = text.find("\n")
-        line.append((style, text[index + 1 :]))
-        if index > -1:
+    lines: "list[StyleAndTextTuples]" = [[]]
+    for style, text, *_ in reversed(ft):
+        parts = text.split("\n")
+        lines[-1].append((style, parts[-1]))
+        if parts:
+            for part in parts[-2::-1]:
+                if len(lines) == rows:
+                    break
+                lines.append([])
+                lines[-1].append((style, part))
+            else:
+                continue
             break
-    return fragment_list_width(line)
+    return max(fragment_list_width(line) for line in lines)
 
 
 def max_line_width(ft: StyleAndTextTuples) -> int:
@@ -70,7 +109,7 @@ def strip(
     ft: StyleAndTextTuples,
     left: bool = True,
     right: bool = True,
-    char: str | None = None,
+    chars: str | None = None,
     only_unstyled: bool = False,
 ) -> StyleAndTextTuples:
     """Strip whitespace (or a given character) from the ends of formatted text.
@@ -89,15 +128,29 @@ def strip(
     result = ft[:]
     for toggle, index, strip_func in [(left, 0, str.lstrip), (right, -1, str.rstrip)]:
         if result and toggle:
-            text = strip_func(result[index][1], char)
+            text = strip_func(result[index][1], chars)
             while result and not text:
                 del result[index]
                 if not result:
                     break
-                text = strip_func(result[index][1], char)
+                text = strip_func(result[index][1], chars)
             if result and "[ZeroWidthEscape]" not in result[index][0]:
                 result[index] = (result[index][0], text)
     return result
+
+
+def strip_one_trailing_newline(ft: "StyleAndTextTuples") -> "StyleAndTextTuples":
+    """Remove up to one trailing new-line character from formatted text."""
+    for i in range(len(ft) - 1, -1, -1):
+        frag = ft[i]
+        if not frag[1]:
+            continue
+        if frag[1] == "\n":
+            del ft[i]
+        elif frag[1].endswith("\n"):
+            ft[i] = (frag[0], frag[1][:-1])
+        break
+    return ft
 
 
 def truncate(
@@ -105,6 +158,7 @@ def truncate(
     width: int,
     style: str = "",
     placeholder: str = "…",
+    ignore_whitespace: bool = False,
 ) -> StyleAndTextTuples:
     """Truncates all lines at a given length.
 
@@ -114,6 +168,7 @@ def truncate(
         style: The style to apply to the truncation placeholder. The style of the
             truncated text will be used if not provided
         placeholder: The string that will appear at the end of a truncated line
+        ignore_whitespace: Do not use placeholder when truncating whitespace
 
     Returns:
         The truncated formatted text
@@ -123,14 +178,19 @@ def truncate(
     phw = sum(get_cwidth(c) for c in placeholder)
     for line in split_lines(ft):
         used_width = 0
-        for item in line:
+        for i, item in enumerate(line):
             fragment_width = sum(
-                get_cwidth(c) for c in item[1] if "[ZeroWidthEscape]" not in item[0]
+                get_cwidth(c)
+                for c in item[1]
+                if not any(x in item[0] for x in _ZERO_WIDTH_FRAGMENTS)
             )
             if used_width + fragment_width > width - phw:
                 remaining_width = width - used_width - fragment_width - phw
                 result.append((item[0], item[1][:remaining_width]))
-                result.append((style or item[0], placeholder))
+                if ignore_whitespace and not fragment_list_to_text(line[i:]).strip():
+                    result.append((item[0], item[1][remaining_width]))
+                else:
+                    result.append((style or item[0], placeholder))
                 break
             else:
                 result.append(item)
@@ -225,11 +285,12 @@ def wrap(
 
 
 def align(
-    how: FormattedTextAlign,
     ft: StyleAndTextTuples,
+    how: FormattedTextAlign = FormattedTextAlign.LEFT,
     width: int | None = None,
     style: str = "",
     placeholder: str = "…",
+    ignore_whitespace: bool = False,
 ) -> StyleAndTextTuples:
     """Align formatted text at a given width.
 
@@ -255,7 +316,7 @@ def align(
         line_width = fragment_list_width(line)
         # Truncate the line if it is too long
         if line_width > width:
-            result += truncate(line, width, style, placeholder)
+            result += truncate(line, width, style, placeholder, ignore_whitespace)
         else:
             pad_left = pad_right = 0
             if how == FormattedTextAlign.CENTER:
@@ -273,6 +334,175 @@ def align(
         result.append((style, "\n"))
     result.pop()
     return result
+
+
+def valign(
+    ft: "StyleAndTextTuples",
+    how: "FormattedTextVerticalAlign" = FormattedTextVerticalAlign.MIDDLE,
+    height: "int|None" = None,
+    style: "str" = "",
+) -> "StyleAndTextTuples":
+    """Align formatted text vertically."""
+    if height is None:
+        return ft
+    lines = list(split_lines(ft))
+    width = max(fragment_list_width(line) for line in lines)
+    remaining = height - len(lines)
+    if how == FormattedTextVerticalAlign.TOP:
+        above = 0
+        below = remaining
+    elif how == FormattedTextVerticalAlign.MIDDLE:
+        above = remaining // 2
+        below = remaining - above
+    else:
+        above = remaining
+        below = 0
+    return [
+        (style, ((" " * width) + "\n") * above),
+        *ft,
+        (style, ("\n" + (" " * width)) * below),
+    ]
+
+
+def join_lines(fragments: "list[StyleAndTextTuples]") -> "StyleAndTextTuples":
+    """Join a list of lines of formatted text."""
+    ft = []
+    if fragments:
+        for line in fragments[:-1]:
+            ft.extend(line)
+            ft.append(("", "\n"))
+        lines = list(split_lines(fragments[-1]))
+        for line in lines[:-1]:
+            ft.extend(line)
+            ft.append(("", "\n"))
+        ft.extend(lines[-1])
+    return ft
+
+
+def pad(
+    ft: "StyleAndTextTuples",
+    width: "int|None" = None,
+    char: "str" = " ",
+    style: "str" = "",
+) -> "StyleAndTextTuples":
+    """Fill space at the end of lines."""
+    if width is None:
+        width = max_line_width(ft)
+    filled_output = []
+    for line in split_lines(ft):
+        if (remaining := (width - fragment_list_width(line))) > 0:
+            line.append((style + " nounderline", (char * remaining)))
+        filled_output.append(line)
+    return join_lines(filled_output)
+
+
+def substring(
+    ft: "StyleAndTextTuples", start: "Optional[int]" = None, end: "Optional[int]" = None
+) -> "StyleAndTextTuples":
+    """Extract a substring from formatted text."""
+    output: StyleAndTextTuples = []
+    if start is None:
+        start = 0
+    if end is None or start < 0 or end < 0:
+        width = fragment_list_width(ft)
+        if end is None:
+            end = width
+        if start < 0:
+            start = width + start
+        if end < 0:
+            end = width + end
+    x = 0
+    for style, text, *extra in ft:
+        if any(x in style for x in _ZERO_WIDTH_FRAGMENTS):
+            frag_len = 0
+        else:
+            frag_len = sum(get_cwidth(c) for c in text)
+        if start < x + frag_len <= end + frag_len:
+            if text := text[max(0, start - x) : end - x]:
+                output.append(cast("OneStyleAndTextTuple", (style, text, *extra)))
+        x += frag_len
+    return output
+
+
+def paste(
+    ft_bottom: "StyleAndTextTuples",
+    ft_top: "StyleAndTextTuples",
+    row: "int" = 0,
+    col: "int" = 0,
+) -> "StyleAndTextTuples":
+    """Paste formatted text on top of other formatted text."""
+    ft: "StyleAndTextTuples" = []
+
+    top_lines = dict(enumerate(split_lines(ft_top), start=row))
+    for y, line_b in enumerate(split_lines(ft_bottom)):
+        if y in top_lines:
+            # x = 0
+            line_t = top_lines[y]
+            line_t_width = fragment_list_width(line_t)
+            ft += substring(line_b, 0, col)
+            ft += substring(line_t)
+            ft += substring(line_b, col + line_t_width)
+        else:
+            ft += line_b
+        ft.append(("", "\n"))
+
+    if ft:
+        ft.pop()
+
+    return ft
+
+
+def concat(
+    ft_a: "StyleAndTextTuples",
+    ft_b: "StyleAndTextTuples",
+    baseline_a: "int" = 0,
+    baseline_b: "int" = 0,
+    style: "str" = "",
+) -> "tuple[StyleAndTextTuples, int]":
+    """Concatenate two blocks of formatted text, aligning at a given baseline.
+
+    Args:
+        ft_a: The first block of formatted text to combine
+        ft_b: The second block of formatted text to combine
+        baseline_a: The row to use to align the first block of formatted text with the
+            second, counted in lines down from the top of the block
+        baseline_b: The row to use to align the second block of formatted text with the
+            second, counted in lines down from the top of the block
+        style: The style to use for any extra lines added
+
+    Returns:
+        A tuple containing the combined formatted text and the new baseline position
+    """
+    rows_a = len(list(split_lines(ft_a))) - 1
+    rows_b = len(list(split_lines(ft_b))) - 1
+    cols_a = max_line_width(ft_a)
+
+    lines_above = max(baseline_a, baseline_b) - min(baseline_a, baseline_b)
+    lines_below = max(rows_a - baseline_a, rows_b - baseline_b) - min(
+        rows_a - baseline_a,
+        rows_b - baseline_b,
+    )
+
+    if baseline_a < baseline_b:
+        ft_a = [("", lines_above * "\n"), *ft_a]
+    elif baseline_a > baseline_b:
+        ft_b = [("", lines_above * "\n"), *ft_b]
+
+    if rows_a - baseline_a < rows_b - baseline_b:
+        ft_a = [*ft_a, ("", lines_below * "\n")]
+    elif rows_a - baseline_a > rows_b - baseline_b:
+        ft_b = [*ft_b, ("", lines_below * "\n")]
+
+    ft = paste(
+        pad(ft_a, style=style),
+        ft_b,
+        row=0,
+        col=cols_a,
+    )
+
+    new_baseline = max(baseline_a, baseline_b)
+
+    return ft, new_baseline
 
 
 def indent(
@@ -305,111 +535,197 @@ def indent(
 
 def add_border(
     ft: StyleAndTextTuples,
-    width: "Optional[int]" = None,
-    style: str = "",
-    border: "GridStyle" = Thin.grid,
-    padding: "Optional[Padding]" = None,
+    width: "int|None" = None,
+    style: "str" = "",
+    border_grid: "GridStyle" = ThinGrid,
+    border_visibility: "DiBool|bool" = True,
+    border_style: "DiStr|str" = "",
+    padding: "DiInt|int" = 0,
+    padding_style: "DiStr|str" = "",
 ) -> StyleAndTextTuples:
     """Adds a border around formatted text.
 
     Args:
         ft: The formatted text to enclose with a border
         width: The target width including the border and padding
-        style: The style to apply to the border
-        border: The grid style to use for the border
+        style: The style to apply to the content background
+        border_grid: The grid style to use for the border
+        border_visibility: Determines which edges should receive a border
+        border_style: The style to apply to the border
         padding: The width of spacing to apply between the content and the border
+        padding_style: The style to apply to the border
 
     Returns:
         The indented formatted text
 
     """
-    if padding is None:
-        padding = Padding(0, 1, 0, 1)
+    if isinstance(border_visibility, bool):
+        border_visibility = DiBool.from_value(border_visibility)
     if isinstance(padding, int):
-        padding = Padding(padding, padding, padding, padding)
-    if len(padding) == 2:
-        padding = Padding(padding[0], padding[1], padding[0], padding[1])
-    # `None` is not permitted for padding here
-    padding = Padding(
-        padding[0] or 0, padding[1] or 0, padding[2] or 0, padding[3] or 0
-    )
+        padding = DiInt.from_value(padding)
+    if isinstance(border_style, str):
+        border_style = DiStr.from_value(border_style)
+    if isinstance(padding_style, str):
+        padding_style = DiStr.from_value(padding_style)
 
-    max_lw = max_line_width(ft)
+    edge_width = (
+        border_visibility.left + border_visibility.right + padding.left + padding.right
+    )
     if width is None:
-        width = max_lw + (padding.right or 0) + (padding.left or 0) + 2
+        inner_width = max_line_width(ft)
+        width = max_line_width(ft) + edge_width
+    else:
+        inner_width = width - edge_width
 
-    inner_width = width - 2
     # Ensure all lines are the same length
-    ft = align(
-        FormattedTextAlign.LEFT,
-        ft,
-        width=inner_width - (padding.right or 0) - (padding.left or 0),
-        style=style,
-    )
+    if ft:
+        ft = align(
+            ft,
+            FormattedTextAlign.LEFT,
+            width=inner_width,
+            style=style,
+        )
 
-    result: StyleAndTextTuples = []
+    output: "list[StyleAndTextTuples]" = []
 
-    style = f"{style} nounderline"
+    base_style = f"{style} nounderline"
 
-    result.extend(
-        [
+    # Add top row
+    if border_visibility.top:
+        new_line: StyleAndTextTuples = []
+        if border_visibility.left:
+            new_line.append(
+                (
+                    f"{base_style} class:border,left,top {border_style.top} {border_style.left}",
+                    border_grid.TOP_LEFT,
+                )
+            )
+        new_line.append(
             (
-                f"{style} class:border,left,top",
-                border.TOP_LEFT,
-            ),
-            (
-                f"{style} class:border,top",
-                border.TOP_MID * inner_width,
-            ),
-            (
-                f"{style} class:border,right,top",
-                border.TOP_RIGHT + "\n",
-            ),
-        ]
-    )
+                f"{base_style} class:border,top {border_style.top}",
+                border_grid.TOP_MID * (inner_width + padding.left + padding.right),
+            )
+        )
+        if border_visibility.right:
+            new_line.append(
+                (
+                    f"{base_style} class:border,right,top {border_style.top} {border_style.right}",
+                    border_grid.TOP_RIGHT,
+                )
+            )
+        output.append(new_line)
+    # Add top padding
     for _ in range(padding.top or 0):
-        result.extend(
-            [
-                (f"{style} class:border,left", border.MID_LEFT),
-                (style, " " * inner_width),
-                (f"{style} class:border,right", border.MID_RIGHT + "\n"),
-            ]
-        )
-    for line in split_lines(ft):
-        result.extend(
-            [
-                (f"{style} class:border,left", border.MID_LEFT),
-                (style, " " * (padding.left or 0)),
-                *line,
-                (style, " " * (padding.right or 0)),
-                (f"{style} class:border,right", border.MID_RIGHT + "\n"),
-            ]
-        )
-    for _ in range(padding.bottom or 0):
-        result.extend(
-            [
-                (f"{style} class:border,left", border.MID_LEFT),
-                (style, " " * inner_width),
-                (f"{style} class:border,right", border.MID_RIGHT + "\n"),
-            ]
-        )
-    result.extend(
-        [
+        new_line = []
+        if border_visibility.left:
+            new_line.append(
+                (
+                    f"{base_style} class:border,left {border_style.left}",
+                    border_grid.MID_LEFT,
+                )
+            )
+        if padding.top:
+            new_line.append(
+                (
+                    f"{base_style} class:padding,top {padding_style.top}",
+                    " " * (inner_width + padding.left + padding.right),
+                )
+            )
+        if border_visibility.right:
+            new_line.append(
+                (
+                    f"{base_style} class:border,right {border_style.right}",
+                    border_grid.MID_RIGHT,
+                )
+            )
+        output.append(new_line)
+    # Add contents with left & right padding
+    if ft:
+        for line in split_lines(ft):
+            new_line = []
+            if border_visibility.left:
+                new_line.append(
+                    (
+                        f"{base_style} class:border,left {border_style.left}",
+                        border_grid.MID_LEFT,
+                    )
+                )
+            if padding.left:
+                new_line.append(
+                    (
+                        f"{base_style} class:padding,left {padding_style.left}",
+                        " " * (padding.left or 0),
+                    )
+                )
+
+            new_line.extend(line)
+            if padding.right:
+                new_line.append(
+                    (
+                        f"{base_style} class:padding,right {padding_style.right}",
+                        " " * (padding.right or 0),
+                    )
+                )
+            if border_visibility.right:
+                new_line.append(
+                    (
+                        f"{base_style} class:border,right {border_style.right}",
+                        border_grid.MID_RIGHT,
+                    )
+                )
+            output.append(new_line)
+    # Add bottom padding
+    for _ in range(int(padding.bottom) or 0):
+        new_line = []
+        if border_visibility.left:
+            new_line.append(
+                (
+                    f"{base_style} class:border,left {border_style.left}",
+                    border_grid.MID_LEFT,
+                )
+            )
+        if padding.bottom:
+            new_line.append(
+                (
+                    f"{base_style} class:padding,bottom {padding_style.bottom}",
+                    " " * (inner_width + padding.left + padding.right),
+                )
+            )
+        if border_visibility.right:
+            new_line.append(
+                (
+                    f"{base_style} class:border,right {border_style.right}",
+                    border_grid.MID_RIGHT,
+                )
+            )
+        output.append(new_line)
+    # Add bottom row
+    if border_visibility.bottom:
+        new_line = []
+        if border_visibility.left:
+            new_line.append(
+                (
+                    f"{base_style} class:border,left,bottom {border_style.bottom} {border_style.left}",
+                    border_grid.BOTTOM_LEFT,
+                )
+            )
+        new_line.append(
             (
-                f"{style} class:border,left,bottom",
-                border.BOTTOM_LEFT,
-            ),
-            (
-                f"{style} class:border,bottom",
-                border.BOTTOM_MID * inner_width,
-            ),
-            (
-                f"{style} class:border,right,bottom",
-                border.BOTTOM_RIGHT + "\n",
-            ),
-        ]
-    )
-    return result
+                f"{base_style} class:border,bottom {border_style.bottom}",
+                border_grid.BOTTOM_MID * (inner_width + padding.left + padding.right),
+            )
+        )
+        if border_visibility.right:
+            new_line.append(
+                (
+                    f"{base_style} class:border,right,bottom {border_style.bottom} {border_style.right}",
+                    border_grid.BOTTOM_RIGHT,
+                )
+            )
+
+        output.append(new_line)
+
+    return join_lines(output)
 
 
 def lex(ft: "StyleAndTextTuples", lexer_name: "str") -> "StyleAndTextTuples":
@@ -425,45 +741,45 @@ def lex(ft: "StyleAndTextTuples", lexer_name: "str") -> "StyleAndTextTuples":
         return [(_token_cache[t], v) for _, t, v in lexer.get_tokens_unprocessed(text)]
 
 
-def paste(
-    ft_bottom: "StyleAndTextTuples",
-    ft_top: "StyleAndTextTuples",
-    row: "int" = 0,
-    col: "int" = 0,
-) -> "StyleAndTextTuples":
-    """Paste formatted text on top of other formatted text."""
-    ft: "StyleAndTextTuples" = []
+def apply_reverse_overwrites(ft: "StyleAndTextTuples") -> "StyleAndTextTuples":
+    """Write fragments tagged with "[ReverseOverwrite]" over text to their left."""
 
-    top_lines = dict(enumerate(split_lines(ft_top), start=row))
-    for y, line_b in enumerate(split_lines(ft_bottom)):
-        if y in top_lines:
-            x = 0
-            line_t = top_lines[y]
-            line_t_width = fragment_list_width(line_t)
-            done = False
-            for frag in line_b:
-                fragment_width = sum(
-                    get_cwidth(c) for c in frag[1] if "[ZeroWidthEscape]" not in frag[0]
-                )
-                if x < col:
-                    remaining = col - x
-                    ft.append(
-                        cast(
-                            "OneStyleAndTextTuple",
-                            (frag[0], frag[1][:remaining], *frag[2:]),
-                        )
-                    )
-                elif x == col and not done:
-                    ft += line_t
-                    done = True
-                elif x >= col + line_t_width:
-                    ft.append(frag)
-                x += fragment_width
+    def _apply_overwrites(
+        overwrites: "StyleAndTextTuples", transformed_line: "StyleAndTextTuples"
+    ) -> "tuple[StyleAndTextTuples, StyleAndTextTuples]":
+        """Paste `overwrites` over the end of `transformed_line`."""
+        # Remove the ``[ReverseOverwrite]`` from the overwrite fragments
+        top = cast(
+            StyleAndTextTuples,
+            [(x[0].replace("[ReverseOverwrite]", ""), *x[1:]) for x in overwrites],
+        )
+        top_width = fragment_list_width(top)
+        if fragment_list_width(transformed_line) >= top_width:
+            # Replace the end of the line with the overwrite-fragments if the overwrite
+            # -fragments are shorter than the line
+            transformed_line = [*substring(transformed_line, 0, -top_width), *top]
         else:
-            ft += line_b
-        ft.append(("", "\n"))
+            # Otherwise, replace the whole line with the overwrites
+            transformed_line = overwrites[:]
+        overwrites.clear()
+        return overwrites, transformed_line
 
-    if ft:
-        ft.pop()
-
-    return ft
+    transformed_lines = []
+    for untransformed_line in split_lines(ft):
+        overwrites = []
+        transformed_line: StyleAndTextTuples = []
+        for frag in untransformed_line:
+            # Collect overwrite fragments
+            if "[ReverseOverwrite]" in frag[0]:
+                overwrites.append(frag)
+                continue
+            # If we have any overwrite-fragments, apply them on top of the current line
+            if overwrites:
+                overwrites, transformed_line = _apply_overwrites(
+                    overwrites, transformed_line
+                )
+            # Collect non-overwrite fragments
+            transformed_line.append(frag)
+        # Add this list to
+        transformed_lines.append(transformed_line)
+    return join_lines(transformed_lines)

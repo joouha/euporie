@@ -1,4 +1,4 @@
-r"""Defines border styles."""
+"""Defines border styles."""
 
 from __future__ import annotations
 
@@ -172,23 +172,30 @@ class LineStyle:
     """
 
     def __init__(
-        self, name: "str", rank: "int", parent: "Optional[LineStyle]" = None
+        self,
+        name: "str",
+        rank: "tuple[int, int]",
+        parent: "Optional[LineStyle]" = None,
+        visible: "bool" = True,
     ) -> "None":
         """Creates a new :class:`LineStyle`.
 
         Args:
             name: The name of the line style
             rank: A ranking value - this is used when two adjoining cells in a table
-                have differing line styles to determine which should take precedence.
-                The style with the higher rank is used.
+                have differing widths or styles to determine which should take precedence.
+                The style with the higher rank is used. The rank consists of a tuple
+                representing width and fanciness.
             parent: The :class:`LineStyle` from which this style should inherit if any
                 characters are undefined.
+            visible: A flag to indicate if the line is blank
 
         """
         self.name = name
         self.rank = rank
         self.children: "dict[str, LineStyle]" = {}
         self.parent = parent
+        self.visible = visible
         if parent:
             parent.children[name] = self
 
@@ -232,23 +239,33 @@ class LineStyle:
 
 
 # Line Styles
-Invisible = LineStyle("Invisible", rank=0)
-Ascii = LineStyle("Ascii", rank=10)
-AsciiThick = LineStyle("AsciiDouble", rank=11, parent=Ascii)
-Thin = LineStyle("Thin", rank=20, parent=Ascii)
-Thick = LineStyle("Thick", rank=30, parent=Ascii)
-Rounded = LineStyle("Rounded", rank=40, parent=Thin)
-ThinDoubleDashed = LineStyle("DoubleDashed", 51, parent=Thin)
-ThinTripleDashed = LineStyle("TripleDashed", 52, parent=Thin)
-ThinQuadrupleDashed = LineStyle("QuadDashed", 53, parent=Thin)
-ThickDoubleDashed = LineStyle("DoubleDashed", 54, parent=Thick)
-ThickTripleDashed = LineStyle("TripleDashed", 35, parent=Thick)
-ThickQuadrupleDashed = LineStyle("QuadDashed", 56, parent=Thick)
-Double = LineStyle("Double", 50, parent=Thick)
-EighthBlockUpperRight = LineStyle("EighthBlockUpperRight", 50, parent=Thin)
-EighthBlockLowerLeft = LineStyle("EighthBlockLowerLeft", 50, parent=Thin)
-HalfBlockUpperRight = LineStyle("HalfBlockUpperRight", 50, parent=Thin)
-HalfBlockLowerLeft = LineStyle("HalfBlockLowerLeft", 50, parent=Thin)
+
+# Equivalent to setting the border-stype to "none"
+# - borders with a style of none have the lowest priority.
+NoLine = LineStyle("None", rank=(0, 0), visible=False)
+# Equivalent to setting the border-stype to "hidden"
+# - takes precedence over all other conflicting borders.
+InvisibleLine = LineStyle("Invisible", rank=(9999, 9999), parent=NoLine, visible=False)
+
+AsciiLine = LineStyle("Ascii", rank=(1, 0))
+ThinLine = LineStyle("Thin", rank=(1, 4), parent=AsciiLine)
+RoundedLine = LineStyle("Rounded", rank=(1, 5), parent=ThinLine)
+ThinQuadrupleDashedLine = LineStyle("QuadDashed", (1, 1), parent=ThinLine)
+ThinTripleDashedLine = LineStyle("TripleDashed", (1, 2), parent=ThinLine)
+ThinDoubleDashedLine = LineStyle("DoubleDashed", (1, 3), parent=ThinLine)
+
+UpperRightEighthLine = LineStyle("UpperRightEighthLine", (2, 1), parent=ThinLine)
+LowerLeftEighthLine = LineStyle("LowerLeftEighthLine", (2, 1), parent=ThinLine)
+
+AsciiThickLine = LineStyle("AsciiDouble", rank=(3, 0), parent=AsciiLine)
+ThickLine = LineStyle("Thick", rank=(3, 4), parent=ThinLine)
+DoubleLine = LineStyle("Double", (3, 5), parent=ThickLine)
+ThickQuadrupleDashedLine = LineStyle("QuadDashed", (3, 1), parent=ThickLine)
+ThickTripleDashedLine = LineStyle("TripleDashed", (3, 2), parent=ThickLine)
+ThickDoubleDashedLine = LineStyle("DoubleDashed", (3, 3), parent=ThickLine)
+
+UpperRightHalfLine = LineStyle("UpperRightHalfLine", (4, 1), parent=ThickLine)
+LowerLeftHalfLine = LineStyle("LowerLeftHalfLine", (4, 1), parent=ThickLine)
 
 
 class GridChar(NamedTuple):
@@ -263,304 +280,256 @@ class GridChar(NamedTuple):
     west: "LineStyle"
 
 
+# fmt: off
 _GRID_CHARS = {
     # NONE
-    GridChar(Invisible, Invisible, Invisible, Invisible): " ",
-    # Ascii
-    GridChar(Ascii, Invisible, Ascii, Invisible): "|",
-    GridChar(Invisible, Ascii, Invisible, Ascii): "-",
-    GridChar(Ascii, Ascii, Invisible, Invisible): "+",
-    GridChar(Invisible, Ascii, Ascii, Invisible): "+",
-    GridChar(Invisible, Invisible, Ascii, Ascii): "+",
-    GridChar(Ascii, Invisible, Invisible, Ascii): "+",
-    GridChar(Ascii, Ascii, Ascii, Invisible): "+",
-    GridChar(Invisible, Ascii, Ascii, Ascii): "+",
-    GridChar(Ascii, Invisible, Ascii, Ascii): "+",
-    GridChar(Ascii, Ascii, Invisible, Ascii): "+",
-    GridChar(Ascii, Ascii, Ascii, Ascii): "+",
-    # AsciiThick
-    GridChar(Invisible, AsciiThick, Invisible, AsciiThick): "=",
-    # Thin
-    GridChar(Thin, Invisible, Invisible, Invisible): "╵",
-    GridChar(Invisible, Thin, Invisible, Invisible): "╶",
-    GridChar(Invisible, Invisible, Thin, Invisible): "╷",
-    GridChar(Invisible, Invisible, Invisible, Thin): "╴",
-    GridChar(Thin, Invisible, Thin, Invisible): "│",
-    GridChar(Invisible, Thin, Invisible, Thin): "─",
-    GridChar(Thin, Thin, Invisible, Invisible): "└",
-    GridChar(Invisible, Thin, Thin, Invisible): "┌",
-    GridChar(Invisible, Invisible, Thin, Thin): "┐",
-    GridChar(Thin, Invisible, Invisible, Thin): "┘",
-    GridChar(Thin, Thin, Thin, Invisible): "├",
-    GridChar(Invisible, Thin, Thin, Thin): "┬",
-    GridChar(Thin, Invisible, Thin, Thin): "┤",
-    GridChar(Thin, Thin, Invisible, Thin): "┴",
-    GridChar(Thin, Thin, Thin, Thin): "┼",
-    # Thin Rounded
-    GridChar(Rounded, Rounded, Invisible, Invisible): "╰",
-    GridChar(Invisible, Rounded, Rounded, Invisible): "╭",
-    GridChar(Invisible, Invisible, Rounded, Rounded): "╮",
-    GridChar(Rounded, Invisible, Invisible, Rounded): "╯",
+    GridChar(NoLine, NoLine, NoLine, NoLine): " ",
+    # AsciiLine
+    GridChar(AsciiLine, NoLine, AsciiLine, NoLine): "|",
+    GridChar(NoLine, AsciiLine, NoLine, AsciiLine): "-",
+    GridChar(AsciiLine, AsciiLine, NoLine, NoLine): "+",
+    GridChar(NoLine, AsciiLine, AsciiLine, NoLine): "+",
+    GridChar(NoLine, NoLine, AsciiLine, AsciiLine): "+",
+    GridChar(AsciiLine, NoLine, NoLine, AsciiLine): "+",
+    GridChar(AsciiLine, AsciiLine, AsciiLine, NoLine): "+",
+    GridChar(NoLine, AsciiLine, AsciiLine, AsciiLine): "+",
+    GridChar(AsciiLine, NoLine, AsciiLine, AsciiLine): "+",
+    GridChar(AsciiLine, AsciiLine, NoLine, AsciiLine): "+",
+    GridChar(AsciiLine, AsciiLine, AsciiLine, AsciiLine): "+",
+    # AsciiThickLine
+    GridChar(NoLine, AsciiThickLine, NoLine, AsciiThickLine): "=",
+    # ThinLine
+    GridChar(ThinLine, NoLine, NoLine, NoLine): "╵",
+    GridChar(NoLine, ThinLine, NoLine, NoLine): "╶",
+    GridChar(NoLine, NoLine, ThinLine, NoLine): "╷",
+    GridChar(NoLine, NoLine, NoLine, ThinLine): "╴",
+    GridChar(ThinLine, NoLine, ThinLine, NoLine): "│",
+    GridChar(NoLine, ThinLine, NoLine, ThinLine): "─",
+    GridChar(ThinLine, ThinLine, NoLine, NoLine): "└",
+    GridChar(NoLine, ThinLine, ThinLine, NoLine): "┌",
+    GridChar(NoLine, NoLine, ThinLine, ThinLine): "┐",
+    GridChar(ThinLine, NoLine, NoLine, ThinLine): "┘",
+    GridChar(ThinLine, ThinLine, ThinLine, NoLine): "├",
+    GridChar(NoLine, ThinLine, ThinLine, ThinLine): "┬",
+    GridChar(ThinLine, NoLine, ThinLine, ThinLine): "┤",
+    GridChar(ThinLine, ThinLine, NoLine, ThinLine): "┴",
+    GridChar(ThinLine, ThinLine, ThinLine, ThinLine): "┼",
+    # Thin RoundedLine
+    GridChar(RoundedLine, RoundedLine, NoLine, NoLine): "╰",
+    GridChar(NoLine, RoundedLine, RoundedLine, NoLine): "╭",
+    GridChar(NoLine, NoLine, RoundedLine, RoundedLine): "╮",
+    GridChar(RoundedLine, NoLine, NoLine, RoundedLine): "╯",
     # Thin Dashes
-    GridChar(Invisible, ThinDoubleDashed, Invisible, ThinDoubleDashed): "╌",
-    GridChar(ThinDoubleDashed, Invisible, ThinDoubleDashed, Invisible): "╎",
-    GridChar(Invisible, ThinTripleDashed, Invisible, ThinTripleDashed): "┄",
-    GridChar(ThinTripleDashed, Invisible, ThinTripleDashed, Invisible): "┆",
-    GridChar(Invisible, ThinQuadrupleDashed, Invisible, ThinQuadrupleDashed): "┈",
-    GridChar(ThinQuadrupleDashed, Invisible, ThinQuadrupleDashed, Invisible): "┊",
+    GridChar(NoLine, ThinDoubleDashedLine, NoLine, ThinDoubleDashedLine): "╌",
+    GridChar(ThinDoubleDashedLine, NoLine, ThinDoubleDashedLine, NoLine): "╎",
+    GridChar(NoLine, ThinTripleDashedLine, NoLine, ThinTripleDashedLine): "┄",
+    GridChar(ThinTripleDashedLine, NoLine, ThinTripleDashedLine, NoLine): "┆",
+    GridChar(NoLine, ThinQuadrupleDashedLine, NoLine, ThinQuadrupleDashedLine): "┈",
+    GridChar(ThinQuadrupleDashedLine, NoLine, ThinQuadrupleDashedLine, NoLine): "┊",
     # Double
-    GridChar(Double, Invisible, Invisible, Invisible): "║",
-    GridChar(Invisible, Double, Invisible, Invisible): "═",
-    GridChar(Invisible, Invisible, Double, Invisible): "║",
-    GridChar(Invisible, Invisible, Invisible, Double): "═",
-    GridChar(Double, Invisible, Double, Invisible): "║",
-    GridChar(Invisible, Double, Invisible, Double): "═",
-    GridChar(Double, Double, Invisible, Invisible): "╚",
-    GridChar(Invisible, Double, Double, Invisible): "╔",
-    GridChar(Invisible, Invisible, Double, Double): "╗",
-    GridChar(Double, Invisible, Invisible, Double): "╝",
-    GridChar(Double, Double, Double, Invisible): "╠",
-    GridChar(Invisible, Double, Double, Double): "╦",
-    GridChar(Double, Invisible, Double, Double): "╣",
-    GridChar(Double, Double, Invisible, Double): "╩",
-    GridChar(Double, Double, Double, Double): "╬",
-    # Double / Thin
-    GridChar(Thin, Double, Thin, Double): "╪",
-    GridChar(Double, Thin, Double, Thin): "╫",
-    GridChar(Double, Thin, Invisible, Invisible): "╙",
-    GridChar(Invisible, Double, Thin, Invisible): "╒",
-    GridChar(Invisible, Invisible, Double, Thin): "╖",
-    GridChar(Thin, Invisible, Invisible, Double): "╛",
-    GridChar(Double, Invisible, Invisible, Thin): "╜",
-    GridChar(Thin, Double, Invisible, Invisible): "╘",
-    GridChar(Invisible, Thin, Double, Invisible): "╓",
-    GridChar(Invisible, Invisible, Thin, Double): "╕",
-    GridChar(Thin, Double, Thin, Invisible): "╞",
-    GridChar(Invisible, Thin, Double, Thin): "╥",
-    GridChar(Thin, Invisible, Thin, Double): "╡",
-    GridChar(Double, Thin, Invisible, Thin): "╨",
-    GridChar(Double, Thin, Double, Invisible): "╟",
-    GridChar(Invisible, Double, Thin, Double): "╤",
-    GridChar(Double, Invisible, Double, Thin): "╢",
-    GridChar(Thin, Double, Invisible, Double): "╧",
-    # Thick
-    GridChar(Thick, Thick, Thick, Thick): "╋",
-    GridChar(Thick, Invisible, Invisible, Invisible): "╹",
-    GridChar(Invisible, Thick, Invisible, Invisible): "╺",
-    GridChar(Invisible, Invisible, Thick, Invisible): "╻",
-    GridChar(Invisible, Invisible, Invisible, Thick): "╸",
-    GridChar(Thick, Invisible, Thick, Invisible): "┃",
-    GridChar(Invisible, Thick, Invisible, Thick): "━",
-    GridChar(Thick, Thick, Invisible, Invisible): "┗",
-    GridChar(Invisible, Thick, Thick, Invisible): "┏",
-    GridChar(Invisible, Invisible, Thick, Thick): "┓",
-    GridChar(Thick, Invisible, Invisible, Thick): "┛",
-    GridChar(Thick, Thick, Thick, Invisible): "┣",
-    GridChar(Invisible, Thick, Thick, Thick): "┳",
-    GridChar(Thick, Invisible, Thick, Thick): "┫",
-    GridChar(Thick, Thick, Invisible, Thick): "┻",
-    # Thick Dashes
-    GridChar(Invisible, ThickDoubleDashed, Invisible, ThickDoubleDashed): "╍",
-    GridChar(ThickDoubleDashed, Invisible, ThickDoubleDashed, Invisible): "╏",
-    GridChar(Invisible, ThickTripleDashed, Invisible, ThickTripleDashed): "┅",
-    GridChar(ThickTripleDashed, Invisible, ThickTripleDashed, Invisible): "┇",
-    GridChar(Invisible, ThickQuadrupleDashed, Invisible, ThickQuadrupleDashed): "┉",
-    GridChar(ThickQuadrupleDashed, Invisible, ThickQuadrupleDashed, Invisible): "┋",
-    # Thick / Thin
-    GridChar(Invisible, Thick, Invisible, Thin): "╼",
-    GridChar(Thin, Invisible, Thick, Invisible): "╽",
-    GridChar(Invisible, Thin, Invisible, Thick): "╾",
-    GridChar(Thick, Invisible, Thin, Invisible): "╿",
-    GridChar(Thick, Thin, Invisible, Invisible): "┖",
-    GridChar(Invisible, Thick, Thin, Invisible): "┍",
-    GridChar(Invisible, Invisible, Thick, Thin): "┒",
-    GridChar(Thin, Invisible, Invisible, Thick): "┙",
-    GridChar(Thick, Invisible, Invisible, Thin): "┚",
-    GridChar(Thin, Thick, Invisible, Invisible): "┕",
-    GridChar(Invisible, Thin, Thick, Invisible): "┎",
-    GridChar(Invisible, Invisible, Thin, Thick): "┑",
-    GridChar(Thick, Thin, Thin, Invisible): "┞",
-    GridChar(Invisible, Thick, Thin, Thin): "┮",
-    GridChar(Thin, Invisible, Thick, Thin): "┧",
-    GridChar(Thin, Thin, Invisible, Thick): "┵",
-    GridChar(Thick, Invisible, Thin, Thin): "┦",
-    GridChar(Thin, Thick, Invisible, Thin): "┶",
-    GridChar(Thin, Thin, Thick, Invisible): "┟",
-    GridChar(Invisible, Thin, Thin, Thick): "┭",
-    GridChar(Thick, Thin, Invisible, Thin): "┸",
-    GridChar(Thin, Thick, Thin, Invisible): "┝",
-    GridChar(Invisible, Thin, Thick, Thin): "┰",
-    GridChar(Thin, Invisible, Thin, Thick): "┥",
-    GridChar(Thick, Thick, Thin, Invisible): "┡",
-    GridChar(Invisible, Thick, Thick, Thin): "┲",
-    GridChar(Thin, Invisible, Thick, Thick): "┪",
-    GridChar(Thick, Thin, Invisible, Thick): "┹",
-    GridChar(Thick, Thick, Invisible, Thin): "┺",
-    GridChar(Thin, Thick, Thick, Invisible): "┢",
-    GridChar(Invisible, Thin, Thick, Thick): "┱",
-    GridChar(Thick, Invisible, Thin, Thick): "┩",
-    GridChar(Thick, Thin, Thick, Invisible): "┠",
-    GridChar(Invisible, Thick, Thin, Thick): "┯",
-    GridChar(Thick, Invisible, Thick, Thin): "┨",
-    GridChar(Thin, Thick, Invisible, Thick): "┷",
-    GridChar(Thick, Thin, Thin, Thin): "╀",
-    GridChar(Thin, Thick, Thin, Thin): "┾",
-    GridChar(Thin, Thin, Thick, Thin): "╁",
-    GridChar(Thin, Thin, Thin, Thick): "┽",
-    GridChar(Thick, Thick, Thin, Thin): "╄",
-    GridChar(Thin, Thick, Thick, Thin): "╆",
-    GridChar(Thin, Thin, Thick, Thick): "╅",
-    GridChar(Thick, Thin, Thin, Thick): "╃",
-    GridChar(Thin, Thick, Thin, Thick): "┿",
-    GridChar(Thick, Thin, Thick, Thin): "╂",
-    GridChar(Thick, Thick, Thick, Thin): "╊",
-    GridChar(Thin, Thick, Thick, Thick): "╈",
-    GridChar(Thick, Thin, Thick, Thick): "╉",
-    GridChar(Thick, Thick, Thin, Thick): "╇",
-    # HalfBlockUpperRight
-    GridChar(HalfBlockUpperRight, Invisible, HalfBlockUpperRight, Invisible): "▐",
-    GridChar(Invisible, HalfBlockUpperRight, Invisible, HalfBlockUpperRight): "▀",
-    GridChar(HalfBlockUpperRight, HalfBlockUpperRight, Invisible, Invisible): "▝",
-    GridChar(Invisible, HalfBlockUpperRight, HalfBlockUpperRight, Invisible): "▐",
-    GridChar(Invisible, Invisible, HalfBlockUpperRight, HalfBlockUpperRight): "▜",
-    GridChar(HalfBlockUpperRight, Invisible, Invisible, HalfBlockUpperRight): "▀",
-    GridChar(
-        HalfBlockUpperRight, HalfBlockUpperRight, HalfBlockUpperRight, Invisible
-    ): "▐",
-    GridChar(
-        Invisible, HalfBlockUpperRight, HalfBlockUpperRight, HalfBlockUpperRight
-    ): "▜",
-    GridChar(
-        HalfBlockUpperRight, Invisible, HalfBlockUpperRight, HalfBlockUpperRight
-    ): "▜",
-    GridChar(
-        HalfBlockUpperRight, HalfBlockUpperRight, Invisible, HalfBlockUpperRight
-    ): "▀",
-    GridChar(
-        HalfBlockUpperRight,
-        HalfBlockUpperRight,
-        HalfBlockUpperRight,
-        HalfBlockUpperRight,
-    ): "▜",
-    # HalfBlockLowerLeft
-    GridChar(HalfBlockLowerLeft, Invisible, HalfBlockLowerLeft, Invisible): "▌",
-    GridChar(Invisible, HalfBlockLowerLeft, Invisible, HalfBlockLowerLeft): "▄",
-    GridChar(HalfBlockLowerLeft, HalfBlockLowerLeft, Invisible, Invisible): "▙",
-    GridChar(Invisible, HalfBlockLowerLeft, HalfBlockLowerLeft, Invisible): "▄",
-    GridChar(Invisible, Invisible, HalfBlockLowerLeft, HalfBlockLowerLeft): "▖",
-    GridChar(HalfBlockLowerLeft, Invisible, Invisible, HalfBlockLowerLeft): "▌",
-    GridChar(
-        HalfBlockLowerLeft, HalfBlockLowerLeft, HalfBlockLowerLeft, Invisible
-    ): "▙",
-    GridChar(
-        Invisible, HalfBlockLowerLeft, HalfBlockLowerLeft, HalfBlockLowerLeft
-    ): "▄",
-    GridChar(
-        HalfBlockLowerLeft, Invisible, HalfBlockLowerLeft, HalfBlockLowerLeft
-    ): "▌",
-    GridChar(
-        HalfBlockLowerLeft, HalfBlockLowerLeft, Invisible, HalfBlockLowerLeft
-    ): "▙",
-    GridChar(
-        HalfBlockLowerLeft, HalfBlockLowerLeft, HalfBlockLowerLeft, HalfBlockLowerLeft
-    ): "▙",
-    # HalfBlock Combos
-    GridChar(Invisible, HalfBlockUpperRight, HalfBlockLowerLeft, Invisible): "▛",
-    GridChar(HalfBlockUpperRight, Invisible, Invisible, HalfBlockLowerLeft): "▟",
-    GridChar(HalfBlockLowerLeft, Invisible, Invisible, HalfBlockUpperRight): "▘",
-    GridChar(Invisible, HalfBlockLowerLeft, HalfBlockUpperRight, Invisible): "▗",
-    # Halfblock/Thin combos
-    GridChar(HalfBlockLowerLeft, Thin, HalfBlockLowerLeft, Invisible): "▌",
-    GridChar(Invisible, HalfBlockLowerLeft, Thin, HalfBlockLowerLeft): "▄",
-    GridChar(HalfBlockLowerLeft, Invisible, HalfBlockLowerLeft, Thin): "▌",
-    GridChar(Thin, HalfBlockLowerLeft, Invisible, HalfBlockLowerLeft): "▄",
-    GridChar(HalfBlockUpperRight, Thin, HalfBlockUpperRight, Invisible): "▐",
-    GridChar(Invisible, HalfBlockUpperRight, Thin, HalfBlockUpperRight): "▀",
-    GridChar(HalfBlockUpperRight, Invisible, HalfBlockUpperRight, Thin): "▐",
-    GridChar(Thin, HalfBlockUpperRight, Invisible, HalfBlockUpperRight): "▀",
-    # EighthBlockUpperRight
-    GridChar(EighthBlockUpperRight, Invisible, EighthBlockUpperRight, Invisible): "▕",
-    GridChar(Invisible, EighthBlockUpperRight, Invisible, EighthBlockUpperRight): "▔",
-    GridChar(EighthBlockUpperRight, EighthBlockUpperRight, Invisible, Invisible): " ",
-    GridChar(Invisible, EighthBlockUpperRight, EighthBlockUpperRight, Invisible): "▕",
-    GridChar(Invisible, Invisible, EighthBlockUpperRight, EighthBlockUpperRight): "▕",
-    GridChar(EighthBlockUpperRight, Invisible, Invisible, EighthBlockUpperRight): "▔",
-    GridChar(
-        EighthBlockUpperRight, EighthBlockUpperRight, EighthBlockUpperRight, Invisible
-    ): "▕",
-    GridChar(
-        Invisible, EighthBlockUpperRight, EighthBlockUpperRight, EighthBlockUpperRight
-    ): "▔",
-    GridChar(
-        EighthBlockUpperRight, Invisible, EighthBlockUpperRight, EighthBlockUpperRight
-    ): "▕",
-    GridChar(
-        EighthBlockUpperRight, EighthBlockUpperRight, Invisible, EighthBlockUpperRight
-    ): "▔",
-    GridChar(
-        EighthBlockUpperRight,
-        EighthBlockUpperRight,
-        EighthBlockUpperRight,
-        EighthBlockUpperRight,
-    ): "▕",
-    # EighthBlockLowerLeft
-    GridChar(EighthBlockLowerLeft, Invisible, EighthBlockLowerLeft, Invisible): "▏",
-    GridChar(Invisible, EighthBlockLowerLeft, Invisible, EighthBlockLowerLeft): "▁",
-    GridChar(EighthBlockLowerLeft, EighthBlockLowerLeft, Invisible, Invisible): "▏",
-    GridChar(Invisible, EighthBlockLowerLeft, EighthBlockLowerLeft, Invisible): "▁",
-    GridChar(Invisible, Invisible, EighthBlockLowerLeft, EighthBlockLowerLeft): " ",
-    GridChar(EighthBlockLowerLeft, Invisible, Invisible, EighthBlockLowerLeft): "▏",
-    GridChar(
-        EighthBlockLowerLeft, EighthBlockLowerLeft, EighthBlockLowerLeft, Invisible
-    ): "▏",
-    GridChar(
-        Invisible, EighthBlockLowerLeft, EighthBlockLowerLeft, EighthBlockLowerLeft
-    ): "▁",
-    GridChar(
-        EighthBlockLowerLeft, Invisible, EighthBlockLowerLeft, EighthBlockLowerLeft
-    ): "▏",
-    GridChar(
-        EighthBlockLowerLeft, EighthBlockLowerLeft, Invisible, EighthBlockLowerLeft
-    ): "▁",
-    GridChar(
-        EighthBlockLowerLeft,
-        EighthBlockLowerLeft,
-        EighthBlockLowerLeft,
-        EighthBlockLowerLeft,
-    ): "▏",
-    # EighthBlock Combos
-    GridChar(Invisible, EighthBlockLowerLeft, EighthBlockUpperRight, Invisible): " ",
-    GridChar(EighthBlockLowerLeft, Invisible, Invisible, EighthBlockUpperRight): " ",
-    # Eighthblock/Thin combos
-    GridChar(EighthBlockLowerLeft, Thin, EighthBlockLowerLeft, Invisible): "▏",
-    GridChar(Invisible, EighthBlockLowerLeft, Thin, EighthBlockLowerLeft): "▁",
-    GridChar(EighthBlockLowerLeft, Invisible, EighthBlockLowerLeft, Thin): "▏",
-    GridChar(Thin, EighthBlockLowerLeft, Invisible, EighthBlockLowerLeft): "▁",
-    GridChar(EighthBlockUpperRight, Thin, EighthBlockUpperRight, Invisible): "▕",
-    GridChar(Invisible, EighthBlockUpperRight, Thin, EighthBlockUpperRight): "▔",
-    GridChar(EighthBlockUpperRight, Invisible, EighthBlockUpperRight, Thin): "▕",
-    GridChar(Thin, EighthBlockUpperRight, Invisible, EighthBlockUpperRight): "▔",
-    GridChar(Invisible, Invisible, EighthBlockUpperRight, EighthBlockLowerLeft): "▁",
-    GridChar(EighthBlockLowerLeft, EighthBlockUpperRight, Invisible, Invisible): "▔",
+    GridChar(DoubleLine, NoLine, NoLine, NoLine): "║",
+    GridChar(NoLine, DoubleLine, NoLine, NoLine): "═",
+    GridChar(NoLine, NoLine, DoubleLine, NoLine): "║",
+    GridChar(NoLine, NoLine, NoLine, DoubleLine): "═",
+    GridChar(DoubleLine, NoLine, DoubleLine, NoLine): "║",
+    GridChar(NoLine, DoubleLine, NoLine, DoubleLine): "═",
+    GridChar(DoubleLine, DoubleLine, NoLine, NoLine): "╚",
+    GridChar(NoLine, DoubleLine, DoubleLine, NoLine): "╔",
+    GridChar(NoLine, NoLine, DoubleLine, DoubleLine): "╗",
+    GridChar(DoubleLine, NoLine, NoLine, DoubleLine): "╝",
+    GridChar(DoubleLine, DoubleLine, DoubleLine, NoLine): "╠",
+    GridChar(NoLine, DoubleLine, DoubleLine, DoubleLine): "╦",
+    GridChar(DoubleLine, NoLine, DoubleLine, DoubleLine): "╣",
+    GridChar(DoubleLine, DoubleLine, NoLine, DoubleLine): "╩",
+    GridChar(DoubleLine, DoubleLine, DoubleLine, DoubleLine): "╬",
+    # Double / ThinLine
+    GridChar(ThinLine, DoubleLine, ThinLine, DoubleLine): "╪",
+    GridChar(DoubleLine, ThinLine, DoubleLine, ThinLine): "╫",
+    GridChar(DoubleLine, ThinLine, NoLine, NoLine): "╙",
+    GridChar(NoLine, DoubleLine, ThinLine, NoLine): "╒",
+    GridChar(NoLine, NoLine, DoubleLine, ThinLine): "╖",
+    GridChar(ThinLine, NoLine, NoLine, DoubleLine): "╛",
+    GridChar(DoubleLine, NoLine, NoLine, ThinLine): "╜",
+    GridChar(ThinLine, DoubleLine, NoLine, NoLine): "╘",
+    GridChar(NoLine, ThinLine, DoubleLine, NoLine): "╓",
+    GridChar(NoLine, NoLine, ThinLine, DoubleLine): "╕",
+    GridChar(ThinLine, DoubleLine, ThinLine, NoLine): "╞",
+    GridChar(NoLine, ThinLine, DoubleLine, ThinLine): "╥",
+    GridChar(ThinLine, NoLine, ThinLine, DoubleLine): "╡",
+    GridChar(DoubleLine, ThinLine, NoLine, ThinLine): "╨",
+    GridChar(DoubleLine, ThinLine, DoubleLine, NoLine): "╟",
+    GridChar(NoLine, DoubleLine, ThinLine, DoubleLine): "╤",
+    GridChar(DoubleLine, NoLine, DoubleLine, ThinLine): "╢",
+    GridChar(ThinLine, DoubleLine, NoLine, DoubleLine): "╧",
+    # ThickLine
+    GridChar(ThickLine, ThickLine, ThickLine, ThickLine): "╋",
+    GridChar(ThickLine, NoLine, NoLine, NoLine): "╹",
+    GridChar(NoLine, ThickLine, NoLine, NoLine): "╺",
+    GridChar(NoLine, NoLine, ThickLine, NoLine): "╻",
+    GridChar(NoLine, NoLine, NoLine, ThickLine): "╸",
+    GridChar(ThickLine, NoLine, ThickLine, NoLine): "┃",
+    GridChar(NoLine, ThickLine, NoLine, ThickLine): "━",
+    GridChar(ThickLine, ThickLine, NoLine, NoLine): "┗",
+    GridChar(NoLine, ThickLine, ThickLine, NoLine): "┏",
+    GridChar(NoLine, ThickLine, ThickLine, NoLine): "┏",
+    GridChar(NoLine, NoLine, ThickLine, ThickLine): "┓",
+    GridChar(ThickLine, NoLine, NoLine, ThickLine): "┛",
+    GridChar(ThickLine, ThickLine, ThickLine, NoLine): "┣",
+    GridChar(NoLine, ThickLine, ThickLine, ThickLine): "┳",
+    GridChar(ThickLine, NoLine, ThickLine, ThickLine): "┫",
+    GridChar(ThickLine, ThickLine, NoLine, ThickLine): "┻",
+    # ThickLine Dashes
+    GridChar(NoLine, ThickDoubleDashedLine, NoLine, ThickDoubleDashedLine): "╍",
+    GridChar(ThickDoubleDashedLine, NoLine, ThickDoubleDashedLine, NoLine): "╏",
+    GridChar(NoLine, ThickTripleDashedLine, NoLine, ThickTripleDashedLine): "┅",
+    GridChar(ThickTripleDashedLine, NoLine, ThickTripleDashedLine, NoLine): "┇",
+    GridChar(NoLine, ThickQuadrupleDashedLine, NoLine, ThickQuadrupleDashedLine): "┉",
+    GridChar(ThickQuadrupleDashedLine, NoLine, ThickQuadrupleDashedLine, NoLine): "┋",
+    # ThickLine / ThinLine
+    GridChar(NoLine,                ThickLine,              NoLine,                 ThinLine        ): "╼",
+    GridChar(ThinLine,              NoLine,                 ThickLine,              NoLine          ): "╽",
+    GridChar(NoLine,                ThinLine,               NoLine,                 ThickLine       ): "╾",
+    GridChar(ThickLine,             NoLine,                 ThinLine,               NoLine          ): "╿",
+    GridChar(ThickLine,             ThinLine,               NoLine,                 NoLine          ): "┖",
+    GridChar(NoLine,                ThickLine,              ThinLine,               NoLine          ): "┍",
+    GridChar(NoLine,                NoLine,                 ThickLine,              ThinLine        ): "┒",
+    GridChar(ThinLine,              NoLine,                 NoLine,                 ThickLine       ): "┙",
+    GridChar(ThickLine,             NoLine,                 NoLine,                 ThinLine        ): "┚",
+    GridChar(ThinLine,              ThickLine,              NoLine,                 NoLine          ): "┕",
+    GridChar(NoLine,                ThinLine,               ThickLine,              NoLine          ): "┎",
+    GridChar(NoLine,                NoLine,                 ThinLine,               ThickLine       ): "┑",
+    GridChar(ThickLine,             ThinLine,               ThinLine,               NoLine          ): "┞",
+    GridChar(NoLine,                ThickLine,              ThinLine,               ThinLine        ): "┮",
+    GridChar(ThinLine,              NoLine,                 ThickLine,              ThinLine        ): "┧",
+    GridChar(ThinLine,              ThinLine,               NoLine,                 ThickLine       ): "┵",
+    GridChar(ThickLine,             NoLine,                 ThinLine,               ThinLine        ): "┦",
+    GridChar(ThinLine,              ThickLine,              NoLine,                 ThinLine        ): "┶",
+    GridChar(ThinLine,              ThinLine,               ThickLine,              NoLine          ): "┟",
+    GridChar(NoLine,                ThinLine,               ThinLine,               ThickLine       ): "┭",
+    GridChar(ThickLine,             ThinLine,               NoLine,                 ThinLine        ): "┸",
+    GridChar(ThinLine,              ThickLine,              ThinLine,               NoLine          ): "┝",
+    GridChar(NoLine,                ThinLine,               ThickLine,              ThinLine        ): "┰",
+    GridChar(ThinLine,              NoLine,                 ThinLine,               ThickLine       ): "┥",
+    GridChar(ThickLine,             ThickLine,              ThinLine,               NoLine          ): "┡",
+    GridChar(NoLine,                ThickLine,              ThickLine,              ThinLine        ): "┲",
+    GridChar(ThinLine,              NoLine,                 ThickLine,              ThickLine       ): "┪",
+    GridChar(ThickLine,             ThinLine,               NoLine,                 ThickLine       ): "┹",
+    GridChar(ThickLine,             ThickLine,              NoLine,                 ThinLine        ): "┺",
+    GridChar(ThinLine,              ThickLine,              ThickLine,              NoLine          ): "┢",
+    GridChar(NoLine,                ThinLine,               ThickLine,              ThickLine       ): "┱",
+    GridChar(ThickLine,             NoLine,                 ThinLine,               ThickLine       ): "┩",
+    GridChar(ThickLine,             ThinLine,               ThickLine,              NoLine          ): "┠",
+    GridChar(NoLine,                ThickLine,              ThinLine,               ThickLine       ): "┯",
+    GridChar(ThickLine,             NoLine,                 ThickLine,              ThinLine        ): "┨",
+    GridChar(ThinLine,              ThickLine,              NoLine,                 ThickLine       ): "┷",
+    GridChar(ThickLine,             ThinLine,               ThinLine,               ThinLine        ): "╀",
+    GridChar(ThinLine,              ThickLine,              ThinLine,               ThinLine        ): "┾",
+    GridChar(ThinLine,              ThinLine,               ThickLine,              ThinLine        ): "╁",
+    GridChar(ThinLine,              ThinLine,               ThinLine,               ThickLine       ): "┽",
+    GridChar(ThickLine,             ThickLine,              ThinLine,               ThinLine        ): "╄",
+    GridChar(ThinLine,              ThickLine,              ThickLine,              ThinLine        ): "╆",
+    GridChar(ThinLine,              ThinLine,               ThickLine,              ThickLine       ): "╅",
+    GridChar(ThickLine,             ThinLine,               ThinLine,               ThickLine       ): "╃",
+    GridChar(ThinLine,              ThickLine,              ThinLine,               ThickLine       ): "┿",
+    GridChar(ThickLine,             ThinLine,               ThickLine,              ThinLine        ): "╂",
+    GridChar(ThickLine,             ThickLine,              ThickLine,              ThinLine        ): "╊",
+    GridChar(ThinLine,              ThickLine,              ThickLine,              ThickLine       ): "╈",
+    GridChar(ThickLine,             ThinLine,               ThickLine,              ThickLine       ): "╉",
+    GridChar(ThickLine,             ThickLine,              ThinLine,               ThickLine       ): "╇",
+    # UpperRightHalfLine
+    GridChar(UpperRightHalfLine, NoLine, UpperRightHalfLine, NoLine): "▐",
+    GridChar(NoLine, UpperRightHalfLine, NoLine, UpperRightHalfLine): "▀",
+    GridChar(UpperRightHalfLine, UpperRightHalfLine, NoLine, NoLine): "▝",
+    GridChar(NoLine, UpperRightHalfLine, UpperRightHalfLine, NoLine): "▐",
+    GridChar(NoLine, NoLine, UpperRightHalfLine, UpperRightHalfLine): "▜",
+    GridChar(UpperRightHalfLine, NoLine, NoLine, UpperRightHalfLine): "▀",
+    GridChar(UpperRightHalfLine, UpperRightHalfLine, UpperRightHalfLine, NoLine): "▐",
+    GridChar(NoLine, UpperRightHalfLine, UpperRightHalfLine, UpperRightHalfLine): "▜",
+    GridChar(UpperRightHalfLine, NoLine, UpperRightHalfLine, UpperRightHalfLine): "▜",
+    GridChar(UpperRightHalfLine, UpperRightHalfLine, NoLine, UpperRightHalfLine): "▀",
+    GridChar(UpperRightHalfLine, UpperRightHalfLine, UpperRightHalfLine, UpperRightHalfLine): "▜",
+    # LowerLeftHalfLine
+    GridChar(LowerLeftHalfLine, NoLine, LowerLeftHalfLine, NoLine): "▌",
+    GridChar(NoLine, LowerLeftHalfLine, NoLine, LowerLeftHalfLine): "▄",
+    GridChar(LowerLeftHalfLine, LowerLeftHalfLine, NoLine, NoLine): "▙",
+    GridChar(NoLine, LowerLeftHalfLine, LowerLeftHalfLine, NoLine): "▄",
+    GridChar(NoLine, NoLine, LowerLeftHalfLine, LowerLeftHalfLine): "▖",
+    GridChar(LowerLeftHalfLine, NoLine, NoLine, LowerLeftHalfLine): "▌",
+    GridChar(LowerLeftHalfLine, LowerLeftHalfLine, LowerLeftHalfLine, NoLine): "▙",
+    GridChar(NoLine, LowerLeftHalfLine, LowerLeftHalfLine, LowerLeftHalfLine): "▄",
+    GridChar(LowerLeftHalfLine, NoLine, LowerLeftHalfLine, LowerLeftHalfLine): "▌",
+    GridChar(LowerLeftHalfLine, LowerLeftHalfLine, NoLine, LowerLeftHalfLine): "▙",
+    GridChar(LowerLeftHalfLine, LowerLeftHalfLine, LowerLeftHalfLine, LowerLeftHalfLine): "▙",
+    # Half Combos
+    GridChar(NoLine, UpperRightHalfLine, LowerLeftHalfLine, NoLine): "▛",
+    GridChar(UpperRightHalfLine, NoLine, NoLine, LowerLeftHalfLine): "▟",
+    GridChar(LowerLeftHalfLine, NoLine, NoLine, UpperRightHalfLine): "▘",
+    GridChar(NoLine, LowerLeftHalfLine, UpperRightHalfLine, NoLine): "▗",
+    # Half/ThinLine combos
+    GridChar(LowerLeftHalfLine, ThinLine, LowerLeftHalfLine, NoLine): "▌",
+    GridChar(NoLine, LowerLeftHalfLine, ThinLine, LowerLeftHalfLine): "▄",
+    GridChar(LowerLeftHalfLine, NoLine, LowerLeftHalfLine, ThinLine): "▌",
+    GridChar(ThinLine, LowerLeftHalfLine, NoLine, LowerLeftHalfLine): "▄",
+    GridChar(UpperRightHalfLine, ThinLine, UpperRightHalfLine, NoLine): "▐",
+    GridChar(NoLine, UpperRightHalfLine, ThinLine, UpperRightHalfLine): "▀",
+    GridChar(UpperRightHalfLine, NoLine, UpperRightHalfLine, ThinLine): "▐",
+    GridChar(ThinLine, UpperRightHalfLine, NoLine, UpperRightHalfLine): "▀",
+    # UpperRightEighthLine
+    GridChar(UpperRightEighthLine, NoLine, UpperRightEighthLine, NoLine): "▕",
+    GridChar(NoLine, UpperRightEighthLine, NoLine, UpperRightEighthLine): "▔",
+    GridChar(UpperRightEighthLine, UpperRightEighthLine, NoLine, NoLine): " ",
+    GridChar(NoLine, UpperRightEighthLine, UpperRightEighthLine, NoLine): "▕",
+    GridChar(NoLine, NoLine, UpperRightEighthLine, UpperRightEighthLine): "▕",
+    GridChar(UpperRightEighthLine, NoLine, NoLine, UpperRightEighthLine): "▔",
+    GridChar(UpperRightEighthLine, UpperRightEighthLine, UpperRightEighthLine, NoLine): "▕",
+    GridChar(NoLine, UpperRightEighthLine, UpperRightEighthLine, UpperRightEighthLine): "▔",
+    GridChar(UpperRightEighthLine,  NoLine,                 UpperRightEighthLine,   UpperRightEighthLine): "▕",
+    GridChar(UpperRightEighthLine,  UpperRightEighthLine,   NoLine,                 UpperRightEighthLine): "▔",
+    GridChar(UpperRightEighthLine,  UpperRightEighthLine,   UpperRightEighthLine,   UpperRightEighthLine): "▕",
+    # LowerLeftEighthLine
+    GridChar(LowerLeftEighthLine,   NoLine,                 LowerLeftEighthLine,    NoLine              ): "▏",
+    GridChar(NoLine,                LowerLeftEighthLine,    NoLine,                 LowerLeftEighthLine ): "▁",
+    GridChar(LowerLeftEighthLine,   LowerLeftEighthLine,    NoLine,                 NoLine              ): "▏",
+    GridChar(NoLine,                LowerLeftEighthLine,    LowerLeftEighthLine,    NoLine              ): "▁",
+    GridChar(NoLine,                NoLine,                 LowerLeftEighthLine,    LowerLeftEighthLine ): " ",
+    GridChar(LowerLeftEighthLine,   NoLine,                 NoLine,                 LowerLeftEighthLine ): "▏",
+    GridChar(LowerLeftEighthLine,   LowerLeftEighthLine,    LowerLeftEighthLine,    NoLine              ): "▏",
+    GridChar(NoLine,                LowerLeftEighthLine,    LowerLeftEighthLine,    LowerLeftEighthLine ): "▁",
+    GridChar(LowerLeftEighthLine,   NoLine,                 LowerLeftEighthLine,    LowerLeftEighthLine ): "▏",
+    GridChar(LowerLeftEighthLine,   LowerLeftEighthLine,    NoLine,                 LowerLeftEighthLine ): "▁",
+    GridChar(LowerLeftEighthLine,   LowerLeftEighthLine,    LowerLeftEighthLine,    LowerLeftEighthLine ): "▏",
+    # Eighth Combos
+    GridChar(NoLine,                LowerLeftEighthLine,    UpperRightEighthLine,   NoLine              ): " ",
+    GridChar(LowerLeftEighthLine,   NoLine,                 NoLine,                 UpperRightEighthLine): " ",
+    # Eighth/ThinLine combos
+    GridChar(LowerLeftEighthLine,   ThinLine,               LowerLeftEighthLine,    NoLine              ): "▏",
+    GridChar(NoLine,                LowerLeftEighthLine,    ThinLine,               LowerLeftEighthLine ): "▁",
+    GridChar(LowerLeftEighthLine,   NoLine,                 LowerLeftEighthLine,    ThinLine            ): "▏",
+    GridChar(ThinLine,              LowerLeftEighthLine,    NoLine,                 LowerLeftEighthLine ): "▁",
+    GridChar(UpperRightEighthLine,  ThinLine,               UpperRightEighthLine,   NoLine              ): "▕",
+    GridChar(NoLine,                UpperRightEighthLine,   ThinLine,               UpperRightEighthLine): "▔",
+    GridChar(UpperRightEighthLine,  NoLine,                 UpperRightEighthLine,   ThinLine            ): "▕",
+    GridChar(ThinLine,              UpperRightEighthLine,   NoLine,                 UpperRightEighthLine): "▔",
+    GridChar(NoLine,                NoLine,                 UpperRightEighthLine,   LowerLeftEighthLine ): "▁",
+    GridChar(LowerLeftEighthLine,   UpperRightEighthLine,   NoLine,                 NoLine              ): "▔",
 }
+# fmt: off
 
-
+@lru_cache
 def grid_char(key: "GridChar") -> "str":
     """Return the character represented by a combination of :class:`LineStyles`."""
     if key in _GRID_CHARS:
         return _GRID_CHARS[key]
     else:
-        # If there is not matching character representation, replacing each line style
-        # with its parent style in turn and using the result until a matching character
+        # If there is no matching character representation, replace the line style
+        # whose parent has the highest ranking with the parent style until a character
         # is found
         m_key = list(key)
         while any(x.parent for x in m_key):
-            for part in sorted(
-                {x for x in m_key if x.parent}, key=lambda x: x.rank, reverse=True
-            ):
-                m_key = [
-                    (part.parent or x) if x is part and x.parent else x for x in m_key
-                ]
+            parent_ranks = {(9999,) if line.parent == NoLine else line.parent.rank: i for i, line in enumerate(m_key) if line.parent}
+            idx = parent_ranks[max(parent_ranks)]
+            if parent := m_key[idx].parent:
+                m_key[idx] = parent
                 char = _GRID_CHARS.get(GridChar(*m_key))
                 if char:
                     return char
@@ -579,7 +548,7 @@ class GridStyle:
         RIGHT: "str"
 
     def __init__(
-        self, line_style: "LineStyle" = Invisible, mask: "Mask" = Masks.grid
+        self, line_style: "LineStyle" = InvisibleLine, mask: "Mask" = Masks.grid
     ) -> "None":
         """Creates a new :py:class:`GridStyle` instance.
 
@@ -588,9 +557,12 @@ class GridStyle:
             mask: A mask which can be used to exclude certain character from the grid
         """
         self.grid = {
-            part: GridChar(*((line_style if x else Invisible) for x in mask.mask[part]))
+            part: GridChar(
+                *((line_style if x else NoLine) for x in mask.mask[part])
+            )
             for part in GridPart
         }
+        self.mask = mask
 
     @property
     def TOP(self) -> "_BorderLineChars":
@@ -672,110 +644,50 @@ class GridStyle:
         )
 
 
-InnerEdgeGridStyle = (
-    EighthBlockLowerLeft.top_edge
-    + EighthBlockLowerLeft.right_edge
-    + EighthBlockUpperRight.left_edge
-    + EighthBlockUpperRight.bottom_edge
-    + Thin.inner
+ThinGrid = ThinLine.grid
+
+InnerEigthGrid = (
+    LowerLeftEighthLine.top_edge
+    + LowerLeftEighthLine.right_edge
+    + UpperRightEighthLine.left_edge
+    + UpperRightEighthLine.bottom_edge
+    + ThinLine.inner
+)
+
+OuterEigthGrid = (
+    LowerLeftEighthLine.top_edge
+    + UpperRightEighthLine.right_edge
+    + UpperRightEighthLine.bottom_edge
+    + LowerLeftEighthLine.left_edge
+    + ThinLine.inner
+)
+
+OuterHalfGrid = (
+    UpperRightHalfLine.top_edge
+    + UpperRightHalfLine.right_edge
+    + LowerLeftHalfLine.left_edge
+    + LowerLeftHalfLine.bottom_edge
+    + ThinLine.inner
+)
+
+InnerHalfGrid = (
+    LowerLeftHalfLine.top_edge
+    + LowerLeftHalfLine.right_edge
+    + UpperRightHalfLine.left_edge
+    + UpperRightHalfLine.bottom_edge
+    + ThinLine.inner
 )
 
 
-OuterEdgeGridStyle = (
-    EighthBlockLowerLeft.top_edge
-    + EighthBlockUpperRight.right_edge
-    + EighthBlockUpperRight.bottom_edge
-    + EighthBlockLowerLeft.left_edge
-    + Thin.inner
-)
-
-HalfBlockOuterGridStyle = (
-    HalfBlockUpperRight.top_edge
-    + HalfBlockUpperRight.right_edge
-    + HalfBlockLowerLeft.left_edge
-    + HalfBlockLowerLeft.bottom_edge
-    + Thin.inner
-)
-
-HalfBlockInnerGridStyle = (
-    HalfBlockLowerLeft.top_edge
-    + HalfBlockLowerLeft.right_edge
-    + HalfBlockUpperRight.left_edge
-    + HalfBlockUpperRight.bottom_edge
-    + Thin.inner
-)
-
-
-class WeightedLineStyle(NamedTuple):
-    """A :class:`LineStyle` with a weight."""
-
-    weight: "int"
-    value: "LineStyle"
-
-
-class WeightedInt(NamedTuple):
-    """An :class:`int` with a weight."""
-
-    weight: "int"
-    value: "int"
-
-
-class BorderLineStyle(NamedTuple):
+class DiLineStyle(NamedTuple):
     """A description of a cell border: a :class:`LineStyle` for each edge."""
 
-    top: "Optional[LineStyle]" = None
-    right: "Optional[LineStyle]" = None
-    bottom: "Optional[LineStyle]" = None
-    left: "Optional[LineStyle]" = None
+    top: "LineStyle" = NoLine
+    right: "LineStyle" = NoLine
+    bottom: "LineStyle" = NoLine
+    left: "LineStyle" = NoLine
 
-
-class WeightedBorderLineStyle(NamedTuple):
-    """A weighted description of a cell border: weighted values for each edge."""
-
-    top: "WeightedLineStyle"
-    right: "WeightedLineStyle"
-    bottom: "WeightedLineStyle"
-    left: "WeightedLineStyle"
-
-    # We cannot use :py:func:`functools.cached_property` here as it does not work with
-    # :py:Class:`NamedTuple`s.
-    @property  # type: ignore
-    @lru_cache(maxsize=1)  # noqa: B019
-    def border_line_style(self) -> "BorderLineStyle":
-        """Get the unweighted border line style."""
-        return BorderLineStyle(*(x.value for x in self))
-
-
-class Padding(NamedTuple):
-    """A weighted description of a cell padding: weighted values for each edge."""
-
-    top: "Optional[int]"
-    right: "Optional[int]"
-    bottom: "Optional[int]"
-    left: "Optional[int]"
-
-
-class WeightedPadding(NamedTuple):
-    """A description of a cell padding: :class:`LineStyle`s for each edge."""
-
-    top: "WeightedInt"
-    right: "WeightedInt"
-    bottom: "WeightedInt"
-    left: "WeightedInt"
-
-    # We cannot use :py:func:`functools.cached_property` here as it does not work with
-    # :py:Class:`NamedTuple`s.
-    @property  # type: ignore
-    @lru_cache(maxsize=1)  # noqa: B019
-    def padding(self) -> "Padding":
-        """Get the padding without weights."""
-        return Padding(*(x.value for x in self))
-
-
-class BorderVisibility(NamedTuple):
-    """Defines if each border edge is visible."""
-
-    top: "bool"
-    right: "bool"
-    bottom: "bool"
-    left: "bool"
+    @classmethod
+    def from_value(cls, value: "LineStyle") -> "DiLineStyle":
+        """Construct an instance from a single value."""
+        return cls(top=value, right=value, bottom=value, left=value)

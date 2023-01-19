@@ -6,9 +6,10 @@ import importlib
 from textwrap import dedent
 
 from prompt_toolkit.formatted_text.base import to_formatted_text
+from prompt_toolkit.layout.dimension import Dimension
 from prompt_toolkit.shortcuts.utils import print_formatted_text
 
-from euporie.core.border import Ascii, AsciiThick, BorderLineStyle
+from euporie.core.border import AsciiLine, AsciiThickLine, DiLineStyle
 from euporie.core.commands import get_cmd
 from euporie.core.formatted_text.table import Table
 from euporie.core.formatted_text.utils import indent
@@ -29,14 +30,16 @@ groups = [
 
 sections = {}
 
+available_width = Dimension(max=9999)
+
 for group in groups:
     mod_name, cls_name = group.rsplit(".", maxsplit=1)
     mod = importlib.import_module(mod_name)
     cls = getattr(mod, cls_name)
     section_title = dedent(cls.__doc__).strip().split("\n")[0].rstrip(".")
 
-    table = Table(border=Ascii)
-    head = table.new_row(style="bold", border=BorderLineStyle(bottom=AsciiThick))
+    table = Table(border_line=AsciiLine)
+    head = table.new_row(style="bold", border_line=DiLineStyle(bottom=AsciiThickLine))
     head.new_cell("Keys")
     head.new_cell("Description")
     head.new_cell("Command")
@@ -60,7 +63,9 @@ for group in groups:
     sections[section_title] = table
 
 # Find maximum column widths across all tables
-table_col_widths = [table.calculate_col_widths(99999) for table in sections.values()]
+table_col_widths = [
+    table.calculate_col_widths(available_width) for table in sections.values()
+]
 col_widths = [
     max(w[i] for w in table_col_widths) for i in range(len(table_col_widths[0]))
 ]
@@ -81,5 +86,5 @@ for title, table in sections.items():
 
 """
     )
-    ft = table.render(width=999999)
+    ft = table.render(width=available_width)
     print_formatted_text(to_formatted_text(indent(ft, "   ")))

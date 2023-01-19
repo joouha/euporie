@@ -7,7 +7,6 @@ import logging
 from functools import partial
 from typing import TYPE_CHECKING, cast
 
-from prompt_toolkit.application.current import get_app as ptk_get_app
 from prompt_toolkit.filters import Condition
 from prompt_toolkit.layout.containers import (
     ConditionalContainer,
@@ -62,11 +61,6 @@ if TYPE_CHECKING:
     from euporie.core.widgets.cell import Cell
 
 log = logging.getLogger(__name__)
-
-
-def get_app() -> "NotebookApp":
-    """Get the current application."""
-    return cast("NotebookApp", ptk_get_app())
 
 
 class NotebookApp(BaseApp):
@@ -508,6 +502,8 @@ class NotebookApp(BaseApp):
     @add_cmd()
     def _new_notebook() -> "None":
         """Create a new file."""
+        from euporie.notebook.current import get_app
+
         app = get_app()
         app.tabs.append(Notebook(app, None))
         app.tabs[-1].focus()

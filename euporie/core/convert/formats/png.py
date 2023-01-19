@@ -75,6 +75,7 @@ def pil_to_png_py_pil(
     rows: "Optional[int]" = None,
     fg: "Optional[str]" = None,
     bg: "Optional[str]" = None,
+    path: "Optional[UPath]" = None,
 ) -> "bytes":
     """Convert a pillow image to sixels :py:mod:`teimpy`."""
     import io
@@ -96,6 +97,7 @@ def svg_to_png_py_cairosvg(
     height: "Optional[int]" = None,
     fg: "Optional[str]" = None,
     bg: "Optional[str]" = None,
+    path: "Optional[UPath]" = None,
 ) -> "str":
     """Convert SVG to PNG using :py:mod:`cairosvg`."""
     import cairosvg

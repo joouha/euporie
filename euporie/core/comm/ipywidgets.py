@@ -18,8 +18,8 @@ from prompt_toolkit.layout.containers import HSplit, VSplit
 from prompt_toolkit.layout.processors import BeforeInput
 from prompt_toolkit.widgets.base import Box
 
-from euporie.core.border import BorderVisibility
 from euporie.core.comm.base import Comm, CommView
+from euporie.core.data_structures import DiBool
 from euporie.core.kernel import MsgCallbacks
 from euporie.core.widgets.cell_outputs import CellOutputArea
 from euporie.core.widgets.decor import FocusedStyle
@@ -796,14 +796,14 @@ class NumberTextBoxIpyWidgetComm(TextBoxIpyWidgetComm, metaclass=ABCMeta):
                         text,
                         Button(
                             "-",
-                            show_borders=BorderVisibility(True, False, True, True),
+                            show_borders=DiBool(True, False, True, True),
                             on_click=self.decr,
                             disabled=disabled,
                             style="class:ipywidget",
                         ),
                         Button(
                             "+",
-                            show_borders=BorderVisibility(True, True, True, False),
+                            show_borders=DiBool(True, True, True, False),
                             on_click=self.incr,
                             disabled=disabled,
                             style="class:ipywidget",
@@ -1360,7 +1360,7 @@ class ColorPickerModel(TextBoxIpyWidgetComm):
             height=self.data["state"].get("rows") or self.default_rows,
             multiline=self.multiline,
             placeholder=self.data.get("state", {}).get("placeholder"),
-            show_borders=BorderVisibility(True, True, True, False),
+            show_borders=DiBool(True, True, True, False),
             input_processors=[BeforeInput(" ")],
             disabled=Condition(lambda: self.data["state"].get("disabled", False)),
             style="class:ipywidget",
@@ -1372,7 +1372,7 @@ class ColorPickerModel(TextBoxIpyWidgetComm):
                     [
                         Swatch(
                             self.format_color,
-                            show_borders=BorderVisibility(True, False, True, True),
+                            show_borders=DiBool(True, False, True, True),
                         ),
                         text,
                     ],

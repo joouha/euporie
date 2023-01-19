@@ -47,7 +47,8 @@ from prompt_toolkit.validation import Validator
 from prompt_toolkit.widgets.base import Box, TextArea
 
 from euporie.core.app import get_app
-from euporie.core.border import BorderVisibility, InnerEdgeGridStyle
+from euporie.core.border import InnerEigthGrid
+from euporie.core.data_structures import DiBool
 from euporie.core.formatted_text.utils import FormattedTextAlign, align
 from euporie.core.margins import ScrollbarMargin
 from euporie.core.widgets.decor import Border, Shadow
@@ -94,8 +95,8 @@ class Swatch:
         width: "int" = 2,
         height: "int" = 1,
         style: "str" = "class:swatch",
-        border: "GridStyle" = InnerEdgeGridStyle,
-        show_borders: "Optional[BorderVisibility]" = None,
+        border: "GridStyle" = InnerEigthGrid,
+        show_borders: "Optional[DiBool]" = None,
     ) -> "None":
         """Create a new instance of the color swatch.
 
@@ -142,8 +143,8 @@ class Button:
         disabled: "FilterOrBool" = False,
         width: "Optional[int]" = None,
         style: "Union[str, Callable[[], str]]" = "class:input",
-        border: "Optional[GridStyle]" = InnerEdgeGridStyle,
-        show_borders: "Optional[BorderVisibility]" = None,
+        border: "Optional[GridStyle]" = InnerEigthGrid,
+        show_borders: "Optional[DiBool]" = None,
         selected: "bool" = False,
         key_bindings: "Optional[KeyBindingsBase]" = None,
         mouse_handler: "Optional[Callable[[MouseEvent], NotImplementedOrNone]]" = None,
@@ -222,7 +223,7 @@ class Button:
         ft = [
             *to_formatted_text(self.text),
         ]
-        ft = align(FormattedTextAlign.CENTER, ft, self.width)
+        ft = align(ft, FormattedTextAlign.CENTER, self.width)
         ft = [(style, text, self.mouse_handler) for style, text, *_ in ft]
         ft = [("[SetMenuPosition]", ""), *ft]
         return ft
@@ -364,8 +365,8 @@ class ToggleButton(ToggleableWidget):
         on_click: "Optional[Callable[[ToggleButton], None]]" = None,
         width: "Optional[int]" = None,
         style: "Union[str, Callable[[], str]]" = "class:input",
-        border: "Optional[GridStyle]" = InnerEdgeGridStyle,
-        show_borders: "Optional[BorderVisibility]" = None,
+        border: "Optional[GridStyle]" = InnerEigthGrid,
+        show_borders: "Optional[DiBool]" = None,
         selected: "bool" = False,
         disabled: "FilterOrBool" = False,
         key_bindings: "Optional[KeyBindingsBase]" = None,
@@ -539,7 +540,7 @@ class Text:
         width: "Optional[int]" = None,
         completer: "Optional[Completer]" = None,
         options: "Optional[Union[list[str], Callable[[], list[str]]]]" = None,
-        show_borders: "Optional[BorderVisibility]" = None,
+        show_borders: "Optional[DiBool]" = None,
         on_text_changed: "Optional[Callable[[Buffer], None]]" = None,
         validation: "Optional[Callable[[str], bool]]" = None,
         accept_handler: "Optional[BufferAcceptHandler]" = None,
@@ -649,7 +650,7 @@ class Text:
             self.text_area.buffer.validate_while_typing = Always()
         self.container = Border(
             self.text_area,
-            border=InnerEdgeGridStyle,
+            border=InnerEigthGrid,
             style=self.border_style,
             show_borders=show_borders,
         )
@@ -712,7 +713,7 @@ class Label:
         if self.html():
             from euporie.core.formatted_text.html import HTML
 
-            return HTML(data, pad=False)
+            return HTML(data, collapse_root_margin=True, fill=False)
         return data
 
     def __pt_container__(self) -> "AnyContainer":
@@ -906,7 +907,7 @@ class Progress:
                     height=lambda: None if self.vertical() else 1,
                     width=lambda: 1 if self.vertical() else None,
                 ),
-                border=InnerEdgeGridStyle,
+                border=InnerEigthGrid,
                 style=self.add_style("class:progress,border"),
             ),
             # width=lambda: 1 if self.vertical() else None,
@@ -1204,8 +1205,8 @@ class Select(SelectableWidget):
         style: "Union[str, Callable[[], str]]" = "class:input,select",
         rows: "Optional[int]" = 3,
         prefix: "tuple[str, str]" = ("", ""),
-        border: "Optional[GridStyle]" = InnerEdgeGridStyle,
-        show_borders: "Optional[BorderVisibility]" = None,
+        border: "Optional[GridStyle]" = InnerEigthGrid,
+        show_borders: "Optional[DiBool]" = None,
         disabled: "FilterOrBool" = False,
         dont_extend_width: "FilterOrBool" = True,
         dont_extend_height: "FilterOrBool" = True,
@@ -1258,7 +1259,7 @@ class Select(SelectableWidget):
         max_width = max(fragment_list_width(to_formatted_text(x)) for x in self.labels)
         for i, label in enumerate(self.labels):
             label = to_formatted_text(label)
-            label = align(FormattedTextAlign.LEFT, label, width=max_width)
+            label = align(label, FormattedTextAlign.LEFT, width=max_width)
             if self.multiple():
                 cursor = "[SetCursorPosition]" if i == self.hovered else ""
             else:
@@ -1399,8 +1400,8 @@ class Dropdown(SelectableWidget):
         ]
         max_width = max(fragment_list_width(x) for x in labels)
         ft = align(
-            FormattedTextAlign.LEFT,
             to_formatted_text(labels[self.index or 0]),
+            FormattedTextAlign.LEFT,
             max_width,
         )
         ft += [("", " " if self.arrow else ""), ("class:arrow", self.arrow)]
@@ -1419,7 +1420,7 @@ class Dropdown(SelectableWidget):
         max_width = max(fragment_list_width(x) for x in labels)
         for i, label in enumerate(labels):
             # Pad each option
-            formatted_label = align(FormattedTextAlign.LEFT, label, width=max_width + 2)
+            formatted_label = align(label, FormattedTextAlign.LEFT, width=max_width + 2)
             item_style = "class:hovered" if i == self.hovered else ""
             handler = partial(self.mouse_handler, i)
             ft.extend(
@@ -1513,7 +1514,7 @@ class ToggleButtons(SelectableWidget):
         max_count: "int|None" = None,
         on_change: "Optional[Callable[[SelectableWidget], None]]" = None,
         style: "Union[str, Callable[[], str]]" = "class:input",
-        border: "GridStyle|None" = InnerEdgeGridStyle,
+        border: "GridStyle|None" = InnerEigthGrid,
         disabled: "FilterOrBool" = False,
         vertical: "FilterOrBool" = False,
     ) -> "None":
@@ -1553,13 +1554,13 @@ class ToggleButtons(SelectableWidget):
         """Load the widget's container."""
         if self.vertical():
             show_borders_values = [
-                BorderVisibility(False, True, False, True) for _ in self.options
+                DiBool(False, True, False, True) for _ in self.options
             ]
             show_borders_values[0] = show_borders_values[0]._replace(top=True)
             show_borders_values[-1] = show_borders_values[-1]._replace(bottom=True)
         else:
             show_borders_values = [
-                BorderVisibility(True, False, True, False) for _ in self.options
+                DiBool(True, False, True, False) for _ in self.options
             ]
             show_borders_values[0] = show_borders_values[0]._replace(left=True)
             show_borders_values[-1] = show_borders_values[-1]._replace(right=True)
@@ -2060,8 +2061,8 @@ class Slider(SelectableWidget):
         max_count: "int|None" = None,
         on_change: "Optional[Callable[[SelectableWidget], None]]" = None,
         style: "Union[str, Callable[[], str]]" = "class:input",
-        border: "GridStyle" = InnerEdgeGridStyle,
-        show_borders: "Optional[BorderVisibility]" = None,
+        border: "GridStyle" = InnerEigthGrid,
+        show_borders: "Optional[DiBool]" = None,
         vertical: "FilterOrBool" = False,
         show_arrows: "FilterOrBool" = True,
         arrows: "tuple[AnyFormattedText, AnyFormattedText]" = ("-", "+"),

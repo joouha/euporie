@@ -24,7 +24,7 @@ from prompt_toolkit.layout.mouse_handlers import MouseHandlers
 from prompt_toolkit.layout.screen import Char, Screen, WritePosition
 from prompt_toolkit.mouse_events import MouseEvent, MouseEventType, MouseModifier
 
-from euporie.core.data_structures import BoxSize
+from euporie.core.data_structures import DiInt
 
 if TYPE_CHECKING:
     from typing import Callable, Optional, Sequence, Union
@@ -50,7 +50,7 @@ class BoundedWritePosition(WritePosition):
         ypos: "int",
         width: "int",
         height: "int",
-        bbox: "BoxSize",
+        bbox: "DiInt",
     ) -> "None":
         """Create a new instance of the write position."""
         super().__init__(xpos, ypos, width, height)
@@ -159,7 +159,7 @@ class ChildRenderInfo:
                 ypos=wp.ypos + top,
                 width=wp.width,
                 height=wp.height,
-                bbox=BoxSize(
+                bbox=DiInt(
                     top=max(0, rows.start - wp.ypos),
                     right=max(0, wp.width - cols.stop),
                     bottom=max(0, wp.height - (rows.stop - wp.ypos)),

@@ -24,7 +24,7 @@ from prompt_toolkit.lexers import DynamicLexer, PygmentsLexer, SimpleLexer
 from pygments.lexers import get_lexer_by_name
 
 from euporie.core.app import get_app
-from euporie.core.border import Invisible, Thick, Thin
+from euporie.core.border import NoLine, ThickLine, ThinLine
 from euporie.core.config import add_setting
 from euporie.core.filters import multiple_cells_selected
 from euporie.core.format import format_code
@@ -167,12 +167,12 @@ class Cell:
             """Returns a function which returns the cell border character to display."""
 
             def _inner() -> "str":
-                grid = Invisible.grid
+                grid = NoLine.grid
                 if get_app().config.show_cell_borders or weak_self.selected:
                     if weak_self.focused and multiple_cells_selected():
-                        grid = Thick.outer
+                        grid = ThickLine.outer
                     else:
-                        grid = Thin.outer
+                        grid = ThinLine.outer
                 return getattr(grid, name.upper())
 
             return _inner
@@ -830,7 +830,7 @@ class Cell:
 
             This is useful if you run euporie inside a tmux session, and wish to launch
             your editor in a pop-up pane. This can be achieved by setting this parameter
-            to something like the following:
+            to someThinLineg like the following:
 
             .. code-block::
 

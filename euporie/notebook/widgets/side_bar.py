@@ -14,7 +14,6 @@ from prompt_toolkit.layout.containers import (
 )
 from prompt_toolkit.layout.controls import FormattedTextControl
 
-from euporie.core.app import get_app
 from euporie.core.commands import add_cmd
 from euporie.core.config import add_setting
 from euporie.core.key_binding.registry import register_bindings
@@ -84,6 +83,8 @@ class SideBar:
         panels: "Sequence[AnyContainer]",
     ) -> "None":
         """Initialize a new side-bar object."""
+        from euporie.core.current import get_app
+
         self.side_bar_buttons = SideBarButtons(
             options=list(icons),
             style="class:buttons",
@@ -192,7 +193,7 @@ class SideBar:
     @add_cmd()
     def _toggle_side_bar_pane() -> "None":
         """Open or close the current side-bar pane."""
-        from euporie.notebook.app import get_app
+        from euporie.notebook.current import get_app
 
         get_app().side_bar.toggle_pane()
 

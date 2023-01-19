@@ -31,7 +31,7 @@ from prompt_toolkit.layout.screen import WritePosition
 from prompt_toolkit.mouse_events import MouseButton, MouseEventType
 from prompt_toolkit.widgets.base import Box, Label
 
-from euporie.core.border import HalfBlockOuterGridStyle
+from euporie.core.border import OuterHalfGrid
 from euporie.core.commands import add_cmd
 from euporie.core.filters import tab_has_focus
 from euporie.core.formatted_text.utils import FormattedTextAlign, align, lex
@@ -80,7 +80,7 @@ class DialogTitleControl(UIControl):
             lines = list(
                 split_lines(
                     align(
-                        FormattedTextAlign.CENTER, to_formatted_text(self.title), width
+                        to_formatted_text(self.title), FormattedTextAlign.CENTER, width
                     )
                 )
             )
@@ -228,7 +228,7 @@ class Dialog(Float, metaclass=ABCMeta):
                         key_bindings=self.kb,
                         modal=True,
                     ),
-                    border=HalfBlockOuterGridStyle,
+                    border=OuterHalfGrid,
                     style="class:dialog,border",
                 ),
             ),
@@ -430,9 +430,9 @@ class FileDialog(Dialog, metaclass=ABCMeta):
     def load(
         self,
         text: "str" = "",
-        tab: "Optional[Tab]" = None,
+        tab: "Tab|None" = None,
         error: "str" = "",
-        cb: "Optional[Callable]" = None,
+        cb: "Callable|None" = None,
     ) -> "None":
         """Load the dialog body."""
         self.filepath.text = text
@@ -448,7 +448,7 @@ class FileDialog(Dialog, metaclass=ABCMeta):
         self.to_focus = self.filepath
 
     def validate(
-        self, buffer: "Buffer", tab: "Tab", cb: "Optional[Callable]" = None
+        self, buffer: "Buffer", tab: "Tab|None", cb: "Optional[Callable]" = None
     ) -> "None":
         """Validate the input."""
         self.hide()
@@ -460,7 +460,7 @@ class OpenFileDialog(FileDialog):
     title = "Select a File to Open"
 
     def validate(
-        self, buffer: "Buffer", tab: "Tab", cb: "Optional[Callable]" = None
+        self, buffer: "Buffer", tab: "Tab|None", cb: "Callable|None" = None
     ) -> "None":
         """Validate the the file to open exists."""
         from euporie.core.utils import parse_path
@@ -505,7 +505,7 @@ class SaveAsDialog(FileDialog):
     title = "Select a Path to Save"
 
     def validate(
-        self, buffer: "Buffer", tab: "Tab", cb: "Optional[Callable]" = None
+        self, buffer: "Buffer", tab: "Tab|None", cb: "Callable|None" = None
     ) -> "None":
         """Validate the the file to open exists."""
         from euporie.core.utils import parse_path
@@ -790,14 +790,15 @@ class ShortcutsDialog(Dialog):
 
         from prompt_toolkit.formatted_text.base import to_formatted_text
 
-        from euporie.core.border import Invisible, Padding
+        from euporie.core.border import InvisibleLine
         from euporie.core.commands import get_cmd
+        from euporie.core.data_structures import DiInt
         from euporie.core.formatted_text.table import Table
         from euporie.core.formatted_text.utils import FormattedTextAlign
         from euporie.core.key_binding.registry import BINDINGS
         from euporie.core.key_binding.utils import format_keys, parse_keys
 
-        table = Table(padding=0, border=Invisible, border_collapse=True)
+        table = Table(padding=0, border_line=InvisibleLine, collapse_empty_borders=True)
 
         for group, bindings in BINDINGS.items():
             log.info(group)
@@ -830,7 +831,7 @@ class ShortcutsDialog(Dialog):
                             style="class:key",
                         )
                         row.new_cell(cmd.title)
-        table.padding = Padding(0, 1, 0, 1)
+        table.padding = DiInt(0, 1, 0, 1)
 
         return to_formatted_text(table)
 

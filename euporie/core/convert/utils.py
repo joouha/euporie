@@ -188,7 +188,11 @@ def pixels_to_cell_size(
     """
     cols, aspect = 0, 0.0
     if px is not None and py is not None:
-        cell_px, cell_py = get_app().term_info.cell_size_px
+        app = get_app()
+        if hasattr(app, "term_info"):
+            cell_px, cell_py = get_app().term_info.cell_size_px
+        else:
+            cell_px, cell_py = 10, 20
         cols = max(1, int(px // cell_px))
         aspect = (py / cell_py) / (px / cell_px)
     return cols, aspect
