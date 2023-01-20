@@ -222,20 +222,20 @@ class Cell:
     def computed_border_line(self) -> "DiLineStyle":
         """The cell's border line."""
         output = {}
-        table_border_line = self.row.table.border_line
+        cell_border_line = self.border_line
         row_border_line = self.row.border_line
         col_border_line = self.col.border_line
-        cell_border_line = self.border_line
+        table_border_line = self.row.table.border_line
         for direction in ("top", "right", "bottom", "left"):
-            value = getattr(cell_border_line, direction, NoLine)
-            if value is NoLine:
-                getattr(row_border_line, direction, NoLine)
-            if value is NoLine:
-                value = getattr(row_border_line, direction, NoLine)
-            if value is NoLine:
-                value = getattr(col_border_line, direction, NoLine)
-            if value is NoLine:
-                value = getattr(table_border_line, direction, NoLine)
+            for source in (
+                cell_border_line,
+                row_border_line,
+                col_border_line,
+                table_border_line,
+            ):
+                value = getattr(source, direction, NoLine)
+                if value is not NoLine:
+                    break
             output[direction] = value
         return DiLineStyle(**output)
 
