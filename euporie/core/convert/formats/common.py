@@ -47,7 +47,7 @@ def imagemagick_convert(
     bg = bg or get_app().color_palette.bg.base_hex
     if bg is not None:
         cmd += ["-background", bg]
-    cmd += ["-", f"{output_format}:-"]
+    cmd += ["-[0]", f"{output_format}:-"]
     result: "Union[bytes, str]" = call_subproc(data, cmd)
     if output_format in {"sixel", "svg"} and isinstance(result, bytes):
         result = result.decode()
