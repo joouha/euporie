@@ -39,7 +39,7 @@ from euporie.core.convert.base import convert, get_format
 from euporie.core.convert.utils import data_pixel_size, pixels_to_cell_size
 from euporie.core.current import get_app
 from euporie.core.data_structures import DiBool, DiInt, DiStr
-from euporie.core.formatted_text.table import Table
+from euporie.core.formatted_text.table import Table, compute_padding
 from euporie.core.formatted_text.utils import (
     FormattedTextAlign,
     add_border,
@@ -48,7 +48,6 @@ from euporie.core.formatted_text.utils import (
     apply_style,
     concat,
     fragment_list_width,
-    indent,
     join_lines,
     last_line_length,
     lex,
@@ -98,6 +97,14 @@ class CssSelector(NamedTuple):
     item: str | None = None
     attr: str | None = None
     pseudo: str | None = None
+
+    def __repr__(self) -> "str":
+        """A string representation of the selector."""
+        defaults = self._field_defaults
+        attrs = ", ".join(
+            f"{k}={v!r}" for k, v in self._asdict().items() if v != defaults[k]
+        )
+        return f"{self.__class__.__name__}({attrs})"
 
 
 # List of elements which might not have a close tag
@@ -202,7 +209,7 @@ _HERITABLE_PROPS = {
     "list_style_position",
 }
 
-
+"""
 CSS_PROPERTIES = {
     "display": {"inline", "block", "inline-block", "list-item", "table", "none"},
     "visibility": {"visible", "hidden", "collapse"},
@@ -285,6 +292,7 @@ CSS_PROPERTIES = {
     },
     "list_style_position": {"inside", "outside"},
 }
+"""
 
 
 @lru_cache(maxsize=1_000_000)
@@ -298,9 +306,8 @@ def match_css_selector(
     **element_attrs: "Any",
 ) -> "bool":
     """Determine if a CSS selector matches a particular element."""
-    matched = True
-
     # Check for pseudo classes
+    matched = True
     while pseudo and matched:
         if pseudo.startswith(":first-child"):
             matched = is_first_child_element
@@ -314,8 +321,10 @@ def match_css_selector(
             matched = is_first_child_element and is_last_child_element
             pseudo = pseudo[11:]
             continue
-        else:
-            return False
+        return False
+
+    if not matched:
+        return False
 
     while selector and matched:
 
@@ -352,12 +361,9 @@ def match_css_selector(
             else:
                 return False
 
-        if not matched:
-            return False
-
     # Attribute selectors
     # TODO - chained attribute selectors
-    if matched and attrs:
+    if attrs and matched:
         test = attrs[1 : attrs.index("]")]
         if (op := "*=") in test:
             attr, _, value = test.partition(op)
@@ -385,8 +391,6 @@ def match_css_selector(
             matched = element_attrs.get(attr) == value
         else:
             matched = test in element_attrs
-        if not matched:
-            return False
         selector = selector[2 + len(test) :]
 
     return matched
@@ -417,14 +421,9 @@ def get_integer(value: "str") -> "int|None":
     return None
 
 
-_NAMED_COLORS: "dict[str, str]|None" = None
-_KNOWN_COLORS: "list[str]|None" = None
-
-
+@lru_cache
 def get_color(value: "str") -> "str":
     """Extract a hex color from a string."""
-    global _NAMED_COLORS
-    global _KNOWN_COLORS
     if match := re.search(_COLOR_RE, value):
         hexes = match.group(1)
         if len(hexes) == 3:
@@ -837,64 +836,73 @@ class Theme(Mapping):
         # cellpadding # TODO
         return theme
 
-    def _css_theme(self, css: "dict[str, dict[str, str]]") -> "dict[str, str]":
+    def _css_theme(
+        self, css: "dict[tuple[tuple[CssSelector, ...], ...], dict[str, str]]"
+    ) -> "dict[str, str]":
         """Calculate the theme defined in CSS."""
         specificity_rules = []
         element = self.element
-        for selector_parts, rule in css.items():
+        for selectors, rule in css.items():
+            for selector_parts in selectors:
 
-            # Last selector item should match the current element
-            selector = selector_parts[-1]
-            if not match_css_selector(
-                selector.item or "",
-                selector.attr or "",
-                selector.pseudo or "",
-                element.name,
-                element.is_first_child_element,
-                element.is_last_child_element,
-                **element.attrs,
-            ):
-                continue
+                # Last selector item should match the current element
+                selector = selector_parts[-1]
+                if not match_css_selector(
+                    selector.item or "",
+                    selector.attr or "",
+                    selector.pseudo or "",
+                    element.name,
+                    element.is_first_child_element,
+                    element.is_last_child_element,
+                    **element.attrs,
+                ):
+                    continue
 
-            # All of the parent selectors should match a separate parent in order
-            # TODO - combinators
-            # https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Selectors#combinators
-            unmatched_parents: "list[Node]" = [x for x in element.parents[::-1] if x]
+                # All of the parent selectors should match a separate parent in order
+                # TODO - combinators
+                # https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Selectors#combinators
+                unmatched_parents: "list[Node]" = [
+                    x for x in element.parents[::-1] if x
+                ]
 
-            _unmatched_parents: "list[Node]"
-            if selector.comb == ">" and (parent := element.parent):
-                _unmatched_parents = [parent]
-            else:
-                _unmatched_parents = unmatched_parents
-
-            # TODO investigate caching element / selector chains so we don't have to
-            # iterate through every parent every time
-
-            # Iterate through selector items in reverse, skipping the last
-            for selector in selector_parts[-2::-1]:
-
-                for i, parent in enumerate(_unmatched_parents):
-                    if parent and match_css_selector(
-                        selector.item or "",
-                        selector.attr or "",
-                        selector.pseudo or "",
-                        parent.name,
-                        parent.is_first_child_element,
-                        parent.is_last_child_element,
-                        **parent.attrs,
-                    ):
-                        if selector.comb == ">" and (parent := parent.parent):
-                            _unmatched_parents = [parent]
-                        else:
-                            _unmatched_parents = unmatched_parents[i + 1 :]
-                        break
+                _unmatched_parents: "list[Node]"
+                if selector.comb == ">" and (parent := element.parent):
+                    _unmatched_parents = [parent]
                 else:
-                    break
+                    _unmatched_parents = unmatched_parents
 
-            else:
-                # Calculate selector specificity score
-                score = selector_specificity(selector_parts)
-                specificity_rules.append((score, rule))
+                # TODO investigate caching element / selector chains so we don't have to
+                # iterate through every parent every time
+
+                # Iterate through selector items in reverse, skipping the last
+                for selector in selector_parts[-2::-1]:
+
+                    for i, parent in enumerate(_unmatched_parents):
+                        if parent and match_css_selector(
+                            selector.item or "",
+                            selector.attr or "",
+                            selector.pseudo or "",
+                            parent.name,
+                            parent.is_first_child_element,
+                            parent.is_last_child_element,
+                            **parent.attrs,
+                        ):
+                            if selector.comb == ">" and (parent := parent.parent):
+                                _unmatched_parents = [parent]
+                            else:
+                                _unmatched_parents = unmatched_parents[i + 1 :]
+                            break
+                    else:
+                        break
+
+                else:
+                    # Calculate selector specificity score
+                    specificity_rules.append(
+                        (selector_specificity(selector_parts), rule)
+                    )
+                    # We have already matched this rule, we don't need to keep checking
+                    # the rest of the selectors for this rule
+                    break
 
         return {
             k: v
@@ -1117,9 +1125,11 @@ class Theme(Mapping):
     @cached_property
     def border_style(self) -> "DiStr":
         """Calculate the visibility of the element's borders."""
-        parent_theme = self.parent_theme
-        fg = parent_theme.color
-        bg = parent_theme.background_color if parent_theme else "default"
+        if parent_theme := self.parent_theme:
+            fg = parent_theme.color
+            bg = parent_theme.background_color
+        else:
+            fg = bg = "default"
 
         output = {}
         for direction in ("top", "left", "bottom", "right"):
@@ -1358,110 +1368,122 @@ class Theme(Mapping):
 
 
 _BROWSER_CSS = {
-    (CssSelector(item="text"),): {"display": "inline"},
-    (CssSelector(item="head"),): {"display": "none"},
-    (CssSelector(item="base"),): {"display": "none"},
-    (CssSelector(item="command"),): {"display": "none"},
-    (CssSelector(item="link"),): {"display": "none"},
-    (CssSelector(item="meta"),): {"display": "none"},
-    (CssSelector(item="noscript"),): {"display": "none"},
-    (CssSelector(item="script"),): {"display": "none"},
-    (CssSelector(item="style"),): {"display": "none"},
-    (CssSelector(item="title"),): {"display": "none"},
-    (CssSelector(item="a"),): {
+    (
+        (CssSelector(item="text"),),
+        (CssSelector(item="abbr"),),
+        (CssSelector(item="acronym"),),
+        (CssSelector(item="audio"),),
+        (CssSelector(item="bdi"),),
+        (CssSelector(item="bdo"),),
+        (CssSelector(item="big"),),
+        (CssSelector(item="br"),),
+        (CssSelector(item="canvas"),),
+        (CssSelector(item="data"),),
+        (CssSelector(item="datalist"),),
+        (CssSelector(item="embed"),),
+        (CssSelector(item="iframe"),),
+        (CssSelector(item="label"),),
+        (CssSelector(item="map"),),
+        (CssSelector(item="meter"),),
+        (CssSelector(item="object"),),
+        (CssSelector(item="output"),),
+        (CssSelector(item="picture"),),
+        (CssSelector(item="progress"),),
+        (CssSelector(item="q"),),
+        (CssSelector(item="ruby"),),
+        (CssSelector(item="select"),),
+        (CssSelector(item="slot"),),
+        (CssSelector(item="small"),),
+        (CssSelector(item="span"),),
+        (CssSelector(item="svg"),),
+        (CssSelector(item="template"),),
+        (CssSelector(item="textarea"),),
+        (CssSelector(item="time"),),
+        (CssSelector(item="tt"),),
+        (CssSelector(item="video"),),
+        (CssSelector(item="wbr"),),
+    ): {"display": "inline"},
+    (
+        (CssSelector(item="head"),),
+        (CssSelector(item="base"),),
+        (CssSelector(item="command"),),
+        (CssSelector(item="link"),),
+        (CssSelector(item="meta"),),
+        (CssSelector(item="noscript"),),
+        (CssSelector(item="script"),),
+        (CssSelector(item="style"),),
+        (CssSelector(item="title"),),
+        (CssSelector(item="option"),),
+        (CssSelector(item="input", attr="[type=hidden]"),),
+    ): {"display": "none"},
+    ((CssSelector(item="a"),),): {
         "display": "inline",
         "text_decoration": "underline",
         "color": "ansibrightblue",
     },
-    (CssSelector(item="abbr"),): {"display": "inline"},
-    (CssSelector(item="acronym"),): {"display": "inline"},
-    (CssSelector(item="audio"),): {"display": "inline"},
-    (CssSelector(item="b"),): {"display": "inline", "font_weight": "bold"},
-    (CssSelector(item="bdi"),): {"display": "inline"},
-    (CssSelector(item="bdo"),): {"display": "inline"},
-    (CssSelector(item="big"),): {"display": "inline"},
-    (CssSelector(item="br"),): {"display": "inline"},
-    (CssSelector(item="canvas"),): {"display": "inline"},
-    (CssSelector(item="cite"),): {"display": "inline", "font_style": "italic"},
-    (CssSelector(item="code"),): {
+    ((CssSelector(item="b"),), (CssSelector(item="strong"),)): {
+        "display": "inline",
+        "font_weight": "bold",
+    },
+    (
+        (CssSelector(item="cite"),),
+        (CssSelector(item="dfn"),),
+        (CssSelector(item="em"),),
+        (CssSelector(item="i"),),
+        (CssSelector(item="var"),),
+    ): {"display": "inline", "font_style": "italic"},
+    ((CssSelector(item="code"),),): {
         "display": "inline",
         "background_color": "#333333",
         "color": "#FFFFFF",
     },
-    (CssSelector(item="data"),): {"display": "inline"},
-    (CssSelector(item="datalist"),): {"display": "inline"},
-    (CssSelector(item="del"),): {
+    ((CssSelector(item="del"),), (CssSelector(item="s"),)): {
         "display": "inline",
         "text_decoration": "line-through",
     },
-    (CssSelector(item="dfn"),): {"display": "inline", "font_style": "italic"},
-    (CssSelector(item="em"),): {"display": "inline", "font_style": "italic"},
-    (CssSelector(item="embed"),): {"display": "inline"},
-    (CssSelector(item="i"),): {"display": "inline", "font_style": "italic"},
-    (CssSelector(item="iframe"),): {"display": "inline"},
-    (CssSelector(item="img"),): {
+    ((CssSelector(item="img"),),): {
         "display": "inline-block",
         "overflow_x": "hidden",
         "overflow_y": "hidden",
     },
-    (CssSelector(item="ins"),): {"display": "inline", "text_decoration": "underline"},
-    (CssSelector(item="kbd"),): {
+    ((CssSelector(item="ins"),), (CssSelector(item="u"),)): {
+        "display": "inline",
+        "text_decoration": "underline",
+    },
+    ((CssSelector(item="kbd"),),): {
         "display": "inline",
         "background_color": "#333344",
         "color": "#FFFFFF",
     },
-    (CssSelector(item="label"),): {"display": "inline"},
-    (CssSelector(item="map"),): {"display": "inline"},
-    (CssSelector(item="mark"),): {
+    ((CssSelector(item="mark"),),): {
         "display": "inline",
         "color": "black",
         "background_color": "#FFFF00",
     },
-    (CssSelector(item="meter"),): {"display": "inline"},
-    (CssSelector(item="object"),): {"display": "inline"},
-    (CssSelector(item="output"),): {"display": "inline"},
-    (CssSelector(item="picture"),): {"display": "inline"},
-    (CssSelector(item="progress"),): {"display": "inline"},
-    (CssSelector(item="q"),): {"display": "inline"},
-    (CssSelector(item="ruby"),): {"display": "inline"},
-    (CssSelector(item="s"),): {"display": "inline", "text_decoration": "line-through"},
-    (CssSelector(item="samp"),): {
+    ((CssSelector(item="samp"),),): {
         "display": "inline",
         "background_color": "#334433",
         "color": "#FFFFFF",
     },
-    (CssSelector(item="select"),): {"display": "inline"},
-    (CssSelector(item="slot"),): {"display": "inline"},
-    (CssSelector(item="small"),): {"display": "inline"},
-    (CssSelector(item="span"),): {"display": "inline"},
-    (CssSelector(item="strong"),): {"display": "inline", "font_weight": "bold"},
-    (CssSelector(item="sub"),): {"display": "inline", "vertical_align": "sub"},
-    (CssSelector(item="sup"),): {"display": "inline", "vertical_align": "super"},
-    (CssSelector(item="svg"),): {"display": "inline"},
-    (CssSelector(item="template"),): {"display": "inline"},
-    (CssSelector(item="textarea"),): {"display": "inline"},
-    (CssSelector(item="time"),): {"display": "inline"},
-    (CssSelector(item="u"),): {"display": "inline", "text_decoration": "underline"},
-    (CssSelector(item="tt"),): {"display": "inline"},
-    (CssSelector(item="var"),): {"display": "inline", "font_style": "italic"},
-    (CssSelector(item="video"),): {"display": "inline"},
-    (CssSelector(item="wbr"),): {"display": "inline"},
-    (CssSelector(item="math"),): {
+    ((CssSelector(item="sub"),),): {"display": "inline", "vertical_align": "sub"},
+    ((CssSelector(item="sup"),),): {"display": "inline", "vertical_align": "super"},
+    ((CssSelector(item="math"),),): {
         "display": "inline",
         "text_align": "center",
         "margin_top": "1rem",
         "margin_bottom": "1rem",
     },
-    (CssSelector(item="center"),): {"text_align": "center"},
-    (CssSelector(item="table"),): {"display": "table"},
-    (CssSelector(item="td"),): {"display": "table-cell"},
-    (CssSelector(item="th"),): {
+    ((CssSelector(item="center"),), (CssSelector(item="caption"),)): {
+        "text_align": "center"
+    },
+    ((CssSelector(item="table"),),): {"display": "table"},
+    ((CssSelector(item="td"),),): {"display": "table-cell"},
+    ((CssSelector(item="th"),),): {
         "display": "table-cell",
         "font_weight": "bold",
         "text_align": "center",
     },
-    (CssSelector(item="option"),): {"display": "none"},
-    (CssSelector(item="input"),): {
+    ((CssSelector(item="input"),),): {
         "display": "inline-block",
         "color": "#000000",
         "border_top_style": ":lower-left",
@@ -1474,36 +1496,25 @@ _BROWSER_CSS = {
         "border_left_width": "2px",
         "vertical_align": "middle",
     },
-    (CssSelector(item="input", attr="[type=hidden]"),): {"display": "none"},
-    (CssSelector(item="input", attr="[type=text]"),): {
+    ((CssSelector(item="input", attr="[type=text]"),),): {
         "background_color": "#FFFFFF",
         "border_top_color": "#606060",
         "border_right_color": "#E9E7E3",
         "border_bottom_color": "#E9E7E3",
         "border_left_color": "#606060",
     },
-    (CssSelector(item="input", attr="[type=button]"),): {
+    (
+        (CssSelector(item="input", attr="[type=button]"),),
+        (CssSelector(item="input", attr="[type=submit]"),),
+        (CssSelector(item="input", attr="[type=reset]"),),
+    ): {
         "background_color": "#d4d0c8",
         "border_right": "#606060",
         "border_bottom": "#606060",
         "border_left": "#ffffff",
         "border_top": "#ffffff",
     },
-    (CssSelector(item="input", attr="[type=submit]"),): {
-        "background_color": "#d4d0c8",
-        "border_right": "#606060",
-        "border_bottom": "#606060",
-        "border_left": "#ffffff",
-        "border_top": "#ffffff",
-    },
-    (CssSelector(item="input", attr="[type=reset]"),): {
-        "background_color": "#d4d0c8",
-        "border_right": "#606060",
-        "border_bottom": "#606060",
-        "border_left": "#ffffff",
-        "border_top": "#ffffff",
-    },
-    (CssSelector(item="button"),): {
+    ((CssSelector(item="button"),),): {
         "display": "inline-block",
         "color": "#000000",
         "border_top_style": ":lower-left",
@@ -1520,9 +1531,8 @@ _BROWSER_CSS = {
         "border_left": "#ffffff",
         "border_top": "#ffffff",
     },
-    (CssSelector(item="body"),): {"display": "block"},
-    (CssSelector(item="h1"),): {
-        "display": "block",
+    ((CssSelector(item=".block"),),): {"display": "block"},
+    ((CssSelector(item="h1"),),): {
         "font_weight": "bold",
         "border_bottom_style": "solid",
         "text_decoration": "underline",
@@ -1531,8 +1541,7 @@ _BROWSER_CSS = {
         "margin_top": "2rem",
         "margin_bottom": "2em",
     },
-    (CssSelector(item="h2"),): {
-        "display": "block",
+    ((CssSelector(item="h2"),),): {
         "font_weight": "bold",
         "border_bottom_style": "double",
         "border_bottom_width": "thick",
@@ -1540,8 +1549,7 @@ _BROWSER_CSS = {
         "margin_top": "1.5rem",
         "margin_bottom": "1.5rem",
     },
-    (CssSelector(item="h3"),): {
-        "display": "block",
+    ((CssSelector(item="h3"),),): {
         "font_weight": "bold",
         "font_style": "italic",
         "border_bottom_style": ":lower-left",
@@ -1550,8 +1558,7 @@ _BROWSER_CSS = {
         "padding_bottom": "1rem",
         "margin_bottom": "1.5rem",
     },
-    (CssSelector(item="h4"),): {
-        "display": "block",
+    ((CssSelector(item="h4"),),): {
         "text_decoration": "underline",
         "border_bottom_style": "solid",
         "border_bottom_width": "thin",
@@ -1559,21 +1566,18 @@ _BROWSER_CSS = {
         "padding_bottom": "1rem",
         "margin_bottom": "1.5rem",
     },
-    (CssSelector(item="h5"),): {
-        "display": "block",
+    ((CssSelector(item="h5"),),): {
         "border_bottom_style": "dashed",
         "border_bottom_width": "thin",
         "margin_bottom": "1.5rem",
     },
-    (CssSelector(item="h6"),): {
-        "display": "block",
+    ((CssSelector(item="h6"),),): {
         "font_style": "italic",
         "border_bottom_style": "dotted",
         "border_bottom_width": "thin",
         "margin_bottom": "1.5rem",
     },
-    (CssSelector(item="blockquote"),): {
-        "display": "block",
+    ((CssSelector(item="blockquote"),),): {
         "margin_top": "1em",
         "margin_bottom": "1em",
         "padding_left": "1em",
@@ -1581,431 +1585,343 @@ _BROWSER_CSS = {
         "border_left_style": "solid",
         "border_left_color": "darkmagenta",
     },
-    (CssSelector(item="hr"),): {
+    ((CssSelector(item="hr"),),): {
         "margin_top": "1rem",
         "margin_bottom": "1rem",
         "border_top_width": "thin",
         "border_top_style": "solid",
         "border_top_color": "ansired",
     },
-    (CssSelector(item="p"),): {"margin_top": "1em", "margin_bottom": "1em"},
-    (CssSelector(item="pre"),): {
+    ((CssSelector(item="p"),),): {"margin_top": "1em", "margin_bottom": "1em"},
+    ((CssSelector(item="pre"),),): {
         "margin_top": "1em",
         "margin_bottom": "1em",
         "white_space": "pre",
     },
-    (CssSelector(item="caption"),): {"text_align": "center"},
-    (CssSelector(item="::marker"),): {
+    ((CssSelector(item="::marker"),),): {
         "display": "inline",
         "padding_right": "1em",
         "text_align": "right",
     },
-    (CssSelector(item="ol"),): {
-        "display": "block",
+    ((CssSelector(item="ol"),),): {
         "list_style_type": "decimal",
         "list_style_position": "outside",
         "padding_left": "4em",
         "margin_top": "1em",
         "margin_bottom": "1em",
     },
-    (CssSelector(item="ul"),): {
-        "display": "block",
-        "list_style_type": "disc",
-        "list_style_position": "outside",
-        "padding_left": "3em",
-        "margin_top": "1em",
-        "margin_bottom": "1em",
-    },
-    (CssSelector(item="menu"),): {
-        "display": "block",
-        "list_style_type": "disc",
-        "list_style_position": "outside",
-        "padding_left": "3em",
-        "margin_top": "1em",
-        "margin_bottom": "1em",
-    },
-    (CssSelector(item="dir"),): {
-        "display": "block",
-        "list_style_type": "disc",
-        "list_style_position": "outside",
-        "padding_left": "3em",
-        "margin_top": "1em",
-        "margin_bottom": "1em",
-    },
-    (CssSelector(item="li"),): {"display": "block"},
     (
-        CssSelector(item="ol"),
-        CssSelector(comb=" ", item="li"),
-        CssSelector(comb="", item="::marker"),
+        (CssSelector(item="ul"),),
+        (CssSelector(item="menu"),),
+        (CssSelector(item="dir"),),
+    ): {
+        "list_style_type": "disc",
+        "list_style_position": "outside",
+        "padding_left": "3em",
+        "margin_top": "1em",
+        "margin_bottom": "1em",
+    },
+    (
+        (
+            CssSelector(item="ol"),
+            CssSelector(comb=" ", item="li"),
+            CssSelector(comb="", item="::marker"),
+        ),
     ): {"color": "ansicyan"},
     (
-        CssSelector(item="ul"),
-        CssSelector(comb=" ", item="li"),
-        CssSelector(comb="", item="::marker"),
+        (
+            CssSelector(item="ul"),
+            CssSelector(comb=" ", item="li"),
+            CssSelector(comb="", item="::marker"),
+        ),
     ): {"color": "ansiyellow"},
-    (CssSelector(item="dir"), CssSelector(comb=" ", item="dir")): {
-        "margin_top": "0em",
-        "margin_bottom": "0em",
-        "list_style_type": "circle",
-    },
-    (CssSelector(item="dir"), CssSelector(comb=" ", item="dl")): {
-        "margin_top": "0em",
-        "margin_bottom": "0em",
-    },
-    (CssSelector(item="dir"), CssSelector(comb=" ", item="ol")): {
-        "margin_top": "0em",
-        "margin_bottom": "0em",
-    },
-    (CssSelector(item="dir"), CssSelector(comb=" ", item="menu")): {
-        "margin_top": "0em",
-        "margin_bottom": "0em",
-        "list_style_type": "circle",
-    },
-    (CssSelector(item="dir"), CssSelector(comb=" ", item="ul")): {
-        "margin_top": "0em",
-        "margin_bottom": "0em",
-        "list_style_type": "circle",
-    },
-    (CssSelector(item="dl"), CssSelector(comb=" ", item="dir")): {
-        "margin_top": "0em",
-        "margin_bottom": "0em",
-    },
-    (CssSelector(item="dl"), CssSelector(comb=" ", item="dl")): {
-        "margin_top": "0em",
-        "margin_bottom": "0em",
-    },
-    (CssSelector(item="dl"), CssSelector(comb=" ", item="ol")): {
-        "margin_top": "0em",
-        "margin_bottom": "0em",
-    },
-    (CssSelector(item="dl"), CssSelector(comb=" ", item="menu")): {
-        "margin_top": "0em",
-        "margin_bottom": "0em",
-    },
-    (CssSelector(item="dl"), CssSelector(comb=" ", item="ul")): {
-        "margin_top": "0em",
-        "margin_bottom": "0em",
-    },
-    (CssSelector(item="ol"), CssSelector(comb=" ", item="dir")): {
-        "margin_top": "0em",
-        "margin_bottom": "0em",
-        "list_style_type": "circle",
-    },
-    (CssSelector(item="ol"), CssSelector(comb=" ", item="dl")): {
-        "margin_top": "0em",
-        "margin_bottom": "0em",
-    },
-    (CssSelector(item="ol"), CssSelector(comb=" ", item="ol")): {
-        "margin_top": "0em",
-        "margin_bottom": "0em",
-    },
-    (CssSelector(item="ol"), CssSelector(comb=" ", item="menu")): {
-        "margin_top": "0em",
-        "margin_bottom": "0em",
-        "list_style_type": "circle",
-    },
-    (CssSelector(item="ol"), CssSelector(comb=" ", item="ul")): {
-        "margin_top": "0em",
-        "margin_bottom": "0em",
-        "list_style_type": "circle",
-    },
-    (CssSelector(item="menu"), CssSelector(comb=" ", item="dir")): {
-        "margin_top": "0em",
-        "margin_bottom": "0em",
-        "list_style_type": "circle",
-    },
-    (CssSelector(item="menu"), CssSelector(comb=" ", item="dl")): {
-        "margin_top": "0em",
-        "margin_bottom": "0em",
-    },
-    (CssSelector(item="menu"), CssSelector(comb=" ", item="ol")): {
-        "margin_top": "0em",
-        "margin_bottom": "0em",
-    },
-    (CssSelector(item="menu"), CssSelector(comb=" ", item="menu")): {
-        "margin_top": "0em",
-        "margin_bottom": "0em",
-        "list_style_type": "circle",
-    },
-    (CssSelector(item="menu"), CssSelector(comb=" ", item="ul")): {
+    (
+        (CssSelector(item="dir"), CssSelector(comb=" ", item="dir")),
+        (CssSelector(item="dir"), CssSelector(comb=" ", item="menu")),
+        (CssSelector(item="dir"), CssSelector(comb=" ", item="ul")),
+        (CssSelector(item="ol"), CssSelector(comb=" ", item="dir")),
+        (CssSelector(item="ol"), CssSelector(comb=" ", item="menu")),
+        (CssSelector(item="ol"), CssSelector(comb=" ", item="ul")),
+        (CssSelector(item="menu"), CssSelector(comb=" ", item="dir")),
+        (CssSelector(item="menu"), CssSelector(comb=" ", item="menu")),
+        (CssSelector(item="ul"), CssSelector(comb=" ", item="dir")),
+        (CssSelector(item="ul"), CssSelector(comb=" ", item="menu")),
+        (CssSelector(item="ul"), CssSelector(comb=" ", item="ul")),
+    ): {"margin_top": "0em", "margin_bottom": "0em", "list_style_type": "circle"},
+    (
+        (CssSelector(item="dir"), CssSelector(comb=" ", item="dl")),
+        (CssSelector(item="dir"), CssSelector(comb=" ", item="ol")),
+        (CssSelector(item="dl"), CssSelector(comb=" ", item="dir")),
+        (CssSelector(item="dl"), CssSelector(comb=" ", item="dl")),
+        (CssSelector(item="dl"), CssSelector(comb=" ", item="ol")),
+        (CssSelector(item="dl"), CssSelector(comb=" ", item="menu")),
+        (CssSelector(item="dl"), CssSelector(comb=" ", item="ul")),
+        (CssSelector(item="ol"), CssSelector(comb=" ", item="dl")),
+        (CssSelector(item="ol"), CssSelector(comb=" ", item="ol")),
+        (CssSelector(item="menu"), CssSelector(comb=" ", item="dl")),
+        (CssSelector(item="menu"), CssSelector(comb=" ", item="ol")),
+        (CssSelector(item="ul"), CssSelector(comb=" ", item="dl")),
+        (CssSelector(item="ul"), CssSelector(comb=" ", item="ol")),
+    ): {"margin_top": "0em", "margin_bottom": "0em"},
+    ((CssSelector(item="menu"), CssSelector(comb=" ", item="ul")),): {
         "list_style_type": "circle",
         "margin_top": "0em",
         "margin_bottom": "0em",
     },
-    (CssSelector(item="ul"), CssSelector(comb=" ", item="dir")): {
-        "margin_top": "0em",
-        "margin_bottom": "0em",
-        "list_style_type": "circle",
-    },
-    (CssSelector(item="ul"), CssSelector(comb=" ", item="dl")): {
-        "margin_top": "0em",
-        "margin_bottom": "0em",
-    },
-    (CssSelector(item="ul"), CssSelector(comb=" ", item="ol")): {
-        "margin_top": "0em",
-        "margin_bottom": "0em",
-    },
-    (CssSelector(item="ul"), CssSelector(comb=" ", item="menu")): {
-        "margin_top": "0em",
-        "margin_bottom": "0em",
-        "list_style_type": "circle",
-    },
-    (CssSelector(item="ul"), CssSelector(comb=" ", item="ul")): {
-        "margin_top": "0em",
-        "margin_bottom": "0em",
-        "list_style_type": "circle",
-    },
     (
-        CssSelector(item="dir"),
-        CssSelector(comb=" ", item="dir"),
-        CssSelector(comb=" ", item="dir"),
+        (
+            CssSelector(item="dir"),
+            CssSelector(comb=" ", item="dir"),
+            CssSelector(comb=" ", item="dir"),
+        ),
+        (
+            CssSelector(item="dir"),
+            CssSelector(comb=" ", item="dir"),
+            CssSelector(comb=" ", item="menu"),
+        ),
+        (
+            CssSelector(item="dir"),
+            CssSelector(comb=" ", item="dir"),
+            CssSelector(comb=" ", item="ul"),
+        ),
+        (
+            CssSelector(item="dir"),
+            CssSelector(comb=" ", item="menu"),
+            CssSelector(comb=" ", item="dir"),
+        ),
+        (
+            CssSelector(item="dir"),
+            CssSelector(comb=" ", item="menu"),
+            CssSelector(comb=" ", item="menu"),
+        ),
+        (
+            CssSelector(item="dir"),
+            CssSelector(comb=" ", item="menu"),
+            CssSelector(comb=" ", item="ul"),
+        ),
+        (
+            CssSelector(item="dir"),
+            CssSelector(comb=" ", item="ol"),
+            CssSelector(comb=" ", item="dir"),
+        ),
+        (
+            CssSelector(item="dir"),
+            CssSelector(comb=" ", item="ol"),
+            CssSelector(comb=" ", item="menu"),
+        ),
+        (
+            CssSelector(item="dir"),
+            CssSelector(comb=" ", item="ol"),
+            CssSelector(comb=" ", item="ul"),
+        ),
+        (
+            CssSelector(item="dir"),
+            CssSelector(comb=" ", item="ul"),
+            CssSelector(comb=" ", item="dir"),
+        ),
+        (
+            CssSelector(item="dir"),
+            CssSelector(comb=" ", item="ul"),
+            CssSelector(comb=" ", item="menu"),
+        ),
+        (
+            CssSelector(item="dir"),
+            CssSelector(comb=" ", item="ul"),
+            CssSelector(comb=" ", item="ul"),
+        ),
+        (
+            CssSelector(item="menu"),
+            CssSelector(comb=" ", item="dir"),
+            CssSelector(comb=" ", item="dir"),
+        ),
+        (
+            CssSelector(item="menu"),
+            CssSelector(comb=" ", item="dir"),
+            CssSelector(comb=" ", item="menu"),
+        ),
+        (
+            CssSelector(item="menu"),
+            CssSelector(comb=" ", item="dir"),
+            CssSelector(comb=" ", item="ul"),
+        ),
+        (
+            CssSelector(item="menu"),
+            CssSelector(comb=" ", item="menu"),
+            CssSelector(comb=" ", item="dir"),
+        ),
+        (
+            CssSelector(item="menu"),
+            CssSelector(comb=" ", item="menu"),
+            CssSelector(comb=" ", item="menu"),
+        ),
+        (
+            CssSelector(item="menu"),
+            CssSelector(comb=" ", item="menu"),
+            CssSelector(comb=" ", item="ul"),
+        ),
+        (
+            CssSelector(item="menu"),
+            CssSelector(comb=" ", item="ol"),
+            CssSelector(comb=" ", item="dir"),
+        ),
+        (
+            CssSelector(item="menu"),
+            CssSelector(comb=" ", item="ol"),
+            CssSelector(comb=" ", item="menu"),
+        ),
+        (
+            CssSelector(item="menu"),
+            CssSelector(comb=" ", item="ol"),
+            CssSelector(comb=" ", item="ul"),
+        ),
+        (
+            CssSelector(item="menu"),
+            CssSelector(comb=" ", item="ul"),
+            CssSelector(comb=" ", item="dir"),
+        ),
+        (
+            CssSelector(item="menu"),
+            CssSelector(comb=" ", item="ul"),
+            CssSelector(comb=" ", item="menu"),
+        ),
+        (
+            CssSelector(item="menu"),
+            CssSelector(comb=" ", item="ul"),
+            CssSelector(comb=" ", item="ul"),
+        ),
+        (
+            CssSelector(item="ol"),
+            CssSelector(comb=" ", item="dir"),
+            CssSelector(comb=" ", item="dir"),
+        ),
+        (
+            CssSelector(item="ol"),
+            CssSelector(comb=" ", item="dir"),
+            CssSelector(comb=" ", item="menu"),
+        ),
+        (
+            CssSelector(item="ol"),
+            CssSelector(comb=" ", item="dir"),
+            CssSelector(comb=" ", item="ul"),
+        ),
+        (
+            CssSelector(item="ol"),
+            CssSelector(comb=" ", item="menu"),
+            CssSelector(comb=" ", item="dir"),
+        ),
+        (
+            CssSelector(item="ol"),
+            CssSelector(comb=" ", item="menu"),
+            CssSelector(comb=" ", item="menu"),
+        ),
+        (
+            CssSelector(item="ol"),
+            CssSelector(comb=" ", item="menu"),
+            CssSelector(comb=" ", item="ul"),
+        ),
+        (
+            CssSelector(item="ol"),
+            CssSelector(comb=" ", item="ol"),
+            CssSelector(comb=" ", item="dir"),
+        ),
+        (
+            CssSelector(item="ol"),
+            CssSelector(comb=" ", item="ol"),
+            CssSelector(comb=" ", item="menu"),
+        ),
+        (
+            CssSelector(item="ol"),
+            CssSelector(comb=" ", item="ol"),
+            CssSelector(comb=" ", item="ul"),
+        ),
+        (
+            CssSelector(item="ol"),
+            CssSelector(comb=" ", item="ul"),
+            CssSelector(comb=" ", item="dir"),
+        ),
+        (
+            CssSelector(item="ol"),
+            CssSelector(comb=" ", item="ul"),
+            CssSelector(comb=" ", item="menu"),
+        ),
+        (
+            CssSelector(item="ol"),
+            CssSelector(comb=" ", item="ul"),
+            CssSelector(comb=" ", item="ul"),
+        ),
+        (
+            CssSelector(item="ul"),
+            CssSelector(comb=" ", item="dir"),
+            CssSelector(comb=" ", item="dir"),
+        ),
+        (
+            CssSelector(item="ul"),
+            CssSelector(comb=" ", item="dir"),
+            CssSelector(comb=" ", item="menu"),
+        ),
+        (
+            CssSelector(item="ul"),
+            CssSelector(comb=" ", item="dir"),
+            CssSelector(comb=" ", item="ul"),
+        ),
+        (
+            CssSelector(item="ul"),
+            CssSelector(comb=" ", item="menu"),
+            CssSelector(comb=" ", item="dir"),
+        ),
+        (
+            CssSelector(item="ul"),
+            CssSelector(comb=" ", item="menu"),
+            CssSelector(comb=" ", item="menu"),
+        ),
+        (
+            CssSelector(item="ul"),
+            CssSelector(comb=" ", item="menu"),
+            CssSelector(comb=" ", item="ul"),
+        ),
+        (
+            CssSelector(item="ul"),
+            CssSelector(comb=" ", item="ol"),
+            CssSelector(comb=" ", item="dir"),
+        ),
+        (
+            CssSelector(item="ul"),
+            CssSelector(comb=" ", item="ol"),
+            CssSelector(comb=" ", item="menu"),
+        ),
+        (
+            CssSelector(item="ul"),
+            CssSelector(comb=" ", item="ol"),
+            CssSelector(comb=" ", item="ul"),
+        ),
+        (
+            CssSelector(item="ul"),
+            CssSelector(comb=" ", item="ul"),
+            CssSelector(comb=" ", item="dir"),
+        ),
+        (
+            CssSelector(item="ul"),
+            CssSelector(comb=" ", item="ul"),
+            CssSelector(comb=" ", item="menu"),
+        ),
+        (
+            CssSelector(item="ul"),
+            CssSelector(comb=" ", item="ul"),
+            CssSelector(comb=" ", item="ul"),
+        ),
     ): {"list_style_type": "square"},
-    (
-        CssSelector(item="dir"),
-        CssSelector(comb=" ", item="dir"),
-        CssSelector(comb=" ", item="menu"),
-    ): {"list_style_type": "square"},
-    (
-        CssSelector(item="dir"),
-        CssSelector(comb=" ", item="dir"),
-        CssSelector(comb=" ", item="ul"),
-    ): {"list_style_type": "square"},
-    (
-        CssSelector(item="dir"),
-        CssSelector(comb=" ", item="menu"),
-        CssSelector(comb=" ", item="dir"),
-    ): {"list_style_type": "square"},
-    (
-        CssSelector(item="dir"),
-        CssSelector(comb=" ", item="menu"),
-        CssSelector(comb=" ", item="menu"),
-    ): {"list_style_type": "square"},
-    (
-        CssSelector(item="dir"),
-        CssSelector(comb=" ", item="menu"),
-        CssSelector(comb=" ", item="ul"),
-    ): {"list_style_type": "square"},
-    (
-        CssSelector(item="dir"),
-        CssSelector(comb=" ", item="ol"),
-        CssSelector(comb=" ", item="dir"),
-    ): {"list_style_type": "square"},
-    (
-        CssSelector(item="dir"),
-        CssSelector(comb=" ", item="ol"),
-        CssSelector(comb=" ", item="menu"),
-    ): {"list_style_type": "square"},
-    (
-        CssSelector(item="dir"),
-        CssSelector(comb=" ", item="ol"),
-        CssSelector(comb=" ", item="ul"),
-    ): {"list_style_type": "square"},
-    (
-        CssSelector(item="dir"),
-        CssSelector(comb=" ", item="ul"),
-        CssSelector(comb=" ", item="dir"),
-    ): {"list_style_type": "square"},
-    (
-        CssSelector(item="dir"),
-        CssSelector(comb=" ", item="ul"),
-        CssSelector(comb=" ", item="menu"),
-    ): {"list_style_type": "square"},
-    (
-        CssSelector(item="dir"),
-        CssSelector(comb=" ", item="ul"),
-        CssSelector(comb=" ", item="ul"),
-    ): {"list_style_type": "square"},
-    (
-        CssSelector(item="menu"),
-        CssSelector(comb=" ", item="dir"),
-        CssSelector(comb=" ", item="dir"),
-    ): {"list_style_type": "square"},
-    (
-        CssSelector(item="menu"),
-        CssSelector(comb=" ", item="dir"),
-        CssSelector(comb=" ", item="menu"),
-    ): {"list_style_type": "square"},
-    (
-        CssSelector(item="menu"),
-        CssSelector(comb=" ", item="dir"),
-        CssSelector(comb=" ", item="ul"),
-    ): {"list_style_type": "square"},
-    (
-        CssSelector(item="menu"),
-        CssSelector(comb=" ", item="menu"),
-        CssSelector(comb=" ", item="dir"),
-    ): {"list_style_type": "square"},
-    (
-        CssSelector(item="menu"),
-        CssSelector(comb=" ", item="menu"),
-        CssSelector(comb=" ", item="menu"),
-    ): {"list_style_type": "square"},
-    (
-        CssSelector(item="menu"),
-        CssSelector(comb=" ", item="menu"),
-        CssSelector(comb=" ", item="ul"),
-    ): {"list_style_type": "square"},
-    (
-        CssSelector(item="menu"),
-        CssSelector(comb=" ", item="ol"),
-        CssSelector(comb=" ", item="dir"),
-    ): {"list_style_type": "square"},
-    (
-        CssSelector(item="menu"),
-        CssSelector(comb=" ", item="ol"),
-        CssSelector(comb=" ", item="menu"),
-    ): {"list_style_type": "square"},
-    (
-        CssSelector(item="menu"),
-        CssSelector(comb=" ", item="ol"),
-        CssSelector(comb=" ", item="ul"),
-    ): {"list_style_type": "square"},
-    (
-        CssSelector(item="menu"),
-        CssSelector(comb=" ", item="ul"),
-        CssSelector(comb=" ", item="dir"),
-    ): {"list_style_type": "square"},
-    (
-        CssSelector(item="menu"),
-        CssSelector(comb=" ", item="ul"),
-        CssSelector(comb=" ", item="menu"),
-    ): {"list_style_type": "square"},
-    (
-        CssSelector(item="menu"),
-        CssSelector(comb=" ", item="ul"),
-        CssSelector(comb=" ", item="ul"),
-    ): {"list_style_type": "square"},
-    (
-        CssSelector(item="ol"),
-        CssSelector(comb=" ", item="dir"),
-        CssSelector(comb=" ", item="dir"),
-    ): {"list_style_type": "square"},
-    (
-        CssSelector(item="ol"),
-        CssSelector(comb=" ", item="dir"),
-        CssSelector(comb=" ", item="menu"),
-    ): {"list_style_type": "square"},
-    (
-        CssSelector(item="ol"),
-        CssSelector(comb=" ", item="dir"),
-        CssSelector(comb=" ", item="ul"),
-    ): {"list_style_type": "square"},
-    (
-        CssSelector(item="ol"),
-        CssSelector(comb=" ", item="menu"),
-        CssSelector(comb=" ", item="dir"),
-    ): {"list_style_type": "square"},
-    (
-        CssSelector(item="ol"),
-        CssSelector(comb=" ", item="menu"),
-        CssSelector(comb=" ", item="menu"),
-    ): {"list_style_type": "square"},
-    (
-        CssSelector(item="ol"),
-        CssSelector(comb=" ", item="menu"),
-        CssSelector(comb=" ", item="ul"),
-    ): {"list_style_type": "square"},
-    (
-        CssSelector(item="ol"),
-        CssSelector(comb=" ", item="ol"),
-        CssSelector(comb=" ", item="dir"),
-    ): {"list_style_type": "square"},
-    (
-        CssSelector(item="ol"),
-        CssSelector(comb=" ", item="ol"),
-        CssSelector(comb=" ", item="menu"),
-    ): {"list_style_type": "square"},
-    (
-        CssSelector(item="ol"),
-        CssSelector(comb=" ", item="ol"),
-        CssSelector(comb=" ", item="ul"),
-    ): {"list_style_type": "square"},
-    (
-        CssSelector(item="ol"),
-        CssSelector(comb=" ", item="ul"),
-        CssSelector(comb=" ", item="dir"),
-    ): {"list_style_type": "square"},
-    (
-        CssSelector(item="ol"),
-        CssSelector(comb=" ", item="ul"),
-        CssSelector(comb=" ", item="menu"),
-    ): {"list_style_type": "square"},
-    (
-        CssSelector(item="ol"),
-        CssSelector(comb=" ", item="ul"),
-        CssSelector(comb=" ", item="ul"),
-    ): {"list_style_type": "square"},
-    (
-        CssSelector(item="ul"),
-        CssSelector(comb=" ", item="dir"),
-        CssSelector(comb=" ", item="dir"),
-    ): {"list_style_type": "square"},
-    (
-        CssSelector(item="ul"),
-        CssSelector(comb=" ", item="dir"),
-        CssSelector(comb=" ", item="menu"),
-    ): {"list_style_type": "square"},
-    (
-        CssSelector(item="ul"),
-        CssSelector(comb=" ", item="dir"),
-        CssSelector(comb=" ", item="ul"),
-    ): {"list_style_type": "square"},
-    (
-        CssSelector(item="ul"),
-        CssSelector(comb=" ", item="menu"),
-        CssSelector(comb=" ", item="dir"),
-    ): {"list_style_type": "square"},
-    (
-        CssSelector(item="ul"),
-        CssSelector(comb=" ", item="menu"),
-        CssSelector(comb=" ", item="menu"),
-    ): {"list_style_type": "square"},
-    (
-        CssSelector(item="ul"),
-        CssSelector(comb=" ", item="menu"),
-        CssSelector(comb=" ", item="ul"),
-    ): {"list_style_type": "square"},
-    (
-        CssSelector(item="ul"),
-        CssSelector(comb=" ", item="ol"),
-        CssSelector(comb=" ", item="dir"),
-    ): {"list_style_type": "square"},
-    (
-        CssSelector(item="ul"),
-        CssSelector(comb=" ", item="ol"),
-        CssSelector(comb=" ", item="menu"),
-    ): {"list_style_type": "square"},
-    (
-        CssSelector(item="ul"),
-        CssSelector(comb=" ", item="ol"),
-        CssSelector(comb=" ", item="ul"),
-    ): {"list_style_type": "square"},
-    (
-        CssSelector(item="ul"),
-        CssSelector(comb=" ", item="ul"),
-        CssSelector(comb=" ", item="dir"),
-    ): {"list_style_type": "square"},
-    (
-        CssSelector(item="ul"),
-        CssSelector(comb=" ", item="ul"),
-        CssSelector(comb=" ", item="menu"),
-    ): {"list_style_type": "square"},
-    (
-        CssSelector(item="ul"),
-        CssSelector(comb=" ", item="ul"),
-        CssSelector(comb=" ", item="ul"),
-    ): {"list_style_type": "square"},
-    (CssSelector(item="details"),): {
-        "display": "block",
+    ((CssSelector(item="details"),),): {
         "list_style_type": "disclosure-closed",
         "list_style_position": "inside",
     },
     (
-        CssSelector(item="details", attr="[open]"),
-        CssSelector(comb=" ", item="summary"),
+        (
+            CssSelector(item="details", attr="[open]"),
+            CssSelector(comb=" ", item="summary"),
+        ),
     ): {"list_style_type": "disclosure-open"},
-    (CssSelector(item="summary"),): {"font_weight": "bold"},
-    (CssSelector(item=".dataframe"),): {
+    ((CssSelector(item="summary"),),): {"font_weight": "bold"},
+    ((CssSelector(item=".dataframe"),),): {
         "border_top_width": "0",
         "border_right_width": "0",
         "border_bottom_width": "0",
@@ -2015,9 +1931,10 @@ _BROWSER_CSS = {
         "border_bottom_style": "none",
         "border_left_style": "none",
     },
-    (CssSelector(item=".block"),): {"display": "block"},
 }
 
+
+"""
 __BROWSER_CSS = {
     "::default": {
         # Display
@@ -2485,6 +2402,7 @@ __BROWSER_CSS = {
     # Custom for markdownit-py
     ".block": {"display": "block"},
 }
+"""
 
 
 class Node:
@@ -2554,6 +2472,7 @@ class Node:
                         text = "\n"
                     else:
                         text = " "
+
                 text = re.sub(r"\s+", " ", text.strip("\n").replace("\n", " "))
 
                 # This next bit does not appear to be needed
@@ -2788,9 +2707,11 @@ class CustomHTMLParser(HTMLParser):
             self.curr = self.curr.parent
 
 
-def parse_styles(soup: "Node", base_url: "UPath") -> "dict[str, dict[str, str]]":
+def parse_styles(
+    soup: "Node", base_url: "UPath"
+) -> "dict[tuple[tuple[CssSelector, ...], ...], dict[str, str]]":
     """Collect all CSS styles from style tags."""
-    rules: "dict[str, dict[str, str]]" = {}
+    rules: "dict[tuple[tuple[CssSelector, ...], ...], dict[str, str]]" = {}
     for child in soup.descendents:
         css_str = ""
 
@@ -2850,19 +2771,20 @@ def parse_styles(soup: "Node", base_url: "UPath") -> "dict[str, dict[str, str]]"
             if css_str:
                 for rule in css_str.rstrip("}").split("}"):
                     selectors, _, content = rule.partition("{")
-                    # TODO - more CSS matching complex rules
                     content = content.strip().rstrip(";")
                     rule_content = parse_css_content(content)
                     if rule_content:
-                        for selector in map(str.strip, selectors.split(",")):
-                            selector_parts = tuple(
+                        parsed_selectors = tuple(
+                            tuple(
                                 CssSelector(**m.groupdict())
                                 for m in _SELECTOR_RE.finditer(selector.strip())
                             )
-                            if selector in rules:
-                                rules[selector_parts].update(rule_content)
-                            else:
-                                rules[selector_parts] = rule_content
+                            for selector in map(str.strip, selectors.split(","))
+                        )
+                        if parsed_selectors in rules:
+                            rules[parsed_selectors].update(rule_content)
+                        else:
+                            rules[parsed_selectors] = rule_content
 
     return rules
 
@@ -2973,8 +2895,10 @@ class HTML:
             fill: Whether remaining space in block elements should be filled
 
         """
-        self.browser_css: "dict[str, dict[str, str]]" = {**_BROWSER_CSS}
-        self.css: "dict[str, dict[str, str]]" = {}
+        self.browser_css: "dict[tuple[tuple[CssSelector, ...], ...], dict[str, str]]" = {
+            **_BROWSER_CSS
+        }
+        self.css: "dict[tuple[tuple[CssSelector, ...], ...], dict[str, str]]" = {}
 
         self.markup = markup
         self.base = base
@@ -3580,6 +3504,7 @@ class HTML:
             for row in table.rows:
                 for col_width, cell in zip(col_widths, row.cells):
                     if td := td_map.get(cell):
+                        cell_padding = compute_padding(cell)
                         cell.text = self.render_contents(
                             td.contents,
                             parent_theme=td.theme,
@@ -3589,10 +3514,8 @@ class HTML:
                                 if cell.colspan > 1
                                 else col_width
                             )
-                            - cell.computed_padding.left
-                            - cell.computed_padding.right,
-                            # - cell.computed_border_width.left
-                            # - cell.computed_border_width.right,
+                            - cell_padding.left
+                            - cell_padding.right,
                             left=0,
                         )
 
@@ -3889,20 +3812,6 @@ class HTML:
             return result
         else:
             return ft
-
-    @staticmethod
-    def format_details(
-        ft: "StyleAndTextTuples",
-        available_width: "int",
-        available_height: "int",
-        left: "int",
-        element: "Node",
-        theme: "Theme",
-    ) -> "StyleAndTextTuples":
-        """Format details indented."""
-        ft = strip(ft, chars="\n")
-        ft = indent(ft, margin="   ")
-        return ft
 
     @staticmethod
     def format_q(
