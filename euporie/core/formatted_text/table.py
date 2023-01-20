@@ -306,7 +306,7 @@ class Cell:
         col = self.col
         table = col.table
 
-        if row not in table._rows:
+        if row not in table._rows.values():
             # The table has not yet been fully constructed
             return DiInt.from_value(1)
 
@@ -1118,7 +1118,7 @@ class Table:
                 )
 
                 # We only need to check on cell to the left and one cell to the right
-                if (
+                if self.collapse_empty_borders and (
                     not w.computed_border_width.right
                     and not e.computed_border_width.left
                 ):
