@@ -90,6 +90,16 @@ _SELECTOR_RE = re.compile(
     "(?:^|\s*(?P<comb>[\s\+\>\~]|(?=::))\s*)(?P<item>(?:::)?[^\s\+>~:[\]]+)?(?P<attr>\[[^\s\+>~:]+\])?(?P<pseudo>\:[^:][^\s\+>~]*)?"
 )
 
+
+class CssSelector(NamedTuple):
+    """A named tuple to hold CSS selector data."""
+
+    comb: str | None = None
+    item: str | None = None
+    attr: str | None = None
+    pseudo: str | None = None
+
+
 # List of elements which might not have a close tag
 _VOID_ELEMENTS = (
     "area",
@@ -305,7 +315,7 @@ def match_css_selector(
             pseudo = pseudo[11:]
             continue
         else:
-            matched = False
+            return False
 
     while selector and matched:
 
@@ -318,7 +328,7 @@ def match_css_selector(
             if selector.startswith(name := element_name):
                 selector = selector[len(name) :]
             else:
-                matched = False
+                return False
 
         # ID selectors
         if selector.startswith("#"):
@@ -326,9 +336,9 @@ def match_css_selector(
                 if selector[1:].startswith(id_):
                     selector = selector[1 + len(id_) :]
                 else:
-                    matched = False
+                    return False
             else:
-                matched = False
+                return False
 
         # Class selectors
         if selector and selector.startswith("."):
@@ -340,10 +350,10 @@ def match_css_selector(
                     selector = selector = selector[1 + len(class_name) :]
                     break
             else:
-                matched = False
+                return False
 
         if not matched:
-            break
+            return False
 
     # Attribute selectors
     # TODO - chained attribute selectors
@@ -375,6 +385,8 @@ def match_css_selector(
             matched = element_attrs.get(attr) == value
         else:
             matched = test in element_attrs
+        if not matched:
+            return False
         selector = selector[2 + len(test) :]
 
     return matched
@@ -646,6 +658,71 @@ def parse_css_content(content: "str") -> "dict[str, str]":
     return theme
 
 
+@lru_cache(maxsize=1024)
+def selector_specificity(
+    selector_parts: "tuple[CssSelector, ...]",
+) -> "tuple[int, int, int]":
+    """Calculate the specificity score of a CSS selector."""
+    identifiers = classes = elements = 0
+    for selector in selector_parts:
+        item = selector.item or ""
+        identifiers += (ids := item.count("#"))
+        classes += (clss := item.count("."))
+        if item != "*" and not ids and not clss:
+            elements += 1
+        classes += (selector.attr or "").count("[")
+        classes += (selector.pseudo or "").count(":")
+    return (identifiers, classes, elements)
+
+
+_DEFAULT_ELEMENT_CSS = {
+    "display": "block",
+    "visibility": "visible",
+    "opacity": "1.0",
+    "color": "default",
+    "background_color": "default",
+    "font_style": "normal",
+    "font_size": "1em",
+    "font_weight": "normal",
+    "text_decoration": "none",
+    "text_transform": "none",
+    "text_align": "left",
+    "white_space": "normal",
+    "overflow_x": "visible",
+    "overflow_y": "visible",
+    "vertical_align": "baseline",
+    "padding_top": "0",
+    "padding_left": "0",
+    "padding_bottom": "0",
+    "padding_right": "0",
+    "margin_top": "0",
+    "margin_left": "0",
+    "margin_bottom": "0",
+    "margin_right": "0",
+    "border_top_width": "0",
+    "border_left_width": "0",
+    "border_bottom_width": "0",
+    "border_right_width": "0",
+    "border_top_style": "none",
+    "border_left_style": "none",
+    "border_bottom_style": "none",
+    "border_right_style": "none",
+    "border_top_color": "",
+    "border_left_color": "",
+    "border_bottom_color": "",
+    "border_right_color": "",
+    "float": "none",
+    "position": "static",
+    "top": "0",
+    "right": "0",
+    "bottom": "0",
+    "left": "0",
+    "z_index": "0",
+    "list_style_type": "none",
+    "list_style_position": "inside",
+}
+
+
 class Theme(Mapping):
     """The computed theme of an element."""
 
@@ -666,7 +743,7 @@ class Theme(Mapping):
     def theme(self) -> "dict[str, str]":
         """Return the combined computed theme."""
         return {
-            **self.element.dom.browser_css["::default"],
+            **_DEFAULT_ELEMENT_CSS,
             **self.inherited_browser_css_theme,
             **self.browser_css_theme,
             **self.inherited_theme,
@@ -752,9 +829,11 @@ class Theme(Mapping):
             theme["text_align"] = align
         if (align := attrs.get("valign")) is not None:
             theme["vertical_align"] = align
-        # width
+        # width/height
         if (value := attrs.get("width")) is not None:
             theme["width"] = value
+        if (value := attrs.get("height")) is not None:
+            theme["height"] = value
         # cellpadding # TODO
         return theme
 
@@ -762,17 +841,14 @@ class Theme(Mapping):
         """Calculate the theme defined in CSS."""
         specificity_rules = []
         element = self.element
-        for selectors, rule in css.items():
-            split_selectors = [m.groupdict() for m in _SELECTOR_RE.finditer(selectors)][
-                ::-1
-            ]
+        for selector_parts, rule in css.items():
 
-            # Last element in the selector should match the current element
-            selector = split_selectors[0]
+            # Last selector item should match the current element
+            selector = selector_parts[-1]
             if not match_css_selector(
-                selector["item"] or "",
-                selector["attr"] or "",
-                selector["pseudo"] or "",
+                selector.item or "",
+                selector.attr or "",
+                selector.pseudo or "",
                 element.name,
                 element.is_first_child_element,
                 element.is_last_child_element,
@@ -783,54 +859,42 @@ class Theme(Mapping):
             # All of the parent selectors should match a separate parent in order
             # TODO - combinators
             # https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Selectors#combinators
-            unmatched_parents: "list[Node]" = [
-                x for x in reversed(element.parents) if x
-            ]
+            unmatched_parents: "list[Node]" = [x for x in element.parents[::-1] if x]
 
             _unmatched_parents: "list[Node]"
-            if selector["comb"] == ">" and (parent := element.parent):
+            if selector.comb == ">" and (parent := element.parent):
                 _unmatched_parents = [parent]
             else:
                 _unmatched_parents = unmatched_parents
 
-            # TODO investigate caching element / selector chains so don't have to
+            # TODO investigate caching element / selector chains so we don't have to
             # iterate through every parent every time
 
-            for selector in split_selectors[1:]:
+            # Iterate through selector items in reverse, skipping the last
+            for selector in selector_parts[-2::-1]:
 
                 for i, parent in enumerate(_unmatched_parents):
                     if parent and match_css_selector(
-                        selector["item"] or "",
-                        selector["attr"] or "",
-                        selector["pseudo"] or "",
+                        selector.item or "",
+                        selector.attr or "",
+                        selector.pseudo or "",
                         parent.name,
                         parent.is_first_child_element,
                         parent.is_last_child_element,
                         **parent.attrs,
                     ):
-                        # unmatched_parents = unmatched_parents[i + 1 :]
-
-                        if selector["comb"] == ">" and (parent := parent.parent):
+                        if selector.comb == ">" and (parent := parent.parent):
                             _unmatched_parents = [parent]
                         else:
                             _unmatched_parents = unmatched_parents[i + 1 :]
-
                         break
                 else:
                     break
 
             else:
-                identifiers = classes = elements = 0
-                for selector in split_selectors:
-                    item = selector["item"] or ""
-                    identifiers += (ids := item.count("#"))
-                    classes += (clss := item.count("."))
-                    if item != "*" and not ids and not clss:
-                        elements += 1
-                    classes += (selector["attr"] or "").count("[")
-                    classes += (selector["pseudo"] or "").count(":")
-                key = (identifiers, classes, elements)
-                specificity_rules.append((key, rule))
+                # Calculate selector specificity score
+                score = selector_specificity(selector_parts)
+                specificity_rules.append((score, rule))
 
         return {
             k: v
@@ -934,7 +998,7 @@ class Theme(Mapping):
             ("left", False),
         ):
             value = css_dimension(
-                self[f"padding_{direction}"], vertical=vertical, available=a_w
+                self.theme[f"padding_{direction}"], vertical=vertical, available=a_w
             )
             output[direction] = int((value or 0) + 0.49999)
         return DiInt(**output)
@@ -951,7 +1015,7 @@ class Theme(Mapping):
             ("left", False),
         ):
             value = css_dimension(
-                self[f"margin_{direction}"], vertical=vertical, available=a_w
+                self.theme[f"margin_{direction}"], vertical=vertical, available=a_w
             )
             # output[direction] = int((value or 0) + 0.49999)
             output[direction] = int((value or 0) + 0.5)
@@ -1048,18 +1112,19 @@ class Theme(Mapping):
     @cached_property
     def margin_auto(self) -> "bool":
         """Determine if the left and right margins are set to auto."""
-        return self["margin_left"] == self["margin_right"] == "auto"
+        return self.theme["margin_left"] == self.theme["margin_right"] == "auto"
 
     @cached_property
     def border_style(self) -> "DiStr":
         """Calculate the visibility of the element's borders."""
-        fg = self.color
-        bg = self.parent_theme.background_color if self.parent_theme else "default"
+        parent_theme = self.parent_theme
+        fg = parent_theme.color
+        bg = parent_theme.background_color if parent_theme else "default"
 
         output = {}
         for direction in ("top", "left", "bottom", "right"):
             fg_, bg_ = fg, bg
-            if border_color := get_color(self[f"border_{direction}_color"]):
+            if border_color := get_color(self.theme[f"border_{direction}_color"]):
                 fg_ = border_color
 
             if getattr(self.border_line, direction) in {
@@ -1075,10 +1140,11 @@ class Theme(Mapping):
     @cached_property
     def border_visibility(self) -> "DiBool":
         """Calculate the visibility of the element's borders."""
+        theme = self.theme
         return DiBool(
             **{
-                direction: css_dimension(self[f"border_{direction}_width"]) != 0
-                and self[f"border_{direction}_style"] != "none"
+                direction: css_dimension(theme[f"border_{direction}_width"]) != 0
+                and theme[f"border_{direction}_style"] != "none"
                 for direction in ("top", "left", "bottom", "right")
             }
         )
@@ -1090,7 +1156,7 @@ class Theme(Mapping):
         output = {}
         for direction in ("top", "right", "bottom", "left"):
 
-            border_width = self[f"border_{direction}_width"]
+            border_width = self.theme[f"border_{direction}_width"]
             size = (
                 _BORDER_WIDTHS.get(
                     border_width,
@@ -1109,7 +1175,7 @@ class Theme(Mapping):
             else:
                 output[direction] = list(_BORDER_WIDTH_STYLES.values())[
                     bisect_right(list(_BORDER_WIDTH_STYLES.keys()), size) - 1
-                ].get(self[f"border_{direction}_style"], NoLine)
+                ].get(self.theme[f"border_{direction}_style"], NoLine)
 
         return DiLineStyle(**output)
 
@@ -1128,7 +1194,7 @@ class Theme(Mapping):
     def color(self) -> "str":
         """Get the computed theme foreground color."""
         # TODO - transparency
-        if bg := get_color(self["color"]):
+        if bg := get_color(self.theme["color"]):
             return bg
         elif self.parent_theme:
             return self.parent_theme.color
@@ -1139,7 +1205,7 @@ class Theme(Mapping):
     def background_color(self) -> "str":
         """Get the computed theme background color."""
         # TODO - transparency
-        if bg := get_color(self["background_color"]):
+        if bg := get_color(self.theme["background_color"]):
             return bg
         elif self.parent_theme:
             return self.parent_theme.background_color
@@ -1149,36 +1215,38 @@ class Theme(Mapping):
     @cached_property
     def style(self) -> "str":
         """Calculate the output style."""
-        parts = [f"fg:{self.color}", f"bg:{self.background_color}"]
+        theme = self.theme
+        style = f"fg:{self.color} bg:{self.background_color}"
 
-        if "bold" in self["font_weight"] or (
-            isinstance((weight := try_eval(self["font_weight"])), int) and weight >= 700
+        if "bold" in self.theme["font_weight"] or (
+            isinstance((weight := try_eval(theme["font_weight"])), int)
+            and weight >= 700
         ):
-            parts.append("bold")
+            style = f"{style} bold"
 
-        if "italic" in self["font_style"] or "oblique" in self["font_style"]:
-            parts.append("italic")
+        if "italic" in theme["font_style"] or "oblique" in theme["font_style"]:
+            style = f"{style} italic"
 
-        if "underline" in self["text_decoration"]:
-            parts.append("underline")
+        if "underline" in theme["text_decoration"]:
+            style = f"{style} underline"
 
-        if "line-through" in self["text_decoration"]:
-            parts.append("strike")
+        if "line-through" in theme["text_decoration"]:
+            style = f"{style} strike"
 
-        return " ".join(parts)
+        return style
 
     @cached_property
     def text_transform(self) -> "Callable[[str], str]|None":
         """Return a function which transforms text."""
-        if "uppercase" in self["text_transform"]:
+        if "uppercase" in self.theme["text_transform"]:
             return str.upper
-        elif "lowercase" in self["text_transform"]:
+        elif "lowercase" in self.theme["text_transform"]:
             return str.lower
-        elif "capitalize" in self["text_transform"]:
+        elif "capitalize" in self.theme["text_transform"]:
             return str.capitalize
-        elif "sub" in self["vertical_align"]:
+        elif "sub" in self.theme["vertical_align"]:
             return lambda x: "".join(subscript.get(c, c) for c in x)
-        elif "super" in self["vertical_align"]:
+        elif "super" in self.theme["vertical_align"]:
             return lambda x: "".join(superscript.get(c, c) for c in x)
         else:
             return None
@@ -1186,27 +1254,29 @@ class Theme(Mapping):
     @cached_property
     def preformatted(self) -> "bool":
         """Determine if the content is pre-formatted."""
-        return self["white_space"] in {"pre", "pre-wrap", "pre-line"}
+        return self.theme["white_space"] in {"pre", "pre-wrap", "pre-line"}
 
     @cached_property
     def text_align(self) -> "FormattedTextAlign":
         """The text alignment direction."""
-        return _TEXT_ALIGNS.get(self["text_align"], FormattedTextAlign.LEFT)
+        return _TEXT_ALIGNS.get(self.theme["text_align"], FormattedTextAlign.LEFT)
 
     @cached_property
     def vertical_align(self) -> "float":
         """The vertical alignment direction."""
-        return _VERTICAL_ALIGNS.get(self["vertical_align"], 1)
+        return _VERTICAL_ALIGNS.get(self.theme["vertical_align"], 1)
 
     @cached_property
     def list_style_type(self) -> "str":
         """The bullet character to use for the list."""
-        return _LIST_STYLE_TYPES.get(self["list_style_type"], self["list_style_type"])
+        return _LIST_STYLE_TYPES.get(
+            self.theme["list_style_type"], self.theme["list_style_type"]
+        )
 
     @cached_property
     def list_style_position(self) -> "str":
         """Where the list bullet should be located."""
-        if "outside" in self["list_style_position"]:
+        if "outside" in self.theme["list_style_position"]:
             return "outside"
         else:
             return "inside"
@@ -1216,7 +1286,7 @@ class Theme(Mapping):
         """Get the computed font size for the current element."""
         available = self.parent_theme.font_size if self.parent_theme else 1
         if (
-            result := css_dimension(self["font_size"], available=available)
+            result := css_dimension(self.theme["font_size"], available=available)
         ) is not None:
             return result
         else:
@@ -1225,48 +1295,50 @@ class Theme(Mapping):
     @cached_property
     def block(self) -> "bool":
         """If the element a block element."""
-        return "block" in self["display"] or "table" in self["display"]
+        return "block" in self.theme["display"] or "table" in self.theme["display"]
 
     @cached_property
     def inline(self) -> "bool":
         """If the element an inline element."""
-        return "inline" in self["display"]
+        return "inline" in self.theme["display"]
 
     @cached_property
     def z_index(self) -> "int":
         """The z-index of the element."""
-        return get_integer(self["z_index"]) or 0
+        return get_integer(self.theme["z_index"]) or 0
 
     @cached_property
     def position(self) -> "DiInt":
         """The position of an element with a relative, absolute or fixed position."""
         # TODO - calculate position based on top, left, bottom,right, width, height
         return DiInt(
-            top=int(css_dimension(self["top"], vertical=True) or 0),
-            right=int(css_dimension(self["right"], vertical=False) or 0),
-            bottom=int(css_dimension(self["bottom"], vertical=True) or 0),
-            left=int(css_dimension(self["left"], vertical=False) or 0),
+            top=int(css_dimension(self.theme["top"], vertical=True) or 0),
+            right=int(css_dimension(self.theme["right"], vertical=False) or 0),
+            bottom=int(css_dimension(self.theme["bottom"], vertical=True) or 0),
+            left=int(css_dimension(self.theme["left"], vertical=False) or 0),
         )
 
     @cached_property
     def skip(self) -> "bool":
         """Determine if the element should not be displayed."""
-        return "none" in self["display"] or (
+        return "none" in self.theme["display"] or (
             (element := self.element).name == "text" and not element.text
         )
 
     @cached_property
     def hidden(self) -> "bool":
         """Determine if the element is hidden."""
-        return try_eval(self["opacity"]) == 0 or "hidden" in self["visibility"]
+        return (
+            try_eval(self.theme["opacity"]) == 0 or "hidden" in self.theme["visibility"]
+        )
 
     @cached_property
     def in_flow(self) -> "bool":
         """Determines if the element is "in-flow"."""
         return (
             not self.skip
-            and self["float"] == "none"
-            and self["position"] not in {"absolute", "fixed"}
+            and self.theme["float"] == "none"
+            and self.theme["position"] not in {"absolute", "fixed"}
             and self.element.name != "html"
         )
 
@@ -1286,6 +1358,667 @@ class Theme(Mapping):
 
 
 _BROWSER_CSS = {
+    (CssSelector(item="text"),): {"display": "inline"},
+    (CssSelector(item="head"),): {"display": "none"},
+    (CssSelector(item="base"),): {"display": "none"},
+    (CssSelector(item="command"),): {"display": "none"},
+    (CssSelector(item="link"),): {"display": "none"},
+    (CssSelector(item="meta"),): {"display": "none"},
+    (CssSelector(item="noscript"),): {"display": "none"},
+    (CssSelector(item="script"),): {"display": "none"},
+    (CssSelector(item="style"),): {"display": "none"},
+    (CssSelector(item="title"),): {"display": "none"},
+    (CssSelector(item="a"),): {
+        "display": "inline",
+        "text_decoration": "underline",
+        "color": "ansibrightblue",
+    },
+    (CssSelector(item="abbr"),): {"display": "inline"},
+    (CssSelector(item="acronym"),): {"display": "inline"},
+    (CssSelector(item="audio"),): {"display": "inline"},
+    (CssSelector(item="b"),): {"display": "inline", "font_weight": "bold"},
+    (CssSelector(item="bdi"),): {"display": "inline"},
+    (CssSelector(item="bdo"),): {"display": "inline"},
+    (CssSelector(item="big"),): {"display": "inline"},
+    (CssSelector(item="br"),): {"display": "inline"},
+    (CssSelector(item="canvas"),): {"display": "inline"},
+    (CssSelector(item="cite"),): {"display": "inline", "font_style": "italic"},
+    (CssSelector(item="code"),): {
+        "display": "inline",
+        "background_color": "#333333",
+        "color": "#FFFFFF",
+    },
+    (CssSelector(item="data"),): {"display": "inline"},
+    (CssSelector(item="datalist"),): {"display": "inline"},
+    (CssSelector(item="del"),): {
+        "display": "inline",
+        "text_decoration": "line-through",
+    },
+    (CssSelector(item="dfn"),): {"display": "inline", "font_style": "italic"},
+    (CssSelector(item="em"),): {"display": "inline", "font_style": "italic"},
+    (CssSelector(item="embed"),): {"display": "inline"},
+    (CssSelector(item="i"),): {"display": "inline", "font_style": "italic"},
+    (CssSelector(item="iframe"),): {"display": "inline"},
+    (CssSelector(item="img"),): {
+        "display": "inline-block",
+        "overflow_x": "hidden",
+        "overflow_y": "hidden",
+    },
+    (CssSelector(item="ins"),): {"display": "inline", "text_decoration": "underline"},
+    (CssSelector(item="kbd"),): {
+        "display": "inline",
+        "background_color": "#333344",
+        "color": "#FFFFFF",
+    },
+    (CssSelector(item="label"),): {"display": "inline"},
+    (CssSelector(item="map"),): {"display": "inline"},
+    (CssSelector(item="mark"),): {
+        "display": "inline",
+        "color": "black",
+        "background_color": "#FFFF00",
+    },
+    (CssSelector(item="meter"),): {"display": "inline"},
+    (CssSelector(item="object"),): {"display": "inline"},
+    (CssSelector(item="output"),): {"display": "inline"},
+    (CssSelector(item="picture"),): {"display": "inline"},
+    (CssSelector(item="progress"),): {"display": "inline"},
+    (CssSelector(item="q"),): {"display": "inline"},
+    (CssSelector(item="ruby"),): {"display": "inline"},
+    (CssSelector(item="s"),): {"display": "inline", "text_decoration": "line-through"},
+    (CssSelector(item="samp"),): {
+        "display": "inline",
+        "background_color": "#334433",
+        "color": "#FFFFFF",
+    },
+    (CssSelector(item="select"),): {"display": "inline"},
+    (CssSelector(item="slot"),): {"display": "inline"},
+    (CssSelector(item="small"),): {"display": "inline"},
+    (CssSelector(item="span"),): {"display": "inline"},
+    (CssSelector(item="strong"),): {"display": "inline", "font_weight": "bold"},
+    (CssSelector(item="sub"),): {"display": "inline", "vertical_align": "sub"},
+    (CssSelector(item="sup"),): {"display": "inline", "vertical_align": "super"},
+    (CssSelector(item="svg"),): {"display": "inline"},
+    (CssSelector(item="template"),): {"display": "inline"},
+    (CssSelector(item="textarea"),): {"display": "inline"},
+    (CssSelector(item="time"),): {"display": "inline"},
+    (CssSelector(item="u"),): {"display": "inline", "text_decoration": "underline"},
+    (CssSelector(item="tt"),): {"display": "inline"},
+    (CssSelector(item="var"),): {"display": "inline", "font_style": "italic"},
+    (CssSelector(item="video"),): {"display": "inline"},
+    (CssSelector(item="wbr"),): {"display": "inline"},
+    (CssSelector(item="math"),): {
+        "display": "inline",
+        "text_align": "center",
+        "margin_top": "1rem",
+        "margin_bottom": "1rem",
+    },
+    (CssSelector(item="center"),): {"text_align": "center"},
+    (CssSelector(item="table"),): {"display": "table"},
+    (CssSelector(item="td"),): {"display": "table-cell"},
+    (CssSelector(item="th"),): {
+        "display": "table-cell",
+        "font_weight": "bold",
+        "text_align": "center",
+    },
+    (CssSelector(item="option"),): {"display": "none"},
+    (CssSelector(item="input"),): {
+        "display": "inline-block",
+        "color": "#000000",
+        "border_top_style": ":lower-left",
+        "border_right_style": ":lower-left",
+        "border_bottom_style": ":upper-right",
+        "border_left_style": ":upper-right",
+        "border_top_width": "2px",
+        "border_right_width": "2px",
+        "border_bottom_width": "2px",
+        "border_left_width": "2px",
+        "vertical_align": "middle",
+    },
+    (CssSelector(item="input", attr="[type=hidden]"),): {"display": "none"},
+    (CssSelector(item="input", attr="[type=text]"),): {
+        "background_color": "#FFFFFF",
+        "border_top_color": "#606060",
+        "border_right_color": "#E9E7E3",
+        "border_bottom_color": "#E9E7E3",
+        "border_left_color": "#606060",
+    },
+    (CssSelector(item="input", attr="[type=button]"),): {
+        "background_color": "#d4d0c8",
+        "border_right": "#606060",
+        "border_bottom": "#606060",
+        "border_left": "#ffffff",
+        "border_top": "#ffffff",
+    },
+    (CssSelector(item="input", attr="[type=submit]"),): {
+        "background_color": "#d4d0c8",
+        "border_right": "#606060",
+        "border_bottom": "#606060",
+        "border_left": "#ffffff",
+        "border_top": "#ffffff",
+    },
+    (CssSelector(item="input", attr="[type=reset]"),): {
+        "background_color": "#d4d0c8",
+        "border_right": "#606060",
+        "border_bottom": "#606060",
+        "border_left": "#ffffff",
+        "border_top": "#ffffff",
+    },
+    (CssSelector(item="button"),): {
+        "display": "inline-block",
+        "color": "#000000",
+        "border_top_style": ":lower-left",
+        "border_right_style": ":lower-left",
+        "border_bottom_style": ":upper-right",
+        "border_left_style": ":upper-right",
+        "border_top_width": "2px",
+        "border_right_width": "2px",
+        "border_bottom_width": "2px",
+        "border_left_width": "2px",
+        "background_color": "#d4d0c8",
+        "border_right": "#606060",
+        "border_bottom": "#606060",
+        "border_left": "#ffffff",
+        "border_top": "#ffffff",
+    },
+    (CssSelector(item="body"),): {"display": "block"},
+    (CssSelector(item="h1"),): {
+        "display": "block",
+        "font_weight": "bold",
+        "border_bottom_style": "solid",
+        "text_decoration": "underline",
+        "border_bottom_width": "thick",
+        "padding_bottom": "2rem",
+        "margin_top": "2rem",
+        "margin_bottom": "2em",
+    },
+    (CssSelector(item="h2"),): {
+        "display": "block",
+        "font_weight": "bold",
+        "border_bottom_style": "double",
+        "border_bottom_width": "thick",
+        "padding_bottom": "1.5rem",
+        "margin_top": "1.5rem",
+        "margin_bottom": "1.5rem",
+    },
+    (CssSelector(item="h3"),): {
+        "display": "block",
+        "font_weight": "bold",
+        "font_style": "italic",
+        "border_bottom_style": ":lower-left",
+        "border_bottom_width": "thin",
+        "padding_top": "1rem",
+        "padding_bottom": "1rem",
+        "margin_bottom": "1.5rem",
+    },
+    (CssSelector(item="h4"),): {
+        "display": "block",
+        "text_decoration": "underline",
+        "border_bottom_style": "solid",
+        "border_bottom_width": "thin",
+        "padding_top": "1rem",
+        "padding_bottom": "1rem",
+        "margin_bottom": "1.5rem",
+    },
+    (CssSelector(item="h5"),): {
+        "display": "block",
+        "border_bottom_style": "dashed",
+        "border_bottom_width": "thin",
+        "margin_bottom": "1.5rem",
+    },
+    (CssSelector(item="h6"),): {
+        "display": "block",
+        "font_style": "italic",
+        "border_bottom_style": "dotted",
+        "border_bottom_width": "thin",
+        "margin_bottom": "1.5rem",
+    },
+    (CssSelector(item="blockquote"),): {
+        "display": "block",
+        "margin_top": "1em",
+        "margin_bottom": "1em",
+        "padding_left": "1em",
+        "border_left_width": "thick",
+        "border_left_style": "solid",
+        "border_left_color": "darkmagenta",
+    },
+    (CssSelector(item="hr"),): {
+        "margin_top": "1rem",
+        "margin_bottom": "1rem",
+        "border_top_width": "thin",
+        "border_top_style": "solid",
+        "border_top_color": "ansired",
+    },
+    (CssSelector(item="p"),): {"margin_top": "1em", "margin_bottom": "1em"},
+    (CssSelector(item="pre"),): {
+        "margin_top": "1em",
+        "margin_bottom": "1em",
+        "white_space": "pre",
+    },
+    (CssSelector(item="caption"),): {"text_align": "center"},
+    (CssSelector(item="::marker"),): {
+        "display": "inline",
+        "padding_right": "1em",
+        "text_align": "right",
+    },
+    (CssSelector(item="ol"),): {
+        "display": "block",
+        "list_style_type": "decimal",
+        "list_style_position": "outside",
+        "padding_left": "4em",
+        "margin_top": "1em",
+        "margin_bottom": "1em",
+    },
+    (CssSelector(item="ul"),): {
+        "display": "block",
+        "list_style_type": "disc",
+        "list_style_position": "outside",
+        "padding_left": "3em",
+        "margin_top": "1em",
+        "margin_bottom": "1em",
+    },
+    (CssSelector(item="menu"),): {
+        "display": "block",
+        "list_style_type": "disc",
+        "list_style_position": "outside",
+        "padding_left": "3em",
+        "margin_top": "1em",
+        "margin_bottom": "1em",
+    },
+    (CssSelector(item="dir"),): {
+        "display": "block",
+        "list_style_type": "disc",
+        "list_style_position": "outside",
+        "padding_left": "3em",
+        "margin_top": "1em",
+        "margin_bottom": "1em",
+    },
+    (CssSelector(item="li"),): {"display": "block"},
+    (
+        CssSelector(item="ol"),
+        CssSelector(comb=" ", item="li"),
+        CssSelector(comb="", item="::marker"),
+    ): {"color": "ansicyan"},
+    (
+        CssSelector(item="ul"),
+        CssSelector(comb=" ", item="li"),
+        CssSelector(comb="", item="::marker"),
+    ): {"color": "ansiyellow"},
+    (CssSelector(item="dir"), CssSelector(comb=" ", item="dir")): {
+        "margin_top": "0em",
+        "margin_bottom": "0em",
+        "list_style_type": "circle",
+    },
+    (CssSelector(item="dir"), CssSelector(comb=" ", item="dl")): {
+        "margin_top": "0em",
+        "margin_bottom": "0em",
+    },
+    (CssSelector(item="dir"), CssSelector(comb=" ", item="ol")): {
+        "margin_top": "0em",
+        "margin_bottom": "0em",
+    },
+    (CssSelector(item="dir"), CssSelector(comb=" ", item="menu")): {
+        "margin_top": "0em",
+        "margin_bottom": "0em",
+        "list_style_type": "circle",
+    },
+    (CssSelector(item="dir"), CssSelector(comb=" ", item="ul")): {
+        "margin_top": "0em",
+        "margin_bottom": "0em",
+        "list_style_type": "circle",
+    },
+    (CssSelector(item="dl"), CssSelector(comb=" ", item="dir")): {
+        "margin_top": "0em",
+        "margin_bottom": "0em",
+    },
+    (CssSelector(item="dl"), CssSelector(comb=" ", item="dl")): {
+        "margin_top": "0em",
+        "margin_bottom": "0em",
+    },
+    (CssSelector(item="dl"), CssSelector(comb=" ", item="ol")): {
+        "margin_top": "0em",
+        "margin_bottom": "0em",
+    },
+    (CssSelector(item="dl"), CssSelector(comb=" ", item="menu")): {
+        "margin_top": "0em",
+        "margin_bottom": "0em",
+    },
+    (CssSelector(item="dl"), CssSelector(comb=" ", item="ul")): {
+        "margin_top": "0em",
+        "margin_bottom": "0em",
+    },
+    (CssSelector(item="ol"), CssSelector(comb=" ", item="dir")): {
+        "margin_top": "0em",
+        "margin_bottom": "0em",
+        "list_style_type": "circle",
+    },
+    (CssSelector(item="ol"), CssSelector(comb=" ", item="dl")): {
+        "margin_top": "0em",
+        "margin_bottom": "0em",
+    },
+    (CssSelector(item="ol"), CssSelector(comb=" ", item="ol")): {
+        "margin_top": "0em",
+        "margin_bottom": "0em",
+    },
+    (CssSelector(item="ol"), CssSelector(comb=" ", item="menu")): {
+        "margin_top": "0em",
+        "margin_bottom": "0em",
+        "list_style_type": "circle",
+    },
+    (CssSelector(item="ol"), CssSelector(comb=" ", item="ul")): {
+        "margin_top": "0em",
+        "margin_bottom": "0em",
+        "list_style_type": "circle",
+    },
+    (CssSelector(item="menu"), CssSelector(comb=" ", item="dir")): {
+        "margin_top": "0em",
+        "margin_bottom": "0em",
+        "list_style_type": "circle",
+    },
+    (CssSelector(item="menu"), CssSelector(comb=" ", item="dl")): {
+        "margin_top": "0em",
+        "margin_bottom": "0em",
+    },
+    (CssSelector(item="menu"), CssSelector(comb=" ", item="ol")): {
+        "margin_top": "0em",
+        "margin_bottom": "0em",
+    },
+    (CssSelector(item="menu"), CssSelector(comb=" ", item="menu")): {
+        "margin_top": "0em",
+        "margin_bottom": "0em",
+        "list_style_type": "circle",
+    },
+    (CssSelector(item="menu"), CssSelector(comb=" ", item="ul")): {
+        "list_style_type": "circle",
+        "margin_top": "0em",
+        "margin_bottom": "0em",
+    },
+    (CssSelector(item="ul"), CssSelector(comb=" ", item="dir")): {
+        "margin_top": "0em",
+        "margin_bottom": "0em",
+        "list_style_type": "circle",
+    },
+    (CssSelector(item="ul"), CssSelector(comb=" ", item="dl")): {
+        "margin_top": "0em",
+        "margin_bottom": "0em",
+    },
+    (CssSelector(item="ul"), CssSelector(comb=" ", item="ol")): {
+        "margin_top": "0em",
+        "margin_bottom": "0em",
+    },
+    (CssSelector(item="ul"), CssSelector(comb=" ", item="menu")): {
+        "margin_top": "0em",
+        "margin_bottom": "0em",
+        "list_style_type": "circle",
+    },
+    (CssSelector(item="ul"), CssSelector(comb=" ", item="ul")): {
+        "margin_top": "0em",
+        "margin_bottom": "0em",
+        "list_style_type": "circle",
+    },
+    (
+        CssSelector(item="dir"),
+        CssSelector(comb=" ", item="dir"),
+        CssSelector(comb=" ", item="dir"),
+    ): {"list_style_type": "square"},
+    (
+        CssSelector(item="dir"),
+        CssSelector(comb=" ", item="dir"),
+        CssSelector(comb=" ", item="menu"),
+    ): {"list_style_type": "square"},
+    (
+        CssSelector(item="dir"),
+        CssSelector(comb=" ", item="dir"),
+        CssSelector(comb=" ", item="ul"),
+    ): {"list_style_type": "square"},
+    (
+        CssSelector(item="dir"),
+        CssSelector(comb=" ", item="menu"),
+        CssSelector(comb=" ", item="dir"),
+    ): {"list_style_type": "square"},
+    (
+        CssSelector(item="dir"),
+        CssSelector(comb=" ", item="menu"),
+        CssSelector(comb=" ", item="menu"),
+    ): {"list_style_type": "square"},
+    (
+        CssSelector(item="dir"),
+        CssSelector(comb=" ", item="menu"),
+        CssSelector(comb=" ", item="ul"),
+    ): {"list_style_type": "square"},
+    (
+        CssSelector(item="dir"),
+        CssSelector(comb=" ", item="ol"),
+        CssSelector(comb=" ", item="dir"),
+    ): {"list_style_type": "square"},
+    (
+        CssSelector(item="dir"),
+        CssSelector(comb=" ", item="ol"),
+        CssSelector(comb=" ", item="menu"),
+    ): {"list_style_type": "square"},
+    (
+        CssSelector(item="dir"),
+        CssSelector(comb=" ", item="ol"),
+        CssSelector(comb=" ", item="ul"),
+    ): {"list_style_type": "square"},
+    (
+        CssSelector(item="dir"),
+        CssSelector(comb=" ", item="ul"),
+        CssSelector(comb=" ", item="dir"),
+    ): {"list_style_type": "square"},
+    (
+        CssSelector(item="dir"),
+        CssSelector(comb=" ", item="ul"),
+        CssSelector(comb=" ", item="menu"),
+    ): {"list_style_type": "square"},
+    (
+        CssSelector(item="dir"),
+        CssSelector(comb=" ", item="ul"),
+        CssSelector(comb=" ", item="ul"),
+    ): {"list_style_type": "square"},
+    (
+        CssSelector(item="menu"),
+        CssSelector(comb=" ", item="dir"),
+        CssSelector(comb=" ", item="dir"),
+    ): {"list_style_type": "square"},
+    (
+        CssSelector(item="menu"),
+        CssSelector(comb=" ", item="dir"),
+        CssSelector(comb=" ", item="menu"),
+    ): {"list_style_type": "square"},
+    (
+        CssSelector(item="menu"),
+        CssSelector(comb=" ", item="dir"),
+        CssSelector(comb=" ", item="ul"),
+    ): {"list_style_type": "square"},
+    (
+        CssSelector(item="menu"),
+        CssSelector(comb=" ", item="menu"),
+        CssSelector(comb=" ", item="dir"),
+    ): {"list_style_type": "square"},
+    (
+        CssSelector(item="menu"),
+        CssSelector(comb=" ", item="menu"),
+        CssSelector(comb=" ", item="menu"),
+    ): {"list_style_type": "square"},
+    (
+        CssSelector(item="menu"),
+        CssSelector(comb=" ", item="menu"),
+        CssSelector(comb=" ", item="ul"),
+    ): {"list_style_type": "square"},
+    (
+        CssSelector(item="menu"),
+        CssSelector(comb=" ", item="ol"),
+        CssSelector(comb=" ", item="dir"),
+    ): {"list_style_type": "square"},
+    (
+        CssSelector(item="menu"),
+        CssSelector(comb=" ", item="ol"),
+        CssSelector(comb=" ", item="menu"),
+    ): {"list_style_type": "square"},
+    (
+        CssSelector(item="menu"),
+        CssSelector(comb=" ", item="ol"),
+        CssSelector(comb=" ", item="ul"),
+    ): {"list_style_type": "square"},
+    (
+        CssSelector(item="menu"),
+        CssSelector(comb=" ", item="ul"),
+        CssSelector(comb=" ", item="dir"),
+    ): {"list_style_type": "square"},
+    (
+        CssSelector(item="menu"),
+        CssSelector(comb=" ", item="ul"),
+        CssSelector(comb=" ", item="menu"),
+    ): {"list_style_type": "square"},
+    (
+        CssSelector(item="menu"),
+        CssSelector(comb=" ", item="ul"),
+        CssSelector(comb=" ", item="ul"),
+    ): {"list_style_type": "square"},
+    (
+        CssSelector(item="ol"),
+        CssSelector(comb=" ", item="dir"),
+        CssSelector(comb=" ", item="dir"),
+    ): {"list_style_type": "square"},
+    (
+        CssSelector(item="ol"),
+        CssSelector(comb=" ", item="dir"),
+        CssSelector(comb=" ", item="menu"),
+    ): {"list_style_type": "square"},
+    (
+        CssSelector(item="ol"),
+        CssSelector(comb=" ", item="dir"),
+        CssSelector(comb=" ", item="ul"),
+    ): {"list_style_type": "square"},
+    (
+        CssSelector(item="ol"),
+        CssSelector(comb=" ", item="menu"),
+        CssSelector(comb=" ", item="dir"),
+    ): {"list_style_type": "square"},
+    (
+        CssSelector(item="ol"),
+        CssSelector(comb=" ", item="menu"),
+        CssSelector(comb=" ", item="menu"),
+    ): {"list_style_type": "square"},
+    (
+        CssSelector(item="ol"),
+        CssSelector(comb=" ", item="menu"),
+        CssSelector(comb=" ", item="ul"),
+    ): {"list_style_type": "square"},
+    (
+        CssSelector(item="ol"),
+        CssSelector(comb=" ", item="ol"),
+        CssSelector(comb=" ", item="dir"),
+    ): {"list_style_type": "square"},
+    (
+        CssSelector(item="ol"),
+        CssSelector(comb=" ", item="ol"),
+        CssSelector(comb=" ", item="menu"),
+    ): {"list_style_type": "square"},
+    (
+        CssSelector(item="ol"),
+        CssSelector(comb=" ", item="ol"),
+        CssSelector(comb=" ", item="ul"),
+    ): {"list_style_type": "square"},
+    (
+        CssSelector(item="ol"),
+        CssSelector(comb=" ", item="ul"),
+        CssSelector(comb=" ", item="dir"),
+    ): {"list_style_type": "square"},
+    (
+        CssSelector(item="ol"),
+        CssSelector(comb=" ", item="ul"),
+        CssSelector(comb=" ", item="menu"),
+    ): {"list_style_type": "square"},
+    (
+        CssSelector(item="ol"),
+        CssSelector(comb=" ", item="ul"),
+        CssSelector(comb=" ", item="ul"),
+    ): {"list_style_type": "square"},
+    (
+        CssSelector(item="ul"),
+        CssSelector(comb=" ", item="dir"),
+        CssSelector(comb=" ", item="dir"),
+    ): {"list_style_type": "square"},
+    (
+        CssSelector(item="ul"),
+        CssSelector(comb=" ", item="dir"),
+        CssSelector(comb=" ", item="menu"),
+    ): {"list_style_type": "square"},
+    (
+        CssSelector(item="ul"),
+        CssSelector(comb=" ", item="dir"),
+        CssSelector(comb=" ", item="ul"),
+    ): {"list_style_type": "square"},
+    (
+        CssSelector(item="ul"),
+        CssSelector(comb=" ", item="menu"),
+        CssSelector(comb=" ", item="dir"),
+    ): {"list_style_type": "square"},
+    (
+        CssSelector(item="ul"),
+        CssSelector(comb=" ", item="menu"),
+        CssSelector(comb=" ", item="menu"),
+    ): {"list_style_type": "square"},
+    (
+        CssSelector(item="ul"),
+        CssSelector(comb=" ", item="menu"),
+        CssSelector(comb=" ", item="ul"),
+    ): {"list_style_type": "square"},
+    (
+        CssSelector(item="ul"),
+        CssSelector(comb=" ", item="ol"),
+        CssSelector(comb=" ", item="dir"),
+    ): {"list_style_type": "square"},
+    (
+        CssSelector(item="ul"),
+        CssSelector(comb=" ", item="ol"),
+        CssSelector(comb=" ", item="menu"),
+    ): {"list_style_type": "square"},
+    (
+        CssSelector(item="ul"),
+        CssSelector(comb=" ", item="ol"),
+        CssSelector(comb=" ", item="ul"),
+    ): {"list_style_type": "square"},
+    (
+        CssSelector(item="ul"),
+        CssSelector(comb=" ", item="ul"),
+        CssSelector(comb=" ", item="dir"),
+    ): {"list_style_type": "square"},
+    (
+        CssSelector(item="ul"),
+        CssSelector(comb=" ", item="ul"),
+        CssSelector(comb=" ", item="menu"),
+    ): {"list_style_type": "square"},
+    (
+        CssSelector(item="ul"),
+        CssSelector(comb=" ", item="ul"),
+        CssSelector(comb=" ", item="ul"),
+    ): {"list_style_type": "square"},
+    (CssSelector(item="details"),): {
+        "display": "block",
+        "list_style_type": "disclosure-closed",
+        "list_style_position": "inside",
+    },
+    (
+        CssSelector(item="details", attr="[open]"),
+        CssSelector(comb=" ", item="summary"),
+    ): {"list_style_type": "disclosure-open"},
+    (CssSelector(item="summary"),): {"font_weight": "bold"},
+    (CssSelector(item=".dataframe"),): {
+        "border_top_width": "0",
+        "border_right_width": "0",
+        "border_bottom_width": "0",
+        "border_left_width": "0",
+        "border_top_style": "none",
+        "border_right_style": "none",
+        "border_bottom_style": "none",
+        "border_left_style": "none",
+    },
+    (CssSelector(item=".block"),): {"display": "block"},
+}
+
+__BROWSER_CSS = {
     "::default": {
         # Display
         "display": "block",
@@ -1823,7 +2556,7 @@ class Node:
                         text = " "
                 text = re.sub(r"\s+", " ", text.strip("\n").replace("\n", " "))
 
-                # This next is does not appear to be needed
+                # This next bit does not appear to be needed
                 """
                 if text and (
                     self.is_first_child_node
@@ -1923,8 +2656,15 @@ class Node:
     @cached_property
     def is_last_child_element(self) -> "bool":
         """True if the element if the last child element of its parent element."""
-        if (parent := self.parent) and (child_elements := list(parent.child_elements)):
-            return child_elements[-1] == self
+        if parent := self.parent:
+            for child in reversed(parent.contents):
+                # Ignore text and comment nodes
+                if (
+                    child.name != "text"
+                    and child.name != "comment"
+                    and not child.name.startswith("::")
+                ):
+                    return child == self
         return False
 
     @cached_property
@@ -2111,14 +2851,18 @@ def parse_styles(soup: "Node", base_url: "UPath") -> "dict[str, dict[str, str]]"
                 for rule in css_str.rstrip("}").split("}"):
                     selectors, _, content = rule.partition("{")
                     # TODO - more CSS matching complex rules
-                    for selector in map(str.strip, selectors.split(",")):
-                        content = content.strip().rstrip(";")
-                        rule_content = parse_css_content(content)
-                        if rule_content:
+                    content = content.strip().rstrip(";")
+                    rule_content = parse_css_content(content)
+                    if rule_content:
+                        for selector in map(str.strip, selectors.split(",")):
+                            selector_parts = tuple(
+                                CssSelector(**m.groupdict())
+                                for m in _SELECTOR_RE.finditer(selector.strip())
+                            )
                             if selector in rules:
-                                rules[selector].update(rule_content)
+                                rules[selector_parts].update(rule_content)
                             else:
-                                rules[selector] = rule_content
+                                rules[selector_parts] = rule_content
 
     return rules
 
@@ -2315,7 +3059,7 @@ class HTML:
             theme.update_space(available_width, available_height)
 
             # Do not render tags set to display:none
-            if theme["display"] == "none":
+            if theme.skip:
                 continue
 
             # Is the current element a block element?
@@ -2334,7 +3078,6 @@ class HTML:
             # if inline:
             # left = last_line_length(ft, rows=line_height)
 
-            # Render the element
             # p rint(
             # "<",
             # *(x.name for x in element.parents),
@@ -2344,6 +3087,7 @@ class HTML:
             # [x[1] for x in ft],
             # )
 
+            # Render the element
             rendering = render_func(
                 element,
                 parent_theme=parent_theme,
@@ -2359,7 +3103,7 @@ class HTML:
                 continue
 
             # If the rendering was a float, store it and draw it later
-            if theme["position"] == "fixed":
+            if theme.theme["position"] == "fixed":
                 floats[(theme.z_index, theme.position)] = rendering
 
             # If the rendering was inline (an inline-block or text), add it to the end
@@ -2506,9 +3250,6 @@ class HTML:
         """
         theme = element.theme  # (parent_theme, available_width, available_height)
         theme.update_space(available_width, available_height)
-
-        if theme.skip:
-            return []
 
         block = theme.block
         inline = theme.inline
