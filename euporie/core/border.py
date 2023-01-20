@@ -6,6 +6,8 @@ from enum import Enum
 from functools import lru_cache, total_ordering
 from typing import TYPE_CHECKING, NamedTuple
 
+from prompt_toolkit.cache import FastDictCache
+
 if TYPE_CHECKING:
     from typing import Optional
 
@@ -163,6 +165,11 @@ class Masks:
     )
 
 
+def _lint_to_grid(line: "LineStyle", mask: "Mask") -> "GridStyle":
+    """Get a grid from a line and a mask."""
+    return GridStyle(line, mask)
+
+
 @total_ordering
 class LineStyle:
     """Defines a line style which can be used to draw grids.
@@ -170,6 +177,10 @@ class LineStyle:
     :class:`GridStyle`s can be created from a :class:`LineStyle` by accessing an
     attribute with the name of a default mask from :class:`Masks`.
     """
+
+    _grid_cache: "FastDictCache[tuple[LineStyle, Mask], GridStyle]" = FastDictCache(
+        get_value=_lint_to_grid
+    )
 
     def __init__(
         self,
@@ -199,7 +210,6 @@ class LineStyle:
         if parent:
             parent.children[name] = self
 
-    @lru_cache  # noqa B019
     def __getattr__(self, value: "str") -> "GridStyle":
         """Defines attribute access.
 
@@ -218,7 +228,7 @@ class LineStyle:
         """
         if hasattr(Masks, value):
             mask = getattr(Masks, value)
-            return GridStyle(self, mask)
+            return self._grid_cache[self, mask]
         else:
             raise AttributeError(f"No such attribute `{value}`")
 
@@ -580,6 +590,17 @@ def get_grid_char(key: "GridChar") -> "str":
             return " "
 
 
+def _combine_grids(grid_a: "GridStyle", grid_b: "GridStyle") -> GridStyle:
+    """Combine a pair of grids."""
+    grid_style = GridStyle()
+    grid_style.grid = {}
+    for part in GridPart:
+        grid_style.grid[part] = GridChar(
+            *(max(grid_a.grid[part][i], grid_b.grid[part][i]) for i in range(4))
+        )
+    return grid_style
+
+
 class GridStyle:
     """A collection of characters which can be used to draw a grid."""
 
@@ -588,6 +609,8 @@ class GridStyle:
         MID: "str"
         SPLIT: "str"
         RIGHT: "str"
+
+    _grid_cache: "FastDictCache[tuple[GridStyle, GridStyle], GridStyle]" = FastDictCache(get_value=_combine_grids)
 
     def __init__(
         self, line_style: "LineStyle" = NoLine, mask: "Mask" = Masks.grid
@@ -665,16 +688,9 @@ class GridStyle:
         """List the public attributes of the grid style."""
         return [x.name for x in GridPart] + ["TOP", "MID", "SPLIT", "BOTTOM"]
 
-    @lru_cache  # noqa B019
     def __add__(self, other: "GridStyle") -> "GridStyle":
         """Combine two grid styles."""
-        grid_style = GridStyle()
-        grid_style.grid = {}
-        for part in GridPart:
-            grid_style.grid[part] = GridChar(
-                *(max(self.grid[part][i], other.grid[part][i]) for i in range(4))
-            )
-        return grid_style
+        return self._grid_cache[self, other]
 
     def __repr__(self) -> "str":
         """Returns a string representation of the grid style."""
