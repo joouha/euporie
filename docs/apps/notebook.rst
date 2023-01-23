@@ -116,7 +116,11 @@ To save a notebook, press :kbd:`Ctrl+W` or navigate to :menuselection:`File --> 
 Changing a Cell's Type
 ======================
 
-To close a notebook, press :kbd:`Ctrl+W` or navigate to :menuselection:`File --> Close File` in the menus.
+To change the currently selected cells to:
+
+* **code cells**, press :kbd:`y`;
+* **markdown cells**, press :kbd:`m`;
+* **raw cells**, press :kbd:`r`.
 
 .. video:: https://user-images.githubusercontent.com/12154190/183309066-ff54ef27-f34b-4f65-a1ba-4b144f9d9ab5.webm
    :width: 100%
