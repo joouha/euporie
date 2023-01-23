@@ -25,6 +25,7 @@ from euporie.core.app import get_app
 from euporie.core.border import ThinLine
 from euporie.core.config import add_setting
 from euporie.core.data_structures import DiBool
+from euporie.core.style import ColorPaletteColor
 
 if TYPE_CHECKING:
     from typing import Callable, Optional, Union
@@ -417,6 +418,80 @@ class FocusedStyle(Container):
         return [to_container(self.body)]
 
 
+class DropShadow(Container):
+    """A transparent container which makes the background darker."""
+
+    def __init__(self, amount: float = 0.5) -> None:
+        """Create a new instance."""
+        self.amount = amount
+        app = get_app()
+        self.cp = app.color_palette
+        self.renderer = app.renderer
+
+    def reset(self) -> "None":
+        """Reset the wrapped container - here, do nothing."""
+
+    def preferred_width(self, max_available_width: "int") -> "Dimension":
+        """Return the wrapped container's preferred width."""
+        return Dimension(weight=1)
+
+    def preferred_height(
+        self, width: "int", max_available_height: "int"
+    ) -> "Dimension":
+        """Return the wrapped container's preferred height."""
+        return Dimension(weight=1)
+
+    def write_to_screen(
+        self,
+        screen: "Screen",
+        mouse_handlers: "MouseHandlers",
+        write_position: "WritePosition",
+        parent_style: "str",
+        erase_bg: "bool",
+        z_index: "Optional[int]",
+    ) -> "None":
+        """Draw the wrapped container with the additional style."""
+        attr_cache = self.renderer._attrs_for_style
+        if attr_cache is not None:
+            ypos = write_position.ypos
+            xpos = write_position.xpos
+            amount = self.amount
+            for y in range(ypos, ypos + write_position.height):
+                row = screen.data_buffer[y]
+                for x in range(xpos, xpos + write_position.width):
+                    char = row[x]
+                    style = char.style
+                    attrs = attr_cache[style]
+
+                    if not (fg := attrs.color) or fg == "default":
+                        color = self.cp.fg
+                        style += f" fg:{color.darker(amount)}"
+                    else:
+                        try:
+                            color = ColorPaletteColor(fg)
+                        except ValueError:
+                            pass
+                        else:
+                            style += f" fg:{color.darker(amount)}"
+
+                    if not (bg := attrs.bgcolor) or bg == "default":
+                        color = self.cp.bg
+                        style += f" bg:{color.darker(amount)}"
+                    else:
+                        try:
+                            color = ColorPaletteColor(bg)
+                        except ValueError:
+                            pass
+                        else:
+                            style += f" bg:{color.darker(amount)}"
+
+                    row[x] = Char(char=char.char, style=style)
+
+    def get_children(self) -> list[Container]:
+        """Return an empty list of child :class:`.Container` objects."""
+        return []
+
+
 class Shadow:
     """Draw a shadow underneath/behind this container.
 
@@ -440,7 +515,7 @@ class Shadow:
                     left=1,
                     right=-1,
                     transparent=True,
-                    content=Window(style="class:shadow"),
+                    content=DropShadow(),
                 ),
                 Float(
                     bottom=-1,
@@ -448,7 +523,7 @@ class Shadow:
                     width=1,
                     right=-1,
                     transparent=True,
-                    content=Window(style="class:shadow"),
+                    content=DropShadow(),
                 ),
             ],
         )

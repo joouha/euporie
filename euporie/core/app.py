@@ -80,7 +80,6 @@ from euporie.core.style import (
     LOG_STYLE,
     MIME_STYLE,
     ColorPalette,
-    ShadowStyle,
     build_style,
 )
 from euporie.core.terminal import TerminalInfo
@@ -179,6 +178,7 @@ class BaseApp(Application):
     """
 
     name: str
+    color_palette: ColorPalette
     config = Config()
     status_default: "StatusBarFields" = ([], [])
     need_mouse_support: "bool" = False
@@ -721,20 +721,15 @@ class BaseApp(Application):
             ]
         )
 
-        return ShadowStyle(
-            style=merge_styles(
-                [
-                    style_from_pygments_cls(
-                        get_style_by_name(self.config.syntax_theme)
-                    ),
-                    Style(MIME_STYLE),
-                    Style(HTML_STYLE),
-                    Style(LOG_STYLE),
-                    Style(IPYWIDGET_STYLE),
-                    app_style,
-                ]
-            ),
-            color_palette=self.color_palette,
+        return merge_styles(
+            [
+                style_from_pygments_cls(get_style_by_name(self.config.syntax_theme)),
+                Style(MIME_STYLE),
+                Style(HTML_STYLE),
+                Style(LOG_STYLE),
+                Style(IPYWIDGET_STYLE),
+                app_style,
+            ]
         )
 
     def update_style(
