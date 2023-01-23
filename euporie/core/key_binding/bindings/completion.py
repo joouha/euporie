@@ -49,7 +49,7 @@ add_cmd(
 
 
 @add_cmd(
-    filter=completion_is_selected & has_completions,
+    filter=has_completions,
     hidden=True,
     eager=True,
 )
