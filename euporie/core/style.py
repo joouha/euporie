@@ -8,15 +8,12 @@ from functools import partial
 from typing import TYPE_CHECKING
 
 from prompt_toolkit.cache import SimpleCache
-from prompt_toolkit.styles.base import DEFAULT_ATTRS, BaseStyle
 from prompt_toolkit.styles.defaults import default_ui_style
-from prompt_toolkit.styles.style import Style, _parse_style_str, merge_styles
+from prompt_toolkit.styles.style import Style
 
 if TYPE_CHECKING:
-    from typing import Any, Hashable, Optional
+    from typing import Any
 
-    from prompt_toolkit.styles.base import Attrs
-    from prompt_toolkit.styles.style import _MergedStyle
 
 log = logging.getLogger(__name__)
 
@@ -646,76 +643,3 @@ def build_style(
     }
 
     return Style.from_dict(style_dict)
-
-
-class ShadowStyle(BaseStyle):
-    """Wraps a :py:class:`BaseStyle`, and generates opaque shadow styles for each rule."""
-
-    def __init__(
-        self,
-        style: "BaseStyle",
-        color_palette: "ColorPalette",
-        opacity: "float" = 0.5,
-        color: "Optional[ColorPaletteColor]" = None,
-    ) -> "None":
-        """The constructor accepts a style."""
-        self.cp = color_palette
-        self.color = color or color_palette.bg.darker(0.5)
-        self.opacity = opacity
-        self.base_style = style
-        self._style: "SimpleCache[Hashable, _MergedStyle]" = SimpleCache(maxsize=1)
-
-    @property
-    def _merged_style(self) -> "_MergedStyle":
-        """The `Style` object that has the other styles merged together."""
-
-        def get() -> "_MergedStyle":
-            return merge_styles([self.base_style, Style(self.shadow_rules)])
-
-        return self._style.get(self.base_style.invalidation_hash(), get)
-
-    @property
-    def shadow_rules(self) -> "list[tuple[str, str]]":
-        """Generate new shadow rules."""
-        color = self.color
-        opacity = self.opacity
-
-        default_fg = self.cp.fg.towards(self.color, opacity)
-        default_bg = self.cp.bg.towards(self.color, opacity)
-
-        new_rules = [("shadow", f"fg:{default_fg} bg:{default_bg}")]
-        for rule, style_str in self.base_style.style_rules:
-            style_attrs = _parse_style_str(style_str)
-            if "shadow" in rule.split():
-                continue
-            new_style_str = ""
-            old_fg = style_attrs.color
-            old_bg = style_attrs.bgcolor
-            new_fg = (
-                ColorPaletteColor(old_fg).towards(color, opacity)
-                if old_fg and old_fg not in ("default", "ansidefault")
-                else default_fg
-            )
-            new_bg = (
-                ColorPaletteColor(old_bg).towards(color, opacity)
-                if old_bg and old_bg not in ("default", "ansidefault")
-                else default_bg
-            )
-            new_style_str += f"fg:{new_fg} bg:{new_bg}"
-            new_rules.append((f"{rule} shadow", new_style_str))
-        return new_rules
-
-    @property
-    def style_rules(self) -> "list[tuple[str, str]]":
-        """The list of style rules, used to create this style."""
-        return self._merged_style.style_rules
-
-    def get_attrs_for_style_str(
-        self, style_str: "str", default: "Attrs" = DEFAULT_ATTRS
-    ) -> "Attrs":
-        """Return :class:`.Attrs` for the given style string."""
-        return self._merged_style.get_attrs_for_style_str(style_str, default)
-
-    def invalidation_hash(self) -> "Hashable":
-        """Invalidation hash for the style, which redraws everything on a change."""
-        return self.base_style.invalidation_hash()
