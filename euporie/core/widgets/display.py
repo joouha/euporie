@@ -29,7 +29,13 @@ from euporie.core.commands import add_cmd
 from euporie.core.convert.base import convert, find_route
 from euporie.core.convert.utils import data_pixel_size, pixels_to_cell_size
 from euporie.core.data_structures import DiInt
-from euporie.core.filters import display_has_focus, has_dialog, has_menus, scrollable
+from euporie.core.filters import (
+    display_has_focus,
+    has_dialog,
+    has_menus,
+    in_tmux,
+    scrollable,
+)
 from euporie.core.key_binding.registry import (
     load_registered_bindings,
     register_bindings,
@@ -976,8 +982,11 @@ class GraphicFloat(Float):
         term_info = app.term_info
         preferred_graphics_protocol = app.config.graphics
         useable_graphics_controls: "list[Type[GraphicControl]]" = []
+        _in_tmux = in_tmux()
 
-        if preferred_graphics_protocol != "none":
+        if (
+            not _in_tmux or (_in_tmux and app.config.tmux_graphics)
+        ) and preferred_graphics_protocol != "none":
             if term_info.iterm_graphics_status.value and find_route(
                 format_, "base64-png"
             ):
