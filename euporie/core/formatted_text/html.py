@@ -62,6 +62,24 @@ from euporie.core.formatted_text.utils import (
 from euporie.core.terminal import tmuxify
 from euporie.core.url import load_url
 
+
+class CssSelector(NamedTuple):
+    """A named tuple to hold CSS selector data."""
+
+    comb: str | None = None
+    item: str | None = None
+    attr: str | None = None
+    pseudo: str | None = None
+
+    def __repr__(self) -> "str":
+        """A string representation of the selector."""
+        defaults = self._field_defaults
+        attrs = ", ".join(
+            f"{k}={v!r}" for k, v in self._asdict().items() if v != defaults[k]
+        )
+        return f"{self.__class__.__name__}({attrs})"
+
+
 if TYPE_CHECKING:
     from typing import (
         Any,
@@ -71,6 +89,8 @@ if TYPE_CHECKING:
         Iterator,
         Union,
     )
+
+    CssSelectors = dict[tuple[tuple[CssSelector, ...], ...], dict[str, str]]
 
 log = logging.getLogger(__name__)
 
@@ -88,23 +108,6 @@ _COLOR_RE = re.compile("#([a-fA-F0-9]{6}|[a-fA-F0-9]{3})")
 _SELECTOR_RE = re.compile(
     "(?:^|\s*(?P<comb>[\s\+\>\~]|(?=::))\s*)(?P<item>(?:::)?[^\s\+>~:[\]]+)?(?P<attr>\[[^\s\+>~:]+\])?(?P<pseudo>\:[^:][^\s\+>~]*)?"
 )
-
-
-class CssSelector(NamedTuple):
-    """A named tuple to hold CSS selector data."""
-
-    comb: str | None = None
-    item: str | None = None
-    attr: str | None = None
-    pseudo: str | None = None
-
-    def __repr__(self) -> "str":
-        """A string representation of the selector."""
-        defaults = self._field_defaults
-        attrs = ", ".join(
-            f"{k}={v!r}" for k, v in self._asdict().items() if v != defaults[k]
-        )
-        return f"{self.__class__.__name__}({attrs})"
 
 
 # List of elements which might not have a close tag
@@ -167,7 +170,7 @@ _BORDER_WIDTH_STYLES = {
         ":upper-right": UpperRightEighthLine,
         ":lower-left": LowerLeftEighthLine,
     },
-    0.3: {
+    0.2: {
         "none": NoLine,
         "hidden": InvisibleLine,
         "dotted": ThickQuadrupleDashedLine,
@@ -207,6 +210,7 @@ _HERITABLE_PROPS = {
     "white_space",
     "list_style_type",
     "list_style_position",
+    "pt_theme",
 }
 
 """
@@ -585,9 +589,10 @@ def parse_css_content(content: "str") -> "dict[str, str]":
                 if color := get_color(each_value):
                     color_value = color
                 elif (
-                    width := css_dimension(each_value)
-                ) is not None or each_value in _BORDER_WIDTH_STYLES:
-                    width_value = str(width if width is not None else each_value)
+                    css_dimension(each_value) is not None
+                    or each_value in _BORDER_WIDTH_STYLES
+                ):
+                    width_value = each_value
                 elif each_value in _BORDER_WIDTH_STYLES[0]:
                     style_value = each_value
 
@@ -836,9 +841,7 @@ class Theme(Mapping):
         # cellpadding # TODO
         return theme
 
-    def _css_theme(
-        self, css: "dict[tuple[tuple[CssSelector, ...], ...], dict[str, str]]"
-    ) -> "dict[str, str]":
+    def _css_theme(self, css: "CssSelectors") -> "dict[str, str]":
         """Calculate the theme defined in CSS."""
         specificity_rules = []
         element = self.element
@@ -1126,24 +1129,27 @@ class Theme(Mapping):
     def border_style(self) -> "DiStr":
         """Calculate the visibility of the element's borders."""
         if parent_theme := self.parent_theme:
-            fg = parent_theme.color
-            bg = parent_theme.background_color
+            parent_style = parent_theme.style
         else:
-            fg = bg = "default"
+            parent_style = ""
 
         output = {}
         for direction in ("top", "left", "bottom", "right"):
-            fg_, bg_ = fg, bg
+            style = f"{parent_style}"
+
+            if pt_class := self.theme.get("pt_class"):
+                style += f" class:{pt_class}"
+
             if border_color := get_color(self.theme[f"border_{direction}_color"]):
-                fg_ = border_color
+                style += f" fg:{border_color}"
 
             if getattr(self.border_line, direction) in {
                 UpperRightEighthLine,
                 LowerLeftEighthLine,
             }:
-                bg_ = self.background_color
+                style += f" bg:{self.background_color}"
 
-            output[direction] = f"fg:{fg_} bg:{bg_}"
+            output[direction] = style
 
         return DiStr(**output)
 
@@ -1170,7 +1176,7 @@ class Theme(Mapping):
             size = (
                 _BORDER_WIDTHS.get(
                     border_width,
-                    css_dimension(border_width, vertical=True, available=a_w),
+                    css_dimension(border_width, vertical=False, available=a_w),
                 )
                 or 0
             )
@@ -1209,7 +1215,7 @@ class Theme(Mapping):
         elif self.parent_theme:
             return self.parent_theme.color
         else:
-            return "default"
+            return ""
 
     @cached_property
     def background_color(self) -> "str":
@@ -1220,13 +1226,22 @@ class Theme(Mapping):
         elif self.parent_theme:
             return self.parent_theme.background_color
         else:
-            return "default"
+            return ""
 
     @cached_property
     def style(self) -> "str":
         """Calculate the output style."""
         theme = self.theme
-        style = f"fg:{self.color} bg:{self.background_color}"
+        style = ""
+
+        if "pt_class" in self.theme:
+            style += f"class:{theme['pt_class']}"
+
+        if fg := self.color:
+            style += f" fg:{fg}"
+
+        if bg := self.background_color:
+            style += f" bg:{bg}"
 
         if "bold" in self.theme["font_weight"] or (
             isinstance((weight := try_eval(theme["font_weight"])), int)
@@ -1531,11 +1546,10 @@ _BROWSER_CSS = {
         "border_left": "#ffffff",
         "border_top": "#ffffff",
     },
-    ((CssSelector(item=".block"),),): {"display": "block"},
     ((CssSelector(item="h1"),),): {
         "font_weight": "bold",
-        "border_bottom_style": "solid",
         "text_decoration": "underline",
+        "border_bottom_style": "solid",
         "border_bottom_width": "thick",
         "padding_bottom": "2rem",
         "margin_top": "2rem",
@@ -1583,7 +1597,7 @@ _BROWSER_CSS = {
         "padding_left": "1em",
         "border_left_width": "thick",
         "border_left_style": "solid",
-        "border_left_color": "darkmagenta",
+        "border_left_color": "#888888",
     },
     ((CssSelector(item="hr"),),): {
         "margin_top": "1rem",
@@ -1621,20 +1635,6 @@ _BROWSER_CSS = {
         "margin_top": "1em",
         "margin_bottom": "1em",
     },
-    (
-        (
-            CssSelector(item="ol"),
-            CssSelector(comb=" ", item="li"),
-            CssSelector(comb="", item="::marker"),
-        ),
-    ): {"color": "ansicyan"},
-    (
-        (
-            CssSelector(item="ul"),
-            CssSelector(comb=" ", item="li"),
-            CssSelector(comb="", item="::marker"),
-        ),
-    ): {"color": "ansiyellow"},
     (
         (CssSelector(item="dir"), CssSelector(comb=" ", item="dir")),
         (CssSelector(item="dir"), CssSelector(comb=" ", item="menu")),
@@ -1921,15 +1921,27 @@ _BROWSER_CSS = {
         ),
     ): {"list_style_type": "disclosure-open"},
     ((CssSelector(item="summary"),),): {"font_weight": "bold"},
+    (
+        (
+            CssSelector(item=".dataframe"),
+            CssSelector(item="td"),
+        ),
+        (
+            CssSelector(item=".dataframe"),
+            CssSelector(item="th"),
+        ),
+    ): {
+        "border_top_style": "hidden",
+        "border_right_style": "hidden",
+        "border_bottom_style": "hidden",
+        "border_left_style": "hidden",
+        "padding_right": "1em",
+    },
     ((CssSelector(item=".dataframe"),),): {
-        "border_top_width": "0",
-        "border_right_width": "0",
-        "border_bottom_width": "0",
-        "border_left_width": "0",
-        "border_top_style": "none",
-        "border_right_style": "none",
-        "border_bottom_style": "none",
-        "border_left_style": "none",
+        "pt_class": "dataframe",
+    },
+    ((CssSelector(item=".dataframe"), CssSelector(item="th"),),): {
+        "pt_class": "dataframe,th",
     },
 }
 
@@ -2398,9 +2410,6 @@ __BROWSER_CSS = {
         "border_bottom_style": "none",
         "border_left_style": "none",
     },
-    #
-    # Custom for markdownit-py
-    ".block": {"display": "block"},
 }
 """
 
@@ -2707,11 +2716,9 @@ class CustomHTMLParser(HTMLParser):
             self.curr = self.curr.parent
 
 
-def parse_styles(
-    soup: "Node", base_url: "UPath"
-) -> "dict[tuple[tuple[CssSelector, ...], ...], dict[str, str]]":
+def parse_styles(soup: "Node", base_url: "UPath") -> "CssSelectors":
     """Collect all CSS styles from style tags."""
-    rules: "dict[tuple[tuple[CssSelector, ...], ...], dict[str, str]]" = {}
+    rules: "CssSelectors" = {}
     for child in soup.descendents:
         css_str = ""
 
@@ -2880,6 +2887,7 @@ class HTML:
         height: "int|None" = None,
         collapse_root_margin: "bool" = False,
         fill: "bool" = True,
+        browser_css: "CssSelectors|None" = None,
     ) -> None:
         """Initialize the markdown formatter.
 
@@ -2893,12 +2901,13 @@ class HTML:
             collapse_root_margin: If :py:const:`True`, margins of the root element will
                 be collapsed
             fill: Whether remaining space in block elements should be filled
+            browser_css: The browser CSS to use
 
         """
-        self.browser_css: "dict[tuple[tuple[CssSelector, ...], ...], dict[str, str]]" = {
-            **_BROWSER_CSS
+        self.browser_css: "CssSelectors" = {
+            **(_BROWSER_CSS if browser_css is None else browser_css)
         }
-        self.css: "dict[tuple[tuple[CssSelector, ...], ...], dict[str, str]]" = {}
+        self.css: "CssSelectors" = {}
 
         self.markup = markup
         self.base = base
@@ -3696,6 +3705,7 @@ class HTML:
         # Ensure svg width and height are set
         element.attrs.setdefault("width", f"{element.theme.content_width}")
         element.attrs.setdefault("height", f"{element.theme.content_height}")
+        # Render the image
         ft = self._render_image(
             element._outer_html(),
             "svg",
@@ -3766,9 +3776,9 @@ class HTML:
             # Add the sunrise emoji to represent an image. I would use :framed_picture:, but it
             # requires multiple code-points and causes breakage in many terminals
             ft = [
-                ("reverse", f"{bounds[0]}"),
-                ("", f"🌄 {title}"),
-                ("reverse", f"{bounds[1]}"),
+                ("", f"{bounds[0]}"),
+                ("reverse", f"🌄 {title}"),
+                ("", f"{bounds[1]}"),
             ]
             ft = apply_style(ft, theme.style)
         return ft
@@ -3869,13 +3879,11 @@ if __name__ == "__main__":
     with create_app_session(input=BaseApp.load_input(), output=BaseApp.load_output()):
         with set_app(BaseApp()):
             with path.open() as f:
-
-                print_formatted_text(
-                    HTML(
-                        path.open().read(),
-                        base=path,
-                        collapse_root_margin=False,
-                        fill=True,
-                    ),
-                    style=Style(HTML_STYLE),
+                html = HTML(
+                    path.open().read(),
+                    base=path,
+                    collapse_root_margin=False,
+                    fill=True,
                 )
+
+                print_formatted_text(html, style=Style(HTML_STYLE))
