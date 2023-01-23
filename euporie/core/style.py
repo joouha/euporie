@@ -498,10 +498,10 @@ def build_style(
         "pager": f"bg:{cp.bg.more(0.05)}",
         "pager.border": f"fg:{cp.bg.more(0.45)}",
         # Markdown
-        "html code": f"bg:{cp.bg.more(0.15)}",
-        "html code block": f"bg:{cp.bg.less(0.2)}",
-        "html pre border": f"fg:{cp.bg.more(0.25)}",
-        "html table border": f"fg:{cp.bg.more(0.75)}",
+        "markdown code": f"bg:{cp.bg.more(0.15)}",
+        "markdown code block": f"bg:{cp.bg.less(0.2)}",
+        "markdown code block border": f"fg:{cp.bg.more(0.25)}",
+        "markdown table border": f"fg:{cp.bg.more(0.75)}",
         # Drop-shadow
         "drop-shadow inner": f"fg:{cp.bg.towards(cp.ansiblack, 0.3)}",
         "drop-shadow outer": f"fg:{cp.bg.towards(cp.ansiblack, 0.2)} bg:{cp.bg.towards(cp.ansiblack, 0.05)}",
@@ -641,8 +641,8 @@ def build_style(
         "input select face hovered": f"bg:{cp.bg.more(0.2)}",
         "input select face hovered selection": f"fg:white bg:{cp.hl}",
         # Dataframes
-        "html table dataframe border": f"fg:{cp.bg.more(0.25)} bg:{cp.bg.more(0.05)}",
-        "html table dataframe th": f"bg:{cp.bg.more(0.1)}",
+        "dataframe th": f"bg:{cp.bg.more(0.1)}",
+        "dataframe td": f"bg:{cp.bg.less(0.1)}",
     }
 
     return Style.from_dict(style_dict)

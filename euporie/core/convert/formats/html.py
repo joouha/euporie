@@ -66,7 +66,4 @@ def markdown_to_html_markdown_it(
     """Convert markdown to HTML using :py:mod:`markdownit_py`."""
     assert markdown_parser is not None
     markup = data.decode() if isinstance(data, bytes) else data
-    # Give markdown tables borders
-    html = "<style>table{border-width:1}th{border-width:3;font-weight:bold}</style>"
-    html += markdown_parser.render(markup)
-    return html
+    return markdown_parser.render(markup)

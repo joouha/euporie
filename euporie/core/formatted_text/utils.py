@@ -732,13 +732,16 @@ def lex(ft: "StyleAndTextTuples", lexer_name: "str") -> "StyleAndTextTuples":
     """Format formatted text using a named :py:mod:`pygments` lexer."""
     from prompt_toolkit.lexers.pygments import _token_cache
 
-    text = fragment_list_to_text(ft)
     try:
         lexer = get_lexer_by_name(lexer_name)
     except ClassNotFound:
         return ft
     else:
-        return [(_token_cache[t], v) for _, t, v in lexer.get_tokens_unprocessed(text)]
+        output: "StyleAndTextTuples" = []
+        for style, text, *_rest in ft:
+            for _, t, v in lexer.get_tokens_unprocessed(text):
+                output.append((f"{style} {_token_cache[t]}", v))
+        return output
 
 
 def apply_reverse_overwrites(ft: "StyleAndTextTuples") -> "StyleAndTextTuples":
