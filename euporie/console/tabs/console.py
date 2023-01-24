@@ -66,7 +66,7 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 
-class Console(KernelTab):
+class ConsoleTab(KernelTab):
     """Interactive console.
 
     An interactive console which connects to a Jupyter kernel.
@@ -79,7 +79,7 @@ class Console(KernelTab):
         path: "Optional[UPath]" = None,
         use_kernel_history: "bool" = True,
     ) -> "None":
-        """Create a new :py:class:`KernelNotebook` instance.
+        """Create a new :py:class:`ConsoleTab` tab instance.
 
         Args:
             app: The euporie application the console tab belongs to
@@ -574,7 +574,7 @@ class Console(KernelTab):
         from euporie.console.app import get_app
 
         console = get_app().tab
-        assert isinstance(console, Console)
+        assert isinstance(console, ConsoleTab)
         console.run()
 
     @staticmethod
@@ -586,7 +586,7 @@ class Console(KernelTab):
         from euporie.console.app import get_app
 
         console = get_app().tab
-        assert isinstance(console, Console)
+        assert isinstance(console, ConsoleTab)
         console.inspect()
 
     @staticmethod
