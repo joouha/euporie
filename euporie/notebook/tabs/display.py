@@ -44,7 +44,7 @@ class DisplayTab(Tab):
     def title(self) -> "str":
         """Return the tab title."""
         if self.path is not None:
-            return str(self.path.name)
+            return str(self.path.name) or str(self.path)
         else:
             return "<file>"
 
