@@ -154,4 +154,10 @@ _MARKDOWN_CSS = {
     ): {
         "pt_class": "markdown,code,block",
     },
+    ((CssSelector(item="img"),),): {
+        "display": "inline-block",
+        "overflow_x": "hidden",
+        "overflow_y": "hidden",
+        "vertical_align": "middle",
+    },
 }
