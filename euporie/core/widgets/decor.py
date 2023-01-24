@@ -513,7 +513,7 @@ class Shadow:
                     bottom=-1,
                     height=1,
                     left=1,
-                    right=-1,
+                    right=0,
                     transparent=True,
                     content=DropShadow(),
                 ),
