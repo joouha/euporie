@@ -10,6 +10,7 @@ from prompt_toolkit.application.run_in_terminal import in_terminal
 from prompt_toolkit.filters.app import (
     has_completions,
     is_done,
+    is_searching,
     renderer_height_is_known,
 )
 from prompt_toolkit.layout.containers import (
@@ -122,17 +123,20 @@ class ConsoleApp(BaseApp):
                                 ),
                                 self.pager,
                                 self.search_bar,
-                                VSplit(
-                                    [
-                                        Window(
-                                            char=f" {__logo__} ",
-                                            height=1,
-                                            width=3,
-                                            style="class:menu,logo",
-                                            dont_extend_width=True,
-                                        ),
-                                        StatusBar(),
-                                    ]
+                                ConditionalContainer(
+                                    VSplit(
+                                        [
+                                            Window(
+                                                char=f" {__logo__} ",
+                                                height=1,
+                                                width=3,
+                                                style="class:menu,logo",
+                                                dont_extend_width=True,
+                                            ),
+                                            StatusBar(),
+                                        ]
+                                    ),
+                                    filter=~is_searching,
                                 ),
                             ],
                         ),
