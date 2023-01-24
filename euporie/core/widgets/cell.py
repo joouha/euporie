@@ -830,7 +830,7 @@ class Cell:
 
             This is useful if you run euporie inside a tmux session, and wish to launch
             your editor in a pop-up pane. This can be achieved by setting this parameter
-            to someThinLineg like the following:
+            to something like the following:
 
             .. code-block::
 
