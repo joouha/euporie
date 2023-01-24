@@ -22,6 +22,7 @@ def load_url(
     url: "Union[UPath, str]", base: "Optional[Union[UPath, str]]" = None
 ) -> "Optional[bytes]":
     """Loads data from a url."""
+    # "tuple[str, str|None, bytes]":
     log.debug("Loading data from url `%s`", url)
     data = None
 
@@ -50,12 +51,14 @@ def load_url(
         try:
             # The use of 'file:' scheme is intended
             response = urlopen(request, timeout=4)
-            log.debug(response)
             data = response.read()  # noqa S310
 
         except Exception:
             log.debug("Failed to load `%s`", url)
 
-    # Get mime type from response
+        else:
+            url = response.url
+            # TODO - Get mime type from response
 
     return data
+    # return url, mime, data
