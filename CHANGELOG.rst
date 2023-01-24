@@ -27,6 +27,11 @@ Fixed
 - Fixed crash when merging last two cells in a notebook
 - Relaxed dependency specification constraints
 
+Changed
+=======
+
+- Major re-write of HTML renderer
+
 ----
 
 *******************
