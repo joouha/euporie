@@ -45,9 +45,6 @@ BASE64_FORMATS = {"png", "jepg", "pdf", "gif"}
 # If file has extension, guess from filename
 # Else try using python-magic
 # >>> import magic
-# >>> magic.from_file("testdata/test.pdf")
-# 'PDF document, version 1.2'
-# # recommend using at least the first 2048 bytes, as less can produce incorrect identification
 # >>> magic.from_buffer(open("testdata/test.pdf", "rb").read(2048))
 # 'PDF document, version 1.2'
 # >>> magic.from_file("testdata/test.pdf", mime=True)
@@ -64,7 +61,7 @@ def get_format(path: "UPath|str", default: "str" = "") -> "str":
         else:
             default = "ansi"
     mime, _ = mimetypes.guess_type(path)
-    return MIME_FORMATS.get(mime or "*", default)
+    return MIME_FORMATS.get(mime, default) if mime else default
 
 
 class Converter(NamedTuple):
