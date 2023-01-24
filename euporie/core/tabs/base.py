@@ -294,3 +294,18 @@ class KernelTab(Tab, metaclass=ABCMeta):
             to launch.
         """,
     )
+
+    add_setting(
+        name="record_cell_timing",
+        title="cell timing recording",
+        flags=["--record-cell-timing"],
+        type_=bool,
+        help_="Should timing data be recorded in cell metadata.",
+        default=False,
+        schema={
+            "type": "boolean",
+        },
+        description="""
+            When set, execution timing data will be recorded in cell metadata.
+        """,
+    )
