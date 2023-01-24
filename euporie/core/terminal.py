@@ -232,12 +232,12 @@ class KittyGraphicsStatus(TerminalQuery):
 
     default = False
     cache = True
-    cmd = "\x1b[s\x1b_Gi=4294967295,s=1,v=1,a=q,t=d,f=24;AAAA\x1b\\\x1b[u\x1b[2K"
+    cmd = "\x1b_Gi=4294967295,s=1,v=1,a=q,t=d,f=24;AAAA\x1b\\"
     # Konsole responds with 'i=0' - I'll allow it
     pattern = re.compile(r"^\x1b_Gi=(4294967295|0);(?P<status>OK)\x1b\\\Z")
 
     def _cmd(self) -> "str":
-        return tmuxify(self.cmd)
+        return "\x1b[s" + tmuxify(self.cmd) + "\x1b[u\x1b[2K"
 
     def verify(self, data: "str") -> "bool":
         """Verifies the terminal response means kitty graphics are supported."""
