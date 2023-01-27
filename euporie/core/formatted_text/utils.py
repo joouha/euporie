@@ -7,7 +7,11 @@ from enum import Enum
 from typing import Iterable, Optional, cast
 
 from prompt_toolkit.formatted_text.base import OneStyleAndTextTuple, StyleAndTextTuples
-from prompt_toolkit.formatted_text.utils import fragment_list_to_text, split_lines
+from prompt_toolkit.formatted_text.utils import (
+    fragment_list_to_text,
+    split_lines,
+    to_plain_text,
+)
 from prompt_toolkit.utils import get_cwidth
 from pygments.lexers import get_lexer_by_name
 from pygments.util import ClassNotFound
@@ -84,12 +88,21 @@ def max_line_width(ft: StyleAndTextTuples) -> int:
 
 def fragment_list_to_words(
     fragments: "StyleAndTextTuples", sep: "str" = " "
-) -> "Iterable[OneStyleAndTextTuple]":
-    """Split formatted text into word fragments."""
-    for style, string, *mouse_handler in fragments:
-        # for part in re.split(r"\b", string):
-        for part in re.split(r"(?=\s)", string):
-            yield cast("OneStyleAndTextTuple", (style, part, *mouse_handler))
+) -> "Iterable[StyleAndTextTuples]":
+    """Split formatted text into a list of word fragments which form words."""
+    word: StyleAndTextTuples = []
+    for style, string, *_ in fragments:
+        parts = re.split(r"(?<=[\s\-])", string)
+        if len(parts) == 1:
+            word.append((style, parts[0]))
+        else:
+            for part in parts[:-1]:
+                word.append((style, part))
+                yield word[:]
+                word.clear()
+            word.append((style, parts[-1]))
+    if word:
+        yield word
 
 
 def apply_style(ft: StyleAndTextTuples, style: str) -> StyleAndTextTuples:
@@ -174,6 +187,9 @@ def truncate(
         The truncated formatted text
 
     """
+    lines = split_lines(ft)
+    if max(fragment_list_width(line) for line in lines) < width:
+        return ft
     result: StyleAndTextTuples = []
     phw = sum(get_cwidth(c) for c in placeholder)
     for line in split_lines(ft):
@@ -184,11 +200,17 @@ def truncate(
                 for c in item[1]
                 if not any(x in item[0] for x in _ZERO_WIDTH_FRAGMENTS)
             )
-            if used_width + fragment_width > width - phw:
+            if (
+                used_width + fragment_width > width - phw
+                # Do not truncate if we have the exact width
+                and used_width + fragment_width != width
+            ):
                 remaining_width = width - used_width - fragment_width - phw
                 result.append((item[0], item[1][:remaining_width]))
                 if ignore_whitespace and not fragment_list_to_text(line[i:]).strip():
-                    result.append((item[0], item[1][remaining_width]))
+                    result.append(
+                        (item[0], item[1][remaining_width : remaining_width + 1])
+                    )
                 else:
                     result.append((style or item[0], placeholder))
                 break
@@ -198,6 +220,34 @@ def truncate(
         result.append(("", "\n"))
     result.pop()
     return result
+
+
+def substring(
+    ft: "StyleAndTextTuples", start: "Optional[int]" = None, end: "Optional[int]" = None
+) -> "StyleAndTextTuples":
+    """Extract a substring from formatted text."""
+    output: StyleAndTextTuples = []
+    if start is None:
+        start = 0
+    if end is None or start < 0 or end < 0:
+        width = fragment_list_width(ft)
+        if end is None:
+            end = width
+        if start < 0:
+            start = width + start
+        if end < 0:
+            end = width + end
+    x = 0
+    for style, text, *extra in ft:
+        if any(x in style for x in _ZERO_WIDTH_FRAGMENTS):
+            frag_len = 0
+        else:
+            frag_len = sum(get_cwidth(c) for c in text)
+        if start < x + frag_len <= end + frag_len:
+            if text := text[max(0, start - x) : end - x]:
+                output.append(cast("OneStyleAndTextTuple", (style, text, *extra)))
+        x += frag_len
+    return output
 
 
 def wrap(
@@ -218,7 +268,7 @@ def wrap(
         width: The width at which to wrap the text
         style: The style to apply to the truncation placeholder
         placeholder: The string that will appear at the end of a truncated line
-        left: The starting position within the first list
+        left: The starting position within the first line
         truncate_long_words: If :const:`True` words longer than a line will be
             truncated
         strip_trailing_ws: If :const:`True`, trailing whitespace will be removed from
@@ -238,19 +288,21 @@ def wrap(
             output_line += 1
             left = 0
         else:
-            for item in fragment_list_to_words(line):
+            for word in fragment_list_to_words(line):
                 # Skip empty fragments
-                if item[1] == "":
-                    continue
-                fragment_width = sum(
-                    get_cwidth(c) for c in item[1] if "[ZeroWidthEscape]" not in item[0]
-                )
+                # if item[1] == "":
+                # continue
+
+                fragment_width = fragment_list_width(word)
+
                 # Start a new line - we are at the end of the current output line
                 if left + fragment_width > width and left > 0:
 
                     # Add as much trailing whitespace as we can
-                    if not strip_trailing_ws and (trailing_ws := (not item[1].strip())):
-                        result.append((item[0], item[1][: width - left]))
+                    if not strip_trailing_ws and (
+                        trailing_ws := (not to_plain_text(word).strip())
+                    ):
+                        result.extend(substring(word, end=width - left))
 
                     # Remove trailing whitespace
                     if strip_trailing_ws:
@@ -268,14 +320,14 @@ def wrap(
                 # Strip left-hand whitespace from a word at the start of a line
                 # if output_line != 0 and left == 0:
                 if left == 0:
-                    item = (item[0], item[1].lstrip(" "))
+                    word = strip(word, right=False)
                 # Truncate words longer than a line
                 if truncate_long_words and left == 0 and fragment_width > width - left:
-                    result += truncate([item], width - left, style, placeholder)
+                    result += truncate(word, width - left, style, placeholder)
                     left += fragment_width
                 # Otherwise just add the word to the line
                 else:
-                    result.append(item)
+                    result.extend(word)
                     left += fragment_width
 
     if strip_trailing_ws:
@@ -301,6 +353,7 @@ def align(
             length of the longest line is used
         style: The style to apply to the padding
         placeholder: The string that will appear at the end of a truncated line
+        ignore_whitespace: If True, whitespace will be ignored
 
     Returns:
         The aligned formatted text
@@ -309,9 +362,10 @@ def align(
     style = f"{style} nounderline"
     lines = split_lines(ft)
     if width is None:
-        lines = [strip(line) for line in split_lines(ft)]
+        lines = [strip(line) if ignore_whitespace else line for line in split_lines(ft)]
         width = max(fragment_list_width(line) for line in lines)
     result: StyleAndTextTuples = []
+
     for line in lines:
         line_width = fragment_list_width(line)
         # Truncate the line if it is too long
@@ -328,7 +382,7 @@ def align(
                 pad_left = width - line_width
             if pad_left:
                 result.append((style, " " * pad_left))
-            result += line
+            result.extend(line)
             if pad_right:
                 result.append((style, " " * pad_right))
         result.append((style, "\n"))
@@ -394,34 +448,6 @@ def pad(
             line.append((style + " nounderline", (char * remaining)))
         filled_output.append(line)
     return join_lines(filled_output)
-
-
-def substring(
-    ft: "StyleAndTextTuples", start: "Optional[int]" = None, end: "Optional[int]" = None
-) -> "StyleAndTextTuples":
-    """Extract a substring from formatted text."""
-    output: StyleAndTextTuples = []
-    if start is None:
-        start = 0
-    if end is None or start < 0 or end < 0:
-        width = fragment_list_width(ft)
-        if end is None:
-            end = width
-        if start < 0:
-            start = width + start
-        if end < 0:
-            end = width + end
-    x = 0
-    for style, text, *extra in ft:
-        if any(x in style for x in _ZERO_WIDTH_FRAGMENTS):
-            frag_len = 0
-        else:
-            frag_len = sum(get_cwidth(c) for c in text)
-        if start < x + frag_len <= end + frag_len:
-            if text := text[max(0, start - x) : end - x]:
-                output.append(cast("OneStyleAndTextTuple", (style, text, *extra)))
-        x += frag_len
-    return output
 
 
 def paste(
