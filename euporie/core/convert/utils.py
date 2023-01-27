@@ -51,7 +51,10 @@ def have_modules(*modules: "str") -> "Filter":
 
 
 def call_subproc(
-    data: "Union[str, bytes]", cmd: "list[Any]", use_tempfile: "bool" = False
+    data: "Union[str, bytes]",
+    cmd: "list[Any]",
+    use_tempfile: "bool" = False,
+    suffix: "str" = "",
 ) -> "bytes":
     """Call the command as a subprocess and return it's output as bytes.
 
@@ -59,6 +62,7 @@ def call_subproc(
         data: The data to pass to the subprocess
         cmd: The command and arguments to call
         use_tempfile: If True, the command saves its output to a file, not stdout
+        suffix: Suffix for the temporary file name
 
     Returns:
         The data printed to standard out by the subprocess.
@@ -74,7 +78,7 @@ def call_subproc(
     if use_tempfile:
         # If the command cannot read from stdin, create a temporary file to pass to
         # the command
-        tfile = tempfile.NamedTemporaryFile(delete=False)
+        tfile = tempfile.NamedTemporaryFile(delete=False, suffix=suffix)
         tfile.write(data)
         tfile.close()
         cmd.append(tfile.name)

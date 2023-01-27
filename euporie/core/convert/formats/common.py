@@ -40,7 +40,7 @@ def imagemagick_convert(
     path: "Optional[UPath]" = None,
 ) -> "Union[str, bytes]":
     """Converts image data to PNG bytes using ``imagemagick``."""
-    cmd: "list[Any]" = ["convert"]
+    cmd: "list[Any]" = ["convert"]  # , "-density", "300"]
     if cols is not None:
         px, _ = get_app().term_info.cell_size_px
         cmd += ["-geometry", f"{int(cols * px)}"]
@@ -65,7 +65,9 @@ def chafa_convert(
 ) -> "Union[str, bytes]":
     """Converts image data to ANSI text using :command:`chafa`."""
     cmd: "list[Any]" = ["chafa", f"--format={output_format}"]
-    if cols is not None and rows is not None:
-        cmd += [f"--size={cols}x{rows}"]
-    cmd += ["--stretch", "-"]
+    if cols is not None or rows is not None:
+        cmd += [f"--size={cols or '1'}x{rows or '1'}"]
+    if bg:
+        cmd += ["--bg", bg]
+    cmd += ["--stretch", "/dev/stdin"]
     return call_subproc(data, cmd).decode()
