@@ -104,6 +104,7 @@ _MARKDOWN_CSS = {
     },
     ((CssSelector(item=".block"),),): {"display": "block"},
     ((CssSelector(item="td"),),): {
+        "display": "table-cell",
         "border_top_style": "solid",
         "border_right_style": "solid",
         "border_bottom_style": "solid",
@@ -116,6 +117,7 @@ _MARKDOWN_CSS = {
         "padding_right": "1em",
     },
     ((CssSelector(item="th"),),): {
+        "display": "table-cell",
         "border_top_style": "solid",
         "border_right_style": "solid",
         "border_bottom_style": "solid",
@@ -126,6 +128,7 @@ _MARKDOWN_CSS = {
         "border_left_width": "0.34em",
         "padding_left": "1em",
         "padding_right": "1em",
+        "font_weight": "bold",
     },
     ((CssSelector(item="code"),),): {
         "display": "inline",
@@ -143,7 +146,7 @@ _MARKDOWN_CSS = {
         "border_bottom_width": "1px",
         "border_left_style": "solid",
         "border_left_width": "1px",
-        "pt_class": "markdown,code,block",
+        "_pt_class": "markdown,code,block",
     },
     (
         (
@@ -154,7 +157,7 @@ _MARKDOWN_CSS = {
     ): {
         "pt_class": "markdown,code,block",
     },
-    ((CssSelector(item="img"),),): {
+    ((CssSelector(item="img"),), (CssSelector(item="svg"),)): {
         "display": "inline-block",
         "overflow_x": "hidden",
         "overflow_y": "hidden",
