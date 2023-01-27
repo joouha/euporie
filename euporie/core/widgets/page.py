@@ -226,7 +226,13 @@ class ChildRenderInfo:
                         modifiers=mouse_event.modifiers,
                     )
 
-                    response = handler(new_event)
+                    if mouse_event.event_type == MouseEventType.SCROLL_DOWN:
+                        response = self.parent.scroll(-1)
+                    elif mouse_event.event_type == MouseEventType.SCROLL_UP:
+                        response = self.parent.scroll(1)
+
+                    else:
+                        response = handler(new_event)
 
                     # Refresh the child if there was a response
                     if response is None:
@@ -235,11 +241,11 @@ class ChildRenderInfo:
 
                     # This would work if windows returned NotImplemented when scrolled
                     # to the start or end
-                    if response is NotImplemented:
-                        if mouse_event.event_type == MouseEventType.SCROLL_DOWN:
-                            response = self.parent.scroll(-1)
-                        elif mouse_event.event_type == MouseEventType.SCROLL_UP:
-                            response = self.parent.scroll(1)
+                    # if response is NotImplemented:
+                    #     if mouse_event.event_type == MouseEventType.SCROLL_DOWN:
+                    #         response = self.parent.scroll(-1)
+                    #     elif mouse_event.event_type == MouseEventType.SCROLL_UP:
+                    #         response = self.parent.scroll(1)
 
                     # Select the clicked child if clicked
                     if mouse_event.event_type == MouseEventType.MOUSE_DOWN:
