@@ -598,7 +598,7 @@ def calculate_col_widths(
     cols: "tuple[Col]",
     width: "Dimension",
     expand_to_width: "bool",
-    min_col_width: "int" = 4,
+    min_col_width: "int" = 2,
     render_count: int = 0,
 ) -> "list[int]":
     """Calculate column widths given the available space.
@@ -616,7 +616,13 @@ def calculate_col_widths(
     """
     # TODO - this function is too slow
     col_widths = [
-        max([*[calculate_cell_width(cell) for cell in col.cells], 0]) for col in cols
+        max(
+            [
+                *[calculate_cell_width(cell, render_count) for cell in col.cells],
+                min_col_width,
+            ]
+        )
+        for col in cols
     ]
 
     def total_width(col_widths: "list[int]") -> "int":
