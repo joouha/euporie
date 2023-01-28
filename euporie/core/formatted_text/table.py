@@ -624,7 +624,8 @@ def calculate_col_widths(
         width = sum(col_widths)
         for col in cols:
             width += compute_border_width(col.cells[0], render_count).right
-        width += compute_border_width(cols[0].cells[0], render_count).left
+        if cols:
+            width += compute_border_width(cols[0].cells[0], render_count).left
         return width
 
     def expand(target: "int") -> "None":
@@ -639,8 +640,11 @@ def calculate_col_widths(
             ]
             if not col_index_widths:
                 col_index_widths = list(enumerate(col_widths))
-            idxmin = min(col_index_widths, key=lambda x: x[1])[0]
-            col_widths[idxmin] += 1
+            if col_index_widths:
+                idxmin = min(col_index_widths, key=lambda x: x[1])[0]
+                col_widths[idxmin] += 1
+            else:
+                break
 
     def contract(target: "int") -> "None":
         """Contract the columns."""
