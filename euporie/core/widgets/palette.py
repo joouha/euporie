@@ -18,6 +18,7 @@ from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
 from euporie.core.commands import Command, add_cmd, commands
 from euporie.core.current import get_app
 from euporie.core.key_binding.registry import register_bindings
+from euporie.core.widgets.decor import FocusedStyle
 from euporie.core.widgets.dialog import Dialog
 from euporie.core.widgets.forms import Text
 
@@ -48,9 +49,6 @@ class CommandMenuControl(UIControl):
         """Instantiates a new command list instance."""
         self.palette = command_palette
         self.width = width
-
-    # def is_focusable(self) -> "bool":
-    # return True
 
     def create_content(self, width: "int", height: "int") -> "UIContent":
         """Create a UIContent object for this control."""
@@ -124,11 +122,17 @@ class CommandMenuControl(UIControl):
 
     def mouse_handler(self, mouse_event: "MouseEvent") -> "NotImplementedOrNone":
         """Handle clicking and scrolling mouse events."""
-        if mouse_event.event_type == MouseEventType.MOUSE_UP:
+        if mouse_event.event_type in {
+            MouseEventType.MOUSE_MOVE,
+            MouseEventType.MOUSE_DOWN,
+        }:
+            self.palette.index = mouse_event.position.y
+
+        elif mouse_event.event_type == MouseEventType.MOUSE_UP:
             self.palette.index = mouse_event.position.y
             self.palette.accept()
 
-        if mouse_event.event_type == MouseEventType.SCROLL_DOWN:
+        elif mouse_event.event_type == MouseEventType.SCROLL_DOWN:
             # Scroll up.
             self.palette.select(1)
 
@@ -197,7 +201,7 @@ class CommandPalette(Dialog):
         self.body = HSplit(
             [
                 VSplit(
-                    [self.text_area],
+                    [FocusedStyle(self.text_area)],
                     padding=1,
                 ),
                 Window(
