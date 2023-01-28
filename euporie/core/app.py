@@ -876,6 +876,12 @@ class BaseApp(Application):
         """Focus the previous control."""
         get_app().layout.focus_previous()
 
+    @staticmethod
+    @add_cmd()
+    def _clear_screen() -> "None":
+        """Clear the screen."""
+        get_app().renderer.clear()
+
     # ################################### Settings ####################################w
 
     add_setting(
@@ -1167,6 +1173,7 @@ class BaseApp(Application):
                 "previous-tab": "c-pageup",
                 "focus-next": "s-tab",
                 "focus-previous": "tab",
+                "clear-screen": "c-l",
             }
         }
     )
