@@ -8,7 +8,3 @@ __author__ = "Josiah Outram Halstead"
 __email__ = "josiah@halstead.email"
 __copyright__ = f"© 2022, {__author__}"
 __license__ = "MIT"
-
-from euporie.core.log import default_logs
-
-default_logs()

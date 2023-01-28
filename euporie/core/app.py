@@ -71,7 +71,7 @@ from euporie.core.key_binding.registry import (
     register_bindings,
 )
 from euporie.core.key_binding.vi_state import ViState
-from euporie.core.log import setup_logs
+from euporie.core.log import default_logs, setup_logs
 from euporie.core.renderer import Renderer
 from euporie.core.style import (
     DEFAULT_COLORS,
@@ -511,6 +511,8 @@ class BaseApp(Application):
     @classmethod
     def launch(cls) -> "None":
         """Launches the app."""
+        # Load default logging
+        default_logs()
         # Load the app's configuration
         cls.config.load(cls)
         # Configure the logs
