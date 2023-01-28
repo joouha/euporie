@@ -5,6 +5,7 @@ from __future__ import annotations
 from importlib.metadata import entry_points
 
 from euporie.core.config import Config, add_setting
+from euporie.core.log import default_logs
 
 APP_ALIASES = {
     "edit": "notebook",
@@ -20,6 +21,9 @@ class CoreApp:
     @classmethod
     def launch(cls) -> "None":
         """Launches the app."""
+        # Set up default logging
+        default_logs()
+
         # Load the launcher's configuration
         cls.config.load(cls)
         app = cls.config.app
