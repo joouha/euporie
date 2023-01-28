@@ -83,15 +83,15 @@ _MARKDOWN_CSS = {
     (
         (
             CssSelector(item="ol"),
-            CssSelector(comb=" ", item="li"),
-            CssSelector(comb="", item="::marker"),
+            CssSelector(item="li"),
+            CssSelector(item="::marker"),
         ),
     ): {"color": "ansicyan"},
     (
         (
             CssSelector(item="ul"),
-            CssSelector(comb=" ", item="li"),
-            CssSelector(comb="", item="::marker"),
+            CssSelector(item="li"),
+            CssSelector(item="::marker"),
         ),
     ): {"color": "ansiyellow"},
     ((CssSelector(item="blockquote"),),): {
