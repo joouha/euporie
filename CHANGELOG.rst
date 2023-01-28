@@ -11,6 +11,7 @@ Upcoming
 Added
 =====
 
+- Add command to clear screen
 - Add a "Restart kernel and clear all output" command
 - Add commands for clearing cell outputs
 - The ``scroll-up-5-lines`` and ``scroll-down-5-lines`` commands now scroll to the top or bottom of the document if less than 5 lines remain
