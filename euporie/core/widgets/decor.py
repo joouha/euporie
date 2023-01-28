@@ -21,9 +21,9 @@ from prompt_toolkit.layout.dimension import Dimension
 from prompt_toolkit.layout.mouse_handlers import MouseHandlers
 from prompt_toolkit.layout.screen import Char, Screen, WritePosition
 
-from euporie.core.app import get_app
 from euporie.core.border import ThinLine
 from euporie.core.config import add_setting
+from euporie.core.current import get_app
 from euporie.core.data_structures import DiBool
 from euporie.core.style import ColorPaletteColor
 

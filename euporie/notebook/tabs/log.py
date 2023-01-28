@@ -11,8 +11,8 @@ from prompt_toolkit.layout.containers import HSplit
 from prompt_toolkit.layout.dimension import Dimension
 from prompt_toolkit.widgets import SearchToolbar
 
-from euporie.core.app import get_app
 from euporie.core.commands import add_cmd
+from euporie.core.current import get_app
 from euporie.core.log import LOG_QUEUE, QueueHandler
 from euporie.core.tabs.base import Tab
 from euporie.core.widgets.formatted_text_area import FormattedTextArea

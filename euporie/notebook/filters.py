@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from prompt_toolkit.filters import Condition
 
-from euporie.core.app import get_app
+from euporie.core.current import get_app
 
 
 @Condition

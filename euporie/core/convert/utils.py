@@ -15,8 +15,8 @@ from typing import TYPE_CHECKING
 import imagesize
 from prompt_toolkit.filters import Condition, to_filter
 
-from euporie.core.app import get_app
 from euporie.core.convert.base import convert
+from euporie.core.current import get_app
 
 if TYPE_CHECKING:
     from typing import Any, Optional, Union

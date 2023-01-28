@@ -391,7 +391,7 @@ class AboutDialog(Dialog):
     @add_cmd()
     def _about() -> "None":
         """Show the about dialog."""
-        from euporie.core.app import get_app
+        from euporie.core.current import get_app
 
         if dialog := get_app().dialogs.get("about"):
             dialog.toggle()
@@ -495,7 +495,7 @@ class OpenFileDialog(FileDialog):
     @add_cmd(menu_title="Open File…")
     def _open_file() -> "None":
         """Open a file."""
-        from euporie.core.app import get_app
+        from euporie.core.current import get_app
 
         if dialog := get_app().dialogs.get("open-file"):
             dialog.show()
@@ -541,7 +541,7 @@ class SaveAsDialog(FileDialog):
     )
     def _save_as() -> None:
         """Save the current file at a new location."""
-        from euporie.core.app import get_app
+        from euporie.core.current import get_app
 
         app = get_app()
         if dialog := app.dialogs.get("save-as"):
@@ -853,7 +853,7 @@ class ShortcutsDialog(Dialog):
     @add_cmd()
     def _keyboard_shortcuts() -> "None":
         """Displays details of registered key-bindings in a dialog."""
-        from euporie.core.app import get_app
+        from euporie.core.current import get_app
 
         if dialog := get_app().dialogs.get("shortcuts"):
             dialog.toggle()

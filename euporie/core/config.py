@@ -415,7 +415,7 @@ class Setting:
             if self.type == bool:
 
                 def _toggled() -> "bool":
-                    from euporie.core.app import get_app
+                    from euporie.core.current import get_app
 
                     app = get_app()
                     value = app.config.get(self.name)
