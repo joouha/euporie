@@ -7,7 +7,7 @@ from abc import ABCMeta, abstractmethod
 from typing import TYPE_CHECKING
 from weakref import WeakKeyDictionary
 
-from euporie.core.app import get_app
+from euporie.core.current import get_app
 from euporie.core.widgets.display import Display
 
 if TYPE_CHECKING:

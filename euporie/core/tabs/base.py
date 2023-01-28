@@ -11,11 +11,11 @@ from typing import TYPE_CHECKING
 from prompt_toolkit.history import InMemoryHistory
 from prompt_toolkit.layout.containers import Window
 
-from euporie.core.app import get_app
 from euporie.core.comm.registry import open_comm
 from euporie.core.commands import add_cmd
 from euporie.core.completion import KernelCompleter
 from euporie.core.config import add_setting
+from euporie.core.current import get_app
 from euporie.core.filters import kernel_tab_has_focus, tab_has_focus
 from euporie.core.history import KernelHistory
 from euporie.core.kernel import Kernel, MsgCallbacks

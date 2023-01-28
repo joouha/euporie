@@ -23,9 +23,9 @@ from prompt_toolkit.layout.dimension import Dimension
 from prompt_toolkit.lexers import DynamicLexer, PygmentsLexer, SimpleLexer
 from pygments.lexers import get_lexer_by_name
 
-from euporie.core.app import get_app
 from euporie.core.border import NoLine, ThickLine, ThinLine
 from euporie.core.config import add_setting
+from euporie.core.current import get_app
 from euporie.core.filters import multiple_cells_selected
 from euporie.core.format import format_code
 from euporie.core.utils import on_click

@@ -15,8 +15,8 @@ from prompt_toolkit.layout.controls import UIContent, UIControl
 from prompt_toolkit.layout.margins import ScrollbarMargin
 from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
 
-from euporie.core.app import get_app
 from euporie.core.commands import Command, add_cmd, commands
+from euporie.core.current import get_app
 from euporie.core.key_binding.registry import register_bindings
 from euporie.core.widgets.dialog import Dialog
 from euporie.core.widgets.forms import Text

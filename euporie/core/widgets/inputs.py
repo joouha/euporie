@@ -29,9 +29,9 @@ from prompt_toolkit.lexers import DynamicLexer, PygmentsLexer, SimpleLexer
 from prompt_toolkit.widgets import TextArea
 from pygments.lexers import ClassNotFound, get_lexer_by_name
 
-from euporie.core.app import get_app
 from euporie.core.commands import add_cmd
 from euporie.core.config import add_setting
+from euporie.core.current import get_app
 from euporie.core.filters import buffer_is_code, scrollable
 from euporie.core.key_binding.registry import (
     load_registered_bindings,

@@ -11,8 +11,8 @@ from prompt_toolkit.cache import SimpleCache
 from prompt_toolkit.layout.containers import DynamicContainer, HSplit, to_container
 from prompt_toolkit.widgets.base import Box
 
-from euporie.core.app import get_app
 from euporie.core.convert.base import BASE64_FORMATS, MIME_FORMATS, find_route
+from euporie.core.current import get_app
 from euporie.core.widgets.display import Display
 from euporie.core.widgets.tree import JsonView
 
