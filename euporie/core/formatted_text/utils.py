@@ -599,7 +599,7 @@ def add_border(
     )
     if width is None:
         inner_width = max_line_width(ft)
-        width = max_line_width(ft) + edge_width
+        width = inner_width + edge_width
     else:
         inner_width = width - edge_width
 

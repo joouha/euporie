@@ -275,10 +275,22 @@ ThickQuadrupleDashedLine = LineStyle("QuadDashed", (3, 1), parent=ThickLine)
 ThickTripleDashedLine = LineStyle("TripleDashed", (3, 2), parent=ThickLine)
 ThickDoubleDashedLine = LineStyle("DoubleDashed", (3, 3), parent=ThickLine)
 
-UpperRightHalfLine = LineStyle("UpperRightHalfLine", (4, 1), parent=ThickLine)
-LowerLeftHalfLine = LineStyle("LowerLeftHalfLine", (4, 1), parent=ThickLine)
+#  ▂▂▂▂▂▂▂▂▂▂▂▂
+# 🮇Quarter Line▎
+#  🮂🮂🮂🮂🮂🮂🮂🮂🮂🮂🮂🮂
 
-FullLine = LineStyle("FullLine", (5, 1), parent=ThickLine)
+UpperRightHalfLine = LineStyle("UpperRightHalfLine", (4, 2), parent=ThickLine)
+LowerLeftHalfLine = LineStyle("LowerLeftHalfLine", (4, 2), parent=ThickLine)
+UpperRightHalfDottedLine = LineStyle(
+    "UpperRightHalfDottedLine", (4, 1), parent=UpperRightHalfLine
+)
+LowerLeftHalfDottedLine = LineStyle(
+    "LowerLeftHalfDottedLine", (4, 2), parent=LowerLeftHalfLine
+)
+
+
+FullLine = LineStyle("FullLine", (5, 2), parent=ThickLine)
+FullDottedLine = LineStyle("FullDottedLine", (5, 1), parent=ThickLine)
 
 
 class GridChar(NamedTuple):
@@ -450,21 +462,21 @@ _GRID_CHARS = {
     GridChar(ThickLine,             ThinLine,               ThickLine,              ThickLine       ): "╉",
     GridChar(ThickLine,             ThickLine,              ThinLine,               ThickLine       ): "╇",
     # UpperRightEighthLine
-    GridChar(UpperRightEighthLine, NoLine, UpperRightEighthLine, NoLine): "▕",
-    GridChar(NoLine, UpperRightEighthLine, NoLine, UpperRightEighthLine): "▔",
-    GridChar(UpperRightEighthLine, UpperRightEighthLine, NoLine, NoLine): " ",
-    GridChar(NoLine, UpperRightEighthLine, UpperRightEighthLine, NoLine): "▕",
-    GridChar(NoLine, NoLine, UpperRightEighthLine, UpperRightEighthLine): "╲",
-    GridChar(UpperRightEighthLine, NoLine, NoLine, UpperRightEighthLine): "▔",
-    GridChar(UpperRightEighthLine, UpperRightEighthLine, UpperRightEighthLine, NoLine): "▕",
-    GridChar(NoLine, UpperRightEighthLine, UpperRightEighthLine, UpperRightEighthLine): "▔",
+    GridChar(UpperRightEighthLine,  NoLine,                 UpperRightEighthLine,   NoLine              ): "▕",
+    GridChar(NoLine,                UpperRightEighthLine,   NoLine,                 UpperRightEighthLine): "▔",
+    GridChar(UpperRightEighthLine,  UpperRightEighthLine,   NoLine,                 NoLine              ): " ",
+    GridChar(NoLine,                UpperRightEighthLine,   UpperRightEighthLine,   NoLine              ): "▕",
+    GridChar(NoLine,                NoLine,                 UpperRightEighthLine,   UpperRightEighthLine): "🭾", #
+    GridChar(UpperRightEighthLine,  NoLine,                 NoLine,                 UpperRightEighthLine): "▔",
+    GridChar(UpperRightEighthLine,  UpperRightEighthLine,   UpperRightEighthLine,   NoLine              ): "▕",
+    GridChar(NoLine,                UpperRightEighthLine,   UpperRightEighthLine,   UpperRightEighthLine): "▔",
     GridChar(UpperRightEighthLine,  NoLine,                 UpperRightEighthLine,   UpperRightEighthLine): "▕",
     GridChar(UpperRightEighthLine,  UpperRightEighthLine,   NoLine,                 UpperRightEighthLine): "▔",
     GridChar(UpperRightEighthLine,  UpperRightEighthLine,   UpperRightEighthLine,   UpperRightEighthLine): "▕",
     # LowerLeftEighthLine
     GridChar(LowerLeftEighthLine,   NoLine,                 LowerLeftEighthLine,    NoLine              ): "▏",
     GridChar(NoLine,                LowerLeftEighthLine,    NoLine,                 LowerLeftEighthLine ): "▁",
-    GridChar(LowerLeftEighthLine,   LowerLeftEighthLine,    NoLine,                 NoLine              ): "╲",
+    GridChar(LowerLeftEighthLine,   LowerLeftEighthLine,    NoLine,                 NoLine              ): "🭼", #
     GridChar(NoLine,                LowerLeftEighthLine,    LowerLeftEighthLine,    NoLine              ): "▁",
     GridChar(NoLine,                NoLine,                 LowerLeftEighthLine,    LowerLeftEighthLine ): " ",
     GridChar(LowerLeftEighthLine,   NoLine,                 NoLine,                 LowerLeftEighthLine ): "▏",
@@ -476,8 +488,8 @@ _GRID_CHARS = {
     # Eighth Combos
     GridChar(NoLine,                LowerLeftEighthLine,    UpperRightEighthLine,   NoLine              ): " ",
     GridChar(LowerLeftEighthLine,   NoLine,                 NoLine,                 UpperRightEighthLine): " ",
-    GridChar(NoLine,                UpperRightEighthLine,   LowerLeftEighthLine,    NoLine              ): "╱",
-    GridChar(UpperRightEighthLine,  NoLine,                 NoLine,                 LowerLeftEighthLine ): "╱",
+    GridChar(NoLine,                UpperRightEighthLine,   LowerLeftEighthLine,    NoLine              ): "🭽", #
+    GridChar(UpperRightEighthLine,  NoLine,                 NoLine,                 LowerLeftEighthLine ): "🭿", #
 
     # Eighth/ThinLine combos
     GridChar(LowerLeftEighthLine,   ThinLine,               LowerLeftEighthLine,    NoLine              ): "▏",
@@ -529,11 +541,6 @@ _GRID_CHARS = {
     GridChar(UpperRightHalfLine, NoLine, UpperRightHalfLine, ThinLine): "▐",
     GridChar(ThinLine, UpperRightHalfLine, NoLine, UpperRightHalfLine): "▀",
     # FullLine
-    GridChar(FullLine, NoLine, NoLine, NoLine): "▀",
-    GridChar(NoLine, FullLine, NoLine, NoLine): "▐",
-    GridChar(NoLine, NoLine, FullLine, NoLine): "▄",
-    GridChar(NoLine, NoLine, NoLine, FullLine): "▌",
-
     GridChar(FullLine, NoLine, FullLine, NoLine): "█",
     GridChar(NoLine, FullLine, NoLine, FullLine): "█",
     GridChar(FullLine, FullLine, NoLine, NoLine): "█",
@@ -545,6 +552,11 @@ _GRID_CHARS = {
     GridChar(FullLine, NoLine, FullLine, FullLine): "█",
     GridChar(FullLine, FullLine, NoLine, FullLine): "█",
     GridChar(FullLine, FullLine, FullLine, FullLine): "█",
+    # FullLine End-stops
+    GridChar(FullLine, NoLine, NoLine, NoLine): "▀",
+    GridChar(NoLine, FullLine, NoLine, NoLine): "▐",
+    GridChar(NoLine, NoLine, FullLine, NoLine): "▄",
+    GridChar(NoLine, NoLine, NoLine, FullLine): "▌",
     # Full + Halves
     GridChar(FullLine, NoLine, NoLine, LowerLeftHalfLine): "█",
     GridChar(FullLine, LowerLeftHalfLine, NoLine, NoLine): "█",
@@ -554,16 +566,117 @@ _GRID_CHARS = {
     GridChar(FullLine, UpperRightHalfLine, NoLine, NoLine): "▀",
     GridChar(NoLine, LowerLeftHalfLine, FullLine, NoLine): "▄",
     GridChar(NoLine, NoLine, FullLine, LowerLeftHalfLine): "▄",
-
+    GridChar(NoLine, FullLine, LowerLeftHalfLine, NoLine): "█",
+    GridChar(NoLine, NoLine, LowerLeftHalfLine, FullLine): "▌",
+    GridChar(LowerLeftHalfLine, NoLine, NoLine, FullLine): "▌",
+    GridChar(LowerLeftHalfLine, FullLine, NoLine, NoLine): "█",
+    GridChar(FullLine, LowerLeftHalfLine, FullLine, NoLine): "█",
+    GridChar(NoLine, LowerLeftHalfLine, FullLine, LowerLeftHalfLine): "▄",
+    GridChar(FullLine, LowerLeftHalfLine, FullLine, LowerLeftHalfLine): "█",
+    GridChar(FullLine, UpperRightHalfLine, FullLine, UpperRightHalfLine): "█",
+    GridChar(FullLine, NoLine, FullLine, LowerLeftHalfLine): "█",
+    GridChar(FullLine, UpperRightHalfLine, NoLine, UpperRightHalfLine): "▀",
+    GridChar(FullLine, UpperRightHalfLine, FullLine, NoLine): "█",
+    GridChar(FullLine, UpperRightHalfLine, FullLine, UpperRightHalfLine): "█",
     GridChar(NoLine, UpperRightHalfLine, FullLine, UpperRightHalfLine): "█",
     GridChar(UpperRightHalfLine, NoLine, UpperRightHalfLine, FullLine): "█",
     GridChar(FullLine, LowerLeftHalfLine, NoLine, LowerLeftHalfLine): "█",
     GridChar(LowerLeftHalfLine, FullLine, LowerLeftHalfLine, NoLine): "█",
+    GridChar(NoLine, NoLine, UpperRightHalfLine, FullLine): "█",
+    GridChar(UpperRightHalfLine, NoLine, NoLine, FullLine): "█",
+    GridChar(NoLine, FullLine, LowerLeftHalfLine, FullLine): "█",
+    GridChar(NoLine, FullLine, UpperRightHalfLine, FullLine): "█",
+    GridChar(UpperRightHalfLine, FullLine, UpperRightHalfLine, FullLine): "█",
+    GridChar(UpperRightHalfLine, FullLine, LowerLeftHalfLine, FullLine): "█",
+    GridChar(LowerLeftHalfLine, FullLine, LowerLeftHalfLine, FullLine): "█",
+    GridChar(LowerLeftHalfLine, FullLine, NoLine, FullLine): "█",
+
     # Full + Eighths
     GridChar(NoLine, UpperRightEighthLine, FullLine, UpperRightEighthLine): "█",
     GridChar(UpperRightEighthLine, NoLine, UpperRightEighthLine, FullLine): "█",
     GridChar(FullLine, LowerLeftEighthLine, NoLine, LowerLeftEighthLine): "█",
     GridChar(LowerLeftEighthLine, FullLine, LowerLeftEighthLine, NoLine): "█",
+
+    # UpperRightHalfDottedLine
+    GridChar(UpperRightHalfDottedLine, NoLine, UpperRightHalfDottedLine, NoLine): "⢸",
+    GridChar(NoLine, UpperRightHalfDottedLine, NoLine, UpperRightHalfDottedLine): "⠛",
+    GridChar(UpperRightHalfDottedLine, UpperRightHalfDottedLine, NoLine, NoLine): "▝",
+    GridChar(NoLine, UpperRightHalfDottedLine, UpperRightHalfDottedLine, NoLine): "⢸",
+    GridChar(NoLine, NoLine, UpperRightHalfDottedLine, UpperRightHalfDottedLine): "▜",
+    GridChar(UpperRightHalfDottedLine, NoLine, NoLine, UpperRightHalfDottedLine): "⠛",
+    GridChar(UpperRightHalfDottedLine, UpperRightHalfDottedLine, UpperRightHalfDottedLine, NoLine): "⢸",
+    GridChar(NoLine, UpperRightHalfDottedLine, UpperRightHalfDottedLine, UpperRightHalfDottedLine): "▜",
+    GridChar(UpperRightHalfDottedLine, NoLine, UpperRightHalfDottedLine, UpperRightHalfDottedLine): "▜",
+    GridChar(UpperRightHalfDottedLine, UpperRightHalfDottedLine, NoLine, UpperRightHalfDottedLine): "⠛",
+    GridChar(UpperRightHalfDottedLine, UpperRightHalfDottedLine, UpperRightHalfDottedLine, UpperRightHalfDottedLine): "▜",
+    # LowerLeftHalfDottedLine
+    GridChar(LowerLeftHalfDottedLine, NoLine, LowerLeftHalfDottedLine, NoLine): "⡇",
+    GridChar(NoLine, LowerLeftHalfDottedLine, NoLine, LowerLeftHalfDottedLine): "⣤",
+    GridChar(LowerLeftHalfDottedLine, LowerLeftHalfDottedLine, NoLine, NoLine): "▙",
+    GridChar(NoLine, LowerLeftHalfDottedLine, LowerLeftHalfDottedLine, NoLine): "⣤",
+    GridChar(NoLine, NoLine, LowerLeftHalfDottedLine, LowerLeftHalfDottedLine): "▖",
+    GridChar(LowerLeftHalfDottedLine, NoLine, NoLine, LowerLeftHalfDottedLine): "⡇",
+    GridChar(LowerLeftHalfDottedLine, LowerLeftHalfDottedLine, LowerLeftHalfDottedLine, NoLine): "▙",
+    GridChar(NoLine, LowerLeftHalfDottedLine, LowerLeftHalfDottedLine, LowerLeftHalfDottedLine): "⣤",
+    GridChar(LowerLeftHalfDottedLine, NoLine, LowerLeftHalfDottedLine, LowerLeftHalfDottedLine): "⡇",
+    GridChar(LowerLeftHalfDottedLine, LowerLeftHalfDottedLine, NoLine, LowerLeftHalfDottedLine): "▙",
+    GridChar(LowerLeftHalfDottedLine, LowerLeftHalfDottedLine, LowerLeftHalfDottedLine, LowerLeftHalfDottedLine): "▙",
+    # Half Combos
+    GridChar(NoLine, UpperRightHalfDottedLine, LowerLeftHalfDottedLine, NoLine): "▛",
+    GridChar(UpperRightHalfDottedLine, NoLine, NoLine, LowerLeftHalfDottedLine): "▟",
+    GridChar(LowerLeftHalfDottedLine, NoLine, NoLine, UpperRightHalfDottedLine): "▘",
+    GridChar(NoLine, LowerLeftHalfDottedLine, UpperRightHalfDottedLine, NoLine): "▗",
+    # FullDottedLine
+    GridChar(FullDottedLine, NoLine, FullDottedLine, NoLine): "⣿",
+    GridChar(NoLine, FullDottedLine, NoLine, FullDottedLine): "⣿",
+    GridChar(FullDottedLine, FullDottedLine, NoLine, NoLine): "⣿",
+    GridChar(NoLine, FullDottedLine, FullDottedLine, NoLine): "⣿",
+    GridChar(NoLine, NoLine, FullDottedLine, FullDottedLine): "⣿",
+    GridChar(FullDottedLine, NoLine, NoLine, FullDottedLine): "⣿",
+    GridChar(FullDottedLine, FullDottedLine, FullDottedLine, NoLine): "⣿",
+    GridChar(NoLine, FullDottedLine, FullDottedLine, FullDottedLine): "⣿",
+    GridChar(FullDottedLine, NoLine, FullDottedLine, FullDottedLine): "⣿",
+    GridChar(FullDottedLine, FullDottedLine, NoLine, FullDottedLine): "⣿",
+    GridChar(FullDottedLine, FullDottedLine, FullDottedLine, FullDottedLine): "⣿",
+    # FullDottedLine End-stops
+    GridChar(FullDottedLine, NoLine, NoLine, NoLine): "⠛",
+    GridChar(NoLine, FullDottedLine, NoLine, NoLine): "⢸",
+    GridChar(NoLine, NoLine, FullDottedLine, NoLine): "⣤",
+    GridChar(NoLine, NoLine, NoLine, FullDottedLine): "⡇",
+    # Full + Halves
+    GridChar(FullDottedLine, NoLine, NoLine, LowerLeftHalfDottedLine): "⣿",
+    GridChar(FullDottedLine, LowerLeftHalfDottedLine, NoLine, NoLine): "⣿",
+    GridChar(NoLine, UpperRightHalfDottedLine, FullDottedLine, NoLine): "⣿",
+    GridChar(NoLine, NoLine, FullDottedLine, UpperRightHalfDottedLine): "⣿",
+    GridChar(FullDottedLine, NoLine, NoLine, UpperRightHalfDottedLine): "⠛",
+    GridChar(FullDottedLine, UpperRightHalfDottedLine, NoLine, NoLine): "⠛",
+    GridChar(NoLine, LowerLeftHalfDottedLine, FullDottedLine, NoLine): "⣤",
+    GridChar(NoLine, NoLine, FullDottedLine, LowerLeftHalfDottedLine): "⣤",
+    GridChar(NoLine, FullDottedLine, LowerLeftHalfDottedLine, NoLine): "⣿",
+    GridChar(NoLine, NoLine, LowerLeftHalfDottedLine, FullDottedLine): "⡇",
+    GridChar(LowerLeftHalfDottedLine, NoLine, NoLine, FullDottedLine): "⡇",
+    GridChar(LowerLeftHalfDottedLine, FullDottedLine, NoLine, NoLine): "⣿",
+    GridChar(FullDottedLine, LowerLeftHalfDottedLine, FullDottedLine, NoLine): "⣿",
+    GridChar(NoLine, LowerLeftHalfDottedLine, FullDottedLine, LowerLeftHalfDottedLine): "⣤",
+    GridChar(FullDottedLine, LowerLeftHalfDottedLine, FullDottedLine, LowerLeftHalfDottedLine): "⣿",
+    GridChar(FullDottedLine, UpperRightHalfDottedLine, FullDottedLine, UpperRightHalfDottedLine): "⣿",
+    GridChar(FullDottedLine, NoLine, FullDottedLine, LowerLeftHalfDottedLine): "⣿",
+    GridChar(FullDottedLine, UpperRightHalfDottedLine, NoLine, UpperRightHalfDottedLine): "⠛",
+    GridChar(FullDottedLine, UpperRightHalfDottedLine, FullDottedLine, NoLine): "⣿",
+    GridChar(FullDottedLine, UpperRightHalfDottedLine, FullDottedLine, UpperRightHalfDottedLine): "⣿",
+    GridChar(NoLine, UpperRightHalfDottedLine, FullDottedLine, UpperRightHalfDottedLine): "⣿",
+    GridChar(UpperRightHalfDottedLine, NoLine, UpperRightHalfDottedLine, FullDottedLine): "⣿",
+    GridChar(FullDottedLine, LowerLeftHalfDottedLine, NoLine, LowerLeftHalfDottedLine): "⣿",
+    GridChar(LowerLeftHalfDottedLine, FullDottedLine, LowerLeftHalfDottedLine, NoLine): "⣿",
+    GridChar(NoLine, NoLine, UpperRightHalfDottedLine, FullDottedLine): "⣿",
+    GridChar(UpperRightHalfDottedLine, NoLine, NoLine, FullDottedLine): "⣿",
+    GridChar(NoLine, FullDottedLine, LowerLeftHalfDottedLine, FullDottedLine): "⣿",
+    GridChar(NoLine, FullDottedLine, UpperRightHalfDottedLine, FullDottedLine): "⣿",
+    GridChar(UpperRightHalfDottedLine, FullDottedLine, UpperRightHalfDottedLine, FullDottedLine): "⣿",
+    GridChar(UpperRightHalfDottedLine, FullDottedLine, LowerLeftHalfDottedLine, FullDottedLine): "⣿",
+    GridChar(LowerLeftHalfDottedLine, FullDottedLine, LowerLeftHalfDottedLine, FullDottedLine): "⣿",
+    GridChar(LowerLeftHalfDottedLine, FullDottedLine, NoLine, FullDottedLine): "⣿",
+
 }
 # fmt: off
 
