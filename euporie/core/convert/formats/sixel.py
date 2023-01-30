@@ -6,7 +6,11 @@ from functools import partial
 from typing import TYPE_CHECKING
 
 from euporie.core.convert.base import register
-from euporie.core.convert.formats.common import chafa_convert, imagemagick_convert
+from euporie.core.convert.formats.common import (
+    chafa_convert_cmd,
+    chafa_convert_py,
+    imagemagick_convert,
+)
 from euporie.core.convert.utils import call_subproc, commands_exist, have_modules
 from euporie.core.current import get_app
 
@@ -21,7 +25,14 @@ register(
     from_=("png", "jpeg", "svg", "pdf"),
     to="sixel",
     filter_=commands_exist("chafa"),
-)(partial(chafa_convert, "sixel"))
+)(partial(chafa_convert_cmd, "sixel"))
+
+
+register(
+    from_=("pil"),
+    to="sixel",
+    filter_=have_modules("chafa"),
+)(partial(chafa_convert_py, "sixel"))
 
 
 @register(
