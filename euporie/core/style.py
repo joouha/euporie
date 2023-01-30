@@ -639,7 +639,7 @@ def build_style(
         "input select face hovered selection": f"fg:white bg:{cp.hl}",
         # Dataframes
         "dataframe th": f"bg:{cp.bg.more(0.1)}",
-        "dataframe td": f"bg:{cp.bg.less(0.1)}",
+        "dataframe row-odd td": f"bg:{cp.bg.more(0.05)}",
     }
 
     return Style.from_dict(style_dict)
