@@ -11,6 +11,7 @@ Upcoming
 Added
 =====
 
+- Add ``cahfa.py`` image renderer
 - Add command to clear screen
 - Add a "Restart kernel and clear all output" command
 - Add commands for clearing cell outputs

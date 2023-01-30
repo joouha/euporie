@@ -10,8 +10,9 @@ from euporie.core.convert.utils import call_subproc
 from euporie.core.current import get_app
 
 if TYPE_CHECKING:
-    from typing import Any, Optional, Union
+    from typing import Any, Literal, Optional, Union
 
+    from PIL import Image
     from upath import UPath
 
 log = logging.getLogger(__name__)
@@ -54,7 +55,7 @@ def imagemagick_convert(
     return result
 
 
-def chafa_convert(
+def chafa_convert_cmd(
     output_format: "str",
     data: "str|bytes",
     cols: "Optional[int]" = None,
@@ -71,3 +72,68 @@ def chafa_convert(
         cmd += ["--bg", bg]
     cmd += ["--stretch", "/dev/stdin"]
     return call_subproc(data, cmd).decode()
+
+
+def chafa_convert_py(
+    output_format: "Literal['symbols','sixels','kitty','iterm2']",
+    data: "Image",
+    cols: "Optional[int]" = None,
+    rows: "Optional[int]" = None,
+    fg: "Optional[str]" = None,
+    bg: "Optional[str]" = None,
+    path: "Optional[UPath]" = None,
+) -> "Union[str, bytes]":
+    """Converts image data to ANSI text using ::`chafa.py`."""
+    from chafa.chafa import Canvas, CanvasConfig, PixelMode, PixelType
+
+    pil_mode_to_pixel_type = {
+        "RGBa": PixelType.CHAFA_PIXEL_RGBA8_PREMULTIPLIED,
+        "RGBA": PixelType.CHAFA_PIXEL_RGBA8_UNASSOCIATED,
+        "RGB": PixelType.CHAFA_PIXEL_RGB8,
+    }
+
+    str_to_pixel_mode = {
+        "symbols": PixelMode.CHAFA_PIXEL_MODE_SYMBOLS,
+        "sixels": PixelMode.CHAFA_PIXEL_MODE_SIXELS,
+        "kitty": PixelMode.CHAFA_PIXEL_MODE_KITTY,
+        "iterm2": PixelMode.CHAFA_PIXEL_MODE_ITERM2,
+    }
+
+    # Convert PIL image to format that chafa can use
+    if data.mode not in pil_mode_to_pixel_type:
+        from PIL import Image
+
+        data = data.convert("RGBA", palette=Image.Palette.ADAPTIVE, colors=16)
+
+    # Init canvas config
+    config = CanvasConfig()
+    # Set output mode
+    config.pixel_mode = str_to_pixel_mode[output_format]
+    # Set canvas height and width
+    config.height = rows or 20
+    config.width = cols or 80
+    # Configure the canvas geometry based on our cell size
+    config.cell_width, config.cell_height = get_app().term_info.cell_size_px
+    # Set the background color
+    if bg is not None:
+        color = bg.lstrip("#")
+        config.bg_color = (
+            int(color[0:2], 16),
+            int(color[2:4], 16),
+            int(color[4:6], 16),
+        )
+
+    # Init the canvas
+    canvas = Canvas(config)
+
+    # Draw to canvas
+    canvas.draw_all_pixels(
+        pil_mode_to_pixel_type.get(data.mode, PixelType.CHAFA_PIXEL_RGBA8_UNASSOCIATED),
+        list(data.tobytes()),
+        width := data.width,
+        data.height,
+        width * len(data.getbands()),
+    )
+
+    # Return the output
+    return canvas.print(fallback=True).decode()

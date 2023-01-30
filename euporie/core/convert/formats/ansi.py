@@ -8,7 +8,7 @@ from math import ceil
 from typing import TYPE_CHECKING
 
 from euporie.core.convert.base import register
-from euporie.core.convert.formats.common import chafa_convert
+from euporie.core.convert.formats.common import chafa_convert_cmd, chafa_convert_py
 from euporie.core.convert.formats.pil import set_background
 from euporie.core.convert.utils import call_subproc, commands_exist, have_modules
 from euporie.core.current import get_app
@@ -234,11 +234,7 @@ def latex_to_ansi_py_sympy(
     return pretty(parsed)
 
 
-@register(
-    from_="pil",
-    to="ansi",
-    filter_=have_modules("timg"),
-)
+@register(from_="pil", to="ansi", filter_=have_modules("timg"), weight=2)
 def pil_to_ansi_py_timg(
     data: "PilImage",
     cols: "Optional[int]" = None,
@@ -290,7 +286,12 @@ register(
     from_=("png", "jpeg", "svg", "pdf", "gif"),
     to="ansi",
     filter_=commands_exist("chafa"),
-)(partial(chafa_convert, "symbols"))
+)(partial(chafa_convert_cmd, "symbols"))
+
+
+register(from_=("pil"), to="ansi", filter_=have_modules("chafa"))(
+    partial(chafa_convert_py, "symbols")
+)
 
 
 @register(
