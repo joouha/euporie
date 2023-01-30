@@ -152,6 +152,8 @@ class ChildRenderInfo:
             rows: The rows to copy
 
         """
+        layout = get_app().layout
+
         # Copy write positions
         for win, wp in self.screen.visible_windows_to_write_positions.items():
             new_wp = BoundedWritePosition(
@@ -260,6 +262,9 @@ class ChildRenderInfo:
                         response = None
                         self.refresh = True
 
+                        # Attempt to focus the container
+                        layout.focus(self.child)
+
                     return response
 
                 mouse_handler_wrappers[handler] = wrapped_mouse_handler
@@ -290,7 +295,7 @@ class ChildRenderInfo:
         # Copy cursors
         if self.screen.show_cursor:
             for window, point in self.screen.cursor_positions.items():
-                if get_app().layout.current_control == window.content:
+                if layout.current_control == window.content:
                     assert window.render_info is not None
                     if (
                         window.render_info.ui_content.show_cursor
