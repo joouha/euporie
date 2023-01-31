@@ -242,13 +242,10 @@ class Cell:
                                     (
                                         "",
                                         weak_self.prompt,
-                                    ),
-                                    (
-                                        "",
-                                        "\n ",
                                         on_click(self.toggle_input),
                                     ),
-                                ],
+                                    ("", "\n ", lambda e: NotImplemented),
+                                ]
                             ),
                             width=lambda: len(weak_self.prompt),
                             height=Dimension(preferred=1),
@@ -326,12 +323,9 @@ class Cell:
                                     (
                                         "",
                                         weak_self.prompt,
-                                    ),
-                                    (
-                                        "",
-                                        "\n ",
                                         on_click(self.toggle_output),
                                     ),
+                                    ("", "\n ", lambda e: NotImplemented),
                                 ],
                             ),
                             width=lambda: len(weak_self.prompt),
