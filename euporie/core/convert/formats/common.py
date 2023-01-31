@@ -12,7 +12,7 @@ from euporie.core.current import get_app
 if TYPE_CHECKING:
     from typing import Any, Literal, Optional, Union
 
-    from PIL import Image
+    from PIL.Image import Image as PilImage
     from upath import UPath
 
 log = logging.getLogger(__name__)
@@ -76,14 +76,14 @@ def chafa_convert_cmd(
 
 def chafa_convert_py(
     output_format: "Literal['symbols','sixels','kitty','iterm2']",
-    data: "Image",
+    data: "PilImage",
     cols: "Optional[int]" = None,
     rows: "Optional[int]" = None,
     fg: "Optional[str]" = None,
     bg: "Optional[str]" = None,
     path: "Optional[UPath]" = None,
 ) -> "Union[str, bytes]":
-    """Converts image data to ANSI text using ::`chafa.py`."""
+    """Convert image data to ANSI text using ::`chafa.py`."""
     from chafa.chafa import Canvas, CanvasConfig, PixelMode, PixelType
 
     pil_mode_to_pixel_type = {
