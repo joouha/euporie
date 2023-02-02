@@ -25,6 +25,8 @@ Added
 Fixed
 =====
 
+- Change "toggle cell inputs" / "toggle cell outputs" click area to just prompt number
+- Focus notebook page on click
 - Add global dragging to slider widgets
 - Fixed crash when merging last two cells in a notebook
 - Relaxed dependency specification constraints
