@@ -57,6 +57,9 @@ format = [
   "isort~=5.10.1",
   "ssort~=0.11.6",
 ]
+chafa = [
+  "chafa.py>=1.0.2",
+]
 
 [project.urls]
 Documentation = "https://euporie.readthedocs.io/en/latest"
@@ -210,7 +213,7 @@ show_error_codes = true
 [[tool.mypy.overrides]]
 module = [
   "_frozen_importlib", "ipykernel", "fastjsonschema",
-  "pyperclip", "upath.*", "timg", "pylatexenc.*", "aenum", "pygments.*",
+  "pyperclip", "upath.*", "chafa.*", "timg", "pylatexenc.*", "aenum", "pygments.*",
   "ssort",
   "flatlatex.*", "timg", "img2unicode", "cairosvg", "teimpy", "IPython.*", "numpy", "mtable", "imagesize",
 ]
