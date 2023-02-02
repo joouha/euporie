@@ -39,7 +39,7 @@ def test_hidden_underline_removal() -> "None":
     """Underline attribute should be removed from hidden elements."""
     data = 'a <u style="visibility:hidden">b</u> c'
     result = HTML(data, width=5).formatted_text
-    assert "nounderline" in result[1][0]
+    assert "underline" not in {x[0] for x in result}
 
 
 def test_text_wrapping() -> "None":
