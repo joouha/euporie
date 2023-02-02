@@ -86,6 +86,16 @@ def max_line_width(ft: StyleAndTextTuples) -> int:
     return max(fragment_list_width(line) for line in split_lines(ft))
 
 
+def last_char(ft: StyleAndTextTuples) -> str | None:
+    """Retrieve the last character of formatted text."""
+    for frag in reversed(ft):
+        text = frag[1]
+        for c in reversed(text):
+            if c:
+                return c
+    return None
+
+
 def fragment_list_to_words(
     fragments: "StyleAndTextTuples", sep: "str" = " "
 ) -> "Iterable[StyleAndTextTuples]":
