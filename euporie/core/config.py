@@ -21,6 +21,7 @@ from upath import UPath
 
 from euporie.core import __app_name__, __copyright__, __version__
 from euporie.core.commands import add_cmd, get_cmd
+from euporie.core.log import setup_logs
 
 if TYPE_CHECKING:
     from typing import IO, Any, Callable, Optional, Sequence, Type, Union
@@ -166,22 +167,44 @@ class Config:
         )
         self.valid_user = True
 
-        set_values = ChainMap(
-            self.load_args(),
+        config_maps = {
+            # Load command line arguments
+            "command line arguments": self.load_args(),
             # Load app specific env vars
-            self.load_env(app_name=self.app_name),
+            "app-specific environment variable": self.load_env(app_name=self.app_name),
             # Load global env vars
-            self.load_env(),
+            "global environment variable": self.load_env(),
             # Load app specific user config
-            self.load_user(app_name=self.app_name),
+            "app-specific user configuration": self.load_user(app_name=self.app_name),
             # Load global user config
-            self.load_user(),
-        )
+            "user configuration": self.load_user(),
+        }
+        set_values = ChainMap(*config_maps.values())
+
         for name, setting in Config.settings.items():
             if setting.name in set_values:
                 # Set value without triggering hooks
                 setting._value = set_values[name]
             setting.event += self._save
+
+        # Set-up logs
+        setup_logs(self)
+
+        # Save a list of unknown configuration options so we can warn about them once
+        # the logs are configured
+        self.unrecognised = [
+            (map_name, option_name)
+            for map_name, map_values in config_maps.items()
+            for option_name in map_values.keys() - Config.settings.keys()
+            if not isinstance(set_values[option_name], dict)
+        ]
+
+    def warn(self) -> "None":
+        """Warn about unrecognised configuration items."""
+        for map_name, option_name in self.unrecognised:
+            log.warning(
+                "Configuration option '%s' not recognised in %s", option_name, map_name
+            )
 
     @property
     def schema(self) -> "dict[str, Any]":

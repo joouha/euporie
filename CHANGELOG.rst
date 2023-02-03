@@ -4,6 +4,17 @@ Changelog
 
 Notable changes to this project will be documented in this file.
 
+********
+Upcoming
+********
+
+Added
+=====
+
+- Warn about unrecognised configuration options in the log
+
+----
+
 *******************
 v2.3.0 (2023-02-03)
 *******************
