@@ -517,6 +517,8 @@ class BaseApp(Application):
         cls.config.load(cls)
         # Configure the logs
         setup_logs(cls.config)
+        # Warn about unrecognised configuration items
+        cls.config.warn()
         # Run the application
         with create_app_session(input=cls.load_input(), output=cls.load_output()):
             # Create an instance of the app and run it
