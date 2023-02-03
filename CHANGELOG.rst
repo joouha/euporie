@@ -4,9 +4,9 @@ Changelog
 
 Notable changes to this project will be documented in this file.
 
-********
-Upcoming
-********
+*******************
+v2.3.0 (2023-02-03)
+*******************
 
 Added
 =====
@@ -19,7 +19,7 @@ Added
 - "Open" and "Save As" dialogs now include a file browser
 - Added a side-bar, which currently shows a file browser
 - Add file display tab
-- Minor ussability improvements to widgets
+- Minor usability improvements to widgets
 - Partially obscured images are now rendered using terminal graphics
 
 Fixed
@@ -34,7 +34,7 @@ Fixed
 Changed
 =======
 
-- Major re-write of HTML renderer
+- Major re-write of HTML renderer (there is still work to be done on rendering the contents of inline elements).
 
 ----
 
