@@ -4,16 +4,19 @@ Changelog
 
 Notable changes to this project will be documented in this file.
 
-********
-Upcoming
-********
+*******************
+v2.3.1 (2023-02-05)
+*******************
 
 Added
 =====
 
 - Warn about unrecognised configuration options in the log
 
-----
+Fixed
+=====
+
+- Fix minor issue with ``chafa.py`` image renderer
 
 *******************
 v2.3.0 (2023-02-03)
