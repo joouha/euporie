@@ -115,8 +115,7 @@ def chafa_convert_py(
     # Configure the canvas geometry based on our cell size
     config.cell_width, config.cell_height = get_app().term_info.cell_size_px
     # Set the background color
-    if bg is not None:
-        color = bg.lstrip("#")
+    if bg and (color := bg.lstrip("#")):
         config.bg_color = (
             int(color[0:2], 16),
             int(color[2:4], 16),
