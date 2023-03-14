@@ -202,7 +202,7 @@ ignore = [
 "scripts/*.py" = ["T201"]
 
 [tool.codespell]
-ignore-words-list = "iterm,edn"
+ignore-words-list = "iterm,edn,controll,controle"
 skip = "euporie/core/reference.py,.*"
 
 
