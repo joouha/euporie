@@ -13,8 +13,10 @@ from prompt_toolkit.output import ColorDepth, Output
 from prompt_toolkit.renderer import Renderer as PtkRenderer
 from prompt_toolkit.renderer import _StyleStringHasStyleCache, _StyleStringToAttrsCache
 
+from euporie.core.io import Vt100_Output
+
 if TYPE_CHECKING:
-    from typing import Any, Callable, Optional, Tuple
+    from typing import Any, Callable
 
     from prompt_toolkit.application import Application
     from prompt_toolkit.filters import FilterOrBool
@@ -28,20 +30,20 @@ log = logging.getLogger(__name__)
 
 
 def _output_screen_diff(
-    app: "Application[Any]",
-    output: "Output",
-    screen: "Screen",
-    current_pos: "Point",
-    color_depth: "ColorDepth",
-    previous_screen: "Optional[Screen]",
-    last_style: "Optional[str]",
-    is_done: "bool",  # XXX: drop is_done
-    full_screen: "bool",
-    attrs_for_style_string: "_StyleStringToAttrsCache",
-    style_string_has_style: "_StyleStringHasStyleCache",
-    size: "Size",
-    previous_width: "int",
-) -> "Tuple[Point, Optional[str]]":
+    app: Application[Any],
+    output: Output,
+    screen: Screen,
+    current_pos: Point,
+    color_depth: ColorDepth,
+    previous_screen: Screen | None,
+    last_style: str | None,
+    is_done: bool,  # XXX: drop is_done
+    full_screen: bool,
+    attrs_for_style_string: _StyleStringToAttrsCache,
+    style_string_has_style: _StyleStringHasStyleCache,
+    size: Size,
+    previous_width: int,
+) -> tuple[Point, str | None]:
     """Render the diff between this screen and the previous screen."""
     width, height = size.columns, size.rows
 
@@ -61,7 +63,7 @@ def _output_screen_diff(
     output.hide_cursor()
 
     def reset_attributes() -> None:
-        """Wrapper around Output.reset_attributes."""
+        """Wrap Output.reset_attributes."""
         nonlocal last_style
         _output_reset_attributes()
         last_style = None  # Forget last char after resetting attributes.
@@ -252,13 +254,13 @@ class Renderer(PtkRenderer):
 
     def __init__(
         self,
-        style: "BaseStyle",
-        output: "Output",
-        full_screen: "bool" = False,
-        mouse_support: "FilterOrBool" = False,
-        cpr_not_supported_callback: "Optional[Callable[[], None]]" = None,
-        extend_height: "FilterOrBool" = False,
-        extend_width: "FilterOrBool" = False,
+        style: BaseStyle,
+        output: Output,
+        full_screen: bool = False,
+        mouse_support: FilterOrBool = False,
+        cpr_not_supported_callback: Callable[[], None] | None = None,
+        extend_height: FilterOrBool = False,
+        extend_width: FilterOrBool = False,
     ) -> None:
         """Create a new :py:class:`Renderer` instance."""
         super().__init__(
@@ -267,11 +269,25 @@ class Renderer(PtkRenderer):
         self.extend_height = to_filter(extend_height)
         self.extend_width = to_filter(extend_width)
 
+    def reset(self, _scroll: bool = False, leave_alternate_screen: bool = True) -> None:
+        """Disable extended keys before resetting the output."""
+        output = self.output
+
+        # Disable extended keys
+        if isinstance(output, Vt100_Output):
+            self.output.disable_extended_keys()
+
+        super().reset(_scroll, leave_alternate_screen)
+
     def render(
-        self, app: "Application[Any]", layout: "Layout", is_done: bool = False
+        self, app: Application[Any], layout: Layout, is_done: bool = False
     ) -> None:
         """Render the current interface to the output."""
         output = self.output
+
+        # Enable extended keys
+        if isinstance(output, Vt100_Output):
+            output.enable_extended_keys()
 
         # Enter alternate screen.
         if self.full_screen and not self._in_alternate_screen:

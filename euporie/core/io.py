@@ -1,7 +1,5 @@
 """Defines custom inputs and outputs, and related methods."""
 
-from __future__ import annotations
-
 import logging
 import re
 from typing import TYPE_CHECKING
@@ -55,7 +53,7 @@ class Vt100Parser(vt100_parser.Vt100Parser):
         self.queries: "dict[Keys, re.Pattern]" = {}
 
     def _get_match(self, prefix: "str") -> "Union[None, Keys, tuple[Keys, ...]]":
-        """Checks for additional key matches first."""
+        """Check for additional key matches first."""
         for key, pattern in self.queries.items():
             if pattern.match(prefix):
                 return key
@@ -85,3 +83,17 @@ class Vt100_Output(PtkVt100_Output):
         """Additionally disable SGR-pixel mouse positioning."""
         super().disable_mouse_support()
         self.write_raw("\x1b[?1016l")
+
+    def enable_extended_keys(self) -> "None":
+        """Request extended keys."""
+        # xterm
+        self.write_raw("\x1b[>4;1m")
+        # kitty
+        self.write_raw("\x1b[>1u")
+
+    def disable_extended_keys(self) -> "None":
+        """Disable extended keys."""
+        # xterm
+        self.write_raw("\x1b[>4;0m")
+        # kitty
+        self.write_raw("\x1b[<u")
