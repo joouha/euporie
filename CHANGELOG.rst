@@ -4,6 +4,17 @@ Changelog
 
 Notable changes to this project will be documented in this file.
 
+********
+Upcoming
+********
+
+Fixed
+=====
+
+- Prevent exception if kernel requests an unknown lexer
+
+----
+
 *******************
 v2.3.1 (2023-02-05)
 *******************

@@ -22,6 +22,7 @@ from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.layout.dimension import Dimension
 from prompt_toolkit.lexers import DynamicLexer, PygmentsLexer, SimpleLexer
 from pygments.lexers import get_lexer_by_name
+from pygments.util import ClassNotFound
 
 from euporie.core.border import NoLine, ThickLine, ThinLine
 from euporie.core.config import add_setting
@@ -62,6 +63,19 @@ def get_cell_id(cell_json: "dict") -> "str":
     if not cell_id:
         cell_json["id"] = cell_id = nbformat.v4.new_code_cell().get("id")
     return cell_id
+
+
+def get_pygments_lexer(language: str) -> PygmentsLexer:
+    """Get a pygments lexer class by name, ignoring errors."""
+    try:
+        lexer_class = get_lexer_by_name(language).__class__
+    except ClassNotFound:
+        return SimpleLexer()
+    else:
+        return PygmentsLexer(
+            lexer_class,
+            sync_from_start=False,
+        )
 
 
 class Cell:
@@ -136,7 +150,7 @@ class Cell:
             # Tell the scrolling container to scroll the cursor into view on the next render
             weak_self.kernel_tab.page.scroll_to_cursor = True
 
-        # Noew we generate the main container used to represent a kernel_tab cell
+        # Now we generate the main container used to represent a kernel_tab cell
 
         self.input_box = KernelInput(
             kernel_tab=self.kernel_tab,
@@ -149,10 +163,7 @@ class Cell:
             lexer=DynamicLexer(
                 partial(
                     lambda cell: (
-                        PygmentsLexer(
-                            get_lexer_by_name(cell.language).__class__,
-                            sync_from_start=False,
-                        )
+                        get_pygments_lexer(cell.language)
                         if cell.cell_type != "raw"
                         else SimpleLexer()
                     ),
@@ -720,7 +731,6 @@ class Cell:
         visual = os.environ.get("VISUAL")
 
         if editor := app.config.external_editor:
-
             if "{left}" in editor:
                 win = self.input_box.window
 
