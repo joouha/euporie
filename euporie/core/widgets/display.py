@@ -247,9 +247,7 @@ class DisplayControl(UIControl):
 
             def get_line(i: "int") -> "StyleAndTextTuples":
                 # Return blank lines if the renderer expects more content than we have
-                line = []
-                if i < line_count:
-                    line += rendered_lines[i]
+                line = rendered_lines[i] if i < line_count else []
                 # Add a space at the end, because that is a possible cursor position.
                 # This is what PTK does, and fixes a nasty bug which took me ages to
                 # track down the source of, where scrolling would stop working when the
@@ -360,8 +358,8 @@ class FormattedTextDisplayControl(DisplayControl):
         """Get rendered lines from the cache, or generate them."""
 
         def render_lines() -> "list[StyleAndTextTuples]":
-            """Renders the lines to display in the control."""
-            return list(
+            """Render the lines to display in the control."""
+            lines = list(
                 split_lines(
                     convert(
                         data=self.data,
@@ -375,6 +373,12 @@ class FormattedTextDisplayControl(DisplayControl):
                     )
                 )
             )
+
+            # Ensure we have enough lines to fill the data's calculated height
+            rows = ceil(min(width, self.max_cols) * self.aspect)
+            lines.extend([[]] * max(0, rows - len(lines)))
+
+            return lines
 
         # Re-render if the image width changes, or the terminal character size changes
         key = (width, self.app.term_info.cell_size_px)
@@ -867,7 +871,6 @@ class GraphicWindow(Window):
             and target_wp
             and (render_info := self.target_window.render_info) is not None
         ):
-
             xpos = target_wp.xpos
             ypos = target_wp.ypos
             content_height = render_info.ui_content.line_count
@@ -931,7 +934,11 @@ class GraphicWindow(Window):
             self.content.hide()
 
     def _fill_bg(
-        self, screen: Screen, write_position: WritePosition, erase_bg: bool
+        self,
+        screen: Screen,
+        # mouse_handlers: MouseHandlers,
+        write_position: WritePosition,
+        erase_bg: bool,
     ) -> None:
         """Erase/fill the background."""
         char: str | None
@@ -942,10 +949,14 @@ class GraphicWindow(Window):
         if erase_bg or char:
             wp = write_position
             char_obj = Char(char or " ", f"class:render-{get_app().render_counter}")
+
+            # mouse_handlers_dict = mouse_handlers.mouse_handlers
             for y in range(wp.ypos, wp.ypos + wp.height):
                 row = screen.data_buffer[y]
+                # mouse_handler_row = mouse_handlers_dict[y]
                 for x in range(wp.xpos, wp.xpos + wp.width):
                     row[x] = char_obj
+                    # mouse_handler_row[x] = lambda e: NotImplemented
 
 
 class GraphicFloat(Float):

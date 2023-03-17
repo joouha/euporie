@@ -13,6 +13,7 @@ Fixed
 
 - Prevent exception if kernel requests an unknown lexer
 - Improve handling of kernel startup errors and reliability of changing kernels
+- Rendering of LaTeX as terminal graphics
 
 ----
 

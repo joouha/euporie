@@ -22,8 +22,84 @@ register(
 )(base64_to_bytes_py)
 
 
-def latex_to_png_py_ipython(
-    backend: "str",
+@register(
+    from_="latex",
+    to="png",
+    filter_=commands_exist("dvipng") & commands_exist("latex"),
+)
+def latex_to_png_dvipng(
+    data: "str|bytes",
+    width: "Optional[int]" = None,
+    height: "Optional[int]" = None,
+    fg: "Optional[str]" = None,
+    bg: "Optional[str]" = None,
+    path: "Optional[UPath]" = None,
+) -> "bytes|None":
+    """Render LaTeX as a png image using :command:`dvipng`.
+
+    Borrowed from IPython.
+    """
+    import shutil
+    import subprocess
+    import tempfile
+    from pathlib import Path
+
+    latex_doc = (
+        r"\documentclass{article}\pagestyle{empty}\begin{document}"
+        + data
+        + r"\end{document}"
+    )
+
+    workdir = Path(tempfile.mkdtemp())
+    with workdir.joinpath("tmp.tex").open("w", encoding="utf8") as f:
+        f.writelines(latex_doc)
+
+    # Convert hex color to latax color
+    fg_latex = f"RGB {int(fg[1:3], 16)} {int(fg[3:5], 16)} {int(fg[5:7], 16)}"
+
+    # Convert latex document to dvi image, then Convert dvi image to png
+    try:
+        subprocess.check_call(
+            ["latex", "-halt-on-error", "-interaction", "batchmode", "tmp.tex"],
+            cwd=workdir,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        output = subprocess.check_output(
+            [
+                "dvipng",
+                "-T",
+                "tight",
+                "-D",
+                "150",
+                "-z",
+                "9",
+                "-bg",
+                "Transparent",
+                "-o",
+                "/dev/stdout",
+                "tmp.dvi",
+                "-fg",
+                fg_latex,
+            ],
+            cwd=workdir,
+            stderr=subprocess.DEVNULL,
+        )
+    except subprocess.CalledProcessError:
+        return None
+    finally:
+        # Clean up temporary folder
+        shutil.rmtree(workdir)
+
+    return output
+
+
+@register(
+    from_="latex",
+    to="png",
+    filter_=have_modules("matplotlib"),
+)
+def latex_to_png_py_mpl(
     data: "str|bytes",
     width: "Optional[int]" = None,
     height: "Optional[int]" = None,
@@ -31,30 +107,28 @@ def latex_to_png_py_ipython(
     bg: "Optional[str]" = None,
     path: "Optional[UPath]" = None,
 ) -> "bytes":
-    """Converts LaTeX data to PNG bytes with :py:mod:`IPython` & :py:mod:`matplotlib`."""
-    from IPython.lib.latextools import latex_to_png
+    """Render LaTeX as a png image using :py:module:`matplotlib`.
 
-    markup = data.decode() if isinstance(data, bytes) else data
-    return (
-        latex_to_png(
-            markup, encode=False, backend=backend, **({"color": fg} if fg else {})
-        )
-        or b"error"
-    )
+    Borrowed from IPython.
+    """
+    from io import BytesIO
 
+    from matplotlib import figure, font_manager, mathtext
+    from matplotlib.backends import backend_agg
 
-register(
-    from_="latex",
-    to="png",
-    filter_=commands_exist("dvipng") & have_modules("IPython.lib.latextools"),
-)(partial(latex_to_png_py_ipython, "dvipng"))
+    # mpl mathtext doesn't support display math, force inline
+    data = data.replace("$$", "$")
 
+    buffer = BytesIO()
 
-register(
-    from_="latex",
-    to="png",
-    filter_=have_modules("IPython.lib.latextools", "matplotlib"),
-)(partial(latex_to_png_py_ipython, "matplotlib"))
+    prop = font_manager.FontProperties(size=12)
+    parser = mathtext.MathTextParser("path")
+    width, height, depth, _, _ = parser.parse(data, dpi=72, prop=prop)
+    fig = figure.Figure(figsize=(width / 72, height / 72))
+    fig.text(0, depth / height, data, fontproperties=prop, color=fg)
+    backend_agg.FigureCanvasAgg(fig)
+    fig.savefig(buffer, dpi=120, format="png", transparent=True)
+    return buffer.getvalue()
 
 
 register(
