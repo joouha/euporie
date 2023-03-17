@@ -20,7 +20,7 @@ from euporie.core.current import get_app
 from euporie.core.key_binding.bindings.mouse import MouseEvent, RelativePosition
 
 if TYPE_CHECKING:
-    from typing import Callable, Optional, Protocol
+    from typing import Callable, Protocol
 
     from prompt_toolkit.formatted_text import StyleAndTextTuples
     from prompt_toolkit.key_binding.key_bindings import (
@@ -45,9 +45,9 @@ log = logging.getLogger(__name__)
 class ClickableMargin(Margin, metaclass=ABCMeta):
     """A margin sub-class which handles mouse events."""
 
-    write_position: "Optional[WritePosition]"
+    write_position: WritePosition | None
 
-    def set_write_position(self, write_position: "WritePosition") -> "None":
+    def set_write_position(self, write_position: WritePosition) -> None:
         """Set the write position of the menu."""
         self.write_position = write_position
 
@@ -55,14 +55,14 @@ class ClickableMargin(Margin, metaclass=ABCMeta):
 class MarginContainer(Window):
     """A container which renders a stand-alone margin."""
 
-    def __init__(self, margin: "Margin", target: "ScrollableContainer") -> "None":
+    def __init__(self, margin: Margin, target: ScrollableContainer) -> None:
         """Create a new instance."""
         self.margin = margin
         self.target = target
-        self.render_info: "Optional[WindowRenderInfo]" = None
+        self.render_info: WindowRenderInfo | None = None
         self.content = FormattedTextControl(self.create_fragments)
 
-    def create_fragments(self) -> "StyleAndTextTuples":
+    def create_fragments(self) -> StyleAndTextTuples:
         """Generate text fragments to display."""
         return self.margin.create_margin(
             self.target.render_info,
@@ -70,25 +70,23 @@ class MarginContainer(Window):
             self.write_position.height,
         )
 
-    def reset(self) -> "None":
+    def reset(self) -> None:
         """Reset the state of this container and all the children."""
 
-    def preferred_width(self, max_available_width: "int") -> "Dimension":
+    def preferred_width(self, max_available_width: int) -> Dimension:
         """Return a the desired width for this container."""
         width = self.margin.get_width(lambda: self.target.render_info.ui_content)
         return Dimension(min=width, max=width)
 
-    def preferred_height(
-        self, width: "int", max_available_height: "int"
-    ) -> "Dimension":
+    def preferred_height(self, width: int, max_available_height: int) -> Dimension:
         """Return a thedesired height for this container."""
         return Dimension()
 
     def write_to_screen(
         self,
-        screen: "Screen",
-        mouse_handlers: "MouseHandlers",
-        write_position: "WritePosition",
+        screen: Screen,
+        mouse_handlers: MouseHandlers,
+        write_position: WritePosition,
         parent_style: str,
         erase_bg: bool,
         z_index: int | None,
@@ -98,7 +96,7 @@ class MarginContainer(Window):
         if isinstance(self.margin, ClickableMargin):
             self.margin.set_write_position(write_position)
 
-        margin_content: "UIContent" = self.content.create_content(
+        margin_content: UIContent = self.content.create_content(
             write_position.width + 1, write_position.height
         )
         visible_line_to_row_col, rowcol_to_yx = self._copy_body(
@@ -106,8 +104,8 @@ class MarginContainer(Window):
         )
 
         # Set mouse handlers.
-        def mouse_handler(mouse_event: PtkMouseEvent) -> "NotImplementedOrNone":
-            """Turns screen coordinates into line coordinates."""
+        def mouse_handler(mouse_event: PtkMouseEvent) -> NotImplementedOrNone:
+            """Turn screen coordinates into line coordinates."""
             # Don't handle mouse events outside of the current modal part of the UI
             if self not in get_app().layout.walk_through_modal_area():
                 return NotImplemented
@@ -121,7 +119,7 @@ class MarginContainer(Window):
             # last line instead
             max_y = write_position.ypos + len(visible_line_to_row_col) - 1
             y = min(max_y, y)
-            result: "NotImplementedOrNone" = NotImplemented
+            result: NotImplementedOrNone = NotImplemented
 
             while x >= 0:
                 try:
@@ -157,15 +155,15 @@ class MarginContainer(Window):
             handler=mouse_handler,
         )
 
-    def is_modal(self) -> "bool":
+    def is_modal(self) -> bool:
         """When this container is modal."""
         return False
 
-    def get_key_bindings(self) -> "Optional[KeyBindingsBase]":
+    def get_key_bindings(self) -> KeyBindingsBase | None:
         """Returns a :class:`.KeyBindings` object."""
         return None
 
-    def get_children(self) -> "list[Container]":
+    def get_children(self) -> list[Container]:
         """Return the list of child :class:`.Container` objects."""
         return []
 
@@ -185,21 +183,21 @@ class ScrollbarMargin(ClickableMargin):
 
     def __init__(
         self,
-        display_arrows: "FilterOrBool" = True,
-        up_arrow_symbol: "str" = "▴",
-        down_arrow_symbol: "str" = "▾",
-        autohide: "FilterOrBool" = True,
-        smooth: "bool" = True,
-        style: "str" = "",
-    ) -> "None":
-        """Creates a new scrollbar instance."""
+        display_arrows: FilterOrBool = True,
+        up_arrow_symbol: str = "▴",
+        down_arrow_symbol: str = "▾",
+        autohide: FilterOrBool = True,
+        smooth: bool = True,
+        style: str = "",
+    ) -> None:
+        """Create a new scrollbar instance."""
         self.display_arrows = to_filter(display_arrows)
         self.up_arrow_symbol = up_arrow_symbol
         self.down_arrow_symbol = down_arrow_symbol
         self.smooth = smooth
         self.style = style
 
-        self.repeat_task: "Optional[asyncio.Task[None]]" = None
+        self.repeat_task: asyncio.Task[None] | None = None
         self.dragging = False
         self.drag_start_scroll = 0
         self.drag_start_offset = 0.0
@@ -207,27 +205,27 @@ class ScrollbarMargin(ClickableMargin):
         self.thumb_top = 0.0
         self.thumb_size = 0.0
 
-        self.window_render_info: "Optional[WindowRenderInfo]" = None
-        self.write_position: "Optional[WritePosition]" = None
+        self.window_render_info: WindowRenderInfo | None = None
+        self.write_position: WritePosition | None = None
 
-    def get_width(self, get_ui_content: "Callable[[], UIContent]") -> "int":
+    def get_width(self, get_ui_content: Callable[[], UIContent]) -> int:
         """Return the scrollbar width: always 1."""
         return 1
 
     def create_margin(
         self,
-        window_render_info: "WindowRenderInfo",
-        width: "int",
-        height: "int",
-        margin_render_info: "Optional[WindowRenderInfo]" = None,
-    ) -> "StyleAndTextTuples":
+        window_render_info: WindowRenderInfo,
+        width: int,
+        height: int,
+        margin_render_info: WindowRenderInfo | None = None,
+    ) -> StyleAndTextTuples:
         """Creates the margin's formatted text."""
         result: StyleAndTextTuples = []
 
         self.window_render_info = window_render_info
         self.margin_render_info = margin_render_info
 
-        if not width:
+        if window_render_info is None or not width:
             return result
 
         # Show we render the arrow buttons?
@@ -363,8 +361,8 @@ class ScrollbarMargin(ClickableMargin):
         return result
 
     def _mouse_handler(
-        self, mouse_event: "PtkMouseEvent", repeated: "bool" = False
-    ) -> "NotImplementedOrNone":
+        self, mouse_event: PtkMouseEvent, repeated: bool = False
+    ) -> NotImplementedOrNone:
         """Handle scrollbar mouse events.
 
         Scrolls up or down if the arrows are clicked, repeating while the mouse button
@@ -472,13 +470,11 @@ class ScrollbarMargin(ClickableMargin):
 
         return None
 
-    def mouse_handler(self, mouse_event: "PtkMouseEvent") -> "NotImplementedOrNone":
+    def mouse_handler(self, mouse_event: PtkMouseEvent) -> NotImplementedOrNone:
         """Type compatible mouse handler."""
         return self._mouse_handler(mouse_event, repeated=False)
 
-    async def repeat(
-        self, mouse_event: "PtkMouseEvent", timeout: "float" = 0.1
-    ) -> "None":
+    async def repeat(self, mouse_event: PtkMouseEvent, timeout: float = 0.1) -> None:
         """Repeat a mouse event after a timeout."""
         await asyncio.sleep(timeout)
         self._mouse_handler(mouse_event, repeated=True)
@@ -490,14 +486,14 @@ class NumberedDiffMargin(Margin):
 
     style = "class:line-number"
 
-    def get_width(self, get_ui_content: "Callable[[], UIContent]") -> "int":
+    def get_width(self, get_ui_content: Callable[[], UIContent]) -> int:
         """Return the width of the margin."""
         line_count = get_ui_content().line_count
         return len("%s" % line_count) + 2
 
     def create_margin(
-        self, window_render_info: "WindowRenderInfo", width: "int", height: "int"
-    ) -> "StyleAndTextTuples":
+        self, window_render_info: WindowRenderInfo, width: int, height: int
+    ) -> StyleAndTextTuples:
         """Generate the margin's content."""
         # Get current line number.
         current_lineno = window_render_info.ui_content.cursor_position.y
@@ -530,17 +526,17 @@ class NumberedDiffMargin(Margin):
 class OverflowMargin(Margin):
     """A margin which indicates lines extending beyond the edge of the window."""
 
-    def get_width(self, get_ui_content: "Callable[[], UIContent]") -> "int":
+    def get_width(self, get_ui_content: Callable[[], UIContent]) -> int:
         """Return the width of the margin."""
         return 1
 
     def create_margin(
-        self, window_render_info: "WindowRenderInfo", width: "int", height: "int"
-    ) -> "StyleAndTextTuples":
+        self, window_render_info: WindowRenderInfo, width: int, height: int
+    ) -> StyleAndTextTuples:
         """Generate the margin's content."""
         from prompt_toolkit.formatted_text.utils import fragment_list_width
 
-        result: "StyleAndTextTuples" = []
+        result: StyleAndTextTuples = []
 
         for lineno in window_render_info.displayed_lines:
             line = window_render_info.ui_content.get_line(lineno)

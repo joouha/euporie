@@ -12,12 +12,12 @@ from prompt_toolkit.filters import Condition
 from prompt_toolkit.key_binding.bindings.focus import focus_next, focus_previous
 from prompt_toolkit.layout.containers import HSplit, ScrollOffsets, VSplit, Window
 from prompt_toolkit.layout.controls import UIContent, UIControl
-from prompt_toolkit.layout.margins import ScrollbarMargin
 from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
 
 from euporie.core.commands import Command, add_cmd, commands
 from euporie.core.current import get_app
 from euporie.core.key_binding.registry import register_bindings
+from euporie.core.margins import ScrollbarMargin
 from euporie.core.widgets.decor import FocusedStyle
 from euporie.core.widgets.dialog import Dialog
 from euporie.core.widgets.forms import Text
@@ -194,9 +194,7 @@ class CommandPalette(Dialog):
             placeholder="  Type to search…",
         )
         self.text_area.buffer.on_text_changed += self.text_changed
-        scroll_bar_margin = ScrollbarMargin(display_arrows=True)
-        scroll_bar_margin.up_arrow_symbol = "▲"
-        scroll_bar_margin.down_arrow_symbol = "▼"
+        scroll_bar_margin = ScrollbarMargin(display_arrows=False)
 
         self.body = HSplit(
             [

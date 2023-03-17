@@ -99,7 +99,7 @@ class FormattedTextArea(TextArea):
             )
         ]
         # Add auto scrollbar
-        self.window.right_margins = [ScrollbarMargin()]
+        self.window.right_margins = [ScrollbarMargin(display_arrows=False)]
         # Set the formatted text to display
         self._set_formatted_text(formatted_text)
 
