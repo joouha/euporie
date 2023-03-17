@@ -176,7 +176,9 @@ class KernelInput(TextArea):
         ]
         self.window.right_margins = right_margins or [
             OverflowMargin(),
-            ConditionalMargin(ScrollbarMargin(), filter=scrollable(self.window)),
+            ConditionalMargin(
+                ScrollbarMargin(display_arrows=False), filter=scrollable(self.window)
+            ),
         ]
 
         self.window.cursorline = self.has_focus
