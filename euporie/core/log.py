@@ -168,7 +168,7 @@ class FtFormatter(logging.Formatter):
     def __init__(self, *args: "Any", **kwargs: "Any") -> "None":
         """Creates a new formatter instance."""
         super().__init__(*args, **kwargs)
-        self.datefmt = self.datefmt or "%Y-%m-%d %H:%M:%S"
+        self.datefmt = self.datefmt or "%H:%M:%S"
 
     def prepare(
         self, record: "logging.LogRecord", width: "Optional[int]" = None
@@ -319,7 +319,7 @@ def setup_logs(config: "Config") -> "None":
             "stdout": {
                 "level": config.log_level.upper()
                 if config.log_level and log_file_is_stdout
-                else "CRITICAL",
+                else config.app_cls.log_stdout_level,
                 "class": "euporie.core.log.FormattedTextHandler",
                 "pygments_theme": config.syntax_theme,
                 "formatter": "stdout_format",

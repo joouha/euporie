@@ -464,13 +464,6 @@ class ConsoleTab(KernelTab):
         assert self.kernel is not None
         self.kernel.interrupt()
 
-    @property
-    def kernel_display_name(self) -> "str":
-        """Return the display name of the kernel defined in the notebook JSON."""
-        if self.kernel and self.kernel.km.kernel_spec:
-            return self.kernel.km.kernel_spec.display_name
-        return self.kernel_name
-
     def set_kernel_info(self, info: "dict") -> "None":
         """Receives and processes kernel metadata."""
         self.lang_info = info.get("language_info", {})

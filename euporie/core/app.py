@@ -182,6 +182,7 @@ class BaseApp(Application):
     config = Config()
     status_default: "StatusBarFields" = ([], [])
     need_mouse_support: "bool" = False
+    log_stdout_level: "str" = "CRITICAL"
 
     def __init__(
         self,
