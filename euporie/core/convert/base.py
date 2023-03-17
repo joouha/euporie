@@ -36,8 +36,13 @@ MIME_FORMATS = {
     "*": "ansi",
 }
 
+
 BASE64_FORMATS = {"png", "jepg", "pdf", "gif"}
 
+ERROR_OUTPUTS = {
+    "ansi": b"(Format Conversion Error)",
+    "formatted_text": [("fg:white bg:darkred", "(Format Conversion Error)")],
+}
 
 # def get_mime(path: "UPath") -> "str":
 # If http, do HEAD request and check "content-type" header
@@ -199,10 +204,13 @@ def convert(
             except TypeError as error:
                 log.warning("Cannot hash %s", data)
                 raise error
-            output = _CONVERSION_CACHE.get(
-                (output_hash, from_, stage_b, cols, rows, fg, bg, path),
-                partial(func, output, cols, rows, fg, bg, path),
-            )
+            try:
+                output = _CONVERSION_CACHE.get(
+                    (output_hash, from_, stage_b, cols, rows, fg, bg, path),
+                    partial(func, output, cols, rows, fg, bg, path),
+                )
+            except Exception:
+                output = None
             if output is None:
                 log.error(
                     "Failed to convert `%s` from `%s`"
@@ -213,7 +221,7 @@ def convert(
                     route,
                     stage_b,
                 )
-                return [("", "(Conversion failed")]
+                output = ERROR_OUTPUTS.get(to, b"(Conversion Error)")
         return output
 
     data = _CONVERSION_CACHE.get(
