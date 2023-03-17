@@ -163,7 +163,7 @@ def convert(
     try:
         data_hash = hash(data)
     except TypeError as error:
-        log.exception("Cannot hash %s", data)
+        log.warning("Cannot hash %s", data)
         raise error
 
     def _convert(
@@ -197,7 +197,7 @@ def convert(
             try:
                 output_hash = hash(data)
             except TypeError as error:
-                log.exception("Cannot hash %s", data)
+                log.warning("Cannot hash %s", data)
                 raise error
             output = _CONVERSION_CACHE.get(
                 (output_hash, from_, stage_b, cols, rows, fg, bg, path),

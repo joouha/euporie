@@ -192,12 +192,13 @@ class Kernel:
         """
         # Check kernel is alive - use client rather than manager if we have one, as we
         # could be connected to a kernel which we was not started by the manager
-        self._aodo(
-            self.km.is_alive(),
-            timeout=0.2,
-            callback=self._set_living_status,
-            wait=False,
-        )
+        if self.kc:
+            self._aodo(
+                self.kc.is_alive(),
+                timeout=0.2,
+                callback=self._set_living_status,
+                wait=False,
+            )
 
         return self._status
 
@@ -209,7 +210,7 @@ class Kernel:
         self.status_change_event.clear()
 
     def wait_for_status(self, status: "str" = "idle") -> "None":
-        """Block until the kernel reasches a given status value."""
+        """Block until the kernel reaches a given status value."""
         if self.status != status:
 
             async def _wait() -> "None":
@@ -280,11 +281,11 @@ class Kernel:
                     # Keep trying if we get an import deadlock
                     continue
                 except Exception as e:
-                    log.exception("Kernel '%s' could not start", self.km.kernel_name)
+                    log.error("Kernel '%s' could not start", self.km.kernel_name)
                     self.status = "error"
                     self.error = e
                 else:
-                    log.debug("Started kernel")
+                    log.info("Started kernel %s", self.km.kernel_name)
                     # Create a client for the newly started kernel
                     if self.km.has_kernel:
                         self.kc = self.km.client()
@@ -294,6 +295,7 @@ class Kernel:
         except NoSuchKernel as e:
             self.error = e
             self.status = "error"
+            log.error("Selected kernel '%s' not registered", self.km.kernel_name)
         else:
             if ks is not None:
                 self.kernel_tab.metadata["kernelspec"] = {
@@ -302,29 +304,27 @@ class Kernel:
                     "language": ks.language,
                 }
 
-        if self.kc and self.status != "error":
-            log.debug("Waiting for kernel to become ready")
-            try:
-                await self.kc._async_wait_for_ready(timeout=10)
-            except RuntimeError as e:
-                log.exception("Error connecting to kernel")
-                await self.stop_()
-                self.error = e
-                self.status = "error"
-            else:
-                log.debug("Kernel %s ready", self.id)
-                self.status = "idle"
-                self.error = None
-                self.poll_tasks = [
-                    asyncio.create_task(self.poll("shell")),
-                    asyncio.create_task(self.poll("iopub")),
-                    asyncio.create_task(self.poll("stdin")),
-                ]
+                log.debug("Waiting for kernel to become ready")
+                try:
+                    await self.kc._async_wait_for_ready(timeout=10)
+                except RuntimeError as e:
+                    log.error("Error connecting to kernel")
+                    self.error = e
+                    self.status = "error"
+                else:
+                    log.debug("Kernel %s ready", self.id)
+                    self.status = "idle"
+                    self.error = None
+                    self.poll_tasks = [
+                        asyncio.create_task(self.poll("shell")),
+                        asyncio.create_task(self.poll("iopub")),
+                        asyncio.create_task(self.poll("stdin")),
+                    ]
 
     def start(
         self, cb: "Optional[Callable]" = None, wait: "bool" = False, timeout: "int" = 10
     ) -> "None":
-        """Starts the kernel.
+        """Start the kernel.
 
         Args:
             cb: An optional callback to run after the kernel has started
@@ -671,7 +671,7 @@ class Kernel:
         try:
             await asyncio.wait_for(event.wait(), timeout=None)
         except asyncio.TimeoutError:
-            log.debug("Timed out waiting for kernel info response")
+            log.debug("Timed out waiting for kernel run response")
 
         # Clean up callbacks
         # await asyncio.sleep(0.1)
@@ -685,8 +685,18 @@ class Kernel:
     ) -> "None":
         """Request information about the kernel."""
         if self.kc is not None:
+
+            def _set_status(status: str) -> None:
+                """Set the kernel status based on the response of a kerne_info request."""
+                self.status = status
+                if callable(set_status):
+                    set_status(status)
+
             msg_id = self.kc.kernel_info()
-            callbacks = {"set_kernel_info": set_kernel_info, "set_status": set_status}
+            callbacks = {
+                "set_kernel_info": set_kernel_info,
+                "set_status": _set_status,
+            }
             self.msg_id_callbacks[msg_id].update(
                 MsgCallbacks(
                     filter(lambda x: x[1] is not None, callbacks.items())
@@ -743,7 +753,7 @@ class Kernel:
         try:
             await asyncio.wait_for(event.wait(), timeout)
         except asyncio.TimeoutError:
-            log.debug("Timed out waiting for kernel info response")
+            log.debug("Timed out waiting for kernel completion response")
 
         return results
 
@@ -800,7 +810,7 @@ class Kernel:
         try:
             await asyncio.wait_for(event.wait(), timeout)
         except asyncio.TimeoutError:
-            log.debug("Timed out waiting for kernel info response")
+            log.debug("Timed out waiting for kernel history response")
 
         return results
 
@@ -856,7 +866,7 @@ class Kernel:
         try:
             await asyncio.wait_for(event.wait(), timeout)
         except asyncio.TimeoutError:
-            log.debug("Timed out waiting for kernel info response")
+            log.debug("Timed out waiting for kernel inspection response")
 
         return result
 
@@ -912,7 +922,7 @@ class Kernel:
         try:
             await asyncio.wait_for(event.wait(), timeout)
         except asyncio.TimeoutError:
-            log.debug("Timed out waiting for kernel info response")
+            log.debug("Timed out waiting for kernel completion response")
 
         return result
 
@@ -975,18 +985,29 @@ class Kernel:
             cb: Callback to run once restarted
 
         """
-        spec = self.specs.get(name, {}).get("spec", {})
+        self.status = "starting"
 
+        # Update the tab's kernel spec
+        spec = self.specs.get(name, {}).get("spec", {})
         self.kernel_tab.metadata["kernelspec"] = {
             "name": name,
             "display_name": spec["display_name"],
             "language": spec["language"],
         }
-        self.km.kernel_name = name
+
+        # Stop the old kernel
         if self.km.has_kernel:
-            self.restart(cb=cb)
-        else:
-            self.start(cb=cb)
+            self.stop()
+
+        # Create a new kernel manager instance
+        del self.km
+        self.km = AsyncKernelManager(
+            kernel_name=name,
+        )
+        self.error = None
+
+        # Start the kernel
+        self.start(cb=cb)
 
     def stop(self, cb: "Optional[Callable]" = None, wait: "bool" = False) -> "None":
         """Stops the current kernel.

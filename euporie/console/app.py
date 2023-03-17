@@ -61,6 +61,7 @@ class ConsoleApp(BaseApp):
     """
 
     name = "console"
+    log_stdout_level = "ERROR"
 
     def __init__(self, **kwargs: "Any") -> "None":
         """Create a new euporie text user interface application instance."""

@@ -157,36 +157,47 @@ class KernelTab(Tab, metaclass=ABCMeta):
         else:
             self.kernel.restart(cb=_cb)
 
-    def kernel_started(self, result: "Optional[dict[str, Any]]" = None) -> "None":
+    def kernel_started(self, result: "Optional[dict[str, Any]]" = None) -> None:
         """Tasks to run when the kernel has started."""
         # Check kernel has not failed
-        if not self.kernel_name or self.kernel.missing or self.kernel.status == "error":
-            return
+        if not self.kernel_name or self.kernel.missing:
+            if not self.kernel_name:
+                msg = "No kernel selected"
+            else:
+                msg = f"Kernel '{self.kernel_display_name}' not installed"
+            self.change_kernel(
+                msg=msg,
+                startup=True,
+            )
 
-        # Wait for an idle kernel
-        if self.kernel.status != "idle":
-            self.kernel.wait_for_status("idle")
+        elif self.kernel.status == "error":
+            self.report_kernel_error(self.kernel.error)
 
-        # Load widget comm info
-        # self.kernel.comm_info(target_name="jupyter.widget")
+        else:
+            # Wait for an idle kernel
+            if self.kernel.status != "idle":
+                self.kernel.wait_for_status("idle")
 
-        # Load kernel info
-        self.kernel.info(set_kernel_info=self.set_kernel_info)
+            # Load widget comm info
+            # self.kernel.comm_info(target_name="jupyter.widget")
 
-        # Load kernel history
-        if self.use_kernel_history:
-            self.app.create_background_task(self.load_history())
-            # async def _do_history_load():
-            # self.app.create_background_task(self.load_history())
-            #
-            # self.app.loop.create_task(_do_history_load())
+            # Load kernel info
+            self.kernel.info(set_kernel_info=self.set_kernel_info)
 
-        # Run queued kernel tasks when the kernel is idle
-        log.debug("Running %d kernel tasks", len(self.kernel_queue))
-        while self.kernel_queue:
-            self.kernel_queue.popleft()()
+            # Load kernel history
+            if self.use_kernel_history:
+                self.app.create_background_task(self.load_history())
+
+            # Run queued kernel tasks when the kernel is idle
+            log.debug("Running %d kernel tasks", len(self.kernel_queue))
+            while self.kernel_queue:
+                self.kernel_queue.popleft()()
 
         self.app.invalidate()
+
+    def report_kernel_error(self, error: Exception | None) -> None:
+        """Report a kernel error to the user."""
+        log.debug("Kernel error", exc_info=error)
 
     async def load_history(self) -> "None":
         """Load kernel history."""

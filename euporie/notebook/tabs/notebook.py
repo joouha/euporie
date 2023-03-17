@@ -145,23 +145,16 @@ class Notebook(BaseNotebook):
 
     def kernel_started(self, result: "Optional[dict[str, Any]]" = None) -> "None":
         """Run when the kernel has started."""
+
         super().kernel_started(result)
-        if not self.kernel_name or self.kernel.missing:
-            if not self.kernel_name:
-                msg = "No kernel selected"
-            else:
-                msg = f"Kernel '{self.kernel_display_name}' not installed"
-            self.change_kernel(
-                msg=msg,
-                startup=True,
-            )
-        elif self.kernel.status == "error":
-            self.app.dialogs["error"].show(
-                exception=self.kernel.error, when="starting the kernel"
-            )
-        elif self.kernel.status == "idle":
+
+        if self.kernel.status == "idle":
             if self.app.config.run:
                 self.run_all(wait=False)
+
+    def report_kernel_error(self, error: Exception | None) -> None:
+        """Report a kernel error to the user"""
+        self.app.dialogs["error"].show(exception=error, when="starting the kernel")
 
     def load_container(self) -> "AnyContainer":
         """Load the main notebook container."""
