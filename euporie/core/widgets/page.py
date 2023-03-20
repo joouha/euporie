@@ -700,6 +700,7 @@ class ScrollingContainer(Container):
             # Do not allow scrolling if there is no overflow
             if sum(heights) < available_height:
                 self.selected_child_position = heights_above
+                self.scrolling = 0
             else:
                 # Prevent overscrolling at the top of the document
                 overscroll = heights_above - new_child_position
@@ -883,6 +884,7 @@ class ScrollingContainer(Container):
         """
         child_render_info = self.get_child_render_info(index)
 
+        new_top: int | None = None
         if index in self.visible_indicies:
             new_top = self.index_positions[index]
         else:
@@ -894,17 +896,17 @@ class ScrollingContainer(Container):
             elif index == self._selected_slice.start:
                 new_top = self.selected_child_position
             elif index > self._selected_slice.start:
-                last_index = max(
-                    k for k, v in self.index_positions.items() if v is not None
-                )
-                new_top = max(
-                    min(
-                        self.last_write_position.height,
-                        (self.index_positions[last_index] or 0)
-                        + self.get_child_render_info(last_index).height,
-                    ),
-                    0,
-                )
+                indices = [k for k, v in self.index_positions.items() if v is not None]
+                if indices:
+                    last_index = max(indices)
+                    new_top = max(
+                        min(
+                            self.last_write_position.height,
+                            (self.index_positions[last_index] or 0)
+                            + self.get_child_render_info(last_index).height,
+                        ),
+                        0,
+                    )
 
         if new_top is None or new_top < 0:
             self.selected_child_position = min(

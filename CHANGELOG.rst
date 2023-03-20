@@ -11,6 +11,7 @@ Upcoming
 Fixed
 =====
 
+- Fix minor notebook scrolling issues
 - Fix scrollbar dragging on tiled notebooks
 - Prevent exception if kernel requests an unknown lexer
 - Improve handling of kernel startup errors and reliability of changing kernels
