@@ -622,16 +622,17 @@ class FileBrowser:
                     ),
                     filter=to_filter(show_address_bar),
                 ),
-                Border(
-                    FocusedStyle(
+                FocusedStyle(
+                    Border(
                         Window(
                             control,
                             style="class:face",
                             right_margins=[ScrollbarMargin()],
-                        )
+                        ),
+                        border=InnerEigthGrid,
+                        style="class:input,inset,border",
                     ),
-                    border=InnerEigthGrid,
-                    style="class:input,inset,border",
+                    style_hover="",
                 ),
             ],
             style="class:file-browser " + style,
