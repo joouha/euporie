@@ -17,6 +17,7 @@ Added
 Fixed
 =====
 
+- Re-enable display of large images in console
 - Fix HTML table colspan border rendering issue
 - Fix minor notebook scrolling issues
 - Fix scrollbar dragging on tiled notebooks
