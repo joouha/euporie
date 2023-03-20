@@ -11,6 +11,7 @@ Upcoming
 Added
 =====
 
+- Allow closing notebook tabs with the middle mouse button
 - Notify the user if the kernel dies unexpectedly
 
 Fixed

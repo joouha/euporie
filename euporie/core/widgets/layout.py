@@ -26,7 +26,7 @@ from prompt_toolkit.layout.controls import (
     UIContent,
     UIControl,
 )
-from prompt_toolkit.mouse_events import MouseEventType
+from prompt_toolkit.mouse_events import MouseButton, MouseEventType
 from prompt_toolkit.utils import Event
 from prompt_toolkit.widgets import Box
 
@@ -304,8 +304,19 @@ class TabBarControl(UIControl):
 
         if row == 1:
             if mouse_event.event_type == MouseEventType.MOUSE_UP:
-                if handler := self.mouse_handlers.get(col):
+                if mouse_event.button == MouseButton.LEFT and callable(
+                    handler := self.mouse_handlers.get(col)
+                ):
+                    # Activate the tab
                     handler()
+                    return None
+                elif mouse_event.button == MouseButton.MIDDLE and self.closeable:
+                    if callable(handler := self.mouse_handlers.get(col)):
+                        # Activate tab
+                        handler()
+                        # Close the now active tab
+                        tabs = self.tabs
+                        tabs[self.active].on_close()
                     return None
 
         tabs = self.tabs
