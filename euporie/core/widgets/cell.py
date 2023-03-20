@@ -186,15 +186,6 @@ class Cell:
 
             return _inner
 
-        def border_style() -> str:
-            """Determine the style of the cell borders, based on the cell state."""
-            if weak_self.selected:
-                if weak_self.kernel_tab.in_edit_mode():
-                    return "class:cell.border.edit"
-                else:
-                    return "class:cell.border.selected"
-            return "class:cell.border"
-
         self.control = Window(
             FormattedTextControl(
                 border_char("TOP_LEFT"),
@@ -203,11 +194,11 @@ class Cell:
             ),
             width=1,
             height=0,
-            style=border_style,
+            style="class:border",
             always_hide_cursor=True,
         )
 
-        fill = partial(Window, style=border_style)
+        fill = partial(Window, style="class:border")
 
         # Create textbox for standard input
         def _send_input(buf: Buffer) -> bool:
@@ -258,7 +249,7 @@ class Cell:
                             ),
                             width=lambda: len(weak_self.prompt),
                             height=Dimension(preferred=1),
-                            style="class:cell.input.prompt",
+                            style="class:input,prompt",
                         ),
                         filter=show_prompt,
                     ),
@@ -339,7 +330,7 @@ class Cell:
                             ),
                             width=lambda: len(weak_self.prompt),
                             height=Dimension(preferred=1),
-                            style="class:cell.output.prompt",
+                            style="class:output,prompt",
                         ),
                         filter=show_prompt,
                     ),
@@ -406,6 +397,16 @@ class Cell:
             height=1,
         )
 
+        def _style() -> str:
+            """Calculate the cell's style given its state."""
+            style = "class:cell"
+            if weak_self.selected:
+                if weak_self.kernel_tab.in_edit_mode():
+                    style += ",edit"
+                else:
+                    style += ",cell.selection"
+            return style
+
         self.container = HSplit(
             [
                 top_border,
@@ -414,6 +415,7 @@ class Cell:
                 output_row,
                 bottom_border,
             ],
+            style=_style,
         )
 
     def focus(self, position: int | None = None, scroll: bool = False) -> None:
