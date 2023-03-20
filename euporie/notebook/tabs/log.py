@@ -19,7 +19,7 @@ from euporie.core.widgets.formatted_text_area import FormattedTextArea
 
 if TYPE_CHECKING:
     from os import PathLike
-    from typing import Callable, Optional
+    from typing import Callable
 
     from euporie.core.app import BaseApp
 
@@ -27,7 +27,7 @@ if TYPE_CHECKING:
 class LogView(Tab):
     """A tab which allows you to view log entries."""
 
-    def __init__(self, app: "BaseApp", path: "Optional[PathLike]" = None) -> "None":
+    def __init__(self, app: BaseApp, path: PathLike | None = None) -> None:
         """Create a new log view tab instance."""
         super().__init__(app, path)
         # Build the container
@@ -56,8 +56,8 @@ class LogView(Tab):
         # Hook the queue handler
         self.text_area.window.cursorline = has_focus(self)
 
-    def add_record(self, message: "FormattedText") -> "None":
-        """Adds a single new record to the textarea.
+    def add_record(self, message: FormattedText) -> None:
+        """Add a single new record to the textarea.
 
         Args:
             message: The formatted log record to add
@@ -68,8 +68,8 @@ class LogView(Tab):
         self.text_area.buffer.cursor_position = cp
 
     @property
-    def title(self) -> "str":
-        """Returns the title of this tab."""
+    def title(self) -> str:
+        """Return the title of this tab."""
         suffix = (
             f" ({Path(self.app.config.log_file).name})"
             if self.app.config.log_file
@@ -77,7 +77,7 @@ class LogView(Tab):
         )
         return f"Logs{suffix}"
 
-    def close(self, cb: "Optional[Callable]" = None) -> "None":
+    def close(self, cb: Callable | None = None) -> None:
         """Remove log queue handler hook on close."""
         QueueHandler.unhook(self.hook_id)
         super().close(cb=cb)
@@ -86,7 +86,7 @@ class LogView(Tab):
 
     @staticmethod
     @add_cmd()
-    def _view_logs() -> "None":
+    def _view_logs() -> None:
         """Open the logs in a new tab."""
         app = get_app()
         for tab in app.tabs:

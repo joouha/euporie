@@ -1,4 +1,4 @@
-"""Defines default key-bindings."""
+"""Define default key-bindings."""
 
 from __future__ import annotations
 
@@ -12,9 +12,6 @@ from euporie.core.current import get_app
 from euporie.core.keys import Keys
 
 if TYPE_CHECKING:
-
-    from typing import Optional
-
     from prompt_toolkit.key_binding import KeyBindingsBase
 
     AnyKey = tuple[Keys | str, ...] | Keys | str
@@ -22,11 +19,11 @@ if TYPE_CHECKING:
 
     KeyBindingDefs = dict[str, AnyKeys]
 
-BINDINGS: "dict[str, KeyBindingDefs]" = {}
+BINDINGS: dict[str, KeyBindingDefs] = {}
 
 
-def register_bindings(bindings: "dict[str, KeyBindingDefs]") -> "None":
-    """Updates the key-binding registry."""
+def register_bindings(bindings: dict[str, KeyBindingDefs]) -> None:
+    """Update the key-binding registry."""
     for group, items in bindings.items():
         if group not in BINDINGS:
             BINDINGS[group] = {}
@@ -35,8 +32,8 @@ def register_bindings(bindings: "dict[str, KeyBindingDefs]") -> "None":
 
 
 def load_registered_bindings(
-    *names: "str", config: "Optional[Config]" = None
-) -> "KeyBindingsBase":
+    *names: str, config: Config | None = None
+) -> KeyBindingsBase:
     """Assign key-bindings to commands based on a dictionary."""
     from euporie.core.app import BaseApp
 

@@ -1,4 +1,4 @@
-"""Defines a configuration class for euporie.core."""
+"""Define a configuration class for euporie.core."""
 
 from __future__ import annotations
 
@@ -24,7 +24,7 @@ from euporie.core.commands import add_cmd, get_cmd
 from euporie.core.log import setup_logs
 
 if TYPE_CHECKING:
-    from typing import IO, Any, Callable, Optional, Sequence, Type, Union
+    from typing import IO, Any, Callable, Optional, Sequence
 
     from prompt_toolkit.filters.base import Filter, FilterOrBool
 
@@ -34,8 +34,8 @@ if TYPE_CHECKING:
 class ConfigurableApp(Protocol):
     """An application with configuration."""
 
-    config: "Config"
-    name: "str"
+    config: Config
+    name: str
 
 
 log = logging.getLogger(__name__)
@@ -44,9 +44,7 @@ log = logging.getLogger(__name__)
 class ArgumentParser(argparse.ArgumentParser):
     """An argument parser which lexes and formats the help message before printing it."""
 
-    def _print_message(
-        self, message: "str", file: "Optional[IO[str]]" = None
-    ) -> "None":
+    def _print_message(self, message: str, file: IO[str] | None = None) -> None:
         from prompt_toolkit.formatted_text.base import FormattedText
         from prompt_toolkit.lexers.pygments import _token_cache
         from prompt_toolkit.shortcuts.utils import print_formatted_text
@@ -75,9 +73,7 @@ class BooleanOptionalAction(argparse.Action):
     Included because `argparse.BooleanOptionalAction` is not present in `python<=3.9`.
     """
 
-    def __init__(
-        self, option_strings: "list[str]", *args: "Any", **kwargs: "Any"
-    ) -> "None":
+    def __init__(self, option_strings: list[str], *args: Any, **kwargs: Any) -> None:
         """Initiate the Action, as per `argparse.BooleanOptionalAction`."""
         _option_strings = list(option_strings)
         for option_string in option_strings:
@@ -86,8 +82,8 @@ class BooleanOptionalAction(argparse.Action):
         kwargs["nargs"] = 0
         super().__init__(_option_strings, *args, **kwargs)
 
-    def format_usage(self) -> "str":
-        """Formats the action string.
+    def format_usage(self) -> str:
+        """Format the action string.
 
         Returns:
             The formatted string.
@@ -97,18 +93,18 @@ class BooleanOptionalAction(argparse.Action):
 
     def __call__(
         self,
-        parser: "argparse.ArgumentParser",
-        namespace: "argparse.Namespace",
-        values: "Union[str, Sequence[Any], None]",
-        option_string: "Optional[str]" = None,
-    ) -> "None":
+        parser: argparse.ArgumentParser,
+        namespace: argparse.Namespace,
+        values: str | Sequence[Any] | None,
+        option_string: str | None = None,
+    ) -> None:
         """Set the value to True or False depending on the flag provided."""
         if option_string in self.option_strings:
             assert isinstance(option_string, str)
             setattr(namespace, self.dest, not option_string.startswith("--no-"))
 
 
-TYPE_ACTIONS: "dict[Callable[[Any], Any], Type[argparse.Action]]" = {
+TYPE_ACTIONS: dict[Callable[[Any], Any], type[argparse.Action]] = {
     bool: BooleanOptionalAction
 }
 
@@ -116,7 +112,7 @@ TYPE_ACTIONS: "dict[Callable[[Any], Any], Type[argparse.Action]]" = {
 class JSONEncoderPlus(json.JSONEncoder):
     """JSON encode class which encodes paths as strings."""
 
-    def default(self, o: "Any") -> "Union[bool, int, float, str, None]":
+    def default(self, o: Any) -> bool | int | float | str | None:
         """Encode an object to JSON.
 
         Args:
@@ -134,18 +130,203 @@ class JSONEncoderPlus(json.JSONEncoder):
 _json_encoder = JSONEncoderPlus()
 
 
+class Setting:
+    """A single configuration item."""
+
+    def __init__(
+        self,
+        name: str,
+        default: Any,
+        help_: str,
+        description: str,
+        type_: Callable[[Any], Any] | None = None,
+        title: str | None = None,
+        choices: list[Any] | None = None,
+        action: argparse.Action | str | None = None,
+        flags: list[str] | None = None,
+        schema: dict[str, Any] | None = None,
+        nargs: str | int | None = None,
+        hidden: FilterOrBool = False,
+        hooks: list[Callable[[Setting], None]] | None = None,
+        cmd_filter: FilterOrBool = True,
+        **kwargs: Any,
+    ) -> None:
+        """Create a new configuration item."""
+        self.name = name
+        self.default = default
+        self._value = default
+        self.title = title or self.name.replace("_", " ")
+        self.help = help_
+        self.description = description
+        self.choices = choices
+        self.type = type_ or type(default)
+        self.action = action or TYPE_ACTIONS.get(self.type)
+        self.flags = flags or [f"--{name.replace('_','-')}"]
+        self._schema: dict[str, Any] = {
+            "type": {
+                bool: "boolean",
+                str: "string",
+                int: "integer",
+                float: "float",
+                UPath: "string",
+            }.get(self.type),
+            **(schema or {}),
+        }
+        self.nargs = nargs
+        self.hidden = to_filter(hidden)
+        self.kwargs = kwargs
+        self.cmd_filter = cmd_filter
+
+        self.event = Event(self)
+        for hook in hooks or []:
+            self.event += hook
+
+        self.register_commands()
+
+    def register_commands(self) -> None:
+        """Register commands to set this setting."""
+        name = self.name.replace("_", "-")
+        if self.type in (bool, int) or self.choices is not None:
+            toggled_filter = None
+            if self.type == bool:
+
+                def _toggled() -> bool:
+                    from euporie.core.current import get_app
+
+                    app = get_app()
+                    value = app.config.get(self.name)
+                    return bool(getattr(app.config, self.name, not value))
+
+                toggled_filter = Condition(_toggled)
+
+            add_cmd(
+                name=f"toggle-{name}",
+                toggled=toggled_filter,
+                hidden=self.hidden,
+                title=f"Toggle {self.title}",
+                menu_title=self.kwargs.get("menu_title"),
+                description=f'Toggle the value of the "{self.name}" configuration option.',
+                filter=self.cmd_filter,
+            )(self.toggle)
+
+        for choice in (self.choices or self.schema.get("enum", [])) or []:
+            add_cmd(
+                name=f"set-{name}-{choice}",
+                hidden=self.hidden,
+                toggled=Condition(partial(lambda x: self.value == x, choice)),
+                title=f"Set {self.title} to {choice}",
+                menu_title=str(choice).replace("_", " ").capitalize(),
+                description=f'Set the value of the "{self.name}" '
+                f'configuration option to "{choice}"',
+                filter=self.cmd_filter,
+            )(partial(setattr, self, "value", choice))
+
+    def toggle(self) -> None:
+        """Toggle the setting's value."""
+        if self.type == bool:
+            new = not self.value
+        elif (
+            self.type == int
+            and "minimum" in (schema := self.schema)
+            and "maximum" in schema
+        ):
+            new = schema["minimum"] + (self.value - schema["minimum"] + 1) % (
+                schema["maximum"] + 1
+            )
+        elif self.choices is not None:
+            new = self.choices[(self.choices.index(self.value) + 1) % len(self.choices)]
+        else:
+            raise NotImplementedError
+        self.value = new
+
+    @property
+    def value(self) -> Any:
+        """Return the current value."""
+        return self._value
+
+    @value.setter
+    def value(self, new: Any) -> None:
+        """Set the current value."""
+        self._value = new
+        self.event.fire()
+
+    @property
+    def schema(self) -> dict[str, Any]:
+        """Return a json schema property for the config item."""
+        return {
+            "description": self.help,
+            **({"enum": self.choices} if self.choices is not None else {}),
+            **({"default": self.default} if self.default is not None else {}),
+            **self._schema,
+        }
+
+    @property
+    def menu(self) -> MenuItem:
+        """Return a menu item for the setting."""
+        from euporie.core.widgets.menu import MenuItem
+
+        choices = (self.choices or self.schema.get("enum", [])) or []
+        if choices:
+            return MenuItem(
+                self.title.capitalize(),
+                children=[
+                    cmd.menu
+                    for cmd in sorted(
+                        (
+                            get_cmd(f"set-{self.name.replace('_', '-')}-{choice}")
+                            for choice in choices
+                        ),
+                        key=lambda x: x.menu_title,
+                    )
+                ],
+            )
+        elif self.type in (bool, int):
+            return get_cmd(f"toggle-{self.name.replace('_', '-')}").menu
+        else:
+            raise NotImplementedError
+
+    @property
+    def parser_args(self) -> tuple[list[str], dict[str, Any]]:
+        """Return arguments for construction of an :class:`argparse.ArgumentParser`."""
+        # Do not set defaults for command line arguments, as default values
+        # would override values set in the configuration file
+        args = self.flags or [self.name]
+
+        kwargs: dict[str, Any] = {
+            "action": self.action,
+            "help": self.help,
+        }
+
+        if self.nargs:
+            kwargs["nargs"] = self.nargs
+        if self.type is not None and self.name != "version":
+            kwargs["type"] = self.type
+        if self.choices:
+            kwargs["choices"] = self.choices
+        if "version" in self.kwargs:
+            kwargs["version"] = self.kwargs["version"]
+        if "const" in self.kwargs:
+            kwargs["const"] = self.kwargs["const"]
+
+        return args, kwargs
+
+    def __repr__(self) -> str:
+        """Represent a :py:class`Setting` instance as a string."""
+        return f"<Setting {self.name}={self.value.__repr__()}>"
+
+
 class Config:
     """A configuration store."""
 
-    settings: "dict[str, Setting]" = {}
+    settings: dict[str, Setting] = {}
     conf_file_name = "config.json"
 
-    def __init__(self) -> "None":
+    def __init__(self) -> None:
         """Create a new configuration object instance."""
-        self.app_name: "str" = "base"
-        self.app_cls: "Optional[Type[ConfigurableApp]]" = None
+        self.app_name: str = "base"
+        self.app_cls: type[ConfigurableApp] | None = None
 
-    def _save(self, setting: "Setting") -> "None":
+    def _save(self, setting: Setting) -> None:
         """Save settings to user's configuration file."""
         json_data = self.load_config_file()
         json_data.setdefault(self.app_name, {})[setting.name] = setting.value
@@ -154,8 +335,8 @@ class Config:
             with open(self.config_file_path, "w") as f:
                 json.dump(json_data, f, indent=2)
 
-    def load(self, cls: "Type[ConfigurableApp]") -> "None":
-        """Loads the command line, environment, and user configuration."""
+    def load(self, cls: type[ConfigurableApp]) -> None:
+        """Load the command line, environment, and user configuration."""
         self.app_cls = cls
         self.app_name = cls.name
         log.debug("Loading config for %s", self.app_name)
@@ -199,7 +380,7 @@ class Config:
             if not isinstance(set_values[option_name], dict)
         ]
 
-    def warn(self) -> "None":
+    def warn(self) -> None:
         """Warn about unrecognised configuration items."""
         for map_name, option_name in self.unrecognised:
             log.warning(
@@ -207,7 +388,7 @@ class Config:
             )
 
     @property
-    def schema(self) -> "dict[str, Any]":
+    def schema(self) -> dict[str, Any]:
         """Return a JSON schema for the config."""
         return {
             "title": "Euporie Configuration",
@@ -216,8 +397,8 @@ class Config:
             "properties": {name: item.schema for name, item in self.settings.items()},
         }
 
-    def load_parser(self) -> "argparse.ArgumentParser":
-        """Constructs an :py:class:`ArgumentParser`."""
+    def load_parser(self) -> argparse.ArgumentParser:
+        """Construct an :py:class:`ArgumentParser`."""
         parser = ArgumentParser(
             description=self.app_cls.__doc__,
             epilog=__copyright__,
@@ -230,8 +411,8 @@ class Config:
             parser.add_argument(*args, **kwargs)
         return parser
 
-    def load_args(self) -> "dict[str, Any]":
-        """Attempts to load configuration settings from commandline flags."""
+    def load_args(self) -> dict[str, Any]:
+        """Attempt to load configuration settings from commandline flags."""
         result = {}
         namespace, _ = self.load_parser().parse_known_intermixed_args()
         for name, value in vars(namespace).items():
@@ -246,7 +427,7 @@ class Config:
                     result[name] = value
         return result
 
-    def load_env(self, app_name: "str" = "") -> "dict[str, Any]":
+    def load_env(self, app_name: str = "") -> dict[str, Any]:
         """Attempt to load configuration settings from environment variables."""
         result = {}
         for name, setting in self.settings.items():
@@ -256,7 +437,7 @@ class Config:
                 env = f"{__app_name__.upper()}_{setting.name.upper()}"
             if env in os.environ:
                 value = os.environ.get(env)
-                parsed_value: "Any" = value
+                parsed_value: Any = value
                 # Attempt to parse the value as a literal
                 if value:
                     try:
@@ -287,7 +468,7 @@ class Config:
                         result[name] = parsed_value
         return result
 
-    def load_config_file(self) -> "dict[str, Any]":
+    def load_config_file(self) -> dict[str, Any]:
         """Attempt to load JSON configuration file."""
         results = {}
         assert isinstance(self.config_file_path, Path)
@@ -306,7 +487,7 @@ class Config:
                     results.update(json_data)
         return results
 
-    def load_user(self, app_name: "str" = "") -> "dict[str, Any]":
+    def load_user(self, app_name: str = "") -> dict[str, Any]:
         """Attempt to load JSON configuration file."""
         results = {}
         # Load config file
@@ -325,7 +506,7 @@ class Config:
             results.update(json_data)
         return results
 
-    def get(self, name: "str") -> "Any":
+    def get(self, name: str) -> Any:
         """Access a configuration value, falling back to the default value if unset.
 
         Args:
@@ -337,7 +518,7 @@ class Config:
         """
         return self.settings[name].value
 
-    def get_item(self, name: "str") -> "Any":
+    def get_item(self, name: str) -> Any:
         """Access a configuration item.
 
         Args:
@@ -349,12 +530,12 @@ class Config:
         """
         return self.settings.get(name)
 
-    def filter(self, name: "str") -> "Filter":
+    def filter(self, name: str) -> Filter:
         """Return a :py:class:`Filter` for a configuration item."""
         return Condition(partial(self.get, name))
 
-    def __getattr__(self, name: "str") -> "Any":
-        """Enables access of config elements via dotted attributes.
+    def __getattr__(self, name: str) -> Any:
+        """Enable access of config elements via dotted attributes.
 
         Args:
             name: The name of the attribute to access.
@@ -365,7 +546,7 @@ class Config:
         """
         return self.get(name)
 
-    def __setitem__(self, name: "str", value: "Any") -> "None":
+    def __setitem__(self, name: str, value: Any) -> None:
         """Set a configuration attribute.
 
         Args:
@@ -377,206 +558,21 @@ class Config:
         setting.value = value
 
 
-class Setting:
-    """A single configuration item."""
-
-    def __init__(
-        self,
-        name: "str",
-        default: "Any",
-        help_: "str",
-        description: "str",
-        type_: "Optional[Callable[[Any], Any]]" = None,
-        title: "Optional[str]" = None,
-        choices: "Optional[list[Any]]" = None,
-        action: "Optional[Union[argparse.Action,str]]" = None,
-        flags: "Optional[list[str]]" = None,
-        schema: "Optional[dict[str, Any]]" = None,
-        nargs: "Optional[str|int]" = None,
-        hidden: "FilterOrBool" = False,
-        hooks: "Optional[list[Callable[[Setting], None]]]" = None,
-        cmd_filter: "FilterOrBool" = True,
-        **kwargs: "Any",
-    ) -> "None":
-        """Create a new configuration item."""
-        self.name = name
-        self.default = default
-        self._value = default
-        self.title = title or self.name.replace("_", " ")
-        self.help = help_
-        self.description = description
-        self.choices = choices
-        self.type = type_ or type(default)
-        self.action = action or TYPE_ACTIONS.get(self.type)
-        self.flags = flags or [f"--{name.replace('_','-')}"]
-        self._schema: "dict[str, Any]" = {
-            "type": {
-                bool: "boolean",
-                str: "string",
-                int: "integer",
-                float: "float",
-                UPath: "string",
-            }.get(self.type),
-            **(schema or {}),
-        }
-        self.nargs = nargs
-        self.hidden = to_filter(hidden)
-        self.kwargs = kwargs
-        self.cmd_filter = cmd_filter
-
-        self.event = Event(self)
-        for hook in hooks or []:
-            self.event += hook
-
-        self.register_commands()
-
-    def register_commands(self) -> "None":
-        """Register commands to set this setting."""
-        name = self.name.replace("_", "-")
-        if self.type in (bool, int) or self.choices is not None:
-            toggled_filter = None
-            if self.type == bool:
-
-                def _toggled() -> "bool":
-                    from euporie.core.current import get_app
-
-                    app = get_app()
-                    value = app.config.get(self.name)
-                    return bool(getattr(app.config, self.name, not value))
-
-                toggled_filter = Condition(_toggled)
-
-            add_cmd(
-                name=f"toggle-{name}",
-                toggled=toggled_filter,
-                hidden=self.hidden,
-                title=f"Toggle {self.title}",
-                menu_title=self.kwargs.get("menu_title"),
-                description=f'Toggle the value of the "{self.name}" configuration option.',
-                filter=self.cmd_filter,
-            )(self.toggle)
-
-        for choice in (self.choices or self.schema.get("enum", [])) or []:
-            add_cmd(
-                name=f"set-{name}-{choice}",
-                hidden=self.hidden,
-                toggled=Condition(partial(lambda x: self.value == x, choice)),
-                title=f"Set {self.title} to {choice}",
-                menu_title=str(choice).replace("_", " ").capitalize(),
-                description=f'Set the value of the "{self.name}" '
-                f'configuration option to "{choice}"',
-                filter=self.cmd_filter,
-            )(partial(setattr, self, "value", choice))
-
-    def toggle(self) -> "None":
-        """Toggle the setting's value."""
-        if self.type == bool:
-            new = not self.value
-        elif (
-            self.type == int
-            and "minimum" in (schema := self.schema)
-            and "maximum" in schema
-        ):
-            new = schema["minimum"] + (self.value - schema["minimum"] + 1) % (
-                schema["maximum"] + 1
-            )
-        elif self.choices is not None:
-            new = self.choices[(self.choices.index(self.value) + 1) % len(self.choices)]
-        else:
-            raise NotImplementedError
-        self.value = new
-
-    @property
-    def value(self) -> "Any":
-        """Return the current value."""
-        return self._value
-
-    @value.setter
-    def value(self, new: "Any") -> "None":
-        """Set the current value."""
-        self._value = new
-        self.event.fire()
-
-    @property
-    def schema(self) -> "dict[str, Any]":
-        """Return a json schema property for the config item."""
-        return {
-            "description": self.help,
-            **({"enum": self.choices} if self.choices is not None else {}),
-            **({"default": self.default} if self.default is not None else {}),
-            **self._schema,
-        }
-
-    @property
-    def menu(self) -> "MenuItem":
-        """Return a menu item for the setting."""
-        from euporie.core.widgets.menu import MenuItem
-
-        choices = (self.choices or self.schema.get("enum", [])) or []
-        if choices:
-            return MenuItem(
-                self.title.capitalize(),
-                children=[
-                    cmd.menu
-                    for cmd in sorted(
-                        (
-                            get_cmd(f"set-{self.name.replace('_', '-')}-{choice}")
-                            for choice in choices
-                        ),
-                        key=lambda x: x.menu_title,
-                    )
-                ],
-            )
-        elif self.type in (bool, int):
-            return get_cmd(f"toggle-{self.name.replace('_', '-')}").menu
-        else:
-            raise NotImplementedError
-
-    @property
-    def parser_args(self) -> "tuple[list[str], dict[str, Any]]":
-        """Return arguments for construction of an :class:`argparse.ArgumentParser`."""
-        # Do not set defaults for command line arguments, as default values
-        # would override values set in the configuration file
-        args = self.flags or [self.name]
-
-        kwargs: "dict[str, Any]" = {
-            "action": self.action,
-            "help": self.help,
-        }
-
-        if self.nargs:
-            kwargs["nargs"] = self.nargs
-        if self.type is not None and self.name != "version":
-            kwargs["type"] = self.type
-        if self.choices:
-            kwargs["choices"] = self.choices
-        if "version" in self.kwargs:
-            kwargs["version"] = self.kwargs["version"]
-        if "const" in self.kwargs:
-            kwargs["const"] = self.kwargs["const"]
-
-        return args, kwargs
-
-    def __repr__(self) -> "str":
-        """String representation of the Setting."""
-        return f"<Setting {self.name}={self.value.__repr__()}>"
-
-
 def add_setting(
-    name: "str",
-    default: "Any",
-    help_: "str",
-    description: "str",
-    type_: "Optional[Callable[[Any], Any]]" = None,
-    action: "Optional[Union[argparse.Action,str]]" = None,
-    flags: "Optional[list[str]]" = None,
-    schema: "Optional[dict[str, Any]]" = None,
-    nargs: "Optional[str|int]" = None,
-    hidden: "FilterOrBool" = False,
-    hooks: "Optional[list[Callable[[Setting], None]]]" = None,
-    cmd_filter: "FilterOrBool" = True,
-    **kwargs: "Any",
-) -> "None":
+    name: str,
+    default: Any,
+    help_: str,
+    description: str,
+    type_: Callable[[Any], Any] | None = None,
+    action: argparse.Action | str | None = None,
+    flags: list[str] | None = None,
+    schema: dict[str, Any] | None = None,
+    nargs: str | int | None = None,
+    hidden: FilterOrBool = False,
+    hooks: list[Callable[[Setting], None]] | None = None,
+    cmd_filter: FilterOrBool = True,
+    **kwargs: Any,
+) -> None:
     """Register a new config item."""
     Config.settings[name] = Setting(
         name=name,

@@ -1,4 +1,4 @@
-"""Allows drawing tables as :class:`FormattedText`."""
+"""Allow drawing tables as :class:`FormattedText`."""
 
 from __future__ import annotations
 
@@ -39,7 +39,6 @@ if TYPE_CHECKING:
         Any,
         Iterable,
         Iterator,
-        Optional,
         Sequence,
         TypeVar,
     )
@@ -53,8 +52,8 @@ if TYPE_CHECKING:
     PairT = TypeVar("PairT")
 
 
-def pairwise(iterable: "Iterable[PairT]") -> "Iterator[tuple[PairT, PairT]]":
-    """Returns successiver overlapping pairs from an iterable."""
+def pairwise(iterable: Iterable[PairT]) -> Iterator[tuple[PairT, PairT]]:
+    """Return successiver overlapping pairs from an iterable."""
     a, b = tee(iterable)
     next(b, None)
     return zip(a, b)
@@ -65,19 +64,19 @@ class Cell:
 
     def __init__(
         self,
-        text: "AnyFormattedText" = "",
-        row: "Row|None" = None,
-        col: "Col|None" = None,
-        colspan: "int" = 1,
-        rowspan: "int" = 1,
-        width: "int|None" = None,
-        align: "FormattedTextAlign|None" = None,
-        style: "str" = "",
-        padding: "DiInt|int" = 0,
-        border_line: "DiLineStyle|LineStyle" = NoLine,
-        border_style: "DiStr|str" = "",
-    ) -> "None":
-        """Creates a new table cell.
+        text: AnyFormattedText = "",
+        row: Row | None = None,
+        col: Col | None = None,
+        colspan: int = 1,
+        rowspan: int = 1,
+        width: int | None = None,
+        align: FormattedTextAlign | None = None,
+        style: str = "",
+        padding: DiInt | int = 0,
+        border_line: DiLineStyle | LineStyle = NoLine,
+        border_style: DiStr | str = "",
+    ) -> None:
+        """Create a new table cell.
 
         Args:
             text: Text or formatted text to display in the cell
@@ -120,13 +119,13 @@ class Cell:
         )
 
     @property
-    def padding(self) -> "DiInt":
+    def padding(self) -> DiInt:
         """The cell's padding."""
         return self._padding
 
     @padding.setter
-    def padding(self, padding: "DiInt|int") -> "None":
-        """Sets the cell's padding."""
+    def padding(self, padding: DiInt | int) -> None:
+        """Set the cell's padding."""
         self._padding = (
             DiInt(padding, padding, padding, padding)
             if isinstance(padding, int)
@@ -134,13 +133,13 @@ class Cell:
         )
 
     @property
-    def border_line(self) -> "DiLineStyle":
+    def border_line(self) -> DiLineStyle:
         """The cell's border line."""
         return self._border_line
 
     @border_line.setter
-    def border_line(self, border_line: "DiLineStyle|LineStyle") -> "None":
-        """Sets the cell's border line."""
+    def border_line(self, border_line: DiLineStyle | LineStyle) -> None:
+        """Set the cell's border line."""
         self._border_line = (
             DiLineStyle(border_line, border_line, border_line, border_line)
             if isinstance(border_line, LineStyle)
@@ -148,21 +147,21 @@ class Cell:
         )
 
     @property
-    def border_style(self) -> "DiStr":
+    def border_style(self) -> DiStr:
         """The cell's border style."""
         return self._border_style
 
     @border_style.setter
-    def border_style(self, border_style: "DiStr|str") -> "None":
-        """Sets the cell's border style."""
+    def border_style(self, border_style: DiStr | str) -> None:
+        """Set the cell's border style."""
         self._border_style = (
             DiStr(border_style, border_style, border_style, border_style)
             if isinstance(border_style, str)
             else border_style
         )
 
-    def __repr__(self) -> "str":
-        """Returns a text representation of the cell."""
+    def __repr__(self) -> str:
+        """Return a text representation of the cell."""
         cell_text = to_plain_text(self.text)
         if len(cell_text) > 5:
             cell_text = cell_text[:4] + "…"
@@ -174,21 +173,21 @@ class SpacerCell(Cell):
 
     def __init__(
         self,
-        expands: "Cell",
-        span_index: "int",
-        text: "AnyFormattedText" = "",
-        row: "Optional[Row]" = None,
-        col: "Optional[Col]" = None,
-        colspan: "int" = 1,
-        rowspan: "int" = 1,
-        width: "Optional[int]" = None,
-        align: "Optional[FormattedTextAlign]" = None,
-        style: "str" = "",
-        padding: "DiInt|int|None" = None,
-        border_line: "DiLineStyle|LineStyle" = NoLine,
-        border_style: "DiStr|str" = "",
-    ) -> "None":
-        """Creates a new table cell.
+        expands: Cell,
+        span_index: int,
+        text: AnyFormattedText = "",
+        row: Row | None = None,
+        col: Col | None = None,
+        colspan: int = 1,
+        rowspan: int = 1,
+        width: int | None = None,
+        align: FormattedTextAlign | None = None,
+        style: str = "",
+        padding: DiInt | int | None = None,
+        border_line: DiLineStyle | LineStyle = NoLine,
+        border_style: DiStr | str = "",
+    ) -> None:
+        """Create a new table cell.
 
         Args:
             expands: This should be reference to the spanning cell
@@ -226,27 +225,27 @@ class SpacerCell(Cell):
 class DummyCell(Cell):
     """A dummy cell with not content, padding or borders."""
 
-    def __repr__(self) -> "str":
-        """String representation of the cell."""
+    def __repr__(self) -> str:
+        """Represent the cell instance as a string."""
         return f"{self.__class__.__name__}()"
 
 
 class RowCol:
-    """Base class for table rows and columns."""
+    """Bae class for table rows and columns."""
 
-    type_: "str"
-    span_type: "str"
+    type_: str
+    span_type: str
 
     def __init__(
         self,
-        table: "Optional[Table]" = None,
-        cells: "Optional[Sequence[Cell]]" = None,
-        align: "Optional[FormattedTextAlign]" = None,
-        style: "str" = "",
-        padding: "DiInt|int" = 0,
-        border_line: "DiLineStyle|LineStyle" = NoLine,
-        border_style: "DiStr|str" = "",
-    ) -> "None":
+        table: Table | None = None,
+        cells: Sequence[Cell] | None = None,
+        align: FormattedTextAlign | None = None,
+        style: str = "",
+        padding: DiInt | int = 0,
+        border_line: DiLineStyle | LineStyle = NoLine,
+        border_style: DiStr | str = "",
+    ) -> None:
         """Create a new row/column.
 
         Args:
@@ -285,13 +284,13 @@ class RowCol:
         )
 
     @property
-    def padding(self) -> "DiInt":
+    def padding(self) -> DiInt:
         """The cell's padding."""
         return self._padding
 
     @padding.setter
-    def padding(self, padding: "DiInt|int") -> "None":
-        """Sets the cell's padding."""
+    def padding(self, padding: DiInt | int) -> None:
+        """Set the cell's padding."""
         self._padding = (
             DiInt(padding, padding, padding, padding)
             if isinstance(padding, int)
@@ -299,13 +298,13 @@ class RowCol:
         )
 
     @property
-    def border_line(self) -> "DiLineStyle":
+    def border_line(self) -> DiLineStyle:
         """The cell's border line."""
         return self._border_line
 
     @border_line.setter
-    def border_line(self, border_line: "DiLineStyle|LineStyle") -> "None":
-        """Sets the cell's border line."""
+    def border_line(self, border_line: DiLineStyle | LineStyle) -> None:
+        """Set the cell's border line."""
         self._border_line = (
             DiLineStyle(border_line, border_line, border_line, border_line)
             if isinstance(border_line, LineStyle)
@@ -313,13 +312,13 @@ class RowCol:
         )
 
     @property
-    def border_style(self) -> "DiStr":
+    def border_style(self) -> DiStr:
         """The cell's border style."""
         return self._border_style
 
     @border_style.setter
-    def border_style(self, border_style: "DiStr|str") -> "None":
-        """Sets the cell's border style."""
+    def border_style(self, border_style: DiStr | str) -> None:
+        """Set the cell's border style."""
         self._border_style = (
             DiStr(border_style, border_style, border_style, border_style)
             if isinstance(border_style, str)
@@ -327,18 +326,18 @@ class RowCol:
         )
 
     @property
-    def cells(self) -> "list[Cell]":
-        """Lists the cells in the row/column."""
+    def cells(self) -> list[Cell]:
+        """List the cells in the row/column."""
         return [self._cells[i] for i in range(len(self._cells))]
 
-    def new_cell(self, *args: "Any", **kwargs: "Any") -> "Cell":
+    def new_cell(self, *args: Any, **kwargs: Any) -> Cell:
         """Create a new cell in this row/column."""
         cell = Cell(*args, **kwargs)
         self.add_cell(cell)
         return cell
 
-    def add_cell(self, cell: "Cell") -> "None":
-        """Adds a cell to the row/ column."""
+    def add_cell(self, cell: Cell) -> None:
+        """Add a cell to the row/ column."""
         index = max([-1] + list(self._cells.keys())) + 1
         self._cells[index] = cell
 
@@ -407,8 +406,8 @@ class RowCol:
                     cell.row._cells[col_index + i] = spacer
                     spacer.col._cells[row_index] = spacer
 
-    def __repr__(self) -> "str":
-        """Returns a textual representation of the row or column."""
+    def __repr__(self) -> str:
+        """Return a textual representation of the row or column."""
         return f"{self.__class__.__name__}({', '.join(map(str, self._cells.values()))})"
 
 
@@ -427,8 +426,8 @@ class Col(RowCol):
 
 
 @lru_cache
-def compute_style(cell: Cell, render_count: int = 0) -> "str":
-    """The cell's computed style."""
+def compute_style(cell: Cell, render_count: int = 0) -> str:
+    """Compute a cell's style string."""
     return f"{cell.row.table.style} {cell.col.style} {cell.row.style} {cell.style}"
 
 
@@ -436,14 +435,14 @@ def compute_style(cell: Cell, render_count: int = 0) -> "str":
 
 
 @lru_cache
-def compute_text(cell: Cell, render_count: int = 0) -> "StyleAndTextTuples":
-    """The cell's input, converted to :class:`FormattedText`."""
+def compute_text(cell: Cell, render_count: int = 0) -> StyleAndTextTuples:
+    """Compute a cell's input, converted to :class:`FormattedText`."""
     return to_formatted_text(cell.text, style=compute_style(cell))
 
 
 @lru_cache
-def compute_padding(cell: Cell, render_count: int = 0) -> "DiInt":
-    """The cell's padding."""
+def compute_padding(cell: Cell, render_count: int = 0) -> DiInt:
+    """Compute a cell's padding."""
     output = {}
     table_padding = cell.row.table.padding
     row_padding = cell.row.padding
@@ -465,7 +464,7 @@ def compute_padding(cell: Cell, render_count: int = 0) -> "DiInt":
 
 @lru_cache
 def calculate_cell_width(cell: Cell, render_count: int = 0) -> int:
-    """The width of the cell including padding."""
+    """Compute the final width of a cell, including padding."""
     if cell.colspan > 1:
         return 0
     padding = compute_padding(cell, render_count)
@@ -477,8 +476,8 @@ def calculate_cell_width(cell: Cell, render_count: int = 0) -> int:
 
 
 @lru_cache
-def compute_border_line(cell: Cell, render_count: int = 0) -> "DiLineStyle":
-    """The cell's border line."""
+def compute_border_line(cell: Cell, render_count: int = 0) -> DiLineStyle:
+    """Compute a cell's border line."""
     output = {}
     cell_border_line = cell.border_line
     row_border_line = cell.row.border_line
@@ -509,8 +508,8 @@ def compute_border_line(cell: Cell, render_count: int = 0) -> "DiLineStyle":
 
 
 @lru_cache
-def compute_border_width(cell: Cell, render_count: int = 0) -> "DiInt":
-    """The style for the cell's borders."""
+def compute_border_width(cell: Cell, render_count: int = 0) -> DiInt:
+    """Compute the width od a cell's borders."""
     if isinstance(cell, DummyCell):
         return DiInt(0, 0, 0, 0)
 
@@ -595,20 +594,23 @@ def compute_border_width(cell: Cell, render_count: int = 0) -> "DiInt":
 
 @lru_cache
 def calculate_col_widths(
-    cols: "tuple[Col]",
-    width: "Dimension",
-    expand_to_width: "bool",
-    min_col_width: "int" = 2,
+    cols: tuple[Col],
+    width: Dimension,
+    expand_to_width: bool,
+    min_col_width: int = 2,
     render_count: int = 0,
-) -> "list[int]":
+) -> list[int]:
     """Calculate column widths given the available space.
 
     Reduce the widest column until we fit in available width, or expand cells to
     to fill the available width.
 
     Args:
+        cols: A list of columns in the table
         width: The desired width of the table
+        expand_to_width: Whether the column should expand to fill the available width
         min_col_width: The minimum width allowed for a column
+        render_count: The number of times the app has been rendered
 
     Returns:
         List of new column widths
@@ -625,7 +627,7 @@ def calculate_col_widths(
         for col in cols
     ]
 
-    def total_width(col_widths: "list[int]") -> "int":
+    def total_width(col_widths: list[int]) -> int:
         """Calculate the total width of the columns including borders."""
         width = sum(col_widths)
         for col in cols:
@@ -634,7 +636,7 @@ def calculate_col_widths(
             width += compute_border_width(cols[0].cells[0], render_count).left
         return width
 
-    def expand(target: "int") -> "None":
+    def expand(target: int) -> None:
         """Expand the columns."""
         max_width = max(target, len(col_widths) * min_col_width)
         while total_width(col_widths) < max_width:
@@ -652,7 +654,7 @@ def calculate_col_widths(
             else:
                 break
 
-    def contract(target: "int") -> "None":
+    def contract(target: int) -> None:
         """Contract the columns."""
         max_width = max(target, len(col_widths) * min_col_width)
         while total_width(col_widths) > max_width:
@@ -679,11 +681,11 @@ def calculate_col_widths(
 
 @lru_cache
 def get_node(
-    nw_bl: "DiLineStyle",
-    ne_bl: "DiLineStyle",
-    se_bl: "DiLineStyle",
-    sw_bl: "DiLineStyle",
-) -> "str":
+    nw_bl: DiLineStyle,
+    ne_bl: DiLineStyle,
+    se_bl: DiLineStyle,
+    sw_bl: DiLineStyle,
+) -> str:
     """Calculate which character to use at the intersection of four cells."""
     return get_grid_char(
         GridChar(
@@ -696,22 +698,22 @@ def get_node(
 
 
 @lru_cache
-def get_horizontal_edge(n_bl: "DiLineStyle", s_bl: "DiLineStyle") -> "str":
+def get_horizontal_edge(n_bl: DiLineStyle, s_bl: DiLineStyle) -> str:
     """Calculate which character to use to divide horizontally adjacent cells."""
     line_style = max(n_bl.bottom, s_bl.top)
     return get_grid_char(GridChar(NoLine, line_style, NoLine, line_style))
 
 
 @lru_cache
-def get_vertical_edge(w_bl: "DiLineStyle", e_bl: "DiLineStyle") -> "str":
+def get_vertical_edge(w_bl: DiLineStyle, e_bl: DiLineStyle) -> str:
     """Calculate which character to use to divide vertically adjacent cells."""
     line_style = max(w_bl.right, e_bl.left)
     return get_grid_char(GridChar(line_style, NoLine, line_style, NoLine))
 
 
 @lru_cache
-def compute_align(cell: Cell, render_count: int = 0) -> "FormattedTextAlign":
-    """The cell's alignment."""
+def compute_align(cell: Cell, render_count: int = 0) -> FormattedTextAlign:
+    """Compute the alignment of a cell."""
     if (align := cell.align) is not None:
         return align
     else:
@@ -719,12 +721,14 @@ def compute_align(cell: Cell, render_count: int = 0) -> "FormattedTextAlign":
 
 
 def compute_lines(
-    cell: Cell, width: "int", render_count: int = 0
-) -> "Iterable[StyleAndTextTuples]":
-    """Wraps the cell's text to a given width.
+    cell: Cell, width: int, render_count: int = 0
+) -> Iterable[StyleAndTextTuples]:
+    """Wrap the cell's text to a given width.
 
     Args:
+        cell: The cell whose lines to compute
         width: The width at which to wrap the cell's text.
+        render_count: The number of times the application has been rendered
 
     Returns:
         A list of lines of formatted text
@@ -748,8 +752,8 @@ def compute_lines(
 
 
 @lru_cache
-def compute_border_style(cell: Cell, render_count: int = 0) -> "DiStr":
-    """The style for the cell's borders."""
+def compute_border_style(cell: Cell, render_count: int = 0) -> DiStr:
+    """Compute the cell's final style for each of a cell's borders."""
     table_ = cell.row.table.border_style
     row_ = cell.row.border_style
     col_ = cell.col.border_style
@@ -790,19 +794,19 @@ class Table:
 
     def __init__(
         self,
-        rows: "Optional[Sequence[Row]]" = None,
-        cols: "Optional[Sequence[Col]]" = None,
-        width: "AnyDimension|None" = None,
-        expand: "bool" = False,
-        align: "FormattedTextAlign" = FormattedTextAlign.LEFT,
-        style: "str" = "",
-        padding: "DiInt|int|None" = None,
-        border_line: "DiLineStyle|LineStyle" = ThinLine,
-        border_style: "DiStr|str" = "",
-        border_spacing: "int" = 0,
-        collapse_empty_borders: "bool" = True,
-    ) -> "None":
-        """Creates a new table instance.
+        rows: Sequence[Row] | None = None,
+        cols: Sequence[Col] | None = None,
+        width: AnyDimension | None = None,
+        expand: bool = False,
+        align: FormattedTextAlign = FormattedTextAlign.LEFT,
+        style: str = "",
+        padding: DiInt | int | None = None,
+        border_line: DiLineStyle | LineStyle = ThinLine,
+        border_style: DiStr | str = "",
+        border_spacing: int = 0,
+        collapse_empty_borders: bool = True,
+    ) -> None:
+        """Create a new table instance.
 
         Args:
             rows: A list of :class:`Row`s to add to the table
@@ -866,13 +870,13 @@ class Table:
         self.border_spacing = border_spacing
 
     @property
-    def padding(self) -> "DiInt":
+    def padding(self) -> DiInt:
         """The cell's padding."""
         return self._padding
 
     @padding.setter
-    def padding(self, padding: "DiInt|int") -> "None":
-        """Sets the cell's padding."""
+    def padding(self, padding: DiInt | int) -> None:
+        """Set the cell's padding."""
         self._padding = (
             DiInt(padding, padding, padding, padding)
             if isinstance(padding, int)
@@ -880,13 +884,13 @@ class Table:
         )
 
     @property
-    def border_line(self) -> "DiLineStyle":
+    def border_line(self) -> DiLineStyle:
         """The cell's border line."""
         return self._border_line
 
     @border_line.setter
-    def border_line(self, border_line: "DiLineStyle|LineStyle") -> "None":
-        """Sets the cell's border line."""
+    def border_line(self, border_line: DiLineStyle | LineStyle) -> None:
+        """Set the cell's border line."""
         self._border_line = (
             DiLineStyle(border_line, border_line, border_line, border_line)
             if isinstance(border_line, LineStyle)
@@ -894,13 +898,13 @@ class Table:
         )
 
     @property
-    def border_style(self) -> "DiStr":
+    def border_style(self) -> DiStr:
         """The cell's border style."""
         return self._border_style
 
     @border_style.setter
-    def border_style(self, border_style: "DiStr|str") -> "None":
-        """Sets the cell's border style."""
+    def border_style(self, border_style: DiStr | str) -> None:
+        """Set the cell's border style."""
         self._border_style = (
             DiStr(border_style, border_style, border_style, border_style)
             if isinstance(border_style, str)
@@ -908,48 +912,48 @@ class Table:
         )
 
     @property
-    def width(self) -> "Dimension":
+    def width(self) -> Dimension:
         """The table's width."""
         return self._width
 
     @width.setter
-    def width(self, value: "AnyDimension") -> "None":
+    def width(self, value: AnyDimension) -> None:
         """Set the table's width."""
         self._width = to_dimension(value)
 
     @property
-    def rows(self) -> "list[Row]":
+    def rows(self) -> list[Row]:
         """A list of rows in the table."""
         return [self._rows[i] for i in range(len(self._rows))]
 
     @property
-    def cols(self) -> "list[Col]":
+    def cols(self) -> list[Col]:
         """A list of columns in the table."""
         return [self._cols[i] for i in range(len(self._cols))]
 
-    def sync_rows_to_cols(self) -> "None":
-        """Ensure cells in rows are present in the relevant columns."""
+    def sync_rows_to_cols(self) -> None:
+        """Enure cells in rows are present in the relevant columns."""
         cols = self._cols
         for i, row in self._rows.items():
             for j, cell in row._cells.items():
                 cell.col = cols[j]
                 cols[j]._cells[i] = cell
 
-    def sync_cols_to_rows(self) -> "None":
-        """Ensure cells in columns are present in the relevant rows."""
+    def sync_cols_to_rows(self) -> None:
+        """Enure cells in columns are present in the relevant rows."""
         rows = self._rows
         for i, col in self._cols.items():
             for j, cell in col._cells.items():
                 cell.row = rows[j]
                 rows[j]._cells[i] = cell
 
-    def new_row(self, *args: "Any", **kwargs: "Any") -> "Row":
-        """Creates a new row in the table."""
+    def new_row(self, *args: Any, **kwargs: Any) -> Row:
+        """Create a new row in the table."""
         row = Row(*args, **kwargs)
         self.add_row(row)
         return row
 
-    def add_row(self, row: "Row") -> "None":
+    def add_row(self, row: Row) -> None:
         """Add a row to the table."""
         row.table = self
 
@@ -974,13 +978,13 @@ class Table:
         row._cells = cells
         self._rows[index] = row
 
-    def new_col(self, *args: "Any", **kwargs: "Any") -> "Col":
-        """Creates a new column in the table."""
+    def new_col(self, *args: Any, **kwargs: Any) -> Col:
+        """Create a new column in the table."""
         col = Col(*args, **kwargs)
         self.add_col(col)
         return col
 
-    def add_col(self, col: "Col") -> "None":
+    def add_col(self, col: Col) -> None:
         """Add a column to the table."""
         col.table = self
 
@@ -1007,22 +1011,22 @@ class Table:
 
     def calculate_col_widths(
         self,
-        width: "AnyDimension|None" = None,
-        min_col_width: "int" = 4,
-    ) -> "list[int]":
+        width: AnyDimension | None = None,
+        min_col_width: int = 4,
+    ) -> list[int]:
         """Calculate the table's column widths."""
         width = self.width if width is None else to_dimension(width)
         return calculate_col_widths(tuple(self.cols), width, self.expand)
 
     def draw_border_row(
         self,
-        row_above: "Optional[Row]",
-        row_below: "Optional[Row]",
-        col_widths: "list[int]",
-        collapse_empty_borders: "bool",
-    ) -> "StyleAndTextTuples":
-        """Draws a border line separating two rows in the table."""
-        output: "StyleAndTextTuples" = []
+        row_above: Row | None,
+        row_below: Row | None,
+        col_widths: list[int],
+        collapse_empty_borders: bool,
+    ) -> StyleAndTextTuples:
+        """Draw a border line separating two rows in the table."""
+        output: StyleAndTextTuples = []
         if row_above is not None:
             row_above_cells = row_above.cells
         else:
@@ -1094,12 +1098,12 @@ class Table:
 
     def draw_table_row(
         self,
-        row: "Optional[RowCol]",
-        col_widths: "list[int]",
-        collapse_empty_borders: "bool",
-    ) -> "StyleAndTextTuples":
-        """Draws a row in the table."""
-        output_lines: "list[StyleAndTextTuples]" = []
+        row: RowCol | None,
+        col_widths: list[int],
+        collapse_empty_borders: bool,
+    ) -> StyleAndTextTuples:
+        """Draw a row in the table."""
+        output_lines: list[StyleAndTextTuples] = []
         if row:
             # Calculate borders
             borders = []
@@ -1125,9 +1129,7 @@ class Table:
 
                 borders.append((border_style, border_char))
 
-            def _calc_cell_width(
-                cell: "Cell", col: "int", col_widths: "list[int]"
-            ) -> "int":
+            def _calc_cell_width(cell: Cell, col: int, col_widths: list[int]) -> int:
                 """Calculate a cell's width."""
                 if isinstance(cell, SpacerCell) and cell.expands.colspan > 1:
                     return 0
@@ -1157,7 +1159,7 @@ class Table:
             )
 
             for row_line in row_lines:
-                output_line: "StyleAndTextTuples" = []
+                output_line: StyleAndTextTuples = []
                 for i, (line, cell) in enumerate(zip(row_line, row.cells)):
                     # Skip spacer cells
                     if isinstance(cell, SpacerCell) and cell.expands.colspan > 1:
@@ -1188,8 +1190,8 @@ class Table:
 
         return join_lines(output_lines)
 
-    def render(self, width: "AnyDimension|None" = None) -> "StyleAndTextTuples":
-        """Draws the table, optionally at a given character width."""
+    def render(self, width: AnyDimension | None = None) -> StyleAndTextTuples:
+        """Draw the table, optionally at a given character width."""
         self.render_count += 1
         width = self.width if width is None else to_dimension(width)
         col_widths = self.calculate_col_widths(width)
@@ -1208,7 +1210,7 @@ class Table:
                     lines.append(line)
         return join_lines(lines)
 
-    def __pt_formatted_text__(self) -> "StyleAndTextTuples":
+    def __pt_formatted_text__(self) -> StyleAndTextTuples:
         """Render the table as formatted text."""
         return self.render()
 
@@ -1216,31 +1218,31 @@ class Table:
 class DummyRow(Row):
     """A dummy row - created to hold cells without an assigned column."""
 
-    def add_cell(self, cell: "Cell") -> "None":
-        """Prevents cells being added to a dummy row."""
+    def add_cell(self, cell: Cell) -> None:
+        """Prevent cells being added to a dummy row."""
         raise NotImplementedError("Cannot add a cell to a DummyRow")
 
 
 class DummyCol(Col):
     """A dummy column - created to hold cells without an assigned column."""
 
-    def add_cell(self, cell: "Cell") -> "None":
-        """Prevents cells being added to a dummy column."""
+    def add_cell(self, cell: Cell) -> None:
+        """Prevent cells being added to a dummy column."""
         raise NotImplementedError("Cannot add a cell to a DummyCol")
 
 
 class DummyTable(Table):
     """A dummy table - created to hold rows and columns without an assigned table."""
 
-    def __init__(self, *args: "Any", **kwargs: "Any") -> "None":
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Create a new dummy table."""
         kwargs["border_line"] = NoLine
         super().__init__(*args, **kwargs)
 
-    def add_row(self, row: "Row") -> "None":
-        """Prevents rows being added to a dummy table."""
+    def add_row(self, row: Row) -> None:
+        """Prevent rows being added to a dummy table."""
         raise NotImplementedError("Cannot add a row to a DummyTable")
 
-    def add_col(self, col: "Col") -> "None":
-        """Prevents columns being added to a dummy table."""
+    def add_col(self, col: Col) -> None:
+        """Prevent columns being added to a dummy table."""
         raise NotImplementedError("Cannot add a column to a DummyTable")

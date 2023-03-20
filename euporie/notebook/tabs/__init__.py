@@ -1,4 +1,4 @@
-"""Tabs for use in euporie notebook editor."""
+"""Tab for use in euporie notebook editor."""
 
 from .log import LogView
 from .notebook import Notebook

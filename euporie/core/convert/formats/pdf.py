@@ -1,4 +1,4 @@
-"""Contains function which convert data to pdf format."""
+"""Contain function which convert data to pdf format."""
 
 from __future__ import annotations
 

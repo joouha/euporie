@@ -14,7 +14,7 @@ class ViState(PtkViState):
         self.__input_mode = InputMode.NAVIGATION
 
     def reset(self) -> "None":
-        """Reset state, go back to the given mode. NAVIGATION by default."""
+        """Reet state, go back to the given mode. NAVIGATION by default."""
         super().reset()
         # Go back to navigation mode.
         self.input_mode = InputMode.NAVIGATION

@@ -1,4 +1,4 @@
-"""Contains the command palette container."""
+"""Contain the command palette container."""
 
 from __future__ import annotations
 
@@ -23,8 +23,6 @@ from euporie.core.widgets.dialog import Dialog
 from euporie.core.widgets.forms import Text
 
 if TYPE_CHECKING:
-    from typing import Optional
-
     from prompt_toolkit.buffer import Buffer
     from prompt_toolkit.formatted_text import StyleAndTextTuples
     from prompt_toolkit.key_binding.key_bindings import NotImplementedOrNone
@@ -45,16 +43,16 @@ class _CommandMatch(NamedTuple):
 class CommandMenuControl(UIControl):
     """A filterable and navigable list of commands."""
 
-    def __init__(self, command_palette: "CommandPalette", width: "int" = 60) -> "None":
-        """Instantiates a new command list instance."""
+    def __init__(self, command_palette: CommandPalette, width: int = 60) -> None:
+        """Instantiate a new command list instance."""
         self.palette = command_palette
         self.width = width
 
-    def create_content(self, width: "int", height: "int") -> "UIContent":
+    def create_content(self, width: int, height: int) -> UIContent:
         """Create a UIContent object for this control."""
 
-        def get_line(i: "int") -> "StyleAndTextTuples":
-            result: "StyleAndTextTuples" = []
+        def get_line(i: int) -> StyleAndTextTuples:
+            result: StyleAndTextTuples = []
             match = self.palette.matches[i]
 
             # Set style depending on row number / selection status
@@ -103,24 +101,24 @@ class CommandMenuControl(UIControl):
             line_count=len(self.palette.matches),
         )
 
-    def preferred_width(self, max_available_width: "int") -> "Optional[int]":
-        """Returns the preferred width of the command list."""
+    def preferred_width(self, max_available_width: int) -> int | None:
+        """Return the preferred width of the command list."""
         return min(self.width, max_available_width)
 
     def preferred_height(
         self,
-        width: "int",
-        max_available_height: "int",
-        wrap_lines: "bool",
-        get_line_prefix: "Optional[GetLinePrefixCallable]",
-    ) -> "Optional[int]":
-        """Returns the preferred height of the command list."""
+        width: int,
+        max_available_height: int,
+        wrap_lines: bool,
+        get_line_prefix: GetLinePrefixCallable | None,
+    ) -> int | None:
+        """Return the preferred height of the command list."""
         return min(
             max_available_height // 2,
             len(self.palette.matches),
         )
 
-    def mouse_handler(self, mouse_event: "MouseEvent") -> "NotImplementedOrNone":
+    def mouse_handler(self, mouse_event: MouseEvent) -> NotImplementedOrNone:
         """Handle clicking and scrolling mouse events."""
         if mouse_event.event_type in {
             MouseEventType.MOUSE_MOVE,
@@ -146,20 +144,20 @@ class CommandMenuControl(UIControl):
 class CommandPalette(Dialog):
     """A command palette which allows searching the available commands."""
 
-    index: "int"
-    matches: "list[_CommandMatch]"
+    index: int
+    matches: list[_CommandMatch]
 
     title = "Search for a command"
     body_padding_top = 0
     body_padding_bottom = 0
 
-    def __init__(self, app: "BaseApp") -> None:
-        """Instantiates a new command palette instance."""
+    def __init__(self, app: BaseApp) -> None:
+        """Instantiate a new command palette instance."""
         super().__init__(app=app)
-        self.matches: "list[_CommandMatch]" = []
+        self.matches: list[_CommandMatch] = []
         self.index = 0
 
-        self.last_focused: "Optional[UIControl]" = None
+        self.last_focused: UIControl | None = None
         self._visible = False
         self.visible = Condition(lambda: self._visible)
 
@@ -213,21 +211,21 @@ class CommandPalette(Dialog):
 
         get_app().container_statuses[self.container] = self.statusbar_fields
 
-    def load(self) -> "None":
-        """The body is already loaded: does nothing."""
+    def load(self) -> None:
+        """Reset the dialog ready for display."""
         self.text_area.buffer.text = ""
         self.to_focus = self.text_area
 
     def statusbar_fields(
         self,
-    ) -> "StatusBarFields":
-        """Returns a list of statusbar field values shown then this tab is active."""
+    ) -> StatusBarFields:
+        """Return a list of statusbar field values shown then this tab is active."""
         if self.matches:
             return ([self.matches[self.index].command.description], [])
         else:
             return ([], [])
 
-    def select(self, n: "int", event: "KeyPressEvent|None" = None) -> "None":
+    def select(self, n: int, event: KeyPressEvent | None = None) -> None:
         """Change the index of the selected command.
 
         Args:
@@ -238,8 +236,8 @@ class CommandPalette(Dialog):
         self.index += n
         self.index = min(len(self.matches) - 1, max(0, self.index))
 
-    def text_changed(self, buffer: "Buffer") -> "None":
-        """Called when the input text changes: filters the command list."""
+    def text_changed(self, buffer: Buffer) -> None:
+        """Call when the input text changes: filters the command list."""
         self.matches = []
 
         # Lookahead regex to manage overlapping matches
@@ -260,8 +258,8 @@ class CommandPalette(Dialog):
         # Ensure the selected index is within the list of matches
         self.index = min(len(self.matches) - 1, max(0, self.index))
 
-    def accept(self, buffer: "Optional[Buffer]" = None) -> "bool":
-        """Called on :kbd:`enter`: runs the selected command."""
+    def accept(self, buffer: Buffer | None = None) -> bool:
+        """Call on :kbd:`enter`: runs the selected command."""
         if self.matches:
             self.hide()
             self.matches[self.index].command.run()
@@ -273,21 +271,21 @@ class CommandPalette(Dialog):
 
     @staticmethod
     @add_cmd()
-    def _toggle_command_palette() -> "None":
+    def _toggle_command_palette() -> None:
         """Show the command palette."""
         if command_palette := get_app().dialogs.get("command-palette"):
             command_palette.toggle()
 
     @staticmethod
     @add_cmd()
-    def _show_command_palette() -> "None":
+    def _show_command_palette() -> None:
         """Show the command palette."""
         if command_palette := get_app().dialogs.get("command-palette"):
             command_palette.show()
 
     @staticmethod
     @add_cmd()
-    def _hide_command_palette() -> "None":
+    def _hide_command_palette() -> None:
         """Hide the command palette."""
         if command_palette := get_app().dialogs.get("command-palette"):
             command_palette.hide()

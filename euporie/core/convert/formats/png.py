@@ -1,4 +1,4 @@
-"""Contains functions which convert data to png format."""
+"""Contain functions which convert data to png format."""
 
 from __future__ import annotations
 
@@ -10,8 +10,6 @@ from euporie.core.convert.formats.common import base64_to_bytes_py, imagemagick_
 from euporie.core.convert.utils import commands_exist, have_modules
 
 if TYPE_CHECKING:
-    from typing import Optional
-
     from PIL.Image import Image as PilImage
     from upath import UPath
 
@@ -28,13 +26,13 @@ register(
     filter_=commands_exist("dvipng") & commands_exist("latex"),
 )
 def latex_to_png_dvipng(
-    data: "str|bytes",
-    width: "Optional[int]" = None,
-    height: "Optional[int]" = None,
-    fg: "Optional[str]" = None,
-    bg: "Optional[str]" = None,
-    path: "Optional[UPath]" = None,
-) -> "bytes|None":
+    data: str | bytes,
+    width: int | None = None,
+    height: int | None = None,
+    fg: str | None = None,
+    bg: str | None = None,
+    path: UPath | None = None,
+) -> bytes | None:
     """Render LaTeX as a png image using :command:`dvipng`.
 
     Borrowed from IPython.
@@ -100,13 +98,13 @@ def latex_to_png_dvipng(
     filter_=have_modules("matplotlib"),
 )
 def latex_to_png_py_mpl(
-    data: "str|bytes",
-    width: "Optional[int]" = None,
-    height: "Optional[int]" = None,
-    fg: "Optional[str]" = None,
-    bg: "Optional[str]" = None,
-    path: "Optional[UPath]" = None,
-) -> "bytes":
+    data: str | bytes,
+    width: int | None = None,
+    height: int | None = None,
+    fg: str | None = None,
+    bg: str | None = None,
+    path: UPath | None = None,
+) -> bytes:
     """Render LaTeX as a png image using :py:module:`matplotlib`.
 
     Borrowed from IPython.
@@ -144,13 +142,13 @@ register(
     filter_=have_modules("PIL"),
 )
 def pil_to_png_py_pil(
-    data: "PilImage",
-    cols: "Optional[int]" = None,
-    rows: "Optional[int]" = None,
-    fg: "Optional[str]" = None,
-    bg: "Optional[str]" = None,
-    path: "Optional[UPath]" = None,
-) -> "bytes":
+    data: PilImage,
+    cols: int | None = None,
+    rows: int | None = None,
+    fg: str | None = None,
+    bg: str | None = None,
+    path: UPath | None = None,
+) -> bytes:
     """Convert a pillow image to sixels :py:mod:`teimpy`."""
     import io
 
@@ -166,13 +164,13 @@ def pil_to_png_py_pil(
     filter_=have_modules("cairosvg"),
 )
 def svg_to_png_py_cairosvg(
-    data: "str|bytes",
-    width: "Optional[int]" = None,
-    height: "Optional[int]" = None,
-    fg: "Optional[str]" = None,
-    bg: "Optional[str]" = None,
-    path: "Optional[UPath]" = None,
-) -> "str":
+    data: str | bytes,
+    width: int | None = None,
+    height: int | None = None,
+    fg: str | None = None,
+    bg: str | None = None,
+    path: UPath | None = None,
+) -> str:
     """Convert SVG to PNG using :py:mod:`cairosvg`."""
     import cairosvg
 

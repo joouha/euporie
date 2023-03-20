@@ -1,4 +1,4 @@
-"""Contains a container for the cell output area."""
+"""Contain a container for the cell output area."""
 
 from __future__ import annotations
 
@@ -27,7 +27,7 @@ from euporie.core.widgets.decor import Line
 from euporie.core.widgets.display import Display
 
 if TYPE_CHECKING:
-    from typing import Any, Optional
+    from typing import Any
 
     from prompt_toolkit.layout.containers import AnyContainer
     from prompt_toolkit.layout.dimension import AnyDimension
@@ -50,11 +50,11 @@ class PagerOutputDataElement(CellOutputDataElement):
 
     def __init__(
         self,
-        mime: "str",
-        data: "dict[str, Any]",
-        metadata: "dict",
-        parent: "Optional[OutputParent]",
-    ) -> "None":
+        mime: str,
+        data: dict[str, Any],
+        metadata: dict,
+        parent: OutputParent | None,
+    ) -> None:
         """Create a new data output element instance.
 
         Args:
@@ -90,8 +90,8 @@ class PagerOutputDataElement(CellOutputDataElement):
 class PagerOutput(CellOutput):
     """Display pager output."""
 
-    def make_element(self, mime: "str") -> "CellOutputElement":
-        """Creates a container for the pager output mime-type if it doesn't exist.
+    def make_element(self, mime: str) -> CellOutputElement:
+        """Create a container for the pager output mime-type if it doesn't exist.
 
         Args:
             mime: The mime-type to make the container for
@@ -114,9 +114,9 @@ class Pager:
 
     """
 
-    def __init__(self, height: "Optional[AnyDimension]" = None) -> "None":
+    def __init__(self, height: AnyDimension | None = None) -> None:
         """Create a new page instance."""
-        self._state: "Optional[PagerState]" = None
+        self._state: PagerState | None = None
         self.visible = Condition(
             lambda: self.state is not None and bool(self.state.response.get("found"))
         )
@@ -145,11 +145,11 @@ class Pager:
             filter=self.visible,
         )
 
-    def focus(self) -> "None":
+    def focus(self) -> None:
         """Focus the pager."""
         get_app().layout.focus(self)
 
-    def hide(self) -> "None":
+    def hide(self) -> None:
         """Clear and hide the pager."""
         if self.visible():
             self.state = None
@@ -161,19 +161,19 @@ class Pager:
                     layout.focus(previous_control)
 
     @property
-    def state(self) -> "Optional[PagerState]":
+    def state(self) -> PagerState | None:
         """Return the pager's current state."""
         return self._state
 
     @state.setter
-    def state(self, new: "Optional[PagerState]") -> "None":
+    def state(self, new: PagerState | None) -> None:
         """Set the pager's current state."""
         self._state = new
         if new is not None:
             self.output.json = new.response
             self.output.update()
 
-    def __pt_container__(self) -> "AnyContainer":
+    def __pt_container__(self) -> AnyContainer:
         """Return the pager container."""
         return self.container
 
@@ -181,8 +181,8 @@ class Pager:
 
     @staticmethod
     @add_cmd(filter=pager_has_focus)
-    def _close_pager() -> "None":
-        """Close the pager."""
+    def _close_pager() -> None:
+        """Cloe the pager."""
         app = get_app()
         if app.pager is not None:
             app.pager.hide()

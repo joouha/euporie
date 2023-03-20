@@ -1,1 +1,1 @@
-"""Contains various application tab implementations."""
+"""Contain various application tab implementations."""

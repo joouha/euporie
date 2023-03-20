@@ -1,4 +1,4 @@
-"""Contains the main class for a notebook file."""
+"""Contain the main class for a notebook file."""
 
 from __future__ import annotations
 
@@ -52,7 +52,7 @@ from euporie.core.widgets.page import PrintingContainer
 from euporie.core.widgets.pager import PagerState
 
 if TYPE_CHECKING:
-    from typing import Any, Callable, Optional, Sequence
+    from typing import Any, Callable, Sequence
 
     from prompt_toolkit.application.application import Application
     from prompt_toolkit.formatted_text import AnyFormattedText, StyleAndTextTuples
@@ -75,10 +75,10 @@ class ConsoleTab(KernelTab):
 
     def __init__(
         self,
-        app: "BaseApp",
-        path: "Optional[UPath]" = None,
-        use_kernel_history: "bool" = True,
-    ) -> "None":
+        app: BaseApp,
+        path: UPath | None = None,
+        use_kernel_history: bool = True,
+    ) -> None:
         """Create a new :py:class:`ConsoleTab` tab instance.
 
         Args:
@@ -107,7 +107,7 @@ class ConsoleTab(KernelTab):
 
         super().__init__(app=app, path=path, use_kernel_history=use_kernel_history)
 
-        self.lang_info: "dict[str, Any]" = {}
+        self.lang_info: dict[str, Any] = {}
         self.execution_count = 0
         self.clear_outputs_on_output = False
 
@@ -120,33 +120,33 @@ class ConsoleTab(KernelTab):
 
         self.app.before_render += self.render_outputs
 
-    def kernel_died(self) -> "None":
+    def kernel_died(self) -> None:
         """Call when the kernel dies."""
         log.error("The kernel has died")
 
-    async def load_history(self) -> "None":
+    async def load_history(self) -> None:
         """Load kernel history."""
         await super().load_history()
         # Re-run history load for the input-box
         self.input_box.buffer._load_history_task = None
         self.input_box.buffer.load_history_if_not_yet_loaded()
 
-    def close(self, cb: "Optional[Callable]" = None) -> "None":
-        """Close the console tab."""
+    def close(self, cb: Callable | None = None) -> None:
+        """Cloe the console tab."""
         # Ensure any output no longer appears interactive
         self.live_output.style = "class:disabled"
         # Unregister output renderer
         self.app.before_render -= self.render_outputs
         super().close(cb)
 
-    def clear_output(self, wait: "bool" = False) -> "None":
+    def clear_output(self, wait: bool = False) -> None:
         """Remove the last output, optionally when new output is generated."""
         if wait:
             self.clear_outputs_on_output = True
         else:
             self.live_output.reset()
 
-    def validate_input(self, code: "str") -> "bool":
+    def validate_input(self, code: str) -> bool:
         """Determine if the entered code is ready to run."""
         assert self.kernel is not None
         completeness_status = self.kernel.is_complete(code, wait=True).get(
@@ -161,7 +161,7 @@ class ConsoleTab(KernelTab):
         else:
             return True
 
-    def run(self, buffer: "Optional[Buffer]" = None) -> "None":
+    def run(self, buffer: Buffer | None = None) -> None:
         """Run the code in the input box."""
         if buffer is None:
             buffer = self.input_box.buffer
@@ -201,7 +201,7 @@ class ConsoleTab(KernelTab):
         ):
             del self.json["cells"][0]
 
-    def new_output(self, output_json: "dict[str, Any]") -> "None":
+    def new_output(self, output_json: dict[str, Any]) -> None:
         """Print the previous output and replace it with the new one."""
         # Clear the output if we were previously asked to
         if self.clear_outputs_on_output:
@@ -226,12 +226,12 @@ class ConsoleTab(KernelTab):
             # Invalidate the app so the output get printed
             self.app.invalidate()
 
-    def render_outputs(self, app: "Application[Any]") -> "None":
+    def render_outputs(self, app: Application[Any]) -> None:
         """Request that any unrendered outputs be rendered."""
         if self.output.json:
             self.app.create_background_task(self.async_render_outputs())
 
-    async def async_render_outputs(self) -> "None":
+    async def async_render_outputs(self) -> None:
         """Render any unrendered outputs above the application."""
         if self.output.json:
             # Run the output app in the terminal
@@ -240,24 +240,24 @@ class ConsoleTab(KernelTab):
             # Remove the outputs so they do not get rendered again
             self.output.reset()
 
-    def reset(self) -> "None":
-        """Reset the state of the tab."""
+    def reset(self) -> None:
+        """Reet the state of the tab."""
         self.live_output.reset()
         if self.app.config.mouse_support is None:
             self.app.need_mouse_support = False
 
-    def complete(self, content: "dict|None" = None) -> "None":
+    def complete(self, content: dict | None = None) -> None:
         """Re-render any changes."""
         self.app.invalidate()
 
     def prompt(
-        self, text: "str", offset: "int" = 0, show_busy: "bool" = False
-    ) -> "StyleAndTextTuples":
+        self, text: str, offset: int = 0, show_busy: bool = False
+    ) -> StyleAndTextTuples:
         """Determine what should be displayed in the prompt of the cell."""
         prompt = str(self.execution_count + offset)
         if show_busy and self.kernel.status in ("busy", "queued"):
             prompt = "*".center(len(prompt))
-        ft: "StyleAndTextTuples" = [
+        ft: StyleAndTextTuples = [
             ("", f"{text}["),
             ("class:count", prompt),
             ("", "]: "),
@@ -265,24 +265,24 @@ class ConsoleTab(KernelTab):
         return ft
 
     @property
-    def language(self) -> "str":
+    def language(self) -> str:
         """The language of the current kernel."""
         return self.lang_info.get(
             "name", self.lang_info.get("pygments_lexer", "python")
         )
 
-    def lang_file_ext(self) -> "str":
+    def lang_file_ext(self) -> str:
         """Return the file extension for scripts in the notebook's language."""
         return self.lang_info.get("file_extension", ".py")
 
-    def load_container(self) -> "HSplit":
-        """Builds the main application layout."""
+    def load_container(self) -> HSplit:
+        """Build the main application layout."""
         # Output area
 
         self.output = CellOutputArea([], parent=self)
 
         @Condition
-        def first_output() -> "bool":
+        def first_output() -> bool:
             """Check if the current outputs contain the first output."""
             if self.output.json:
                 for output in self.json["cells"][-1].get("outputs", []):
@@ -330,8 +330,8 @@ class ConsoleTab(KernelTab):
 
         # Input area
 
-        def on_cursor_position_changed(buf: "Buffer") -> "None":
-            """Respond to cursor movements."""
+        def on_cursor_position_changed(buf: Buffer) -> None:
+            """Repond to cursor movements."""
             # Update contextual help
             if self.app.config.autoinspect and buf.name == "code":
                 self.inspect()
@@ -341,7 +341,7 @@ class ConsoleTab(KernelTab):
         input_kb = KeyBindings()
 
         @Condition
-        def empty() -> "bool":
+        def empty() -> bool:
             from euporie.console.app import get_app
 
             buffer = get_app().current_buffer
@@ -349,7 +349,7 @@ class ConsoleTab(KernelTab):
             return not text.strip()
 
         @Condition
-        def not_invalid() -> "bool":
+        def not_invalid() -> bool:
             from euporie.console.app import get_app
 
             buffer = get_app().current_buffer
@@ -363,7 +363,7 @@ class ConsoleTab(KernelTab):
             & at_end_of_buffer
             & ~has_completions,
         )
-        async def on_enter(event: "KeyPressEvent") -> "NotImplementedOrNone":
+        async def on_enter(event: KeyPressEvent) -> NotImplementedOrNone:
             """Accept input if the input is valid, otherwise insert a return."""
             buffer = event.current_buffer
             # Accept the buffer if there are 2 blank lines
@@ -387,7 +387,7 @@ class ConsoleTab(KernelTab):
             return None
 
         @input_kb.add("s-enter")
-        def _newline(event: "KeyPressEvent") -> "None":
+        def _newline(event: KeyPressEvent) -> None:
             """Force new line on Shift-Enter."""
             event.current_buffer.newline(copy_margin=not in_paste_mode())
 
@@ -460,27 +460,27 @@ class ConsoleTab(KernelTab):
 
         return self.input_layout
 
-    def accept_stdin(self, buf: "Buffer") -> "bool":
+    def accept_stdin(self, buf: Buffer) -> bool:
         """Accept the user's input."""
         return True
 
-    def interrupt_kernel(self) -> "None":
+    def interrupt_kernel(self) -> None:
         """Interrupt the current `Notebook`'s kernel."""
         assert self.kernel is not None
         self.kernel.interrupt()
 
-    def set_kernel_info(self, info: "dict") -> "None":
-        """Receives and processes kernel metadata."""
+    def set_kernel_info(self, info: dict) -> None:
+        """Receive and processes kernel metadata."""
         self.lang_info = info.get("language_info", {})
 
-    def refresh(self, now: "bool" = True) -> "None":
+    def refresh(self, now: bool = True) -> None:
         """Request the output is refreshed (does nothing)."""
         pass
 
     def statusbar_fields(
         self,
-    ) -> "tuple[Sequence[AnyFormattedText], Sequence[AnyFormattedText]]":
-        """Generates the formatted text for the statusbar."""
+    ) -> tuple[Sequence[AnyFormattedText], Sequence[AnyFormattedText]]:
+        """Generate the formatted text for the statusbar."""
         assert self.kernel is not None
         return (
             [],
@@ -496,11 +496,11 @@ class ConsoleTab(KernelTab):
             ],
         )
 
-    def reformat(self) -> "None":
-        """Reformats the input."""
+    def reformat(self) -> None:
+        """Reformat the input."""
         self.input_box.text = format_code(self.input_box.text, self.app.config)
 
-    def inspect(self) -> "None":
+    def inspect(self) -> None:
         """Get contextual help for the current cursor position in the current cell."""
         code = self.input_box.text
         cursor_pos = self.input_box.buffer.cursor_position
@@ -515,7 +515,7 @@ class ConsoleTab(KernelTab):
                 self.app.pager.focus()
                 return
 
-        def _cb(response: "dict") -> "None":
+        def _cb(response: dict) -> None:
             assert self.app.pager is not None
             prev_state = self.app.pager.state
             new_state = PagerState(
@@ -534,7 +534,7 @@ class ConsoleTab(KernelTab):
             callback=_cb,
         )
 
-    def save(self, path: "UPath" = None, cb: "Optional[Callable]" = None) -> "None":
+    def save(self, path: UPath = None, cb: Callable | None = None) -> None:
         """Save the console as a notebook."""
         from euporie.core.tabs.notebook import BaseNotebook
 
@@ -544,7 +544,7 @@ class ConsoleTab(KernelTab):
 
     @staticmethod
     @add_cmd()
-    def _accept_input() -> "None":
+    def _accept_input() -> None:
         """Accept the current console input."""
         from euporie.console.app import get_app
 
@@ -556,7 +556,7 @@ class ConsoleTab(KernelTab):
     @add_cmd(
         filter=buffer_is_code & buffer_has_focus & ~has_selection & ~buffer_is_empty,
     )
-    def _clear_input() -> "None":
+    def _clear_input() -> None:
         """Clear the console input."""
         from euporie.console.app import get_app
 
@@ -567,7 +567,7 @@ class ConsoleTab(KernelTab):
     @add_cmd(
         filter=buffer_is_code & buffer_has_focus,
     )
-    def _run_input() -> "None":
+    def _run_input() -> None:
         """Run the console input."""
         from euporie.console.app import get_app
 
@@ -579,8 +579,8 @@ class ConsoleTab(KernelTab):
     @add_cmd(
         filter=buffer_is_code & buffer_has_focus & ~has_selection,
     )
-    def _show_contextual_help() -> "None":
-        """Displays contextual help."""
+    def _show_contextual_help() -> None:
+        """Display contextual help."""
         from euporie.console.app import get_app
 
         console = get_app().tab
@@ -596,7 +596,7 @@ class ConsoleTab(KernelTab):
     @add_cmd(
         filter=kernel_tab_has_focus,
     )
-    def _interrupt_kernel() -> "None":
+    def _interrupt_kernel() -> None:
         """Interrupt the notebook's kernel."""
         from euporie.console.app import get_app
 
@@ -607,7 +607,7 @@ class ConsoleTab(KernelTab):
     @add_cmd(
         filter=kernel_tab_has_focus,
     )
-    def _restart_kernel() -> "None":
+    def _restart_kernel() -> None:
         """Restart the notebook's kernel."""
         from euporie.console.app import get_app
 

@@ -1,1 +1,1 @@
-"""Contains widgets used in the notebook app."""
+"""Contain widgets used in the notebook app."""

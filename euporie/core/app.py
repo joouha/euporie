@@ -1,4 +1,4 @@
-"""Contains the main Application class which runs euporie.core."""
+"""Contain the main Application class which runs euporie.core."""
 
 from __future__ import annotations
 
@@ -88,7 +88,7 @@ from euporie.core.widgets.decor import Shadow
 
 if TYPE_CHECKING:
     from asyncio import AbstractEventLoop
-    from typing import Any, Callable, Literal, Optional, Sequence, Type, Union
+    from typing import Any, Callable, Literal, Sequence
 
     from prompt_toolkit.clipboard import Clipboard
     from prompt_toolkit.contrib.ssh import PromptToolkitSSHSession
@@ -125,9 +125,9 @@ _COLOR_DEPTHS = {
 
 
 class CursorConfig(CursorShapeConfig):
-    """Determines which cursor mode to use."""
+    """Determine which cursor mode to use."""
 
-    def get_cursor_shape(self, app: "Application[Any]") -> "CursorShape":
+    def get_cursor_shape(self, app: Application[Any]) -> CursorShape:
         """Return the cursor shape to be used in the current state."""
         if isinstance(app, BaseApp) and app.config.set_cursor_shape:
             if insert_mode():
@@ -180,20 +180,20 @@ class BaseApp(Application):
     name: str
     color_palette: ColorPalette
     config = Config()
-    status_default: "StatusBarFields" = ([], [])
-    need_mouse_support: "bool" = False
-    log_stdout_level: "str" = "CRITICAL"
+    status_default: StatusBarFields = ([], [])
+    need_mouse_support: bool = False
+    log_stdout_level: str = "CRITICAL"
 
     def __init__(
         self,
-        title: "Optional[str]" = None,
-        set_title: "bool" = True,
-        leave_graphics: "FilterOrBool" = True,
-        extend_renderer_height: "FilterOrBool" = False,
-        extend_renderer_width: "FilterOrBool" = False,
-        **kwargs: "Any",
-    ) -> "None":
-        """Instantiates euporie specific application variables.
+        title: str | None = None,
+        set_title: bool = True,
+        leave_graphics: FilterOrBool = True,
+        extend_renderer_height: FilterOrBool = False,
+        extend_renderer_width: FilterOrBool = False,
+        **kwargs: Any,
+    ) -> None:
+        """Instantiate euporie specific application variables.
 
         After euporie specific application variables are instantiated, the application
         instance is initiated.
@@ -234,9 +234,9 @@ class BaseApp(Application):
             extend_width=extend_renderer_width,
         )
         # Contains the opened tab containers
-        self.tabs: "list[Tab]" = []
+        self.tabs: list[Tab] = []
         # Holds the search bar to pass to cell inputs
-        self.search_bar: "Optional[SearchBar]" = None
+        self.search_bar: SearchBar | None = None
         # Holds the index of the current tab
         self._tab_idx = 0
         # Add state for micro key-bindings
@@ -245,20 +245,20 @@ class BaseApp(Application):
         self.term_info = TerminalInfo(self.input, self.output, self.config)
         # Floats at the app level
         self.leave_graphics = to_filter(leave_graphics)
-        self.graphics: "WeakSet[Float]" = WeakSet()
-        self.dialogs: "dict[str, Dialog]" = {}
-        self.menus: "dict[str, Float]" = {}
+        self.graphics: WeakSet[Float] = WeakSet()
+        self.dialogs: dict[str, Dialog] = {}
+        self.menus: dict[str, Float] = {}
         self.floats = ChainedList(
             self.graphics,
             self.dialogs.values(),
             self.menus.values(),
         )
         # Mapping of Containers to status field generating functions
-        self.container_statuses: "ContainerStatusDict" = {}
+        self.container_statuses: ContainerStatusDict = {}
         # Continue loading when the application has been launched
         # and an event loop has been creeated
         self.pre_run_callables = [self.pre_run]
-        self.post_load_callables: "list[Callable[[], None]]" = []
+        self.post_load_callables: list[Callable[[], None]] = []
         # Set default vi input mode to navigate
         self.vi_state = ViState()
         # Set a long timeout for mappings (e.g. dd)
@@ -270,16 +270,16 @@ class BaseApp(Application):
         # List of key-bindings groups to load
         self.bindings_to_load = ["euporie.core.app.BaseApp"]
         # Determines which clipboard mechanism to use
-        self.clipboard: "Clipboard" = (
+        self.clipboard: Clipboard = (
             PyperclipClipboard() if determine_clipboard()[0] else InMemoryClipboard()
         )
         # Allow hiding element when manually redrawing app
         self._redrawing = False
         self.redrawing = Condition(lambda: self._redrawing)
         # Add an optional pager
-        self.pager: "Optional[Pager]" = None
+        self.pager: Pager | None = None
         # Stores the initially focused element
-        self.focused_element: "Optional[FocusableElement]" = None
+        self.focused_element: FocusableElement | None = None
         # Set the terminal title
         self.set_title = to_filter(set_title)
         self.title = title or self.__class__.__name__
@@ -298,23 +298,23 @@ class BaseApp(Application):
         self.color_palette.add_color("fg", "#ffffff", "default")
         self.color_palette.add_color("bg", "#000000", "default")
         # Set up a write position to limit mouse events to a particular region
-        self.mouse_limits: "Optional[WritePosition]" = None
+        self.mouse_limits: WritePosition | None = None
         self.mouse_position = Point(0, 0)
 
     @property
-    def title(self) -> "str":
+    def title(self) -> str:
         """The application's title."""
         return self._title
 
     @title.setter
-    def title(self, value: "str") -> "None":
+    def title(self, value: str) -> None:
         """Set the terminal title."""
         self._title = value
         if self.set_title():
             self.output.set_title(value)
 
-    def pause_rendering(self) -> "None":
-        """Blocks rendering, but allows input to be processed.
+    def pause_rendering(self) -> None:
+        """Block rendering, but allows input to be processed.
 
         The first line prevents the display being drawn, and the second line means
         the key processor continues to process keys. We need this as we need to
@@ -326,14 +326,14 @@ class BaseApp(Application):
         self._is_running = False
         self.renderer._waiting_for_cpr_futures.append(asyncio.Future())
 
-    def resume_rendering(self) -> "None":
-        """Resume rendering the app."""
+    def resume_rendering(self) -> None:
+        """Reume rendering the app."""
         self._is_running = True
         if futures := self.renderer._waiting_for_cpr_futures:
             futures.pop()
 
-    def pre_run(self, app: "Application|None" = None) -> "None":
-        """Called during the 'pre-run' stage of application loading."""
+    def pre_run(self, app: Application | None = None) -> None:
+        """Call during the 'pre-run' stage of application loading."""
         # Load key bindings
         self.load_key_bindings()
         # Determine what color depth to use
@@ -357,8 +357,8 @@ class BaseApp(Application):
             ycursor=True,
         )
 
-        def terminal_ready() -> "None":
-            """Commands here depend on the result of terminal queries."""
+        def terminal_ready() -> None:
+            """Command here depend on the result of terminal queries."""
             # Open any files we need to
             self.open_files()
             # Load the layout
@@ -384,7 +384,7 @@ class BaseApp(Application):
             # Otherwise, we query the terminal and wait asynchronously to give it
             # a chance to respond
 
-            async def await_terminal_feedback() -> "None":
+            async def await_terminal_feedback() -> None:
                 try:
                     # Send queries to the terminal if supported
                     if self.input.__class__.__name__ in (
@@ -409,8 +409,8 @@ class BaseApp(Application):
             self.create_background_task(await_terminal_feedback())
 
     @classmethod
-    def load_input(cls) -> "Input":
-        """Creates the input for this application to use.
+    def load_input(cls) -> Input:
+        """Create the input for this application to use.
 
         Ensures the TUI app always tries to run in a TTY.
 
@@ -434,8 +434,8 @@ class BaseApp(Application):
         return input_
 
     @classmethod
-    def load_output(cls) -> "Output":
-        """Creates the output for this application to use.
+    def load_output(cls) -> Output:
+        """Create the output for this application to use.
 
         Ensures the TUI app always tries to run in a TTY.
 
@@ -456,14 +456,14 @@ class BaseApp(Application):
 
         return output
 
-    def post_load(self) -> "None":
-        """Allows subclasses to define additional loading steps."""
+    def post_load(self) -> None:
+        """Allow subclasses to define additional loading steps."""
         # Call extra callables
         for cb in self.post_load_callables:
             cb()
 
-    def load_key_bindings(self) -> "None":
-        """Loads the application's key bindings."""
+    def load_key_bindings(self) -> None:
+        """Load the application's key bindings."""
         from euporie.core.key_binding.bindings.micro import load_micro_bindings
         from euporie.core.key_binding.bindings.mouse import load_mouse_bindings
 
@@ -504,14 +504,14 @@ class BaseApp(Application):
             *self.bindings_to_load, config=self.config
         )
 
-    def _on_resize(self) -> "None":
-        """Hook the resize event to also query the terminal dimensions."""
+    def _on_resize(self) -> None:
+        """Query the terminal dimensions on a resize event."""
         self.term_info.pixel_dimensions.send()
         super()._on_resize()
 
     @classmethod
-    def launch(cls) -> "None":
-        """Launches the app."""
+    def launch(cls) -> None:
+        """Launch the app."""
         # Load default logging
         default_logs()
         # Load the app's configuration
@@ -526,12 +526,12 @@ class BaseApp(Application):
             return cls().run()
 
     @classmethod
-    async def interact(cls, ssh_session: "PromptToolkitSSHSession") -> None:
-        """Function to run the app asynchronously for the ssh hub server."""
+    async def interact(cls, ssh_session: PromptToolkitSSHSession) -> None:
+        """Run the app asynchronously for the hub SSH server."""
         await cls().run_async()
 
-    def load_container(self) -> "FloatContainer":
-        """Loads the root container for this application.
+    def load_container(self) -> FloatContainer:
+        """Load the root container for this application.
 
         Returns:
             The root container for this app
@@ -542,12 +542,12 @@ class BaseApp(Application):
             floats=cast("list[Float]", self.floats),
         )
 
-    def get_file_tab(self, path: "UPath") -> "Optional[Type[Tab]]":
-        """Returns the tab to use for a file path."""
+    def get_file_tab(self, path: UPath) -> type[Tab] | None:
+        """Return the tab to use for a file path."""
         return None
 
-    def open_file(self, path: "UPath", read_only: "bool" = False) -> "None":
-        """Creates a tab for a file.
+    def open_file(self, path: UPath, read_only: bool = False) -> None:
+        """Create a tab for a file.
 
         Args:
             path: The file path of the notebook file to open
@@ -573,13 +573,13 @@ class BaseApp(Application):
                 # Ensure the newly opened tab is selected
                 self.tab_idx = len(self.tabs) - 1
 
-    def open_files(self) -> "None":
-        """Opens the files defined in the configuration."""
+    def open_files(self) -> None:
+        """Open the files defined in the configuration."""
         for file in self.config.files:
             self.open_file(file)
 
     @property
-    def tab(self) -> "Optional[Tab]":
+    def tab(self) -> Tab | None:
         """Return the currently selected tab container object."""
         if self.tabs:
             # Detect if focused tab has changed
@@ -594,13 +594,13 @@ class BaseApp(Application):
             return None
 
     @property
-    def tab_idx(self) -> "int":
-        """Gets the current tab index."""
+    def tab_idx(self) -> int:
+        """Get the current tab index."""
         return self._tab_idx
 
     @tab_idx.setter
-    def tab_idx(self, value: "int") -> "None":
-        """Sets the current tab by index."""
+    def tab_idx(self, value: int) -> None:
+        """Set the current tab by index."""
         self._tab_idx = value % (len(self.tabs) or 1)
         if self.tabs:
             try:
@@ -608,11 +608,11 @@ class BaseApp(Application):
             except ValueError:
                 pass
 
-    def focus_tab(self, tab: "Tab") -> "None":
-        """Makes a tab visible and focuses it."""
+    def focus_tab(self, tab: Tab) -> None:
+        """Make a tab visible and focuses it."""
         self.tab_idx = self.tabs.index(tab)
 
-    def cleanup_closed_tab(self, tab: "Tab") -> "None":
+    def cleanup_closed_tab(self, tab: Tab) -> None:
         """Remove a tab container from the current instance of the app.
 
         Args:
@@ -635,8 +635,8 @@ class BaseApp(Application):
             except ValueError:
                 pass
 
-    def close_tab(self, tab: "Optional[Tab]" = None) -> "None":
-        """Closes a notebook tab.
+    def close_tab(self, tab: Tab | None = None) -> None:
+        """Close a notebook tab.
 
         Args:
             tab: The instance of the tab to close. If `None`, the currently
@@ -648,8 +648,8 @@ class BaseApp(Application):
         if tab is not None:
             tab.close(cb=partial(self.cleanup_closed_tab, tab))
 
-    def get_edit_mode(self) -> "EditingMode":
-        """Returns the editing mode enum defined in the configuration."""
+    def get_edit_mode(self) -> EditingMode:
+        """Return the editing mode enum defined in the configuration."""
         from euporie.core.key_binding.bindings.micro import EditingMode
 
         return {
@@ -660,12 +660,12 @@ class BaseApp(Application):
             str(self.config.edit_mode), EditingMode.MICRO  # type: ignore
         )
 
-    def update_edit_mode(self, setting: "Optional[Setting]" = None) -> "None":
-        """Sets the keybindings for editing mode."""
+    def update_edit_mode(self, setting: Setting | None = None) -> None:
+        """Set the keybindings for editing mode."""
         self.editing_mode = self.get_edit_mode()
         log.debug("Editing mode set to: %s", self.editing_mode)
 
-    def create_merged_style(self) -> "BaseStyle":
+    def create_merged_style(self) -> BaseStyle:
         """Generate a new merged style for the application.
 
         Using a dynamic style has serious performance issues, so instead we update
@@ -676,7 +676,7 @@ class BaseApp(Application):
 
         """
         # Get foreground and background colors based on the configured colour scheme
-        theme_colors: "dict[str, dict[str, str]]" = {
+        theme_colors: dict[str, dict[str, str]] = {
             "default": {},
             "light": {"fg": "#202020", "bg": "#F0F0F0"},
             "dark": {"fg": "#F0F0F0", "bg": "#202020"},
@@ -688,7 +688,7 @@ class BaseApp(Application):
                 "bg": self.config.custom_background_color,
             },
         }
-        base_colors: "dict[str, str]" = {
+        base_colors: dict[str, str] = {
             **DEFAULT_COLORS,
             **self.term_info.colors.value,
             **theme_colors.get(self.config.color_scheme, theme_colors["default"]),
@@ -739,24 +739,24 @@ class BaseApp(Application):
 
     def update_style(
         self,
-        query: "Optional[Union[TerminalQuery, Setting]]" = None,
-    ) -> "None":
-        """Updates the application's style when the syntax theme is changed."""
+        query: TerminalQuery | Setting | None = None,
+    ) -> None:
+        """Update the application's style when the syntax theme is changed."""
         self.renderer.style = self.create_merged_style()
 
-    def refresh(self) -> "None":
-        """Reset all tabs."""
+    def refresh(self) -> None:
+        """Reet all tabs."""
         for tab in self.tabs:
             to_container(tab).reset()
 
     def _create_merged_style(
-        self, include_default_pygments_style: "Filter|None" = None
-    ) -> "BaseStyle":
+        self, include_default_pygments_style: Filter | None = None
+    ) -> BaseStyle:
         """Block default style loading."""
         return DummyStyle()
 
-    def format_status(self, part: "Literal['left', 'right']") -> "StyleAndTextTuples":
-        """Formats the fields in the statusbar generated by the current tab.
+    def format_status(self, part: Literal["left", "right"]) -> StyleAndTextTuples:
+        """Format the fields in the statusbar generated by the current tab.
 
         Args:
             part: ``'left'`` to return the fields on the left side of the statusbar,
@@ -766,7 +766,7 @@ class BaseApp(Application):
             A list of style and text tuples for display in the statusbar
 
         """
-        entries: "StatusBarFields" = ([], [])
+        entries: StatusBarFields = ([], [])
         for container, status_func in self.container_statuses.items():
             if self.layout.has_focus(container):
                 entries = status_func()
@@ -775,7 +775,7 @@ class BaseApp(Application):
             if not self.tabs:
                 entries = self.status_default
 
-        output: "StyleAndTextTuples" = []
+        output: StyleAndTextTuples = []
         # Show the tab's status fields
         for field in entries[0 if part == "left" else 1]:
             if field:
@@ -793,7 +793,7 @@ class BaseApp(Application):
             output.pop()
         return output
 
-    def draw(self, render_as_done: "bool" = True) -> "None":
+    def draw(self, render_as_done: bool = True) -> None:
         """Draw the app without focus, leaving the cursor below the drawn output."""
         # Hide ephemeral containers
         self._redrawing = True
@@ -809,8 +809,8 @@ class BaseApp(Application):
         self._request_absolute_cursor_position()
 
     def _handle_exception(
-        self, loop: "AbstractEventLoop", context: "dict[str, Any]"
-    ) -> "None":
+        self, loop: AbstractEventLoop, context: dict[str, Any]
+    ) -> None:
         exception = context.get("exception")
         # Log observed exceptions to the log
         log.exception("An unhandled exception occurred", exc_info=exception)
@@ -833,7 +833,7 @@ class BaseApp(Application):
 
     @staticmethod
     @add_cmd()
-    def _quit() -> "None":
+    def _quit() -> None:
         """Quit euporie."""
         get_app().exit()
 
@@ -844,14 +844,14 @@ class BaseApp(Application):
         menu_title="Close File",
     )
     def _close_tab() -> None:
-        """Close the current tab."""
+        """Cloe the current tab."""
         get_app().close_tab()
 
     @staticmethod
     @add_cmd(
         filter=tab_has_focus,
     )
-    def _next_tab() -> "None":
+    def _next_tab() -> None:
         """Switch to the next tab."""
         get_app().tab_idx += 1
 
@@ -859,7 +859,7 @@ class BaseApp(Application):
     @add_cmd(
         filter=tab_has_focus,
     )
-    def _previous_tab() -> "None":
+    def _previous_tab() -> None:
         """Switch to the previous tab."""
         get_app().tab_idx -= 1
 
@@ -867,7 +867,7 @@ class BaseApp(Application):
     @add_cmd(
         filter=~buffer_has_focus,
     )
-    def _focus_next() -> "None":
+    def _focus_next() -> None:
         """Focus the next control."""
         get_app().layout.focus_next()
 
@@ -875,13 +875,13 @@ class BaseApp(Application):
     @add_cmd(
         filter=~buffer_has_focus,
     )
-    def _focus_previous() -> "None":
+    def _focus_previous() -> None:
         """Focus the previous control."""
         get_app().layout.focus_previous()
 
     @staticmethod
     @add_cmd()
-    def _clear_screen() -> "None":
+    def _clear_screen() -> None:
         """Clear the screen."""
         get_app().renderer.clear()
 

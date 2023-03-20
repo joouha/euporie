@@ -12,7 +12,7 @@ from prompt_toolkit.key_binding.key_processor import _Flush
 from prompt_toolkit.keys import Keys
 
 if TYPE_CHECKING:
-    from typing import Any, Optional
+    from typing import Any
 
     from prompt_toolkit.key_binding.key_processor import KeyPress
 
@@ -27,12 +27,12 @@ class KeyProcessor(PtKeyProcessor):
 
     """
 
-    def __init__(self, *args: "Any", **kwargs: "Any") -> "None":
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Create a new KeyProcessor instance."""
         super().__init__(*args, **kwargs)
-        self._last_key_press: "Optional[KeyPress]" = None
+        self._last_key_press: KeyPress | None = None
 
-    def _start_timeout(self) -> "None":
+    def _start_timeout(self) -> None:
         """Start auto flush timeout. Similar to Vim's `timeoutlen` option.
 
         Do not apply a timeout if the key is :kbd:`Escape`.
@@ -43,7 +43,7 @@ class KeyProcessor(PtKeyProcessor):
         if timeout is None:
             return
 
-        async def wait() -> "None":
+        async def wait() -> None:
             """Wait for timeout."""
             # This sleep can be cancelled. In that case we don't flush.
             # Don't sleep for the escape key
@@ -54,8 +54,8 @@ class KeyProcessor(PtKeyProcessor):
                 # (No keys pressed in the meantime.)
                 flush_keys()
 
-        def flush_keys() -> "None":
-            """Flush keys."""
+        def flush_keys() -> None:
+            """Fluh keys."""
             self.feed(_Flush)
             self.process_keys()
 
@@ -68,7 +68,7 @@ class KeyProcessor(PtKeyProcessor):
         """Process all the keys in the input queue."""
         app = get_app()
 
-        def not_empty() -> "bool":
+        def not_empty() -> bool:
             # When the application result is set, stop processing keys.  (E.g.
             # if ENTER was received, followed by a few additional key strokes,
             # leave the other keys in the queue.)
@@ -79,7 +79,7 @@ class KeyProcessor(PtKeyProcessor):
             else:
                 return bool(self.input_queue)
 
-        def get_next() -> "KeyPress":
+        def get_next() -> KeyPress:
             if app.is_done:
                 # Only process CPR responses. Everything else is typeahead.
                 cpr = [k for k in self.input_queue if k.key == Keys.CPRResponse][0]

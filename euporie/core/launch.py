@@ -1,4 +1,4 @@
-"""Defines a simple app for launching euporie apps."""
+"""Define a simple app for launching euporie apps."""
 
 from __future__ import annotations
 
@@ -19,8 +19,8 @@ class CoreApp:
     config = Config()
 
     @classmethod
-    def launch(cls) -> "None":
-        """Launches the app."""
+    def launch(cls) -> None:
+        """Launch the app."""
         # Set up default logging
         default_logs()
 

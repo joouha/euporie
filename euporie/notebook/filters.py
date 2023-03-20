@@ -1,4 +1,4 @@
-"""Defines filters used in the notebook app."""
+"""Define filters used in the notebook app."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from euporie.core.current import get_app
 
 
 @Condition
-def notebook_has_focus() -> "bool":
+def notebook_has_focus() -> bool:
     """Determine if there is a currently focused notebook."""
     from euporie.notebook.tabs.notebook import Notebook
 
@@ -16,7 +16,7 @@ def notebook_has_focus() -> "bool":
 
 
 @Condition
-def deleted_cells() -> "bool":
+def deleted_cells() -> bool:
     """Determine if there ares cell in the undo buffer."""
     from euporie.notebook.tabs.notebook import Notebook
 
@@ -27,7 +27,7 @@ def deleted_cells() -> "bool":
 
 
 @Condition
-def code_cell_selected() -> "bool":
+def code_cell_selected() -> bool:
     """Determine if a code cell is selected."""
     from euporie.notebook.tabs.notebook import Notebook
 
@@ -40,7 +40,7 @@ def code_cell_selected() -> "bool":
 
 
 @Condition
-def cell_has_focus() -> "bool":
+def cell_has_focus() -> bool:
     """Determine if there is a currently focused cell."""
     from euporie.notebook.tabs.notebook import Notebook
 
@@ -51,7 +51,7 @@ def cell_has_focus() -> "bool":
 
 
 @Condition
-def in_edit_mode() -> "bool":
+def in_edit_mode() -> bool:
     """Determine if there is a currently focused notebook."""
     from euporie.notebook.tabs.notebook import Notebook
 

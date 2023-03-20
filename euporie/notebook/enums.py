@@ -1,10 +1,10 @@
-"""Defines enums."""
+"""Define enums."""
 
 from enum import Enum
 
 
 class TabMode(Enum):
-    """Defines how multiple tabs are displayed."""
+    """Define how multiple tabs are displayed."""
 
     STACK = "stack"
     TILE_HORIZONTALLY = "tile_horizontally"

@@ -1,4 +1,4 @@
-"""Defines a command object for use in key-bindings, menus, and the command palette."""
+"""Define a command object for use in key-bindings, menus, and the command palette."""
 
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ from euporie.core.key_binding.utils import parse_keys
 from euporie.core.keys import Keys
 
 if TYPE_CHECKING:
-    from typing import Any, Callable, Coroutine, Optional, Sequence, Union
+    from typing import Any, Callable, Coroutine, Sequence
 
     from prompt_toolkit.filters import Filter, FilterOrBool
     from prompt_toolkit.key_binding.key_bindings import (
@@ -32,29 +32,26 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 
-commands: "dict[str, Command]" = {}
-
-
 class Command:
-    """Wraps a function so it can be used as a key-binding or a menu item."""
+    """Wrap a function so it can be used as a key-binding or a menu item."""
 
     def __init__(
         self,
-        handler: "Callable[..., Optional[Coroutine[Any, Any, None]]]",
+        handler: Callable[..., Coroutine[Any, Any, None] | None],
         *,
-        filter: "FilterOrBool" = True,
-        hidden: "FilterOrBool" = False,
-        name: "Optional[str]" = None,
-        title: "Optional[str]" = None,
-        menu_title: "Optional[str]" = None,
-        description: "Optional[str]" = None,
-        toggled: "Optional[Filter]" = None,
-        eager: "FilterOrBool" = False,
-        is_global: "FilterOrBool" = False,
-        save_before: "Callable[[KeyPressEvent], bool]" = (lambda event: True),
-        record_in_macro: "FilterOrBool" = True,
-    ) -> "None":
-        """Creates a new instance of a command.
+        filter: FilterOrBool = True,
+        hidden: FilterOrBool = False,
+        name: str | None = None,
+        title: str | None = None,
+        menu_title: str | None = None,
+        description: str | None = None,
+        toggled: Filter | None = None,
+        eager: FilterOrBool = False,
+        is_global: FilterOrBool = False,
+        save_before: Callable[[KeyPressEvent], bool] = (lambda event: True),
+        record_in_macro: FilterOrBool = True,
+    ) -> None:
+        """Create a new instance of a command.
 
         Args:
             handler: The callable to run when the command is triggers
@@ -92,20 +89,20 @@ class Command:
         self.description = description
 
         self.toggled = toggled
-        self._menu: "Optional[MenuItem]" = None
+        self._menu: MenuItem | None = None
 
         self.eager = to_filter(eager)
         self.is_global = to_filter(is_global)
         self.save_before = save_before
         self.record_in_macro = to_filter(record_in_macro)
 
-        self.keys: "list[tuple[Union[str, Keys], ...]]" = []
+        self.keys: list[tuple[str | Keys, ...]] = []
 
         self.selected_item = 0
-        self.children: "Sequence[MenuItem]" = []
+        self.children: Sequence[MenuItem] = []
 
-    def run(self) -> "None":
-        """Runs the command's handler."""
+    def run(self) -> None:
+        """Run the command's handler."""
         if self.filter():
             self.key_handler(
                 KeyPressEvent(
@@ -118,15 +115,15 @@ class Command:
             )
 
     @property
-    def key_handler(self) -> "KeyHandlerCallable":
-        """Returns a key handler for the command."""
+    def key_handler(self) -> KeyHandlerCallable:
+        """Return a key handler for the command."""
         sig = signature(self.handler)
 
         if sig.parameters:
             # The handler already accepts a `KeyPressEvent` argument
             return cast("KeyHandlerCallable", self.handler)
 
-        def _key_handler(event: "KeyPressEvent") -> "None":
+        def _key_handler(event: KeyPressEvent) -> None:
             result = self.handler()
             # If the handler is a coroutine, create an asyncio task.
             if isawaitable(result):
@@ -143,7 +140,7 @@ class Command:
 
         return _key_handler
 
-    def bind(self, key_bindings: "KeyBindingsBase", keys: "AnyKeys") -> "None":
+    def bind(self, key_bindings: KeyBindingsBase, keys: AnyKeys) -> None:
         """Add the current commands to a set of key bindings.
 
         Args:
@@ -165,7 +162,7 @@ class Command:
                 )
             )
 
-    def key_str(self) -> "str":
+    def key_str(self) -> str:
         """Return a string representing the first registered key-binding."""
         from euporie.core.key_binding.utils import format_keys
 
@@ -174,11 +171,11 @@ class Command:
         return ""
 
     @property
-    def menu_handler(self) -> "Callable[[], None]":
-        """Returns a menu handler for the command."""
+    def menu_handler(self) -> Callable[[], None]:
+        """Return a menu handler for the command."""
         if isawaitable(self.handler):
 
-            def _menu_handler() -> "None":
+            def _menu_handler() -> None:
                 task = self.handler()
                 if task is not None:
                     get_app().create_background_task(task)
@@ -188,8 +185,8 @@ class Command:
             return cast("Callable[[], None]", self.handler)
 
     @property
-    def menu(self) -> "MenuItem":
-        """Returns a menu item for the command."""
+    def menu(self) -> MenuItem:
+        """Return a menu item for the command."""
         from euporie.core.widgets.menu import MenuItem
 
         if self._menu is None:
@@ -197,10 +194,13 @@ class Command:
         return self._menu
 
 
-def add_cmd(**kwargs: "Any") -> "Callable":
-    """Adds a command to the centralized command system."""
+commands: dict[str, Command] = {}
 
-    def decorator(handler: "Callable") -> "Callable":
+
+def add_cmd(**kwargs: Any) -> Callable:
+    """Add a command to the centralized command system."""
+
+    def decorator(handler: Callable) -> Callable:
         cmd = Command(handler, **kwargs)
         commands[cmd.name] = cmd
         return handler
@@ -208,7 +208,7 @@ def add_cmd(**kwargs: "Any") -> "Callable":
     return decorator
 
 
-def get_cmd(name: "str") -> "Command":
+def get_cmd(name: str) -> Command:
     """Get a command from the centralized command system by name.
 
     Args:

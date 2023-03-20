@@ -1,4 +1,4 @@
-"""Defines border styles."""
+"""Define border styles."""
 
 from __future__ import annotations
 
@@ -9,11 +9,11 @@ from typing import TYPE_CHECKING, NamedTuple
 from prompt_toolkit.cache import FastDictCache
 
 if TYPE_CHECKING:
-    from typing import Optional
+    pass
 
 
 class GridPart(Enum):
-    """Defines the component characters of a grid.
+    """Define the component characters of a grid.
 
     Character naming works as follows:
 
@@ -48,12 +48,12 @@ class GridPart(Enum):
 
 
 class DirectionFlags(NamedTuple):
-    """Flags which indicate the connection of a grid node."""
+    """Flag which indicate the connection of a grid node."""
 
-    north: "bool" = False
-    east: "bool" = False
-    south: "bool" = False
-    west: "bool" = False
+    north: bool = False
+    east: bool = False
+    south: bool = False
+    west: bool = False
 
 
 class Mask:
@@ -62,7 +62,7 @@ class Mask:
     Masks can be combined to construct more complex masks.
     """
 
-    def __init__(self, mask: "dict[GridPart, DirectionFlags]") -> "None":
+    def __init__(self, mask: dict[GridPart, DirectionFlags]) -> None:
         """Create a new grid mask.
 
         Args:
@@ -73,8 +73,8 @@ class Mask:
         """
         self.mask = {part: mask.get(part, DirectionFlags()) for part in GridPart}
 
-    def __add__(self, other: "Mask") -> "Mask":
-        """Adds two masks, combining direction flags for each :class:`GridPart`.
+    def __add__(self, other: Mask) -> Mask:
+        """Add two masks, combining direction flags for each :class:`GridPart`.
 
         Args:
             other: Another mask to combine with this one
@@ -165,31 +165,31 @@ class Masks:
     )
 
 
-def _lint_to_grid(line: "LineStyle", mask: "Mask") -> "GridStyle":
+def _lint_to_grid(line: LineStyle, mask: Mask) -> GridStyle:
     """Get a grid from a line and a mask."""
     return GridStyle(line, mask)
 
 
 @total_ordering
 class LineStyle:
-    """Defines a line style which can be used to draw grids.
+    """Define a line style which can be used to draw grids.
 
     :class:`GridStyle`s can be created from a :class:`LineStyle` by accessing an
     attribute with the name of a default mask from :class:`Masks`.
     """
 
-    _grid_cache: "FastDictCache[tuple[LineStyle, Mask], GridStyle]" = FastDictCache(
+    _grid_cache: FastDictCache[tuple[LineStyle, Mask], GridStyle] = FastDictCache(
         get_value=_lint_to_grid
     )
 
     def __init__(
         self,
-        name: "str",
-        rank: "tuple[int, int]",
-        parent: "Optional[LineStyle]" = None,
-        visible: "bool" = True,
-    ) -> "None":
-        """Creates a new :class:`LineStyle`.
+        name: str,
+        rank: tuple[int, int],
+        parent: LineStyle | None = None,
+        visible: bool = True,
+    ) -> None:
+        """Create a new :class:`LineStyle`.
 
         Args:
             name: The name of the line style
@@ -204,14 +204,14 @@ class LineStyle:
         """
         self.name = name
         self.rank = rank
-        self.children: "dict[str, LineStyle]" = {}
+        self.children: dict[str, LineStyle] = {}
         self.parent = parent
         self.visible = visible
         if parent:
             parent.children[name] = self
 
-    def __getattr__(self, value: "str") -> "GridStyle":
-        """Defines attribute access.
+    def __getattr__(self, value: str) -> GridStyle:
+        """Define attribute access.
 
         Allows dynamic access to children and :class:`GridStyle` creation via attribute
         access.
@@ -232,20 +232,20 @@ class LineStyle:
         else:
             raise AttributeError(f"No such attribute `{value}`")
 
-    def __dir__(self) -> "list[str]":
-        """Lists the public attributes."""
+    def __dir__(self) -> list[str]:
+        """List the public attributes."""
         return [x for x in Masks.__dict__ if not x.startswith("_")]
 
-    def __lt__(self, other: "LineStyle") -> "bool":
-        """Allows :class:`LineStyle`s to be sorted according to their rank."""
+    def __lt__(self, other: LineStyle) -> bool:
+        """Allow :class:`LineStyle`s to be sorted according to their rank."""
         if self.__class__ is other.__class__:
             return self.rank < other.rank
         elif other is None:
             return None
         return NotImplemented
 
-    def __repr__(self) -> "str":
-        """A string representation of the :class:`LineStyle`."""
+    def __repr__(self) -> str:
+        """Represent :class:`LineStyle` instances as a string."""
         return f"LineStyle({self.name})"
 
 
@@ -294,15 +294,15 @@ FullDottedLine = LineStyle("FullDottedLine", (5, 1), parent=ThickLine)
 
 
 class GridChar(NamedTuple):
-    """Representation of a grid node character.
+    """Repreentation of a grid node character.
 
     The four compass points represent the line style joining from the given direction.
     """
 
-    north: "LineStyle"
-    east: "LineStyle"
-    south: "LineStyle"
-    west: "LineStyle"
+    north: LineStyle
+    east: LineStyle
+    south: LineStyle
+    west: LineStyle
 
 
 # fmt: off
@@ -681,7 +681,7 @@ _GRID_CHARS = {
 # fmt: off
 
 @lru_cache
-def get_grid_char(key: "GridChar") -> "str":
+def get_grid_char(key: GridChar) -> str:
     """Return the character represented by a combination of :class:`LineStyles`."""
     if key in _GRID_CHARS:
         return _GRID_CHARS[key]
@@ -703,7 +703,7 @@ def get_grid_char(key: "GridChar") -> "str":
             return " "
 
 
-def _combine_grids(grid_a: "GridStyle", grid_b: "GridStyle") -> GridStyle:
+def _combine_grids(grid_a: GridStyle, grid_b: GridStyle) -> GridStyle:
     """Combine a pair of grids."""
     grid_style = GridStyle()
     grid_style.grid = {}
@@ -718,17 +718,17 @@ class GridStyle:
     """A collection of characters which can be used to draw a grid."""
 
     class _BorderLineChars(NamedTuple):
-        LEFT: "str"
-        MID: "str"
-        SPLIT: "str"
-        RIGHT: "str"
+        LEFT: str
+        MID: str
+        SPLIT: str
+        RIGHT: str
 
-    _grid_cache: "FastDictCache[tuple[GridStyle, GridStyle], GridStyle]" = FastDictCache(get_value=_combine_grids)
+    _grid_cache: FastDictCache[tuple[GridStyle, GridStyle], GridStyle] = FastDictCache(get_value=_combine_grids)
 
     def __init__(
-        self, line_style: "LineStyle" = NoLine, mask: "Mask" = Masks.grid
-    ) -> "None":
-        """Creates a new :py:class:`GridStyle` instance.
+        self, line_style: LineStyle = NoLine, mask: Mask = Masks.grid
+    ) -> None:
+        """Create a new :py:class:`GridStyle` instance.
 
         Args:
             line_style: The line style to use to construct the grid
@@ -743,7 +743,7 @@ class GridStyle:
         self.mask = mask
 
     @property
-    def TOP(self) -> "_BorderLineChars":
+    def TOP(self) -> _BorderLineChars:
         """Allow dotted attribute access to the top grid row."""
         return self._BorderLineChars(
             get_grid_char(self.grid[GridPart.TOP_LEFT]),
@@ -753,7 +753,7 @@ class GridStyle:
         )
 
     @property
-    def MID(self) -> "_BorderLineChars":
+    def MID(self) -> _BorderLineChars:
         """Allow dotted attribute access to the mid grid row."""
         return self._BorderLineChars(
             get_grid_char(self.grid[GridPart.MID_LEFT]),
@@ -763,7 +763,7 @@ class GridStyle:
         )
 
     @property
-    def SPLIT(self) -> "_BorderLineChars":
+    def SPLIT(self) -> _BorderLineChars:
         """Allow dotted attribute access to the split grid row."""
         return self._BorderLineChars(
             get_grid_char(self.grid[GridPart.SPLIT_LEFT]),
@@ -773,7 +773,7 @@ class GridStyle:
         )
 
     @property
-    def BOTTOM(self) -> "_BorderLineChars":
+    def BOTTOM(self) -> _BorderLineChars:
         """Allow dotted attribute access to the bottom grid row."""
         return self._BorderLineChars(
             get_grid_char(self.grid[GridPart.BOTTOM_LEFT]),
@@ -783,30 +783,30 @@ class GridStyle:
         )
 
     @property
-    def HORIZONTAL(self) -> "str":
+    def HORIZONTAL(self) -> str:
         """For compatibility with :class:`prompt_toolkit.widgets.base.Border`."""
         return self.SPLIT_MID
 
     @property
-    def VERTICAL(self) -> "str":
+    def VERTICAL(self) -> str:
         """For compatibility with :class:`prompt_toolkit.widgets.base.Border`."""
         return self.MID_SPLIT
 
-    def __getattr__(self, value: "str") -> "str":
-        """Allows the parts of the grid to be accessed as attributes by name."""
+    def __getattr__(self, value: str) -> str:
+        """Allow the parts of the grid to be accessed as attributes by name."""
         key = getattr(GridPart, value)
         return get_grid_char(self.grid[key])
 
-    def __dir__(self) -> "list":
-        """List the public attributes of the grid style."""
+    def __dir__(self) -> list:
+        """Lit the public attributes of the grid style."""
         return [x.name for x in GridPart] + ["TOP", "MID", "SPLIT", "BOTTOM"]
 
-    def __add__(self, other: "GridStyle") -> "GridStyle":
+    def __add__(self, other: GridStyle) -> GridStyle:
         """Combine two grid styles."""
         return self._grid_cache[self, other]
 
-    def __repr__(self) -> "str":
-        """Returns a string representation of the grid style."""
+    def __repr__(self) -> str:
+        """Return a string representation of the grid style."""
         return "\n".join(
             "".join(
                 get_grid_char(char_key)
@@ -853,12 +853,12 @@ InnerHalfGrid = (
 class DiLineStyle(NamedTuple):
     """A description of a cell border: a :class:`LineStyle` for each edge."""
 
-    top: "LineStyle" = NoLine
-    right: "LineStyle" = NoLine
-    bottom: "LineStyle" = NoLine
-    left: "LineStyle" = NoLine
+    top: LineStyle = NoLine
+    right: LineStyle = NoLine
+    bottom: LineStyle = NoLine
+    left: LineStyle = NoLine
 
     @classmethod
-    def from_value(cls, value: "LineStyle") -> "DiLineStyle":
+    def from_value(cls, value: LineStyle) -> DiLineStyle:
         """Construct an instance from a single value."""
         return cls(top=value, right=value, bottom=value, left=value)

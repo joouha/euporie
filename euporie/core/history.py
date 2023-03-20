@@ -1,4 +1,4 @@
-"""Defines input history loaders."""
+"""Define input history loaders."""
 
 from __future__ import annotations
 
@@ -18,7 +18,7 @@ log = logging.getLogger(__name__)
 class KernelHistory(History):
     """Load the kernel's command history."""
 
-    def __init__(self, kernel: "Kernel", n: "int" = 1000) -> "None":
+    def __init__(self, kernel: Kernel, n: int = 1000) -> None:
         """Create a new instance of the kernel history loader."""
         super().__init__()
         self.kernel = kernel
@@ -27,7 +27,7 @@ class KernelHistory(History):
         self.n_loaded = 0
         self.loading = False
 
-    async def load(self) -> "AsyncGenerator[str, None]":
+    async def load(self) -> AsyncGenerator[str, None]:
         """Load the history and yield all entries, most recent history first.
 
         This method can be called multiple times from the `Buffer` to
@@ -60,16 +60,16 @@ class KernelHistory(History):
         for item in self._loaded_strings:
             yield item
 
-    def load_history_strings(self) -> "Iterable[str]":
+    def load_history_strings(self) -> Iterable[str]:
         """Not used to load history, as we load it asynchronously."""
         while False:
             yield
 
-    def store_string(self, string: "str") -> "None":
+    def store_string(self, string: str) -> None:
         """Don't store strings in persistent storage: they are stored by the kernel."""
         pass
 
     @property
-    def recent(self) -> "list[str]":
+    def recent(self) -> list[str]:
         """Return new items added since history was initially loaded."""
         return self._loaded_strings[: -self.n_loaded]

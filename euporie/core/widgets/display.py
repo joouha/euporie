@@ -1,4 +1,4 @@
-"""Defines custom controls which re-render on resize."""
+"""Define custom controls which re-render on resize."""
 
 from __future__ import annotations
 
@@ -45,7 +45,7 @@ from euporie.core.terminal import tmuxify
 from euporie.core.widgets.page import BoundedWritePosition
 
 if TYPE_CHECKING:
-    from typing import Any, Callable, Iterable, Type, Union
+    from typing import Any, Callable, Iterable
 
     from prompt_toolkit.filters import FilterOrBool
     from prompt_toolkit.formatted_text import StyleAndTextTuples
@@ -69,16 +69,16 @@ class DisplayControl(UIControl):
 
     def __init__(
         self,
-        data: "Any",
-        format_: "str",
-        path: "UPath|None" = None,
-        fg_color: "str|None" = None,
-        bg_color: "str|None" = None,
-        sizing_func: "Callable[[], tuple[int, float]]|None" = None,
-        focusable: "FilterOrBool" = False,
-        focus_on_click: "FilterOrBool" = False,
-    ) -> "None":
-        """Creates a new data formatter control.
+        data: Any,
+        format_: str,
+        path: UPath | None = None,
+        fg_color: str | None = None,
+        bg_color: str | None = None,
+        sizing_func: Callable[[], tuple[int, float]] | None = None,
+        focusable: FilterOrBool = False,
+        focus_on_click: FilterOrBool = False,
+    ) -> None:
+        """Create a new data formatter control.
 
         Args:
             data: Raw cell output data
@@ -112,93 +112,93 @@ class DisplayControl(UIControl):
         self._max_cols = 0
         self._aspect = 0.0
 
-        self.rendered_lines: "list[StyleAndTextTuples]" = []
+        self.rendered_lines: list[StyleAndTextTuples] = []
         self._format_cache: SimpleCache = SimpleCache(maxsize=50)
         self._content_cache: SimpleCache = SimpleCache(maxsize=50)
         self._size_cache: SimpleCache = SimpleCache(maxsize=1)
 
-    def reset(self) -> "None":
+    def reset(self) -> None:
         """Clear the display control's caches (required if the control's data changes)."""
         self._format_cache.clear()
         self._size_cache.clear()
         self._content_cache.clear()
 
     @property
-    def data(self) -> "Any":
+    def data(self) -> Any:
         """Return the control's display data."""
         return self._data
 
     @data.setter
-    def data(self, value: "Any") -> "None":
+    def data(self, value: Any) -> None:
         """Set the control's data."""
         self._data = value
         self.reset()
 
-    def get_key_bindings(self) -> "KeyBindingsBase|None":
+    def get_key_bindings(self) -> KeyBindingsBase | None:
         """Return the control's key bindings."""
         return self.key_bindings
 
     @property
-    def cursor_position(self) -> "Point":
+    def cursor_position(self) -> Point:
         """Get the cursor position."""
         return self._cursor_position
 
     @cursor_position.setter
-    def cursor_position(self, value: "Point") -> "None":
+    def cursor_position(self, value: Point) -> None:
         """Set the cursor position."""
         changed = self._cursor_position != value
         self._cursor_position = value
         if changed:
             self.on_cursor_position_changed.fire()
 
-    def move_cursor_down(self) -> "None":
-        """Moves the cursor down one line."""
+    def move_cursor_down(self) -> None:
+        """Move the cursor down one line."""
         x, y = self.cursor_position
         self.cursor_position = Point(x=x, y=y + 1)
 
-    def move_cursor_up(self) -> "None":
-        """Moves the cursor up one line."""
+    def move_cursor_up(self) -> None:
+        """Move the cursor up one line."""
         x, y = self.cursor_position
         self.cursor_position = Point(x=x, y=max(0, y - 1))
 
-    def move_cursor_left(self) -> "None":
-        """Moves the cursor down one line."""
+    def move_cursor_left(self) -> None:
+        """Move the cursor down one line."""
         x, y = self.cursor_position
         self.cursor_position = Point(x=max(0, x - 1), y=y)
 
-    def move_cursor_right(self) -> "None":
-        """Moves the cursor up one line."""
+    def move_cursor_right(self) -> None:
+        """Move the cursor up one line."""
         x, y = self.cursor_position
         self.cursor_position = Point(x=x + 1, y=y)
 
-    def is_focusable(self) -> "bool":
-        """Determines if the current control is focusable."""
+    def is_focusable(self) -> bool:
+        """Determine if the current control is focusable."""
         return self.focusable()
 
-    def size(self) -> "None":
+    def size(self) -> None:
         """Load the maximum cell width and aspect ratio of the output."""
         self._max_cols, self._aspect = self._size_cache.get(
             self.app.render_counter, self.sizing_func
         )
 
-    def hide(self) -> "None":
-        """Hides the output from show."""
+    def hide(self) -> None:
+        """Hide the output from show."""
         pass
 
     @property
-    def max_cols(self) -> "int":
+    def max_cols(self) -> int:
         """Load the maximum width of the output in terminal columns."""
         self.size()
         return self._max_cols
 
     @property
-    def aspect(self) -> "float":
+    def aspect(self) -> float:
         """Lazily load the aspect ratio of the output."""
         self.size()
         return self._aspect
 
-    def preferred_width(self, max_available_width: "int") -> "int|None":
-        """Returns the width of the rendered content."""
+    def preferred_width(self, max_available_width: int) -> int | None:
+        """Return the width of the rendered content."""
         self.max_available_width = max_available_width
         return (
             min(self.max_cols, max_available_width)
@@ -206,28 +206,26 @@ class DisplayControl(UIControl):
             else max_available_width
         )
 
-    def get_rendered_lines(
-        self, width: "int", height: "int"
-    ) -> "list[StyleAndTextTuples]":
+    def get_rendered_lines(self, width: int, height: int) -> list[StyleAndTextTuples]:
         """Render the output data."""
         return []
 
     def preferred_height(
         self,
-        width: "int",
-        max_available_height: "int",
-        wrap_lines: "bool",
+        width: int,
+        max_available_height: int,
+        wrap_lines: bool,
         get_line_prefix: GetLinePrefixCallable | None,
-    ) -> "int":
-        """Returns the number of lines in the rendered content."""
+    ) -> int:
+        """Return the number of lines in the rendered content."""
         if self.aspect:
             return ceil(min(width, self.max_cols) * self.aspect)
         else:
             self.rendered_lines = self.get_rendered_lines(width, max_available_height)
             return len(self.rendered_lines)
 
-    def create_content(self, width: "int", height: "int") -> "UIContent":
-        """Generates rendered output at a given size.
+    def create_content(self, width: int, height: int) -> UIContent:
+        """Generate rendered output at a given size.
 
         Args:
             width: The desired output width
@@ -240,12 +238,12 @@ class DisplayControl(UIControl):
         cols = min(self.max_cols, width) if self.max_cols else width
         rows = ceil(cols * self.aspect) if self.aspect else height
 
-        def get_content() -> "dict[str, Any]":
+        def get_content() -> dict[str, Any]:
             rendered_lines = self.get_rendered_lines(width=cols, height=rows)
             self.rendered_lines = rendered_lines[:]
             line_count = len(rendered_lines)
 
-            def get_line(i: "int") -> "StyleAndTextTuples":
+            def get_line(i: int) -> StyleAndTextTuples:
                 # Return blank lines if the renderer expects more content than we have
                 line = rendered_lines[i] if i < line_count else []
                 # Add a space at the end, because that is a possible cursor position.
@@ -268,24 +266,24 @@ class DisplayControl(UIControl):
             **self._content_cache.get(key, get_content),
         )
 
-    def mouse_handler(self, mouse_event: "MouseEvent") -> "NotImplementedOrNone":
+    def mouse_handler(self, mouse_event: MouseEvent) -> NotImplementedOrNone:
         """Mouse handler for this control."""
         if self.focus_on_click() and mouse_event.event_type == MouseEventType.MOUSE_UP:
             self.app.layout.current_control = self
             return None
         return NotImplemented
 
-    def get_invalidate_events(self) -> "Iterable[Event[object]]":
+    def get_invalidate_events(self) -> Iterable[Event[object]]:
         """Return the Window invalidate events."""
         # Whenever the cursor position changes, the UI has to be updated.
         yield self.on_cursor_position_changed
 
     @property
-    def content_width(self) -> "int":
+    def content_width(self) -> int:
         """Return the maximum line length of the content."""
         return max(fragment_list_width(line) for line in self.rendered_lines)
 
-    def close(self) -> "None":
+    def close(self) -> None:
         """Remove the displayed object entirely."""
         if not self.app.leave_graphics():
             self.hide()
@@ -294,19 +292,19 @@ class DisplayControl(UIControl):
 class DisplayWindow(Window):
     """A window sub-class which can scroll left and right."""
 
-    content: "DisplayControl"
-    render_info: "WindowRenderInfo"
-    vertical_scroll: "int"
+    content: DisplayControl
+    render_info: WindowRenderInfo
+    vertical_scroll: int
 
     def _write_to_screen_at_index(
         self,
-        screen: "Screen",
-        mouse_handlers: "MouseHandlers",
-        write_position: "WritePosition",
-        parent_style: "str",
-        erase_bg: "bool",
+        screen: Screen,
+        mouse_handlers: MouseHandlers,
+        write_position: WritePosition,
+        parent_style: str,
+        erase_bg: bool,
     ) -> None:
-        """Ensure the :attr:`horizontal_scroll` is recorded."""
+        """Enure the :attr:`horizontal_scroll` is recorded."""
         super()._write_to_screen_at_index(
             screen,
             mouse_handlers,
@@ -352,12 +350,10 @@ class FormattedTextDisplayControl(DisplayControl):
     events - i.e. images are downscaled to fit, markdown is re-flowed, etc.
     """
 
-    def get_rendered_lines(
-        self, width: "int", height: "int"
-    ) -> "list[StyleAndTextTuples]":
+    def get_rendered_lines(self, width: int, height: int) -> list[StyleAndTextTuples]:
         """Get rendered lines from the cache, or generate them."""
 
-        def render_lines() -> "list[StyleAndTextTuples]":
+        def render_lines() -> list[StyleAndTextTuples]:
             """Render the lines to display in the control."""
             lines = list(
                 split_lines(
@@ -390,17 +386,17 @@ class GraphicControl(DisplayControl, metaclass=ABCMeta):
 
     def __init__(
         self,
-        data: "Any",
-        format_: "str",
-        path: "UPath|None" = None,
-        fg_color: "str|None" = None,
-        bg_color: "str|None" = None,
-        sizing_func: "Callable[[], tuple[int, float]]|None" = None,
-        focusable: "FilterOrBool" = False,
-        focus_on_click: "FilterOrBool" = False,
-        scale: "float" = 0,
-        bbox: "DiInt|None" = None,
-    ) -> "None":
+        data: Any,
+        format_: str,
+        path: UPath | None = None,
+        fg_color: str | None = None,
+        bg_color: str | None = None,
+        sizing_func: Callable[[], tuple[int, float]] | None = None,
+        focusable: FilterOrBool = False,
+        focus_on_click: FilterOrBool = False,
+        scale: float = 0,
+        bbox: DiInt | None = None,
+    ) -> None:
         """Initialize the graphic control."""
         super().__init__(
             data,
@@ -421,8 +417,8 @@ class GraphicControl(DisplayControl, metaclass=ABCMeta):
             px, py = px or 100, py or 100
         self.px, self.py = px, py
 
-    def create_content(self, width: "int", height: "int") -> "UIContent":
-        """Generates rendered output at a given size.
+    def create_content(self, width: int, height: int) -> UIContent:
+        """Generate rendered output at a given size.
 
         Args:
             width: The desired output width
@@ -439,12 +435,12 @@ class GraphicControl(DisplayControl, metaclass=ABCMeta):
             else height
         )
 
-        def get_content() -> "dict[str, Any]":
+        def get_content() -> dict[str, Any]:
             rendered_lines = self.get_rendered_lines(width=cols, height=rows)
             self.rendered_lines = rendered_lines[:]
             line_count = len(rendered_lines)
 
-            def get_line(i: "int") -> "StyleAndTextTuples":
+            def get_line(i: int) -> StyleAndTextTuples:
                 # Return blank lines if the renderer expects more content than we have
                 line = []
                 if i < line_count:
@@ -473,14 +469,12 @@ class GraphicControl(DisplayControl, metaclass=ABCMeta):
 class SixelGraphicControl(GraphicControl):
     """A graphic control which displays images as sixels."""
 
-    def get_rendered_lines(
-        self, width: "int", height: "int"
-    ) -> "list[StyleAndTextTuples]":
+    def get_rendered_lines(self, width: int, height: int) -> list[StyleAndTextTuples]:
         """Get rendered lines from the cache, or generate them."""
         cell_size_x, cell_size_y = self.app.term_info.cell_size_px
 
-        def render_lines() -> "list[StyleAndTextTuples]":
-            """Renders the lines to display in the control."""
+        def render_lines() -> list[StyleAndTextTuples]:
+            """Render the lines to display in the control."""
             full_width = width + self.bbox.left + self.bbox.right
             full_height = height + self.bbox.top + self.bbox.bottom
             cmd = convert(
@@ -539,8 +533,8 @@ class SixelGraphicControl(GraphicControl):
 class ItermGraphicControl(GraphicControl):
     """A graphic control which displays images using iTerm's graphics protocol."""
 
-    def convert_data(self, rows: "int", cols: "int") -> "str":
-        """Converts the graphic's data to base64 data."""
+    def convert_data(self, rows: int, cols: int) -> str:
+        """Convert the graphic's data to base64 data."""
         data = self.data
         format_ = self.format_
 
@@ -593,13 +587,11 @@ class ItermGraphicControl(GraphicControl):
         b64data = b64data.replace("\n", "").strip()
         return b64data
 
-    def get_rendered_lines(
-        self, width: "int", height: "int"
-    ) -> "list[StyleAndTextTuples]":
+    def get_rendered_lines(self, width: int, height: int) -> list[StyleAndTextTuples]:
         """Get rendered lines from the cache, or generate them."""
 
-        def render_lines() -> "list[StyleAndTextTuples]":
-            """Renders the lines to display in the control."""
+        def render_lines() -> list[StyleAndTextTuples]:
+            """Render the lines to display in the control."""
             b64data = self.convert_data(cols=width, rows=height)
             cmd = f"\x1b]1337;File=inline=1;width={width}:{b64data}\a"
             return list(
@@ -638,17 +630,17 @@ class KittyGraphicControl(GraphicControl):
 
     def __init__(
         self,
-        data: "Any",
-        format_: "str",
-        path: "UPath|None" = None,
-        fg_color: "str|None" = None,
-        bg_color: "str|None" = None,
-        sizing_func: "Callable[[], tuple[int, float]]|None" = None,
-        focusable: "FilterOrBool" = False,
-        focus_on_click: "FilterOrBool" = False,
-        scale: "float" = 0,
-        bbox: "DiInt|None" = None,
-    ) -> "None":
+        data: Any,
+        format_: str,
+        path: UPath | None = None,
+        fg_color: str | None = None,
+        bg_color: str | None = None,
+        sizing_func: Callable[[], tuple[int, float]] | None = None,
+        focusable: FilterOrBool = False,
+        focus_on_click: FilterOrBool = False,
+        scale: float = 0,
+        bbox: DiInt | None = None,
+    ) -> None:
         """Create a new kitty graphic instance."""
         super().__init__(
             data=data,
@@ -665,8 +657,8 @@ class KittyGraphicControl(GraphicControl):
         self.kitty_image_id = 0
         self.loaded = False
 
-    def convert_data(self, rows: "int", cols: "int") -> "str":
-        """Converts the graphic's data to base64 data for kitty graphics protocol."""
+    def convert_data(self, rows: int, cols: int) -> str:
+        """Convert the graphic's data to base64 data for kitty graphics protocol."""
         return convert(
             self.data,
             from_=self.format_,
@@ -679,7 +671,7 @@ class KittyGraphicControl(GraphicControl):
         ).replace("\n", "")
 
     @staticmethod
-    def _kitty_cmd(chunk: "str" = "", **params: "Any") -> "str":
+    def _kitty_cmd(chunk: str = "", **params: Any) -> str:
         param_str = ",".join(
             [f"{key}={value}" for key, value in params.items() if value is not None]
         )
@@ -689,8 +681,8 @@ class KittyGraphicControl(GraphicControl):
         cmd += "\x1b\\"
         return cmd
 
-    def load(self, rows: "int", cols: "int") -> "None":
-        """Sends the graphic to the terminal without displaying it."""
+    def load(self, rows: int, cols: int) -> None:
+        """Send the graphic to the terminal without displaying it."""
         global _kitty_image_count
 
         data = self.convert_data(rows=rows, cols=cols)
@@ -715,8 +707,8 @@ class KittyGraphicControl(GraphicControl):
         self.app.output.flush()
         self.loaded = True
 
-    def hide(self) -> "None":
-        """Hides the graphic from show without deleting it."""
+    def hide(self) -> None:
+        """Hide the graphic from show without deleting it."""
         if self.kitty_image_id > 0:
             self.app.output.write_raw(
                 tmuxify(
@@ -730,8 +722,8 @@ class KittyGraphicControl(GraphicControl):
             )
             self.app.output.flush()
 
-    def delete(self) -> "None":
-        """Deletes the graphic from the terminal."""
+    def delete(self) -> None:
+        """Delete the graphic from the terminal."""
         if self.kitty_image_id > 0:
             self.app.output.write_raw(
                 tmuxify(
@@ -746,17 +738,15 @@ class KittyGraphicControl(GraphicControl):
             self.app.output.flush()
             self.loaded = False
 
-    def get_rendered_lines(
-        self, width: "int", height: "int"
-    ) -> "list[StyleAndTextTuples]":
+    def get_rendered_lines(self, width: int, height: int) -> list[StyleAndTextTuples]:
         """Get rendered lines from the cache, or generate them."""
         # TODO - wezterm does not scale kitty graphics, so we might want to resize
         # images at this point rather than just loading them once
         if not self.loaded:
             self.load(cols=width, rows=height)
 
-        def render_lines() -> "list[StyleAndTextTuples]":
-            """Renders the lines to display in the control."""
+        def render_lines() -> list[StyleAndTextTuples]:
+            """Render the lines to display in the control."""
             full_width = width + self.bbox.left + self.bbox.right
             full_height = height + self.bbox.top + self.bbox.bottom
             cmd = self._kitty_cmd(
@@ -805,13 +795,13 @@ class KittyGraphicControl(GraphicControl):
         key = (width, height, self.bbox, self.app.term_info.cell_size_px)
         return self._format_cache.get(key, render_lines)
 
-    def reset(self) -> "None":
+    def reset(self) -> None:
         """Hide and delete the kitty graphic from the terminal."""
         self.hide()
         self.delete()
         super().reset()
 
-    def close(self) -> "None":
+    def close(self) -> None:
         """Remove the displayed object entirely."""
         super().close()
         if not self.app.leave_graphics():
@@ -830,17 +820,17 @@ class GraphicWindow(Window):
     - the output it attached to is fully in view
     """
 
-    content: "GraphicControl"
+    content: GraphicControl
 
     def __init__(
         self,
-        content: "GraphicControl",
-        target_window: "Window",
-        filter: "FilterOrBool",
-        *args: "Any",
-        **kwargs: "Any",
-    ) -> "None":
-        """Initiates a new :py:class:`GraphicWindow` object.
+        content: GraphicControl,
+        target_window: Window,
+        filter: FilterOrBool,
+        *args: Any,
+        **kwargs: Any,
+    ) -> None:
+        """Initiate a new :py:class:`GraphicWindow` object.
 
         Args:
             content: A control which generates the graphical content to display
@@ -856,14 +846,14 @@ class GraphicWindow(Window):
 
     def write_to_screen(
         self,
-        screen: "Screen",
-        mouse_handlers: "MouseHandlers",
-        write_position: "WritePosition",
-        parent_style: "str",
-        erase_bg: "bool",
-        z_index: "int|None",
-    ) -> "None":
-        """Draws the graphic window's contents to the screen if required."""
+        screen: Screen,
+        mouse_handlers: MouseHandlers,
+        write_position: WritePosition,
+        parent_style: str,
+        erase_bg: bool,
+        z_index: int | None,
+    ) -> None:
+        """Draw the graphic window's contents to the screen if required."""
         filter_value = self.filter()
         target_wp = screen.visible_windows_to_write_positions.get(self.target_window)
         if (
@@ -940,7 +930,7 @@ class GraphicWindow(Window):
         write_position: WritePosition,
         erase_bg: bool,
     ) -> None:
-        """Erase/fill the background."""
+        """Erae/fill the background."""
         char: str | None
         if callable(self.char):
             char = self.char()
@@ -964,15 +954,15 @@ class GraphicFloat(Float):
 
     def __init__(
         self,
-        target_window: "Window",
-        data: "Any",
-        format_: "str",
-        path: "UPath|None" = None,
-        fg_color: "str|None" = None,
-        bg_color: "str|None" = None,
-        sizing_func: "Callable[[], tuple[int, float]]|None" = None,
-        filter: "FilterOrBool" = True,
-    ) -> "None":
+        target_window: Window,
+        data: Any,
+        format_: str,
+        path: UPath | None = None,
+        fg_color: str | None = None,
+        bg_color: str | None = None,
+        sizing_func: Callable[[], tuple[int, float]] | None = None,
+        filter: FilterOrBool = True,
+    ) -> None:
         """Create a new instance.
 
         Args:
@@ -986,13 +976,13 @@ class GraphicFloat(Float):
                 cells and its aspect ratio
             filter: A filter which is used to hide and show the graphic
         """
-        self.GraphicControl: "Type[GraphicControl]|None" = None
+        self.GraphicControl: type[GraphicControl] | None = None
         self.control = None
 
         app = get_app()
         term_info = app.term_info
         preferred_graphics_protocol = app.config.graphics
-        useable_graphics_controls: "list[Type[GraphicControl]]" = []
+        useable_graphics_controls: list[type[GraphicControl]] = []
         _in_tmux = in_tmux()
 
         if (
@@ -1051,12 +1041,12 @@ class GraphicFloat(Float):
             weakref.finalize(self, self.control.close)
 
     @property
-    def data(self) -> "Any":
+    def data(self) -> Any:
         """Return the graphic's current data."""
         return self._data
 
     @data.setter
-    def data(self, value: "Any") -> "None":
+    def data(self, value: Any) -> None:
         """Set the graphic float's data."""
         self._data = value
         if self.control is not None:
@@ -1073,24 +1063,24 @@ class Display:
 
     def __init__(
         self,
-        data: "Any",
-        format_: "str",
-        path: "UPath|None" = None,
-        fg_color: "str|None" = None,
-        bg_color: "str|None" = None,
-        height: "AnyDimension" = None,
-        width: "AnyDimension" = None,
-        px: "int|None" = None,
-        py: "int|None" = None,
-        focusable: "FilterOrBool" = False,
-        focus_on_click: "FilterOrBool" = False,
-        wrap_lines: "FilterOrBool" = False,
-        always_hide_cursor: "FilterOrBool" = True,
-        scrollbar: "FilterOrBool" = True,
-        scrollbar_autohide: "FilterOrBool" = True,
-        dont_extend_height: "FilterOrBool" = True,
-        style: "Union[str, Callable[[], str]]" = "",
-    ) -> "None":
+        data: Any,
+        format_: str,
+        path: UPath | None = None,
+        fg_color: str | None = None,
+        bg_color: str | None = None,
+        height: AnyDimension = None,
+        width: AnyDimension = None,
+        px: int | None = None,
+        py: int | None = None,
+        focusable: FilterOrBool = False,
+        focus_on_click: FilterOrBool = False,
+        wrap_lines: FilterOrBool = False,
+        always_hide_cursor: FilterOrBool = True,
+        scrollbar: FilterOrBool = True,
+        scrollbar_autohide: FilterOrBool = True,
+        dont_extend_height: FilterOrBool = True,
+        style: str | Callable[[], str] = "",
+    ) -> None:
         """Instantiate an Output container object.
 
         Args:
@@ -1175,19 +1165,19 @@ class Display:
             app.graphics.add(self.graphic_float)
 
     @property
-    def data(self) -> "Any":
+    def data(self) -> Any:
         """Return the display's current data."""
         return self.control.data
 
     @data.setter
-    def data(self, value: "Any") -> "None":
+    def data(self, value: Any) -> None:
         """Set the display container's data."""
         self.control.data = value
         self.graphic_float.data = value
 
     def make_sizing_func(
-        self, data: "Any", format_: "str", fg: "str|None", bg: "str|None"
-    ) -> "Callable[[], tuple[int, float]]":
+        self, data: Any, format_: str, fg: str | None, bg: str | None
+    ) -> Callable[[], tuple[int, float]]:
         """Create a function to recalculate the data's dimensions in terminal cells."""
         px, py = self.px, self.py
         if px is None or py is None:
@@ -1195,28 +1185,28 @@ class Display:
         return partial(pixels_to_cell_size, px, py)
 
     @property
-    def px(self) -> "int|None":
+    def px(self) -> int | None:
         """Return the displayed data's pixel widget."""
         return self._px
 
     @px.setter
-    def px(self, value: "int|None") -> "None":
+    def px(self, value: int | None) -> None:
         """Set the display container's width in pixels."""
         self._px = value
         self.update_sizing()
 
     @property
-    def py(self) -> "int|None":
+    def py(self) -> int | None:
         """Return the displayed data's pixel height."""
         return self._py
 
     @py.setter
-    def py(self, value: "int|None") -> "None":
+    def py(self, value: int | None) -> None:
         """Set the display container's height in pixels."""
         self._py = value
         self.update_sizing()
 
-    def update_sizing(self) -> "None":
+    def update_sizing(self) -> None:
         """Create a sizing function when the data's pixel size changes."""
         sizing_func = self.make_sizing_func(
             data=self.control.data,
@@ -1230,7 +1220,7 @@ class Display:
             self.graphic_float.control.sizing_func = sizing_func
             self.graphic_float.control.reset()
 
-    def __pt_container__(self) -> "AnyContainer":
+    def __pt_container__(self) -> AnyContainer:
         """Return the content of this output."""
         return self.window
 
@@ -1238,7 +1228,7 @@ class Display:
 
     @staticmethod
     @add_cmd(filter=display_has_focus)
-    def _scroll_display_left() -> "None":
+    def _scroll_display_left() -> None:
         """Scroll the display up one line."""
         window = get_app().layout.current_window
         assert isinstance(window, DisplayWindow)
@@ -1246,7 +1236,7 @@ class Display:
 
     @staticmethod
     @add_cmd(filter=display_has_focus)
-    def _scroll_display_right() -> "None":
+    def _scroll_display_right() -> None:
         """Scroll the display down one line."""
         window = get_app().layout.current_window
         assert isinstance(window, DisplayWindow)
@@ -1254,19 +1244,19 @@ class Display:
 
     @staticmethod
     @add_cmd(filter=display_has_focus)
-    def _scroll_display_up() -> "None":
+    def _scroll_display_up() -> None:
         """Scroll the display up one line."""
         get_app().layout.current_window._scroll_up()
 
     @staticmethod
     @add_cmd(filter=display_has_focus)
-    def _scroll_display_down() -> "None":
+    def _scroll_display_down() -> None:
         """Scroll the display down one line."""
         get_app().layout.current_window._scroll_down()
 
     @staticmethod
     @add_cmd(filter=display_has_focus)
-    def _page_up_display() -> "None":
+    def _page_up_display() -> None:
         """Scroll the display up one page."""
         window = get_app().layout.current_window
         if window.render_info is not None:
@@ -1275,7 +1265,7 @@ class Display:
 
     @staticmethod
     @add_cmd(filter=display_has_focus)
-    def _page_down_display() -> "None":
+    def _page_down_display() -> None:
         """Scroll the display down one page."""
         window = get_app().layout.current_window
         if window.render_info is not None:
@@ -1284,7 +1274,7 @@ class Display:
 
     @staticmethod
     @add_cmd(filter=display_has_focus)
-    def _go_to_start_of_display() -> "None":
+    def _go_to_start_of_display() -> None:
         """Scroll the display to the top."""
         from euporie.core.widgets.display import DisplayControl
 
@@ -1294,7 +1284,7 @@ class Display:
 
     @staticmethod
     @add_cmd(filter=display_has_focus)
-    def _go_to_end_of_display() -> "None":
+    def _go_to_end_of_display() -> None:
         """Scroll the display down one page."""
         from euporie.core.widgets.display import DisplayControl
 

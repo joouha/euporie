@@ -1,4 +1,4 @@
-"""Contains functions which can be used to convert data to multiple formats."""
+"""Contain functions which can be used to convert data to multiple formats."""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ from euporie.core.convert.utils import call_subproc
 from euporie.core.current import get_app
 
 if TYPE_CHECKING:
-    from typing import Any, Literal, Optional, Union
+    from typing import Any, Literal
 
     from PIL.Image import Image as PilImage
     from upath import UPath
@@ -19,29 +19,29 @@ log = logging.getLogger(__name__)
 
 
 def base64_to_bytes_py(
-    data: "str|bytes",
-    width: "Optional[int]" = None,
-    height: "Optional[int]" = None,
-    fg: "Optional[str]" = None,
-    bg: "Optional[str]" = None,
-    path: "Optional[UPath]" = None,
-) -> "bytes":
-    """Converts base64 encoded data to bytes."""
+    data: str | bytes,
+    width: int | None = None,
+    height: int | None = None,
+    fg: str | None = None,
+    bg: str | None = None,
+    path: UPath | None = None,
+) -> bytes:
+    """Convert base64 encoded data to bytes."""
     data_str = data.decode() if isinstance(data, bytes) else data
     return base64.b64decode(data_str)
 
 
 def imagemagick_convert(
-    output_format: "str",
-    data: "str|bytes",
-    cols: "Optional[int]" = None,
-    rows: "Optional[int]" = None,
-    fg: "Optional[str]" = None,
-    bg: "Optional[str]" = None,
-    path: "Optional[UPath]" = None,
-) -> "Union[str, bytes]":
-    """Converts image data to PNG bytes using ``imagemagick``."""
-    cmd: "list[Any]" = ["convert"]  # , "-density", "300"]
+    output_format: str,
+    data: str | bytes,
+    cols: int | None = None,
+    rows: int | None = None,
+    fg: str | None = None,
+    bg: str | None = None,
+    path: UPath | None = None,
+) -> str | bytes:
+    """Convert image data to PNG bytes using ``imagemagick``."""
+    cmd: list[Any] = ["convert"]  # , "-density", "300"]
     if cols is not None:
         px, _ = get_app().term_info.cell_size_px
         cmd += ["-geometry", f"{int(cols * px)}"]
@@ -49,23 +49,23 @@ def imagemagick_convert(
     if bg is not None:
         cmd += ["-background", bg]
     cmd += ["-[0]", f"{output_format}:-"]
-    result: "Union[bytes, str]" = call_subproc(data, cmd)
+    result: bytes | str = call_subproc(data, cmd)
     if output_format in {"sixel", "svg"} and isinstance(result, bytes):
         result = result.decode()
     return result
 
 
 def chafa_convert_cmd(
-    output_format: "str",
-    data: "str|bytes",
-    cols: "Optional[int]" = None,
-    rows: "Optional[int]" = None,
-    fg: "Optional[str]" = None,
-    bg: "Optional[str]" = None,
-    path: "Optional[UPath]" = None,
-) -> "Union[str, bytes]":
-    """Converts image data to ANSI text using :command:`chafa`."""
-    cmd: "list[Any]" = ["chafa", f"--format={output_format}"]
+    output_format: str,
+    data: str | bytes,
+    cols: int | None = None,
+    rows: int | None = None,
+    fg: str | None = None,
+    bg: str | None = None,
+    path: UPath | None = None,
+) -> str | bytes:
+    """Convert image data to ANSI text using :command:`chafa`."""
+    cmd: list[Any] = ["chafa", f"--format={output_format}"]
     if cols is not None or rows is not None:
         cmd += [f"--size={cols or '1'}x{rows or '1'}"]
     if bg:
@@ -75,14 +75,14 @@ def chafa_convert_cmd(
 
 
 def chafa_convert_py(
-    output_format: "Literal['symbols','sixels','kitty','iterm2']",
-    data: "PilImage",
-    cols: "Optional[int]" = None,
-    rows: "Optional[int]" = None,
-    fg: "Optional[str]" = None,
-    bg: "Optional[str]" = None,
-    path: "Optional[UPath]" = None,
-) -> "Union[str, bytes]":
+    output_format: Literal["symbols", "sixels", "kitty", "iterm2"],
+    data: PilImage,
+    cols: int | None = None,
+    rows: int | None = None,
+    fg: str | None = None,
+    bg: str | None = None,
+    path: UPath | None = None,
+) -> str | bytes:
     """Convert image data to ANSI text using ::`chafa.py`."""
     from chafa.chafa import Canvas, CanvasConfig, PixelMode, PixelType
 

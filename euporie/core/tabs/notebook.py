@@ -1,4 +1,4 @@
-"""Contains the main class for a notebook file."""
+"""Contain the main class for a notebook file."""
 
 from __future__ import annotations
 
@@ -20,7 +20,7 @@ from euporie.core.utils import parse_path
 from euporie.core.widgets.cell import Cell, get_cell_id
 
 if TYPE_CHECKING:
-    from typing import Any, Callable, Optional
+    from typing import Any, Callable
 
     from prompt_toolkit.filters import Filter
     from prompt_toolkit.layout.containers import AnyContainer
@@ -41,13 +41,13 @@ class BaseNotebook(KernelTab, metaclass=ABCMeta):
 
     def __init__(
         self,
-        app: "BaseApp",
-        path: "Optional[UPath]" = None,
-        kernel: "Optional[Kernel]" = None,
-        comms: "Optional[dict[str, Comm]]" = None,
-        use_kernel_history: "bool" = False,
-        json: "Optional[dict[str, Any]]" = None,
-    ) -> "None":
+        app: BaseApp,
+        path: UPath | None = None,
+        kernel: Kernel | None = None,
+        comms: dict[str, Comm] | None = None,
+        use_kernel_history: bool = False,
+        json: dict[str, Any] | None = None,
+    ) -> None:
         """Instantiate a Notebook container, using a notebook at a given path.
 
         Args:
@@ -84,17 +84,17 @@ class BaseNotebook(KernelTab, metaclass=ABCMeta):
             app, path, kernel=kernel, comms=comms, use_kernel_history=use_kernel_history
         )
 
-        self._rendered_cells: "dict[str, Cell]" = {}
+        self._rendered_cells: dict[str, Cell] = {}
         self.load_widgets_from_metadata()
         self.dirty = False
         self.saving = False
-        self.multiple_cells_selected: "Filter" = Never()
+        self.multiple_cells_selected: Filter = Never()
 
         self.container = self.load_container()
 
     # Tab stuff
 
-    def reset(self) -> "None":
+    def reset(self) -> None:
         """Reload the notebook file from the disk and re-render."""
         # Restore selection after reset
         if self.path is not None:
@@ -105,16 +105,16 @@ class BaseNotebook(KernelTab, metaclass=ABCMeta):
     # KernelTab stuff
 
     @property
-    def metadata(self) -> "dict[str, Any]":
+    def metadata(self) -> dict[str, Any]:
         """Return a dictionary to hold notebook / kernel metadata."""
         return self.json.setdefault("metadata", {})
 
-    def kernel_started(self, result: "Optional[dict[str, Any]]" = None) -> "None":
-        """Tasks to run when the kernel has started."""
+    def kernel_started(self, result: dict[str, Any] | None = None) -> None:
+        """Task to run when the kernel has started."""
         super().kernel_started(result)
 
-    def kernel_died(self) -> "None":
-        """Called if the kernel dies."""
+    def kernel_died(self) -> None:
+        """Call if the kernel dies."""
         if confirm := self.app.dialogs.get("confirm"):
             confirm.show(
                 title="Kernel connection lost",
@@ -125,7 +125,7 @@ class BaseNotebook(KernelTab, metaclass=ABCMeta):
 
     # Notebook stuff
 
-    def load(self, json: "Optional[dict[str, Any]]" = None) -> "None":
+    def load(self, json: dict[str, Any] | None = None) -> None:
         """Load the notebook file from the file-system."""
         # Open json file, or load from passed json object
         if self.path is not None and self.path.exists():
@@ -137,28 +137,28 @@ class BaseNotebook(KernelTab, metaclass=ABCMeta):
         if not self.json.setdefault("cells", []):
             self.json["cells"] = [nbformat.v4.new_code_cell()]
 
-    def set_status(self, status: "str") -> "None":
-        """Called when kernel status changes."""
+    def set_status(self, status: str) -> None:
+        """Call when kernel status changes."""
         self.cell.set_status(status)
         self.app.invalidate()
 
     @property
-    def selected_indices(self) -> "list[int]":
+    def selected_indices(self) -> list[int]:
         """Return a list of the currently selected cell indices."""
         return []
 
     @abstractmethod
-    def load_container(self) -> "AnyContainer":
-        """Abscract method for loading the notebook's main container."""
+    def load_container(self) -> AnyContainer:
+        """Abcract method for loading the notebook's main container."""
         ...
 
     @abstractproperty
-    def cell(self) -> "Cell":
+    def cell(self) -> Cell:
         """Return the current cell."""
         ...
 
     @property
-    def path_name(self) -> "str":
+    def path_name(self) -> str:
         """Return the path name."""
         if self.path is not None:
             return self.path.name
@@ -166,11 +166,11 @@ class BaseNotebook(KernelTab, metaclass=ABCMeta):
             return "(New file)"
 
     @property
-    def title(self) -> "str":
+    def title(self) -> str:
         """Return the tab title."""
         return ("* " if self.dirty else "") + self.path_name
 
-    def lang_file_ext(self) -> "str":
+    def lang_file_ext(self) -> str:
         """Return the file extension for scripts in the notebook's language."""
         return (
             self.json.get("metadata", {})
@@ -178,7 +178,7 @@ class BaseNotebook(KernelTab, metaclass=ABCMeta):
             .get("file_extension", ".py")
         )
 
-    def rendered_cells(self) -> "list[Cell]":
+    def rendered_cells(self) -> list[Cell]:
         """Return a list of rendered notebooks' cells."""
         cells = {}
         for i, cell_json in enumerate(self.json.get("cells", [])):
@@ -195,8 +195,8 @@ class BaseNotebook(KernelTab, metaclass=ABCMeta):
         self._rendered_cells = cells
         return list(self._rendered_cells.values())
 
-    def get_cell_by_id(self, cell_id: "str") -> "Optional[Cell]":
-        """Returns a reference to the `Cell` container with a given cell id."""
+    def get_cell_by_id(self, cell_id: str) -> Cell | None:
+        """Return a reference to the `Cell` container with a given cell id."""
         # Re-render the cells as the one we want might be new
         for cell in self._rendered_cells.values():
             if cell.id == cell_id:
@@ -207,29 +207,27 @@ class BaseNotebook(KernelTab, metaclass=ABCMeta):
 
     def select(
         self,
-        cell_index: "int",
-        extend: "bool" = False,
-        position: "Optional[int]" = None,
-        scroll: "bool" = False,
-    ) -> "None":
+        cell_index: int,
+        extend: bool = False,
+        position: int | None = None,
+        scroll: bool = False,
+    ) -> None:
         """Select a cell."""
         pass
 
-    def scroll_to(self, index: "int") -> "None":
+    def scroll_to(self, index: int) -> None:
         """Scroll to a cell by index."""
         pass
 
-    def refresh(
-        self, slice_: "Optional[slice]" = None, scroll: "bool" = False
-    ) -> "None":
+    def refresh(self, slice_: slice | None = None, scroll: bool = False) -> None:
         """Refresh the notebook."""
         pass
 
-    def refresh_cell(self, cell: "Cell") -> "None":
+    def refresh_cell(self, cell: Cell) -> None:
         """Trigger the refresh of a notebook cell."""
         pass
 
-    def close(self, cb: "Optional[Callable]" = None) -> "None":
+    def close(self, cb: Callable | None = None) -> None:
         """Check if the user want to save an unsaved notebook, then close the file.
 
         Args:
@@ -244,7 +242,7 @@ class BaseNotebook(KernelTab, metaclass=ABCMeta):
         else:
             super().close(cb)
 
-    def save(self, path: "UPath" = None, cb: "Optional[Callable]" = None) -> "None":
+    def save(self, path: UPath = None, cb: Callable | None = None) -> None:
         """Write the notebook's JSON to the current notebook's file.
 
         Additionally save the widget state to the notebook metadata.
@@ -293,11 +291,11 @@ class BaseNotebook(KernelTab, metaclass=ABCMeta):
 
     def run_cell(
         self,
-        cell: "Cell",
-        wait: "bool" = False,
-        callback: "Optional[Callable[..., None]]" = None,
-    ) -> "None":
-        """Runs a cell.
+        cell: Cell,
+        wait: bool = False,
+        callback: Callable[..., None] | None = None,
+    ) -> None:
+        """Run a cell.
 
         Args:
             cell: The rendered cell to run. If ``None``, runs the currently
@@ -326,8 +324,8 @@ class BaseNotebook(KernelTab, metaclass=ABCMeta):
                 done=cell.ran,
             )
 
-    def load_widgets_from_metadata(self) -> "None":
-        """Loads widgets from state saved in notebook metadata."""
+    def load_widgets_from_metadata(self) -> None:
+        """Load widgets from state saved in notebook metadata."""
         for comm_id, comm_data in (
             self.json.get("metadata", {})
             .get("widgets", {})

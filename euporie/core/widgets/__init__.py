@@ -1,1 +1,1 @@
-"""Contains various widgets used in euporie.core."""
+"""Contain various widgets used in euporie.core."""

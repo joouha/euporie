@@ -1,4 +1,4 @@
-"""Contains functions to automatically format code cell input."""
+"""Contain functions to automatically format code cell input."""
 
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 
-def format_black(text: "str") -> "str":
+def format_black(text: str) -> str:
     """Format a code string using :py:mod:`black`."""
     try:
         import black
@@ -27,7 +27,7 @@ def format_black(text: "str") -> "str":
     return text
 
 
-def format_isort(text: "str") -> "str":
+def format_isort(text: str) -> str:
     """Format a code string using :py:mod:`isort`."""
     try:
         import isort
@@ -38,7 +38,7 @@ def format_isort(text: "str") -> "str":
     return text
 
 
-def format_ssort(text: "str") -> "str":
+def format_ssort(text: str) -> str:
     """Format a code string using :py:mod:`ssort`."""
     try:
         import ssort
@@ -58,7 +58,7 @@ def format_ssort(text: "str") -> "str":
     return text
 
 
-def format_code(text: "str", config: "Config") -> "str":
+def format_code(text: str, config: Config) -> str:
     """Format a code string using :py:mod:``."""
     if config.format_ssort:
         text = format_ssort(text)

@@ -44,7 +44,7 @@ log = logging.getLogger(__name__)
 
 
 class Line(Container):
-    """Draws a horizontal or vertical line."""
+    """Draw a horizontal or vertical line."""
 
     def __init__(
         self,
@@ -79,7 +79,7 @@ class Line(Container):
         self.collapse = collapse
 
     def reset(self) -> "None":
-        """Reset the state of the line. Does nothing."""
+        """Reet the state of the line. Does nothing."""
 
     def preferred_width(self, max_available_width: "int") -> "Dimension":
         """Return the preferred width of the line."""
@@ -100,7 +100,7 @@ class Line(Container):
         erase_bg: "bool",
         z_index: "Optional[int]",
     ) -> "None":
-        """Draws a continuous line in the ``write_position`` area.
+        """Draw a continuous line in the ``write_position`` area.
 
         Args:
             screen: The :class:`~prompt_toolkit.layout.screen.Screen` class to which
@@ -143,7 +143,7 @@ class Pattern(Container):
         self.pattern = pattern
 
     def reset(self) -> "None":
-        """Reset the pattern. Does nothing."""
+        """Reet the pattern. Does nothing."""
         pass
 
     def preferred_width(self, max_available_width: "int") -> "Dimension":
@@ -361,7 +361,7 @@ class Border:
 
 
 class FocusedStyle(Container):
-    """Applies a style to child containers when focused or hovered."""
+    """Apply a style to child containers when focused or hovered."""
 
     def __init__(
         self,
@@ -383,7 +383,7 @@ class FocusedStyle(Container):
         self.has_focus = has_focus(self.body)
 
     def reset(self) -> "None":
-        """Reset the wrapped container."""
+        """Reet the wrapped container."""
         to_container(self.body).reset()
 
     def preferred_width(self, max_available_width: "int") -> "Dimension":
@@ -479,7 +479,7 @@ class DropShadow(Container):
         self.renderer = app.renderer
 
     def reset(self) -> "None":
-        """Reset the wrapped container - here, do nothing."""
+        """Reet the wrapped container - here, do nothing."""
 
     def preferred_width(self, max_available_width: "int") -> "Dimension":
         """Return the wrapped container's preferred width."""

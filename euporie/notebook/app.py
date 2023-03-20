@@ -51,7 +51,7 @@ from euporie.notebook.widgets.side_bar import SideBar
 
 if TYPE_CHECKING:
     from asyncio import AbstractEventLoop
-    from typing import Any, Callable, Optional, Sequence, Type
+    from typing import Any, Callable, Sequence
 
     from prompt_toolkit.formatted_text import StyleAndTextTuples
     from prompt_toolkit.layout.containers import AnyContainer, Float
@@ -68,14 +68,14 @@ class NotebookApp(BaseApp):
 
     Interactively edit a notebook file.
 
-    Launches the interactive TUI notebook editor, allowing you to run and edit Jupyter
+    Launch the interactive TUI notebook editor, allowing you to run and edit Jupyter
     notebooks in the terminal.
     """
 
     name = "notebook"
     need_mouse_support = True
 
-    def __init__(self, **kwargs: "Any") -> "None":
+    def __init__(self, **kwargs: Any) -> None:
         """Create a new euporie text user interface application instance."""
         kwargs.setdefault("title", "euporie-notebook")
         kwargs.setdefault("full_screen", True)
@@ -88,7 +88,7 @@ class NotebookApp(BaseApp):
         # Register config hooks
         self.config.get_item("show_cell_borders").event += lambda x: self.refresh()
 
-    def load_default_statusbar_fields(self) -> "None":
+    def load_default_statusbar_fields(self) -> None:
         """Load the default statusbar fields (run after keybindings are loaded)."""
         self.status_default = (
             [
@@ -101,8 +101,8 @@ class NotebookApp(BaseApp):
             [[("", "Press "), ("bold", get_cmd("quit").key_str()), ("", " to quit")]],
         )
 
-    def get_file_tab(self, path: "UPath") -> "Type[Tab]":
-        """Returns the tab to use for a file path."""
+    def get_file_tab(self, path: UPath) -> type[Tab]:
+        """Return the tab to use for a file path."""
         if path.suffix == ".ipynb":
             return Notebook
         else:
@@ -121,14 +121,14 @@ class NotebookApp(BaseApp):
 
                 return DisplayTab
 
-    async def _poll_terminal_colors(self) -> "None":
+    async def _poll_terminal_colors(self) -> None:
         """Repeatedly query the terminal for its background and foreground colours."""
         while self.config.terminal_polling_interval:
             await asyncio.sleep(self.config.terminal_polling_interval)
             self.term_info.colors.send()
 
-    def post_load(self) -> "None":
-        """Continues loading the app."""
+    def post_load(self) -> None:
+        """Continue loading the app."""
         super().post_load()
         # Ensure an opened tab is focused
         if self.tab:
@@ -140,15 +140,15 @@ class NotebookApp(BaseApp):
         ):
             self.create_background_task(self._poll_terminal_colors())
 
-    def format_title(self) -> "StyleAndTextTuples":
-        """Formats the tab's title for display in the top right of the app."""
+    def format_title(self) -> StyleAndTextTuples:
+        """Format the tab's title for display in the top right of the app."""
         if self.tab:
             return [("bold class:status.field", f" {self.tab.title} ")]
         else:
             return []
 
-    def tab_container(self) -> "AnyContainer":
-        """Returns a container with all opened tabs.
+    def tab_container(self) -> AnyContainer:
+        """Return a container with all opened tabs.
 
         Returns:
             A layout displaying the opened tab containers.
@@ -176,8 +176,8 @@ class NotebookApp(BaseApp):
                 self.config.background_character, self.config.background_pattern
             )
 
-    def load_container(self) -> "FloatContainer":
-        """Builds the main application layout."""
+    def load_container(self) -> FloatContainer:
+        """Build the main application layout."""
         have_tabs = Condition(lambda: bool(self.tabs))
 
         self.logo = Window(
@@ -247,9 +247,9 @@ class NotebookApp(BaseApp):
             filter=self.config.filter("show_top_bar"),
         )
 
-        titles: "Sequence[str]"
-        icons: "Sequence[str]"
-        panels: "Sequence[AnyContainer]"
+        titles: Sequence[str]
+        icons: Sequence[str]
+        panels: Sequence[AnyContainer]
         titles, icons, panels = list(
             zip(
                 *[
@@ -291,7 +291,7 @@ class NotebookApp(BaseApp):
 
         return self.container
 
-    def tab_bar_tabs(self) -> "list[TabBarTab]":
+    def tab_bar_tabs(self) -> list[TabBarTab]:
         """Return a list of the current tabs for the tab-bar."""
         return [
             TabBarTab(
@@ -303,15 +303,15 @@ class NotebookApp(BaseApp):
         ]
 
     def _handle_exception(
-        self, loop: "AbstractEventLoop", context: "dict[str, Any]"
-    ) -> "None":
+        self, loop: AbstractEventLoop, context: dict[str, Any]
+    ) -> None:
         exception = context.get("exception")
         # Also display a dialog to the user
         self.dialogs["error"].show(exception=exception)
         # Log observed exceptions to the log
         log.exception("An unhandled exception occurred", exc_info=exception)
 
-    def exit(self, *args: "Any", **kwargs: "Any") -> "None":
+    def exit(self, *args: Any, **kwargs: Any) -> None:
         """Check for unsaved files before closing.
 
         Creates a chain of close file commands, where the callback for each triggers
@@ -326,14 +326,12 @@ class NotebookApp(BaseApp):
         really_close = super().exit
         if self.tabs:
 
-            def final_cb() -> "None":
+            def final_cb() -> None:
                 """Really exit after the last tab in the chain is closed."""
                 self.cleanup_closed_tab(self.tabs[0])
                 really_close(*args, **kwargs)
 
-            def create_cb(
-                close_tab: "Tab", cleanup_tab: "Tab", cb: "Callable"
-            ) -> "Callable":
+            def create_cb(close_tab: Tab, cleanup_tab: Tab, cb: Callable) -> Callable:
                 """Generate a tab close chaining callbacks.
 
                 Cleans up after the previously closed tab, and requests to close the
@@ -364,21 +362,21 @@ class NotebookApp(BaseApp):
             really_close(*args, **kwargs)
 
     @property
-    def notebook(self) -> "Optional[Notebook]":
+    def notebook(self) -> Notebook | None:
         """Return the currently active notebook."""
         if isinstance(self.tab, Notebook):
             return self.tab
         return None
 
     @property
-    def cell(self) -> "Optional[Cell]":
+    def cell(self) -> Cell | None:
         """Return the currently active cell."""
         if isinstance(self.tab, Notebook):
             return self.tab.cell
         return None
 
-    def load_menu_items(self) -> "list[MenuItem]":
-        """Loads the list of menu items to display in the menu."""
+    def load_menu_items(self) -> list[MenuItem]:
+        """Load the list of menu items to display in the menu."""
         separator = MenuItem(separator=True)
         return [
             MenuItem(
@@ -500,7 +498,7 @@ class NotebookApp(BaseApp):
 
     @staticmethod
     @add_cmd()
-    def _new_notebook() -> "None":
+    def _new_notebook() -> None:
         """Create a new file."""
         from euporie.notebook.current import get_app
 
@@ -510,7 +508,7 @@ class NotebookApp(BaseApp):
 
     @staticmethod
     @add_cmd()
-    def _view_documentation() -> "None":
+    def _view_documentation() -> None:
         """Open the documentation in the browser."""
         import webbrowser
 

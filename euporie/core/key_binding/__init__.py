@@ -1,1 +1,1 @@
-"""Defines key-bindings for the application."""
+"""Define key-bindings for the application."""

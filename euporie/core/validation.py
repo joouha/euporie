@@ -15,11 +15,11 @@ if TYPE_CHECKING:
 class KernelValidator(Validator):
     """Validate kernel input using a kernel code completeness call."""
 
-    def __init__(self, kernel: "Kernel") -> "None":
+    def __init__(self, kernel: Kernel) -> None:
         """Initialize the validator."""
         self.kernel = kernel
 
-    def validate(self, document: "Document") -> "None":
+    def validate(self, document: Document) -> None:
         """Validate the input synchronously."""
         completeness_status = self.kernel.is_complete(
             code=document.text, wait=True
@@ -27,7 +27,7 @@ class KernelValidator(Validator):
         if completeness_status == "incomplete":
             raise ValidationError
 
-    async def validate_async(self, document: "Document") -> "None":
+    async def validate_async(self, document: Document) -> None:
         """Return a `Future` which is set when the validation is ready."""
         completeness_status = (await self.kernel.is_complete_(code=document.text)).get(
             "status", "unknown"

@@ -184,6 +184,8 @@ select = ["ANN", "B", "C", "D", "E", "F", "I", "Q", "S", "T", "UP"]
 ignore = [
     # Annotations on `self` and `cls`
     "ANN101", "ANN102",
+    # Use of typing.Any
+    "ANN401",
     # Function too complex
     "C901",
     # Use of assert

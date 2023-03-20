@@ -1,4 +1,4 @@
-"""Contains the main class for a notebook file."""
+"""Contain the main class for a notebook file."""
 
 from __future__ import annotations
 
@@ -19,7 +19,7 @@ from jupyter_core.paths import jupyter_path
 from euporie.core.config import add_setting
 
 if TYPE_CHECKING:
-    from typing import Any, Callable, Coroutine, Optional, Union
+    from typing import Any, Callable, Coroutine
 
     from jupyter_client import KernelClient
 
@@ -32,25 +32,25 @@ log = logging.getLogger(__name__)
 class MsgCallbacks(TypedDict, total=False):
     """Typed dictionary for named message callbacks."""
 
-    get_input: "Callable[[str, bool], None]|None"
-    set_execution_count: "Callable[[int], None]|None"
-    add_output: "Callable[[dict[str, Any]], None]|None"
-    clear_output: "Callable[[bool], None]|None"
-    done: "Callable[[dict[str, Any]], None]|None"
-    set_metadata: "Callable[[tuple[str, ...], Any], None]|None"
-    set_status: "Callable[[str], None]|None"
-    set_kernel_info: "Callable[[dict[str, Any]], None]|None"
-    completeness_status: "Callable[[dict[str, Any]], None]|None"
-    dead: "Callable[[], None]|None"
+    get_input: Callable[[str, bool], None] | None
+    set_execution_count: Callable[[int], None] | None
+    add_output: Callable[[dict[str, Any]], None] | None
+    clear_output: Callable[[bool], None] | None
+    done: Callable[[dict[str, Any]], None] | None
+    set_metadata: Callable[[tuple[str, ...], Any], None] | None
+    set_status: Callable[[str], None] | None
+    set_kernel_info: Callable[[dict[str, Any]], None] | None
+    completeness_status: Callable[[dict[str, Any]], None] | None
+    dead: Callable[[], None] | None
 
 
 class Kernel:
-    """Runs a notebook kernel and communicates with it asynchronously.
+    """Run a notebook kernel and communicates with it asynchronously.
 
     Has the ability to run itself in it's own thread.
     """
 
-    def _setup_loop(self) -> "None":
+    def _setup_loop(self) -> None:
         """Set the current loop the the kernel's event loop.
 
         This method is intended to be run in the kernel thread.
@@ -60,12 +60,12 @@ class Kernel:
 
     def __init__(
         self,
-        kernel_tab: "KernelTab",
-        threaded: "bool" = True,
-        allow_stdin: "bool" = False,
-        default_callbacks: "Optional[MsgCallbacks]" = None,
-    ) -> "None":
-        """Called when the :py:class:`Kernel` is initialized.
+        kernel_tab: KernelTab,
+        threaded: bool = True,
+        allow_stdin: bool = False,
+        default_callbacks: MsgCallbacks | None = None,
+    ) -> None:
+        """Call when the :py:class:`Kernel` is initialized.
 
         Args:
             kernel_tab: The notebook this kernel belongs to
@@ -86,16 +86,16 @@ class Kernel:
         self.allow_stdin = allow_stdin
 
         self.kernel_tab = kernel_tab
-        self.kc: "Optional[KernelClient]" = None
+        self.kc: KernelClient | None = None
         self.km = AsyncKernelManager(
             kernel_name=str(kernel_tab.kernel_name),
         )
         self._status = "stopped"
-        self.error: "Optional[Exception]" = None
+        self.error: Exception | None = None
         self.dead = False
 
-        self.coros: "dict[str, concurrent.futures.Future]" = {}
-        self.poll_tasks: "list[asyncio.Task]" = []
+        self.coros: dict[str, concurrent.futures.Future] = {}
+        self.poll_tasks: list[asyncio.Task] = []
 
         self.default_callbacks = MsgCallbacks(
             {
@@ -111,7 +111,7 @@ class Kernel:
         if default_callbacks is not None:
             self.default_callbacks.update(default_callbacks)
 
-        self.msg_id_callbacks: "dict[str, MsgCallbacks]" = defaultdict(
+        self.msg_id_callbacks: dict[str, MsgCallbacks] = defaultdict(
             # Return a copy of the default callbacks
             lambda: MsgCallbacks(dict(self.default_callbacks))  # type: ignore # mypy #8890
         )
@@ -129,13 +129,13 @@ class Kernel:
 
     def _aodo(
         self,
-        coro: "Coroutine",
-        wait: "bool" = False,
-        callback: "Optional[Callable]" = None,
-        timeout: "Optional[Union[int, float]]" = None,
-        single: "bool" = False,
-    ) -> "Any":
-        """Schedules a coroutine in the kernel's event loop.
+        coro: Coroutine,
+        wait: bool = False,
+        callback: Callable | None = None,
+        timeout: int | float | None = None,
+        single: bool = False,
+    ) -> Any:
+        """Schedule a coroutine in the kernel's event loop.
 
         Optionally waits for the results (blocking the main thread). Optionally
         schedules a callback to run when the coroutine has completed or timed out.
@@ -177,7 +177,7 @@ class Kernel:
                     lambda f: callback(f.result()) if callback else None
                 )
 
-    def _set_living_status(self, alive: "bool") -> "None":
+    def _set_living_status(self, alive: bool) -> None:
         """Set the life status of the kernel."""
         if not alive:
             self.status = "error"
@@ -190,7 +190,7 @@ class Kernel:
                 dead_cb()
 
     @property
-    def status(self) -> "str":
+    def status(self) -> str:
         """Retrieve the current kernel status.
 
         Trigger a kernel life status check when retrieved
@@ -212,17 +212,17 @@ class Kernel:
         return self._status
 
     @status.setter
-    def status(self, value: "str") -> "None":
+    def status(self, value: str) -> None:
         """Set the kernel status."""
         self.status_change_event.set()
         self._status = value
         self.status_change_event.clear()
 
-    def wait_for_status(self, status: "str" = "idle") -> "None":
+    def wait_for_status(self, status: str = "idle") -> None:
         """Block until the kernel reaches a given status value."""
         if self.status != status:
 
-            async def _wait() -> "None":
+            async def _wait() -> None:
                 while self.status != status:
                     await asyncio.wait_for(
                         self.status_change_event.wait(), timeout=None
@@ -231,7 +231,7 @@ class Kernel:
             self._aodo(_wait(), wait=True)
 
     @property
-    def missing(self) -> "bool":
+    def missing(self) -> bool:
         """Return True if the requested kernel is not found."""
         try:
             self.km.kernel_spec
@@ -241,7 +241,7 @@ class Kernel:
             return self.km.kernel_spec is None
 
     @property
-    def id(self) -> "Optional[str]":
+    def id(self) -> str | None:
         """Get the ID of the current kernel."""
         if self.km.has_kernel:
             return self.km.kernel_id
@@ -249,11 +249,11 @@ class Kernel:
             return None
 
     @property
-    def specs(self) -> "dict[str, dict]":
-        """Returns a list of available kernelspecs."""
+    def specs(self) -> dict[str, dict]:
+        """Return a list of available kernelspecs."""
         return self.km.kernel_spec_manager.get_all_specs()
 
-    async def stop_(self, cb: "Optional[Callable[[], Any]]" = None) -> "None":
+    async def stop_(self, cb: Callable[[], Any] | None = None) -> None:
         """Stop the kernel asynchronously."""
         for task in self.poll_tasks:
             task.cancel()
@@ -263,7 +263,7 @@ class Kernel:
             await self.km.shutdown_kernel()
         log.debug("Kernel %s shutdown", self.id)
 
-    async def start_(self) -> "None":
+    async def start_(self) -> None:
         """Start the kernel asynchronously and set its status."""
         if self.km.kernel_name is None:
             self.status = "error"
@@ -302,7 +302,7 @@ class Kernel:
 
         await self.post_start_()
 
-    async def post_start_(self) -> "None":
+    async def post_start_(self) -> None:
         """Wait for the kernel to become ready."""
         try:
             ks = self.km.kernel_spec
@@ -337,8 +337,8 @@ class Kernel:
                     self.dead = False
 
     def start(
-        self, cb: "Optional[Callable]" = None, wait: "bool" = False, timeout: "int" = 10
-    ) -> "None":
+        self, cb: Callable | None = None, wait: bool = False, timeout: int = 10
+    ) -> None:
         """Start the kernel.
 
         Args:
@@ -367,8 +367,8 @@ class Kernel:
             callback=cb,
         )
 
-    async def poll(self, channel: "str") -> "None":
-        """Polls for messages on a channel, and signal when they arrive.
+    async def poll(self, channel: str) -> None:
+        """Poll for messages on a channel, and signal when they arrive.
 
         Args:
             channel: The name of the channel to get messages from
@@ -386,7 +386,7 @@ class Kernel:
             else:
                 self.on_unhandled(channel, rsp)
 
-    def on_unhandled(self, channel: "str", rsp: "dict[str, Any]") -> "None":
+    def on_unhandled(self, channel: str, rsp: dict[str, Any]) -> None:
         """Report unhandled messages to the debug log."""
         log.debug(
             "Unhandled %s message:\nparent_id = '%s'\ntype = '%s'\ncontent='%s'",
@@ -396,7 +396,7 @@ class Kernel:
             rsp.get("content"),
         )
 
-    def on_stdin_input_request(self, rsp: "dict[str, Any]") -> "None":
+    def on_stdin_input_request(self, rsp: dict[str, Any]) -> None:
         """Call ``get_input`` callback for a stdin input request message."""
         msg_id = rsp.get("parent_header", {}).get("msg_id")
         content = rsp.get("content", {})
@@ -406,7 +406,7 @@ class Kernel:
                 content.get("password", False),
             )
 
-    def on_shell_status(self, rsp: "dict[str, Any]") -> "None":
+    def on_shell_status(self, rsp: dict[str, Any]) -> None:
         """Call ``set_execution_count`` callback for a shell status response."""
         msg_id = rsp.get("parent_header", {}).get("msg_id")
         content = rsp.get("content", {})
@@ -420,7 +420,7 @@ class Kernel:
                 ):
                     set_execution_count(execution_count)
 
-    def on_shell_execute_reply(self, rsp: "dict[str, Any]") -> "None":
+    def on_shell_execute_reply(self, rsp: dict[str, Any]) -> None:
         """Call callbacks for a shell execute reply response."""
         msg_id = rsp.get("parent_header", {}).get("msg_id")
         content = rsp.get("content", {})
@@ -457,7 +457,7 @@ class Kernel:
             if callable(done := self.msg_id_callbacks[msg_id].get("done")):
                 done(content)
 
-    def on_shell_kernel_info_reply(self, rsp: "dict[str, Any]") -> "None":
+    def on_shell_kernel_info_reply(self, rsp: dict[str, Any]) -> None:
         """Call callbacks for a shell kernel info response."""
         msg_id = rsp.get("parent_header", {}).get("msg_id")
         if callable(
@@ -465,25 +465,25 @@ class Kernel:
         ):
             set_kernel_info(rsp.get("content", {}))
 
-    def on_shell_complete_reply(self, rsp: "dict[str, Any]") -> "None":
+    def on_shell_complete_reply(self, rsp: dict[str, Any]) -> None:
         """Call callbacks for a shell completion reply response."""
         msg_id = rsp.get("parent_header", {}).get("msg_id")
         if callable(done := self.msg_id_callbacks[msg_id].get("done")):
             done(rsp.get("content", {}))
 
-    def on_shell_history_reply(self, rsp: "dict[str, Any]") -> "None":
+    def on_shell_history_reply(self, rsp: dict[str, Any]) -> None:
         """Call callbacks for a shell history reply response."""
         msg_id = rsp.get("parent_header", {}).get("msg_id")
         if callable(done := self.msg_id_callbacks[msg_id].get("done")):
             done(rsp.get("content", {}))
 
-    def on_shell_inspect_reply(self, rsp: "dict[str, Any]") -> "None":
+    def on_shell_inspect_reply(self, rsp: dict[str, Any]) -> None:
         """Call callbacks for a shell inspection reply response."""
         msg_id = rsp.get("parent_header", {}).get("msg_id")
         if callable(done := self.msg_id_callbacks[msg_id].get("done")):
             done(rsp.get("content", {}))
 
-    def on_shell_is_complete_reply(self, rsp: "dict[str, Any]") -> "None":
+    def on_shell_is_complete_reply(self, rsp: dict[str, Any]) -> None:
         """Call callbacks for a shell completeness reply response."""
         msg_id = rsp.get("parent_header", {}).get("msg_id")
         if callable(
@@ -493,7 +493,7 @@ class Kernel:
         ):
             completeness_status(rsp.get("content", {}))
 
-    def on_iopub_status(self, rsp: "dict[str, Any]") -> "None":
+    def on_iopub_status(self, rsp: dict[str, Any]) -> None:
         """Call callbacks for an iopub status response."""
         msg_id = rsp.get("parent_header", {}).get("msg_id")
         status = rsp.get("content", {}).get("execution_state")
@@ -520,7 +520,7 @@ class Kernel:
                     rsp["header"]["date"].isoformat(),
                 )
 
-    def on_iopub_execute_input(self, rsp: "dict[str, Any]") -> "None":
+    def on_iopub_execute_input(self, rsp: dict[str, Any]) -> None:
         """Call callbacks for an iopub execute input response."""
         msg_id = rsp.get("parent_header", {}).get("msg_id")
         if self.kernel_tab.app.config.record_cell_timing and callable(
@@ -531,19 +531,19 @@ class Kernel:
                 rsp["header"]["date"].isoformat(),
             )
 
-    def on_iopub_display_data(self, rsp: "dict[str, Any]") -> "None":
+    def on_iopub_display_data(self, rsp: dict[str, Any]) -> None:
         """Call callbacks for an iopub display data response."""
         msg_id = rsp.get("parent_header", {}).get("msg_id")
         if callable(add_output := self.msg_id_callbacks[msg_id]["add_output"]):
             add_output(nbformat.v4.output_from_msg(rsp))
 
-    def on_iopub_update_display_data(self, rsp: "dict[str, Any]") -> "None":
+    def on_iopub_update_display_data(self, rsp: dict[str, Any]) -> None:
         """Call callbacks for an iopub update display data response."""
         msg_id = rsp.get("parent_header", {}).get("msg_id")
         if callable(add_output := self.msg_id_callbacks[msg_id]["add_output"]):
             add_output(nbformat.v4.output_from_msg(rsp))
 
-    def on_iopub_execute_result(self, rsp: "dict[str, Any]") -> "None":
+    def on_iopub_execute_result(self, rsp: dict[str, Any]) -> None:
         """Call callbacks for an iopub execute result response."""
         msg_id = rsp.get("parent_header", {}).get("msg_id")
         if callable(add_output := self.msg_id_callbacks[msg_id]["add_output"]):
@@ -557,7 +557,7 @@ class Kernel:
             ):
                 set_execution_count(execution_count)
 
-    def on_iopub_error(self, rsp: "dict[str, dict[str, Any]]") -> "None":
+    def on_iopub_error(self, rsp: dict[str, dict[str, Any]]) -> None:
         """Call callbacks for an iopub error response."""
         msg_id = rsp.get("parent_header", {}).get("msg_id", "")
         if callable(add_output := self.msg_id_callbacks[msg_id].get("add_output")):
@@ -565,13 +565,13 @@ class Kernel:
         if callable(done := self.msg_id_callbacks[msg_id].get("done")):
             done(rsp.get("content", {}))
 
-    def on_iopub_stream(self, rsp: "dict[str, Any]") -> "None":
+    def on_iopub_stream(self, rsp: dict[str, Any]) -> None:
         """Call callbacks for an iopub stream response."""
         msg_id = rsp.get("parent_header", {}).get("msg_id")
         if callable(add_output := self.msg_id_callbacks[msg_id]["add_output"]):
             add_output(nbformat.v4.output_from_msg(rsp))
 
-    def on_iopub_clear_output(self, rsp: "dict[str, Any]") -> "None":
+    def on_iopub_clear_output(self, rsp: dict[str, Any]) -> None:
         """Call callbacks for an iopub clear output response."""
         # Clear cell output, either now or when we get the next output
         msg_id = rsp.get("parent_header", {}).get("msg_id")
@@ -586,7 +586,7 @@ class Kernel:
         )
     '''
 
-    def on_iopub_comm_open(self, rsp: "dict[str, Any]") -> "None":
+    def on_iopub_comm_open(self, rsp: dict[str, Any]) -> None:
         """Call callbacks for an comm open response."""
         # TODO
         # "If the target_name key is not found on the receiving side, then it should
@@ -596,19 +596,19 @@ class Kernel:
             content=rsp.get("content", {}), buffers=rsp.get("buffers", [])
         )
 
-    def on_iopub_comm_msg(self, rsp: "dict[str, Any]") -> "None":
+    def on_iopub_comm_msg(self, rsp: dict[str, Any]) -> None:
         """Call callbacks for an iopub comm message response."""
         self.kernel_tab.comm_msg(
             content=rsp.get("content", {}), buffers=rsp.get("buffers", [])
         )
 
-    def on_iopub_comm_close(self, rsp: "dict[str, Any]") -> "None":
+    def on_iopub_comm_close(self, rsp: dict[str, Any]) -> None:
         """Call callbacks for an iopub comm close response."""
         self.kernel_tab.comm_close(
             content=rsp.get("content", {}), buffers=rsp.get("buffers", [])
         )
 
-    def kc_comm(self, comm_id: "str", data: "dict[str, Any]") -> "str":
+    def kc_comm(self, comm_id: str, data: dict[str, Any]) -> str:
         """Send a comm message on the shell channel."""
         content = {
             "comm_id": comm_id,
@@ -623,11 +623,11 @@ class Kernel:
 
     def run(
         self,
-        source: "str",
-        wait: "bool" = False,
-        callback: "Optional[Callable[..., None]]" = None,
-        **callbacks: "Callable[..., Any]",
-    ) -> "None":
+        source: str,
+        wait: bool = False,
+        callback: Callable[..., None] | None = None,
+        **callbacks: Callable[..., Any],
+    ) -> None:
         """Run a cell using the notebook kernel and process the responses."""
         if self.kc is None:
             log.debug("Cannot run cell because kernel has not started")
@@ -641,16 +641,16 @@ class Kernel:
 
     async def run_(
         self,
-        source: "str",
-        get_input: "Optional[Callable[[str, bool], None]]" = None,
-        set_execution_count: "Optional[Callable[[int], None]]" = None,
-        add_output: "Optional[Callable[[dict[str, Any]], None]]" = None,
-        clear_output: "Optional[Callable[[bool], None]]" = None,
-        done: "Optional[Callable[[dict[str, Any]], None]]" = None,
-        set_metadata: "Optional[Callable[[tuple[str, ...], Any], None]]" = None,
-        set_status: "Optional[Callable[[str], None]]" = None,
-    ) -> "None":
-        """Runs the code cell and and set the response callbacks, optionally waiting."""
+        source: str,
+        get_input: Callable[[str, bool], None] | None = None,
+        set_execution_count: Callable[[int], None] | None = None,
+        add_output: Callable[[dict[str, Any]], None] | None = None,
+        clear_output: Callable[[bool], None] | None = None,
+        done: Callable[[dict[str, Any]], None] | None = None,
+        set_metadata: Callable[[tuple[str, ...], Any], None] | None = None,
+        set_status: Callable[[str], None] | None = None,
+    ) -> None:
+        """Run the code cell and and set the response callbacks, optionally waiting."""
         if self.kc is None:
             return
         event = asyncio.Event()
@@ -660,8 +660,8 @@ class Kernel:
             allow_stdin=self.allow_stdin,
         )
 
-        def wrapped_done(content: "dict[str, Any]") -> "None":
-            """Sets the event after the ``done`` callback has completed."""
+        def wrapped_done(content: dict[str, Any]) -> None:
+            """Set the event after the ``done`` callback has completed."""
             # Run the original callback
             if callable(done):
                 done(content)
@@ -695,9 +695,9 @@ class Kernel:
 
     def info(
         self,
-        set_kernel_info: "Optional[Callable[[dict[str, Any]], None]]" = None,
-        set_status: "Optional[Callable[[str], None]]" = None,
-    ) -> "None":
+        set_kernel_info: Callable[[dict[str, Any]], None] | None = None,
+        set_status: Callable[[str], None] | None = None,
+    ) -> None:
         """Request information about the kernel."""
         if self.kc is not None:
 
@@ -718,22 +718,22 @@ class Kernel:
                 )  # type: ignore # mypy #8890
             )
 
-    def comm_info(self, target_name: "Optional[str]" = None) -> "None":
+    def comm_info(self, target_name: str | None = None) -> None:
         """Request information about the current comms."""
         if self.kc is not None:
             self.kc.comm_info(target_name=target_name)
 
     async def complete_(
-        self, code: "str", cursor_pos: "int", timeout: "int" = 60
-    ) -> "list[dict]":
+        self, code: str, cursor_pos: int, timeout: int = 60
+    ) -> list[dict]:
         """Request code completions from the kernel, asynchronously."""
-        results: "list[dict]" = []
+        results: list[dict] = []
         if not self.kc:
             return results
 
         event = asyncio.Event()
 
-        def process_complete_reply(content: "dict[str, Any]") -> "None":
+        def process_complete_reply(content: dict[str, Any]) -> None:
             """Process response messages on the ``shell`` channel."""
             status = content.get("status", "")
             if status == "ok":
@@ -772,7 +772,7 @@ class Kernel:
 
         return results
 
-    def complete(self, code: "str", cursor_pos: "int") -> "list[dict]":
+    def complete(self, code: str, cursor_pos: int) -> list[dict]:
         """Request code completions from the kernel.
 
         Args:
@@ -794,22 +794,22 @@ class Kernel:
 
     async def history_(
         self,
-        pattern: "str" = "",
-        n: "int" = 1,
-        hist_access_type: "str" = "search",
-        timeout: "int" = 1,
-    ) -> "Optional[list[tuple[int, int, str]]]":
+        pattern: str = "",
+        n: int = 1,
+        hist_access_type: str = "search",
+        timeout: int = 1,
+    ) -> list[tuple[int, int, str]] | None:
         """Retrieve history from the kernel asynchronously."""
         await asyncio.sleep(0.1)  # Add a tiny timeout so we don't spam the kernel
 
-        results: "list[tuple[int, int, str]]" = []
+        results: list[tuple[int, int, str]] = []
 
         if not self.kc:
             return results
 
         event = asyncio.Event()
 
-        def process_history_reply(content: "dict[str, Any]") -> "None":
+        def process_history_reply(content: dict[str, Any]) -> None:
             """Process responses on the shell channel."""
             status = content.get("status", "")
             if status == "ok":
@@ -830,8 +830,8 @@ class Kernel:
         return results
 
     def history(
-        self, pattern: "str" = "", n: "int" = 1, hist_access_type: "str" = "search"
-    ) -> "Optional[list[tuple[int, int, str]]]":
+        self, pattern: str = "", n: int = 1, hist_access_type: str = "search"
+    ) -> list[tuple[int, int, str]] | None:
         """Retrieve history from the kernel.
 
         Args:
@@ -851,22 +851,22 @@ class Kernel:
 
     async def inspect_(
         self,
-        code: "str",
-        cursor_pos: "int",
-        detail_level: "int" = 0,
-        timeout: "int" = 2,
-    ) -> "dict[str, Any]":
+        code: str,
+        cursor_pos: int,
+        detail_level: int = 0,
+        timeout: int = 2,
+    ) -> dict[str, Any]:
         """Retrieve introspection string from the kernel asynchronously."""
         await asyncio.sleep(0.1)  # Add a tiny timeout so we don't spam the kernel
 
-        result: "dict[str, Any]" = {}
+        result: dict[str, Any] = {}
 
         if not self.kc:
             return result
 
         event = asyncio.Event()
 
-        def process_inspect_reply(content: "dict[str, Any]") -> "None":
+        def process_inspect_reply(content: dict[str, Any]) -> None:
             """Process responses on the shell channel."""
             status = content.get("status", "")
             if status == "ok":
@@ -887,10 +887,10 @@ class Kernel:
 
     def inspect(
         self,
-        code: "str",
-        cursor_pos: "int",
-        callback: "Optional[Callable[[dict[str, Any]], None]]" = None,
-    ) -> "str":
+        code: str,
+        cursor_pos: int,
+        callback: Callable[[dict[str, Any]], None] | None = None,
+    ) -> str:
         """Request code inspection from the kernel.
 
         Args:
@@ -913,18 +913,18 @@ class Kernel:
 
     async def is_complete_(
         self,
-        code: "str",
-        timeout: "Union[int, float]" = 0.1,
-    ) -> "dict[str, Any]":
+        code: str,
+        timeout: int | float = 0.1,
+    ) -> dict[str, Any]:
         """Ask the kernel to determine if code is complete asynchronously."""
-        result: "dict[str, Any]" = {}
+        result: dict[str, Any] = {}
 
         if not self.kc:
             return result
 
         event = asyncio.Event()
 
-        def process_is_complete_reply(content: "dict[str, Any]") -> "None":
+        def process_is_complete_reply(content: dict[str, Any]) -> None:
             """Process responses on the shell channel."""
             result.update(content)
             event.set()
@@ -943,11 +943,11 @@ class Kernel:
 
     def is_complete(
         self,
-        code: "str",
-        timeout: "Union[int, float]" = 0.1,
-        wait: "bool" = False,
-        callback: "Optional[Callable[[dict[str, Any]], None]]" = None,
-    ) -> "dict[str, Any]":
+        code: str,
+        timeout: int | float = 0.1,
+        wait: bool = False,
+        callback: Callable[[dict[str, Any]], None] | None = None,
+    ) -> dict[str, Any]:
         """Request code completeness status from the kernel.
 
         Args:
@@ -967,7 +967,7 @@ class Kernel:
             callback=callback,
         )
 
-    def interrupt(self) -> "None":
+    def interrupt(self) -> None:
         """Interrupt the kernel.
 
         This is run in the main thread rather than on the event loop in the kernel's thread,
@@ -978,7 +978,7 @@ class Kernel:
             log.debug("Interrupting kernel %s", self.id)
             KernelManager.interrupt_kernel(self.km)
 
-    async def restart_(self) -> "None":
+    async def restart_(self) -> None:
         """Restart the kernel asyncchronously."""
         self.dead = True
         log.debug("Restarting kernel `%s`", self.id)
@@ -988,15 +988,15 @@ class Kernel:
         log.debug("Kernel %s restarted", self.id)
         await self.post_start_()
 
-    def restart(self, wait: "bool" = False, cb: "Optional[Callable]" = None) -> "None":
-        """Restarts the current kernel."""
+    def restart(self, wait: bool = False, cb: Callable | None = None) -> None:
+        """Restart the current kernel."""
         self._aodo(
             self.restart_(),
             wait=wait,
             callback=cb,
         )
 
-    def change(self, name: "str", cb: "Optional[Callable]" = None) -> "None":
+    def change(self, name: str, cb: Callable | None = None) -> None:
         """Change the kernel.
 
         Args:
@@ -1026,8 +1026,8 @@ class Kernel:
         # Start the kernel
         self.start(cb=cb)
 
-    def stop(self, cb: "Optional[Callable]" = None, wait: "bool" = False) -> "None":
-        """Stops the current kernel.
+    def stop(self, cb: Callable | None = None, wait: bool = False) -> None:
+        """Stop the current kernel.
 
         Args:
             cb: An optional callback to run when the kernel has stopped.
@@ -1050,7 +1050,7 @@ class Kernel:
                 wait=wait,
             )
 
-    async def shutdown_(self) -> "None":
+    async def shutdown_(self) -> None:
         """Shut down the kernel and close the event loop if running in a thread."""
         if self.km.has_kernel:
             await self.km.shutdown_kernel(now=True)
@@ -1059,7 +1059,7 @@ class Kernel:
             self.loop.close()
             log.debug("Loop closed")
 
-    def shutdown(self, wait: "bool" = False) -> "None":
+    def shutdown(self, wait: bool = False) -> None:
         """Shutdown the kernel and close the kernel's thread.
 
         This is intended to be run when the notebook is closed: the

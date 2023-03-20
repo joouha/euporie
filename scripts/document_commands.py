@@ -18,8 +18,8 @@ else:
     from importlib_metadata import entry_points
 
 
-def format_commands() -> "None":
-    """Formats commands as RST."""
+def format_commands() -> None:
+    """Format commands as RST."""
     for name, command in commands.items():
         print(f".. option:: {name}\n")
         print(f":title: {command.title}")

@@ -1,4 +1,4 @@
-"""Defines an application menu."""
+"""Define an application menu."""
 
 from __future__ import annotations
 
@@ -30,7 +30,7 @@ from euporie.core.current import get_app
 from euporie.core.widgets.decor import Shadow
 
 if TYPE_CHECKING:
-    from typing import Any, Callable, Iterable, Optional, Sequence
+    from typing import Any, Callable, Iterable, Sequence
 
     from prompt_toolkit.filters import Filter, FilterOrBool
     from prompt_toolkit.formatted_text.base import (
@@ -57,18 +57,18 @@ class MenuItem:
 
     def __init__(
         self,
-        formatted_text: "AnyFormattedText" = "",
-        description: "str" = "",
-        separator: "bool" = False,
-        handler: "Optional[Callable[[], None]]" = None,
-        children: "Optional[list[MenuItem]]" = None,
-        shortcut: "AnyFormattedText" = "",
-        hidden: "FilterOrBool" = False,
-        disabled: "FilterOrBool" = False,
-        toggled: "Optional[Filter]" = None,
-        collapse_prefix: "bool" = False,
-        collapse_suffix: "bool" = True,
-    ) -> "None":
+        formatted_text: AnyFormattedText = "",
+        description: str = "",
+        separator: bool = False,
+        handler: Callable[[], None] | None = None,
+        children: list[MenuItem] | None = None,
+        shortcut: AnyFormattedText = "",
+        hidden: FilterOrBool = False,
+        disabled: FilterOrBool = False,
+        toggled: Filter | None = None,
+        collapse_prefix: bool = False,
+        collapse_suffix: bool = True,
+    ) -> None:
         """Initiate a smart menu item.
 
         Args:
@@ -97,7 +97,7 @@ class MenuItem:
         self.toggled = toggled
         self.collapse_prefix = collapse_prefix
         self.collapse_suffix = collapse_suffix
-        self._prefix_width: "Optional[int]" = None
+        self._prefix_width: int | None = None
 
         self.handler = handler
         self.children = children or []
@@ -105,7 +105,7 @@ class MenuItem:
         self.selected_item = 0
 
     @property
-    def formatted_text(self) -> "StyleAndTextTuples":
+    def formatted_text(self) -> StyleAndTextTuples:
         """Generate the formatted text for this menu item."""
         if callable(self._formatted_text):
             text = self._formatted_text()
@@ -118,17 +118,17 @@ class MenuItem:
     # https://github.com/python/mypy/issues/4125
 
     @property  # type: ignore
-    def text(self) -> "str":  # type: ignore
+    def text(self) -> str:  # type: ignore
         """Return plain text verision of the item's formatted text."""
         return fragment_list_to_text(self.formatted_text)
 
     @text.setter
-    def text(self, value: "Any") -> "None":
+    def text(self, value: Any) -> None:
         """Prevent the inherited `__init__` method setting this property value."""
         pass
 
     @classmethod
-    def from_command(cls, command: "Command") -> "MenuItem":
+    def from_command(cls, command: Command) -> MenuItem:
         """Create a menu item from a command."""
         return cls(
             formatted_text=command.menu_title,
@@ -141,18 +141,18 @@ class MenuItem:
         )
 
     @property  # type: ignore
-    def disabled(self) -> "bool":  # type: ignore
+    def disabled(self) -> bool:  # type: ignore
         """Determine if the menu item is disabled."""
         return self._disabled()
 
     @disabled.setter
-    def disabled(self, value: "Any") -> "None":
+    def disabled(self, value: Any) -> None:
         """Prevent the inherited `__init__` method setting this property value."""
         pass
 
     @property
-    def has_toggles(self) -> "bool":
-        """Returns true if any child items have a toggle state."""
+    def has_toggles(self) -> bool:
+        """Return true if any child items have a toggle state."""
         toggles = False
         for child in self.children:
             if (
@@ -164,7 +164,7 @@ class MenuItem:
         return toggles
 
     @property
-    def prefix(self) -> "StyleAndTextTuples":
+    def prefix(self) -> StyleAndTextTuples:
         """The item's prefix.
 
         Formatted text that will be displayed before the item's main text. All prefixes
@@ -174,13 +174,13 @@ class MenuItem:
             Formatted text
 
         """
-        prefix: "StyleAndTextTuples" = []
+        prefix: StyleAndTextTuples = []
         if self.toggled is not None:
             prefix.append(("class:menu,prefix", "✓ " if self.toggled() else "  "))
         return prefix
 
     @property
-    def prefix_width(self) -> "int":
+    def prefix_width(self) -> int:
         """The maximum width of the item's children's prefixes."""
         if self._prefix_width is None:
             self._prefix_width = max(
@@ -196,7 +196,7 @@ class MenuItem:
         return self._prefix_width or 0
 
     @property
-    def suffix(self) -> "StyleAndTextTuples":
+    def suffix(self) -> StyleAndTextTuples:
         """The item's suffix.
 
         Formatted text that will be displayed aligned right after them item's main text.
@@ -205,7 +205,7 @@ class MenuItem:
             Formatted text
 
         """
-        suffix: "StyleAndTextTuples" = []
+        suffix: StyleAndTextTuples = []
         if self.children:
             suffix.append(("", "›"))
         elif self.shortcut is not None:
@@ -214,7 +214,7 @@ class MenuItem:
         return suffix
 
     @property
-    def suffix_width(self) -> "int":
+    def suffix_width(self) -> int:
         """The maximum width of the item's children's suffixes."""
         return max(
             [
@@ -225,7 +225,7 @@ class MenuItem:
         )
 
     @property
-    def width(self) -> "int":
+    def width(self) -> int:
         """The maximum width of the item's children."""
         widths = [0]
         for child in self.children:
@@ -254,7 +254,7 @@ class MenuItem:
 class MenuBar:
     """A container to hold the menubar and main application body."""
 
-    def _get_menu(self, level: "int") -> "MenuItem":
+    def _get_menu(self, level: int) -> MenuItem:
         menu = self.menu_items[self.selected_menu[0]]
 
         for i, index in enumerate(self.selected_menu[1:]):
@@ -266,8 +266,7 @@ class MenuBar:
 
         return menu
 
-    def _get_menu_fragments(self) -> "StyleAndTextTuples":
-
+    def _get_menu_fragments(self) -> StyleAndTextTuples:
         focused = get_app().layout.has_focus(self.window)
 
         # This is called during the rendering. When we discover that this
@@ -275,7 +274,7 @@ class MenuBar:
         if not focused:
             self.selected_menu = [0]
 
-        def mouse_handler(index: "int", mouse_event: MouseEvent) -> "None":
+        def mouse_handler(index: int, mouse_event: MouseEvent) -> None:
             hover = mouse_event.event_type == MouseEventType.MOUSE_MOVE
             if mouse_event.event_type == MouseEventType.MOUSE_DOWN or hover and focused:
                 # Toggle focus.
@@ -288,14 +287,13 @@ class MenuBar:
                         app.layout.focus(self.window)
                 self.selected_menu = [index]
 
-        results: "StyleAndTextTuples" = []
+        results: StyleAndTextTuples = []
         used_keys = set()
 
         for i, item in enumerate(self.menu_items):
-
             # Add shortcut key hints
             key = to_plain_text(item.formatted_text)[0].lower()
-            ft: "StyleAndTextTuples"
+            ft: StyleAndTextTuples
             if key not in used_keys:
                 ft = explode_text_fragments(item.formatted_text)
                 ft = [(f"underline {ft[0][0]}", ft[0][1]), *ft[1:]]
@@ -318,9 +316,9 @@ class MenuBar:
 
         return results
 
-    def _submenu(self, level: "int" = 0) -> "Window":
-        def get_text_fragments() -> "StyleAndTextTuples":
-            result: "StyleAndTextTuples" = []
+    def _submenu(self, level: int = 0) -> Window:
+        def get_text_fragments() -> StyleAndTextTuples:
+            result: StyleAndTextTuples = []
             if level < len(self.selected_menu):
                 menu = self._get_menu(level)
 
@@ -340,12 +338,12 @@ class MenuBar:
                         selected_item = -1
 
                     def one_item(
-                        i: int, item: "MenuItem"
-                    ) -> "Iterable[OneStyleAndTextTuple]":
+                        i: int, item: MenuItem
+                    ) -> Iterable[OneStyleAndTextTuple]:
                         assert isinstance(item, MenuItem)
                         assert isinstance(menu, MenuItem)
 
-                        def mouse_handler(mouse_event: "MouseEvent") -> "None":
+                        def mouse_handler(mouse_event: MouseEvent) -> None:
                             if item.disabled:
                                 # The arrow keys can't interact with menu items that
                                 # are disabled. The mouse shouldn't be able to either.
@@ -411,18 +409,16 @@ class MenuBar:
                                 - fragment_list_width(item.suffix)
                                 - len(suffix_padding)
                             )
-                            menu_formatted_text: "StyleAndTextTuples" = (
-                                to_formatted_text(
-                                    [
-                                        *item.prefix,
-                                        ("", prefix_padding),
-                                        *item.formatted_text,
-                                        ("", text_padding),
-                                        ("", suffix_padding),
-                                        *item.suffix,
-                                    ],
-                                    style=style,
-                                )
+                            menu_formatted_text: StyleAndTextTuples = to_formatted_text(
+                                [
+                                    *item.prefix,
+                                    ("", prefix_padding),
+                                    *item.formatted_text,
+                                    ("", text_padding),
+                                    ("", suffix_padding),
+                                    *item.suffix,
+                                ],
+                                style=style,
                             )
                             # Apply mouse handler to all fragments
                             menu_formatted_text = [
@@ -457,10 +453,10 @@ class MenuBar:
 
     def __init__(
         self,
-        app: "BaseApp",
-        menu_items: "Sequence[MenuItem]",
-        grid: "GridStyle" = OuterHalfGrid,
-    ) -> "None":
+        app: BaseApp,
+        menu_items: Sequence[MenuItem],
+        grid: GridStyle = OuterHalfGrid,
+    ) -> None:
         """Initiate the menu bar.
 
         Args:
@@ -488,22 +484,22 @@ class MenuBar:
         # Navigation through the main menu.
 
         @kb.add("left", filter=in_main_menu)
-        def _left(event: "KeyPressEvent") -> "None":
+        def _left(event: KeyPressEvent) -> None:
             self.selected_menu[0] = max(0, self.selected_menu[0] - 1)
 
         @kb.add("right", filter=in_main_menu)
-        def _right(event: "KeyPressEvent") -> "None":
+        def _right(event: KeyPressEvent) -> None:
             self.selected_menu[0] = min(
                 len(self.menu_items) - 1, self.selected_menu[0] + 1
             )
 
         @kb.add("down", filter=in_main_menu)
-        def _down(event: "KeyPressEvent") -> "None":
+        def _down(event: KeyPressEvent) -> None:
             self.selected_menu.append(0)
 
         @kb.add("c-c", filter=in_main_menu)
         @kb.add("c-g", filter=in_main_menu)
-        def _cancel(event: "KeyPressEvent") -> "None":
+        def _cancel(event: KeyPressEvent) -> None:
             """Leave menu."""
             event.app.layout.focus_last()
 
@@ -512,13 +508,13 @@ class MenuBar:
         @kb.add("left", filter=in_sub_menu)
         @kb.add("c-g", filter=in_sub_menu)
         @kb.add("c-c", filter=in_sub_menu)
-        def _back(event: "KeyPressEvent") -> "None":
+        def _back(event: KeyPressEvent) -> None:
             """Go back to parent menu."""
             if len(self.selected_menu) > 1:
                 self.selected_menu.pop()
 
         @kb.add("right", filter=in_sub_menu)
-        def _submenu(event: "KeyPressEvent") -> "None":
+        def _submenu(event: KeyPressEvent) -> None:
             """Go into a sub menu."""
             if self._get_menu(len(self.selected_menu) - 1).children:
                 self.selected_menu.append(0)
@@ -535,7 +531,7 @@ class MenuBar:
                     self.selected_menu.append(0)
 
         @kb.add("up", filter=in_sub_menu)
-        def _up_in_submenu(event: "KeyPressEvent") -> "None":
+        def _up_in_submenu(event: KeyPressEvent) -> None:
             """Select previous (enabled) menu item or return to main menu."""
             # Look for previous enabled items in this sub menu.
             menu = self._get_menu(len(self.selected_menu) - 2)
@@ -554,7 +550,7 @@ class MenuBar:
                 self.selected_menu.pop()
 
         @kb.add("down", filter=in_sub_menu)
-        def _down_in_submenu(event: "KeyPressEvent") -> "None":
+        def _down_in_submenu(event: KeyPressEvent) -> None:
             """Select next (enabled) menu item."""
             menu = self._get_menu(len(self.selected_menu) - 2)
             index = self.selected_menu[-1]
@@ -569,7 +565,7 @@ class MenuBar:
                 self.selected_menu[-1] = next_indexes[0]
 
         @kb.add("enter")
-        def _click(event: "KeyPressEvent") -> "None":
+        def _click(event: KeyPressEvent) -> None:
             """Click the selected menu item."""
             item = self._get_menu(len(self.selected_menu) - 1)
             if item.handler:
@@ -577,8 +573,8 @@ class MenuBar:
                 item.handler()
 
         @kb.add("escape")
-        def _close(event: "KeyPressEvent") -> "None":
-            """Close the current menu."""
+        def _close(event: KeyPressEvent) -> None:
+            """Cloe the current menu."""
             if len(self.selected_menu) > 1:
                 self.selected_menu = self.selected_menu[:-1]
             else:
@@ -586,7 +582,7 @@ class MenuBar:
 
         # Add global CUA menu shortcut
         @kb.add("f10", is_global=True)
-        def _open_menu_default(event: "KeyPressEvent") -> "None":
+        def _open_menu_default(event: KeyPressEvent) -> None:
             self.selected_menu = [0]
             event.app.layout.focus(self.window)
 
@@ -598,7 +594,7 @@ class MenuBar:
                 used_keys |= {key}
 
                 @kb.add("escape", key, is_global=True)
-                def _open_menu(event: "KeyPressEvent", index: "int" = i) -> "None":
+                def _open_menu(event: KeyPressEvent, index: int = i) -> None:
                     """Open the  menu item."""
                     self.selected_menu = [index]
                     event.app.layout.focus(self.window)
@@ -610,7 +606,7 @@ class MenuBar:
             focusable=True,
             show_cursor=False,
         )
-        self.window: "Window" = Window(
+        self.window: Window = Window(
             height=1,
             content=self.control,
             style="class:menu,bar",
@@ -656,7 +652,7 @@ class MenuBar:
 
     def statusbar_fields(
         self,
-    ) -> "tuple[list[AnyFormattedText], list[AnyFormattedText]]":
+    ) -> tuple[list[AnyFormattedText], list[AnyFormattedText]]:
         """Return the description of the currently selected menu item."""
         selected_item = self._get_menu(len(self.selected_menu) - 1)
         if isinstance(selected_item, MenuItem):
@@ -664,6 +660,6 @@ class MenuBar:
         else:
             return (["", ""], [])
 
-    def __pt_container__(self) -> "Container":
+    def __pt_container__(self) -> Container:
         """Return the menu bar container's content."""
         return self.window

@@ -22,8 +22,8 @@ log = logging.getLogger(__name__)
 class AppendLineAutoSuggestion(AppendAutoSuggestion):
     """Append the auto suggestion to the current line of the input."""
 
-    def apply_transformation(self, ti: "TransformationInput") -> "Transformation":
-        """Insert fragments at the end of the current line."""
+    def apply_transformation(self, ti: TransformationInput) -> Transformation:
+        """Inert fragments at the end of the current line."""
         if ti.lineno == ti.document.cursor_position_row:
             buffer = ti.buffer_control.buffer
 
@@ -41,14 +41,14 @@ class ShowTrailingWhiteSpaceProcessor(Processor):
 
     def __init__(
         self,
-        char: "str" = "·",
-        style: "str" = "class:trailing-whitespace",
-    ) -> "None":
+        char: str = "·",
+        style: str = "class:trailing-whitespace",
+    ) -> None:
         """Create a new processor instance."""
         self.char = char
         self.style = style
 
-    def apply_transformation(self, ti: "TransformationInput") -> "Transformation":
+    def apply_transformation(self, ti: TransformationInput) -> Transformation:
         """Walk backwards through all the fragments and replace whitespace."""
         fragments = ti.fragments
         if fragments and fragments[-1][1].endswith(" "):

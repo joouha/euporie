@@ -1,4 +1,4 @@
-"""Defines editor key-bindings and commands for input completions."""
+"""Define editor key-bindings and commands for input completions."""
 
 from __future__ import annotations
 
@@ -53,13 +53,13 @@ add_cmd(
     hidden=True,
     eager=True,
 )
-def cancel_completion() -> "None":
+def cancel_completion() -> None:
     """Cancel a completion."""
     get_app().current_buffer.cancel_completion()
 
 
 @add_cmd(filter=completion_is_selected, hidden=True)
-def accept_completion() -> "None":
+def accept_completion() -> None:
     """Accept a selected completion."""
     buffer = get_app().current_buffer
     complete_state = buffer.complete_state

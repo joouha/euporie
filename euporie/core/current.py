@@ -1,4 +1,4 @@
-"""Allows access to the current running application."""
+"""Allow access to the current running application."""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ if TYPE_CHECKING:
     from euporie.core.app import BaseApp
 
 
-def get_app() -> "BaseApp":
+def get_app() -> BaseApp:
     """Get the current application."""
     app = ptk_get_app()
     return cast("BaseApp", app)

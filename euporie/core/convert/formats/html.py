@@ -1,4 +1,4 @@
-"""Contains functions which convert data to html format."""
+"""Contain functions which convert data to html format."""
 
 from __future__ import annotations
 
@@ -17,18 +17,16 @@ from euporie.core.convert.base import register
 from euporie.core.current import get_app
 
 if TYPE_CHECKING:
-    from typing import Optional
-
     from upath import UPath
 
 log = logging.getLogger(__name__)
 
 
 class MarkdownParser(MarkdownIt):
-    """Subclass the markdown parser to allow ``file:`` URIs."""
+    """Subclas the markdown parser to allow ``file:`` URIs."""
 
-    def validateLink(self, url: "str") -> "bool":
-        """Allows all link URIs."""
+    def validateLink(self, url: str) -> bool:
+        """Allow all link URIs."""
         return True
 
 
@@ -62,13 +60,13 @@ markdown_parser = (
 
 @register(from_="markdown", to="html")
 def markdown_to_html_markdown_it(
-    data: "str|bytes",
-    width: "Optional[int]" = None,
-    height: "Optional[int]" = None,
-    fg: "Optional[str]" = None,
-    bg: "Optional[str]" = None,
-    path: "Optional[UPath]" = None,
-) -> "str":
+    data: str | bytes,
+    width: int | None = None,
+    height: int | None = None,
+    fg: str | None = None,
+    bg: str | None = None,
+    path: UPath | None = None,
+) -> str:
     """Convert markdown to HTML using :py:mod:`markdownit_py`."""
     assert markdown_parser is not None
     markup = data.decode() if isinstance(data, bytes) else data

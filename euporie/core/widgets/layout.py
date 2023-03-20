@@ -1,4 +1,4 @@
-"""Defines widget for defining layouts."""
+"""Define widget for defining layouts."""
 
 from __future__ import annotations
 
@@ -35,7 +35,7 @@ from euporie.core.data_structures import DiBool
 from euporie.core.widgets.decor import Border
 
 if TYPE_CHECKING:
-    from typing import Any, Callable, Optional, Sequence, Type, Union
+    from typing import Any, Callable, Sequence
 
     from prompt_toolkit.filters import FilterOrBool
     from prompt_toolkit.formatted_text.base import AnyFormattedText, StyleAndTextTuples
@@ -52,10 +52,8 @@ log = logging.getLogger(__name__)
 class ConditionalSplit:
     """A split container where the orientation depends on a filter."""
 
-    def __init__(
-        self, vertical: "FilterOrBool", *args: "Any", **kwargs: "Any"
-    ) -> "None":
-        """Creates a new conditional split container.
+    def __init__(self, vertical: FilterOrBool, *args: Any, **kwargs: Any) -> None:
+        """Create a new conditional split container.
 
         Args:
             vertical: A filter which determines if the container should be displayed vertically
@@ -66,21 +64,21 @@ class ConditionalSplit:
         self.vertical = to_filter(vertical)
         self.args = args
         self.kwargs = kwargs
-        self._cache: "SimpleCache" = SimpleCache(maxsize=2)
+        self._cache: SimpleCache = SimpleCache(maxsize=2)
 
-    def load_container(self, vertical: "bool") -> "_Split":
+    def load_container(self, vertical: bool) -> _Split:
         """Load the container."""
         if vertical:
             return HSplit(*self.args, **self.kwargs)
         else:
             return VSplit(*self.args, **self.kwargs)
 
-    def container(self) -> "_Split":
+    def container(self) -> _Split:
         """Return the container for the current orientation."""
         vertical = self.vertical()
         return self._cache.get(vertical, partial(self.load_container, vertical))
 
-    def __pt_container__(self) -> "AnyContainer":
+    def __pt_container__(self) -> AnyContainer:
         """Return a dymanic container."""
         return DynamicContainer(self.container)
 
@@ -90,11 +88,11 @@ class ReferencedSplit:
 
     def __init__(
         self,
-        split: "Type[_Split]",
-        children: "Sequence[AnyContainer]",
-        *args: "Any",
-        **kwargs: "Any",
-    ) -> "None":
+        split: type[_Split],
+        children: Sequence[AnyContainer],
+        *args: Any,
+        **kwargs: Any,
+    ) -> None:
         """Create a new instance of the split container.
 
         Args:
@@ -108,17 +106,17 @@ class ReferencedSplit:
         self.children = list(children)
 
     @property
-    def children(self) -> "list[AnyContainer]":
+    def children(self) -> list[AnyContainer]:
         """Convert the referenced children to containers."""
         return self._children
 
     @children.setter
-    def children(self, children: "list[AnyContainer]") -> "None":
+    def children(self, children: list[AnyContainer]) -> None:
         """Set the containers children."""
         self._children = children
         self.container.children = [to_container(x) for x in self._children]
 
-    def __pt_container__(self) -> "Container":
+    def __pt_container__(self) -> Container:
         """Return the child container."""
         return self.container
 
@@ -126,10 +124,10 @@ class ReferencedSplit:
 class TabBarTab(NamedTuple):
     """A named tuple represting a tab and it's callbacks."""
 
-    title: "AnyFormattedText"
-    on_activate: "Callable"
-    on_deactivate: "Optional[Callable]" = None
-    on_close: "Optional[Callable]" = None
+    title: AnyFormattedText
+    on_activate: Callable
+    on_deactivate: Callable | None = None
+    on_close: Callable | None = None
 
 
 class TabBarControl(UIControl):
@@ -143,12 +141,12 @@ class TabBarControl(UIControl):
 
     def __init__(
         self,
-        tabs: "Union[Sequence[TabBarTab], Callable[[], Sequence[TabBarTab]]]",
-        active: "Union[int, Callable[[], int]]",
-        spacing: "int" = 1,
-        closeable: "bool" = False,
-    ) -> "None":
-        """Creates a new tab bar instance.
+        tabs: Sequence[TabBarTab] | Callable[[], Sequence[TabBarTab]],
+        active: int | Callable[[], int],
+        spacing: int = 1,
+        closeable: bool = False,
+    ) -> None:
+        """Create a new tab bar instance.
 
         Args:
             tabs: A list to tuples describing the tab title and the callback to run
@@ -163,13 +161,13 @@ class TabBarControl(UIControl):
         self.closeable = closeable
         self._active = active
 
-        self.mouse_handlers: "dict[int, Optional[Callable[..., Any]]]" = {}
+        self.mouse_handlers: dict[int, Callable[..., Any] | None] = {}
 
         self._title_cache: SimpleCache = SimpleCache(maxsize=1)
         self._content_cache: SimpleCache = SimpleCache(maxsize=50)
 
     @property
-    def tabs(self) -> "list[TabBarTab]":
+    def tabs(self) -> list[TabBarTab]:
         """Return the tab-bar's tabs."""
         if callable(self._tabs):
             return list(self._tabs())
@@ -177,12 +175,12 @@ class TabBarControl(UIControl):
             return list(self._tabs)
 
     @tabs.setter
-    def tabs(self, tabs: "Sequence[TabBarTab]") -> "None":
+    def tabs(self, tabs: Sequence[TabBarTab]) -> None:
         """Set the tab bar's current tabs."""
         self._tabs = tabs
 
     @property
-    def active(self) -> "int":
+    def active(self) -> int:
         """Return the index of the active tab."""
         if callable(self._active):
             return self._active()
@@ -190,21 +188,21 @@ class TabBarControl(UIControl):
             return self._active
 
     @active.setter
-    def active(self, active: "Union[int, Callable[[], int]]") -> "None":
+    def active(self, active: int | Callable[[], int]) -> None:
         """Set the currently active tab."""
         self._active = active
 
-    def preferred_width(self, max_available_width: "int") -> "Optional[int]":
+    def preferred_width(self, max_available_width: int) -> int | None:
         """Return the preferred width of the tab-bar control, the maximum available."""
         return max_available_width
 
     def preferred_height(
         self,
-        width: "int",
-        max_available_height: "int",
-        wrap_lines: "bool",
-        get_line_prefix: "Optional[GetLinePrefixCallable]",
-    ) -> "Optional[int]":
+        width: int,
+        max_available_height: int,
+        wrap_lines: bool,
+        get_line_prefix: GetLinePrefixCallable | None,
+    ) -> int | None:
         """Return the preferred height of the tab-bar control (2 rows)."""
         return 2
 
@@ -212,7 +210,7 @@ class TabBarControl(UIControl):
         """Tell whether this user control is focusable."""
         return True
 
-    def create_content(self, width: "int", height: "int") -> "UIContent":
+    def create_content(self, width: int, height: int) -> UIContent:
         """Generate the formatted text fragments which make the controls output."""
 
         def get_content() -> UIContent:
@@ -227,10 +225,10 @@ class TabBarControl(UIControl):
         key = (hash(tuple(self.tabs)), width, self.closeable, self.active)
         return self._content_cache.get(key, get_content)
 
-    def render(self, width: "int") -> "list[StyleAndTextTuples]":
+    def render(self, width: int) -> list[StyleAndTextTuples]:
         """Render the tab-bar as linest of formatted text."""
-        top_line: "StyleAndTextTuples" = []
-        tab_line: "StyleAndTextTuples" = []
+        top_line: StyleAndTextTuples = []
+        tab_line: StyleAndTextTuples = []
         i = 0
 
         # Initial spacing
@@ -297,7 +295,7 @@ class TabBarControl(UIControl):
         result = [top_line, tab_line]
         return result
 
-    def mouse_handler(self, mouse_event: "MouseEvent") -> "NotImplementedOrNone":
+    def mouse_handler(self, mouse_event: MouseEvent) -> NotImplementedOrNone:
         """Handle mouse events."""
         row = mouse_event.position.y
         col = mouse_event.position.x
@@ -340,18 +338,18 @@ class TabBarControl(UIControl):
 
 
 class StackedSplit(metaclass=ABCMeta):
-    """Base class for containers with selectable children."""
+    """Bae class for containers with selectable children."""
 
     def __init__(
         self,
-        children: "Sequence[AnyContainer]",
-        titles: "Sequence[AnyFormattedText]",
-        active: "int" = 0,
-        style: "Union[str, Callable[[], str]]" = "class:tab-split",
-        on_change: "Optional[Callable[[StackedSplit], None]]" = None,
-        width: "AnyDimension" = None,
-        height: "AnyDimension" = None,
-    ) -> "None":
+        children: Sequence[AnyContainer],
+        titles: Sequence[AnyFormattedText],
+        active: int = 0,
+        style: str | Callable[[], str] = "class:tab-split",
+        on_change: Callable[[StackedSplit], None] | None = None,
+        width: AnyDimension = None,
+        height: AnyDimension = None,
+    ) -> None:
         """Create a new tabbed container instance.
 
         Args:
@@ -365,7 +363,7 @@ class StackedSplit(metaclass=ABCMeta):
         """
         self._children = list(children)
         self._titles = list(titles)
-        self._active: "Optional[int]" = active
+        self._active: int | None = active
         self.style = style
         self.on_change = Event(self, on_change)
         self.width = width
@@ -374,22 +372,22 @@ class StackedSplit(metaclass=ABCMeta):
         self.container = self.load_container()
 
     @abstractmethod
-    def load_container(self) -> "AnyContainer":
+    def load_container(self) -> AnyContainer:
         """Abstract method for loading the widget's container."""
         ...
 
-    def add_style(self, style: "str") -> "str":
+    def add_style(self, style: str) -> str:
         """Add a style to the widget's base style."""
         base_style = self.style() if callable(self.style) else self.style
         return f"{base_style} {style}"
 
     @property
-    def active(self) -> "Optional[int]":
+    def active(self) -> int | None:
         """Return the index of the active child container."""
         return self._active
 
     @active.setter
-    def active(self, value: "Optional[int]") -> "None":
+    def active(self, value: int | None) -> None:
         """Set the active child container.
 
         Args:
@@ -408,36 +406,36 @@ class StackedSplit(metaclass=ABCMeta):
                     pass
 
     @property
-    def children(self) -> "list[AnyContainer]":
+    def children(self) -> list[AnyContainer]:
         """Return a list of the widget's child containers."""
         return self._children
 
     @children.setter
-    def children(self, value: "Sequence[AnyContainer]") -> "None":
+    def children(self, value: Sequence[AnyContainer]) -> None:
         """Set the widget's child containers."""
         self._children = list(value)
         self.refresh()
 
-    def active_child(self) -> "AnyContainer":
+    def active_child(self) -> AnyContainer:
         """Return the currently active child container."""
         return self.children[self.active or 0]
 
     @property
-    def titles(self) -> "list[AnyFormattedText]":
+    def titles(self) -> list[AnyFormattedText]:
         """Return the titles of the child containers."""
         return self._titles
 
     @titles.setter
-    def titles(self, value: "Sequence[AnyFormattedText]") -> "None":
+    def titles(self, value: Sequence[AnyFormattedText]) -> None:
         """Set the titles of the child containers."""
         self._titles = list(value)
         self.refresh()
 
-    def refresh(self) -> "None":
+    def refresh(self) -> None:
         """Reload the widget's container when its children or their titles change."""
         pass
 
-    def __pt_container__(self) -> "AnyContainer":
+    def __pt_container__(self) -> AnyContainer:
         """Return the widget's container."""
         return self.container
 
@@ -447,16 +445,16 @@ class TabbedSplit(StackedSplit):
 
     def __init__(
         self,
-        children: "Sequence[AnyContainer]",
-        titles: "Sequence[AnyFormattedText]",
-        active: "int" = 0,
-        style: "Union[str, Callable[[], str]]" = "class:tab-split",
-        on_change: "Optional[Callable[[StackedSplit], None]]" = None,
-        width: "AnyDimension" = None,
-        height: "AnyDimension" = None,
-        border: "GridStyle" = OuterEigthGrid,
-        show_borders: "Optional[DiBool]" = None,
-    ) -> "None":
+        children: Sequence[AnyContainer],
+        titles: Sequence[AnyFormattedText],
+        active: int = 0,
+        style: str | Callable[[], str] = "class:tab-split",
+        on_change: Callable[[StackedSplit], None] | None = None,
+        width: AnyDimension = None,
+        height: AnyDimension = None,
+        border: GridStyle = OuterEigthGrid,
+        show_borders: DiBool | None = None,
+    ) -> None:
         """Initialize a new tabbed container."""
         self.border = border
         self.show_borders = show_borders or DiBool(False, True, True, True)
@@ -470,7 +468,7 @@ class TabbedSplit(StackedSplit):
             height=height,
         )
 
-    def load_container(self) -> "AnyContainer":
+    def load_container(self) -> AnyContainer:
         """Create the tabbed widget's container.
 
         Consists of a tab-bar control above a dynamic container which shows the active
@@ -503,13 +501,13 @@ class TabbedSplit(StackedSplit):
             height=self.height,
         )
 
-    def refresh(self) -> "None":
+    def refresh(self) -> None:
         """Refresh the widget - set the tab-bar's tabs and active tab index."""
         self.control.tabs = self.load_tabs()
         if self.active is not None:
             self.control.active = self.active
 
-    def load_tabs(self) -> "list[TabBarTab]":
+    def load_tabs(self) -> list[TabBarTab]:
         """Return a list of tabs for the current children."""
         return [
             TabBarTab(
@@ -523,13 +521,13 @@ class TabbedSplit(StackedSplit):
 class AccordionSplit(StackedSplit):
     """A container which switches between children using expandable sections."""
 
-    def load_container(self) -> "AnyContainer":
+    def load_container(self) -> AnyContainer:
         """Create the accordiion widget's container."""
         self.draw_container()
         return DynamicContainer(lambda: self._container)
 
-    def draw_container(self) -> "None":
-        """Renders the accordion in it's current state."""
+    def draw_container(self) -> None:
+        """Render the accordion in it's current state."""
         self._container = HSplit(
             [
                 Border(
@@ -557,9 +555,7 @@ class AccordionSplit(StackedSplit):
             style="class:accordion",
         )
 
-    def title_text(
-        self, index: "int", title: "AnyFormattedText"
-    ) -> "StyleAndTextTuples":
+    def title_text(self, index: int, title: AnyFormattedText) -> StyleAndTextTuples:
         """Generate the title for each child container."""
         return [
             ("", " "),
@@ -585,8 +581,8 @@ class AccordionSplit(StackedSplit):
         ]
 
     def mouse_handler(
-        self, index: "int", mouse_event: "MouseEvent"
-    ) -> "NotImplementedOrNone":
+        self, index: int, mouse_event: MouseEvent
+    ) -> NotImplementedOrNone:
         """Handle mouse events."""
         # if mouse_event.event_type == MouseEventType.MOUSE_DOWN:
         #    get_app().layout.focus()
@@ -598,11 +594,11 @@ class AccordionSplit(StackedSplit):
 
     def toggle(
         self,
-        index: "int",
-    ) -> "None":
+        index: int,
+    ) -> None:
         """Toggle the visibility of a child container."""
         self.active = index if self.active != index else None
 
-    def refresh(self) -> "None":
+    def refresh(self) -> None:
         """Re-draw the container when the list of child containers changes."""
         self.draw_container()

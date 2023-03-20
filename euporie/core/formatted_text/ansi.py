@@ -1,4 +1,4 @@
-"""Contains ANSI formatted text parser."""
+"""Contain ANSI formatted text parser."""
 
 from __future__ import annotations
 
@@ -15,9 +15,9 @@ log = logging.getLogger(__name__)
 
 
 class ANSI(PTANSI):
-    """Converts ANSI text into formatted text, preserving all control sequences."""
+    """Convert ANSI text into formatted text, preserving all control sequences."""
 
-    def __init__(self, value: "str", tab_size: "int" = 4) -> None:
+    def __init__(self, value: str, tab_size: int = 4) -> None:
         """Initiate the ANSI processor instance.
 
         This replaces carriage returns to emulate terminal output.
@@ -54,7 +54,6 @@ class ANSI(PTANSI):
         formatted_text = self._formatted_text
 
         while True:
-
             char = yield
             sequence = char
 
@@ -82,7 +81,6 @@ class ANSI(PTANSI):
                 continue
 
             elif char in ("\x1b", "\x9b"):
-
                 # Got a CSI sequence, try to compile a control sequence
                 char = yield
 

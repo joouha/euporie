@@ -32,7 +32,7 @@ log = logging.getLogger(__name__)
 
 
 class RelativePosition(NamedTuple):
-    """Stores the relative position or the mouse within a terminal cell."""
+    """Store the relative position or the mouse within a terminal cell."""
 
     x: float
     y: float

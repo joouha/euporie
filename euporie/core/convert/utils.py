@@ -19,15 +19,15 @@ from euporie.core.convert.base import convert
 from euporie.core.current import get_app
 
 if TYPE_CHECKING:
-    from typing import Any, Optional, Union
+    from typing import Any
 
     from prompt_toolkit.filters import Filter
 
 log = logging.getLogger(__name__)
 
 
-def commands_exist(*cmds: "str") -> "Filter":
-    """Verifies a list of external commands exist on the system."""
+def commands_exist(*cmds: str) -> Filter:
+    """Verify a list of external commands exist on the system."""
     filters = [
         Condition(partial(lambda x: bool(which(cmd)), cmd))  # noqa: B023
         for cmd in cmds
@@ -35,10 +35,10 @@ def commands_exist(*cmds: "str") -> "Filter":
     return reduce(lambda a, b: a & b, filters, to_filter(True))
 
 
-def have_modules(*modules: "str") -> "Filter":
-    """Verifies a list of python modules are importable."""
+def have_modules(*modules: str) -> Filter:
+    """Verify a list of python modules are importable."""
 
-    def try_import(module: "str") -> "bool":
+    def try_import(module: str) -> bool:
         try:
             import_module(module)
         except ModuleNotFoundError:
@@ -51,11 +51,11 @@ def have_modules(*modules: "str") -> "Filter":
 
 
 def call_subproc(
-    data: "Union[str, bytes]",
-    cmd: "list[Any]",
-    use_tempfile: "bool" = False,
-    suffix: "str" = "",
-) -> "bytes":
+    data: str | bytes,
+    cmd: list[Any],
+    use_tempfile: bool = False,
+    suffix: str = "",
+) -> bytes:
     """Call the command as a subprocess and return it's output as bytes.
 
     Args:
@@ -93,7 +93,7 @@ def call_subproc(
     # stdout, stderr = await proc.communicate(data)
 
     log.debug("Running external command `%s`", cmd)
-    error: "Optional[Exception]" = None
+    error: Exception | None = None
     try:
         # Execution of untrusted input has been checked for
         output_bytes = subprocess.check_output(  # noqa S603
@@ -130,11 +130,11 @@ def call_subproc(
 
 
 def data_pixel_size(
-    data: "Any",
-    format_: "str",
-    fg: "Optional[str]" = None,
-    bg: "Optional[str]" = None,
-) -> "tuple[Optional[int], Optional[int]]":
+    data: Any,
+    format_: str,
+    fg: str | None = None,
+    bg: str | None = None,
+) -> tuple[int | None, int | None]:
     """Get the dimensions of an image.
 
     Foreground and background color are set at this point if they are available, as
@@ -176,9 +176,9 @@ def data_pixel_size(
 
 
 def pixels_to_cell_size(
-    px: "Optional[int]" = None,
-    py: "Optional[int]" = None,
-) -> "tuple[int, float]":
+    px: int | None = None,
+    py: int | None = None,
+) -> tuple[int, float]:
     """Get the cell width and aspect ration of a pixel dimension.
 
     Args:
