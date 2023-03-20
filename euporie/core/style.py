@@ -566,18 +566,21 @@ def build_style(
         "selection warning face": f"bg:{cp.ansiyellow.darker(0.05)}",
         "selection danger face": f"bg:{cp.ansired.darker(0.05)}",
         # Hovered faces
+        "input hovered face": f"fg:default bg:{cp.bg.more(0.2)}",
         "focused hovered success face": f"bg:{cp.ansigreen.lighter(0.05)}",
         "focused hovered info face": f"bg:{cp.ansicyan.lighter(0.05)}",
         "focused hovered warning face": f"bg:{cp.ansiyellow.lighter(0.05)}",
         "focused hovered danger face": f"bg:{cp.ansired.lighter(0.05)}",
-        # Input widgets
+        # Text areas
         "text-area focused": "noreverse",
         "text-area selected": "noreverse",
         "text-area focused selected": "reverse",
-        # "input focused": f"bg:{cp.bg.more(0.025)}",
-        # "input button face": f"fg:default bg:{cp.bg.more(0.05)}",
+        # Buttons
+        "input button face": f"fg:default bg:{cp.bg.more(0.05)}",
+        "input button face hovered": f"fg:default bg:{cp.bg.more(0.2)}",
         "input button face selection": f"bg:{cp.bg.more(0.05)}",
-        # "input button face focused": f"fg:default bg:{cp.hl.darker(0.75)}",
+        "input button face focused": f"fg:default bg:{cp.bg.towards(cp.hl, 0.1)}",
+        # Input widgets
         "input border top": f"fg:{cp.bg.lighter(0.5)}",
         "input border left": f"fg:{cp.bg.lighter(0.5)}",
         "input border bottom": f"fg:{cp.bg.darker(0.25)}",

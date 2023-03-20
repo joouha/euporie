@@ -367,7 +367,7 @@ class FocusedStyle(Container):
         self,
         body: "AnyContainer",
         style_focus: "Union[str, Callable[[], str]]" = "class:focused",
-        style_hover: "Union[str, Callable[[], str]]" = "class:hover",
+        style_hover: "Union[str, Callable[[], str]]" = "class:hovered",
     ) -> "None":
         """Create a new instance of the widget.
 
@@ -458,7 +458,7 @@ class FocusedStyle(Container):
                 self.style_focus() if callable(self.style_focus) else self.style_focus
             )
         if self.hover:
-            style += (
+            style += " " + (
                 self.style_hover() if callable(self.style_hover) else self.style_hover
             )
         return style
