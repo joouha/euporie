@@ -65,7 +65,7 @@ def load_mouse_bindings() -> "KeyBindings":
 
     @key_bindings.add(Keys.Vt100MouseEvent)
     def _(event: "KeyPressEvent") -> "NotImplementedOrNone":
-        """Handling of incoming mouse event, include SGR-pixel mode."""
+        """Handle incoming mouse event, include SGR-pixel mode."""
         # Ensure mypy knows this would only run in a euporie app
         assert isinstance(event.app, BaseApp)
 
@@ -106,9 +106,7 @@ def load_mouse_bindings() -> "KeyBindings":
 
             # Parse event type.
             if sgr:
-
                 if event.app.term_info.sgr_pixel_status.value:
-
                     # Calculate cell position
                     cell_px, cell_py = event.app.term_info.cell_size_px
                     px, py = x, y
@@ -156,11 +154,11 @@ def load_mouse_bindings() -> "KeyBindings":
             if (mouse_limits := event.app.mouse_limits) is not None:
                 x = max(
                     mouse_limits.xpos,
-                    min(x, mouse_limits.xpos + mouse_limits.width),
+                    min(x, mouse_limits.xpos + mouse_limits.width - 1),
                 )
                 y = max(
                     mouse_limits.ypos,
-                    min(y, mouse_limits.ypos + mouse_limits.height),
+                    min(y, mouse_limits.ypos + mouse_limits.height - 1),
                 )
 
             # Call the mouse handler from the renderer.
