@@ -1,4 +1,4 @@
-"""Contains functions which convert data to markdown format."""
+"""Contain functions which convert data to markdown format."""
 
 from __future__ import annotations
 
@@ -9,8 +9,6 @@ from euporie.core.convert.base import register
 from euporie.core.convert.utils import have_modules
 
 if TYPE_CHECKING:
-    from typing import Optional
-
     from upath import UPath
 
 log = logging.getLogger(__name__)
@@ -24,13 +22,13 @@ _HTML2TEXT_TABLE_RE = r"(?:(?:.*\|)+[^|]*?(?:\n|$))+"
     filter_=have_modules("html2text"),
 )
 def html_to_markdown_py_html2text(
-    data: "str|bytes",
-    width: "Optional[int]" = None,
-    height: "Optional[int]" = None,
-    fg: "Optional[str]" = None,
-    bg: "Optional[str]" = None,
-    path: "Optional[UPath]" = None,
-) -> "str":
+    data: str | bytes,
+    width: int | None = None,
+    height: int | None = None,
+    fg: str | None = None,
+    bg: str | None = None,
+    path: UPath | None = None,
+) -> str:
     """Convert HTML to markdown tables using :py:mod:`html2text`."""
     import re
 
@@ -70,13 +68,13 @@ def html_to_markdown_py_html2text(
     filter_=have_modules("mtable", "html5lib"),
 )
 def html_to_markdown_py_mtable(
-    data: "str|bytes",
-    width: "Optional[int]" = None,
-    height: "Optional[int]" = None,
-    fg: "Optional[str]" = None,
-    bg: "Optional[str]" = None,
-    path: "Optional[UPath]" = None,
-) -> "str":
+    data: str | bytes,
+    width: int | None = None,
+    height: int | None = None,
+    fg: str | None = None,
+    bg: str | None = None,
+    path: UPath | None = None,
+) -> str:
     """Convert HTML tables to markdown tables using :py:mod:`mtable`."""
     from mtable import MarkupTable
 

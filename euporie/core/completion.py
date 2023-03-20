@@ -1,4 +1,4 @@
-"""Contains the main class for a notebook file."""
+"""Contain the main class for a notebook file."""
 
 from __future__ import annotations
 
@@ -26,16 +26,16 @@ class KernelCompleter(Completer):
         self.kernel = kernel
 
     def get_completions(
-        self, document: "Document", complete_event: "CompleteEvent"
-    ) -> "Iterable[Completion]":
-        """Does nothing as completions are retrieved asynchronously."""
+        self, document: Document, complete_event: CompleteEvent
+    ) -> Iterable[Completion]:
+        """Doe nothing as completions are retrieved asynchronously."""
         while False:
             yield
 
     async def get_completions_async(
         self, document: Document, complete_event: CompleteEvent
-    ) -> "AsyncGenerator[Completion, None]":
-        """Retrieves completions from a :class:`Kernel`."""
+    ) -> AsyncGenerator[Completion, None]:
+        """Retrieve completions from a :class:`Kernel`."""
         for kwargs in await self.kernel.complete_(
             code=document.text,
             cursor_pos=document.cursor_position,

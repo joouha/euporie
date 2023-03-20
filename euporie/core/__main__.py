@@ -2,7 +2,7 @@
 
 
 def main(name: "str" = "launch") -> "None":
-    """Loads and launches the application."""
+    """Load and launches the application."""
     from importlib.metadata import entry_points
 
     for entry in entry_points()["euporie.apps"]:

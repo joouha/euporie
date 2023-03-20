@@ -1,4 +1,4 @@
-"""Defines a cell object with input are and rich outputs, and related objects."""
+"""Define a cell object with input are and rich outputs, and related objects."""
 
 from __future__ import annotations
 
@@ -46,7 +46,7 @@ from euporie.core.suggest import ConditionalAutoSuggestAsync
 from euporie.core.widgets.pager import PagerState
 
 if TYPE_CHECKING:
-    from typing import Any, Callable, Optional, Sequence, Union
+    from typing import Any, Callable, Sequence
 
     from prompt_toolkit.buffer import Buffer
     from prompt_toolkit.filters import FilterOrBool
@@ -70,22 +70,22 @@ class KernelInput(TextArea):
 
     def __init__(
         self,
-        kernel_tab: "KernelTab",
-        *args: "Any",
-        left_margins: "Optional[Sequence[Margin]]" = None,
-        right_margins: "Optional[Sequence[Margin]]" = None,
-        on_text_changed: "Optional[Callable[[Buffer], None]]" = None,
-        on_cursor_position_changed: "Optional[Callable[[Buffer], None]]" = None,
-        tempfile_suffix: "Union[str, Callable[[], str]]" = "",
-        key_bindings: "Optional[KeyBindingsBase]" = None,
-        enable_history_search: "Optional[FilterOrBool]" = False,
-        focusable: "FilterOrBool" = True,
-        wrap_lines: "FilterOrBool" = False,
-        complete_while_typing: "FilterOrBool" = True,
-        autosuggest_while_typing: "FilterOrBool" = True,
-        validate_while_typing: "Optional[FilterOrBool]" = None,
-        **kwargs: "Any",
-    ) -> "None":
+        kernel_tab: KernelTab,
+        *args: Any,
+        left_margins: Sequence[Margin] | None = None,
+        right_margins: Sequence[Margin] | None = None,
+        on_text_changed: Callable[[Buffer], None] | None = None,
+        on_cursor_position_changed: Callable[[Buffer], None] | None = None,
+        tempfile_suffix: str | Callable[[], str] = "",
+        key_bindings: KeyBindingsBase | None = None,
+        enable_history_search: FilterOrBool | None = False,
+        focusable: FilterOrBool = True,
+        wrap_lines: FilterOrBool = False,
+        complete_while_typing: FilterOrBool = True,
+        autosuggest_while_typing: FilterOrBool = True,
+        validate_while_typing: FilterOrBool | None = None,
+        **kwargs: Any,
+    ) -> None:
         """Initiate the cell input box."""
         self.kernel_tab = kernel_tab
         app = kernel_tab.app
@@ -112,7 +112,7 @@ class KernelInput(TextArea):
         )
         kwargs.setdefault("completer", kernel_tab.completer)
 
-        def _get_lexer() -> "Lexer":
+        def _get_lexer() -> Lexer:
             try:
                 pygments_lexer_class = get_lexer_by_name(
                     self.kernel_tab.language
@@ -193,7 +193,7 @@ class KernelInput(TextArea):
             )
         self.control.key_bindings = widgets_key_bindings
 
-    def inspect(self) -> "None":
+    def inspect(self) -> None:
         """Get contextual help for the current cursor position in the current cell."""
         code = self.buffer.text
         cursor_pos = self.buffer.cursor_position
@@ -206,7 +206,7 @@ class KernelInput(TextArea):
                 pager.focus()
                 return
 
-        def _cb(response: "dict") -> "None":
+        def _cb(response: dict) -> None:
             assert pager is not None
             prev_state = pager.state
             new_state = PagerState(
@@ -277,8 +277,8 @@ class KernelInput(TextArea):
     @add_cmd(
         filter=buffer_is_code & buffer_has_focus & ~has_selection,
     )
-    def _show_contextual_help() -> "None":
-        """Displays contextual help."""
+    def _show_contextual_help() -> None:
+        """Display contextual help."""
         from euporie.core.tabs.notebook import BaseNotebook
 
         nb = get_app().tab
@@ -299,15 +299,15 @@ class KernelInput(TextArea):
 class StdInput:
     """A widget to accept kernel input."""
 
-    def __init__(self, kernel_tab: "KernelTab") -> "None":
+    def __init__(self, kernel_tab: KernelTab) -> None:
         """Create a new kernel input box."""
         from euporie.core.widgets.forms import LabelledWidget, Text
 
         self.kernel_tab = kernel_tab
-        self.last_focused: "Optional[FocusableElement]" = None
+        self.last_focused: FocusableElement | None = None
 
         self.password = False
-        self.prompt: "Optional[str]" = None
+        self.prompt: str | None = None
         self.active = False
         self.visible = Condition(lambda: self.active)
 
@@ -326,7 +326,7 @@ class StdInput:
             filter=self.visible,
         )
 
-    def accept(self, buffer: "Buffer") -> "bool":
+    def accept(self, buffer: Buffer) -> bool:
         """Send the input to the kernel and hide the input box."""
         if self.kernel_tab.kernel.kc is not None:
             self.kernel_tab.kernel.kc.input(buffer.text)
@@ -343,10 +343,10 @@ class StdInput:
 
     def get_input(
         self,
-        prompt: "str" = "Please enter a value: ",
-        password: "bool" = False,
-    ) -> "None":
-        """Prompts the user for input and sends the result to the kernel."""
+        prompt: str = "Please enter a value: ",
+        password: bool = False,
+    ) -> None:
+        """Prompt the user for input and sends the result to the kernel."""
         self.password = password
         self.prompt = prompt
 
@@ -365,7 +365,7 @@ class StdInput:
             layout.focus(self)
         finally:
 
-            async def _focus_input() -> "None":
+            async def _focus_input() -> None:
                 # Focus the input box
                 if self.window in layout.visible_windows:
                     layout.focus(self)
@@ -374,6 +374,6 @@ class StdInput:
 
             app.create_background_task(_focus_input())
 
-    def __pt_container__(self) -> "AnyContainer":
+    def __pt_container__(self) -> AnyContainer:
         """Return the input's container."""
         return self.container

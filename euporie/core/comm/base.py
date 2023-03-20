@@ -1,4 +1,4 @@
-"""Defines the base class for a Comm object and it's representation."""
+"""Define the base class for a Comm object and it's representation."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ from euporie.core.current import get_app
 from euporie.core.widgets.display import Display
 
 if TYPE_CHECKING:
-    from typing import Any, Callable, Optional, Sequence
+    from typing import Any, Callable, Sequence
 
     from prompt_toolkit.layout.containers import AnyContainer
 
@@ -24,14 +24,14 @@ log = logging.getLogger(__name__)
 
 
 class CommView:
-    """Holds a container and methods to update its attributes."""
+    """Hold a container and methods to update its attributes."""
 
     def __init__(
         self,
-        container: "AnyContainer",
-        setters: "Optional[dict[str, Callable[..., None]]]" = None,
-    ) -> "None":
-        """Creates a new instance of the Comm vieew.
+        container: AnyContainer,
+        setters: dict[str, Callable[..., None]] | None = None,
+    ) -> None:
+        """Create a new instance of the Comm vieew.
 
         Args:
             container: The main container to display when this Comm is to be visualised
@@ -40,10 +40,10 @@ class CommView:
         """
         self.container = container
         self.setters = setters or {}
-        self.kernel: "Optional[Kernel]" = None
+        self.kernel: Kernel | None = None
 
-    def update(self, changes: "dict[str, Any]") -> "None":
-        """Updates the view to reflect changes in the Comm.
+    def update(self, changes: dict[str, Any]) -> None:
+        """Update the view to reflect changes in the Comm.
 
         Calls any setter functions defined for the changed keys with the changed values
         as arguments.
@@ -56,8 +56,8 @@ class CommView:
             if setter := self.setters.get(key):
                 setter(value)
 
-    def __pt_container__(self) -> "AnyContainer":
-        """Returns the widget's container for display."""
+    def __pt_container__(self) -> AnyContainer:
+        """Return the widget's container for display."""
         return self.container
 
 
@@ -66,12 +66,12 @@ class Comm(metaclass=ABCMeta):
 
     def __init__(
         self,
-        comm_container: "KernelTab",
-        comm_id: "str",
-        data: "dict",
-        buffers: "Sequence[bytes]",
-    ) -> "None":
-        """Creates a new instance of the Comm.
+        comm_container: KernelTab,
+        comm_id: str,
+        data: dict,
+        buffers: Sequence[bytes],
+    ) -> None:
+        """Create a new instance of the Comm.
 
         Args:
             comm_container: The container this Comm belongs to
@@ -82,29 +82,29 @@ class Comm(metaclass=ABCMeta):
         """
         self.comm_container = comm_container
         self.comm_id = comm_id
-        self.data: "dict[str, Any]" = {}
-        self.buffers: "Sequence[bytes]" = []
-        self.views: "WeakKeyDictionary[CommView, OutputParent]" = WeakKeyDictionary()
+        self.data: dict[str, Any] = {}
+        self.buffers: Sequence[bytes] = []
+        self.views: WeakKeyDictionary[CommView, OutputParent] = WeakKeyDictionary()
         self.process_data(data, buffers)
 
     @abstractmethod
-    def process_data(self, data: "dict", buffers: "Sequence[bytes]") -> "None":
-        """Processes a comm_msg data / buffers."""
+    def process_data(self, data: dict, buffers: Sequence[bytes]) -> None:
+        """Process a comm_msg data / buffers."""
 
-    def _get_embed_state(self) -> "dict":
+    def _get_embed_state(self) -> dict:
         return {}
 
-    def create_view(self, parent: "OutputParent") -> "CommView":
+    def create_view(self, parent: OutputParent) -> CommView:
         """Create a new :class:`CommView` for this Comm."""
         return CommView(Display("[Object cannot be rendered]", format_="ansi"))
 
-    def new_view(self, parent: "OutputParent") -> "CommView":
+    def new_view(self, parent: OutputParent) -> CommView:
         """Create and register a new :class:`CommView` for this Comm."""
         view = self.create_view(parent)
         self.views[view] = parent
         return view
 
-    def update_views(self, changes: "dict") -> "None":
+    def update_views(self, changes: dict) -> None:
         """Update all the active views of this Comm."""
         for view, parent in self.views.items():
             view.update(changes)
@@ -113,8 +113,8 @@ class Comm(metaclass=ABCMeta):
 
 
 class UnimplementedComm(Comm):
-    """Represents a Comm object which is not implemented in euporie.core."""
+    """Represent a Comm object which is not implemented in euporie.core."""
 
-    def process_data(self, data: "dict", buffers: "Sequence[bytes]") -> "None":
-        """Does nothing when data is received."""
+    def process_data(self, data: dict, buffers: Sequence[bytes]) -> None:
+        """Doe nothing when data is received."""
         return None

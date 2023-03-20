@@ -1,4 +1,4 @@
-"""Contains commonly used data structures."""
+"""Contain commonly used data structures."""
 
 from functools import lru_cache
 from typing import NamedTuple

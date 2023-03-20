@@ -1,4 +1,4 @@
-"""Defines a file browser widget."""
+"""Define a file browser widget."""
 
 from __future__ import annotations
 
@@ -349,7 +349,7 @@ FILE_ICONS = {
 }
 
 
-def is_dir(path: "str") -> "bool|None":
+def is_dir(path: str) -> bool | None:
     """Check if a path is a directory."""
     test_path = UPath(path)
     try:
@@ -363,17 +363,17 @@ class FileBrowserControl(UIControl):
 
     def __init__(
         self,
-        path: "UPath" = None,
-        on_chdir: "Callable[[FileBrowserControl], None]|None" = None,
-        on_select: "Callable[[FileBrowserControl], None]|None" = None,
-        on_open: "Callable[[FileBrowserControl], None]|None" = None,
-    ) -> "None":
+        path: UPath = None,
+        on_chdir: Callable[[FileBrowserControl], None] | None = None,
+        on_select: Callable[[FileBrowserControl], None] | None = None,
+        on_open: Callable[[FileBrowserControl], None] | None = None,
+    ) -> None:
         """Initialize a new file browser instance."""
         self.dir = path or UPath(".")
-        self.hovered: "int" = 0
-        self.selected: "int|None" = None
-        self._dir_cache: "FastDictCache[UPath, list[tuple[bool, UPath]]]" = (
-            FastDictCache(get_value=self.load_path, size=1)
+        self.hovered: int = 0
+        self.selected: int | None = None
+        self._dir_cache: FastDictCache[UPath, list[tuple[bool, UPath]]] = FastDictCache(
+            get_value=self.load_path, size=1
         )
         self.on_select = Event(self, on_select)
         self.on_chdir = Event(self, on_chdir)
@@ -385,44 +385,44 @@ class FileBrowserControl(UIControl):
 
         @kb.add("up")
         @kb.add("<scroll-up>")
-        def _move_up(event: "KeyPressEvent") -> "None":
+        def _move_up(event: KeyPressEvent) -> None:
             self.move_cursor_up()
 
         @kb.add("down")
         @kb.add("<scroll-down>")
-        def _move_down(event: "KeyPressEvent") -> "None":
+        def _move_down(event: KeyPressEvent) -> None:
             self.move_cursor_down()
 
         @kb.add("home")
-        def _home(event: "KeyPressEvent") -> "None":
+        def _home(event: KeyPressEvent) -> None:
             self.select(0)
 
         @kb.add("end")
-        def _end(event: "KeyPressEvent") -> "None":
+        def _end(event: KeyPressEvent) -> None:
             self.select(len(self.contents) - 1)
 
         @kb.add("left")
-        def _up(event: "KeyPressEvent") -> "None":
+        def _up(event: KeyPressEvent) -> None:
             self.dir = self.dir.parent
 
         @kb.add("space")
         @kb.add("enter")
         @kb.add("right")
-        def _open(event: "KeyPressEvent") -> "None":
+        def _open(event: KeyPressEvent) -> None:
             return self.open_path()
 
     @property
-    def contents(self) -> "list[tuple[bool, UPath]]":
+    def contents(self) -> list[tuple[bool, UPath]]:
         """Return the contents of the current folder."""
         return self._dir_cache[(self.dir,)]
 
     @property
-    def dir(self) -> "UPath":
+    def dir(self) -> UPath:
         """Return the current folder path."""
         return self._dir
 
     @dir.setter
-    def dir(self, value: "PT") -> "None":
+    def dir(self, value: PT) -> None:
         """Set the current folder path."""
         dir_path = UPath(value)
         try:
@@ -435,12 +435,12 @@ class FileBrowserControl(UIControl):
             log.warning("'%s' is not a directory, not changing directory", value)
 
     @property
-    def path(self) -> "UPath":
+    def path(self) -> UPath:
         """Return the current selected path."""
         return self.contents[self.selected or 0][1]
 
     @staticmethod
-    def load_path(path: "UPath") -> "list[tuple[bool, UPath]]":
+    def load_path(path: UPath) -> list[tuple[bool, UPath]]:
         """Return the contents of a folder."""
         paths = [] if path.parent == path else [path / ".."]
         try:
@@ -455,7 +455,7 @@ class FileBrowserControl(UIControl):
             is_dirs.append(child_is_dir)
         return sorted(zip(is_dirs, paths), key=lambda x: (not x[0], x[1].name))
 
-    def create_content(self, width: int, height: int) -> "UIContent":
+    def create_content(self, width: int, height: int) -> UIContent:
         """Generate the content for this user control."""
         paths = self.contents
 
@@ -486,7 +486,7 @@ class FileBrowserControl(UIControl):
             show_cursor=False,
         )
 
-    def mouse_handler(self, mouse_event: MouseEvent) -> "NotImplementedOrNone":
+    def mouse_handler(self, mouse_event: MouseEvent) -> NotImplementedOrNone:
         """Handle mouse events."""
         row = mouse_event.position.y
         if mouse_event.event_type == MouseEventType.MOUSE_DOWN:
@@ -497,9 +497,7 @@ class FileBrowserControl(UIControl):
 
         return NotImplemented
 
-    def select(
-        self, row: "int|None", open_file: "bool" = False
-    ) -> "NotImplementedOrNone":
+    def select(self, row: int | None, open_file: bool = False) -> NotImplementedOrNone:
         """Select a file in the browser."""
         if row is None:
             row = 0
@@ -511,7 +509,7 @@ class FileBrowserControl(UIControl):
             self.open_path()
         return None
 
-    def hover(self, row: int) -> "NotImplementedOrNone":
+    def hover(self, row: int) -> NotImplementedOrNone:
         """Hover a file in the browser."""
         row = min(max(0, row), len(self.contents) - 1)
         if self.hovered != row:
@@ -519,7 +517,7 @@ class FileBrowserControl(UIControl):
             return None
         return NotImplemented
 
-    def open_path(self) -> "None":
+    def open_path(self) -> None:
         """Open the selected file."""
         if self.selected is not None:
             is_dir, path = self.contents[self.selected]
@@ -531,7 +529,7 @@ class FileBrowserControl(UIControl):
             else:
                 self.on_open.fire()
 
-    def move_cursor_down(self) -> "None":
+    def move_cursor_down(self) -> None:
         """Request to move the cursor down."""
         index = self.selected
         if index is None:
@@ -540,7 +538,7 @@ class FileBrowserControl(UIControl):
             index += 1
         self.select(index)
 
-    def move_cursor_up(self) -> "None":
+    def move_cursor_up(self) -> None:
         """Request to move the cursor up."""
         index = self.selected
         if index is None:
@@ -549,12 +547,12 @@ class FileBrowserControl(UIControl):
             index -= 1
         self.select(index)
 
-    def get_key_bindings(self) -> "KeyBindingsBase|None":
-        """The key bindings that are specific for this user control."""
+    def get_key_bindings(self) -> KeyBindingsBase | None:
+        """Key bindings specific to this user control."""
         return self.key_bindings
 
-    def is_focusable(self) -> "bool":
-        """Determines that the file_browser is focusable."""
+    def is_focusable(self) -> bool:
+        """Determine that the file_browser is focusable."""
         return True
 
 
@@ -565,22 +563,22 @@ class FileBrowser:
 
     def __init__(
         self,
-        path: "UPath" = None,
-        on_select: "Callable[[UPath], None]|None" = None,
-        on_open: "Callable[[UPath], None]|None" = None,
-        on_chdir: "Callable[[UPath], None]|None" = None,
-        width: "AnyDimension" = None,
-        height: "AnyDimension" = None,
-        style: "str" = "",
-        show_address_bar: "FilterOrBool" = True,
-    ) -> "None":
+        path: UPath = None,
+        on_select: Callable[[UPath], None] | None = None,
+        on_open: Callable[[UPath], None] | None = None,
+        on_chdir: Callable[[UPath], None] | None = None,
+        width: AnyDimension = None,
+        height: AnyDimension = None,
+        style: str = "",
+        show_address_bar: FilterOrBool = True,
+    ) -> None:
         """Create a new instance."""
 
-        def _accept_path(buffer: "Buffer") -> "bool":
+        def _accept_path(buffer: Buffer) -> bool:
             control.dir = buffer.text
             return True
 
-        def _validate_path(path: "str") -> "bool":
+        def _validate_path(path: str) -> bool:
             return is_dir(path) or False
 
         text = Text(
@@ -640,6 +638,6 @@ class FileBrowser:
             height=height,
         )
 
-    def __pt_container__(self) -> "AnyContainer":
+    def __pt_container__(self) -> AnyContainer:
         """Return the tree-view container's content."""
         return self.container

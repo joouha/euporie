@@ -1,4 +1,4 @@
-"""Contains a container for the cell output area."""
+"""Contain a container for the cell output area."""
 
 from __future__ import annotations
 
@@ -17,7 +17,7 @@ from euporie.core.widgets.display import Display
 from euporie.core.widgets.tree import JsonView
 
 if TYPE_CHECKING:
-    from typing import Any, Optional, Protocol, Type, TypeVar
+    from typing import Any, Protocol, TypeVar
 
     from prompt_toolkit.layout.containers import AnyContainer
 
@@ -30,7 +30,7 @@ if TYPE_CHECKING:
 
         kernel_tab: KTParent
 
-        def refresh(self, now: "bool" = True) -> "None":
+        def refresh(self, now: bool = True) -> None:
             """Update the parent container."""
             ...
 
@@ -39,17 +39,17 @@ log = logging.getLogger(__name__)
 
 
 class CellOutputElement(metaclass=ABCMeta):
-    """Base class for the various types of cell outputs (display data or widgets)."""
+    """Bae class for the various types of cell outputs (display data or widgets)."""
 
-    data: "Any"
+    data: Any
 
     def __init__(
         self,
-        mime: "str",
-        data: "Any",
-        metadata: "dict",
-        parent: "Optional[OutputParent]",
-    ) -> "None":
+        mime: str,
+        data: Any,
+        metadata: dict,
+        parent: OutputParent | None,
+    ) -> None:
         """Create a new instances of the output element.
 
         Args:
@@ -61,16 +61,16 @@ class CellOutputElement(metaclass=ABCMeta):
         """
         pass
 
-    def scroll_left(self) -> "None":
-        """Scrolls the output left."""
+    def scroll_left(self) -> None:
+        """Scroll the output left."""
         pass
 
-    def scroll_right(self) -> "None":
-        """Scrolls the output right."""
+    def scroll_right(self) -> None:
+        """Scroll the output right."""
         pass
 
     @abstractmethod
-    def __pt_container__(self) -> "AnyContainer":
+    def __pt_container__(self) -> AnyContainer:
         """Return the container representing the cell output element."""
         ...
 
@@ -80,11 +80,11 @@ class CellOutputDataElement(CellOutputElement):
 
     def __init__(
         self,
-        mime: "str",
-        data: "Any",
-        metadata: "dict",
-        parent: "Optional[OutputParent]",
-    ) -> "None":
+        mime: str,
+        data: Any,
+        metadata: dict,
+        parent: OutputParent | None,
+    ) -> None:
         """Create a new data output element instance.
 
         Args:
@@ -131,25 +131,25 @@ class CellOutputDataElement(CellOutputElement):
         )
 
     @property
-    def data(self) -> "Any":
+    def data(self) -> Any:
         """Return the control's display data."""
         return self._data
 
     @data.setter
-    def data(self, value: "Any") -> "None":
+    def data(self, value: Any) -> None:
         """Set the cell output's data."""
         self._data = value
         self.container.data = value
 
-    def scroll_left(self) -> "None":
-        """Scrolls the output left."""
+    def scroll_left(self) -> None:
+        """Scroll the output left."""
         self.container.window._scroll_left()
 
-    def scroll_right(self) -> "None":
-        """Scrolls the output right."""
+    def scroll_right(self) -> None:
+        """Scroll the output right."""
         self.container.window._scroll_right()
 
-    def __pt_container__(self) -> "AnyContainer":
+    def __pt_container__(self) -> AnyContainer:
         """Return the display container."""
         return self.container
 
@@ -159,11 +159,11 @@ class CellOutputWidgetElement(CellOutputElement):
 
     def __init__(
         self,
-        mime: "str",
-        data: "dict[str, Any]",
-        metadata: "dict",
-        parent: "Optional[OutputParent]",
-    ) -> "None":
+        mime: str,
+        data: dict[str, Any],
+        metadata: dict,
+        parent: OutputParent | None,
+    ) -> None:
         """Create a new widget output element instance.
 
         Args:
@@ -190,7 +190,7 @@ class CellOutputWidgetElement(CellOutputElement):
         else:
             raise NotImplementedError
 
-    def __pt_container__(self) -> "AnyContainer":
+    def __pt_container__(self) -> AnyContainer:
         """Return a box container which holds a view of an ipywidget."""
         return self.container
 
@@ -200,11 +200,11 @@ class CellOutputJsonElement(CellOutputElement):
 
     def __init__(
         self,
-        mime: "str",
-        data: "dict[str, Any]",
-        metadata: "dict",
-        parent: "Optional[OutputParent]",
-    ) -> "None":
+        mime: str,
+        data: dict[str, Any],
+        metadata: dict,
+        parent: OutputParent | None,
+    ) -> None:
         """Create a new widget output element instance.
 
         Args:
@@ -218,12 +218,12 @@ class CellOutputJsonElement(CellOutputElement):
             data, title=metadata.get("root"), expanded=metadata.get("expanded", True)
         )
 
-    def __pt_container__(self) -> "AnyContainer":
+    def __pt_container__(self) -> AnyContainer:
         """Return a box container which holds a view of an ipywidget."""
         return self.container
 
 
-MIME_RENDERERS: "dict[str, Type[CellOutputElement]]" = {
+MIME_RENDERERS: dict[str, type[CellOutputElement]] = {
     "application/vnd.jupyter.widget-view+json": CellOutputWidgetElement,
     "application/json": CellOutputJsonElement,
     "*": CellOutputDataElement,
@@ -245,8 +245,8 @@ MIME_ORDER = [
 ]
 
 
-def _calculate_mime_rank(mime_data: "tuple[str, Any]") -> "int":
-    """Scores the richness of mime output types."""
+def _calculate_mime_rank(mime_data: tuple[str, Any]) -> int:
+    """Score the richness of mime output types."""
     mime, data = mime_data
     for i, ranked_mime in enumerate(MIME_ORDER):
         # Uprank plain text with escape sequences
@@ -259,17 +259,15 @@ def _calculate_mime_rank(mime_data: "tuple[str, Any]") -> "int":
 
 
 class CellOutput:
-    """Represents a single cell output.
+    """Represent a single cell output.
 
     Capable of displaying multiple mime representations of the same data.
 
     TODO - allow the visible mime-type to be rotated.
     """
 
-    def __init__(
-        self, json: "dict[str, Any]", parent: "Optional[OutputParent]"
-    ) -> "None":
-        """Creates a new cell output instance.
+    def __init__(self, json: dict[str, Any], parent: OutputParent | None) -> None:
+        """Create a new cell output instance.
 
         Args:
             json: The cell output's json
@@ -279,10 +277,10 @@ class CellOutput:
         self.parent = parent
         self.json = json
         self.selected_mime = next(x for x in self.data)
-        self._elements: "dict[str, CellOutputElement]" = {}
+        self._elements: dict[str, CellOutputElement] = {}
 
     @property
-    def data(self) -> "dict[str, Any]":
+    def data(self) -> dict[str, Any]:
         """Return dictionary of mime types and data for this output.
 
         This generates similarly structured data objects for markdown cells and text
@@ -305,8 +303,8 @@ class CellOutput:
             data = self.json.get("data", {"text/plain": ""})
         return dict(sorted(data.items(), key=_calculate_mime_rank))
 
-    def update(self) -> "None":
-        """Update's the output by updating all child containers."""
+    def update(self) -> None:
+        """Update the output by updating all child containers."""
         # log.debug("Updating %s", self)
         data = self.data
         for mime_type, element in self._elements.items():
@@ -315,8 +313,8 @@ class CellOutput:
             else:
                 del self._elements[mime_type]
 
-    def make_element(self, mime: "str") -> "CellOutputElement":
-        """Creates a container for the cell output mime-type if it doesn't exist.
+    def make_element(self, mime: str) -> CellOutputElement:
+        """Create a container for the cell output mime-type if it doesn't exist.
 
         Args:
             mime: The mime-type for which to create an output element
@@ -343,7 +341,7 @@ class CellOutput:
             "text/plain", "(Cannot display output)", {}, self.parent
         )
 
-    def get_element(self, mime: "str") -> "CellOutputElement":
+    def get_element(self, mime: str) -> CellOutputElement:
         """Return the currently displayed cell element."""
         if mime not in self._elements:
             element = self.make_element(mime)
@@ -353,35 +351,35 @@ class CellOutput:
         return element
 
     @property
-    def element(self) -> "CellOutputElement":
+    def element(self) -> CellOutputElement:
         """Get the element for the currently selected mime type."""
         return self.get_element(self.selected_mime)
 
-    def __pt_container__(self) -> "AnyContainer":
+    def __pt_container__(self) -> AnyContainer:
         """Return the cell output container (an :class:`OutputElement`)."""
         return DynamicContainer(lambda: self.element)
 
-    def scroll_left(self) -> "None":
-        """Scrolls the currently visible output left."""
+    def scroll_left(self) -> None:
+        """Scroll the currently visible output left."""
         self.element.scroll_left()
 
-    def scroll_right(self) -> "None":
-        """Scrolls the currently visible output right."""
+    def scroll_right(self) -> None:
+        """Scroll the currently visible output right."""
         self.element.scroll_right()
 
 
 class CellOutputArea:
     """An area below a cell where one or more cell outputs can be shown."""
 
-    output_cache: "SimpleCache[str, CellOutput]" = SimpleCache()
+    output_cache: SimpleCache[str, CellOutput] = SimpleCache()
 
     def __init__(
         self,
-        json: "list[dict[str, Any]]",
-        parent: "Optional[OutputParent]",
-        style: "str" = "",
-    ) -> "None":
-        """Creates a new cell output area instance.
+        json: list[dict[str, Any]],
+        parent: OutputParent | None,
+        style: str = "",
+    ) -> None:
+        """Create a new cell output area instance.
 
         Args:
             json: The cell's output json
@@ -389,22 +387,22 @@ class CellOutputArea:
             style: Additional style to apply to the output
 
         """
-        self._json: "list[dict[str, Any]]" = []
+        self._json: list[dict[str, Any]] = []
         self.parent = parent
         self.style = style
-        self.display_json: "list[dict[str, Any]]" = []
-        self.rendered_outputs: "list[CellOutput]" = []
+        self.display_json: list[dict[str, Any]] = []
+        self.rendered_outputs: list[CellOutput] = []
         self.container = HSplit([], style=lambda: self.style)
         self.children = self.container.children
         self.json = json
 
     @property
-    def json(self) -> "Any":
+    def json(self) -> Any:
         """Return the control's display data."""
         return self._json
 
     @json.setter
-    def json(self, value: "Any") -> "None":
+    def json(self, value: Any) -> None:
         """Set the cell output area JSON data."""
         # Reset if we have lost existing outputs
         if any(old_output_json not in value for old_output_json in self._json):
@@ -415,9 +413,7 @@ class CellOutputArea:
                 self.add_output(new_output_json, refresh=False)
         get_app().invalidate()
 
-    def add_output(
-        self, output_json: "dict[str, Any]", refresh: "bool" = True
-    ) -> "None":
+    def add_output(self, output_json: dict[str, Any], refresh: bool = True) -> None:
         """Add a new output to the output area."""
         # Update json
         self._json.append(output_json)
@@ -443,34 +439,34 @@ class CellOutputArea:
         if refresh:
             get_app().invalidate()
 
-    def update(self) -> "None":
+    def update(self) -> None:
         """Update all existing outputs."""
         for output in self.rendered_outputs:
             output.update()
 
-    def reset(self) -> "None":
-        """Clears all outputs from the output area."""
+    def reset(self) -> None:
+        """Clear all outputs from the output area."""
         self.style = ""
         self._json.clear()
         self.display_json.clear()
         self.rendered_outputs.clear()
         self.children.clear()
 
-    def scroll_left(self) -> "None":
-        """Scrolls the outputs left."""
+    def scroll_left(self) -> None:
+        """Scroll the outputs left."""
         for cell_output in self.rendered_outputs:
             cell_output.scroll_left()
 
-    def scroll_right(self) -> "None":
-        """Scrolls the outputs right."""
+    def scroll_right(self) -> None:
+        """Scroll the outputs right."""
         for cell_output in self.rendered_outputs:
             cell_output.scroll_right()
 
-    def __pt_container__(self) -> "AnyContainer":
+    def __pt_container__(self) -> AnyContainer:
         """Return the cell output area container (an :class:`HSplit`)."""
         return self.container
 
-    def to_plain_text(self) -> "str":
+    def to_plain_text(self) -> str:
         """Convert the contents of the output to plain text."""
         from prompt_toolkit.formatted_text.utils import to_plain_text
 

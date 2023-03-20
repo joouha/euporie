@@ -1,4 +1,4 @@
-"""Contains a registry of Comm target classes."""
+"""Contain a registry of Comm target classes."""
 
 from __future__ import annotations
 
@@ -16,11 +16,11 @@ TARGET_CLASSES = {"jupyter.widget": open_comm_ipywidgets}
 
 
 def open_comm(
-    comm_container: "KernelTab",
-    content: "dict[str, Any]",
-    buffers: "Sequence[bytes]",
-) -> "Comm":
-    """Creates a new object respsenting a Comm.
+    comm_container: KernelTab,
+    content: dict[str, Any],
+    buffers: Sequence[bytes],
+) -> Comm:
+    """Create a new object respsenting a Comm.
 
     The class used to represent the Comm is determined by the "target_class" given in
     the ``comm_open`` message.

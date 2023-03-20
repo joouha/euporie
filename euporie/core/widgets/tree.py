@@ -1,4 +1,4 @@
-"""Defines a tree-view widget."""
+"""Define a tree-view widget."""
 
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.mouse_events import MouseButton, MouseEvent, MouseEventType
 
 if TYPE_CHECKING:
-    from typing import Any, Optional
+    from typing import Any
 
     from prompt_toolkit.formatted_text import StyleAndTextTuples
     from prompt_toolkit.key_binding.key_bindings import NotImplementedOrNone
@@ -26,8 +26,8 @@ class JsonView:
     """A JSON-view contiainer."""
 
     def __init__(
-        self, data: "Any", title: "Optional[str]" = None, expanded: "bool" = True
-    ) -> "None":
+        self, data: Any, title: str | None = None, expanded: bool = True
+    ) -> None:
         """Create a new instance."""
         if title is None:
             self.title = "root"
@@ -82,7 +82,7 @@ class JsonView:
             style="class:tree",
         )
 
-    def toggle(self, mouse_event: "MouseEvent") -> "NotImplementedOrNone":
+    def toggle(self, mouse_event: MouseEvent) -> NotImplementedOrNone:
         """Toggle the expansion state."""
         if (
             mouse_event.button == MouseButton.LEFT
@@ -92,7 +92,7 @@ class JsonView:
             return None
         return NotImplemented
 
-    def format_title(self) -> "StyleAndTextTuples":
+    def format_title(self) -> StyleAndTextTuples:
         """Return the tree node toggle and title."""
         return cast(
             "StyleAndTextTuples",
@@ -107,6 +107,6 @@ class JsonView:
             ],
         )
 
-    def __pt_container__(self) -> "AnyContainer":
+    def __pt_container__(self) -> AnyContainer:
         """Return the tree-view container's content."""
         return self.container

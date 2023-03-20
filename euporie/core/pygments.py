@@ -1,4 +1,4 @@
-"""Contains lexers for pygments."""
+"""Contain lexers for pygments."""
 
 from __future__ import annotations
 
@@ -21,7 +21,7 @@ class ArgparseLexer(RegexLexer):
 
     name = "argparse"
     aliases = ["argparse"]
-    filenames: "list[str]" = []
+    filenames: list[str] = []
 
     tokens = {
         "root": [

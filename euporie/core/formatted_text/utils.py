@@ -1,10 +1,10 @@
-"""Utilities for manipulating formatted text."""
+"""Utilitie for manipulating formatted text."""
 
 from __future__ import annotations
 
 import re
 from enum import Enum
-from typing import Iterable, Optional, cast
+from typing import Iterable, cast
 
 from prompt_toolkit.formatted_text.base import OneStyleAndTextTuple, StyleAndTextTuples
 from prompt_toolkit.formatted_text.utils import (
@@ -38,7 +38,7 @@ class FormattedTextVerticalAlign(Enum):
     BOTTOM = "bottom"
 
 
-def fragment_list_width(fragments: StyleAndTextTuples) -> "int":
+def fragment_list_width(fragments: StyleAndTextTuples) -> int:
     """Return the character width of this text fragment list.
 
     Takes double width characters into account, and ignore special fragments:
@@ -63,9 +63,9 @@ def fragment_list_width(fragments: StyleAndTextTuples) -> "int":
     )
 
 
-def last_line_length(ft: "StyleAndTextTuples", rows: "int" = 1) -> "int":
+def last_line_length(ft: StyleAndTextTuples, rows: int = 1) -> int:
     """Calculate the length of the last line in formatted text."""
-    lines: "list[StyleAndTextTuples]" = [[]]
+    lines: list[StyleAndTextTuples] = [[]]
     for style, text, *_ in reversed(ft):
         parts = text.split("\n")
         lines[-1].append((style, parts[-1]))
@@ -97,8 +97,8 @@ def last_char(ft: StyleAndTextTuples) -> str | None:
 
 
 def fragment_list_to_words(
-    fragments: "StyleAndTextTuples", sep: "str" = " "
-) -> "Iterable[StyleAndTextTuples]":
+    fragments: StyleAndTextTuples, sep: str = " "
+) -> Iterable[StyleAndTextTuples]:
     """Split formatted text into a list of word fragments which form words."""
     word: StyleAndTextTuples = []
     for style, string, *_ in fragments:
@@ -141,7 +141,7 @@ def strip(
         ft: The formatted text to strip
         left: If :py:const:`True`, strip from the left side of the input
         right: If :py:const:`True`, strip from the right side of the input
-        char: The character to strip. If :py:const:`None`, strips whitespace
+        chars: The character to strip. If :py:const:`None`, strips whitespace
         only_unstyled: If :py:const:`True`, only strip unstyled fragments
 
     Returns:
@@ -162,7 +162,7 @@ def strip(
     return result
 
 
-def strip_one_trailing_newline(ft: "StyleAndTextTuples") -> "StyleAndTextTuples":
+def strip_one_trailing_newline(ft: StyleAndTextTuples) -> StyleAndTextTuples:
     """Remove up to one trailing new-line character from formatted text."""
     for i in range(len(ft) - 1, -1, -1):
         frag = ft[i]
@@ -183,7 +183,7 @@ def truncate(
     placeholder: str = "…",
     ignore_whitespace: bool = False,
 ) -> StyleAndTextTuples:
-    """Truncates all lines at a given length.
+    """Truncate all lines at a given length.
 
     Args:
         ft: The formatted text to truncate
@@ -233,8 +233,8 @@ def truncate(
 
 
 def substring(
-    ft: "StyleAndTextTuples", start: "Optional[int]" = None, end: "Optional[int]" = None
-) -> "StyleAndTextTuples":
+    ft: StyleAndTextTuples, start: int | None = None, end: int | None = None
+) -> StyleAndTextTuples:
     """Extract a substring from formatted text."""
     output: StyleAndTextTuples = []
     if start is None:
@@ -265,11 +265,11 @@ def wrap(
     width: int,
     style: str = "",
     placeholder: str = "…",
-    left: "int" = 0,
-    truncate_long_words: "bool" = True,
-    strip_trailing_ws: "bool" = False,
+    left: int = 0,
+    truncate_long_words: bool = True,
+    strip_trailing_ws: bool = False,
 ) -> StyleAndTextTuples:
-    """Wraps formatted text at a given width.
+    """Wrap formatted text at a given width.
 
     If words are longer than the given line they will be truncated
 
@@ -307,7 +307,6 @@ def wrap(
 
                 # Start a new line - we are at the end of the current output line
                 if left + fragment_width > width and left > 0:
-
                     # Add as much trailing whitespace as we can
                     if not strip_trailing_ws and (
                         trailing_ws := (not to_plain_text(word).strip())
@@ -401,11 +400,11 @@ def align(
 
 
 def valign(
-    ft: "StyleAndTextTuples",
-    how: "FormattedTextVerticalAlign" = FormattedTextVerticalAlign.MIDDLE,
-    height: "int|None" = None,
-    style: "str" = "",
-) -> "StyleAndTextTuples":
+    ft: StyleAndTextTuples,
+    how: FormattedTextVerticalAlign = FormattedTextVerticalAlign.MIDDLE,
+    height: int | None = None,
+    style: str = "",
+) -> StyleAndTextTuples:
     """Align formatted text vertically."""
     if height is None:
         return ft
@@ -428,7 +427,7 @@ def valign(
     ]
 
 
-def join_lines(fragments: "list[StyleAndTextTuples]") -> "StyleAndTextTuples":
+def join_lines(fragments: list[StyleAndTextTuples]) -> StyleAndTextTuples:
     """Join a list of lines of formatted text."""
     ft = []
     if fragments:
@@ -444,11 +443,11 @@ def join_lines(fragments: "list[StyleAndTextTuples]") -> "StyleAndTextTuples":
 
 
 def pad(
-    ft: "StyleAndTextTuples",
-    width: "int|None" = None,
-    char: "str" = " ",
-    style: "str" = "",
-) -> "StyleAndTextTuples":
+    ft: StyleAndTextTuples,
+    width: int | None = None,
+    char: str = " ",
+    style: str = "",
+) -> StyleAndTextTuples:
     """Fill space at the end of lines."""
     if width is None:
         width = max_line_width(ft)
@@ -461,13 +460,13 @@ def pad(
 
 
 def paste(
-    ft_bottom: "StyleAndTextTuples",
-    ft_top: "StyleAndTextTuples",
-    row: "int" = 0,
-    col: "int" = 0,
-) -> "StyleAndTextTuples":
-    """Paste formatted text on top of other formatted text."""
-    ft: "StyleAndTextTuples" = []
+    ft_bottom: StyleAndTextTuples,
+    ft_top: StyleAndTextTuples,
+    row: int = 0,
+    col: int = 0,
+) -> StyleAndTextTuples:
+    """Pate formatted text on top of other formatted text."""
+    ft: StyleAndTextTuples = []
 
     top_lines = dict(enumerate(split_lines(ft_top), start=row))
     for y, line_b in enumerate(split_lines(ft_bottom)):
@@ -489,12 +488,12 @@ def paste(
 
 
 def concat(
-    ft_a: "StyleAndTextTuples",
-    ft_b: "StyleAndTextTuples",
-    baseline_a: "int" = 0,
-    baseline_b: "int" = 0,
-    style: "str" = "",
-) -> "tuple[StyleAndTextTuples, int]":
+    ft_a: StyleAndTextTuples,
+    ft_b: StyleAndTextTuples,
+    baseline_a: int = 0,
+    baseline_b: int = 0,
+    style: str = "",
+) -> tuple[StyleAndTextTuples, int]:
     """Concatenate two blocks of formatted text, aligning at a given baseline.
 
     Args:
@@ -547,7 +546,7 @@ def indent(
     style: str = "",
     skip_first: bool = False,
 ) -> StyleAndTextTuples:
-    """Indents formatted text with a given margin.
+    """Indent formatted text with a given margin.
 
     Args:
         ft: The formatted text to strip
@@ -571,15 +570,15 @@ def indent(
 
 def add_border(
     ft: StyleAndTextTuples,
-    width: "int|None" = None,
-    style: "str" = "",
-    border_grid: "GridStyle" = ThinGrid,
-    border_visibility: "DiBool|bool" = True,
-    border_style: "DiStr|str" = "",
-    padding: "DiInt|int" = 0,
-    padding_style: "DiStr|str" = "",
+    width: int | None = None,
+    style: str = "",
+    border_grid: GridStyle = ThinGrid,
+    border_visibility: DiBool | bool = True,
+    border_style: DiStr | str = "",
+    padding: DiInt | int = 0,
+    padding_style: DiStr | str = "",
 ) -> StyleAndTextTuples:
-    """Adds a border around formatted text.
+    """Add a border around formatted text.
 
     Args:
         ft: The formatted text to enclose with a border
@@ -622,7 +621,7 @@ def add_border(
             style=style,
         )
 
-    output: "list[StyleAndTextTuples]" = []
+    output: list[StyleAndTextTuples] = []
 
     base_style = f"{style} nounderline"
 
@@ -764,7 +763,7 @@ def add_border(
     return join_lines(output)
 
 
-def lex(ft: "StyleAndTextTuples", lexer_name: "str") -> "StyleAndTextTuples":
+def lex(ft: StyleAndTextTuples, lexer_name: str) -> StyleAndTextTuples:
     """Format formatted text using a named :py:mod:`pygments` lexer."""
     from prompt_toolkit.lexers.pygments import _token_cache
 
@@ -773,20 +772,20 @@ def lex(ft: "StyleAndTextTuples", lexer_name: "str") -> "StyleAndTextTuples":
     except ClassNotFound:
         return ft
     else:
-        output: "StyleAndTextTuples" = []
+        output: StyleAndTextTuples = []
         for style, text, *_rest in ft:
             for _, t, v in lexer.get_tokens_unprocessed(text):
                 output.append((f"{style} {_token_cache[t]}", v))
         return output
 
 
-def apply_reverse_overwrites(ft: "StyleAndTextTuples") -> "StyleAndTextTuples":
+def apply_reverse_overwrites(ft: StyleAndTextTuples) -> StyleAndTextTuples:
     """Write fragments tagged with "[ReverseOverwrite]" over text to their left."""
 
     def _apply_overwrites(
-        overwrites: "StyleAndTextTuples", transformed_line: "StyleAndTextTuples"
-    ) -> "tuple[StyleAndTextTuples, StyleAndTextTuples]":
-        """Paste `overwrites` over the end of `transformed_line`."""
+        overwrites: StyleAndTextTuples, transformed_line: StyleAndTextTuples
+    ) -> tuple[StyleAndTextTuples, StyleAndTextTuples]:
+        """Pate `overwrites` over the end of `transformed_line`."""
         # Remove the ``[ReverseOverwrite]`` from the overwrite fragments
         top = cast(
             StyleAndTextTuples,

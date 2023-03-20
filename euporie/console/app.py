@@ -47,13 +47,13 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 
-def get_app() -> "ConsoleApp":
+def get_app() -> ConsoleApp:
     """Get the current application."""
     return cast("ConsoleApp", ptk_get_app())
 
 
 class ConsoleApp(BaseApp):
-    """Console app.
+    """Conole app.
 
     An interactive console which connects to Jupyter kernels and displays
     rich output in the terminal.
@@ -63,7 +63,7 @@ class ConsoleApp(BaseApp):
     name = "console"
     log_stdout_level = "ERROR"
 
-    def __init__(self, **kwargs: "Any") -> "None":
+    def __init__(self, **kwargs: Any) -> None:
         """Create a new euporie text user interface application instance."""
         # Setup mouse support
         self.need_mouse_support = False
@@ -89,7 +89,7 @@ class ConsoleApp(BaseApp):
             self, "need_mouse_support", x.value
         )
 
-    def _get_reserved_height(self) -> "Dimension":
+    def _get_reserved_height(self) -> Dimension:
         if has_dialog():
             return Dimension(min=15)
         elif has_completions():
@@ -97,8 +97,8 @@ class ConsoleApp(BaseApp):
         else:
             return Dimension(min=1)
 
-    def load_container(self) -> "FloatContainer":
-        """Returns a container with all opened tabs."""
+    def load_container(self) -> FloatContainer:
+        """Return a container with all opened tabs."""
         assert self.pager is not None
         assert self.search_bar is not None
         assert self.tab is not None
@@ -148,8 +148,8 @@ class ConsoleApp(BaseApp):
             floats=self.floats,  # type: ignore
         )
 
-    def exit(self, **kwargs: "Any") -> "None":
-        """Close all tabs on exit."""
+    def exit(self, **kwargs: Any) -> None:
+        """Cloe all tabs on exit."""
         for tab in self.tabs:
             tab.close()
         super().exit(**kwargs)
@@ -158,7 +158,7 @@ class ConsoleApp(BaseApp):
 
     @staticmethod
     @add_cmd()
-    async def _convert_to_notebook() -> "None":
+    async def _convert_to_notebook() -> None:
         """Convert the current console session to a notebook."""
         from euporie.notebook.app import NotebookApp
         from euporie.notebook.tabs.notebook import Notebook
@@ -190,8 +190,8 @@ class ConsoleApp(BaseApp):
 
     @staticmethod
     @add_cmd()
-    def _clear_screen() -> "None":
-        """Clears the screen and the previous output."""
+    def _clear_screen() -> None:
+        """Clear the screen and the previous output."""
         app = get_app()
         tab = app.tab
         app.renderer.clear()

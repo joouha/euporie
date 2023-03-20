@@ -1,4 +1,4 @@
-"""Responsible for loading data from urls."""
+"""Responible for loading data from urls."""
 
 import base64
 import binascii
@@ -21,7 +21,7 @@ log = logging.getLogger(__name__)
 def load_url(
     url: "Union[UPath, str]", base: "Optional[Union[UPath, str]]" = None
 ) -> "Optional[bytes]":
-    """Loads data from a url."""
+    """Load data from a url."""
     # "tuple[str, str|None, bytes]":
     log.debug("Loading data from url `%s`", url)
     data = None

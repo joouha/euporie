@@ -1,4 +1,4 @@
-"""Contains data reference dictionaries for value lookups."""
+"""Contain data reference dictionaries for value lookups."""
 
 from prompt_toolkit.styles.base import ANSI_COLOR_NAMES, ANSI_COLOR_NAMES_ALIASES
 from prompt_toolkit.styles.named_colors import NAMED_COLORS as PTK_NAMED_COLORS

@@ -1,4 +1,4 @@
-"""Contains functions which convert data to formatted text."""
+"""Contain functions which convert data to formatted text."""
 
 from __future__ import annotations
 
@@ -13,14 +13,12 @@ from euporie.core.formatted_text.ansi import ANSI
 from euporie.core.lexers import detect_lexer
 
 if TYPE_CHECKING:
-    from typing import Optional
-
     from prompt_toolkit.formatted_text.base import StyleAndTextTuples
     from upath import UPath
 
     from euporie.core.formatted_text.html import HTML, CssSelectors
 
-_html_cache: "SimpleCache[int, HTML]" = SimpleCache(maxsize=20)
+_html_cache: SimpleCache[int, HTML] = SimpleCache(maxsize=20)
 
 
 @register(
@@ -28,15 +26,15 @@ _html_cache: "SimpleCache[int, HTML]" = SimpleCache(maxsize=20)
     to="formatted_text",
 )
 def html_to_ft(
-    data: "str|bytes",
-    width: "Optional[int]" = None,
-    height: "Optional[int]" = None,
-    fg: "Optional[str]" = None,
-    bg: "Optional[str]" = None,
-    path: "Optional[UPath]" = None,
-    browser_css: "CssSelectors|None" = None,
-) -> "StyleAndTextTuples":
-    """Converts markdown to formatted text."""
+    data: str | bytes,
+    width: int | None = None,
+    height: int | None = None,
+    fg: str | None = None,
+    bg: str | None = None,
+    path: UPath | None = None,
+    browser_css: CssSelectors | None = None,
+) -> StyleAndTextTuples:
+    """Convert markdown to formatted text."""
     from euporie.core.formatted_text.html import HTML
 
     markup = data.decode() if isinstance(data, bytes) else data
@@ -67,13 +65,13 @@ def html_to_ft(
     to="formatted_text",
 )
 def markdown_to_ft(
-    data: "str|bytes",
-    width: "Optional[int]" = None,
-    height: "Optional[int]" = None,
-    fg: "Optional[str]" = None,
-    bg: "Optional[str]" = None,
-    path: "Optional[UPath]" = None,
-) -> "StyleAndTextTuples":
+    data: str | bytes,
+    width: int | None = None,
+    height: int | None = None,
+    fg: str | None = None,
+    bg: str | None = None,
+    path: UPath | None = None,
+) -> StyleAndTextTuples:
     """Convert markdown to formatted text, injecting a custom CSS style-sheet."""
     from euporie.core.convert.formats.html import markdown_to_html_markdown_it
     from euporie.core.formatted_text.html import _BROWSER_CSS
@@ -97,16 +95,16 @@ def markdown_to_ft(
     to="formatted_text",
 )
 def ansi_to_ft(
-    data: "str|bytes",
-    width: "Optional[int]" = None,
-    height: "Optional[int]" = None,
-    fg: "Optional[str]" = None,
-    bg: "Optional[str]" = None,
-    path: "Optional[UPath]" = None,
-) -> "StyleAndTextTuples":
-    """Converts ANSI text to formatted text."""
+    data: str | bytes,
+    width: int | None = None,
+    height: int | None = None,
+    fg: str | None = None,
+    bg: str | None = None,
+    path: UPath | None = None,
+) -> StyleAndTextTuples:
+    """Convert ANSI text to formatted text."""
     markup = data.decode() if isinstance(data, bytes) else data
-    ft: "StyleAndTextTuples"
+    ft: StyleAndTextTuples
     if "\x1b" in markup or "\r" in markup:
         ft = to_formatted_text(ANSI(markup.strip()))
     elif (lexer := detect_lexer(markup, path)) is not None:

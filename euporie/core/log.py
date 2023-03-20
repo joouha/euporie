@@ -27,7 +27,7 @@ from euporie.core.style import LOG_STYLE
 
 if TYPE_CHECKING:
     from types import TracebackType
-    from typing import Any, Callable, Optional, TextIO, Type
+    from typing import Any, Callable, TextIO
 
     from prompt_toolkit.formatted_text.base import StyleAndTextTuples
     from prompt_toolkit.styles.base import BaseStyle
@@ -36,10 +36,10 @@ if TYPE_CHECKING:
 
 log = logging.getLogger(__name__)
 
-LOG_QUEUE: "deque" = deque(maxlen=1000)
+LOG_QUEUE: deque = deque(maxlen=1000)
 
 
-def dict_merge(target_dict: "dict", input_dict: "dict") -> "None":
+def dict_merge(target_dict: dict, input_dict: dict) -> None:
     """Merge the second dictionary onto the first."""
     for k in input_dict:
         if k in target_dict:
@@ -53,20 +53,50 @@ def dict_merge(target_dict: "dict", input_dict: "dict") -> "None":
             target_dict[k] = input_dict[k]
 
 
+class FtFormatter(logging.Formatter):
+    """Bae class for formatted text logging formatter."""
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        """Create a new formatter instance."""
+        super().__init__(*args, **kwargs)
+        self.datefmt = self.datefmt or "%H:%M:%S"
+
+    def prepare(
+        self, record: logging.LogRecord, width: int | None = None
+    ) -> logging.LogRecord:
+        """Format certain attributes on the log record."""
+        record.asctime = self.formatTime(record, self.datefmt)
+        record.message = record.getMessage()
+        record.exc_text = ""
+        if record.exc_info and not record.exc_text:
+            record.exc_text = self.formatException(record.exc_info)
+        return record
+
+    def format_traceback(self, tb: str) -> StyleAndTextTuples:
+        """Format a traceback string using pygments."""
+        return lex([("", tb)], "pytb")
+
+    def ft_format(
+        self, record: logging.LogRecord, width: int | None = None
+    ) -> FormattedText:
+        """Format a log record as :py:class:`FormattedText`."""
+        return FormattedText([])
+
+
 class FormattedTextHandler(logging.StreamHandler):
     """Format log records for display on the standard output."""
 
-    formatter: "FtFormatter"
+    formatter: FtFormatter
 
     def __init__(
         self,
-        *args: "Any",
-        share_stream: "bool" = True,
-        style: "Optional[BaseStyle]" = None,
-        pygments_theme: "str" = "euporie",
-        **kwargs: "Any",
-    ) -> "None":
-        """Creates a new log handler instance."""
+        *args: Any,
+        share_stream: bool = True,
+        style: BaseStyle | None = None,
+        pygments_theme: str = "euporie",
+        **kwargs: Any,
+    ) -> None:
+        """Create a new log handler instance."""
         super().__init__(*args, **kwargs)
         self.output = create_output(stdout=self.stream)
         self.style = style or merge_styles(
@@ -77,14 +107,14 @@ class FormattedTextHandler(logging.StreamHandler):
         )
         self.share_stream = share_stream
 
-    def ft_format(self, record: "logging.LogRecord") -> "FormattedText":
+    def ft_format(self, record: logging.LogRecord) -> FormattedText:
         """Format the specified record."""
         if self.formatter is not None:
             return self.formatter.ft_format(record, width=self.output.get_size()[1])
         else:
             return FormattedText([])
 
-    def emit(self, record: "logging.LogRecord") -> "None":
+    def emit(self, record: logging.LogRecord) -> None:
         """Emit a formatted record."""
         try:
             msg = self.ft_format(record)
@@ -112,23 +142,23 @@ class FormattedTextHandler(logging.StreamHandler):
 class QueueHandler(logging.Handler):
     """This handler store logs events into a queue."""
 
-    formatter: "FtFormatter"
+    formatter: FtFormatter
     hook_id = 0
-    hooks: "dict[int, Callable]" = {}
+    hooks: dict[int, Callable] = {}
 
     def __init__(
         self,
-        *args: "Any",
-        queue: "deque",
-        style: "Optional[Style]" = None,
-        **kwargs: "Any",
-    ) -> "None":
+        *args: Any,
+        queue: deque,
+        style: Style | None = None,
+        **kwargs: Any,
+    ) -> None:
         """Initialize an instance, using the passed queue."""
         logging.Handler.__init__(self, *args, **kwargs)
         self.queue = queue
         self.style = style or Style(LOG_STYLE)
 
-    def emit(self, record: "logging.LogRecord") -> "None":
+    def emit(self, record: logging.LogRecord) -> None:
         """Queue unformatted records, as they will be formatted when accessed."""
         message = self.formatter.ft_format(record)
         self.queue.append(message)
@@ -137,8 +167,8 @@ class QueueHandler(logging.Handler):
                 hook(message)
 
     @classmethod
-    def hook(cls, hook: "Callable") -> "int":
-        """Adds a hook to run after each log entry.
+    def hook(cls, hook: Callable) -> int:
+        """Add a hook to run after each log entry.
 
         Args:
             hook: The hook function to add
@@ -152,8 +182,8 @@ class QueueHandler(logging.Handler):
         return hook_id
 
     @classmethod
-    def unhook(cls, hook_id: "int") -> "None":
-        """Removes a hook function.
+    def unhook(cls, hook_id: int) -> None:
+        """Remove a hook function.
 
         Args:
             hook_id: The ID of the hook function to remove
@@ -162,45 +192,15 @@ class QueueHandler(logging.Handler):
             del cls.hooks[hook_id]
 
 
-class FtFormatter(logging.Formatter):
-    """Base class for formatted text logging formatter."""
-
-    def __init__(self, *args: "Any", **kwargs: "Any") -> "None":
-        """Creates a new formatter instance."""
-        super().__init__(*args, **kwargs)
-        self.datefmt = self.datefmt or "%H:%M:%S"
-
-    def prepare(
-        self, record: "logging.LogRecord", width: "Optional[int]" = None
-    ) -> "logging.LogRecord":
-        """Format certain attributes on the log record."""
-        record.asctime = self.formatTime(record, self.datefmt)
-        record.message = record.getMessage()
-        record.exc_text = ""
-        if record.exc_info and not record.exc_text:
-            record.exc_text = self.formatException(record.exc_info)
-        return record
-
-    def format_traceback(self, tb: "str") -> "StyleAndTextTuples":
-        """Formats a traceback string using pygments."""
-        return lex([("", tb)], "pytb")
-
-    def ft_format(
-        self, record: "logging.LogRecord", width: "Optional[int]" = None
-    ) -> "FormattedText":
-        """Formats a log record as :py:class:`FormattedText`."""
-        return FormattedText([])
-
-
 class LogTabFormatter(FtFormatter):
-    """Formats log messages for display in the log view tab."""
+    """Format log messages for display in the log view tab."""
 
     def ft_format(
-        self, record: "logging.LogRecord", width: "Optional[int]" = None
-    ) -> "FormattedText":
-        """Formats a log record as formatted text."""
+        self, record: logging.LogRecord, width: int | None = None
+    ) -> FormattedText:
+        """Format a log record as formatted text."""
         record = self.prepare(record)
-        output: "StyleAndTextTuples" = [
+        output: StyleAndTextTuples = [
             ("class:pygments.literal.date", f"{record.asctime}"),
             ("", " "),
             (f"class:log.level.{record.levelname}", f"{record.levelname}"),
@@ -221,15 +221,15 @@ class LogTabFormatter(FtFormatter):
 class StdoutFormatter(FtFormatter):
     """A log formatter for formatting log entries for display on the standard output."""
 
-    def __init__(self, *args: "Any", **kwargs: "Any") -> "None":
-        """Creates a new formatter instance."""
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        """Create a new formatter instance."""
         super().__init__(*args, **kwargs)
-        self.last_date: "Optional[str]" = None
+        self.last_date: str | None = None
 
     def ft_format(
-        self, record: "logging.LogRecord", width: "Optional[int]" = None
-    ) -> "FormattedText":
-        """Formats log records for display on the standard output."""
+        self, record: logging.LogRecord, width: int | None = None
+    ) -> FormattedText:
+        """Format log records for display on the standard output."""
         if width is None:
             width = get_app_session().output.get_size()[1]
 
@@ -254,7 +254,7 @@ class StdoutFormatter(FtFormatter):
             subsequent_indent=" " * msg_pad,
         )
 
-        output: "StyleAndTextTuples" = [
+        output: StyleAndTextTuples = [
             ("class:pygments.literal.date", date),
             ("", " " * (9 - len(record.levelname))),
             (f"class:log.level.{record.levelname}", record.levelname),
@@ -283,8 +283,8 @@ class StdoutFormatter(FtFormatter):
         return FormattedText(output)
 
 
-def setup_logs(config: "Config") -> "None":
-    """Configures the logger for euporie."""
+def setup_logs(config: Config) -> None:
+    """Configure the logger for euporie."""
     log_file_is_stdout = config.log_file in ("-", "/dev/stdout")
 
     log_config = {
@@ -359,9 +359,9 @@ class stdout_to_log:
     """A decorator which captures standard output and logs it."""
 
     def __init__(
-        self, log: "logging.Logger", output: "str" = "Literal['stdout','stderr']"
-    ) -> "None":
-        """Creates a new instance of the capturing context manager.
+        self, log: logging.Logger, output: str = "Literal['stdout','stderr']"
+    ) -> None:
+        """Create a new instance of the capturing context manager.
 
         Args:
             log: The logger to send the output to
@@ -371,10 +371,10 @@ class stdout_to_log:
         self.log = log
         self.out = StringIO()
         self.output = output
-        self._original: "Optional[TextIO]" = None
+        self._original: TextIO | None = None
 
-    def __enter__(self) -> "None":
-        """Hooks the standard output when entering the context manager."""
+    def __enter__(self) -> None:
+        """Intercept the standard output when entering the context manager."""
         if self.output == "stderr":
             self._original = sys.stderr
             sys.stderr = self.out
@@ -384,11 +384,11 @@ class stdout_to_log:
 
     def __exit__(
         self,
-        exc_type: "Optional[type[BaseException]]",
-        exc_value: "Optional[BaseException]",
-        exc_traceback: "Optional[TracebackType]",
-    ) -> "None":
-        """Replaces the standard output, and logs the captured output."""
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        exc_traceback: TracebackType | None,
+    ) -> None:
+        """Replace the standard output, and logs the captured output."""
         assert self._original is not None
         if self.output == "stderr":
             sys.stderr = self._original
@@ -402,10 +402,10 @@ class stdout_to_log:
 
 
 def handle_exception(
-    exc_type: "Type[BaseException]",
-    exc_value: "BaseException",
-    exc_traceback: "Optional[TracebackType]",
-) -> "Any":
+    exc_type: type[BaseException],
+    exc_value: BaseException,
+    exc_traceback: TracebackType | None,
+) -> Any:
     """Log unhandled exceptions and their tracebacks in the log.
 
     Args:
@@ -421,8 +421,8 @@ def handle_exception(
     log.critical("Uncaught exception", exc_info=(exc_type, exc_value, exc_traceback))
 
 
-def default_logs() -> "None":
-    """Default logging configuration to be used before euporie's config is loaded."""
+def default_logs() -> None:
+    """Apply the default logging configuration before euporie's config is loaded."""
     logging.config.dictConfig(
         {
             "version": 1,

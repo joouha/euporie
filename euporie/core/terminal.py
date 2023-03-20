@@ -1,4 +1,4 @@
-"""Contains classes related to querying terminal feautres."""
+"""Contain classes related to querying terminal feautres."""
 
 from __future__ import annotations
 
@@ -20,7 +20,7 @@ from euporie.core.key_binding.registry import register_bindings
 from euporie.core.style import DEFAULT_COLORS
 
 if TYPE_CHECKING:
-    from typing import Any, Optional, Type
+    from typing import Any
 
     from prompt_toolkit.input import Input
     from prompt_toolkit.key_binding import KeyPressEvent
@@ -32,7 +32,7 @@ log = logging.getLogger(__name__)
 
 
 @lru_cache
-def _have_termios_tty_fcntl() -> "bool":
+def _have_termios_tty_fcntl() -> bool:
     try:
         import fcntl  # noqa F401
         import termios  # noqa F401
@@ -43,8 +43,8 @@ def _have_termios_tty_fcntl() -> "bool":
         return True
 
 
-def tmuxify(cmd: "str") -> "str":
-    """Wraps an escape sequence for tmux passthrough."""
+def tmuxify(cmd: str) -> str:
+    """Wrap an escape sequence for tmux passthrough."""
     if in_tmux():
         cmd = cmd.replace("\x1b", "\x1b\x1b")
         cmd = f"\x1bPtmux;{cmd}\033\\"
@@ -58,17 +58,17 @@ class TerminalQuery:
     and the received value processed and stored.
     """
 
-    default: "Optional[Any]" = None
+    default: Any | None = None
     cache = False
     cmd = ""
-    pattern: "Optional[re.Pattern]" = None
+    pattern: re.Pattern | None = None
 
-    def __init__(self, output: "Output", config: "Config") -> "None":
+    def __init__(self, output: Output, config: Config) -> None:
         """Create a new instance of the terminal query."""
         self.config = config
         self.output = output
         self.waiting = False
-        self._value: "Optional[Any]" = None
+        self._value: Any | None = None
         self.event = Event(self)
         self.queryable = self.output.stdout and (
             self.output.stdout.isatty()
@@ -80,11 +80,11 @@ class TerminalQuery:
         if not self.queryable:
             self.cmd = ""
 
-    def verify(self, data: "str") -> "Optional[Any]":
-        """Verifies the response from the terminal."""
+    def verify(self, data: str) -> Any | None:
+        """Verify the response from the terminal."""
         return None
 
-    async def _handle_response(self, event: "KeyPressEvent") -> "object":
+    async def _handle_response(self, event: KeyPressEvent) -> object:
         """Run when the terminal receives the response from the terminal.
 
         Args:
@@ -104,12 +104,12 @@ class TerminalQuery:
             self.event.fire()
         return NotImplemented
 
-    def _cmd(self) -> "str":
+    def _cmd(self) -> str:
         """Return the query's command."""
         return self.cmd
 
-    def send(self) -> "None":
-        """Sends the terminal query command to the output."""
+    def send(self) -> None:
+        """Send the terminal query command to the output."""
         if self.queryable and self.cmd and not self.waiting:
             cmd = self._cmd()
             log.debug(
@@ -122,8 +122,8 @@ class TerminalQuery:
             self.waiting = True
 
     @property
-    def value(self) -> "Any":
-        """Returns the last known value for the query.
+    def value(self) -> Any:
+        """Return the last known value for the query.
 
         Returns:
             The last value received, or the default value.
@@ -135,10 +135,10 @@ class TerminalQuery:
 class ColorQueryMixin:
     """A mixin for terminal queries which check a terminal colour."""
 
-    pattern: "re.Pattern"
+    pattern: re.Pattern
 
-    def verify(self, data: "str") -> "Optional[str]":
-        """Verifies the response contains a colour."""
+    def verify(self, data: str) -> str | None:
+        """Verify the response contains a colour."""
         if match := self.pattern.match(data):
             if colors := match.groupdict():
                 r, g, b = (
@@ -187,11 +187,11 @@ class Colors(TerminalQuery):
         r"(\x1b\\\Z|\0x7)"
     )
 
-    def _cmd(self) -> "str":
+    def _cmd(self) -> str:
         return tmuxify(self.cmd)
 
-    def verify(self, data: "str") -> "dict[str, str]":
-        """Verifies the response contains a colour."""
+    def verify(self, data: str) -> dict[str, str]:
+        """Verify the response contains a colour."""
         if match := self.pattern.match(data):
             if colors := match.groupdict():
                 c = colors["c"]
@@ -216,8 +216,8 @@ class PixelDimensions(TerminalQuery):
     cache = True
     pattern = re.compile(r"^\x1b\[4;(?P<y>\d+);(?P<x>\d+)t\x1b\\")
 
-    def verify(self, data: "str") -> "Optional[tuple[int, int]]":
-        """Verifies the terminal responded with pixel dimensions."""
+    def verify(self, data: str) -> tuple[int, int] | None:
+        """Verify the terminal responded with pixel dimensions."""
         if match := self.pattern.match(data):
             if values := match.groupdict():
                 if (x := values.get("x")) is not None and (
@@ -236,11 +236,11 @@ class KittyGraphicsStatus(TerminalQuery):
     # Konsole responds with 'i=0' - I'll allow it
     pattern = re.compile(r"^\x1b_Gi=(4294967295|0);(?P<status>OK)\x1b\\\Z")
 
-    def _cmd(self) -> "str":
+    def _cmd(self) -> str:
         return "\x1b[s" + tmuxify(self.cmd) + "\x1b[u\x1b[2K"
 
-    def verify(self, data: "str") -> "bool":
-        """Verifies the terminal response means kitty graphics are supported."""
+    def verify(self, data: str) -> bool:
+        """Verify the terminal response means kitty graphics are supported."""
         if match := self.pattern.match(data):
             if values := match.groupdict():
                 if values.get("status") == "OK":
@@ -256,14 +256,14 @@ class SixelGraphicsStatus(TerminalQuery):
     cmd = "\x1b[c"
     pattern = re.compile(r"^\x1b\[\?(?:\d+;)*(?P<sixel>4)(?:;\d+)*c\Z")
 
-    def _cmd(self) -> "str":
+    def _cmd(self) -> str:
         if self.config.tmux_graphics:
             return tmuxify(self.cmd)
         else:
             return self.cmd
 
-    def verify(self, data: "str") -> "bool":
-        """Verifies the terminal response means sixel graphics are supported."""
+    def verify(self, data: str) -> bool:
+        """Verify the terminal response means sixel graphics are supported."""
         if match := self.pattern.match(data):
             if values := match.groupdict():
                 if values.get("sixel"):
@@ -279,14 +279,14 @@ class ItermGraphicsStatus(TerminalQuery):
     cmd = "\x1b[>q"
     pattern = re.compile(r"^\x1bP>\|(?P<term>[^\x1b]+)\x1b\\")
 
-    def _cmd(self) -> "str":
+    def _cmd(self) -> str:
         if self.config.tmux_graphics:
             return tmuxify(self.cmd)
         else:
             return self.cmd
 
-    def verify(self, data: "str") -> "bool":
-        """Verifies iterm graphics are supported by the terminal."""
+    def verify(self, data: str) -> bool:
+        """Verify iterm graphics are supported by the terminal."""
         if match := self.pattern.match(data):
             if values := match.groupdict():
                 if term := values.get("term"):
@@ -300,17 +300,17 @@ class ItermGraphicsStatus(TerminalQuery):
 
 
 class DepthOfColor(TerminalQuery):
-    """Determines the suspected color depth of the terminal."""
+    """Determine the suspected color depth of the terminal."""
 
     # TODO - detect 24bit color support with escape sequence
     # "\x1b[48:2:1:2:3m\eP$qm\x1b\\"
 
     default = ColorDepth.DEPTH_24_BIT
 
-    def __init__(self, output: "Output", config: "Config") -> "None":
+    def __init__(self, output: Output, config: Config) -> None:
         """Detect the terminal's colour support based on environment variables."""
         super().__init__(output, config)
-        self._value: "Optional[ColorDepth]" = None
+        self._value: ColorDepth | None = None
         if os.environ.get("NO_COLOR", "") or os.environ.get("TERM", "") == "dumb":
             self._value = ColorDepth.DEPTH_1_BIT
             return
@@ -331,8 +331,8 @@ class SgrPixelStatus(TerminalQuery):
     cmd = "\x1b[?1016$p"
     pattern = re.compile(r"^\x1b\[\?1016;(?P<Pm>\d)\$\Z")
 
-    def verify(self, data: "str") -> "bool":
-        """Verifies the terminal response means sixel graphics are supported."""
+    def verify(self, data: str) -> bool:
+        """Verify the terminal response means sixel graphics are supported."""
         if match := self.pattern.match(data):
             if values := match.groupdict():
                 if values.get("Pm") != 0:
@@ -343,15 +343,15 @@ class SgrPixelStatus(TerminalQuery):
 class TerminalInfo:
     """A class to gather and hold information about the terminal."""
 
-    input: "Input"
-    output: "Output"
+    input: Input
+    output: Output
 
-    def __init__(self, input_: "Input", output: "Output", config: "Config") -> "None":
-        """Instantiates the terminal information class."""
+    def __init__(self, input_: Input, output: Output, config: Config) -> None:
+        """Instantiate the terminal information class."""
         self.input = input_
         self.output = output
         self.config = config
-        self._queries: "list[TerminalQuery]" = []
+        self._queries: list[TerminalQuery] = []
 
         self.colors = self.register(Colors)
         self.pixel_dimensions = self.register(PixelDimensions)
@@ -361,8 +361,8 @@ class TerminalInfo:
         self.depth_of_color = self.register(DepthOfColor)
         self.sgr_pixel_status = self.register(SgrPixelStatus)
 
-    def register(self, query: "Type[TerminalQuery]") -> "TerminalQuery":
-        """Instantiates and registers a query's response with the input parser."""
+    def register(self, query: type[TerminalQuery]) -> TerminalQuery:
+        """Instantiate and registers a query's response with the input parser."""
         # Create an instance of this query
         query_inst = query(self.output, config=self.config)
         self._queries.append(query_inst)
@@ -393,14 +393,14 @@ class TerminalInfo:
 
         return query_inst
 
-    def send_all(self) -> "None":
-        """Sends the command for all queries."""
+    def send_all(self) -> None:
+        """Send the command for all queries."""
         # Ensure line wrapping is off before sending queries
         self.output.disable_autowrap()
         for query in self._queries:
             query.send()
 
-    def _tiocgwnsz(self) -> "tuple[int, int, int, int]":
+    def _tiocgwnsz(self) -> tuple[int, int, int, int]:
         """Get the size and pixel dimensions of the terminal with `termios`."""
         output = array.array("H", [0, 0, 0, 0])
         if _have_termios_tty_fcntl():
@@ -415,7 +415,7 @@ class TerminalInfo:
         return rows, cols, xpixels, ypixels
 
     @property
-    def terminal_size_px(self) -> "tuple[int, int]":
+    def terminal_size_px(self) -> tuple[int, int]:
         """Get the pixel dimensions of the terminal."""
         # Prefer using escape codes as this works over SSH
         px, py = self.pixel_dimensions.value
@@ -425,7 +425,7 @@ class TerminalInfo:
         return px, py
 
     @property
-    def cell_size_px(self) -> "tuple[int, int]":
+    def cell_size_px(self) -> tuple[int, int]:
         """Get the pixel size of a single terminal cell."""
         px, py = self.terminal_size_px
         rows, cols = self.output.get_size()

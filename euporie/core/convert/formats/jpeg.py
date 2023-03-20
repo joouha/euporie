@@ -1,4 +1,4 @@
-"""Contains functions which convert data to jpeg format."""
+"""Contain functions which convert data to jpeg format."""
 
 from __future__ import annotations
 

@@ -1,4 +1,4 @@
-"""Defines a cell object with input are and rich outputs, and related objects."""
+"""Define a cell object with input are and rich outputs, and related objects."""
 
 from __future__ import annotations
 
@@ -34,7 +34,7 @@ from euporie.core.widgets.cell_outputs import CellOutputArea
 from euporie.core.widgets.inputs import KernelInput, StdInput
 
 if TYPE_CHECKING:
-    from typing import Any, Callable, Literal, Optional
+    from typing import Any, Callable, Literal
 
     from prompt_toolkit.buffer import Buffer
     from prompt_toolkit.formatted_text.base import OneStyleAndTextTuple
@@ -45,7 +45,7 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 
-def get_cell_id(cell_json: "dict") -> "str":
+def get_cell_id(cell_json: dict) -> str:
     """Return the cell ID field defined in a cell JSON object.
 
     If no cell ID is defined (as per ```:mod:`nbformat`<4.5``), then one is generated
@@ -85,11 +85,9 @@ class Cell:
     focused.
     """
 
-    input_box: "KernelInput"
+    input_box: KernelInput
 
-    def __init__(
-        self, index: "int", json: "dict", kernel_tab: "BaseNotebook"
-    ) -> "None":
+    def __init__(self, index: int, json: dict, kernel_tab: BaseNotebook) -> None:
         """Initiate the cell element.
 
         Args:
@@ -101,7 +99,7 @@ class Cell:
         weak_self = weakref.proxy(self)
         self.index = index
         self.json = json
-        self.kernel_tab: "BaseNotebook" = kernel_tab
+        self.kernel_tab: BaseNotebook = kernel_tab
         self.rendered = True
         self.clear_outputs_on_output = False
 
@@ -133,13 +131,13 @@ class Cell:
 
         self.output_area = CellOutputArea(json=self.output_json, parent=weak_self)
 
-        def on_text_changed(buf: "Buffer") -> "None":
+        def on_text_changed(buf: Buffer) -> None:
             """Update cell json when the input buffer has been edited."""
             weak_self._set_input(buf.text)
             weak_self.kernel_tab.dirty = True
 
-        def on_cursor_position_changed(buf: "Buffer") -> "None":
-            """Respond to cursor movements."""
+        def on_cursor_position_changed(buf: Buffer) -> None:
+            """Repond to cursor movements."""
             # Update contextual help
             if weak_self.kernel_tab.app.config.autoinspect and weak_self.is_code():
                 weak_self.input_box.inspect()
@@ -174,10 +172,10 @@ class Cell:
         )
         self.input_box.buffer.name = self.cell_type
 
-        def border_char(name: "str") -> "Callable[..., str]":
-            """Returns a function which returns the cell border character to display."""
+        def border_char(name: str) -> Callable[..., str]:
+            """Return a function which returns the cell border character to display."""
 
-            def _inner() -> "str":
+            def _inner() -> str:
                 grid = NoLine.grid
                 if get_app().config.show_cell_borders or weak_self.selected:
                     if weak_self.focused and multiple_cells_selected():
@@ -188,8 +186,8 @@ class Cell:
 
             return _inner
 
-        def border_style() -> "str":
-            """Determines the style of the cell borders, based on the cell state."""
+        def border_style() -> str:
+            """Determine the style of the cell borders, based on the cell state."""
             if weak_self.selected:
                 if weak_self.kernel_tab.in_edit_mode():
                     return "class:cell.border.edit"
@@ -212,7 +210,7 @@ class Cell:
         fill = partial(Window, style=border_style)
 
         # Create textbox for standard input
-        def _send_input(buf: "Buffer") -> "bool":
+        def _send_input(buf: Buffer) -> bool:
             return False
 
         self.stdin_box = StdInput(self.kernel_tab)
@@ -418,8 +416,8 @@ class Cell:
             ],
         )
 
-    def focus(self, position: "Optional[int]" = None, scroll: "bool" = False) -> "None":
-        """Focuses the relevant control in this cell.
+    def focus(self, position: int | None = None, scroll: bool = False) -> None:
+        """Focus the relevant control in this cell.
 
         Args:
             position: An optional cursor position index to apply to the input box
@@ -452,7 +450,7 @@ class Cell:
             self.kernel_tab.scroll_to(self.index)
 
     @property
-    def focused(self) -> "bool":
+    def focused(self) -> bool:
         """Determine if the cell currently has focus."""
         if self.container is not None:
             return get_app().layout.has_focus(self)
@@ -460,7 +458,7 @@ class Cell:
             return False
 
     @property
-    def selected(self) -> "bool":
+    def selected(self) -> bool:
         """Determine if the cell currently is selected."""
         if self.container is not None:
             return self.index in self.kernel_tab.selected_indices
@@ -468,17 +466,17 @@ class Cell:
             return False
 
     @property
-    def cell_type(self) -> "str":
+    def cell_type(self) -> str:
         """Determine the current cell type."""
         return self.json.get("cell_type", "code")
 
     @property
-    def execution_count(self) -> "str":
+    def execution_count(self) -> str:
         """Retrieve the execution count from the cell's JSON."""
         return self.json.get("execution_count", " ")
 
     @execution_count.setter
-    def execution_count(self, count: int) -> "None":
+    def execution_count(self, count: int) -> None:
         """Set the execution count in the cell's JSON.
 
         Args:
@@ -488,7 +486,7 @@ class Cell:
         self.json["execution_count"] = count
 
     @property
-    def prompt(self) -> "str":
+    def prompt(self) -> str:
         """Determine what should be displayed in the prompt of the cell."""
         if self.state in ("busy", "queued"):
             prompt = "*"
@@ -498,16 +496,16 @@ class Cell:
             prompt = f"[{prompt}]"
         return prompt
 
-    def _set_input(self, value: "str") -> "None":
+    def _set_input(self, value: str) -> None:
         self.json["source"] = value
 
     @property
-    def input(self) -> "str":
+    def input(self) -> str:
         """Fetch the cell's contents from the cell's JSON."""
         return self.json.get("source", "")
 
     @input.setter
-    def input(self, value: "str") -> "None":
+    def input(self, value: str) -> None:
         """Set the cell's contents in the cell's JSON.
 
         Args:
@@ -521,7 +519,7 @@ class Cell:
         self.input_box.buffer.cursor_position = cp
 
     @property
-    def output_json(self) -> "list[dict[str, Any]]":
+    def output_json(self) -> list[dict[str, Any]]:
         """Retrieve a list of cell outputs from the cell's JSON."""
         if self.cell_type == "markdown":
             return [
@@ -530,18 +528,18 @@ class Cell:
         else:
             return self.json.setdefault("outputs", [])
 
-    def refresh(self, now: "bool" = True) -> "None":
+    def refresh(self, now: bool = True) -> None:
         """Request that the cell to be re-rendered next time it is drawn."""
         self.kernel_tab.refresh_cell(self)
         if now:
             get_app().invalidate()
 
-    def ran(self, content: "dict|None" = None) -> "None":
-        """Callback which runs when the cell has finished running."""
+    def ran(self, content: dict | None = None) -> None:
+        """Update the cell status and update display when the cell has finished."""
         self.state = "idle"
         self.refresh()
 
-    def remove_outputs(self) -> "None":
+    def remove_outputs(self) -> None:
         """Remove all outputs from the cell."""
         self.clear_outputs_on_output = False
         if "outputs" in self.json:
@@ -553,8 +551,8 @@ class Cell:
         self.refresh()
 
     def set_cell_type(
-        self, cell_type: "Literal['markdown','code','raw']", clear: "bool" = False
-    ) -> "None":
+        self, cell_type: Literal["markdown", "code", "raw"], clear: bool = False
+    ) -> None:
         """Convert the cell to a different cell type.
 
         Args:
@@ -577,13 +575,13 @@ class Cell:
         self.input_box.control._fragment_cache.clear()
 
     @property
-    def id(self) -> "str":
-        """Returns the cell's ID as per the cell JSON."""
+    def id(self) -> str:
+        """Return the cell's ID as per the cell JSON."""
         return get_cell_id(self.json)
 
     @property
-    def language(self) -> "str":
-        """Returns the cell's code language."""
+    def language(self) -> str:
+        """Return the cell's code language."""
         if self.cell_type == "markdown":
             return "markdown"
         elif self.cell_type == "code":
@@ -592,19 +590,19 @@ class Cell:
         else:
             return "raw"
 
-    def reformat(self) -> "None":
-        """Reformats the cell's input."""
+    def reformat(self) -> None:
+        """Reformat the cell's input."""
         config = get_app().config
         self.input = format_code(self.input, config)
         self.refresh()
 
     def run_or_render(
         self,
-        buffer: "Optional[Buffer]" = None,
-        wait: "bool" = False,
-        callback: "Optional[Callable[..., None]]" = None,
-    ) -> "bool":
-        """Placeholder function for running the cell.
+        buffer: Buffer | None = None,
+        wait: bool = False,
+        callback: Callable[..., None] | None = None,
+    ) -> bool:
+        """Send the cell's source code the the kernel to run.
 
         Args:
             buffer: Unused parameter, required when accepting the contents of a cell's
@@ -629,15 +627,15 @@ class Cell:
 
         return True
 
-    def __pt_container__(self) -> "Container":
-        """Returns the container which represents this cell."""
+    def __pt_container__(self) -> Container:
+        """Return the container which represents this cell."""
         return self.container
 
-    def set_execution_count(self, n: "int") -> "None":
+    def set_execution_count(self, n: int) -> None:
         """Set the execution count of the cell."""
         self.json["execution_count"] = n
 
-    def add_output(self, output_json: "dict[str, Any]") -> "None":
+    def add_output(self, output_json: dict[str, Any]) -> None:
         """Add a new output to the cell."""
         # Clear the output if we were previously asked to
         if self.clear_outputs_on_output:
@@ -648,18 +646,18 @@ class Cell:
         # Tell the page this cell has been updated
         self.refresh()
 
-    def clear_output(self, wait: "bool" = False) -> "None":
+    def clear_output(self, wait: bool = False) -> None:
         """Remove the cells output, optionally when new output is generated."""
         if wait:
             self.clear_outputs_on_output = True
         else:
             self.remove_outputs()
 
-    def show_input(self) -> "None":
+    def show_input(self) -> None:
         """Set the cell inputs to visible."""
         self.set_metadata(("jupyter", "source_hidden"), False)
 
-    def hide_input(self) -> "None":
+    def hide_input(self) -> None:
         """Set the cell inputs to visible."""
         # Exit edit mode
         self.kernel_tab.edit_mode = False
@@ -668,32 +666,32 @@ class Cell:
         # Set the input to hidden
         self.set_metadata(("jupyter", "source_hidden"), True)
 
-    def toggle_input(self) -> "None":
+    def toggle_input(self) -> None:
         """Toggle the visibility of the cell input."""
         if self.json["metadata"].get("jupyter", {}).get("source_hidden", False):
             self.show_input()
         else:
             self.hide_input()
 
-    def show_output(self) -> "None":
+    def show_output(self) -> None:
         """Set the cell outputs to visible."""
         self.set_metadata(("jupyter", "outputs_hidden"), False)
         self.set_metadata(("collapsed",), False)
 
-    def hide_output(self) -> "None":
+    def hide_output(self) -> None:
         """Set the cell outputs to visible."""
         self.set_metadata(("jupyter", "outputs_hidden"), True)
         self.set_metadata(("collapsed",), True)
 
-    def toggle_output(self) -> "None":
+    def toggle_output(self) -> None:
         """Toggle the visibility of the cell outputs."""
         if self.json["metadata"].get("jupyter", {}).get("outputs_hidden", False):
             self.show_output()
         else:
             self.hide_output()
 
-    def set_metadata(self, path: "tuple[str, ...]", data: "Any") -> "None":
-        """Sets a value in the metadata at an arbitrary path.
+    def set_metadata(self, path: tuple[str, ...], data: Any) -> None:
+        """Set a value in the metadata at an arbitrary path.
 
         Args:
             path: A tuple of path level names to create
@@ -707,21 +705,21 @@ class Cell:
             else:
                 level = level.setdefault(key, {})
 
-    def set_status(self, status: "str") -> "None":
+    def set_status(self, status: str) -> None:
         """Set the execution status of the cell."""
         # log.debug(status)
         pass
 
     def get_input(
         self,
-        prompt: "str" = "Please enter a value:",
-        password: "bool" = False,
-    ) -> "None":
+        prompt: str = "Please enter a value:",
+        password: bool = False,
+    ) -> None:
         """Scroll the cell requesting input into view and render it before asking for input."""
         self.kernel_tab.select(self.index)
         self.stdin_box.get_input(prompt, password)
 
-    async def edit_in_editor(self) -> "None":
+    async def edit_in_editor(self) -> None:
         """Edit the cell in $EDITOR."""
         buffer = self.input_box.buffer
         app = get_app()

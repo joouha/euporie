@@ -1,4 +1,4 @@
-"""Defines custom inputs and outputs, and related methods."""
+"""Define custom inputs and outputs, and related methods."""
 
 import logging
 import re

@@ -1,4 +1,4 @@
-"""Contains dpdated ANSI parsing and Formatted Text processing."""
+"""Contain dpdated ANSI parsing and Formatted Text processing."""
 
 from __future__ import annotations
 
@@ -28,22 +28,22 @@ log = logging.getLogger(__name__)
 
 
 class FormattedTextProcessor(Processor):
-    """Applies formatted text to a TextArea."""
+    """Apply formatted text to a TextArea."""
 
-    def __init__(self, formatted_text: "StyleAndTextTuples") -> "None":
+    def __init__(self, formatted_text: StyleAndTextTuples) -> None:
         """Initiate the processor.
 
         Args:
             formatted_text: The text in a buffer but with formatting applied.
 
         """
-        self.formatted_lines: "list[StyleAndTextTuples]" = []
+        self.formatted_lines: list[StyleAndTextTuples] = []
         self.formatted_text = formatted_text
         super().__init__()
 
     def apply_transformation(
-        self, transformation_input: "TransformationInput"
-    ) -> "Transformation":
+        self, transformation_input: TransformationInput
+    ) -> Transformation:
         """Apply text formatting to a line in a buffer."""
         if not self.formatted_lines:
             self.formatted_lines = list(split_lines(self.formatted_text))
@@ -56,22 +56,22 @@ class FormattedTextProcessor(Processor):
 
 
 class FormattedTextArea(TextArea):
-    """Applies formatted text to a TextArea."""
+    """Apply formatted text to a TextArea."""
 
-    _formatted_text: "AnyFormattedText"
+    _formatted_text: AnyFormattedText
 
-    def _set_formatted_text(self, value: "AnyFormattedText") -> None:
+    def _set_formatted_text(self, value: AnyFormattedText) -> None:
         self._formatted_text = value
         self.text = fragment_list_to_text(self.formatted_text)
 
     def __init__(
         self,
-        formatted_text: "AnyFormattedText",
-        *args: "Any",
-        line_numbers: "FilterOrBool" = False,
-        **kwargs: "Any",
-    ) -> "None":
-        """Initialise a `FormattedTextArea` instance.
+        formatted_text: AnyFormattedText,
+        *args: Any,
+        line_numbers: FilterOrBool = False,
+        **kwargs: Any,
+    ) -> None:
+        """Initialie a `FormattedTextArea` instance.
 
         Args:
             formatted_text: A list of `(style, text)` tuples to display.
@@ -104,7 +104,7 @@ class FormattedTextArea(TextArea):
         self._set_formatted_text(formatted_text)
 
     @property
-    def formatted_text(self) -> "StyleAndTextTuples":
+    def formatted_text(self) -> StyleAndTextTuples:
         """The formatted text."""
         ft = to_formatted_text(self._formatted_text)
         text = fragment_list_to_text(ft)
@@ -113,10 +113,10 @@ class FormattedTextArea(TextArea):
         return ft
 
     @formatted_text.setter
-    def formatted_text(self, value: "AnyFormattedText") -> None:
-        """Sets the formatted text."""
+    def formatted_text(self, value: AnyFormattedText) -> None:
+        """Set the formatted text."""
         self._set_formatted_text(value)
 
-    def get_processor(self) -> "FormattedTextProcessor":
+    def get_processor(self) -> FormattedTextProcessor:
         """Generate a processor for the formatted text."""
         return FormattedTextProcessor(self.formatted_text)

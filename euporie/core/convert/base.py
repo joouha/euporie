@@ -1,4 +1,4 @@
-"""Contains main format conversion function."""
+"""Contain main format conversion function."""
 
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ from upath import UPath
 from upath.implementations.http import HTTPPath
 
 if TYPE_CHECKING:
-    from typing import Any, Callable, Iterable, Optional, Union
+    from typing import Any, Callable, Iterable
 
     from prompt_toolkit.filters import Filter, FilterOrBool
 
@@ -56,7 +56,7 @@ ERROR_OUTPUTS = {
 # 'application/pdf'
 
 
-def get_format(path: "UPath|str", default: "str" = "") -> "str":
+def get_format(path: UPath | str, default: str = "") -> str:
     """Attempt to guess the format of a path."""
     if isinstance(path, str):
         path = UPath(path)
@@ -70,30 +70,30 @@ def get_format(path: "UPath|str", default: "str" = "") -> "str":
 
 
 class Converter(NamedTuple):
-    """Holds a conversion function and its weight."""
+    """Hold a conversion function and its weight."""
 
     func: Callable
     filter_: Filter
     weight: int = 1
 
 
-converters: "dict[str, dict[str, list[Converter]]]" = {}
+converters: dict[str, dict[str, list[Converter]]] = {}
 
-_CONVERSION_CACHE: "SimpleCache" = SimpleCache(maxsize=2048)
-_FILTER_CACHE: "SimpleCache" = SimpleCache()
+_CONVERSION_CACHE: SimpleCache = SimpleCache(maxsize=2048)
+_FILTER_CACHE: SimpleCache = SimpleCache()
 
 
 def register(
-    from_: "Union[Iterable[str], str]",
-    to: "str",
-    filter_: "FilterOrBool" = True,
-    weight: "int" = 1,
-) -> "Callable":
-    """Adds a converter to the centralized format conversion system."""
+    from_: Iterable[str] | str,
+    to: str,
+    filter_: FilterOrBool = True,
+    weight: int = 1,
+) -> Callable:
+    """Add a converter to the centralized format conversion system."""
     if isinstance(from_, str):
         from_ = (from_,)
 
-    def decorator(func: "Callable") -> "Callable":
+    def decorator(func: Callable) -> Callable:
         if to not in converters:
             converters[to] = {}
         for from_format in from_:
@@ -107,17 +107,17 @@ def register(
     return decorator
 
 
-def find_route(from_: "str", to: "str") -> "Optional[list]":
-    """Finds the shortest conversion path between two formats."""
+def find_route(from_: str, to: str) -> list | None:
+    """Find the shortest conversion path between two formats."""
     if from_ == to:
         return [from_]
 
     chains = []
 
-    def find(start: "str", chain: "list[str]") -> "None":
+    def find(start: str, chain: list[str]) -> None:
         if chain[0] == start:
             chains.append(chain)
-        sources: "dict[str, list[Converter]]" = converters.get(chain[0], {})
+        sources: dict[str, list[Converter]] = converters.get(chain[0], {})
         for link in sources:
             if link not in chain:
                 if any(
@@ -149,21 +149,21 @@ def find_route(from_: "str", to: "str") -> "Optional[list]":
         return None
 
 
-_CONVERTOR_ROUTE_CACHE: "FastDictCache[tuple[str, str], Optional[list]]" = (
-    FastDictCache(find_route)
+_CONVERTOR_ROUTE_CACHE: FastDictCache[tuple[str, str], list | None] = FastDictCache(
+    find_route
 )
 
 
 def convert(
-    data: "Any",
-    from_: "str",
-    to: "str",
-    cols: "Optional[int]" = None,
-    rows: "Optional[int]" = None,
-    fg: "Optional[str]" = None,
-    bg: "Optional[str]" = None,
-    path: "Optional[UPath]" = None,
-) -> "Any":
+    data: Any,
+    from_: str,
+    to: str,
+    cols: int | None = None,
+    rows: int | None = None,
+    fg: str | None = None,
+    bg: str | None = None,
+    path: UPath | None = None,
+) -> Any:
     """Convert between formats."""
     try:
         data_hash = hash(data)
@@ -172,15 +172,15 @@ def convert(
         raise error
 
     def _convert(
-        data: "str",
-        from_: "str",
-        to: "str",
-        cols: "Optional[int]" = None,
-        rows: "Optional[int]" = None,
-        fg: "Optional[str]" = None,
-        bg: "Optional[str]" = None,
-        path: "Optional[UPath]" = None,
-    ) -> "Any":
+        data: str,
+        from_: str,
+        to: str,
+        cols: int | None = None,
+        rows: int | None = None,
+        fg: str | None = None,
+        bg: str | None = None,
+        path: UPath | None = None,
+    ) -> Any:
         if from_ == to:
             return data
         route = _CONVERTOR_ROUTE_CACHE[(from_, to)]

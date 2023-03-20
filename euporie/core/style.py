@@ -207,12 +207,12 @@ IPYWIDGET_STYLE = [
 class ColorPaletteColor:
     """A representation of a color with adjustment methods."""
 
-    _cache: "SimpleCache[tuple[str, float, float, float, bool], ColorPaletteColor]" = (
-        SimpleCache()
-    )
+    _cache: SimpleCache[
+        tuple[str, float, float, float, bool], ColorPaletteColor
+    ] = SimpleCache()
 
-    def __init__(self, base: "str", _base_override: str = "") -> "None":
-        """Creates a new color."""
+    def __init__(self, base: str, _base_override: str = "") -> None:
+        """Create a new color."""
         self.base_hex = DEFAULT_COLORS.get(base, base)
         self.base = _base_override or base
 
@@ -230,8 +230,8 @@ class ColorPaletteColor:
         self.is_light = self.brightness > 0.5
 
     def _adjust_abs(
-        self, hue: "float" = 0.0, brightness: "float" = 0.0, saturation: "float" = 0.0
-    ) -> "ColorPaletteColor":
+        self, hue: float = 0.0, brightness: float = 0.0, saturation: float = 0.0
+    ) -> ColorPaletteColor:
         hue = max(min(1, self.hue + hue), 0)
         brightness = max(min(1, self.brightness + brightness), 0)
         saturation = max(min(1, self.saturation + saturation), 0)
@@ -241,8 +241,8 @@ class ColorPaletteColor:
         return ColorPaletteColor(new_color)
 
     def _adjust_rel(
-        self, hue: "float" = 0.0, brightness: "float" = 0.0, saturation: "float" = 0.0
-    ) -> "ColorPaletteColor":
+        self, hue: float = 0.0, brightness: float = 0.0, saturation: float = 0.0
+    ) -> ColorPaletteColor:
         hue = min(max(0, hue), 1)
         brightness = min(max(-1, brightness), 1)
         saturation = min(max(-1, saturation), 1)
@@ -273,12 +273,12 @@ class ColorPaletteColor:
 
     def _adjust(
         self,
-        hue: "float" = 0.0,
-        brightness: "float" = 0.0,
-        saturation: "float" = 0.0,
-        rel: "bool" = True,
-    ) -> "ColorPaletteColor":
-        """Performs a relative of absolute color adjustment."""
+        hue: float = 0.0,
+        brightness: float = 0.0,
+        saturation: float = 0.0,
+        rel: bool = True,
+    ) -> ColorPaletteColor:
+        """Perform a relative of absolute color adjustment."""
         if rel:
             return self._adjust_rel(hue, brightness, saturation)
         else:
@@ -286,40 +286,38 @@ class ColorPaletteColor:
 
     def adjust(
         self,
-        hue: "float" = 0.0,
-        brightness: "float" = 0.0,
-        saturation: "float" = 0.0,
-        rel: "bool" = True,
-    ) -> "ColorPaletteColor":
-        """Adjust the hue, saturation, or brightness of the color."""
+        hue: float = 0.0,
+        brightness: float = 0.0,
+        saturation: float = 0.0,
+        rel: bool = True,
+    ) -> ColorPaletteColor:
+        """Adjut the hue, saturation, or brightness of the color."""
         key = (self.base_hex, hue, brightness, saturation, rel)
         return self._cache.get(
             key, partial(self._adjust, hue, brightness, saturation, rel)
         )
 
-    def lighter(self, amount: "float", rel: "bool" = True) -> "ColorPaletteColor":
-        """Makes the color lighter."""
+    def lighter(self, amount: float, rel: bool = True) -> ColorPaletteColor:
+        """Make the color lighter."""
         return self.adjust(brightness=amount, rel=rel)
 
-    def darker(self, amount: "float", rel: "bool" = True) -> "ColorPaletteColor":
-        """Makes the color darker."""
+    def darker(self, amount: float, rel: bool = True) -> ColorPaletteColor:
+        """Make the color darker."""
         return self.adjust(brightness=-amount, rel=rel)
 
-    def more(self, amount: "float", rel: "bool" = True) -> "ColorPaletteColor":
-        """Makes bright colors darker and dark colors brighter."""
+    def more(self, amount: float, rel: bool = True) -> ColorPaletteColor:
+        """Make bright colors darker and dark colors brighter."""
         if self.is_light:
             amount *= -1
         return self.adjust(brightness=amount, rel=rel)
 
-    def less(self, amount: "float", rel: "bool" = True) -> "ColorPaletteColor":
-        """Makes bright colors brighter and dark colors darker."""
+    def less(self, amount: float, rel: bool = True) -> ColorPaletteColor:
+        """Make bright colors brighter and dark colors darker."""
         if self.is_light:
             amount *= -1
         return self.adjust(brightness=-amount, rel=rel)
 
-    def towards(
-        self, other: "ColorPaletteColor", amount: "float"
-    ) -> "ColorPaletteColor":
+    def towards(self, other: ColorPaletteColor, amount: float) -> ColorPaletteColor:
         """Interpolate between two colors."""
         amount = min(max(0, amount), 1)
         r = (other.red - self.red) * amount + self.red
@@ -328,27 +326,25 @@ class ColorPaletteColor:
         new_color = f"#{int(r * 255):02x}{int(g * 255):02x}{int(b * 255):02x}"
         return ColorPaletteColor(new_color)
 
-    def __repr__(self) -> "str":
-        """Returns a string representation of the color."""
+    def __repr__(self) -> str:
+        """Return a string representation of the color."""
         return self.base
 
 
 class ColorPalette:
-    """Defines a collection of colors."""
+    """Define a collection of colors."""
 
-    def __init__(self) -> "None":
-        """Creates a new color-palette."""
-        self.colors: "dict[str, ColorPaletteColor]" = {}
+    def __init__(self) -> None:
+        """Create a new color-palette."""
+        self.colors: dict[str, ColorPaletteColor] = {}
 
-    def add_color(
-        self, name: "str", base: "str", _base_override: str = ""
-    ) -> "ColorPalette":
-        """Adds a color to the palette."""
+    def add_color(self, name: str, base: str, _base_override: str = "") -> ColorPalette:
+        """Add a color to the palette."""
         self.colors[name] = ColorPaletteColor(base, _base_override)
         return self
 
-    def __getattr__(self, name: "str") -> "Any":
-        """Enables access of palette colors via dotted attributes.
+    def __getattr__(self, name: str) -> Any:
+        """Enable access of palette colors via dotted attributes.
 
         Args:
             name: The name of the attribute to access.
@@ -361,9 +357,9 @@ class ColorPalette:
 
 
 def build_style(
-    cp: "ColorPalette",
-    have_term_colors: "bool" = True,
-) -> "Style":
+    cp: ColorPalette,
+    have_term_colors: bool = True,
+) -> Style:
     """Create an application style based on the given color palette."""
     style_dict = {
         # The default style is merged at this point so full styles can be

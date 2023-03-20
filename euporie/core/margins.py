@@ -1,4 +1,4 @@
-"""Contains margins."""
+"""Contain margins."""
 
 from __future__ import annotations
 
@@ -71,7 +71,7 @@ class MarginContainer(Window):
         )
 
     def reset(self) -> None:
-        """Reset the state of this container and all the children."""
+        """Reet the state of this container and all the children."""
 
     def preferred_width(self, max_available_width: int) -> Dimension:
         """Return a the desired width for this container."""
@@ -160,7 +160,7 @@ class MarginContainer(Window):
         return False
 
     def get_key_bindings(self) -> KeyBindingsBase | None:
-        """Returns a :class:`.KeyBindings` object."""
+        """Return a :class:`.KeyBindings` object."""
         return None
 
     def get_children(self) -> list[Container]:
@@ -219,7 +219,7 @@ class ScrollbarMargin(ClickableMargin):
         height: int,
         margin_render_info: WindowRenderInfo | None = None,
     ) -> StyleAndTextTuples:
-        """Creates the margin's formatted text."""
+        """Create the margin's formatted text."""
         result: StyleAndTextTuples = []
 
         self.window_render_info = window_render_info

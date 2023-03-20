@@ -1,4 +1,4 @@
-"""Concerns dumping output."""
+"""Concern dumping output."""
 
 from __future__ import annotations
 
@@ -20,7 +20,7 @@ from euporie.core.key_binding.registry import register_bindings
 from euporie.preview.tabs.notebook import PreviewNotebook
 
 if TYPE_CHECKING:
-    from typing import IO, Any, Optional, TextIO, Type, Union
+    from typing import IO, Any, TextIO
 
     from prompt_toolkit.application.application import _AppResult
     from prompt_toolkit.layout.containers import Float
@@ -36,10 +36,8 @@ class PseudoTTY:
 
     fake_tty = True
 
-    def __init__(
-        self, underlying: "Union[IO[str], TextIO]", isatty: "bool" = True
-    ) -> "None":
-        """Wraps an underlying output stream.
+    def __init__(self, underlying: IO[str] | TextIO, isatty: bool = True) -> None:
+        """Wrap an underlying output stream.
 
         Args:
             underlying: The underlying output stream
@@ -49,18 +47,13 @@ class PseudoTTY:
         self._underlying = underlying
         self._isatty = isatty
 
-    def isatty(self) -> "bool":
-        """Determines if the stream is interpreted as a TTY."""
+    def isatty(self) -> bool:
+        """Determine if the stream is interpreted as a TTY."""
         return self._isatty
 
-    def __getattr__(self, name: "str") -> "Any":
-        """Returns an attribute of the wrappeed stream."""
+    def __getattr__(self, name: str) -> Any:
+        """Return an attribute of the wrappeed stream."""
         return getattr(self._underlying, name)
-
-
-def get_preview_app() -> "PreviewApp":
-    """Get the current application."""
-    return cast("PreviewApp", get_app())
 
 
 class PreviewApp(BaseApp):
@@ -76,7 +69,7 @@ class PreviewApp(BaseApp):
 
     name = "preview"
 
-    def __init__(self, **kwargs: "Any") -> "None":
+    def __init__(self, **kwargs: Any) -> None:
         """Create an app for dumping a prompt-toolkit layout."""
         # Set default arguments
         kwargs.setdefault("title", "euporie-preview")
@@ -98,16 +91,16 @@ class PreviewApp(BaseApp):
         # Select the first tab after files are opened
         self.post_load_callables.append(partial(setattr, self, "tab_idx", 0))
 
-    def get_file_tab(self, path: "UPath") -> "Type[Tab]":
-        """Returns the tab to use for a file path."""
+    def get_file_tab(self, path: UPath) -> type[Tab]:
+        """Return the tab to use for a file path."""
         return PreviewNotebook
 
     def exit(
         self,
-        result: "Optional[_AppResult]" = None,
-        exception: "Optional[Union[BaseException, Type[BaseException]]]" = None,
-        style: "str" = "",
-    ) -> "None":
+        result: _AppResult | None = None,
+        exception: BaseException | type[BaseException] | None = None,
+        style: str = "",
+    ) -> None:
         """Optionally pipe the output to a pager on exit."""
         # Display pager if needed
         if self.config.page:
@@ -125,14 +118,14 @@ class PreviewApp(BaseApp):
         else:
             super().exit()
 
-    def load_container(self) -> "FloatContainer":
-        """Returns a container with all opened tabs."""
+    def load_container(self) -> FloatContainer:
+        """Return a container with all opened tabs."""
         return FloatContainer(
             DynamicContainer(lambda: self.tab or Window()),
             floats=cast("list[Float]", self.floats),
         )
 
-    def cleanup_closed_tab(self, tab: "Tab") -> "None":
+    def cleanup_closed_tab(self, tab: Tab) -> None:
         """Exit if all tabs are closed."""
         super().cleanup_closed_tab(tab)
         if not self.tabs:
@@ -141,8 +134,8 @@ class PreviewApp(BaseApp):
         self.draw(render_as_done=True)
 
     @classmethod
-    def load_output(cls) -> "Output":
-        """Loads the output.
+    def load_output(cls) -> Output:
+        """Load the output.
 
         Depending on the application configuration, will set the output to a file, to
         stdout, or to a temporary file so the output can be displayed in a pager.
@@ -211,8 +204,8 @@ class PreviewApp(BaseApp):
 
         return output
 
-    def _redraw(self, render_as_done: "bool" = False) -> "None":
-        """Always render the output as done - we will be rending one item each time."""
+    def _redraw(self, render_as_done: bool = False) -> None:
+        """Ensure the output is always rendered as done."""
         # import time
         # time.sleep(0.1)
         super()._redraw(render_as_done=True)
@@ -254,3 +247,8 @@ class PreviewApp(BaseApp):
             }
         }
     )
+
+
+def get_preview_app() -> PreviewApp:
+    """Get the current application."""
+    return cast("PreviewApp", get_app())

@@ -1,4 +1,4 @@
-"""Contains function which convert data to sixel format."""
+"""Contain function which convert data to sixel format."""
 
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ from euporie.core.convert.utils import call_subproc, commands_exist, have_module
 from euporie.core.current import get_app
 
 if TYPE_CHECKING:
-    from typing import Any, Optional
+    from typing import Any
 
     from PIL.Image import Image as PilImage
     from upath import UPath
@@ -41,16 +41,16 @@ register(
     filter_=commands_exist("img2sixel"),
 )
 def png_to_sixel_img2sixel(
-    data: "bytes",
-    cols: "Optional[int]" = None,
-    rows: "Optional[int]" = None,
-    fg: "Optional[str]" = None,
-    bg: "Optional[str]" = None,
-    path: "Optional[UPath]" = None,
-) -> "str":
-    """Converts PNG data to sixels :command:`img2sixel`."""
+    data: bytes,
+    cols: int | None = None,
+    rows: int | None = None,
+    fg: str | None = None,
+    bg: str | None = None,
+    path: UPath | None = None,
+) -> str:
+    """Convert PNG data to sixels :command:`img2sixel`."""
     bg = bg or get_app().color_palette.bg.base_hex
-    cmd: "list[Any]" = ["img2sixel", "-I"]
+    cmd: list[Any] = ["img2sixel", "-I"]
     if bg:
         cmd += [f"--bgcolor={bg}"]
     if cols is not None:
@@ -72,13 +72,13 @@ register(
     filter_=have_modules("timg"),
 )
 def pil_to_sixel_py_timg(
-    data: "PilImage",
-    cols: "Optional[int]" = None,
-    rows: "Optional[int]" = None,
-    fg: "Optional[str]" = None,
-    bg: "Optional[str]" = None,
-    path: "Optional[UPath]" = None,
-) -> "str":
+    data: PilImage,
+    cols: int | None = None,
+    rows: int | None = None,
+    fg: str | None = None,
+    bg: str | None = None,
+    path: UPath | None = None,
+) -> str:
     """Convert a pillow image to sixels :py:mod:`timg`."""
     import timg
 
@@ -91,13 +91,13 @@ def pil_to_sixel_py_timg(
     filter_=have_modules("teimpy", "numpy"),
 )
 def pil_to_sixel_py_teimpy(
-    data: "PilImage",
-    cols: "Optional[int]" = None,
-    rows: "Optional[int]" = None,
-    fg: "Optional[str]" = None,
-    bg: "Optional[str]" = None,
-    path: "Optional[UPath]" = None,
-) -> "str":
+    data: PilImage,
+    cols: int | None = None,
+    rows: int | None = None,
+    fg: str | None = None,
+    bg: str | None = None,
+    path: UPath | None = None,
+) -> str:
     """Convert a pillow image to sixels :py:mod:`teimpy`."""
     import numpy as np
     import teimpy

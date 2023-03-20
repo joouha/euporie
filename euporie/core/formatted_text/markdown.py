@@ -1,4 +1,4 @@
-"""Contains the browser CSS for formatting markdown."""
+"""Contain the browser CSS for formatting markdown."""
 
 from .html import CssSelector
 
@@ -136,7 +136,12 @@ _MARKDOWN_CSS = {
     },
     ((CssSelector(item=".block"),),): {"display": "block"},
     ((CssSelector(item=".math.block"),),): {"text_align": "center"},
-    ((CssSelector(item="pre"), CssSelector(comb=">", item="code"),),): {
+    (
+        (
+            CssSelector(item="pre"),
+            CssSelector(comb=">", item="code"),
+        ),
+    ): {
         "display": "block",
         "border_top_style": "solid",
         "border_top_width": "1px",

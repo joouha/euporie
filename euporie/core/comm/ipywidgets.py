@@ -1,4 +1,4 @@
-"""Defines representations for :py:class:`ipywidget` comms."""
+"""Define representations for :py:class:`ipywidget` comms."""
 
 from __future__ import annotations
 
@@ -41,7 +41,7 @@ from euporie.core.widgets.forms import (
 from euporie.core.widgets.layout import AccordionSplit, ReferencedSplit, TabbedSplit
 
 if TYPE_CHECKING:
-    from typing import Any, Iterable, Optional, Sequence, Type, Union
+    from typing import Any, Iterable, Sequence
 
     from prompt_toolkit.buffer import Buffer
     from prompt_toolkit.formatted_text.base import AnyFormattedText
@@ -59,15 +59,15 @@ log = logging.getLogger(__name__)
 
 _binary_types = (memoryview, bytearray, bytes)
 
-WIDGET_MODELS: "dict[str, Type[IpyWidgetComm]]" = {}
+WIDGET_MODELS: dict[str, type[IpyWidgetComm]] = {}
 
 
 def _separate_buffers(
-    substate: "Union[dict, list, tuple]",
-    path: "list[Union[str, int]]",
-    buffer_paths: "list[list[Union[str, int]]]",
-    buffers: "list[Union[memoryview, bytearray, bytes]]",
-) -> "Union[dict, list, tuple]":
+    substate: dict | list | tuple,
+    path: list[str | int],
+    buffer_paths: list[list[str | int]],
+    buffers: list[memoryview | bytearray | bytes],
+) -> dict | list | tuple:
     """Remove binary types from dicts and lists, but keep track of their paths.
 
     Any part of the dict/list that needs modification will be cloned, so the original
@@ -85,7 +85,7 @@ def _separate_buffers(
     Returns:
         The updated substrate without buffers
     """
-    cloned_substrate: "Optional[Union[list, dict]]" = None
+    cloned_substrate: list | dict | None = None
     if isinstance(substate, (list, tuple)):
         for i, v in enumerate(substate):
             if isinstance(v, _binary_types):
@@ -128,22 +128,22 @@ class IpyWidgetComm(Comm, metaclass=ABCMeta):
 
     def __init__(
         self,
-        comm_container: "KernelTab",
-        comm_id: "str",
-        data: "dict",
-        buffers: "Sequence[bytes]",
-    ) -> "None":
+        comm_container: KernelTab,
+        comm_id: str,
+        data: dict,
+        buffers: Sequence[bytes],
+    ) -> None:
         """Create a new instance of the ipywidget."""
         super().__init__(comm_container, comm_id, data, buffers)
         self.sync = True
 
-    def __init_subclass__(cls, **kwargs: "Any") -> "None":
+    def __init_subclass__(cls, **kwargs: Any) -> None:
         """Add ipywidget model classes to a registry when they are created."""
         super().__init_subclass__(**kwargs)
         if cls.__name__.endswith("Model"):
             WIDGET_MODELS[cls.__name__] = cls
 
-    def set_state(self, key: "str", value: "JSONType") -> "None":
+    def set_state(self, key: str, value: JSONType) -> None:
         """Send a ``comm_msg`` to the kernel with local state changes."""
         if self.sync:
             self.data.setdefault("state", {})[key] = value
@@ -154,7 +154,7 @@ class IpyWidgetComm(Comm, metaclass=ABCMeta):
                 )
             self.update_views({key: value})
 
-    def process_data(self, data: "dict", buffers: "Sequence[bytes]") -> "None":
+    def process_data(self, data: dict, buffers: Sequence[bytes]) -> None:
         """Handle incoming Comm update messages, updating the state and views."""
         # Add buffers to data based on buffer paths
         self.buffers = list(buffers)
@@ -176,13 +176,13 @@ class IpyWidgetComm(Comm, metaclass=ABCMeta):
             self.update_views(changes)
 
     @abstractmethod
-    def create_view(self, parent: "OutputParent") -> "CommView":
+    def create_view(self, parent: OutputParent) -> CommView:
         """Abstract method for creating a view of the ipywidget."""
 
-    def _get_embed_state(self) -> "dict[str, Any]":
+    def _get_embed_state(self) -> dict[str, Any]:
         """Convert the ipywidgets state to embeddable json."""
-        buffer_paths: "list[list[Union[str, int]]]" = []
-        buffers: "list[bytes]" = []
+        buffer_paths: list[list[str | int]] = []
+        buffers: list[bytes] = []
         state = _separate_buffers(self.data["state"], [], buffer_paths, buffers)
         assert isinstance(state, dict)
         output = {
@@ -207,7 +207,7 @@ class IpyWidgetComm(Comm, metaclass=ABCMeta):
 class UnimplementedModel(IpyWidgetComm):
     """An ipywidget used to represent unimplemented widgets."""
 
-    def create_view(self, parent: "OutputParent") -> "CommView":
+    def create_view(self, parent: OutputParent) -> CommView:
         """Create a new view."""
         return CommView(Display("[Widget not implemented]", format_="ansi"))
 
@@ -219,24 +219,24 @@ class OutputModel(IpyWidgetComm):
 
     def __init__(
         self,
-        comm_container: "KernelTab",
-        comm_id: "str",
-        data: "dict",
-        buffers: "Sequence[bytes]",
-    ) -> "None":
+        comm_container: KernelTab,
+        comm_id: str,
+        data: dict,
+        buffers: Sequence[bytes],
+    ) -> None:
         """Create a new output ipywidget instance."""
         super().__init__(comm_container, comm_id, data, buffers)
         self.clear_output_wait = False
         self.prev_msg_id = ""
         self.original_callbacks = MsgCallbacks()
-        self.callbacks: "MsgCallbacks" = MsgCallbacks(
+        self.callbacks: MsgCallbacks = MsgCallbacks(
             {
                 "add_output": self.add_output,
                 "clear_output": self.clear_output,
             }
         )
 
-    def create_view(self, parent: "OutputParent") -> "CommView":
+    def create_view(self, parent: OutputParent) -> CommView:
         """Create a new view of this output ipywidget."""
         container = CellOutputArea(
             self.data.get("state", {}).get("outputs", []), parent
@@ -246,14 +246,14 @@ class OutputModel(IpyWidgetComm):
             {"outputs": partial(setattr, container, "json")},
         )
 
-    def add_output(self, json: "dict[str, Any]") -> "None":
+    def add_output(self, json: dict[str, Any]) -> None:
         """Add a new output to this widget."""
         if self.clear_output_wait:
             self.set_state("outputs", [json])
         else:
             self.set_state("outputs", [*self.data["state"]["outputs"], json])
 
-    def clear_output(self, wait: "bool" = False) -> "None":
+    def clear_output(self, wait: bool = False) -> None:
         """Remove all outputs from this widget."""
         if wait:
             self.clear_output_wait = True
@@ -261,7 +261,7 @@ class OutputModel(IpyWidgetComm):
             self.clear_output_wait = False
             self.set_state("outputs", [])
 
-    def process_data(self, data: "dict", buffers: "Sequence[bytes]") -> "None":
+    def process_data(self, data: dict, buffers: Sequence[bytes]) -> None:
         """Modify the callbacks of a given message to add outputs to this ipywidget."""
         if data.get("method") == "update" and self.comm_container.kernel:
             if (msg_id := data.get("state", {}).get("msg_id")) is not None:
@@ -292,11 +292,11 @@ class OutputModel(IpyWidgetComm):
 
 
 class LayoutIpyWidgetComm(IpyWidgetComm, metaclass=ABCMeta):
-    """Base class for layout widgets with children."""
+    """Bae class for layout widgets with children."""
 
     def render_children(
-        self, models: "list[str]", parent: "OutputParent"
-    ) -> "list[AnyContainer]":
+        self, models: list[str], parent: OutputParent
+    ) -> list[AnyContainer]:
         """Create views for the child Comms in the layout."""
         return [
             self.comm_container.comms[
@@ -305,7 +305,7 @@ class LayoutIpyWidgetComm(IpyWidgetComm, metaclass=ABCMeta):
             for ipy_model in models
         ]
 
-    def box_style(self) -> "str":
+    def box_style(self) -> str:
         """Convert the ipywidget box_style to a prompt_toolkit style string."""
         if style := self.data["state"].get("box_style", ""):
             return f"class:{style}"
@@ -316,9 +316,9 @@ class BoxModel(LayoutIpyWidgetComm):
     """A box layout ipywidget (basically the same a HBox)."""
 
     padding = 1
-    Split: "Type[_Split]" = VSplit
+    Split: type[_Split] = VSplit
 
-    def create_view(self, parent: "OutputParent") -> "CommView":
+    def create_view(self, parent: OutputParent) -> CommView:
         """Create a new view of the layout ipywidget."""
         container = ReferencedSplit(
             self.Split,
@@ -327,7 +327,7 @@ class BoxModel(LayoutIpyWidgetComm):
             style=self.box_style,
         )
 
-        def set_children(models: "list[str]") -> "None":
+        def set_children(models: list[str]) -> None:
             """Set the children in they layout view when they change."""
             container.children = self.render_children(models, parent)
 
@@ -351,7 +351,7 @@ class VBoxModel(BoxModel):
 class TabModel(LayoutIpyWidgetComm):
     """A tabbed layout ipywidget."""
 
-    def create_view(self, parent: "OutputParent") -> "CommView":
+    def create_view(self, parent: OutputParent) -> CommView:
         """Create a new view of the tabbed ipywidget."""
         children = self.data["state"]["children"]
         container = TabbedSplit(
@@ -363,11 +363,11 @@ class TabModel(LayoutIpyWidgetComm):
             on_change=self.update_index,
         )
 
-        def set_children(models: "list[str]") -> "None":
+        def set_children(models: list[str]) -> None:
             """Set the children of the tab view when they change."""
             container.children = self.render_children(models, parent)
 
-        def set_titles(new: "dict[int, str]") -> "None":
+        def set_titles(new: dict[int, str]) -> None:
             """Set the titles on the tabs when they change."""
             titles = container.titles
             for index, value in new.items():
@@ -383,7 +383,7 @@ class TabModel(LayoutIpyWidgetComm):
             },
         )
 
-    def update_index(self, container: "StackedSplit") -> "None":
+    def update_index(self, container: StackedSplit) -> None:
         """Send a ``comm_message`` updating the selected index when it changes."""
         self.set_state("selected_index", container.active)
 
@@ -391,7 +391,7 @@ class TabModel(LayoutIpyWidgetComm):
 class AccordionModel(LayoutIpyWidgetComm):
     """An accoridon layout ipywidget."""
 
-    def create_view(self, parent: "OutputParent") -> "CommView":
+    def create_view(self, parent: OutputParent) -> CommView:
         """Create a new view of the accordion ipywidget."""
         children = self.data["state"]["children"]
         container = AccordionSplit(
@@ -403,11 +403,11 @@ class AccordionModel(LayoutIpyWidgetComm):
             on_change=self.update_index,
         )
 
-        def set_children(models: "list[str]") -> "None":
+        def set_children(models: list[str]) -> None:
             """Set the children of the accordion when they change."""
             container.children = self.render_children(models, parent)
 
-        def set_titles(new: "dict[int, str]") -> "None":
+        def set_titles(new: dict[int, str]) -> None:
             """Set the titles on the accordion when they change."""
             titles = container.titles
             for index, value in new.items():
@@ -423,7 +423,7 @@ class AccordionModel(LayoutIpyWidgetComm):
             },
         )
 
-    def update_index(self, container: "StackedSplit") -> "None":
+    def update_index(self, container: StackedSplit) -> None:
         """Send a ``comm_message`` updating the selected index when it changes."""
         self.set_state("selected_index", container.active)
 
@@ -431,7 +431,7 @@ class AccordionModel(LayoutIpyWidgetComm):
 class ButtonModel(IpyWidgetComm):
     """A Button ipywidget."""
 
-    def create_view(self, parent: "OutputParent") -> "CommView":
+    def create_view(self, parent: OutputParent) -> CommView:
         """Create a new view of the button ipywidget."""
         button = Button(
             text=self.text,
@@ -444,7 +444,7 @@ class ButtonModel(IpyWidgetComm):
             setters={"description": partial(setattr, button, "text")},
         )
 
-    def text(self) -> "str":
+    def text(self) -> str:
         """Generate the button text, optionally including an icon if specified."""
         text = self.data["state"].get("description", "")
         if icon := self.data["state"].get("icon", ""):
@@ -453,13 +453,13 @@ class ButtonModel(IpyWidgetComm):
             text = f"{FA_ICONS.get(icon, '#')} {text}"
         return text
 
-    def button_style(self) -> "str":
+    def button_style(self) -> str:
         """Convert the ipywidget button_style to a prompt_toolkit style string."""
         if style := self.data["state"].get("button_style", ""):
             return f"class:ipywidget,{style}"
         return "class:ipywidget"
 
-    def click(self, button: "Button") -> "None":
+    def click(self, button: Button) -> None:
         """Send a ``comm_msg`` describing a click event."""
         if self.comm_container.kernel:
             self.comm_container.kernel.kc_comm(
@@ -474,19 +474,19 @@ class TextBoxIpyWidgetComm(IpyWidgetComm, metaclass=ABCMeta):
     default_rows = 1
     multiline = False
 
-    def validation(self, x: "Any") -> "bool":
-        """Ensure the entered text can be normalized."""
+    def validation(self, x: Any) -> bool:
+        """Enure the entered text can be normalized."""
         return self.normalize(x) is not None
 
-    def normalize(self, x: "Any") -> "Optional[Any]":
-        """Ensure the selected value is permitted and the correct type."""
+    def normalize(self, x: Any) -> Any | None:
+        """Enure the selected value is permitted and the correct type."""
         return x
 
-    def value(self) -> "str":
+    def value(self) -> str:
         """Return the ipywidget's value."""
         return self.data["state"].get("value", "")
 
-    def create_view(self, parent: "OutputParent") -> "CommView":
+    def create_view(self, parent: OutputParent) -> CommView:
         """Create a new view of the text-box ipywidget."""
         text = Text(
             text=self.value(),
@@ -516,7 +516,7 @@ class TextBoxIpyWidgetComm(IpyWidgetComm, metaclass=ABCMeta):
             },
         )
 
-    def update_value(self, buffer: "Buffer") -> "None":
+    def update_value(self, buffer: Buffer) -> None:
         """Set the selected index when the ipywidget's entered value changes."""
         if (value := self.normalize(buffer.text)) is not None:
             self.set_state("value", value)
@@ -536,10 +536,10 @@ class TextareaModel(TextBoxIpyWidgetComm):
 class IntOptionsMixin:
     """A mixin for ipywidgets which accept a range of integer values."""
 
-    data: "dict[str, Any]"
+    data: dict[str, Any]
 
-    def normalize(self, x: "Any") -> "Optional[int]":
-        """Ensure the selected value is within the permitted range and is a integer."""
+    def normalize(self, x: Any) -> int | None:
+        """Enure the selected value is within the permitted range and is a integer."""
         try:
             value = int(x)
         except ValueError:
@@ -554,7 +554,7 @@ class IntOptionsMixin:
             return value
 
     @property
-    def options(self) -> "list[int]":
+    def options(self) -> list[int]:
         """Generate a list of available options in a range of integers."""
         step = self.data["state"].get("step", 1)
         return list(
@@ -569,10 +569,10 @@ class IntOptionsMixin:
 class FloatOptionsMixin:
     """A mixin for ipywidgets which accept a range of float values."""
 
-    data: "dict[str, Any]"
+    data: dict[str, Any]
 
-    def normalize(self, x: "Any") -> "Optional[float]":
-        """Ensure the selected value is within the permitted range and is a float."""
+    def normalize(self, x: Any) -> float | None:
+        """Enure the selected value is within the permitted range and is a float."""
         try:
             value = float(x)
         except ValueError:
@@ -587,7 +587,7 @@ class FloatOptionsMixin:
             return value
 
     @property
-    def options(self) -> "list[float]":
+    def options(self) -> list[float]:
         """Generate a list of available options in a range of floats."""
         step = Decimal(str(self.data["state"].get("step", 0.1)))
         start = Decimal(str(self.data["state"].get("min", 0)))
@@ -608,10 +608,10 @@ class FloatOptionsMixin:
 class FloatLogOptionsMixin(FloatOptionsMixin):
     """A mixin for ipywidgets which accept a value from range of exponents."""
 
-    data: "dict[str, Any]"
+    data: dict[str, Any]
 
-    def normalize(self, x: "Any") -> "Optional[float]":
-        """Ensure the selected value is within the permitted range and is a float."""
+    def normalize(self, x: Any) -> float | None:
+        """Enure the selected value is within the permitted range and is a float."""
         try:
             value = float(x)
         except ValueError:
@@ -627,7 +627,7 @@ class FloatLogOptionsMixin(FloatOptionsMixin):
             return value
 
     @property
-    def options(self) -> "list[float]":
+    def options(self) -> list[float]:
         """Generate a list of available options in a range of log values."""
         base = Decimal(str(self.data["state"].get("base", 10)))
         start = Decimal(str(self.data["state"].get("min", 0)))
@@ -644,19 +644,19 @@ class FloatLogOptionsMixin(FloatOptionsMixin):
 
 
 class SliderIpyWidgetComm(IpyWidgetComm, metaclass=ABCMeta):
-    """Base class for slider ipywidgets."""
+    """Bae class for slider ipywidgets."""
 
-    def normalize(self, x: "Any") -> "Any":
+    def normalize(self, x: Any) -> Any:
         """Convert the internal widget's value to one compatible with the ipywidget."""
         return x
 
     @property
     @abstractmethod
-    def options(self) -> "list":
+    def options(self) -> list:
         """Abstract method to return a list of available options."""
         return []
 
-    def create_view(self, parent: "OutputParent") -> "CommView":
+    def create_view(self, parent: OutputParent) -> CommView:
         """Create a new view of the slider ipywidget."""
         vertical = Condition(
             lambda: self.data["state"].get("orientation", "horizontal") == "vertical"
@@ -702,19 +702,19 @@ class SliderIpyWidgetComm(IpyWidgetComm, metaclass=ABCMeta):
         )
 
     @property
-    def indices(self) -> "list[Any]":
+    def indices(self) -> list[Any]:
         """Return the selected index as a list."""
         return [
             self.options.index(value) for value in [self.data["state"].get("value", 0)]
         ]
 
-    def update_value(self, container: "SelectableWidget") -> "None":
+    def update_value(self, container: SelectableWidget) -> None:
         """Send a ``comm_message`` updating the value when it changes."""
         if (index := container.index) is not None:
             if (value := self.normalize(container.options[index])) is not None:
                 self.set_state("value", value)
 
-    def set_value(self, slider: "Slider", value: "Any") -> "None":
+    def set_value(self, slider: Slider, value: Any) -> None:
         """Set the selected index when the ipywidget's selected value changes."""
         if value in slider.options:
             slider.index = slider.options.index(value)
@@ -722,10 +722,10 @@ class SliderIpyWidgetComm(IpyWidgetComm, metaclass=ABCMeta):
 
 
 class RangeSliderIpyWidgetComm(SliderIpyWidgetComm):
-    """Base class for range slider ipywidgets."""
+    """Bae class for range slider ipywidgets."""
 
     @property
-    def indices(self) -> "list[int]":
+    def indices(self) -> list[int]:
         """Return the first and last selected indices."""
         output = []
         for value in self.data["state"]["value"]:
@@ -733,13 +733,13 @@ class RangeSliderIpyWidgetComm(SliderIpyWidgetComm):
                 output.append(self.options.index(value))
         return output
 
-    def update_value(self, slider: "SelectableWidget") -> "None":
+    def update_value(self, slider: SelectableWidget) -> None:
         """Send a ``comm_message`` updating the values when they change."""
         self.set_state(
             "value", [self.normalize(slider.options[index]) for index in slider.indices]
         )
 
-    def set_value(self, slider: "Slider", values: "Any") -> "None":
+    def set_value(self, slider: Slider, values: Any) -> None:
         """Any float value is permitted - we might need to add an option."""
         indices = slider.indices
         norm_values = [self.normalize(value) for value in values]
@@ -773,9 +773,9 @@ class FloatRangeSliderModel(FloatOptionsMixin, RangeSliderIpyWidgetComm):
 
 
 class NumberTextBoxIpyWidgetComm(TextBoxIpyWidgetComm, metaclass=ABCMeta):
-    """Base class for text-box ipywidgets with numerical values."""
+    """Bae class for text-box ipywidgets with numerical values."""
 
-    def create_view(self, parent: "OutputParent") -> "CommView":
+    def create_view(self, parent: OutputParent) -> CommView:
         """Create a new view of the numerical text-box ipywidget."""
         disabled = disabled = Condition(
             lambda: self.data["state"].get("disabled", False)
@@ -819,14 +819,14 @@ class NumberTextBoxIpyWidgetComm(TextBoxIpyWidgetComm, metaclass=ABCMeta):
             setters={"value": partial(lambda x: setattr(text.buffer, "text", str(x)))},
         )
 
-    def incr(self, button: "Button") -> "None":
+    def incr(self, button: Button) -> None:
         """Increment the widget's value by one step."""
         value = Decimal(str(self.data["state"]["value"]))
         step = Decimal(str(self.data["state"].get("step", 1) or 1))
         if (new := self.normalize(value + step)) is not None:
             self.set_state("value", new)
 
-    def decr(self, button: "Button") -> "None":
+    def decr(self, button: Button) -> None:
         """Decrement the widget's value by one step."""
         value = Decimal(str(self.data["state"]["value"]))
         step = Decimal(str(self.data["state"].get("step", 1) or 1))
@@ -853,7 +853,7 @@ class BoundedFloatTextModel(FloatOptionsMixin, NumberTextBoxIpyWidgetComm):
 class ProgressIpyWidgetComm(IpyWidgetComm, metaclass=ABCMeta):
     """The base class for progress bar ipywidgets."""
 
-    def create_view(self, parent: "OutputParent") -> "CommView":
+    def create_view(self, parent: OutputParent) -> CommView:
         """Create a new view of the progress bar."""
         vertical = Condition(
             lambda: self.data["state"].get("orientation", "horizontal") == "vertical"
@@ -883,7 +883,7 @@ class ProgressIpyWidgetComm(IpyWidgetComm, metaclass=ABCMeta):
             },
         )
 
-    def bar_style(self) -> "str":
+    def bar_style(self) -> str:
         """Convert the ipywidget ``bar_style`` to a prompt_toolkit style string."""
         if style := self.data["state"].get("bar_style", ""):
             return f"class:{style}"
@@ -899,10 +899,10 @@ class FloatProgressModel(FloatOptionsMixin, ProgressIpyWidgetComm):
 
 
 class ToggleableIpyWidgetComm(IpyWidgetComm, metaclass=ABCMeta):
-    """Base class for toggleable ipywidgets."""
+    """Bae class for toggleable ipywidgets."""
 
-    def normalize(self, x: "Any") -> "Optional[float]":
-        """Cast the container's selected value to a bool if possible."""
+    def normalize(self, x: Any) -> float | None:
+        """Cat the container's selected value to a bool if possible."""
         try:
             value = bool(x)
         except ValueError:
@@ -910,7 +910,7 @@ class ToggleableIpyWidgetComm(IpyWidgetComm, metaclass=ABCMeta):
         else:
             return value
 
-    def value_changed(self, button: "ToggleableWidget") -> "None":
+    def value_changed(self, button: ToggleableWidget) -> None:
         """Send a ``comm_message`` updating the value when it changes."""
         if (value := self.normalize(button.selected)) is not None:
             self.set_state("value", value)
@@ -919,7 +919,7 @@ class ToggleableIpyWidgetComm(IpyWidgetComm, metaclass=ABCMeta):
 class ToggleButtonModel(ToggleableIpyWidgetComm):
     """A toggleable button ipywidget."""
 
-    def create_view(self, parent: "OutputParent") -> "CommView":
+    def create_view(self, parent: OutputParent) -> CommView:
         """Create a new view of the toggle button ipywidget."""
         button = ToggleButton(
             text=self.text,
@@ -935,7 +935,7 @@ class ToggleButtonModel(ToggleableIpyWidgetComm):
             setters={"value": partial(setattr, button, "selected")},
         )
 
-    def text(self) -> "str":
+    def text(self) -> str:
         """Generate the button text, optionally including an icon if specified."""
         text = self.data["state"].get("description", "")
         if icon := self.data["state"].get("icon", ""):
@@ -944,7 +944,7 @@ class ToggleButtonModel(ToggleableIpyWidgetComm):
             text = f"{FA_ICONS.get(icon, '#')} {text}"
         return text
 
-    def button_style(self) -> "str":
+    def button_style(self) -> str:
         """Convert the ipywidget button_style to a prompt_toolkit style string."""
         if style := self.data["state"].get("button_style", ""):
             return f"class:ipywidget,{style}"
@@ -954,7 +954,7 @@ class ToggleButtonModel(ToggleableIpyWidgetComm):
 class CheckboxModel(ToggleableIpyWidgetComm):
     """A checkbox ipywidget."""
 
-    def create_view(self, parent: "OutputParent") -> "CommView":
+    def create_view(self, parent: OutputParent) -> CommView:
         """Create a new view of the checkbox ipywidget."""
         checkbox = Checkbox(
             text=self.data["state"].get("description", ""),
@@ -973,7 +973,7 @@ class CheckboxModel(ToggleableIpyWidgetComm):
 class ValidModel(ToggleableIpyWidgetComm):
     """A validity indicator ipywidget."""
 
-    def create_view(self, parent: "OutputParent") -> "CommView":
+    def create_view(self, parent: OutputParent) -> CommView:
         """Create a new view of the validity ipywidget."""
         checkbox = Checkbox(
             on_click=self.value_changed,
@@ -993,9 +993,9 @@ class ValidModel(ToggleableIpyWidgetComm):
 
 
 class SelectableIpyWidgetComm(IpyWidgetComm, metaclass=ABCMeta):
-    """Base class for selectable ipywidgets."""
+    """Bae class for selectable ipywidgets."""
 
-    def update_index(self, container: "SelectableWidget") -> "None":
+    def update_index(self, container: SelectableWidget) -> None:
         """Send a ``comm_message`` updating the selected index when it changes."""
         self.set_state("index", container.index)
 
@@ -1003,7 +1003,7 @@ class SelectableIpyWidgetComm(IpyWidgetComm, metaclass=ABCMeta):
 class DropdownModel(SelectableIpyWidgetComm):
     """An ipywidget allowing an item to be selected using a drop-down menu."""
 
-    def create_view(self, parent: "OutputParent") -> "CommView":
+    def create_view(self, parent: OutputParent) -> CommView:
         """Create a new view of the drop-down widget."""
         dropdown = Dropdown(
             options=self.data["state"].get("_options_labels", []),
@@ -1030,7 +1030,7 @@ class DropdownModel(SelectableIpyWidgetComm):
 class RadioButtonsModel(SelectableIpyWidgetComm):
     """An ipywidget allowing an item to be selected using radio buttons."""
 
-    def create_view(self, parent: "OutputParent") -> "CommView":
+    def create_view(self, parent: OutputParent) -> CommView:
         """Create a new view of the radio-buttons widget."""
         select = Select(
             options=self.data["state"].get("_options_labels", []),
@@ -1061,7 +1061,7 @@ class RadioButtonsModel(SelectableIpyWidgetComm):
 class SelectModel(SelectableIpyWidgetComm):
     """An ipywidget allowing a value to be selected from a list of options."""
 
-    def create_view(self, parent: "OutputParent") -> "CommView":
+    def create_view(self, parent: OutputParent) -> CommView:
         """Create a new view of the select widget."""
         select = Select(
             options=self.data["state"].get("_options_labels", []),
@@ -1091,7 +1091,7 @@ class SelectModel(SelectableIpyWidgetComm):
 class SelectMultipleModel(IpyWidgetComm):
     """An ipywidget allowing one or more value to be selected from a list of options."""
 
-    def create_view(self, parent: "OutputParent") -> "CommView":
+    def create_view(self, parent: OutputParent) -> CommView:
         """Create a new view of the multiple select widget."""
         select = Select(
             options=self.data["state"].get("_options_labels", []),
@@ -1117,7 +1117,7 @@ class SelectMultipleModel(IpyWidgetComm):
             },
         )
 
-    def update_index(self, container: "SelectableWidget") -> "None":
+    def update_index(self, container: SelectableWidget) -> None:
         """Send a ``comm_message`` updating the selected index when it changes."""
         self.set_state("index", container.indices)
 
@@ -1126,20 +1126,20 @@ class SelectionSliderModel(SliderIpyWidgetComm):
     """A slider ipywidget where one of a list of options can be selected."""
 
     @property
-    def options(self) -> "list[str]":
+    def options(self) -> list[str]:
         """Return a list of the available options."""
         return self.data["state"].get("_options_labels", [])
 
     @property
-    def indices(self) -> "list[int]":
+    def indices(self) -> list[int]:
         """Return the selected index as a list."""
         return [self.data["state"]["index"]]
 
-    def update_value(self, slider: "SelectableWidget") -> "None":
+    def update_value(self, slider: SelectableWidget) -> None:
         """Send a ``comm_message`` updating the selected index when it changes."""
         self.set_state("index", slider.index)
 
-    def set_value(self, slider: "Slider", index: "int") -> "None":
+    def set_value(self, slider: Slider, index: int) -> None:
         """Set the selected index on the selection slider when the value changes."""
         self.sync = False
         slider.control.set_index(ab=index)
@@ -1150,20 +1150,20 @@ class SelectionRangeSliderModel(SliderIpyWidgetComm):
     """A slider ipywidget where one or more of a list of options can be selected."""
 
     @property
-    def options(self) -> "list[str]":
+    def options(self) -> list[str]:
         """Return a list of the available options."""
         return self.data["state"].get("_options_labels", [])
 
     @property
-    def indices(self) -> "list[int]":
+    def indices(self) -> list[int]:
         """Return a list of the selected indices."""
         return self.data["state"]["index"]
 
-    def update_value(self, slider: "SelectableWidget") -> "None":
+    def update_value(self, slider: SelectableWidget) -> None:
         """Send a ``comm_message`` updating the selected indices when they change."""
         self.set_state("index", slider.indices)
 
-    def set_value(self, slider: "Slider", indices: "tuple[int, int]") -> "None":
+    def set_value(self, slider: Slider, indices: tuple[int, int]) -> None:
         """Set the selected indices on the selection slider when the value changes."""
         self.sync = False
         for i, index in enumerate(indices):
@@ -1174,8 +1174,8 @@ class SelectionRangeSliderModel(SliderIpyWidgetComm):
 class ToggleButtonsModel(IpyWidgetComm):
     """An ipywidget where a single value can be selected using togglable buttons."""
 
-    def get_label(self, index: "int") -> "AnyFormattedText":
-        """Returns the label for each toggle button (optionally including the icon)."""
+    def get_label(self, index: int) -> AnyFormattedText:
+        """Return the label for each toggle button (optionally including the icon)."""
         label = str(self.data["state"].get("_options_labels", [])[index])
         if index < len(self.data["state"].get("icons", [])):
             if icon := self.data["state"]["icons"][index]:
@@ -1184,7 +1184,7 @@ class ToggleButtonsModel(IpyWidgetComm):
                 label = f"{FA_ICONS.get(icon, '#')} {label}"
         return label
 
-    def create_view(self, parent: "OutputParent") -> "CommView":
+    def create_view(self, parent: OutputParent) -> CommView:
         """Create a new view of the toggle button widget."""
         options = self.data["state"].get("_options_labels", [])
         buttons = ToggleButtons(
@@ -1210,20 +1210,20 @@ class ToggleButtonsModel(IpyWidgetComm):
             },
         )
 
-    def set_options(self, buttons: "ToggleButtons") -> "None":
+    def set_options(self, buttons: ToggleButtons) -> None:
         """Set the list of selectable options in the toggle buttons."""
         options = self.data["state"].get("_options_labels", [])
         buttons.options = options
         # Update the button label functions in case the number of options has changed
         buttons.labels = [partial(self.get_label, i) for i in range(len(options))]
 
-    def button_style(self) -> "str":
+    def button_style(self) -> str:
         """Convert the ipywidget button_style to a prompt_toolkit style string."""
         if style := self.data["state"].get("button_style", ""):
             return f"class:ipywidget,{style}"
         return "class:ipywidget"
 
-    def update_index(self, container: "SelectableWidget") -> "None":
+    def update_index(self, container: SelectableWidget) -> None:
         """Set the selected index be sending a comm update message."""
         self.set_state("index", container.index)
 
@@ -1231,8 +1231,8 @@ class ToggleButtonsModel(IpyWidgetComm):
 class ComboboxModel(TextBoxIpyWidgetComm):
     """A combobox input widget."""
 
-    def normalize(self, x: "str") -> "Optional[str]":
-        """Ensure that the entered text matches a permitted option, if required."""
+    def normalize(self, x: str) -> str | None:
+        """Enure that the entered text matches a permitted option, if required."""
         if self.data["state"].get("ensure_option", False):
             if x in self.data["state"].get("options", []):
                 return x
@@ -1244,7 +1244,7 @@ class ComboboxModel(TextBoxIpyWidgetComm):
 class LabelModel(IpyWidgetComm):
     """A label ipwidget."""
 
-    def create_view(self, parent: "OutputParent") -> "CommView":
+    def create_view(self, parent: OutputParent) -> CommView:
         """Create a new view of the Label widget."""
         label = Label(lambda: self.data["state"].get("value", ""))
         return CommView(label)
@@ -1253,7 +1253,7 @@ class LabelModel(IpyWidgetComm):
 class HTMLModel(IpyWidgetComm):
     """A label ipywidget which displays HTML."""
 
-    def create_view(self, parent: "OutputParent") -> "CommView":
+    def create_view(self, parent: OutputParent) -> CommView:
         """Create a new view of the HTML widget."""
         html = Display(
             data=self.data["state"].get("value", ""),
@@ -1272,13 +1272,13 @@ class HTMLModel(IpyWidgetComm):
 
 
 class HTMLMathModel(HTMLModel):
-    """Alias for :class:`HTMLModel`, which can render maths."""
+    """Alia for :class:`HTMLModel`, which can render maths."""
 
 
 class ImageModel(IpyWidgetComm):
     """A ipywidget which displays an image."""
 
-    def create_view(self, parent: "OutputParent") -> "CommView":
+    def create_view(self, parent: OutputParent) -> CommView:
         """Create a new view of the image widget."""
         display = Display(
             data=self.data["state"].get("value", b""),
@@ -1305,7 +1305,7 @@ class ImageModel(IpyWidgetComm):
 class DatePickerModel(TextBoxIpyWidgetComm):
     """A date-picker ipywidget."""
 
-    def normalize(self, x: "str") -> "Optional[dict[str, int]]":
+    def normalize(self, x: str) -> dict[str, int] | None:
         """Attempt to convert entered text to the internal date representation."""
         if not x:
             return None
@@ -1320,7 +1320,7 @@ class DatePickerModel(TextBoxIpyWidgetComm):
                 "date": value.day,
             }
 
-    def create_view(self, parent: "OutputParent") -> "CommView":
+    def create_view(self, parent: OutputParent) -> CommView:
         """Create a new view of the date-picker widget."""
         comm_view = super().create_view(parent)
         # Wrap the standard value setter to parse the date objects
@@ -1330,16 +1330,16 @@ class DatePickerModel(TextBoxIpyWidgetComm):
         )
         return comm_view
 
-    def value(self) -> "str":
-        """Returns the text to display in the widget's text area."""
+    def value(self) -> str:
+        """Return the text to display in the widget's text area."""
         value = self.data["state"].get("value")
         if value:
             return self.parse_date(value).strftime("%Y-%m-%d")
         else:
             return ""
 
-    def parse_date(self, value: "dict[str, int]") -> "date":
-        """Converts the internal date representation to a python date."""
+    def parse_date(self, value: dict[str, int]) -> date:
+        """Convert the internal date representation to a python date."""
         return date(value["year"], value["month"] + 1, value["date"])
 
 
@@ -1350,7 +1350,7 @@ class ColorPickerModel(TextBoxIpyWidgetComm):
         r"#(?:[a-fA-F0-9]{3}(?:[a-fA-F0-9]{3})?|[a-fA-F0-9]{4}(?:[a-fA-F0-9]{4})?)$"
     )
 
-    def create_view(self, parent: "OutputParent") -> "CommView":
+    def create_view(self, parent: OutputParent) -> CommView:
         """Create a new view of the color-picker widget."""
         text = Text(
             text=self.value(),
@@ -1390,8 +1390,8 @@ class ColorPickerModel(TextBoxIpyWidgetComm):
             },
         )
 
-    def format_color(self) -> "str":
-        """Formats a color as a hex code for display."""
+    def format_color(self) -> str:
+        """Format a color as a hex code for display."""
         from euporie.core.reference import NAMED_COLORS
 
         # TODO - blend alpha colors with the terminal background
@@ -1404,8 +1404,8 @@ class ColorPickerModel(TextBoxIpyWidgetComm):
             value = value[:7]
         return value
 
-    def normalize(self, x: "str") -> "Optional[str]":
-        """Returns the color string if it is recognised as an allowed color."""
+    def normalize(self, x: str) -> str | None:
+        """Return the color string if it is recognised as an allowed color."""
         from euporie.core.reference import NAMED_COLORS
 
         if x in NAMED_COLORS or self._hex_pattern.match(x) is not None:
@@ -1415,12 +1415,12 @@ class ColorPickerModel(TextBoxIpyWidgetComm):
 
 
 def open_comm_ipywidgets(
-    comm_container: "KernelTab",
-    comm_id: "str",
-    data: "dict",
-    buffers: "Sequence[bytes]",
-) -> "IpyWidgetComm":
-    """Creates a new Comm for an :py:mod:`ipywidgets` widget.
+    comm_container: KernelTab,
+    comm_id: str,
+    data: dict,
+    buffers: Sequence[bytes],
+) -> IpyWidgetComm:
+    """Create a new Comm for an :py:mod:`ipywidgets` widget.
 
     The relevant widget model is selected based on the model name given in the
     ``comm_open`` message data.

@@ -1,1 +1,1 @@
-"""Defines euporie's application classes."""
+"""Define euporie's application classes."""

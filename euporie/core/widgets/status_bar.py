@@ -1,4 +1,4 @@
-"""Defines a status-bar widget."""
+"""Define a status-bar widget."""
 
 from __future__ import annotations
 
@@ -25,7 +25,7 @@ if TYPE_CHECKING:
 class StatusBar:
     """A status bar which shows the status of the current tab."""
 
-    def __init__(self, extra_filter: "FilterOrBool" = True) -> "None":
+    def __init__(self, extra_filter: FilterOrBool = True) -> None:
         """Create a new status bar instance."""
         self.app = get_app()
         self.container = ConditionalContainer(
@@ -52,7 +52,7 @@ class StatusBar:
             & to_filter(extra_filter),
         )
 
-    def __pt_container__(self) -> "AnyContainer":
+    def __pt_container__(self) -> AnyContainer:
         """Return the widget's container."""
         return self.container
 

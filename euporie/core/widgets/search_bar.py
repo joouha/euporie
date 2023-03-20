@@ -1,4 +1,4 @@
-"""Defines the global search toolbar and related search functions."""
+"""Define the global search toolbar and related search functions."""
 
 from __future__ import annotations
 
@@ -19,8 +19,6 @@ from euporie.core.key_binding.registry import (
 )
 
 if TYPE_CHECKING:
-    from typing import Optional
-
     from prompt_toolkit.buffer import Buffer
     from prompt_toolkit.filters import FilterOrBool
     from prompt_toolkit.formatted_text.base import AnyFormattedText
@@ -36,13 +34,13 @@ class SearchBar(PtkSearchToolbar):
 
     def __init__(
         self,
-        search_buffer: "Optional[Buffer]" = None,
-        vi_mode: "bool" = False,
-        text_if_not_searching: "AnyFormattedText" = "",
-        forward_search_prompt: "AnyFormattedText" = "I-search: ",
-        backward_search_prompt: "AnyFormattedText" = "I-search backward: ",
-        ignore_case: "FilterOrBool" = False,
-    ) -> "None":
+        search_buffer: Buffer | None = None,
+        vi_mode: bool = False,
+        text_if_not_searching: AnyFormattedText = "",
+        forward_search_prompt: AnyFormattedText = "I-search: ",
+        backward_search_prompt: AnyFormattedText = "I-search backward: ",
+        ignore_case: FilterOrBool = False,
+    ) -> None:
         """Create a new search bar instance."""
         super().__init__(
             text_if_not_searching="",
@@ -61,9 +59,9 @@ class SearchBar(PtkSearchToolbar):
 
 
 def start_global_search(
-    buffer_control: "Optional[BufferControl]" = None,
-    direction: "SearchDirection" = SearchDirection.FORWARD,
-) -> "None":
+    buffer_control: BufferControl | None = None,
+    direction: SearchDirection = SearchDirection.FORWARD,
+) -> None:
     """Start a search through all searchable `buffer_controls` in the layout."""
     app = get_app()
     layout = app.layout
@@ -79,7 +77,7 @@ def start_global_search(
     else:
         return
     # Find all searchable controls
-    searchable_controls: "list[BufferControl]" = []
+    searchable_controls: list[BufferControl] = []
     next_control_index = 0
     for control in layout.find_all_controls():
         # Find the index of the next searchable control so we can link the search
@@ -119,12 +117,12 @@ def start_global_search(
     menu_title="Find",
     # filter=control_is_searchable,
 )
-def find() -> "None":
+def find() -> None:
     """Enter search mode."""
     start_global_search(direction=SearchDirection.FORWARD)
 
 
-def find_prev_next(direction: "SearchDirection") -> "None":
+def find_prev_next(direction: SearchDirection) -> None:
     """Find the previous or next search match."""
     app = get_app()
     layout = app.layout
@@ -151,13 +149,13 @@ def find_prev_next(direction: "SearchDirection") -> "None":
 
 
 @add_cmd()
-def find_next() -> "None":
+def find_next() -> None:
     """Find the next search match."""
     find_prev_next(SearchDirection.FORWARD)
 
 
 @add_cmd()
-def find_previous() -> "None":
+def find_previous() -> None:
     """Find the previous search match."""
     find_prev_next(SearchDirection.BACKWARD)
 
@@ -165,7 +163,7 @@ def find_previous() -> "None":
 @add_cmd(
     filter=is_searching,
 )
-def stop_search() -> "None":
+def stop_search() -> None:
     """Abort the search."""
     layout = get_app().layout
     buffer_control = layout.search_target_buffer_control
@@ -187,7 +185,7 @@ def stop_search() -> "None":
     name="accept-search",
     filter=is_searching,
 )
-def accept_search() -> "None":
+def accept_search() -> None:
     """Accept the search input."""
     layout = get_app().layout
     search_buffer_control = layout.current_control

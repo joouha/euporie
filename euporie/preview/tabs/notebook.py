@@ -21,7 +21,7 @@ from euporie.core.widgets.cell import Cell
 from euporie.core.widgets.page import PrintingContainer
 
 if TYPE_CHECKING:
-    from typing import Any, Callable, Optional
+    from typing import Any, Callable
 
     from prompt_toolkit.application.application import Application
     from prompt_toolkit.formatted_text.base import StyleAndTextTuples
@@ -38,16 +38,16 @@ class PreviewNotebook(BaseNotebook):
 
     def __init__(
         self,
-        app: "BaseApp",
-        path: "Optional[UPath]" = None,
-        use_kernel_history: "bool" = False,
-    ) -> "None":
+        app: BaseApp,
+        path: UPath | None = None,
+        use_kernel_history: bool = False,
+    ) -> None:
         """Create a new instance."""
         super().__init__(app, path, use_kernel_history=use_kernel_history)
         self.cell_index = 0
         self.app.before_render += self.before_render
         self.app.after_render += self.after_render
-        self.cells: "FastDictCache[tuple[int], Cell]" = FastDictCache(
+        self.cells: FastDictCache[tuple[int], Cell] = FastDictCache(
             get_value=self.get_cell
         )
 
@@ -58,8 +58,8 @@ class PreviewNotebook(BaseNotebook):
 
         # Filter the cells to be shown
         n_cells = len(self.json["cells"]) - 1
-        start: "Optional[int]" = None
-        stop: "Optional[int]" = None
+        start: int | None = None
+        stop: int | None = None
         if self.app.config.cell_start is not None:
             start = min(max(self.app.config.cell_start, -n_cells), n_cells)
         if self.app.config.cell_stop is not None:
@@ -67,7 +67,7 @@ class PreviewNotebook(BaseNotebook):
         log.debug("Showing cells %s to %s", start, stop)
         self.json["cells"] = self.json["cells"][start:stop]
 
-    def print_title(self) -> "None":
+    def print_title(self) -> None:
         """Print a notebook's filename."""
         from euporie.core.formatted_text.utils import (
             FormattedTextAlign,
@@ -77,24 +77,24 @@ class PreviewNotebook(BaseNotebook):
         )
 
         width = self.app.output.get_size().columns
-        ft: "StyleAndTextTuples" = [("bold", str(self.path))]
+        ft: StyleAndTextTuples = [("bold", str(self.path))]
         ft = wrap(ft, width - 4)
         ft = align(ft, how=FormattedTextAlign.CENTER, width=width - 4)
         ft = add_border(ft, width=width)
         self.app.print_text(ft)
 
-    def kernel_started(self, result: "Optional[dict]" = None) -> "None":
-        """Resumes rendering the app when the kernel has started."""
+    def kernel_started(self, result: dict | None = None) -> None:
+        """Resume rendering the app when the kernel has started."""
         self.app.resume_rendering()
 
-    def close(self, cb: "Optional[Callable]" = None) -> "None":
+    def close(self, cb: Callable | None = None) -> None:
         """Clean up render hooks before the tab is closed."""
         self.app.after_render -= self.after_render
         if self.app.config.run and self.app.config.save:
             self.save()
         super().close(cb)
 
-    def before_render(self, app: "Application[Any]") -> "None":
+    def before_render(self, app: Application[Any]) -> None:
         """Run the cell before rendering it if needed."""
         if (
             self.app.tab == self
@@ -113,15 +113,15 @@ class PreviewNotebook(BaseNotebook):
             cell.run_or_render(wait=True)
             # self.kernel.wait_for_status("idle")
 
-    def after_render(self, app: "Application[Any]") -> "None":
-        """Close the tab if all cells have been rendered."""
+    def after_render(self, app: Application[Any]) -> None:
+        """Cloe the tab if all cells have been rendered."""
         if self.app.tab == self:
             if self.cell_index < len(self.json["cells"]) - 1:
                 self.cell_index += 1
             else:
                 self.app.close_tab(self)
 
-    def get_cell(self, index: "int") -> "Cell":
+    def get_cell(self, index: int) -> Cell:
         """Render a cell by its index."""
         if index < len(self.json["cells"]):
             return Cell(index, self.json["cells"][index], self)
@@ -129,12 +129,12 @@ class PreviewNotebook(BaseNotebook):
             return Cell(0, {}, self)
 
     @property
-    def cell(self) -> "Cell":
+    def cell(self) -> Cell:
         """Return the current cell."""
         return self.cells[(self.cell_index,)]
 
-    def load_container(self) -> "AnyContainer":
-        """Abscract method for loading the notebook's main container."""
+    def load_container(self) -> AnyContainer:
+        """Abcract method for loading the notebook's main container."""
         return PrintingContainer(
             [
                 VSplit(

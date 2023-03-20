@@ -1,4 +1,4 @@
-"""Contains a HTML to formatted text parser."""
+"""Contain a HTML to formatted text parser."""
 
 from __future__ import annotations
 
@@ -76,7 +76,7 @@ class CssSelector(NamedTuple):
     attr: str | None = None
     pseudo: str | None = None
 
-    def __repr__(self) -> "str":
+    def __repr__(self) -> str:
         """Return a string representation of the selector."""
         defaults = self._field_defaults
         attrs = ", ".join(
@@ -92,7 +92,6 @@ if TYPE_CHECKING:
         Generator,
         Hashable,
         Iterator,
-        Union,
     )
 
     CssSelectors = dict[tuple[tuple[CssSelector, ...], ...], dict[str, str]]
@@ -103,8 +102,8 @@ log = logging.getLogger(__name__)
 class Direction(NamedTuple):
     """A description of a direction."""
 
-    x: "bool" = False
-    y: "bool" = False
+    x: bool = False
+    y: bool = False
 
 
 # Prefer 6-digit hex-colors over 3-digit ones
@@ -294,15 +293,15 @@ _HERITABLE_PROPS = {
 
 @lru_cache(maxsize=500_000)
 def match_css_selector(
-    selector: "str",
-    attrs: "str",
-    pseudo: "str",
-    element_name: "str",
-    is_first_child_element: "bool",
-    is_last_child_element: "bool",
-    sibling_element_index: "int|None",
-    **element_attrs: "Any",
-) -> "bool":
+    selector: str,
+    attrs: str,
+    pseudo: str,
+    element_name: str,
+    is_first_child_element: bool,
+    is_last_child_element: bool,
+    sibling_element_index: int | None,
+    **element_attrs: Any,
+) -> bool:
     """Determine if a CSS selector matches a particular element."""
     matched = True
 
@@ -337,7 +336,6 @@ def match_css_selector(
         return False
 
     while selector and matched:
-
         # Universal selector
         if selector == "*":
             break
@@ -406,7 +404,7 @@ def match_css_selector(
     return matched
 
 
-def try_eval(value: "str", default: "Any" = None) -> "Any":
+def try_eval(value: str, default: Any = None) -> Any:
     """Attempt to cast a string to a python type."""
     parsed_value = default or value
     try:
@@ -422,7 +420,7 @@ def try_eval(value: "str", default: "Any" = None) -> "Any":
     return parsed_value
 
 
-def get_integer(value: "str") -> "int|None":
+def get_integer(value: str) -> int | None:
     """Extract the first integer from a string."""
     for word in value.split(" "):
         for c in word.partition(".")[0].split():
@@ -432,7 +430,7 @@ def get_integer(value: "str") -> "int|None":
 
 
 @lru_cache
-def get_color(value: "str") -> "str":
+def get_color(value: str) -> str:
     """Extract a hex color from a string."""
     if match := re.search(_COLOR_RE, value):
         hexes = match.group(1)
@@ -464,10 +462,10 @@ def get_color(value: "str") -> "str":
 
 
 def css_dimension(
-    value: "str",
-    vertical: "bool" = False,
-    available: "float|int|None" = None,
-) -> "int|float|None":
+    value: str,
+    vertical: bool = False,
+    available: float | int | None = None,
+) -> int | float | None:
     """Convert CSS dimensions to terminal cell sizes."""
     # TODO - create a unit class for easy conversion
     # Get digits
@@ -534,9 +532,9 @@ def css_dimension(
             return cols
 
 
-def parse_css_content(content: "str") -> "dict[str, str]":
+def parse_css_content(content: str) -> dict[str, str]:
     """Convert CSS declarations into the internals style representation."""
-    theme: "dict[str, str]" = {}
+    theme: dict[str, str] = {}
 
     if not content:
         return theme
@@ -550,7 +548,7 @@ def parse_css_content(content: "str") -> "dict[str, str]":
 
         # Helpers
 
-        def _split_quad(value: "str") -> "tuple[str, str, str, str]":
+        def _split_quad(value: str) -> tuple[str, str, str, str]:
             values = value.split()
             if len(values) == 1:
                 top = right = bottom = left = values[0]
@@ -670,8 +668,8 @@ def parse_css_content(content: "str") -> "dict[str, str]":
 
 @lru_cache(maxsize=1024)
 def selector_specificity(
-    selector_parts: "tuple[CssSelector, ...]",
-) -> "tuple[int, int, int]":
+    selector_parts: tuple[CssSelector, ...],
+) -> tuple[int, int, int]:
     """Calculate the specificity score of a CSS selector."""
     identifiers = classes = elements = 0
     for selector in selector_parts:
@@ -743,11 +741,11 @@ class Theme(Mapping):
 
     def __init__(
         self,
-        element: "Node",
-        parent_theme: "Theme|None",
-        available_width: "int" = 0,
-        available_height: "int" = 0,
-    ) -> "None":
+        element: Node,
+        parent_theme: Theme | None,
+        available_width: int = 0,
+        available_height: int = 0,
+    ) -> None:
         """Initialize a new element theme."""
         self.element = element
         self.parent_theme = parent_theme
@@ -755,7 +753,7 @@ class Theme(Mapping):
         self.available_height = available_height
 
     @cached_property
-    def theme(self) -> "dict[str, str]":
+    def theme(self) -> dict[str, str]:
         """Return the combined computed theme."""
         return {
             **_DEFAULT_ELEMENT_CSS,
@@ -769,17 +767,17 @@ class Theme(Mapping):
 
     def update_space(
         self,
-        available_width: "int",
-        available_height: "int",
-    ) -> "None":
+        available_width: int,
+        available_height: int,
+    ) -> None:
         """Set the space available to the element for rendering."""
         self.available_width = available_width
         self.available_height = available_height
 
-    # Theme calculation mathods
+    # Theme calculation methods
 
     @cached_property
-    def inherited_browser_css_theme(self) -> "dict[str, str]":
+    def inherited_browser_css_theme(self) -> dict[str, str]:
         """Get the inherited parts from the browser CSS."""
         if (parent_theme := self.parent_theme) is not None:
             return {
@@ -795,7 +793,7 @@ class Theme(Mapping):
             return {}
 
     @cached_property
-    def inherited_theme(self) -> "dict[str, str]":
+    def inherited_theme(self) -> dict[str, str]:
         """Calculate the theme inherited from the element's parent."""
         if (parent_theme := self.parent_theme) is not None:
             browser_css = self.browser_css_theme
@@ -815,12 +813,12 @@ class Theme(Mapping):
             return {}
 
     @cached_property
-    def style_attribute_theme(self) -> "dict[str, str]":
+    def style_attribute_theme(self) -> dict[str, str]:
         """Calculate the theme defined by the element's style attribute."""
         return parse_css_content(self.element.attrs.get("style", ""))
 
     @cached_property
-    def attributes_theme(self) -> "dict[str, str]":
+    def attributes_theme(self) -> dict[str, str]:
         """Calculate the theme defined by (depreciated) HTML attributes."""
         theme = {}
         # border
@@ -853,13 +851,12 @@ class Theme(Mapping):
         # cellpadding # TODO
         return theme
 
-    def _css_theme(self, css: "CssSelectors") -> "dict[str, str]":
+    def _css_theme(self, css: CssSelectors) -> dict[str, str]:
         """Calculate the theme defined in CSS."""
         specificity_rules = []
         element = self.element
         for selectors, rule in css.items():
             for selector_parts in selectors:
-
                 # Last selector item should match the current element
                 selector = selector_parts[-1]
                 if not match_css_selector(
@@ -877,11 +874,9 @@ class Theme(Mapping):
                 # All of the parent selectors should match a separate parent in order
                 # TODO - combinators
                 # https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Selectors#combinators
-                unmatched_parents: "list[Node]" = [
-                    x for x in element.parents[::-1] if x
-                ]
+                unmatched_parents: list[Node] = [x for x in element.parents[::-1] if x]
 
-                _unmatched_parents: "list[Node]"
+                _unmatched_parents: list[Node]
                 parent = element.parent
                 if parent and (
                     (selector.comb == ">" and parent)
@@ -897,7 +892,6 @@ class Theme(Mapping):
 
                 # Iterate through selector items in reverse, skipping the last
                 for selector in selector_parts[-2::-1]:
-
                     for i, parent in enumerate(_unmatched_parents):
                         if parent and match_css_selector(
                             selector.item or "",
@@ -933,49 +927,49 @@ class Theme(Mapping):
         }
 
     @cached_property
-    def browser_css_theme(self) -> "dict[str, str]":
+    def browser_css_theme(self) -> dict[str, str]:
         """Calculate the theme defined in the browser CSS."""
         return self._css_theme(css=self.element.dom.browser_css)
 
     @cached_property
-    def dom_css_theme(self) -> "dict[str,str]":
+    def dom_css_theme(self) -> dict[str, str]:
         """Calculate the theme defined in CSS in the DOM."""
         return self._css_theme(css=self.element.dom.css)
 
     # Computed properties
 
     @cached_property
-    def d_block(self) -> "bool":
+    def d_block(self) -> bool:
         """If the element a block element."""
         return self.theme["display"] == "block" and self.theme["float"] == "none"
 
     @cached_property
-    def d_inline(self) -> "bool":
+    def d_inline(self) -> bool:
         """If the element an inline element."""
         return self.theme["display"] == "inline" and self.theme["float"] == "none"
 
     @cached_property
-    def d_inline_block(self) -> "bool":
+    def d_inline_block(self) -> bool:
         """If the element an inline element."""
         return self.theme["display"] == "inline-block" or self.theme["float"] != "none"
 
     @cached_property
-    def d_table(self) -> "bool":
+    def d_table(self) -> bool:
         """If the element a block element."""
         return self.theme["display"] == "table"
 
     @cached_property
-    def d_list_item(self) -> "bool":
+    def d_list_item(self) -> bool:
         """If the element an inline element."""
         return self.theme["display"] == "list-item" and self.theme["float"] == "none"
 
     @cached_property
-    def d_blocky(self) -> "bool":
+    def d_blocky(self) -> bool:
         """If the element an inline element."""
         return self.d_block or self.d_table or self.d_list_item
 
     @property
-    def min_width(self) -> "int|None":
+    def min_width(self) -> int | None:
         """The minimum permitted width."""
         if value := self.get("min_width"):
             theme_width = css_dimension(
@@ -986,7 +980,7 @@ class Theme(Mapping):
         return None
 
     @property
-    def width(self) -> "int|None":
+    def width(self) -> int | None:
         """The pescribed width."""
         if value := self.theme.get("width"):
             theme_width = css_dimension(
@@ -1012,7 +1006,7 @@ class Theme(Mapping):
         return None
 
     @property
-    def max_width(self) -> "int|None":
+    def max_width(self) -> int | None:
         """The maximum permitted width."""
         if value := self.get("max_width"):
             theme_width = css_dimension(
@@ -1023,7 +1017,7 @@ class Theme(Mapping):
         return None
 
     @property
-    def height(self) -> "int":
+    def height(self) -> int:
         """The perscribed height."""
         # TODO - process min-/max-height
         if value := self.get("height"):
@@ -1036,7 +1030,7 @@ class Theme(Mapping):
         return self.available_height
 
     @property
-    def content_width(self) -> "int":
+    def content_width(self) -> int:
         """Return the width available for rendering the element's content."""
         value = self.width
         # Set content width to the available width for blocks
@@ -1055,7 +1049,7 @@ class Theme(Mapping):
         return max(0, value)
 
     @property
-    def content_height(self) -> "int":
+    def content_height(self) -> int:
         """Return the height available for rendering the element's content."""
         value = self.height
         if value and self.d_blocky:
@@ -1065,7 +1059,7 @@ class Theme(Mapping):
         return max(value, 0)
 
     @cached_property
-    def padding(self) -> "DiInt":
+    def padding(self) -> DiInt:
         """Calculate the padding box."""
         output = {}
         a_w = self.available_width
@@ -1088,7 +1082,7 @@ class Theme(Mapping):
         return DiInt(**output)
 
     @cached_property
-    def base_margin(self) -> "DiInt":
+    def base_margin(self) -> DiInt:
         """Calculate the margin box."""
         output = {}
         a_w = self.available_width
@@ -1106,7 +1100,7 @@ class Theme(Mapping):
         return DiInt(**output)
 
     @cached_property
-    def margin(self) -> "DiInt":
+    def margin(self) -> DiInt:
         """Calculate the margin box."""
         values = self.base_margin._asdict()
         element = self.element
@@ -1116,7 +1110,6 @@ class Theme(Mapping):
             # allow it via configuration)
             and (element.name != "::root" or not element.dom.collapse_root_margin)
         ):
-
             # Collapse margins for empty block elements
             if (
                 self.border_visibility.top
@@ -1128,7 +1121,6 @@ class Theme(Mapping):
 
             # Collapse if there is no content separating parent and descendants
             if parent_theme := self.parent_theme:
-
                 parent_padding = parent_theme.padding
                 parent_border_visibility = parent_theme.border_visibility
 
@@ -1191,12 +1183,12 @@ class Theme(Mapping):
         return DiInt(**values)
 
     @cached_property
-    def margin_auto(self) -> "bool":
+    def margin_auto(self) -> bool:
         """Determine if the left and right margins are set to auto."""
         return self.theme["margin_left"] == self.theme["margin_right"] == "auto"
 
     @cached_property
-    def border_style(self) -> "DiStr":
+    def border_style(self) -> DiStr:
         """Calculate the visibility of the element's borders."""
         if parent_theme := self.parent_theme:
             parent_style = parent_theme.style
@@ -1227,7 +1219,7 @@ class Theme(Mapping):
         return DiStr(**output)
 
     @cached_property
-    def border_visibility(self) -> "DiBool":
+    def border_visibility(self) -> DiBool:
         """Calculate the visibility of the element's borders."""
         theme = self.theme
         output = {
@@ -1248,13 +1240,12 @@ class Theme(Mapping):
         return DiBool(**output)
 
     @cached_property
-    def border_line(self) -> "DiLineStyle":
+    def border_line(self) -> DiLineStyle:
         """Calculate the line style."""
         a_w = self.available_width
         self.d_inline
         output = {}
         for direction in ("top", "right", "bottom", "left"):
-
             border_width = self.theme[f"border_{direction}_width"]
             size = (
                 _BORDER_WIDTHS.get(
@@ -1283,7 +1274,7 @@ class Theme(Mapping):
         return DiLineStyle(**output)
 
     @cached_property
-    def border_grid(self) -> "GridStyle":
+    def border_grid(self) -> GridStyle:
         """Calculate a GridStyle based on the border lines."""
         border_line = self.border_line
         return (
@@ -1294,12 +1285,12 @@ class Theme(Mapping):
         )
 
     @cached_property
-    def border_collapse(self) -> "bool":
+    def border_collapse(self) -> bool:
         """Determine if the border is collapsed."""
         return self.theme.get("border_collapse") == "collapse"
 
     @cached_property
-    def color(self) -> "str":
+    def color(self) -> str:
         """Get the computed theme foreground color."""
         # TODO - transparency
         color_str = self.theme["color"]
@@ -1313,7 +1304,7 @@ class Theme(Mapping):
             return ""
 
     @cached_property
-    def background_color(self) -> "str":
+    def background_color(self) -> str:
         """Get the computed theme background color."""
         # TODO - transparency
         color_str = self.theme["background_color"]
@@ -1328,7 +1319,7 @@ class Theme(Mapping):
             return ""
 
     @cached_property
-    def style(self) -> "str":
+    def style(self) -> str:
         """Calculate the output style."""
         theme = self.theme
         style = ""
@@ -1360,7 +1351,7 @@ class Theme(Mapping):
         return style
 
     @cached_property
-    def text_transform(self) -> "Callable[[str], str]|None":
+    def text_transform(self) -> Callable[[str], str] | None:
         """Return a function which transforms text."""
         if "uppercase" in self.theme["text_transform"]:
             return str.upper
@@ -1378,29 +1369,29 @@ class Theme(Mapping):
             return None
 
     @cached_property
-    def preformatted(self) -> "bool":
+    def preformatted(self) -> bool:
         """Determine if the content is pre-formatted."""
         return self.theme["white_space"] in {"pre", "pre-wrap", "pre-line"}
 
     @cached_property
-    def text_align(self) -> "FormattedTextAlign":
+    def text_align(self) -> FormattedTextAlign:
         """The text alignment direction."""
         return _TEXT_ALIGNS.get(self.theme["text_align"], FormattedTextAlign.LEFT)
 
     @cached_property
-    def vertical_align(self) -> "float":
+    def vertical_align(self) -> float:
         """The vertical alignment direction."""
         return _VERTICAL_ALIGNS.get(self.theme["vertical_align"], 1)
 
     @cached_property
-    def list_style_type(self) -> "str":
+    def list_style_type(self) -> str:
         """The bullet character to use for the list."""
         return _LIST_STYLE_TYPES.get(
             self.theme["list_style_type"], self.theme["list_style_type"]
         )
 
     @cached_property
-    def list_style_position(self) -> "str":
+    def list_style_position(self) -> str:
         """Where the list bullet should be located."""
         if "outside" in self.theme["list_style_position"]:
             return "outside"
@@ -1408,7 +1399,7 @@ class Theme(Mapping):
             return "inside"
 
     @cached_property
-    def font_size(self) -> "float|int":
+    def font_size(self) -> float | int:
         """Get the computed font size for the current element."""
         available = self.parent_theme.font_size if self.parent_theme else 1
         if (
@@ -1419,12 +1410,12 @@ class Theme(Mapping):
             return 1
 
     @cached_property
-    def z_index(self) -> "int":
+    def z_index(self) -> int:
         """The z-index of the element."""
         return get_integer(self.theme["z_index"]) or 0
 
     @cached_property
-    def position(self) -> "DiInt":
+    def position(self) -> DiInt:
         """The position of an element with a relative, absolute or fixed position."""
         # TODO - calculate position based on top, left, bottom,right, width, height
         return DiInt(
@@ -1463,7 +1454,7 @@ class Theme(Mapping):
         )
 
     @cached_property
-    def skip(self) -> "bool":
+    def skip(self) -> bool:
         """Determine if the element should not be displayed."""
         return (
             "none" in self.theme["display"]
@@ -1479,15 +1470,15 @@ class Theme(Mapping):
         )
 
     @cached_property
-    def hidden(self) -> "bool":
+    def hidden(self) -> bool:
         """Determine if the element is hidden."""
         return (
             try_eval(self.theme["opacity"]) == 0 or self.theme["visibility"] == "hidden"
         )
 
     @cached_property
-    def in_flow(self) -> "bool":
-        """Determines if the element is "in-flow"."""
+    def in_flow(self) -> bool:
+        """Determine if the element is "in-flow"."""
         return (
             not self.skip
             and self.theme["float"] == "none"
@@ -1497,15 +1488,15 @@ class Theme(Mapping):
 
     # Mapping methods - these are passed on to the unerlying theme dictionary
 
-    def __getitem__(self, key: "str") -> "Any":
+    def __getitem__(self, key: str) -> Any:
         """Get an item."""
         return self.theme.__getitem__(key)
 
-    def __iter__(self) -> "Iterator":
+    def __iter__(self) -> Iterator:
         """Iterate over items."""
         return self.theme.__iter__()
 
-    def __len__(self) -> "int":
+    def __len__(self) -> int:
         """Get the length of the mapping."""
         return self.theme.__len__()
 
@@ -1899,7 +1890,12 @@ _BROWSER_CSS = {
         "border_right_style": "hidden",
         "padding_left": "1em",
     },
-    ((CssSelector(item=".dataframe"), CssSelector(item="th"),),): {
+    (
+        (
+            CssSelector(item=".dataframe"),
+            CssSelector(item="th"),
+        ),
+    ): {
         "_pt_class": "dataframe,th",
     },
     (
@@ -1921,35 +1917,35 @@ _BROWSER_CSS = {
 
 
 class Node:
-    """Represents an node in the DOM."""
+    """Represent an node in the DOM."""
 
-    theme: "Theme"
+    theme: Theme
 
     def __init__(
         self,
-        dom: "HTML",
-        name: "str",
-        parent: "Node|None",
-        text: "str" = "",
-        attrs: "list[tuple[str, str|None]]|None" = None,
-        contents: "list[Node]|None" = None,
-    ) -> "None":
+        dom: HTML,
+        name: str,
+        parent: Node | None,
+        text: str = "",
+        attrs: list[tuple[str, str | None]] | None = None,
+        contents: list[Node] | None = None,
+    ) -> None:
         """Create a new page element."""
         self.dom = dom
         self.name = name
         self.parent = parent
         self._text = text
-        self.attrs: "dict[str, Any]" = {k: v for k, v in (attrs or []) if v is not None}
-        self.contents: "list[Node]" = contents or []
+        self.attrs: dict[str, Any] = {k: v for k, v in (attrs or []) if v is not None}
+        self.contents: list[Node] = contents or []
         self.closed = False
-        self.marker: "Node|None" = None
-        self.before: "Node|None" = None
-        self.after: "Node|None" = None
+        self.marker: Node | None = None
+        self.before: Node | None = None
+        self.after: Node | None = None
 
         parent_theme = parent.theme if parent else None
         self.theme = Theme(self, parent_theme=parent_theme)
 
-    def _outer_html(self, d: "int" = 0, attrs: "bool" = True) -> "str":
+    def _outer_html(self, d: int = 0, attrs: bool = True) -> str:
         dd = " " * d
         s = ""
         if self.name != "text":
@@ -1971,10 +1967,9 @@ class Node:
         return s
 
     @cached_property
-    def text(self) -> "str":
+    def text(self) -> str:
         """Get the element's computed text."""
         if text := self._text:
-
             if callable(transform := self.theme.text_transform):
                 text = transform(text)
 
@@ -1996,20 +1991,20 @@ class Node:
 
         return text
 
-    def find_all(self, tag: "str", recursive: "bool" = False) -> "list[Node]":
+    def find_all(self, tag: str, recursive: bool = False) -> list[Node]:
         """Find all child elements of a given tag type."""
         return [element for element in self.contents if element.name == tag]
 
     @property
-    def descendents(self) -> "Generator[Node, None, None]":
-        """Yields all descendent elements."""
+    def descendents(self) -> Generator[Node, None, None]:
+        """Yield all descendent elements."""
         for child in self.contents:
             yield child
             yield from child.descendents
 
     @cached_property
-    def parents(self) -> "list[Node]":
-        """Yields all descendent elements."""
+    def parents(self) -> list[Node]:
+        """Yield all descendent elements."""
         parents = []
         parent = self.parent
         while parent is not None:
@@ -2018,22 +2013,22 @@ class Node:
         return parents[::-1]
 
     @cached_property
-    def is_first_child_node(self) -> "bool":
+    def is_first_child_node(self) -> bool:
         """True if the element if the first child node of its parent element."""
         if (parent := self.parent) and (child_nodes := parent.contents):
             return child_nodes[0] == self
         return False
 
     @cached_property
-    def is_last_child_node(self) -> "bool":
+    def is_last_child_node(self) -> bool:
         """True if the element if the last child node of its parent element."""
         if (parent := self.parent) and (child_nodes := parent.contents):
             return child_nodes[-1] == self
         return False
 
     @property
-    def child_elements(self) -> "Generator[Node, None, None]":
-        """Yields all of the child element nodes."""
+    def child_elements(self) -> Generator[Node, None, None]:
+        """Yield all of the child element nodes."""
         for child in self.contents:
             # Ignore text and comment nodes
             if (
@@ -2044,22 +2039,22 @@ class Node:
                 yield child
 
     @cached_property
-    def first_child_element(self) -> "Node|None":
-        """Returns the first child element."""
+    def first_child_element(self) -> Node | None:
+        """Return the first child element."""
         try:
             return next(self.child_elements)
         except StopIteration:
             return None
 
     @cached_property
-    def last_child_element(self) -> "Node|None":
-        """Returns the last child element."""
+    def last_child_element(self) -> Node | None:
+        """Return the last child element."""
         if child_elements := list(self.child_elements):
             return child_elements[-1]
         return None
 
     @cached_property
-    def is_first_child_element(self) -> "bool":
+    def is_first_child_element(self) -> bool:
         """True if the element if the first child element of its parent element."""
         if parent := self.parent:
             try:
@@ -2069,7 +2064,7 @@ class Node:
         return False
 
     @cached_property
-    def is_last_child_element(self) -> "bool":
+    def is_last_child_element(self) -> bool:
         """True if the element if the last child element of its parent element."""
         if parent := self.parent:
             for child in reversed(parent.contents):
@@ -2083,7 +2078,7 @@ class Node:
         return False
 
     @cached_property
-    def sibling_element_index(self) -> "int|None":
+    def sibling_element_index(self) -> int | None:
         """Return the index of this element among its siblings."""
         if self.parent:
             for i, child in enumerate(self.parent.child_elements):
@@ -2092,7 +2087,7 @@ class Node:
         return None
 
     @cached_property
-    def prev_node(self) -> "Node|None":
+    def prev_node(self) -> Node | None:
         """Return the previous sibling node."""
         if parent := self.parent:
             prev_node = None
@@ -2103,7 +2098,7 @@ class Node:
         return None
 
     @cached_property
-    def next_node(self) -> "Node|None":
+    def next_node(self) -> Node | None:
         """Return the next sibling node."""
         if parent := self.parent:
             prev_child = None
@@ -2114,7 +2109,7 @@ class Node:
         return None
 
     @cached_property
-    def prev_node_in_flow(self) -> "Node|None":
+    def prev_node_in_flow(self) -> Node | None:
         """Get the previous node in the current element's flow."""
         prev_node = self.prev_node
         while prev_node and not prev_node.theme.in_flow:
@@ -2122,7 +2117,7 @@ class Node:
         return prev_node
 
     @cached_property
-    def next_node_in_flow(self) -> "Node|None":
+    def next_node_in_flow(self) -> Node | None:
         """Get the next node in the current element's flow."""
         next_node = self.next_node
         while next_node and not next_node.theme.in_flow:
@@ -2130,7 +2125,7 @@ class Node:
         return next_node
 
     @cached_property
-    def prev_element(self) -> "Node|None":
+    def prev_element(self) -> Node | None:
         """Return the previous sibling element."""
         if parent := self.parent:
             prev_element = None
@@ -2141,7 +2136,7 @@ class Node:
         return None
 
     @cached_property
-    def next_element(self) -> "Node|None":
+    def next_element(self) -> Node | None:
         """Return the next sibling element."""
         if parent := self.parent:
             child_elements = parent.child_elements
@@ -2153,7 +2148,7 @@ class Node:
                         return None
         return None
 
-    def __repr__(self, d: "int" = 0) -> "str":
+    def __repr__(self, d: int = 0) -> str:
         """Return a string representation of the element."""
         parts = [self.name, *[f'{k}="{v}"' for k, v in self.attrs.items()]]
         return f"<{' '.join(parts)}>"
@@ -2162,35 +2157,33 @@ class Node:
 class CustomHTMLParser(HTMLParser):
     """An HTML parser."""
 
-    def __init__(self, dom: "HTML") -> "None":
+    def __init__(self, dom: HTML) -> None:
         """Create a new parser instance."""
         super().__init__()
         self.dom = dom
         self.curr = self.soup = Node(name="::root", dom=dom, parent=None, attrs=[])
 
-    def parse(self, markup: "str") -> "Node":
-        """Parse HTML markup."""
+    def parse(self, markup: str) -> Node:
+        """Pare HTML markup."""
         self.curr = self.soup = Node(dom=self.dom, name="::root", parent=None, attrs=[])
         self.feed(markup)
         return self.soup
 
-    def handle_starttag(
-        self, tag: "str", attrs: "list[tuple[str, str|None]]"
-    ) -> "None":
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         """Open a new element."""
         self.autoclose()
         element = Node(dom=self.dom, name=tag, parent=self.curr, attrs=attrs)
         self.curr.contents.append(element)
         self.curr = element
 
-    def autoclose(self) -> "None":
+    def autoclose(self) -> None:
         """Automatically close void elements."""
         if not self.curr.closed and self.curr.name in _VOID_ELEMENTS:
             self.curr.closed = True
             if self.curr.parent:
                 self.curr = self.curr.parent
 
-    def handle_data(self, data: "str") -> "None":
+    def handle_data(self, data: str) -> None:
         """Create data (text) elements."""
         self.autoclose()
         self.curr.contents.append(
@@ -2203,7 +2196,7 @@ class CustomHTMLParser(HTMLParser):
             )
         )
 
-    def handle_endtag(self, tag: "str") -> "None":
+    def handle_endtag(self, tag: str) -> None:
         """Handle end tags: close the currently opened element."""
         if tag != self.curr.name:
             self.autoclose()
@@ -2212,9 +2205,9 @@ class CustomHTMLParser(HTMLParser):
             self.curr = self.curr.parent
 
 
-def parse_styles(soup: "Node", base_url: "UPath") -> "CssSelectors":
+def parse_styles(soup: Node, base_url: UPath) -> CssSelectors:
     """Collect all CSS styles from style tags."""
-    rules: "CssSelectors" = {}
+    rules: CssSelectors = {}
     for child in soup.descendents:
         css_str = ""
 
@@ -2302,15 +2295,15 @@ class HTML:
     Accepts a HTML string and renders it at a given width.
     """
 
-    formatted_text: "StyleAndTextTuples"
+    formatted_text: StyleAndTextTuples
 
     def render_ol_content(
         self,
-        element: "Node",
-        left: "int" = 0,
-        fill: "bool" = True,
-        align_content: "bool" = True,
-    ) -> "StyleAndTextTuples":
+        element: Node,
+        left: int = 0,
+        fill: bool = True,
+        align_content: bool = True,
+    ) -> StyleAndTextTuples:
         """Render lists, adding item numbers to child <li> elements."""
         # Assign a list index to each item. This can be set via the 'value' attributed
         _curr = 0
@@ -2329,13 +2322,13 @@ class HTML:
 
     def __init__(
         self,
-        markup: "str",
-        base: "Union[UPath, str]|None" = None,
-        width: "int|None" = None,
-        height: "int|None" = None,
-        collapse_root_margin: "bool" = False,
-        fill: "bool" = True,
-        browser_css: "CssSelectors|None" = None,
+        markup: str,
+        base: UPath | str | None = None,
+        width: int | None = None,
+        height: int | None = None,
+        collapse_root_margin: bool = False,
+        fill: bool = True,
+        browser_css: CssSelectors | None = None,
     ) -> None:
         """Initialize the markdown formatter.
 
@@ -2352,23 +2345,21 @@ class HTML:
             browser_css: The browser CSS to use
 
         """
-        self.browser_css: "CssSelectors" = {
+        self.browser_css: CssSelectors = {
             **(_BROWSER_CSS if browser_css is None else browser_css)
         }
-        self.css: "CssSelectors" = {}
+        self.css: CssSelectors = {}
 
         self.markup = markup
         self.base = base
-        self.width: "int|None" = None
-        self.height: "int|None" = None
+        self.width: int | None = None
+        self.height: int | None = None
         self.collapse_root_margin = collapse_root_margin
         self.fill = fill
 
         self.parser = CustomHTMLParser(self)
 
-        self.element_theme_cache: "SimpleCache[Hashable, dict[str, Any]]" = (
-            SimpleCache()
-        )
+        self.element_theme_cache: SimpleCache[Hashable, dict[str, Any]] = SimpleCache()
 
         # Parse the markup
         self.soup = self.parser.parse(markup.strip())
@@ -2392,11 +2383,11 @@ class HTML:
 
     def render_list_item_content(
         self,
-        element: "Node",
-        left: "int" = 0,
-        fill: "bool" = True,
-        align_content: "bool" = True,
-    ) -> "StyleAndTextTuples":
+        element: Node,
+        left: int = 0,
+        fill: bool = True,
+        align_content: bool = True,
+    ) -> StyleAndTextTuples:
         """Render a list item."""
         # Get element theme
         theme = element.theme
@@ -2426,7 +2417,7 @@ class HTML:
         )
         return ft
 
-    def render(self, width: "int|None", height: "int|None") -> "None":
+    def render(self, width: int | None, height: int | None) -> None:
         """Render the current markup at a given size."""
         if not width or not height:
             size = get_app_session().output.get_size()
@@ -2465,13 +2456,13 @@ class HTML:
 
     def render_element(
         self,
-        element: "Node",
-        available_width: "int",
-        available_height: "int",
-        left: "int" = 0,
-        fill: "bool" = True,
-        align_content: "bool" = True,
-    ) -> "StyleAndTextTuples":
+        element: Node,
+        available_width: int,
+        available_height: int,
+        left: int = 0,
+        fill: bool = True,
+        align_content: bool = True,
+    ) -> StyleAndTextTuples:
         """Render a Node."""
         # Update the element theme with the available space
         element.theme.update_space(available_width, available_height)
@@ -2498,26 +2489,25 @@ class HTML:
 
     def render_text_content(
         self,
-        element: "Node",
-        left: "int" = 0,
-        fill: "bool" = True,
-        align_content: "bool" = True,
-    ) -> "StyleAndTextTuples":
+        element: Node,
+        left: int = 0,
+        fill: bool = True,
+        align_content: bool = True,
+    ) -> StyleAndTextTuples:
         """Render a text element.
 
         Args:
             element: The page element to render
-            parent_theme: The theme of the element's parent element
-            available_width: The width available for rendering the element
-            available_height: The height available for rendering the element
             left: The position on the current line at which to render the output - used
                 to indent subsequent lines when rendering inline blocks like images
+            fill: Whether to fill the remainder of the rendered space with whitespace
+            align_content: Whether to align the element's content
 
         Returns:
             Formatted text
 
         """
-        ft: "StyleAndTextTuples" = []
+        ft: StyleAndTextTuples = []
         if text := element.text:
             if parent_theme := element.theme.parent_theme:
                 style = parent_theme.style
@@ -2528,20 +2518,19 @@ class HTML:
 
     def render_table_content(
         self,
-        element: "Node",
-        left: "int" = 0,
-        fill: "bool" = True,
-        align_content: "bool" = True,
-    ) -> "StyleAndTextTuples":
+        element: Node,
+        left: int = 0,
+        fill: bool = True,
+        align_content: bool = True,
+    ) -> StyleAndTextTuples:
         """Render a list of parsed markdown elements representing a table element.
 
         Args:
             element: The list of parsed elements to render
-            available_width: The width available for rendering the element
-            available_height: The height available for rendering the element
-            parent_theme: The theme of the parent element
             left: The position on the current line at which to render the output - used
                 to indent subsequent lines when rendering inline blocks like images
+            fill: Whether to fill the remainder of the rendered space with whitespace
+            align_content: Whether to align the element's content
 
         Returns:
             Formatted text
@@ -2569,7 +2558,7 @@ class HTML:
         td_map = {}
 
         # Stack the elements in the shape of the table
-        def render_rows(elements: "list[Node]") -> "None":
+        def render_rows(elements: list[Node]) -> None:
             for tr in elements:
                 if tr.name == "tr":
                     tr_theme = tr.theme
@@ -2668,10 +2657,10 @@ class HTML:
 
     def render_img_content(
         self,
-        element: "Node",
-        left: "int" = 0,
-        fill: "bool" = True,
-        align_content: "bool" = True,
+        element: Node,
+        left: int = 0,
+        fill: bool = True,
+        align_content: bool = True,
     ) -> StyleAndTextTuples:
         """Render an image's content."""
         theme = element.theme
@@ -2727,11 +2716,11 @@ class HTML:
 
     def render_svg_content(
         self,
-        element: "Node",
-        left: "int" = 0,
-        fill: "bool" = True,
-        align_content: "bool" = True,
-    ) -> "StyleAndTextTuples":
+        element: Node,
+        left: int = 0,
+        fill: bool = True,
+        align_content: bool = True,
+    ) -> StyleAndTextTuples:
         """Display images rendered as ANSI art."""
         theme = element.theme
         # HTMLParser clobber the case of element attributes
@@ -2753,11 +2742,11 @@ class HTML:
 
     def render_input_content(
         self,
-        element: "Node",
-        left: "int" = 0,
-        fill: "bool" = True,
-        align_content: "bool" = True,
-    ) -> "StyleAndTextTuples":
+        element: Node,
+        left: int = 0,
+        fill: bool = True,
+        align_content: bool = True,
+    ) -> StyleAndTextTuples:
         """Render an input element."""
         attrs = element.attrs
         element.contents.insert(
@@ -2779,10 +2768,10 @@ class HTML:
 
     def render_br_content(
         self,
-        element: "Node",
-        left: "int" = 0,
-        fill: "bool" = True,
-        align_content: "bool" = True,
+        element: Node,
+        left: int = 0,
+        fill: bool = True,
+        align_content: bool = True,
     ) -> StyleAndTextTuples:
         """Render line breaks."""
         return [("", "\n")]
@@ -2795,7 +2784,7 @@ class HTML:
         align_content: bool = True,
     ) -> StyleAndTextTuples:
         """Generate flows for the contents of the element."""
-        ft: "StyleAndTextTuples" = []
+        ft: StyleAndTextTuples = []
 
         ft_left: StyleAndTextTuples
         ft_middle: StyleAndTextTuples
@@ -2833,7 +2822,6 @@ class HTML:
 
         # Render each child node
         for child in element.contents:
-
             theme = child.theme
 
             if theme.skip:
@@ -2910,7 +2898,6 @@ class HTML:
                 new_line.extend(rendering)
 
             elif d_inline or d_inline_block:
-
                 if d_inline:
                     tokens = fragment_list_to_words(rendering)
                 else:
@@ -2919,7 +2906,6 @@ class HTML:
                 tokens = list(tokens)
 
                 for token in tokens:
-
                     token_lines = list(split_lines(token))
                     token_width = max(fragment_list_width(line) for line in token_lines)
                     token_height = len(token_lines)
@@ -3238,7 +3224,7 @@ class HTML:
 
         return ft
 
-    def __pt_formatted_text__(self) -> "StyleAndTextTuples":
+    def __pt_formatted_text__(self) -> StyleAndTextTuples:
         """Return formatted text."""
         return self.formatted_text
 

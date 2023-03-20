@@ -17,7 +17,7 @@ else:
     from importlib_metadata import entry_points
 
 
-def format_action(action: "argparse.Action") -> "str":
+def format_action(action: argparse.Action) -> str:
     """Format an action as RST."""
     s = ""
     type_ = ""
@@ -39,9 +39,9 @@ def format_action(action: "argparse.Action") -> "str":
 
 
 def format_parser(
-    title: "str", parser: "argparse.ArgumentParser", description: "str" = ""
-) -> "str":
-    """Formats a parser's arguments as RST."""
+    title: str, parser: argparse.ArgumentParser, description: str = ""
+) -> str:
+    """Format a parser's arguments as RST."""
     s = ""
 
     # s = "\n"

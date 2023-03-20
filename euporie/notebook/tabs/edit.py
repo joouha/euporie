@@ -1,4 +1,4 @@
-"""Contains a tab for displaying files."""
+"""Contain a tab for displaying files."""
 
 from __future__ import annotations
 
@@ -36,13 +36,13 @@ class EditorTab(KernelTab):
 
     def __init__(
         self,
-        app: "BaseApp",
-        path: "UPath|None" = None,
-        kernel: "Kernel|None" = None,
-        comms: "dict[str, Comm]|None" = None,
-        use_kernel_history: "bool" = False,
-    ) -> "None":
-        """Called when the tab is created."""
+        app: BaseApp,
+        path: UPath | None = None,
+        kernel: Kernel | None = None,
+        comms: dict[str, Comm] | None = None,
+        use_kernel_history: bool = False,
+    ) -> None:
+        """Call when the tab is created."""
         self.default_callbacks = MsgCallbacks({})
         super().__init__(app, path, kernel, comms, use_kernel_history)
 
@@ -63,20 +63,20 @@ class EditorTab(KernelTab):
 
     def statusbar_fields(
         self,
-    ) -> "tuple[Sequence[AnyFormattedText], Sequence[AnyFormattedText]]":
-        """Returns a list of statusbar field values shown then this tab is active."""
+    ) -> tuple[Sequence[AnyFormattedText], Sequence[AnyFormattedText]]:
+        """Return a list of statusbar field values shown then this tab is active."""
         return ([str(self.path)], [])
 
     @property
-    def title(self) -> "str":
+    def title(self) -> str:
         """Return the tab title."""
         if self.path is not None:
             return str(self.path.name)
         else:
             return "<New File>"
 
-    def load_container(self) -> "AnyContainer":
-        """Abscract method for loading the notebook's main container."""
+    def load_container(self) -> AnyContainer:
+        """Abcract method for loading the notebook's main container."""
         assert self.path is not None
 
         self.input_box = KernelInput(kernel_tab=self)

@@ -1,4 +1,4 @@
-"""Contains functions which convert data to PIL format."""
+"""Contain functions which convert data to PIL format."""
 
 from __future__ import annotations
 
@@ -9,16 +9,14 @@ from euporie.core.convert.base import register
 from euporie.core.convert.utils import have_modules
 
 if TYPE_CHECKING:
-    from typing import Optional
-
     from PIL.Image import Image as PilImage
     from upath import UPath
 
 log = logging.getLogger(__name__)
 
 
-def set_background(image: "PilImage", bg_color: "Optional[str]" = None) -> "PilImage":
-    """Removes the alpha channel from an image and set the background colour."""
+def set_background(image: PilImage, bg_color: str | None = None) -> PilImage:
+    """Remove the alpha channel from an image and set the background colour."""
     from PIL import Image
 
     if image.mode in ("RGBA", "LA") or (
@@ -40,13 +38,13 @@ def set_background(image: "PilImage", bg_color: "Optional[str]" = None) -> "PilI
     filter_=have_modules("PIL"),
 )
 def png_to_pil_py(
-    data: "bytes",
-    cols: "Optional[int]" = None,
-    rows: "Optional[int]" = None,
-    fg: "Optional[str]" = None,
-    bg: "Optional[str]" = None,
-    path: "Optional[UPath]" = None,
-) -> "PilImage":
+    data: bytes,
+    cols: int | None = None,
+    rows: int | None = None,
+    fg: str | None = None,
+    bg: str | None = None,
+    path: UPath | None = None,
+) -> PilImage:
     """Convert PNG to a pillow image using :py:mod:`PIL`."""
     import io
 

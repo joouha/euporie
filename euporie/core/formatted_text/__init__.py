@@ -1,1 +1,1 @@
-"""Contains modules for working with formatted text."""
+"""Contain modules for working with formatted text."""

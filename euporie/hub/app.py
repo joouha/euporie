@@ -23,7 +23,7 @@ from euporie.core.config import add_setting
 from euporie.core.log import setup_logs
 
 if TYPE_CHECKING:
-    from typing import Awaitable, Type
+    from typing import Awaitable
 
 log = logging.getLogger(__name__)
 
@@ -31,23 +31,23 @@ log = logging.getLogger(__name__)
 class EuporieSSHServer(asyncssh.SSHServer):  # type: ignore
     """Launch euporie hub, which serves a euporie app over SSH.
 
-    Launches euporie hub, a multi-client SSH server running euporie, which
+    Launch euporie hub, a multi-client SSH server running euporie, which
     allows multiple users to connect and run instances of a euporie app.
 
     """
 
-    def __init__(self, app_cls: "Type[BaseApp]") -> "None":
-        """Sets the interaction function for the SSH session."""
+    def __init__(self, app_cls: type[BaseApp]) -> None:
+        """Set the interaction function for the SSH session."""
         self.app_cls = app_cls
 
-    def begin_auth(self, username: "str") -> "bool | Awaitable[bool]":
+    def begin_auth(self, username: str) -> bool | Awaitable[bool]:
         """Perform authentication in the SSH server."""
         if self.app_cls.config.no_auth:
             # No authentication.
             return False
         return super().begin_auth(username)
 
-    def session_requested(self) -> "PromptToolkitSSHSession":
+    def session_requested(self) -> PromptToolkitSSHSession:
         """Return an SSH session."""
         # Not sure why mypy gives an error here
         return PromptToolkitSSHSession(
@@ -66,7 +66,7 @@ class HubApp(BaseApp):
     name = "hub"
 
     @classmethod
-    def launch(cls) -> "None":
+    def launch(cls) -> None:
         """Launch the HubApp SSH server."""
         # Configure some setting defaults
         cls.config.settings["log_file"].value = "-"

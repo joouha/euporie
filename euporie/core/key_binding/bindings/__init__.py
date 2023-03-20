@@ -1,4 +1,4 @@
-"""Defines collections of generic key-bindings which do not belong to widgets."""
+"""Define collections of generic key-bindings which do not belong to widgets."""
 
 from euporie.core.key_binding.bindings import completion, micro
 

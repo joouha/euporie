@@ -1,4 +1,4 @@
-"""Defines a side-bar."""
+"""Define a side-bar."""
 
 from functools import partial
 from typing import TYPE_CHECKING

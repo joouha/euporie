@@ -1,4 +1,4 @@
-"""Defines common filters."""
+"""Define common filters."""
 
 from __future__ import annotations
 
@@ -26,7 +26,7 @@ if TYPE_CHECKING:
 
 @Condition
 @lru_cache
-def have_black() -> "bool":
+def have_black() -> bool:
     """Determine if black is available."""
     try:
         import black.const  # noqa F401
@@ -38,7 +38,7 @@ def have_black() -> "bool":
 
 @Condition
 @lru_cache
-def have_isort() -> "bool":
+def have_isort() -> bool:
     """Determine if isort is available."""
     try:
         import isort  # noqa F401
@@ -50,7 +50,7 @@ def have_isort() -> "bool":
 
 @Condition
 @lru_cache
-def have_ssort() -> "bool":
+def have_ssort() -> bool:
     """Determine if ssort is available."""
     try:
         import ssort  # noqa F401
@@ -68,7 +68,7 @@ in_tmux = to_filter(os.environ.get("TMUX") is not None)
 
 
 @Condition
-def cursor_in_leading_ws() -> "bool":
+def cursor_in_leading_ws() -> bool:
     """Determine if the cursor of the current buffer is in leading whitespace."""
     from prompt_toolkit.application.current import get_app
 
@@ -77,7 +77,7 @@ def cursor_in_leading_ws() -> "bool":
 
 
 @Condition
-def has_suggestion() -> "bool":
+def has_suggestion() -> bool:
     """Determine if the current buffer can display a suggestion."""
     from prompt_toolkit.application.current import get_app
 
@@ -90,7 +90,7 @@ def has_suggestion() -> "bool":
 
 
 @Condition
-def has_dialog() -> "bool":
+def has_dialog() -> bool:
     """Determine if a dialog is being displayed."""
     from prompt_toolkit.layout.containers import ConditionalContainer
 
@@ -105,7 +105,7 @@ def has_dialog() -> "bool":
 
 
 @Condition
-def has_menus() -> "bool":
+def has_menus() -> bool:
     """Determine if a menu is being displayed."""
     from prompt_toolkit.layout.containers import ConditionalContainer
 
@@ -120,7 +120,7 @@ def has_menus() -> "bool":
 
 
 @Condition
-def tab_has_focus() -> "bool":
+def tab_has_focus() -> bool:
     """Determine if there is a currently focused tab."""
     from euporie.core.current import get_app
 
@@ -128,7 +128,7 @@ def tab_has_focus() -> "bool":
 
 
 @Condition
-def pager_has_focus() -> "bool":
+def pager_has_focus() -> bool:
     """Determine if there is a currently focused notebook."""
     from euporie.core.current import get_app
 
@@ -140,7 +140,7 @@ def pager_has_focus() -> "bool":
 
 
 @Condition
-def display_has_focus() -> "bool":
+def display_has_focus() -> bool:
     """Determine if there is a currently focused cell."""
     from euporie.core.current import get_app
     from euporie.core.widgets.display import DisplayControl
@@ -149,7 +149,7 @@ def display_has_focus() -> "bool":
 
 
 @Condition
-def buffer_is_empty() -> "bool":
+def buffer_is_empty() -> bool:
     """Determine if the current buffer contains nothing."""
     from euporie.core.current import get_app
 
@@ -157,7 +157,7 @@ def buffer_is_empty() -> "bool":
 
 
 @Condition
-def buffer_is_code() -> "bool":
+def buffer_is_code() -> bool:
     """Determine if the current buffer contains code."""
     from euporie.core.current import get_app
 
@@ -165,7 +165,7 @@ def buffer_is_code() -> "bool":
 
 
 @Condition
-def buffer_is_markdown() -> "bool":
+def buffer_is_markdown() -> bool:
     """Determine if the current buffer contains markdown."""
     from euporie.core.current import get_app
 
@@ -173,7 +173,7 @@ def buffer_is_markdown() -> "bool":
 
 
 @Condition
-def micro_mode() -> "bool":
+def micro_mode() -> bool:
     """When the micro key-bindings are active."""
     from euporie.core.current import get_app
 
@@ -181,7 +181,7 @@ def micro_mode() -> "bool":
 
 
 @Condition
-def micro_replace_mode() -> "bool":
+def micro_replace_mode() -> bool:
     """Determine if the editor is in overwrite mode."""
     from euporie.core.current import get_app
 
@@ -190,7 +190,7 @@ def micro_replace_mode() -> "bool":
 
 
 @Condition
-def micro_insert_mode() -> "bool":
+def micro_insert_mode() -> bool:
     """Determine if the editor is in insert mode."""
     from euporie.core.current import get_app
 
@@ -199,7 +199,7 @@ def micro_insert_mode() -> "bool":
 
 
 @Condition
-def micro_recording_macro() -> "bool":
+def micro_recording_macro() -> bool:
     """Determine if a micro macro is being recorded."""
     from euporie.core.current import get_app
 
@@ -207,7 +207,7 @@ def micro_recording_macro() -> "bool":
 
 
 @Condition
-def is_returnable() -> "bool":
+def is_returnable() -> bool:
     """Determine if the current buffer has an accept handler."""
     from euporie.core.current import get_app
 
@@ -215,7 +215,7 @@ def is_returnable() -> "bool":
 
 
 @Condition
-def cursor_at_start_of_line() -> "bool":
+def cursor_at_start_of_line() -> bool:
     """Determine if the cursor is at the start of a line."""
     from euporie.core.current import get_app
 
@@ -223,7 +223,7 @@ def cursor_at_start_of_line() -> "bool":
 
 
 @Condition
-def cursor_on_first_line() -> "bool":
+def cursor_on_first_line() -> bool:
     """Determine if the cursor is on the first line of a buffer."""
     from euporie.core.current import get_app
 
@@ -231,7 +231,7 @@ def cursor_on_first_line() -> "bool":
 
 
 @Condition
-def cursor_on_last_line() -> "bool":
+def cursor_on_last_line() -> bool:
     """Determine if the cursor is on the last line of a buffer."""
     from euporie.core.current import get_app
 
@@ -250,7 +250,7 @@ replace_mode = micro_replace_mode | vi_replace_mode
 
 
 @Condition
-def is_searching() -> "bool":
+def is_searching() -> bool:
     """Determine if the app is in search mode."""
     from euporie.core.current import get_app
 
@@ -261,7 +261,7 @@ def is_searching() -> "bool":
 
 
 @Condition
-def at_end_of_buffer() -> "bool":
+def at_end_of_buffer() -> bool:
     """Determine if the cursor is at the end of the current buffer."""
     from prompt_toolkit.application.current import get_app
 
@@ -270,7 +270,7 @@ def at_end_of_buffer() -> "bool":
 
 
 @Condition
-def kernel_is_python() -> "bool":
+def kernel_is_python() -> bool:
     """Determine if the current notebook has a python kernel."""
     from euporie.core.current import get_app
     from euporie.core.tabs.base import KernelTab
@@ -282,7 +282,7 @@ def kernel_is_python() -> "bool":
 
 
 @Condition
-def multiple_cells_selected() -> "bool":
+def multiple_cells_selected() -> bool:
     """Determine if there is more than one selected cell."""
     from euporie.core.current import get_app
     from euporie.core.tabs.notebook import BaseNotebook
@@ -294,7 +294,7 @@ def multiple_cells_selected() -> "bool":
 
 
 @Condition
-def kernel_tab_has_focus() -> "bool":
+def kernel_tab_has_focus() -> bool:
     """Determine if there is a focused kernel tab."""
     from euporie.core.current import get_app
     from euporie.core.tabs.base import KernelTab
@@ -302,7 +302,7 @@ def kernel_tab_has_focus() -> "bool":
     return isinstance(get_app().tab, KernelTab)
 
 
-def scrollable(window: "Window") -> "Filter":
+def scrollable(window: Window) -> Filter:
     """Return a filter which indicates if a window is scrollable."""
     return Condition(
         lambda: (
