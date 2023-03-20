@@ -232,7 +232,7 @@ class ColorPaletteColor:
     def _adjust_abs(
         self, hue: float = 0.0, brightness: float = 0.0, saturation: float = 0.0
     ) -> ColorPaletteColor:
-        hue = max(min(1, self.hue + hue), 0)
+        hue = (self.hue + hue) % 1
         brightness = max(min(1, self.brightness + brightness), 0)
         saturation = max(min(1, self.saturation + saturation), 0)
 
@@ -422,12 +422,13 @@ def build_style(
         # Inputs
         "kernel-input": f"fg:default bg:{cp.bg.more(0.02)}",
         # Cells
-        "cell.border": f"fg:{cp.bg.more(0.25)}",
-        "cell.border.selected": f"fg:{cp.hl.more(0.2)}",
-        "cell.border.edit": "fg:ansibrightgreen",
-        "cell.output": "fg:default bg:default",
-        "cell.input.prompt": "fg:blue",
-        "cell.output.prompt": "fg:red",
+        "cell cell.selection": f"bg:{cp.bg.towards(cp.hl, 0.05)}",
+        "cell edit": f"bg:{cp.bg.towards(cp.hl.adjust(hue=-0.3333, rel=False), 0.025)}",
+        "cell border": f"fg:{cp.bg.more(0.25)}",
+        "cell border cell.selection": f"fg:{cp.hl.more(0.2)}",
+        "cell border edit": f"fg:{cp.hl.adjust(hue=-0.3333, rel=False)}",
+        "cell input prompt": "fg:blue",
+        "cell output prompt": "fg:red",
         "cell show outputs": "bg:#888",
         "cell show inputs": "bg:#888",
         # Scrollbars

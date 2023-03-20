@@ -294,7 +294,7 @@ class ConsoleTab(KernelTab):
         output_prompt = Window(
             FormattedTextControl(partial(self.prompt, "Out", show_busy=False)),
             dont_extend_width=True,
-            style="class:cell.output.prompt",
+            style="class:cell,output,prompt",
             height=1,
         )
         output_margin = Window(
@@ -394,7 +394,7 @@ class ConsoleTab(KernelTab):
         input_prompt = Window(
             FormattedTextControl(partial(self.prompt, "In ", offset=1)),
             dont_extend_width=True,
-            style="class:cell.input.prompt",
+            style="class:cell,input,prompt",
             height=1,
         )
 
