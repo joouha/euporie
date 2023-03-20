@@ -11,6 +11,7 @@ Upcoming
 Fixed
 =====
 
+- Fix HTML table colspan border rendering issue
 - Fix minor notebook scrolling issues
 - Fix scrollbar dragging on tiled notebooks
 - Prevent exception if kernel requests an unknown lexer
