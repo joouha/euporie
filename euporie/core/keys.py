@@ -46,3 +46,5 @@ ANSI_SEQUENCES["\x1b[119;5u"] = Keys.ControlW  # type: ignore
 ANSI_SEQUENCES["\x1b[120;5u"] = Keys.ControlX  # type: ignore
 ANSI_SEQUENCES["\x1b[121;5u"] = Keys.ControlY  # type: ignore
 ANSI_SEQUENCES["\x1b[122;5u"] = Keys.ControlZ  # type: ignore
+ANSI_SEQUENCES["\x1b[27;2;9~"] = Keys.BackTab  # type: ignore
+ANSI_SEQUENCES["\x1b[9;2u"] = Keys.BackTab  # type: ignore
