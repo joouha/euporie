@@ -63,14 +63,14 @@ Most command names are listed in `Default Key Bindings Reference`_.
 Running Cells
 *************
 
-Cells can be run using :kbd:`Ctrl+Enter`, or :kbd:`Shift+Enter` to run and selct the next cell, as is the case in `JupyterLab <https://jupyter.org/>`_.
+Cells can be run using :kbd:`Ctrl+Enter`, or :kbd:`Shift+Enter` to run and select the next cell, as is the case in `JupyterLab <https://jupyter.org/>`_.
 
 However, most terminals do not distinguish between :kbd:`Enter`, :kbd:`Ctrl+Enter` & :kbd:`Shift+Enter` by default, meaning that you have to use alternative key-bindings in euporie to run cells.
 
 Fortunately it is possible to configure many terminals such that these key-bindings can be used, as outlined below.
 
 .. note::
-   There are two commonly used formats of escape sequences which can be used to distinguish these key-bindings: **FK-27** and **CSI-u**. The instuctions below implement the CSI-u style, but euporie will recognise either.
+   There are two commonly used formats of escape sequences which can be used to distinguish these key-bindings: **FK-27** and **CSI-u**. The instructions below implement the CSI-u style, but euporie will recognise either.
 
 WezTerm
 =======
