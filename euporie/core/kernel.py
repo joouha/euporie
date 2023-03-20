@@ -41,6 +41,7 @@ class MsgCallbacks(TypedDict, total=False):
     set_status: "Callable[[str], None]|None"
     set_kernel_info: "Callable[[dict[str, Any]], None]|None"
     completeness_status: "Callable[[dict[str, Any]], None]|None"
+    dead: "Callable[[], None]|None"
 
 
 class Kernel:
@@ -91,6 +92,7 @@ class Kernel:
         )
         self._status = "stopped"
         self.error: "Optional[Exception]" = None
+        self.dead = False
 
         self.coros: "dict[str, concurrent.futures.Future]" = {}
         self.poll_tasks: "list[asyncio.Task]" = []
@@ -179,6 +181,13 @@ class Kernel:
         """Set the life status of the kernel."""
         if not alive:
             self.status = "error"
+            if (
+                callable(dead_cb := self.default_callbacks.get("dead"))
+                and not self.dead
+            ):
+                log.debug("Kernel %s appears to have died", self.id)
+                self.dead = True
+                dead_cb()
 
     @property
     def status(self) -> "str":
@@ -290,6 +299,11 @@ class Kernel:
                     if self.km.has_kernel:
                         self.kc = self.km.client()
                 break
+
+        await self.post_start_()
+
+    async def post_start_(self) -> "None":
+        """Wait for the kernel to become ready."""
         try:
             ks = self.km.kernel_spec
         except NoSuchKernel as e:
@@ -320,6 +334,7 @@ class Kernel:
                         asyncio.create_task(self.poll("iopub")),
                         asyncio.create_task(self.poll("stdin")),
                     ]
+                    self.dead = False
 
     def start(
         self, cb: "Optional[Callable]" = None, wait: "bool" = False, timeout: "int" = 10
@@ -965,9 +980,13 @@ class Kernel:
 
     async def restart_(self) -> "None":
         """Restart the kernel asyncchronously."""
+        self.dead = True
         log.debug("Restarting kernel `%s`", self.id)
-        await self.km.restart_kernel()
+        self.error = None
+        self.status = "starting"
+        await self.km.restart_kernel(now=True)
         log.debug("Kernel %s restarted", self.id)
+        await self.post_start_()
 
     def restart(self, wait: "bool" = False, cb: "Optional[Callable]" = None) -> "None":
         """Restarts the current kernel."""
@@ -1001,9 +1020,7 @@ class Kernel:
 
         # Create a new kernel manager instance
         del self.km
-        self.km = AsyncKernelManager(
-            kernel_name=name,
-        )
+        self.km = AsyncKernelManager(kernel_name=name)
         self.error = None
 
         # Start the kernel

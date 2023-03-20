@@ -8,6 +8,11 @@ Notable changes to this project will be documented in this file.
 Upcoming
 ********
 
+Added
+=====
+
+- Notify the user if the kernel dies unexpectedly
+
 Fixed
 =====
 
