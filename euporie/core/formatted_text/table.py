@@ -1105,7 +1105,6 @@ class Table:
             borders = []
             render_count = self.render_count
             for w, e in zip([DummyCell(), *row.cells], [*row.cells, DummyCell()]):
-
                 border_style = " ".join(
                     (
                         compute_border_style(w, render_count).right,
@@ -1140,7 +1139,7 @@ class Table:
                 # Expand if colspan
                 for i in range(col + 1, col + cell.colspan):
                     width += col_widths[i]
-                    if borders[col]:
+                    if borders[col][1]:  # Check text fragment
                         width += 1
 
                 return width
