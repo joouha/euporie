@@ -101,6 +101,7 @@ class ConsoleTab(KernelTab):
             set_status=lambda status: self.app.invalidate(),
             set_kernel_info=self.set_kernel_info,
             done=self.complete,
+            dead=self.kernel_died,
         )
         self.kernel_tab = self
 
@@ -118,6 +119,10 @@ class ConsoleTab(KernelTab):
         self.kernel.start(cb=self.kernel_started, wait=False)
 
         self.app.before_render += self.render_outputs
+
+    def kernel_died(self) -> "None":
+        """Call when the kernel dies."""
+        log.error("The kernel has died")
 
     async def load_history(self) -> "None":
         """Load kernel history."""
