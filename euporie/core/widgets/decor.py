@@ -1,10 +1,11 @@
 """Decorative widgets."""
 
-from __future__ import annotations
+# from __future__ import annotations
 
 import logging
 from typing import TYPE_CHECKING
 
+from prompt_toolkit.cache import FastDictCache
 from prompt_toolkit.filters import has_focus, to_filter
 from prompt_toolkit.layout.containers import (
     ConditionalContainer,
@@ -20,6 +21,7 @@ from prompt_toolkit.layout.containers import (
 from prompt_toolkit.layout.dimension import Dimension
 from prompt_toolkit.layout.mouse_handlers import MouseHandlers
 from prompt_toolkit.layout.screen import Char, Screen, WritePosition
+from prompt_toolkit.mouse_events import MouseEventType
 
 from euporie.core.border import ThinLine
 from euporie.core.config import add_setting
@@ -30,9 +32,13 @@ from euporie.core.style import ColorPaletteColor
 if TYPE_CHECKING:
     from typing import Callable, Optional, Union
 
+    from prompt_toolkit.key_binding.key_bindings import NotImplementedOrNone
     from prompt_toolkit.layout.containers import AnyContainer
+    from prompt_toolkit.mouse_events import MouseEvent
 
     from euporie.core.border import GridStyle
+
+    MouseHandler = Callable[[MouseEvent], object]
 
 log = logging.getLogger(__name__)
 
@@ -48,7 +54,7 @@ class Line(Container):
         collapse: "bool" = False,
         style: "str" = "class:grid-line",
     ) -> "None":
-        """Initializes a grid line.
+        """Initialize a grid line.
 
         Args:
             char: The character to draw. If unset, the relevant character from
@@ -73,7 +79,7 @@ class Line(Container):
         self.collapse = collapse
 
     def reset(self) -> "None":
-        """Resets the state of the line. Does nothing."""
+        """Reset the state of the line. Does nothing."""
 
     def preferred_width(self, max_available_width: "int") -> "Dimension":
         """Return the preferred width of the line."""
@@ -137,7 +143,7 @@ class Pattern(Container):
         self.pattern = pattern
 
     def reset(self) -> "None":
-        """Resets the pattern. Does nothing."""
+        """Reset the pattern. Does nothing."""
         pass
 
     def preferred_width(self, max_available_width: "int") -> "Dimension":
@@ -355,21 +361,25 @@ class Border:
 
 
 class FocusedStyle(Container):
-    """Applies a style to child containers when focused."""
+    """Applies a style to child containers when focused or hovered."""
 
     def __init__(
         self,
         body: "AnyContainer",
-        style: "Union[str, Callable[[], str]]" = "class:focused",
+        style_focus: "Union[str, Callable[[], str]]" = "class:focused",
+        style_hover: "Union[str, Callable[[], str]]" = "class:hover",
     ) -> "None":
         """Create a new instance of the widget.
 
         Args:
             body: The container to act on
-            style: The style to apply
+            style_focus: The style to apply when the body has focus
+            style_hover: The style to apply when the body is hovered
         """
         self.body = body
-        self.style = style
+        self.style_focus = style_focus
+        self.style_hover = style_hover
+        self.hover = False
         self.has_focus = has_focus(self.body)
 
     def reset(self) -> "None":
@@ -396,7 +406,7 @@ class FocusedStyle(Container):
         z_index: "Optional[int]",
     ) -> "None":
         """Draw the wrapped container with the additional style."""
-        return to_container(self.body).write_to_screen(
+        to_container(self.body).write_to_screen(
             screen,
             mouse_handlers,
             write_position,
@@ -405,13 +415,53 @@ class FocusedStyle(Container):
             z_index,
         )
 
+        if self.style_hover:
+            x_min = write_position.xpos
+            x_max = x_min + write_position.width
+            y_min = write_position.ypos
+            y_max = y_min + write_position.height
+
+            # Wrap mouse handlers to add "hover" class on hover
+            def _wrap_mouse_handler(handler: "Callable") -> "MouseHandler":
+                def wrapped_mouse_handler(
+                    mouse_event: "MouseEvent",
+                ) -> "NotImplementedOrNone":
+                    result = handler(mouse_event)
+
+                    if mouse_event.event_type == MouseEventType.MOUSE_MOVE:
+                        app = get_app()
+                        if (
+                            mouse_event.position.x,
+                            mouse_event.position.y,
+                        ) == app.mouse_position:
+                            app.mouse_limits = write_position
+                            self.hover = True
+                        else:
+                            app.mouse_limits = None
+                            self.hover = False
+                        result = None
+                    return result
+
+                return wrapped_mouse_handler
+
+            mouse_handler_wrappers = FastDictCache(get_value=_wrap_mouse_handler)
+            for y in range(y_min, y_max):
+                row = mouse_handlers.mouse_handlers[y]
+                for x in range(x_min, x_max):
+                    row[x] = mouse_handler_wrappers[(row[x],)]
+
     def get_style(self) -> "str":
         """Determine the style to apply depending on the focus status."""
+        style = ""
         if self.has_focus():
-            style = self.style
-            return style() if callable(style) else style
-        else:
-            return ""
+            style += (
+                self.style_focus() if callable(self.style_focus) else self.style_focus
+            )
+        if self.hover:
+            style += (
+                self.style_hover() if callable(self.style_hover) else self.style_hover
+            )
+        return style
 
     def get_children(self) -> "list[Container]":
         """Return the list of child :class:`.Container` objects."""
