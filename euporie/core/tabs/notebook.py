@@ -70,6 +70,7 @@ class BaseNotebook(KernelTab, metaclass=ABCMeta):
                 "set_metadata": lambda path, data: self.cell.set_metadata(path, data),
                 "set_status": self.set_status,
                 "set_kernel_info": self.set_kernel_info,
+                "dead": self.kernel_died,
             }
         )
 
@@ -111,6 +112,16 @@ class BaseNotebook(KernelTab, metaclass=ABCMeta):
     def kernel_started(self, result: "Optional[dict[str, Any]]" = None) -> "None":
         """Tasks to run when the kernel has started."""
         super().kernel_started(result)
+
+    def kernel_died(self) -> "None":
+        """Called if the kernel dies."""
+        if confirm := self.app.dialogs.get("confirm"):
+            confirm.show(
+                title="Kernel connection lost",
+                message="The kernel appears to have died\nas it can no longer be reached.\n\n"
+                "Do you want to restart the kernel?",
+                cb=self.kernel.restart,
+            )
 
     # Notebook stuff
 

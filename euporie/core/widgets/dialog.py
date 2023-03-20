@@ -648,14 +648,14 @@ class MsgBoxDialog(Dialog):
 class ConfirmDialog(Dialog):
     """A dialog which allows the user to confirm an action."""
 
-    title = "Are you sure?"
-
     def load(
         self,
+        title: "str" = "Are you sure?",
         message: "str" = "Please confirm",
         cb: "Optional[Callable[[], None]]" = None,
     ) -> "None":
         """Load dialog body & buttons."""
+        self.title = title
         self.body = Label(message)
 
         def _callback() -> "None":
