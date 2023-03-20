@@ -139,7 +139,7 @@ dependencies = [
   # Dependencies
   "types-appdirs", "importlib_metadata", "types-Pillow", "sixelcrop",
   # Optional dependencies
-  "rich", "black", "isort", "ssort", "ipython",
+  "rich", "black", "isort", "ssort",
   # Non-dependencies
   "html2text", "sympy"
 ]
@@ -215,6 +215,6 @@ module = [
   "_frozen_importlib", "ipykernel", "fastjsonschema",
   "pyperclip", "upath.*", "chafa.*", "timg", "pylatexenc.*", "aenum", "pygments.*",
   "ssort",
-  "flatlatex.*", "timg", "img2unicode", "cairosvg", "teimpy", "IPython.*", "numpy", "mtable", "imagesize",
+  "flatlatex.*", "timg", "img2unicode", "cairosvg", "teimpy", "numpy", "mtable", "imagesize",
 ]
 ignore_missing_imports = true
