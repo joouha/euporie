@@ -593,9 +593,7 @@ class ConsoleTab(KernelTab):
         hidden=True,
         filter=buffer_is_code & buffer_is_empty,
     )
-    @add_cmd(
-        filter=kernel_tab_has_focus,
-    )
+    @add_cmd(filter=kernel_tab_has_focus)
     def _interrupt_kernel() -> None:
         """Interrupt the notebook's kernel."""
         from euporie.console.app import get_app
@@ -604,15 +602,29 @@ class ConsoleTab(KernelTab):
             kt.interrupt_kernel()
 
     @staticmethod
-    @add_cmd(
-        filter=kernel_tab_has_focus,
-    )
+    @add_cmd(filter=kernel_tab_has_focus)
     def _restart_kernel() -> None:
         """Restart the notebook's kernel."""
         from euporie.console.app import get_app
 
         if isinstance(kt := get_app().tab, KernelTab):
             kt.restart_kernel()
+
+    @staticmethod
+    @add_cmd(filter=buffer_is_code & buffer_has_focus)
+    def _history_prev() -> None:
+        """Get the previous history entry."""
+        from euporie.console.app import get_app
+
+        get_app().current_buffer.history_backward()
+
+    @staticmethod
+    @add_cmd(filter=buffer_is_code & buffer_has_focus)
+    def _history_next() -> None:
+        """Get the next history entry."""
+        from euporie.console.app import get_app
+
+        get_app().current_buffer.history_forward()
 
     # ################################### Settings ####################################
 
@@ -642,6 +654,8 @@ class ConsoleTab(KernelTab):
             "euporie.console.app.ConsoleApp": {
                 "clear-input": "c-c",
                 "run-input": ["c-enter", "c-e"],
+                "history-prev": "c-up",
+                "history-next": "c-down",
             },
         }
     )

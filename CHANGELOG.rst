@@ -11,6 +11,7 @@ Upcoming
 Added
 =====
 
+- Add :kbd:`Ctrl+up` and :kbd:`Ctrl+down` as key-bindings to move through kernel history in the console
 - Allow closing notebook tabs with the middle mouse button
 - Notify the user if the kernel dies unexpectedly
 
