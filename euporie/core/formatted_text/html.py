@@ -1363,7 +1363,7 @@ class Theme(Mapping):
             return lambda x: "".join(subscript.get(c, c) for c in x)
         elif "super" in self.theme["vertical_align"]:
             return lambda x: "".join(superscript.get(c, c) for c in x)
-        elif "math" in self.theme["text_transform"]:
+        elif "latex" in self.theme["text_transform"]:
             return lambda x: convert(x, "latex", "ansi")
         else:
             return None
