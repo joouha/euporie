@@ -15,6 +15,8 @@ euporie
 
 Euporie's apps allow you to interact with Jupyter kernels, and run Jupyter notebooks - entirely from the terminal.
 
+If you're working with Jupyter notebooks in a terminal only environment, like an SSH server or a container, or just prefer working in the terminal, then euporie is the tool for you!
+
 .. list-table::
    :align: center
    :widths: 25 25 25 25
