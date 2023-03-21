@@ -314,7 +314,9 @@ class TabBarControl(UIControl):
                         handler()
                         # Close the now active tab
                         tabs = self.tabs
-                        tabs[self.active].on_close()
+                        on_close = tabs[self.active]
+                        if callable(on_close):
+                            on_close()
                     return None
 
         tabs = self.tabs

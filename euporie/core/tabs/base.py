@@ -80,7 +80,7 @@ class Tab(metaclass=ABCMeta):
         """Focus the tab (or make it visible)."""
         self.app.focus_tab(self)
 
-    def save(self, path: UPath = None, cb: Callable | None = None) -> None:
+    def save(self, path: UPath | None = None, cb: Callable | None = None) -> None:
         """Save the current notebook."""
         raise NotImplementedError
 

@@ -421,7 +421,7 @@ class FileDialog(Dialog, metaclass=ABCMeta):
             show_address_bar=False,
             on_select=lambda path: setattr(self.filepath, "text", path.name),
         )
-        completer.get_paths = lambda: [self.file_browser.control.dir, "."]
+        completer.get_paths = lambda: [str(self.file_browser.control.dir), "."]
         self.error = ""
 
         self.body = HSplit(

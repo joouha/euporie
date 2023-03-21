@@ -172,7 +172,7 @@ def convert(
         raise error
 
     def _convert(
-        data: str,
+        data: str | bytes,
         from_: str,
         to: str,
         cols: int | None = None,
@@ -187,7 +187,7 @@ def convert(
         # log.debug("Converting from '%s' to '%s' using route: %s", from_, to, route)
         if route is None:
             raise NotImplementedError(f"Cannot convert from `{from_}` to `{to}`")
-        output = data
+        output: Any = data
         for stage_a, stage_b in zip(route, route[1:]):
             # Find converter with lowest weight
             func = sorted(

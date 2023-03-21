@@ -984,9 +984,10 @@ class ValidModel(ToggleableIpyWidgetComm):
         return CommView(
             FocusedStyle(
                 LabelledWidget(
-                    checkbox, label=lambda: self.data["state"].get("description", "")
+                    checkbox,
+                    label=lambda: self.data["state"].get("description", ""),
+                    style="class:ipywidget",
                 ),
-                style="class:ipywidget",
             ),
             setters={"value": partial(setattr, checkbox, "selected")},
         )

@@ -2351,7 +2351,7 @@ class HTML:
         self.css: CssSelectors = {}
 
         self.markup = markup
-        self.base = base
+        self.base = UPath(base or ".")
         self.width: int | None = None
         self.height: int | None = None
         self.collapse_root_margin = collapse_root_margin
