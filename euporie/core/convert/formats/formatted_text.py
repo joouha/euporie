@@ -10,6 +10,7 @@ from prompt_toolkit.formatted_text import to_formatted_text
 
 from euporie.core.convert.base import register
 from euporie.core.formatted_text.ansi import ANSI
+from euporie.core.formatted_text.utils import strip_one_trailing_newline
 from euporie.core.lexers import detect_lexer
 
 if TYPE_CHECKING:
@@ -113,4 +114,4 @@ def ansi_to_ft(
         ft = [(_token_cache[t], v) for _, t, v in lexer.get_tokens_unprocessed(markup)]
     else:
         ft = to_formatted_text(markup)
-    return ft
+    return strip_one_trailing_newline(ft)
