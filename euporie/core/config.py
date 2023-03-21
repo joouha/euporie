@@ -30,15 +30,23 @@ if TYPE_CHECKING:
 
     from euporie.core.widgets.menu import MenuItem
 
+    class ConfigurableApp(Protocol):
+        """An application with configuration."""
 
-class ConfigurableApp(Protocol):
-    """An application with configuration."""
-
-    config: Config
-    name: str
+        config: Config
+        name: str
+        log_stdout_level: str
 
 
 log = logging.getLogger(__name__)
+
+_SCHEMA_TYPES: dict[type | Callable, str] = {
+    bool: "boolean",
+    str: "string",
+    int: "integer",
+    float: "float",
+    UPath: "string",
+}
 
 
 class ArgumentParser(argparse.ArgumentParser):
@@ -163,13 +171,7 @@ class Setting:
         self.action = action or TYPE_ACTIONS.get(self.type)
         self.flags = flags or [f"--{name.replace('_','-')}"]
         self._schema: dict[str, Any] = {
-            "type": {
-                bool: "boolean",
-                str: "string",
-                int: "integer",
-                float: "float",
-                UPath: "string",
-            }.get(self.type),
+            "type": _SCHEMA_TYPES.get(self.type),
             **(schema or {}),
         }
         self.nargs = nargs

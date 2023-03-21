@@ -203,7 +203,7 @@ class Kernel:
         # could be connected to a kernel which we was not started by the manager
         if self.kc:
             self._aodo(
-                self.kc.is_alive(),
+                self.kc._async_is_alive(),
                 timeout=0.2,
                 callback=self._set_living_status,
                 wait=False,
@@ -318,23 +318,24 @@ class Kernel:
                     "language": ks.language,
                 }
 
-                log.debug("Waiting for kernel to become ready")
-                try:
-                    await self.kc._async_wait_for_ready(timeout=10)
-                except RuntimeError as e:
-                    log.error("Error connecting to kernel")
-                    self.error = e
-                    self.status = "error"
-                else:
-                    log.debug("Kernel %s ready", self.id)
-                    self.status = "idle"
-                    self.error = None
-                    self.poll_tasks = [
-                        asyncio.create_task(self.poll("shell")),
-                        asyncio.create_task(self.poll("iopub")),
-                        asyncio.create_task(self.poll("stdin")),
-                    ]
-                    self.dead = False
+                if self.kc is not None:
+                    log.debug("Waiting for kernel to become ready")
+                    try:
+                        await self.kc._async_wait_for_ready(timeout=10)
+                    except RuntimeError as e:
+                        log.error("Error connecting to kernel")
+                        self.error = e
+                        self.status = "error"
+                    else:
+                        log.debug("Kernel %s ready", self.id)
+                        self.status = "idle"
+                        self.error = None
+                        self.poll_tasks = [
+                            asyncio.create_task(self.poll("shell")),
+                            asyncio.create_task(self.poll("iopub")),
+                            asyncio.create_task(self.poll("stdin")),
+                        ]
+                        self.dead = False
 
     def start(
         self, cb: Callable | None = None, wait: bool = False, timeout: int = 10

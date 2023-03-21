@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from prompt_toolkit.data_structures import Point, Size
 from prompt_toolkit.filters import to_filter
@@ -275,7 +275,7 @@ class Renderer(PtkRenderer):
 
         # Disable extended keys
         if isinstance(output, Vt100_Output):
-            self.output.disable_extended_keys()
+            cast(Vt100_Output, self.output).disable_extended_keys()
 
         super().reset(_scroll, leave_alternate_screen)
 

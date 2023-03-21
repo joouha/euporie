@@ -26,7 +26,7 @@ register(
     filter_=commands_exist("dvipng") & commands_exist("latex"),
 )
 def latex_to_png_dvipng(
-    data: str | bytes,
+    data: str,
     width: int | None = None,
     height: int | None = None,
     fg: str | None = None,
@@ -53,7 +53,9 @@ def latex_to_png_dvipng(
         f.writelines(latex_doc)
 
     # Convert hex color to latax color
-    fg_latex = f"RGB {int(fg[1:3], 16)} {int(fg[3:5], 16)} {int(fg[5:7], 16)}"
+    fg_latex = (
+        f"RGB {int(fg[1:3], 16)} {int(fg[3:5], 16)} {int(fg[5:7], 16)}" if fg else ""
+    )
 
     # Convert latex document to dvi image, then Convert dvi image to png
     try:
@@ -63,23 +65,30 @@ def latex_to_png_dvipng(
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
         )
+
+        dvipng_cmd = [
+            "dvipng",
+            "-T",
+            "tight",
+            "-D",
+            "150",
+            "-z",
+            "9",
+            "-bg",
+            "Transparent",
+            "-o",
+            "/dev/stdout",
+            "tmp.dvi",
+        ]
+        if fg:
+            dvipng_cmd.extend(
+                [
+                    "-fg",
+                    fg_latex,
+                ]
+            )
         output = subprocess.check_output(
-            [
-                "dvipng",
-                "-T",
-                "tight",
-                "-D",
-                "150",
-                "-z",
-                "9",
-                "-bg",
-                "Transparent",
-                "-o",
-                "/dev/stdout",
-                "tmp.dvi",
-                "-fg",
-                fg_latex,
-            ],
+            dvipng_cmd,
             cwd=workdir,
             stderr=subprocess.DEVNULL,
         )
@@ -98,7 +107,7 @@ def latex_to_png_dvipng(
     filter_=have_modules("matplotlib"),
 )
 def latex_to_png_py_mpl(
-    data: str | bytes,
+    data: str,
     width: int | None = None,
     height: int | None = None,
     fg: str | None = None,
@@ -118,11 +127,10 @@ def latex_to_png_py_mpl(
     data = data.replace("$$", "$")
 
     buffer = BytesIO()
-
     prop = font_manager.FontProperties(size=12)
     parser = mathtext.MathTextParser("path")
     width, height, depth, _, _ = parser.parse(data, dpi=72, prop=prop)
-    fig = figure.Figure(figsize=(width / 72, height / 72))
+    fig = figure.Figure(figsize=(width or 256 / 72, height or 256 / 72))
     fig.text(0, depth / height, data, fontproperties=prop, color=fg)
     backend_agg.FigureCanvasAgg(fig)
     fig.savefig(buffer, dpi=120, format="png", transparent=True)

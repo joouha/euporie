@@ -534,11 +534,12 @@ class ConsoleTab(KernelTab):
             callback=_cb,
         )
 
-    def save(self, path: UPath = None, cb: Callable | None = None) -> None:
+    def save(self, path: UPath | None = None, cb: Callable | None = None) -> None:
         """Save the console as a notebook."""
         from euporie.core.tabs.notebook import BaseNotebook
 
-        BaseNotebook.save(cast("BaseNotebook", self), path)
+        if path is not None:
+            BaseNotebook.save(cast("BaseNotebook", self), path)
 
     # ################################### Commands ####################################
 

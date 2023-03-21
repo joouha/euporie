@@ -444,7 +444,9 @@ class FocusedStyle(Container):
 
                 return wrapped_mouse_handler
 
-            mouse_handler_wrappers = FastDictCache(get_value=_wrap_mouse_handler)
+            mouse_handler_wrappers: FastDictCache[
+                tuple[Callable], MouseHandler
+            ] = FastDictCache(get_value=_wrap_mouse_handler)
             for y in range(y_min, y_max):
                 row = mouse_handlers.mouse_handlers[y]
                 for x in range(x_min, x_max):

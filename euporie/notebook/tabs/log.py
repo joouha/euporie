@@ -18,8 +18,9 @@ from euporie.core.tabs.base import Tab
 from euporie.core.widgets.formatted_text_area import FormattedTextArea
 
 if TYPE_CHECKING:
-    from os import PathLike
     from typing import Callable
+
+    from upath import UPath
 
     from euporie.core.app import BaseApp
 
@@ -27,7 +28,7 @@ if TYPE_CHECKING:
 class LogView(Tab):
     """A tab which allows you to view log entries."""
 
-    def __init__(self, app: BaseApp, path: PathLike | None = None) -> None:
+    def __init__(self, app: BaseApp, path: UPath | None = None) -> None:
         """Create a new log view tab instance."""
         super().__init__(app, path)
         # Build the container

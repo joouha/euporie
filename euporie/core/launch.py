@@ -17,6 +17,7 @@ class CoreApp:
 
     name = "launch"
     config = Config()
+    log_stdout_level = "error"
 
     @classmethod
     def launch(cls) -> None:

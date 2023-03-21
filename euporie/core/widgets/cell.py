@@ -38,6 +38,7 @@ if TYPE_CHECKING:
 
     from prompt_toolkit.buffer import Buffer
     from prompt_toolkit.formatted_text.base import OneStyleAndTextTuple
+    from prompt_toolkit.lexers import Lexer
 
     from euporie.core.tabs.notebook import BaseNotebook
 
@@ -65,7 +66,7 @@ def get_cell_id(cell_json: dict) -> str:
     return cell_id
 
 
-def get_pygments_lexer(language: str) -> PygmentsLexer:
+def get_pygments_lexer(language: str) -> Lexer:
     """Get a pygments lexer class by name, ignoring errors."""
     try:
         lexer_class = get_lexer_by_name(language).__class__

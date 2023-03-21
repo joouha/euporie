@@ -46,7 +46,7 @@ def load_url(
                 data = None
     else:
         request = Request(
-            url, headers={"User-Agent": "euporie", "Host": parsed_url.netloc}
+            str(url), headers={"User-Agent": "euporie", "Host": parsed_url.netloc}
         )
         try:
             # The use of 'file:' scheme is intended

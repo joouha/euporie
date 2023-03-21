@@ -242,7 +242,7 @@ class BaseNotebook(KernelTab, metaclass=ABCMeta):
         else:
             super().close(cb)
 
-    def save(self, path: UPath = None, cb: Callable | None = None) -> None:
+    def save(self, path: UPath | None = None, cb: Callable | None = None) -> None:
         """Write the notebook's JSON to the current notebook's file.
 
         Additionally save the widget state to the notebook metadata.

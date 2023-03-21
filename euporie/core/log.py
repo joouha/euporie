@@ -319,7 +319,11 @@ def setup_logs(config: Config) -> None:
             "stdout": {
                 "level": config.log_level.upper()
                 if config.log_level and log_file_is_stdout
-                else config.app_cls.log_stdout_level,
+                else (
+                    "critical"
+                    if (app_cls := config.app_cls) is None
+                    else app_cls.log_stdout_level
+                ),
                 "class": "euporie.core.log.FormattedTextHandler",
                 "pygments_theme": config.syntax_theme,
                 "formatter": "stdout_format",

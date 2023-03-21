@@ -349,7 +349,7 @@ FILE_ICONS = {
 }
 
 
-def is_dir(path: str) -> bool | None:
+def is_dir(path: str | UPath) -> bool | None:
     """Check if a path is a directory."""
     test_path = UPath(path)
     try:
@@ -363,7 +363,7 @@ class FileBrowserControl(UIControl):
 
     def __init__(
         self,
-        path: UPath = None,
+        path: UPath | None = None,
         on_chdir: Callable[[FileBrowserControl], None] | None = None,
         on_select: Callable[[FileBrowserControl], None] | None = None,
         on_open: Callable[[FileBrowserControl], None] | None = None,
@@ -372,9 +372,9 @@ class FileBrowserControl(UIControl):
         self.dir = path or UPath(".")
         self.hovered: int = 0
         self.selected: int | None = None
-        self._dir_cache: FastDictCache[UPath, list[tuple[bool, UPath]]] = FastDictCache(
-            get_value=self.load_path, size=1
-        )
+        self._dir_cache: FastDictCache[
+            tuple[UPath], list[tuple[bool, UPath]]
+        ] = FastDictCache(get_value=self.load_path, size=1)
         self.on_select = Event(self, on_select)
         self.on_chdir = Event(self, on_chdir)
         self.on_open = Event(self, on_open)
@@ -563,7 +563,7 @@ class FileBrowser:
 
     def __init__(
         self,
-        path: UPath = None,
+        path: UPath | None = None,
         on_select: Callable[[UPath], None] | None = None,
         on_open: Callable[[UPath], None] | None = None,
         on_chdir: Callable[[UPath], None] | None = None,
@@ -575,7 +575,7 @@ class FileBrowser:
         """Create a new instance."""
 
         def _accept_path(buffer: Buffer) -> bool:
-            control.dir = buffer.text
+            control.dir = UPath(buffer.text)
             return True
 
         def _validate_path(path: str) -> bool:

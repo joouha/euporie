@@ -179,6 +179,8 @@ class BaseApp(Application):
 
     name: str
     color_palette: ColorPalette
+    mouse_position: Point
+
     config = Config()
     status_default: StatusBarFields = ([], [])
     need_mouse_support: bool = False
