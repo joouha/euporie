@@ -115,6 +115,7 @@ _MARKDOWN_CSS = {
         "border_left_width": "0.1em",
         "padding_left": "1em",
         "padding_right": "1em",
+        # "_pt_class": "markdown,table,border",
     },
     ((CssSelector(item="th"),),): {
         "display": "table-cell",
@@ -129,10 +130,11 @@ _MARKDOWN_CSS = {
         "padding_left": "1em",
         "padding_right": "1em",
         "font_weight": "bold",
+        # "_pt_class": "markdown,table,border",
     },
     ((CssSelector(item="code"),),): {
         "display": "inline",
-        "pt_class": "markdown,code",
+        "_pt_class": "markdown,code",
     },
     ((CssSelector(item=".math"),),): {"text_transform": "latex"},
     ((CssSelector(item=".block"),),): {"display": "block"},
