@@ -25,8 +25,8 @@ Euporie's apps allow you to interact with Jupyter kernels, and run Jupyter noteb
      - `Preview <https://euporie.readthedocs.io/en/latest/apps/preview.html>`_
      - `Hub <https://euporie.readthedocs.io/en/latest/apps/hub.html>`_
 
-.. image:: https://user-images.githubusercontent.com/12154190/182201621-9c3e4b04-1b1e-46e3-b852-b43f16adfc7b.png
-   :target: https://user-images.githubusercontent.com/12154190/182201621-9c3e4b04-1b1e-46e3-b852-b43f16adfc7b.png
+.. image:: https://user-images.githubusercontent.com/12154190/226652401-f0601134-208d-4edc-9f5d-39fcd9dab288.png
+   :target: https://user-images.githubusercontent.com/12154190/226652401-f0601134-208d-4edc-9f5d-39fcd9dab288.png
 
 `View more screenshots here <https://euporie.readthedocs.io/en/latest/pages/gallery.html>`_
 
