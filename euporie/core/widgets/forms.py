@@ -46,7 +46,7 @@ from prompt_toolkit.utils import Event
 from prompt_toolkit.validation import Validator
 from prompt_toolkit.widgets.base import Box, TextArea
 
-from euporie.core.border import InnerEigthGrid
+from euporie.core.border import InsetGrid
 from euporie.core.current import get_app
 from euporie.core.data_structures import DiBool
 from euporie.core.formatted_text.utils import FormattedTextAlign, align
@@ -95,7 +95,7 @@ class Swatch:
         width: int = 2,
         height: int = 1,
         style: str = "class:swatch",
-        border: GridStyle = InnerEigthGrid,
+        border: GridStyle = InsetGrid,
         show_borders: DiBool | None = None,
     ) -> None:
         """Create a new instance of the color swatch.
@@ -143,7 +143,7 @@ class Button:
         disabled: FilterOrBool = False,
         width: int | None = None,
         style: str | Callable[[], str] = "class:input",
-        border: GridStyle | None = InnerEigthGrid,
+        border: GridStyle | None = InsetGrid,
         show_borders: DiBool | None = None,
         selected: bool = False,
         key_bindings: KeyBindingsBase | None = None,
@@ -363,7 +363,7 @@ class ToggleButton(ToggleableWidget):
         on_click: Callable[[ToggleButton], None] | None = None,
         width: int | None = None,
         style: str | Callable[[], str] = "class:input",
-        border: GridStyle | None = InnerEigthGrid,
+        border: GridStyle | None = InsetGrid,
         show_borders: DiBool | None = None,
         selected: bool = False,
         disabled: FilterOrBool = False,
@@ -648,7 +648,7 @@ class Text:
             self.text_area.buffer.validate_while_typing = Always()
         self.container = Border(
             self.text_area,
-            border=InnerEigthGrid,
+            border=InsetGrid,
             style=self.border_style,
             show_borders=show_borders,
         )
@@ -905,7 +905,7 @@ class Progress:
                     height=lambda: None if self.vertical() else 1,
                     width=lambda: 1 if self.vertical() else None,
                 ),
-                border=InnerEigthGrid,
+                border=InsetGrid,
                 style=self.add_style("class:progress,border"),
             ),
             # width=lambda: 1 if self.vertical() else None,
@@ -1201,7 +1201,7 @@ class Select(SelectableWidget):
         style: str | Callable[[], str] = "class:input,select",
         rows: int | None = 3,
         prefix: tuple[str, str] = ("", ""),
-        border: GridStyle | None = InnerEigthGrid,
+        border: GridStyle | None = InsetGrid,
         show_borders: DiBool | None = None,
         disabled: FilterOrBool = False,
         dont_extend_width: FilterOrBool = True,
@@ -1510,7 +1510,7 @@ class ToggleButtons(SelectableWidget):
         max_count: int | None = None,
         on_change: Callable[[SelectableWidget], None] | None = None,
         style: str | Callable[[], str] = "class:input",
-        border: GridStyle | None = InnerEigthGrid,
+        border: GridStyle | None = InsetGrid,
         disabled: FilterOrBool = False,
         vertical: FilterOrBool = False,
     ) -> None:
@@ -2055,7 +2055,7 @@ class Slider(SelectableWidget):
         max_count: int | None = None,
         on_change: Callable[[SelectableWidget], None] | None = None,
         style: str | Callable[[], str] = "class:input",
-        border: GridStyle = InnerEigthGrid,
+        border: GridStyle = InsetGrid,
         show_borders: DiBool | None = None,
         vertical: FilterOrBool = False,
         show_arrows: FilterOrBool = True,
