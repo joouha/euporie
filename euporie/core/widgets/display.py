@@ -25,7 +25,7 @@ from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
 from prompt_toolkit.utils import Event
 
 from euporie.core.commands import add_cmd
-from euporie.core.convert.base import convert, find_route
+from euporie.core.convert.core import convert, find_route
 from euporie.core.convert.utils import data_pixel_size, pixels_to_cell_size
 from euporie.core.current import get_app
 from euporie.core.data_structures import DiInt

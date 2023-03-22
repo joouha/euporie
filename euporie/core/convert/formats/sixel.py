@@ -5,7 +5,7 @@ from __future__ import annotations
 from functools import partial
 from typing import TYPE_CHECKING
 
-from euporie.core.convert.base import register
+from euporie.core.convert.core import register
 from euporie.core.convert.formats.common import (
     chafa_convert_cmd,
     chafa_convert_py,

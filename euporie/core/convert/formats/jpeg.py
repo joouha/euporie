@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from euporie.core.convert.base import register
+from euporie.core.convert.core import register
 from euporie.core.convert.formats.common import base64_to_bytes_py
 
 register(

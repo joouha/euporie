@@ -5,7 +5,7 @@ from __future__ import annotations
 from functools import partial
 from typing import TYPE_CHECKING
 
-from euporie.core.convert.base import register
+from euporie.core.convert.core import register
 from euporie.core.convert.formats.common import base64_to_bytes_py, imagemagick_convert
 from euporie.core.convert.utils import commands_exist, have_modules
 
