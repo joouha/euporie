@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 from prompt_toolkit.layout.containers import VSplit
 from prompt_toolkit.layout.dimension import Dimension
 
-from euporie.core.convert.base import get_format
+from euporie.core.convert.core import get_format
 from euporie.core.margins import MarginContainer, ScrollbarMargin
 from euporie.core.tabs.base import Tab
 from euporie.core.widgets.display import Display

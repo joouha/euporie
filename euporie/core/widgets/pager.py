@@ -15,7 +15,7 @@ from prompt_toolkit.layout.containers import (
 from prompt_toolkit.widgets import Box
 
 from euporie.core.commands import add_cmd
-from euporie.core.convert.base import BASE64_FORMATS, MIME_FORMATS, find_route
+from euporie.core.convert.core import BASE64_FORMATS, MIME_FORMATS, find_route
 from euporie.core.current import get_app
 from euporie.core.filters import pager_has_focus
 from euporie.core.key_binding.registry import (

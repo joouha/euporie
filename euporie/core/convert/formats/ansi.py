@@ -7,7 +7,7 @@ from functools import partial
 from math import ceil
 from typing import TYPE_CHECKING
 
-from euporie.core.convert.base import register
+from euporie.core.convert.core import register
 from euporie.core.convert.formats.common import chafa_convert_cmd, chafa_convert_py
 from euporie.core.convert.formats.pil import set_background
 from euporie.core.convert.utils import call_subproc, commands_exist, have_modules

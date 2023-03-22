@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 from prompt_toolkit.cache import SimpleCache
 from prompt_toolkit.formatted_text import to_formatted_text
 
-from euporie.core.convert.base import register
+from euporie.core.convert.core import register
 from euporie.core.formatted_text.ansi import ANSI
 from euporie.core.formatted_text.utils import strip_one_trailing_newline
 from euporie.core.lexers import detect_lexer

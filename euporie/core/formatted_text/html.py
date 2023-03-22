@@ -42,7 +42,7 @@ from euporie.core.border import (
     UpperRightHalfDottedLine,
     UpperRightHalfLine,
 )
-from euporie.core.convert.base import convert, get_format
+from euporie.core.convert.core import convert, get_format
 from euporie.core.convert.utils import data_pixel_size, pixels_to_cell_size
 from euporie.core.current import get_app
 from euporie.core.data_structures import DiBool, DiInt, DiStr

@@ -49,7 +49,7 @@ class ChainedList(Sequence[T]):
 
 
 def parse_path(path: str | PathLike | None) -> UPath | None:
-    """Pare and resolve a path."""
+    """Parse and resolve a path."""
     if path is None:
         return None
     upath = UPath(path)

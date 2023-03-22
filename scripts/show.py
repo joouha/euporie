@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 from prompt_toolkit.application.current import set_app
 
 from euporie.core.app import BaseApp
-from euporie.core.convert.base import convert, get_format
+from euporie.core.convert.core import convert, get_format
 
 if TYPE_CHECKING:
     from typing import Any, Callable, Optional

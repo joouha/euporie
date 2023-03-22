@@ -13,7 +13,7 @@ from pygments import highlight
 from pygments.formatters import HtmlFormatter
 from pygments.lexers import get_lexer_by_name
 
-from euporie.core.convert.base import register
+from euporie.core.convert.core import register
 from euporie.core.current import get_app
 
 if TYPE_CHECKING:

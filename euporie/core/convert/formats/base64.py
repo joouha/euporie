@@ -5,7 +5,7 @@ from __future__ import annotations
 import base64
 from typing import TYPE_CHECKING
 
-from euporie.core.convert.base import register
+from euporie.core.convert.core import register
 
 if TYPE_CHECKING:
     from upath import UPath

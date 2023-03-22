@@ -108,7 +108,7 @@ class NotebookApp(BaseApp):
         else:
             import mimetypes
 
-            from euporie.core.convert.base import MIME_FORMATS
+            from euporie.core.convert.core import MIME_FORMATS
 
             mime, _ = mimetypes.guess_type(path)
             log.debug("File %s has mime type: %s", path, mime)
