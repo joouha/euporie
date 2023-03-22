@@ -9,6 +9,7 @@ from prompt_toolkit.layout.containers import VSplit
 from prompt_toolkit.layout.dimension import Dimension
 
 from euporie.core.kernel import Kernel, MsgCallbacks
+from euporie.core.key_binding.registry import load_registered_bindings
 from euporie.core.lexers import detect_lexer
 
 # from euporie.core.margins import MarginContainer
@@ -16,7 +17,7 @@ from euporie.core.tabs.base import KernelTab
 from euporie.core.widgets.inputs import KernelInput
 
 if TYPE_CHECKING:
-    from typing import Sequence
+    from typing import Callable, Sequence
 
     from prompt_toolkit.formatted_text import AnyFormattedText
     from prompt_toolkit.layout.containers import AnyContainer
@@ -60,6 +61,7 @@ class EditorTab(KernelTab):
         self.container = self.load_container()
 
         self.input_box.text = text
+        self.input_box.buffer.on_text_changed += lambda b: setattr(self, "dirty", True)
 
     def statusbar_fields(
         self,
@@ -68,12 +70,17 @@ class EditorTab(KernelTab):
         return ([str(self.path)], [])
 
     @property
+    def path_name(self) -> str:
+        """Return the path name."""
+        if self.path is not None:
+            return self.path.name
+        else:
+            return "(New file)"
+
+    @property
     def title(self) -> str:
         """Return the tab title."""
-        if self.path is not None:
-            return str(self.path.name)
-        else:
-            return "<New File>"
+        return ("* " if self.dirty else "") + self.path_name
 
     def load_container(self) -> AnyContainer:
         """Abcract method for loading the notebook's main container."""
@@ -88,4 +95,48 @@ class EditorTab(KernelTab):
             ],
             width=Dimension(weight=1),
             height=Dimension(weight=1),
+            key_bindings=load_registered_bindings("euporie.notebook.tabs.base.BaseTab"),
         )
+
+    def save(self, path: UPath | None = None, cb: Callable | None = None) -> None:
+        """Save the current file."""
+        if path is not None:
+            self.path = path
+
+        if self.path is None:
+            if dialog := self.app.dialogs.get("save-as"):
+                dialog.show(tab=self, cb=cb)
+        else:
+            log.debug("Saving file...")
+            self.saving = True
+            self.app.invalidate()
+
+            # Save to a temp file, then replace the original
+            temp_path = self.path.parent / f".{self.path.name}.tmp"
+            log.debug("Using temporary file %s", temp_path.name)
+            try:
+                open_file = temp_path.open("w")
+            except NotImplementedError:
+                if dialog := self.app.dialogs.get("save-as"):
+                    dialog.show(tab=self, cb=cb)
+            else:
+                try:
+                    with open_file as f:
+                        f.write(self.input_box.buffer.text)
+                except Exception:
+                    if dialog := self.app.dialogs.get("save-as"):
+                        dialog.show(tab=self, cb=cb)
+                else:
+                    try:
+                        temp_path.rename(self.path)
+                    except Exception:
+                        if dialog := self.app.dialogs.get("save-as"):
+                            dialog.show(tab=self, cb=cb)
+                    else:
+                        self.dirty = False
+                        self.saving = False
+                        self.app.invalidate()
+                        log.debug("Notebook saved")
+            # Run the callback
+            if callable(cb):
+                cb()

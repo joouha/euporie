@@ -19,6 +19,9 @@ from euporie.core.current import get_app
 from euporie.core.filters import kernel_tab_has_focus, tab_has_focus
 from euporie.core.history import KernelHistory
 from euporie.core.kernel import Kernel, MsgCallbacks
+from euporie.core.key_binding.registry import (
+    register_bindings,
+)
 from euporie.core.suggest import HistoryAutoSuggest
 
 if TYPE_CHECKING:
@@ -48,6 +51,9 @@ class Tab(metaclass=ABCMeta):
         self.path = path
         self.app.container_statuses[self] = self.statusbar_fields
         self.container = Window()
+
+        self.dirty = False
+        self.saving = False
 
     def statusbar_fields(
         self,
@@ -96,6 +102,27 @@ class Tab(metaclass=ABCMeta):
         """Reet the current tab, reloading contents from source."""
         if (tab := get_app().tab) is not None:
             tab.reset()
+
+    @staticmethod
+    @add_cmd(filter=tab_has_focus)
+    def _save_file() -> None:
+        """Save the current file."""
+        if (tab := get_app().tab) is not None:
+            try:
+                tab.save()
+            except NotImplementedError:
+                pass
+
+    # ################################# Key Bindings ##################################
+
+    register_bindings(
+        {
+            "euporie.notebook.tabs.base.BaseTab": {
+                "save-file": "c-s",
+                "reset-tab": "f5",
+            }
+        }
+    )
 
 
 class KernelTab(Tab, metaclass=ABCMeta):

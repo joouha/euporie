@@ -86,8 +86,6 @@ class BaseNotebook(KernelTab, metaclass=ABCMeta):
 
         self._rendered_cells: dict[str, Cell] = {}
         self.load_widgets_from_metadata()
-        self.dirty = False
-        self.saving = False
         self.multiple_cells_selected: Filter = Never()
 
         self.container = self.load_container()
@@ -267,24 +265,38 @@ class BaseNotebook(KernelTab, metaclass=ABCMeta):
                 }
             }
         if self.path is None:
-            # get_cmd("save-as").run()
             if dialog := self.app.dialogs.get("save-as"):
                 dialog.show(tab=self, cb=cb)
         else:
             log.debug("Saving notebook..")
             self.saving = True
             self.app.invalidate()
+
+            # Save to a temp file, then replace the original
+            temp_path = self.path.parent / f".{self.path.name}.tmp"
+            log.debug("Using temporary file %s", temp_path.name)
             try:
-                open_file = self.path.open("w")
+                open_file = temp_path.open("w")
             except NotImplementedError:
                 get_cmd("save-as").run()
             else:
-                with open_file as f:
-                    nbformat.write(nb=nbformat.from_dict(self.json), fp=f)
-                self.dirty = False
-                self.saving = False
-                self.app.invalidate()
-                log.debug("Notebook saved")
+                try:
+                    with open_file as f:
+                        nbformat.write(nb=nbformat.from_dict(self.json), fp=f)
+                except Exception:
+                    if dialog := self.app.dialogs.get("save-as"):
+                        dialog.show(tab=self, cb=cb)
+                else:
+                    try:
+                        temp_path.rename(self.path)
+                    except Exception:
+                        if dialog := self.app.dialogs.get("save-as"):
+                            dialog.show(tab=self, cb=cb)
+                    else:
+                        self.dirty = False
+                        self.saving = False
+                        self.app.invalidate()
+                        log.debug("Notebook saved")
             # Run the callback
             if callable(cb):
                 cb()

@@ -4,6 +4,22 @@ Changelog
 
 Notable changes to this project will be documented in this file.
 
+********
+Upcoming
+********
+
+Added
+=====
+
+- Add support for saving changes to text files
+
+Fixed
+=====
+
+- Make saving safer by saving to a temporary file first
+
+----
+
 *******************
 v2.3.2 (2023-03-21)
 *******************

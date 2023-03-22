@@ -385,7 +385,7 @@ class NotebookApp(BaseApp):
                     get_cmd("new-notebook").menu,
                     get_cmd("open-file").menu,
                     separator,
-                    get_cmd("save-notebook").menu,
+                    get_cmd("save-file").menu,
                     get_cmd("save-as").menu,
                     get_cmd("close-tab").menu,
                     separator,

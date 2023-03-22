@@ -219,7 +219,8 @@ class Notebook(BaseNotebook):
             width=Dimension(weight=1),
             height=Dimension(min=1, weight=2),
             key_bindings=load_registered_bindings(
-                "euporie.notebook.tabs.notebook.Notebook"
+                "euporie.notebook.tabs.base.BaseTab",
+                "euporie.notebook.tabs.notebook.Notebook",
             ),
         )
 
@@ -567,16 +568,6 @@ class Notebook(BaseNotebook):
     )
 
     # ################################### Commands ####################################
-
-    @staticmethod
-    @add_cmd(
-        filter=notebook_has_focus,
-    )
-    def _save_notebook() -> None:
-        """Save the current notebook."""
-        tab = get_app().tab
-        if isinstance(tab, Notebook):
-            tab.save()
 
     @staticmethod
     @add_cmd(
@@ -1187,7 +1178,6 @@ class Notebook(BaseNotebook):
     register_bindings(
         {
             "euporie.notebook.tabs.notebook.Notebook": {
-                "save-notebook": "c-s",
                 "enter-cell-edit-mode": "enter",
                 "exit-edit-mode": "escape",
                 "run-selected-cells": ["c-enter", "c-e"],
@@ -1234,7 +1224,6 @@ class Notebook(BaseNotebook):
                 "scroll-output-right": "right",
                 "toggle-expand": "w",
                 "notebook-toggle-line-numbers": "l",
-                "reset-tab": "f5",
             }
         }
     )
