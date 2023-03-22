@@ -275,22 +275,21 @@ ThickQuadrupleDashedLine = LineStyle("QuadDashed", (3, 1), parent=ThickLine)
 ThickTripleDashedLine = LineStyle("TripleDashed", (3, 2), parent=ThickLine)
 ThickDoubleDashedLine = LineStyle("DoubleDashed", (3, 3), parent=ThickLine)
 
-#  ▂▂▂▂▂▂▂▂▂▂▂▂
-# 🮇Quarter Line▎
-#  🮂🮂🮂🮂🮂🮂🮂🮂🮂🮂🮂🮂
+UpperRightQuarterLine = LineStyle("UpperRightQuarterLine", (4, 2), parent=ThickLine)
+LowerLeftQuarterLine = LineStyle("LowerLeftQuarterLine", (4, 2), parent=ThickLine)
 
-UpperRightHalfLine = LineStyle("UpperRightHalfLine", (4, 2), parent=ThickLine)
-LowerLeftHalfLine = LineStyle("LowerLeftHalfLine", (4, 2), parent=ThickLine)
+UpperRightHalfLine = LineStyle("UpperRightHalfLine", (5, 2), parent=ThickLine)
+LowerLeftHalfLine = LineStyle("LowerLeftHalfLine", (5, 2), parent=ThickLine)
 UpperRightHalfDottedLine = LineStyle(
-    "UpperRightHalfDottedLine", (4, 1), parent=UpperRightHalfLine
+    "UpperRightHalfDottedLine", (5, 1), parent=UpperRightHalfLine
 )
 LowerLeftHalfDottedLine = LineStyle(
-    "LowerLeftHalfDottedLine", (4, 2), parent=LowerLeftHalfLine
+    "LowerLeftHalfDottedLine", (5, 2), parent=LowerLeftHalfLine
 )
 
 
-FullLine = LineStyle("FullLine", (5, 2), parent=ThickLine)
-FullDottedLine = LineStyle("FullDottedLine", (5, 1), parent=ThickLine)
+FullLine = LineStyle("FullLine", (6, 2), parent=ThickLine)
+FullDottedLine = LineStyle("FullDottedLine", (6, 1), parent=ThickLine)
 
 
 class GridChar(NamedTuple):
@@ -502,6 +501,37 @@ _GRID_CHARS = {
     GridChar(ThinLine,              UpperRightEighthLine,   NoLine,                 UpperRightEighthLine): "▔",
     GridChar(NoLine,                NoLine,                 UpperRightEighthLine,   LowerLeftEighthLine ): "▁",
     GridChar(LowerLeftEighthLine,   UpperRightEighthLine,   NoLine,                 NoLine              ): "▔",
+
+    # UpperRightQuarterLine
+    GridChar(UpperRightQuarterLine, NoLine, UpperRightQuarterLine, NoLine): "🮇",
+    GridChar(NoLine, UpperRightQuarterLine, NoLine, UpperRightQuarterLine): "🮂",
+    GridChar(NoLine, UpperRightQuarterLine, UpperRightQuarterLine, NoLine): "🮇",
+    GridChar(UpperRightQuarterLine, NoLine, NoLine, UpperRightQuarterLine): "🮂",
+    GridChar(UpperRightQuarterLine, UpperRightQuarterLine, UpperRightQuarterLine, NoLine): "🮇",
+    GridChar(UpperRightQuarterLine, UpperRightQuarterLine, NoLine, UpperRightQuarterLine): "🮂",
+    # Corners
+    GridChar(NoLine, LowerLeftEighthLine, UpperRightQuarterLine, NoLine): " ",
+    GridChar(NoLine, NoLine, LowerLeftQuarterLine, LowerLeftEighthLine): " ",
+    GridChar(LowerLeftQuarterLine, NoLine, NoLine, UpperRightEighthLine): " ",
+    GridChar(UpperRightQuarterLine, UpperRightEighthLine, NoLine, NoLine): " ",
+
+    # LowerLeftQuarterLine
+    GridChar(LowerLeftQuarterLine, NoLine, LowerLeftQuarterLine, NoLine): "▎",
+    GridChar(NoLine, LowerLeftQuarterLine, NoLine, LowerLeftQuarterLine): "▂",
+    GridChar(NoLine, LowerLeftQuarterLine, LowerLeftQuarterLine, NoLine): "▂",
+    GridChar(LowerLeftQuarterLine, NoLine, NoLine, LowerLeftQuarterLine): "▎",
+    GridChar(NoLine, LowerLeftQuarterLine, LowerLeftQuarterLine, LowerLeftQuarterLine): "▂",
+    GridChar(LowerLeftQuarterLine, NoLine, LowerLeftQuarterLine, LowerLeftQuarterLine): "▎",
+    # Half/ThinLine combos
+    GridChar(LowerLeftQuarterLine, ThinLine, LowerLeftQuarterLine, NoLine): "▎",
+    GridChar(NoLine, LowerLeftQuarterLine, ThinLine, LowerLeftQuarterLine): "▂",
+    GridChar(LowerLeftQuarterLine, NoLine, LowerLeftQuarterLine, ThinLine): "▎",
+    GridChar(ThinLine, LowerLeftQuarterLine, NoLine, LowerLeftQuarterLine): "▂",
+    GridChar(UpperRightQuarterLine, ThinLine, UpperRightQuarterLine, NoLine): "🮇",
+    GridChar(NoLine, UpperRightQuarterLine, ThinLine, UpperRightQuarterLine): "🮂",
+    GridChar(UpperRightQuarterLine, NoLine, UpperRightQuarterLine, ThinLine): "🮇",
+    GridChar(ThinLine, UpperRightQuarterLine, NoLine, UpperRightQuarterLine): "🮂",
+
     # UpperRightHalfLine
     GridChar(UpperRightHalfLine, NoLine, UpperRightHalfLine, NoLine): "▐",
     GridChar(NoLine, UpperRightHalfLine, NoLine, UpperRightHalfLine): "▀",
@@ -817,15 +847,15 @@ class GridStyle:
 
 ThinGrid = ThinLine.grid
 
-InnerEigthGrid = (
-    LowerLeftEighthLine.top_edge
-    + LowerLeftEighthLine.right_edge
-    + UpperRightEighthLine.left_edge
+InsetGrid = (
+    UpperRightQuarterLine.left_edge
+    + LowerLeftQuarterLine.right_edge
     + UpperRightEighthLine.bottom_edge
+    + LowerLeftEighthLine.top_edge
     + ThinLine.inner
 )
 
-OuterEigthGrid = (
+OutsetGrid = (
     LowerLeftEighthLine.top_edge
     + UpperRightEighthLine.right_edge
     + UpperRightEighthLine.bottom_edge

@@ -30,7 +30,7 @@ from prompt_toolkit.mouse_events import MouseButton, MouseEventType
 from prompt_toolkit.utils import Event
 from prompt_toolkit.widgets import Box
 
-from euporie.core.border import OuterEigthGrid
+from euporie.core.border import OutsetGrid
 from euporie.core.data_structures import DiBool
 from euporie.core.widgets.decor import Border
 
@@ -454,7 +454,7 @@ class TabbedSplit(StackedSplit):
         on_change: Callable[[StackedSplit], None] | None = None,
         width: AnyDimension = None,
         height: AnyDimension = None,
-        border: GridStyle = OuterEigthGrid,
+        border: GridStyle = OutsetGrid,
         show_borders: DiBool | None = None,
     ) -> None:
         """Initialize a new tabbed container."""
