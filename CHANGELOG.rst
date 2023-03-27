@@ -11,6 +11,7 @@ Upcoming
 Added
 =====
 
+- Select text on find-next
 - Add support for saving changes to text files
 
 Fixed
