@@ -121,8 +121,7 @@ class EditorTab(KernelTab):
                     dialog.show(tab=self, cb=cb)
             else:
                 try:
-                    with open_file as f:
-                        f.write(self.input_box.buffer.text)
+                    open_file.write_text(self.input_box.buffer.text)
                 except Exception:
                     if dialog := self.app.dialogs.get("save-as"):
                         dialog.show(tab=self, cb=cb)

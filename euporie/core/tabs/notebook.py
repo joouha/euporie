@@ -75,7 +75,7 @@ class BaseNotebook(KernelTab, metaclass=ABCMeta):
         )
 
         # Load the notebook file
-        self.path = parse_path(path)
+        self.path = parse_path(path) if path else None
         log.debug("Loading notebooks %s", self.path)
 
         self.load(json)

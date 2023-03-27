@@ -16,6 +16,7 @@ Added
 Fixed
 =====
 
+- Improve mime-type detection
 - Make saving safer by saving to a temporary file first
 
 ----
