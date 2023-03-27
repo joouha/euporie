@@ -4,13 +4,15 @@ from __future__ import annotations
 
 import logging
 import mimetypes
-from functools import partial
+from functools import lru_cache, partial
 from typing import TYPE_CHECKING, NamedTuple
 
 from prompt_toolkit.cache import FastDictCache, SimpleCache
 from prompt_toolkit.filters import to_filter
 from upath import UPath
 from upath.implementations.http import HTTPPath
+
+from euporie.core.path import DataPath
 
 if TYPE_CHECKING:
     from typing import Any, Callable, Iterable
@@ -44,18 +46,64 @@ ERROR_OUTPUTS = {
     "formatted_text": [("fg:white bg:darkred", "(Format Conversion Error)")],
 }
 
-# def get_mime(path: "UPath") -> "str":
-# If http, do HEAD request and check "content-type" header
-# If data:// uri, mime is given in the path
-# If file has extension, guess from filename
-# Else try using python-magic
-# >>> import magic
-# >>> magic.from_buffer(open("testdata/test.pdf", "rb").read(2048))
-# 'PDF document, version 1.2'
-# >>> magic.from_file("testdata/test.pdf", mime=True)
-# 'application/pdf'
+
+@lru_cache
+def get_mime(path: UPath | str) -> str | None:
+    """Attempt to determine the mime-type of a path."""
+    path = UPath(path).resolve()
+    mime = None
+
+    # Read from path of data URI
+    if isinstance(path, DataPath):
+        mime = path._mime
+
+    # Check for Jupyter notebooks by extension
+
+    # Guess from file-extension
+    if not mime and path.suffix:
+        if path.suffix == ".ipynb":
+            return "application/x-ipynb+json"
+        else:
+            mime, _ = mimetypes.guess_type(path)
+
+    # Try using magic
+    if not mime:
+        try:
+            import magic
+        except ModuleNotFoundError:
+            pass
+        else:
+            with path.open(mode="rb") as f:
+                mime = magic.from_buffer(f.read(2048), mime=True)
+
+    # If we have a web-address, nsure we have a url
+    # Check http-headers and nsure we have a url
+    if not mime and isinstance(path, HTTPPath) and path._url is not None:
+        from fsspec.asyn import sync
+
+        # Get parsed url
+        url = path._url.geturl()
+        # Get the fsspec fs
+        fs = path._accessor._fs
+        # Ensure we have a session
+        session = sync(fs.loop, fs.set_session)
+        # Use HEAD requests if the server allows it, falling back to GETs
+        for method in (session.head, session.get):
+            r = sync(fs.loop, method, url, allow_redirects=True)
+            try:
+                r.raise_for_status()
+            except Exception:
+                log.debug("Request failed: %s", r)
+                continue
+            else:
+                mime = r.headers.get("Content-Type")
+                if mime is not None:
+                    break
+
+    return mime
 
 
+@lru_cache
 def get_format(path: UPath | str, default: str = "") -> str:
     """Attempt to guess the format of a path."""
     if isinstance(path, str):
@@ -65,7 +113,7 @@ def get_format(path: UPath | str, default: str = "") -> str:
             default = "html"
         else:
             default = "ansi"
-    mime, _ = mimetypes.guess_type(path)
+    mime = get_mime(path)
     return MIME_FORMATS.get(mime, default) if mime else default
 
 

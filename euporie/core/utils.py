@@ -48,10 +48,8 @@ class ChainedList(Sequence[T]):
         return len(self.data)
 
 
-def parse_path(path: str | PathLike | None) -> UPath | None:
+def parse_path(path: str | PathLike) -> UPath:
     """Parse and resolve a path."""
-    if path is None:
-        return None
     upath = UPath(path)
     try:
         upath = upath.expanduser()

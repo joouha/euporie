@@ -24,6 +24,7 @@ from euporie.core import __logo__
 from euporie.core.app import BaseApp
 from euporie.core.commands import add_cmd, get_cmd
 from euporie.core.config import add_setting
+from euporie.core.convert.core import MIME_FORMATS, get_mime
 from euporie.core.key_binding.registry import register_bindings
 from euporie.core.widgets.decor import Pattern
 from euporie.core.widgets.dialog import (
@@ -103,23 +104,18 @@ class NotebookApp(BaseApp):
 
     def get_file_tab(self, path: UPath) -> type[Tab]:
         """Return the tab to use for a file path."""
-        if path.suffix == ".ipynb":
+        mime = get_mime(path) or ""
+        log.debug("File %s has mime type: %s", path, mime)
+        if mime == "application/x-ipynb+json":
             return Notebook
+        elif mime in MIME_FORMATS and mime != "text/plain":
+            from euporie.notebook.tabs.display import DisplayTab
+
+            return DisplayTab
         else:
-            import mimetypes
+            from euporie.notebook.tabs.edit import EditorTab
 
-            from euporie.core.convert.core import MIME_FORMATS
-
-            mime, _ = mimetypes.guess_type(path)
-            log.debug("File %s has mime type: %s", path, mime)
-            if (mime or "").startswith("text/") and mime not in MIME_FORMATS:
-                from euporie.notebook.tabs.edit import EditorTab
-
-                return EditorTab
-            else:
-                from euporie.notebook.tabs.display import DisplayTab
-
-                return DisplayTab
+            return EditorTab
 
     async def _poll_terminal_colors(self) -> None:
         """Repeatedly query the terminal for its background and foreground colours."""

@@ -6,6 +6,7 @@ from prompt_toolkit.application.current import set_app
 
 from euporie.core.app import BaseApp
 from euporie.core.convert.core import convert, get_format
+from euporie.core.utils import parse_path
 
 if TYPE_CHECKING:
     from typing import Any, Callable, Optional
@@ -19,7 +20,6 @@ class ShowApp(BaseApp):
     def __init__(self, **kwargs: "Any") -> "None":
         """Create an app to preview files."""
         super().__init__(**kwargs)
-        # print(self.vt100_parser)
 
     def run(
         self,
@@ -32,8 +32,10 @@ class ShowApp(BaseApp):
         with set_app(self):
             size = self.output.get_size()
             for file in self.config.files:
-                data_bytes = file.read_bytes()
+                upath = parse_path(file)
+                data_bytes = upath.read_bytes()
 
+                data: str | bytes
                 try:
                     data = data_bytes.decode()
                 except UnicodeDecodeError:
@@ -42,11 +44,11 @@ class ShowApp(BaseApp):
                 self.print_text(
                     convert(
                         data=data,
-                        from_=get_format(file),
+                        from_=get_format(upath),
                         to="formatted_text",
                         rows=size.rows,
                         cols=size.columns,
-                        path=file,
+                        path=upath,
                     ),
                     style=self.create_merged_style(),
                 )

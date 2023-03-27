@@ -12,6 +12,7 @@ from html.parser import HTMLParser
 from itertools import zip_longest
 from math import ceil
 from typing import TYPE_CHECKING, NamedTuple
+from urllib.parse import urljoin
 
 from flatlatex.data import subscript, superscript
 from prompt_toolkit.application.current import get_app_session
@@ -65,7 +66,6 @@ from euporie.core.formatted_text.utils import (
     strip_one_trailing_newline,
     truncate,
 )
-from euporie.core.url import load_url
 
 
 class CssSelector(NamedTuple):
@@ -2217,8 +2217,8 @@ def parse_styles(soup: Node, base_url: UPath) -> CssSelectors:
             and child.attrs.get("rel") == "stylesheet"
             and (href := child.attrs.get("href"))
         ):
-            if css_bytes := load_url(href, base_url):
-                css_str = css_bytes.decode()
+            css_path = UPath(urljoin(str(base_url), str(href)))
+            css_str = css_path.read_text()
 
         # In case of a <style> tab, load first child's text
         elif child.name == "style":
@@ -2370,7 +2370,8 @@ class HTML:
         # Load images
         for child in self.soup.descendents:
             if child.name == "img" and (src := child.attrs.get("src")):
-                if data := load_url(src, self.base):
+                data_path = UPath(urljoin(str(self.base), src))
+                if data := data_path.read_bytes():
                     child.attrs["_data"] = data
                 else:
                     child.attrs["_missing"] = "true"
@@ -3238,8 +3239,9 @@ if __name__ == "__main__":
 
     from euporie.core.app import BaseApp
     from euporie.core.style import HTML_STYLE
+    from euporie.core.utils import parse_path
 
-    path = UPath(sys.argv[1])
+    path = parse_path(sys.argv[1])
 
     with create_app_session(input=BaseApp.load_input(), output=BaseApp.load_output()):
         with set_app(BaseApp()):
