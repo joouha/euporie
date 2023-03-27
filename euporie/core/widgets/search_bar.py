@@ -9,6 +9,7 @@ from prompt_toolkit.filters.app import is_searching
 from prompt_toolkit.key_binding.vi_state import InputMode
 from prompt_toolkit.layout.controls import BufferControl, SearchBufferControl
 from prompt_toolkit.search import SearchDirection
+from prompt_toolkit.selection import SelectionState
 from prompt_toolkit.widgets import SearchToolbar as PtkSearchToolbar
 
 from euporie.core.commands import add_cmd
@@ -113,10 +114,7 @@ def start_global_search(
     app.vi_state.input_mode = InputMode.INSERT
 
 
-@add_cmd(
-    menu_title="Find",
-    # filter=control_is_searchable,
-)
+@add_cmd(menu_title="Find")
 def find() -> None:
     """Enter search mode."""
     start_global_search(direction=SearchDirection.FORWARD)
@@ -142,10 +140,13 @@ def find_prev_next(direction: SearchDirection) -> None:
         search_state = control.search_state
         search_state.direction = direction
         # Apply search to buffer
-        control.buffer.apply_search(
-            search_state, include_current_position=False, count=1
+        buffer = control.buffer
+        buffer.apply_search(search_state, include_current_position=False, count=1)
+        # Set selection
+        buffer.selection_state = SelectionState(
+            buffer.cursor_position + len(search_state.text)
         )
-    # break
+        buffer.selection_state.enter_shift_mode()
 
 
 @add_cmd()
