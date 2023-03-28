@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Terminal=true
+Name=Euporie Notebook
+Icon=utilities-terminal
+Exec=bash -i -c 'euporie-notebook %f'
+Categories=Application;
