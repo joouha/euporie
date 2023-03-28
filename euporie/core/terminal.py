@@ -382,7 +382,9 @@ class TerminalInfo:
             key = getattr(Keys, key_name)
 
             # Register this key with the parser if supported
-            if parser := getattr(self.input, "vt100_parser", None):
+            if (parser := getattr(self.input, "vt100_parser", None)) and hasattr(
+                parser, "queries"
+            ):
                 # Register the key
                 parser.queries[key] = query.pattern
 

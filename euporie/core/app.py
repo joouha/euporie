@@ -389,10 +389,7 @@ class BaseApp(Application):
             async def await_terminal_feedback() -> None:
                 try:
                     # Send queries to the terminal if supported
-                    if self.input.__class__.__name__ in (
-                        "Vt100Input",
-                        "PosixPipeInput",
-                    ):
+                    if self.input.__class__.__name__ == "Vt100Input":
                         self.term_info.send_all()
                         # Give the terminal a chance to respond
                         await asyncio.sleep(0.1)
@@ -421,6 +418,7 @@ class BaseApp(Application):
 
         """
         input_ = create_input(always_prefer_tty=True)
+
         if stdin := getattr(input_, "stdin", None):
             if not stdin.isatty():
                 from euporie.core.io import IgnoredInput
