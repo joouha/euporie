@@ -18,6 +18,7 @@ Added
 Fixed
 =====
 
+- Prevent crash when connecting to ``euporie-hub``
 - Improve mime-type detection
 - Make saving safer by saving to a temporary file first
 

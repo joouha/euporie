@@ -125,14 +125,14 @@ dependencies = [
 check = [
     "ssort --check {args:euporie tests scripts}",
     "black --check {args:euporie tests scripts}",
-    "codespell {args:euporie tests scripts}",
     "ruff {args:euporie tests scripts}",
+    "codespell {args:.}",
 ]
 fix = [
     "ssort {args:euporie tests scripts}",
     "black {args:euporie tests scripts}",
-    "codespell {args:-- euporie tests scripts}",
     "ruff --fix {args:euporie tests scripts}",
+    "codespell -i 3 -w {args:.}",
 ]
 
 [tool.hatch.envs.type]
