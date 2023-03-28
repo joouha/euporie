@@ -87,6 +87,9 @@ argparse = 'euporie.core.pygments:ArgparseLexer'
 [project.entry-points."pygments.styles"]
 euporie = 'euporie.core.pygments:EuporiePygmentsStyle'
 
+[tool.hatch.build.targets.wheel.shared-data]
+"euporie/data/desktop" = "share/applications/"
+"euporie/data/bin" = "bin/"
 
 [tool.hatch.version]
 path = "euporie/core/__init__.py"

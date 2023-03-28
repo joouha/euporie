@@ -11,6 +11,7 @@ Upcoming
 Added
 =====
 
+- Add "*.desktop" files
 - Select text on find-next
 - Add support for saving changes to text files
 

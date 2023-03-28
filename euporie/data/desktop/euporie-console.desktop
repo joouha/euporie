@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Terminal=true
+Name=Euporie Console
+Icon=utilities-terminal
+Exec=bash -i -c 'euporie-console %f'
+Categories=Application;
