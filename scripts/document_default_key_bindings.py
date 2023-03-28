@@ -21,7 +21,7 @@ groups = [
     "euporie.notebook.app.NotebookApp",
     "euporie.notebook.tabs.notebook.Notebook",
     "euporie.console.app.ConsoleApp",
-    "euporie.console.tabs.console.Console",
+    "euporie.console.tabs.console.ConsoleTab",
     "euporie.preview.app.PreviewApp",
     "euporie.core.widgets.pager.Pager",
     "euporie.core.widgets.inputs.KernelInput",
