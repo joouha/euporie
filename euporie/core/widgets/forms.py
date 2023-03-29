@@ -1133,6 +1133,22 @@ class SelectableWidget(metaclass=ABCMeta):
         for i in range(len(self.options)):
             self._selected[i] = i in values
 
+    @property
+    def value(self) -> Any:
+        """Return the selected value."""
+        if self.options:
+            return self.options[self.index]
+        else:
+            return None
+
+    @property
+    def values(self) -> list[Any]:
+        """Return a list of the selected values."""
+        if self.options:
+            return [self.options[i] for i in self.indices]
+        else:
+            return [None for i in self.indices]
+
     def mouse_handler(self, i: int, mouse_event: MouseEvent) -> NotImplementedOrNone:
         """Handle mouse events."""
         if self.disabled():
@@ -1252,7 +1268,12 @@ class Select(SelectableWidget):
     def text_fragments(self) -> StyleAndTextTuples:
         """Create a list of formatted text fragments to display."""
         ft: StyleAndTextTuples = []
-        max_width = max(fragment_list_width(to_formatted_text(x)) for x in self.labels)
+        if self.labels:
+            max_width = max(
+                fragment_list_width(to_formatted_text(x)) for x in self.labels
+            )
+        else:
+            max_width = 1
         for i, label in enumerate(self.labels):
             label = to_formatted_text(label)
             label = align(label, FormattedTextAlign.LEFT, width=max_width)
@@ -1277,7 +1298,8 @@ class Select(SelectableWidget):
                 (f"{fragment_style} {style}", text, handler)
                 for fragment_style, text, *_ in ft_option
             ]
-        ft.pop()
+        if ft:
+            ft.pop()
         return ft
 
     def load_container(self) -> AnyContainer:

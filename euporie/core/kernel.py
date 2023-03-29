@@ -9,14 +9,14 @@ import threading
 from collections import defaultdict
 from subprocess import DEVNULL  # noqa S404 - Security implications considered
 from typing import TYPE_CHECKING, TypedDict
+from uuid import uuid4
 
 import nbformat
 from _frozen_importlib import _DeadlockError
 from jupyter_client import AsyncKernelManager, KernelManager
 from jupyter_client.kernelspec import NATIVE_KERNEL_NAME, NoSuchKernel
-from jupyter_core.paths import jupyter_path
-
-from euporie.core.config import add_setting
+from jupyter_core.paths import jupyter_path, jupyter_runtime_dir
+from upath import UPath
 
 if TYPE_CHECKING:
     from typing import Any, Callable, Coroutine
@@ -64,6 +64,7 @@ class Kernel:
         threaded: bool = True,
         allow_stdin: bool = False,
         default_callbacks: MsgCallbacks | None = None,
+        connection_file: UPath | None = None,
     ) -> None:
         """Call when the :py:class:`Kernel` is initialized.
 
@@ -72,6 +73,8 @@ class Kernel:
             threaded: If :py:const:`True`, run kernel communication in a separate thread
             allow_stdin: Whether the kernel is allowed to request input
             default_callbacks: The default callbacks to use on recipt of a message
+            connection_file: Path to a file from which to load or to hwich to save
+                kernel connection information
 
         """
         self.threaded = threaded
@@ -86,6 +89,7 @@ class Kernel:
         self.allow_stdin = allow_stdin
 
         self.kernel_tab = kernel_tab
+        self.connection_file = connection_file
         self.kc: KernelClient | None = None
         self.km = AsyncKernelManager(
             kernel_name=str(kernel_tab.kernel_name),
@@ -272,10 +276,22 @@ class Kernel:
 
         # If we are connecting to an existing kernel, create a kernel client using
         # the given connection file
-        if self.kernel_tab.app.config.kernel_connection_file:
-            connection_file = self.kernel_tab.app.config.kernel_connection_file
-            self.km.load_connection_file(connection_file)
-            kc = self.km.client_factory(connection_file=connection_file)
+        if (connection_file := self.connection_file) is None:
+            id_ = str(uuid4())[:8]
+            connection_file = (
+                UPath(jupyter_runtime_dir()) / f"kernel-euporie-{id_}.json"
+            )
+        log.debug(connection_file)
+        connection_file_str = str(connection_file)
+        self.km.connection_file = connection_file_str
+
+        if connection_file.exists():
+            log.debug(
+                "Connecting to existing kernel using connection file '%s'",
+                connection_file,
+            )
+            self.km.load_connection_file(connection_file_str)
+            kc = self.km.client_factory(connection_file=connection_file_str)
             kc.load_connection_file()
             kc.start_channels()
             self.kc = kc
@@ -997,22 +1013,29 @@ class Kernel:
             callback=cb,
         )
 
-    def change(self, name: str, cb: Callable | None = None) -> None:
+    def change(
+        self,
+        name: str | None,
+        connection_file: UPath | None = None,
+        cb: Callable | None = None,
+    ) -> None:
         """Change the kernel.
 
         Args:
             name: The name of the kernel to change to
+            connection_file: The path to the connection file to use
             cb: Callback to run once restarted
 
         """
+        self.connection_file = connection_file
         self.status = "starting"
 
         # Update the tab's kernel spec
         spec = self.specs.get(name, {}).get("spec", {})
         self.kernel_tab.metadata["kernelspec"] = {
             "name": name,
-            "display_name": spec["display_name"],
-            "language": spec["language"],
+            "display_name": spec.get("display_name", ""),
+            "language": spec.get("language", ""),
         }
 
         # Stop the old kernel
@@ -1021,7 +1044,8 @@ class Kernel:
 
         # Create a new kernel manager instance
         del self.km
-        self.km = AsyncKernelManager(kernel_name=name)
+        kwargs = {} if name is None else {"kernel_name": name}
+        self.km = AsyncKernelManager(**kwargs)
         self.error = None
 
         # Start the kernel
@@ -1053,12 +1077,14 @@ class Kernel:
 
     async def shutdown_(self) -> None:
         """Shut down the kernel and close the event loop if running in a thread."""
+        # Clean up connection file
+        self.km.cleanup_connection_file()
+        # Stop kernel
         if self.km.has_kernel:
             await self.km.shutdown_kernel(now=True)
+        # Stop event loop
         if self.threaded:
             self.loop.stop()
-            self.loop.close()
-            log.debug("Loop closed")
 
     def shutdown(self, wait: bool = False) -> None:
         """Shutdown the kernel and close the kernel's thread.
@@ -1076,17 +1102,3 @@ class Kernel:
         )
         if self.threaded:
             self.thread.join(timeout=5)
-
-    # ################################### Settings ####################################
-
-    add_setting(
-        name="kernel_connection_file",
-        flags=["--kernel-connection-file"],
-        type_=str,
-        help_="Attempt to connect to an existing kernel using a JSON connection info file",
-        default="",
-        description="""
-            Load connection info from JSON dict. This allows euporie to connect to
-            existing kernels.
-        """,
-    )

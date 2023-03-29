@@ -493,6 +493,7 @@ class TabbedSplit(StackedSplit):
                         padding=0,
                         padding_top=1,
                         padding_bottom=1,
+                        style="class:tabbed-split,page",
                     ),
                     border=self.border,
                     show_borders=self.show_borders,

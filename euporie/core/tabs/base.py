@@ -77,8 +77,12 @@ class Tab(metaclass=ABCMeta):
             cb: A function to call after the tab is closed.
 
         """
+        # Shutdown kernel
+        self.kernel.shutdown()
+        # Clean up status-bar
         if self in self.app.container_statuses:
             del self.app.container_statuses[self]
+        # Run callback
         if callable(cb):
             cb()
 
@@ -142,6 +146,7 @@ class KernelTab(Tab, metaclass=ABCMeta):
         kernel: Kernel | None = None,
         comms: dict[str, Comm] | None = None,
         use_kernel_history: bool = False,
+        connection_file: str | None = None,
     ) -> None:
         """Create a new instance of a tab with a kernel."""
         super().__init__(app, path)
@@ -156,6 +161,7 @@ class KernelTab(Tab, metaclass=ABCMeta):
                 kernel_tab=self,
                 allow_stdin=self.allow_stdin,
                 default_callbacks=self.default_callbacks,
+                connection_file=connection_file,
             )
         self.comms: dict[str, Comm] = comms or {}  # The client-side comm states
         self.completer: Completer = KernelCompleter(self.kernel)
@@ -320,7 +326,7 @@ class KernelTab(Tab, metaclass=ABCMeta):
 
     add_setting(
         name="kernel_name",
-        flags=["--kernel-name"],
+        flags=["--kernel-name", "--kernel"],
         type_=str,
         help_="The name of the kernel to start by default",
         default="python3",
