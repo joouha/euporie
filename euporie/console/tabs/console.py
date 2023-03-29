@@ -28,6 +28,7 @@ from prompt_toolkit.layout.containers import (
 )
 from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.layout.layout import Layout
+from upath import UPath
 
 from euporie.core.commands import add_cmd, get_cmd
 from euporie.core.config import add_setting
@@ -59,7 +60,6 @@ if TYPE_CHECKING:
     from prompt_toolkit.key_binding.key_bindings import NotImplementedOrNone
     from prompt_toolkit.key_binding.key_processor import KeyPressEvent
     from prompt_toolkit.layout.containers import Float
-    from upath import UPath
 
     from euporie.core.app import BaseApp
 
@@ -78,6 +78,7 @@ class ConsoleTab(KernelTab):
         app: BaseApp,
         path: UPath | None = None,
         use_kernel_history: bool = True,
+        connection_file: str = "",
     ) -> None:
         """Create a new :py:class:`ConsoleTab` tab instance.
 
@@ -85,6 +86,7 @@ class ConsoleTab(KernelTab):
             app: The euporie application the console tab belongs to
             path: A file path to open (not used currently)
             use_kernel_history: If :const:`True`, history will be loaded from the kernel
+            connection_file: The connection file of an existing kernel
         """
         # Kernel setup
         self._metadata = {}
@@ -105,7 +107,12 @@ class ConsoleTab(KernelTab):
         )
         self.kernel_tab = self
 
-        super().__init__(app=app, path=path, use_kernel_history=use_kernel_history)
+        super().__init__(
+            app=app,
+            path=path,
+            use_kernel_history=use_kernel_history,
+            connection_file=app.config.connection_file,
+        )
 
         self.lang_info: dict[str, Any] = {}
         self.execution_count = 0
@@ -641,6 +648,21 @@ class ConsoleTab(KernelTab):
         description="""
             Defines the maximum number of executed "cells" to store in case the console
             session is saved to a file or converted into a notebook.
+        """,
+    )
+
+    add_setting(
+        name="connection_file",
+        flags=["--connection-file", "--kernel-connection-file"],
+        type_=UPath,
+        help_="Attempt to connect to an existing kernel using a JSON connection info file",
+        default=None,
+        description="""
+            If the file does not exist, kernel connection information will be written
+            to the file path provided.
+
+            If the file exists, kernel connection info will be read from the file,
+            allowing euporie to connect to existing kernels.
         """,
     )
 

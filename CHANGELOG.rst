@@ -11,6 +11,7 @@ Upcoming
 Added
 =====
 
+- Add ability to select an existing kernel when changing a notebook's kernel
 - Add "*.desktop" files
 - Select text on find-next
 - Add support for saving changes to text files

@@ -6,6 +6,7 @@ import logging
 import traceback
 from abc import ABCMeta, abstractmethod
 from functools import partial
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from prompt_toolkit.cache import SimpleCache
@@ -191,7 +192,7 @@ class Dialog(Float, metaclass=ABCMeta):
         self.buttons_kb = KeyBindings()
 
         # Create title row
-        title_window = Window(height=1, style="class:dialog,title")
+        title_window = Window(height=1, style="class:dialog,dialog-title")
         title_window.content = DialogTitleControl(
             lambda: self.title, self, title_window
         )
@@ -589,13 +590,19 @@ class SelectKernelDialog(Dialog):
     def load(
         self,
         kernel_specs: dict[str, Any] | None = None,
+        runtime_dirs: dict[str, Path] | None = None,
         tab: KernelTab | None = None,
         message: str = "",
     ) -> None:
         """Load dialog body & buttons."""
-        kernel_specs = kernel_specs or {}
+        from jupyter_core.paths import jupyter_runtime_dir
 
-        options = Select(
+        from euporie.core.widgets.layout import TabbedSplit
+
+        kernel_specs = kernel_specs or {}
+        runtime_dirs = runtime_dirs or {}
+
+        options_specs = Select(
             options=list(kernel_specs.keys()),
             labels=[
                 kernel_spec.get("spec", {}).get("display_name", kernel_name)
@@ -609,20 +616,49 @@ class SelectKernelDialog(Dialog):
             dont_extend_width=False,
         )
 
-        msg_ft = (f"{message}\n" if message else "") + "Please select a kernel:\n"
+        connection_files = {
+            path.name: path
+            for path in Path(jupyter_runtime_dir()).glob("kernel-*.json")
+        }
+        options_files = Select(
+            options=list(connection_files.values()),
+            labels=list(connection_files.keys()),
+            style="class:input,radio-buttons",
+            prefix=("○", "◉"),
+            multiple=False,
+            border=None,
+            rows=5,
+            dont_extend_width=False,
+        )
+
+        msg_ft = (f"{message}\n\n" if message else "") + "Please select a kernel:"
 
         self.body = HSplit(
             [
                 Label(msg_ft),
-                FocusedStyle(options),
+                tabs := TabbedSplit(
+                    [
+                        FocusedStyle(options_specs),
+                        FocusedStyle(options_files),
+                    ],
+                    titles=["New", "Existing"],
+                    width=Dimension(min=30),
+                ),
             ]
         )
 
         def _change_kernel() -> None:
             self.hide()
             assert tab is not None
-            name = options.options[options.index or 0]
-            tab.kernel.change(name, cb=tab.kernel_started)
+            if tabs.active == 0:
+                name = options_specs.value
+                connection_file = None
+            else:
+                name = None
+                connection_file = options_files.value
+            tab.kernel.change(
+                name=name, connection_file=connection_file, cb=tab.kernel_started
+            )
 
         self.buttons = {
             "Select": _change_kernel,
