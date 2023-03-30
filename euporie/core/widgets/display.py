@@ -1053,6 +1053,32 @@ class GraphicFloat(Float):
             self.control.data = value
             self.control.reset()
 
+    @property
+    def format_(self) -> str:
+        """Return the graphic's current data format."""
+        if self.control is not None:
+            return self.control.format_
+        return ""
+
+    @format_.setter
+    def format_(self, value: str) -> None:
+        """Set the graphic float's data format."""
+        if self.control is not None:
+            self.control.format_ = value
+
+    @property
+    def path(self) -> UPath | None:
+        """Return the graphic's current data path."""
+        if self.control is not None:
+            return self.control.path
+        return None
+
+    @path.setter
+    def path(self, value: UPath | None) -> None:
+        """Set the graphic float's data path."""
+        if self.control is not None:
+            self.control.path = value
+
 
 class Display:
     """Rich output displays.
@@ -1174,6 +1200,28 @@ class Display:
         """Set the display container's data."""
         self.control.data = value
         self.graphic_float.data = value
+
+    @property
+    def format_(self) -> str:
+        """Return the display's current data format."""
+        return self.control.format_
+
+    @format_.setter
+    def format_(self, value: str) -> None:
+        """Set the display container's data format."""
+        self.control.format_ = value
+        self.graphic_float.format_ = value
+
+    @property
+    def path(self) -> UPath | None:
+        """Return the display's current data path."""
+        return self.control.path
+
+    @path.setter
+    def path(self, value: UPath | None) -> None:
+        """Set the display container's data path."""
+        self.control.path = value
+        self.graphic_float.path = value
 
     def make_sizing_func(
         self, data: Any, format_: str, fg: str | None, bg: str | None

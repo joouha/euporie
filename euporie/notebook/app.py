@@ -108,6 +108,10 @@ class NotebookApp(BaseApp):
         log.debug("File %s has mime type: %s", path, mime)
         if mime == "application/x-ipynb+json":
             return Notebook
+        elif mime == "text/html":
+            from euporie.web.tabs.web import WebTab
+
+            return WebTab
         elif mime in MIME_FORMATS and mime != "text/plain":
             from euporie.notebook.tabs.display import DisplayTab
 

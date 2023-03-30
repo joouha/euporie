@@ -258,6 +258,7 @@ def convert(
                     partial(func, output, cols, rows, fg, bg, path),
                 )
             except Exception:
+                log.exception("An error occurred during format conversion")
                 output = None
             if output is None:
                 log.error(
