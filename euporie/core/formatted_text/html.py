@@ -795,22 +795,39 @@ class Theme(Mapping):
     @cached_property
     def inherited_theme(self) -> dict[str, str]:
         """Calculate the theme inherited from the element's parent."""
+        theme: dict[str, str] = {}
+        parent = self.element.parent
+
+        # Text elements inherit from direct inline parents
+        if self.element.name == "text" and parent is not None:
+            inline_parent_themes = []
+            while parent.theme.d_inline:
+                inline_parent_themes.append(parent.theme.theme)
+                parent = parent.parent
+                if parent is None:
+                    break
+            for inherited_theme in inline_parent_themes:
+                theme.update(inherited_theme)
+
+        # Inherit heritable properties from the parent element's theme
+        # unless the default value is unset
         if (parent_theme := self.parent_theme) is not None:
             browser_css = self.browser_css_theme
-            return {
-                k: v
-                for part in (
-                    parent_theme.inherited_theme,
-                    parent_theme.dom_css_theme,
-                    parent_theme.attributes_theme,
-                    parent_theme.style_attribute_theme,
-                )
-                for k, v in part.items()
-                if k in _HERITABLE_PROPS and browser_css.get(k) != "unset"
-            }
+            theme.update(
+                {
+                    k: v
+                    for part in (
+                        parent_theme.inherited_theme,
+                        parent_theme.dom_css_theme,
+                        parent_theme.attributes_theme,
+                        parent_theme.style_attribute_theme,
+                    )
+                    for k, v in part.items()
+                    if k in _HERITABLE_PROPS and browser_css.get(k) != "unset"
+                }
+            )
 
-        else:
-            return {}
+        return theme
 
     @cached_property
     def style_attribute_theme(self) -> dict[str, str]:
@@ -1995,6 +2012,36 @@ class Node:
         """Find all child elements of a given tag type."""
         return [element for element in self.contents if element.name == tag]
 
+    @cached_property
+    def renderable_contents(self) -> list[Node]:
+        """List the node's contents including '::before' and '::after' elements."""
+        # Do not add '::before' and '::after' elements to themselves
+        if self.name.startswith("::") or self.name == "text":
+            return self.contents
+
+        contents = []
+
+        # Add ::before node
+        before_node = Node(dom=self.dom, name="::before", parent=self)
+        if text := before_node.theme.theme.get("content", "").strip('"'):
+            before_node.contents.append(
+                Node(dom=self.dom, name="text", parent=before_node, text=text)
+            )
+            contents.append(before_node)
+
+        # Add HTML contents
+        contents.extend(self.contents)
+
+        # Add ::after node
+        after_node = Node(dom=self.dom, name="::after", parent=self)
+        if text := after_node.theme.theme.get("content", "").strip('"'):
+            after_node.contents.append(
+                Node(dom=self.dom, name="text", parent=after_node, text=text)
+            )
+            contents.append(after_node)
+
+        return contents
+
     @property
     def descendents(self) -> Generator[Node, None, None]:
         """Yield all descendent elements."""
@@ -2002,9 +2049,22 @@ class Node:
             yield child
             yield from child.descendents
 
+    @property
+    def renderable_descendents(self) -> Generator[Node, None, None]:
+        """Yield descendents, including pseudo and skipping inline elements."""
+        for child in self.renderable_contents:
+            if (
+                child.theme.d_inline
+                and child.renderable_contents
+                and child.name != "text"
+            ):
+                yield from child.renderable_descendents
+            else:
+                yield child
+
     @cached_property
     def parents(self) -> list[Node]:
-        """Yield all descendent elements."""
+        """Yield all parent elements."""
         parents = []
         parent = self.parent
         while parent is not None:
@@ -2215,9 +2275,9 @@ def parse_styles(soup: Node, base_url: UPath) -> CssSelectors:
         if (
             child.name == "link"
             and child.attrs.get("rel") == "stylesheet"
-            and (href := child.attrs.get("href"))
+            and (href := child.attrs.get("href", ""))
         ):
-            css_path = UPath(urljoin(str(base_url), str(href)))
+            css_path = UPath(urljoin(str(base_url), href))
             css_str = css_path.read_text()
 
         # In case of a <style> tab, load first child's text
@@ -2232,6 +2292,7 @@ def parse_styles(soup: Node, base_url: UPath) -> CssSelectors:
         # Remove comments
         css_str = re.sub(r"\/\*[^\*]+\*\/", "", css_str)
         # Replace ':before' and ':after' with '::before' and '::after'
+        # for compatibility with old CSS
         css_str = re.sub("(?<!:):(?=before|after)", "::", css_str)
         # Allow plain '@media screen' queries
         css_str = re.sub(
@@ -2399,11 +2460,9 @@ class HTML:
             bullet = f"{element.attrs['value']}."
         # Add bullet element
         if bullet:
-            bullet_element = Node(
-                dom=self,
-                name="::marker",
-                parent=element,
-                contents=[Node(dom=self, name="text", parent=element, text=bullet)],
+            bullet_element = Node(dom=self, name="::marker", parent=element)
+            bullet_element.contents.append(
+                Node(dom=self, name="text", parent=bullet_element, text=bullet)
             )
             if theme.list_style_position == "inside":
                 element.contents.insert(0, bullet_element)
@@ -2668,7 +2727,7 @@ class HTML:
         content_width = theme.content_width
         # content_height = theme.content_height
         src = str(element.attrs.get("src", ""))
-        path = UPath(src)
+        path = UPath(urljoin(str(self.base), src))
 
         if data := element.attrs.get("_data"):
             # Display it graphically
@@ -2767,16 +2826,6 @@ class HTML:
         )
         return ft
 
-    def render_br_content(
-        self,
-        element: Node,
-        left: int = 0,
-        fill: bool = True,
-        align_content: bool = True,
-    ) -> StyleAndTextTuples:
-        """Render line breaks."""
-        return [("", "\n")]
-
     def render_node_content(
         self,
         element: Node,
@@ -2795,19 +2844,6 @@ class HTML:
         line_height = 1
         baseline = 0
 
-        # Add "::before"  and "::after" nodes
-        # TODO - do we have to do this for every element?
-        for name, pos in (("::before", 0), ("::after", 1)):
-            if not element.name.startswith("::"):
-                content_node = Node(dom=element.dom, name=name, parent=element)
-                if text := content_node.theme.get("content", "").strip('"'):
-                    content_node.contents.append(
-                        Node(
-                            dom=element.dom, name="text", parent=content_node, text=text
-                        )
-                    )
-                    element.contents.insert(pos * len(element.contents), content_node)
-
         parent_theme = element.theme
 
         d_blocky = d_inline = d_inline_block = False
@@ -2819,13 +2855,21 @@ class HTML:
 
         content_width = parent_theme.content_width
 
-        new_line = []
+        new_line: StyleAndTextTuples = []
 
         # Render each child node
-        for child in element.contents:
+        for child in element.renderable_descendents:
             theme = child.theme
 
             if theme.skip:
+                continue
+
+            # Start a new line if we encounter a <br> element
+            if child.name == "br":
+                ft = join_lines([ft, new_line]) if ft else new_line
+                new_line = []
+                left = 0
+                line_height = 1
                 continue
 
             # We will start a new line if the previous item was a block
@@ -2858,7 +2902,7 @@ class HTML:
                 self.floats[(theme.z_index, theme.position)] = rendering
 
             # if theme.theme["position"] == "absolute":
-            # self.floats[(theme.z_index, theme.position)] = rendering
+            #     self.floats[(theme.z_index, theme.position)] = rendering
 
             # if theme.theme["position"] == "relative":
             # ... TODO ..
@@ -2978,7 +3022,7 @@ class HTML:
                         new_line.extend(token)
                         new_rows = [new_line]
                         baseline = int(theme.vertical_align * (token_height - 1))
-
+                        line_height = max(line_height, token_height)
                     else:
                         new_line, baseline = concat(
                             ft_a=new_line,
@@ -3158,7 +3202,7 @@ class HTML:
             content_width = max_line_width(ft)
 
         # Add padding & border
-        if d_blocky or d_inline_block or d_inline:
+        if d_blocky or d_inline_block:
             padding = theme.padding
             border_visibility = theme.border_visibility
             if (any(padding) or any(border_visibility)) and not (
@@ -3173,6 +3217,33 @@ class HTML:
                     border_style=theme.border_style,
                     padding=padding,
                 )
+
+        # Draw borders and padding on text inside inline elements
+        elif element.name == "text":
+            padding = theme.padding
+            border_visibility = theme.border_visibility
+            if (
+                padding.left
+                or padding.right
+                or border_visibility.left
+                or border_visibility.right
+            ):
+                if not element.is_first_child_node:
+                    border_visibility = border_visibility._replace(left=False)
+                    padding = padding._replace(left=0)
+                if not element.is_last_child_node:
+                    border_visibility = border_visibility._replace(right=False)
+                    padding = padding._replace(right=0)
+                if any(padding) or any(border_visibility):
+                    ft = add_border(
+                        ft,
+                        style=f"{theme.style} nounderline",
+                        border_grid=theme.border_grid,
+                        width=content_width if not ft else None,
+                        border_visibility=border_visibility,
+                        border_style=theme.border_style,
+                        padding=padding,
+                    )
 
         # The "::marker" element is drawn in the margin, before any padding
         # If the element has no margin, it can end up in the parent's padding
