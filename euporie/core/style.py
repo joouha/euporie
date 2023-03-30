@@ -620,7 +620,7 @@ def build_style(
         "input inset border top selection focused": f"fg:{cp.hl.lighter(0.5)}",
         "input inset border left selection focused": f"fg:{cp.hl.lighter(0.5)}",
         "input text placeholder": f"fg:{cp.fg.more(0.6)}",
-        "input text text-area": f"bg:{cp.bg.lighter(0.1)}",
+        "input text text-area": f"fg:default bg:{cp.bg.lighter(0.1)}",
         "input text border top": f"fg:{cp.bg.darker(0.5)}",
         "input text border right": f"fg:{cp.bg.lighter(0.25)}",
         "input text border bottom": f"fg:{cp.bg.lighter(0.25)}",

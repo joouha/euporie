@@ -126,13 +126,13 @@ check = [
     "ssort --check {args:euporie tests scripts}",
     "black --check {args:euporie tests scripts}",
     "ruff {args:euporie tests scripts}",
-    "codespell {args:.}",
+    "codespell {args:euporie tests scripts docs/pages}",
 ]
 fix = [
     "ssort {args:euporie tests scripts}",
     "black {args:euporie tests scripts}",
     "ruff --fix {args:euporie tests scripts}",
-    "codespell -i 3 -w {args:.}",
+    "codespell -i 3 -w {args:euporie tests scripts docs/pages}",
 ]
 
 [tool.hatch.envs.type]
