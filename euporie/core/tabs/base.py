@@ -77,8 +77,6 @@ class Tab(metaclass=ABCMeta):
             cb: A function to call after the tab is closed.
 
         """
-        # Shutdown kernel
-        self.kernel.shutdown()
         # Clean up status-bar
         if self in self.app.container_statuses:
             del self.app.container_statuses[self]
@@ -146,7 +144,7 @@ class KernelTab(Tab, metaclass=ABCMeta):
         kernel: Kernel | None = None,
         comms: dict[str, Comm] | None = None,
         use_kernel_history: bool = False,
-        connection_file: str | None = None,
+        connection_file: UPath | None = None,
     ) -> None:
         """Create a new instance of a tab with a kernel."""
         super().__init__(app, path)
@@ -170,6 +168,11 @@ class KernelTab(Tab, metaclass=ABCMeta):
             KernelHistory(self.kernel) if use_kernel_history else InMemoryHistory()
         )
         self.suggester: AutoSuggest = HistoryAutoSuggest(self.history)
+
+    def close(self, cb: Callable | None = None) -> None:
+        """Shut down kernel when tab is closed."""
+        self.kernel.shutdown()
+        super().close(cb)
 
     def interrupt_kernel(self) -> None:
         """Interrupt the current `Notebook`'s kernel."""
