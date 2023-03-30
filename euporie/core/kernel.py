@@ -1031,7 +1031,7 @@ class Kernel:
         self.status = "starting"
 
         # Update the tab's kernel spec
-        spec = self.specs.get(name, {}).get("spec", {})
+        spec = self.specs.get(name or "", {}).get("spec", {})
         self.kernel_tab.metadata["kernelspec"] = {
             "name": name,
             "display_name": spec.get("display_name", ""),

@@ -1137,7 +1137,7 @@ class SelectableWidget(metaclass=ABCMeta):
     def value(self) -> Any:
         """Return the selected value."""
         if self.options:
-            return self.options[self.index]
+            return self.options[self.index or 0]
         else:
             return None
 
