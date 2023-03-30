@@ -1225,11 +1225,11 @@ class Theme(Mapping):
             elif border_color := get_color(color_str):
                 style += f" fg:{border_color}"
 
-            if getattr(self.border_line, direction) in {
-                UpperRightEighthLine,
-                LowerLeftEighthLine,
-            }:
-                style += f" bg:{self.background_color}"
+            # if getattr(self.border_line, direction) in {
+            #     UpperRightEighthLine,
+            #     LowerLeftEighthLine,
+            # }:
+            style += f" bg:{self.background_color}"
 
             output[direction] = style
 
@@ -2857,6 +2857,20 @@ class HTML:
 
         new_line: StyleAndTextTuples = []
 
+        def flush() -> None:
+            """Add the current line to the rendered output."""
+            nonlocal new_line, ft, left, line_height, baseline
+            if new_line:
+                # Pad the new-line to form an alignable block
+                new_line = pad(new_line, style=parent_theme.style)
+                # Combine with the output
+                ft = join_lines([ft, new_line]) if ft else new_line
+                new_line = []
+                left = 0
+                line_height = 1
+                new_line = []
+                baseline = 0
+
         # Render each child node
         for child in element.renderable_descendents:
             theme = child.theme
@@ -2866,10 +2880,7 @@ class HTML:
 
             # Start a new line if we encounter a <br> element
             if child.name == "br":
-                ft = join_lines([ft, new_line]) if ft else new_line
-                new_line = []
-                left = 0
-                line_height = 1
+                flush()
                 continue
 
             # We will start a new line if the previous item was a block
@@ -3007,16 +3018,19 @@ class HTML:
                                 ]
                             )
 
-                        ft = join_lines([ft, *transformed_rows]) if ft else new_line
-
                         float_lines_left = float_lines_left[line_height:]
                         float_lines_right = float_lines_right[line_height:]
 
-                        new_rows = [[]]
-                        new_line = []
-                        line_height = 1
-                        left = 0
+                        # Manually flush the transformed lines
+                        if ft:
+                            ft = join_lines([ft, *transformed_rows])
+                        else:
+                            ft = join_lines(transformed_rows)
                         baseline = 0
+                        new_rows = [[]]
+                        left = 0
+                        line_height = 1
+                        new_line = []
 
                     if line_height == token_height == 1 or not new_line:
                         new_line.extend(token)
@@ -3040,9 +3054,7 @@ class HTML:
             # end of the output
             else:
                 # Flush the latest line
-                if new_line:
-                    ft = join_lines([ft, new_line]) if ft else new_line
-                    new_line = []
+                flush()
                 # Start block elements on a new line
                 if ft and d_blocky and last_char(ft) != "\n":
                     ft.append(("", "\n"))
@@ -3097,8 +3109,7 @@ class HTML:
             new_line = []
 
         # Flush any current lines
-        if new_line:
-            ft = join_lines([ft, new_line]) if ft else new_line
+        flush()
 
         # Draw flex elements
         # if parent_theme.get("flex") and parent_theme.get("flex-direction") == "column":
@@ -3168,9 +3179,8 @@ class HTML:
             ft = join_lines(lines)
 
         # Align content
-        if align_content and (d_blocky or d_inline_block):
+        if align_content and d_blocky:
             alignment = theme.text_align
-
             if alignment != FormattedTextAlign.LEFT:
                 ft = align(
                     ft,
