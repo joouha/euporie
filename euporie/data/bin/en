@@ -1,7 +1,0 @@
-#!/usr/bin/env python3
-"""Alias for euporie-notebook."""
-
-from euporie.notebook.__main__ import main
-
-if __name__ == "__main__":
-    main()

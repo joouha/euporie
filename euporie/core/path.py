@@ -6,10 +6,12 @@ import base64
 import binascii
 import io
 import logging
+from pathlib import Path
 from typing import TYPE_CHECKING, overload
 from urllib.parse import urlunsplit
 
 import upath
+from appdirs import user_cache_dir
 from fsspec.implementations.cached import WholeFileCacheFileSystem
 from upath.implementations.http import HTTPPath, _HTTPAccessor
 from upath.registry import _registry
@@ -184,7 +186,9 @@ class CachingHTTPAccessor(_HTTPAccessor):
         url_kwargs = cls._get_kwargs_from_urls(urlunsplit(parsed_url))
         url_kwargs.update(kwargs)
         url_kwargs.setdefault("target_protocol", "http")
-        url_kwargs.setdefault("cache_storage", "TMP")
+        url_kwargs.setdefault(
+            "cache_storage", str(Path(user_cache_dir("euporie")) / "web")
+        )
         self._fs = cls(**url_kwargs)
 
     def _format_path(self, path: upath.UPath) -> str:
