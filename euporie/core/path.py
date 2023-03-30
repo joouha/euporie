@@ -12,6 +12,7 @@ from urllib.parse import urlunsplit
 import upath
 from fsspec.implementations.cached import WholeFileCacheFileSystem
 from upath.implementations.http import HTTPPath, _HTTPAccessor
+from upath.registry import _registry
 
 if TYPE_CHECKING:
     from io import BufferedRandom, BufferedReader, BufferedWriter, FileIO, TextIOWrapper
@@ -167,7 +168,7 @@ class DataPath(upath.core.UPath):
         return mime
 
 
-upath.registry._registry.known_implementations["data"] = "euporie.core.path.DataPath"
+_registry.known_implementations["data"] = "euporie.core.path.DataPath"
 
 
 # Patch UPath to cache http requests
@@ -186,13 +187,17 @@ class CachingHTTPAccessor(_HTTPAccessor):
         url_kwargs.setdefault("cache_storage", "TMP")
         self._fs = cls(**url_kwargs)
 
+    def _format_path(self, path: upath.UPath) -> str:
+        if (url := path._url) is not None:
+            return url.geturl()
+        return super()._format_path(path)
 
-class CachingHttpPath(HTTPPath):
+
+class CachingHTTPPath(HTTPPath):
     """An HTTP path which caches content."""
 
     _default_accessor = CachingHTTPAccessor
 
 
-upath.registry._registry.known_implementations[
-    "http"
-] = "euporie.core.path.CachingHTTPPath"
+_registry.known_implementations["http"] = "euporie.core.path.CachingHTTPPath"
+_registry.known_implementations["https"] = "euporie.core.path.CachingHTTPPath"
