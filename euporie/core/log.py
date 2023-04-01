@@ -201,16 +201,14 @@ class LogTabFormatter(FtFormatter):
         """Format a log record as formatted text."""
         record = self.prepare(record)
         output: StyleAndTextTuples = [
+            ("", "["),
             ("class:pygments.literal.date", f"{record.asctime}"),
-            ("", " "),
+            ("", "] ["),
             (f"class:log.level.{record.levelname}", f"{record.levelname}"),
-            ("", " " * (10 - len(record.levelname))),
+            ("", "] ["),
+            ("class:pygments.comment", f"{record.name}"),
+            ("", "] "),
             ("class:log,msg", record.message),
-            ("", " "),
-            (
-                "class:pygments.comment",
-                f"{record.name}.{record.funcName}:{record.lineno}",
-            ),
             ("", "\n"),
         ]
         if record.exc_text:
