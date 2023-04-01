@@ -119,6 +119,22 @@ _SELECTOR_RE = re.compile(
     re.VERBOSE,
 )
 
+_AT_RULE_RE = re.compile(
+    r"""
+    (
+        @(?:color-profile|container|counter-style|document|font-face|font-feature-values|font-palette-values|keyframes|layer|media|page|supports)
+        [^@{]+{(?:[^{]+?{(?:[^{}]|{[^}]+?})+?}\s*)*?}
+        |
+        @(?:charset|import|namespace)[^;]*;
+    )
+    """,
+    re.VERBOSE,
+)
+
+_NESTED_AT_RULE_RE = re.compile(
+    r"@(?P<identifier>[\w-]+)\s+(?P<rule>[^{]*?)\s*{\s*(?P<part>.*)\s*}"
+)
+
 
 # List of elements which might not have a close tag
 _VOID_ELEMENTS = (
@@ -2294,59 +2310,40 @@ def parse_styles(soup: Node, base_url: UPath) -> CssSelectors:
         # Replace ':before' and ':after' with '::before' and '::after'
         # for compatibility with old CSS
         css_str = re.sub("(?<!:):(?=before|after)", "::", css_str)
-        # Allow plain '@media screen' queries
-        css_str = re.sub(
-            r"""
-            @media\s+screen\s*{\s*
-              (.+? {
-                (?:[^:}]+\s*:\s*[^;}]+\s*;\s*)*
-                (?:[^:}]+\s*:\s*[^;}]+\s*;?\s*)?
-              })
-              \s*
-            }
-            """,
-            "\\1",
-            css_str,
-            0,
-            flags=re.DOTALL | re.VERBOSE,
-        )
-        # Remove other media queries for now - TODO
-        # TODO - Far too slow sometimes!
-        css_str = re.sub(
-            r"""
-            @media.+?{\s*
-              (.+? {
-                (?:[^:}]+\s*:\s*[^;}]+\s*;\s*)*
-                (?:[^:}]+\s*:\s*[^;}]+\s*;?\s*)?
-              })
-              \s*
-            }
-            """,
-            "",
-            css_str,
-            0,
-            flags=re.DOTALL | re.VERBOSE,
-        )
-        if css_str:
-            css_str = css_str.replace("\n", "").strip()
-            if css_str:
-                for rule in css_str.rstrip("}").split("}"):
-                    selectors, _, content = rule.partition("{")
-                    content = content.strip().rstrip(";")
-                    rule_content = parse_css_content(content)
-                    if rule_content:
-                        parsed_selectors = tuple(
-                            tuple(
-                                CssSelector(**m.groupdict())
-                                for m in _SELECTOR_RE.finditer(selector.strip())
-                            )
-                            for selector in map(str.strip, selectors.split(","))
-                        )
-                        if parsed_selectors in rules:
-                            rules[parsed_selectors].update(rule_content)
-                        else:
-                            rules[parsed_selectors] = rule_content
 
+        def parse_part(css_str: str) -> None:
+            """Parse a group of CSS rules."""
+            if css_str:
+                css_str = css_str.replace("\n", "").strip()
+                if css_str:
+                    for rule in css_str.rstrip("}").split("}"):
+                        selectors, _, content = rule.partition("{")
+                        content = content.strip().rstrip(";")
+                        rule_content = parse_css_content(content)
+                        if rule_content:
+                            parsed_selectors = tuple(
+                                tuple(
+                                    CssSelector(**m.groupdict())
+                                    for m in _SELECTOR_RE.finditer(selector.strip())
+                                )
+                                for selector in map(str.strip, selectors.split(","))
+                            )
+                            if parsed_selectors in rules:
+                                rules[parsed_selectors].update(rule_content)
+                            else:
+                                rules[parsed_selectors] = rule_content
+
+        # Split out nested at-rules - we need to process them separately
+        for part in _AT_RULE_RE.split(css_str):
+            if part:
+                if part[0] == "@" and (m := _NESTED_AT_RULE_RE.match(part)) is not None:
+                    m_dict = m.groupdict()
+                    # Process '@media' queries
+                    if m_dict["identifier"] == "media":
+                        if m_dict["rule"] == "screen":
+                            parse_part(m_dict["part"])
+                else:
+                    parse_part(part)
     return rules
 
 
@@ -3326,12 +3323,12 @@ if __name__ == "__main__":
 
     with create_app_session(input=BaseApp.load_input(), output=BaseApp.load_output()):
         with set_app(BaseApp()):
-            with path.open() as f:
-                html = HTML(
-                    path.open().read(),
+            print_formatted_text(
+                HTML(
+                    path.read_text(),
                     base=path,
                     collapse_root_margin=False,
                     fill=True,
-                )
-
-                print_formatted_text(html, style=Style(HTML_STYLE))
+                ),
+                style=Style(HTML_STYLE),
+            )
