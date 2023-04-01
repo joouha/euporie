@@ -974,7 +974,15 @@ class Theme(Mapping):
     @cached_property
     def d_block(self) -> bool:
         """If the element a block element."""
-        return self.theme["display"] == "block" and self.theme["float"] == "none"
+        return (
+            self.theme["display"] == "block"
+            and self.theme["float"] == "none"
+            # Temporary workaround until 'flex' and 'grid' are implemented (TODO)
+            and not (
+                self.parent_theme
+                and self.parent_theme.theme["display"] in {"flex", "grid"}
+            )
+        )
 
     @cached_property
     def d_inline(self) -> bool:
@@ -984,7 +992,15 @@ class Theme(Mapping):
     @cached_property
     def d_inline_block(self) -> bool:
         """If the element an inline element."""
-        return self.theme["display"] == "inline-block" or self.theme["float"] != "none"
+        return (
+            self.theme["display"] == "inline-block"
+            or self.theme["float"] != "none"
+            # Temporary workaround until 'flex' and 'grid' are implemented (TODO)
+            or (
+                self.parent_theme is not None
+                and self.parent_theme.theme["display"] in {"flex", "grid"}
+            )
+        )
 
     @cached_property
     def d_table(self) -> bool:
@@ -1216,9 +1232,18 @@ class Theme(Mapping):
         return DiInt(**values)
 
     @cached_property
-    def margin_auto(self) -> bool:
+    def block_align(self) -> FormattedTextAlign:
         """Determine if the left and right margins are set to auto."""
-        return self.theme["margin_left"] == self.theme["margin_right"] == "auto"
+        # Temporarily use "justify_self" until flex / grid are implemented (TODO)
+        if (self.theme["margin_left"] == self.theme["margin_right"] == "auto") or (
+            self.d_inline_block and self.theme.get("justify_self") == "center"
+        ):
+            return FormattedTextAlign.CENTER
+        elif (self.theme["margin_left"] == "auto") or (
+            self.d_inline_block and self.theme.get("justify_self") == "right"
+        ):
+            return FormattedTextAlign.RIGHT
+        return FormattedTextAlign.LEFT
 
     @cached_property
     def border_style(self) -> DiStr:
@@ -2428,7 +2453,7 @@ class HTML:
         # Load images
         for child in self.soup.descendents:
             if child.name == "img" and (src := child.attrs.get("src")):
-                data_path = UPath(urljoin(str(self.base), src))
+                data_path = UPath(urljoin(str(self.base), src)).resolve()
                 if data := data_path.read_bytes():
                     child.attrs["_data"] = data
                 else:
@@ -3273,11 +3298,12 @@ class HTML:
         parent_style = parent_theme.style if parent_theme else ""
 
         # Render the margin
-        if d_blocky and theme.margin_auto:
+        # if d_blocky and (alignment := theme.block_align) != FormattedTextAlign.LEFT:
+        if (alignment := theme.block_align) != FormattedTextAlign.LEFT:
             # Center block contents if margin_left and margin_right are "auto"
             ft = align(
                 ft,
-                how=FormattedTextAlign.CENTER,
+                how=alignment,
                 width=theme.available_width,
                 style=parent_style,
             )
