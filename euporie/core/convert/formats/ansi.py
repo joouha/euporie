@@ -442,14 +442,19 @@ def png_to_ansi_img2txt(
 @register(from_=("png", "jpeg", "svg"), to="ansi", filter_=True, weight=99)
 def png_to_ansi_py_placeholder(
     data: bytes,
-    cols: int = 7,
-    rows: int = 3,
+    cols: int | None = None,
+    rows: int | None = None,
     fg: str | None = None,
     bg: str | None = None,
     path: UPath | None = None,
 ) -> str:
     """Draw placeholder ANSI text."""
     from euporie.core.border import RoundedLine
+
+    if cols is None:
+        cols = 7
+    if rows is None:
+        rows = 3
 
     lines = []
     B = RoundedLine.grid
