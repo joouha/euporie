@@ -3,6 +3,11 @@
 from .html import CssSelector
 
 _MARKDOWN_CSS = {
+    # ((CssSelector(item="::root"),),): {
+    #     "max_width": "100em",
+    #     "margin_left": "auto",
+    #     "margin_right": "auto",
+    # },
     (
         (CssSelector(item="h1"),),
         (CssSelector(item="h2"),),
