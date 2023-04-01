@@ -281,7 +281,6 @@ class Kernel:
             connection_file = (
                 UPath(jupyter_runtime_dir()) / f"kernel-euporie-{id_}.json"
             )
-        log.debug(connection_file)
         connection_file_str = str(connection_file)
         self.km.connection_file = connection_file_str
 
