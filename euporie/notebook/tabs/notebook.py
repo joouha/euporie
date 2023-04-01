@@ -921,6 +921,10 @@ class Notebook(BaseNotebook):
         if isinstance(nb, Notebook):
             for cell in nb.cells:
                 cell.set_cell_type("markdown", clear=True)
+                # Remove unallowed additional properties
+                json = cell.json
+                json.pop("execution_count", None)
+                json.pop("outputs", None)
 
     @staticmethod
     @add_cmd(
