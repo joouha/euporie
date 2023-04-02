@@ -50,17 +50,21 @@ ERROR_OUTPUTS = {
 @lru_cache
 def get_mime(path: UPath | str) -> str | None:
     """Attempt to determine the mime-type of a path."""
-    path = UPath(path).resolve()
+    path = UPath(path)
+    try:
+        path = path.resolve()
+    except Exception:
+        log.debug("Cannot resolve '%s'", path)
+
     mime = None
 
     # Read from path of data URI
     if isinstance(path, DataPath):
         mime = path._mime
 
-    # Check for Jupyter notebooks by extension
-
     # Guess from file-extension
     if not mime and path.suffix:
+        # Check for Jupyter notebooks by extension
         if path.suffix == ".ipynb":
             return "application/x-ipynb+json"
         else:
