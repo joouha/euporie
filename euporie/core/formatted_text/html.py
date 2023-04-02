@@ -2453,11 +2453,17 @@ class HTML:
         # Load images
         for child in self.soup.descendents:
             if child.name == "img" and (src := child.attrs.get("src")):
-                data_path = UPath(urljoin(str(self.base), src)).resolve()
-                if data := data_path.read_bytes():
-                    child.attrs["_data"] = data
-                else:
-                    child.attrs["_missing"] = "true"
+                data_path = UPath(urljoin(str(self.base), src))
+                try:
+                    data = data_path.resolve().read_bytes()
+                except Exception:
+                    data = b""
+                    log.exception("Error loading file '%s'", data_path)
+                finally:
+                    if data:
+                        child.attrs["_data"] = data
+                    else:
+                        child.attrs["_missing"] = "true"
 
         self.floats: dict[tuple[int, DiInt], StyleAndTextTuples] = {}
         self.fixes: dict[tuple[int, DiInt], StyleAndTextTuples] = {}
