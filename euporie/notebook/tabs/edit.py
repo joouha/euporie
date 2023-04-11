@@ -95,7 +95,7 @@ class EditorTab(KernelTab):
             ],
             width=Dimension(weight=1),
             height=Dimension(weight=1),
-            key_bindings=load_registered_bindings("euporie.notebook.tabs.base.BaseTab"),
+            key_bindings=load_registered_bindings("euporie.core.tabs.base.Tab"),
         )
 
     def save(self, path: UPath | None = None, cb: Callable | None = None) -> None:

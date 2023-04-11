@@ -119,7 +119,7 @@ class Tab(metaclass=ABCMeta):
 
     register_bindings(
         {
-            "euporie.notebook.tabs.base.BaseTab": {
+            "euporie.core.tabs.base.Tab": {
                 "save-file": "c-s",
                 "reset-tab": "f5",
             }

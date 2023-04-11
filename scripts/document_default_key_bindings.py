@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib
+import json
 from textwrap import dedent
 
 from prompt_toolkit.formatted_text.base import to_formatted_text
@@ -18,19 +19,27 @@ from euporie.core.key_binding.utils import format_keys, parse_keys
 
 groups = [
     "euporie.core.app.BaseApp",
+    "euporie.core.tabs.base.Tab",
     "euporie.notebook.app.NotebookApp",
     "euporie.notebook.tabs.notebook.Notebook",
     "euporie.console.app.ConsoleApp",
-    "euporie.console.tabs.console.ConsoleTab",
+    "euporie.console.tabs.console.Console",
     "euporie.preview.app.PreviewApp",
+    "euporie.core.key_binding.bindings.micro.EditMode",
     "euporie.core.widgets.pager.Pager",
     "euporie.core.widgets.inputs.KernelInput",
-    "euporie.core.key_binding.bindings.micro.EditMode",
+    "euporie.core.widgets.display.Display",
+    "euporie.web.widgets.webview.WebViewControl",
 ]
 
 sections = {}
 
 available_width = Dimension(max=9999)
+
+# Pre-import everything
+for group in groups:
+    mod_name, cls_name = group.rsplit(".", maxsplit=1)
+    importlib.import_module(mod_name)
 
 for group in groups:
     mod_name, cls_name = group.rsplit(".", maxsplit=1)
@@ -88,3 +97,25 @@ for title, table in sections.items():
     )
     ft = table.render(width=available_width)
     print_formatted_text(to_formatted_text(indent(ft, "   ")))
+
+print()
+print("----")
+print()
+
+print(
+    """
+Default Key-binding configuration
+=================================
+
+The following lists all of the default key-bindings used in euporie in the format required for custom key-bindings in the configuration file.
+
+.. code-block:: javascript
+"""
+)
+
+lines = json.dumps(
+    {group: BINDINGS.get(group, {}) for group in groups}, indent=2
+).split("\n")
+for line in lines:
+    print(f"   {line}")
+print()
