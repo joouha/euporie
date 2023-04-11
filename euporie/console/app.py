@@ -22,7 +22,7 @@ from prompt_toolkit.layout.containers import (
 )
 from prompt_toolkit.layout.dimension import Dimension
 
-from euporie.console.tabs.console import ConsoleTab
+from euporie.console.tabs.console import Console
 from euporie.core import __logo__
 from euporie.core.app import BaseApp
 from euporie.core.commands import add_cmd
@@ -82,7 +82,7 @@ class ConsoleApp(BaseApp):
         self.search_bar = SearchBar()
         self.bindings_to_load += ["euporie.console.app.ConsoleApp"]
 
-        self.tabs = [ConsoleTab(self)]
+        self.tabs = [Console(self)]
         self.pager = Pager()
 
         self.config.get_item("mouse_support").event += lambda x: setattr(
@@ -166,7 +166,7 @@ class ConsoleApp(BaseApp):
         app = get_app()
         nb_app = NotebookApp()
         for tab in app.tabs:
-            if isinstance(tab, ConsoleTab):
+            if isinstance(tab, Console):
                 nb = Notebook(
                     app=nb_app,
                     path=tab.path,
@@ -195,7 +195,7 @@ class ConsoleApp(BaseApp):
         app = get_app()
         tab = app.tab
         app.renderer.clear()
-        if isinstance(tab, ConsoleTab):
+        if isinstance(tab, Console):
             tab.reset()
             app.layout.focus(tab.input_box)
 
