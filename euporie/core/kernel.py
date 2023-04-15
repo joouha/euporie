@@ -276,11 +276,10 @@ class Kernel:
 
         # If we are connecting to an existing kernel, create a kernel client using
         # the given connection file
+        runtime_dir = UPath(jupyter_runtime_dir())
         if (connection_file := self.connection_file) is None:
             id_ = str(uuid4())[:8]
-            connection_file = (
-                UPath(jupyter_runtime_dir()) / f"kernel-euporie-{id_}.json"
-            )
+            connection_file = runtime_dir / f"kernel-euporie-{id_}.json"
         connection_file_str = str(connection_file)
         self.km.connection_file = connection_file_str
 
@@ -297,6 +296,7 @@ class Kernel:
 
         # Otherwise, start a new kernel using the kernel manager
         else:
+            runtime_dir.mkdir(exist_ok=True, parents=True)
             while True:
                 try:
                     # TODO - send stdout to log
