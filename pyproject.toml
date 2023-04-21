@@ -55,7 +55,6 @@ hub = [
 format = [
   "black>=19.3.b0",
   "isort~=5.10.1",
-  "ssort~=0.11.6",
 ]
 chafa = [
   "chafa.py>=1.0.2",
@@ -114,7 +113,6 @@ detached = true
 dependencies = [
   "pre-commit",
   "pre-commit-hooks",
-  "ssort",
   "black",
   "ruff",
   "codespell", "tomli",
@@ -122,13 +120,11 @@ dependencies = [
 
 [tool.hatch.envs.check.scripts]
 check = [
-    "ssort --check {args:euporie tests scripts}",
     "black --check {args:euporie tests scripts}",
     "ruff {args:euporie tests scripts}",
     "codespell {args:euporie tests scripts docs/pages}",
 ]
 fix = [
-    "ssort {args:euporie tests scripts}",
     "black {args:euporie tests scripts}",
     "ruff --fix {args:euporie tests scripts}",
     "codespell -i 3 -w {args:euporie tests scripts docs/pages}",
