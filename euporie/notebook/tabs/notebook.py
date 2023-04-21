@@ -988,7 +988,7 @@ class Notebook(BaseNotebook):
         title="Collapse cell inputs",
     )
     def _hide_cell_inputs() -> None:
-        """Collape the selected cells' inputs."""
+        """Collapse the selected cells' inputs."""
         nb = get_app().tab
         if isinstance(nb, Notebook):
             for cell in nb.cells:
@@ -1023,7 +1023,7 @@ class Notebook(BaseNotebook):
         title="Collapse cell outputs",
     )
     def _hide_cell_outputs() -> None:
-        """Collape the selected cells' outputs."""
+        """Collapse the selected cells' outputs."""
         nb = get_app().tab
         if isinstance(nb, Notebook):
             for cell in nb.cells:
