@@ -10,10 +10,10 @@ from euporie.core.convert.utils import call_subproc
 from euporie.core.current import get_app
 
 if TYPE_CHECKING:
+    from pathlib import Path
     from typing import Any, Literal
 
     from PIL.Image import Image as PilImage
-    from upath import UPath
 
 log = logging.getLogger(__name__)
 
@@ -24,7 +24,7 @@ def base64_to_bytes_py(
     height: int | None = None,
     fg: str | None = None,
     bg: str | None = None,
-    path: UPath | None = None,
+    path: Path | None = None,
 ) -> bytes:
     """Convert base64 encoded data to bytes."""
     data_str = data.decode() if isinstance(data, bytes) else data
@@ -38,7 +38,7 @@ def imagemagick_convert(
     rows: int | None = None,
     fg: str | None = None,
     bg: str | None = None,
-    path: UPath | None = None,
+    path: Path | None = None,
 ) -> str | bytes:
     """Convert image data to PNG bytes using ``imagemagick``."""
     cmd: list[Any] = ["convert"]  # , "-density", "300"]
@@ -62,7 +62,7 @@ def chafa_convert_cmd(
     rows: int | None = None,
     fg: str | None = None,
     bg: str | None = None,
-    path: UPath | None = None,
+    path: Path | None = None,
 ) -> str | bytes:
     """Convert image data to ANSI text using :command:`chafa`."""
     cmd: list[Any] = ["chafa", f"--format={output_format}"]
@@ -81,7 +81,7 @@ def chafa_convert_py(
     rows: int | None = None,
     fg: str | None = None,
     bg: str | None = None,
-    path: UPath | None = None,
+    path: Path | None = None,
 ) -> str | bytes:
     """Convert image data to ANSI text using ::`chafa.py`."""
     from chafa.chafa import Canvas, CanvasConfig, PixelMode, PixelType

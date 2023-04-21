@@ -8,7 +8,6 @@ from typing import TYPE_CHECKING
 
 from prompt_toolkit.layout.containers import HSplit, VSplit
 from prompt_toolkit.layout.dimension import Dimension
-from upath import UPath
 
 from euporie.core.convert.core import get_format
 from euporie.core.data_structures import DiBool
@@ -19,6 +18,7 @@ from euporie.core.widgets.display import Display
 from euporie.core.widgets.forms import Button, Text
 
 if TYPE_CHECKING:
+    from pathlib import Path
     from typing import Sequence
 
     from prompt_toolkit.formatted_text import AnyFormattedText
@@ -32,7 +32,7 @@ log = logging.getLogger(__name__)
 class WebTab(Tab):
     """Tab class for displaying files."""
 
-    def __init__(self, app: BaseApp, path: UPath | None = None) -> None:
+    def __init__(self, app: BaseApp, path: Path | None = None) -> None:
         """Call when the tab is created."""
         super().__init__(app, path)
 
@@ -55,7 +55,7 @@ class WebTab(Tab):
         else:
             return "<Web Page>"
 
-    def load_url(self, url: str | UPath | None = None) -> bool:
+    def load_url(self, url: str | Path | None = None) -> bool:
         """Load a new URL, or the URL in the address-bar."""
         if url == "":
             return False

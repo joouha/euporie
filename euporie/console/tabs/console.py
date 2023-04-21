@@ -53,6 +53,7 @@ from euporie.core.widgets.page import PrintingContainer
 from euporie.core.widgets.pager import PagerState
 
 if TYPE_CHECKING:
+    from pathlib import Path
     from typing import Any, Callable, Sequence
 
     from prompt_toolkit.application.application import Application
@@ -76,7 +77,7 @@ class Console(KernelTab):
     def __init__(
         self,
         app: BaseApp,
-        path: UPath | None = None,
+        path: Path | None = None,
         use_kernel_history: bool = True,
         connection_file: str = "",
     ) -> None:
@@ -541,7 +542,7 @@ class Console(KernelTab):
             callback=_cb,
         )
 
-    def save(self, path: UPath | None = None, cb: Callable | None = None) -> None:
+    def save(self, path: Path | None = None, cb: Callable | None = None) -> None:
         """Save the console as a notebook."""
         from euporie.core.tabs.notebook import BaseNotebook
 

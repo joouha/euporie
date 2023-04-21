@@ -14,11 +14,11 @@ from euporie.core.tabs.base import Tab
 from euporie.core.widgets.display import Display
 
 if TYPE_CHECKING:
+    from pathlib import Path
     from typing import Sequence
 
     from prompt_toolkit.formatted_text import AnyFormattedText
     from prompt_toolkit.layout.containers import AnyContainer
-    from upath import UPath
 
     from euporie.core.app import BaseApp
 
@@ -28,7 +28,7 @@ log = logging.getLogger(__name__)
 class DisplayTab(Tab):
     """Tab class for displaying files."""
 
-    def __init__(self, app: BaseApp, path: UPath | None = None) -> None:
+    def __init__(self, app: BaseApp, path: Path | None = None) -> None:
         """Call when the tab is created."""
         super().__init__(app, path)
         if self.path is not None:

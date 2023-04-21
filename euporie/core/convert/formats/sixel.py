@@ -15,10 +15,10 @@ from euporie.core.convert.utils import call_subproc, commands_exist, have_module
 from euporie.core.current import get_app
 
 if TYPE_CHECKING:
+    from pathlib import Path
     from typing import Any
 
     from PIL.Image import Image as PilImage
-    from upath import UPath
 
 
 register(
@@ -46,7 +46,7 @@ def png_to_sixel_img2sixel(
     rows: int | None = None,
     fg: str | None = None,
     bg: str | None = None,
-    path: UPath | None = None,
+    path: Path | None = None,
 ) -> str:
     """Convert PNG data to sixels :command:`img2sixel`."""
     bg = bg or get_app().color_palette.bg.base_hex
@@ -77,7 +77,7 @@ def pil_to_sixel_py_timg(
     rows: int | None = None,
     fg: str | None = None,
     bg: str | None = None,
-    path: UPath | None = None,
+    path: Path | None = None,
 ) -> str:
     """Convert a pillow image to sixels :py:mod:`timg`."""
     import timg
@@ -96,7 +96,7 @@ def pil_to_sixel_py_teimpy(
     rows: int | None = None,
     fg: str | None = None,
     bg: str | None = None,
-    path: UPath | None = None,
+    path: Path | None = None,
 ) -> str:
     """Convert a pillow image to sixels :py:mod:`teimpy`."""
     import numpy as np

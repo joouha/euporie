@@ -88,6 +88,7 @@ from euporie.core.widgets.decor import Shadow
 
 if TYPE_CHECKING:
     from asyncio import AbstractEventLoop
+    from pathlib import Path
     from typing import Any, Callable, Literal, Sequence
 
     from prompt_toolkit.clipboard import Clipboard
@@ -542,11 +543,11 @@ class BaseApp(Application):
             floats=cast("list[Float]", self.floats),
         )
 
-    def get_file_tab(self, path: UPath) -> type[Tab] | None:
+    def get_file_tab(self, path: Path) -> type[Tab] | None:
         """Return the tab to use for a file path."""
         return None
 
-    def open_file(self, path: UPath, read_only: bool = False) -> None:
+    def open_file(self, path: Path, read_only: bool = False) -> None:
         """Create a tab for a file.
 
         Args:

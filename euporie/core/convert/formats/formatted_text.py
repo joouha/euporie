@@ -14,8 +14,9 @@ from euporie.core.formatted_text.utils import strip_one_trailing_newline
 from euporie.core.lexers import detect_lexer
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     from prompt_toolkit.formatted_text.base import StyleAndTextTuples
-    from upath import UPath
 
     from euporie.core.formatted_text.html import HTML, CssSelectors
 
@@ -32,7 +33,7 @@ def html_to_ft(
     height: int | None = None,
     fg: str | None = None,
     bg: str | None = None,
-    path: UPath | None = None,
+    path: Path | None = None,
     browser_css: CssSelectors | None = None,
 ) -> StyleAndTextTuples:
     """Convert markdown to formatted text."""
@@ -101,7 +102,7 @@ def ansi_to_ft(
     height: int | None = None,
     fg: str | None = None,
     bg: str | None = None,
-    path: UPath | None = None,
+    path: Path | None = None,
 ) -> StyleAndTextTuples:
     """Convert ANSI text to formatted text."""
     markup = data.decode() if isinstance(data, bytes) else data

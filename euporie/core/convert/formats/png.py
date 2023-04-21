@@ -10,8 +10,9 @@ from euporie.core.convert.formats.common import base64_to_bytes_py, imagemagick_
 from euporie.core.convert.utils import commands_exist, have_modules
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     from PIL.Image import Image as PilImage
-    from upath import UPath
 
 
 register(
@@ -31,7 +32,7 @@ def latex_to_png_dvipng(
     height: int | None = None,
     fg: str | None = None,
     bg: str | None = None,
-    path: UPath | None = None,
+    path: Path | None = None,
 ) -> bytes | None:
     """Render LaTeX as a png image using :command:`dvipng`.
 
@@ -112,7 +113,7 @@ def latex_to_png_py_mpl(
     height: int | None = None,
     fg: str | None = None,
     bg: str | None = None,
-    path: UPath | None = None,
+    path: Path | None = None,
 ) -> bytes:
     """Render LaTeX as a png image using :py:module:`matplotlib`.
 
@@ -155,7 +156,7 @@ def pil_to_png_py_pil(
     rows: int | None = None,
     fg: str | None = None,
     bg: str | None = None,
-    path: UPath | None = None,
+    path: Path | None = None,
 ) -> bytes:
     """Convert a pillow image to sixels :py:mod:`teimpy`."""
     import io
@@ -177,7 +178,7 @@ def svg_to_png_py_cairosvg(
     height: int | None = None,
     fg: str | None = None,
     bg: str | None = None,
-    path: UPath | None = None,
+    path: Path | None = None,
 ) -> str:
     """Convert SVG to PNG using :py:mod:`cairosvg`."""
     import cairosvg

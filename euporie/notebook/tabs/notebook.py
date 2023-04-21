@@ -54,13 +54,13 @@ from euporie.notebook.filters import (
 )
 
 if TYPE_CHECKING:
+    from pathlib import Path
     from typing import Any, Deque, MutableSequence, Sequence
 
     from prompt_toolkit.formatted_text.base import AnyFormattedText, StyleAndTextTuples
     from prompt_toolkit.key_binding.key_bindings import NotImplementedOrNone
     from prompt_toolkit.layout.containers import AnyContainer
     from prompt_toolkit.mouse_events import MouseEvent
-    from upath import UPath
 
     from euporie.core.app import BaseApp
     from euporie.core.comm.base import Comm
@@ -80,7 +80,7 @@ class Notebook(BaseNotebook):
     def __init__(
         self,
         app: BaseApp,
-        path: UPath | None = None,
+        path: Path | None = None,
         kernel: Kernel | None = None,
         comms: dict[str, Comm] | None = None,
         use_kernel_history: bool = True,

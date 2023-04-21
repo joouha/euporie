@@ -9,7 +9,7 @@ from euporie.core.convert.core import register
 from euporie.core.convert.utils import have_modules
 
 if TYPE_CHECKING:
-    from upath import UPath
+    from pathlib import Path
 
 log = logging.getLogger(__name__)
 
@@ -27,7 +27,7 @@ def html_to_markdown_py_html2text(
     height: int | None = None,
     fg: str | None = None,
     bg: str | None = None,
-    path: UPath | None = None,
+    path: Path | None = None,
 ) -> str:
     """Convert HTML to markdown tables using :py:mod:`html2text`."""
     import re
@@ -73,7 +73,7 @@ def html_to_markdown_py_mtable(
     height: int | None = None,
     fg: str | None = None,
     bg: str | None = None,
-    path: UPath | None = None,
+    path: Path | None = None,
 ) -> str:
     """Convert HTML tables to markdown tables using :py:mod:`mtable`."""
     from mtable import MarkupTable

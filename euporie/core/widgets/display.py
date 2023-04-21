@@ -45,6 +45,7 @@ from euporie.core.terminal import tmuxify
 from euporie.core.widgets.page import BoundedWritePosition
 
 if TYPE_CHECKING:
+    from pathlib import Path
     from typing import Any, Callable, Iterable
 
     from prompt_toolkit.filters import FilterOrBool
@@ -54,7 +55,6 @@ if TYPE_CHECKING:
     from prompt_toolkit.layout.containers import AnyContainer, WindowRenderInfo
     from prompt_toolkit.layout.dimension import AnyDimension
     from prompt_toolkit.layout.screen import Screen
-    from upath import UPath
 
 
 log = logging.getLogger(__name__)
@@ -71,7 +71,7 @@ class DisplayControl(UIControl):
         self,
         data: Any,
         format_: str,
-        path: UPath | None = None,
+        path: Path | None = None,
         fg_color: str | None = None,
         bg_color: str | None = None,
         sizing_func: Callable[[], tuple[int, float]] | None = None,
@@ -388,7 +388,7 @@ class GraphicControl(DisplayControl, metaclass=ABCMeta):
         self,
         data: Any,
         format_: str,
-        path: UPath | None = None,
+        path: Path | None = None,
         fg_color: str | None = None,
         bg_color: str | None = None,
         sizing_func: Callable[[], tuple[int, float]] | None = None,
@@ -632,7 +632,7 @@ class KittyGraphicControl(GraphicControl):
         self,
         data: Any,
         format_: str,
-        path: UPath | None = None,
+        path: Path | None = None,
         fg_color: str | None = None,
         bg_color: str | None = None,
         sizing_func: Callable[[], tuple[int, float]] | None = None,
@@ -957,7 +957,7 @@ class GraphicFloat(Float):
         target_window: Window,
         data: Any,
         format_: str,
-        path: UPath | None = None,
+        path: Path | None = None,
         fg_color: str | None = None,
         bg_color: str | None = None,
         sizing_func: Callable[[], tuple[int, float]] | None = None,
@@ -1067,14 +1067,14 @@ class GraphicFloat(Float):
             self.control.format_ = value
 
     @property
-    def path(self) -> UPath | None:
+    def path(self) -> Path | None:
         """Return the graphic's current data path."""
         if self.control is not None:
             return self.control.path
         return None
 
     @path.setter
-    def path(self, value: UPath | None) -> None:
+    def path(self, value: Path | None) -> None:
         """Set the graphic float's data path."""
         if self.control is not None:
             self.control.path = value
@@ -1091,7 +1091,7 @@ class Display:
         self,
         data: Any,
         format_: str,
-        path: UPath | None = None,
+        path: Path | None = None,
         fg_color: str | None = None,
         bg_color: str | None = None,
         height: AnyDimension = None,
@@ -1213,12 +1213,12 @@ class Display:
         self.graphic_float.format_ = value
 
     @property
-    def path(self) -> UPath | None:
+    def path(self) -> Path | None:
         """Return the display's current data path."""
         return self.control.path
 
     @path.setter
-    def path(self, value: UPath | None) -> None:
+    def path(self, value: Path | None) -> None:
         """Set the display container's data path."""
         self.control.path = value
         self.graphic_float.path = value

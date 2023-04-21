@@ -19,6 +19,7 @@ from jupyter_core.paths import jupyter_path, jupyter_runtime_dir
 from upath import UPath
 
 if TYPE_CHECKING:
+    from pathlib import Path
     from typing import Any, Callable, Coroutine
 
     from jupyter_client import KernelClient
@@ -64,7 +65,7 @@ class Kernel:
         threaded: bool = True,
         allow_stdin: bool = False,
         default_callbacks: MsgCallbacks | None = None,
-        connection_file: UPath | None = None,
+        connection_file: Path | None = None,
     ) -> None:
         """Call when the :py:class:`Kernel` is initialized.
 
@@ -1015,7 +1016,7 @@ class Kernel:
     def change(
         self,
         name: str | None,
-        connection_file: UPath | None = None,
+        connection_file: Path | None = None,
         cb: Callable | None = None,
     ) -> None:
         """Change the kernel.

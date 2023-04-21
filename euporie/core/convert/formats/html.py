@@ -17,7 +17,7 @@ from euporie.core.convert.core import register
 from euporie.core.current import get_app
 
 if TYPE_CHECKING:
-    from upath import UPath
+    from pathlib import Path
 
 log = logging.getLogger(__name__)
 
@@ -65,7 +65,7 @@ def markdown_to_html_markdown_it(
     height: int | None = None,
     fg: str | None = None,
     bg: str | None = None,
-    path: UPath | None = None,
+    path: Path | None = None,
 ) -> str:
     """Convert markdown to HTML using :py:mod:`markdownit_py`."""
     assert markdown_parser is not None

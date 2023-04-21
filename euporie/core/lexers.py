@@ -10,11 +10,12 @@ from pygments.lexers import (
 from pygments.util import ClassNotFound
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     from pygments.lexer import Lexer as PygmentsLexerCls
-    from upath import UPath
 
 
-def detect_lexer(text: "str" = "", path: "UPath|None" = None) -> "PygmentsLexerCls":
+def detect_lexer(text: "str" = "", path: "Path|None" = None) -> "PygmentsLexerCls":
     """Detect the pygments lexer for a file."""
     lexer = None
     if path is not None:

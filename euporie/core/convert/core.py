@@ -15,6 +15,7 @@ from upath.implementations.http import HTTPPath
 from euporie.core.path import DataPath
 
 if TYPE_CHECKING:
+    from pathlib import Path
     from typing import Any, Callable, Iterable
 
     from prompt_toolkit.filters import Filter, FilterOrBool
@@ -48,7 +49,7 @@ ERROR_OUTPUTS = {
 
 
 @lru_cache
-def get_mime(path: UPath | str) -> str | None:
+def get_mime(path: Path | str) -> str | None:
     """Attempt to determine the mime-type of a path."""
     path = UPath(path)
     try:
@@ -108,7 +109,7 @@ def get_mime(path: UPath | str) -> str | None:
 
 
 @lru_cache
-def get_format(path: UPath | str, default: str = "") -> str:
+def get_format(path: Path | str, default: str = "") -> str:
     """Attempt to guess the format of a path."""
     if isinstance(path, str):
         path = UPath(path)
@@ -214,7 +215,7 @@ def convert(
     rows: int | None = None,
     fg: str | None = None,
     bg: str | None = None,
-    path: UPath | None = None,
+    path: Path | None = None,
 ) -> Any:
     """Convert between formats."""
     try:
@@ -231,7 +232,7 @@ def convert(
         rows: int | None = None,
         fg: str | None = None,
         bg: str | None = None,
-        path: UPath | None = None,
+        path: Path | None = None,
     ) -> Any:
         if from_ == to:
             return data
