@@ -12,6 +12,7 @@ from prompt_toolkit.formatted_text.utils import (
     split_lines,
     to_plain_text,
 )
+from prompt_toolkit.layout.utils import explode_text_fragments
 from prompt_toolkit.utils import get_cwidth
 from pygments.lexers import get_lexer_by_name
 from pygments.util import ClassNotFound
@@ -101,16 +102,16 @@ def fragment_list_to_words(
 ) -> Iterable[StyleAndTextTuples]:
     """Split formatted text into a list of word fragments which form words."""
     word: StyleAndTextTuples = []
-    for style, string, *_ in fragments:
+    for style, string, *rest in fragments:
         parts = re.split(r"(?<=[\s\-])", string)
         if len(parts) == 1:
-            word.append((style, parts[0]))
+            word.append(cast("OneStyleAndTextTuple", (style, parts[0], *rest)))
         else:
             for part in parts[:-1]:
-                word.append((style, part))
+                word.append(cast("OneStyleAndTextTuple", (style, part, *rest)))
                 yield word[:]
                 word.clear()
-            word.append((style, parts[-1]))
+            word.append(cast("OneStyleAndTextTuple", (style, parts[-1], *rest)))
     if word:
         yield word
 
@@ -198,7 +199,7 @@ def truncate(
 
     """
     lines = split_lines(ft)
-    if max(fragment_list_width(line) for line in lines) < width:
+    if max(fragment_list_width(line) for line in lines) <= width:
         return ft
     result: StyleAndTextTuples = []
     phw = sum(get_cwidth(c) for c in placeholder)
@@ -460,22 +461,32 @@ def pad(
 
 
 def paste(
-    ft_bottom: StyleAndTextTuples,
     ft_top: StyleAndTextTuples,
+    ft_bottom: StyleAndTextTuples,
     row: int = 0,
     col: int = 0,
+    transparent: bool = False,
 ) -> StyleAndTextTuples:
     """Pate formatted text on top of other formatted text."""
     ft: StyleAndTextTuples = []
-
     top_lines = dict(enumerate(split_lines(ft_top), start=row))
     for y, line_b in enumerate(split_lines(ft_bottom)):
         if y in top_lines:
-            # x = 0
             line_t = top_lines[y]
             line_t_width = fragment_list_width(line_t)
             ft += substring(line_b, 0, col)
-            ft += substring(line_t)
+            if transparent:
+                chars_t = explode_text_fragments(line_t)
+                chars_b = explode_text_fragments(
+                    substring(line_b, col, col + line_t_width)
+                )
+                for char_t, char_b in zip(chars_t, chars_b):
+                    if char_t[0] == "" and char_t[1] == " ":
+                        ft.append(char_b)
+                    else:
+                        ft.append(char_t)
+            else:
+                ft += line_t
             ft += substring(line_b, col + line_t_width)
         else:
             ft += line_b
@@ -529,8 +540,8 @@ def concat(
         ft_b = [*ft_b, ("", lines_below * "\n")]
 
     ft = paste(
-        pad(ft_a, style=style),
         ft_b,
+        pad(ft_a, style=style),
         row=0,
         col=cols_a,
     )

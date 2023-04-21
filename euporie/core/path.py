@@ -8,12 +8,16 @@ import io
 import logging
 from pathlib import Path
 from typing import TYPE_CHECKING, overload
-from urllib.parse import urlunsplit
+from urllib.parse import urljoin, urlunsplit
 
 import upath
-from appdirs import user_cache_dir
+from aiohttp.client_reqrep import ClientResponse
 from fsspec.implementations.cached import WholeFileCacheFileSystem
-from upath.implementations.http import HTTPPath, _HTTPAccessor
+from fsspec.implementations.http import HTTPFileSystem as FsHTTPFileSystem
+from fsspec.registry import register_implementation as fs_register_implementation
+from upath import UPath
+from upath.implementations.http import HTTPPath as _HTTPPath
+from upath.implementations.http import _HTTPAccessor
 from upath.registry import _registry
 
 if TYPE_CHECKING:
@@ -29,6 +33,7 @@ if TYPE_CHECKING:
         OpenBinaryModeWriting,
         OpenTextMode,
     )
+    from upath.core import PT
 
 
 log = logging.getLogger(__name__)
@@ -47,6 +52,14 @@ def parse_path(path: str | PathLike) -> Path:
     except (AttributeError, NotImplementedError):
         pass
     return path
+
+
+def _raise_for_status(self: ClientResponse) -> None:
+    """Monkey-patch :py:class:`aiohttp.ClientResponse` not to raise for any status."""
+    pass
+
+
+setattr(ClientResponse, "raise_for_status", _raise_for_status)  # noqa B010
 
 
 class DataPath(upath.core.UPath):
@@ -189,11 +202,8 @@ class DataPath(upath.core.UPath):
 _registry.known_implementations["data"] = "euporie.core.path.DataPath"
 
 
-# Patch UPath to cache http requests
-
-
 class CachingHTTPAccessor(_HTTPAccessor):
-    """A :py:module:`universal_pathlib` accrssor which caches content."""
+    """A :py:module:`universal_pathlib` accessor which caches content."""
 
     def __init__(self, parsed_url: SplitResult | None, **kwargs: Any) -> None:
         """Load a caching filesystem."""
@@ -202,9 +212,9 @@ class CachingHTTPAccessor(_HTTPAccessor):
         url_kwargs = cls._get_kwargs_from_urls(urlunsplit(parsed_url))
         url_kwargs.update(kwargs)
         url_kwargs.setdefault("target_protocol", "http")
-        url_kwargs.setdefault(
-            "cache_storage", str(Path(user_cache_dir("euporie")) / "web")
-        )
+        # url_kwargs.setdefault(
+        #     "cache_storage", str(Path(user_cache_dir("euporie")) / "web")
+        # )
         self._fs = cls(**url_kwargs)
 
     def _format_path(self, path: upath.UPath) -> str:
@@ -213,11 +223,47 @@ class CachingHTTPAccessor(_HTTPAccessor):
         return super()._format_path(path)
 
 
-class CachingHTTPPath(HTTPPath):
+class HTTPPath(_HTTPPath):
     """An HTTP path which caches content."""
 
+    _hash: int
     _default_accessor = CachingHTTPAccessor
 
+    def __truediv__(self: PT, key: str | PathLike) -> PT:
+        """Join a path to a HTTP URI."""
+        return self.__class__(urljoin(str(self), str(key)))
 
-_registry.known_implementations["http"] = "euporie.core.path.CachingHTTPPath"
-_registry.known_implementations["https"] = "euporie.core.path.CachingHTTPPath"
+    def __str__(self) -> str:
+        """Represent the path as a string."""
+        try:
+            return self._str
+        except AttributeError:
+            if url := self._url:
+                self._str = url.geturl()
+            else:
+                return super().__str__()
+            return self._str
+
+    def __hash__(self) -> int:
+        """Provide a unique hash of the path."""
+        try:
+            return self._hash
+        except AttributeError:
+            self._hash = hash(self._url)
+            return self._hash
+
+
+_registry.known_implementations["http"] = "euporie.core.path.HTTPPath"
+_registry.known_implementations["https"] = "euporie.core.path.HTTPPath"
+
+
+class HTTPFileSystem(FsHTTPFileSystem):
+    """A :py:class:`HTTPFileSystem` which does not raise exceptions on 404 errors."""
+
+    def _raise_not_found_for_status(self, response: ClientResponse, url: str) -> None:
+        """Do not raise an exception for 404 errors."""
+        pass
+
+
+fs_register_implementation("http", HTTPFileSystem, clobber=True)
+fs_register_implementation("https", HTTPFileSystem, clobber=True)

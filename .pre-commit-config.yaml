@@ -37,12 +37,6 @@ repos:
         language: system
         types: [text]
         stages: [commit, push, manual]
-      - id: ssort
-        name: ssort
-        entry: hatch run check:ssort
-        language: system
-        types: [python]
-        require_serial: true
       - id: black
         name: black
         entry: hatch run check:black

@@ -34,6 +34,7 @@ def html_to_ft(
     fg: str | None = None,
     bg: str | None = None,
     path: Path | None = None,
+    css: CssSelectors | None = None,
     browser_css: CssSelectors | None = None,
 ) -> StyleAndTextTuples:
     """Convert markdown to formatted text."""
@@ -48,6 +49,7 @@ def html_to_ft(
             width=width,
             base=path,
             collapse_root_margin=True,
+            css=css,
             browser_css=browser_css,
         ),
     )
@@ -76,7 +78,6 @@ def markdown_to_ft(
 ) -> StyleAndTextTuples:
     """Convert markdown to formatted text, injecting a custom CSS style-sheet."""
     from euporie.core.convert.formats.html import markdown_to_html_markdown_it
-    from euporie.core.formatted_text.html import _BROWSER_CSS
     from euporie.core.formatted_text.markdown import _MARKDOWN_CSS
 
     return html_to_ft(
@@ -88,7 +89,7 @@ def markdown_to_ft(
         fg=fg,
         bg=bg,
         path=path,
-        browser_css={**_BROWSER_CSS, **_MARKDOWN_CSS},
+        css=_MARKDOWN_CSS,
     )
 
 
