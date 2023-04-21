@@ -42,14 +42,17 @@ def imagemagick_convert(
 ) -> str | bytes:
     """Convert image data to PNG bytes using ``imagemagick``."""
     cmd: list[Any] = ["convert"]  # , "-density", "300"]
-    if cols is not None:
-        px, _ = get_app().term_info.cell_size_px
+    app = get_app()
+    if cols is not None and hasattr(app, "term_info"):
+        px, _ = app.term_info.cell_size_px
         cmd += ["-geometry", f"{int(cols * px)}"]
-    bg = bg or get_app().color_palette.bg.base_hex
+    if bg is None and hasattr(app, "color_palette"):
+        bg = app.color_palette.bg.base_hex
     if bg is not None:
         cmd += ["-background", bg]
     cmd += ["-[0]", f"{output_format}:-"]
     result: bytes | str = call_subproc(data, cmd)
+
     if output_format in {"sixel", "svg"} and isinstance(result, bytes):
         result = result.decode()
     return result
@@ -109,12 +112,34 @@ def chafa_convert_py(
     config = CanvasConfig()
     # Set output mode
     config.pixel_mode = str_to_pixel_mode[output_format]
-    # Set canvas height and width
-    config.height = rows or 20
-    config.width = cols or 80
     # Configure the canvas geometry based on our cell size
-    config.cell_width, config.cell_height = get_app().term_info.cell_size_px
+    if hasattr(app := get_app(), "term_info"):
+        px, py = app.term_info.cell_size_px
+    else:
+        px, py = 10, 20
+    config.cell_width, config.cell_height = px, py
+    # Set canvas height and width
+    if cols:
+        config.width = cols
+        if rows:
+            config.height = rows
+        # If we don't have specified, use the image's aspect
+        else:
+            config.height = int(cols / data.size[0] * data.size[1] * px / py)
+
+    # Set the foreground color
+    if fg is None and hasattr(app, "color_palette"):
+        fg = app.color_palette.fg.base_hex
+    if fg and (color := fg.lstrip("#")):
+        config.fg_color = (
+            int(color[0:2], 16),
+            int(color[2:4], 16),
+            int(color[4:6], 16),
+        )
+
     # Set the background color
+    if bg is None and hasattr(app, "color_palette"):
+        bg = app.color_palette.bg.base_hex
     if bg and (color := bg.lstrip("#")):
         config.bg_color = (
             int(color[0:2], 16),
