@@ -5,7 +5,7 @@ def main(name: "str" = "launch") -> "None":
     """Load and launches the application."""
     from importlib.metadata import entry_points
 
-    for entry in entry_points()["euporie.apps"]:
+    for entry in entry_points().get("euporie.apps", []):
         if entry.name == name:
             return entry.load().launch()
     else:
