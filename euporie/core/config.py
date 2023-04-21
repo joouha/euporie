@@ -508,17 +508,21 @@ class Config:
             results.update(json_data)
         return results
 
-    def get(self, name: str) -> Any:
+    def get(self, name: str, default: Any = None) -> Any:
         """Access a configuration value, falling back to the default value if unset.
 
         Args:
             name: The name of the attribute to access.
+            default: The value to return if the name is not found
 
         Returns:
             The configuration variable value.
 
         """
-        return self.settings[name].value
+        if name in self.settings:
+            return self.settings[name].value
+        else:
+            return default
 
     def get_item(self, name: str) -> Any:
         """Access a configuration item.
