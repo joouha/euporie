@@ -7,16 +7,20 @@ import re
 from ast import literal_eval
 from bisect import bisect_right
 from collections.abc import Mapping
-from functools import cached_property, lru_cache
+from functools import cached_property, lru_cache, partial
 from html.parser import HTMLParser
 from itertools import zip_longest
 from math import ceil
-from typing import TYPE_CHECKING, NamedTuple
+from operator import eq, ge, gt, le, lt
+from typing import TYPE_CHECKING, NamedTuple, cast
 from urllib.parse import urljoin
 
 from flatlatex.data import subscript, superscript
 from prompt_toolkit.application.current import get_app_session
-from prompt_toolkit.cache import SimpleCache
+from prompt_toolkit.data_structures import Size
+from prompt_toolkit.filters.base import Condition
+from prompt_toolkit.filters.utils import _always as always
+from prompt_toolkit.filters.utils import _never as never
 from prompt_toolkit.formatted_text.base import StyleAndTextTuples
 from prompt_toolkit.formatted_text.utils import split_lines
 from prompt_toolkit.layout.dimension import Dimension
@@ -63,7 +67,6 @@ from euporie.core.formatted_text.utils import (
     pad,
     paste,
     strip,
-    strip_one_trailing_newline,
     truncate,
 )
 
@@ -86,15 +89,16 @@ class CssSelector(NamedTuple):
 
 
 if TYPE_CHECKING:
-    from typing import (
-        Any,
-        Callable,
-        Generator,
-        Hashable,
-        Iterator,
-    )
+    from pathlib import Path
+    from typing import Any, Callable, Generator, Iterator
 
-    CssSelectors = dict[tuple[tuple[CssSelector, ...], ...], dict[str, str]]
+    from prompt_toolkit.filters.base import Filter
+    from prompt_toolkit.key_binding.key_bindings import NotImplementedOrNone
+    from prompt_toolkit.mouse_events import MouseEvent
+
+    CssSelectors = dict[
+        Filter, dict[tuple[tuple[CssSelector, ...], ...], dict[str, str]]
+    ]
 
 log = logging.getLogger(__name__)
 
@@ -123,7 +127,12 @@ _AT_RULE_RE = re.compile(
     r"""
     (
         @(?:color-profile|container|counter-style|document|font-face|font-feature-values|font-palette-values|keyframes|layer|media|page|supports)
-        [^@{]+{(?:[^{]+?{(?:[^{}]|{[^}]+?})+?}\s*)*?}
+        [^@{]+
+        (?:
+            {[^{}]*}
+            |
+            {(?:[^{]+?{(?:[^{}]|{[^}]+?})+?}\s*)*?}
+        )
         |
         @(?:charset|import|namespace)[^;]*;
     )
@@ -135,6 +144,17 @@ _NESTED_AT_RULE_RE = re.compile(
     r"@(?P<identifier>[\w-]+)\s+(?P<rule>[^{]*?)\s*{\s*(?P<part>.*)\s*}"
 )
 
+_MEDIA_QUERY_TARGET_RE = re.compile(
+    r"""
+        (?:
+            (?P<invert>not\s+)?
+            (?:only\s+)?  # Ignore this
+            (?P<type>all|print|screen) |
+            (?:\((?P<feature>[^)]+)\))
+        )
+    """,
+    re.VERBOSE,
+)
 
 # List of elements which might not have a close tag
 _VOID_ELEMENTS = (
@@ -346,6 +366,10 @@ def match_css_selector(
                     or (rule == "even" and sibling_element_index % 2 == 0)
                 )
                 continue
+        if pseudo.startswith(":link"):
+            pseudo = pseudo[5:]
+            matched = bool(element_attrs.get("href"))
+            continue
         return False
 
     if not matched:
@@ -520,7 +544,7 @@ def css_dimension(
     # TODO - process view-width units
     # https://developer.mozilla.org/en-US/docs/Learn/CSS/Building_blocks/Values_and_units
 
-    if units == "%":
+    if units in {"%", "vh", "vw"}:
         assert available is not None
         return number / 100 * available
 
@@ -557,7 +581,7 @@ def parse_css_content(content: str) -> dict[str, str]:
 
     for declaration in content.split(";"):
         name, _, value = declaration.partition(":")
-        name = name.strip()
+        name = name.strip().lower()
 
         # Ignore "!important" tags for now - TODO
         value = value.replace("!important", "").strip()
@@ -577,6 +601,8 @@ def parse_css_content(content: str) -> dict[str, str]:
                 bottom = values[2]
             elif len(values) >= 4:
                 top, right, bottom, left, *_ = values
+            else:
+                top = right = bottom = left = ""
             return top, right, bottom, left
 
         # Compute values
@@ -675,6 +701,15 @@ def parse_css_content(content: str) -> dict[str, str]:
                 elif each_value in _LIST_STYLE_TYPES:
                     theme["list_style_type"] = each_value
 
+        elif name == "flex-flow":
+            values = set(value.split(" "))
+            directions = {"row", "row-reverse", "column", "column-reverse"}
+            wraps = {"nowrap", "wrap", "wrap-reverse"}
+            for value in values.intersection(directions):
+                theme["flex_direction"] = value
+            for value in values.intersection(wraps):
+                theme["flex_wrap"] = value
+
         else:
             name = name.replace("-", "_")
             theme[name] = value
@@ -739,12 +774,15 @@ _DEFAULT_ELEMENT_CSS = {
     "border_left_color": "",
     "border_bottom_color": "",
     "border_right_color": "",
+    # Flex
+    "flex_direction": "row",
+    "align_content": "normal",
     # Position
     "position": "static",
-    "top": "0",
-    "right": "0",
-    "bottom": "0",
-    "left": "0",
+    "top": "unset",
+    "right": "unset",
+    "bottom": "unset",
+    "left": "unset",
     "z_index": "0",
     # Lists
     "list_style_type": "none",
@@ -787,8 +825,21 @@ class Theme(Mapping):
         available_height: int,
     ) -> None:
         """Set the space available to the element for rendering."""
-        self.available_width = available_width
-        self.available_height = available_height
+        if self.theme["position"] == "fixed":
+            # Space is given by position
+            position = self.position
+            dom = self.element.dom
+            assert dom.width is not None and dom.height is not None
+            self.available_width = (dom.width - position.right) - position.left
+            self.available_height = (dom.height - position.bottom) - position.top
+
+        # elif parent_theme := self.parent_theme:
+        #     self.available_width = parent_theme.content_width
+        #     self.available_height = parent_theme.content_height
+
+        else:
+            self.available_width = available_width
+            self.available_height = available_height
 
     # Theme calculation methods
 
@@ -802,7 +853,7 @@ class Theme(Mapping):
                     **parent_theme.inherited_browser_css_theme,
                     **parent_theme.browser_css_theme,
                 }.items()
-                if k in _HERITABLE_PROPS
+                if k in _HERITABLE_PROPS or k.startswith("__")
             }
 
         else:
@@ -839,7 +890,8 @@ class Theme(Mapping):
                         parent_theme.style_attribute_theme,
                     )
                     for k, v in part.items()
-                    if k in _HERITABLE_PROPS and browser_css.get(k) != "unset"
+                    if (k in _HERITABLE_PROPS or k.startswith("__"))
+                    and browser_css.get(k) != "unset"
                 }
             )
 
@@ -888,70 +940,76 @@ class Theme(Mapping):
         """Calculate the theme defined in CSS."""
         specificity_rules = []
         element = self.element
-        for selectors, rule in css.items():
-            for selector_parts in selectors:
-                # Last selector item should match the current element
-                selector = selector_parts[-1]
-                if not match_css_selector(
-                    selector.item or "",
-                    selector.attr or "",
-                    selector.pseudo or "",
-                    element.name,
-                    element.is_first_child_element,
-                    element.is_last_child_element,
-                    element.sibling_element_index,
-                    **element.attrs,
-                ):
-                    continue
-
-                # All of the parent selectors should match a separate parent in order
-                # TODO - combinators
-                # https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Selectors#combinators
-                unmatched_parents: list[Node] = [x for x in element.parents[::-1] if x]
-
-                _unmatched_parents: list[Node]
-                parent = element.parent
-                if parent and (
-                    (selector.comb == ">" and parent)
-                    # Pseudo-element selectors only match direct ancestors
-                    or ((item := selector.item) and item.startswith("::"))
-                ):
-                    _unmatched_parents = [parent]
-                else:
-                    _unmatched_parents = unmatched_parents
-
-                # TODO investigate caching element / selector chains so we don't have to
-                # iterate through every parent every time
-
-                # Iterate through selector items in reverse, skipping the last
-                for selector in selector_parts[-2::-1]:
-                    for i, parent in enumerate(_unmatched_parents):
-                        if parent and match_css_selector(
+        for condition, css_block in css.items():
+            if condition():
+                for selectors, rule in css_block.items():
+                    for selector_parts in selectors:
+                        # Last selector item should match the current element
+                        selector = selector_parts[-1]
+                        if not match_css_selector(
                             selector.item or "",
                             selector.attr or "",
                             selector.pseudo or "",
-                            parent.name,
-                            parent.is_first_child_element,
-                            parent.is_last_child_element,
-                            parent.sibling_element_index,
-                            **parent.attrs,
+                            element.name,
+                            element.is_first_child_element,
+                            element.is_last_child_element,
+                            element.sibling_element_index,
+                            **element.attrs,
                         ):
-                            if selector.comb == ">" and (parent := parent.parent):
-                                _unmatched_parents = [parent]
-                            else:
-                                _unmatched_parents = unmatched_parents[i + 1 :]
-                            break
-                    else:
-                        break
+                            continue
 
-                else:
-                    # Calculate selector specificity score
-                    specificity_rules.append(
-                        (selector_specificity(selector_parts), rule)
-                    )
-                    # We have already matched this rule, we don't need to keep checking
-                    # the rest of the selectors for this rule
-                    break
+                        # All of the parent selectors should match a separate parent in order
+                        # TODO - combinators
+                        # https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Selectors#combinators
+                        unmatched_parents: list[Node] = [
+                            x for x in element.parents[::-1] if x
+                        ]
+
+                        _unmatched_parents: list[Node]
+                        parent = element.parent
+                        if parent and (
+                            (selector.comb == ">" and parent)
+                            # Pseudo-element selectors only match direct ancestors
+                            or ((item := selector.item) and item.startswith("::"))
+                        ):
+                            _unmatched_parents = [parent]
+                        else:
+                            _unmatched_parents = unmatched_parents
+
+                        # TODO investigate caching element / selector chains so we don't have to
+                        # iterate through every parent every time
+
+                        # Iterate through selector items in reverse, skipping the last
+                        for selector in selector_parts[-2::-1]:
+                            for i, parent in enumerate(_unmatched_parents):
+                                if parent and match_css_selector(
+                                    selector.item or "",
+                                    selector.attr or "",
+                                    selector.pseudo or "",
+                                    parent.name,
+                                    parent.is_first_child_element,
+                                    parent.is_last_child_element,
+                                    parent.sibling_element_index,
+                                    **parent.attrs,
+                                ):
+                                    if selector.comb == ">" and (
+                                        parent := parent.parent
+                                    ):
+                                        _unmatched_parents = [parent]
+                                    else:
+                                        _unmatched_parents = unmatched_parents[i + 1 :]
+                                    break
+                            else:
+                                break
+
+                        else:
+                            # Calculate selector specificity score
+                            specificity_rules.append(
+                                (selector_specificity(selector_parts), rule)
+                            )
+                            # We have already matched this rule, we don't need to keep checking
+                            # the rest of the selectors for this rule
+                            break
 
         return {
             k: v
@@ -974,33 +1032,48 @@ class Theme(Mapping):
     @cached_property
     def d_block(self) -> bool:
         """If the element a block element."""
-        return (
-            self.theme["display"] == "block"
-            and self.theme["float"] == "none"
-            # Temporary workaround until 'flex' and 'grid' are implemented (TODO)
-            and not (
-                self.parent_theme
-                and self.parent_theme.theme["display"] in {"flex", "grid"}
+        theme = self.theme
+        parent_theme = self.parent_theme
+        return theme["display"] in {"block", "flex"} and (
+            parent_theme is None
+            or (self.floated is None and not parent_theme.d_flex)
+            or (
+                parent_theme.d_flex and parent_theme["flex_direction"].startswith("col")
             )
         )
 
     @cached_property
     def d_inline(self) -> bool:
         """If the element an inline element."""
-        return self.theme["display"] == "inline" and self.theme["float"] == "none"
+        return self.theme["display"] == "inline" and self.floated is None
 
     @cached_property
     def d_inline_block(self) -> bool:
         """If the element an inline element."""
+        theme = self.theme
+        parent_theme = self.parent_theme
         return (
-            self.theme["display"] == "inline-block"
-            or self.theme["float"] != "none"
-            # Temporary workaround until 'flex' and 'grid' are implemented (TODO)
+            # Is an actual inline block
+            theme["display"] == "inline-block"
+            # Is floated
+            or self.floated is not None
+            # If flexed in the row direction
             or (
-                self.parent_theme is not None
-                and self.parent_theme.theme["display"] in {"flex", "grid"}
+                parent_theme is not None
+                and parent_theme.d_flex
+                and parent_theme["flex_direction"].startswith("row")
             )
         )
+
+    @cached_property
+    def d_flex(self) -> bool:
+        """If the element a block element."""
+        return self.theme["display"] == "flex"
+
+    @cached_property
+    def d_image(self) -> bool:
+        """If the element is an image."""
+        return self.element.name in {"img", "svg"}
 
     @cached_property
     def d_table(self) -> bool:
@@ -1008,14 +1081,30 @@ class Theme(Mapping):
         return self.theme["display"] == "table"
 
     @cached_property
+    def d_table_cell(self) -> bool:
+        """If the element a block element."""
+        return self.theme["display"] == "table-cell"
+
+    @cached_property
     def d_list_item(self) -> bool:
         """If the element an inline element."""
-        return self.theme["display"] == "list-item" and self.theme["float"] == "none"
+        return self.theme["display"] == "list-item" and self.floated is None
 
     @cached_property
     def d_blocky(self) -> bool:
         """If the element an inline element."""
-        return self.d_block or self.d_table or self.d_list_item
+        return self.d_block or self.d_table or self.d_table_cell or self.d_list_item
+
+    @cached_property
+    def floated(self) -> str | None:
+        """The float status of the element."""
+        value = self.theme["float"]
+        # Float property does not apply to flex-level boxes
+        if value == "none" or (
+            (parent_theme := self.parent_theme) and parent_theme.d_flex
+        ):
+            return None
+        return value
 
     @property
     def min_width(self) -> int | None:
@@ -1031,17 +1120,24 @@ class Theme(Mapping):
     @property
     def width(self) -> int | None:
         """The pescribed width."""
-        if value := self.theme.get("width"):
-            theme_width = css_dimension(
-                value, vertical=False, available=self.available_width
-            )
-            if theme_width is not None:
-                return int(theme_width)
+        value = self.theme.get("width")
 
-        else:
-            element = self.element
+        theme_width: int | float | None
+        if value:
+            if value == "min-content":
+                theme_width = self.min_content_width
+            elif value == "max-content":
+                theme_width = self.max_content_width
+            else:
+                theme_width = css_dimension(
+                    value, vertical=False, available=self.available_width
+                )
+            if theme_width is not None:
+                return min(int(theme_width), self.available_width)
+
+        elif (element := self.element).name == "input":
             attrs = element.attrs
-            if element.name == "input" and attrs.get("type") in {
+            if attrs.get("type") in {
                 "text",
                 "password",
                 "email",
@@ -1051,6 +1147,9 @@ class Theme(Mapping):
                 "url",
             }:
                 return try_eval(size) if (size := attrs.get("size")) else 20
+
+        elif element.name == "text":
+            return len(element.text)
 
         return None
 
@@ -1065,8 +1164,88 @@ class Theme(Mapping):
                 return int(theme_width)
         return None
 
+    @cached_property
+    def min_content_width(self) -> int:
+        """Get maximum absolute child width."""
+        if self.element.name == "text":
+            return max([len(x) for x in self.element.text.split()] or [0])
+        else:
+            return max(
+                [
+                    child.theme.min_content_width
+                    for child in self.element.renderable_contents
+                ]
+                or [0]
+            )
+
+    @cached_property
+    def max_content_width(self) -> int:
+        """Get maximum absolute child width."""
+        if self.element.name == "text":
+            return max([len(x) for x in self.element.text.split("\n")] or [0])
+        else:
+            return sum(
+                [
+                    child.theme.max_content_width
+                    for child in self.element.renderable_contents
+                ]
+                or [0]
+            )
+
     @property
-    def height(self) -> int:
+    def content_width(self) -> int:
+        """Return the width available for rendering the element's content."""
+        value = self.width
+
+        border_box = self.theme.get("box_sizing") == "border-box"
+
+        # Use max-content-width as default for inline-blocks
+        if value is None and self.d_inline_block and not self.d_image:
+            value = self.max_content_width
+            # Do not use border-box for inline-blocks if no width is given
+            border_box = False
+
+        # If we do not have a value, use the available space
+        if value is None:
+            margin = self.margin
+            value = (self.available_width or 0) - margin.left - margin.right
+
+            # Blocks without a set with are rendered with border-box box-sizing
+            if self.d_blocky or self.d_inline_block:
+                border_box = True
+
+        # Ignore box-sizing for table cells, as they include padding and borders
+        if self.d_table_cell:
+            border_box = False
+
+        # Remove padding and borders from available space if we are using box-sizing
+        if border_box:
+            padding = self.padding
+            border_visibility = self.border_visibility
+            value -= padding.left + padding.right
+            value -= border_visibility.left + border_visibility.right
+
+        # Apply min / max width constraints
+        if (max_width := self.max_width) is not None and max_width < value:
+            value = max_width
+        elif (min_width := self.min_width) is not None and min_width > value:
+            value = min_width
+
+        return max(0, value)
+
+    @property
+    def min_height(self) -> int | None:
+        """The minimum permitted height."""
+        if value := self.get("min_height"):
+            theme_height = css_dimension(
+                value, vertical=True, available=self.available_height
+            )
+            if theme_height is not None:
+                return int(theme_height)
+        return None
+
+    @property
+    def height(self) -> int | None:
         """The perscribed height."""
         # TODO - process min-/max-height
         if value := self.get("height"):
@@ -1075,37 +1254,60 @@ class Theme(Mapping):
             )
             if theme_height is not None:
                 return int(theme_height)
-        assert self.available_height is not None
-        return self.available_height
+        return None
 
     @property
-    def content_width(self) -> int:
-        """Return the width available for rendering the element's content."""
-        value = self.width
-        # Set content width to the available width for blocks
-        if value is None:
-            value = (self.available_width or 0) - self.margin.left - self.margin.right
-        # Apply min / max width constraints
-        if (max_width := self.max_width) is not None and max_width < value:
-            value = max_width
-        elif (min_width := self.min_width) is not None and min_width > value:
-            value = min_width
-        # Remove padding and borders from content width for blocks
-        if value and (self.d_blocky or self.d_inline_block):
-            value -= self.padding.left + self.padding.right
-            value -= self.border_visibility.left + self.border_visibility.right
-
-        return max(0, value)
+    def max_height(self) -> int | None:
+        """The maximum permitted height."""
+        if value := self.get("max_height"):
+            theme_height = css_dimension(
+                value, vertical=True, available=self.available_height
+            )
+            if theme_height is not None:
+                return int(theme_height)
+        return None
 
     @property
     def content_height(self) -> int:
         """Return the height available for rendering the element's content."""
         value = self.height
-        if value and self.d_blocky:
-            value -= self.padding.top + self.padding.bottom
-            value -= self.border_visibility.top + self.border_visibility.bottom
-            value -= self.margin.top + self.margin.bottom
-        return max(value, 0)
+
+        border_box = self.theme.get("box_sizing") == "border-box"
+
+        # Use max-content-height as default for inline-blocks
+        # if value is None and self.d_inline_block and not self.d_image:
+        #     value = self.max_content_height
+        #     # Do not use border-box for inline-blocks if no height is given
+        #     border_box = False
+
+        # If we do not have a value, use the available space
+        if value is None:
+            margin = self.margin
+            value = (self.available_height or 0) - margin.top - margin.bottom
+
+            # Blocks without a set with are rendered with border-box box-sizing
+            # (but not rendered tables as they include padding and borders)
+            if self.d_blocky or self.d_inline_block:
+                border_box = True
+
+        # Ignore box-sizing for table cells, as they include padding and borders
+        if self.d_table_cell:
+            border_box = False
+
+        # Remove padding and borders from available space if we are using box-sizing
+        if border_box:
+            padding = self.padding
+            border_visibility = self.border_visibility
+            value -= padding.top + padding.bottom
+            value -= border_visibility.top + border_visibility.bottom
+
+        # Apply min / max height constraints
+        if (max_height := self.max_height) is not None and max_height < value:
+            value = max_height
+        elif (min_height := self.min_height) is not None and min_height > value:
+            value = min_height
+
+        return max(0, value)
 
     @cached_property
     def padding(self) -> DiInt:
@@ -1193,6 +1395,7 @@ class Theme(Mapping):
             # Replace the margin on the parent
             if (
                 (first_child := element.first_child_element)
+                and first_child.prev_node_in_flow is None
                 and not self.border_visibility.top
                 and not self.padding.top
             ):
@@ -1206,6 +1409,7 @@ class Theme(Mapping):
                     values["top"] = max(child_theme.base_margin.top, values["top"])
             if (
                 (last_child := element.last_child_element)
+                and last_child.next_node_in_flow is None
                 and not self.padding.bottom
                 and not self.border_visibility.bottom
             ):
@@ -1301,7 +1505,6 @@ class Theme(Mapping):
     def border_line(self) -> DiLineStyle:
         """Calculate the line style."""
         a_w = self.available_width
-        self.d_inline
         output = {}
         for direction in ("top", "right", "bottom", "left"):
             border_width = self.theme[f"border_{direction}_width"]
@@ -1352,7 +1555,13 @@ class Theme(Mapping):
         """Get the computed theme foreground color."""
         # TODO - transparency
         color_str = self.theme["color"]
-        if color_str == "transparent":
+        # Use black as the default color if a bg color is set
+        if color_str.startswith("var("):
+            var = color_str[4:-1].replace("-", "_")
+            color_str = self.theme.get(var, color_str)
+        if color_str == "default" and self.theme["background_color"] != "default":
+            color_str = "#000000"
+        elif color_str == "transparent":
             return self.background_color
         if fg := get_color(color_str):
             return fg
@@ -1366,9 +1575,16 @@ class Theme(Mapping):
         """Get the computed theme background color."""
         # TODO - transparency
         color_str = self.theme["background_color"]
+        # Use white as the default bg color if a fg color is set
+        # if color_str == "default" and self.theme["color"] != "default":
+        # color_str = "#ffffff"
+        if color_str.startswith("var("):
+            var = color_str[4:-1].replace("-", "_")
+            color_str = self.theme.get(var, color_str)
         if color_str == "transparent":
             if parent_theme := self.parent_theme:
                 return parent_theme.background_color
+            color_str = ""
         if bg := get_color(color_str):
             return bg
         elif self.parent_theme:
@@ -1439,6 +1655,19 @@ class Theme(Mapping):
     @cached_property
     def vertical_align(self) -> float:
         """The vertical alignment direction."""
+        if (parent_theme := self.parent_theme) and parent_theme.d_flex:
+            if self.theme.get("align_content") in {
+                "normal",
+                "flex-start",
+                "start",
+                "baseline",
+            }:
+                return 0
+            elif self.theme.get("align_content") == "center":
+                return 0.5
+            else:
+                return 1
+
         return _VERTICAL_ALIGNS.get(self.theme["vertical_align"], 1)
 
     @cached_property
@@ -1476,12 +1705,13 @@ class Theme(Mapping):
     def position(self) -> DiInt:
         """The position of an element with a relative, absolute or fixed position."""
         # TODO - calculate position based on top, left, bottom,right, width, height
+        soup_theme = self.element.dom.soup.theme
         return DiInt(
             top=int(
                 css_dimension(
                     self.theme["top"],
                     vertical=True,
-                    available=self.element.dom.soup.theme.available_height,
+                    available=soup_theme.available_height,
                 )
                 or 0
             ),
@@ -1489,7 +1719,7 @@ class Theme(Mapping):
                 css_dimension(
                     self.theme["right"],
                     vertical=False,
-                    available=self.element.dom.soup.theme.available_width,
+                    available=soup_theme.available_width,
                 )
                 or 0
             ),
@@ -1497,7 +1727,7 @@ class Theme(Mapping):
                 css_dimension(
                     self.theme["bottom"],
                     vertical=True,
-                    available=self.element.dom.soup.theme.available_height,
+                    available=soup_theme.available_height,
                 )
                 or 0
             ),
@@ -1505,10 +1735,20 @@ class Theme(Mapping):
                 css_dimension(
                     self.theme["left"],
                     vertical=False,
-                    available=self.element.dom.soup.theme.available_width,
+                    available=soup_theme.available_width,
                 )
                 or 0
             ),
+        )
+
+    @cached_property
+    def anchors(self) -> DiBool:
+        """Which position directions are set."""
+        return DiBool(
+            top=self.theme["top"] not in {"unset"},
+            right=self.theme["right"] not in {"unset"},
+            bottom=self.theme["bottom"] not in {"unset"},
+            left=self.theme["left"] not in {"unset"},
         )
 
     @cached_property
@@ -1539,7 +1779,7 @@ class Theme(Mapping):
         """Determine if the element is "in-flow"."""
         return (
             not self.skip
-            and self.theme["float"] == "none"
+            and self.floated is None
             and self.theme["position"] not in {"absolute", "fixed"}
             and self.element.name != "html"
         )
@@ -1559,418 +1799,492 @@ class Theme(Mapping):
         return self.theme.__len__()
 
 
-_BROWSER_CSS = {
-    # Non-rendered elements
-    (
-        (CssSelector(item="head"),),
-        (CssSelector(item="base"),),
-        (CssSelector(item="command"),),
-        (CssSelector(item="link"),),
-        (CssSelector(item="meta"),),
-        (CssSelector(item="noscript"),),
-        (CssSelector(item="script"),),
-        (CssSelector(item="style"),),
-        (CssSelector(item="title"),),
-        (CssSelector(item="option"),),
-        (CssSelector(item="input", attr="[type=hidden]"),),
-    ): {"display": "none"},
-    # Inline elements
-    (
-        (CssSelector(item="::before"),),
-        (CssSelector(item="::after"),),
-        (CssSelector(item="text"),),
-        (CssSelector(item="abbr"),),
-        (CssSelector(item="acronym"),),
-        (CssSelector(item="audio"),),
-        (CssSelector(item="bdi"),),
-        (CssSelector(item="bdo"),),
-        (CssSelector(item="big"),),
-        (CssSelector(item="br"),),
-        (CssSelector(item="canvas"),),
-        (CssSelector(item="data"),),
-        (CssSelector(item="datalist"),),
-        (CssSelector(item="embed"),),
-        (CssSelector(item="iframe"),),
-        (CssSelector(item="label"),),
-        (CssSelector(item="map"),),
-        (CssSelector(item="meter"),),
-        (CssSelector(item="object"),),
-        (CssSelector(item="output"),),
-        (CssSelector(item="picture"),),
-        (CssSelector(item="progress"),),
-        (CssSelector(item="q"),),
-        (CssSelector(item="ruby"),),
-        (CssSelector(item="select"),),
-        (CssSelector(item="slot"),),
-        (CssSelector(item="small"),),
-        (CssSelector(item="span"),),
-        (CssSelector(item="template"),),
-        (CssSelector(item="textarea"),),
-        (CssSelector(item="time"),),
-        (CssSelector(item="tt"),),
-        (CssSelector(item="video"),),
-        (CssSelector(item="wbr"),),
-    ): {"display": "inline"},
-    # Formatted inlines
-    ((CssSelector(item="a"),),): {
-        "display": "inline",
-        "text_decoration": "underline",
-        "color": "ansibrightblue",
-    },
-    ((CssSelector(item="b"),), (CssSelector(item="strong"),)): {
-        "display": "inline",
-        "font_weight": "bold",
-    },
-    (
-        (CssSelector(item="cite"),),
-        (CssSelector(item="dfn"),),
-        (CssSelector(item="em"),),
-        (CssSelector(item="i"),),
-        (CssSelector(item="var"),),
-    ): {"display": "inline", "font_style": "italic"},
-    ((CssSelector(item="code"),),): {
-        "display": "inline",
-    },
-    ((CssSelector(item="del"),), (CssSelector(item="s"),)): {
-        "display": "inline",
-        "text_decoration": "line-through",
-    },
-    ((CssSelector(item="img"),), (CssSelector(item="svg"),)): {
-        "display": "inline-block",
-        "overflow_x": "hidden",
-        "overflow_y": "hidden",
-    },
-    ((CssSelector(item="ins"),), (CssSelector(item="u"),)): {
-        "display": "inline",
-        "text_decoration": "underline",
-    },
-    ((CssSelector(item="kbd"),),): {
-        "display": "inline",
-        "background_color": "#333344",
-        "color": "#FFFFFF",
-    },
-    ((CssSelector(item="mark"),),): {
-        "display": "inline",
-        "color": "black",
-        "background_color": "#FFFF00",
-    },
-    ((CssSelector(item="samp"),),): {
-        "display": "inline",
-        "background_color": "#334433",
-        "color": "#FFFFFF",
-    },
-    ((CssSelector(item="sub"),),): {"display": "inline", "vertical_align": "sub"},
-    ((CssSelector(item="sup"),),): {"display": "inline", "vertical_align": "super"},
-    (
+_BROWSER_CSS: CssSelectors = {
+    always: {
+        # Set body background to white
+        ((CssSelector(item="body"),),): {"background_color": "#FFFFFF"},
+        # Non-rendered elements
         (
-            CssSelector(item="q"),
-            CssSelector(item="::before"),
-        ),
-    ): {"content": "“"},
-    (
+            (CssSelector(item="head"),),
+            (CssSelector(item="base"),),
+            (CssSelector(item="command"),),
+            (CssSelector(item="link"),),
+            (CssSelector(item="meta"),),
+            (CssSelector(item="noscript"),),
+            (CssSelector(item="script"),),
+            (CssSelector(item="style"),),
+            (CssSelector(item="title"),),
+            (CssSelector(item="option"),),
+            (CssSelector(item="input", attr="[type=hidden]"),),
+        ): {"display": "none"},
+        # Inline elements
         (
-            CssSelector(item="q"),
-            CssSelector(item="::after"),
-        ),
-    ): {"content": "”"},
-    # Images
-    (
-        (CssSelector(item="img", attr="[_missing]"),),
-        (CssSelector(item="svg", attr="[_missing]"),),
-    ): {
-        "border_top_style": "solid",
-        "border_right_style": "solid",
-        "border_bottom_style": "solid",
-        "border_left_style": "solid",
-        "border_top_width": "1px",
-        "border_right_width": "1px",
-        "border_bottom_width": "1px",
-        "border_left_width": "1px",
-    },
-    # Alignment
-    ((CssSelector(item="center"),), (CssSelector(item="caption"),)): {
-        "text_align": "center",
-        "display": "block",
-    },
-    # Tables
-    ((CssSelector(item="table"),),): {
-        "display": "table",
-        "border_collapse": "collapse",
-    },
-    ((CssSelector(item="td"),),): {"display": "table-cell", "text_align": "unset"},
-    ((CssSelector(item="th"),),): {
-        "display": "table-cell",
-        "font_weight": "bold",
-        "text_align": "center",
-    },
-    # Forms
-    ((CssSelector(item="input"),),): {
-        "display": "inline-block",
-        "white_space": "pre",
-        "color": "#000000",
-        "border_top_style": "inset",
-        "border_right_style": "inset",
-        "border_bottom_style": "inset",
-        "border_left_style": "inset",
-        "border_top_width": "2px",
-        "border_right_width": "2px",
-        "border_bottom_width": "2px",
-        "border_left_width": "2px",
-        "vertical_align": "middle",
-    },
-    ((CssSelector(item="input", attr="[type=text]"),),): {
-        "background_color": "#FFFFFF",
-        "border_top_color": "#606060",
-        "border_right_color": "#E9E7E3",
-        "border_bottom_color": "#E9E7E3",
-        "border_left_color": "#606060",
-        "overflow_x": "hidden",
-    },
-    (
-        (CssSelector(item="input", attr="[type=button]"),),
-        (CssSelector(item="input", attr="[type=submit]"),),
-        (CssSelector(item="input", attr="[type=reset]"),),
-    ): {
-        "background_color": "#d4d0c8",
-        "border_right": "#606060",
-        "border_bottom": "#606060",
-        "border_left": "#ffffff",
-        "border_top": "#ffffff",
-    },
-    ((CssSelector(item="button"),),): {
-        "display": "inline-block",
-        "color": "#000000",
-        "border_top_style": "outset",
-        "border_right_style": "outset",
-        "border_bottom_style": "outset",
-        "border_left_style": "outset",
-        "border_top_width": "2px",
-        "border_right_width": "2px",
-        "border_bottom_width": "2px",
-        "border_left_width": "2px",
-        "background_color": "#d4d0c8",
-        "border_right": "#606060",
-        "border_bottom": "#606060",
-        "border_left": "#ffffff",
-        "border_top": "#ffffff",
-    },
-    # Headings
-    ((CssSelector(item="h1"),),): {
-        "font_weight": "bold",
-        "text_decoration": "underline",
-        "border_bottom_style": "solid",
-        "border_bottom_width": "thick",
-        "padding_bottom": "2rem",
-        "margin_top": "2rem",
-        "margin_bottom": "2em",
-    },
-    ((CssSelector(item="h2"),),): {
-        "font_weight": "bold",
-        "border_bottom_style": "double",
-        "border_bottom_width": "thick",
-        "padding_bottom": "1.5rem",
-        "margin_top": "1.5rem",
-        "margin_bottom": "1.5rem",
-    },
-    ((CssSelector(item="h3"),),): {
-        "font_weight": "bold",
-        "font_style": "italic",
-        "border_bottom_style": ":lower-left",
-        "border_bottom_width": "thin",
-        "padding_top": "1rem",
-        "padding_bottom": "1rem",
-        "margin_bottom": "1.5rem",
-    },
-    ((CssSelector(item="h4"),),): {
-        "text_decoration": "underline",
-        "border_bottom_style": "solid",
-        "border_bottom_width": "thin",
-        "padding_top": "1rem",
-        "padding_bottom": "1rem",
-        "margin_bottom": "1.5rem",
-    },
-    ((CssSelector(item="h5"),),): {
-        "border_bottom_style": "dashed",
-        "border_bottom_width": "thin",
-        "margin_bottom": "1.5rem",
-    },
-    ((CssSelector(item="h6"),),): {
-        "font_style": "italic",
-        "border_bottom_style": "dotted",
-        "border_bottom_width": "thin",
-        "margin_bottom": "1.5rem",
-    },
-    # Misc blocks
-    ((CssSelector(item="blockquote"),),): {
-        "margin_top": "1em",
-        "margin_bottom": "1em",
-        "margin_right": "2em",
-        "margin_left": "2em",
-    },
-    ((CssSelector(item="hr"),),): {
-        "margin_top": "1rem",
-        "margin_bottom": "1rem",
-        "border_top_width": "thin",
-        "border_top_style": "solid",
-        "border_top_color": "ansired",
-    },
-    ((CssSelector(item="p"),),): {"margin_top": "1em", "margin_bottom": "1em"},
-    ((CssSelector(item="pre"),),): {
-        "margin_top": "1em",
-        "margin_bottom": "1em",
-        "white_space": "pre",
-    },
-    # Lists
-    ((CssSelector(item="::marker"),),): {
-        "display": "inline",
-        "padding_right": "1em",
-        "text_align": "right",
-    },
-    ((CssSelector(item="ol"),),): {
-        "list_style_type": "decimal",
-        "list_style_position": "outside",
-        "padding_left": "4em",
-        "margin_top": "1em",
-        "margin_bottom": "1em",
-    },
-    (
-        (CssSelector(item="ul"),),
-        (CssSelector(item="menu"),),
-        (CssSelector(item="dir"),),
-    ): {
-        "list_style_type": "disc",
-        "list_style_position": "outside",
-        "padding_left": "3em",
-        "margin_top": "1em",
-        "margin_bottom": "1em",
-    },
-    (
-        (CssSelector(item="dir"), CssSelector(item="dir")),
-        (CssSelector(item="dir"), CssSelector(item="menu")),
-        (CssSelector(item="dir"), CssSelector(item="ul")),
-        (CssSelector(item="ol"), CssSelector(item="dir")),
-        (CssSelector(item="ol"), CssSelector(item="menu")),
-        (CssSelector(item="ol"), CssSelector(item="ul")),
-        (CssSelector(item="menu"), CssSelector(item="dir")),
-        (CssSelector(item="menu"), CssSelector(item="menu")),
-        (CssSelector(item="ul"), CssSelector(item="dir")),
-        (CssSelector(item="ul"), CssSelector(item="menu")),
-        (CssSelector(item="ul"), CssSelector(item="ul")),
-    ): {"margin_top": "0em", "margin_bottom": "0em", "list_style_type": "circle"},
-    (
-        (CssSelector(item="dir"), CssSelector(item="dl")),
-        (CssSelector(item="dir"), CssSelector(item="ol")),
-        (CssSelector(item="dl"), CssSelector(item="dir")),
-        (CssSelector(item="dl"), CssSelector(item="dl")),
-        (CssSelector(item="dl"), CssSelector(item="ol")),
-        (CssSelector(item="dl"), CssSelector(item="menu")),
-        (CssSelector(item="dl"), CssSelector(item="ul")),
-        (CssSelector(item="ol"), CssSelector(item="dl")),
-        (CssSelector(item="ol"), CssSelector(item="ol")),
-        (CssSelector(item="menu"), CssSelector(item="dl")),
-        (CssSelector(item="menu"), CssSelector(item="ol")),
-        (CssSelector(item="ul"), CssSelector(item="dl")),
-        (CssSelector(item="ul"), CssSelector(item="ol")),
-    ): {"margin_top": "0em", "margin_bottom": "0em"},
-    ((CssSelector(item="menu"), CssSelector(item="ul")),): {
-        "list_style_type": "circle",
-        "margin_top": "0em",
-        "margin_bottom": "0em",
-    },
-    (
-        (CssSelector(item="dir"), CssSelector(item="dir"), CssSelector(item="dir")),
-        (CssSelector(item="dir"), CssSelector(item="dir"), CssSelector(item="menu")),
-        (CssSelector(item="dir"), CssSelector(item="dir"), CssSelector(item="ul")),
-        (CssSelector(item="dir"), CssSelector(item="menu"), CssSelector(item="dir")),
-        (CssSelector(item="dir"), CssSelector(item="menu"), CssSelector(item="menu")),
-        (CssSelector(item="dir"), CssSelector(item="menu"), CssSelector(item="ul")),
-        (CssSelector(item="dir"), CssSelector(item="ol"), CssSelector(item="dir")),
-        (CssSelector(item="dir"), CssSelector(item="ol"), CssSelector(item="menu")),
-        (CssSelector(item="dir"), CssSelector(item="ol"), CssSelector(item="ul")),
-        (CssSelector(item="dir"), CssSelector(item="ul"), CssSelector(item="dir")),
-        (CssSelector(item="dir"), CssSelector(item="ul"), CssSelector(item="menu")),
-        (CssSelector(item="dir"), CssSelector(item="ul"), CssSelector(item="ul")),
-        (CssSelector(item="menu"), CssSelector(item="dir"), CssSelector(item="dir")),
-        (CssSelector(item="menu"), CssSelector(item="dir"), CssSelector(item="menu")),
-        (CssSelector(item="menu"), CssSelector(item="dir"), CssSelector(item="ul")),
-        (CssSelector(item="menu"), CssSelector(item="menu"), CssSelector(item="dir")),
-        (CssSelector(item="menu"), CssSelector(item="menu"), CssSelector(item="menu")),
-        (CssSelector(item="menu"), CssSelector(item="menu"), CssSelector(item="ul")),
-        (CssSelector(item="menu"), CssSelector(item="ol"), CssSelector(item="dir")),
-        (CssSelector(item="menu"), CssSelector(item="ol"), CssSelector(item="menu")),
-        (CssSelector(item="menu"), CssSelector(item="ol"), CssSelector(item="ul")),
-        (CssSelector(item="menu"), CssSelector(item="ul"), CssSelector(item="dir")),
-        (CssSelector(item="menu"), CssSelector(item="ul"), CssSelector(item="menu")),
-        (CssSelector(item="menu"), CssSelector(item="ul"), CssSelector(item="ul")),
-        (CssSelector(item="ol"), CssSelector(item="dir"), CssSelector(item="dir")),
-        (CssSelector(item="ol"), CssSelector(item="dir"), CssSelector(item="menu")),
-        (CssSelector(item="ol"), CssSelector(item="dir"), CssSelector(item="ul")),
-        (CssSelector(item="ol"), CssSelector(item="menu"), CssSelector(item="dir")),
-        (CssSelector(item="ol"), CssSelector(item="menu"), CssSelector(item="menu")),
-        (CssSelector(item="ol"), CssSelector(item="menu"), CssSelector(item="ul")),
-        (CssSelector(item="ol"), CssSelector(item="ol"), CssSelector(item="dir")),
-        (CssSelector(item="ol"), CssSelector(item="ol"), CssSelector(item="menu")),
-        (CssSelector(item="ol"), CssSelector(item="ol"), CssSelector(item="ul")),
-        (CssSelector(item="ol"), CssSelector(item="ul"), CssSelector(item="dir")),
-        (CssSelector(item="ol"), CssSelector(item="ul"), CssSelector(item="menu")),
-        (CssSelector(item="ol"), CssSelector(item="ul"), CssSelector(item="ul")),
-        (CssSelector(item="ul"), CssSelector(item="dir"), CssSelector(item="dir")),
-        (CssSelector(item="ul"), CssSelector(item="dir"), CssSelector(item="menu")),
-        (CssSelector(item="ul"), CssSelector(item="dir"), CssSelector(item="ul")),
-        (CssSelector(item="ul"), CssSelector(item="menu"), CssSelector(item="dir")),
-        (CssSelector(item="ul"), CssSelector(item="menu"), CssSelector(item="menu")),
-        (CssSelector(item="ul"), CssSelector(item="menu"), CssSelector(item="ul")),
-        (CssSelector(item="ul"), CssSelector(item="ol"), CssSelector(item="dir")),
-        (CssSelector(item="ul"), CssSelector(item="ol"), CssSelector(item="menu")),
-        (CssSelector(item="ul"), CssSelector(item="ol"), CssSelector(item="ul")),
-        (CssSelector(item="ul"), CssSelector(item="ul"), CssSelector(item="dir")),
-        (CssSelector(item="ul"), CssSelector(item="ul"), CssSelector(item="menu")),
-        (CssSelector(item="ul"), CssSelector(item="ul"), CssSelector(item="ul")),
-    ): {"list_style_type": "square"},
-    ((CssSelector(item="li"),),): {"display": "list-item"},
-    ((CssSelector(item="details"),),): {
-        "list_style_type": "disclosure-closed",
-        "list_style_position": "inside",
-    },
-    ((CssSelector(item="details", attr="[open]"), CssSelector(item="summary")),): {
-        "list_style_type": "disclosure-open"
-    },
-    ((CssSelector(item="summary"),),): {"display": "list-item", "font_weight": "bold"},
-    # Dataframes for Jupyter
-    ((CssSelector(item=".dataframe"),),): {"_pt_class": "dataframe"},
-    (
-        (CssSelector(item=".dataframe"), CssSelector(item="td")),
-        (CssSelector(item=".dataframe"), CssSelector(item="th")),
-    ): {
-        "border_top_style": "hidden",
-        "border_left_style": "hidden",
-        "border_bottom_style": "hidden",
-        "border_right_style": "hidden",
-        "padding_left": "1em",
-    },
-    (
+            (CssSelector(item="::before"),),
+            (CssSelector(item="::after"),),
+            (CssSelector(item="text"),),
+            (CssSelector(item="abbr"),),
+            (CssSelector(item="acronym"),),
+            (CssSelector(item="audio"),),
+            (CssSelector(item="bdi"),),
+            (CssSelector(item="bdo"),),
+            (CssSelector(item="big"),),
+            (CssSelector(item="br"),),
+            (CssSelector(item="canvas"),),
+            (CssSelector(item="data"),),
+            (CssSelector(item="datalist"),),
+            (CssSelector(item="embed"),),
+            (CssSelector(item="iframe"),),
+            (CssSelector(item="label"),),
+            (CssSelector(item="map"),),
+            (CssSelector(item="meter"),),
+            (CssSelector(item="object"),),
+            (CssSelector(item="output"),),
+            (CssSelector(item="picture"),),
+            (CssSelector(item="progress"),),
+            (CssSelector(item="q"),),
+            (CssSelector(item="ruby"),),
+            (CssSelector(item="select"),),
+            (CssSelector(item="slot"),),
+            (CssSelector(item="small"),),
+            (CssSelector(item="span"),),
+            (CssSelector(item="template"),),
+            (CssSelector(item="textarea"),),
+            (CssSelector(item="time"),),
+            (CssSelector(item="tt"),),
+            (CssSelector(item="video"),),
+            (CssSelector(item="wbr"),),
+        ): {"display": "inline"},
+        # Formatted inlines
+        ((CssSelector(item="a"),),): {
+            "display": "inline",
+            "text_decoration": "underline",
+            "color": "ansibrightblue",
+        },
+        ((CssSelector(item="b"),), (CssSelector(item="strong"),)): {
+            "display": "inline",
+            "font_weight": "bold",
+        },
         (
-            CssSelector(item=".dataframe"),
-            CssSelector(item="th"),
-        ),
-    ): {
-        "_pt_class": "dataframe,th",
-    },
-    (
-        (CssSelector(item=".dataframe"), CssSelector(item="th", pseudo=":first-child")),
-        (CssSelector(item=".dataframe"), CssSelector(item="th", pseudo=":last-child")),
-        (CssSelector(item=".dataframe"), CssSelector(item="td", pseudo=":last-child")),
-    ): {"padding_right": "1em"},
-    ((CssSelector(item=".dataframe"), CssSelector(item="td")),): {
-        "_pt_class": "dataframe,td bg:default"
-    },
-    (
+            (CssSelector(item="cite"),),
+            (CssSelector(item="dfn"),),
+            (CssSelector(item="em"),),
+            (CssSelector(item="i"),),
+            (CssSelector(item="var"),),
+        ): {"display": "inline", "font_style": "italic"},
+        ((CssSelector(item="code"),),): {
+            "display": "inline",
+        },
+        ((CssSelector(item="del"),), (CssSelector(item="s"),)): {
+            "display": "inline",
+            "text_decoration": "line-through",
+        },
+        ((CssSelector(item="img"),), (CssSelector(item="svg"),)): {
+            "display": "inline-block",
+            "overflow_x": "hidden",
+            "overflow_y": "hidden",
+        },
+        ((CssSelector(item="ins"),), (CssSelector(item="u"),)): {
+            "display": "inline",
+            "text_decoration": "underline",
+        },
+        ((CssSelector(item="kbd"),),): {
+            "display": "inline",
+            "background_color": "#333344",
+            "color": "#FFFFFF",
+        },
+        ((CssSelector(item="mark"),),): {
+            "display": "inline",
+            "color": "black",
+            "background_color": "#FFFF00",
+        },
+        ((CssSelector(item="samp"),),): {
+            "display": "inline",
+            "background_color": "#334433",
+            "color": "#FFFFFF",
+        },
+        ((CssSelector(item="sub"),),): {"display": "inline", "vertical_align": "sub"},
+        ((CssSelector(item="sup"),),): {"display": "inline", "vertical_align": "super"},
         (
-            CssSelector(item=".dataframe"),
-            CssSelector(item="tr", pseudo=":nth-child(odd)"),
-            CssSelector(item="td"),
-        ),
-    ): {"_pt_class": "dataframe,row-odd,td"},
+            (
+                CssSelector(item="q"),
+                CssSelector(item="::before"),
+            ),
+        ): {"content": "“"},
+        (
+            (
+                CssSelector(item="q"),
+                CssSelector(item="::after"),
+            ),
+        ): {"content": "”"},
+        # Images
+        (
+            (CssSelector(item="img", attr="[_missing]"),),
+            (CssSelector(item="svg", attr="[_missing]"),),
+        ): {
+            "border_top_style": "solid",
+            "border_right_style": "solid",
+            "border_bottom_style": "solid",
+            "border_left_style": "solid",
+            "border_top_width": "1px",
+            "border_right_width": "1px",
+            "border_bottom_width": "1px",
+            "border_left_width": "1px",
+        },
+        # Alignment
+        ((CssSelector(item="center"),), (CssSelector(item="caption"),)): {
+            "text_align": "center",
+            "display": "block",
+        },
+        # Tables
+        ((CssSelector(item="table"),),): {
+            "display": "table",
+            "border_collapse": "collapse",
+        },
+        (
+            (CssSelector(item="td"),),
+            (CssSelector(item="th"),),
+        ): {
+            "border_top_width": "0px",
+            "border_right_width": "0px",
+            "border_bottom_width": "0px",
+            "border_left_width": "0px",
+        },
+        ((CssSelector(item="td"),),): {"display": "table-cell", "text_align": "unset"},
+        ((CssSelector(item="th"),),): {
+            "display": "table-cell",
+            "font_weight": "bold",
+            "text_align": "center",
+        },
+        # Forms
+        ((CssSelector(item="input"),),): {
+            "display": "inline-block",
+            "white_space": "pre",
+            "color": "#000000",
+            "border_top_style": "inset",
+            "border_right_style": "inset",
+            "border_bottom_style": "inset",
+            "border_left_style": "inset",
+            "border_top_width": "2px",
+            "border_right_width": "2px",
+            "border_bottom_width": "2px",
+            "border_left_width": "2px",
+            "vertical_align": "middle",
+        },
+        ((CssSelector(item="input", attr="[type=text]"),),): {
+            "background_color": "#FAFAFA",
+            "border_top_color": "#606060",
+            "border_right_color": "#E9E7E3",
+            "border_bottom_color": "#E9E7E3",
+            "border_left_color": "#606060",
+            "overflow_x": "hidden",
+        },
+        (
+            (CssSelector(item="input", attr="[type=button]"),),
+            (CssSelector(item="input", attr="[type=submit]"),),
+            (CssSelector(item="input", attr="[type=reset]"),),
+        ): {
+            "background_color": "#d4d0c8",
+            "border_right": "#606060",
+            "border_bottom": "#606060",
+            "border_left": "#ffffff",
+            "border_top": "#ffffff",
+        },
+        ((CssSelector(item="button"),),): {
+            "display": "inline-block",
+            "color": "#000000",
+            "border_top_style": "outset",
+            "border_right_style": "outset",
+            "border_bottom_style": "outset",
+            "border_left_style": "outset",
+            "border_top_width": "2px",
+            "border_right_width": "2px",
+            "border_bottom_width": "2px",
+            "border_left_width": "2px",
+            "background_color": "#d4d0c8",
+            "border_right": "#606060",
+            "border_bottom": "#606060",
+            "border_left": "#ffffff",
+            "border_top": "#ffffff",
+        },
+        # Headings
+        ((CssSelector(item="h1"),),): {
+            "font_weight": "bold",
+            "text_decoration": "underline",
+            "border_bottom_style": "solid",
+            "border_bottom_width": "thick",
+            "padding_bottom": "2rem",
+            "margin_top": "2rem",
+            "margin_bottom": "2em",
+        },
+        ((CssSelector(item="h2"),),): {
+            "font_weight": "bold",
+            "border_bottom_style": "double",
+            "border_bottom_width": "thick",
+            "padding_bottom": "1.5rem",
+            "margin_top": "1.5rem",
+            "margin_bottom": "1.5rem",
+        },
+        ((CssSelector(item="h3"),),): {
+            "font_weight": "bold",
+            "font_style": "italic",
+            "border_bottom_style": ":lower-left",
+            "border_bottom_width": "thin",
+            "padding_top": "1rem",
+            "padding_bottom": "1rem",
+            "margin_bottom": "1.5rem",
+        },
+        ((CssSelector(item="h4"),),): {
+            "text_decoration": "underline",
+            "border_bottom_style": "solid",
+            "border_bottom_width": "thin",
+            "padding_top": "1rem",
+            "padding_bottom": "1rem",
+            "margin_bottom": "1.5rem",
+        },
+        ((CssSelector(item="h5"),),): {
+            "border_bottom_style": "dashed",
+            "border_bottom_width": "thin",
+            "margin_bottom": "1.5rem",
+        },
+        ((CssSelector(item="h6"),),): {
+            "font_style": "italic",
+            "border_bottom_style": "dotted",
+            "border_bottom_width": "thin",
+            "margin_bottom": "1.5rem",
+        },
+        # Misc blocks
+        ((CssSelector(item="blockquote"),),): {
+            "margin_top": "1em",
+            "margin_bottom": "1em",
+            "margin_right": "2em",
+            "margin_left": "2em",
+        },
+        ((CssSelector(item="hr"),),): {
+            "margin_top": "1rem",
+            "margin_bottom": "1rem",
+            "border_top_width": "thin",
+            "border_top_style": "solid",
+            "border_top_color": "ansired",
+            "width": "100%",
+        },
+        ((CssSelector(item="p"),),): {"margin_top": "1em", "margin_bottom": "1em"},
+        ((CssSelector(item="pre"),),): {
+            "margin_top": "1em",
+            "margin_bottom": "1em",
+            "white_space": "pre",
+        },
+        # Lists
+        ((CssSelector(item="::marker"),),): {
+            "display": "inline",
+            "padding_right": "1em",
+            "text_align": "right",
+        },
+        ((CssSelector(item="ol"),),): {
+            "list_style_type": "decimal",
+            "list_style_position": "outside",
+            "padding_left": "4em",
+            "margin_top": "1em",
+            "margin_bottom": "1em",
+        },
+        (
+            (CssSelector(item="ul"),),
+            (CssSelector(item="menu"),),
+            (CssSelector(item="dir"),),
+        ): {
+            "list_style_type": "disc",
+            "list_style_position": "outside",
+            "padding_left": "3em",
+            "margin_top": "1em",
+            "margin_bottom": "1em",
+        },
+        (
+            (CssSelector(item="dir"), CssSelector(item="dir")),
+            (CssSelector(item="dir"), CssSelector(item="menu")),
+            (CssSelector(item="dir"), CssSelector(item="ul")),
+            (CssSelector(item="ol"), CssSelector(item="dir")),
+            (CssSelector(item="ol"), CssSelector(item="menu")),
+            (CssSelector(item="ol"), CssSelector(item="ul")),
+            (CssSelector(item="menu"), CssSelector(item="dir")),
+            (CssSelector(item="menu"), CssSelector(item="menu")),
+            (CssSelector(item="ul"), CssSelector(item="dir")),
+            (CssSelector(item="ul"), CssSelector(item="menu")),
+            (CssSelector(item="ul"), CssSelector(item="ul")),
+        ): {"margin_top": "0em", "margin_bottom": "0em", "list_style_type": "circle"},
+        (
+            (CssSelector(item="dir"), CssSelector(item="dl")),
+            (CssSelector(item="dir"), CssSelector(item="ol")),
+            (CssSelector(item="dl"), CssSelector(item="dir")),
+            (CssSelector(item="dl"), CssSelector(item="dl")),
+            (CssSelector(item="dl"), CssSelector(item="ol")),
+            (CssSelector(item="dl"), CssSelector(item="menu")),
+            (CssSelector(item="dl"), CssSelector(item="ul")),
+            (CssSelector(item="ol"), CssSelector(item="dl")),
+            (CssSelector(item="ol"), CssSelector(item="ol")),
+            (CssSelector(item="menu"), CssSelector(item="dl")),
+            (CssSelector(item="menu"), CssSelector(item="ol")),
+            (CssSelector(item="ul"), CssSelector(item="dl")),
+            (CssSelector(item="ul"), CssSelector(item="ol")),
+        ): {"margin_top": "0em", "margin_bottom": "0em"},
+        ((CssSelector(item="menu"), CssSelector(item="ul")),): {
+            "list_style_type": "circle",
+            "margin_top": "0em",
+            "margin_bottom": "0em",
+        },
+        (
+            (CssSelector(item="dir"), CssSelector(item="dir"), CssSelector(item="dir")),
+            (
+                CssSelector(item="dir"),
+                CssSelector(item="dir"),
+                CssSelector(item="menu"),
+            ),
+            (CssSelector(item="dir"), CssSelector(item="dir"), CssSelector(item="ul")),
+            (
+                CssSelector(item="dir"),
+                CssSelector(item="menu"),
+                CssSelector(item="dir"),
+            ),
+            (
+                CssSelector(item="dir"),
+                CssSelector(item="menu"),
+                CssSelector(item="menu"),
+            ),
+            (CssSelector(item="dir"), CssSelector(item="menu"), CssSelector(item="ul")),
+            (CssSelector(item="dir"), CssSelector(item="ol"), CssSelector(item="dir")),
+            (CssSelector(item="dir"), CssSelector(item="ol"), CssSelector(item="menu")),
+            (CssSelector(item="dir"), CssSelector(item="ol"), CssSelector(item="ul")),
+            (CssSelector(item="dir"), CssSelector(item="ul"), CssSelector(item="dir")),
+            (CssSelector(item="dir"), CssSelector(item="ul"), CssSelector(item="menu")),
+            (CssSelector(item="dir"), CssSelector(item="ul"), CssSelector(item="ul")),
+            (
+                CssSelector(item="menu"),
+                CssSelector(item="dir"),
+                CssSelector(item="dir"),
+            ),
+            (
+                CssSelector(item="menu"),
+                CssSelector(item="dir"),
+                CssSelector(item="menu"),
+            ),
+            (CssSelector(item="menu"), CssSelector(item="dir"), CssSelector(item="ul")),
+            (
+                CssSelector(item="menu"),
+                CssSelector(item="menu"),
+                CssSelector(item="dir"),
+            ),
+            (
+                CssSelector(item="menu"),
+                CssSelector(item="menu"),
+                CssSelector(item="menu"),
+            ),
+            (
+                CssSelector(item="menu"),
+                CssSelector(item="menu"),
+                CssSelector(item="ul"),
+            ),
+            (CssSelector(item="menu"), CssSelector(item="ol"), CssSelector(item="dir")),
+            (
+                CssSelector(item="menu"),
+                CssSelector(item="ol"),
+                CssSelector(item="menu"),
+            ),
+            (CssSelector(item="menu"), CssSelector(item="ol"), CssSelector(item="ul")),
+            (CssSelector(item="menu"), CssSelector(item="ul"), CssSelector(item="dir")),
+            (
+                CssSelector(item="menu"),
+                CssSelector(item="ul"),
+                CssSelector(item="menu"),
+            ),
+            (CssSelector(item="menu"), CssSelector(item="ul"), CssSelector(item="ul")),
+            (CssSelector(item="ol"), CssSelector(item="dir"), CssSelector(item="dir")),
+            (CssSelector(item="ol"), CssSelector(item="dir"), CssSelector(item="menu")),
+            (CssSelector(item="ol"), CssSelector(item="dir"), CssSelector(item="ul")),
+            (CssSelector(item="ol"), CssSelector(item="menu"), CssSelector(item="dir")),
+            (
+                CssSelector(item="ol"),
+                CssSelector(item="menu"),
+                CssSelector(item="menu"),
+            ),
+            (CssSelector(item="ol"), CssSelector(item="menu"), CssSelector(item="ul")),
+            (CssSelector(item="ol"), CssSelector(item="ol"), CssSelector(item="dir")),
+            (CssSelector(item="ol"), CssSelector(item="ol"), CssSelector(item="menu")),
+            (CssSelector(item="ol"), CssSelector(item="ol"), CssSelector(item="ul")),
+            (CssSelector(item="ol"), CssSelector(item="ul"), CssSelector(item="dir")),
+            (CssSelector(item="ol"), CssSelector(item="ul"), CssSelector(item="menu")),
+            (CssSelector(item="ol"), CssSelector(item="ul"), CssSelector(item="ul")),
+            (CssSelector(item="ul"), CssSelector(item="dir"), CssSelector(item="dir")),
+            (CssSelector(item="ul"), CssSelector(item="dir"), CssSelector(item="menu")),
+            (CssSelector(item="ul"), CssSelector(item="dir"), CssSelector(item="ul")),
+            (CssSelector(item="ul"), CssSelector(item="menu"), CssSelector(item="dir")),
+            (
+                CssSelector(item="ul"),
+                CssSelector(item="menu"),
+                CssSelector(item="menu"),
+            ),
+            (CssSelector(item="ul"), CssSelector(item="menu"), CssSelector(item="ul")),
+            (CssSelector(item="ul"), CssSelector(item="ol"), CssSelector(item="dir")),
+            (CssSelector(item="ul"), CssSelector(item="ol"), CssSelector(item="menu")),
+            (CssSelector(item="ul"), CssSelector(item="ol"), CssSelector(item="ul")),
+            (CssSelector(item="ul"), CssSelector(item="ul"), CssSelector(item="dir")),
+            (CssSelector(item="ul"), CssSelector(item="ul"), CssSelector(item="menu")),
+            (CssSelector(item="ul"), CssSelector(item="ul"), CssSelector(item="ul")),
+        ): {"list_style_type": "square"},
+        ((CssSelector(item="li"),),): {"display": "list-item"},
+        ((CssSelector(item="details"),),): {
+            "list_style_type": "disclosure-closed",
+            "list_style_position": "inside",
+        },
+        ((CssSelector(item="details", attr="[open]"), CssSelector(item="summary")),): {
+            "list_style_type": "disclosure-open"
+        },
+        ((CssSelector(item="summary"),),): {
+            "display": "list-item",
+            "font_weight": "bold",
+        },
+        # Dataframes for Jupyter
+        ((CssSelector(item=".dataframe"),),): {"_pt_class": "dataframe"},
+        (
+            (CssSelector(item=".dataframe"), CssSelector(item="td")),
+            (CssSelector(item=".dataframe"), CssSelector(item="th")),
+        ): {
+            "border_top_style": "hidden",
+            "border_left_style": "hidden",
+            "border_bottom_style": "hidden",
+            "border_right_style": "hidden",
+            "padding_left": "1em",
+        },
+        (
+            (
+                CssSelector(item=".dataframe"),
+                CssSelector(item="th"),
+            ),
+        ): {
+            "_pt_class": "dataframe,th",
+        },
+        (
+            (
+                CssSelector(item=".dataframe"),
+                CssSelector(item="th", pseudo=":first-child"),
+            ),
+            (
+                CssSelector(item=".dataframe"),
+                CssSelector(item="th", pseudo=":last-child"),
+            ),
+            (
+                CssSelector(item=".dataframe"),
+                CssSelector(item="td", pseudo=":last-child"),
+            ),
+        ): {"padding_right": "1em"},
+        ((CssSelector(item=".dataframe"), CssSelector(item="td")),): {
+            "_pt_class": "dataframe,td bg:default"
+        },
+        (
+            (
+                CssSelector(item=".dataframe"),
+                CssSelector(item="tr", pseudo=":nth-child(odd)"),
+                CssSelector(item="td"),
+            ),
+        ): {"_pt_class": "dataframe,row-odd,td"},
+    }
 }
 
 
@@ -2000,8 +2314,7 @@ class Node:
         self.before: Node | None = None
         self.after: Node | None = None
 
-        parent_theme = parent.theme if parent else None
-        self.theme = Theme(self, parent_theme=parent_theme)
+        self.theme = Theme(self, parent_theme=parent.theme if parent else None)
 
     def _outer_html(self, d: int = 0, attrs: bool = True) -> str:
         dd = " " * d
@@ -2025,27 +2338,84 @@ class Node:
         return s
 
     @cached_property
+    def preceding_text(self) -> str:
+        """Return the text preceding this element."""
+        s = ""
+        parent = self.parent
+        while parent and not parent.theme.d_blocky:
+            parent = parent.parent
+        if parent:
+            for node in parent.renderable_descendents:
+                if node is self:
+                    break
+                s += node.text
+        return s
+
+    @cached_property
     def text(self) -> str:
         """Get the element's computed text."""
         if text := self._text:
             if callable(transform := self.theme.text_transform):
                 text = transform(text)
 
-            if not self.theme.preformatted:
-                # Strip whitespace
-                strippable = True
-                for i in text:
-                    if i not in "\x20\x0a\x09\x0c\x0d":
-                        strippable = False
-                        break
-                if strippable:
-                    if "\n" in text:
-                        text = "\n"
-                    else:
-                        text = " "
+            # if False and not (preformatted := self.theme.preformatted):
+            if not (preformatted := self.theme.preformatted):
+                # 1. All spaces and tabs immediately before and after a line break are ignored
+                text = re.sub("(\s+(?=\n)|(?<=\n)\s+)", "", text, re.MULTILINE)
+                # 2. All tab characters are handled as space characters
+                text = text.replace("\t", " ")
+                # 3. Line breaks are converted to spaces
+                text = text.replace("\n", " ")
+                # 4. any space immediately following another space is ignored
+                # (even across two separate inline elements)
+                text = re.sub("\s\s+", " ", text)
+                if not (
+                    preceding_text := self.preceding_text
+                ) or preceding_text.endswith(" "):
+                    text = text.lstrip(" ")
+                # 5. Sequences of spaces at the beginning and end of an element are removed
+                if text:
+                    parent = self.parent
+                    while (
+                        parent
+                        and parent.is_first_child_element
+                        and not parent.theme.d_blocky
+                    ):
+                        parent = parent.parent
+                    if parent and parent.theme.d_blocky:
+                        if text[0] == " " and (self.is_first_child_node):
+                            text = text[1:]
+                if text:
+                    parent = self.parent
+                    while (
+                        parent
+                        and parent.is_last_child_element
+                        and not parent.theme.d_blocky
+                    ):
+                        parent = parent.parent
+                    if text[-1] == " " and (self.is_last_child_node):
+                        text = text[:-1]
 
-                # Collapse whitespace
-                text = re.sub(r"\s+", " ", text.strip("\n").replace("\n", " "))
+                # Remove space around text in block contexts
+                if (
+                    text
+                    and (node := self.prev_node)
+                    and (node.theme.d_blocky or node.name == "br")
+                ):
+                    text = text.lstrip("\x20\x0a\x09\x0c\x0d")
+                if (
+                    text
+                    and (node := self.next_node)
+                    and (node.theme.d_blocky or node.name == "br")
+                ):
+                    text = text.rstrip(" \t\r\n\x0c")
+
+            elif preformatted and self.is_last_child_node:
+                # TODO - align tabstops
+                text = text.replace("\t", "    ")
+                # Remove one trailing newline
+                if text[-1] == "\n":
+                    text = text[:-1]
 
         return text
 
@@ -2064,18 +2434,17 @@ class Node:
 
         # Add ::before node
         before_node = Node(dom=self.dom, name="::before", parent=self)
-        if text := before_node.theme.theme.get("content", "").strip('"'):
+        if text := before_node.theme.theme.get("content", "").strip('"').strip("'"):
             before_node.contents.append(
                 Node(dom=self.dom, name="text", parent=before_node, text=text)
             )
             contents.append(before_node)
 
-        # Add HTML contents
         contents.extend(self.contents)
 
         # Add ::after node
         after_node = Node(dom=self.dom, name="::after", parent=self)
-        if text := after_node.theme.theme.get("content", "").strip('"'):
+        if text := after_node.theme.theme.get("content", "").strip('"').strip("'"):
             after_node.contents.append(
                 Node(dom=self.dom, name="text", parent=after_node, text=text)
             )
@@ -2100,6 +2469,10 @@ class Node:
                 and child.name != "text"
             ):
                 yield from child.renderable_descendents
+            # elif (
+            #     child.name == "text" and self.name != "::block" and self.theme.d_blocky
+            # ):
+            #     yield Node(dom=self.dom, name="::block", parent=self, contents=[child])
             else:
                 yield child
 
@@ -2258,17 +2631,20 @@ class Node:
 class CustomHTMLParser(HTMLParser):
     """An HTML parser."""
 
+    soup: Node
+    curr: Node
+
     def __init__(self, dom: HTML) -> None:
         """Create a new parser instance."""
         super().__init__()
         self.dom = dom
-        self.curr = self.soup = Node(name="::root", dom=dom, parent=None, attrs=[])
 
     def parse(self, markup: str) -> Node:
         """Pare HTML markup."""
-        self.curr = self.soup = Node(dom=self.dom, name="::root", parent=None, attrs=[])
+        soup = Node(name="::root", dom=self.dom, parent=None, attrs=[])
+        self.curr = soup
         self.feed(markup)
-        return self.soup
+        return soup
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         """Open a new element."""
@@ -2288,13 +2664,7 @@ class CustomHTMLParser(HTMLParser):
         """Create data (text) elements."""
         self.autoclose()
         self.curr.contents.append(
-            Node(
-                dom=self.dom,
-                name="text",
-                parent=self.curr,
-                text=data,
-                attrs=[],
-            )
+            Node(dom=self.dom, name="text", text=data, parent=self.curr, attrs=[])
         )
 
     def handle_endtag(self, tag: str) -> None:
@@ -2306,70 +2676,183 @@ class CustomHTMLParser(HTMLParser):
             self.curr = self.curr.parent
 
 
-def parse_styles(soup: Node, base_url: UPath) -> CssSelectors:
+def parse_style_sheet(css_str: str, dom: HTML) -> None:
     """Collect all CSS styles from style tags."""
-    rules: CssSelectors = {}
-    for child in soup.descendents:
-        css_str = ""
+    dom_css = dom.css
+    # Remove whitespace and newlines
+    # css_str = css_str.strip().replace("\n", "")
+    css_str = re.sub(r"\s*\n\s*", " ", css_str)
+    # Remove comments
+    css_str = re.sub(r"\/\*[^\*]+\*\/", "", css_str)
+    # Replace ':before' and ':after' with '::before' and '::after'
+    # for compatibility with old CSS and to make root selector work
+    css_str = re.sub("(?<!:):(?=before|after|root)", "::", css_str)
 
-        # In case of a <link> style, load the url
-        if (
-            child.name == "link"
-            and child.attrs.get("rel") == "stylesheet"
-            and (href := child.attrs.get("href", ""))
-        ):
-            css_path = UPath(urljoin(str(base_url), href))
-            css_str = css_path.read_text()
-
-        # In case of a <style> tab, load first child's text
-        elif child.name == "style":
-            if child.contents:
-                css_str = child.contents[0].text
-        else:
-            continue
-        # Remove whitespace and newlines
-        # css_str = css_str.strip().replace("\n", "")
-        css_str = re.sub(r"\s*\n\s*", " ", css_str)
-        # Remove comments
-        css_str = re.sub(r"\/\*[^\*]+\*\/", "", css_str)
-        # Replace ':before' and ':after' with '::before' and '::after'
-        # for compatibility with old CSS
-        css_str = re.sub("(?<!:):(?=before|after)", "::", css_str)
-
-        def parse_part(css_str: str) -> None:
-            """Parse a group of CSS rules."""
+    def parse_part(condition: Filter, css_str: str) -> None:
+        """Parse a group of CSS rules."""
+        if css_str:
+            css_str = css_str.replace("\n", "").strip()
             if css_str:
-                css_str = css_str.replace("\n", "").strip()
-                if css_str:
-                    for rule in css_str.rstrip("}").split("}"):
-                        selectors, _, content = rule.partition("{")
-                        content = content.strip().rstrip(";")
-                        rule_content = parse_css_content(content)
-                        if rule_content:
-                            parsed_selectors = tuple(
-                                tuple(
-                                    CssSelector(**m.groupdict())
-                                    for m in _SELECTOR_RE.finditer(selector.strip())
-                                )
-                                for selector in map(str.strip, selectors.split(","))
+                for rule in css_str.rstrip("}").split("}"):
+                    selectors, _, content = rule.partition("{")
+                    content = content.strip().rstrip(";")
+                    rule_content = parse_css_content(content)
+                    if rule_content:
+                        parsed_selectors = tuple(
+                            tuple(
+                                CssSelector(**m.groupdict())
+                                for m in _SELECTOR_RE.finditer(selector.strip())
                             )
-                            if parsed_selectors in rules:
-                                rules[parsed_selectors].update(rule_content)
-                            else:
-                                rules[parsed_selectors] = rule_content
+                            for selector in map(str.strip, selectors.split(","))
+                        )
+                        rules = dom_css.setdefault(condition, {})
+                        if parsed_selectors in rules:
+                            rules[parsed_selectors].update(rule_content)
+                        else:
+                            rules[parsed_selectors] = rule_content
 
-        # Split out nested at-rules - we need to process them separately
-        for part in _AT_RULE_RE.split(css_str):
-            if part:
-                if part[0] == "@" and (m := _NESTED_AT_RULE_RE.match(part)) is not None:
-                    m_dict = m.groupdict()
-                    # Process '@media' queries
-                    if m_dict["identifier"] == "media":
-                        if m_dict["rule"] == "screen":
-                            parse_part(m_dict["part"])
-                else:
-                    parse_part(part)
-    return rules
+    # Split out nested at-rules - we need to process them separately
+    for part in _AT_RULE_RE.split(css_str):
+        if (
+            part
+            and part[0] == "@"
+            and (m := _NESTED_AT_RULE_RE.match(part)) is not None
+        ):
+            m_dict = m.groupdict()
+            # Process '@media' queries
+            if m_dict["identifier"] == "media":
+                # Split each query - separated by "or" or ","
+                queries = re.split("(?: or |,)", m_dict["rule"])
+                query_conditions: Filter = never
+                for query in queries:
+                    # Each query can be the logical sum of multiple targets
+                    target_conditions: Filter = always
+                    for target in query.split(" and "):
+                        if (
+                            target_m := _MEDIA_QUERY_TARGET_RE.match(target)
+                        ) is not None:
+                            target_m_dict = target_m.groupdict()
+                            # Check for media type conditions
+                            if (media_type := target_m_dict["type"]) is not None:
+                                target_conditions &= (
+                                    always if media_type in {"all", "screen"} else never
+                                )
+                            # Check for media feature confitions
+                            elif (
+                                media_feature := target_m_dict["feature"]
+                            ) is not None:
+                                target_conditions &= parse_media_condition(
+                                    media_feature, dom
+                                )
+                            # Check for logical 'NOT' inverting the target condition
+                            if target_m_dict["invert"]:
+                                target_conditions = ~target_conditions
+                    # Logical OR of all media queries
+                    query_conditions |= target_conditions
+                # Parse the @media CSS block
+                parse_part(query_conditions, m_dict["part"])
+        # If we are outinside an at-rule block, parse the CSS and always use it
+        else:
+            parse_part(always, part)
+
+
+def parse_media_condition(condition: str, dom: HTML) -> Filter:
+    """Convert media rules to conditions."""
+    condition = condition.replace(" ", "")
+    result: Filter
+
+    for op_str, op_func in (("<=", le), (">=", ge), ("<", lt), (">", gt), ("=", eq)):
+        if op_str in condition:
+            operator = op_func
+            feature, _, value = condition.partition(op_str)
+            break
+    else:
+        feature, _, value = condition.partition(":")
+        if feature.startswith("max-"):
+            operator = le
+            feature = feature[4:]
+        elif feature.startswith("min-"):
+            operator = ge
+            feature = feature[4:]
+
+    if feature == "width":
+        result = Condition(
+            lambda: operator(
+                width := dom.width or 80,
+                css_dimension(value, vertical=False, available=width) or 80,
+            )
+        )
+    elif feature == "height":
+        result = Condition(
+            lambda: operator(
+                height := dom.height or 24,
+                css_dimension(value, vertical=True, available=height) or 24,
+            )
+        )
+    elif feature == "aspect":
+        result = Condition(
+            lambda: operator(
+                (width := (dom.width or 80)) / (height := (dom.height or 24)),
+                (
+                    80
+                    if (dim := css_dimension(value, vertical=False, available=width))
+                    is None
+                    else dim
+                )
+                / (
+                    24
+                    if (dim := css_dimension(value, vertical=True, available=height))
+                    is None
+                    else dim
+                ),
+            )
+        )
+
+    elif feature == "device-width":
+        result = Condition(
+            lambda: operator(
+                (
+                    output.get_size()
+                    if (output := get_app_session()._output)
+                    else Size(24, 80)
+                ).columns,
+                css_dimension(value, vertical=False, available=dom.width) or 80,
+            )
+        )
+    elif feature == "device-height":
+        result = Condition(
+            lambda: operator(
+                (
+                    output.get_size()
+                    if (output := get_app_session()._output)
+                    else Size(24, 80)
+                ).rows,
+                css_dimension(value, vertical=True, available=dom.height) or 24,
+            )
+        )
+    elif feature == "device-aspect":
+        result = Condition(
+            lambda: operator(
+                (
+                    size := (
+                        output.get_size()
+                        if (output := get_app_session()._output)
+                        else Size(24, 80)
+                    )
+                ).columns
+                / size.rows,
+                (css_dimension(value, vertical=False, available=dom.width) or 1)
+                / (css_dimension(value, vertical=True, available=dom.height) or 1),
+            )
+        )
+
+    # elif feature == "color":
+    #     Check output color depth
+
+    else:
+        result = always
+
+    return result
 
 
 class HTML:
@@ -2378,40 +2861,18 @@ class HTML:
     Accepts a HTML string and renders it at a given width.
     """
 
-    formatted_text: StyleAndTextTuples
-
-    def render_ol_content(
-        self,
-        element: Node,
-        left: int = 0,
-        fill: bool = True,
-        align_content: bool = True,
-    ) -> StyleAndTextTuples:
-        """Render lists, adding item numbers to child <li> elements."""
-        # Assign a list index to each item. This can be set via the 'value' attributed
-        _curr = 0
-        for item in element.find_all("li"):
-            _curr += 1
-            _curr = int(item.attrs.setdefault("value", str(_curr)))
-        # Render list as normal
-        return self.render_node_content(
-            element=element,
-            left=left,
-            fill=fill,
-            align_content=align_content,
-        )
-
-    render_ul_content = render_ol_content
-
     def __init__(
         self,
         markup: str,
-        base: UPath | str | None = None,
+        base: Path | str | None = None,
         width: int | None = None,
         height: int | None = None,
         collapse_root_margin: bool = False,
         fill: bool = True,
+        css: CssSelectors | None = None,
         browser_css: CssSelectors | None = None,
+        mouse_handler: Callable[[Node, MouseEvent], NotImplementedOrNone] | None = None,
+        paste_fixed: bool = True,
     ) -> None:
         """Initialize the markdown formatter.
 
@@ -2425,92 +2886,115 @@ class HTML:
             collapse_root_margin: If :py:const:`True`, margins of the root element will
                 be collapsed
             fill: Whether remaining space in block elements should be filled
+            css: Base CSS to apply when rendering the HTML
             browser_css: The browser CSS to use
+            mouse_handler: A mouse handler function to use when links are clicked
+            paste_fixed: Whether fixed elements should be pasted over the output
 
         """
-        self.browser_css: CssSelectors = {
-            **(_BROWSER_CSS if browser_css is None else browser_css)
-        }
-        self.css: CssSelectors = {}
-
-        self.markup = markup
+        self.markup = markup.strip()
         self.base = UPath(base or ".")
-        self.width: int | None = None
-        self.height: int | None = None
-        self.collapse_root_margin = collapse_root_margin
+
+        self.browser_css = browser_css or _BROWSER_CSS
+        self.css: CssSelectors = css or {}
+
+        self.render_count = 0
+        self.width = width
+        self.height = height
+
         self.fill = fill
+        self.collapse_root_margin = collapse_root_margin
+        self.paste_fixed = paste_fixed
 
-        self.parser = CustomHTMLParser(self)
+        self.mouse_handler = mouse_handler
 
-        self.element_theme_cache: SimpleCache[Hashable, dict[str, Any]] = SimpleCache()
+        self.formatted_text: StyleAndTextTuples = []
+        self.floats: dict[tuple[int, DiBool, DiInt], StyleAndTextTuples] = {}
+        self.fixed: dict[tuple[int, DiBool, DiInt], StyleAndTextTuples] = {}
+        self.fixed_mask: StyleAndTextTuples = []
+        # self.images = []
+        # self.anchors = []
 
-        # Parse the markup
-        self.soup = self.parser.parse(markup.strip())
+        self.assets_loaded = False
 
-        # Parse the styles
-        self.css.update(parse_styles(self.soup, self.base))
+    # Lazily load attributes
 
-        # Load images
+    @cached_property
+    def parser(self) -> CustomHTMLParser:
+        """Load the HTML parser."""
+        return CustomHTMLParser(self)
+
+    @cached_property
+    def soup(self) -> Node:
+        """Parse the markup."""
+        return self.parser.parse(self.markup)
+
+    def load_assets(self) -> None:
+        """Load CSS styles and image resources.
+
+        Do not touch element's themes!
+        """
         for child in self.soup.descendents:
-            if child.name == "img" and (src := child.attrs.get("src")):
-                data_path = UPath(urljoin(str(self.base), src))
+            # In case of a <link> style, load the url
+            if (
+                child.name == "link"
+                and (
+                    (attrs := child.attrs).get("rel") == "stylesheet"
+                    or (attrs.get("rel") == "preload" and attrs.get("as") == "style")
+                )
+                and (href := attrs.get("href", ""))
+            ):
+                css_path = UPath(urljoin(str(self.base), href))
                 try:
-                    data = data_path.resolve().read_bytes()
+                    css_str = css_path.read_text()
                 except Exception:
-                    data = b""
-                    log.exception("Error loading file '%s'", data_path)
-                finally:
-                    if data:
-                        child.attrs["_data"] = data
-                    else:
-                        child.attrs["_missing"] = "true"
+                    log.debug("Could not load file %s", css_path)
+                else:
+                    parse_style_sheet(css_str, self)
 
-        self.floats: dict[tuple[int, DiInt], StyleAndTextTuples] = {}
-        self.fixes: dict[tuple[int, DiInt], StyleAndTextTuples] = {}
+            # In case of a <style> tab, load first child's text
+            elif child.name == "style":
+                if child.contents:
+                    # Use unprocess text attribute to avoid loading the element's theme
+                    css_str = child.contents[0]._text
+                    parse_style_sheet(css_str, self)
 
-        # Render the markup
-        self.render(width, height)
+            # Load images
+            elif child.name == "img" and (src := child.attrs.get("src")):
+                data_path = UPath(urljoin(str(self.base), src))
+                if data_path.exists():
+                    try:
+                        data = data_path.read_bytes()
+                    except Exception:
+                        data = b""
+                        log.exception("Error loading file '%s'", data_path)
+                    finally:
+                        if data:
+                            child.attrs["_data"] = data
+                else:
+                    child.attrs["_missing"] = "true"
 
-    def render_list_item_content(
-        self,
-        element: Node,
-        left: int = 0,
-        fill: bool = True,
-        align_content: bool = True,
-    ) -> StyleAndTextTuples:
-        """Render a list item."""
-        # Get element theme
-        theme = element.theme
-        # Get the bullet style
-        list_style = theme.list_style_type
-        bullet = list_style
-        if list_style == "decimal":
-            bullet = f"{element.attrs['value']}."
-        # Add bullet element
-        if bullet:
-            bullet_element = Node(dom=self, name="::marker", parent=element)
-            bullet_element.contents.append(
-                Node(dom=self, name="text", parent=bullet_element, text=bullet)
-            )
-            if theme.list_style_position == "inside":
-                element.contents.insert(0, bullet_element)
-            else:
-                element.marker = bullet_element
-        # Render the list item
-        ft = self.render_node_content(
-            element,
-            left=left,
-            fill=fill,
-            align_content=align_content,
-        )
-        return ft
+        self.assets_loaded = True
 
-    def render(self, width: int | None, height: int | None) -> None:
+    def render(self, width: int | None, height: int | None) -> StyleAndTextTuples:
         """Render the current markup at a given size."""
-        if not width or not height:
+        no_w = width is None and self.width is None
+        no_h = height is None and self.height is None
+        if no_w or no_h:
             size = get_app_session().output.get_size()
-        self.width = width or size.columns
-        self.height = height or size.rows
+            if no_w:
+                width = size.columns
+            if no_h:
+                height = size.rows
+        if width is not None:
+            self.width = width
+        if height is not None:
+            self.height = height
+        assert self.width is not None
+        assert self.height is not None
+
+        if not self.assets_loaded:
+            self.load_assets()
 
         ft = self.render_element(
             self.soup,
@@ -2519,28 +3003,63 @@ class HTML:
             fill=self.fill,
         )
 
-        # Draw floats
-        for (_, position), float_ft in sorted(self.floats.items()):
-            row = col = 0
-            if (top := position.top) is not None:
-                row = top
-            elif (bottom := position.bottom) is not None:
-                row = (
-                    sum(1 for _ in split_lines(ft))
-                    - sum(1 for _ in split_lines(float_ft))
-                    - bottom
-                )
-            if (left := position.left) is not None:
-                col = left
-            elif (right := position.right) is not None:
-                row = max_line_width(ft) - max_line_width(float_ft) - right
-
-            ft = paste(ft, float_ft, row, col)
-
         # Apply "ReverseOverwrite"s
         ft = apply_reverse_overwrites(ft)
 
+        # Apply floats and fixed elements
+
+        def _paste_floats(
+            floats: dict[tuple[int, DiBool, DiInt], StyleAndTextTuples],
+            lower_ft: StyleAndTextTuples,
+        ) -> StyleAndTextTuples:
+            """Paste floats on top of rendering."""
+            lower_ft_height = None
+            for (_, anchors, position), float_ft in sorted(floats.items()):
+                row = col = 0
+                if anchors.top:
+                    row = position.top
+                elif anchors.bottom:
+                    if lower_ft_height is None:
+                        lower_ft_height = sum(1 for _ in split_lines(lower_ft))
+                    row = (
+                        lower_ft_height
+                        - sum(1 for _ in split_lines(float_ft))
+                        - position.bottom
+                    )
+                if anchors.left:
+                    col = position.left
+                elif anchors.right:
+                    row = (
+                        max_line_width(lower_ft)
+                        - max_line_width(float_ft)
+                        - position.right
+                    )
+                lower_ft = paste(float_ft, lower_ft, row, col)
+            return lower_ft
+
+        # Draw floats
+        if self.floats:
+            ft = _paste_floats(self.floats, ft)
+
+        # Paste floats onto a mask, then onto the rendering if required
+        if self.fixed:
+            assert self.width is not None
+            assert self.height is not None
+            fixed_mask = cast(
+                "StyleAndTextTuples", [("", (" " * self.width) + "\n")] * self.height
+            )
+            fixed_mask = _paste_floats(self.fixed, fixed_mask)
+            fixed_mask = apply_reverse_overwrites(fixed_mask)
+            if self.paste_fixed:
+                ft = paste(fixed_mask, ft, 0, 0, transparent=True)
+            self.fixed_mask = fixed_mask
+        else:
+            self.fixed_mask = []
+
+        self.render_count += 1
         self.formatted_text = ft
+
+        return ft
 
     def render_element(
         self,
@@ -2604,6 +3123,63 @@ class HTML:
             ft = [(style, text)]
         return ft
 
+    def render_ol_content(
+        self,
+        element: Node,
+        left: int = 0,
+        fill: bool = True,
+        align_content: bool = True,
+    ) -> StyleAndTextTuples:
+        """Render lists, adding item numbers to child <li> elements."""
+        # Assign a list index to each item. This can be set via the 'value' attributed
+        _curr = 0
+        for item in element.find_all("li"):
+            _curr += 1
+            _curr = int(item.attrs.setdefault("value", str(_curr)))
+        # Render list as normal
+        return self.render_node_content(
+            element=element,
+            left=left,
+            fill=fill,
+            align_content=align_content,
+        )
+
+    render_ul_content = render_ol_content
+
+    def render_list_item_content(
+        self,
+        element: Node,
+        left: int = 0,
+        fill: bool = True,
+        align_content: bool = True,
+    ) -> StyleAndTextTuples:
+        """Render a list item."""
+        # Get element theme
+        theme = element.theme
+        # Get the bullet style
+        list_style = theme.list_style_type
+        bullet = list_style
+        if list_style == "decimal":
+            bullet = f"{element.attrs['value']}."
+        # Add bullet element
+        if bullet:
+            bullet_element = Node(dom=self, name="::marker", parent=element)
+            bullet_element.contents.append(
+                Node(dom=self, name="text", parent=bullet_element, text=bullet)
+            )
+            if theme.list_style_position == "inside":
+                element.contents.insert(0, bullet_element)
+            else:
+                element.marker = bullet_element
+        # Render the list item
+        ft = self.render_node_content(
+            element,
+            left=left,
+            fill=fill,
+            align_content=align_content,
+        )
+        return ft
+
     def render_table_content(
         self,
         element: Node,
@@ -2611,7 +3187,7 @@ class HTML:
         fill: bool = True,
         align_content: bool = True,
     ) -> StyleAndTextTuples:
-        """Render a list of parsed markdown elements representing a table element.
+        """Render a HTML table element.
 
         Args:
             element: The list of parsed elements to render
@@ -2630,7 +3206,7 @@ class HTML:
         table_x_dim = Dimension(
             min=table_theme.min_width,
             preferred=table_theme.content_width if "width" in table_theme else None,
-            max=table_theme.max_width or table_theme.available_width,
+            max=table_theme.max_width or table_theme.content_width,
         )
         table = Table(
             align=table_theme.text_align,
@@ -2667,7 +3243,6 @@ class HTML:
                                 or table_theme.available_width,
                             )
                             cell = row.new_cell(
-                                # text=" ",
                                 text=self.render_node_content(
                                     td,
                                     left=0,
@@ -2698,18 +3273,19 @@ class HTML:
         for child in element.find_all("tfoot", recursive=False):
             render_rows(child.contents)
 
+        # TODO - process <colgroup> elements
+
         # Add cell contents
         if td_map:
             col_widths = table.calculate_col_widths()
-
             for row in table.rows:
                 for col_width, cell in zip(col_widths, row.cells):
                     if td := td_map.get(cell):
                         cell_padding = compute_padding(cell)
                         available_width = (
-                            (table_x_dim.max if cell.colspan > 1 else col_width)
-                            - cell_padding.left
-                            - cell_padding.right
+                            table_x_dim.max
+                            if cell.colspan > 1
+                            else col_width - cell_padding.left - cell_padding.right
                         )
                         td.theme.update_space(
                             available_width, table_theme.available_height
@@ -2755,9 +3331,9 @@ class HTML:
         content_width = theme.content_width
         # content_height = theme.content_height
         src = str(element.attrs.get("src", ""))
-        path = UPath(urljoin(str(self.base), src))
+        path = self.base / src
 
-        if data := element.attrs.get("_data"):
+        if not element.attrs.get("_missing") and (data := element.attrs.get("_data")):
             # Display it graphically
             format_ = get_format(path, default="png")
             cols, aspect = pixels_to_cell_size(*data_pixel_size(data, format_=format_))
@@ -2787,18 +3363,21 @@ class HTML:
             ft = [(f"{theme.style} {x[0]}", *x[1:]) for x in ft]
 
         else:
-            ft = []
-
-            if (alt := element.attrs.get("alt")) != "":
-                style = f"class:image,placeholder {theme.style}"
-                ft.append((style, "🌄"))
-                if content_width and content_width >= 7:
-                    ft.extend(
-                        [
-                            (style, " "),
-                            (style, (alt or (path.name if path else "Image"))),
-                        ]
-                    )
+            style = f"class:image,placeholder {theme.style}"
+            ft = [(style, "🌄")]
+            if content_width and content_width >= 7:
+                ft.extend(
+                    [
+                        (style, " "),
+                        (
+                            style,
+                            (
+                                element.attrs.get("alt")
+                                or (path.name if path else "Image")
+                            ),
+                        ),
+                    ]
+                )
 
         return ft
 
@@ -2814,12 +3393,23 @@ class HTML:
         # HTMLParser clobber the case of element attributes
         # We fix the SVG viewBox here
         data = element._outer_html().replace(" viewbox=", " viewBox=")
-        # Render the image
+        # Display it graphically
+        cols, aspect = pixels_to_cell_size(*data_pixel_size(data, format_="svg"))
+        # Scale down the image to fit to width
+        if content_width := theme.content_width:
+            if cols == 0:
+                cols = content_width
+            else:
+                cols = min(content_width, cols)
+        rows = int(cols * aspect)
+        # Convert the image to formatted-text
         ft = convert(
             data=data,
             from_="svg",
             to="formatted_text",
-            cols=theme.content_width,
+            cols=cols,
+            rows=rows or None,
+            fg=theme.color,
             bg=theme.background_color,
         )
         # Remove trailing new-lines
@@ -2843,7 +3433,7 @@ class HTML:
                 dom=self,
                 name="text",
                 parent=element,
-                text=attrs.get("value", attrs.get("placeholder", "")),
+                text=attrs.get("value", attrs.get("placeholder", " ")) or " ",
             ),
         )
         ft = self.render_node_content(
@@ -2891,13 +3481,16 @@ class HTML:
             if new_line:
                 # Pad the new-line to form an alignable block
                 new_line = pad(new_line, style=parent_theme.style)
-                # Combine with the output
-                ft = join_lines([ft, new_line]) if ft else new_line
-                new_line = []
-                left = 0
-                line_height = 1
-                new_line = []
-                baseline = 0
+                if ft:
+                    # Combine with the output
+                    ft = join_lines([ft, new_line]) if ft else new_line
+                else:
+                    ft = new_line
+            # Reset the new line
+            left = 0
+            line_height = 1
+            baseline = 0
+            new_line = []
 
         # Render each child node
         for child in element.renderable_descendents:
@@ -2920,12 +3513,16 @@ class HTML:
             d_blocky = theme.d_blocky
             d_inline = theme.d_inline
             d_inline_block = theme.d_inline_block
+            preformatted = theme.preformatted
+
+            available_width = parent_theme.content_width
+            available_height = parent_theme.content_height
 
             # Render the element
             rendering = self.render_element(
                 child,
-                available_width=parent_theme.content_width,
-                available_height=parent_theme.content_height,
+                available_width=available_width,
+                available_height=available_height,
                 left=0 if d_blocky or d_inline_block else left,
                 fill=fill,
                 align_content=align_content,
@@ -2937,16 +3534,15 @@ class HTML:
 
             # If the rendering was a positioned absolutely or fixed, store it and draw it later
             if theme.theme["position"] == "fixed":
-                # self.fixes[(theme.z_index, theme.position)] = rendering
-                self.floats[(theme.z_index, theme.position)] = rendering
+                self.fixed[(theme.z_index, theme.anchors, theme.position)] = rendering
 
             # if theme.theme["position"] == "absolute":
-            #     self.floats[(theme.z_index, theme.position)] = rendering
+            #     self.floats[(theme.z_index, theme.anchors, theme.position)] = rendering
 
             # if theme.theme["position"] == "relative":
             # ... TODO ..
 
-            elif theme.theme["float"] == "right":
+            elif theme.floated == "right":
                 lines = []
                 for ft_left, ft_right in zip_longest(
                     split_lines(pad(rendering, style=theme.style)),
@@ -2958,7 +3554,7 @@ class HTML:
                 float_width_right = fragment_list_width(float_lines_right[0])
                 continue
 
-            elif theme.theme["float"] == "left":
+            elif theme.floated == "left":
                 lines = []
                 for ft_left, ft_right in zip_longest(
                     lines,
@@ -2975,24 +3571,24 @@ class HTML:
             # output, which could have been an inline-block
 
             elif d_inline and (
+                # parent_theme.d_inline or parent_theme.d_inline_block or preformatted
                 parent_theme.d_inline
-                or parent_theme.d_inline_block
-                or theme.preformatted
+                or preformatted
             ):
                 new_line.extend(rendering)
 
             elif d_inline or d_inline_block:
                 if d_inline:
-                    tokens = fragment_list_to_words(rendering)
+                    tokens = list(fragment_list_to_words(rendering))
                 else:
                     tokens = [rendering]
-
-                tokens = list(tokens)
 
                 for token in tokens:
                     token_lines = list(split_lines(token))
                     token_width = max(fragment_list_width(line) for line in token_lines)
                     token_height = len(token_lines)
+
+                    # Deal with floats
 
                     float_width_right = (
                         fragment_list_width(float_lines_right[0])
@@ -3005,9 +3601,15 @@ class HTML:
                         else 0
                     )
 
+                    # If we have floats, transform the current new line and add one row
+                    # from each active float
                     if (
-                        content_width - float_width_left - float_width_right
-                    ) - left - token_width < 0:
+                        new_line
+                        and (content_width - float_width_left - float_width_right)
+                        - left
+                        - token_width
+                        < 0
+                    ):
                         new_rows = list(split_lines(new_line))
                         new_line_width = max(
                             fragment_list_width(line) for line in new_rows
@@ -3041,6 +3643,7 @@ class HTML:
                                         how=parent_theme.text_align,
                                         width=line_width,
                                         style=parent_theme.style,
+                                        placeholder="",
                                     ),
                                     *ft_right,
                                 ]
@@ -3130,6 +3733,7 @@ class HTML:
                         how=parent_theme.text_align,
                         width=line_width,
                         style=parent_theme.style + " nounderline",
+                        placeholder="",
                     ),
                     *ft_right,
                 ]
@@ -3176,12 +3780,6 @@ class HTML:
         if d_inline:
             ft = apply_style(ft, theme.style)
 
-        # Remove trailing newline from the contents of pre-formatted elements
-        if preformatted and (
-            (parent_theme and not parent_theme.preformatted) or d_blocky
-        ):
-            ft = strip_one_trailing_newline(ft)
-
         # If an element should not overflow it's width / height, truncate it
         if not d_inline and not preformatted:
             if theme.get("overflow_x") == "hidden":
@@ -3196,15 +3794,40 @@ class HTML:
                 )
             else:
                 ft = truncate(
-                    ft, content_width, ignore_whitespace=True, style=theme.style
+                    ft,
+                    content_width,
+                    placeholder="",
+                    ignore_whitespace=True,
+                    style=theme.style,
                 )
 
-        if theme.get("overflow_y") in {"hidden", "auto"}:
-            lines = []
-            for i, line in enumerate(split_lines(ft)):
-                if i <= content_height:
-                    lines.append(line)
-            ft = join_lines(lines)
+        # Truncate or expand the height
+        overflow_y = theme.get("overflow_y") in {"hidden", "auto"}
+        pad_height = d_blocky and theme.height is not None
+        if overflow_y or pad_height:
+            target_height = None
+            if (min_height := theme.min_height) and min_height > content_height:
+                target_height = min_height
+            if (max_height := theme.max_height) and max_height < content_height:
+                target_height = max_height
+            elif height := theme.height:
+                target_height = height
+
+            if target_height is not None:
+                # Truncate elements with hidden overflows
+                if overflow_y:
+                    lines = []
+                    for i, line in enumerate(split_lines(ft)):
+                        if i <= target_height:
+                            lines.append(line)
+                else:
+                    lines = list(split_lines(ft))
+
+                # Pad height of block elements to theme height
+                if pad_height and len(lines) < target_height:
+                    lines.extend([[]] * (target_height - len(lines)))
+
+                ft = join_lines(lines)
 
         # Align content
         if align_content and d_blocky:
@@ -3216,10 +3839,11 @@ class HTML:
                     width=None if d_inline_block else content_width,
                     style=theme.style,
                     ignore_whitespace=True,
+                    placeholder="",
                 )
 
         # # Fill space around block elements so they fill the content width
-        if ft and (fill and d_blocky) or d_inline_block:
+        if ft and ((fill and d_blocky and not theme.d_table) or d_inline_block):
             pad_width = None
             if d_blocky:
                 pad_width = content_width
@@ -3228,11 +3852,12 @@ class HTML:
                     pad_width = max_line_width(ft)
                 else:
                     pad_width = content_width
+            style = theme.style
             ft = pad(
                 ft,
                 width=pad_width,
                 char=" ",
-                style=theme.style,
+                style=style,
             )
 
         # Use the rendered content width from now on for inline elements
@@ -3312,6 +3937,7 @@ class HTML:
                 how=alignment,
                 width=theme.available_width,
                 style=parent_style,
+                placeholder="",
             )
 
         elif any(margin := theme.margin):
@@ -3325,18 +3951,40 @@ class HTML:
 
         # Ensure hidden content is blank and styled like the parent
         if theme.hidden:
-            ft = [
-                (
-                    parent_style,
-                    "\n".join([" " * len(x) for x in text.split("\n")]),
-                )
-                for style, text, *_ in ft
-            ]
+            ft = cast(
+                "StyleAndTextTuples",
+                [
+                    (
+                        parent_style,
+                        "\n".join([" " * len(x) for x in text.split("\n")]),
+                        *rest,
+                    )
+                    for style, text, *rest in ft
+                ],
+            )
+
+        # Apply mouse handler to links
+        if (
+            (parent := element.parent)
+            and parent.name == "a"
+            and callable(handler := self.mouse_handler)
+            and (href := parent.attrs.get("href"))
+        ):
+            element.attrs["_link_path"] = self.base / href
+            ft = cast(
+                "StyleAndTextTuples",
+                [
+                    (style, text, *(rest or [partial(handler, element)]))
+                    for style, text, *rest in ft
+                ],
+            )
 
         return ft
 
     def __pt_formatted_text__(self) -> StyleAndTextTuples:
         """Return formatted text."""
+        if not self.formatted_text:
+            self.render(width=None, height=None)
         return self.formatted_text
 
 
@@ -3348,8 +3996,8 @@ if __name__ == "__main__":
     from prompt_toolkit.styles.style import Style
 
     from euporie.core.app import BaseApp
+    from euporie.core.path import parse_path
     from euporie.core.style import HTML_STYLE
-    from euporie.core.utils import parse_path
 
     path = parse_path(sys.argv[1])
 

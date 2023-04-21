@@ -668,12 +668,12 @@ def calculate_col_widths(
             expand(width.preferred)
         elif current_width > width.preferred:
             contract(width.preferred)
-    elif width.max_specified:
+    if width.max_specified:
         if current_width > width.max:
             contract(width.max)
         if current_width < width.max and expand_to_width:
             expand(width.max)
-    elif width.min_specified and current_width < width.min:
+    if width.min_specified and current_width < width.min:
         expand(width.min)
 
     return col_widths
@@ -738,15 +738,17 @@ def compute_lines(
         align(
             wrap(
                 [
-                    ("", "\n" * (padding.top or 0)),
+                    *([("", "\n" * padding.top)] if padding.top else []),
                     *compute_text(cell, render_count),
-                    ("", "\n" * (padding.bottom or 0)),
+                    *([("", "\n" * padding.bottom)] if padding.bottom else []),
                 ],
                 width=width,
+                placeholder="",
             ),
             compute_align(cell, render_count),
             width=width,
             style=compute_style(cell, render_count),
+            placeholder="",
         )
     )
 
@@ -1057,13 +1059,13 @@ class Table:
 
             node_style = " ".join(
                 (
-                    sw_bs.top,
-                    sw_bs.right,
                     ne_bs.bottom,
+                    sw_bs.right,
+                    sw_bs.top,
                     ne_bs.left,
-                    se_bs.top,
-                    se_bs.left,
                     nw_bs.bottom,
+                    se_bs.left,
+                    se_bs.top,
                     nw_bs.right,
                 )
             )
@@ -1111,13 +1113,13 @@ class Table:
             for w, e in zip([DummyCell(), *row.cells], [*row.cells, DummyCell()]):
                 border_style = " ".join(
                     (
-                        compute_border_style(w, render_count).right,
                         compute_border_style(e, render_count).left,
+                        compute_border_style(w, render_count).right,
                     )
                 )
                 border_char = get_vertical_edge(
-                    compute_border_line(w, render_count),
                     compute_border_line(e, render_count),
+                    compute_border_line(w, render_count),
                 )
 
                 # We only need to check on cell to the left and one cell to the right
