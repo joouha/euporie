@@ -5,14 +5,18 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
+from prompt_toolkit.data_structures import Point
 from prompt_toolkit.layout.processors import (
     AppendAutoSuggestion,
     Processor,
     Transformation,
 )
 from prompt_toolkit.layout.utils import explode_text_fragments
+from prompt_toolkit.utils import get_cwidth
 
 if TYPE_CHECKING:
+    from typing import Callable
+
     from prompt_toolkit.layout.processors import TransformationInput
 
 
@@ -60,4 +64,35 @@ class ShowTrailingWhiteSpaceProcessor(Processor):
                     fragments[i] = (f"{style} {self.style}", new_char)
                 else:
                     break
+        return Transformation(fragments)
+
+
+class CursorProcessor(Processor):
+    """Show a mouse cursor."""
+
+    def __init__(
+        self,
+        get_cursor_position: Callable[[], Point],
+        char: str = "🮰",
+        style: str = "class:mouse",
+    ) -> None:
+        """Create a new processor instance."""
+        self.char = char
+        self.style = style
+        self.get_cursor_position = get_cursor_position
+
+    def apply_transformation(self, ti: TransformationInput) -> Transformation:
+        """Replace character at the cursor position."""
+        pos = self.get_cursor_position()
+        fragments = ti.fragments
+        if ti.lineno == pos.y:
+            fragments = explode_text_fragments(fragments)
+            if (length := len(fragments)) < (x := pos.x):
+                fragments.append(("", " " * (x - length)))
+            frag = fragments[x]
+            char = self.char.ljust(get_cwidth(frag[1]))
+            fragments[x] = (
+                f"{frag[0]} {self.style}",
+                char,
+            )
         return Transformation(fragments)
