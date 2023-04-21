@@ -365,22 +365,15 @@ class ScrollingContainer(Container):
         ctx = contextvars.copy_context()
 
         def render_in_thread() -> None:
-            """Create a new event loop in the thread."""
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-
-            async def render_run_in_loop() -> None:
-                """Render all children sequentially."""
-                n_children = len(self.children)
-                for i in range(n_children):
-                    if i < len(self.children):
-                        self.get_child_render_info(i).render(width, height)
-                        self.pre_rendered = i / n_children
-                    get_app().invalidate()
-                self.pre_rendered = 1.0
+            """Render children in  thread."""
+            n_children = len(self.children)
+            for i in range(n_children):
+                if i < len(self.children):
+                    self.get_child_render_info(i).render(width, height)
+                    self.pre_rendered = i / n_children
                 get_app().invalidate()
-
-            loop.run_until_complete(render_run_in_loop())
+            self.pre_rendered = 1.0
+            get_app().invalidate()
 
         async def trigger_render() -> None:
             """Use an executor thread from the current event loop."""
