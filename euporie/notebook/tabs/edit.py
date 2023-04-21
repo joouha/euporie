@@ -17,11 +17,11 @@ from euporie.core.tabs.base import KernelTab
 from euporie.core.widgets.inputs import KernelInput
 
 if TYPE_CHECKING:
+    from pathlib import Path
     from typing import Callable, Sequence
 
     from prompt_toolkit.formatted_text import AnyFormattedText
     from prompt_toolkit.layout.containers import AnyContainer
-    from upath import UPath
 
     from euporie.core.app import BaseApp
     from euporie.core.comm.base import Comm
@@ -38,7 +38,7 @@ class EditorTab(KernelTab):
     def __init__(
         self,
         app: BaseApp,
-        path: UPath | None = None,
+        path: Path | None = None,
         kernel: Kernel | None = None,
         comms: dict[str, Comm] | None = None,
         use_kernel_history: bool = False,
@@ -98,7 +98,7 @@ class EditorTab(KernelTab):
             key_bindings=load_registered_bindings("euporie.core.tabs.base.Tab"),
         )
 
-    def save(self, path: UPath | None = None, cb: Callable | None = None) -> None:
+    def save(self, path: Path | None = None, cb: Callable | None = None) -> None:
         """Save the current file."""
         if path is not None:
             self.path = path
@@ -121,7 +121,7 @@ class EditorTab(KernelTab):
                     dialog.show(tab=self, cb=cb)
             else:
                 try:
-                    open_file.write_text(self.input_box.buffer.text)
+                    open_file.write(self.input_box.buffer.text)
                 except Exception:
                     if dialog := self.app.dialogs.get("save-as"):
                         dialog.show(tab=self, cb=cb)

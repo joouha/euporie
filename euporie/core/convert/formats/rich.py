@@ -8,8 +8,9 @@ from euporie.core.convert.core import register
 from euporie.core.convert.utils import have_modules
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     from rich.markdown import Markdown
-    from upath import UPath
 
 
 @register(
@@ -23,7 +24,7 @@ def markdown_to_rich_py(
     height: int | None = None,
     fg: str | None = None,
     bg: str | None = None,
-    path: UPath | None = None,
+    path: Path | None = None,
 ) -> Markdown:
     """Convert base64 encoded data to bytes."""
     from rich.markdown import Markdown

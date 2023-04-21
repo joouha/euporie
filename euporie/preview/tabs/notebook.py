@@ -21,12 +21,12 @@ from euporie.core.widgets.cell import Cell
 from euporie.core.widgets.page import PrintingContainer
 
 if TYPE_CHECKING:
+    from pathlib import Path
     from typing import Any, Callable
 
     from prompt_toolkit.application.application import Application
     from prompt_toolkit.formatted_text.base import StyleAndTextTuples
     from prompt_toolkit.layout.containers import AnyContainer
-    from upath import UPath
 
     from euporie.core.app import BaseApp
 
@@ -39,7 +39,7 @@ class PreviewNotebook(BaseNotebook):
     def __init__(
         self,
         app: BaseApp,
-        path: UPath | None = None,
+        path: Path | None = None,
         use_kernel_history: bool = False,
     ) -> None:
         """Create a new instance."""

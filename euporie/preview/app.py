@@ -20,6 +20,7 @@ from euporie.core.key_binding.registry import register_bindings
 from euporie.preview.tabs.notebook import PreviewNotebook
 
 if TYPE_CHECKING:
+    from pathlib import Path
     from typing import IO, Any, TextIO
 
     from prompt_toolkit.application.application import _AppResult
@@ -91,7 +92,7 @@ class PreviewApp(BaseApp):
         # Select the first tab after files are opened
         self.post_load_callables.append(partial(setattr, self, "tab_idx", 0))
 
-    def get_file_tab(self, path: UPath) -> type[Tab]:
+    def get_file_tab(self, path: Path) -> type[Tab]:
         """Return the tab to use for a file path."""
         return PreviewNotebook
 

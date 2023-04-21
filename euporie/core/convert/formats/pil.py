@@ -9,8 +9,9 @@ from euporie.core.convert.core import register
 from euporie.core.convert.utils import have_modules
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     from PIL.Image import Image as PilImage
-    from upath import UPath
 
 log = logging.getLogger(__name__)
 
@@ -43,7 +44,7 @@ def png_to_pil_py(
     rows: int | None = None,
     fg: str | None = None,
     bg: str | None = None,
-    path: UPath | None = None,
+    path: Path | None = None,
 ) -> PilImage:
     """Convert PNG to a pillow image using :py:mod:`PIL`."""
     import io

@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 from euporie.core.convert.core import register
 
 if TYPE_CHECKING:
-    from upath import UPath
+    from pathlib import Path
 
 
 @register(
@@ -37,7 +37,7 @@ def bytes_to_base64_py(
     height: int | None = None,
     fg: str | None = None,
     bg: str | None = None,
-    path: UPath | None = None,
+    path: Path | None = None,
 ) -> str:
     """Convert bytes to base64 encoded data."""
     if isinstance(data, str):

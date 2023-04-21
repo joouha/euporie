@@ -14,11 +14,11 @@ from euporie.core.convert.utils import call_subproc, commands_exist, have_module
 from euporie.core.current import get_app
 
 if TYPE_CHECKING:
+    from pathlib import Path
     from typing import Any
 
     from PIL.Image import Image as PilImage
     from rich.console import RenderableType
-    from upath import UPath
 
 log = logging.getLogger(__name__)
 
@@ -34,7 +34,7 @@ def html_to_ansi_w3m(
     height: int | None = None,
     fg: str | None = None,
     bg: str | None = None,
-    path: UPath | None = None,
+    path: Path | None = None,
 ) -> str:
     """Convert HTML text to formatted ANSI using :command:`w3m`."""
     cmd: list[Any] = ["w3m", "-T", "text/html"]
@@ -54,7 +54,7 @@ def html_to_ansi_elinks(
     height: int | None = None,
     fg: str | None = None,
     bg: str | None = None,
-    path: UPath | None = None,
+    path: Path | None = None,
 ) -> str:
     """Convert HTML text to formatted ANSI using :command:`elinks`."""
     cmd: list[Any] = [
@@ -82,7 +82,7 @@ def html_to_ansi_lynx(
     height: int | None = None,
     fg: str | None = None,
     bg: str | None = None,
-    path: UPath | None = None,
+    path: Path | None = None,
 ) -> str:
     """Convert HTML text to formatted ANSI using :command:`lynx`."""
     cmd: list[Any] = ["lynx", "-dump", "-stdin"]
@@ -102,7 +102,7 @@ def html_to_ansi_links(
     height: int | None = None,
     fg: str | None = None,
     bg: str | None = None,
-    path: UPath | None = None,
+    path: Path | None = None,
 ) -> str:
     """Convert HTML text to formatted ANSI using :command:`links`."""
     cmd: list[Any] = ["links", "-dump"]
@@ -122,7 +122,7 @@ def html_to_ansi_py_htmlparser(
     height: int | None = None,
     fg: str | None = None,
     bg: str | None = None,
-    path: UPath | None = None,
+    path: Path | None = None,
 ) -> str:
     """Convert HTML tables to ANSI text using :py:mod:`HTMLParser`."""
     import io
@@ -179,7 +179,7 @@ def latex_to_ansi_py_flatlatex(
     height: int | None = None,
     fg: str | None = None,
     bg: str | None = None,
-    path: UPath | None = None,
+    path: Path | None = None,
 ) -> str:
     """Convert LaTeX to ANSI using :py:mod:`flatlatex`."""
     import flatlatex
@@ -198,7 +198,7 @@ def latex_to_ansi_py_pylatexenc(
     height: int | None = None,
     fg: str | None = None,
     bg: str | None = None,
-    path: UPath | None = None,
+    path: Path | None = None,
 ) -> str:
     """Convert LaTeX to ANSI using :py:mod:`pylatexenc`."""
     from pylatexenc.latex2text import LatexNodes2Text
@@ -217,7 +217,7 @@ def latex_to_ansi_py_sympy(
     height: int | None = None,
     fg: str | None = None,
     bg: str | None = None,
-    path: UPath | None = None,
+    path: Path | None = None,
 ) -> str:
     """Convert LaTeX to ANSI using :py:mod:`sympy`."""
     from sympy import pretty
@@ -241,7 +241,7 @@ def pil_to_ansi_py_timg(
     rows: int | None = None,
     fg: str | None = None,
     bg: str | None = None,
-    path: UPath | None = None,
+    path: Path | None = None,
 ) -> str:
     """Convert a PIL image to ANSI text using :py:mod:`timg`."""
     import timg
@@ -267,7 +267,7 @@ def pil_to_ansi_py_img2unicode(
     rows: int | None = None,
     fg: str | None = None,
     bg: str | None = None,
-    path: UPath | None = None,
+    path: Path | None = None,
 ) -> str:
     """Convert a PIL image to ANSI text using :py:mod:`img2unicode`."""
     import io
@@ -305,7 +305,7 @@ def image_to_ansi_timg(
     rows: int | None = None,
     fg: str | None = None,
     bg: str | None = None,
-    path: UPath | None = None,
+    path: Path | None = None,
 ) -> str:
     """Convert image data to ANSI text using :command:`timg`."""
     cmd: list[Any] = ["timg"]
@@ -326,7 +326,7 @@ def image_to_ansi_catimg(
     rows: int | None = None,
     fg: str | None = None,
     bg: str | None = None,
-    path: UPath | None = None,
+    path: Path | None = None,
 ) -> str:
     """Convert image data to ANSI text using :command:`catimg`."""
     cmd: list[Any] = ["catimg"]
@@ -347,7 +347,7 @@ def image_to_ansi_icat(
     rows: int | None = None,
     fg: str | None = None,
     bg: str | None = None,
-    path: UPath | None = None,
+    path: Path | None = None,
 ) -> str:
     """Convert image data to ANSI text using :command:`icat`."""
     cmd: list[Any] = ["icat"]
@@ -368,7 +368,7 @@ def image_to_ansi_tiv(
     rows: int | None = None,
     fg: str | None = None,
     bg: str | None = None,
-    path: UPath | None = None,
+    path: Path | None = None,
 ) -> str:
     """Convert image data to ANSI text using :command:`tiv`."""
     cmd: list[Any] = ["tiv"]
@@ -388,7 +388,7 @@ def image_to_ansi_viu(
     rows: int | None = None,
     fg: str | None = None,
     bg: str | None = None,
-    path: UPath | None = None,
+    path: Path | None = None,
 ) -> str:
     """Convert image data to ANSI text using :command:`viu`."""
     cmd: list[Any] = ["viu"]
@@ -409,7 +409,7 @@ def image_to_ansi_jp2a(
     rows: int | None = None,
     fg: str | None = None,
     bg: str | None = None,
-    path: UPath | None = None,
+    path: Path | None = None,
 ) -> str:
     """Convert image data to ANSI text using :command:`jp2a`."""
     cmd: list[Any] = ["jp2a", "--color"]
@@ -430,7 +430,7 @@ def png_to_ansi_img2txt(
     rows: int | None = None,
     fg: str | None = None,
     bg: str | None = None,
-    path: UPath | None = None,
+    path: Path | None = None,
 ) -> str:
     """Convert PNG data to ANSI text using :command:`img2txt`."""
     cmd: list[Any] = ["img2txt"]
@@ -446,7 +446,7 @@ def png_to_ansi_py_placeholder(
     rows: int | None = None,
     fg: str | None = None,
     bg: str | None = None,
-    path: UPath | None = None,
+    path: Path | None = None,
 ) -> str:
     """Draw placeholder ANSI text."""
     from euporie.core.border import RoundedLine
@@ -479,7 +479,7 @@ def rich_to_ansi_py(
     height: int | None = None,
     fg: str | None = None,
     bg: str | None = None,
-    path: UPath | None = None,
+    path: Path | None = None,
 ) -> str:
     """Convert rich objects to formatted ANSI text."""
     import rich

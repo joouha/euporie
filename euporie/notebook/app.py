@@ -52,11 +52,11 @@ from euporie.notebook.widgets.side_bar import SideBar
 
 if TYPE_CHECKING:
     from asyncio import AbstractEventLoop
+    from pathlib import Path
     from typing import Any, Callable, Sequence
 
     from prompt_toolkit.formatted_text import StyleAndTextTuples
     from prompt_toolkit.layout.containers import AnyContainer, Float
-    from upath import UPath
 
     from euporie.core.tabs.base import Tab
     from euporie.core.widgets.cell import Cell
@@ -102,7 +102,7 @@ class NotebookApp(BaseApp):
             [[("", "Press "), ("bold", get_cmd("quit").key_str()), ("", " to quit")]],
         )
 
-    def get_file_tab(self, path: UPath) -> type[Tab]:
+    def get_file_tab(self, path: Path) -> type[Tab]:
         """Return the tab to use for a file path."""
         mime = get_mime(path) or ""
         log.debug("File %s has mime type: %s", path, mime)

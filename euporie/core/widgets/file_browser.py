@@ -30,6 +30,7 @@ from euporie.core.widgets.decor import Border, FocusedStyle
 from euporie.core.widgets.forms import Button, Text
 
 if TYPE_CHECKING:
+    from pathlib import Path
     from typing import Callable
 
     from prompt_toolkit.filters.base import FilterOrBool
@@ -349,7 +350,7 @@ FILE_ICONS = {
 }
 
 
-def is_dir(path: str | UPath) -> bool | None:
+def is_dir(path: str | Path) -> bool | None:
     """Check if a path is a directory."""
     test_path = UPath(path)
     try:
@@ -363,7 +364,7 @@ class FileBrowserControl(UIControl):
 
     def __init__(
         self,
-        path: UPath | None = None,
+        path: Path | None = None,
         on_chdir: Callable[[FileBrowserControl], None] | None = None,
         on_select: Callable[[FileBrowserControl], None] | None = None,
         on_open: Callable[[FileBrowserControl], None] | None = None,
@@ -373,7 +374,7 @@ class FileBrowserControl(UIControl):
         self.hovered: int = 0
         self.selected: int | None = None
         self._dir_cache: FastDictCache[
-            tuple[UPath], list[tuple[bool, UPath]]
+            tuple[Path], list[tuple[bool, Path]]
         ] = FastDictCache(get_value=self.load_path, size=1)
         self.on_select = Event(self, on_select)
         self.on_chdir = Event(self, on_chdir)
@@ -412,12 +413,12 @@ class FileBrowserControl(UIControl):
             return self.open_path()
 
     @property
-    def contents(self) -> list[tuple[bool, UPath]]:
+    def contents(self) -> list[tuple[bool, Path]]:
         """Return the contents of the current folder."""
         return self._dir_cache[(self.dir,)]
 
     @property
-    def dir(self) -> UPath:
+    def dir(self) -> Path:
         """Return the current folder path."""
         return self._dir
 
@@ -435,12 +436,12 @@ class FileBrowserControl(UIControl):
             log.warning("'%s' is not a directory, not changing directory", value)
 
     @property
-    def path(self) -> UPath:
+    def path(self) -> Path:
         """Return the current selected path."""
         return self.contents[self.selected or 0][1]
 
     @staticmethod
-    def load_path(path: UPath) -> list[tuple[bool, UPath]]:
+    def load_path(path: Path) -> list[tuple[bool, Path]]:
         """Return the contents of a folder."""
         paths = [] if path.parent == path else [path / ".."]
         try:
@@ -563,10 +564,10 @@ class FileBrowser:
 
     def __init__(
         self,
-        path: UPath | None = None,
-        on_select: Callable[[UPath], None] | None = None,
-        on_open: Callable[[UPath], None] | None = None,
-        on_chdir: Callable[[UPath], None] | None = None,
+        path: Path | None = None,
+        on_select: Callable[[Path], None] | None = None,
+        on_open: Callable[[Path], None] | None = None,
+        on_chdir: Callable[[Path], None] | None = None,
         width: AnyDimension = None,
         height: AnyDimension = None,
         style: str = "",
@@ -575,7 +576,7 @@ class FileBrowser:
         """Create a new instance."""
 
         def _accept_path(buffer: Buffer) -> bool:
-            control.dir = UPath(buffer.text)
+            control.dir = Path(buffer.text)
             return True
 
         def _validate_path(path: str) -> bool:

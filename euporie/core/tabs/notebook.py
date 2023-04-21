@@ -20,11 +20,11 @@ from euporie.core.utils import parse_path
 from euporie.core.widgets.cell import Cell, get_cell_id
 
 if TYPE_CHECKING:
+    from pathlib import Path
     from typing import Any, Callable
 
     from prompt_toolkit.filters import Filter
     from prompt_toolkit.layout.containers import AnyContainer
-    from upath import UPath
 
     from euporie.core.app import BaseApp
     from euporie.core.comm.base import Comm
@@ -42,7 +42,7 @@ class BaseNotebook(KernelTab, metaclass=ABCMeta):
     def __init__(
         self,
         app: BaseApp,
-        path: UPath | None = None,
+        path: Path | None = None,
         kernel: Kernel | None = None,
         comms: dict[str, Comm] | None = None,
         use_kernel_history: bool = False,
@@ -240,7 +240,7 @@ class BaseNotebook(KernelTab, metaclass=ABCMeta):
         else:
             super().close(cb)
 
-    def save(self, path: UPath | None = None, cb: Callable | None = None) -> None:
+    def save(self, path: Path | None = None, cb: Callable | None = None) -> None:
         """Write the notebook's JSON to the current notebook's file.
 
         Additionally save the widget state to the notebook metadata.
