@@ -24,6 +24,7 @@ from pygments.styles import get_style_by_name
 
 from euporie.core.formatted_text.utils import indent, lex, wrap
 from euporie.core.style import LOG_STYLE
+from euporie.core.utils import dict_merge
 
 if TYPE_CHECKING:
     from types import TracebackType
@@ -37,20 +38,6 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 LOG_QUEUE: deque = deque(maxlen=1000)
-
-
-def dict_merge(target_dict: dict, input_dict: dict) -> None:
-    """Merge the second dictionary onto the first."""
-    for k in input_dict:
-        if k in target_dict:
-            if isinstance(target_dict[k], dict) and isinstance(input_dict[k], dict):
-                dict_merge(target_dict[k], input_dict[k])
-            elif isinstance(target_dict[k], list) and isinstance(input_dict[k], list):
-                target_dict[k] = [*target_dict[k], *input_dict[k]]
-            else:
-                target_dict[k] = input_dict[k]
-        else:
-            target_dict[k] = input_dict[k]
 
 
 class FtFormatter(logging.Formatter):
