@@ -270,7 +270,7 @@ class StdoutFormatter(FtFormatter):
 
 def setup_logs(config: Config) -> None:
     """Configure the logger for euporie."""
-    log_file_is_stdout = config.log_file in ("-", "/dev/stdout")
+    log_file_is_stdout = config.get("log_file", "") in ("-", "/dev/stdout")
 
     log_config = {
         "version": 1,
@@ -292,7 +292,7 @@ def setup_logs(config: Config) -> None:
             **(
                 {
                     "file": {
-                        "level": config.log_level.upper() or "ERROR",
+                        "level": config.get("log_level", "ERROR").upper(),
                         "class": "logging.FileHandler",
                         "filename": Path(config.log_file).expanduser(),
                         "formatter": "file_format",
@@ -302,20 +302,20 @@ def setup_logs(config: Config) -> None:
                 else {}
             ),
             "stdout": {
-                "level": config.log_level.upper()
+                "level": config.get("log_level", "ERROR").upper()
                 if config.log_level and log_file_is_stdout
                 else (
-                    "critical"
+                    "CRITICAL"
                     if (app_cls := config.app_cls) is None
-                    else app_cls.log_stdout_level
+                    else app_cls.log_stdout_level.upper()
                 ),
                 "class": "euporie.core.log.FormattedTextHandler",
-                "pygments_theme": config.syntax_theme,
+                "pygments_theme": config.get("syntax_theme", "euporie"),
                 "formatter": "stdout_format",
                 "stream": sys.stdout,
             },
             "log_tab": {
-                "level": config.log_level.upper() or "INFO",
+                "level": config.get("log_level", "INFO").upper(),
                 "class": "euporie.core.log.QueueHandler",
                 "formatter": "log_tab_format",
                 "queue": LOG_QUEUE,
@@ -323,7 +323,7 @@ def setup_logs(config: Config) -> None:
         },
         "loggers": {
             "euporie": {
-                "level": config.log_level.upper() or "INFO",
+                "level": config.get("log_level", "INFO").upper(),
                 "handlers": ["log_tab", "stdout"]
                 + (["file"] if not log_file_is_stdout and config.log_file else []),
                 "propagate": False,
