@@ -6,16 +6,17 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
+from prompt_toolkit.filters import Condition
 from prompt_toolkit.layout.containers import HSplit, VSplit
 from prompt_toolkit.layout.dimension import Dimension
 
-from euporie.core.convert.core import get_format
 from euporie.core.data_structures import DiBool
 from euporie.core.margins import MarginContainer, ScrollbarMargin
 from euporie.core.tabs.base import Tab
 from euporie.core.widgets.decor import FocusedStyle
-from euporie.core.widgets.display import Display
+from euporie.core.widgets.display import DisplayWindow
 from euporie.core.widgets.forms import Button, Text
+from euporie.web.widgets.webview import WebViewControl
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -59,35 +60,36 @@ class WebTab(Tab):
         """Load a new URL, or the URL in the address-bar."""
         if url == "":
             return False
-
         if url is None:
             url = self.url_bar.text
-
         log.debug("Loading %s", url)
+        self.webview.load_url(url)
+        return True
 
-        url = UPath(url).resolve()
+    def _url_loaded(self, webview: WebViewControl) -> None:
+        """Trigger callback when the URL is loaded."""
+        url = webview.url
         self.path = url
         self.url_bar.text = str(url)
-
-        self.display.path = url
-        self.display.format_ = get_format(url, default="html")
-        self.display.data = url.read_bytes()
-
-        return True
 
     def load_container(self) -> AnyContainer:
         """Abcract method for loading the notebook's main container."""
         assert self.path is not None
 
+        self.webview = WebViewControl(url=self.path)
+        self.webview.rendered += self._url_loaded
+
         button_prev = Button(
             "◀",
             show_borders=DiBool(top=True, right=False, bottom=True, left=True),
-            # on_click=lambda x: self.navigate_next(),
+            disabled=Condition(lambda: not self.webview.prev_stack),
+            on_click=lambda x: self.webview.nav_prev(),
         )
         button_next = Button(
             "▶",
             show_borders=DiBool(top=True, right=True, bottom=True, left=False),
-            # on_click=lambda x: self.navigate_prev(),
+            disabled=Condition(lambda: not self.webview.next_stack),
+            on_click=lambda x: self.webview.nav_next(),
         )
         self.url_bar = Text(
             text=str(self.path),
@@ -98,17 +100,6 @@ class WebTab(Tab):
             "➜",
             show_borders=DiBool(top=True, right=True, bottom=True, left=False),
             on_click=lambda x: (self.load_url() and None) or None,  # typing magic
-        )
-
-        self.display = Display(
-            data="",
-            format_="html",
-            path=self.path,
-            focusable=True,
-            focus_on_click=True,
-            always_hide_cursor=True,
-            dont_extend_height=False,
-            scrollbar=False,
         )
 
         return HSplit(
@@ -124,8 +115,8 @@ class WebTab(Tab):
                 ),
                 VSplit(
                     [
-                        self.display,
-                        MarginContainer(ScrollbarMargin(), target=self.display.window),
+                        window := DisplayWindow(self.webview),
+                        MarginContainer(ScrollbarMargin(), target=window),
                     ]
                 ),
             ],
