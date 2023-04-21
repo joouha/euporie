@@ -15,8 +15,8 @@ from euporie.core.comm.registry import open_comm
 from euporie.core.commands import get_cmd
 from euporie.core.config import add_setting
 from euporie.core.kernel import MsgCallbacks
+from euporie.core.path import parse_path
 from euporie.core.tabs.base import KernelTab
-from euporie.core.utils import parse_path
 from euporie.core.widgets.cell import Cell, get_cell_id
 
 if TYPE_CHECKING:

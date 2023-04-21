@@ -6,10 +6,8 @@ from itertools import chain
 from typing import TYPE_CHECKING, Sequence, TypeVar, overload
 
 from prompt_toolkit.mouse_events import MouseButton, MouseEventType
-from upath import UPath
 
 if TYPE_CHECKING:
-    from os import PathLike
     from typing import Callable, Iterable
 
     from prompt_toolkit.key_binding.key_bindings import NotImplementedOrNone
@@ -46,20 +44,6 @@ class ChainedList(Sequence[T]):
     def __len__(self) -> int:
         """Return the length of the chained lists."""
         return len(self.data)
-
-
-def parse_path(path: str | PathLike) -> UPath:
-    """Parse and resolve a path."""
-    upath = UPath(path)
-    try:
-        upath = upath.expanduser()
-    except NotImplementedError:
-        pass
-    try:
-        upath = upath.resolve()
-    except (AttributeError, NotImplementedError):
-        pass
-    return upath
 
 
 def on_click(func: Callable) -> MouseHandler:
