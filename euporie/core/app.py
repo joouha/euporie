@@ -72,6 +72,7 @@ from euporie.core.key_binding.registry import (
 )
 from euporie.core.key_binding.vi_state import ViState
 from euporie.core.log import default_logs, setup_logs
+from euporie.core.path import parse_path
 from euporie.core.renderer import Renderer
 from euporie.core.style import (
     DEFAULT_COLORS,
@@ -83,7 +84,7 @@ from euporie.core.style import (
     build_style,
 )
 from euporie.core.terminal import TerminalInfo
-from euporie.core.utils import ChainedList, parse_path
+from euporie.core.utils import ChainedList
 from euporie.core.widgets.decor import Shadow
 
 if TYPE_CHECKING:

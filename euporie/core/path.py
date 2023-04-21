@@ -18,6 +18,7 @@ from upath.registry import _registry
 
 if TYPE_CHECKING:
     from io import BufferedRandom, BufferedReader, BufferedWriter, FileIO, TextIOWrapper
+    from os import PathLike
     from typing import IO, Any, BinaryIO, Literal
     from urllib.parse import SplitResult
 
@@ -31,6 +32,21 @@ if TYPE_CHECKING:
 
 
 log = logging.getLogger(__name__)
+
+
+def parse_path(path: str | PathLike) -> Path:
+    """Parse and resolve a path."""
+    if not isinstance(path, Path):
+        path = UPath(path)
+    try:
+        path = path.expanduser()
+    except NotImplementedError:
+        pass
+    try:
+        path = path.resolve()
+    except (AttributeError, NotImplementedError):
+        pass
+    return path
 
 
 class DataPath(upath.core.UPath):

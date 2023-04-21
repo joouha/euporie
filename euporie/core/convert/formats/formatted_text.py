@@ -72,7 +72,7 @@ def markdown_to_ft(
     height: int | None = None,
     fg: str | None = None,
     bg: str | None = None,
-    path: UPath | None = None,
+    path: Path | None = None,
 ) -> StyleAndTextTuples:
     """Convert markdown to formatted text, injecting a custom CSS style-sheet."""
     from euporie.core.convert.formats.html import markdown_to_html_markdown_it

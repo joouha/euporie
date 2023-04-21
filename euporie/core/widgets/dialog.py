@@ -472,7 +472,7 @@ class OpenFileDialog(FileDialog):
         self, buffer: Buffer, tab: Tab | None, cb: Callable | None = None
     ) -> None:
         """Validate the the file to open exists."""
-        from euporie.core.utils import parse_path
+        from euporie.core.path import parse_path
 
         path = parse_path(self.file_browser.control.dir / buffer.text)
         if path is not None:
@@ -517,7 +517,7 @@ class SaveAsDialog(FileDialog):
         self, buffer: Buffer, tab: Tab | None, cb: Callable | None = None
     ) -> None:
         """Validate the the file to open exists."""
-        from euporie.core.utils import parse_path
+        from euporie.core.path import parse_path
 
         path = parse_path(self.file_browser.control.dir / buffer.text)
         if tab and path is not None:

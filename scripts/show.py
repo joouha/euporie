@@ -6,7 +6,7 @@ from prompt_toolkit.application.current import set_app
 
 from euporie.core.app import BaseApp
 from euporie.core.convert.core import convert, get_format
-from euporie.core.utils import parse_path
+from euporie.core.path import parse_path
 
 if TYPE_CHECKING:
     from typing import Any, Callable, Optional
