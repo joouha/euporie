@@ -925,6 +925,7 @@ class Notebook(BaseNotebook):
                 json = cell.json
                 json.pop("execution_count", None)
                 json.pop("outputs", None)
+                cell.run_or_render()
 
     @staticmethod
     @add_cmd(
