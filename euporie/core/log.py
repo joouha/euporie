@@ -292,7 +292,7 @@ def setup_logs(config: Config) -> None:
             **(
                 {
                     "file": {
-                        "level": config.get("log_level", "ERROR").upper(),
+                        "level": config.log_level.upper() or "ERROR",
                         "class": "logging.FileHandler",
                         "filename": Path(config.log_file).expanduser(),
                         "formatter": "file_format",
@@ -302,12 +302,13 @@ def setup_logs(config: Config) -> None:
                 else {}
             ),
             "stdout": {
-                "level": config.get("log_level", "ERROR").upper()
-                if config.log_level and log_file_is_stdout
+                "level": log_level.upper() or "ERROR"
+                if (log_level := config.log_level) and log_file_is_stdout
                 else (
                     "CRITICAL"
                     if (app_cls := config.app_cls) is None
-                    else app_cls.log_stdout_level.upper()
+                    or not (log_stdout_level := app_cls.log_stdout_level)
+                    else log_stdout_level.upper()
                 ),
                 "class": "euporie.core.log.FormattedTextHandler",
                 "pygments_theme": config.get("syntax_theme", "euporie"),
@@ -315,7 +316,7 @@ def setup_logs(config: Config) -> None:
                 "stream": sys.stdout,
             },
             "log_tab": {
-                "level": config.get("log_level", "INFO").upper(),
+                "level": config.log_level.upper() or "INFO",
                 "class": "euporie.core.log.QueueHandler",
                 "formatter": "log_tab_format",
                 "queue": LOG_QUEUE,
@@ -323,7 +324,7 @@ def setup_logs(config: Config) -> None:
         },
         "loggers": {
             "euporie": {
-                "level": config.get("log_level", "INFO").upper(),
+                "level": config.log_level.upper() or "INFO",
                 "handlers": ["log_tab", "stdout"]
                 + (["file"] if not log_file_is_stdout and config.log_file else []),
                 "propagate": False,
