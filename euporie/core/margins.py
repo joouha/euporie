@@ -64,13 +64,13 @@ class MarginContainer(Window):
 
     def create_fragments(self) -> StyleAndTextTuples:
         """Generate text fragments to display."""
-        render_info = self.target.render_info
-        assert render_info is not None
-        return self.margin.create_margin(
-            render_info,
-            self.write_position.width,
-            self.write_position.height,
-        )
+        if (render_info := self.target.render_info) is not None:
+            return self.margin.create_margin(
+                render_info,
+                self.write_position.width,
+                self.write_position.height,
+            )
+        return []
 
     def reset(self) -> None:
         """Reet the state of this container and all the children."""
@@ -222,7 +222,7 @@ class ScrollbarMargin(ClickableMargin):
 
     def create_margin(
         self,
-        window_render_info: WindowRenderInfo | None,
+        window_render_info: WindowRenderInfo,
         width: int,
         height: int,
         margin_render_info: WindowRenderInfo | None = None,
