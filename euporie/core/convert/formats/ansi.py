@@ -246,9 +246,25 @@ def pil_to_ansi_py_timg(
     """Convert a PIL image to ANSI text using :py:mod:`timg`."""
     import timg
 
+    px, py = get_app().term_info.cell_size_px
+
+    # Calculate rows based on image aspect ratio
     w, h = data.size
-    if cols is not None:
-        data = data.resize((cols, ceil(cols / w * h)))
+    if rows is None and cols is not None:
+        w, h = data.size
+        rows = ceil(cols / w * h)
+    elif cols is None and rows is not None:
+        w, h = data.size
+        cols = ceil(rows / h * w)
+    elif rows is None and cols is None:
+        cols = ceil(w / px)
+        rows = ceil(h / py)
+    assert rows is not None and cols is not None
+
+    # `timg` assumes a 2x1 terminal cell aspect ratio, so we correct for while
+    # resizing the image
+    data = data.resize((cols, ceil(rows * (px / py) / 0.5)))
+
     bg = bg or get_app().color_palette.bg.base_hex
     if bg:
         data = set_background(data, bg)
