@@ -6,13 +6,15 @@ from typing import TYPE_CHECKING
 
 from prompt_toolkit.filters import Condition, has_focus
 from prompt_toolkit.formatted_text.base import FormattedText
-from prompt_toolkit.layout.containers import HSplit
+from prompt_toolkit.layout.containers import HSplit, VSplit
 from prompt_toolkit.layout.dimension import Dimension
 from prompt_toolkit.widgets import SearchToolbar
 
 from euporie.core.commands import add_cmd
 from euporie.core.current import get_app
 from euporie.core.log import LOG_QUEUE, QueueHandler
+from euporie.core.margins import MarginContainer, ScrollbarMargin
+from euporie.core.path import parse_path
 from euporie.core.tabs.base import Tab
 from euporie.core.widgets.formatted_text_area import FormattedTextArea
 
@@ -36,7 +38,7 @@ class LogView(Tab):
         self.text_area = FormattedTextArea(
             formatted_text=[],
             read_only=True,
-            scrollbar=True,
+            scrollbar=False,
             line_numbers=Condition(lambda: self.app.config.line_numbers),
             search_field=self.search_field,
             focus_on_click=True,
@@ -44,7 +46,17 @@ class LogView(Tab):
             dont_extend_width=False,
         )
         self.container = HSplit(
-            [self.text_area, self.search_field],
+            [
+                VSplit(
+                    [
+                        self.text_area,
+                        MarginContainer(
+                            ScrollbarMargin(), target=self.text_area.window
+                        ),
+                    ]
+                ),
+                self.search_field,
+            ],
             width=Dimension(weight=1),
             height=Dimension(weight=1),
         )
@@ -70,7 +82,7 @@ class LogView(Tab):
     def title(self) -> str:
         """Return the title of this tab."""
         suffix = (
-            f" ({Path(self.app.config.log_file).name})"
+            f" ({parse_path(self.app.config.log_file).name})"
             if self.app.config.log_file
             else ""
         )

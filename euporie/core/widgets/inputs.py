@@ -168,18 +168,28 @@ class KernelInput(TextArea):
         )
 
         # Add configurable line numbers
-        self.window.left_margins = left_margins or [
-            ConditionalMargin(
-                NumberedDiffMargin(),
-                Condition(lambda: self.kernel_tab.app.config.line_numbers),
-            )
-        ]
-        self.window.right_margins = right_margins or [
-            OverflowMargin(),
-            ConditionalMargin(
-                ScrollbarMargin(display_arrows=False), filter=scrollable(self.window)
-            ),
-        ]
+        self.window.left_margins = (
+            left_margins
+            if left_margins is not None
+            else [
+                ConditionalMargin(
+                    NumberedDiffMargin(),
+                    Condition(lambda: self.kernel_tab.app.config.line_numbers),
+                )
+            ]
+        )
+
+        self.window.right_margins = (
+            right_margins
+            if right_margins is not None
+            else [
+                OverflowMargin(),
+                ConditionalMargin(
+                    ScrollbarMargin(display_arrows=False),
+                    filter=scrollable(self.window),
+                ),
+            ]
+        )
 
         self.window.cursorline = self.has_focus
 

@@ -1168,7 +1168,8 @@ class Table:
                         continue
                     output_line.append(borders[i])
 
-                    padding_style = f"{cell.style} nounderline"
+                    cell_style = compute_style(cell, render_count)
+                    padding_style = f"{cell_style} nounderline"
                     padding = compute_padding(cell, render_count)
                     padding_left, padding_right = padding.left, padding.right
 
@@ -1183,7 +1184,7 @@ class Table:
                         [
                             (padding_style, " " * (padding.left or 0)),
                             *(line or []),
-                            (cell.style, " " * excess),
+                            (cell_style, " " * excess),
                             (padding_style, " " * (padding.right or 0)),
                         ]
                     )

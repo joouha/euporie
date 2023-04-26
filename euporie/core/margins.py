@@ -35,7 +35,7 @@ if TYPE_CHECKING:
     class ScrollableContainer(Protocol):
         """Protocol for a scrollable container."""
 
-        render_info: WindowRenderInfo
+        render_info: WindowRenderInfo | None
         vertical_scroll: int
 
 
@@ -64,8 +64,10 @@ class MarginContainer(Window):
 
     def create_fragments(self) -> StyleAndTextTuples:
         """Generate text fragments to display."""
+        render_info = self.target.render_info
+        assert render_info is not None
         return self.margin.create_margin(
-            self.target.render_info,
+            render_info,
             self.write_position.width,
             self.write_position.height,
         )
@@ -75,7 +77,13 @@ class MarginContainer(Window):
 
     def preferred_width(self, max_available_width: int) -> Dimension:
         """Return a the desired width for this container."""
-        width = self.margin.get_width(lambda: self.target.render_info.ui_content)
+
+        def _get_ui_content() -> UIContent:
+            render_info = self.target.render_info
+            assert render_info is not None
+            return render_info.ui_content
+
+        width = self.margin.get_width(_get_ui_content)
         return Dimension(min=width, max=width)
 
     def preferred_height(self, width: int, max_available_height: int) -> Dimension:
@@ -186,7 +194,7 @@ class ScrollbarMargin(ClickableMargin):
         display_arrows: FilterOrBool = True,
         up_arrow_symbol: str = "▴",
         down_arrow_symbol: str = "▾",
-        autohide: FilterOrBool = True,
+        autohide: FilterOrBool = False,
         smooth: bool = True,
         style: str = "",
     ) -> None:
@@ -214,7 +222,7 @@ class ScrollbarMargin(ClickableMargin):
 
     def create_margin(
         self,
-        window_render_info: WindowRenderInfo,
+        window_render_info: WindowRenderInfo | None,
         width: int,
         height: int,
         margin_render_info: WindowRenderInfo | None = None,
@@ -225,22 +233,25 @@ class ScrollbarMargin(ClickableMargin):
         self.window_render_info = window_render_info
         self.margin_render_info = margin_render_info
 
-        if window_render_info is None or not width:
+        if not width:
             return result
 
         # Show we render the arrow buttons?
         display_arrows = self.display_arrows()
 
         # The height of the scrollbar, excluding the optional buttons
-        self.track_height = window_render_info.window_height
+        self.track_height = (
+            window_render_info.window_height if window_render_info else height
+        )
         if display_arrows:
             self.track_height -= 2
 
         # Height of all text in the output: If there is none, we cannot divide
         # by zero so we hide the thumb
-        content_height = window_render_info.content_height
-        if content_height == 0 or content_height <= len(
-            window_render_info.displayed_lines
+        if (
+            window_render_info is None
+            or (content_height := window_render_info.content_height) == 0
+            or content_height <= len(window_render_info.displayed_lines)
         ):
             self.thumb_size = 0
         else:
@@ -259,7 +270,9 @@ class ScrollbarMargin(ClickableMargin):
             self.thumb_size = int(self.thumb_size)
 
         # Calculate the position of the thumb
-        if content_height <= len(window_render_info.displayed_lines):
+        if window_render_info is None or content_height <= len(
+            window_render_info.displayed_lines
+        ):
             fraction_above = 0.0
         else:
             fraction_above = window_render_info.vertical_scroll / (
@@ -381,7 +394,8 @@ class ScrollbarMargin(ClickableMargin):
 
         """
         render_info = self.window_render_info
-        assert render_info is not None
+        if render_info is None:
+            return NotImplemented
 
         content_height = render_info.content_height
         if isinstance(mouse_event, MouseEvent):
@@ -410,9 +424,9 @@ class ScrollbarMargin(ClickableMargin):
 
             if isinstance(window, Window):
                 if delta < 0:
-                    func = window._scroll_up
-                else:
                     func = window._scroll_down
+                else:
+                    func = window._scroll_up
                 for _ in range(abs(delta)):
                     func()
             elif hasattr(window, "scrolling"):

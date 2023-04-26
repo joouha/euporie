@@ -25,7 +25,7 @@ from prompt_toolkit.utils import Event
 from upath import UPath
 
 from euporie.core.border import InsetGrid
-from euporie.core.margins import ScrollbarMargin
+from euporie.core.margins import MarginContainer, ScrollbarMargin
 from euporie.core.widgets.decor import Border, FocusedStyle
 from euporie.core.widgets.forms import Button, Text
 
@@ -623,10 +623,14 @@ class FileBrowser:
                 ),
                 FocusedStyle(
                     Border(
-                        Window(
-                            control,
-                            style="class:face",
-                            right_margins=[ScrollbarMargin()],
+                        VSplit(
+                            [
+                                window := Window(
+                                    control,
+                                    style="class:face",
+                                ),
+                                MarginContainer(ScrollbarMargin(), target=window),
+                            ]
                         ),
                         border=InsetGrid,
                         style="class:input,inset,border",

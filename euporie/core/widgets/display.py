@@ -16,9 +16,8 @@ from prompt_toolkit.filters.base import Condition
 from prompt_toolkit.filters.utils import to_filter
 from prompt_toolkit.formatted_text.base import to_formatted_text
 from prompt_toolkit.formatted_text.utils import fragment_list_width, split_lines
-from prompt_toolkit.layout.containers import Float, Window
+from prompt_toolkit.layout.containers import ConditionalContainer, Float, VSplit, Window
 from prompt_toolkit.layout.controls import GetLinePrefixCallable, UIContent, UIControl
-from prompt_toolkit.layout.margins import ConditionalMargin
 from prompt_toolkit.layout.mouse_handlers import MouseHandlers
 from prompt_toolkit.layout.screen import Char, WritePosition
 from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
@@ -40,7 +39,7 @@ from euporie.core.key_binding.registry import (
     load_registered_bindings,
     register_bindings,
 )
-from euporie.core.margins import ScrollbarMargin
+from euporie.core.margins import MarginContainer, ScrollbarMargin
 from euporie.core.terminal import tmuxify
 from euporie.core.widgets.page import BoundedWritePosition
 
@@ -52,7 +51,7 @@ if TYPE_CHECKING:
     from prompt_toolkit.formatted_text import StyleAndTextTuples
     from prompt_toolkit.key_binding import KeyBindingsBase
     from prompt_toolkit.key_binding.key_bindings import NotImplementedOrNone
-    from prompt_toolkit.layout.containers import AnyContainer, WindowRenderInfo
+    from prompt_toolkit.layout.containers import AnyContainer
     from prompt_toolkit.layout.dimension import AnyDimension
     from prompt_toolkit.layout.screen import Screen
 
@@ -293,7 +292,6 @@ class DisplayWindow(Window):
     """A window sub-class which can scroll left and right."""
 
     content: DisplayControl
-    render_info: WindowRenderInfo
     vertical_scroll: int
 
     def _write_to_screen_at_index(
@@ -1164,16 +1162,19 @@ class Display:
             char=" ",
         )
 
-        self.window.right_margins = [
-            ConditionalMargin(
-                ScrollbarMargin(),
-                filter=to_filter(scrollbar)
-                & (
-                    ~to_filter(scrollbar_autohide)
-                    | (to_filter(scrollbar_autohide) & scrollable(self.window))
+        self.container = VSplit(
+            [
+                self.window,
+                ConditionalContainer(
+                    MarginContainer(ScrollbarMargin(), target=self.window),
+                    filter=to_filter(scrollbar)
+                    & (
+                        ~to_filter(scrollbar_autohide)
+                        | (to_filter(scrollbar_autohide) & scrollable(self.window))
+                    ),
                 ),
-            )
-        ]
+            ]
+        )
 
         # Add graphic
         app = get_app()
@@ -1270,7 +1271,7 @@ class Display:
 
     def __pt_container__(self) -> AnyContainer:
         """Return the content of this output."""
-        return self.window
+        return self.container
 
     # ################################### Commands ####################################
 
