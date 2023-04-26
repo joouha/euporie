@@ -30,7 +30,7 @@ from prompt_toolkit.key_binding.key_bindings import (
     KeyBindings,
     merge_key_bindings,
 )
-from prompt_toolkit.layout.containers import ConditionalContainer, Float, Window
+from prompt_toolkit.layout.containers import ConditionalContainer, Float, VSplit, Window
 from prompt_toolkit.layout.controls import (
     BufferControl,
     FormattedTextControl,
@@ -50,7 +50,7 @@ from euporie.core.border import InsetGrid
 from euporie.core.current import get_app
 from euporie.core.data_structures import DiBool
 from euporie.core.formatted_text.utils import FormattedTextAlign, align
-from euporie.core.margins import ScrollbarMargin
+from euporie.core.margins import MarginContainer, ScrollbarMargin
 from euporie.core.widgets.decor import Border, Shadow
 from euporie.core.widgets.layout import ConditionalSplit
 
@@ -533,7 +533,7 @@ class Text:
         style: str = "class:input",
         height: int = 1,
         min_height: int = 1,
-        multiline: bool = False,
+        multiline: FilterOrBool = False,
         expand: FilterOrBool = True,
         width: int | None = None,
         completer: Completer | None = None,
@@ -637,17 +637,22 @@ class Text:
         )
         self.text_area.window.content = self.text_area.control
 
-        if multiline:
-            self.text_area.window.right_margins = [
-                *self.text_area.window.right_margins,
-                ScrollbarMargin(),
-            ]
         if on_text_changed:
             self.text_area.buffer.on_text_changed += on_text_changed
         if validation:
             self.text_area.buffer.validate_while_typing = Always()
         self.container = Border(
-            self.text_area,
+            VSplit(
+                [
+                    self.text_area,
+                    ConditionalContainer(
+                        MarginContainer(
+                            ScrollbarMargin(), target=self.text_area.window
+                        ),
+                        filter=to_filter(multiline),
+                    ),
+                ]
+            ),
             border=InsetGrid,
             style=self.border_style,
             show_borders=show_borders,
@@ -1306,19 +1311,23 @@ class Select(SelectableWidget):
         """Load the widget's container."""
         return Box(
             Border(
-                Window(
-                    FormattedTextControl(
-                        self.text_fragments,
-                        focusable=True,
-                        show_cursor=False,
-                        key_bindings=self.key_bindings(),
-                    ),
-                    height=lambda: self.rows,
-                    dont_extend_width=self.dont_extend_width,
-                    dont_extend_height=self.dont_extend_height,
-                    style=f"class:face"
-                    f"{' class:disabled' if self.disabled() else ''}",
-                    right_margins=[ScrollbarMargin(style=self.style)],
+                VSplit(
+                    [
+                        window := Window(
+                            FormattedTextControl(
+                                self.text_fragments,
+                                focusable=True,
+                                show_cursor=False,
+                                key_bindings=self.key_bindings(),
+                            ),
+                            height=lambda: self.rows,
+                            dont_extend_width=self.dont_extend_width,
+                            dont_extend_height=self.dont_extend_height,
+                            style=f"class:face"
+                            f"{' class:disabled' if self.disabled() else ''}",
+                        ),
+                        MarginContainer(ScrollbarMargin(), target=window),
+                    ]
                 ),
                 border=self.border,
                 show_borders=self.show_borders,

@@ -11,8 +11,7 @@ from prompt_toolkit.layout.dimension import Dimension
 from euporie.core.kernel import Kernel, MsgCallbacks
 from euporie.core.key_binding.registry import load_registered_bindings
 from euporie.core.lexers import detect_lexer
-
-# from euporie.core.margins import MarginContainer
+from euporie.core.margins import MarginContainer, ScrollbarMargin
 from euporie.core.tabs.base import KernelTab
 from euporie.core.widgets.inputs import KernelInput
 
@@ -86,12 +85,12 @@ class EditorTab(KernelTab):
         """Abcract method for loading the notebook's main container."""
         assert self.path is not None
 
-        self.input_box = KernelInput(kernel_tab=self)
+        self.input_box = KernelInput(kernel_tab=self, right_margins=[])
 
         return VSplit(
             [
                 self.input_box,
-                # MarginContainer(ScrollbarMargin(), target=self.input_box.window),
+                MarginContainer(ScrollbarMargin(), target=self.input_box.window),
             ],
             width=Dimension(weight=1),
             height=Dimension(weight=1),

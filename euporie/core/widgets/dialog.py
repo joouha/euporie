@@ -708,6 +708,7 @@ class ErrorDialog(Dialog):
 
     def load(self, exception: Exception | None = None, when: str = "") -> None:
         """Load dialog body & buttons."""
+        from euporie.core.margins import MarginContainer, ScrollbarMargin
         from euporie.core.widgets.formatted_text_area import FormattedTextArea
         from euporie.core.widgets.forms import Checkbox
 
@@ -741,12 +742,17 @@ class ErrorDialog(Dialog):
                     Box(checkbox, padding_left=0),
                 ),
                 ConditionalContainer(
-                    FormattedTextArea(
-                        lex([("", tb_text)], "pytb"),
-                        width=80,
-                        height=Dimension(min=10),
-                        wrap_lines=False,
-                        style="",
+                    VSplit(
+                        [
+                            fta := FormattedTextArea(
+                                lex([("", tb_text)], "pytb"),
+                                width=80,
+                                height=Dimension(min=10),
+                                wrap_lines=False,
+                                style="",
+                            ),
+                            MarginContainer(ScrollbarMargin(), target=fta.window),
+                        ]
                     ),
                     filter=Condition(lambda: checkbox.selected),
                 ),
@@ -811,6 +817,7 @@ class ShortcutsDialog(Dialog):
     def load(self, *args: Any, **kwargs: Any) -> None:
         """Load the dialog body."""
         from euporie.core.formatted_text.utils import max_line_width
+        from euporie.core.margins import MarginContainer, ScrollbarMargin
         from euporie.core.widgets.formatted_text_area import FormattedTextArea
 
         if not self.details:
@@ -819,13 +826,14 @@ class ShortcutsDialog(Dialog):
 
         width = max_line_width(self.details)
 
-        self.body = FormattedTextArea(
+        fta = FormattedTextArea(
             formatted_text=self.details,
             multiline=True,
             focusable=True,
             wrap_lines=False,
-            width=width,
+            width=width - 2,
         )
+        self.body = VSplit([fta, MarginContainer(ScrollbarMargin(), target=fta.window)])
 
     def format_key_info(self) -> StyleAndTextTuples:
         """Generate a table with the current key bindings."""

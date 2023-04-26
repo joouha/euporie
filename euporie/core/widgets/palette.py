@@ -17,7 +17,7 @@ from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
 from euporie.core.commands import Command, add_cmd, commands
 from euporie.core.current import get_app
 from euporie.core.key_binding.registry import register_bindings
-from euporie.core.margins import ScrollbarMargin
+from euporie.core.margins import MarginContainer, ScrollbarMargin
 from euporie.core.widgets.decor import FocusedStyle
 from euporie.core.widgets.dialog import Dialog
 from euporie.core.widgets.forms import Text
@@ -192,7 +192,6 @@ class CommandPalette(Dialog):
             placeholder="  Type to search…",
         )
         self.text_area.buffer.on_text_changed += self.text_changed
-        scroll_bar_margin = ScrollbarMargin(display_arrows=False)
 
         self.body = HSplit(
             [
@@ -200,10 +199,15 @@ class CommandPalette(Dialog):
                     [FocusedStyle(self.text_area)],
                     padding=1,
                 ),
-                Window(
-                    CommandMenuControl(self),
-                    scroll_offsets=ScrollOffsets(bottom=1),
-                    right_margins=[scroll_bar_margin],
+                VSplit(
+                    [
+                        window := Window(
+                            CommandMenuControl(self),
+                            scroll_offsets=ScrollOffsets(bottom=1),
+                            # right_margins=[ScrollbarMargin(display_arrows=False)],
+                        ),
+                        MarginContainer(ScrollbarMargin(), target=window),
+                    ]
                 ),
             ],
         )

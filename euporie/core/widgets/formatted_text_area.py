@@ -15,7 +15,7 @@ from prompt_toolkit.layout.margins import ConditionalMargin
 from prompt_toolkit.layout.processors import DynamicProcessor, Processor, Transformation
 from prompt_toolkit.widgets import TextArea
 
-from euporie.core.margins import NumberedDiffMargin, ScrollbarMargin
+from euporie.core.margins import NumberedDiffMargin
 
 if TYPE_CHECKING:
     from typing import Any
@@ -98,8 +98,6 @@ class FormattedTextArea(TextArea):
                 self.line_numbers,
             )
         ]
-        # Add auto scrollbar
-        self.window.right_margins = [ScrollbarMargin(display_arrows=False)]
         # Set the formatted text to display
         self._set_formatted_text(formatted_text)
 

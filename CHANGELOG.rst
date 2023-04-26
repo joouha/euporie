@@ -11,6 +11,7 @@ Upcoming
 Added
 =====
 
+- Make all scrollbars clickable
 - Add ability to select an existing kernel when changing a notebook's kernel
 - Add "*.desktop" files
 - Select text on find-next
@@ -19,6 +20,7 @@ Added
 Fixed
 =====
 
+- Make clickable scrollbars work correctly with Window containers
 - Render cells when converted to markdown
 - Prevent crash when connecting to ``euporie-hub``
 - Improve mime-type detection

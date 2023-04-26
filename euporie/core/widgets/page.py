@@ -316,6 +316,8 @@ class ChildRenderInfo:
 class ScrollingContainer(Container):
     """A scrollable container which renders only the currently visible children."""
 
+    render_info: WindowRenderInfo | None
+
     def __init__(
         self,
         children: Callable[[], Sequence[AnyContainer]] | Sequence[AnyContainer],
