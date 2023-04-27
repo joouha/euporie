@@ -338,7 +338,7 @@ def handle_exception(
 def setup_logs(config: Config | None = None) -> None:
     """Configure the logger for euporie."""
     # Default log config
-    log_config = {
+    log_config: dict[str, Any] = {
         "version": 1,
         "disable_existing_loggers": False,
         "formatters": {
