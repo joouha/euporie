@@ -90,12 +90,12 @@ from euporie.core.widgets.decor import Shadow
 if TYPE_CHECKING:
     from asyncio import AbstractEventLoop
     from pathlib import Path
-    from typing import Any, Callable, Literal, Sequence
+    from typing import Any, Callable, Literal
 
     from prompt_toolkit.clipboard import Clipboard
     from prompt_toolkit.contrib.ssh import PromptToolkitSSHSession
     from prompt_toolkit.filters import Filter, FilterOrBool
-    from prompt_toolkit.formatted_text import AnyFormattedText, StyleAndTextTuples
+    from prompt_toolkit.formatted_text import StyleAndTextTuples
     from prompt_toolkit.input import Input
     from prompt_toolkit.layout.containers import AnyContainer
     from prompt_toolkit.layout.layout import FocusableElement
@@ -108,8 +108,8 @@ if TYPE_CHECKING:
     from euporie.core.widgets.dialog import Dialog
     from euporie.core.widgets.pager import Pager
     from euporie.core.widgets.search_bar import SearchBar
+    from euporie.core.widgets.status_bar import StatusBarFields
 
-    StatusBarFields = tuple[Sequence[AnyFormattedText], Sequence[AnyFormattedText]]
     ContainerStatusDict = dict[
         AnyContainer,
         Callable[[], StatusBarFields],
