@@ -22,6 +22,7 @@ from prompt_toolkit.styles.pygments import style_from_pygments_cls
 from prompt_toolkit.styles.style import Style, merge_styles
 from pygments.styles import get_style_by_name
 
+from euporie.core.config import add_setting
 from euporie.core.formatted_text.utils import indent, lex, wrap
 from euporie.core.style import LOG_STYLE
 from euporie.core.utils import dict_merge
@@ -268,83 +269,6 @@ class StdoutFormatter(FtFormatter):
         return FormattedText(output)
 
 
-def setup_logs(config: Config) -> None:
-    """Configure the logger for euporie."""
-    log_file_is_stdout = config.get("log_file", "") in ("-", "/dev/stdout")
-
-    log_config = {
-        "version": 1,
-        "disable_existing_loggers": False,
-        "formatters": {
-            "file_format": {
-                "format": "{asctime} {levelname:<7} [{name}.{funcName}:{lineno}] {message}",
-                "style": "{",
-                "datefmt": "%Y-%m-%d %H:%M:%S",
-            },
-            "stdout_format": {
-                "()": "euporie.core.log.StdoutFormatter",
-            },
-            "log_tab_format": {
-                "()": "euporie.core.log.LogTabFormatter",
-            },
-        },
-        "handlers": {
-            **(
-                {
-                    "file": {
-                        "level": config.log_level.upper() or "ERROR",
-                        "class": "logging.FileHandler",
-                        "filename": Path(config.log_file).expanduser(),
-                        "formatter": "file_format",
-                    }
-                }
-                if config.log_file and not log_file_is_stdout
-                else {}
-            ),
-            "stdout": {
-                "level": log_level.upper() or "ERROR"
-                if (log_level := config.log_level) and log_file_is_stdout
-                else (
-                    "CRITICAL"
-                    if (app_cls := config.app_cls) is None
-                    or not (log_stdout_level := app_cls.log_stdout_level)
-                    else log_stdout_level.upper()
-                ),
-                "class": "euporie.core.log.FormattedTextHandler",
-                "pygments_theme": config.get("syntax_theme", "euporie"),
-                "formatter": "stdout_format",
-                "stream": sys.stdout,
-            },
-            "log_tab": {
-                "level": config.log_level.upper() or "INFO",
-                "class": "euporie.core.log.QueueHandler",
-                "formatter": "log_tab_format",
-                "queue": LOG_QUEUE,
-            },
-        },
-        "loggers": {
-            "euporie": {
-                "level": config.log_level.upper() or "INFO",
-                "handlers": ["log_tab", "stdout"]
-                + (["file"] if not log_file_is_stdout and config.log_file else []),
-                "propagate": False,
-            },
-        },
-        # Log everything to the internal logger
-        "root": {"handlers": ["log_tab"]},
-    }
-    # Update log_config based additional config provided
-    if config.log_config:
-        import json
-
-        extra_config = json.loads(config.log_config)
-        dict_merge(log_config, extra_config)
-    # Configure the logger
-    # Pytype used TypedDicts to validate the dictionary structure, but I cannot get
-    # this to work for some reason...
-    logging.config.dictConfig(log_config)  # type: ignore
-
-
 class stdout_to_log:
     """A decorator which captures standard output and logs it."""
 
@@ -411,53 +335,139 @@ def handle_exception(
     log.critical("Uncaught exception", exc_info=(exc_type, exc_value, exc_traceback))
 
 
-def default_logs() -> None:
-    """Apply the default logging configuration before euporie's config is loaded."""
-    logging.config.dictConfig(
-        {
-            "version": 1,
-            "disable_existing_loggers": False,
-            "formatters": {
-                "file_format": {
-                    "format": "{asctime} {levelname:<7} [{name}.{funcName}:{lineno}] {message}",
-                    "style": "{",
-                    "datefmt": "%Y-%m-%d %H:%M:%S",
-                },
-                "stdout_format": {
-                    "()": StdoutFormatter,
-                },
-                "log_tab_format": {
-                    "()": LogTabFormatter,
-                },
+def setup_logs(config: Config | None = None) -> None:
+    """Configure the logger for euporie."""
+    # Default log config
+    log_config = {
+        "version": 1,
+        "disable_existing_loggers": False,
+        "formatters": {
+            "file_format": {
+                "format": "{asctime} {levelname:<7} [{name}.{funcName}:{lineno}] {message}",
+                "style": "{",
+                "datefmt": "%Y-%m-%d %H:%M:%S",
             },
-            "handlers": {
-                "stdout": {
-                    "level": "INFO",
-                    "()": FormattedTextHandler,
-                    "formatter": "stdout_format",
-                    "stream": sys.stdout,
-                },
-                "log_tab": {
-                    "level": "INFO",
-                    "()": QueueHandler,
-                    "formatter": "log_tab_format",
-                    "queue": LOG_QUEUE,
-                },
+            "stdout_format": {
+                "()": StdoutFormatter,
             },
-            "loggers": {
-                "euporie": {
-                    "level": "INFO",
-                    "handlers": ["log_tab", "stdout"],
-                    "propagate": False,
-                },
+            "log_tab_format": {
+                "()": LogTabFormatter,
             },
-            # Log everything to the internal logger
-            "root": {"handlers": ["log_tab"]},
-        }
-    )  # type: ignore
+        },
+        "handlers": {
+            "stdout": {
+                "level": "INFO",
+                "()": FormattedTextHandler,
+                "formatter": "stdout_format",
+                "stream": sys.stdout,
+            },
+            "log_tab": {
+                "level": "INFO",
+                "()": QueueHandler,
+                "formatter": "log_tab_format",
+                "queue": LOG_QUEUE,
+            },
+        },
+        "loggers": {
+            "euporie": {
+                "level": "INFO",
+                "handlers": ["log_tab", "stdout"],
+                "propagate": False,
+            },
+        },
+        # Log everything to the internal logger
+        "root": {"handlers": ["log_tab"]},
+    }
+
+    if config is not None:
+        log_file = config.get("log_file", "")
+        log_file_is_stdout = log_file in {"-", "/dev/stdout"}
+        log_level = config.log_level.upper()
+
+        # Configure file handler
+        if log_file and not log_file_is_stdout:
+            log_config["handlers"]["file"] = {
+                "level": log_level,
+                "class": "logging.FileHandler",
+                "filename": Path(config.log_file).expanduser(),
+                "formatter": "file_format",
+            }
+            log_config["loggers"]["euporie"]["handlers"].append("file")
+
+        # Configure stdout handler
+        if log_file_is_stdout:
+            stdout_level = log_level
+        elif (app_cls := config.app_cls) is not None and (
+            log_stdout_level := app_cls.log_stdout_level
+        ):
+            stdout_level = log_stdout_level.upper()
+        else:
+            stdout_level = "CRITICAL"
+        log_config["handlers"]["stdout"]["level"] = stdout_level
+        log_config["handlers"]["stdout"]["pygments_theme"] = config.get(
+            "syntax_theme", "euporie"
+        )
+
+        # Configure euporie logger
+        log_config["loggers"]["euporie"]["level"] = config.log_level.upper()
+
+        # Update log_config based on additional config dict provided
+        if config.log_config:
+            import json
+
+            extra_config = json.loads(config.log_config)
+            dict_merge(log_config, extra_config)
+
+    # Configure the logger
+    # Pytype used TypedDicts to validate the dictionary structure, but I cannot get
+    # this to work for some reason...
+    logging.config.dictConfig(log_config)  # type: ignore
 
     # Capture warnings so they show up in the logs
     logging.captureWarnings(True)
 
     # Log uncaught exceptions
     sys.excepthook = handle_exception
+
+
+# ################################### Settings ########################################
+
+
+add_setting(
+    name="log_file",
+    flags=["--log-file"],
+    nargs="?",
+    default="",
+    type_=str,
+    title="the log file path",
+    help_="File path for logs",
+    description="""
+        When set to a file path, the log output will be written to the given path.
+        If no value is given output will be sent to the standard output.
+    """,
+)
+
+add_setting(
+    name="log_level",
+    flags=["--log-level"],
+    type_=str,
+    default="warning",
+    title="the log level",
+    help_="Set the log level",
+    choices=["debug", "info", "warning", "error", "critical"],
+    description="""
+        When set, logging events at the given level are emitted.
+    """,
+)
+
+add_setting(
+    name="log_config",
+    flags=["--log-config"],
+    type_=str,
+    default=None,
+    title="additional logging configuration",
+    help_="Additional logging configuration",
+    description="""
+        A JSON string specifying additional logging configuration.
+    """,
+)

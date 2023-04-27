@@ -6,6 +6,7 @@ import argparse
 import json
 import logging
 import os
+import sys
 from ast import literal_eval
 from collections import ChainMap
 from functools import partial
@@ -21,7 +22,6 @@ from upath import UPath
 
 from euporie.core import __app_name__, __copyright__, __version__
 from euporie.core.commands import add_cmd, get_cmd
-from euporie.core.log import setup_logs
 
 if TYPE_CHECKING:
     from typing import IO, Any, Callable, Optional, Sequence
@@ -339,6 +339,8 @@ class Config:
 
     def load(self, cls: type[ConfigurableApp]) -> None:
         """Load the command line, environment, and user configuration."""
+        from euporie.core.log import setup_logs
+
         self.app_cls = cls
         self.app_name = cls.name
         log.debug("Loading config for %s", self.app_name)
@@ -416,7 +418,11 @@ class Config:
     def load_args(self) -> dict[str, Any]:
         """Attempt to load configuration settings from commandline flags."""
         result = {}
-        namespace, _ = self.load_parser().parse_known_intermixed_args()
+        # Parse known arguments
+        namespace, remainder = self.load_parser().parse_known_intermixed_args()
+        # Update argv to leave the remaining arguments for subsequent apps
+        sys.argv[1:] = remainder
+        # Validate arguments
         for name, value in vars(namespace).items():
             if value is not None:
                 # Convert to json and back to attain json types
