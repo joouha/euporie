@@ -8,6 +8,11 @@ Notable changes to this project will be documented in this file.
 Upcoming
 ********
 
+Changed
+=======
+
+- Changed name of ``hub`` configuration item ```no_auth`` to ``auth`` with inverse logic
+
 Added
 =====
 
