@@ -71,7 +71,7 @@ from euporie.core.key_binding.registry import (
     register_bindings,
 )
 from euporie.core.key_binding.vi_state import ViState
-from euporie.core.log import default_logs, setup_logs
+from euporie.core.log import setup_logs
 from euporie.core.path import parse_path
 from euporie.core.renderer import Renderer
 from euporie.core.style import (
@@ -515,7 +515,7 @@ class BaseApp(Application):
     def launch(cls) -> None:
         """Launch the app."""
         # Load default logging
-        default_logs()
+        setup_logs()
         # Load the app's configuration
         cls.config.load(cls)
         # Configure the logs
@@ -905,45 +905,6 @@ class BaseApp(Application):
         },
         description="""
             A list of file paths to open when euporie is launched.
-        """,
-    )
-
-    add_setting(
-        name="log_file",
-        flags=["--log-file"],
-        nargs="?",
-        default="",
-        type_=str,
-        title="the log file path",
-        help_="File path for logs",
-        description="""
-            When set to a file path, the log output will be written to the given path.
-            If no value is given output will be sent to the standard output.
-        """,
-    )
-
-    add_setting(
-        name="log_level",
-        flags=["--log-level"],
-        type_=str,
-        default="",
-        title="the log level",
-        help_="Set the log level",
-        choices=["debug", "info", "warning", "error", "critical"],
-        description="""
-            When set, logging events at the given level are emitted.
-        """,
-    )
-
-    add_setting(
-        name="log_config",
-        flags=["--log-config"],
-        type_=str,
-        default=None,
-        title="additional logging configuration",
-        help_="Additional logging configuration",
-        description="""
-            A JSON string specifying additional logging configuration.
         """,
     )
 

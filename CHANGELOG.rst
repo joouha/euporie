@@ -20,6 +20,7 @@ Added
 Fixed
 =====
 
+- Prevent ``KeyError: 'log_file'`` error when launching apps via ``euporie`` app
 - Prevent unknown markdown code block language causing rendering error
 - Fix unexpected cropped graphics when using ``timg`` with character aspects ≠ 0.5
 - Make clickable scrollbars work correctly with Window containers

@@ -42,7 +42,7 @@ class EuporieSSHServer(asyncssh.SSHServer):  # type: ignore
 
     def begin_auth(self, username: str) -> bool | Awaitable[bool]:
         """Perform authentication in the SSH server."""
-        if self.app_cls.config.no_auth:
+        if not self.app_cls.config.auth:
             # No authentication.
             return False
         return super().begin_auth(username)
@@ -68,18 +68,20 @@ class HubApp(BaseApp):
     @classmethod
     def launch(cls) -> None:
         """Launch the HubApp SSH server."""
+        # Default logging configuration
+        setup_logs()
+
         # Configure some setting defaults
         cls.config.settings["log_file"].value = "-"
+        cls.config.settings["log_level"].value = "info"
         cls.config.settings[
             "log_config"
         ].value = '{"loggers": {"asyncssh": {"handlers":["stdout"], "level": "DEBUG"}}}'
 
         # Load the app's configuration
         cls.config.load(cls)
-        # Configure the logs
-        setup_logs(cls.config)
 
-        if cls.config.no_auth:
+        if not cls.config.auth:
             log.warning(
                 "This server has been configured without SSH authentication, "
                 "meaning anyone can connect"
@@ -188,11 +190,11 @@ class HubApp(BaseApp):
     )
 
     add_setting(
-        name="no_auth",
-        flags=["--no-auth"],
+        name="auth",
+        flags=["--auth"],
         type_=bool,
         help_="Allow unauthenticated access to euporie hub",
-        default=False,
+        default=True,
         description="""
             When set, users will be able to access euporie hub without authentication.
 
