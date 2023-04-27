@@ -80,6 +80,25 @@ def markdown_to_ft(
     from euporie.core.convert.formats.html import markdown_to_html_markdown_it
     from euporie.core.formatted_text.markdown import _MARKDOWN_CSS
 
+    css = _MARKDOWN_CSS
+
+    # If we are rendering a file rather than a snippet, apply margins to the root
+    if path is not None:
+        from prompt_toolkit.filters.utils import _always
+
+        from euporie.core.formatted_text.html import CssSelector
+
+        css = {
+            _always: {
+                **_MARKDOWN_CSS[_always],
+                ((CssSelector(item="::root"),),): {
+                    "max_width": "100em",
+                    "margin_left": "auto",
+                    "margin_right": "auto",
+                },
+            }
+        }
+
     return html_to_ft(
         markdown_to_html_markdown_it(
             path=path, bg=bg, fg=fg, height=height, width=width, data=data
@@ -89,7 +108,7 @@ def markdown_to_ft(
         fg=fg,
         bg=bg,
         path=path,
-        css=_MARKDOWN_CSS,
+        css=css,
     )
 
 
