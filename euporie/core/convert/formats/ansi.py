@@ -263,7 +263,7 @@ def pil_to_ansi_py_timg(
 
     # `timg` assumes a 2x1 terminal cell aspect ratio, so we correct for while
     # resizing the image
-    data = data.resize((cols, ceil(rows * (px / py) / 0.5)))
+    data = data.resize((cols, ceil(rows * 2 * (px / py) / 0.5)))
 
     bg = bg or get_app().color_palette.bg.base_hex
     if bg:
