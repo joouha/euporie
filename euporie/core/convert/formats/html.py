@@ -11,10 +11,10 @@ from mdit_py_plugins.dollarmath.index import dollarmath_plugin
 from mdit_py_plugins.texmath.index import texmath_plugin
 from pygments import highlight
 from pygments.formatters import HtmlFormatter
-from pygments.lexers import get_lexer_by_name
 
 from euporie.core.convert.core import register
 from euporie.core.current import get_app
+from euporie.core.lexers import detect_lexer
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -36,7 +36,7 @@ markdown_parser = (
             options_update={
                 "highlight": lambda text, language, lang_args: highlight(
                     text,
-                    get_lexer_by_name(language),
+                    detect_lexer(text, language=language),
                     HtmlFormatter(
                         nowrap=True,
                         noclasses=True,
