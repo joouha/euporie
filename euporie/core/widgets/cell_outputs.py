@@ -39,7 +39,7 @@ log = logging.getLogger(__name__)
 
 
 class CellOutputElement(metaclass=ABCMeta):
-    """Bae class for the various types of cell outputs (display data or widgets)."""
+    """Base class for the various types of cell outputs (display data or widgets)."""
 
     data: Any
 

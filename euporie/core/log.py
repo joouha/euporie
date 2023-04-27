@@ -42,7 +42,7 @@ LOG_QUEUE: deque = deque(maxlen=1000)
 
 
 class FtFormatter(logging.Formatter):
-    """Bae class for formatted text logging formatter."""
+    """Base class for formatted text logging formatter."""
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Create a new formatter instance."""

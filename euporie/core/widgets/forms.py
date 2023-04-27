@@ -305,7 +305,7 @@ class Button:
 
 
 class ToggleableWidget(metaclass=ABCMeta):
-    """Bae class for toggleable widgets."""
+    """Base class for toggleable widgets."""
 
     container: AnyContainer
     on_click: Event
@@ -979,7 +979,7 @@ class SizedMask(dict[int, bool]):
 
 
 class SelectableWidget(metaclass=ABCMeta):
-    """Bae class for widgets where one or more items can be selected."""
+    """Base class for widgets where one or more items can be selected."""
 
     def __init__(
         self,

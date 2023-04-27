@@ -340,7 +340,7 @@ class TabBarControl(UIControl):
 
 
 class StackedSplit(metaclass=ABCMeta):
-    """Bae class for containers with selectable children."""
+    """Base class for containers with selectable children."""
 
     def __init__(
         self,
