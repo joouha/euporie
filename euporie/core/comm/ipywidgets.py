@@ -292,7 +292,7 @@ class OutputModel(IpyWidgetComm):
 
 
 class LayoutIpyWidgetComm(IpyWidgetComm, metaclass=ABCMeta):
-    """Bae class for layout widgets with children."""
+    """Base class for layout widgets with children."""
 
     def render_children(
         self, models: list[str], parent: OutputParent
@@ -644,7 +644,7 @@ class FloatLogOptionsMixin(FloatOptionsMixin):
 
 
 class SliderIpyWidgetComm(IpyWidgetComm, metaclass=ABCMeta):
-    """Bae class for slider ipywidgets."""
+    """Base class for slider ipywidgets."""
 
     def normalize(self, x: Any) -> Any:
         """Convert the internal widget's value to one compatible with the ipywidget."""
@@ -722,7 +722,7 @@ class SliderIpyWidgetComm(IpyWidgetComm, metaclass=ABCMeta):
 
 
 class RangeSliderIpyWidgetComm(SliderIpyWidgetComm):
-    """Bae class for range slider ipywidgets."""
+    """Base class for range slider ipywidgets."""
 
     @property
     def indices(self) -> list[int]:
@@ -773,7 +773,7 @@ class FloatRangeSliderModel(FloatOptionsMixin, RangeSliderIpyWidgetComm):
 
 
 class NumberTextBoxIpyWidgetComm(TextBoxIpyWidgetComm, metaclass=ABCMeta):
-    """Bae class for text-box ipywidgets with numerical values."""
+    """Base class for text-box ipywidgets with numerical values."""
 
     def create_view(self, parent: OutputParent) -> CommView:
         """Create a new view of the numerical text-box ipywidget."""
@@ -899,7 +899,7 @@ class FloatProgressModel(FloatOptionsMixin, ProgressIpyWidgetComm):
 
 
 class ToggleableIpyWidgetComm(IpyWidgetComm, metaclass=ABCMeta):
-    """Bae class for toggleable ipywidgets."""
+    """Base class for toggleable ipywidgets."""
 
     def normalize(self, x: Any) -> float | None:
         """Cat the container's selected value to a bool if possible."""
@@ -994,7 +994,7 @@ class ValidModel(ToggleableIpyWidgetComm):
 
 
 class SelectableIpyWidgetComm(IpyWidgetComm, metaclass=ABCMeta):
-    """Bae class for selectable ipywidgets."""
+    """Base class for selectable ipywidgets."""
 
     def update_index(self, container: SelectableWidget) -> None:
         """Send a ``comm_message`` updating the selected index when it changes."""

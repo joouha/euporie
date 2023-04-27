@@ -41,7 +41,7 @@ log = logging.getLogger(__name__)
 
 
 class Tab(metaclass=ABCMeta):
-    """Bae class for interface tabs."""
+    """Base class for interface tabs."""
 
     container: AnyContainer
 

@@ -231,7 +231,7 @@ class DummyCell(Cell):
 
 
 class RowCol:
-    """Bae class for table rows and columns."""
+    """Base class for table rows and columns."""
 
     type_: str
     span_type: str
