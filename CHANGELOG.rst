@@ -20,6 +20,7 @@ Added
 Fixed
 =====
 
+- Prevent unknown markdown code block language causing rendering error
 - Fix unexpected cropped graphics when using ``timg`` with character aspects ≠ 0.5
 - Make clickable scrollbars work correctly with Window containers
 - Render cells when converted to markdown

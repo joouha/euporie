@@ -3,6 +3,7 @@
 from typing import TYPE_CHECKING
 
 from pygments.lexers import (
+    get_lexer_by_name,
     get_lexer_for_filename,
     guess_lexer,
     guess_lexer_for_filename,
@@ -15,7 +16,9 @@ if TYPE_CHECKING:
     from pygments.lexer import Lexer as PygmentsLexerCls
 
 
-def detect_lexer(text: "str" = "", path: "Path|None" = None) -> "PygmentsLexerCls":
+def detect_lexer(
+    text: "str" = "", path: "Path|None" = None, language: str = ""
+) -> "PygmentsLexerCls":
     """Detect the pygments lexer for a file."""
     lexer = None
     if path is not None:
@@ -26,6 +29,11 @@ def detect_lexer(text: "str" = "", path: "Path|None" = None) -> "PygmentsLexerCl
                 lexer = guess_lexer_for_filename(path, text)
             except ClassNotFound:
                 pass
+    if lexer is None and language:
+        try:
+            lexer = get_lexer_by_name(language)
+        except ClassNotFound:
+            pass
     if lexer is None:
         try:
             lexer = guess_lexer(text)
