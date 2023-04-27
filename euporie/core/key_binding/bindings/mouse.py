@@ -154,11 +154,11 @@ def load_mouse_bindings() -> "KeyBindings":
             if (mouse_limits := event.app.mouse_limits) is not None:
                 x = max(
                     mouse_limits.xpos,
-                    min(x, mouse_limits.xpos + mouse_limits.width - 1),
+                    min(x, mouse_limits.xpos + (mouse_limits.width - 1)),
                 )
                 y = max(
                     mouse_limits.ypos,
-                    min(y, mouse_limits.ypos + mouse_limits.height - 1),
+                    min(y, mouse_limits.ypos + (mouse_limits.height - 1)),
                 )
 
             # Call the mouse handler from the renderer.

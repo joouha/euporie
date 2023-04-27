@@ -5,7 +5,6 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-from prompt_toolkit.application.current import get_app
 from prompt_toolkit.buffer import Buffer
 from prompt_toolkit.cache import FastDictCache
 from prompt_toolkit.completion import PathCompleter
@@ -20,10 +19,12 @@ from prompt_toolkit.layout.containers import (
     Window,
 )
 from prompt_toolkit.layout.controls import UIContent, UIControl
+from prompt_toolkit.layout.screen import WritePosition
 from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
 from prompt_toolkit.utils import Event
 from upath import UPath
 
+from euporie.core.app import get_app
 from euporie.core.border import InsetGrid
 from euporie.core.margins import MarginContainer, ScrollbarMargin
 from euporie.core.widgets.decor import Border, FocusedStyle
@@ -39,6 +40,8 @@ if TYPE_CHECKING:
     from prompt_toolkit.layout.containers import AnyContainer
     from prompt_toolkit.layout.dimension import AnyDimension
     from upath.core import PT
+
+    from euporie.core.widgets.status_bar import StatusBarFields
 
 log = logging.getLogger(__name__)
 
@@ -368,10 +371,11 @@ class FileBrowserControl(UIControl):
         on_chdir: Callable[[FileBrowserControl], None] | None = None,
         on_select: Callable[[FileBrowserControl], None] | None = None,
         on_open: Callable[[FileBrowserControl], None] | None = None,
+        window: Window | None = None,
     ) -> None:
         """Initialize a new file browser instance."""
         self.dir = path or UPath(".")
-        self.hovered: int = 0
+        self.hovered: int | None = None
         self.selected: int | None = None
         self._dir_cache: FastDictCache[
             tuple[Path], list[tuple[bool, Path]]
@@ -379,6 +383,8 @@ class FileBrowserControl(UIControl):
         self.on_select = Event(self, on_select)
         self.on_chdir = Event(self, on_chdir)
         self.on_open = Event(self, on_open)
+
+        self.window = window
 
         self.on_chdir.fire()
 
@@ -494,7 +500,34 @@ class FileBrowserControl(UIControl):
             get_app().layout.current_control = self
             return self.select(row, open_file=True)
         elif mouse_event.event_type == MouseEventType.MOUSE_MOVE:
-            return self.hover(row)
+            # Mark item as hovered if mouse is over the control
+            if (
+                self.window is not None
+                and (info := self.window.render_info) is not None
+            ):
+                app = get_app()
+                rowcol_to_yx = info._rowcol_to_yx
+                abs_mouse_pos = (
+                    mouse_event.position.y + info._y_offset,
+                    mouse_event.position.x + info._x_offset,
+                )
+                if (abs_mouse_pos[1], abs_mouse_pos[0]) == app.mouse_position:
+                    row_col_vals = rowcol_to_yx.values()
+                    y_min, x_min = min(row_col_vals)
+                    y_max, x_max = max(row_col_vals)
+                    app.mouse_limits = WritePosition(
+                        xpos=x_min,
+                        ypos=y_min,
+                        width=x_max - x_min + 1,
+                        height=y_max - y_min + 1,
+                    )
+                    return self.hover(row)
+                else:
+                    # Clear mouse limits if mouse is outside control
+                    app.mouse_limits = None
+                    self.hovered = None
+                    return None
+            # return self.hover(row)
 
         return NotImplemented
 
@@ -510,12 +543,13 @@ class FileBrowserControl(UIControl):
             self.open_path()
         return None
 
-    def hover(self, row: int) -> NotImplementedOrNone:
+    def hover(self, row: int | None) -> NotImplementedOrNone:
         """Hover a file in the browser."""
-        row = min(max(0, row), len(self.contents) - 1)
-        if self.hovered != row:
-            self.hovered = row
-            return None
+        if row is not None:
+            row = min(max(0, row), len(self.contents) - 1)
+            if self.hovered != row:
+                self.hovered = row
+                return None
         return NotImplemented
 
     def open_path(self) -> None:
@@ -556,6 +590,14 @@ class FileBrowserControl(UIControl):
         """Determine that the file_browser is focusable."""
         return True
 
+    def __pt_status__(self) -> StatusBarFields:
+        """Show the selected or hovered path in the statusbar."""
+        if self.hovered is not None:
+            return [[("", str(self.contents[self.hovered][1]))]], []
+        elif self.selected is not None:
+            return [[("", str(self.contents[self.selected][1]))]], []
+        return [], []
+
 
 class FileBrowser:
     """A file browser."""
@@ -589,7 +631,6 @@ class FileBrowser:
         )
         self.control = control = FileBrowserControl(
             path=path,
-            on_open=lambda x: log.debug(x.path),
             on_chdir=lambda x: setattr(text, "text", str(x.dir)),
         )
         if on_select is not None:
@@ -642,6 +683,10 @@ class FileBrowser:
             width=width,
             height=height,
         )
+        # Set control's window so it can determine it's position for mouse-over
+        control.window = window
+
+        get_app().container_statuses[window] = control.__pt_status__
 
     def __pt_container__(self) -> AnyContainer:
         """Return the tree-view container's content."""

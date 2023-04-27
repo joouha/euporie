@@ -16,6 +16,7 @@ Changed
 Added
 =====
 
+- Show full file-browser file path in status-bar
 - Make all scrollbars clickable
 - Add ability to select an existing kernel when changing a notebook's kernel
 - Add "*.desktop" files

@@ -18,8 +18,13 @@ from euporie.core.current import get_app
 from euporie.core.filters import is_searching
 
 if TYPE_CHECKING:
+    from typing import Sequence
+
     from prompt_toolkit.filters.base import FilterOrBool
+    from prompt_toolkit.formatted_text.base import AnyFormattedText
     from prompt_toolkit.layout.containers import AnyContainer
+
+    StatusBarFields = tuple[Sequence[AnyFormattedText], Sequence[AnyFormattedText]]
 
 
 class StatusBar:

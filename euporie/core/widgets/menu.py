@@ -43,6 +43,7 @@ if TYPE_CHECKING:
     from euporie.core.app import BaseApp
     from euporie.core.border import GridStyle
     from euporie.core.commands import Command
+    from euporie.core.widgets.status_bar import StatusBarFields
 
 
 log = logging.getLogger(__name__)
@@ -650,9 +651,7 @@ class MenuBar:
 
         get_app().container_statuses[self.window] = self.statusbar_fields
 
-    def statusbar_fields(
-        self,
-    ) -> tuple[list[AnyFormattedText], list[AnyFormattedText]]:
+    def statusbar_fields(self) -> StatusBarFields:
         """Return the description of the currently selected menu item."""
         selected_item = self._get_menu(len(self.selected_menu) - 1)
         if isinstance(selected_item, MenuItem):
