@@ -15,12 +15,11 @@ from euporie.core.widgets.display import Display
 
 if TYPE_CHECKING:
     from pathlib import Path
-    from typing import Sequence
 
-    from prompt_toolkit.formatted_text import AnyFormattedText
     from prompt_toolkit.layout.containers import AnyContainer
 
     from euporie.core.app import BaseApp
+    from euporie.core.widgets.status_bar import StatusBarFields
 
 log = logging.getLogger(__name__)
 
@@ -34,9 +33,7 @@ class DisplayTab(Tab):
         if self.path is not None:
             self.container = self.load_container()
 
-    def statusbar_fields(
-        self,
-    ) -> tuple[Sequence[AnyFormattedText], Sequence[AnyFormattedText]]:
+    def __pt_status__(self) -> StatusBarFields | None:
         """Return a list of statusbar field values shown then this tab is active."""
         return ([str(self.path)], [])
 

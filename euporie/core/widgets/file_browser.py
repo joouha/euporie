@@ -686,8 +686,10 @@ class FileBrowser:
         # Set control's window so it can determine it's position for mouse-over
         control.window = window
 
-        get_app().container_statuses[window] = control.__pt_status__
-
     def __pt_container__(self) -> AnyContainer:
         """Return the tree-view container's content."""
         return self.container
+
+    def __pt_status__(self) -> StatusBarFields:
+        """Show the selected or hovered path in the statusbar."""
+        return self.control.__pt_status__()

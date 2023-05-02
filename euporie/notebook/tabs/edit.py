@@ -17,13 +17,13 @@ from euporie.core.widgets.inputs import KernelInput
 
 if TYPE_CHECKING:
     from pathlib import Path
-    from typing import Callable, Sequence
+    from typing import Callable
 
-    from prompt_toolkit.formatted_text import AnyFormattedText
     from prompt_toolkit.layout.containers import AnyContainer
 
     from euporie.core.app import BaseApp
     from euporie.core.comm.base import Comm
+    from euporie.core.widgets.status_bar import StatusBarFields
 
 log = logging.getLogger(__name__)
 
@@ -62,9 +62,7 @@ class EditorTab(KernelTab):
         self.input_box.text = text
         self.input_box.buffer.on_text_changed += lambda b: setattr(self, "dirty", True)
 
-    def statusbar_fields(
-        self,
-    ) -> tuple[Sequence[AnyFormattedText], Sequence[AnyFormattedText]]:
+    def __pt_status__(self) -> StatusBarFields | None:
         """Return a list of statusbar field values shown then this tab is active."""
         return ([str(self.path)], [])
 

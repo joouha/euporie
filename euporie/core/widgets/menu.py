@@ -255,6 +255,204 @@ class MenuItem:
 class MenuBar:
     """A container to hold the menubar and main application body."""
 
+    def __init__(
+        self,
+        app: BaseApp,
+        menu_items: Sequence[MenuItem],
+        grid: GridStyle = OuterHalfGrid,
+    ) -> None:
+        """Initiate the menu bar.
+
+        Args:
+            app: The application the menubar is attached to
+            menu_items: The menu items to show in the menubar
+            grid: The grid style to use for the menu's borders
+
+        """
+        self.app = app
+        self.menu_items = menu_items
+        self.grid = grid
+        self.selected_menu = [0]
+
+        # Key bindings.
+        kb = KeyBindings()
+
+        @Condition
+        def in_main_menu() -> bool:
+            return len(self.selected_menu) == 1
+
+        @Condition
+        def in_sub_menu() -> bool:
+            return len(self.selected_menu) > 1
+
+        # Navigation through the main menu.
+
+        @kb.add("left", filter=in_main_menu)
+        def _left(event: KeyPressEvent) -> None:
+            self.selected_menu[0] = max(0, self.selected_menu[0] - 1)
+
+        @kb.add("right", filter=in_main_menu)
+        def _right(event: KeyPressEvent) -> None:
+            self.selected_menu[0] = min(
+                len(self.menu_items) - 1, self.selected_menu[0] + 1
+            )
+
+        @kb.add("down", filter=in_main_menu)
+        def _down(event: KeyPressEvent) -> None:
+            menu = self._get_menu(len(self.selected_menu) - 2)
+            indices = [i for i, item in enumerate(menu.children) if not item.disabled]
+            if indices:
+                self.selected_menu.append(indices[0])
+
+        @kb.add("c-c", filter=in_main_menu)
+        @kb.add("c-g", filter=in_main_menu)
+        def _cancel(event: KeyPressEvent) -> None:
+            """Leave menu."""
+            event.app.layout.focus_last()
+
+        # Sub menu navigation.
+
+        @kb.add("left", filter=in_sub_menu)
+        @kb.add("c-g", filter=in_sub_menu)
+        @kb.add("c-c", filter=in_sub_menu)
+        def _back(event: KeyPressEvent) -> None:
+            """Go back to parent menu."""
+            if len(self.selected_menu) > 1:
+                self.selected_menu.pop()
+
+        @kb.add("right", filter=in_sub_menu)
+        def _submenu(event: KeyPressEvent) -> None:
+            """Go into a sub menu."""
+            if self._get_menu(len(self.selected_menu) - 1).children:
+                self.selected_menu.append(0)
+
+            # If This item does not have a sub menu. Go up in the parent menu.
+            elif (
+                len(self.selected_menu) == 2
+                and self.selected_menu[0] < len(self.menu_items) - 1
+            ):
+                self.selected_menu = [
+                    min(len(self.menu_items) - 1, self.selected_menu[0] + 1)
+                ]
+                if self.menu_items[self.selected_menu[0]].children:
+                    self.selected_menu.append(0)
+
+        @kb.add("up", filter=in_sub_menu)
+        def _up_in_submenu(event: KeyPressEvent) -> None:
+            """Select previous (enabled) menu item or return to main menu."""
+            # Look for previous enabled items in this sub menu.
+            menu = self._get_menu(len(self.selected_menu) - 2)
+            index = self.selected_menu[-1]
+
+            previous_indexes = [
+                i
+                for i, item in enumerate(menu.children)
+                if i < index and not item.disabled
+            ]
+
+            if previous_indexes:
+                self.selected_menu[-1] = previous_indexes[-1]
+            elif len(self.selected_menu) == 2:
+                # Return to main menu.
+                self.selected_menu.pop()
+
+        @kb.add("down", filter=in_sub_menu)
+        def _down_in_submenu(event: KeyPressEvent) -> None:
+            """Select next (enabled) menu item."""
+            menu = self._get_menu(len(self.selected_menu) - 2)
+            index = self.selected_menu[-1]
+
+            next_indexes = [
+                i
+                for i, item in enumerate(menu.children)
+                if i > index and not item.disabled
+            ]
+
+            if next_indexes:
+                self.selected_menu[-1] = next_indexes[0]
+
+        @kb.add("enter")
+        def _click(event: KeyPressEvent) -> None:
+            """Click the selected menu item."""
+            item = self._get_menu(len(self.selected_menu) - 1)
+            if item.handler:
+                event.app.layout.focus_last()
+                item.handler()
+
+        @kb.add("escape")
+        def _close(event: KeyPressEvent) -> None:
+            """Cloe the current menu."""
+            if len(self.selected_menu) > 1:
+                self.selected_menu = self.selected_menu[:-1]
+            else:
+                app.layout.focus_previous()
+
+        # Add global CUA menu shortcut
+        @kb.add("f10", is_global=True)
+        def _open_menu_default(event: KeyPressEvent) -> None:
+            self.selected_menu = [0]
+            event.app.layout.focus(self.window)
+
+        # Add menu shortcuts
+        used_keys = set()
+        for i, item in enumerate(menu_items):
+            key = to_plain_text(item.formatted_text)[0].lower()
+            if key not in used_keys:
+                used_keys |= {key}
+
+                @kb.add("escape", key, is_global=True)
+                def _open_menu(event: KeyPressEvent, index: int = i) -> None:
+                    """Open the  menu item."""
+                    self.selected_menu = [index]
+                    event.app.layout.focus(self.window)
+
+        # Controls.
+        self.control = FormattedTextControl(
+            self._get_menu_fragments,
+            key_bindings=kb,
+            focusable=True,
+            show_cursor=False,
+        )
+        self.window: Window = Window(
+            height=1, content=self.control, style="class:menu,bar"
+        )
+
+        submenu = self._submenu(0)
+        submenu2 = self._submenu(1)
+        submenu3 = self._submenu(2)
+
+        @Condition
+        def has_focus() -> bool:
+            return get_app().layout.current_window == self.window
+
+        self.app.menus["menu-1"] = Float(
+            xcursor=True,
+            ycursor=True,
+            content=ConditionalContainer(
+                content=Shadow(body=submenu), filter=has_focus
+            ),
+        )
+        self.app.menus["menu-2"] = Float(
+            attach_to_window=submenu,
+            xcursor=True,
+            ycursor=True,
+            allow_cover_cursor=True,
+            content=ConditionalContainer(
+                content=Shadow(body=submenu2),
+                filter=has_focus & Condition(lambda: len(self.selected_menu) >= 1),
+            ),
+        )
+        self.app.menus["menu-3"] = Float(
+            attach_to_window=submenu2,
+            xcursor=True,
+            ycursor=True,
+            allow_cover_cursor=True,
+            content=ConditionalContainer(
+                content=Shadow(body=submenu3),
+                filter=has_focus & Condition(lambda: len(self.selected_menu) >= 2),
+            ),
+        )
+
     def _get_menu(self, level: int) -> MenuItem:
         menu = self.menu_items[self.selected_menu[0]]
 
@@ -450,215 +648,19 @@ class MenuBar:
 
             return result
 
-        return Window(FormattedTextControl(get_text_fragments), style="class:menu")
-
-    def __init__(
-        self,
-        app: BaseApp,
-        menu_items: Sequence[MenuItem],
-        grid: GridStyle = OuterHalfGrid,
-    ) -> None:
-        """Initiate the menu bar.
-
-        Args:
-            app: The application the menubar is attached to
-            menu_items: The menu items to show in the menubar
-            grid: The grid style to use for the menu's borders
-
-        """
-        self.app = app
-        self.menu_items = menu_items
-        self.grid = grid
-        self.selected_menu = [0]
-
-        # Key bindings.
-        kb = KeyBindings()
-
-        @Condition
-        def in_main_menu() -> bool:
-            return len(self.selected_menu) == 1
-
-        @Condition
-        def in_sub_menu() -> bool:
-            return len(self.selected_menu) > 1
-
-        # Navigation through the main menu.
-
-        @kb.add("left", filter=in_main_menu)
-        def _left(event: KeyPressEvent) -> None:
-            self.selected_menu[0] = max(0, self.selected_menu[0] - 1)
-
-        @kb.add("right", filter=in_main_menu)
-        def _right(event: KeyPressEvent) -> None:
-            self.selected_menu[0] = min(
-                len(self.menu_items) - 1, self.selected_menu[0] + 1
-            )
-
-        @kb.add("down", filter=in_main_menu)
-        def _down(event: KeyPressEvent) -> None:
-            self.selected_menu.append(0)
-
-        @kb.add("c-c", filter=in_main_menu)
-        @kb.add("c-g", filter=in_main_menu)
-        def _cancel(event: KeyPressEvent) -> None:
-            """Leave menu."""
-            event.app.layout.focus_last()
-
-        # Sub menu navigation.
-
-        @kb.add("left", filter=in_sub_menu)
-        @kb.add("c-g", filter=in_sub_menu)
-        @kb.add("c-c", filter=in_sub_menu)
-        def _back(event: KeyPressEvent) -> None:
-            """Go back to parent menu."""
-            if len(self.selected_menu) > 1:
-                self.selected_menu.pop()
-
-        @kb.add("right", filter=in_sub_menu)
-        def _submenu(event: KeyPressEvent) -> None:
-            """Go into a sub menu."""
-            if self._get_menu(len(self.selected_menu) - 1).children:
-                self.selected_menu.append(0)
-
-            # If This item does not have a sub menu. Go up in the parent menu.
-            elif (
-                len(self.selected_menu) == 2
-                and self.selected_menu[0] < len(self.menu_items) - 1
-            ):
-                self.selected_menu = [
-                    min(len(self.menu_items) - 1, self.selected_menu[0] + 1)
-                ]
-                if self.menu_items[self.selected_menu[0]].children:
-                    self.selected_menu.append(0)
-
-        @kb.add("up", filter=in_sub_menu)
-        def _up_in_submenu(event: KeyPressEvent) -> None:
-            """Select previous (enabled) menu item or return to main menu."""
-            # Look for previous enabled items in this sub menu.
-            menu = self._get_menu(len(self.selected_menu) - 2)
-            index = self.selected_menu[-1]
-
-            previous_indexes = [
-                i
-                for i, item in enumerate(menu.children)
-                if i < index and not item.disabled
-            ]
-
-            if previous_indexes:
-                self.selected_menu[-1] = previous_indexes[-1]
-            elif len(self.selected_menu) == 2:
-                # Return to main menu.
-                self.selected_menu.pop()
-
-        @kb.add("down", filter=in_sub_menu)
-        def _down_in_submenu(event: KeyPressEvent) -> None:
-            """Select next (enabled) menu item."""
-            menu = self._get_menu(len(self.selected_menu) - 2)
-            index = self.selected_menu[-1]
-
-            next_indexes = [
-                i
-                for i, item in enumerate(menu.children)
-                if i > index and not item.disabled
-            ]
-
-            if next_indexes:
-                self.selected_menu[-1] = next_indexes[0]
-
-        @kb.add("enter")
-        def _click(event: KeyPressEvent) -> None:
-            """Click the selected menu item."""
-            item = self._get_menu(len(self.selected_menu) - 1)
-            if item.handler:
-                event.app.layout.focus_last()
-                item.handler()
-
-        @kb.add("escape")
-        def _close(event: KeyPressEvent) -> None:
-            """Cloe the current menu."""
-            if len(self.selected_menu) > 1:
-                self.selected_menu = self.selected_menu[:-1]
-            else:
-                app.layout.focus_previous()
-
-        # Add global CUA menu shortcut
-        @kb.add("f10", is_global=True)
-        def _open_menu_default(event: KeyPressEvent) -> None:
-            self.selected_menu = [0]
-            event.app.layout.focus(self.window)
-
-        # Add menu shortcuts
-        used_keys = set()
-        for i, item in enumerate(menu_items):
-            key = to_plain_text(item.formatted_text)[0].lower()
-            if key not in used_keys:
-                used_keys |= {key}
-
-                @kb.add("escape", key, is_global=True)
-                def _open_menu(event: KeyPressEvent, index: int = i) -> None:
-                    """Open the  menu item."""
-                    self.selected_menu = [index]
-                    event.app.layout.focus(self.window)
-
-        # Controls.
-        self.control = FormattedTextControl(
-            self._get_menu_fragments,
-            key_bindings=kb,
-            focusable=True,
-            show_cursor=False,
-        )
-        self.window: Window = Window(
-            height=1,
-            content=self.control,
-            style="class:menu,bar",
+        return Window(
+            FormattedTextControl(get_text_fragments),
+            style="class:menu",
         )
 
-        submenu = self._submenu(0)
-        submenu2 = self._submenu(1)
-        submenu3 = self._submenu(2)
+    def __pt_container__(self) -> Container:
+        """Return the menu bar container's content."""
+        return self.window
 
-        @Condition
-        def has_focus() -> bool:
-            return get_app().layout.current_window == self.window
-
-        self.app.menus["menu-1"] = Float(
-            xcursor=True,
-            ycursor=True,
-            content=ConditionalContainer(
-                content=Shadow(body=submenu), filter=has_focus
-            ),
-        )
-        self.app.menus["menu-2"] = Float(
-            attach_to_window=submenu,
-            xcursor=True,
-            ycursor=True,
-            allow_cover_cursor=True,
-            content=ConditionalContainer(
-                content=Shadow(body=submenu2),
-                filter=has_focus & Condition(lambda: len(self.selected_menu) >= 1),
-            ),
-        )
-        self.app.menus["menu-3"] = Float(
-            attach_to_window=submenu2,
-            xcursor=True,
-            ycursor=True,
-            allow_cover_cursor=True,
-            content=ConditionalContainer(
-                content=Shadow(body=submenu3),
-                filter=has_focus & Condition(lambda: len(self.selected_menu) >= 2),
-            ),
-        )
-
-        get_app().container_statuses[self.window] = self.statusbar_fields
-
-    def statusbar_fields(self) -> StatusBarFields:
+    def __pt_status__(self) -> StatusBarFields:
         """Return the description of the currently selected menu item."""
         selected_item = self._get_menu(len(self.selected_menu) - 1)
         if isinstance(selected_item, MenuItem):
             return (["", selected_item.description], [])
         else:
             return (["", ""], [])
-
-    def __pt_container__(self) -> Container:
-        """Return the menu bar container's content."""
-        return self.window
