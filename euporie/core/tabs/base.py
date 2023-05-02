@@ -30,12 +30,12 @@ if TYPE_CHECKING:
 
     from prompt_toolkit.auto_suggest import AutoSuggest
     from prompt_toolkit.completion.base import Completer
-    from prompt_toolkit.formatted_text import AnyFormattedText
     from prompt_toolkit.history import History
     from prompt_toolkit.layout.containers import AnyContainer
 
     from euporie.core.app import BaseApp
     from euporie.core.comm.base import Comm
+    from euporie.core.widgets.status_bar import StatusBarFields
 
 log = logging.getLogger(__name__)
 
@@ -49,17 +49,10 @@ class Tab(metaclass=ABCMeta):
         """Call when the tab is created."""
         self.app = app
         self.path = path
-        self.app.container_statuses[self] = self.statusbar_fields
         self.container = Window()
 
         self.dirty = False
         self.saving = False
-
-    def statusbar_fields(
-        self,
-    ) -> tuple[Sequence[AnyFormattedText], Sequence[AnyFormattedText]]:
-        """Return a list of statusbar field values shown then this tab is active."""
-        return ([], [])
 
     @property
     def title(self) -> str:
@@ -77,9 +70,6 @@ class Tab(metaclass=ABCMeta):
             cb: A function to call after the tab is closed.
 
         """
-        # Clean up status-bar
-        if self in self.app.container_statuses:
-            del self.app.container_statuses[self]
         # Run callback
         if callable(cb):
             cb()
@@ -91,6 +81,10 @@ class Tab(metaclass=ABCMeta):
     def save(self, path: Path | None = None, cb: Callable | None = None) -> None:
         """Save the current notebook."""
         raise NotImplementedError
+
+    def __pt_status__(self) -> StatusBarFields | None:
+        """Return a list of statusbar field values shown then this tab is active."""
+        return ([], [])
 
     def __pt_container__(self) -> AnyContainer:
         """Return the main container object."""

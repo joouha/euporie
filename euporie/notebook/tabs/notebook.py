@@ -57,7 +57,7 @@ if TYPE_CHECKING:
     from pathlib import Path
     from typing import Any, Deque, MutableSequence, Sequence
 
-    from prompt_toolkit.formatted_text.base import AnyFormattedText, StyleAndTextTuples
+    from prompt_toolkit.formatted_text.base import StyleAndTextTuples
     from prompt_toolkit.key_binding.key_bindings import NotImplementedOrNone
     from prompt_toolkit.layout.containers import AnyContainer
     from prompt_toolkit.mouse_events import MouseEvent
@@ -65,6 +65,7 @@ if TYPE_CHECKING:
     from euporie.core.app import BaseApp
     from euporie.core.comm.base import Comm
     from euporie.core.kernel import Kernel
+    from euporie.core.widgets.status_bar import StatusBarFields
 
 log = logging.getLogger(__name__)
 
@@ -115,9 +116,7 @@ class Notebook(BaseNotebook):
         else:
             return NotImplemented
 
-    def statusbar_fields(
-        self,
-    ) -> tuple[Sequence[AnyFormattedText], Sequence[AnyFormattedText]]:
+    def __pt_status__(self) -> StatusBarFields | None:
         """Generate the formatted text for the statusbar."""
         rendered = self.page.pre_rendered
         return (

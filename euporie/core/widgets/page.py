@@ -387,8 +387,7 @@ class ScrollingContainer(Container):
 
     def reset(self) -> None:
         """Reet the state of this container and all the children."""
-        meta_data = list(self.child_render_infos.values())
-        for meta in meta_data:
+        for meta in self.child_render_infos.values():
             meta.container.reset()
             meta.refresh = True
 
@@ -646,7 +645,7 @@ class ScrollingContainer(Container):
         self._selected_child_render_infos = []
         for index in selected_indices:
             render_info = self.get_child_render_info(index)
-            # Do not bother to re-render children if we are scrolling
+            # Do not bother to re-render selected children if we are scrolling
             if not self.scrolling:
                 render_info.refresh = True
             self._selected_child_render_infos.append(render_info)
@@ -663,6 +662,7 @@ class ScrollingContainer(Container):
                 self.get_child_render_info(index).refresh = True
 
         # Scroll to make the cursor visible
+        layout = get_app().layout
         if self.scroll_to_cursor:
             selected_child_render_info = self._selected_child_render_infos[0]
             selected_child_render_info.render(
@@ -670,7 +670,7 @@ class ScrollingContainer(Container):
                 available_height=available_height,
                 style=f"{parent_style} {self.style}",
             )
-            current_window = get_app().layout.current_window
+            current_window = layout.current_window
             cursor_position = selected_child_render_info.screen.cursor_positions.get(
                 current_window
             )
@@ -800,6 +800,15 @@ class ScrollingContainer(Container):
 
         # Update which children will appear in the layout
         self.visible_indicies = visible_indicies
+
+        # Update parent relations in layout
+        def _walk(e: Container) -> None:
+            for c in e.get_children():
+                layout._child_to_parent[c] = e
+                _walk(c)
+
+        _walk(self)
+
         # Record where the contain was last drawn so we can determine if cell outputs
         # are partially obscured
         self.last_write_position = write_position

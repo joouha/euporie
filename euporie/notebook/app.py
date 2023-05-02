@@ -60,6 +60,7 @@ if TYPE_CHECKING:
 
     from euporie.core.tabs.base import Tab
     from euporie.core.widgets.cell import Cell
+    from euporie.core.widgets.status_bar import StatusBarFields
 
 log = logging.getLogger(__name__)
 
@@ -84,14 +85,13 @@ class NotebookApp(BaseApp):
         super().__init__(**kwargs)
         self.search_bar = SearchBar()
         self.bindings_to_load.append("euporie.notebook.app.NotebookApp")
-        self.pre_run_callables.append(self.load_default_statusbar_fields)
 
         # Register config hooks
         self.config.get_item("show_cell_borders").event += lambda x: self.refresh()
 
-    def load_default_statusbar_fields(self) -> None:
+    def statusbar_defaults(self) -> StatusBarFields | None:
         """Load the default statusbar fields (run after keybindings are loaded)."""
-        self.status_default = (
+        return (
             [
                 [
                     ("", "Press "),
@@ -282,7 +282,7 @@ class NotebookApp(BaseApp):
                         height=Dimension(min=1),
                     ),
                     self.search_bar,
-                    StatusBar(),
+                    StatusBar(default=self.statusbar_defaults()),
                 ],
                 style="class:body",
             ),

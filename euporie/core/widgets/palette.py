@@ -21,6 +21,7 @@ from euporie.core.margins import MarginContainer, ScrollbarMargin
 from euporie.core.widgets.decor import FocusedStyle
 from euporie.core.widgets.dialog import Dialog
 from euporie.core.widgets.forms import Text
+from euporie.core.widgets.status_bar import StatusContainer
 
 if TYPE_CHECKING:
     from prompt_toolkit.buffer import Buffer
@@ -29,7 +30,8 @@ if TYPE_CHECKING:
     from prompt_toolkit.key_binding.key_processor import KeyPressEvent
     from prompt_toolkit.layout.controls import GetLinePrefixCallable
 
-    from euporie.core.app import BaseApp, StatusBarFields
+    from euporie.core.app import BaseApp
+    from euporie.core.widgets.status_bar import StatusBarFields
 
 log = logging.getLogger(__name__)
 
@@ -193,41 +195,32 @@ class CommandPalette(Dialog):
         )
         self.text_area.buffer.on_text_changed += self.text_changed
 
-        self.body = HSplit(
-            [
-                VSplit(
-                    [FocusedStyle(self.text_area)],
-                    padding=1,
-                ),
-                VSplit(
-                    [
-                        window := Window(
-                            CommandMenuControl(self),
-                            scroll_offsets=ScrollOffsets(bottom=1),
-                            # right_margins=[ScrollbarMargin(display_arrows=False)],
-                        ),
-                        MarginContainer(ScrollbarMargin(), target=window),
-                    ]
-                ),
-            ],
+        self.body = StatusContainer(
+            body=HSplit(
+                [
+                    VSplit(
+                        [FocusedStyle(self.text_area)],
+                        padding=1,
+                    ),
+                    VSplit(
+                        [
+                            window := Window(
+                                CommandMenuControl(self),
+                                scroll_offsets=ScrollOffsets(bottom=1),
+                            ),
+                            MarginContainer(ScrollbarMargin(), target=window),
+                        ]
+                    ),
+                ],
+            ),
+            status=self.__pt_status__,
         )
         self.buttons = {}
-
-        get_app().container_statuses[self.container] = self.statusbar_fields
 
     def load(self) -> None:
         """Reset the dialog ready for display."""
         self.text_area.buffer.text = ""
         self.to_focus = self.text_area
-
-    def statusbar_fields(
-        self,
-    ) -> StatusBarFields:
-        """Return a list of statusbar field values shown then this tab is active."""
-        if self.matches:
-            return ([self.matches[self.index].command.description], [])
-        else:
-            return ([], [])
 
     def select(self, n: int, event: KeyPressEvent | None = None) -> None:
         """Change the index of the selected command.
@@ -270,6 +263,12 @@ class CommandPalette(Dialog):
             return True
         else:
             return False
+
+    def __pt_status__(self) -> StatusBarFields | None:
+        """Return a list of statusbar field values shown then this tab is active."""
+        if self.matches:
+            return ([self.matches[self.index].command.description], [])
+        return None
 
     # ################################### Commands ####################################
 
