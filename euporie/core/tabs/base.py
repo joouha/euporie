@@ -43,7 +43,19 @@ log = logging.getLogger(__name__)
 class Tab(metaclass=ABCMeta):
     """Base class for interface tabs."""
 
+    _registry: set[type[Tab]] = set()
+    name: str | None = None
+    weight: int = 0
+    mime_types: set[str] = set()
+    file_extensions: set[str] = set()
+
     container: AnyContainer
+
+    def __init_subclass__(cls, *args: Any, **kwargs: Any) -> None:
+        """Compile a registry of named tabs."""
+        super().__init_subclass__(**kwargs)
+        if cls.name:
+            Tab._registry.add(cls)
 
     def __init__(self, app: BaseApp, path: Path | None = None) -> None:
         """Call when the tab is created."""

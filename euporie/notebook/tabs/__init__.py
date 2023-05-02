@@ -1,6 +1,9 @@
 """Tab for use in euporie notebook editor."""
 
-from .log import LogView
-from .notebook import Notebook
+from euporie.notebook.tabs.display import DisplayTab
+from euporie.notebook.tabs.edit import EditorTab
+from euporie.notebook.tabs.log import LogView
+from euporie.notebook.tabs.notebook import Notebook
+from euporie.web.tabs.web import WebTab
 
-__all__ = ["LogView", "Notebook"]
+__all__ = ["DisplayTab", "EditorTab", "LogView", "Notebook", "WebTab"]

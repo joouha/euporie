@@ -16,6 +16,7 @@ Changed
 Added
 =====
 
+- Add support for opening scripts & markdown documents as notebooks using Jupytext
 - Show full file-browser file path in status-bar
 - Make all scrollbars clickable
 - Add ability to select an existing kernel when changing a notebook's kernel

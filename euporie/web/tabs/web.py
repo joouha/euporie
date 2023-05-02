@@ -33,6 +33,10 @@ log = logging.getLogger(__name__)
 class WebTab(Tab):
     """Tab class for displaying files."""
 
+    name = "Web Viewer"
+    weight = 2
+    mime_types = {"text/html"}
+
     def __init__(self, app: BaseApp, path: Path | None = None) -> None:
         """Call when the tab is created."""
         super().__init__(app, path)

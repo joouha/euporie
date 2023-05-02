@@ -49,16 +49,10 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-hub = [
-  "asyncssh~=2.10.1",
-]
-format = [
-  "black>=19.3.b0",
-  "isort~=5.10.1",
-]
-chafa = [
-  "chafa.py>=1.0.2",
-]
+hub = ["asyncssh~=2.10.1"]
+format = ["black>=19.3.b0", "isort~=5.10.1"]
+chafa = ["chafa.py>=1.0.2"]
+jupytext = ["jupytext>=1.14.0"]
 
 [project.urls]
 Documentation = "https://euporie.readthedocs.io/en/latest"
@@ -214,6 +208,7 @@ show_error_codes = true
 module = [
   "_frozen_importlib", "ipykernel", "fastjsonschema",
   "pyperclip", "upath.*", "chafa.*", "timg", "pylatexenc.*", "aenum", "pygments.*",
+  "jupytext.*",
   "ssort",
   "flatlatex.*", "timg", "img2unicode", "cairosvg", "teimpy", "numpy", "mtable", "imagesize", "matplotlib.*",
   "magic", "fsspec.*",
