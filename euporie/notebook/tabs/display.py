@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 from prompt_toolkit.layout.containers import VSplit
 from prompt_toolkit.layout.dimension import Dimension
 
-from euporie.core.convert.core import get_format
+from euporie.core.convert.core import MIME_FORMATS, get_format
 from euporie.core.margins import MarginContainer, ScrollbarMargin
 from euporie.core.tabs.base import Tab
 from euporie.core.widgets.display import Display
@@ -26,6 +26,9 @@ log = logging.getLogger(__name__)
 
 class DisplayTab(Tab):
     """Tab class for displaying files."""
+
+    name = "File Viewer"
+    mime_types = set(MIME_FORMATS.keys())
 
     def __init__(self, app: BaseApp, path: Path | None = None) -> None:
         """Call when the tab is created."""

@@ -76,6 +76,17 @@ class Notebook(BaseNotebook):
     A tab which allows running and editing a notebook.
     """
 
+    name = "Notebook Editor"
+    weight = 3
+    mime_types = {"application/x-ipynb+json"}
+    file_extensions = {".ipynb"}
+    try:
+        from jupytext.formats import NOTEBOOK_EXTENSIONS
+    except ModuleNotFoundError:
+        pass
+    else:
+        file_extensions |= set(NOTEBOOK_EXTENSIONS)
+
     allow_stdin = True
 
     def __init__(

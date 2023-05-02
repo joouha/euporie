@@ -31,6 +31,10 @@ log = logging.getLogger(__name__)
 class EditorTab(KernelTab):
     """Tab class for editing text files."""
 
+    name = "Text Editor"
+    weight = 1
+    mime_types = {"text/*"}
+
     allow_stdin = True
     _metadata = {}
 

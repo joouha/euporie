@@ -19,6 +19,13 @@ from euporie.core.path import parse_path
 from euporie.core.tabs.base import KernelTab
 from euporie.core.widgets.cell import Cell, get_cell_id
 
+try:
+    from jupytext import read as read_nb
+    from jupytext import write as write_nb
+except ModuleNotFoundError:
+    from nbformat import read as read_nb
+    from nbformat import write as write_nb
+
 if TYPE_CHECKING:
     from pathlib import Path
     from typing import Any, Callable
@@ -116,7 +123,8 @@ class BaseNotebook(KernelTab, metaclass=ABCMeta):
         if confirm := self.app.dialogs.get("confirm"):
             confirm.show(
                 title="Kernel connection lost",
-                message="The kernel appears to have died\nas it can no longer be reached.\n\n"
+                message="The kernel appears to have died\n"
+                "as it can no longer be reached.\n\n"
                 "Do you want to restart the kernel?",
                 cb=self.kernel.restart,
             )
@@ -128,7 +136,7 @@ class BaseNotebook(KernelTab, metaclass=ABCMeta):
         # Open json file, or load from passed json object
         if self.path is not None and self.path.exists():
             with self.path.open() as f:
-                self.json = nbformat.read(f, as_version=4)
+                self.json = read_nb(f, as_version=4)
         else:
             self.json = json or nbformat.v4.new_notebook()
         # Ensure there is always at least one cell
@@ -273,7 +281,7 @@ class BaseNotebook(KernelTab, metaclass=ABCMeta):
             self.app.invalidate()
 
             # Save to a temp file, then replace the original
-            temp_path = self.path.parent / f".{self.path.name}.tmp"
+            temp_path = self.path.parent / f".{self.path.stem}.tmp{self.path.suffix}"
             log.debug("Using temporary file %s", temp_path.name)
             try:
                 open_file = temp_path.open("w")
@@ -281,12 +289,17 @@ class BaseNotebook(KernelTab, metaclass=ABCMeta):
                 get_cmd("save-as").run()
             else:
                 try:
-                    with open_file as f:
-                        nbformat.write(nb=nbformat.from_dict(self.json), fp=f)
+                    try:
+                        with open_file as f:
+                            write_nb(nb=nbformat.from_dict(self.json), fp=f)
+                    except AssertionError:
+                        # Jupytext requires a filename if we don't give it a format
+                        write_nb(nb=nbformat.from_dict(self.json), fp=temp_path)
                 except Exception:
                     if dialog := self.app.dialogs.get("save-as"):
                         dialog.show(tab=self, cb=cb)
                 else:
+                    open_file.close()
                     try:
                         temp_path.rename(self.path)
                     except Exception:

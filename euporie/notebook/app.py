@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from functools import partial
+from pathlib import PurePath
 from typing import TYPE_CHECKING, cast
 
 from prompt_toolkit.filters import Condition
@@ -24,8 +25,9 @@ from euporie.core import __logo__
 from euporie.core.app import BaseApp
 from euporie.core.commands import add_cmd, get_cmd
 from euporie.core.config import add_setting
-from euporie.core.convert.core import MIME_FORMATS, get_mime
+from euporie.core.convert.core import get_mime
 from euporie.core.key_binding.registry import register_bindings
+from euporie.core.tabs.base import Tab
 from euporie.core.widgets.decor import Pattern
 from euporie.core.widgets.dialog import (
     AboutDialog,
@@ -58,7 +60,6 @@ if TYPE_CHECKING:
     from prompt_toolkit.formatted_text import StyleAndTextTuples
     from prompt_toolkit.layout.containers import AnyContainer, Float
 
-    from euporie.core.tabs.base import Tab
     from euporie.core.widgets.cell import Cell
     from euporie.core.widgets.status_bar import StatusBarFields
 
@@ -104,22 +105,18 @@ class NotebookApp(BaseApp):
 
     def get_file_tab(self, path: Path) -> type[Tab]:
         """Return the tab to use for a file path."""
-        mime = get_mime(path) or ""
-        log.debug("File %s has mime type: %s", path, mime)
-        if mime == "application/x-ipynb+json":
-            return Notebook
-        elif mime == "text/html":
-            from euporie.web.tabs.web import WebTab
+        path_mime = get_mime(path) or ""
+        log.debug("File %s has mime type: %s", path, path_mime)
 
-            return WebTab
-        elif mime in MIME_FORMATS and mime != "text/plain":
-            from euporie.notebook.tabs.display import DisplayTab
+        tab_options = set()
+        for tab_cls in Tab._registry:
+            for mime_type in tab_cls.mime_types:
+                if PurePath(path_mime).match(mime_type):
+                    tab_options.add(tab_cls)
+            if path.suffix in tab_cls.file_extensions:
+                tab_options.add(tab_cls)
 
-            return DisplayTab
-        else:
-            from euporie.notebook.tabs.edit import EditorTab
-
-            return EditorTab
+        return sorted(tab_options, key=lambda x: x.weight, reverse=True)[0]
 
     async def _poll_terminal_colors(self) -> None:
         """Repeatedly query the terminal for its background and foreground colours."""
