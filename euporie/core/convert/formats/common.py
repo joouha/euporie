@@ -46,9 +46,9 @@ def imagemagick_convert(
     if cols is not None and hasattr(app, "term_info"):
         px, _ = app.term_info.cell_size_px
         cmd += ["-geometry", f"{int(cols * px)}"]
-    if bg is None and hasattr(app, "color_palette"):
+    if not bg and hasattr(app, "color_palette"):
         bg = app.color_palette.bg.base_hex
-    if bg is not None:
+    if bg:
         cmd += ["-background", bg]
     cmd += ["-[0]", f"{output_format}:-"]
     result: bytes | str = call_subproc(data, cmd)
@@ -128,7 +128,7 @@ def chafa_convert_py(
             config.height = int(cols / data.size[0] * data.size[1] * px / py)
 
     # Set the foreground color
-    if fg is None and hasattr(app, "color_palette"):
+    if not fg and hasattr(app, "color_palette"):
         fg = app.color_palette.fg.base_hex
     if fg and (color := fg.lstrip("#")):
         config.fg_color = (
@@ -138,7 +138,7 @@ def chafa_convert_py(
         )
 
     # Set the background color
-    if bg is None and hasattr(app, "color_palette"):
+    if not bg and hasattr(app, "color_palette"):
         bg = app.color_palette.bg.base_hex
     if bg and (color := bg.lstrip("#")):
         config.bg_color = (
