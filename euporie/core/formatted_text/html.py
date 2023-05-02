@@ -3352,6 +3352,7 @@ class HTML:
                     to="formatted_text",
                     cols=cols,
                     rows=rows,
+                    fg=theme.color,
                     bg=theme.background_color,
                     path=path,
                 )
