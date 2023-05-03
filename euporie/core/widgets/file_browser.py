@@ -20,7 +20,7 @@ from prompt_toolkit.layout.containers import (
 )
 from prompt_toolkit.layout.controls import UIContent, UIControl
 from prompt_toolkit.layout.screen import WritePosition
-from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
+from prompt_toolkit.mouse_events import MouseButton, MouseEvent, MouseEventType
 from prompt_toolkit.utils import Event
 from upath import UPath
 
@@ -496,8 +496,14 @@ class FileBrowserControl(UIControl):
     def mouse_handler(self, mouse_event: MouseEvent) -> NotImplementedOrNone:
         """Handle mouse events."""
         row = mouse_event.position.y
-        if mouse_event.event_type == MouseEventType.MOUSE_DOWN:
-            get_app().layout.current_control = self
+        app = get_app()
+        if (
+            mouse_event.button == MouseButton.LEFT
+            and mouse_event.event_type == MouseEventType.MOUSE_DOWN
+        ):
+            app.layout.current_control = self
+            app.mouse_limits = None
+            self.hovered = None
             return self.select(row, open_file=True)
         elif mouse_event.event_type == MouseEventType.MOUSE_MOVE:
             # Mark item as hovered if mouse is over the control
@@ -505,13 +511,12 @@ class FileBrowserControl(UIControl):
                 self.window is not None
                 and (info := self.window.render_info) is not None
             ):
-                app = get_app()
                 rowcol_to_yx = info._rowcol_to_yx
                 abs_mouse_pos = (
-                    mouse_event.position.y + info._y_offset,
                     mouse_event.position.x + info._x_offset,
+                    mouse_event.position.y + info._y_offset - info.vertical_scroll,
                 )
-                if (abs_mouse_pos[1], abs_mouse_pos[0]) == app.mouse_position:
+                if abs_mouse_pos == app.mouse_position:
                     row_col_vals = rowcol_to_yx.values()
                     y_min, x_min = min(row_col_vals)
                     y_max, x_max = max(row_col_vals)
@@ -527,7 +532,6 @@ class FileBrowserControl(UIControl):
                     app.mouse_limits = None
                     self.hovered = None
                     return None
-            # return self.hover(row)
 
         return NotImplemented
 
