@@ -485,7 +485,7 @@ class Console(KernelTab):
         """Request the output is refreshed (does nothing)."""
         pass
 
-    def statusbar_fields(
+    def __pt_status__(
         self,
     ) -> tuple[Sequence[AnyFormattedText], Sequence[AnyFormattedText]]:
         """Generate the formatted text for the statusbar."""
