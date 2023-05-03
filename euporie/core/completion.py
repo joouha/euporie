@@ -41,8 +41,5 @@ class KernelCompleter(Completer):
             cursor_pos=document.cursor_position,
         ):
             if completion_type := kwargs.get("display_meta"):
-                kwargs["style"] = f"class:completion-menu.completion.{completion_type}"
-                kwargs[
-                    "selected_style"
-                ] = f"class:completion-menu.completion.current.{completion_type}"
+                kwargs["style"] = f"class:completion-{completion_type}"
             yield Completion(**kwargs)

@@ -38,7 +38,6 @@ from prompt_toolkit.key_binding.key_bindings import (
 )
 from prompt_toolkit.layout.containers import Float, FloatContainer, Window, to_container
 from prompt_toolkit.layout.layout import Layout
-from prompt_toolkit.layout.menus import CompletionsMenu
 from prompt_toolkit.output import ColorDepth
 from prompt_toolkit.output.defaults import create_output
 from prompt_toolkit.output.vt100 import Vt100_Output as PtkVt100_Output
@@ -85,6 +84,7 @@ from euporie.core.style import (
 from euporie.core.terminal import TerminalInfo
 from euporie.core.utils import ChainedList
 from euporie.core.widgets.decor import Shadow
+from euporie.core.widgets.menu import CompletionsMenu
 
 if TYPE_CHECKING:
     from asyncio import AbstractEventLoop
@@ -339,12 +339,7 @@ class BaseApp(Application):
         # Load completions menu. This must be done after the app is initialized, because
         # :py:func:`get_app` is needed to access the config
         self.menus["completions"] = Float(
-            content=Shadow(
-                CompletionsMenu(
-                    max_height=16,
-                    scroll_offset=1,
-                )
-            ),
+            content=Shadow(CompletionsMenu()),
             xcursor=True,
             ycursor=True,
         )
