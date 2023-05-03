@@ -6,7 +6,8 @@ import logging
 from functools import partial
 from typing import TYPE_CHECKING
 
-from prompt_toolkit.filters import Condition, to_filter
+from prompt_toolkit.data_structures import Point
+from prompt_toolkit.filters import Condition, has_completions, is_done, to_filter
 from prompt_toolkit.formatted_text.base import to_formatted_text
 from prompt_toolkit.formatted_text.utils import (
     fragment_list_to_text,
@@ -18,9 +19,16 @@ from prompt_toolkit.layout.containers import (
     ConditionalContainer,
     Container,
     Float,
+    HSplit,
+    ScrollOffsets,
+    VSplit,
     Window,
 )
-from prompt_toolkit.layout.controls import FormattedTextControl
+from prompt_toolkit.layout.controls import FormattedTextControl, UIContent
+from prompt_toolkit.layout.dimension import Dimension
+from prompt_toolkit.layout.menus import (
+    CompletionsMenuControl as PtkCompletionsMenuControl,
+)
 from prompt_toolkit.layout.utils import explode_text_fragments
 from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
 from prompt_toolkit.utils import get_cwidth
@@ -38,6 +46,7 @@ if TYPE_CHECKING:
         OneStyleAndTextTuple,
         StyleAndTextTuples,
     )
+    from prompt_toolkit.key_binding.key_bindings import NotImplementedOrNone
     from prompt_toolkit.key_binding.key_processor import KeyPressEvent
 
     from euporie.core.app import BaseApp
@@ -433,36 +442,38 @@ class MenuBar:
             ),
         )
         self.app.menus["menu-2"] = Float(
-            attach_to_window=submenu,
+            attach_to_window=submenu.get_children()[1],
             xcursor=True,
             ycursor=True,
             allow_cover_cursor=True,
             content=ConditionalContainer(
                 content=Shadow(body=submenu2),
-                filter=has_focus & Condition(lambda: len(self.selected_menu) >= 1),
+                filter=has_focus
+                & Condition(lambda: len(self.selected_menu) > 1)
+                & Condition(lambda: bool(self._get_menu(1).children)),
             ),
         )
         self.app.menus["menu-3"] = Float(
-            attach_to_window=submenu2,
+            attach_to_window=submenu2.get_children()[1],
             xcursor=True,
             ycursor=True,
             allow_cover_cursor=True,
             content=ConditionalContainer(
                 content=Shadow(body=submenu3),
-                filter=has_focus & Condition(lambda: len(self.selected_menu) >= 2),
+                filter=has_focus
+                & Condition(lambda: len(self.selected_menu) > 2)
+                & Condition(lambda: bool(self._get_menu(2).children)),
             ),
         )
 
     def _get_menu(self, level: int) -> MenuItem:
         menu = self.menu_items[self.selected_menu[0]]
-
         for i, index in enumerate(self.selected_menu[1:]):
             if i < level:
                 try:
                     menu = menu.children[index]
                 except IndexError:
                     return MenuItem("debug")
-
         return menu
 
     def _get_menu_fragments(self) -> StyleAndTextTuples:
@@ -515,22 +526,15 @@ class MenuBar:
 
         return results
 
-    def _submenu(self, level: int = 0) -> Window:
+    def _submenu(self, level: int = 0) -> Container:
+        grid = self.grid
+
         def get_text_fragments() -> StyleAndTextTuples:
             result: StyleAndTextTuples = []
             if level < len(self.selected_menu):
                 menu = self._get_menu(level)
 
                 if menu.children:
-                    result.extend(
-                        [
-                            ("class:menu,border", self.grid.TOP_LEFT),
-                            ("class:menu,border", self.grid.TOP_MID * menu.width),
-                            ("class:menu,border", self.grid.TOP_RIGHT),
-                            ("", "\n"),
-                        ]
-                    )
-
                     try:
                         selected_item = self.selected_menu[level + 1]
                     except IndexError:
@@ -565,9 +569,9 @@ class MenuBar:
                             # Show a connected line with no mouse handler
                             yield (
                                 "class:menu,border",
-                                self.grid.SPLIT_LEFT
-                                + (self.grid.SPLIT_MID * menu.width)
-                                + self.grid.SPLIT_RIGHT,
+                                grid.SPLIT_LEFT
+                                + (grid.SPLIT_MID * menu.width)
+                                + grid.SPLIT_RIGHT,
                             )
 
                         else:
@@ -579,7 +583,7 @@ class MenuBar:
                             # Set the style and cursor if selected
                             if i == selected_item:
                                 style += "class:menu,selection"
-                            yield (f"{style} class:menu,border", self.grid.MID_LEFT)
+                            yield (f"{style} class:menu,border", grid.MID_LEFT)
                             if i == selected_item:
                                 yield ("[SetCursorPosition]", "")
                             # Construct the menu item contents
@@ -630,26 +634,40 @@ class MenuBar:
                             if i == selected_item:
                                 yield ("[SetMenuPosition]", "")
                             # Show the right edge
-                            yield (f"{style} class:menu,border", self.grid.MID_RIGHT)
-
-                        yield ("", "\n")
+                            yield (f"{style} class:menu,border", grid.MID_RIGHT)
 
                     for i, item in enumerate(menu.children):
                         if not item.hidden():
                             result.extend(one_item(i, item))
-
-                    result.extend(
-                        [
-                            ("class:menu,border", self.grid.BOTTOM_LEFT),
-                            ("class:menu,border", self.grid.BOTTOM_MID * menu.width),
-                            ("class:menu,border", self.grid.BOTTOM_RIGHT),
-                        ]
-                    )
+                        if i < len(menu.children) - 1:
+                            result.append(("", "\n"))
 
             return result
 
-        return Window(
-            FormattedTextControl(get_text_fragments),
+        return HSplit(
+            [
+                VSplit(
+                    [
+                        Window(char=grid.TOP_LEFT, width=1, height=1),
+                        Window(char=grid.TOP_MID, height=1),
+                        Window(char=grid.TOP_RIGHT, width=1, height=1),
+                    ],
+                    style="class:border",
+                ),
+                Window(
+                    FormattedTextControl(get_text_fragments),
+                    scroll_offsets=ScrollOffsets(top=1, bottom=1),
+                ),
+                VSplit(
+                    [
+                        Window(char=grid.BOTTOM_LEFT, width=1, height=1),
+                        Window(char=grid.BOTTOM_MID, height=1),
+                        # Window(char="🭑🭆", height=1),
+                        Window(char=grid.BOTTOM_RIGHT, width=1, height=1),
+                    ],
+                    style="class:border",
+                ),
+            ],
             style="class:menu",
         )
 
@@ -664,3 +682,134 @@ class MenuBar:
             return (["", selected_item.description], [])
         else:
             return (["", ""], [])
+
+
+class CompletionsMenuControl(PtkCompletionsMenuControl):
+    """A custom completions menu control."""
+
+    def create_content(self, width: int, height: int) -> UIContent:
+        """Create a UIContent object for this control."""
+        complete_state = get_app().current_buffer.complete_state
+        if complete_state:
+            completions = complete_state.completions
+            index = complete_state.complete_index  # Can be None!
+
+            # Calculate width of completions menu.
+            menu_width = self._get_menu_width(width, complete_state)
+            menu_meta_width = self._get_menu_meta_width(
+                width - menu_width, complete_state
+            )
+            total_width = menu_width + menu_meta_width
+
+            grid = OuterHalfGrid
+
+            def get_line(i: int) -> StyleAndTextTuples:
+                c = completions[i]
+                selected_item = i == index
+                output: StyleAndTextTuples = []
+
+                style = "class:menu"
+                if selected_item:
+                    style += ",selection"
+
+                output.append((f"{style},border", grid.MID_LEFT))
+                if selected_item:
+                    output.append(("[SetCursorPosition]", ""))
+                # Construct the menu item contents
+                padding = " " * (
+                    total_width
+                    - fragment_list_width(c.display)
+                    - fragment_list_width(c.display_meta)
+                    - 2
+                )
+                output.extend(
+                    to_formatted_text(
+                        [
+                            *c.display,
+                            ("", padding),
+                            *to_formatted_text(
+                                c.display_meta, style=f"{style} {c.style}"
+                            ),
+                        ],
+                        style=style,
+                    )
+                )
+                output.append((f"{style},border", grid.MID_RIGHT))
+
+                # Apply mouse handler
+                output = [
+                    (fragment[0], fragment[1], self.mouse_handler)
+                    for fragment in output
+                ]
+
+                return output
+
+            return UIContent(
+                get_line=get_line,
+                cursor_position=Point(x=0, y=index or 0),
+                line_count=len(completions),
+            )
+
+        return UIContent()
+
+    def mouse_handler(self, mouse_event: MouseEvent) -> NotImplementedOrNone:
+        """Handle mouse events: clicking and scrolling."""
+        if mouse_event.event_type == MouseEventType.MOUSE_MOVE:
+            # Set completion
+            complete_state = get_app().current_buffer.complete_state
+            if complete_state:
+                complete_state.complete_index = mouse_event.position.y
+                return None
+
+        return super().mouse_handler(mouse_event)
+
+
+class CompletionsMenu(ConditionalContainer):
+    """A custom completions menu."""
+
+    def __init__(
+        self,
+        max_height: int | None = 16,
+        scroll_offset: int | Callable[[], int] = 1,
+        extra_filter: FilterOrBool = True,
+        z_index: int = 10**8,
+    ) -> None:
+        """Create a completions menu with borders."""
+        extra_filter = to_filter(extra_filter)
+        grid = OuterHalfGrid
+        super().__init__(
+            content=HSplit(
+                [
+                    VSplit(
+                        [
+                            Window(char=grid.TOP_LEFT, width=1, height=1),
+                            Window(char=grid.TOP_MID, height=1),
+                            Window(char=grid.TOP_RIGHT, width=1, height=1),
+                        ],
+                        style="class:border",
+                    ),
+                    Window(
+                        content=CompletionsMenuControl(),
+                        width=Dimension(min=8),
+                        height=Dimension(min=1, max=max_height),
+                        scroll_offsets=ScrollOffsets(
+                            top=scroll_offset, bottom=scroll_offset
+                        ),
+                        dont_extend_width=True,
+                        z_index=z_index,
+                    ),
+                    VSplit(
+                        [
+                            Window(char=grid.BOTTOM_LEFT, width=1, height=1),
+                            Window(char=grid.BOTTOM_MID, height=1),
+                            Window(char=grid.BOTTOM_RIGHT, width=1, height=1),
+                        ],
+                        style="class:border",
+                    ),
+                ],
+                style="class:menu",
+            ),
+            # Show when there are completions but not at the point we are
+            # returning the input.
+            filter=has_completions & ~is_done & extra_filter,
+        )
