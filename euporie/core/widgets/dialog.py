@@ -32,6 +32,7 @@ from prompt_toolkit.layout.screen import WritePosition
 from prompt_toolkit.mouse_events import MouseButton, MouseEventType
 from prompt_toolkit.widgets.base import Box, Label
 
+from euporie.core.app import get_app
 from euporie.core.border import (
     FullLine,
     LowerLeftHalfLine,
@@ -59,6 +60,7 @@ if TYPE_CHECKING:
 
     from euporie.core.app import BaseApp
     from euporie.core.tabs.base import KernelTab
+    from euporie.core.widgets.file_browser import FileBrowserControl
 
 log = logging.getLogger(__name__)
 
@@ -235,7 +237,7 @@ class Dialog(Float, metaclass=ABCMeta):
                         ],
                         style="class:dialog,body",
                         key_bindings=self.kb,
-                        modal=True,
+                        modal=False,
                     ),
                     border=DialogGrid,
                     style="class:dialog,border",
@@ -453,6 +455,7 @@ class FileDialog(Dialog, metaclass=ABCMeta):
         self.file_browser.control.on_open += lambda path: self.validate(
             self.filepath.buffer, tab=tab, cb=cb
         )
+        self.file_browser.control.selected = None
         self.error = error
         self.to_focus = self.filepath
 
@@ -468,6 +471,41 @@ class OpenFileDialog(FileDialog):
 
     title = "Select a File to Open"
 
+    def __init__(self, app: BaseApp) -> None:
+        """Additional body components."""
+        from euporie.core.widgets.forms import Dropdown
+
+        super().__init__(app)
+
+        self.tab_dd = tab_dd = Dropdown(options=[])
+
+        def _update_options(fb: FileBrowserControl) -> None:
+            tabs = get_app().get_file_tabs(path) if (path := fb.path).is_file() else []
+            tab_dd.options = tabs
+            tab_dd.labels = [tab.name for tab in tabs]
+
+        self.file_browser.control.on_select += _update_options
+
+        if isinstance(self.body, HSplit):
+            self.body.children.append(
+                ConditionalContainer(
+                    FocusedStyle(LabelledWidget(tab_dd, "Open with:")),
+                    filter=Condition(lambda: len(tab_dd.options) > 1),
+                )
+            )
+
+    def load(
+        self,
+        text: str = "",
+        tab: Tab | None = None,
+        error: str = "",
+        cb: Callable | None = None,
+    ) -> None:
+        """Load the dialog body."""
+        super().load(text=text, tab=tab, error=error, cb=cb)
+        self.tab_dd.options = []
+        self.tab_dd.labels = []
+
     def validate(
         self, buffer: Buffer, tab: Tab | None, cb: Callable | None = None
     ) -> None:
@@ -478,7 +516,7 @@ class OpenFileDialog(FileDialog):
         if path is not None:
             if str(path).startswith("http") or path.is_file():
                 self.hide()
-                self.app.open_file(path)
+                self.app.open_file(path, tab_class=self.tab_dd.value)
             elif not path.exists():
                 self.show(
                     error="The file path specified does not exist", text=buffer.text

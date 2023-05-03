@@ -6,6 +6,7 @@ import asyncio
 import json
 import logging
 from functools import partial
+from pathlib import PurePath
 from typing import TYPE_CHECKING, cast
 from weakref import WeakSet
 
@@ -59,6 +60,7 @@ from upath import UPath
 
 from euporie.core.commands import add_cmd
 from euporie.core.config import Config, add_setting
+from euporie.core.convert.core import get_mime
 from euporie.core.current import get_app
 from euporie.core.filters import in_tmux, insert_mode, replace_mode, tab_has_focus
 from euporie.core.io import Vt100_Output, Vt100Parser
@@ -527,27 +529,52 @@ class BaseApp(Application):
             floats=cast("list[Float]", self.floats),
         )
 
+    def get_file_tabs(self, path: Path) -> list[type[Tab]]:
+        """Return the tab to use for a file path."""
+        from euporie.core.tabs.base import Tab
+
+        path_mime = get_mime(path) or ""
+        log.debug("File %s has mime type: %s", path, path_mime)
+
+        tab_options = set()
+        for tab_cls in Tab._registry:
+            for mime_type in tab_cls.mime_types:
+                if PurePath(path_mime).match(mime_type):
+                    tab_options.add(tab_cls)
+            if path.suffix in tab_cls.file_extensions:
+                tab_options.add(tab_cls)
+
+        return sorted(tab_options, key=lambda x: x.weight, reverse=True)
+
     def get_file_tab(self, path: Path) -> type[Tab] | None:
         """Return the tab to use for a file path."""
+        if tabs := self.get_file_tabs(path):
+            return tabs[0]
         return None
 
-    def open_file(self, path: Path, read_only: bool = False) -> None:
+    def open_file(
+        self, path: Path, read_only: bool = False, tab_class: type[Tab] | None = None
+    ) -> None:
         """Create a tab for a file.
 
         Args:
             path: The file path of the notebook file to open
             read_only: If true, the file should be opened read_only
+            tab_class: The tab type to use to open the file
 
         """
         ppath = parse_path(path)
         log.info(f"Opening file {path}")
         for tab in self.tabs:
-            if ppath == getattr(tab, "path", ""):
+            if ppath == getattr(tab, "path", "") and (
+                tab_class is None or isinstance(tab, tab_class)
+            ):
                 log.info(f"File {path} already open, activating")
                 self.layout.focus(tab)
                 break
         else:
-            tab_class = self.get_file_tab(path)
+            if tab_class is None:
+                tab_class = self.get_file_tab(path)
             if tab_class is None:
                 log.error("Unable to display file %s", path)
             else:
