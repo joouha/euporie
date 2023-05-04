@@ -46,11 +46,11 @@ class WebTab(Tab):
         if self.path:
             self.load_url(self.path)
 
-    def statusbar_fields(
+    def __pt_status__(
         self,
     ) -> tuple[Sequence[AnyFormattedText], Sequence[AnyFormattedText]]:
         """Return a list of statusbar field values shown then this tab is active."""
-        return ([str(self.path)], [])
+        return ([self.webview.status], [])
 
     @property
     def title(self) -> str:
