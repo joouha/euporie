@@ -8,8 +8,10 @@ from collections import deque
 from functools import partial
 from typing import TYPE_CHECKING
 
+from prompt_toolkit.eventloop.utils import run_in_executor_with_context
 from prompt_toolkit.history import InMemoryHistory
-from prompt_toolkit.layout.containers import Window
+from prompt_toolkit.layout.containers import Window, WindowAlign
+from prompt_toolkit.layout.controls import FormattedTextControl
 
 from euporie.core.comm.registry import open_comm
 from euporie.core.commands import add_cmd
@@ -61,7 +63,10 @@ class Tab(metaclass=ABCMeta):
         """Call when the tab is created."""
         self.app = app
         self.path = path
-        self.container = Window()
+        self.container = Window(
+            FormattedTextControl([("fg:#888888", "\nLoading…")], focusable=True),
+            align=WindowAlign.CENTER,
+        )
 
         self.dirty = False
         self.saving = False
@@ -90,6 +95,10 @@ class Tab(metaclass=ABCMeta):
         """Focus the tab (or make it visible)."""
         self.app.focus_tab(self)
 
+    def _save(self, path: Path | None = None, cb: Callable | None = None) -> None:
+        """Perform the file save in a background thread."""
+        run_in_executor_with_context(self.save, path, cb)
+
     def save(self, path: Path | None = None, cb: Callable | None = None) -> None:
         """Save the current notebook."""
         raise NotImplementedError
@@ -117,7 +126,7 @@ class Tab(metaclass=ABCMeta):
         """Save the current file."""
         if (tab := get_app().tab) is not None:
             try:
-                tab.save()
+                tab._save()
             except NotImplementedError:
                 pass
 
@@ -139,6 +148,7 @@ class KernelTab(Tab, metaclass=ABCMeta):
     kernel: Kernel
     kernel_language: str
     _metadata: dict[str, Any]
+    bg_init = True
 
     default_callbacks: MsgCallbacks
     allow_stdin: bool
@@ -153,7 +163,36 @@ class KernelTab(Tab, metaclass=ABCMeta):
         connection_file: Path | None = None,
     ) -> None:
         """Create a new instance of a tab with a kernel."""
+        # Init tab
         super().__init__(app, path)
+
+        if self.bg_init:
+            # Load kernel in a background thread
+            run_in_executor_with_context(
+                partial(
+                    self.init_kernel, kernel, comms, use_kernel_history, connection_file
+                )
+            )
+        else:
+            self.init_kernel(kernel, comms, use_kernel_history, connection_file)
+
+    def pre_init_kernel(self) -> None:
+        """Run stuff before the kernel is loaded."""
+        pass
+
+    def post_init_kernel(self) -> None:
+        """Run stuff after the kernel is loaded."""
+        pass
+
+    def init_kernel(
+        self,
+        kernel: Kernel | None = None,
+        comms: dict[str, Comm] | None = None,
+        use_kernel_history: bool = False,
+        connection_file: Path | None = None,
+    ) -> None:
+        """Set up the tab's kernel and related components."""
+        self.pre_init_kernel()
 
         self.kernel_queue: Deque[Callable] = deque()
 
@@ -174,6 +213,8 @@ class KernelTab(Tab, metaclass=ABCMeta):
             KernelHistory(self.kernel) if use_kernel_history else InMemoryHistory()
         )
         self.suggester: AutoSuggest = HistoryAutoSuggest(self.history)
+
+        self.post_init_kernel()
 
     def close(self, cb: Callable | None = None) -> None:
         """Shut down kernel when tab is closed."""

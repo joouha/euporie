@@ -588,7 +588,7 @@ class Cell:
         if self.cell_type == "markdown":
             return "markdown"
         elif self.cell_type == "code":
-            lang_info = self.kernel_tab.json.metadata.get("language_info", {})
+            lang_info = self.kernel_tab.metadata.get("language_info", {})
             return lang_info.get("name", lang_info.get("pygments_lexer", "python"))
         else:
             return "raw"

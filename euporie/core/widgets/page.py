@@ -2,14 +2,13 @@
 
 from __future__ import annotations
 
-import asyncio
-import contextvars
 import logging
 import weakref
 from typing import TYPE_CHECKING, cast
 
 from prompt_toolkit.application.current import get_app
 from prompt_toolkit.data_structures import Point
+from prompt_toolkit.eventloop.utils import run_in_executor_with_context
 from prompt_toolkit.filters import is_searching
 from prompt_toolkit.layout.containers import (
     Container,
@@ -363,8 +362,8 @@ class ScrollingContainer(Container):
 
     def pre_render_children(self, width: int, height: int) -> None:
         """Render all unrendered children in a background thread."""
-        # Copy the current context so ``get_app()`` works in the thread
-        ctx = contextvars.copy_context()
+        # Prevent multiple calls
+        self.pre_rendered = 0.00001
 
         def render_in_thread() -> None:
             """Render children in  thread."""
@@ -377,13 +376,7 @@ class ScrollingContainer(Container):
             self.pre_rendered = 1.0
             get_app().invalidate()
 
-        async def trigger_render() -> None:
-            """Use an executor thread from the current event loop."""
-            await asyncio.get_event_loop().run_in_executor(
-                None, ctx.run, render_in_thread
-            )
-
-        get_app().create_background_task(trigger_render())
+        run_in_executor_with_context(render_in_thread)
 
     def reset(self) -> None:
         """Reet the state of this container and all the children."""
@@ -559,7 +552,11 @@ class ScrollingContainer(Container):
         """
         # self.refresh_children = True
         if n > 0:
-            if min(self.visible_indicies) == 0 and self.index_positions[0] is not None:
+            if (
+                min(self.visible_indicies) == 0
+                and self.index_positions
+                and self.index_positions[0] is not None
+            ):
                 n = min(n, 0 - self.index_positions[0] - self.scrolling)
                 if self.index_positions[0] + self.scrolling + n > 0:
                     return NotImplemented
@@ -629,10 +626,6 @@ class ScrollingContainer(Container):
 
         available_width = write_position.width
         available_height = write_position.height
-
-        # Trigger pre-rendering of children
-        if not self.pre_rendered:
-            self.pre_render_children(available_width, available_height)
 
         # Update screen height
         screen.height = max(screen.height, ypos + write_position.height)
@@ -815,7 +808,7 @@ class ScrollingContainer(Container):
 
         # Calculate scrollbar info
         sizes = self.known_sizes
-        avg_size = sum(sizes.values()) / len(sizes)
+        avg_size = sum(sizes.values()) / len(sizes) if sizes else 0
         n_children = len(self.children)
         for i in range(n_children):
             if i not in sizes:
@@ -839,6 +832,10 @@ class ScrollingContainer(Container):
         )
         # Signal that we are no longer scrolling
         self.scrolling = 0
+
+        # Trigger pre-rendering of children
+        if not self.pre_rendered:
+            self.pre_render_children(available_width, available_height)
 
     @property
     def vertical_scroll(self) -> int:

@@ -82,7 +82,7 @@ class ConsoleApp(BaseApp):
         self.search_bar = SearchBar()
         self.bindings_to_load += ["euporie.console.app.ConsoleApp"]
 
-        self.tabs = [Console(self)]
+        self.tabs = []
         self.pager = Pager()
 
         self.config.get_item("mouse_support").event += lambda x: setattr(
@@ -99,6 +99,8 @@ class ConsoleApp(BaseApp):
 
     def load_container(self) -> FloatContainer:
         """Return a container with all opened tabs."""
+        self.tabs = [Console(self)]
+
         assert self.pager is not None
         assert self.search_bar is not None
         assert self.tab is not None

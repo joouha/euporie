@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 from prompt_toolkit.layout.containers import VSplit
 from prompt_toolkit.layout.dimension import Dimension
 
+from euporie.core.filters import insert_mode, replace_mode
 from euporie.core.kernel import Kernel, MsgCallbacks
 from euporie.core.key_binding.registry import load_registered_bindings
 from euporie.core.lexers import detect_lexer
@@ -48,27 +49,57 @@ class EditorTab(KernelTab):
     ) -> None:
         """Call when the tab is created."""
         self.default_callbacks = MsgCallbacks({})
+        self._metadata = {}
+        self.loaded = False
+
         super().__init__(app, path, kernel, comms, use_kernel_history)
 
-        # Load file
+    def post_init_kernel(self) -> None:
+        """Load UI and file in background after kernel has inited."""
+        # Load the UI
+        self.container = self.load_container()
+        self.app.layout.focus(self.container)
+
+        # Read file
+        self.load()
+
+    def load(self) -> None:
+        """Load the text file."""
         if self.path is not None:
             text = self.path.read_text()
         else:
             text = ""
 
-        # Detect language
-        lexer = detect_lexer(text, path)
-        self._metadata = {"kernelspec": {"language": lexer.name}}
-
-        # Load UI
-        self.container = self.load_container()
-
+        # Set text
         self.input_box.text = text
         self.input_box.buffer.on_text_changed += lambda b: setattr(self, "dirty", True)
+        self.input_box.read_only = False
+        self.loaded = True
+
+        # Detect language
+        lexer = detect_lexer(text[:1000], self.path)
+        self._metadata = {"kernelspec": {"language": lexer.name}}
+        # Re-lex the file
+        self.input_box.control._fragment_cache.clear()
+        self.app.invalidate()
+
+    @property
+    def position(self) -> str:
+        """Return the position of the cursor in the document."""
+        doc = self.input_box.buffer.document
+        return f"{doc.cursor_position_row + 1}:{doc.cursor_position_col}"
 
     def __pt_status__(self) -> StatusBarFields | None:
         """Return a list of statusbar field values shown then this tab is active."""
-        return ([str(self.path)], [])
+        if not self.loaded:
+            return (["Loading…"], [])
+        return (
+            [
+                ("I" if insert_mode() else ("o" if replace_mode() else ">")),
+                self.position,
+            ],
+            [str(self.path)],
+        )
 
     @property
     def path_name(self) -> str:
@@ -87,7 +118,7 @@ class EditorTab(KernelTab):
         """Abcract method for loading the notebook's main container."""
         assert self.path is not None
 
-        self.input_box = KernelInput(kernel_tab=self, right_margins=[])
+        self.input_box = KernelInput(kernel_tab=self, right_margins=[], read_only=True)
 
         return VSplit(
             [
@@ -113,7 +144,7 @@ class EditorTab(KernelTab):
             self.app.invalidate()
 
             # Save to a temp file, then replace the original
-            temp_path = self.path.parent / f".{self.path.name}.tmp"
+            temp_path = self.path.parent / f".{self.path.stem}.tmp{self.path.suffix}"
             log.debug("Using temporary file %s", temp_path.name)
             try:
                 open_file = temp_path.open("w")
@@ -136,7 +167,7 @@ class EditorTab(KernelTab):
                         self.dirty = False
                         self.saving = False
                         self.app.invalidate()
-                        log.debug("Notebook saved")
+                        log.debug("File saved")
             # Run the callback
             if callable(cb):
                 cb()

@@ -36,6 +36,8 @@ log = logging.getLogger(__name__)
 class PreviewNotebook(BaseNotebook):
     """A notebook tab which renders cells sequentially."""
 
+    bg_init = False
+
     def __init__(
         self,
         app: BaseApp,
@@ -43,18 +45,19 @@ class PreviewNotebook(BaseNotebook):
         use_kernel_history: bool = False,
     ) -> None:
         """Create a new instance."""
-        super().__init__(app, path, use_kernel_history=use_kernel_history)
         self.cell_index = 0
-        self.app.before_render += self.before_render
-        self.app.after_render += self.after_render
         self.cells: FastDictCache[tuple[int], Cell] = FastDictCache(
             get_value=self.get_cell
         )
 
-        # If we are running the notebook, pause rendering util the kernel has started
-        if self.app.config.run:
-            self.app.pause_rendering()
-            self.kernel.start(cb=self.kernel_started, wait=True)
+        super().__init__(app, path, use_kernel_history=use_kernel_history)
+
+        self.app.before_render += self.before_render
+        self.app.after_render += self.after_render
+
+    def pre_init_kernel(self) -> None:
+        """Filter cells before kernel is loaded."""
+        super().pre_init_kernel()
 
         # Filter the cells to be shown
         n_cells = len(self.json["cells"]) - 1
@@ -67,8 +70,17 @@ class PreviewNotebook(BaseNotebook):
         log.debug("Showing cells %s to %s", start, stop)
         self.json["cells"] = self.json["cells"][start:stop]
 
+    def post_init_kernel(self) -> None:
+        """Optionally start kernel after it is loaded."""
+        super().post_init_kernel()
+        # If we are running the notebook, pause rendering util the kernel has started
+        if self.app.config.run:
+            self.app.pause_rendering()
+            self.kernel.start(cb=self.kernel_started, wait=True)
+
     def print_title(self) -> None:
         """Print a notebook's filename."""
+        from euporie.core.border import DoubleLine
         from euporie.core.formatted_text.utils import (
             FormattedTextAlign,
             add_border,
@@ -80,7 +92,8 @@ class PreviewNotebook(BaseNotebook):
         ft: StyleAndTextTuples = [("bold", str(self.path))]
         ft = wrap(ft, width - 4)
         ft = align(ft, how=FormattedTextAlign.CENTER, width=width - 4)
-        ft = add_border(ft, width=width)
+        ft = add_border(ft, width=width, border_grid=DoubleLine.grid)
+        ft.append(("", "\n"))
         self.app.print_text(ft)
 
     def kernel_started(self, result: dict | None = None) -> None:
