@@ -17,6 +17,7 @@ Changed
 Added
 =====
 
+- Add ability to open remote files from "open" dialog
 - Add ability to select file open method
 - Add support for opening scripts & markdown documents as notebooks using Jupytext
 - Show full file-browser file path in status-bar
