@@ -259,7 +259,7 @@ class WebViewControl(UIControl):
                 self.load_url(url)
                 return None
             elif mouse_event.event_type == MouseEventType.MOUSE_MOVE:
-                self.status = str(url._url)
+                self.status = str(url)
                 return None
         return NotImplemented
 
