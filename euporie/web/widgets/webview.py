@@ -135,7 +135,6 @@ class WebViewControl(UIControl):
         url = parse_path(url)
         self.url = url
         # Reset rendering
-        self.fragments = [("", f"Loading {url}")]
         self.dirty = True
         self.rendered.fire()
 
@@ -194,7 +193,10 @@ class WebViewControl(UIControl):
         self, url: Path, dirty: bool, width: int, height: int, cursor_position: Point
     ) -> UIContent:
         """Create a cacheable UIContent."""
-        lines = list(split_lines(self.fragments))
+        if self.dirty:
+            lines = [[], [("", " " * ((width - 8) // 2)), ("fg:#888888", "Loading…")]]
+        else:
+            lines = list(split_lines(self.fragments))
 
         def get_line(i: int) -> StyleAndTextTuples:
             try:
