@@ -2774,6 +2774,8 @@ def parse_media_condition(condition: str, dom: HTML) -> Filter:
         elif feature.startswith("min-"):
             operator = ge
             feature = feature[4:]
+        else:
+            operator = eq
 
     if feature == "width":
         result = Condition(
