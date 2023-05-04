@@ -11,6 +11,7 @@ Upcoming
 Changed
 =======
 
+- Improvements to responsiveness when opening files
 - Update completion menu style
 - Changed name of ``hub`` configuration item ```no_auth`` to ``auth`` with inverse logic
 

@@ -510,12 +510,14 @@ class OpenFileDialog(FileDialog):
         self, buffer: Buffer, tab: Tab | None, cb: Callable | None = None
     ) -> None:
         """Validate the the file to open exists."""
+        from upath import UPath
+
         from euporie.core.path import parse_path
 
         path = parse_path(self.file_browser.control.dir / buffer.text)
         if path is not None:
             if not path.exists():
-                path = parse_path(buffer.text)
+                path = UPath(buffer.text)
 
             if path.exists():
                 if path.is_dir():

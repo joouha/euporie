@@ -114,9 +114,6 @@ class Notebook(BaseNotebook):
         self.clipboard: list[Cell] = []
         self.undo_buffer: Deque[tuple[int, list[Cell]]] = deque(maxlen=10)
 
-        if not kernel:
-            self.kernel.start(cb=self.kernel_started, wait=False)
-
     # Tab stuff
 
     def _statusbar_kernel_handeler(self, event: MouseEvent) -> NotImplementedOrNone:
@@ -129,24 +126,42 @@ class Notebook(BaseNotebook):
 
     def __pt_status__(self) -> StatusBarFields | None:
         """Generate the formatted text for the statusbar."""
-        rendered = self.page.pre_rendered
-        return (
-            [
-                self.mode(),
-                f"Cell {self.page.selected_slice.start+1}",
-                f"Rendering… ({rendered:.0%})" if rendered < 1 else "",
-                "Saving…" if self.saving else "",
-            ],
-            [
-                lambda: cast(
-                    "StyleAndTextTuples",
-                    [("", self.kernel_display_name, self._statusbar_kernel_handeler)],
-                ),
-                KERNEL_STATUS_REPR[self.kernel.status] if self.kernel else ".",
-            ],
-        )
+        if self.loaded:
+            rendered = self.page.pre_rendered
+            return (
+                [
+                    self.mode(),
+                    f"Cell {self.page.selected_slice.start+1}",
+                    f"Rendering… ({rendered:.0%})" if rendered < 1 else "",
+                    "Saving…" if self.saving else "",
+                ],
+                [
+                    lambda: cast(
+                        "StyleAndTextTuples",
+                        [
+                            (
+                                "",
+                                self.kernel_display_name,
+                                self._statusbar_kernel_handeler,
+                            )
+                        ],
+                    ),
+                    KERNEL_STATUS_REPR[self.kernel.status] if self.kernel else ".",
+                ],
+            )
+        else:
+            return ([], [])
 
     # Notebook stuff
+
+    def post_init_kernel(self) -> None:
+        """Start the kernel after if has been loaded."""
+        # Start kernel
+        if self.kernel._status == "stopped":
+            self.kernel.start(cb=self.kernel_started, wait=False)
+
+        # Load container
+        super().post_init_kernel()
 
     @property
     def selected_indices(self) -> list[int]:

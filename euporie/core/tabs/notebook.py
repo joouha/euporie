@@ -80,22 +80,15 @@ class BaseNotebook(KernelTab, metaclass=ABCMeta):
                 "dead": self.kernel_died,
             }
         )
-
-        # Load the notebook file
+        self.json = json or {}
+        self._rendered_cells: dict[str, Cell] = {}
+        self.multiple_cells_selected: Filter = Never()
         self.path = parse_path(path) if path else None
-        log.debug("Loading notebooks %s", self.path)
-
-        self.load(json)
+        self.loaded = False
 
         super().__init__(
             app, path, kernel=kernel, comms=comms, use_kernel_history=use_kernel_history
         )
-
-        self._rendered_cells: dict[str, Cell] = {}
-        self.load_widgets_from_metadata()
-        self.multiple_cells_selected: Filter = Never()
-
-        self.container = self.load_container()
 
     # Tab stuff
 
@@ -108,6 +101,30 @@ class BaseNotebook(KernelTab, metaclass=ABCMeta):
         self.refresh()
 
     # KernelTab stuff
+
+    def pre_init_kernel(self) -> None:
+        """Run stuff before the kernel is loaded."""
+        # Load notebook file
+        self.load()
+
+    def post_init_kernel(self) -> None:
+        """Load the notebook container after the kernel has been loaded."""
+        # Replace the tab's container
+        prev = self.container
+        self.container = self.load_container()
+        self.loaded = True
+        self.app.invalidate()
+
+        # Update the focus if the old container had focus
+        if (layout := self.app.layout).has_focus(prev):
+
+            async def _focus_new_container() -> None:
+                layout.focus(self.container)
+
+            self.app.create_background_task(_focus_new_container())
+
+        # Load widgets
+        self.load_widgets_from_metadata()
 
     @property
     def metadata(self) -> dict[str, Any]:
@@ -131,14 +148,14 @@ class BaseNotebook(KernelTab, metaclass=ABCMeta):
 
     # Notebook stuff
 
-    def load(self, json: dict[str, Any] | None = None) -> None:
+    def load(self) -> None:
         """Load the notebook file from the file-system."""
         # Open json file, or load from passed json object
         if self.path is not None and self.path.exists():
             with self.path.open() as f:
                 self.json = read_nb(f, as_version=4)
         else:
-            self.json = json or nbformat.v4.new_notebook()
+            self.json = self.json or nbformat.v4.new_notebook()
         # Ensure there is always at least one cell
         if not self.json.setdefault("cells", []):
             self.json["cells"] = [nbformat.v4.new_code_cell()]
