@@ -385,6 +385,8 @@ class WebViewControl(UIControl):
     @add_cmd(filter=webview_has_focus)
     def _scroll_webview_left() -> None:
         """Scroll the display up one line."""
+        from euporie.core.widgets.display import DisplayWindow
+
         window = get_app().layout.current_window
         assert isinstance(window, DisplayWindow)
         window._scroll_left()
@@ -393,6 +395,8 @@ class WebViewControl(UIControl):
     @add_cmd(filter=webview_has_focus)
     def _scroll_webview_right() -> None:
         """Scroll the display down one line."""
+        from euporie.core.widgets.display import DisplayWindow
+
         window = get_app().layout.current_window
         assert isinstance(window, DisplayWindow)
         window._scroll_right()
