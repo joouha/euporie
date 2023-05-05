@@ -218,7 +218,8 @@ class KernelTab(Tab, metaclass=ABCMeta):
 
     def close(self, cb: Callable | None = None) -> None:
         """Shut down kernel when tab is closed."""
-        self.kernel.shutdown()
+        if hasattr(self, "kernel"):
+            self.kernel.shutdown()
         super().close(cb)
 
     def interrupt_kernel(self) -> None:
