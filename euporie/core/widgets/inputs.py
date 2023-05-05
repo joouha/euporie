@@ -95,6 +95,7 @@ class KernelInput(TextArea):
         kwargs.setdefault("history", kernel_tab.history)
         kwargs.setdefault("search_field", app.search_bar)
         kwargs.setdefault("focus_on_click", True)
+        kwargs.setdefault("preview_search", True)
         kwargs.setdefault(
             "input_processors",
             [

@@ -58,6 +58,20 @@ class SearchBar(PtkSearchToolbar):
             "euporie.core.widgets.search_bar.SearchBar"
         )
 
+    register_bindings(
+        {
+            "euporie.core.app.BaseApp": {
+                "find": ["c-f", "f3", "f7"],
+                "find-next": "c-g",
+                "find-previous": "c-p",
+            },
+            "euporie.core.widgets.search_bar.SearchBar": {
+                "accept-search": "enter",
+                "stop-search": "escape",
+            },
+        }
+    )
+
 
 def start_global_search(
     buffer_control: BufferControl | None = None,
@@ -95,6 +109,7 @@ def start_global_search(
             control.search_state.direction = direction
             # Add it to our list
             searchable_controls.append(control)
+
     # Stop the search if we did not find any searchable controls
     if not searchable_controls:
         return
@@ -171,8 +186,8 @@ def stop_search() -> None:
     if buffer_control is None:
         return
     search_buffer_control = buffer_control.search_buffer_control
-    # Focus the original buffer again.
-    layout.focus(buffer_control)
+    # Focus the previous control
+    layout.focus(layout.previous_control)
     # Close the search toolbar
     if search_buffer_control is not None:
         del layout.search_links[search_buffer_control]
@@ -203,23 +218,20 @@ def accept_search() -> None:
             if search_buffer_control.buffer.text:
                 search_state.text = search_buffer_control.buffer.text
             # Apply search.
-            control.buffer.apply_search(search_state, include_current_position=True)
+            control.buffer.apply_search(
+                search_state, include_current_position=True, count=1
+            )
+
+    # Set selection on target control
+    buffer_control = layout.search_target_buffer_control
+    if buffer_control and control.is_focusable():
+        buffer = buffer_control.buffer
+        buffer.selection_state = SelectionState(
+            buffer.cursor_position + len(search_state.text)
+        )
+        buffer.selection_state.enter_shift_mode()
+
     # Add query to history of search line.
     search_buffer_control.buffer.append_to_history()
     # Stop the search
     stop_search()
-
-
-register_bindings(
-    {
-        "euporie.core.app.BaseApp": {
-            "find": ["c-f", "f3", "f7"],
-            "find-next": "c-g",
-            "find-previous": "c-p",
-        },
-        "euporie.core.widgets.search_bar.SearchBar": {
-            "accept-search": "enter",
-            "stop-search": "escape",
-        },
-    }
-)
