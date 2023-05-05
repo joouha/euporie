@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from functools import cached_property
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from prompt_toolkit.application.current import get_app
 from prompt_toolkit.cache import FastDictCache
@@ -194,7 +194,13 @@ class WebViewControl(UIControl):
     ) -> UIContent:
         """Create a cacheable UIContent."""
         if self.dirty:
-            lines = [[], [("", " " * ((width - 8) // 2)), ("fg:#888888", "Loading…")]]
+            lines = [
+                cast("StyleAndTextTuples", []),
+                cast(
+                    "StyleAndTextTuples",
+                    [("", " " * ((width - 8) // 2)), ("fg:#888888", "Loading…")],
+                ),
+            ]
         else:
             lines = list(split_lines(self.fragments))
 
