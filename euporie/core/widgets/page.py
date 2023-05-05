@@ -19,6 +19,7 @@ from prompt_toolkit.layout.containers import (
 )
 from prompt_toolkit.layout.controls import UIContent
 from prompt_toolkit.layout.dimension import Dimension, to_dimension
+from prompt_toolkit.layout.layout import walk
 from prompt_toolkit.layout.mouse_handlers import MouseHandlers
 from prompt_toolkit.layout.screen import Char, Screen, WritePosition
 from prompt_toolkit.mouse_events import MouseEvent, MouseEventType, MouseModifier
@@ -26,7 +27,7 @@ from prompt_toolkit.mouse_events import MouseEvent, MouseEventType, MouseModifie
 from euporie.core.data_structures import DiInt
 
 if TYPE_CHECKING:
-    from typing import Callable, Sequence
+    from typing import Callable, Iterable, Sequence
 
     from prompt_toolkit.key_binding.key_bindings import (
         KeyBindingsBase,
@@ -34,6 +35,7 @@ if TYPE_CHECKING:
     )
     from prompt_toolkit.layout.containers import AnyContainer
     from prompt_toolkit.layout.dimension import AnyDimension
+    from prompt_toolkit.utils import Event
 
     MouseHandler = Callable[[MouseEvent], object]
 
@@ -83,10 +85,24 @@ class ChildRenderInfo:
         self.screen = Screen(default_char=Char(char=" "))
         self.mouse_handlers = MouseHandlers()
 
+        self.render_counter = -1
+        self._invalid = True
+        self._invalidate_events: list[Event[object]] = []
+        self._layout_hash = 0
         self.height = 0
         self.width = 0
 
-        self.refresh = True
+    def invalidate(self) -> None:
+        """Flag the child's rendering as out-of-date."""
+        self._invalid = True
+
+    def _invalidate_handler(self, sender: object) -> None:
+        self.invalidate()
+
+    @property
+    def layout_hash(self) -> int:
+        """Return a hash of the child's current layout."""
+        return sum(hash(container) for container in walk(self.container))
 
     def render(
         self,
@@ -102,9 +118,24 @@ class ChildRenderInfo:
             style: The parent style to apply when rendering
 
         """
-        if self.refresh:
-            self.refresh = False
+        # Check if refresh is needed
+        refresh = False
+        new_layout_hash = self.layout_hash
+        if self.render_counter != (new_render_counter := get_app().render_counter):
+            if (
+                self._invalid
+                or self.width != available_width
+                or self._layout_hash != (new_layout_hash := self.layout_hash)
+            ):
+                self.render_counter = new_render_counter
+                refresh = True
+
+        # Refresh if needed
+        if refresh:
+            self._invalid = False
+            self._layout_hash = new_layout_hash
             # log.debug("Re-rendering cell %s", self.child.index)
+            self.width = available_width
             self.height = self.container.preferred_height(
                 available_width, available_height
             ).preferred
@@ -126,6 +157,20 @@ class ChildRenderInfo:
                 z_index=0,
             )
             self.screen.draw_all_floats()
+
+            # Collect invalidation events
+            def gather_events() -> Iterable[Event[object]]:
+                for container in walk(self.container):
+                    if isinstance(container, Window):
+                        for event in container.content.get_invalidate_events():
+                            event += self._invalidate_handler
+                            yield event
+
+            # Remove all the original event handlers
+            for event in self._invalidate_events:
+                event -= self._invalidate_handler
+            # Update the list of handlers
+            self._invalidate_events = list(gather_events())
 
     def blit(
         self,
@@ -237,7 +282,7 @@ class ChildRenderInfo:
 
                     # Refresh the child if there was a response
                     if response is None:
-                        self.refresh = True
+                        self.invalidate()
                         return response
 
                     # This would work if windows returned NotImplemented when scrolled
@@ -259,7 +304,7 @@ class ChildRenderInfo:
                         else:
                             self.parent.select(index, extend=False)
                         response = None
-                        self.refresh = True
+                        self.invalidate()
 
                         # Attempt to focus the container
                         layout.focus(self.child)
@@ -382,7 +427,7 @@ class ScrollingContainer(Container):
         """Reet the state of this container and all the children."""
         for meta in self.child_render_infos.values():
             meta.container.reset()
-            meta.refresh = True
+            meta.invalidate()
 
     def preferred_width(self, max_available_width: int) -> Dimension:
         """Do not provide a preferred width - grow to fill the available space."""
@@ -433,15 +478,15 @@ class ScrollingContainer(Container):
             render_info: ChildRenderInfo | None
             for render_info in self._selected_child_render_infos:
                 if render_info:
-                    render_info.refresh = True
+                    render_info.invalidate()
             # If a child currently has focus, request to refresh it
-            for child in self.children:
-                if (
-                    render_info := self.child_render_infos.get(hash(child))
-                ) is not None:
-                    if app.layout.has_focus(render_info.child):
-                        render_info.refresh = True
-                        break
+            # for child in self.children:
+            #     if (
+            #         render_info := self.child_render_infos.get(hash(child))
+            #     ) is not None:
+            #         if app.layout.has_focus(render_info.child):
+            #             render_info.invalidate()
+            #             break
             # Get the first selected child and focus it
             child = self.children[new_slice.start]
             if not app.layout.has_focus(child):
@@ -640,19 +685,14 @@ class ScrollingContainer(Container):
             render_info = self.get_child_render_info(index)
             # Do not bother to re-render selected children if we are scrolling
             if not self.scrolling:
-                render_info.refresh = True
+                render_info.invalidate()
             self._selected_child_render_infos.append(render_info)
             self.index_positions[index] = None
-
-        # Refresh all children if the width has changed
-        if self.last_write_position.width != write_position.width:
-            for child_render_info in self.child_render_infos.values():
-                child_render_info.refresh = True
 
         # Refresh visible children if searching
         if is_searching():
             for index in self.visible_indicies:
-                self.get_child_render_info(index).refresh = True
+                self.get_child_render_info(index).invalidate()
 
         # Scroll to make the cursor visible
         layout = get_app().layout

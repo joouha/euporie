@@ -341,7 +341,7 @@ class Notebook(BaseNotebook):
 
     def refresh_cell(self, cell: Cell) -> None:
         """Trigger the refresh of a notebook cell."""
-        self.page.get_child_render_info(cell.index).refresh = True
+        self.page.get_child_render_info(cell.index).invalidate()
 
     def add_cell_above(self) -> None:
         """Inert a cell above the current selection."""
