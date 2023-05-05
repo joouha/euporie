@@ -51,14 +51,6 @@ class Kernel:
     Has the ability to run itself in it's own thread.
     """
 
-    def _setup_loop(self) -> None:
-        """Set the current loop the the kernel's event loop.
-
-        This method is intended to be run in the kernel thread.
-        """
-        asyncio.set_event_loop(self.loop)
-        self.loop.run_forever()
-
     def __init__(
         self,
         kernel_tab: KernelTab,
@@ -130,7 +122,14 @@ class Kernel:
         # Also this speeds up launch since importing IPython is pretty slow.
         self.km.kernel_spec_manager.kernel_dirs = jupyter_path("kernels")
 
+    def _setup_loop(self) -> None:
+        """Set the current loop the the kernel's event loop.
+
+        This method is intended to be run in the kernel thread.
+        """
+        asyncio.set_event_loop(self.loop)
         self.status_change_event = asyncio.Event()
+        self.loop.run_forever()
 
     def _aodo(
         self,
