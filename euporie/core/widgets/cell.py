@@ -151,6 +151,10 @@ class Cell:
 
         # Now we generate the main container used to represent a kernel_tab cell
 
+        source_hidden = Condition(
+            lambda: self.json["metadata"].get("jupyter", {}).get("source_hidden", False)
+        )
+
         self.input_box = KernelInput(
             kernel_tab=self.kernel_tab,
             text=self.input,
@@ -170,6 +174,7 @@ class Cell:
                 )
             ),
             accept_handler=lambda buffer: self.run_or_render() or True,
+            focusable=show_input & ~source_hidden,
         )
         self.input_box.buffer.name = self.cell_type
 
@@ -226,10 +231,6 @@ class Cell:
                 fill(width=1, height=1, char=border_char("TOP_RIGHT")),
             ],
             height=1,
-        )
-
-        source_hidden = Condition(
-            lambda: self.json["metadata"].get("jupyter", {}).get("source_hidden", False)
         )
 
         input_row = ConditionalContainer(
