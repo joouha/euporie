@@ -484,7 +484,7 @@ class MenuBar:
         if not focused:
             self.selected_menu = [0]
 
-        def mouse_handler(index: int, mouse_event: MouseEvent) -> None:
+        def mouse_handler(index: int, mouse_event: MouseEvent) -> NotImplementedOrNone:
             hover = mouse_event.event_type == MouseEventType.MOUSE_MOVE
             if mouse_event.event_type == MouseEventType.MOUSE_DOWN or hover and focused:
                 # Toggle focus.
@@ -496,6 +496,8 @@ class MenuBar:
                     else:
                         app.layout.focus(self.window)
                 self.selected_menu = [index]
+                return None
+            return NotImplemented
 
         results: StyleAndTextTuples = []
         used_keys = set()
