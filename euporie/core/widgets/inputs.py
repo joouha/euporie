@@ -79,7 +79,6 @@ class KernelInput(TextArea):
         tempfile_suffix: str | Callable[[], str] = "",
         key_bindings: KeyBindingsBase | None = None,
         enable_history_search: FilterOrBool | None = False,
-        focusable: FilterOrBool = True,
         wrap_lines: FilterOrBool = False,
         complete_while_typing: FilterOrBool = True,
         autosuggest_while_typing: FilterOrBool = True,
