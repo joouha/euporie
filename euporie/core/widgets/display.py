@@ -101,11 +101,12 @@ class DisplayControl(UIControl):
         self.key_bindings = load_registered_bindings(
             "euporie.core.widgets.display.Display"
         )
-        self.app = get_app()
-
-        self.on_cursor_position_changed = Event(self)
         self._cursor_position = Point(x=0, y=0)
         self.dy = 0
+        self.app = get_app()
+
+        self.on_data_changed = Event(self)
+        self.on_cursor_position_changed = Event(self)
 
         self.sizing_func = sizing_func or (lambda: (0, 0))
         self._max_cols = 0
@@ -132,6 +133,7 @@ class DisplayControl(UIControl):
         """Set the control's data."""
         self._data = value
         self.reset()
+        self.on_data_changed.fire()
 
     def get_key_bindings(self) -> KeyBindingsBase | None:
         """Return the control's key bindings."""
@@ -275,6 +277,7 @@ class DisplayControl(UIControl):
     def get_invalidate_events(self) -> Iterable[Event[object]]:
         """Return the Window invalidate events."""
         # Whenever the cursor position changes, the UI has to be updated.
+        yield self.on_data_changed
         yield self.on_cursor_position_changed
 
     @property
