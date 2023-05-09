@@ -5,6 +5,8 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import signal
+import sys
 from functools import partial
 from pathlib import PurePath
 from typing import TYPE_CHECKING, cast
@@ -91,6 +93,7 @@ from euporie.core.widgets.menu import CompletionsMenu
 if TYPE_CHECKING:
     from asyncio import AbstractEventLoop
     from pathlib import Path
+    from types import FrameType
     from typing import Any, Callable
 
     from prompt_toolkit.clipboard import Clipboard
@@ -510,7 +513,40 @@ class BaseApp(Application):
         # Run the application
         with create_app_session(input=cls.load_input(), output=cls.load_output()):
             # Create an instance of the app and run it
-            return cls().run()
+
+            original_sigterm = signal.getsignal(signal.SIGTERM)
+            original_sigint = signal.getsignal(signal.SIGINT)
+
+            app = cls()
+
+            signal.signal(signal.SIGTERM, app.cleanup)
+            signal.signal(signal.SIGINT, app.cleanup)
+
+            result = app.run()
+
+            signal.signal(signal.SIGTERM, original_sigterm)
+            signal.signal(signal.SIGINT, original_sigint)
+
+            return result
+
+    def cleanup(self, signum: int, frame: FrameType | None) -> None:
+        """Restore the state of the terminal on unexpected exit."""
+        log.critical("Unexpected exit signal, restoring terminal")
+        output = self.output
+        self.exit()
+        # Reset terminal state
+        output.quit_alternate_screen()
+        output.disable_mouse_support()
+        output.reset_cursor_key_mode()
+        output.enable_autowrap()
+        output.disable_bracketed_paste()
+        output.clear_title()
+        output.reset_cursor_shape()
+        output.show_cursor()
+        output.reset_attributes()
+        output.flush()
+        # Exit the main thread
+        sys.exit(1)
 
     @classmethod
     async def interact(cls, ssh_session: PromptToolkitSSHSession) -> None:
