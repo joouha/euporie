@@ -139,6 +139,8 @@ def ansi_to_ft(
     if "\x1b" in markup or "\r" in markup:
         ft = to_formatted_text(ANSI(markup.strip()))
     else:
+        # Replace tabs with spaces
+        markup = markup.expandtabs()
         # Use lexer whitelist
         if (
             lexer := detect_lexer(markup, path=path)
