@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
+from prompt_toolkit.eventloop.utils import run_in_executor_with_context
 from prompt_toolkit.layout.containers import VSplit
 from prompt_toolkit.layout.dimension import Dimension
 
@@ -33,8 +34,16 @@ class DisplayTab(Tab):
     def __init__(self, app: BaseApp, path: Path | None = None) -> None:
         """Call when the tab is created."""
         super().__init__(app, path)
+
+        # Load file and container in background
         if self.path is not None:
-            self.container = self.load_container()
+
+            def _load() -> None:
+                self.container = self.load_container()
+                self.app.layout.focus(self.container)
+                self.app.invalidate()
+
+            run_in_executor_with_context(_load)
 
     def __pt_status__(self) -> StatusBarFields | None:
         """Return a list of statusbar field values shown then this tab is active."""
