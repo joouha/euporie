@@ -118,6 +118,8 @@ def markdown_to_ft(
 _BLACKLISTED_LEXERS = {
     "CBM BASIC V2",
     "Tera Term macro",
+    "Text only",
+    "GDScript",
 }
 
 
