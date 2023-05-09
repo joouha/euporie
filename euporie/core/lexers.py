@@ -1,5 +1,7 @@
 """Relating to lexers."""
 
+from __future__ import annotations
+
 from typing import TYPE_CHECKING
 
 from pygments.lexers import (
@@ -17,8 +19,8 @@ if TYPE_CHECKING:
 
 
 def detect_lexer(
-    text: "str" = "", path: "Path|None" = None, language: str = ""
-) -> "PygmentsLexerCls":
+    text: str = "", path: Path | None = None, language: str = ""
+) -> PygmentsLexerCls | None:
     """Detect the pygments lexer for a file."""
     lexer = None
     if path is not None:

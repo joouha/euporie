@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from functools import partial
 from typing import TYPE_CHECKING
 
@@ -19,6 +20,8 @@ if TYPE_CHECKING:
     from prompt_toolkit.formatted_text.base import StyleAndTextTuples
 
     from euporie.core.formatted_text.html import HTML, CssSelectors
+
+log = logging.getLogger(__name__)
 
 _html_cache: SimpleCache[int, HTML] = SimpleCache(maxsize=20)
 
@@ -112,6 +115,12 @@ def markdown_to_ft(
     )
 
 
+_BLACKLISTED_LEXERS = {
+    "CBM BASIC V2",
+    "Tera Term macro",
+}
+
+
 @register(
     from_="ansi",
     to="formatted_text",
@@ -129,10 +138,18 @@ def ansi_to_ft(
     ft: StyleAndTextTuples
     if "\x1b" in markup or "\r" in markup:
         ft = to_formatted_text(ANSI(markup.strip()))
-    elif (lexer := detect_lexer(markup, path)) is not None:
-        from prompt_toolkit.lexers.pygments import _token_cache
-
-        ft = [(_token_cache[t], v) for _, t, v in lexer.get_tokens_unprocessed(markup)]
     else:
-        ft = to_formatted_text(markup)
+        # Use lexer whitelist
+        if (
+            lexer := detect_lexer(markup, path=path)
+        ) is not None and lexer.name not in _BLACKLISTED_LEXERS:
+            from prompt_toolkit.lexers.pygments import _token_cache
+
+            log.debug('Lexing output using "%s" lexer', lexer.name)
+            ft = [
+                (_token_cache[t], v) for _, t, v in lexer.get_tokens_unprocessed(markup)
+            ]
+
+        else:
+            ft = to_formatted_text(markup)
     return strip_one_trailing_newline(ft)
