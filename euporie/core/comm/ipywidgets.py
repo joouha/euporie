@@ -1098,7 +1098,7 @@ class SelectMultipleModel(IpyWidgetComm):
             options=self.data["state"].get("_options_labels", []),
             indices=self.data["state"]["index"],
             on_change=self.update_index,
-            style="class:select,face",
+            style="class:select",
             multiple=True,
             rows=self.data["state"]["rows"],
             disabled=Condition(lambda: self.data["state"].get("disabled", False)),
