@@ -74,6 +74,8 @@ class Console(KernelTab):
 
     """
 
+    bg_init = False
+
     def __init__(
         self,
         app: BaseApp,
