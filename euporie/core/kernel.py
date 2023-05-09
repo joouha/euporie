@@ -238,7 +238,7 @@ class Kernel:
     def missing(self) -> bool:
         """Return True if the requested kernel is not found."""
         try:
-            self.km.kernel_spec
+            self.km.kernel_spec  # noqa B018
         except NoSuchKernel:
             return True
         else:

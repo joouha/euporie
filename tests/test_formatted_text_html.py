@@ -94,4 +94,4 @@ def test_multiple_css_selectors() -> "None":
     """Comma separated CSS selectors are interpreted."""
     data = '<style>.a,.b{font_weight: bold}</style><span class="a">a</span><span class="b">b</span>'
     result = to_formatted_text(HTML(data, width=2))
-    assert all(["bold" in x[0].split() for x in result])
+    assert all("bold" in x[0].split() for x in result)

@@ -190,7 +190,7 @@ class IpyWidgetComm(Comm, metaclass=ABCMeta):
             "model_module": state.get("_model_module"),
             "model_module_version": state.get("_model_module_version"),
             "state": {
-                **{key: value for key, value in state.items()},
+                **dict(state.items()),
                 "buffers": [
                     {
                         "encoding": "base64",
