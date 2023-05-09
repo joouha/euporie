@@ -31,6 +31,7 @@ Added
 Fixed
 =====
 
+- ``SelectMultiple`` widget is now styled consistently with other widgets
 - Restore terminal state on unexpected exit signal
 - Prevent ``KeyError: 'log_file'`` error when launching apps via ``euporie`` app
 - Prevent unknown markdown code block language causing rendering error
