@@ -190,6 +190,8 @@ ignore = [
     "B027",
     # zip() without an explicit strict= parameter
     "B905",
+    # Ignore subprocess warnings
+    "S603", "S607"
 ]
 
 [tool.ruff.per-file-ignores]

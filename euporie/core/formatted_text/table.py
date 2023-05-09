@@ -962,7 +962,7 @@ class Table:
         unfilled = [
             i
             for i, row in self._rows.items()
-            if all([isinstance(cell, SpacerCell) for cell in row._cells.values()])
+            if all(isinstance(cell, SpacerCell) for cell in row._cells.values())
         ]
 
         index = min(
@@ -993,7 +993,7 @@ class Table:
         unfilled = [
             i
             for i, col in self._cols.items()
-            if all([isinstance(cell, SpacerCell) for cell in col._cells.values()])
+            if all(isinstance(cell, SpacerCell) for cell in col._cells.values())
         ]
 
         index = min(
