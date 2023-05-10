@@ -1,6 +1,6 @@
 """Decorative widgets."""
 
-# from __future__ import annotations
+from __future__ import annotations
 
 import logging
 from typing import TYPE_CHECKING
@@ -30,7 +30,7 @@ from euporie.core.data_structures import DiBool
 from euporie.core.style import ColorPaletteColor
 
 if TYPE_CHECKING:
-    from typing import Callable, Optional, Union
+    from typing import Callable
 
     from prompt_toolkit.key_binding.key_bindings import NotImplementedOrNone
     from prompt_toolkit.layout.containers import AnyContainer
@@ -48,12 +48,12 @@ class Line(Container):
 
     def __init__(
         self,
-        char: "Optional[str]" = None,
-        width: "Optional[int]" = None,
-        height: "Optional[int]" = None,
-        collapse: "bool" = False,
-        style: "str" = "class:grid-line",
-    ) -> "None":
+        char: str | None = None,
+        width: int | None = None,
+        height: int | None = None,
+        collapse: bool = False,
+        style: str = "class:grid-line",
+    ) -> None:
         """Initialize a grid line.
 
         Args:
@@ -78,28 +78,26 @@ class Line(Container):
         self.char = Char(char, style)
         self.collapse = collapse
 
-    def reset(self) -> "None":
+    def reset(self) -> None:
         """Reet the state of the line. Does nothing."""
 
-    def preferred_width(self, max_available_width: "int") -> "Dimension":
+    def preferred_width(self, max_available_width: int) -> Dimension:
         """Return the preferred width of the line."""
         return Dimension(min=int(not self.collapse), max=self.width)
 
-    def preferred_height(
-        self, width: "int", max_available_height: "int"
-    ) -> "Dimension":
+    def preferred_height(self, width: int, max_available_height: int) -> Dimension:
         """Return the preferred height of the line."""
         return Dimension(min=int(not self.collapse), max=self.height)
 
     def write_to_screen(
         self,
-        screen: "Screen",
-        mouse_handlers: "MouseHandlers",
-        write_position: "WritePosition",
-        parent_style: "str",
-        erase_bg: "bool",
-        z_index: "Optional[int]",
-    ) -> "None":
+        screen: Screen,
+        mouse_handlers: MouseHandlers,
+        write_position: WritePosition,
+        parent_style: str,
+        erase_bg: bool,
+        z_index: int | None,
+    ) -> None:
         """Draw a continuous line in the ``write_position`` area.
 
         Args:
@@ -124,7 +122,7 @@ class Line(Container):
             for x in range(xpos, xpos + write_position.width):
                 row[x] = self.char
 
-    def get_children(self) -> "list":
+    def get_children(self) -> list:
         """Return an empty list of the container's children."""
         return []
 
@@ -134,37 +132,35 @@ class Pattern(Container):
 
     def __init__(
         self,
-        char: "Union[str, Callable[[], str]]",
-        pattern: "Union[int, Callable[[], int]]" = 1,
-    ) -> "None":
+        char: str | Callable[[], str],
+        pattern: int | Callable[[], int] = 1,
+    ) -> None:
         """Initialize the :class:`Pattern`."""
         self.bg = Char(" ", "class:pattern")
         self.char = char
         self.pattern = pattern
 
-    def reset(self) -> "None":
+    def reset(self) -> None:
         """Reet the pattern. Does nothing."""
         pass
 
-    def preferred_width(self, max_available_width: "int") -> "Dimension":
+    def preferred_width(self, max_available_width: int) -> Dimension:
         """Return an empty dimension (expand to available width)."""
         return Dimension()
 
-    def preferred_height(
-        self, width: "int", max_available_height: "int"
-    ) -> "Dimension":
+    def preferred_height(self, width: int, max_available_height: int) -> Dimension:
         """Return an empty dimension (expand to available height)."""
         return Dimension()
 
     def write_to_screen(
         self,
-        screen: "Screen",
-        mouse_handlers: "MouseHandlers",
-        write_position: "WritePosition",
-        parent_style: "str",
-        erase_bg: "bool",
-        z_index: "Optional[int]",
-    ) -> "None":
+        screen: Screen,
+        mouse_handlers: MouseHandlers,
+        write_position: WritePosition,
+        parent_style: str,
+        erase_bg: bool,
+        z_index: int | None,
+    ) -> None:
         """Fill the whole area of write_position with a pattern.
 
         Args:
@@ -208,7 +204,7 @@ class Pattern(Container):
                 else:
                     row[x] = bg
 
-    def get_children(self) -> "list":
+    def get_children(self) -> list:
         """Return an empty list of the container's children."""
         return []
 
@@ -218,11 +214,11 @@ class Border:
 
     def __init__(
         self,
-        body: "AnyContainer",
-        border: "Optional[GridStyle]" = ThinLine.grid,
-        style: "Union[str, Callable[[], str]]" = "class:border",
-        show_borders: "Optional[DiBool]" = None,
-    ) -> "None":
+        body: AnyContainer,
+        border: GridStyle | None = ThinLine.grid,
+        style: str | Callable[[], str] = "class:border",
+        show_borders: DiBool | None = None,
+    ) -> None:
         """Create a new border widget which wraps another container.
 
         Args:
@@ -244,7 +240,7 @@ class Border:
         border_bottom = to_filter(show_borders.bottom)
         border_left = to_filter(show_borders.left)
 
-        self.container: "AnyContainer"
+        self.container: AnyContainer
         if border is not None and any(show_borders):
             self.container = HSplit(
                 [
@@ -344,10 +340,10 @@ class Border:
         else:
             self.container = body
 
-    def add_style(self, extra: "str") -> "Callable[[], str]":
+    def add_style(self, extra: str) -> Callable[[], str]:
         """Return a function which adds a style string to the border style."""
 
-        def _style() -> "str":
+        def _style() -> str:
             if callable(self.style):
                 return f"{self.style()} {extra}"
             else:
@@ -355,7 +351,7 @@ class Border:
 
         return _style
 
-    def __pt_container__(self) -> "AnyContainer":
+    def __pt_container__(self) -> AnyContainer:
         """Return the border widget's container."""
         return self.container
 
@@ -365,10 +361,10 @@ class FocusedStyle(Container):
 
     def __init__(
         self,
-        body: "AnyContainer",
-        style_focus: "Union[str, Callable[[], str]]" = "class:focused",
-        style_hover: "Union[str, Callable[[], str]]" = "",
-    ) -> "None":
+        body: AnyContainer,
+        style_focus: str | Callable[[], str] = "class:focused",
+        style_hover: str | Callable[[], str] = "",
+    ) -> None:
         """Create a new instance of the widget.
 
         Args:
@@ -382,29 +378,27 @@ class FocusedStyle(Container):
         self.hover = False
         self.has_focus = has_focus(self.body)
 
-    def reset(self) -> "None":
+    def reset(self) -> None:
         """Reet the wrapped container."""
         to_container(self.body).reset()
 
-    def preferred_width(self, max_available_width: "int") -> "Dimension":
+    def preferred_width(self, max_available_width: int) -> Dimension:
         """Return the wrapped container's preferred width."""
         return to_container(self.body).preferred_width(max_available_width)
 
-    def preferred_height(
-        self, width: "int", max_available_height: "int"
-    ) -> "Dimension":
+    def preferred_height(self, width: int, max_available_height: int) -> Dimension:
         """Return the wrapped container's preferred height."""
         return to_container(self.body).preferred_height(width, max_available_height)
 
     def write_to_screen(
         self,
-        screen: "Screen",
-        mouse_handlers: "MouseHandlers",
-        write_position: "WritePosition",
-        parent_style: "str",
-        erase_bg: "bool",
-        z_index: "Optional[int]",
-    ) -> "None":
+        screen: Screen,
+        mouse_handlers: MouseHandlers,
+        write_position: WritePosition,
+        parent_style: str,
+        erase_bg: bool,
+        z_index: int | None,
+    ) -> None:
         """Draw the wrapped container with the additional style."""
         to_container(self.body).write_to_screen(
             screen,
@@ -422,10 +416,10 @@ class FocusedStyle(Container):
             y_max = y_min + write_position.height
 
             # Wrap mouse handlers to add "hover" class on hover
-            def _wrap_mouse_handler(handler: "Callable") -> "MouseHandler":
+            def _wrap_mouse_handler(handler: Callable) -> MouseHandler:
                 def wrapped_mouse_handler(
-                    mouse_event: "MouseEvent",
-                ) -> "NotImplementedOrNone":
+                    mouse_event: MouseEvent,
+                ) -> NotImplementedOrNone:
                     result = handler(mouse_event)
 
                     if mouse_event.event_type == MouseEventType.MOUSE_MOVE:
@@ -452,7 +446,7 @@ class FocusedStyle(Container):
                 for x in range(x_min, x_max):
                     row[x] = mouse_handler_wrappers[(row[x],)]
 
-    def get_style(self) -> "str":
+    def get_style(self) -> str:
         """Determine the style to apply depending on the focus status."""
         style = ""
         if self.has_focus():
@@ -465,7 +459,7 @@ class FocusedStyle(Container):
             )
         return style
 
-    def get_children(self) -> "list[Container]":
+    def get_children(self) -> list[Container]:
         """Return the list of child :class:`.Container` objects."""
         return [to_container(self.body)]
 
@@ -480,28 +474,26 @@ class DropShadow(Container):
         self.cp = app.color_palette
         self.renderer = app.renderer
 
-    def reset(self) -> "None":
+    def reset(self) -> None:
         """Reet the wrapped container - here, do nothing."""
 
-    def preferred_width(self, max_available_width: "int") -> "Dimension":
+    def preferred_width(self, max_available_width: int) -> Dimension:
         """Return the wrapped container's preferred width."""
         return Dimension(weight=1)
 
-    def preferred_height(
-        self, width: "int", max_available_height: "int"
-    ) -> "Dimension":
+    def preferred_height(self, width: int, max_available_height: int) -> Dimension:
         """Return the wrapped container's preferred height."""
         return Dimension(weight=1)
 
     def write_to_screen(
         self,
-        screen: "Screen",
-        mouse_handlers: "MouseHandlers",
-        write_position: "WritePosition",
-        parent_style: "str",
-        erase_bg: "bool",
-        z_index: "Optional[int]",
-    ) -> "None":
+        screen: Screen,
+        mouse_handlers: MouseHandlers,
+        write_position: WritePosition,
+        parent_style: str,
+        erase_bg: bool,
+        z_index: int | None,
+    ) -> None:
         """Draw the wrapped container with the additional style."""
         attr_cache = self.renderer._attrs_for_style
         if attr_cache is not None:
@@ -551,7 +543,7 @@ class Shadow:
     :py:class:`prompt_toolkit.widows.base.Shadow` class.
     """
 
-    def __init__(self, body: "AnyContainer") -> "None":
+    def __init__(self, body: AnyContainer) -> None:
         """Initialize a new drop-shadow container.
 
         Args:
@@ -580,7 +572,7 @@ class Shadow:
             ],
         )
 
-        def get_contents() -> "AnyContainer":
+        def get_contents() -> AnyContainer:
             if filter_():
                 return shadow
             else:
@@ -588,7 +580,7 @@ class Shadow:
 
         self.container = DynamicContainer(get_contents)
 
-    def __pt_container__(self) -> "AnyContainer":
+    def __pt_container__(self) -> AnyContainer:
         """Return the container's content."""
         return self.container
 

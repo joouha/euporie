@@ -19,7 +19,7 @@ if TYPE_CHECKING:
     from sphinx.application import Sphinx
 
 
-def get_option(options: "dict[str, Any]", key: "str", default: "Any") -> "Any":
+def get_option(options: dict[str, Any], key: str, default: Any) -> Any:
     """Get an option."""
     if key not in options.keys():
         return default
@@ -51,7 +51,7 @@ class Video(Directive):
         "nocontrols": directives.flag,
     }
 
-    def run(self) -> "list[video]":
+    def run(self) -> list[video]:
         """Return the nodes generated from this directive."""
         alt = get_option(self.options, "alt", "Video")
         width = get_option(self.options, "width", "")
@@ -71,7 +71,7 @@ class Video(Directive):
         ]
 
 
-def visit_video_node(self: "HTMLTranslator", node: "video") -> "None":
+def visit_video_node(self: HTMLTranslator, node: video) -> None:
     """Return an HTML block when the video node is visited."""
     extension = os.path.splitext(node["path"])[1][1:]
 
@@ -92,12 +92,12 @@ def visit_video_node(self: "HTMLTranslator", node: "video") -> "None":
     self.body.append(html_block)
 
 
-def depart_video_node(self: "HTMLTranslator", node: "video") -> "None":
+def depart_video_node(self: HTMLTranslator, node: video) -> None:
     """Do nothing when departing a video node."""
     pass
 
 
-def setup(app: "Sphinx") -> "None":
+def setup(app: Sphinx) -> None:
     """Register this extensions with sphinx."""
     app.add_node(
         video,
