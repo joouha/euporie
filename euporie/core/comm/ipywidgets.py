@@ -118,7 +118,7 @@ def _separate_buffers(
                     cloned_substrate[k] = vnew
     else:
         raise ValueError("expected state to be a list or dict, not %r" % substate)
-    return cloned_substrate or substate
+    return cloned_substrate if cloned_substrate is not None else substate
 
 
 class IpyWidgetComm(Comm, metaclass=ABCMeta):

@@ -117,4 +117,5 @@ class UnimplementedComm(Comm):
 
     def process_data(self, data: dict, buffers: Sequence[bytes]) -> None:
         """Doe nothing when data is received."""
-        return None
+        self.data = data
+        self.buffers = buffers
