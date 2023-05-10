@@ -31,6 +31,7 @@ Added
 Fixed
 =====
 
+- Replace tabs with spaces in ANSI text output
 - ``SelectMultiple`` widget is now styled consistently with other widgets
 - Restore terminal state on unexpected exit signal
 - Prevent ``KeyError: 'log_file'`` error when launching apps via ``euporie`` app

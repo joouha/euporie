@@ -17,7 +17,7 @@ log = logging.getLogger(__name__)
 class ANSI(PTANSI):
     """Convert ANSI text into formatted text, preserving all control sequences."""
 
-    def __init__(self, value: str, tab_size: int = 4) -> None:
+    def __init__(self, value: str, tab_size: int = 8) -> None:
         """Initiate the ANSI processor instance.
 
         This replaces carriage returns to emulate terminal output.
@@ -27,9 +27,8 @@ class ANSI(PTANSI):
             tab_size: The number of spaces to use to represent a tab
 
         """
-        self.tab_size = tab_size
         # Replace tabs with spaces
-        value = value.expandtabs()
+        value = value.expandtabs(tabsize=tab_size)
         # Replace windows style newlines
         value = value.replace("\r\n", "\n")
         # Remove anything before a carriage return if there is something after it to
@@ -37,6 +36,7 @@ class ANSI(PTANSI):
         value = re.sub(r"^.*\r(?!\n)", "", value, 0, re.MULTILINE)
         # Clear line by deleting previous characters
         value = re.sub(r".*\x1b\[2K", "", value, 0)
+        # Remove hide & show cursor commands
         value = re.sub(r"\x1b\[\?25[hl]", "", value, 0)
 
         super().__init__(value)
@@ -74,11 +74,6 @@ class ANSI(PTANSI):
             elif char == "\x08":
                 # TODO - remove last character from last non-ZeroWidthEscape fragment
                 formatted_text.pop()
-                continue
-
-            # Check for tabs
-            elif char == "\t":
-                formatted_text.append(("", " " * self.tab_size))
                 continue
 
             elif char in ("\x1b", "\x9b"):
