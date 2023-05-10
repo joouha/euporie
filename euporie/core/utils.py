@@ -46,6 +46,20 @@ class ChainedList(Sequence[T]):
         return len(self.data)
 
 
+def dict_merge(target_dict: dict, input_dict: dict) -> None:
+    """Merge the second dictionary onto the first."""
+    for k in input_dict:
+        if k in target_dict:
+            if isinstance(target_dict[k], dict) and isinstance(input_dict[k], dict):
+                dict_merge(target_dict[k], input_dict[k])
+            elif isinstance(target_dict[k], list) and isinstance(input_dict[k], list):
+                target_dict[k] = [*target_dict[k], *input_dict[k]]
+            else:
+                target_dict[k] = input_dict[k]
+        else:
+            target_dict[k] = input_dict[k]
+
+
 def on_click(func: Callable) -> MouseHandler:
     """Return a mouse handler which call a given function on click."""
 
@@ -58,21 +72,3 @@ def on_click(func: Callable) -> MouseHandler:
         return NotImplemented
 
     return _mouse_handler
-
-
-def dict_merge(target_dict: dict, input_dict: dict, copy: bool = False) -> None:
-    """Merge the second dictionary onto the first."""
-    if copy:
-        from copy import deepcopy
-
-        target_dict = deepcopy(target_dict)
-    for k in input_dict:
-        if k in target_dict:
-            if isinstance(target_dict[k], dict) and isinstance(input_dict[k], dict):
-                dict_merge(target_dict[k], input_dict[k], copy)
-            elif isinstance(target_dict[k], list) and isinstance(input_dict[k], list):
-                target_dict[k] = [*target_dict[k], *input_dict[k]]
-            else:
-                target_dict[k] = input_dict[k]
-        else:
-            target_dict[k] = input_dict[k]

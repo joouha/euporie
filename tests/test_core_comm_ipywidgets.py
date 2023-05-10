@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, cast
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import Mock, call, patch
 
 import pytest
 
@@ -25,13 +25,13 @@ if TYPE_CHECKING:
 
 @pytest.fixture
 def kernel_tab() -> KernelTab:
-    """Create a `MagicMock` instance of the `KernelTab` class.
+    """Create a `Mock` instance of the `KernelTab` class.
 
     Returns:
-        A `MagicMock` instance of the `KernelTab` class.
+        A `Mock` instance of the `KernelTab` class.
     """
-    kt = MagicMock(spec=KernelTab)
-    kt.kernel = MagicMock(spec=Kernel)
+    kt = Mock(spec=KernelTab)
+    kt.kernel = Mock(spec=Kernel)
     return kt
 
 
@@ -128,7 +128,7 @@ class TestIpyWidgetComm:
         data = {"method": "update", "state": changes}
         icomm.process_data(data, [])
         assert icomm.data["state"] == {"key_1": "new_value", "key_2": "value_2"}
-        assert cast("MagicMock", icomm.update_views).call_args_list == [call(changes)]
+        assert cast("Mock", icomm.update_views).call_args_list == [call(changes)]
 
     def test_get_embed_state(self, icomm: IpyWidgetComm) -> None:
         """The embedded output is a dictionary with the expected values."""
