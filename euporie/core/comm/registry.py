@@ -8,11 +8,13 @@ from euporie.core.comm.base import UnimplementedComm
 from euporie.core.comm.ipywidgets import open_comm_ipywidgets
 
 if TYPE_CHECKING:
-    from typing import Any, Sequence
+    from typing import Any, Callable, Sequence
 
     from euporie.core.comm.base import Comm, KernelTab
 
-TARGET_CLASSES = {"jupyter.widget": open_comm_ipywidgets}
+TARGET_CLASSES: dict[str, Callable[[KernelTab, str, dict, Sequence[bytes]], Comm]] = {
+    "jupyter.widget": open_comm_ipywidgets
+}
 
 
 def open_comm(
@@ -36,8 +38,12 @@ def open_comm(
     """
     target_name = content.get("target_name", "")
     return TARGET_CLASSES.get(target_name, UnimplementedComm)(
-        comm_container=comm_container,
-        comm_id=str(content.get("comm_id")),
-        data=content.get("data", {}),
-        buffers=buffers,
+        # comm_container=
+        comm_container,
+        # comm_id=
+        str(content.get("comm_id")),
+        # data=
+        content.get("data", {}),
+        # buffers=
+        buffers,
     )

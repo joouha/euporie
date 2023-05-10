@@ -11,7 +11,7 @@ from euporie.core.current import get_app
 from euporie.core.widgets.display import Display
 
 if TYPE_CHECKING:
-    from typing import Any, Callable, Sequence
+    from typing import Any, Callable, Mapping, Sequence
 
     from prompt_toolkit.layout.containers import AnyContainer
 
@@ -29,7 +29,7 @@ class CommView:
     def __init__(
         self,
         container: AnyContainer,
-        setters: dict[str, Callable[..., None]] | None = None,
+        setters: Mapping[str, Callable[..., None]] | None = None,
     ) -> None:
         """Create a new instance of the Comm vieew.
 
@@ -39,7 +39,7 @@ class CommView:
                 be called when the named state value changed.
         """
         self.container = container
-        self.setters = setters or {}
+        self.setters: dict[str, Callable[..., None]] = dict(setters or {})
         self.kernel: Kernel | None = None
 
     def update(self, changes: dict[str, Any]) -> None:

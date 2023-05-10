@@ -41,7 +41,7 @@ from euporie.core.widgets.forms import (
 from euporie.core.widgets.layout import AccordionSplit, ReferencedSplit, TabbedSplit
 
 if TYPE_CHECKING:
-    from typing import Any, Iterable, Sequence
+    from typing import Any, Iterable, MutableSequence, Sequence
 
     from prompt_toolkit.buffer import Buffer
     from prompt_toolkit.formatted_text.base import AnyFormattedText
@@ -66,7 +66,7 @@ def _separate_buffers(
     substate: dict | list | tuple,
     path: list[str | int],
     buffer_paths: list[list[str | int]],
-    buffers: list[memoryview | bytearray | bytes],
+    buffers: MutableSequence[memoryview | bytearray | bytes],
 ) -> dict | list | tuple:
     """Remove binary types from dicts and lists, but keep track of their paths.
 
