@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, cast
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import Mock, call, patch
 
 import pytest
 from prompt_toolkit.layout.containers import Window
@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 class MockOutputParent:
     """An output's parent."""
 
-    kernel_tab = MagicMock(spec=KernelTab)
+    kernel_tab = Mock(spec=KernelTab)
 
     def refresh(self, now: bool = True) -> None:
         """Update the parent container."""
@@ -29,7 +29,7 @@ class MockOutputParent:
 @pytest.fixture
 def comm() -> UnimplementedComm:
     """Create an `UnimplementedComm` instance of the `Comm` class."""
-    comm_container = MagicMock(spec=KernelTab)
+    comm_container = Mock(spec=KernelTab)
     comm_id = "1234"
     data = {"key": "value"}
     buffers = [b"buffer1", b"buffer2"]
@@ -43,7 +43,7 @@ class TestCommView:
         """Attributes are set correctly."""
         # Create a CommView instance with a mocked container and setters
         container = Window()
-        setters = {"key1": MagicMock(), "key2": MagicMock()}
+        setters = {"key1": Mock(), "key2": Mock()}
         view = CommView(container, setters=setters)
 
         # Check the attributes are set correctly
@@ -55,7 +55,7 @@ class TestCommView:
         """Appropriate setter functions are called with the expected value."""
         # Create a CommView instance with a mocked container and setters
         container = Window()
-        setters = {"key1": MagicMock(), "key2": MagicMock()}
+        setters = {"key1": Mock(), "key2": Mock()}
         view = CommView(container, setters=setters)
 
         # Call the update method with a changes dictionary
@@ -92,7 +92,7 @@ class TestComm:
 
     def test_create_view(self, comm: Comm) -> None:
         """Create a CommView instance."""
-        parent = MagicMock(spec=MockOutputParent)
+        parent = Mock(spec=MockOutputParent)
         view = comm.create_view(parent)
         assert isinstance(view, CommView)
         assert isinstance(view.container, Display)
@@ -100,18 +100,18 @@ class TestComm:
 
     def test_new_view(self, comm: Comm) -> None:
         """Create a new CommView instance."""
-        parent = MagicMock(spec=MockOutputParent)
+        parent = Mock(spec=MockOutputParent)
         view = comm.new_view(parent)
         assert comm.views[view] == parent
 
     def test_update_views(self, comm: Comm) -> None:
         """Create a new CommView instance."""
-        parent = MagicMock(spec=MockOutputParent)
+        parent = Mock(spec=MockOutputParent)
         with patch.object(CommView, "update"):
             view = comm.new_view(parent)
             changes = {"key": "value"}
             comm.update_views(changes)
-            assert cast("MagicMock", view.update).call_args_list == [call(changes)]
+            assert cast("Mock", view.update).call_args_list == [call(changes)]
         parent.refresh.assert_called_once()
 
     def test_process_data(self, comm: Comm) -> None:
