@@ -8,7 +8,7 @@ from abc import ABCMeta, abstractmethod
 from collections import deque
 from functools import partial
 from math import ceil, floor
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Dict, cast
 from weakref import finalize
 
 from prompt_toolkit.buffer import ValidationState
@@ -942,8 +942,8 @@ class Progress:
         return self.container
 
 
-class SizedMask(dict[int, bool]):
-    """Mak with restricted number of True items."""
+class SizedMask(Dict[int, bool]):
+    """Mask with restricted number of True items."""
 
     def __init__(self, size: int | None = None) -> None:
         """Initialize a new sized default dict."""
