@@ -16,18 +16,26 @@ from euporie.core.key_binding.utils import parse_keys
 from euporie.core.keys import Keys
 
 if TYPE_CHECKING:
-    from typing import Any, Callable, Coroutine, Sequence
+    from typing import Any, Callable, Coroutine
 
     from prompt_toolkit.filters import Filter, FilterOrBool
     from prompt_toolkit.key_binding.key_bindings import (
         KeyBindingsBase,
         KeyHandlerCallable,
+        NotImplementedOrNone,
     )
 
     from euporie.core.widgets.menu import MenuItem
 
     AnyKey = tuple[Keys | str, ...] | Keys | str
     AnyKeys = list[AnyKey] | AnyKey
+    CommandHandlerNoArgs = Callable[
+        ..., Coroutine[Any, Any, None] | NotImplementedOrNone
+    ]
+    CommandHandlerArgs = Callable[
+        [KeyPressEvent], Coroutine[Any, Any, None] | NotImplementedOrNone
+    ]
+    CommandHandler = CommandHandlerNoArgs | CommandHandlerArgs
 
 log = logging.getLogger(__name__)
 
@@ -37,7 +45,7 @@ class Command:
 
     def __init__(
         self,
-        handler: Callable[..., Coroutine[Any, Any, None] | None],
+        handler: CommandHandler,
         *,
         filter: FilterOrBool = True,
         hidden: FilterOrBool = False,
@@ -98,9 +106,6 @@ class Command:
 
         self.keys: list[tuple[str | Keys, ...]] = []
 
-        self.selected_item = 0
-        self.children: Sequence[MenuItem] = []
-
     def run(self) -> None:
         """Run the command's handler."""
         if self.filter():
@@ -117,28 +122,28 @@ class Command:
     @property
     def key_handler(self) -> KeyHandlerCallable:
         """Return a key handler for the command."""
-        sig = signature(self.handler)
+        handler = self.handler
+        sig = signature(handler)
 
         if sig.parameters:
             # The handler already accepts a `KeyPressEvent` argument
-            return cast("KeyHandlerCallable", self.handler)
+            return cast("KeyHandlerCallable", handler)
 
-        def _key_handler(event: KeyPressEvent) -> None:
-            result = self.handler()
-            # If the handler is a coroutine, create an asyncio task.
-            if isawaitable(result):
-                awaitable = result
+        if isawaitable(handler):
 
-                async def bg_task() -> None:
-                    result = await awaitable
-                    if result != NotImplemented:
-                        event.app.invalidate()
+            async def _key_handler_async(event: KeyPressEvent) -> NotImplementedOrNone:
+                result = cast("CommandHandlerNoArgs", handler)()
+                assert isawaitable(result)
+                return await result
 
-                event.app.create_background_task(bg_task())
-            elif result != NotImplemented:
-                event.app.invalidate()
+            return _key_handler_async
 
-        return _key_handler
+        else:
+
+            def _key_handler(event: KeyPressEvent) -> NotImplementedOrNone:
+                return cast("CommandHandlerNoArgs", handler)()
+
+            return _key_handler
 
     def bind(self, key_bindings: KeyBindingsBase, keys: AnyKeys) -> None:
         """Add the current commands to a set of key bindings.
@@ -173,16 +178,18 @@ class Command:
     @property
     def menu_handler(self) -> Callable[[], None]:
         """Return a menu handler for the command."""
-        if isawaitable(self.handler):
+        handler = self.handler
+        if isawaitable(handler):
 
             def _menu_handler() -> None:
-                task = self.handler()
+                task = cast("CommandHandlerNoArgs", handler)()
+                task = cast("Coroutine[Any, Any, None]", task)
                 if task is not None:
                     get_app().create_background_task(task)
 
             return _menu_handler
         else:
-            return cast("Callable[[], None]", self.handler)
+            return cast("Callable[[], None]", handler)
 
     @property
     def menu(self) -> MenuItem:
