@@ -356,7 +356,7 @@ class MenuBar:
             previous_indexes = [
                 i
                 for i, item in enumerate(menu.children)
-                if i < index and not item.disabled
+                if i < index and not item.disabled and not item.hidden()
             ]
 
             if previous_indexes:
@@ -374,7 +374,7 @@ class MenuBar:
             next_indexes = [
                 i
                 for i, item in enumerate(menu.children)
-                if i > index and not item.disabled
+                if i > index and not item.disabled and not item.hidden()
             ]
 
             if next_indexes:
@@ -641,8 +641,8 @@ class MenuBar:
                     for i, item in enumerate(menu.children):
                         if not item.hidden():
                             result.extend(one_item(i, item))
-                        if i < len(menu.children) - 1:
-                            result.append(("", "\n"))
+                            if i < len(menu.children) - 1:
+                                result.append(("", "\n"))
 
             return result
 
