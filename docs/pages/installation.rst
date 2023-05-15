@@ -66,7 +66,7 @@ Kitty's Terminal Graphics Protocol
 
 If your terminal supports `kitty's terminal graphics protocol <https://sw.kovidgoyal.net/kitty/graphics-protocol.html>`_, euporie will use it to render images.
 
-Currently only the `kitty <https://sw.kovidgoyal.net/kitty>`_ and `WezTerm <https://wezfurlong.org/wezterm/>`_ terminals support this.
+This is supported by `kitty <https://sw.kovidgoyal.net/kitty>`_, `WezTerm <https://wezfurlong.org/wezterm/>`_, and `Konsole <https://konsole.kde.org/>`_.
 
 Sixels
 ------
