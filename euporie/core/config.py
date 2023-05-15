@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Protocol, TextIO, cast
 
 import fastjsonschema
-from appdirs import user_config_dir
+from platformdirs import user_config_dir
 from prompt_toolkit.filters.base import Condition
 from prompt_toolkit.filters.utils import to_filter
 from prompt_toolkit.utils import Event
