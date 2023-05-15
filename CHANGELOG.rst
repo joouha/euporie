@@ -11,6 +11,7 @@ Upcoming
 Changed
 =======
 
+- Improve changes of successful format conversion by trying all conversion routes
 - Improvements to responsiveness when opening files
 - Update completion menu style
 - Changed name of ``hub`` configuration item ```no_auth`` to ``auth`` with inverse logic
