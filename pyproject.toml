@@ -145,7 +145,7 @@ detached = false
 dependencies = [
   "pytest", "pytest-cov", "coverage",
   # Optional non-dependencies
-  "html2text",
+  "python-magic", "html2text",
 ]
 [[tool.hatch.envs.test.matrix]]
 python = ["3.8", "3.9", "3.10", "3.11", "pypy3"]
