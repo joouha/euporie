@@ -13,7 +13,7 @@ from prompt_toolkit.formatted_text.base import to_formatted_text
 from prompt_toolkit.key_binding.key_bindings import Binding
 from prompt_toolkit.key_binding.key_processor import KeyPressEvent
 
-from euporie.core.commands import Command
+from euporie.core.commands import Command, add_cmd, commands, get_cmd
 from euporie.core.keys import Keys
 
 if TYPE_CHECKING:
@@ -215,3 +215,41 @@ def test_command_menu(command: Command) -> None:
     assert menu._formatted_text == "Test Command Menu Title"
     assert menu.description == "This is a test command."
     assert to_formatted_text(menu.shortcut) == [("", "A, B")]
+
+
+def test_add_cmd() -> None:
+    """Commands are added to the commands dictionary with the correct parameters."""
+
+    # Test adding a command with required parameters only
+    @add_cmd(name="my_cmd")
+    def my_cmd() -> None:
+        pass
+
+    assert isinstance(commands["my_cmd"], Command)
+    assert commands["my_cmd"].name == "my_cmd"
+
+    # Test adding a command with optional parameters
+    @add_cmd(name="my_cmd_2", description="This is my second command")
+    def my_cmd_2() -> None:
+        pass
+
+    assert isinstance(commands["my_cmd_2"], Command)
+    assert commands["my_cmd_2"].name == "my_cmd_2"
+    assert commands["my_cmd_2"].description == "This is my second command"
+
+
+def test_get_cmd() -> None:
+    """Command are retrieved."""
+
+    # Test getting a command that exists in the commands dictionary
+    @add_cmd(name="my_cmd")
+    def my_cmd() -> None:
+        pass
+
+    cmd = get_cmd("my_cmd")
+    assert isinstance(cmd, Command)
+    assert cmd.name == "my_cmd"
+
+    # Test getting a command that doesn't exist in the commands dictionary
+    with pytest.raises(KeyError):
+        get_cmd("nonexistent_cmd")
