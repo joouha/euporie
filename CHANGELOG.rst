@@ -11,6 +11,7 @@ Upcoming
 Changed
 =======
 
+- Change from `appdirs` to `platformdirs` for resolving user configuration path
 - Improve changes of successful format conversion by trying all conversion routes
 - Improvements to responsiveness when opening files
 - Update completion menu style
