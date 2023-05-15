@@ -335,7 +335,7 @@ class SgrPixelStatus(TerminalQuery):
         """Verify the terminal response means sixel graphics are supported."""
         if match := self.pattern.match(data):
             if values := match.groupdict():
-                if values.get("Pm") != 0:
+                if values.get("Pm") in {"1", "3"}:
                     return True
         return False
 

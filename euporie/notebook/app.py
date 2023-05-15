@@ -81,7 +81,6 @@ class NotebookApp(BaseApp):
         kwargs.setdefault("full_screen", True)
         kwargs.setdefault("leave_graphics", False)
         super().__init__(**kwargs)
-        self.search_bar = SearchBar()
         self.bindings_to_load.append("euporie.notebook.app.NotebookApp")
 
         # Register config hooks
@@ -200,8 +199,7 @@ class NotebookApp(BaseApp):
         )
 
         self.pager = Pager()
-
-        assert self.search_bar is not None
+        self.search_bar = SearchBar()
 
         self.dialogs["command-palette"] = CommandPalette(self)
         self.dialogs["about"] = AboutDialog(self)
