@@ -51,7 +51,8 @@ ERROR_OUTPUTS = {
 @lru_cache
 def get_mime(path: Path | str) -> str | None:
     """Attempt to determine the mime-type of a path."""
-    path = UPath(path)
+    if isinstance(path, str):
+        path = UPath(path)
     try:
         path = path.resolve()
     except Exception:
@@ -197,7 +198,7 @@ def find_route(from_: str, to: str) -> list | None:
                     for step_a, step_b in zip(chain, chain[1:])
                 ]
             ),
-        )[0]
+        )
     else:
         return None
 
@@ -236,51 +237,59 @@ def convert(
     ) -> Any:
         if from_ == to:
             return data
-        route = _CONVERTOR_ROUTE_CACHE[(from_, to)]
-        # log.debug("Converting from '%s' to '%s' using route: %s", from_, to, route)
-        if route is None:
+        routes = _CONVERTOR_ROUTE_CACHE[(from_, to)]
+        log.debug("Converting from '%s' to '%s' using route: %s", from_, to, routes)
+        if not routes:
             raise NotImplementedError(f"Cannot convert from `{from_}` to `{to}`")
         output: Any = data
-        for stage_a, stage_b in zip(route, route[1:]):
-            # Find converter with lowest weight
-            func = sorted(
-                [
-                    conv
-                    for conv in converters[stage_b][stage_a]
-                    if _FILTER_CACHE.get((conv,), conv.filter_)
-                ],
-                key=lambda x: x.weight,
-            )[0].func
-            # Add intermediate steps to the cache
-            try:
-                output_hash = hash(data)
-            except TypeError as error:
-                log.warning("Cannot hash %s", data)
-                raise error
-            try:
-                output = _CONVERSION_CACHE.get(
-                    (output_hash, from_, stage_b, cols, rows, fg, bg, path),
-                    partial(func, output, cols, rows, fg, bg, path),
-                )
-            except Exception:
-                log.exception("An error occurred during format conversion")
-                output = None
-            if output is None:
-                log.error(
-                    "Failed to convert `%s` from `%s`"
-                    " to `%s` using route `%s` at stage `%s`",
-                    data.__repr__()[:10],
-                    from_,
-                    to,
-                    route,
-                    stage_b,
-                )
-                output = ERROR_OUTPUTS.get(to, b"(Conversion Error)")
+        for route in routes:
+            for stage_a, stage_b in zip(route, route[1:]):
+                # Find converter with lowest weight
+                func = sorted(
+                    [
+                        conv
+                        for conv in converters[stage_b][stage_a]
+                        if _FILTER_CACHE.get((conv,), conv.filter_)
+                    ],
+                    key=lambda x: x.weight,
+                )[0].func
+                # Add intermediate steps to the cache
+                try:
+                    output_hash = hash(data)
+                except TypeError as error:
+                    log.warning("Cannot hash %s", data)
+                    raise error
+                try:
+                    output = _CONVERSION_CACHE.get(
+                        (output_hash, from_, stage_b, cols, rows, fg, bg, path),
+                        partial(func, output, cols, rows, fg, bg, path),
+                    )
+                except Exception:
+                    log.exception("An error occurred during format conversion")
+                    output = None
+                if output is None:
+                    log.error(
+                        "Failed to convert `%s` from `%s`"
+                        " to `%s` using route `%s` at stage `%s`",
+                        data.__repr__()[:10],
+                        from_,
+                        to,
+                        route,
+                        stage_b,
+                    )
+                    # Try the next route on error
+                    break
+            else:
+                # If this route succeeded, stop trying routes
+                break
         return output
 
     data = _CONVERSION_CACHE.get(
         (data_hash, from_, to, cols, rows, fg, bg, path),
         partial(_convert, data, from_, to, cols, rows, fg, bg, path),
     )
+
+    if data is None:
+        data = ERROR_OUTPUTS.get(to, b"(Conversion Error)")
 
     return data
