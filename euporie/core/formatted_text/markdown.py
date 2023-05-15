@@ -74,16 +74,19 @@ _MARKDOWN_CSS = {
         ((CssSelector(item="h4"),),): {
             "text_weight": "bold",
             "text_decoration": "underline",
+            "border_bottom_color": "#888888",
             "margin_top": "1rem",
             "margin_bottom": "1rem",
         },
         ((CssSelector(item="h5"),),): {
             "font_weight": "bold",
+            "border_bottom_color": "#888888",
             "margin_top": "1rem",
             "margin_bottom": "1rem",
         },
         ((CssSelector(item="h6"),),): {
             "font_style": "italic",
+            "border_bottom_color": "#888888",
             "margin_top": "1rem",
             "margin_bottom": "1rem",
         },
