@@ -340,6 +340,7 @@ class BaseApp(Application):
         # Set the application's style, and update it when the terminal responds
         self.update_style()
         self.term_info.colors.event += self.update_style
+        # Pause rendering while we load the layout
         self.pause_rendering()
         # Load completions menu. This must be done after the app is initialized, because
         # :py:func:`get_app` is needed to access the config
