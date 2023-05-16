@@ -29,6 +29,9 @@ class CoreApp:
         cls.config.load(cls)
         app = cls.config.app
 
+        # Remove the app setting from the list of known settings
+        del Config.settings["app"]
+
         # Add aliases
         app = APP_ALIASES.get(app, app)
 
