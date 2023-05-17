@@ -20,6 +20,7 @@ Changed
 Added
 =====
 
+- Add JSON viewer tab
 - Add ability to open remote files from "open" dialog
 - Add ability to select file open method
 - Add support for opening scripts & markdown documents as notebooks using Jupytext
