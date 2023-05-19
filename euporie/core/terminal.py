@@ -132,24 +132,6 @@ class TerminalQuery:
         return self._value or self.default
 
 
-class ColorQueryMixin:
-    """A mixin for terminal queries which check a terminal colour."""
-
-    pattern: re.Pattern
-
-    def verify(self, data: str) -> str | None:
-        """Verify the response contains a colour."""
-        if match := self.pattern.match(data):
-            if colors := match.groupdict():
-                r, g, b = (
-                    colors.get("r", "00"),
-                    colors.get("g", "00"),
-                    colors.get("b", "00"),
-                )
-                return f"#{r[:2]}{g[:2]}{b[:2]}"
-        return None
-
-
 class Colors(TerminalQuery):
     """A terminal query to retrieve colours as hex codes."""
 
@@ -328,7 +310,7 @@ class SgrPixelStatus(TerminalQuery):
 
     default = False
     cache = True
-    cmd = "\x1b[?1016$p"
+    cmd = "\x1b[?1016h\x1b[?1016$p\x1b[?1016l"  # Enable, check, disable
     pattern = re.compile(r"^\x1b\[\?1016;(?P<Pm>\d)\$\Z")
 
     def verify(self, data: str) -> bool:
@@ -346,12 +328,13 @@ class TerminalInfo:
     input: Input
     output: Output
 
+    _queries: dict[type[TerminalQuery], TerminalQuery] = {}
+
     def __init__(self, input_: Input, output: Output, config: Config) -> None:
         """Instantiate the terminal information class."""
         self.input = input_
         self.output = output
         self.config = config
-        self._queries: list[TerminalQuery] = []
 
         self.colors = self.register(Colors)
         self.pixel_dimensions = self.register(PixelDimensions)
@@ -364,34 +347,39 @@ class TerminalInfo:
     def register(self, query: type[TerminalQuery]) -> TerminalQuery:
         """Instantiate and registers a query's response with the input parser."""
         # Create an instance of this query
-        query_inst = query(self.output, config=self.config)
-        self._queries.append(query_inst)
+        query_inst: TerminalQuery | None
 
-        # If the query expects a response from the terminal, we need to add a
-        # key-binding for it and register it with the input parser
-        if query.pattern:
-            name = re.sub(r"(?<!^)(?=[A-Z])", "-", query.__name__).lower()
-            title = name.replace("-", " ")
+        if (query_inst := self._queries.get(query)) is None:
+            query_inst = query(self.output, config=self.config)
+            self._queries[query] = query_inst
 
-            # Add a "key" definition for this query
-            key_name = f"{query.__name__}Response"
-            key_code = f"<{name}-response>"
-            # Do not register the same key multiple times
-            if not hasattr(Keys, key_name):
-                extend_enum(Keys, key_name, key_code)
-            key = getattr(Keys, key_name)
+            # If the query expects a response from the terminal, we need to add a
+            # key-binding for it and register it with the input parser
+            if query.pattern:
+                name = re.sub(r"(?<!^)(?=[A-Z])", "-", query.__name__).lower()
+                title = name.replace("-", " ")
 
-            # Register this key with the parser if supported
-            if (parser := getattr(self.input, "vt100_parser", None)) and hasattr(
-                parser, "queries"
-            ):
-                # Register the key
-                parser.queries[key] = query.pattern
+                # Add a "key" definition for this query
+                key_name = f"{query.__name__}Response"
+                key_code = f"<{name}-response>"
+                # Do not register the same key multiple times
+                if not hasattr(Keys, key_name):
+                    extend_enum(Keys, key_name, key_code)
+                key = getattr(Keys, key_name)
 
-            # Add a command for the query's key-binding
-            add_cmd(name=name, title=title, hidden=True)(query_inst._handle_response)
-            # Add key-binding
-            register_bindings({"euporie.core.app.BaseApp": {name: key}})
+                # Register this key with the parser if supported
+                if (parser := getattr(self.input, "vt100_parser", None)) and hasattr(
+                    parser, "queries"
+                ):
+                    # Register the key
+                    parser.queries[key] = query.pattern
+
+                # Add a command for the query's key-binding
+                add_cmd(name=name, title=title, hidden=True)(
+                    query_inst._handle_response
+                )
+                # Add key-binding
+                register_bindings({"euporie.core.app.BaseApp": {name: key}})
 
         return query_inst
 
@@ -399,7 +387,7 @@ class TerminalInfo:
         """Send the command for all queries."""
         # Ensure line wrapping is off before sending queries
         self.output.disable_autowrap()
-        for query in self._queries:
+        for query in self._queries.values():
             query.send()
 
     def _tiocgwnsz(self) -> tuple[int, int, int, int]:

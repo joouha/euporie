@@ -78,7 +78,6 @@ class Vt100_Output(PtkVt100_Output):
         """Additionally enable SGR-pixel mouse positioning."""
         super().enable_mouse_support()
         self.write_raw("\x1b[?1016h")
-        log.debug("Enabling SGR pixel mode")
 
     def disable_mouse_support(self) -> None:
         """Additionally disable SGR-pixel mouse positioning."""
