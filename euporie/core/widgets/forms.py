@@ -259,7 +259,11 @@ class Button:
                 self.on_mouse_down.fire()
 
                 if not self.has_focus():
-                    get_app().layout.focus(self)
+                    app = get_app()
+                    app.layout.focus(self)
+                    # Invalidate the app - we don't do it by returning None so the
+                    # event can bubble
+                    app.invalidate()
                     # We want this event to bubble if unfocused
                     return NotImplemented
                 else:
@@ -325,7 +329,9 @@ class ToggleableWidget(metaclass=ABCMeta):
         elif mouse_event.event_type == MouseEventType.MOUSE_DOWN:
             layout = get_app().layout
             if not layout.has_focus(self):
-                get_app().layout.focus(self)
+                app = get_app()
+                app.layout.focus(self)
+                app.invalidate()
                 return NotImplemented
             else:
                 return None
@@ -1163,7 +1169,9 @@ class SelectableWidget(metaclass=ABCMeta):
             return None
         elif mouse_event.event_type == MouseEventType.MOUSE_DOWN:
             if not self.has_focus():
+                app = get_app()
                 get_app().layout.focus(self)
+                app.invalidate()
                 # We want this event to bubble if unfocused
                 return NotImplemented
             else:
