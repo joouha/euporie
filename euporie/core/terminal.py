@@ -219,6 +219,7 @@ class KittyGraphicsStatus(TerminalQuery):
     pattern = re.compile(r"^\x1b_Gi=(4294967295|0);(?P<status>OK)\x1b\\\Z")
 
     def _cmd(self) -> str:
+        """Hide the command in case the terminal does not support this sequence."""
         return "\x1b[s" + tmuxify(self.cmd) + "\x1b[u\x1b[2K"
 
     def verify(self, data: str) -> bool:
@@ -322,6 +323,22 @@ class SgrPixelStatus(TerminalQuery):
         return False
 
 
+class CsiUStatus(TerminalQuery):
+    """A terminal query to check for CSI-u support."""
+
+    default = False
+    cache = True
+    cmd = "\x1b[?u"
+    pattern = re.compile(r"^\x1b\[\?\d+u")
+
+    def verify(self, data: str) -> bool:
+        """Verify the terminal responds."""
+        if match := self.pattern.match(data):
+            if match:
+                return True
+        return False
+
+
 class TerminalInfo:
     """A class to gather and hold information about the terminal."""
 
@@ -343,6 +360,7 @@ class TerminalInfo:
         self.iterm_graphics_status = self.register(ItermGraphicsStatus)
         self.depth_of_color = self.register(DepthOfColor)
         self.sgr_pixel_status = self.register(SgrPixelStatus)
+        self.csiu_status = self.register(CsiUStatus)
 
     def register(self, query: type[TerminalQuery]) -> TerminalQuery:
         """Instantiate and registers a query's response with the input parser."""

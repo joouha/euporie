@@ -8,6 +8,7 @@ from prompt_toolkit.keys import Keys
 extend_enum(Keys, "ControlEnter", "c-enter")
 extend_enum(Keys, "ControlShiftEnter", "c-s-enter")
 extend_enum(Keys, "ShiftEnter", "s-enter")
+extend_enum(Keys, "ControlBackspace", "c-backspace")
 
 # Assign escape sequences to new keys
 ANSI_SEQUENCES["\x1b[27;5;13~"] = Keys.ControlEnter  # type: ignore
@@ -47,5 +48,6 @@ ANSI_SEQUENCES["\x1b[119;5u"] = Keys.ControlW  # type: ignore
 ANSI_SEQUENCES["\x1b[120;5u"] = Keys.ControlX  # type: ignore
 ANSI_SEQUENCES["\x1b[121;5u"] = Keys.ControlY  # type: ignore
 ANSI_SEQUENCES["\x1b[122;5u"] = Keys.ControlZ  # type: ignore
+ANSI_SEQUENCES["\x1b[127;5u"] = Keys.ControlBackspace  # type: ignore
 ANSI_SEQUENCES["\x1b[27;2;9~"] = Keys.BackTab  # type: ignore
 ANSI_SEQUENCES["\x1b[9;2u"] = Keys.BackTab  # type: ignore

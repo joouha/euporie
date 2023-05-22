@@ -93,7 +93,11 @@ register_bindings(
             "newline": "enter",
             "accept-line": "enter",
             "backspace": ["backspace", "c-h"],
-            "backward-kill-word": [("escape", "backspace"), ("escape", "c-h")],
+            "backward-kill-word": [
+                "c-backspace",
+                ("escape", "backspace"),
+                ("escape", "c-h"),
+            ],
             "start-selection": [
                 "s-up",
                 "s-down",
