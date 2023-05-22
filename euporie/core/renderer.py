@@ -263,6 +263,7 @@ class Renderer(PtkRenderer):
         extend_width: FilterOrBool = False,
     ) -> None:
         """Create a new :py:class:`Renderer` instance."""
+        self.app: Application[Any] | None = None
         super().__init__(
             style, output, full_screen, mouse_support, cpr_not_supported_callback
         )
@@ -271,22 +272,37 @@ class Renderer(PtkRenderer):
 
     def reset(self, _scroll: bool = False, leave_alternate_screen: bool = True) -> None:
         """Disable extended keys before resetting the output."""
+        from euporie.core.app import BaseApp
+
+        super().reset(_scroll, leave_alternate_screen)
+
         output = self.output
 
         # Disable extended keys
-        if isinstance(output, Vt100_Output):
-            cast(Vt100_Output, self.output).disable_extended_keys()
-
-        super().reset(_scroll, leave_alternate_screen)
+        app = self.app
+        if (
+            app
+            and isinstance(app, BaseApp)
+            and app.term_info.csiu_status.value
+            and isinstance(output, Vt100_Output)
+        ):
+            cast("Vt100_Output", self.output).disable_extended_keys()
 
     def render(
         self, app: Application[Any], layout: Layout, is_done: bool = False
     ) -> None:
         """Render the current interface to the output."""
+        from euporie.core.app import BaseApp
+
         output = self.output
+        self.app = app
 
         # Enable extended keys
-        if isinstance(output, Vt100_Output):
+        if (
+            isinstance(app, BaseApp)
+            and app.term_info.csiu_status.value
+            and isinstance(output, Vt100_Output)
+        ):
             output.enable_extended_keys()
 
         # Enter alternate screen.

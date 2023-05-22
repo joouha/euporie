@@ -34,6 +34,7 @@ Added
 Fixed
 =====
 
+- Prevent every ``euporie-consle`` run clearing the screen in ``Konsole``
 - Replace tabs with spaces in ANSI text output
 - ``SelectMultiple`` widget is now styled consistently with other widgets
 - Restore terminal state on unexpected exit signal
