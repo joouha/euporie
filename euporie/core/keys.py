@@ -20,6 +20,7 @@ ANSI_SEQUENCES["\x1b[27;6;13~"] = Keys.ControlShiftEnter  # type: ignore
 ANSI_SEQUENCES["\x1b[13;6u"] = Keys.ControlShiftEnter  # type: ignore
 
 # CSI-u control+key
+ANSI_SEQUENCES["\x1b[32;5u"] = Keys.ControlSpace  # type: ignore
 ANSI_SEQUENCES["\x1b[97;5u"] = Keys.ControlA  # type: ignore
 ANSI_SEQUENCES["\x1b[98;5u"] = Keys.ControlB  # type: ignore
 ANSI_SEQUENCES["\x1b[99;5u"] = Keys.ControlC  # type: ignore
