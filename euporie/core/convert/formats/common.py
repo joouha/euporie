@@ -122,10 +122,10 @@ def chafa_convert_py(
     if cols:
         config.width = cols
         if rows:
-            config.height = rows
+            config.height = max(1, rows)
         # If we don't have specified, use the image's aspect
         else:
-            config.height = int(cols / data.size[0] * data.size[1] * px / py)
+            config.height = max(1, int(cols / data.size[0] * data.size[1] * px / py))
 
     # Set the foreground color
     if not fg and hasattr(app, "color_palette"):
