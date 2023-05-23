@@ -8,7 +8,7 @@ import io
 import logging
 from pathlib import Path
 from typing import TYPE_CHECKING, overload
-from urllib.parse import urljoin, urlunsplit
+from urllib.parse import unquote, urljoin, urlunsplit
 
 import upath
 from aiohttp.client_reqrep import ClientResponse
@@ -174,7 +174,7 @@ class DataPath(upath.core.UPath):
                 log.warning("Failed to decode base64 encoded data")
                 data_bytes = b""
         else:
-            data_str = encoded_data
+            data_str = unquote(encoded_data)
 
         if "b" in mode:
             if data_bytes is None:
@@ -189,6 +189,10 @@ class DataPath(upath.core.UPath):
                     decode_kwargs["encoding"] = str(encoding)
                 data_str = data_bytes.decode(**decode_kwargs)
             return io.StringIO(data_str)
+
+    def exists(self, **kwargs: Any) -> bool:
+        """Affirm tat data URIs always exist."""
+        return True
 
     @property
     def _mime(self) -> str:
