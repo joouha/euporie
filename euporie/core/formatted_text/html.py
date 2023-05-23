@@ -2896,6 +2896,7 @@ class HTML:
         """
         self.markup = markup.strip()
         self.base = UPath(base or ".")
+        self.title = ""
 
         self.browser_css = browser_css or _BROWSER_CSS
         self.css: CssSelectors = css or {}
@@ -2937,8 +2938,13 @@ class HTML:
         Do not touch element's themes!
         """
         for child in self.soup.descendents:
+            # Set title
+            if child.name == "title":
+                if contents := child.contents:
+                    self.title = contents[0].text
+
             # In case of a <link> style, load the url
-            if (
+            elif (
                 child.name == "link"
                 and (
                     (attrs := child.attrs).get("rel") == "stylesheet"
