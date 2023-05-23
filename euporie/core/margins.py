@@ -65,7 +65,7 @@ class MarginContainer(Window):
     def create_fragments(self) -> StyleAndTextTuples:
         """Generate text fragments to display."""
         return self.margin.create_margin(
-            self.target.render_info,
+            cast("WindowRenderInfo", self.target.render_info),  # Minor type hack
             self.write_position.width,
             self.write_position.height,
         )
