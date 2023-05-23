@@ -102,8 +102,9 @@ def get_mime(path: Path | str) -> str | None:
                 log.debug("Request failed: %s", r)
                 continue
             else:
-                mime = r.headers.get("Content-Type")
-                if mime is not None:
+                content_type = r.headers.get("Content-Type")
+                if content_type is not None:
+                    mime = content_type.partition(";")[0]
                     break
 
     return mime
