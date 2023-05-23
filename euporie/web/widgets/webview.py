@@ -28,7 +28,7 @@ from euporie.core.path import parse_path
 
 if TYPE_CHECKING:
     from pathlib import Path
-    from typing import Iterable
+    from typing import Any, Callable, Iterable
 
     from prompt_toolkit.formatted_text.base import StyleAndTextTuples
     from prompt_toolkit.key_binding.key_bindings import (
@@ -56,7 +56,11 @@ class WebViewControl(UIControl):
 
     _window: Window
 
-    def __init__(self, url: str | Path) -> None:
+    def __init__(
+        self,
+        url: str | Path,
+        link_handler: Callable | None = None,
+    ) -> None:
         """Create a new web-view control instance."""
         self._cursor_position = Point(0, 0)
         self.loading = False
@@ -66,6 +70,7 @@ class WebViewControl(UIControl):
         self.height = 0
         self.url: Path | None = None
         self.status = ""
+        self.link_handler = link_handler or self.load_url
 
         self.rendered = Event(self)
         self.on_cursor_position_changed = Event(self)
@@ -141,13 +146,14 @@ class WebViewControl(UIControl):
         """Render a HTML page as lines of formatted text."""
         return dom.render(width, height)
 
-    def load_url(self, url: str | Path, save: bool = True) -> None:
+    def load_url(self, url: str | Path, **kwargs: Any) -> None:
         """Load a new URL."""
+        save_to_history = kwargs.get("save_to_history", True)
         # Trigger "loading" view
         self.loading = True
         get_app().invalidate()
         # Update navigation history
-        if self.url and save:
+        if self.url and save_to_history:
             self.prev_stack.append(self.url)
             self.next_stack.clear()
         # Update url
@@ -160,13 +166,13 @@ class WebViewControl(UIControl):
         """Navigate forwards through the browser history."""
         if self.url and self.prev_stack:
             self.next_stack.append(self.url)
-            self.load_url(self.prev_stack.pop(), save=False)
+            self.load_url(self.prev_stack.pop(), save_to_history=False)
 
     def nav_next(self) -> None:
         """Navigate backwards through the browser history."""
         if self.url and self.next_stack:
             self.prev_stack.append(self.url)
-            self.load_url(self.next_stack.pop(), save=False)
+            self.load_url(self.next_stack.pop(), save_to_history=False)
 
     def render(self) -> None:
         """Render the HTML DOM in a thread."""
@@ -298,7 +304,13 @@ class WebViewControl(UIControl):
                 mouse_event.button == MouseButton.LEFT
                 and mouse_event.event_type == MouseEventType.MOUSE_UP
             ):
-                self.load_url(url)
+                self.link_handler(url, save_to_history=True, new_tab=False)
+                return None
+            elif (
+                mouse_event.button == MouseButton.MIDDLE
+                and mouse_event.event_type == MouseEventType.MOUSE_UP
+            ):
+                self.link_handler(url, save_to_history=False, new_tab=True)
                 return None
             elif mouse_event.event_type == MouseEventType.MOUSE_MOVE:
                 self.status = str(url)
