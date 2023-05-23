@@ -513,6 +513,9 @@ def compute_border_width(cell: Cell, render_count: int = 0) -> DiInt:
     if isinstance(cell, DummyCell):
         return DiInt(0, 0, 0, 0)
 
+    if isinstance(cell, SpacerCell):
+        cell = cell.expands
+
     output = {"top": 1, "right": 1, "bottom": 1, "left": 1}
 
     row = cell.row
@@ -1118,8 +1121,8 @@ class Table:
                     )
                 )
                 border_char = get_vertical_edge(
-                    compute_border_line(e, render_count),
                     compute_border_line(w, render_count),
+                    compute_border_line(e, render_count),
                 )
 
                 # We only need to check on cell to the left and one cell to the right
