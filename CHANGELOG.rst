@@ -35,6 +35,7 @@ Added
 Fixed
 =====
 
+- Fix pandas dataframe HTML output formatting with row multi-indices
 - Prevent every ``euporie-consle`` run clearing the screen in ``Konsole``
 - Replace tabs with spaces in ANSI text output
 - ``SelectMultiple`` widget is now styled consistently with other widgets
