@@ -398,6 +398,8 @@ def build_style(
         "app-tab-bar tab active": "bold fg:default bg:default",
         "app-tab-bar tab active close": "fg:darkred",
         "app-tab-bar tab active border top": f"fg:{cp.hl} bg:{cp.bg.less(0.15)}",
+        # Tabs
+        "loading": "fg:#888888",
         # Buffer
         "line-number": f"fg:{cp.fg.more(0.5)} bg:{cp.bg.more(0.05)}",
         "line-number.current": f"bold orange bg:{cp.bg.more(0.1)}",

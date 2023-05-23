@@ -6,9 +6,11 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
+from prompt_toolkit.eventloop.utils import run_in_executor_with_context
 from prompt_toolkit.filters import Condition
 from prompt_toolkit.layout.containers import HSplit, VSplit
 from prompt_toolkit.layout.dimension import Dimension
+from upath import UPath
 
 from euporie.core.data_structures import DiBool
 from euporie.core.margins import MarginContainer, ScrollbarMargin
@@ -20,12 +22,12 @@ from euporie.web.widgets.webview import WebViewControl
 
 if TYPE_CHECKING:
     from pathlib import Path
-    from typing import Sequence
+    from typing import Callable
 
-    from prompt_toolkit.formatted_text import AnyFormattedText
     from prompt_toolkit.layout.containers import AnyContainer
 
     from euporie.core.app import BaseApp
+    from euporie.core.widgets.status_bar import StatusBarFields
 
 log = logging.getLogger(__name__)
 
@@ -37,20 +39,15 @@ class WebTab(Tab):
     weight = 2
     mime_types = {"text/html"}
 
-    def __init__(self, app: BaseApp, path: Path | None = None) -> None:
+    def __init__(self, app: BaseApp, path: Path | None) -> None:
         """Call when the tab is created."""
         super().__init__(app, path)
+        self.status: Callable[[], StatusBarFields] | None = None
 
-        self.container = self.load_container()
+        def _load() -> None:
+            self.container = self.load_container()
 
-        if self.path:
-            self.load_url(self.path)
-
-    def __pt_status__(
-        self,
-    ) -> tuple[Sequence[AnyFormattedText], Sequence[AnyFormattedText]]:
-        """Return a list of statusbar field values shown then this tab is active."""
-        return ([self.webview.status], [])
+        run_in_executor_with_context(_load)
 
     @property
     def title(self) -> str:
@@ -73,15 +70,21 @@ class WebTab(Tab):
     def _url_loaded(self, webview: WebViewControl) -> None:
         """Trigger callback when the URL is loaded."""
         url = webview.url
-        self.path = url
-        self.url_bar.text = str(url)
+        if url is not None:
+            self.path = UPath(url)
+            self.url_bar.text = str(url)
 
     def load_container(self) -> AnyContainer:
         """Abcract method for loading the notebook's main container."""
         assert self.path is not None
-
-        self.webview = WebViewControl(url=self.path)
+        path = self.path
+        self.webview = WebViewControl(url=path)
         self.webview.rendered += self._url_loaded
+
+        def _status() -> StatusBarFields:
+            return ([self.webview.status] if self.webview is not None else [], [])
+
+        self.status = _status
 
         button_prev = Button(
             "◀",
@@ -96,7 +99,7 @@ class WebTab(Tab):
             on_click=lambda x: self.webview.nav_next(),
         )
         self.url_bar = Text(
-            text=str(self.path),
+            text=str(path),
             show_borders=DiBool(top=True, right=False, bottom=True, left=True),
             accept_handler=lambda buf: self.load_url(buf.text),
         )
@@ -127,3 +130,10 @@ class WebTab(Tab):
             width=Dimension(weight=1),
             height=Dimension(weight=1),
         )
+
+    def __pt_status__(self) -> StatusBarFields:
+        """Return a list of statusbar field values shown then this tab is active."""
+        if callable(self.status):
+            return self.status()
+        else:
+            return ([], [])
