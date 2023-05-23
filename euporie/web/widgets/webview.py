@@ -57,7 +57,8 @@ class WebViewControl(UIControl):
     def __init__(self, url: str | Path) -> None:
         """Create a new web-view control instance."""
         self._cursor_position = Point(0, 0)
-        self.dirty = False
+        self.loading = False
+        self.resizing = False
         self.fragments: StyleAndTextTuples = []
         self.width = 0
         self.height = 0
@@ -127,16 +128,18 @@ class WebViewControl(UIControl):
 
     def load_url(self, url: str | Path, save: bool = True) -> None:
         """Load a new URL."""
+        # Trigger "loading" view
+        self.loading = True
+        get_app().invalidate()
         # Update navigation history
         if self.url and save:
             self.prev_stack.append(self.url)
             self.next_stack.clear()
         # Update url
-        url = parse_path(url)
-        self.url = url
+        self.url = UPath(url)
         # Reset rendering
-        self.dirty = True
         self.rendered.fire()
+        get_app().invalidate()
 
     def nav_prev(self) -> None:
         """Navigate forwards through the browser history."""
@@ -153,20 +156,22 @@ class WebViewControl(UIControl):
     def render(self) -> None:
         """Render the HTML DOM in a thread."""
 
-        def _render_in_thread() -> None:
+        def _render() -> None:
             assert self.url is not None
+            # Potentiall redirect url
+            self.url = parse_path(self.url)
             dom = self._dom_cache[self.url,]
             self.fragments = self._fragment_cache[dom, self.width, self.height]
-            self.dirty = False
+            self.loading = False
+            self.resizing = False
             # Scroll to the top
             self.window.vertical_scroll = 0
             self.cursor_position = Point(0, 0)
             self.rendered.fire()
+            get_app().invalidate()
 
-        # self.thread = threading.Thread(target=_render_in_thread, daemon=True)
-        # self.thread.start()
         if self.url:
-            run_in_executor_with_context(_render_in_thread)
+            run_in_executor_with_context(_render)
 
     def reset(self) -> None:
         """Reset the state of the control."""
@@ -190,15 +195,21 @@ class WebViewControl(UIControl):
         return True
 
     def get_content(
-        self, url: Path, dirty: bool, width: int, height: int, cursor_position: Point
+        self,
+        url: Path,
+        loading: bool,
+        resizing: bool,
+        width: int,
+        height: int,
+        cursor_position: Point,
     ) -> UIContent:
         """Create a cacheable UIContent."""
-        if self.dirty:
+        if self.loading:
             lines = [
                 cast("StyleAndTextTuples", []),
                 cast(
                     "StyleAndTextTuples",
-                    [("", " " * ((width - 8) // 2)), ("fg:#888888", "Loading…")],
+                    [("", " " * ((width - 8) // 2)), ("class:loading", "Loading…")],
                 ),
             ]
         else:
@@ -245,13 +256,16 @@ class WebViewControl(UIControl):
             A :class:`.UIContent` instance.
         """
         # Trigger a re-render if things have changed
-        if self.dirty or width != self.width or height != self.height:
+        if self.loading:
+            self.render()
+        elif width != self.width or height != self.height:
+            self.resizing = True
             self.width = width
             self.height = height
             self.render()
 
         return self._content_cache[
-            self.url, self.dirty, width, height, self.cursor_position
+            self.url, self.loading, self.resizing, width, height, self.cursor_position
         ]
 
     def _node_mouse_handler(
@@ -284,9 +298,10 @@ class WebViewControl(UIControl):
         Returns:
             NotImplemented if the UI does not need to be updates, None if it does
         """
-        # Focus on click
+        # Focus on mouse down
         if mouse_event.event_type == MouseEventType.MOUSE_DOWN:
             get_app().layout.focus(self)
+            return None
         # if mouse_event.event_type == MouseEventType.MOUSE_MOVE:
         # self.cursor_position = mouse_event.position
 
@@ -294,7 +309,12 @@ class WebViewControl(UIControl):
         handler: MouseHandler | None = None
         try:
             content = self._content_cache[
-                self.url, self.dirty, self.width, self.height, self.cursor_position
+                self.url,
+                self.loading,
+                self.resizing,
+                self.width,
+                self.height,
+                self.cursor_position,
             ]
             line = content.get_line(mouse_event.position.y)
         except IndexError:
