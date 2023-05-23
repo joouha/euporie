@@ -20,6 +20,7 @@ Changed
 Added
 =====
 
+- Add web viewer tab for sufing the world wide web
 - Add JSON viewer tab
 - Add ability to open remote files from "open" dialog
 - Add ability to select file open method

@@ -200,7 +200,7 @@ class WebViewControl(UIControl):
         loading: bool,
         resizing: bool,
         width: int,
-        height: int,
+        # height: int,
         cursor_position: Point,
     ) -> UIContent:
         """Create a cacheable UIContent."""
@@ -258,14 +258,19 @@ class WebViewControl(UIControl):
         # Trigger a re-render if things have changed
         if self.loading:
             self.render()
-        elif width != self.width or height != self.height:
+        if width != self.width:  # or height != self.height:
             self.resizing = True
             self.width = width
             self.height = height
             self.render()
 
         return self._content_cache[
-            self.url, self.loading, self.resizing, width, height, self.cursor_position
+            self.url,
+            self.loading,
+            self.resizing,
+            width,
+            # height,
+            self.cursor_position,
         ]
 
     def _node_mouse_handler(
@@ -313,7 +318,7 @@ class WebViewControl(UIControl):
                 self.loading,
                 self.resizing,
                 self.width,
-                self.height,
+                # self.height,
                 self.cursor_position,
             ]
             line = content.get_line(mouse_event.position.y)
