@@ -436,7 +436,7 @@ def build_style(
         # Scrollbars
         "scrollbar": f"fg:{cp.bg.more(0.75)} bg:{cp.bg.more(0.15)}",
         "scrollbar.background": f"fg:{cp.bg.more(0.75)} bg:{cp.bg.more(0.15)}",
-        "scrollbar.arrow": f"fg:{cp.bg.more(0.75)} bg:{cp.bg.more(0.15)}",
+        "scrollbar.arrow": f"fg:{cp.bg.more(0.75)} bg:{cp.bg.more(0.20)}",
         "scrollbar.start": "",
         # "scrollbar.start": f"fg:{cp.bg.more(0.75)} bg:{cp.bg.more(0.25)}",
         "scrollbar.button": f"fg:{cp.bg.more(0.75)} bg:{cp.bg.more(0.75)}",
