@@ -2361,14 +2361,14 @@ class Node:
             # if False and not (preformatted := self.theme.preformatted):
             if not (preformatted := self.theme.preformatted):
                 # 1. All spaces and tabs immediately before and after a line break are ignored
-                text = re.sub("(\s+(?=\n)|(?<=\n)\s+)", "", text, re.MULTILINE)
+                text = re.sub(r"(\s+(?=\n)|(?<=\n)\s+)", "", text, re.MULTILINE)
                 # 2. All tab characters are handled as space characters
                 text = text.replace("\t", " ")
                 # 3. Line breaks are converted to spaces
                 text = text.replace("\n", " ")
                 # 4. any space immediately following another space is ignored
                 # (even across two separate inline elements)
-                text = re.sub("\s\s+", " ", text)
+                text = re.sub(r"\s\s+", " ", text)
                 if not (
                     preceding_text := self.preceding_text
                 ) or preceding_text.endswith(" "):
