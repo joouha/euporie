@@ -483,7 +483,7 @@ def get_color(value: str) -> str:
         hexes = []
         for color_value in color_values:
             if (int_value := get_integer(color_value)) is not None:
-                hexes.append(hex(int_value)[2:])
+                hexes.append(f"{hex(int_value)[2:]:02}")
             else:
                 return ""
         return "#" + "".join(hexes)
