@@ -12,6 +12,8 @@ from prompt_toolkit.layout.containers import HSplit, VSplit
 from prompt_toolkit.layout.dimension import Dimension
 from upath import UPath
 
+from euporie.core.convert.core import get_mime
+from euporie.core.current import get_app
 from euporie.core.data_structures import DiBool
 from euporie.core.margins import MarginContainer, ScrollbarMargin
 from euporie.core.tabs.base import Tab
@@ -22,7 +24,7 @@ from euporie.web.widgets.webview import WebViewControl
 
 if TYPE_CHECKING:
     from pathlib import Path
-    from typing import Callable
+    from typing import Any, Callable
 
     from prompt_toolkit.layout.containers import AnyContainer
 
@@ -60,14 +62,18 @@ class WebTab(Tab):
         else:
             return "<Web Page>"
 
-    def load_url(self, url: str | Path | None = None) -> bool:
+    def load_url(self, url: str | Path, new_tab: bool = False, **kwargs: Any) -> bool:
         """Load a new URL, or the URL in the address-bar."""
-        if url == "":
-            return False
-        if url is None:
-            url = self.url_bar.text
         log.debug("Loading %s", url)
-        self.webview.load_url(url)
+        if not url:
+            return False
+        if isinstance(url, str):
+            url = UPath(url)
+
+        if not new_tab and get_mime(url) == "text/html":
+            self.webview.load_url(url, **kwargs)
+        else:
+            get_app().open_file(url)
         return True
 
     def _url_loaded(self, webview: WebViewControl) -> None:
@@ -81,7 +87,7 @@ class WebTab(Tab):
         """Abcract method for loading the notebook's main container."""
         assert self.path is not None
         path = self.path
-        self.webview = WebViewControl(url=path)
+        self.webview = WebViewControl(url=path, link_handler=self.load_url)
         self.webview.rendered += self._url_loaded
 
         def _status() -> StatusBarFields:
@@ -109,7 +115,8 @@ class WebTab(Tab):
         button_go = Button(
             "➜",
             show_borders=DiBool(top=True, right=True, bottom=True, left=False),
-            on_click=lambda x: (self.load_url() and None) or None,  # typing magic
+            on_click=lambda x: (self.load_url(self.url_bar.text) and None)
+            or None,  # Magical typing magic
         )
 
         return HSplit(
