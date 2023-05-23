@@ -1878,6 +1878,12 @@ _BROWSER_CSS: CssSelectors = {
             "display": "inline",
             "text_decoration": "line-through",
         },
+        (
+            (CssSelector(item="img", attr="[width=0]"),),
+            (CssSelector(item="img", attr="[height=0]"),),
+            (CssSelector(item="svg", attr="[width=0]"),),
+            (CssSelector(item="svg", attr="[height=0]"),),
+        ): {"display": "none"},
         ((CssSelector(item="img"),), (CssSelector(item="svg"),)): {
             "display": "inline-block",
             "overflow_x": "hidden",
@@ -2974,9 +2980,8 @@ class HTML:
                     try:
                         data = data_path.read_bytes()
                     except Exception:
-                        data = b""
-                        log.exception("Error loading file '%s'", data_path)
-                    finally:
+                        log.info("Error loading file '%s'", data_path)
+                    else:
                         if data:
                             child.attrs["_data"] = data
                 else:
