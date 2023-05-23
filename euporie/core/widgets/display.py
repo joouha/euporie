@@ -16,11 +16,17 @@ from prompt_toolkit.filters.base import Condition
 from prompt_toolkit.filters.utils import to_filter
 from prompt_toolkit.formatted_text.base import to_formatted_text
 from prompt_toolkit.formatted_text.utils import fragment_list_width, split_lines
-from prompt_toolkit.layout.containers import ConditionalContainer, Float, VSplit, Window
+from prompt_toolkit.layout.containers import (
+    ConditionalContainer,
+    Float,
+    VSplit,
+    Window,
+    WindowRenderInfo,
+)
 from prompt_toolkit.layout.controls import GetLinePrefixCallable, UIContent, UIControl
 from prompt_toolkit.layout.mouse_handlers import MouseHandlers
 from prompt_toolkit.layout.screen import Char, WritePosition
-from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
+from prompt_toolkit.mouse_events import MouseEventType
 from prompt_toolkit.utils import Event
 
 from euporie.core.commands import add_cmd
@@ -35,6 +41,7 @@ from euporie.core.filters import (
     in_tmux,
     scrollable,
 )
+from euporie.core.key_binding.bindings.mouse import MouseEvent
 from euporie.core.key_binding.registry import (
     load_registered_bindings,
     register_bindings,
@@ -76,6 +83,7 @@ class DisplayControl(UIControl):
         sizing_func: Callable[[], tuple[int, float]] | None = None,
         focusable: FilterOrBool = False,
         focus_on_click: FilterOrBool = False,
+        mouse_handler=None,
     ) -> None:
         """Create a new data formatter control.
 
@@ -105,12 +113,15 @@ class DisplayControl(UIControl):
         self.dy = 0
         self.app = get_app()
 
+        self._mouse_handler = mouse_handler
         self.on_data_changed = Event(self)
         self.on_cursor_position_changed = Event(self)
 
         self.sizing_func = sizing_func or (lambda: (0, 0))
         self._max_cols = 0
         self._aspect = 0.0
+        self.rows = 0
+        self.cols = 0
 
         self.rendered_lines: list[StyleAndTextTuples] = []
         self._format_cache: SimpleCache = SimpleCache(maxsize=50)
@@ -238,6 +249,8 @@ class DisplayControl(UIControl):
         """
         cols = min(self.max_cols, width) if self.max_cols else width
         rows = ceil(cols * self.aspect) if self.aspect else height
+        self.rows = rows
+        self.cols = cols
 
         def get_content() -> dict[str, Any]:
             rendered_lines = self.get_rendered_lines(width=cols, height=rows)
@@ -272,6 +285,10 @@ class DisplayControl(UIControl):
         if self.focus_on_click() and mouse_event.event_type == MouseEventType.MOUSE_UP:
             self.app.layout.current_control = self
             return None
+
+        if callable(_mouse_handler := self._mouse_handler):
+            return _mouse_handler(mouse_event)
+
         return NotImplemented
 
     def get_invalidate_events(self) -> Iterable[Event[object]]:
@@ -305,20 +322,187 @@ class DisplayWindow(Window):
         parent_style: str,
         erase_bg: bool,
     ) -> None:
-        """Enure the :attr:`horizontal_scroll` is recorded."""
-        super()._write_to_screen_at_index(
+        # Don't bother writing invisible windows.
+        # (We save some time, but also avoid applying last-line styling.)
+        if write_position.height <= 0 or write_position.width <= 0:
+            return
+
+        # Calculate margin sizes.
+        left_margin_widths = [self._get_margin_width(m) for m in self.left_margins]
+        right_margin_widths = [self._get_margin_width(m) for m in self.right_margins]
+        total_margin_width = sum(left_margin_widths + right_margin_widths)
+
+        # Render UserControl.
+        ui_content = self.content.create_content(
+            write_position.width - total_margin_width, write_position.height
+        )
+        assert isinstance(ui_content, UIContent)
+
+        # Scroll content.
+        wrap_lines = self.wrap_lines()
+        self._scroll(
+            ui_content, write_position.width - total_margin_width, write_position.height
+        )
+
+        # Erase background and fill with `char`.
+        self._fill_bg(screen, write_position, erase_bg)
+
+        # Resolve `align` attribute.
+        align = self.align() if callable(self.align) else self.align
+
+        # Write body
+        visible_line_to_row_col, rowcol_to_yx = self._copy_body(
+            ui_content,
             screen,
-            mouse_handlers,
             write_position,
-            parent_style,
-            erase_bg,
+            sum(left_margin_widths),
+            write_position.width - total_margin_width,
+            self.vertical_scroll,
+            self.horizontal_scroll,
+            wrap_lines=wrap_lines,
+            highlight_lines=True,
+            vertical_scroll_2=self.vertical_scroll_2,
+            always_hide_cursor=self.always_hide_cursor(),
+            has_focus=get_app().layout.current_control == self.content,
+            align=align,
+            get_line_prefix=self.get_line_prefix,
+        )
+
+        # Remember render info. (Set before generating the margins. They need this.)
+        x_offset = write_position.xpos + sum(left_margin_widths)
+        y_offset = write_position.ypos
+
+        render_info = WindowRenderInfo(
+            window=self,
+            ui_content=ui_content,
+            horizontal_scroll=self.horizontal_scroll,
+            vertical_scroll=self.vertical_scroll,
+            window_width=write_position.width - total_margin_width,
+            window_height=write_position.height,
+            configured_scroll_offsets=self.scroll_offsets,
+            visible_line_to_row_col=visible_line_to_row_col,
+            rowcol_to_yx=rowcol_to_yx,
+            x_offset=x_offset,
+            y_offset=y_offset,
+            wrap_lines=wrap_lines,
         )
         # Set the horizontal scroll offset on the render info
         # TODO - fix this upstream
-        if self.render_info is not None:
-            setattr(  # noqa B010
-                self.render_info, "horizontal_scroll", self.horizontal_scroll
+        setattr(render_info, "horizontal_scroll", self.horizontal_scroll)  # noqa B010
+        self.render_info = render_info
+
+        # Set mouse handlers.
+        def mouse_handler(mouse_event: MouseEvent) -> NotImplementedOrNone:
+            """Wrap the mouse_handler of the `UIControl`.
+
+            Turns screen coordinates into line coordinates.
+
+            Returns:
+                `NotImplemented` if no UI invalidation should be done.
+            """
+            # Don't handle mouse events outside of the current modal part of
+            # the UI.
+            if self not in get_app().layout.walk_through_modal_area():
+                return NotImplemented
+
+            # Find row/col position first.
+            yx_to_rowcol = {v: k for k, v in rowcol_to_yx.items()}
+            y = mouse_event.position.y
+            x = mouse_event.position.x
+
+            # If clicked below the content area, look for a position in the
+            # last line instead.
+            max_y = write_position.ypos + len(visible_line_to_row_col) - 1
+            y = min(max_y, y)
+            result: NotImplementedOrNone
+
+            while x >= 0:
+                try:
+                    row, col = yx_to_rowcol[y, x]
+                except KeyError:
+                    # Try again. (When clicking on the right side of double
+                    # width characters, or on the right side of the input.)
+                    x -= 1
+                else:
+                    # Found position, call handler of UIControl.
+                    result = self.content.mouse_handler(
+                        MouseEvent(
+                            position=Point(x=col, y=row),
+                            event_type=mouse_event.event_type,
+                            button=mouse_event.button,
+                            modifiers=mouse_event.modifiers,
+                            cell_position=mouse_event.cell_position,
+                        )
+                    )
+                    break
+            else:
+                # nobreak.
+                # (No x/y coordinate found for the content. This happens in
+                # case of a DummyControl, that does not have any content.
+                # Report (0,0) instead.)
+                result = self.content.mouse_handler(
+                    MouseEvent(
+                        position=Point(x=0, y=0),
+                        event_type=mouse_event.event_type,
+                        button=mouse_event.button,
+                        modifiers=mouse_event.modifiers,
+                        cell_position=mouse_event.cell_position,
+                    )
+                )
+
+            # If it returns NotImplemented, handle it here.
+            if result == NotImplemented:
+                result = self._mouse_handler(mouse_event)
+
+            return result
+
+        mouse_handlers.set_mouse_handler_for_range(
+            x_min=write_position.xpos + sum(left_margin_widths),
+            x_max=write_position.xpos + write_position.width - total_margin_width,
+            y_min=write_position.ypos,
+            y_max=write_position.ypos + write_position.height,
+            handler=mouse_handler,
+        )
+
+        # Render and copy margins.
+        move_x = 0
+
+        def render_margin(m: Margin, width: int) -> UIContent:
+            """Render margin. Return `Screen`."""
+            # Retrieve margin fragments.
+            fragments = m.create_margin(render_info, width, write_position.height)
+
+            # Turn it into a UIContent object.
+            # already rendered those fragments using this size.)
+            return FormattedTextControl(fragments).create_content(
+                width + 1, write_position.height
             )
+
+        for m, width in zip(self.left_margins, left_margin_widths):
+            if width > 0:  # (ConditionalMargin returns a zero width. -- Don't render.)
+                # Create screen for margin.
+                margin_content = render_margin(m, width)
+
+                # Copy and shift X.
+                self._copy_margin(margin_content, screen, write_position, move_x, width)
+                move_x += width
+
+        move_x = write_position.width - sum(right_margin_widths)
+
+        for m, width in zip(self.right_margins, right_margin_widths):
+            # Create screen for margin.
+            margin_content = render_margin(m, width)
+
+            # Copy and shift X.
+            self._copy_margin(margin_content, screen, write_position, move_x, width)
+            move_x += width
+
+        # Apply 'self.style'
+        self._apply_style(screen, write_position, parent_style)
+
+        # Tell the screen that this user control has been painted at this
+        # position.
+        screen.visible_windows_to_write_positions[self] = write_position
 
     def _scroll_right(self) -> None:
         """Scroll window right."""
@@ -623,11 +807,10 @@ class ItermGraphicControl(GraphicControl):
         return self._format_cache.get(key, render_lines)
 
 
-_kitty_image_count = 1
-
-
 class KittyGraphicControl(GraphicControl):
     """A graphic control which displays images using Kitty's graphics protocol."""
+
+    _kitty_image_count = 1
 
     def __init__(
         self,
@@ -656,6 +839,7 @@ class KittyGraphicControl(GraphicControl):
             bbox=bbox,
         )
         self.kitty_image_id = 0
+        self.frame = 1
         self.loaded = False
 
     def convert_data(self, rows: int, cols: int) -> str:
@@ -684,11 +868,9 @@ class KittyGraphicControl(GraphicControl):
 
     def load(self, rows: int, cols: int) -> None:
         """Send the graphic to the terminal without displaying it."""
-        global _kitty_image_count
-
         data = self.convert_data(rows=rows, cols=cols)
-        self.kitty_image_id = _kitty_image_count
-        _kitty_image_count += 1
+        self.kitty_image_id = self._kitty_image_count
+        self._kitty_image_count += 1
 
         while data:
             chunk, data = data[:4096], data[4096:]
@@ -696,17 +878,52 @@ class KittyGraphicControl(GraphicControl):
                 chunk=chunk,
                 a="t",  # We are sending an image without displaying it
                 t="d",  # Transferring the image directly
-                i=self.kitty_image_id,  # Send a unique image number, wait for an image id
-                # I=self.kitty_image_number,  # Send a unique image number, wait for an image id
-                p=1,  # Placement ID
+                I=self.kitty_image_id,  # Send a unique image number, wait for an image id
                 q=2,  # No chatback
                 f=100,  # Sending a PNG image
-                C=1,  # Do not move the cursor
                 m=1 if data else 0,  # Data will be chunked
             )
             self.app.output.write_raw(tmuxify(cmd))
         self.app.output.flush()
         self.loaded = True
+
+    @property
+    def data(self) -> Any:
+        """Return the control's display data."""
+        return self._data
+
+    @data.setter
+    def data(self, value: Any) -> None:
+        """Set the control's data.
+
+        Use kitty graphics animation to update the existing image.
+        """
+        self._data = value
+        data = self.convert_data(rows=self.rows, cols=self.cols)
+        while data:
+            chunk, data = data[:4096], data[4096:]
+            cmd = self._kitty_cmd(
+                chunk=chunk,
+                a="f",  # We are sending a image frame
+                t="d",  # Transferring the image directly
+                I=self.kitty_image_id,  # Send a unique image number, wait for an image id
+                p=1,  # Placement ID
+                q=2,  # No chatback
+                f=100,  # Sending a PNG image
+                C=1,  # Do not move the cursor
+                c=self.frame,  # Overlay on the previous frame
+                m=1 if data else 0,  # Data will be chunked
+            )
+            self.app.output.write_raw(tmuxify(cmd))
+        self.frame += 1
+        cmd = self._kitty_cmd(
+            a="a",
+            s=2,
+            I=self.kitty_image_id,
+        )
+        self.app.output.write_raw(tmuxify(cmd))
+        self.app.output.flush()
+        self.on_data_changed.fire()
 
     def hide(self) -> None:
         """Hide the graphic from show without deleting it."""
@@ -716,7 +933,7 @@ class KittyGraphicControl(GraphicControl):
                     self._kitty_cmd(
                         a="d",
                         d="i",
-                        i=self.kitty_image_id,
+                        I=self.kitty_image_id,
                         q=1,
                     )
                 )
@@ -731,7 +948,7 @@ class KittyGraphicControl(GraphicControl):
                     self._kitty_cmd(
                         a="D",
                         d="I",
-                        i=self.kitty_image_id,
+                        I=self.kitty_image_id,
                         q=2,
                     )
                 )
@@ -752,7 +969,7 @@ class KittyGraphicControl(GraphicControl):
             full_height = height + self.bbox.top + self.bbox.bottom
             cmd = self._kitty_cmd(
                 a="p",  # Display a previously transmitted image
-                i=self.kitty_image_id,
+                I=self.kitty_image_id,
                 p=1,  # Placement ID
                 m=0,  # No batches remaining
                 q=2,  # No backchat
@@ -1052,7 +1269,6 @@ class GraphicFloat(Float):
         self._data = value
         if self.control is not None:
             self.control.data = value
-            self.control.reset()
 
     @property
     def format_(self) -> str:
@@ -1107,6 +1323,7 @@ class Display:
         scrollbar_autohide: FilterOrBool = True,
         dont_extend_height: FilterOrBool = True,
         style: str | Callable[[], str] = "",
+        mouse_handler=None,
     ) -> None:
         """Instantiate an Output container object.
 
@@ -1152,6 +1369,7 @@ class Display:
             sizing_func=sizing_func,
             focusable=focusable,
             focus_on_click=focus_on_click,
+            mouse_handler=mouse_handler,
         )
 
         self.window = DisplayWindow(

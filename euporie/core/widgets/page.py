@@ -22,9 +22,10 @@ from prompt_toolkit.layout.dimension import Dimension, to_dimension
 from prompt_toolkit.layout.layout import walk
 from prompt_toolkit.layout.mouse_handlers import MouseHandlers
 from prompt_toolkit.layout.screen import Char, Screen, WritePosition
-from prompt_toolkit.mouse_events import MouseEvent, MouseEventType, MouseModifier
+from prompt_toolkit.mouse_events import MouseEventType, MouseModifier
 
 from euporie.core.data_structures import DiInt
+from euporie.core.key_binding.bindings.mouse import MouseEvent
 
 if TYPE_CHECKING:
     from typing import Callable, Iterable, Sequence
@@ -270,6 +271,7 @@ class ChildRenderInfo:
                         event_type=mouse_event.event_type,
                         button=mouse_event.button,
                         modifiers=mouse_event.modifiers,
+                        cell_position=mouse_event.cell_position,
                     )
 
                     if mouse_event.event_type == MouseEventType.SCROLL_DOWN:
