@@ -52,6 +52,9 @@ class WebTab(Tab):
     @property
     def title(self) -> str:
         """Return the tab title."""
+        if webview := getattr(self, "webview", None):
+            if title := webview.title:
+                return title
         if self.path is not None:
             return str(self.path.name) or str(self.path)
         else:

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-from functools import cached_property
 from typing import TYPE_CHECKING, cast
 
 from prompt_toolkit.application.current import get_app
@@ -12,6 +11,7 @@ from prompt_toolkit.data_structures import Point
 from prompt_toolkit.eventloop.utils import run_in_executor_with_context
 from prompt_toolkit.filters import Condition
 from prompt_toolkit.formatted_text.utils import split_lines
+from prompt_toolkit.layout.containers import Window
 from prompt_toolkit.layout.controls import UIContent, UIControl
 from prompt_toolkit.mouse_events import MouseButton, MouseEvent, MouseEventType
 from prompt_toolkit.utils import Event
@@ -54,6 +54,8 @@ class WebViewControl(UIControl):
     A control which displays rendered HTML content.
     """
 
+    _window: Window
+
     def __init__(self, url: str | Path) -> None:
         """Create a new web-view control instance."""
         self._cursor_position = Point(0, 0)
@@ -92,12 +94,16 @@ class WebViewControl(UIControl):
         # Start a new event loop in a thread
         self.thread = None
 
-    @cached_property
+    @property
     def window(self) -> Window:
         """Get the control's window."""
-        for window in get_app().layout.find_all_windows():
-            if window.content == self:
-                return window
+        try:
+            return self._window
+        except AttributeError:
+            for window in get_app().layout.find_all_windows():
+                if window.content == self:
+                    self._window = window
+                    return window
         return Window()
 
     @property
@@ -121,6 +127,15 @@ class WebViewControl(UIControl):
             mouse_handler=self._node_mouse_handler,
             paste_fixed=False,
         )
+
+    @property
+    def title(self) -> str:
+        """Return the title of the current HTML page."""
+        if url := self.url:
+            dom = self._dom_cache.get((url,))
+            if dom is not None:
+                return dom.title
+        return ""
 
     def get_fragments(self, dom: HTML, width: int, height: int) -> StyleAndTextTuples:
         """Render a HTML page as lines of formatted text."""
@@ -514,7 +529,6 @@ if __name__ == "__main__":
 
     from prompt_toolkit.application.application import Application
     from prompt_toolkit.key_binding.key_bindings import KeyBindings
-    from prompt_toolkit.layout.containers import Window
     from prompt_toolkit.layout.layout import Layout
     from prompt_toolkit.output.color_depth import ColorDepth
     from prompt_toolkit.styles.style import Style
