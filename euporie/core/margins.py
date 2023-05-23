@@ -64,13 +64,11 @@ class MarginContainer(Window):
 
     def create_fragments(self) -> StyleAndTextTuples:
         """Generate text fragments to display."""
-        if (render_info := self.target.render_info) is not None:
-            return self.margin.create_margin(
-                render_info,
-                self.write_position.width,
-                self.write_position.height,
-            )
-        return []
+        return self.margin.create_margin(
+            self.target.render_info,
+            self.write_position.width,
+            self.write_position.height,
+        )
 
     def reset(self) -> None:
         """Reet the state of this container and all the children."""
@@ -222,7 +220,7 @@ class ScrollbarMargin(ClickableMargin):
 
     def create_margin(
         self,
-        window_render_info: WindowRenderInfo,
+        window_render_info: WindowRenderInfo | None,
         width: int,
         height: int,
         margin_render_info: WindowRenderInfo | None = None,
@@ -232,6 +230,12 @@ class ScrollbarMargin(ClickableMargin):
 
         self.window_render_info = window_render_info
         self.margin_render_info = margin_render_info
+
+        # If this is the first time the target is being drawn, it may not yet have a
+        # render_info yet. Thus, invalidate the app so we can immediately redraw the
+        # scroll-bar with the render_info
+        if window_render_info is None:
+            get_app().invalidate()
 
         if not width:
             return result
