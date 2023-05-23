@@ -570,7 +570,7 @@ class BaseApp(Application):
         """Return the tab to use for a file path."""
         from euporie.core.tabs.base import Tab
 
-        path_mime = get_mime(path) or ""
+        path_mime = get_mime(path) or "text/plain"
         log.debug("File %s has mime type: %s", path, path_mime)
 
         tab_options = set()
