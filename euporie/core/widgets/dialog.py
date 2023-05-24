@@ -13,7 +13,12 @@ from prompt_toolkit.cache import SimpleCache
 from prompt_toolkit.clipboard import ClipboardData
 from prompt_toolkit.completion import PathCompleter
 from prompt_toolkit.data_structures import Point
-from prompt_toolkit.filters import Condition, has_completions, has_focus
+from prompt_toolkit.filters import (
+    Condition,
+    buffer_has_focus,
+    has_completions,
+    has_focus,
+)
 from prompt_toolkit.formatted_text import AnyFormattedText, to_formatted_text
 from prompt_toolkit.formatted_text.utils import split_lines
 from prompt_toolkit.key_binding.bindings.focus import focus_next, focus_previous
@@ -187,10 +192,19 @@ class Dialog(Float, metaclass=ABCMeta):
         self.button_widgets: list[AnyContainer] = []
 
         # Create key-bindings
-        self.kb = KeyBindings()
-        self.kb.add("escape")(lambda event: self.hide())
-        self.kb.add("tab", filter=~has_completions)(focus_next)
-        self.kb.add("s-tab", filter=~has_completions)(focus_previous)
+        kb = KeyBindings()
+        kb.add("escape")(lambda event: self.hide())
+        kb.add("tab", filter=~has_completions)(focus_next)
+        kb.add("s-tab", filter=~has_completions)(focus_previous)
+
+        @kb.add("enter", filter=~has_completions & ~buffer_has_focus)
+        def _focus_button(event: KeyPressEvent) -> NotImplementedOrNone:
+            if self.button_widgets:
+                app.layout.focus(self.button_widgets[0])
+                return None
+            return NotImplemented
+
+        self.kb = kb
         self.buttons_kb = KeyBindings()
 
         # Create title row
@@ -660,6 +674,7 @@ class SelectKernelDialog(Dialog):
             rows=5,
             dont_extend_width=False,
         )
+        self.to_focus = options_specs
 
         connection_files = {
             path.name: path
