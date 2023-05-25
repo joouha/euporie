@@ -4,6 +4,17 @@ Changelog
 
 Notable changes to this project will be documented in this file.
 
+********
+Upcoming
+********
+
+Fixed
+=====
+
+- Fix calling asynchronous commands (e.g. converting console session to a notebook)
+
+----
+
 *******************
 v2.4.1 (2023-05-25)
 *******************
@@ -12,6 +23,8 @@ Fixed
 =====
 
 - Fix dependency version conflict between ``platformdirs`` and ``typing-extensions``
+
+----
 
 *******************
 v2.4.0 (2023-05-24)

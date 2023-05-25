@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 import weakref
-from inspect import isawaitable, signature
+from inspect import isawaitable, iscoroutinefunction, signature
 from typing import TYPE_CHECKING, cast
 
 from prompt_toolkit.application import get_app
@@ -109,15 +109,27 @@ class Command:
     def run(self) -> None:
         """Run the command's handler."""
         if self.filter():
-            self.key_handler(
+            app = get_app()
+            result = self.key_handler(
                 KeyPressEvent(
-                    key_processor_ref=weakref.ref(get_app().key_processor),
+                    key_processor_ref=weakref.ref(app.key_processor),
                     arg=None,
                     key_sequence=[],
                     previous_key_sequence=[],
                     is_repeat=False,
                 )
             )
+            if isawaitable(result):
+
+                async def _wait_and_invalidate() -> None:
+                    assert isawaitable(result)
+                    output = await result
+                    if output is None:
+                        app.invalidate()
+
+                app.create_background_task(_wait_and_invalidate())
+            elif result is None:
+                app.invalidate()
 
     @property
     def key_handler(self) -> KeyHandlerCallable:
@@ -129,7 +141,7 @@ class Command:
             # The handler already accepts a `KeyPressEvent` argument
             return cast("KeyHandlerCallable", handler)
 
-        if isawaitable(handler):
+        if iscoroutinefunction(handler):
 
             async def _key_handler_async(event: KeyPressEvent) -> NotImplementedOrNone:
                 result = cast("CommandHandlerNoArgs", handler)()
