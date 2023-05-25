@@ -11,7 +11,7 @@ from prompt_toolkit.application.application import Application
 from prompt_toolkit.application.current import set_app
 from prompt_toolkit.formatted_text.base import to_formatted_text
 from prompt_toolkit.key_binding.key_bindings import Binding
-from prompt_toolkit.key_binding.key_processor import KeyPressEvent
+from prompt_toolkit.key_binding.key_processor import KeyPressEvent, KeyProcessor
 
 from euporie.core.commands import Command, add_cmd, commands, get_cmd
 from euporie.core.keys import Keys
@@ -75,6 +75,28 @@ def test_command_key_handler() -> None:
         check["handled"] = False
         cmd = Command(handler)
         app = Mock(spec=Application)
+        app.key_processor = KeyProcessor(Mock())
+        # Run the command
+        with set_app(app):
+            cmd.run()
+
+        if is_async:
+            app.create_background_task.assert_called_once()
+            coro = app.create_background_task.call_args_list[0].args[0]
+            asyncio.run(coro)
+
+        assert check["handled"]
+        assert app.invalidate.call_count == invalidate_count
+
+    def check_cmd_key_handler(
+        handler: CommandHandler,
+        check: dict[str, bool],
+        invalidate_count: int,
+        is_async: bool,
+    ) -> None:
+        check["handled"] = False
+        cmd = Command(handler)
+        app = Mock(spec=Application)
         # Create a key-press event
         with set_app(app):
             event = KeyPressEvent(
@@ -109,6 +131,7 @@ def test_command_key_handler() -> None:
         return None
 
     check_cmd_handler(handler_with_args_none, check, 1, False)
+    check_cmd_key_handler(handler_with_args_none, check, 1, False)
 
     # Test the key handler when the command handler accepts arguments
     # and returns `NotImplemented`
@@ -118,7 +141,7 @@ def test_command_key_handler() -> None:
         check["handled"] = True
         return NotImplemented
 
-    check_cmd_handler(handler_with_args_notimplemented, check, 0, False)
+    check_cmd_key_handler(handler_with_args_notimplemented, check, 0, False)
 
     # Test the key handler when the command handler doesn't accept arguments
     # and returns `None`
@@ -129,6 +152,7 @@ def test_command_key_handler() -> None:
         return None
 
     check_cmd_handler(handler_without_args_none, check, 1, False)
+    check_cmd_key_handler(handler_without_args_none, check, 1, False)
 
     # Test the key handler when the command handler doesn't accept arguments
     # and returns `NotImplemented`
@@ -141,6 +165,7 @@ def test_command_key_handler() -> None:
         return NotImplemented
 
     check_cmd_handler(handler_without_args_notimplemented, check, 0, False)
+    check_cmd_key_handler(handler_without_args_notimplemented, check, 0, False)
 
     # Test the key handler when the command handler is async and does not accepts
     # arguments and returns `None`
@@ -151,6 +176,7 @@ def test_command_key_handler() -> None:
         return None
 
     check_cmd_handler(async_handler_without_args_none, check, 1, True)
+    check_cmd_key_handler(async_handler_without_args_none, check, 1, True)
 
     # Test the key handler when the command handler is async and does not accepts
     # arguments and returns `NotImplemented`
@@ -161,6 +187,7 @@ def test_command_key_handler() -> None:
         return NotImplemented
 
     check_cmd_handler(async_handler_without_args_notimplemented, check, 0, True)
+    check_cmd_key_handler(async_handler_without_args_notimplemented, check, 0, True)
 
 
 def test_command_bind(command: Command) -> None:
