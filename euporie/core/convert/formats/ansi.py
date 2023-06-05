@@ -407,7 +407,7 @@ def image_to_ansi_viu(
     path: Path | None = None,
 ) -> str:
     """Convert image data to ANSI text using :command:`viu`."""
-    cmd: list[Any] = ["viu"]
+    cmd: list[Any] = ["viu", "-b"]
     if cols is not None and rows is not None:
         cmd += ["-w", cols]
     cmd += ["-s", "-"]

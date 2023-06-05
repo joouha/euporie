@@ -11,6 +11,7 @@ Upcoming
 Fixed
 =====
 
+- Force block graphic output from ``viu``
 - Fix calling asynchronous commands (e.g. converting console session to a notebook)
 
 ----
