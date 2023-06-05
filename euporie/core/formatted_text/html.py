@@ -3405,6 +3405,8 @@ class HTML:
         """Display images rendered as ANSI art."""
         theme = element.theme
         # HTMLParser clobber the case of element attributes
+        element.attrs["xmlns"] = "http://www.w3.org/2000/svg" 
+        element.attrs["xmlns:xlink"] = "http://www.w3.org/1999/xlink"
         # We fix the SVG viewBox here
         data = element._outer_html().replace(" viewbox=", " viewBox=")
         # Display it graphically
