@@ -8,6 +8,11 @@ Notable changes to this project will be documented in this file.
 Upcoming
 ********
 
+Changed
+=======
+
+- Add common SVG namespaces to HTML inline SVGs before conversion
+
 Fixed
 =====
 
