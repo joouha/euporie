@@ -461,6 +461,7 @@ def build_style(
         "menu completion-module": "fg:#d70000",
         "menu completion-magic": "fg:#888888",
         "menu completion-path": "fg:#aa8800",
+        "menu completion-dict-key": "fg:#ddbb00",
         "menu selection completion-keyword": f"fg:{ColorPaletteColor('#d700af').lighter(0.75)}",
         "menu selection completion-function": f"fg:{ColorPaletteColor('#005faf').lighter(0.75)}",
         "menu selection completion-class": f"fg:{ColorPaletteColor('#008700').lighter(0.75)}",
