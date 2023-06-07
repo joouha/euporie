@@ -5,6 +5,17 @@ Changelog
 Notable changes to this project will be documented in this file.
 
 *******************
+v2.4.2 (2023-06-07)
+*******************
+
+Fixed
+=====
+
+- Fix "Wrong color format" error when suggesting dictionary key completions
+
+----
+
+*******************
 v2.4.2 (2023-06-05)
 *******************
 
