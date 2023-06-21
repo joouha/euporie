@@ -19,6 +19,7 @@ from prompt_toolkit.layout.containers import (
 )
 from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.layout.dimension import Dimension
+from upath import UPath
 
 from euporie.core import __logo__
 from euporie.core.app import BaseApp
@@ -486,10 +487,10 @@ class NotebookApp(BaseApp):
     @staticmethod
     @add_cmd()
     def _view_documentation() -> None:
-        """Open the documentation in the browser."""
-        import webbrowser
+        """Open the documentation in a web-view tab."""
+        from euporie.core.current import get_app
 
-        webbrowser.open("https://euporie.readthedocs.io/")
+        get_app().open_file(UPath("https://euporie.readthedocs.io/"))
 
     # ################################### Settings ####################################
 
