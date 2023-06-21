@@ -127,7 +127,7 @@ class PreviewNotebook(BaseNotebook):
             # self.kernel.wait_for_status("idle")
 
     def after_render(self, app: Application[Any]) -> None:
-        """Cloe the tab if all cells have been rendered."""
+        """Close the tab if all cells have been rendered."""
         if self.app.tab == self:
             if self.cell_index < len(self.json["cells"]) - 1:
                 self.cell_index += 1

@@ -10,8 +10,6 @@ from prompt_toolkit.auto_suggest import AutoSuggest, ConditionalAutoSuggest, Sug
 from prompt_toolkit.filters import to_filter
 
 if TYPE_CHECKING:
-    from typing import Deque
-
     from prompt_toolkit.buffer import Buffer
     from prompt_toolkit.document import Document
     from prompt_toolkit.filters import Filter
@@ -30,7 +28,7 @@ class HistoryAutoSuggest(AutoSuggest):
         self.history = history
 
         self.cache_size = cache_size
-        self.cache_keys: Deque[str] = deque()
+        self.cache_keys: deque[str] = deque()
         self.cache: dict[str, Suggestion] = {}
 
     def get_suggestion(self, buffer: Buffer, document: Document) -> Suggestion | None:

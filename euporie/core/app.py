@@ -855,7 +855,7 @@ class BaseApp(Application):
         menu_title="Close File",
     )
     def _close_tab() -> None:
-        """Cloe the current tab."""
+        """Close the current tab."""
         get_app().close_tab()
 
     @staticmethod

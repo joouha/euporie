@@ -28,7 +28,7 @@ from euporie.core.suggest import HistoryAutoSuggest
 
 if TYPE_CHECKING:
     from pathlib import Path
-    from typing import Any, Callable, Deque, Sequence
+    from typing import Any, Callable, Sequence
 
     from prompt_toolkit.auto_suggest import AutoSuggest
     from prompt_toolkit.completion.base import Completer
@@ -194,7 +194,7 @@ class KernelTab(Tab, metaclass=ABCMeta):
         """Set up the tab's kernel and related components."""
         self.pre_init_kernel()
 
-        self.kernel_queue: Deque[Callable] = deque()
+        self.kernel_queue: deque[Callable] = deque()
 
         if kernel:
             self.kernel = kernel
@@ -359,7 +359,7 @@ class KernelTab(Tab, metaclass=ABCMeta):
             comm.process_data(content.get("data", {}), buffers)
 
     def comm_close(self, content: dict, buffers: Sequence[bytes]) -> None:
-        """Cloe a notebook Comm."""
+        """Close a notebook Comm."""
         comm_id = content.get("comm_id")
         if comm_id in self.comms:
             del self.comms[comm_id]
