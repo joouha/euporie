@@ -55,7 +55,7 @@ from euporie.notebook.filters import (
 
 if TYPE_CHECKING:
     from pathlib import Path
-    from typing import Any, Deque, MutableSequence, Sequence
+    from typing import Any, MutableSequence, Sequence
 
     from prompt_toolkit.formatted_text.base import StyleAndTextTuples
     from prompt_toolkit.key_binding.key_bindings import NotImplementedOrNone
@@ -112,7 +112,7 @@ class Notebook(BaseNotebook):
         self.in_edit_mode = Condition(self.check_edit_mode)
         self.multiple_cells_selected = multiple_cells_selected
         self.clipboard: list[Cell] = []
-        self.undo_buffer: Deque[tuple[int, list[Cell]]] = deque(maxlen=10)
+        self.undo_buffer: deque[tuple[int, list[Cell]]] = deque(maxlen=10)
 
     # Tab stuff
 
@@ -1212,14 +1212,14 @@ class Notebook(BaseNotebook):
                 "exit-edit-mode": "escape",
                 "run-selected-cells": ["c-enter", "c-e"],
                 "run-and-select-next": ["s-enter", "c-r"],
-                "run-cell-and-insert-below": ("escape", "enter"),
+                "run-cell-and-insert-below": ("A-enter"),
                 "add-cell-above": "a",
                 "add-cell-below": "b",
                 "delete-cells": ("d", "d"),
                 "undelete-cells": "z",
                 "cut-cells": "x",
                 "copy-cells": "c",
-                "copy-outputs": ("escape", "c"),
+                "copy-outputs": ("A-c"),
                 "paste-cells": "v",
                 "interrupt-kernel": ("i", "i"),
                 "restart-kernel": ("0", "0"),
@@ -1238,8 +1238,8 @@ class Notebook(BaseNotebook):
                 "extend-cell-selection-up": ["s-up", "K"],
                 "extend-cell-selection-down": ["s-down", "J"],
                 "extend-cell-selection-to-bottom": "s-end",
-                "move-cells-up": ("escape", "up"),
-                "move-cells-down": ("escape", "down"),
+                "move-cells-up": ("A-up"),
+                "move-cells-down": ("A-down"),
                 "cells-to-markdown": "m",
                 "cells-to-code": "y",
                 "cells-to-raw": "r",

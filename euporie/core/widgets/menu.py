@@ -409,7 +409,7 @@ class MenuBar:
             if key not in used_keys:
                 used_keys |= {key}
 
-                @kb.add("escape", key, is_global=True)
+                @kb.add(f"A-{key}", is_global=True)
                 def _open_menu(event: KeyPressEvent, index: int = i) -> None:
                     """Open the  menu item."""
                     self.selected_menu = [index]

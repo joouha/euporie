@@ -4,6 +4,17 @@ Changelog
 
 Notable changes to this project will be documented in this file.
 
+********
+Upcoming
+********
+
+Fixed
+=====
+
+- Improve CSI-u escape sequence detection
+
+----
+
 *******************
 v2.4.3 (2023-06-07)
 *******************

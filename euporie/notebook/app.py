@@ -596,7 +596,7 @@ class NotebookApp(BaseApp):
         {
             "euporie.notebook.app.NotebookApp": {
                 "new-notebook": "c-n",
-                "toggle-show-top-bar": ("escape", "m"),
+                "toggle-show-top-bar": ("A-m"),
             }
         }
     )

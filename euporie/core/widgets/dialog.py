@@ -308,7 +308,7 @@ class Dialog(Float, metaclass=ABCMeta):
                 )
                 # Add a key-handler
                 if key:
-                    self.buttons_kb.add("escape", key.lower(), is_global=True)(handler)
+                    self.buttons_kb.add(f"A-{key.lower()}", is_global=True)(handler)
 
         # When a button is selected, handle left/right key bindings.
         if len(self.button_widgets) > 1:
@@ -608,7 +608,7 @@ class SaveAsDialog(FileDialog):
     register_bindings(
         {
             "euporie.core.app.BaseApp": {
-                "save-as": ("escape", "s"),
+                "save-as": ("A-s"),
             }
         }
     )

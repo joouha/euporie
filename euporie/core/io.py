@@ -89,11 +89,11 @@ class Vt100_Output(PtkVt100_Output):
         # xterm
         self.write_raw("\x1b[>4;1m")
         # kitty
-        self.write_raw("\x1b[=1u")
+        self.write_raw("\x1b[>1u")
 
     def disable_extended_keys(self) -> None:
         """Disable extended keys."""
         # xterm
         self.write_raw("\x1b[>4;0m")
         # kitty
-        self.write_raw("\x1b[=0u")
+        self.write_raw("\x1b[<1u")

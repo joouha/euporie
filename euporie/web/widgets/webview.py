@@ -529,8 +529,8 @@ class WebViewControl(UIControl):
                 "page-down-webview": "pagedown",
                 "go-to-start-of-webview": "home",
                 "go-to-end-of-webview": "end",
-                "webview-nav-prev": ("escape", "left"),
-                "webview-nav-next": ("escape", "right"),
+                "webview-nav-prev": ("A-left"),
+                "webview-nav-next": ("A-right"),
             }
         }
     )

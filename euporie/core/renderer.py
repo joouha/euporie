@@ -300,7 +300,7 @@ class Renderer(PtkRenderer):
         # Enable extended keys
         if (
             isinstance(app, BaseApp)
-            and app.term_info.csiu_status.value
+            # and app.term_info.csiu_status.value
             and isinstance(output, Vt100_Output)
         ):
             output.enable_extended_keys()
