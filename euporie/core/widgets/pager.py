@@ -192,7 +192,7 @@ class Pager:
     register_bindings(
         {
             "euporie.core.widgets.pager.Pager": {
-                "close-pager": ["escape", "q"],
+                "close-pager": ["A-q"],
             }
         }
     )

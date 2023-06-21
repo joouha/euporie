@@ -1,53 +1,100 @@
-"""Define KeyBindings wrapper which keeps track of key binding descriptions."""
+"""Register additional key escape sequences."""
+
+from itertools import combinations
 
 from aenum import extend_enum
 from prompt_toolkit.input.ansi_escape_sequences import ANSI_SEQUENCES
 from prompt_toolkit.keys import Keys
 
-# Register additional keys
-extend_enum(Keys, "ControlEnter", "c-enter")
-extend_enum(Keys, "ControlShiftEnter", "c-s-enter")
-extend_enum(Keys, "ShiftEnter", "s-enter")
-extend_enum(Keys, "ControlBackspace", "c-backspace")
+# Key-name and emacs style shortcut prefix
+_modifiers = {
+    # 0b00000000: ("", ""),
+    0b00000001: ("Shift", "s"),
+    0b00000010: ("Alt", "A"),
+    0b00000100: ("Control", "c"),
+    # 0b00001000: ("Super", "S"),
+    # 0b00010000: ("Meta", "M"),
+    # 0b00100000: ("Hyper", "H"),
+    0b01000000: ("", ""),  # ScollLock - pass-through
+    0b10000000: ("", ""),  # NumLock - pass-through
+}
 
-# Assign escape sequences to new keys
-ANSI_SEQUENCES["\x1b[27;5;13~"] = Keys.ControlEnter  # type: ignore
-ANSI_SEQUENCES["\x1b[13;5u"] = Keys.ControlEnter  # type: ignore
+_key_nos = {
+    9: "tab",
+    13: "enter",
+    27: "escape",
+    32: "space",
+    **{i: chr(i) for i in range(126, 32, -1)},
+    127: "backspace",
+}
 
-ANSI_SEQUENCES["\x1b[27;2;13~"] = Keys.ShiftEnter  # type: ignore
-ANSI_SEQUENCES["\x1b[13;2u"] = Keys.ShiftEnter  # type: ignore
 
-ANSI_SEQUENCES["\x1b[27;6;13~"] = Keys.ControlShiftEnter  # type: ignore
-ANSI_SEQUENCES["\x1b[13;6u"] = Keys.ControlShiftEnter  # type: ignore
+# Kitty style legacy function keys
+_kitty_functional_codes = {
+    "Insert": (2, "~"),
+    "Delete": (3, "~"),
+    "PageUp": (5, "~"),
+    "PageDown": (6, "~"),
+    "Up": (1, "A"),
+    "Down": (1, "B"),
+    "Right": (1, "C"),
+    "Left": (1, "D"),
+    "Home": (1, "H"),
+    "End": (1, "F"),
+    "F1": (1, "P"),
+    "F2": (1, "Q"),
+    "F3": (13, "~"),
+    "F4": (1, "S"),
+    "F5": (15, "~"),
+    "F6": (17, "~"),
+    "F7": (18, "~"),
+    "F8": (19, "~"),
+    "F9": (20, "~"),
+    "F10": (21, "~"),
+    "F11": (23, "~"),
+    "F12": (24, "~"),
+    "Menu": (29, "~"),
+}
 
-# CSI-u control+key
-ANSI_SEQUENCES["\x1b[32;5u"] = Keys.ControlSpace  # type: ignore
-ANSI_SEQUENCES["\x1b[97;5u"] = Keys.ControlA  # type: ignore
-ANSI_SEQUENCES["\x1b[98;5u"] = Keys.ControlB  # type: ignore
-ANSI_SEQUENCES["\x1b[99;5u"] = Keys.ControlC  # type: ignore
-ANSI_SEQUENCES["\x1b[100;5u"] = Keys.ControlD  # type: ignore
-ANSI_SEQUENCES["\x1b[101;5u"] = Keys.ControlE  # type: ignore
-ANSI_SEQUENCES["\x1b[102;5u"] = Keys.ControlF  # type: ignore
-ANSI_SEQUENCES["\x1b[103;5u"] = Keys.ControlG  # type: ignore
-ANSI_SEQUENCES["\x1b[104;5u"] = Keys.ControlH  # type: ignore
-ANSI_SEQUENCES["\x1b[105;5u"] = Keys.ControlI  # type: ignore
-ANSI_SEQUENCES["\x1b[106;5u"] = Keys.ControlJ  # type: ignore
-ANSI_SEQUENCES["\x1b[107;5u"] = Keys.ControlK  # type: ignore
-ANSI_SEQUENCES["\x1b[108;5u"] = Keys.ControlL  # type: ignore
-ANSI_SEQUENCES["\x1b[109;5u"] = Keys.ControlM  # type: ignore
-ANSI_SEQUENCES["\x1b[110;5u"] = Keys.ControlN  # type: ignore
-ANSI_SEQUENCES["\x1b[111;5u"] = Keys.ControlO  # type: ignore
-ANSI_SEQUENCES["\x1b[112;5u"] = Keys.ControlP  # type: ignore
-ANSI_SEQUENCES["\x1b[113;5u"] = Keys.ControlQ  # type: ignore
-ANSI_SEQUENCES["\x1b[114;5u"] = Keys.ControlR  # type: ignore
-ANSI_SEQUENCES["\x1b[115;5u"] = Keys.ControlS  # type: ignore
-ANSI_SEQUENCES["\x1b[116;5u"] = Keys.ControlT  # type: ignore
-ANSI_SEQUENCES["\x1b[117;5u"] = Keys.ControlU  # type: ignore
-ANSI_SEQUENCES["\x1b[118;5u"] = Keys.ControlV  # type: ignore
-ANSI_SEQUENCES["\x1b[119;5u"] = Keys.ControlW  # type: ignore
-ANSI_SEQUENCES["\x1b[120;5u"] = Keys.ControlX  # type: ignore
-ANSI_SEQUENCES["\x1b[121;5u"] = Keys.ControlY  # type: ignore
-ANSI_SEQUENCES["\x1b[122;5u"] = Keys.ControlZ  # type: ignore
-ANSI_SEQUENCES["\x1b[127;5u"] = Keys.ControlBackspace  # type: ignore
-ANSI_SEQUENCES["\x1b[27;2;9~"] = Keys.BackTab  # type: ignore
-ANSI_SEQUENCES["\x1b[9;2u"] = Keys.BackTab  # type: ignore
+# Add Alt-key shortcuts
+for key in _key_nos.values():
+    key_var = f"Alt{key.title()}"
+    if not hasattr(Keys, key_var):
+        extend_enum(Keys, key_var, f"A-{key}")
+    key_enum = getattr(Keys, key_var)
+    # Alias escape + key for Alt-key
+    ANSI_SEQUENCES[f"\x1b{key}"] = key_enum  # type: ignore
+
+# Add CSI-u escape key
+ANSI_SEQUENCES["\x1b[27u"] = Keys.Escape
+
+# Add various CSI-u style keys
+for n in range(len(_modifiers)):
+    for mod_combo in combinations(_modifiers.items(), n):
+        mod_name = "".join(name for _bit, (name, _short) in mod_combo[::-1])
+        mod_short = "-".join(short for _bit, (_name, short) in mod_combo[::-1] if _name)
+        mod_no = 1 + sum(bit for bit, _ in mod_combo)
+
+        if mod_name:
+            for i, key in _key_nos.items():
+                key_var = f"{mod_name}{key.title()}"
+                if not hasattr(Keys, key_var):
+                    extend_enum(Keys, key_var, f"{mod_short}-{key}")
+                key_enum = getattr(Keys, key_var)
+                # CSI-u style
+                ANSI_SEQUENCES[f"\x1b[{i};{mod_no}u"] = key_enum  # type: ignore
+                # xterm style
+                ANSI_SEQUENCES[f"\x1b[27;{mod_no};{i}~"] = key_enum  # type: ignore
+
+        for key, (number, suffix) in _kitty_functional_codes.items():
+            key_var = f"{mod_name}{key}"
+            if not hasattr(Keys, key_var):
+                extend_enum(Keys, key_var, f"{mod_short}-{key.lower()}")
+            mod_str = str(mod_no)
+            num_str = str(number)
+            if mod_no == 1:
+                mod_str = ""
+                if number == 1:
+                    num_str = ""
+            seq = "\x1b[" + (";".join(x for x in [num_str, mod_str] if x)) + suffix
+            ANSI_SEQUENCES[seq] = getattr(Keys, key_var)  # type: ignore

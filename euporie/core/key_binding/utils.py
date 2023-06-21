@@ -38,7 +38,7 @@ def parse_keys(keys: AnyKeys) -> list[tuple[str | Keys, ...]]:
 
 def _format_key_str(key: str) -> str:
     if key:
-        key = key.replace("c-", "Ctrl+").replace("s-", "Shift+")
+        key = key.replace("c-", "Ctrl+").replace("s-", "Shift+").replace("A-", "Alt+")
         parts = key.split("+")
         if parts[-1].isupper():
             parts.insert(-1, "Shift")
