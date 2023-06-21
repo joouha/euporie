@@ -151,7 +151,7 @@ class ConsoleApp(BaseApp):
         )
 
     def exit(self, **kwargs: Any) -> None:
-        """Cloe all tabs on exit."""
+        """Close all tabs on exit."""
         for tab in self.tabs:
             tab.close()
         super().exit(**kwargs)

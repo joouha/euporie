@@ -390,7 +390,7 @@ class MenuBar:
 
         @kb.add("escape")
         def _close(event: KeyPressEvent) -> None:
-            """Cloe the current menu."""
+            """Close the current menu."""
             if len(self.selected_menu) > 1:
                 self.selected_menu = self.selected_menu[:-1]
             else:

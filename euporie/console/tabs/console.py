@@ -142,7 +142,7 @@ class Console(KernelTab):
         self.input_box.buffer.load_history_if_not_yet_loaded()
 
     def close(self, cb: Callable | None = None) -> None:
-        """Cloe the console tab."""
+        """Close the console tab."""
         # Ensure any output no longer appears interactive
         self.live_output.style = "class:disabled"
         # Unregister output renderer

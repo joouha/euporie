@@ -182,7 +182,7 @@ class Pager:
     @staticmethod
     @add_cmd(filter=pager_has_focus)
     def _close_pager() -> None:
-        """Cloe the pager."""
+        """Close the pager."""
         app = get_app()
         if app.pager is not None:
             app.pager.hide()
