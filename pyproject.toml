@@ -80,6 +80,9 @@ argparse = 'euporie.core.pygments:ArgparseLexer'
 [project.entry-points."pygments.styles"]
 euporie = 'euporie.core.pygments:EuporiePygmentsStyle'
 
+[project.entry-points."jupyter_client.kernel_provisioners"]
+logging-local-provisioner = "euporie.core.kernel:LoggingLocalProvisioner"
+
 [tool.hatch.build.targets.wheel.shared-data]
 "euporie/data/desktop" = "share/applications/"
 
