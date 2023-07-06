@@ -335,8 +335,36 @@ def handle_exception(
     log.critical("Uncaught exception", exc_info=(exc_type, exc_value, exc_traceback))
 
 
+def add_log_level(name: str, number: int) -> None:
+    """Add a new level to the logger."""
+    level_name = name.upper()
+    method_name = name.lower()
+
+    if not hasattr(logging, level_name):
+
+        def _log_for_level(
+            self: logging.Logger, message: str, *args: Any, **kwargs: Any
+        ) -> None:
+            if self.isEnabledFor(number):
+                self._log(number, message, args, **kwargs)
+
+        def _log_to_root(message: str, *args: Any, **kwargs: Any) -> None:
+            logging.log(number, message, *args, **kwargs)
+
+        logging.addLevelName(number, level_name)
+        setattr(logging, level_name, number)
+        setattr(logging.getLoggerClass(), method_name, _log_for_level)
+        setattr(logging, method_name, _log_to_root)
+
+
 def setup_logs(config: Config | None = None) -> None:
     """Configure the logger for euporie."""
+    # Add custom log levels
+    # add_log_level("kernelio", logging.WARNING - 1)
+    # add_log_level("kernel", logging.INFO - 1)
+    # add_log_level("convert", logging.INFO - 2)
+    # add_log_level("ui", logging.INFO - 3)
+
     # Default log config
     log_config: dict[str, Any] = {
         "version": 1,
