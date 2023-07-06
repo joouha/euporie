@@ -3,28 +3,36 @@
 from __future__ import annotations
 
 import logging
+import weakref
 from typing import TYPE_CHECKING, cast
 
-from prompt_toolkit.application.current import get_app
 from prompt_toolkit.cache import FastDictCache
 from prompt_toolkit.data_structures import Point
 from prompt_toolkit.eventloop.utils import run_in_executor_with_context
 from prompt_toolkit.filters import Condition
 from prompt_toolkit.formatted_text.utils import split_lines
-from prompt_toolkit.layout.containers import Window
+from prompt_toolkit.layout.containers import Float, Window
 from prompt_toolkit.layout.controls import UIContent, UIControl
+from prompt_toolkit.layout.screen import WritePosition
 from prompt_toolkit.mouse_events import MouseButton, MouseEvent, MouseEventType
 from prompt_toolkit.utils import Event
 from upath import UPath
 
 from euporie.core.commands import add_cmd
+from euporie.core.current import get_app
+from euporie.core.data_structures import DiInt
 from euporie.core.formatted_text.html import HTML, Node
-from euporie.core.formatted_text.utils import max_line_width, paste
+from euporie.core.formatted_text.utils import fragment_list_width, paste
 from euporie.core.key_binding.registry import (
     load_registered_bindings,
     register_bindings,
 )
 from euporie.core.path import parse_path
+from euporie.core.widgets.display import (
+    GraphicWindow,
+    NotVisible,
+    select_graphic_control,
+)
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -37,6 +45,7 @@ if TYPE_CHECKING:
     )
     from prompt_toolkit.layout.controls import GetLinePrefixCallable
     from prompt_toolkit.layout.mouse_handlers import MouseHandler
+    from prompt_toolkit.layout.screen import Screen
 
 
 log = logging.getLogger(__name__)
@@ -65,7 +74,9 @@ class WebViewControl(UIControl):
         self._cursor_position = Point(0, 0)
         self.loading = False
         self.resizing = False
-        self.fragments: StyleAndTextTuples = []
+        self.rendering = False
+        self.lines: list[StyleAndTextTuples] = []
+        self.graphic_positions: dict[str, tuple[int, int]] = {}
         self.width = 0
         self.height = 0
         self.url: Path | None = None
@@ -89,10 +100,13 @@ class WebViewControl(UIControl):
         self._dom_cache: FastDictCache[tuple[Path], HTML] = FastDictCache(
             get_value=self.get_dom, size=100
         )
-        self._fragment_cache: FastDictCache[
-            tuple[HTML, int, int], StyleAndTextTuples
-        ] = FastDictCache(get_value=self.get_fragments, size=100_000)
+        self._line_cache: FastDictCache[
+            tuple[HTML, int, int], list[StyleAndTextTuples]
+        ] = FastDictCache(get_value=self.get_lines, size=100_000)
         self._content_cache: FastDictCache = FastDictCache(self.get_content, size=1_000)
+        self._graphic_float_cache: FastDictCache = FastDictCache(
+            self.get_graphic_float, size=1_000
+        )
 
         self.load_url(url)
 
@@ -142,15 +156,38 @@ class WebViewControl(UIControl):
                 return dom.title
         return ""
 
-    def get_fragments(self, dom: HTML, width: int, height: int) -> StyleAndTextTuples:
+    def get_lines(self, dom: HTML, width: int, height: int) -> list[StyleAndTextTuples]:
         """Render a HTML page as lines of formatted text."""
-        return dom.render(width, height)
+        app = get_app()
+
+        lines = list(split_lines(dom.render(width, height)))
+
+        # Check for graphics
+        self.graphic_positions.clear()
+        for y, line in enumerate(lines):
+            x = 0
+            for style, text, *_ in line:
+                for token in style.split():
+                    token = token[1:-1]
+                    if token.startswith("Image_"):
+                        self.graphic_positions[token] = (x, y)
+                        # Get graphic float for this image and update its position
+                        graphic_float = self._graphic_float_cache[dom, token]
+                        # Register graphic with application
+                        app.graphics.add(graphic_float)
+                        break
+                if "[ZeroWidthEscape]" not in style:
+                    x += len(text)
+
+        return lines
 
     def load_url(self, url: str | Path, **kwargs: Any) -> None:
         """Load a new URL."""
         save_to_history = kwargs.get("save_to_history", True)
         # Trigger "loading" view
         self.loading = True
+        # Clear graphics
+        self.graphic_positions.clear()
         get_app().invalidate()
         # Update navigation history
         if self.url and save_to_history:
@@ -158,6 +195,9 @@ class WebViewControl(UIControl):
             self.next_stack.clear()
         # Update url
         self.url = UPath(url)
+        # Scroll to the top
+        self.window.vertical_scroll = 0
+        self.cursor_position = Point(0, 0)
         # Reset rendering
         self.rendered.fire()
         get_app().invalidate()
@@ -179,19 +219,18 @@ class WebViewControl(UIControl):
 
         def _render() -> None:
             assert self.url is not None
-            # Potentiall redirect url
+            # Potentially redirect url
             self.url = parse_path(self.url)
             dom = self._dom_cache[self.url,]
-            self.fragments = self._fragment_cache[dom, self.width, self.height]
+            self.lines = self._line_cache[dom, self.width, self.height]
             self.loading = False
             self.resizing = False
-            # Scroll to the top
-            self.window.vertical_scroll = 0
-            self.cursor_position = Point(0, 0)
             self.rendered.fire()
             get_app().invalidate()
+            self.rendering = False
 
-        if self.url:
+        if self.url and not self.rendering:
+            self.rendering = True
             run_in_executor_with_context(_render)
 
     def reset(self) -> None:
@@ -215,6 +254,111 @@ class WebViewControl(UIControl):
         """Tell whether this user control is focusable."""
         return True
 
+    def get_graphic_float(self, dom: HTML, key: str) -> Float | None:
+        """Create a graphical float for an image."""
+        node = dom.image_nodes.get(key)
+        if node is None:
+            return None
+
+        graphic_info = node.attrs.get("_graphic_info")
+        if graphic_info is None:
+            return None
+
+        GraphicControl = select_graphic_control(format_=graphic_info.get("format_"))
+        if GraphicControl is None:
+            return None
+
+        def get_position(screen: Screen) -> tuple[WritePosition, DiInt]:
+            """Get the position and bbox of a graphic."""
+            if key not in self.graphic_positions:
+                raise NotVisible
+
+            # Hide graphic if webview is not in layout
+            if screen.visible_windows_to_write_positions.get(self.window) is None:
+                raise NotVisible
+
+            graphic_info = node.attrs.get("_graphic_info")
+            if graphic_info is None:
+                raise NotVisible
+
+            render_info = self.window.render_info
+            if render_info is None:
+                raise NotVisible
+
+            x, y = self.graphic_positions[key]
+
+            content_width = max(0, graphic_info["cols"])
+            horizontal_scroll = getattr(render_info, "horizontal_scroll", 0)
+
+            if horizontal_scroll >= x + content_width:
+                raise NotVisible
+
+            content_height = max(0, graphic_info["rows"])
+            vertical_scroll = render_info.vertical_scroll
+
+            if vertical_scroll >= y + content_height:
+                raise NotVisible
+
+            x_offset = render_info._x_offset
+            y_offset = render_info._y_offset
+
+            xpos = max(x_offset, x - horizontal_scroll + x_offset)
+            if xpos >= x_offset + render_info.window_width:
+                raise NotVisible
+            ypos = max(y_offset, y - vertical_scroll + y_offset)
+            if ypos >= y_offset + render_info.window_height:
+                raise NotVisible
+
+            bbox = DiInt(
+                top=max(0, render_info.vertical_scroll - y),
+                right=0,  # TODO
+                bottom=max(
+                    0, (ypos + content_height) - (y_offset + render_info.window_height)
+                ),
+                left=0,  # TODO
+            )
+
+            write_position = WritePosition(
+                xpos=xpos,
+                ypos=ypos,
+                width=content_width - bbox.left - bbox.right,
+                height=content_height - bbox.top - bbox.bottom,
+            )
+
+            return write_position, bbox
+
+        def _sizing_func() -> tuple[int, float]:
+            assert node is not None
+            return (
+                (info := node.attrs["_graphic_info"])["cols"],
+                info["aspect"],
+            )
+
+        graphic_float = Float(
+            graphic_window := GraphicWindow(
+                content=(
+                    graphic_control := GraphicControl(
+                        graphic_info["data"],
+                        format_=graphic_info["format_"],
+                        path=graphic_info["path"],
+                        fg_color=graphic_info["fg"],
+                        bg_color=graphic_info["bg"],
+                        sizing_func=_sizing_func,
+                    )
+                ),
+                position=get_position,
+                filter=True,  # TODO
+            ),
+        )
+        # Hide the graphic if the float is deleted
+        weak_float_ref = weakref.ref(graphic_float)
+        graphic_window.filter &= Condition(
+            lambda: weak_float_ref() in get_app().graphics
+        )
+        # Hide the graphic if the float is deleted
+        weakref.finalize(graphic_float, graphic_control.close)
+        return graphic_float
+
     def get_content(
         self,
         url: Path,
@@ -234,7 +378,7 @@ class WebViewControl(UIControl):
                 ),
             ]
         else:
-            lines = list(split_lines(self.fragments))
+            lines = self.lines
 
         def get_line(i: int) -> StyleAndTextTuples:
             try:
@@ -243,7 +387,8 @@ class WebViewControl(UIControl):
                 return []
 
             # Paste fixed elements
-            if (dom := self._dom_cache[url,]).fixed:
+            dom = self._dom_cache[url,]
+            if dom.fixed:
                 visible_line = max(0, i - self.window.vertical_scroll)
                 fixed_lines = list(split_lines(dom.fixed_mask))
                 if visible_line < len(fixed_lines):
@@ -376,8 +521,7 @@ class WebViewControl(UIControl):
     @property
     def content_width(self) -> int:
         """Return the width of the content."""
-        # return max(fragment_list_width(line) for line in self.lines)
-        return max_line_width(self.fragments)
+        return max(fragment_list_width(line) for line in self.lines)
 
     def move_cursor_down(self) -> None:
         """Move the cursor down one line."""

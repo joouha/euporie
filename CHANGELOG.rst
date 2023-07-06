@@ -11,6 +11,7 @@ Upcoming
 Added
 =====
 
+- Add terminal graphics support to webview
 - Redirect kernel output to log
 
 Fixed
