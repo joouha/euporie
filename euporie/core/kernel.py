@@ -7,7 +7,7 @@ import concurrent.futures
 import logging
 import threading
 from collections import defaultdict
-from subprocess import DEVNULL  # noqa S404 - Security implications considered
+from subprocess import PIPE, STDOUT  # noqa S404 - Security implications considered
 from typing import TYPE_CHECKING, TypedDict
 from uuid import uuid4
 
@@ -15,19 +15,53 @@ import nbformat
 from _frozen_importlib import _DeadlockError
 from jupyter_client import AsyncKernelManager, KernelManager
 from jupyter_client.kernelspec import NATIVE_KERNEL_NAME, NoSuchKernel
+from jupyter_client.provisioning import KernelProvisionerFactory as KPF
+from jupyter_client.provisioning.local_provisioner import LocalProvisioner
 from jupyter_core.paths import jupyter_path, jupyter_runtime_dir
 from upath import UPath
 
 if TYPE_CHECKING:
     from pathlib import Path
-    from typing import Any, Callable, Coroutine
+    from typing import Any, Callable, Coroutine, TextIO
 
     from jupyter_client import KernelClient
+    from jupyter_client.connect import KernelConnectionInfo
 
     from euporie.core.comm.base import KernelTab
 
 
 log = logging.getLogger(__name__)
+
+
+class LoggingLocalProvisioner(LocalProvisioner):  # type:ignore[misc]
+    """A Jupyter kernel provisionser which logs kernel output."""
+
+    async def launch_kernel(
+        self, cmd: list[str], **kwargs: Any
+    ) -> KernelConnectionInfo:
+        """Launch a kernel with a command."""
+        await super().launch_kernel(cmd, **kwargs)
+
+        def log_kernel_output(pipe: TextIO, log_func: Callable) -> None:
+            try:
+                with pipe:
+                    for line in iter(pipe.readline, ""):
+                        log_func(line.rstrip())
+            except StopIteration:
+                pass
+
+        if self.process is not None:
+            # Start thread to listen for kernel output
+            t = threading.Thread(
+                target=log_kernel_output, args=(self.process.stdout, log.warning)
+            )
+            t.daemon = True
+            t.start()
+
+        return self.connection_info
+
+
+KPF.instance().default_provisioner_name = "logging-local-provisioner"
 
 
 class MsgCallbacks(TypedDict, total=False):
@@ -300,9 +334,10 @@ class Kernel:
             while True:
                 try:
                     # TODO - send stdout to log
-                    await self.km.start_kernel(stdout=DEVNULL, stderr=DEVNULL)
+                    await self.km.start_kernel(stdout=PIPE, stderr=STDOUT, text=True)
                 except _DeadlockError:
                     # Keep trying if we get an import deadlock
+                    await asyncio.sleep(0.1)
                     continue
                 except Exception as e:
                     log.error("Kernel '%s' could not start", self.km.kernel_name)
