@@ -14,6 +14,7 @@ from math import ceil
 from operator import eq, ge, gt, le, lt
 from typing import TYPE_CHECKING, NamedTuple, cast
 from urllib.parse import urljoin
+from weakref import WeakValueDictionary
 
 from flatlatex.data import subscript, superscript
 from prompt_toolkit.application.current import get_app_session
@@ -2630,7 +2631,10 @@ class Node:
 
     def __repr__(self, d: int = 0) -> str:
         """Return a string representation of the element."""
-        parts = [self.name, *[f'{k}="{v}"' for k, v in self.attrs.items()]]
+        parts = [
+            self.name,
+            *[f'{k}="{v}"' for k, v in self.attrs.items() if not k.startswith("_")],
+        ]
         return f"<{' '.join(parts)}>"
 
 
@@ -2906,6 +2910,7 @@ class HTML:
 
         self.browser_css = browser_css or _BROWSER_CSS
         self.css: CssSelectors = css or {}
+        self.image_nodes: WeakValueDictionary[str, Node] = WeakValueDictionary()
 
         self.render_count = 0
         self.width = width
@@ -2959,6 +2964,7 @@ class HTML:
                 and (href := attrs.get("href", ""))
             ):
                 css_path = UPath(urljoin(str(self.base), href))
+                log.debug("Loading %s", css_path)
                 try:
                     css_str = css_path.read_text()
                 except Exception:
@@ -2991,6 +2997,7 @@ class HTML:
 
     def render(self, width: int | None, height: int | None) -> StyleAndTextTuples:
         """Render the current markup at a given size."""
+        # log.debug("Rendering at (%d, %d)", width, height)
         no_w = width is None and self.width is None
         no_h = height is None and self.height is None
         if no_w or no_h:
@@ -3373,8 +3380,26 @@ class HTML:
             )
             # Remove trailing new-lines
             ft = strip(ft, chars="\n", left=False)
-            # Set default background color on generated content
-            ft = [(f"{theme.style} {x[0]}", *x[1:]) for x in ft]
+            # Store reference to image element
+            img_key = f"Image_{hash(element)}"
+            self.image_nodes[img_key] = element
+            # Save graphic kwargs
+            element.attrs["_graphic_info"] = {
+                "data": data,
+                "format_": format_,
+                "path": path,
+                "fg": theme.color,
+                "bg": theme.background_color,
+                "cols": cols,
+                "rows": rows,
+                "aspect": aspect,
+            }
+            ft = [
+                # Label output as containing an image
+                (f"[ZeroWidthEscape] [{img_key}]", ""),
+                # Set default background color on generated content
+                *[(f"{theme.style} {x[0]}", *x[1:]) for x in ft],
+            ]
 
         else:
             style = f"class:image,placeholder {theme.style}"
@@ -3418,6 +3443,9 @@ class HTML:
             else:
                 cols = min(content_width, cols)
         rows = int(cols * aspect)
+        if rows == cols == 1:
+            # Dont bother rendering a 1x1 block image
+            return [(theme.style, " ")]
         # Convert the image to formatted-text
         ft = convert(
             data=data,
@@ -3430,8 +3458,15 @@ class HTML:
         )
         # Remove trailing new-lines
         ft = strip(ft, chars="\n", left=False)
-        # Set default background color on generated content
-        ft = [(f"{theme.style} {x[0]}", *x[1:]) for x in ft]
+        # Store reference to image element
+        img_key = f"Image_{hash(element)}"
+        self.image_nodes[img_key] = element
+        ft = [
+            # Label output as containing an image
+            (f"[ZeroWidthEscape] [{img_key}]", ""),
+            # Set default background color on generated content
+            *[(f"{theme.style} {x[0]}", *x[1:]) for x in ft],
+        ]
         return ft
 
     def render_input_content(

@@ -559,6 +559,8 @@ class ItermGraphicControl(GraphicControl):
             cell_size_x, cell_size_y = self.app.term_info.cell_size_px
             # Downscale image to fit target region for precise cropping
             image.thumbnail((full_width * cell_size_x, full_height * cell_size_y))
+            log.debug(self.bbox)
+            log.debug((cell_size_x, cell_size_y))
             image = image.crop(
                 (
                     self.bbox.left * cell_size_x,  # left
@@ -809,10 +811,79 @@ class KittyGraphicControl(GraphicControl):
             self.delete()
 
 
+class NotVisible(Exception):
+    """Exception to signal that a graphic is not currently visible."""
+
+    pass
+
+
+def get_position_func_overlay(
+    target_window: Window,
+) -> Callable[[Screen], tuple[WritePosition, DiInt]]:
+    """Generate function to postioning floats over existing windows."""
+
+    def get_position(screen: Screen) -> tuple[WritePosition, DiInt]:
+        target_wp = screen.visible_windows_to_write_positions.get(target_window)
+        if target_wp is None:
+            raise NotVisible
+
+        render_info = target_window.render_info
+        if render_info is None:
+            raise NotVisible
+
+        xpos = target_wp.xpos
+        ypos = target_wp.ypos
+
+        content_height = render_info.ui_content.line_count
+        content_width = target_wp.width  # TODO - get the actual content width
+
+        # Calculate the cropping box in case the window is scrolled
+        bbox = DiInt(
+            top=render_info.vertical_scroll,
+            right=max(
+                0,
+                content_height
+                - target_wp.width
+                - getattr(render_info, "horizontal_scroll", 0),
+            ),
+            bottom=max(
+                0,
+                content_height - target_wp.height - render_info.vertical_scroll,
+            ),
+            left=getattr(render_info, "horizontal_scroll", 0),
+        )
+
+        # If the target is within a scrolling container, we might need to adjust
+        # the position of the cropped region so the float covers only the visible
+        # part of the target window
+        if isinstance(target_wp, BoundedWritePosition):
+            bbox = bbox._replace(
+                top=bbox.top + target_wp.bbox.top,
+                right=bbox.right + target_wp.bbox.right,
+                bottom=bbox.bottom + target_wp.bbox.bottom,
+                left=bbox.left + target_wp.bbox.left,
+            )
+            xpos += bbox.left
+            ypos += bbox.top
+            content_height -= bbox.top + bbox.bottom
+            content_width -= bbox.left + bbox.right
+
+        new_write_position = WritePosition(
+            xpos=xpos,
+            ypos=ypos,
+            width=max(0, content_width),
+            height=max(0, content_height),
+        )
+
+        return new_write_position, bbox
+
+    return get_position
+
+
 class GraphicWindow(Window):
     """A window responsible for displaying terminal graphics content.
 
-    The content is displays floating on top of a target window.
+    The content is displayed floating on top of a target window.
 
     The graphic will be displayed if:
     - a completion menu is not being shown
@@ -826,8 +897,8 @@ class GraphicWindow(Window):
     def __init__(
         self,
         content: GraphicControl,
-        target_window: Window,
-        filter: FilterOrBool,
+        position: Callable[[Screen], tuple[WritePosition, DiInt]],
+        filter: FilterOrBool = True,
         *args: Any,
         **kwargs: Any,
     ) -> None:
@@ -835,15 +906,15 @@ class GraphicWindow(Window):
 
         Args:
             content: A control which generates the graphical content to display
-            target_window: The window this graphic should position itself over
+            position: A function which returns the position of the graphic
             filter: A filter which determines if the graphic should be shown
             args: Positional arguments for :py:method:`Window.__init__`
             kwargs: Key-word arguments for :py:method:`Window.__init__`
         """
         super().__init__(*args, **kwargs)
-        self.target_window = target_window
         self.content = content
-        self.filter = to_filter(filter)
+        self.position = position
+        self.filter = ~has_completions & ~has_dialog & ~has_menus & to_filter(filter)
 
     def write_to_screen(
         self,
@@ -856,70 +927,31 @@ class GraphicWindow(Window):
     ) -> None:
         """Draw the graphic window's contents to the screen if required."""
         filter_value = self.filter()
-        target_wp = screen.visible_windows_to_write_positions.get(self.target_window)
-        if (
-            filter_value
-            and target_wp
-            and (render_info := self.target_window.render_info) is not None
-        ):
-            xpos = target_wp.xpos
-            ypos = target_wp.ypos
-            content_height = render_info.ui_content.line_count
-            content_width = target_wp.width  # TODO - get the actual content width
+        if filter_value:
+            try:
+                new_write_position, bbox = self.position(screen)
+            except NotVisible:
+                pass
+            else:
+                # Inform the graphic control of the calculated cropping region
+                self.content.bbox = bbox
 
-            # Calculate the cropping box in case the window is scrolled
-            bbox = DiInt(
-                top=render_info.vertical_scroll,
-                right=max(
-                    0,
-                    content_height
-                    - target_wp.width
-                    - getattr(render_info, "horizontal_scroll", 0),
-                ),
-                bottom=max(
-                    0,
-                    content_height - target_wp.height - render_info.vertical_scroll,
-                ),
-                left=getattr(render_info, "horizontal_scroll", 0),
-            )
-
-            # If the target is within a scrolling container, we might need to adjust
-            # the position of the cropped region so the float covers only the visible
-            # part of the target window
-            if isinstance(target_wp, BoundedWritePosition):
-                bbox = bbox._replace(
-                    top=bbox.top + target_wp.bbox.top,
-                    right=bbox.right + target_wp.bbox.right,
-                    bottom=bbox.bottom + target_wp.bbox.bottom,
-                    left=bbox.left + target_wp.bbox.left,
-                )
-                xpos += bbox.left
-                ypos += bbox.top
-                content_height -= bbox.top + bbox.bottom
-                content_width -= bbox.left + bbox.right
-
-            # Inform the graphic control of the calculated cropping region
-            self.content.bbox = bbox
-
-            if content_height and content_width:
-                # Adjust the write position of the output
-                new_write_position = WritePosition(
-                    xpos=xpos,
-                    ypos=ypos,
-                    width=max(0, content_width),
-                    height=max(0, content_height),
-                )
-
-                super().write_to_screen(
-                    screen,
-                    MouseHandlers(),  # Do not let the float add mouse events
-                    new_write_position,
-                    # Force renderer refreshes by constantly changing the style
-                    f"{parent_style} class:render-{get_app().render_counter}",
-                    erase_bg=True,
-                    z_index=z_index,
-                )
-                return
+                # Draw the graphic content to the screen
+                if (
+                    new_write_position
+                    and new_write_position.width
+                    and new_write_position.height
+                ):
+                    super().write_to_screen(
+                        screen,
+                        MouseHandlers(),  # Do not let the float add mouse events
+                        new_write_position,
+                        # Force renderer refreshes by constantly changing the style
+                        f"{parent_style} class:render-{get_app().render_counter}",
+                        erase_bg=True,
+                        z_index=z_index,
+                    )
+                    return
         # Otherwise hide the content (required for kitty graphics)
         if not filter_value or not get_app().leave_graphics():
             self.content.hide()
@@ -950,135 +982,46 @@ class GraphicWindow(Window):
                     # mouse_handler_row[x] = lambda e: NotImplemented
 
 
-class GraphicFloat(Float):
-    """A :py:class:`Float` which displays a graphic."""
+def select_graphic_control(format_: str) -> type[GraphicControl] | None:
+    """Determine which graphic control to use."""
+    SelectedGraphicControl: type[GraphicControl] | None = None
+    app = get_app()
+    term_info = app.term_info
+    preferred_graphics_protocol = app.config.graphics
+    useable_graphics_controls: list[type[GraphicControl]] = []
+    _in_tmux = in_tmux()
 
-    def __init__(
-        self,
-        target_window: Window,
-        data: Any,
-        format_: str,
-        path: Path | None = None,
-        fg_color: str | None = None,
-        bg_color: str | None = None,
-        sizing_func: Callable[[], tuple[int, float]] | None = None,
-        filter: FilterOrBool = True,
-    ) -> None:
-        """Create a new instance.
-
-        Args:
-            data: The graphical data to be displayed
-            format_: The format of the graphical data
-            path: The path to the data's original location
-            target_window: The window above which the graphic should be displayed
-            fg_color: The graphic's foreground color
-            bg_color: The graphic's background color
-            sizing_func: A callable which returns in the graphic's width in terminal
-                cells and its aspect ratio
-            filter: A filter which is used to hide and show the graphic
-        """
-        self.GraphicControl: type[GraphicControl] | None = None
-        self.control = None
-
-        app = get_app()
-        term_info = app.term_info
-        preferred_graphics_protocol = app.config.graphics
-        useable_graphics_controls: list[type[GraphicControl]] = []
-        _in_tmux = in_tmux()
-
+    if (
+        not _in_tmux or (_in_tmux and app.config.tmux_graphics)
+    ) and preferred_graphics_protocol != "none":
+        if term_info.iterm_graphics_status.value and find_route(format_, "base64-png"):
+            useable_graphics_controls.append(ItermGraphicControl)
         if (
-            not _in_tmux or (_in_tmux and app.config.tmux_graphics)
-        ) and preferred_graphics_protocol != "none":
-            if term_info.iterm_graphics_status.value and find_route(
-                format_, "base64-png"
-            ):
-                useable_graphics_controls.append(ItermGraphicControl)
-            if (
-                preferred_graphics_protocol == "iterm"
-                and ItermGraphicControl in useable_graphics_controls
-            ):
-                self.GraphicControl = ItermGraphicControl
-            elif term_info.kitty_graphics_status.value and find_route(
-                format_, "base64-png"
-            ):
-                useable_graphics_controls.append(KittyGraphicControl)
-            if (
-                preferred_graphics_protocol == "kitty"
-                and KittyGraphicControl in useable_graphics_controls
-            ):
-                self.GraphicControl = KittyGraphicControl
-            elif term_info.sixel_graphics_status.value and find_route(format_, "sixel"):
-                useable_graphics_controls.append(SixelGraphicControl)
-            if (
-                preferred_graphics_protocol == "sixel"
-                and SixelGraphicControl in useable_graphics_controls
-            ):
-                self.GraphicControl = SixelGraphicControl
+            preferred_graphics_protocol == "iterm"
+            and ItermGraphicControl in useable_graphics_controls
+        ):
+            SelectedGraphicControl = ItermGraphicControl
+        elif term_info.kitty_graphics_status.value and find_route(
+            format_, "base64-png"
+        ):
+            useable_graphics_controls.append(KittyGraphicControl)
+        if (
+            preferred_graphics_protocol == "kitty"
+            and KittyGraphicControl in useable_graphics_controls
+        ):
+            SelectedGraphicControl = KittyGraphicControl
+        elif term_info.sixel_graphics_status.value and find_route(format_, "sixel"):
+            useable_graphics_controls.append(SixelGraphicControl)
+        if (
+            preferred_graphics_protocol == "sixel"
+            and SixelGraphicControl in useable_graphics_controls
+        ):
+            SelectedGraphicControl = SixelGraphicControl
 
-            if self.GraphicControl is None and useable_graphics_controls:
-                self.GraphicControl = useable_graphics_controls[0]
+        if SelectedGraphicControl is None and useable_graphics_controls:
+            SelectedGraphicControl = useable_graphics_controls[0]
 
-        if self.GraphicControl:
-            self.control = self.GraphicControl(
-                data,
-                format_=format_,
-                path=path,
-                fg_color=fg_color,
-                bg_color=bg_color,
-                sizing_func=sizing_func,
-            )
-            weak_self_ref = weakref.ref(self)
-            super().__init__(
-                content=GraphicWindow(
-                    content=self.control,
-                    target_window=target_window,
-                    filter=to_filter(filter)
-                    & (Condition(lambda: weak_self_ref() in get_app().graphics)),
-                ),
-                left=0,
-                top=0,
-            )
-            # Hide the graphic if the float is deleted
-            weakref.finalize(self, self.control.close)
-
-    @property
-    def data(self) -> Any:
-        """Return the graphic's current data."""
-        return self._data
-
-    @data.setter
-    def data(self, value: Any) -> None:
-        """Set the graphic float's data."""
-        self._data = value
-        if self.control is not None:
-            self.control.data = value
-            self.control.reset()
-
-    @property
-    def format_(self) -> str:
-        """Return the graphic's current data format."""
-        if self.control is not None:
-            return self.control.format_
-        return ""
-
-    @format_.setter
-    def format_(self, value: str) -> None:
-        """Set the graphic float's data format."""
-        if self.control is not None:
-            self.control.format_ = value
-
-    @property
-    def path(self) -> Path | None:
-        """Return the graphic's current data path."""
-        if self.control is not None:
-            return self.control.path
-        return None
-
-    @path.setter
-    def path(self, value: Path | None) -> None:
-        """Set the graphic float's data path."""
-        if self.control is not None:
-            self.control.path = value
+    return SelectedGraphicControl
 
 
 class Display:
@@ -1180,19 +1123,31 @@ class Display:
         )
 
         # Add graphic
-        app = get_app()
-        self.graphic_float = GraphicFloat(
-            target_window=self.window,
-            data=data,
-            format_=format_,
-            path=path,
-            fg_color=fg_color,
-            bg_color=bg_color,
-            sizing_func=sizing_func,
-            filter=~has_completions & ~has_dialog & ~has_menus,
-        )
-        if self.graphic_float.GraphicControl is not None:
-            app.graphics.add(self.graphic_float)
+        self.graphic_control = None
+        if SelectedGraphicControl := select_graphic_control(format_):
+            self.graphic_control = SelectedGraphicControl(
+                data,
+                format_=format_,
+                path=path,
+                fg_color=fg_color,
+                bg_color=bg_color,
+                sizing_func=sizing_func,
+            )
+            graphic_window = GraphicWindow(
+                content=self.graphic_control,
+                position=get_position_func_overlay(self.window),
+            )
+            # The only reference to the float is saved on the Display widget
+            self.graphic_float = Float(content=graphic_window)
+            # Hide the graphic if not in the app's list of graphics
+            weak_float_ref = weakref.ref(self.graphic_float)
+            graphic_window.filter &= Condition(
+                lambda: weak_float_ref() in get_app().graphics
+            )
+            # Hide the graphic if the float is deleted
+            weakref.finalize(self.graphic_float, self.graphic_control.close)
+            # Add graphic to app
+            get_app().graphics.add(self.graphic_float)
 
     @property
     def data(self) -> Any:
@@ -1203,7 +1158,8 @@ class Display:
     def data(self, value: Any) -> None:
         """Set the display container's data."""
         self.control.data = value
-        self.graphic_float.data = value
+        if self.graphic_control is not None:
+            self.graphic_control.data = value
 
     @property
     def format_(self) -> str:
@@ -1214,7 +1170,8 @@ class Display:
     def format_(self, value: str) -> None:
         """Set the display container's data format."""
         self.control.format_ = value
-        self.graphic_float.format_ = value
+        if self.graphic_control is not None:
+            self.graphic_control.format_ = value
 
     @property
     def path(self) -> Path | None:
@@ -1225,7 +1182,8 @@ class Display:
     def path(self, value: Path | None) -> None:
         """Set the display container's data path."""
         self.control.path = value
-        self.graphic_float.path = value
+        if self.graphic_control is not None:
+            self.graphic_control.path = value
 
     def make_sizing_func(
         self, data: Any, format_: str, fg: str | None, bg: str | None
@@ -1268,9 +1226,9 @@ class Display:
         )
         self.control.sizing_func = sizing_func
         self.control.reset()
-        if self.graphic_float.control is not None:
-            self.graphic_float.control.sizing_func = sizing_func
-            self.graphic_float.control.reset()
+        if self.graphic_control is not None:
+            self.graphic_control.sizing_func = sizing_func
+            self.graphic_control.reset()
 
     def __pt_container__(self) -> AnyContainer:
         """Return the content of this output."""
