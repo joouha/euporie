@@ -32,6 +32,7 @@ from prompt_toolkit.widgets import Box
 
 from euporie.core.border import OutsetGrid
 from euporie.core.data_structures import DiBool
+from euporie.core.formatted_text.utils import truncate
 from euporie.core.widgets.decor import Border
 
 if TYPE_CHECKING:
@@ -145,6 +146,7 @@ class TabBarControl(UIControl):
         active: int | Callable[[], int],
         spacing: int = 1,
         closeable: bool = False,
+        max_title_width: int = 30,
     ) -> None:
         """Create a new tab bar instance.
 
@@ -154,11 +156,13 @@ class TabBarControl(UIControl):
             active: The index of the currently active tab
             spacing: The number of characters between the tabs
             closeable: Whether to show close buttons the the tabs
+            max_title_width: The maximum width of the title to display
 
         """
         self._tabs = tabs
         self.spacing = spacing
         self.closeable = closeable
+        self.max_title_width = max_title_width
         self._active = active
 
         self.mouse_handlers: dict[int, Callable[..., Any] | None] = {}
@@ -238,7 +242,7 @@ class TabBarControl(UIControl):
         i += self.spacing
 
         for j, tab in enumerate(self.tabs):
-            title_ft = to_formatted_text(tab.title)
+            title_ft = truncate(to_formatted_text(tab.title), self.max_title_width)
             title_width = fragment_list_width(title_ft)
             style = "class:active" if self.active == j else "class:inactive"
 
