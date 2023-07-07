@@ -344,6 +344,7 @@ class WebViewControl(UIControl):
                 info["aspect"],
             )
 
+        bg_color = graphic_info["bg"]
         graphic_float = Float(
             graphic_window := GraphicWindow(
                 content=(
@@ -357,7 +358,7 @@ class WebViewControl(UIControl):
                     )
                 ),
                 position=get_position,
-                filter=True,  # TODO
+                style=f"bg:{bg_color}" if bg_color else "",
             ),
         )
         # Hide the graphic if the float is deleted
