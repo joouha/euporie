@@ -1061,7 +1061,10 @@ class Theme(Mapping):
             # If flexed in the row direction
             or (
                 parent_theme is not None
-                and parent_theme.d_flex
+                and (
+                    parent_theme.d_flex
+                    # or parent_theme.d_grid  # TODO
+                )
                 and parent_theme["flex_direction"].startswith("row")
             )
         )
@@ -1070,6 +1073,11 @@ class Theme(Mapping):
     def d_flex(self) -> bool:
         """If the element a block element."""
         return self.theme["display"] == "flex"
+
+    @cached_property
+    def d_grid(self) -> bool:
+        """If the element a block element."""
+        return self.theme["display"] == "grid"
 
     @cached_property
     def d_image(self) -> bool:
@@ -1094,7 +1102,13 @@ class Theme(Mapping):
     @cached_property
     def d_blocky(self) -> bool:
         """If the element an inline element."""
-        return self.d_block or self.d_table or self.d_table_cell or self.d_list_item
+        return (
+            self.d_block
+            or self.d_grid
+            or self.d_table
+            or self.d_table_cell
+            or self.d_list_item
+        )
 
     @cached_property
     def floated(self) -> str | None:
