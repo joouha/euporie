@@ -40,7 +40,7 @@ MIME_FORMATS = {
 }
 
 
-BASE64_FORMATS = {"png", "jepg", "pdf", "gif"}
+BASE64_FORMATS = {"png", "jpeg", "pdf", "gif"}
 
 ERROR_OUTPUTS = {
     "ansi": b"(Format Conversion Error)",
