@@ -8,7 +8,6 @@ from collections import deque
 from functools import partial
 from typing import TYPE_CHECKING
 
-from prompt_toolkit.eventloop.utils import run_in_executor_with_context
 from prompt_toolkit.history import InMemoryHistory
 from prompt_toolkit.layout.containers import Window, WindowAlign
 from prompt_toolkit.layout.controls import FormattedTextControl
@@ -25,6 +24,7 @@ from euporie.core.key_binding.registry import (
     register_bindings,
 )
 from euporie.core.suggest import HistoryAutoSuggest
+from euporie.core.utils import run_in_thread_with_context
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -97,7 +97,7 @@ class Tab(metaclass=ABCMeta):
 
     def _save(self, path: Path | None = None, cb: Callable | None = None) -> None:
         """Perform the file save in a background thread."""
-        run_in_executor_with_context(self.save, path, cb)
+        run_in_thread_with_context(self.save, path, cb)
 
     def save(self, path: Path | None = None, cb: Callable | None = None) -> None:
         """Save the current notebook."""
@@ -168,7 +168,7 @@ class KernelTab(Tab, metaclass=ABCMeta):
 
         if self.bg_init:
             # Load kernel in a background thread
-            run_in_executor_with_context(
+            run_in_thread_with_context(
                 partial(
                     self.init_kernel, kernel, comms, use_kernel_history, connection_file
                 )

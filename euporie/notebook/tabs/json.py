@@ -6,11 +6,11 @@ import json
 import logging
 from typing import TYPE_CHECKING
 
-from prompt_toolkit.eventloop.utils import run_in_executor_with_context
 from prompt_toolkit.layout.containers import VSplit
 from prompt_toolkit.layout.dimension import Dimension
 
 from euporie.core.tabs.base import Tab
+from euporie.core.utils import run_in_thread_with_context
 from euporie.core.widgets.tree import JsonView
 
 if TYPE_CHECKING:
@@ -43,7 +43,7 @@ class JsonTab(Tab):
                 self.app.layout.focus(self.container)
                 self.app.invalidate()
 
-            run_in_executor_with_context(_load)
+            run_in_thread_with_context(_load)
 
     def __pt_status__(self) -> StatusBarFields | None:
         """Return a list of statusbar field values shown then this tab is active."""

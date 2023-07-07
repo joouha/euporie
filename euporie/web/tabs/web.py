@@ -6,7 +6,6 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-from prompt_toolkit.eventloop.utils import run_in_executor_with_context
 from prompt_toolkit.filters import Condition
 from prompt_toolkit.layout.containers import HSplit, VSplit
 from prompt_toolkit.layout.dimension import Dimension
@@ -17,6 +16,7 @@ from euporie.core.current import get_app
 from euporie.core.data_structures import DiBool
 from euporie.core.margins import MarginContainer, ScrollbarMargin
 from euporie.core.tabs.base import Tab
+from euporie.core.utils import run_in_thread_with_context
 from euporie.core.widgets.decor import FocusedStyle
 from euporie.core.widgets.display import DisplayWindow
 from euporie.core.widgets.forms import Button, Text
@@ -49,7 +49,7 @@ class WebTab(Tab):
         def _load() -> None:
             self.container = self.load_container()
 
-        run_in_executor_with_context(_load)
+        run_in_thread_with_context(_load)
 
     @property
     def title(self) -> str:
