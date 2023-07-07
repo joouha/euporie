@@ -21,7 +21,7 @@ from prompt_toolkit.layout.controls import GetLinePrefixCallable, UIContent, UIC
 from prompt_toolkit.layout.mouse_handlers import MouseHandlers
 from prompt_toolkit.layout.screen import Char, WritePosition
 from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
-from prompt_toolkit.utils import Event
+from prompt_toolkit.utils import Event, to_str
 
 from euporie.core.commands import add_cmd
 from euporie.core.convert.core import convert, find_route
@@ -83,8 +83,8 @@ class DisplayControl(UIControl):
             data: Raw cell output data
             format_: The conversion format of the data to render
             path: The path to the data's original location
-            fg_color: The foreground colour to use when renderin this output
-            bg_color: The background colour to use when renderin this output
+            fg_color: The foreground colour to use when rendering this output
+            bg_color: The background colour to use when rendering this output
             sizing_func: Function which returns the maximum width and aspect ratio of
                 the output
             focusable: Whether the control can be focused
@@ -559,8 +559,6 @@ class ItermGraphicControl(GraphicControl):
             cell_size_x, cell_size_y = self.app.term_info.cell_size_px
             # Downscale image to fit target region for precise cropping
             image.thumbnail((full_width * cell_size_x, full_height * cell_size_y))
-            log.debug(self.bbox)
-            log.debug((cell_size_x, cell_size_y))
             image = image.crop(
                 (
                     self.bbox.left * cell_size_x,  # left
@@ -946,12 +944,19 @@ class GraphicWindow(Window):
                         screen,
                         MouseHandlers(),  # Do not let the float add mouse events
                         new_write_position,
-                        # Force renderer refreshes by constantly changing the style
-                        f"{parent_style} class:render-{get_app().render_counter}",
+                        parent_style,
                         erase_bg=True,
                         z_index=z_index,
                     )
+                    # Apply ``self.style``
+                    self._apply_style(
+                        screen,
+                        new_write_position,
+                        # Force renderer refreshes by constantly changing the style
+                        f"{parent_style} class:render-{get_app().render_counter}",
+                    )
                     return
+
         # Otherwise hide the content (required for kitty graphics)
         if not filter_value or not get_app().leave_graphics():
             self.content.hide()
@@ -1073,7 +1078,9 @@ class Display:
             style: The style to apply to the output
 
         """
-        self.style = style
+        self._style = style
+        self.fg_color = fg_color
+        self.bg_color = bg_color
 
         # Get data pixel dimensions
         self._px = px
@@ -1104,7 +1111,8 @@ class Display:
             wrap_lines=wrap_lines,
             always_hide_cursor=always_hide_cursor,
             dont_extend_height=dont_extend_height,
-            style=self.style,
+            # style=self.style,
+            style=lambda: f"bg:{self.bg_color} {to_str(style)}",
             char=" ",
         )
 
@@ -1136,7 +1144,9 @@ class Display:
             graphic_window = GraphicWindow(
                 content=self.graphic_control,
                 position=get_position_func_overlay(self.window),
+                style=lambda: f"bg:{self.bg_color} {to_str(style)}",
             )
+
             # The only reference to the float is saved on the Display widget
             self.graphic_float = Float(content=graphic_window)
             # Hide the graphic if not in the app's list of graphics
