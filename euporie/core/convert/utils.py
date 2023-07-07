@@ -156,7 +156,7 @@ def data_pixel_size(
     if format_ == "ansi":
         return px, py
     # Try using imagesize to get the size of the output
-    if format_ not in {"png", "svg", "jpg", "gif", "tiff"}:
+    if format_ not in {"png", "svg", "jpeg", "gif", "tiff"}:
         try:
             data = convert(data, from_=format_, to="png", fg=fg, bg=bg)
         except NotImplementedError:
