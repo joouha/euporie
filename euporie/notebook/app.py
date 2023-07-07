@@ -8,6 +8,7 @@ from functools import partial
 from typing import TYPE_CHECKING, cast
 
 from prompt_toolkit.filters import Condition
+from prompt_toolkit.formatted_text.base import to_formatted_text
 from prompt_toolkit.layout.containers import (
     ConditionalContainer,
     DynamicContainer,
@@ -25,6 +26,7 @@ from euporie.core import __logo__
 from euporie.core.app import BaseApp
 from euporie.core.commands import add_cmd, get_cmd
 from euporie.core.config import add_setting
+from euporie.core.formatted_text.utils import truncate
 from euporie.core.key_binding.registry import register_bindings
 from euporie.core.tabs.base import Tab
 from euporie.core.widgets.decor import Pattern
@@ -122,7 +124,8 @@ class NotebookApp(BaseApp):
     def format_title(self) -> StyleAndTextTuples:
         """Format the tab's title for display in the top right of the app."""
         if self.tab:
-            return [("bold class:status.field", f" {self.tab.title} ")]
+            title = truncate(to_formatted_text(self.tab.title, style="bold"), 30)
+            return [("", " "), *title, ("", " ")]
         else:
             return []
 
