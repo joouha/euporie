@@ -562,7 +562,7 @@ class BaseApp(Application):
 
         """
         return FloatContainer(
-            content=Window(),
+            content=self.layout.container or Window(),
             floats=cast("list[Float]", self.floats),
         )
 
