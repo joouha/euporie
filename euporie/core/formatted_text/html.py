@@ -1859,7 +1859,7 @@ _BROWSER_CSS: CssSelectors = {
         ((CssSelector(item="a"),),): {
             "display": "inline",
             "text_decoration": "underline",
-            "color": "ansibrightblue",
+            "color": "#0000FF",
         },
         ((CssSelector(item="b"),), (CssSelector(item="strong"),)): {
             "display": "inline",
