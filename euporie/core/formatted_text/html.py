@@ -2910,7 +2910,6 @@ class HTML:
 
         self.browser_css = browser_css or _BROWSER_CSS
         self.css: CssSelectors = css or {}
-        self.image_nodes: WeakValueDictionary[str, Node] = WeakValueDictionary()
 
         self.render_count = 0
         self.width = width
@@ -2926,7 +2925,7 @@ class HTML:
         self.floats: dict[tuple[int, DiBool, DiInt], StyleAndTextTuples] = {}
         self.fixed: dict[tuple[int, DiBool, DiInt], StyleAndTextTuples] = {}
         self.fixed_mask: StyleAndTextTuples = []
-        # self.images = []
+        self.image_nodes: WeakValueDictionary[str, Node] = WeakValueDictionary()
         # self.anchors = []
 
         self.assets_loaded = False
