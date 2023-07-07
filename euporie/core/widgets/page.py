@@ -8,7 +8,6 @@ from typing import TYPE_CHECKING, cast
 
 from prompt_toolkit.application.current import get_app
 from prompt_toolkit.data_structures import Point
-from prompt_toolkit.eventloop.utils import run_in_executor_with_context
 from prompt_toolkit.filters import is_searching
 from prompt_toolkit.layout.containers import (
     Container,
@@ -25,6 +24,7 @@ from prompt_toolkit.layout.screen import Char, Screen, WritePosition
 from prompt_toolkit.mouse_events import MouseEvent, MouseEventType, MouseModifier
 
 from euporie.core.data_structures import DiInt
+from euporie.core.utils import run_in_thread_with_context
 
 if TYPE_CHECKING:
     from typing import Callable, Iterable, Sequence
@@ -421,7 +421,7 @@ class ScrollingContainer(Container):
             self.pre_rendered = 1.0
             get_app().invalidate()
 
-        run_in_executor_with_context(render_in_thread)
+        run_in_thread_with_context(render_in_thread)
 
     def reset(self) -> None:
         """Reet the state of this container and all the children."""

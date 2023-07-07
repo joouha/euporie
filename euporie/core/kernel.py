@@ -52,11 +52,11 @@ class LoggingLocalProvisioner(LocalProvisioner):  # type:ignore[misc]
 
         if self.process is not None:
             # Start thread to listen for kernel output
-            t = threading.Thread(
-                target=log_kernel_output, args=(self.process.stdout, log.warning)
-            )
-            t.daemon = True
-            t.start()
+            threading.Thread(
+                target=log_kernel_output,
+                args=(self.process.stdout, log.warning),
+                daemon=True,
+            ).start()
 
         return self.connection_info
 

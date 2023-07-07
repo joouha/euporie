@@ -8,7 +8,6 @@ from typing import TYPE_CHECKING, cast
 
 from prompt_toolkit.cache import FastDictCache
 from prompt_toolkit.data_structures import Point
-from prompt_toolkit.eventloop.utils import run_in_executor_with_context
 from prompt_toolkit.filters import Condition
 from prompt_toolkit.formatted_text.utils import split_lines
 from prompt_toolkit.layout.containers import Float, Window
@@ -28,6 +27,7 @@ from euporie.core.key_binding.registry import (
     register_bindings,
 )
 from euporie.core.path import parse_path
+from euporie.core.utils import run_in_thread_with_context
 from euporie.core.widgets.display import (
     GraphicWindow,
     NotVisible,
@@ -231,7 +231,7 @@ class WebViewControl(UIControl):
 
         if self.url and not self.rendering:
             self.rendering = True
-            run_in_executor_with_context(_render)
+            run_in_thread_with_context(_render)
 
     def reset(self) -> None:
         """Reset the state of the control."""

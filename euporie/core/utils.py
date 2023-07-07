@@ -2,13 +2,15 @@
 
 from __future__ import annotations
 
+import contextvars
 from itertools import chain
+from threading import Thread
 from typing import TYPE_CHECKING, Sequence, TypeVar, overload
 
 from prompt_toolkit.mouse_events import MouseButton, MouseEventType
 
 if TYPE_CHECKING:
-    from typing import Callable, Iterable
+    from typing import Any, Callable, Iterable
 
     from prompt_toolkit.key_binding.key_bindings import NotImplementedOrNone
     from prompt_toolkit.layout.mouse_handlers import MouseHandler
@@ -72,3 +74,18 @@ def on_click(func: Callable) -> MouseHandler:
         return NotImplemented
 
     return _mouse_handler
+
+
+def run_in_thread_with_context(
+    func: Callable, *args: Any, daemon: bool = True, **kwargs: Any
+) -> None:
+    """Run a function in an thread, but make sure it uses the same contextvars.
+
+    This is required so that the function will see the right application.
+    """
+    Thread(
+        target=contextvars.copy_context().run,
+        args=(func, *args),
+        kwargs=kwargs,
+        daemon=daemon,
+    ).start()
