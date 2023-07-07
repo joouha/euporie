@@ -254,7 +254,7 @@ def substring(
             frag_len = 0
         else:
             frag_len = sum(get_cwidth(c) for c in text)
-        if start < x + frag_len <= end + frag_len:
+        if start <= x + frag_len <= end + frag_len:
             if (text := text[max(0, start - x) : end - x]) or style:
                 output.append(cast("OneStyleAndTextTuple", (style, text, *extra)))
         x += frag_len

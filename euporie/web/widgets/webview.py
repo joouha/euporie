@@ -110,9 +110,6 @@ class WebViewControl(UIControl):
 
         self.load_url(url)
 
-        # Start a new event loop in a thread
-        self.thread = None
-
     @property
     def window(self) -> Window:
         """Get the control's window."""
@@ -174,10 +171,23 @@ class WebViewControl(UIControl):
                         # Get graphic float for this image and update its position
                         graphic_float = self._graphic_float_cache[dom, token]
                         # Register graphic with application
-                        app.graphics.add(graphic_float)
+                        if graphic_float:
+                            app.graphics.add(graphic_float)
                         break
                 if "[ZeroWidthEscape]" not in style:
                     x += len(text)
+
+        # Check for floating graphics and create graphics (do not position them yet)
+        for line in split_lines(dom.fixed_mask):
+            for style, *_ in line:
+                for token in style.split():
+                    token = token[1:-1]
+                    if token.startswith("Image_"):
+                        # Get graphic float for this image and update its position
+                        graphic_float = self._graphic_float_cache[dom, token]
+                        # Register graphic with application
+                        if graphic_float:
+                            app.graphics.add(graphic_float)
 
         return lines
 
@@ -357,6 +367,7 @@ class WebViewControl(UIControl):
         )
         # Hide the graphic if the float is deleted
         weakref.finalize(graphic_float, graphic_control.close)
+
         return graphic_float
 
     def get_content(
@@ -386,15 +397,28 @@ class WebViewControl(UIControl):
             except IndexError:
                 return []
 
-            # Paste fixed elements
+            # Overlay fixed lines onto this line
             dom = self._dom_cache[url,]
             if dom.fixed:
                 visible_line = max(0, i - self.window.vertical_scroll)
                 fixed_lines = list(split_lines(dom.fixed_mask))
                 if visible_line < len(fixed_lines):
+                    # Paste the fixed line over the current line
+                    fixed_line = fixed_lines[visible_line]
                     line = paste(
                         fixed_lines[visible_line], line, 0, 0, transparent=True
                     )
+
+                    # Update graphic positions on the fixed line
+                    x = 0
+                    for style, text, *_ in fixed_line:
+                        for token in style.split():
+                            token = token[1:-1]
+                            if token.startswith("Image_"):
+                                self.graphic_positions[token] = (x, i)
+                                break
+                        if "[ZeroWidthEscape]" not in style:
+                            x += len(text)
 
             # Apply processors
             # merged_processor = self.cursor_processor
