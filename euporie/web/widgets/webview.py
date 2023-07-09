@@ -502,8 +502,10 @@ class WebViewControl(UIControl):
         """
         # Focus on mouse down
         if mouse_event.event_type == MouseEventType.MOUSE_DOWN:
-            get_app().layout.focus(self)
-            return None
+            if not (layout := get_app().layout).has_focus(self):
+                layout.focus(self)
+                return None
+            return NotImplemented
         # if mouse_event.event_type == MouseEventType.MOUSE_MOVE:
         # self.cursor_position = mouse_event.position
 
