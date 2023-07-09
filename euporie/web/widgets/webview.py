@@ -266,18 +266,15 @@ class WebViewControl(UIControl):
 
     def get_graphic_float(self, dom: HTML, key: str) -> Float | None:
         """Create a graphical float for an image."""
-        node = dom.image_nodes.get(key)
-        if node is None:
-            return None
-
-        graphic_info = node.attrs.get("_graphic_info")
+        graphic_info = dom.graphic_info.get(key)
         if graphic_info is None:
             return None
 
-        GraphicControl = select_graphic_control(format_=graphic_info.get("format_"))
+        GraphicControl = select_graphic_control(format_=graphic_info["format_"])
         if GraphicControl is None:
             return None
 
+        # TODO - cache this
         def get_position(screen: Screen) -> tuple[WritePosition, DiInt]:
             """Get the position and bbox of a graphic."""
             if key not in self.graphic_positions:
@@ -287,7 +284,7 @@ class WebViewControl(UIControl):
             if screen.visible_windows_to_write_positions.get(self.window) is None:
                 raise NotVisible
 
-            graphic_info = node.attrs.get("_graphic_info")
+            graphic_info = dom.graphic_info.get(key)
             if graphic_info is None:
                 raise NotVisible
 
@@ -338,10 +335,10 @@ class WebViewControl(UIControl):
             return write_position, bbox
 
         def _sizing_func() -> tuple[int, float]:
-            assert node is not None
+            graphic_info = dom.graphic_info[key]
             return (
-                (info := node.attrs["_graphic_info"])["cols"],
-                info["aspect"],
+                graphic_info["cols"],
+                graphic_info["aspect"],
             )
 
         bg_color = graphic_info["bg"]

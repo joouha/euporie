@@ -1111,8 +1111,7 @@ class Display:
             wrap_lines=wrap_lines,
             always_hide_cursor=always_hide_cursor,
             dont_extend_height=dont_extend_height,
-            # style=self.style,
-            style=lambda: f"bg:{self.bg_color} {to_str(style)}",
+            style=self.style,
             char=" ",
         )
 
@@ -1144,7 +1143,7 @@ class Display:
             graphic_window = GraphicWindow(
                 content=self.graphic_control,
                 position=get_position_func_overlay(self.window),
-                style=lambda: f"bg:{self.bg_color} {to_str(style)}",
+                style=self.style,
             )
 
             # The only reference to the float is saved on the Display widget
@@ -1158,6 +1157,13 @@ class Display:
             weakref.finalize(self.graphic_float, self.graphic_control.close)
             # Add graphic to app
             get_app().graphics.add(self.graphic_float)
+
+    def style(self) -> str:
+        """Use the background color of the data as the default style."""
+        style = to_str(self._style)
+        if self.bg_color:
+            style = f"bg:{self.bg_color} {style}"
+        return style
 
     @property
     def data(self) -> Any:

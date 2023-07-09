@@ -14,7 +14,6 @@ from math import ceil
 from operator import eq, ge, gt, le, lt
 from typing import TYPE_CHECKING, NamedTuple, cast
 from urllib.parse import urljoin
-from weakref import WeakValueDictionary
 
 from flatlatex.data import subscript, superscript
 from prompt_toolkit.application.current import get_app_session
@@ -2939,7 +2938,7 @@ class HTML:
         self.floats: dict[tuple[int, DiBool, DiInt], StyleAndTextTuples] = {}
         self.fixed: dict[tuple[int, DiBool, DiInt], StyleAndTextTuples] = {}
         self.fixed_mask: StyleAndTextTuples = []
-        self.image_nodes: WeakValueDictionary[str, Node] = WeakValueDictionary()
+        self.graphic_info: dict[str, dict] = {}
         # self.anchors = []
 
         self.assets_loaded = False
@@ -3352,6 +3351,67 @@ class HTML:
 
         return ft
 
+    def _render_image(
+        self, data: str | bytes, format_: str, theme: Theme, path: Path | None = None
+    ) -> StyleAndTextTuples:
+        """Render an image and prepare graphic representation."""
+        # Scale down the image to fit to width
+        cols, aspect = pixels_to_cell_size(*data_pixel_size(data, format_=format_))
+
+        if content_width := theme.content_width:
+            if cols == 0:
+                cols = content_width
+            else:
+                cols = min(content_width, cols)
+        rows = ceil(cols * aspect)
+
+        # Dont bother rendering a 1x1 block image
+        if rows == 1 and cols == 1:
+            ft: StyleAndTextTuples = [(theme.style, "-")]
+        else:
+            # Convert the image to formatted-text
+            ft = (
+                convert(
+                    data=data,
+                    from_=format_,
+                    to="formatted_text",
+                    cols=cols,
+                    rows=rows or None,
+                    fg=theme.color,
+                    bg=theme.background_color,
+                    path=path,
+                )
+                or []
+            )
+        # Remove trailing new-lines
+        ft = strip(ft, chars="\n", left=False)
+
+        # If we couldn't calculate the image size, use the size of the text output
+        if rows == 0:
+            rows = min(theme.content_height, len(list(split_lines(ft))))
+            aspect = rows / cols
+
+        # Store reference to image element
+        img_key = f"Image_{hash(theme.element)}"
+        self.graphic_info[img_key] = {
+            "data": data,
+            "format_": format_,
+            "path": path,
+            "fg": theme.color,
+            "bg": theme.background_color,
+            "cols": cols,
+            "rows": rows,
+            "aspect": aspect,
+        }
+
+        return cast(
+            "StyleAndTextTuples",
+            # Flag graphic position
+            [(f"[{img_key}]", "")]
+            # Set default background color on generated content
+            + [(f"{theme.style} {style}", (text), *rest) for style, text, *rest in ft],
+        )
+
     def render_img_content(
         self,
         element: Node,
@@ -3369,50 +3429,7 @@ class HTML:
         if not element.attrs.get("_missing") and (data := element.attrs.get("_data")):
             # Display it graphically
             format_ = get_format(path, default="png")
-            cols, aspect = pixels_to_cell_size(*data_pixel_size(data, format_=format_))
-            # Manually set a value if we don't have one
-            cols = cols or 20
-            aspect = aspect or 0.5
-            # Scale down the image to fit to width
-            if content_width := theme.content_width:
-                cols = min(content_width, cols)
-            rows = ceil(cols * aspect)
-            # Convert the image to formatted-text
-            ft = (
-                convert(
-                    data,
-                    from_=format_,
-                    to="formatted_text",
-                    cols=cols,
-                    rows=rows,
-                    fg=theme.color,
-                    bg=theme.background_color,
-                    path=path,
-                )
-                or []
-            )
-            # Remove trailing new-lines
-            ft = strip(ft, chars="\n", left=False)
-            # Store reference to image element
-            img_key = f"Image_{hash(element)}"
-            self.image_nodes[img_key] = element
-            # Save graphic kwargs
-            element.attrs["_graphic_info"] = {
-                "data": data,
-                "format_": format_,
-                "path": path,
-                "fg": theme.color,
-                "bg": theme.background_color,
-                "cols": cols,
-                "rows": rows,
-                "aspect": aspect,
-            }
-            ft = [
-                # Label output as containing an image
-                (f"[ZeroWidthEscape] [{img_key}]", ""),
-                # Set default background color on generated content
-                *[(f"{theme.style} {x[0]}", *x[1:]) for x in ft],
-            ]
+            ft = self._render_image(data, format_, theme, path)
 
         else:
             style = f"class:image,placeholder {theme.style}"
@@ -3447,39 +3464,9 @@ class HTML:
         element.attrs["xmlns:xlink"] = "http://www.w3.org/1999/xlink"
         # We fix the SVG viewBox here
         data = element._outer_html().replace(" viewbox=", " viewBox=")
-        # Display it graphically
-        cols, aspect = pixels_to_cell_size(*data_pixel_size(data, format_="svg"))
-        # Scale down the image to fit to width
-        if content_width := theme.content_width:
-            if cols == 0:
-                cols = content_width
-            else:
-                cols = min(content_width, cols)
-        rows = int(cols * aspect)
-        if rows == cols == 1:
-            # Dont bother rendering a 1x1 block image
-            return [(theme.style, " ")]
-        # Convert the image to formatted-text
-        ft = convert(
-            data=data,
-            from_="svg",
-            to="formatted_text",
-            cols=cols,
-            rows=rows or None,
-            fg=theme.color,
-            bg=theme.background_color,
-        )
-        # Remove trailing new-lines
-        ft = strip(ft, chars="\n", left=False)
-        # Store reference to image element
-        img_key = f"Image_{hash(element)}"
-        self.image_nodes[img_key] = element
-        ft = [
-            # Label output as containing an image
-            (f"[ZeroWidthEscape] [{img_key}]", ""),
-            # Set default background color on generated content
-            *[(f"{theme.style} {x[0]}", *x[1:]) for x in ft],
-        ]
+        # Replace "currentColor" with theme foreground color
+        data = data.replace("currentColor", theme.color)
+        ft = self._render_image(data, "svg", theme)
         return ft
 
     def render_input_content(
