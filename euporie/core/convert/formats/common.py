@@ -41,7 +41,7 @@ def imagemagick_convert(
     path: Path | None = None,
 ) -> str | bytes:
     """Convert image data to PNG bytes using ``imagemagick``."""
-    cmd: list[Any] = ["convert"]  # , "-density", "300"]
+    cmd: list[Any] = ["convert", "-density", "300"]
     app = get_app()
     if cols is not None and hasattr(app, "term_info"):
         px, _ = app.term_info.cell_size_px
@@ -70,7 +70,12 @@ def chafa_convert_cmd(
     """Convert image data to ANSI text using :command:`chafa`."""
     cmd: list[Any] = ["chafa", f"--format={output_format}"]
     if cols is not None or rows is not None:
-        cmd += [f"--size={cols or '1'}x{rows or '1'}"]
+        size = "--size="
+        if cols is not None:
+            size = f"{size}{cols}"
+        if rows is not None:
+            size = f"{size}x{rows}"
+        cmd.append(size)
     if bg:
         cmd += ["--bg", bg]
     cmd += ["--stretch", "/dev/stdin"]
