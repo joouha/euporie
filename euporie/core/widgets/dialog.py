@@ -795,7 +795,7 @@ class ErrorDialog(Dialog):
                             ("", "\n\n"),
                             ("fg:ansired", exception.__repr__()),
                             ("", "\n"),
-                        ]
+                        ],
                     )
                 ),
                 FocusedStyle(
@@ -810,6 +810,7 @@ class ErrorDialog(Dialog):
                                 height=Dimension(min=10),
                                 wrap_lines=False,
                                 style="",
+                                focus_on_click=True,
                             ),
                             MarginContainer(ScrollbarMargin(), target=fta.window),
                         ]
