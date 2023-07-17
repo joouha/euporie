@@ -81,26 +81,15 @@ def markdown_to_ft(
 ) -> StyleAndTextTuples:
     """Convert markdown to formatted text, injecting a custom CSS style-sheet."""
     from euporie.core.convert.formats.html import markdown_to_html_markdown_it
-    from euporie.core.formatted_text.markdown import _MARKDOWN_CSS
+    from euporie.core.formatted_text.markdown import (
+        _MARKDOWN_CSS,
+        get_markdown_file_css,
+    )
 
-    css = _MARKDOWN_CSS
-
-    # If we are rendering a file rather than a snippet, apply margins to the root
     if path is not None:
-        from prompt_toolkit.filters.utils import _always
-
-        from euporie.core.formatted_text.html import CssSelector
-
-        css = {
-            _always: {
-                **_MARKDOWN_CSS[_always],
-                ((CssSelector(item="::root"),),): {
-                    "max_width": "100em",
-                    "margin_left": "auto",
-                    "margin_right": "auto",
-                },
-            }
-        }
+        css = get_markdown_file_css()
+    else:
+        css = _MARKDOWN_CSS
 
     return html_to_ft(
         markdown_to_html_markdown_it(
@@ -135,7 +124,7 @@ def ansi_to_ft(
     bg: str | None = None,
     path: Path | None = None,
 ) -> StyleAndTextTuples:
-    """Convert ANSI text to formatted text."""
+    """Convert ANSI text to formatted text, lexing & formatting automatically."""
     markup = data.decode() if isinstance(data, bytes) else data
     ft: StyleAndTextTuples
     if "\x1b" in markup or "\r" in markup:
