@@ -175,6 +175,7 @@ class Cell:
             ),
             accept_handler=lambda buffer: self.run_or_render() or True,
             focusable=show_input & ~source_hidden,
+            tempfile_suffix=self.tempfile_suffix,
         )
         self.input_box.buffer.name = self.cell_type
 
@@ -473,6 +474,17 @@ class Cell:
     def cell_type(self) -> str:
         """Determine the current cell type."""
         return self.json.get("cell_type", "code")
+
+    @property
+    def tempfile_suffix(self) -> str:
+        """Return the file suffix matching the current cell type."""
+        cell_type = self.cell_type
+        if cell_type == "markdown":
+            return ".md"
+        elif cell_type == "raw":
+            return ""
+        else:
+            return self.kernel_tab.kernel_lang_file_ext
 
     @property
     def execution_count(self) -> str:
