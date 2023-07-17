@@ -1,8 +1,17 @@
 """Contain the browser CSS for formatting markdown."""
 
+from __future__ import annotations
+
+from functools import cache
+from typing import TYPE_CHECKING
+
 from prompt_toolkit.filters.utils import _always
 
 from .html import CssSelector
+
+if TYPE_CHECKING:
+    from .html import CssSelectors
+
 
 _MARKDOWN_CSS = {
     _always: {
@@ -185,3 +194,18 @@ _MARKDOWN_CSS = {
         },
     }
 }
+
+
+@cache
+def get_markdown_file_css() -> CssSelectors:
+    """Apply margins to the root - used if rendering a full markdown file."""
+    return {
+        _always: {
+            **_MARKDOWN_CSS[_always],
+            ((CssSelector(item="::root"),),): {
+                "max_width": "100em",
+                "margin_left": "auto",
+                "margin_right": "auto",
+            },
+        }
+    }
