@@ -39,7 +39,7 @@ class WebTab(Tab):
 
     name = "Web Viewer"
     weight = 2
-    mime_types = {"text/html"}
+    mime_types = {"text/html", "text/markdown"}
 
     def __init__(self, app: BaseApp, path: Path | None) -> None:
         """Call when the tab is created."""
