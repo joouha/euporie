@@ -33,6 +33,7 @@ def latex_to_png_dvipng(
     fg: str | None = None,
     bg: str | None = None,
     path: Path | None = None,
+    initial_format: str = "",
 ) -> bytes | None:
     """Render LaTeX as a png image using :command:`dvipng`.
 
@@ -114,6 +115,7 @@ def latex_to_png_py_mpl(
     fg: str | None = None,
     bg: str | None = None,
     path: Path | None = None,
+    initial_format: str = "",
 ) -> bytes:
     """Render LaTeX as a png image using :py:module:`matplotlib`.
 
@@ -157,6 +159,7 @@ def pil_to_png_py_pil(
     fg: str | None = None,
     bg: str | None = None,
     path: Path | None = None,
+    initial_format: str = "",
 ) -> bytes:
     """Convert a pillow image to sixels :py:mod:`teimpy`."""
     import io
@@ -179,6 +182,7 @@ def svg_to_png_py_cairosvg(
     fg: str | None = None,
     bg: str | None = None,
     path: Path | None = None,
+    initial_format: str = "",
 ) -> str:
     """Convert SVG to PNG using :py:mod:`cairosvg`."""
     import cairosvg

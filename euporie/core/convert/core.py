@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import logging
 import mimetypes
 from functools import lru_cache, partial
@@ -12,6 +13,7 @@ from prompt_toolkit.filters import to_filter
 from upath import UPath
 from upath.implementations.http import HTTPPath
 
+# from euporie.core.cache import cache
 from euporie.core.path import DataPath
 
 if TYPE_CHECKING:
@@ -209,6 +211,66 @@ _CONVERTOR_ROUTE_CACHE: FastDictCache[tuple[str, str], list | None] = FastDictCa
 )
 
 
+def _convert(
+    data: str | bytes,
+    from_: str,
+    to: str,
+    cols: int | None = None,
+    rows: int | None = None,
+    fg: str | None = None,
+    bg: str | None = None,
+    path: Path | None = None,
+) -> Any:
+    if from_ == to:
+        return data
+    routes = _CONVERTOR_ROUTE_CACHE[(from_, to)]
+    log.debug("Converting from '%s' to '%s' using route: %s", from_, to, routes)
+    if not routes:
+        raise NotImplementedError(f"Cannot convert from `{from_}` to `{to}`")
+    output: Any = data
+    for route in routes:
+        for stage_a, stage_b in zip(route, route[1:]):
+            # Find converter with lowest weight
+            func = sorted(
+                [
+                    conv
+                    for conv in converters[stage_b][stage_a]
+                    if _FILTER_CACHE.get((conv,), conv.filter_)
+                ],
+                key=lambda x: x.weight,
+            )[0].func
+            # Add intermediate steps to the cache
+            try:
+                output_hash = hash(data)
+            except TypeError as error:
+                log.warning("Cannot hash %s", data)
+                raise error
+            try:
+                output = _CONVERSION_CACHE.get(
+                    (output_hash, from_, stage_b, cols, rows, fg, bg, path),
+                    partial(func, output, cols, rows, fg, bg, path, from_),
+                )
+            except Exception:
+                log.exception("An error occurred during format conversion")
+                output = None
+            if output is None:
+                log.error(
+                    "Failed to convert `%s` from `%s`"
+                    " to `%s` using route `%s` at stage `%s`",
+                    data.__repr__()[:10],
+                    from_,
+                    to,
+                    route,
+                    stage_b,
+                )
+                # Try the next route on error
+                break
+        else:
+            # If this route succeeded, stop trying routes
+            break
+    return output
+
+
 def convert(
     data: Any,
     from_: str,
@@ -221,74 +283,25 @@ def convert(
 ) -> Any:
     """Convert between formats."""
     try:
-        data_hash = hash(data)
+        # data_hash = hash(data)
+        data_hash = hashlib.sha1(  # noqa S324
+            data if isinstance(data, bytes) else data.encode()
+        ).hexdigest()
     except TypeError as error:
         log.warning("Cannot hash %s", data)
         raise error
 
-    def _convert(
-        data: str | bytes,
-        from_: str,
-        to: str,
-        cols: int | None = None,
-        rows: int | None = None,
-        fg: str | None = None,
-        bg: str | None = None,
-        path: Path | None = None,
-    ) -> Any:
-        if from_ == to:
-            return data
-        routes = _CONVERTOR_ROUTE_CACHE[(from_, to)]
-        log.debug("Converting from '%s' to '%s' using route: %s", from_, to, routes)
-        if not routes:
-            raise NotImplementedError(f"Cannot convert from `{from_}` to `{to}`")
-        output: Any = data
-        for route in routes:
-            for stage_a, stage_b in zip(route, route[1:]):
-                # Find converter with lowest weight
-                func = sorted(
-                    [
-                        conv
-                        for conv in converters[stage_b][stage_a]
-                        if _FILTER_CACHE.get((conv,), conv.filter_)
-                    ],
-                    key=lambda x: x.weight,
-                )[0].func
-                # Add intermediate steps to the cache
-                try:
-                    output_hash = hash(data)
-                except TypeError as error:
-                    log.warning("Cannot hash %s", data)
-                    raise error
-                try:
-                    output = _CONVERSION_CACHE.get(
-                        (output_hash, from_, stage_b, cols, rows, fg, bg, path),
-                        partial(func, output, cols, rows, fg, bg, path),
-                    )
-                except Exception:
-                    log.exception("An error occurred during format conversion")
-                    output = None
-                if output is None:
-                    log.error(
-                        "Failed to convert `%s` from `%s`"
-                        " to `%s` using route `%s` at stage `%s`",
-                        data.__repr__()[:10],
-                        from_,
-                        to,
-                        route,
-                        stage_b,
-                    )
-                    # Try the next route on error
-                    break
-            else:
-                # If this route succeeded, stop trying routes
-                break
-        return output
+    key = (data_hash, from_, to, cols, rows, fg, bg, path)
 
     data = _CONVERSION_CACHE.get(
-        (data_hash, from_, to, cols, rows, fg, bg, path),
+        key,
         partial(_convert, data, from_, to, cols, rows, fg, bg, path),
     )
+
+    # if key in cache:
+    #     data = cache[key]
+    # else:
+    #     data = cache[key] = _convert(data, from_, to, cols, rows, fg, bg, path)
 
     if data is None:
         data = ERROR_OUTPUTS.get(to, b"(Conversion Error)")

@@ -45,6 +45,7 @@ def png_to_pil_py(
     fg: str | None = None,
     bg: str | None = None,
     path: Path | None = None,
+    initial_format: str = "",
 ) -> PilImage:
     """Convert PNG to a pillow image using :py:mod:`PIL`."""
     import io

@@ -35,6 +35,7 @@ def html_to_ansi_w3m(
     fg: str | None = None,
     bg: str | None = None,
     path: Path | None = None,
+    initial_format: str = "",
 ) -> str:
     """Convert HTML text to formatted ANSI using :command:`w3m`."""
     cmd: list[Any] = ["w3m", "-T", "text/html"]
@@ -55,6 +56,7 @@ def html_to_ansi_elinks(
     fg: str | None = None,
     bg: str | None = None,
     path: Path | None = None,
+    initial_format: str = "",
 ) -> str:
     """Convert HTML text to formatted ANSI using :command:`elinks`."""
     cmd: list[Any] = [
@@ -83,6 +85,7 @@ def html_to_ansi_lynx(
     fg: str | None = None,
     bg: str | None = None,
     path: Path | None = None,
+    initial_format: str = "",
 ) -> str:
     """Convert HTML text to formatted ANSI using :command:`lynx`."""
     cmd: list[Any] = ["lynx", "-dump", "-stdin"]
@@ -103,6 +106,7 @@ def html_to_ansi_links(
     fg: str | None = None,
     bg: str | None = None,
     path: Path | None = None,
+    initial_format: str = "",
 ) -> str:
     """Convert HTML text to formatted ANSI using :command:`links`."""
     cmd: list[Any] = ["links", "-dump"]
@@ -123,6 +127,7 @@ def html_to_ansi_py_htmlparser(
     fg: str | None = None,
     bg: str | None = None,
     path: Path | None = None,
+    initial_format: str = "",
 ) -> str:
     """Convert HTML tables to ANSI text using :py:mod:`HTMLParser`."""
     import io
@@ -180,6 +185,7 @@ def latex_to_ansi_py_flatlatex(
     fg: str | None = None,
     bg: str | None = None,
     path: Path | None = None,
+    initial_format: str = "",
 ) -> str:
     """Convert LaTeX to ANSI using :py:mod:`flatlatex`."""
     import flatlatex
@@ -199,6 +205,7 @@ def latex_to_ansi_py_pylatexenc(
     fg: str | None = None,
     bg: str | None = None,
     path: Path | None = None,
+    initial_format: str = "",
 ) -> str:
     """Convert LaTeX to ANSI using :py:mod:`pylatexenc`."""
     from pylatexenc.latex2text import LatexNodes2Text
@@ -218,6 +225,7 @@ def latex_to_ansi_py_sympy(
     fg: str | None = None,
     bg: str | None = None,
     path: Path | None = None,
+    initial_format: str = "",
 ) -> str:
     """Convert LaTeX to ANSI using :py:mod:`sympy`."""
     from sympy import pretty
@@ -242,6 +250,7 @@ def pil_to_ansi_py_timg(
     fg: str | None = None,
     bg: str | None = None,
     path: Path | None = None,
+    initial_format: str = "",
 ) -> str:
     """Convert a PIL image to ANSI text using :py:mod:`timg`."""
     import timg
@@ -284,6 +293,7 @@ def pil_to_ansi_py_img2unicode(
     fg: str | None = None,
     bg: str | None = None,
     path: Path | None = None,
+    initial_format: str = "",
 ) -> str:
     """Convert a PIL image to ANSI text using :py:mod:`img2unicode`."""
     import io
@@ -322,6 +332,7 @@ def image_to_ansi_timg(
     fg: str | None = None,
     bg: str | None = None,
     path: Path | None = None,
+    initial_format: str = "",
 ) -> str:
     """Convert image data to ANSI text using :command:`timg`."""
     cmd: list[Any] = ["timg"]
@@ -343,6 +354,7 @@ def image_to_ansi_catimg(
     fg: str | None = None,
     bg: str | None = None,
     path: Path | None = None,
+    initial_format: str = "",
 ) -> str:
     """Convert image data to ANSI text using :command:`catimg`."""
     cmd: list[Any] = ["catimg"]
@@ -364,6 +376,7 @@ def image_to_ansi_icat(
     fg: str | None = None,
     bg: str | None = None,
     path: Path | None = None,
+    initial_format: str = "",
 ) -> str:
     """Convert image data to ANSI text using :command:`icat`."""
     cmd: list[Any] = ["icat"]
@@ -385,6 +398,7 @@ def image_to_ansi_tiv(
     fg: str | None = None,
     bg: str | None = None,
     path: Path | None = None,
+    initial_format: str = "",
 ) -> str:
     """Convert image data to ANSI text using :command:`tiv`."""
     cmd: list[Any] = ["tiv"]
@@ -405,6 +419,7 @@ def image_to_ansi_viu(
     fg: str | None = None,
     bg: str | None = None,
     path: Path | None = None,
+    initial_format: str = "",
 ) -> str:
     """Convert image data to ANSI text using :command:`viu`."""
     cmd: list[Any] = ["viu", "-b"]
@@ -426,6 +441,7 @@ def image_to_ansi_jp2a(
     fg: str | None = None,
     bg: str | None = None,
     path: Path | None = None,
+    initial_format: str = "",
 ) -> str:
     """Convert image data to ANSI text using :command:`jp2a`."""
     cmd: list[Any] = ["jp2a", "--color"]
@@ -447,6 +463,7 @@ def png_to_ansi_img2txt(
     fg: str | None = None,
     bg: str | None = None,
     path: Path | None = None,
+    initial_format: str = "",
 ) -> str:
     """Convert PNG data to ANSI text using :command:`img2txt`."""
     cmd: list[Any] = ["img2txt"]
@@ -463,6 +480,7 @@ def png_to_ansi_py_placeholder(
     fg: str | None = None,
     bg: str | None = None,
     path: Path | None = None,
+    initial_format: str = "",
 ) -> str:
     """Draw placeholder ANSI text."""
     from euporie.core.border import RoundedLine
@@ -496,6 +514,7 @@ def rich_to_ansi_py(
     fg: str | None = None,
     bg: str | None = None,
     path: Path | None = None,
+    initial_format: str = "",
 ) -> str:
     """Convert rich objects to formatted ANSI text."""
     import rich

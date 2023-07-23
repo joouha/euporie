@@ -18,6 +18,7 @@ from prompt_toolkit.utils import Event
 from upath import UPath
 
 from euporie.core.commands import add_cmd
+from euporie.core.convert.core import convert, get_format
 from euporie.core.current import get_app
 from euporie.core.data_structures import DiInt
 from euporie.core.formatted_text.html import HTML, Node
@@ -137,11 +138,18 @@ class WebViewControl(UIControl):
 
     def get_dom(self, url: Path) -> HTML:
         """Load a HTML page as renderable formatted text."""
+        markup = convert(
+            data=url.read_text(),
+            from_=(format_ := get_format(url, default="html")),
+            to="html",
+            path=url,
+        )
         return HTML(
-            markup=url.read_text(),
+            markup=markup,
             base=url,
             mouse_handler=self._node_mouse_handler,
             paste_fixed=False,
+            _initial_format=format_,
         )
 
     @property

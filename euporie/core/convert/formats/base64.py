@@ -38,6 +38,7 @@ def bytes_to_base64_py(
     fg: str | None = None,
     bg: str | None = None,
     path: Path | None = None,
+    initial_format: str = "",
 ) -> str:
     """Convert bytes to base64 encoded data."""
     if isinstance(data, str):
