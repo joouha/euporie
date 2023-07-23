@@ -32,8 +32,8 @@ class ShowApp(BaseApp):
         with set_app(self):
             size = self.output.get_size()
             for file in self.config.files:
-                upath = parse_path(file)
-                data_bytes = upath.read_bytes()
+                path = parse_path(file)
+                data_bytes = path.read_bytes()
 
                 data: str | bytes
                 try:
@@ -44,11 +44,11 @@ class ShowApp(BaseApp):
                 self.print_text(
                     convert(
                         data=data,
-                        from_=get_format(upath),
+                        from_=get_format(path),
                         to="formatted_text",
                         rows=size.rows,
                         cols=size.columns,
-                        path=upath,
+                        path=path,
                     ),
                     style=self.create_merged_style(),
                 )
