@@ -28,6 +28,7 @@ def html_to_markdown_py_html2text(
     fg: str | None = None,
     bg: str | None = None,
     path: Path | None = None,
+    initial_format: str = "",
 ) -> str:
     """Convert HTML to markdown tables using :py:mod:`html2text`."""
     import re
@@ -74,6 +75,7 @@ def html_to_markdown_py_mtable(
     fg: str | None = None,
     bg: str | None = None,
     path: Path | None = None,
+    initial_format: str = "",
 ) -> str:
     """Convert HTML tables to markdown tables using :py:mod:`mtable`."""
     from mtable import MarkupTable

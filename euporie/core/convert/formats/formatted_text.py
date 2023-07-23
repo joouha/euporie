@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 
     from prompt_toolkit.formatted_text.base import StyleAndTextTuples
 
-    from euporie.core.formatted_text.html import HTML, CssSelectors
+    from euporie.core.formatted_text.html import HTML
 
 log = logging.getLogger(__name__)
 
@@ -37,8 +37,7 @@ def html_to_ft(
     fg: str | None = None,
     bg: str | None = None,
     path: Path | None = None,
-    css: CssSelectors | None = None,
-    browser_css: CssSelectors | None = None,
+    initial_format: str = "",
 ) -> StyleAndTextTuples:
     """Convert markdown to formatted text."""
     from euporie.core.formatted_text.html import HTML
@@ -52,11 +51,9 @@ def html_to_ft(
             width=width,
             base=path,
             collapse_root_margin=True,
-            css=css,
-            browser_css=browser_css,
+            _initial_format=initial_format,
         ),
     )
-
     if (
         width is not None
         and height is not None
@@ -65,43 +62,6 @@ def html_to_ft(
         html.render(width, height)
 
     return to_formatted_text(html)
-
-
-@register(
-    from_="markdown",
-    to="formatted_text",
-)
-def markdown_to_ft(
-    data: str | bytes,
-    width: int | None = None,
-    height: int | None = None,
-    fg: str | None = None,
-    bg: str | None = None,
-    path: Path | None = None,
-) -> StyleAndTextTuples:
-    """Convert markdown to formatted text, injecting a custom CSS style-sheet."""
-    from euporie.core.convert.formats.html import markdown_to_html_markdown_it
-    from euporie.core.formatted_text.markdown import (
-        _MARKDOWN_CSS,
-        get_markdown_file_css,
-    )
-
-    if path is not None:
-        css = get_markdown_file_css()
-    else:
-        css = _MARKDOWN_CSS
-
-    return html_to_ft(
-        markdown_to_html_markdown_it(
-            path=path, bg=bg, fg=fg, height=height, width=width, data=data
-        ),
-        width=width,
-        height=height,
-        fg=fg,
-        bg=bg,
-        path=path,
-        css=css,
-    )
 
 
 _BLACKLISTED_LEXERS = {
@@ -123,6 +83,7 @@ def ansi_to_ft(
     fg: str | None = None,
     bg: str | None = None,
     path: Path | None = None,
+    initial_format: str = "",
 ) -> StyleAndTextTuples:
     """Convert ANSI text to formatted text, lexing & formatting automatically."""
     markup = data.decode() if isinstance(data, bytes) else data

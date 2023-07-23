@@ -66,6 +66,7 @@ def markdown_to_html_markdown_it(
     fg: str | None = None,
     bg: str | None = None,
     path: Path | None = None,
+    initial_format: str = "",
 ) -> str:
     """Convert markdown to HTML using :py:mod:`markdownit_py`."""
     assert markdown_parser is not None

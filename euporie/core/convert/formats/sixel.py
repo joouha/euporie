@@ -47,6 +47,7 @@ def png_to_sixel_img2sixel(
     fg: str | None = None,
     bg: str | None = None,
     path: Path | None = None,
+    initial_format: str = "",
 ) -> str:
     """Convert PNG data to sixels :command:`img2sixel`."""
     bg = bg or get_app().color_palette.bg.base_hex
@@ -78,6 +79,7 @@ def pil_to_sixel_py_timg(
     fg: str | None = None,
     bg: str | None = None,
     path: Path | None = None,
+    initial_format: str = "",
 ) -> str:
     """Convert a pillow image to sixels :py:mod:`timg`."""
     import timg
@@ -97,6 +99,7 @@ def pil_to_sixel_py_teimpy(
     fg: str | None = None,
     bg: str | None = None,
     path: Path | None = None,
+    initial_format: str = "",
 ) -> str:
     """Convert a pillow image to sixels :py:mod:`teimpy`."""
     import numpy as np

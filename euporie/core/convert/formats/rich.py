@@ -25,6 +25,7 @@ def markdown_to_rich_py(
     fg: str | None = None,
     bg: str | None = None,
     path: Path | None = None,
+    initial_format: str = "",
 ) -> Markdown:
     """Convert base64 encoded data to bytes."""
     from rich.markdown import Markdown
