@@ -434,7 +434,7 @@ def match_css_selector(
     # Attribute selectors
     # TODO - chained attribute selectors
     if attrs and matched:
-        for test in re.split("(?<=\])(?=\[)", attrs):
+        for test in re.split(r"(?<=\])(?=\[)", attrs):
             test = test[1:-1]
             if (op := "*=") in test:
                 attr, _, value = test.partition(op)
@@ -889,10 +889,13 @@ class Theme(Mapping):
             ]
             for k, v in part.items()
         ]
-        theme = dict(rules) | {
-            k: v.replace("!important", "").strip()
-            for k, v in rules
-            if "!important" in v
+        theme = {
+            **dict(rules),
+            **{
+                k: v.replace("!important", "").strip()
+                for k, v in rules
+                if "!important" in v
+            },
         }
         return theme
 
@@ -970,7 +973,7 @@ class Theme(Mapping):
                 and browser_css.get(k) != "unset"
             ]
             # Keep !important items
-            theme = dict(rules) | {k: v for k, v in rules if "!important" in v}
+            theme = {**dict(rules), **{k: v for k, v in rules if "!important" in v}}
 
         return theme
 
@@ -2286,7 +2289,7 @@ _BROWSER_CSS: CssSelectors = {
         },
         # Lists
         ((CssSelector(item="::marker"),),): {
-            "display": "inline",
+            "display": "inline-block",
             "padding_right": "1em",
             "text_align": "right",
         },
