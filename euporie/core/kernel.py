@@ -5,6 +5,9 @@ from __future__ import annotations
 import asyncio
 import concurrent.futures
 import logging
+import os
+import re
+import sys
 import threading
 from collections import defaultdict
 from subprocess import PIPE, STDOUT  # noqa S404 - Security implications considered
@@ -64,6 +67,63 @@ class LoggingLocalProvisioner(LocalProvisioner):  # type:ignore[misc]
 KPF.instance().default_provisioner_name = "logging-local-provisioner"
 
 
+class EuporieKernelManager(AsyncKernelManager):
+    """Kernel Manager subclass.
+
+    ``jupyter_client`` replaces a plain ``python`` command with the current executable,
+    but this is not desirable if the client is running in its own prefix (e.g. with
+    ``pipx``). We work around this here.
+
+    See https://github.com/jupyter/jupyter_client/issues/949
+    """
+
+    def format_kernel_cmd(self, extra_arguments: list[str] | None = None) -> list[str]:
+        """Replace templated args (e.g. {connection_file})."""
+        extra_arguments = extra_arguments or []
+        assert self.kernel_spec is not None
+        cmd = self.kernel_spec.argv + extra_arguments
+
+        v_major, v_minor = sys.version_info[:2]
+        if cmd and cmd[0] in {
+            "python",
+            f"python{v_major}",
+            f"python{v_major}.{v_minor}",
+        }:
+            # If the command is `python` without an absolute path and euporie is
+            # running in the same prefix as the kernel_spec file is located, use
+            # sys.executable: otherwise fall back to the executable in the base prefix
+            if (
+                os.path.commonpath((sys.prefix, self.kernel_spec.resource_dir))
+                == sys.prefix
+            ):
+                cmd[0] = sys.executable
+            else:
+                cmd[0] = sys._base_executable  # type: ignore [attr-defined]
+
+        # Make sure to use the realpath for the connection_file
+        # On windows, when running with the store python, the connection_file path
+        # is not usable by non python kernels because the path is being rerouted when
+        # inside of a store app.
+        # See this bug here: https://bugs.python.org/issue41196
+        ns = {
+            "connection_file": os.path.realpath(self.connection_file),
+            "prefix": sys.prefix,
+        }
+
+        if self.kernel_spec:
+            ns["resource_dir"] = self.kernel_spec.resource_dir
+
+        ns.update(self._launch_args)
+
+        pat = re.compile(r"\{([A-Za-z0-9_]+)\}")
+
+        def _from_ns(match: re.Match) -> str:
+            """Get the key out of ns if it's there, otherwise no change."""
+            return ns.get(match.group(1), match.group())
+
+        return [pat.sub(_from_ns, arg) for arg in cmd]
+
+
 class MsgCallbacks(TypedDict, total=False):
     """Typed dictionary for named message callbacks."""
 
@@ -118,7 +178,7 @@ class Kernel:
         self.kernel_tab = kernel_tab
         self.connection_file = connection_file
         self.kc: KernelClient | None = None
-        self.km = AsyncKernelManager(
+        self.km = EuporieKernelManager(
             kernel_name=str(kernel_tab.kernel_name),
         )
         self._status = "stopped"
@@ -1079,7 +1139,7 @@ class Kernel:
         # Create a new kernel manager instance
         del self.km
         kwargs = {} if name is None else {"kernel_name": name}
-        self.km = AsyncKernelManager(**kwargs)
+        self.km = EuporieKernelManager(**kwargs)
         self.error = None
 
         # Start the kernel
