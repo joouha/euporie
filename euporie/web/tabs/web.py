@@ -91,7 +91,7 @@ class WebTab(Tab):
         self.webview.rendered += self._url_loaded
 
         def _status() -> StatusBarFields:
-            return ([self.webview.status] if self.webview is not None else [], [])
+            return (self.webview.status if self.webview is not None else [], [])
 
         self.status = _status
 

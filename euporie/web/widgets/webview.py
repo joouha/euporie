@@ -39,7 +39,7 @@ if TYPE_CHECKING:
     from pathlib import Path
     from typing import Any, Callable, Iterable
 
-    from prompt_toolkit.formatted_text.base import StyleAndTextTuples
+    from prompt_toolkit.formatted_text.base import AnyFormattedText, StyleAndTextTuples
     from prompt_toolkit.key_binding.key_bindings import (
         KeyBindingsBase,
         NotImplementedOrNone,
@@ -81,7 +81,7 @@ class WebViewControl(UIControl):
         self.width = 0
         self.height = 0
         self.url: Path | None = None
-        self.status = ""
+        self.status: list[AnyFormattedText] = []
         self.link_handler = link_handler or self.load_url
 
         self.rendered = Event(self)
@@ -153,12 +153,15 @@ class WebViewControl(UIControl):
         )
 
     @property
+    def dom(self) -> HTML:
+        """Return the dom for the current URL."""
+        return self._dom_cache[self.url,]
+
+    @property
     def title(self) -> str:
         """Return the title of the current HTML page."""
-        if url := self.url:
-            dom = self._dom_cache.get((url,))
-            if dom is not None:
-                return dom.title
+        if dom := self.dom:
+            return dom.title
         return ""
 
     def get_lines(self, dom: HTML, width: int, height: int) -> list[StyleAndTextTuples]:
@@ -473,7 +476,9 @@ class WebViewControl(UIControl):
         self, node: Node, mouse_event: MouseEvent
     ) -> NotImplementedOrNone:
         """Handle click events."""
-        if url := node.attrs.get("_link_path"):
+        url = node.attrs.get("_link_path")
+        title = node.attrs.get("title")
+        if url:
             # TODO - Check for #anchor links and scroll accordingly
             if (
                 mouse_event.button == MouseButton.LEFT
@@ -487,8 +492,13 @@ class WebViewControl(UIControl):
             ):
                 self.link_handler(url, save_to_history=False, new_tab=True)
                 return None
-            elif mouse_event.event_type == MouseEventType.MOUSE_MOVE:
-                self.status = str(url)
+        if url or title:
+            if mouse_event.event_type == MouseEventType.MOUSE_MOVE:
+                self.status.clear()
+                if title:
+                    self.status.append(str(title))
+                if url:
+                    self.status.append(str(url))
                 return None
         return NotImplemented
 
@@ -546,7 +556,9 @@ class WebViewControl(UIControl):
         if callable(handler):
             return handler
 
-        self.status = ""
+        if self.status:
+            self.status.clear()
+            return None
 
         return NotImplemented
 
