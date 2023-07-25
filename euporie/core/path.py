@@ -39,7 +39,7 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 
-def parse_path(path: str | PathLike) -> Path:
+def parse_path(path: str | PathLike, resolve: bool = True) -> Path:
     """Parse and resolve a path."""
     if not isinstance(path, Path):
         path = UPath(path)
@@ -47,10 +47,12 @@ def parse_path(path: str | PathLike) -> Path:
         path = path.expanduser()
     except NotImplementedError:
         pass
-    try:
-        path = path.resolve()
-    except (AttributeError, NotImplementedError):
-        pass
+    if resolve:
+        try:
+            path = path.resolve()
+        except (AttributeError, NotImplementedError, Exception):
+            log.info("Path %s not resolvable", path)
+            pass
     return path
 
 
