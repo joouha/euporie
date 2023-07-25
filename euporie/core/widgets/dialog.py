@@ -911,7 +911,7 @@ class ShortcutsDialog(Dialog):
         from euporie.core.key_binding.registry import BINDINGS
         from euporie.core.key_binding.utils import format_keys, parse_keys
 
-        table = Table(padding=0, border_line=InvisibleLine, collapse_empty_borders=True)
+        table = Table(padding=0)
 
         for group, bindings in BINDINGS.items():
             log.info(group)
@@ -929,8 +929,9 @@ class ShortcutsDialog(Dialog):
                     align=FormattedTextAlign.CENTER,
                     colspan=2,
                     style="class:shortcuts.group",
+                    border_visibility=True,
+                    border_line=InvisibleLine,
                 )
-                row.new_cell("")
                 for i, (cmd_name, keys) in enumerate(bindings.items()):
                     cmd = get_cmd(cmd_name)
                     if not cmd.hidden():
@@ -942,8 +943,14 @@ class ShortcutsDialog(Dialog):
                             "\n".join(key_strs),
                             align=FormattedTextAlign.RIGHT,
                             style="class:key",
+                            border_visibility=False,
+                            border_line=InvisibleLine,
                         )
-                        row.new_cell(cmd.title)
+                        row.new_cell(
+                            cmd.title,
+                            border_visibility=False,
+                            border_line=InvisibleLine,
+                        )
         table.padding = DiInt(0, 1, 0, 1)
 
         return to_formatted_text(table)
