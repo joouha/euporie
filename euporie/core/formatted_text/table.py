@@ -22,6 +22,7 @@ from euporie.core.border import (
     get_grid_char,
 )
 from euporie.core.data_structures import (
+    DiBool,
     DiInt,
     DiStr,
 )
@@ -73,8 +74,9 @@ class Cell:
         align: FormattedTextAlign | None = None,
         style: str = "",
         padding: DiInt | int = 0,
-        border_line: DiLineStyle | LineStyle = NoLine,
+        border_line: DiLineStyle | LineStyle = ThinLine,
         border_style: DiStr | str = "",
+        border_visibility: DiBool | bool | None = True,
     ) -> None:
         """Create a new table cell.
 
@@ -90,6 +92,7 @@ class Cell:
             padding: The padding around the contents of the cell
             border_line: The line to use for the borders
             border_style: The style to apply to the cell's borders
+            border_visibility: The visibility of each border edge
 
         """
         self.expands = self
@@ -117,6 +120,19 @@ class Cell:
             if isinstance(border_style, str)
             else border_style
         )
+        self.border_visibility = (
+            DiBool(
+                border_visibility,
+                border_visibility,
+                border_visibility,
+                border_visibility,
+            )
+            if isinstance(border_visibility, bool)
+            else border_visibility
+        )
+
+        self._col_index: int | None = None
+        self._row_index: int | None = None
 
     @property
     def padding(self) -> DiInt:
@@ -174,7 +190,8 @@ class SpacerCell(Cell):
     def __init__(
         self,
         expands: Cell,
-        span_index: int,
+        span_row_index: int,
+        span_col_index: int,
         text: AnyFormattedText = "",
         row: Row | None = None,
         col: Col | None = None,
@@ -186,12 +203,14 @@ class SpacerCell(Cell):
         padding: DiInt | int | None = None,
         border_line: DiLineStyle | LineStyle = NoLine,
         border_style: DiStr | str = "",
+        border_visibility: DiBool | bool | None = None,
     ) -> None:
         """Create a new table cell.
 
         Args:
             expands: This should be reference to the spanning cell
-            span_index: The index of a spacer cell inside a colspan / rowspan
+            span_col_index: The index of a spacer cell inside a colspan
+            span_row_index: The index of a spacer cell inside a rowspan
             text: Text or formatted text to display in the cell
             row: The row to which this cell belongs
             col: The column to which this cell belongs
@@ -203,6 +222,7 @@ class SpacerCell(Cell):
             padding: The padding around the contents of the cell
             border_line: The line to use for the borders
             border_style: The style to apply to the cell's borders
+            border_visibility: The visibility of each border edge
 
         """
         super().__init__(
@@ -217,13 +237,43 @@ class SpacerCell(Cell):
             padding=0,
             border_line=expands.border_line,
             border_style=expands.border_style,
+            border_visibility=expands.border_visibility,
         )
         self.expands = expands
-        self.span_index = span_index
+        self.span_row_index = span_row_index
+        self.span_col_index = span_col_index
 
 
-class DummyCell(Cell):
+class _Dummy(Cell):
     """A dummy cell with not content, padding or borders."""
+
+    def __init__(
+        self,
+        text: AnyFormattedText = "",
+        row: Row | None = None,
+        col: Col | None = None,
+        colspan: int = 1,
+        rowspan: int = 1,
+        width: int | None = None,
+        align: FormattedTextAlign | None = None,
+        style: str = "",
+        padding: DiInt | int = 0,
+        border_line: DiLineStyle | LineStyle = NoLine,
+        border_style: DiStr | str = "",
+        border_visibility: DiBool | bool | None = None,
+    ) -> None:
+        """Create an dummy cells to fill empty space in a table."""
+        table = (row or col or DummyRow()).table
+        background_style = table.background_style
+        super().__init__(
+            row=row,
+            col=col,
+            style=background_style,
+            padding=0,
+            border_line=NoLine,
+            border_style=background_style,
+            border_visibility=False,
+        )
 
     def __repr__(self) -> str:
         """Represent the cell instance as a string."""
@@ -233,7 +283,7 @@ class DummyCell(Cell):
 class RowCol:
     """Base class for table rows and columns."""
 
-    type_: str
+    _type: str
     span_type: str
 
     def __init__(
@@ -245,6 +295,7 @@ class RowCol:
         padding: DiInt | int = 0,
         border_line: DiLineStyle | LineStyle = NoLine,
         border_style: DiStr | str = "",
+        border_visibility: DiBool | bool | None = None,
     ) -> None:
         """Create a new row/column.
 
@@ -256,13 +307,26 @@ class RowCol:
             padding: The default padding for cells in this row/column
             border_line: The line to use for the borders
             border_style: The style to apply to the table's borders
+            border_visibility: The visibility of each border edge
 
         """
         self.table = table or DummyTable()
-        self._cells = defaultdict(lambda: DummyCell(), enumerate(cells or []))
+        if isinstance(self, Row):
+            row = self
+            col = None
+        elif isinstance(self, Col):
+            row = None
+            col = self
+        else:
+            raise ValueError("%s is not a `Row` or `Col`", self)
+
+        self._cells = defaultdict(
+            lambda: _Dummy(border_style=self.table.style, row=row, col=col),
+            dict(enumerate(cells or [])),
+        )
         if cells:
             for cell in cells:
-                setattr(cell, self.type_, self)
+                setattr(cell, self._type, self)
 
         self.align = align
         self.style = style
@@ -281,6 +345,16 @@ class RowCol:
             DiStr(border_style, border_style, border_style, border_style)
             if isinstance(border_style, str)
             else border_style
+        )
+        self.border_visibility = (
+            DiBool(
+                border_visibility,
+                border_visibility,
+                border_visibility,
+                border_visibility,
+            )
+            if isinstance(border_visibility, bool)
+            else border_visibility
         )
 
     @property
@@ -328,7 +402,23 @@ class RowCol:
     @property
     def cells(self) -> list[Cell]:
         """List the cells in the row/column."""
-        return [self._cells[i] for i in range(len(self._cells))]
+        if self._type == "row":
+            n = len(self.table._cols)
+        else:
+            n = len(self.table._rows)
+        cells = []
+        for i in range(n):
+            cell = self._cells[i]
+            if isinstance(cell, _Dummy):
+                if isinstance(self, Row):
+                    cell.row = self
+                    cell.col = self.table._cols[i]
+                elif isinstance(self, Col):
+                    cell.col = self
+                    cell.row = self.table._rows[i]
+            cells.append(cell)
+
+        return cells
 
     def new_cell(self, *args: Any, **kwargs: Any) -> Cell:
         """Create a new cell in this row/column."""
@@ -336,75 +426,63 @@ class RowCol:
         self.add_cell(cell)
         return cell
 
-    def add_cell(self, cell: Cell) -> None:
+    def add_cell(self, cell: Cell, index: int | None = None) -> None:
         """Add a cell to the row/ column."""
-        index = max([-1] + list(self._cells.keys())) + 1
+        if index is None:
+            # Fit cells into available space
+            # TODO - also check fit by colspan
+            index = 0
+            cells = self._cells
+            rowspan = cell.rowspan
+            colspan = cell.colspan
+            while any(
+                index + y in cells
+                for y in range(rowspan if self._type == "col" else colspan)
+            ):
+                index += 1
+
         self._cells[index] = cell
 
-        if self.type_ == "row":
+        if self._type == "row":
             assert isinstance(self, Row)
             cell.row = cast("Row", self)
             cell.col = self.table._cols[index]
 
-            row_index = self.table.rows.index(self)
+            row_index = next(i for i, row in self.table._rows.items() if row is self)
             col_index = index
 
             cell.col._cells[row_index] = cell
 
-            if cell.colspan > 1:
-                for i in range(1, cell.colspan):
-                    spacer = SpacerCell(
-                        expands=cell,
-                        span_index=i,
-                        row=cell.row,
-                        col=self.table._cols[col_index + i],
-                    )
-                    self._cells[col_index + i] = spacer
-                    spacer.col._cells[row_index] = spacer
+            cell._row_index = row_index
+            cell._col_index = index
 
-            if cell.rowspan > 1:
-                for i in range(1, cell.rowspan):
-                    spacer = SpacerCell(
-                        expands=cell,
-                        span_index=i,
-                        row=self.table._rows[row_index + i],
-                        col=cell.col,
-                    )
-                    cell.col._cells[row_index + i] = spacer
-                    spacer.row._cells[col_index] = spacer
-
-        elif self.type_ == "col":
+        elif self._type == "col":
             assert isinstance(self, Col)
             cell.row = self.table._rows[index]
             cell.col = cast("Col", self)
 
             row_index = index
-            col_index = self.table.cols.index(self)
+            col_index = next(i for i, col in self.table._cols.items() if col is self)
 
             cell.row._cells[col_index] = cell
 
-            if cell.rowspan > 1:
-                for i in range(1, cell.rowspan):
-                    spacer = SpacerCell(
-                        expands=cell,
-                        span_index=i,
-                        row=self.table._rows[index + i],
-                        col=cell.col,
-                    )
-                    self._cells[row_index + i] = spacer
-                    spacer.row._cells[col_index] = spacer
+            cell._row_index = index
+            cell._col_index = col_index
 
-            if cell.colspan > 1:
-                index = max(cell.row._cells.keys())
-                for i in range(1, cell.colspan):
+        for i in range(cell.rowspan):
+            for j in range(cell.colspan):
+                if i > 0 or j > 0:
                     spacer = SpacerCell(
                         expands=cell,
-                        span_index=i,
-                        row=cell.row,
-                        col=self.table._cols[col_index + i],
+                        span_row_index=i,
+                        span_col_index=j,
+                        row=self.table._rows[row_index + i],
+                        col=self.table._cols[col_index + j],
                     )
-                    cell.row._cells[col_index + i] = spacer
-                    spacer.col._cells[row_index] = spacer
+                    spacer._row_index = row_index + i
+                    spacer._col_index = col_index + j
+                    self.table._rows[row_index + i]._cells[col_index + j] = spacer
+                    self.table._cols[col_index + j]._cells[row_index + i] = spacer
 
     def __repr__(self) -> str:
         """Return a textual representation of the row or column."""
@@ -414,14 +492,14 @@ class RowCol:
 class Row(RowCol):
     """A row in a table."""
 
-    type_ = "row"
+    _type = "row"
     span_type = "colspan"
 
 
 class Col(RowCol):
     """A column in a table."""
 
-    type_ = "col"
+    _type = "col"
     span_type = "rowspan"
 
 
@@ -459,6 +537,82 @@ def compute_padding(cell: Cell, render_count: int = 0) -> DiInt:
     return DiInt(**output)
 
 
+@lru_cache
+def compute_border_visibility(cell: Cell, render_count: int = 0) -> DiBool:
+    """Compute a cell's border visibility."""
+    output = {}
+
+    row = cell.row
+    col = cell.col
+    table = row.table
+    n_rows = len(table._rows)
+    n_cols = len(table._cols)
+    cell_border_visibility = cell.border_visibility
+    row_border_visibility = row.border_visibility
+    col_border_visibility = col.border_visibility
+    table_border_visibility = table.border_visibility
+
+    output["top"] = (
+        (cell_border_visibility and cell_border_visibility.top)
+        or (row_border_visibility and row_border_visibility.top)
+        or (
+            cell._row_index == 0 and col_border_visibility and col_border_visibility.top
+        )
+        or (
+            cell._row_index == 0
+            and table_border_visibility
+            and table_border_visibility.top
+        )
+    )
+
+    output["bottom"] = (
+        (cell_border_visibility and cell_border_visibility.bottom)
+        or (row_border_visibility and row_border_visibility.bottom)
+        or (
+            cell._row_index == n_rows - 1
+            and col_border_visibility
+            and col_border_visibility.bottom
+        )
+        or (
+            table_border_visibility
+            and cell._row_index == n_rows - 1
+            and table_border_visibility.bottom
+        )
+    )
+
+    output["left"] = (
+        (cell_border_visibility and cell_border_visibility.left)
+        or (
+            cell._col_index == 0
+            and row_border_visibility
+            and row_border_visibility.left
+        )
+        or (col_border_visibility and col_border_visibility.left)
+        or (
+            cell._col_index == 0
+            and table_border_visibility
+            and table_border_visibility.left
+        )
+    )
+
+    output["right"] = (
+        (cell_border_visibility and cell_border_visibility.right)
+        or (
+            cell._col_index == n_cols - 1
+            and row_border_visibility
+            and row_border_visibility.left
+        )
+        or (col_border_visibility and col_border_visibility.left)
+        or (
+            table_border_visibility
+            and cell._col_index == n_cols - 1
+            and table_border_visibility.right
+        )
+    )
+
+    return DiBool(**output)
+
+
 ###############
 
 
@@ -478,30 +632,51 @@ def calculate_cell_width(cell: Cell, render_count: int = 0) -> int:
 @lru_cache
 def compute_border_line(cell: Cell, render_count: int = 0) -> DiLineStyle:
     """Compute a cell's border line."""
+    if isinstance(cell, _Dummy):
+        return DiLineStyle(NoLine, NoLine, NoLine, NoLine)
     output = {}
-    cell_border_line = cell.border_line
-    row_border_line = cell.row.border_line
-    col_border_line = cell.col.border_line
-    table_border_line = cell.row.table.border_line
-    for direction in ("top", "right", "bottom", "left"):
-        for source in (
-            cell_border_line,
-            row_border_line,
-            col_border_line,
-            table_border_line,
-        ):
-            value = getattr(source, direction, NoLine)
-            if value is not NoLine:
-                break
-        output[direction] = value
 
-    expands = cell.expands
-    if expands != cell:
+    row = cell.row
+    col = cell.col
+    table = cell.row.table
+    row_cells = row.cells
+    col_cells = col.cells
+    cell_border_line = cell.border_line
+    row_border_line = row.border_line
+    col_border_line = col.border_line
+    table_border_line = table.border_line
+
+    if (value := row_border_line.top) is not NoLine:
+        output["top"] = value
+    elif cell == col_cells[0] and (value := table_border_line.top) is not NoLine:
+        output["top"] = value
+
+    if (value := row_border_line.bottom) is not NoLine:
+        output["bottom"] = value
+    elif cell == col_cells[-1] and (value := table_border_line.bottom) is not NoLine:
+        output["bottom"] = value
+
+    if (value := col_border_line.left) is not NoLine:
+        output["left"] = value
+    elif cell == row_cells[0] and (value := table_border_line.left) is not NoLine:
+        output["left"] = value
+
+    if (value := col_border_line.right) is not NoLine:
+        output["right"] = value
+    elif cell == row_cells[-1] and (value := table_border_line.right) is not NoLine:
+        output["right"] = value
+
+    for direction in ("top", "right", "bottom", "left"):
+        if (value := getattr(cell_border_line, direction, NoLine)) is not NoLine:
+            output[direction] = value
+
+    if isinstance(cell, SpacerCell):
+        expands = cell.expands
         # Set left border to invisible in colspan
-        if expands.colspan > 1:
+        if 0 < cell.span_col_index < expands.colspan:
             output["left"] = InvisibleLine
         # Set top border to invisible in rowspan
-        if expands.rowspan > 1:
+        if 0 < cell.span_row_index < expands.rowspan:
             output["top"] = InvisibleLine
 
     return DiLineStyle(**output)
@@ -509,88 +684,83 @@ def compute_border_line(cell: Cell, render_count: int = 0) -> DiLineStyle:
 
 @lru_cache
 def compute_border_width(cell: Cell, render_count: int = 0) -> DiInt:
-    """Compute the width od a cell's borders."""
-    if isinstance(cell, DummyCell):
-        return DiInt(0, 0, 0, 0)
+    """Compute the width of a cell's borders."""
+    if isinstance(cell, _Dummy):
+        output = {"top": 0, "right": 0, "bottom": 0, "left": 0}
+    else:
+        output = {"top": 1, "right": 1, "bottom": 1, "left": 1}
 
-    if isinstance(cell, SpacerCell):
-        cell = cell.expands
-
-    output = {"top": 1, "right": 1, "bottom": 1, "left": 1}
-
+    # XXX If don't understand why row needs to follow cell expansion but column doesn't
     row = cell.row
     col = cell.col
-    table = col.table
+    table = row.table
 
-    if row not in table._rows.values():
+    if row not in table._rows.values() or col not in table._cols.values():
         # The table has not yet been fully constructed
-        return DiInt(1, 1, 1, 1)
+        return DiInt(**output)
 
     row_index = table.rows.index(row)
     col_index = table.cols.index(col)
 
-    row_top = table._rows.get(row_index - 1)
-    col_right = table._cols.get(col_index + 1)
-    row_bottom = table._rows.get(row_index + 1)
-    col_left = table._cols.get(col_index - 1)
+    row_cells_bv = [compute_border_visibility(cell, render_count) for cell in row.cells]
+    col_cells_bv = [compute_border_visibility(cell, render_count) for cell in col.cells]
 
-    if table.collapse_empty_borders:
-        output["top"] = (
-            any(
-                compute_border_line(cell.expands, render_count).top.visible
-                for cell in row.cells
-            )
-            or (
-                row_top
-                and any(
-                    compute_border_line(cell.expands, render_count).bottom.visible
-                    for cell in row_top.cells
-                )
-            )
-            or 0
+    for cell, cell_left in zip(row.cells, table.rows[row_index - 1].cells):
+        if (
+            compute_border_visibility(cell).left
+            or compute_border_visibility(cell_left).right
+        ):
+            break
+
+    row_top_cells_bv = (
+        compute_border_visibility(cell, render_count)
+        for cell in (
+            table.rows[row_index - 1].cells if row_index - 1 in table._rows else []
         )
-        output["right"] = (
-            any(
-                compute_border_line(cell.expands, render_count).right.visible
-                for cell in col.cells
-            )
-            or (
-                col_right
-                and any(
-                    compute_border_line(cell.expands, render_count).left.visible
-                    for cell in col_right.cells
-                )
-            )
-            or 0
+    )
+    col_left_cells_bv = (
+        compute_border_visibility(cell, render_count)
+        for cell in (
+            table.cols[col_index - 1].cells if col_index - 1 in table._cols else []
         )
-        output["bottom"] = (
-            any(
-                compute_border_line(cell.expands, render_count).bottom.visible
-                for cell in row.cells
-            )
-            or (
-                row_bottom
-                and any(
-                    compute_border_line(cell.expands, render_count).top.visible
-                    for cell in row_bottom.cells
-                )
-            )
-            or 0
+    )
+    col_right_cells_bv = (
+        compute_border_visibility(cell, render_count)
+        for cell in (
+            table.cols[col_index + 1].cells if col_index + 1 in table._cols else []
         )
-        output["left"] = (
-            any(
-                compute_border_line(cell.expands, render_count).left.visible
-                for cell in col.cells
-            )
-            or (
-                col_left
-                and any(
-                    compute_border_line(cell.expands, render_count).right.visible
-                    for cell in col_left.cells
-                )
-            )
-            or 0
+    )
+    row_bottom_cells_bv = (
+        compute_border_visibility(cell, render_count)
+        for cell in (
+            table.rows[row_index + 1].cells if row_index + 1 in table._rows else []
         )
+    )
+
+    output["top"] = int(
+        any(
+            bv.top or (bv_other and bv_other.bottom)
+            for bv, bv_other in zip_longest(row_cells_bv, row_top_cells_bv)
+        )
+    )
+    output["right"] = int(
+        any(
+            bv.right or (bv_other and bv_other.left)
+            for bv, bv_other in zip_longest(col_cells_bv, col_right_cells_bv)
+        )
+    )
+    output["bottom"] = int(
+        any(
+            bv.bottom or (bv_other and bv_other.top)
+            for bv, bv_other in zip_longest(row_cells_bv, row_bottom_cells_bv)
+        )
+    )
+    output["left"] = int(
+        any(
+            bv.left or (bv_other and bv_other.right)
+            for bv, bv_other in zip_longest(col_cells_bv, col_left_cells_bv)
+        )
+    )
 
     return DiInt(**output)
 
@@ -620,12 +790,11 @@ def calculate_col_widths(
 
     """
     # TODO - this function is too slow
+
     col_widths = [
         max(
-            [
-                *[calculate_cell_width(cell, render_count) for cell in col.cells],
-                min_col_width,
-            ]
+            min_col_width,
+            *(calculate_cell_width(cell, render_count) for cell in col.cells),
         )
         for col in cols
     ]
@@ -633,10 +802,10 @@ def calculate_col_widths(
     def total_width(col_widths: list[int]) -> int:
         """Calculate the total width of the columns including borders."""
         width = sum(col_widths)
-        for col in cols:
-            width += compute_border_width(col.cells[0], render_count).right
         if cols:
             width += compute_border_width(cols[0].cells[0], render_count).left
+        for _i, col in enumerate(cols):
+            width += compute_border_width(col.cells[0], render_count).right
         return width
 
     def expand(target: int) -> None:
@@ -644,6 +813,7 @@ def calculate_col_widths(
         max_width = max(target, len(col_widths) * min_col_width)
         while total_width(col_widths) < max_width:
             # Expand only columns which do not have a width set if possible
+            # TODO - expand proportionately to given widths
             col_index_widths = [
                 (i, col_widths[i])
                 for i, col in enumerate(cols)
@@ -723,9 +893,10 @@ def compute_align(cell: Cell, render_count: int = 0) -> FormattedTextAlign:
         return cell.row.align or cell.col.align or cell.row.table.align
 
 
+@lru_cache
 def compute_lines(
     cell: Cell, width: int, render_count: int = 0
-) -> Iterable[StyleAndTextTuples]:
+) -> list[StyleAndTextTuples]:
     """Wrap the cell's text to a given width.
 
     Args:
@@ -737,21 +908,23 @@ def compute_lines(
         A list of lines of formatted text
     """
     padding = compute_padding(cell, render_count)
-    return split_lines(
-        align(
-            wrap(
-                [
-                    *([("", "\n" * padding.top)] if padding.top else []),
-                    *compute_text(cell, render_count),
-                    *([("", "\n" * padding.bottom)] if padding.bottom else []),
-                ],
+    return list(
+        split_lines(
+            align(
+                wrap(
+                    [
+                        *([("", "\n" * padding.top)] if padding.top else []),
+                        *compute_text(cell, render_count),
+                        *([("", "\n" * padding.bottom)] if padding.bottom else []),
+                    ],
+                    width=width,
+                    placeholder="",
+                ),
+                compute_align(cell, render_count),
                 width=width,
+                style=compute_style(cell, render_count),
                 placeholder="",
-            ),
-            compute_align(cell, render_count),
-            width=width,
-            style=compute_style(cell, render_count),
-            placeholder="",
+            )
         )
     )
 
@@ -759,43 +932,56 @@ def compute_lines(
 @lru_cache
 def compute_border_style(cell: Cell, render_count: int = 0) -> DiStr:
     """Compute the cell's final style for each of a cell's borders."""
-    table_ = cell.row.table.border_style
-    row_ = cell.row.border_style
-    col_ = cell.col.border_style
-    cell_ = cell.border_style
     output = {}
-    for direction, line in zip(
-        ("top", "right", "bottom", "left"),
-        compute_border_line(cell, render_count),
-    ):
-        if line.visible:
-            output[direction] = " ".join(
-                (
-                    getattr(table_, direction),
-                    getattr(row_, direction),
-                    getattr(col_, direction),
-                    getattr(cell_, direction),
-                )
-            )
-        else:
-            output[direction] = ""
 
-    expands = cell.expands
-    if expands != cell:
-        # Set left border to invisible in colspan
-        if expands.colspan > 1:
-            output["left"] = expands.style
-        # Set top border to invisible in rowspan
-        if expands.rowspan > 1:
-            output["top"] = expands.style
+    row = cell.row
+    col = cell.col
+    table = row.table
+    max_row = len(table._rows) - 1
+    max_col = len(table._cols) - 1
+    cell_border_style = cell.border_style
+    row_border_style = row.border_style
+    col_border_style = col.border_style
+    table_border_style = table.border_style
+
+    output["top"] = "".join(
+        (
+            table_border_style.top if cell._row_index == 0 else "",
+            col_border_style.top if cell._row_index == 0 else "",
+            row_border_style.top,
+            cell_border_style.top,
+        )
+    )
+    output["right"] = "".join(
+        (
+            table_border_style.right if cell._col_index == max_col else "",
+            col_border_style.right,
+            row_border_style.right if cell._col_index == max_col else "",
+            cell_border_style.right,
+        )
+    )
+    output["bottom"] = "".join(
+        (
+            table_border_style.bottom if cell._row_index == max_row else "",
+            col_border_style.bottom if cell._row_index == max_row else "",
+            row_border_style.bottom,
+            cell_border_style.bottom,
+        )
+    )
+    output["left"] = "".join(
+        (
+            table_border_style.left if cell._col_index == 0 else "",
+            col_border_style.left,
+            row_border_style.left if cell._col_index == 0 else "",
+            cell_border_style.left,
+        )
+    )
 
     return DiStr(**output)
 
 
 class Table:
     """A table."""
-
-    collapse_empty_borders: bool
 
     def __init__(
         self,
@@ -806,10 +992,10 @@ class Table:
         align: FormattedTextAlign = FormattedTextAlign.LEFT,
         style: str = "",
         padding: DiInt | int | None = None,
-        border_line: DiLineStyle | LineStyle = ThinLine,
+        border_line: DiLineStyle | LineStyle = NoLine,
         border_style: DiStr | str = "",
-        border_spacing: int = 0,
-        collapse_empty_borders: bool = True,
+        border_visibility: DiBool | bool = False,
+        background_style: str = "",
     ) -> None:
         """Create a new table instance.
 
@@ -825,9 +1011,9 @@ class Table:
             padding: The default padding for cells in the table
             border_line: The line to use for the borders
             border_style: The style to apply to the table's borders
-            border_spacing: The distance between cell borders
-            collapse_empty_borders: If :const:`True`, if borders in the table are
+            border_visibility: If :const:`True`, if borders in the table are
                 :class:`Invisible` for their entire length, no extra line will be drawn
+            background_style: The style to apply to missing cells
 
         """
         self.render_count = 0
@@ -870,9 +1056,17 @@ class Table:
             if isinstance(border_style, str)
             else border_style
         )
-
-        self.collapse_empty_borders = collapse_empty_borders
-        self.border_spacing = border_spacing
+        self.border_visibility: DiBool = (
+            DiBool(
+                border_visibility,
+                border_visibility,
+                border_visibility,
+                border_visibility,
+            )
+            if isinstance(border_visibility, bool)
+            else border_visibility
+        )
+        self.background_style: str = background_style
 
     @property
     def padding(self) -> DiInt:
@@ -975,12 +1169,19 @@ class Table:
 
         # Merge existing row with new row
         cells = self._rows[index]._cells
+        # Update column reference on existing cells
+        for cell in cells.values():
+            cell.row = row
+        # Add cells from new row to the current cell list
         i = 0
-        for cell in row.cells:
+        for cell in row._cells.values():
             while i in cells:
                 i += 1
+            cell._col_index = i
             cells[i] = cell
+        # Update the new row's cell list
         row._cells = cells
+        # Add the new row to the table
         self._rows[index] = row
 
     def new_col(self, *args: Any, **kwargs: Any) -> Col:
@@ -1006,12 +1207,19 @@ class Table:
 
         # Merge existing col with new col
         cells = self._cols[index]._cells
+        # Update column reference on existing cells
+        for cell in cells.values():
+            cell.col = col
+        # Add cells from new column to the current cell list
         i = 0
-        for cell in col.cells:
+        for cell in col._cells.values():
             while i in cells:
                 i += 1
+            cell._row_index = i
             cells[i] = cell
+        # Update the new columns's cell list
         col._cells = cells
+        # Add the new column to the table
         self._cols[index] = col
 
     def calculate_col_widths(
@@ -1021,154 +1229,152 @@ class Table:
     ) -> list[int]:
         """Calculate the table's column widths."""
         width = self.width if width is None else to_dimension(width)
-        return calculate_col_widths(tuple(self.cols), width, self.expand)
+        return calculate_col_widths(
+            tuple(self.cols), width, self.expand, self.render_count
+        )
 
-    def draw_border_row(
-        self,
-        row_above: Row | None,
-        row_below: Row | None,
-        col_widths: list[int],
-        collapse_empty_borders: bool,
-    ) -> StyleAndTextTuples:
-        """Draw a border line separating two rows in the table."""
-        output: StyleAndTextTuples = []
-        if row_above is not None:
-            row_above_cells = row_above.cells
-        else:
-            assert row_below is not None
-            row_above_cells = [DummyCell()] * len(row_below.cells)
-        if row_below is not None:
-            row_below_cells = row_below.cells
-        else:
-            assert row_above is not None
-            row_below_cells = [DummyCell()] * len(row_above.cells)
-
-        cells_above = [DummyCell(), *(row_above_cells), DummyCell()]
-        cells_below = [DummyCell(), *(row_below_cells), DummyCell()]
-        edges = ""
-
+    def calculate_cell_widths(
+        self, width: AnyDimension | None = None
+    ) -> dict[Cell, int]:
+        """Calculate widths for each table cell, taking colspans into account."""
         render_count = self.render_count
-
-        for i, ((nw, ne), (sw, se)) in enumerate(
-            zip(
-                pairwise(cells_above),
-                pairwise(cells_below),
-            )
-        ):
-            sw_bs = compute_border_style(sw, render_count)
-            ne_bs = compute_border_style(ne, render_count)
-            se_bs = compute_border_style(se, render_count)
-            nw_bs = compute_border_style(nw, render_count)
-
-            node_style = " ".join(
-                (
-                    ne_bs.bottom,
-                    sw_bs.right,
-                    sw_bs.top,
-                    ne_bs.left,
-                    nw_bs.bottom,
-                    se_bs.left,
-                    se_bs.top,
-                    nw_bs.right,
-                )
-            )
-            node_char = get_node(
-                compute_border_line(nw, render_count),
-                ne_bl := compute_border_line(ne, render_count),
-                se_bl := compute_border_line(se, render_count),
-                compute_border_line(sw, render_count),
-            )
-
-            # Do not draw border row if border collapse is on and all parts are invisible
-            if (
-                not compute_border_width(nw, render_count).right
-                and not compute_border_width(ne, render_count).left
-            ):
-                node_char = node_char.strip()
-
-            if node_char:
-                output.append((node_style, node_char))
-
-            if i < len(col_widths):
-                style = " ".join((se_bs.top, ne_bs.bottom))
-                edge = get_horizontal_edge(ne_bl, se_bl)
-                edges = f"{edges}{edge}"
-                output += [(style, edge * col_widths[i])]
-
-        # Do not draw border row if border collapse is on and all parts are invisible
-        if collapse_empty_borders and not edges.strip():
-            return []
-
-        return output
+        col_widths = self.calculate_col_widths(width)
+        widths = {}
+        for _y, row in enumerate(self.rows):
+            for x, cell in enumerate(row.cells):
+                widths[cell] = 0
+                if cell.expands == cell:
+                    colspan = cell.colspan
+                    widths[cell] += sum(col_widths[x : x + colspan]) + sum(
+                        compute_border_width(w, render_count).right
+                        or compute_border_width(e, render_count).left
+                        for w, e in pairwise(row.cells[x : x + colspan])
+                    )
+        return widths
 
     def draw_table_row(
         self,
-        row: RowCol | None,
+        row_above: RowCol | None,
+        row_below: RowCol | None,
+        cell_widths: dict[Cell, int],
         col_widths: list[int],
-        collapse_empty_borders: bool,
-    ) -> StyleAndTextTuples:
+        row_edge_visibility: bool,
+        col_edge_visibilities: dict[int, bool],
+    ) -> Iterable[StyleAndTextTuples]:
         """Draw a row in the table."""
-        output_lines: list[StyleAndTextTuples] = []
-        if row:
+
+        def _calc_cell_inner_width(cell: Cell) -> int:
+            """Calculate a cell's inner width."""
+            if isinstance(cell, SpacerCell) and cell.span_col_index > 0:
+                return 0
+            cell = cell.expands
+            # Sum widths of spanned columns
+            width = cell_widths[cell]
+            # Remove padding
+            padding = compute_padding(cell, render_count)
+            width -= (padding.left or 0) + (padding.right or 0)
+            return max(width, 0)
+
+        #################
+
+        assert row_above is not None or row_below is not None
+
+        render_count = self.render_count
+        dummy = _Dummy()
+
+        row_above_cells: list[Cell]
+        row_below_cells: list[Cell]
+        if row_above is None:
+            assert row_below is not None
+            row_above_cells = [dummy] * len(row_below.cells)
+        else:
+            row_above_cells = row_above.cells
+        if row_below is None:
+            assert row_above is not None
+            row_below_cells = [dummy] * len(row_above.cells)
+        else:
+            row_below_cells = row_below.cells
+        row_above_cells_pad = [dummy, *row_above_cells, dummy]
+        row_below_cells_pad = [dummy, *row_below_cells, dummy]
+
+        if row_above is not None:
+            # Skip rows where all cells expand a cell above
+            # if all(
+            #     isinstance(cell, SpacerCell) and cell.span_row_index > 0
+            #     for cell in row_above_cells
+            # ):
+            #     return output_lines
+
             # Calculate borders
             borders = []
             render_count = self.render_count
-            for w, e in zip([DummyCell(), *row.cells], [*row.cells, DummyCell()]):
-                border_style = " ".join(
-                    (
-                        compute_border_style(e, render_count).left,
-                        compute_border_style(w, render_count).right,
-                    )
-                )
-                border_char = get_vertical_edge(
-                    compute_border_line(w, render_count),
-                    compute_border_line(e, render_count),
-                )
-
+            for i, (w, e) in enumerate(pairwise(row_above_cells_pad)):
                 # We only need to check on cell to the left and one cell to the right
-                if self.collapse_empty_borders and (
-                    not compute_border_width(w, render_count).right
-                    and not compute_border_width(e, render_count).left
-                ):
-                    border_char = border_char.strip()
+                if not col_edge_visibilities[i]:
+                    borders.append(("", ""))
 
-                borders.append((border_style, border_char))
-
-            def _calc_cell_width(cell: Cell, col: int, col_widths: list[int]) -> int:
-                """Calculate a cell's width."""
-                if isinstance(cell, SpacerCell) and cell.expands.colspan > 1:
-                    return 0
-                width = col_widths[col]
-                # Remove padding
-                padding = compute_padding(cell, render_count)
-                width -= (padding.left or 0) + (padding.right or 0)
-
-                # Expand if colspan
-                for i in range(col + 1, col + cell.colspan):
-                    width += col_widths[i]
-                    if borders[col][1]:  # Check text fragment
-                        width += 1
-
-                return width
+                else:
+                    border_style = " ".join(
+                        (
+                            compute_border_style(e, render_count).left,
+                            compute_border_style(w, render_count).right,
+                        )
+                    )
+                    border_char = get_vertical_edge(
+                        compute_border_line(w, render_count),
+                        compute_border_line(e, render_count),
+                    )
+                    borders.append((border_style, border_char))
 
             # Draw row contents line by line
-            row_lines = zip_longest(
-                *(
-                    compute_lines(
-                        cell,
-                        width=_calc_cell_width(cell, col, col_widths),
-                        render_count=render_count,
-                    )
-                    for col, cell in enumerate(row.cells)
-                )
-            )
 
+            # Calculate the lines in each cell.
+            # The result of `compute_lines` is memoized, so the same list instance gets
+            # returned each time we call this.
+            # We will remove rows from the returned instance of each cell's line list
+            # to keep track of remaining lines for row-span cells
+            row_cell_lines = [
+                compute_lines(
+                    cell.expands,
+                    width=_calc_cell_inner_width(cell),
+                    render_count=render_count,
+                )
+                for col, cell in enumerate(row_above_cells)
+            ]
+
+            # We will iterate over a copy of each cell's lines, as we are removing
+            # items from the list as we go
+            row_lines = zip_longest(*(x[:] for x in row_cell_lines))
             for row_line in row_lines:
                 output_line: StyleAndTextTuples = []
-                for i, (line, cell) in enumerate(zip(row_line, row.cells)):
-                    # Skip spacer cells
-                    if isinstance(cell, SpacerCell) and cell.expands.colspan > 1:
+
+                # If we are not on the last row of a rowspan, carry lines over to the
+                # next table row
+                if all(
+                    line is None
+                    or (cell.rowspan > 1)
+                    or (
+                        isinstance(cell, SpacerCell)
+                        and cell.expands.rowspan > 1
+                        and (cell.span_row_index > 1 or cell.span_col_index)
+                        and cell.span_row_index < cell.expands.rowspan - 1
+                    )
+                    or (
+                        isinstance(cell, SpacerCell)
+                        and cell.expands.colspan > 1
+                        and cell.span_col_index
+                    )
+                    for line, cell in zip(row_line, row_above_cells)
+                ):
+                    break
+
+                for i, (cell_line, cell, row_cell_line) in enumerate(
+                    zip(row_line, row_above_cells, row_cell_lines)
+                ):
+                    # Skip horizontal spacer cells
+                    if isinstance(cell, SpacerCell) and (cell.span_col_index):
                         continue
+
                     output_line.append(borders[i])
 
                     cell_style = compute_style(cell, render_count)
@@ -1176,44 +1382,163 @@ class Table:
                     padding = compute_padding(cell, render_count)
                     padding_left, padding_right = padding.left, padding.right
 
-                    excess = (
-                        sum(col_widths[i : i + cell.colspan])
-                        - padding_left
-                        - fragment_list_width(line or [])
-                        - padding_right
+                    excess = _calc_cell_inner_width(cell) - fragment_list_width(
+                        cell_line or []
                     )
 
                     output_line.extend(
                         [
-                            (padding_style, " " * (padding.left or 0)),
-                            *(line or []),
+                            (padding_style, " " * (padding_left or 0)),
+                            *(cell_line or []),
                             (cell_style, " " * excess),
-                            (padding_style, " " * (padding.right or 0)),
+                            (padding_style, " " * (padding_right or 0)),
                         ]
                     )
-                output_line.append(borders[i + 1])
-                output_lines.append(output_line)
 
-        return join_lines(output_lines)
+                    if row_cell_line:
+                        row_cell_line.pop(0)
+
+                output_line.append(borders[i + 1])
+                yield output_line
+
+        ##################################
+        # Draw border row below
+        ##################################
+
+        # Don't draw border rows if all cells expand a cell above
+        if row_below and all(
+            isinstance(cell, SpacerCell) and cell.span_row_index > 0
+            for cell in row_below_cells
+        ):
+            raise StopIteration
+
+        # Draw a border row if at least once cell above have a visible bottom border
+        # or a cell below has a visible top border
+        if row_edge_visibility:
+            output_line = []
+
+            for i, ((nw, ne), (sw, se)) in enumerate(
+                zip(
+                    pairwise(row_above_cells_pad),
+                    pairwise(row_below_cells_pad),
+                )
+            ):
+                cell = se
+
+                # Skip horizontal spacer cells
+                if isinstance(cell, SpacerCell):
+                    if cell.span_col_index and cell.span_row_index:
+                        continue
+
+                nw_bs = compute_border_style(nw, render_count)
+                ne_bs = compute_border_style(ne, render_count)
+                se_bs = compute_border_style(se, render_count)
+                sw_bs = compute_border_style(sw, render_count)
+
+                if sw.expands == se.expands == nw.expands == ne.expands:
+                    node_style = sw.expands.style
+                else:
+                    # TODO - use style where most directions agree
+                    node_style = " ".join(
+                        (
+                            se_bs.left,
+                            se_bs.top,
+                            ne_bs.bottom,
+                            ne_bs.left,
+                            sw_bs.right,
+                            sw_bs.top,
+                            nw_bs.bottom,
+                            nw_bs.right,
+                        )
+                    )
+                # Do not draw border nodes if one dimension is not visible
+                ne_bl = compute_border_line(ne, render_count)
+                se_bl = compute_border_line(se, render_count)
+
+                if not row_edge_visibility or not col_edge_visibilities[i]:
+                    node_char = ""
+                else:
+                    node_char = get_node(
+                        compute_border_line(nw, render_count),
+                        ne_bl,
+                        se_bl,
+                        compute_border_line(sw, render_count),
+                    )
+
+                if node_char:
+                    output_line.append((node_style, node_char))
+
+                if i < len(row_above_cells):
+                    if isinstance(cell, SpacerCell) and cell.span_row_index:
+                        if remaining_lines := row_cell_lines[i]:
+                            line = remaining_lines.pop(0)
+                        else:
+                            line = []
+                        cell_style = compute_style(cell, render_count)
+                        padding_style = f"{cell_style} nounderline"
+                        padding = compute_padding(cell, render_count)
+                        padding_left, padding_right = padding.left, padding.right
+                        excess = _calc_cell_inner_width(cell) - fragment_list_width(
+                            line or []
+                        )
+                        output_line.extend(
+                            [
+                                (padding_style, " " * (padding_left or 0)),
+                                *line,
+                                (cell_style, " " * excess),
+                                (padding_style, " " * (padding_right or 0)),
+                            ]
+                        )
+                        continue
+
+                    style = " ".join((se_bs.top, ne_bs.bottom))
+                    edge = get_horizontal_edge(ne_bl, se_bl)
+                    text = edge * col_widths[i]
+                    output_line += [(style, text)]
+
+            yield output_line
 
     def render(self, width: AnyDimension | None = None) -> StyleAndTextTuples:
         """Draw the table, optionally at a given character width."""
         self.render_count += 1
         width = self.width if width is None else to_dimension(width)
+
+        # Calculate border visibility
+        render_count = self.render_count
+        row_edge_visibilities: dict[int, bool] = defaultdict(lambda: False)
+        col_edge_visibilities: dict[int, bool] = defaultdict(lambda: False)
+        for y, row in enumerate(self.rows):
+            for x, cell in enumerate(row.cells):
+                bv = compute_border_visibility(cell, render_count)
+                if bv.left:
+                    col_edge_visibilities[x] = True
+                if bv.right:
+                    col_edge_visibilities[x + 1] = True
+                if bv.top:
+                    row_edge_visibilities[y] = True
+                if bv.bottom:
+                    row_edge_visibilities[y + 1] = True
+
         col_widths = self.calculate_col_widths(width)
-        lines = []
+        cell_widths = self.calculate_cell_widths(width)
+
+        lines: list[StyleAndTextTuples] = []
 
         if self.rows:
-            collapse_empty_borders = self.collapse_empty_borders
-            for row_above, row_below in zip([None, *self.rows], [*self.rows, None]):
-                if line := self.draw_border_row(
-                    row_above, row_below, col_widths, collapse_empty_borders
-                ):
-                    lines.append(line)
-                if line := self.draw_table_row(
-                    row_below, col_widths, collapse_empty_borders
-                ):
-                    lines.append(line)
+            for i, (row_above, row_below) in enumerate(
+                pairwise([None, *self.rows, None])
+            ):
+                lines.extend(
+                    self.draw_table_row(
+                        row_above,
+                        row_below,
+                        cell_widths,
+                        col_widths,
+                        row_edge_visibilities[i],
+                        col_edge_visibilities,
+                    )
+                )
+
         return join_lines(lines)
 
     def __pt_formatted_text__(self) -> StyleAndTextTuples:
@@ -1224,7 +1549,7 @@ class Table:
 class DummyRow(Row):
     """A dummy row - created to hold cells without an assigned column."""
 
-    def add_cell(self, cell: Cell) -> None:
+    def add_cell(self, cell: Cell, index: int | None = None) -> None:
         """Prevent cells being added to a dummy row."""
         raise NotImplementedError("Cannot add a cell to a DummyRow")
 
@@ -1232,7 +1557,7 @@ class DummyRow(Row):
 class DummyCol(Col):
     """A dummy column - created to hold cells without an assigned column."""
 
-    def add_cell(self, cell: Cell) -> None:
+    def add_cell(self, cell: Cell, index: int | None = None) -> None:
         """Prevent cells being added to a dummy column."""
         raise NotImplementedError("Cannot add a cell to a DummyCol")
 

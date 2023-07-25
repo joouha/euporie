@@ -16,6 +16,7 @@ from typing import TYPE_CHECKING, NamedTuple, cast
 from urllib.parse import urljoin
 
 from flatlatex.data import subscript, superscript
+from fsspec.core import url_to_fs
 from prompt_toolkit.application.current import get_app_session
 from prompt_toolkit.data_structures import Size
 from prompt_toolkit.filters.base import Condition
@@ -24,6 +25,7 @@ from prompt_toolkit.filters.utils import _never as never
 from prompt_toolkit.formatted_text.base import StyleAndTextTuples
 from prompt_toolkit.formatted_text.utils import split_lines
 from prompt_toolkit.layout.dimension import Dimension
+from prompt_toolkit.utils import Event
 from upath import UPath
 
 from euporie.core.border import (
@@ -51,7 +53,7 @@ from euporie.core.convert.core import convert, get_format
 from euporie.core.convert.utils import data_pixel_size, pixels_to_cell_size
 from euporie.core.current import get_app
 from euporie.core.data_structures import DiBool, DiInt, DiStr
-from euporie.core.formatted_text.table import Table, compute_padding
+from euporie.core.formatted_text.table import Cell, Table, compute_padding
 from euporie.core.formatted_text.utils import (
     FormattedTextAlign,
     add_border,
@@ -117,7 +119,7 @@ _SELECTOR_RE = re.compile(
     r"""
         (?:^|\s*(?P<comb>[\s>+~]|(?=::))\s*)
         (?P<item>(?:::)?[^\s>+~:[\]]+)?
-        (?P<attr>\[[^\s>+~:]+\])?
+        (?P<attr>\[[^\s>+~]+\])?
         (?P<pseudo>\:[^:][^\s>+~]*)?
     """,
     re.VERBOSE,
@@ -141,7 +143,7 @@ _AT_RULE_RE = re.compile(
 )
 
 _NESTED_AT_RULE_RE = re.compile(
-    r"@(?P<identifier>[\w-]+)\s+(?P<rule>[^{]*?)\s*{\s*(?P<part>.*)\s*}"
+    r"@(?P<identifier>[\w-]+)\s*(?P<rule>[^{]*?)\s*{\s*(?P<part>.*)\s*}"
 )
 
 _MEDIA_QUERY_TARGET_RE = re.compile(
@@ -154,6 +156,24 @@ _MEDIA_QUERY_TARGET_RE = re.compile(
         )
     """,
     re.VERBOSE,
+)
+
+_GRID_TEMPLATE_RE = re.compile(
+    r"""
+        (
+            none|auto|(?:min|max)-content
+          | (?<!-)\d+(?:\.\d+)?(?:\w{1,4}|%)
+          | minmax\(\s*[^,]+?\s*,\s*[^)]+?\s*\)
+          | repeat\(\s*(?:\d+|auto-fill|auto-fit)\s*,\s*[^)]+?\s*\)
+          | [^\s]+
+        )
+        (?=\s+|$)
+    """,
+    re.MULTILINE | re.VERBOSE,
+)
+
+_GRID_TEMPLATE_REPEAT_RE = re.compile(
+    r"repeat\(\s*(?P<count>\d+)\s*,\s*(?P<value>[^)]+?)\s*\)"
 )
 
 # List of elements which might not have a close tag
@@ -362,7 +382,9 @@ def match_css_selector(
                 rule = pseudo[:end]
                 pseudo = pseudo[end + 1 :]
                 matched = sibling_element_index is not None and (
-                    (rule == "odd" and sibling_element_index % 2 == 1)
+                    # n-th child indices start at one
+                    (str(sibling_element_index + 1) == rule)
+                    or (rule == "odd" and sibling_element_index % 2 == 1)
                     or (rule == "even" and sibling_element_index % 2 == 0)
                 )
                 continue
@@ -412,34 +434,40 @@ def match_css_selector(
     # Attribute selectors
     # TODO - chained attribute selectors
     if attrs and matched:
-        test = attrs[1 : attrs.index("]")]
-        if (op := "*=") in test:
-            attr, _, value = test.partition(op)
-            value = value.strip("'\"")
-            matched = value in element_attrs.get(attr, "")
-        elif (op := "$=") in test:
-            attr, _, value = test.partition(op)
-            value = value.strip("'\"")
-            matched = element_attrs.get(attr, "").endswith(value)
-        elif (op := "^=") in test:
-            attr, _, value = test.partition(op)
-            value = value.strip("'\"")
-            matched = element_attrs.get(attr, "").startswith(value)
-        elif (op := "|=") in test:
-            attr, _, value = test.partition(op)
-            value = value.strip("'\"")
-            matched = element_attrs.get(attr) in (value, f"{value}-")
-        elif (op := "~=") in test:
-            attr, _, value = test.partition(op)
-            value = value.strip("'\"")
-            matched = value in element_attrs.get(attr, "").split()
-        elif (op := "=") in test:
-            attr, _, value = test.partition(op)
-            value = value.strip("'\"")
-            matched = element_attrs.get(attr) == value
+        for test in re.split("(?<=\])(?=\[)", attrs):
+            test = test[1:-1]
+            if (op := "*=") in test:
+                attr, _, value = test.partition(op)
+                value = value.strip("'\"")
+                matched = value in element_attrs.get(attr, "")
+            elif (op := "$=") in test:
+                attr, _, value = test.partition(op)
+                value = value.strip("'\"")
+                matched = element_attrs.get(attr, "").endswith(value)
+            elif (op := "^=") in test:
+                attr, _, value = test.partition(op)
+                value = value.strip("'\"")
+                matched = element_attrs.get(attr, "").startswith(value)
+            elif (op := "|=") in test:
+                attr, _, value = test.partition(op)
+                value = value.strip("'\"")
+                matched = element_attrs.get(attr) in (value, f"{value}-")
+            elif (op := "~=") in test:
+                attr, _, value = test.partition(op)
+                value = value.strip("'\"")
+                matched = value in element_attrs.get(attr, "").split()
+            elif (op := "=") in test:
+                attr, _, value = test.partition(op)
+                value = value.strip("'\"")
+                matched = element_attrs.get(attr) == value
+            else:
+                matched = test in element_attrs
+
+            if not matched:
+                break
+
         else:
-            matched = test in element_attrs
-        selector = selector[2 + len(test) :]
+            selector = selector[2 + len(attrs) :]
 
     return matched
 
@@ -463,9 +491,12 @@ def try_eval(value: str, default: Any = None) -> Any:
 def get_integer(value: str) -> int | None:
     """Extract the first integer from a string."""
     for word in value.split(" "):
-        for c in word.partition(".")[0].split():
-            if c.isdigit():
-                return int(c)
+        try:
+            output = float(word)
+        except ValueError:
+            continue
+        else:
+            return round(output)
     return None
 
 
@@ -505,7 +536,7 @@ def css_dimension(
     value: str,
     vertical: bool = False,
     available: float | int | None = None,
-) -> int | float | None:
+) -> float | None:
     """Convert CSS dimensions to terminal cell sizes."""
     # TODO - create a unit class for easy conversion
     # Get digits
@@ -526,7 +557,7 @@ def css_dimension(
         return None
 
     if number == 0:
-        return 0
+        return 0.0
 
     # Get units
     units = ""
@@ -555,14 +586,7 @@ def css_dimension(
     else:
         cell_px, cell_py = 10, 20
 
-    if units in {"em", "rem", "lh", "ex", "ch", "rlh"}:
-        # one unit = one cell width
-        if vertical:
-            return number * cell_px / cell_py
-        else:
-            return number
-
-    else:  # units == "px"
+    if units == "px":
         cols = number / cell_px
 
         if vertical:
@@ -570,6 +594,16 @@ def css_dimension(
             return cols / aspect
         else:
             return cols
+
+    elif units == "fr":
+        return number
+
+    else:  # elif units in {"em", "rem", "lh", "ex", "ch", "rlh"}:
+        # one unit = one cell width
+        if vertical:
+            return number * cell_px / cell_py
+        else:
+            return number
 
 
 def parse_css_content(content: str) -> dict[str, str]:
@@ -582,9 +616,7 @@ def parse_css_content(content: str) -> dict[str, str]:
     for declaration in content.split(";"):
         name, _, value = declaration.partition(":")
         name = name.strip().lower()
-
-        # Ignore "!important" tags for now - TODO
-        value = value.replace("!important", "").strip()
+        value = value.strip()
 
         # Helpers
 
@@ -604,6 +636,17 @@ def parse_css_content(content: str) -> dict[str, str]:
             else:
                 top = right = bottom = left = ""
             return top, right, bottom, left
+
+        def _split_pair(value: str) -> tuple[str, str]:
+            values = value.split()
+            if len(values) == 1:
+                x = y = values[0]
+            elif len(values) == 2:
+                x = values[0]
+                y = values[1]
+            else:
+                x = y = ""
+            return x, y
 
         # Compute values
 
@@ -710,6 +753,30 @@ def parse_css_content(content: str) -> dict[str, str]:
             for value in values.intersection(wraps):
                 theme["flex_wrap"] = value
 
+        # Grid stuff
+        elif name == "grid-template":
+            rows, cols = value.split("/")
+            theme["grid_template_rows"] = rows.strip()
+            theme["grid_template_columns"] = cols.strip()
+
+        elif name == "grid-column":
+            start, _, end = value.partition("/")
+            theme["grid_column_start"] = start.strip()
+            theme["grid_column_end"] = end.strip()
+
+        elif name == "grid-row":
+            start, _, end = value.partition("/")
+            theme["grid_row_start"] = start.strip()
+            theme["grid_row_end"] = end.strip()
+
+        # Gaps
+        elif name == "gap":
+            theme["column_gap"], theme["row_gap"] = _split_pair(value)
+        elif name == "grid-column-gap":
+            theme["column_gap"] = value
+        elif name == "grid-row-gap":
+            theme["row_gap"] = value
+
         else:
             name = name.replace("-", "_")
             theme[name] = value
@@ -809,15 +876,25 @@ class Theme(Mapping):
     @cached_property
     def theme(self) -> dict[str, str]:
         """Return the combined computed theme."""
-        return {
-            **_DEFAULT_ELEMENT_CSS,
-            **self.inherited_browser_css_theme,
-            **self.browser_css_theme,
-            **self.inherited_theme,
-            **self.dom_css_theme,
-            **self.attributes_theme,
-            **self.style_attribute_theme,
+        rules = [
+            (k, v)
+            for part in [
+                _DEFAULT_ELEMENT_CSS,
+                self.inherited_browser_css_theme,
+                self.browser_css_theme,
+                self.inherited_theme,
+                self.dom_css_theme,
+                self.attributes_theme,
+                self.style_attribute_theme,
+            ]
+            for k, v in part.items()
+        ]
+        theme = dict(rules) | {
+            k: v.replace("!important", "").strip()
+            for k, v in rules
+            if "!important" in v
         }
+        return theme
 
     def update_space(
         self,
@@ -880,20 +957,20 @@ class Theme(Mapping):
         # unless the default value is unset
         if (parent_theme := self.parent_theme) is not None:
             browser_css = self.browser_css_theme
-            theme.update(
-                {
-                    k: v
-                    for part in (
-                        parent_theme.inherited_theme,
-                        parent_theme.dom_css_theme,
-                        parent_theme.attributes_theme,
-                        parent_theme.style_attribute_theme,
-                    )
-                    for k, v in part.items()
-                    if (k in _HERITABLE_PROPS or k.startswith("__"))
-                    and browser_css.get(k) != "unset"
-                }
-            )
+            rules = [
+                (k, v)
+                for part in [
+                    parent_theme.inherited_theme,
+                    parent_theme.dom_css_theme,
+                    parent_theme.attributes_theme,
+                    parent_theme.style_attribute_theme,
+                ]
+                for k, v in part.items()
+                if (k in _HERITABLE_PROPS or k.startswith("__"))
+                and browser_css.get(k) != "unset"
+            ]
+            # Keep !important items
+            theme = dict(rules) | {k: v for k, v in rules if "!important" in v}
 
         return theme
 
@@ -909,10 +986,11 @@ class Theme(Mapping):
         # border
         attrs = self.element.attrs
         if border_attr := attrs.get("border"):
-            theme["border_top_width"] = border_attr
-            theme["border_right_width"] = border_attr
-            theme["border_bottom_width"] = border_attr
-            theme["border_left_width"] = border_attr
+            # TODO - this sets all child cell borders
+            theme["border_top_width"] = f"{border_attr}px"
+            theme["border_right_width"] = f"{border_attr}px"
+            theme["border_bottom_width"] = f"{border_attr}px"
+            theme["border_left_width"] = f"{border_attr}px"
             theme["border_top_style"] = "solid"
             theme["border_right_style"] = "solid"
             theme["border_bottom_style"] = "solid"
@@ -930,9 +1008,9 @@ class Theme(Mapping):
             theme["vertical_align"] = align
         # width/height
         if (value := attrs.get("width")) is not None:
-            theme["width"] = value
+            theme["width"] = f"{value}px"
         if (value := attrs.get("height")) is not None:
-            theme["height"] = value
+            theme["height"] = f"{value}px"
         # cellpadding # TODO
         return theme
 
@@ -1011,10 +1089,11 @@ class Theme(Mapping):
                             # the rest of the selectors for this rule
                             break
 
+        # Move !important rules to the end
         return {
             k: v
-            for specificity_rule in sorted(specificity_rules, key=lambda x: x[0])
-            for k, v in specificity_rule[1].items()
+            for rule in sorted(specificity_rules, key=lambda x: x[0])
+            for k, v in rule[1].items()
         }
 
     @cached_property
@@ -1034,18 +1113,33 @@ class Theme(Mapping):
         """If the element a block element."""
         theme = self.theme
         parent_theme = self.parent_theme
-        return theme["display"] in {"block", "flex"} and (
-            parent_theme is None
-            or (self.floated is None and not parent_theme.d_flex)
-            or (
-                parent_theme.d_flex and parent_theme["flex_direction"].startswith("col")
+        return (
+            theme["display"] in {"block", "flex", "grid"}
+            and (
+                parent_theme is None
+                or (self.floated is None and not parent_theme.d_flex)
+                or (
+                    parent_theme.d_flex
+                    and parent_theme["flex_direction"].startswith("col")
+                )
             )
+            or (parent_theme is not None and parent_theme.d_grid)
         )
 
     @cached_property
     def d_inline(self) -> bool:
         """If the element an inline element."""
-        return self.theme["display"] == "inline" and self.floated is None
+        return (
+            # Elements in a grid container are not inline
+            bool(
+                (parent_theme := self.parent_theme) is not None
+                and not parent_theme.d_grid
+            )
+            # Floated elements are inline-block
+            and self.floated is None
+            # Display set to inline
+            and self.theme["display"] == "inline"
+        )
 
     @cached_property
     def d_inline_block(self) -> bool:
@@ -1060,10 +1154,7 @@ class Theme(Mapping):
             # If flexed in the row direction
             or (
                 parent_theme is not None
-                and (
-                    parent_theme.d_flex
-                    # or parent_theme.d_grid  # TODO
-                )
+                and parent_theme.d_flex
                 and parent_theme["flex_direction"].startswith("row")
             )
         )
@@ -1112,8 +1203,8 @@ class Theme(Mapping):
     @cached_property
     def floated(self) -> str | None:
         """The float status of the element."""
-        value = self.theme["float"]
         # Float property does not apply to flex-level boxes
+        value = self.theme["float"]
         if value == "none" or (
             (parent_theme := self.parent_theme) and parent_theme.d_flex
         ):
@@ -1128,7 +1219,7 @@ class Theme(Mapping):
                 value, vertical=False, available=self.available_width
             )
             if theme_width is not None:
-                return int(theme_width)
+                return round(theme_width)
         return None
 
     @property
@@ -1147,7 +1238,7 @@ class Theme(Mapping):
                     value, vertical=False, available=self.available_width
                 )
             if theme_width is not None:
-                return min(int(theme_width), self.available_width)
+                return min(round(theme_width), self.available_width)
 
         elif (element := self.element).name == "input":
             attrs = element.attrs
@@ -1175,7 +1266,7 @@ class Theme(Mapping):
                 value, vertical=False, available=self.available_width
             )
             if theme_width is not None:
-                return int(theme_width)
+                return round(theme_width)
         return None
 
     @cached_property
@@ -1245,7 +1336,7 @@ class Theme(Mapping):
         elif (min_width := self.min_width) is not None and min_width > value:
             value = min_width
 
-        return max(0, value)
+        return round(max(0, value))
 
     @property
     def min_height(self) -> int | None:
@@ -1255,7 +1346,7 @@ class Theme(Mapping):
                 value, vertical=True, available=self.available_height
             )
             if theme_height is not None:
-                return int(theme_height)
+                return round(theme_height)
         return None
 
     @property
@@ -1267,7 +1358,7 @@ class Theme(Mapping):
                 value, vertical=True, available=self.available_height
             )
             if theme_height is not None:
-                return int(theme_height)
+                return round(theme_height)
         return None
 
     @property
@@ -1278,7 +1369,7 @@ class Theme(Mapping):
                 value, vertical=True, available=self.available_height
             )
             if theme_height is not None:
-                return int(theme_height)
+                return round(theme_height)
         return None
 
     @property
@@ -1337,7 +1428,7 @@ class Theme(Mapping):
             value = css_dimension(
                 self.theme[f"padding_{direction}"], vertical=vertical, available=a_w
             )
-            output[direction] = int((value or 0) + 0.49999)
+            output[direction] = round(value or 0)
 
         # Do not render top and bottom padding for inline elements
         if self.d_inline or self.d_inline_block:
@@ -1361,7 +1452,7 @@ class Theme(Mapping):
                 self.theme[f"margin_{direction}"], vertical=vertical, available=a_w
             )
             # Round up if <=.4em
-            output[direction] = int((value or 0) + 0.6)
+            output[direction] = round((value or 0) + 0.2)
         return DiInt(**output)
 
     @cached_property
@@ -1447,6 +1538,15 @@ class Theme(Mapping):
             values["top"] = 0
             values["bottom"] = 0
 
+        # Add gaps
+        # TODO - do not add to last item in cols / rows
+        if (parent_theme := self.parent_theme) and (
+            parent_theme := self.parent_theme
+        ).d_flex:
+            gap_x, gap_y = parent_theme.gap
+            values["right"] += gap_x
+            values["bottom"] += gap_y
+
         return DiInt(**values)
 
     @cached_property
@@ -1506,7 +1606,7 @@ class Theme(Mapping):
 
         # Do not render top and bottom borders for inline elements
         # if there is no top or bottom padding
-        if self.theme["display"] == "inline":
+        if self.d_inline:
             padding = self.padding
             if not padding.top:
                 output["top"] = False
@@ -1571,8 +1671,8 @@ class Theme(Mapping):
         color_str = self.theme["color"]
         # Use black as the default color if a bg color is set
         if color_str.startswith("var("):
-            var = color_str[4:-1].replace("-", "_")
-            color_str = self.theme.get(var, color_str)
+            var, _, default = color_str[4:-1].replace("-", "_").partition(",")
+            color_str = self.theme.get(var.strip(), default.strip() or color_str)
         if color_str == "default" and self.theme["background_color"] != "default":
             color_str = "#000000"
         elif color_str == "transparent":
@@ -1591,7 +1691,7 @@ class Theme(Mapping):
         color_str = self.theme["background_color"]
         # Use white as the default bg color if a fg color is set
         # if color_str == "default" and self.theme["color"] != "default":
-        # color_str = "#ffffff"
+        #     color_str = "#ffffff"
         if color_str.startswith("var("):
             var = color_str[4:-1].replace("-", "_")
             color_str = self.theme.get(var, color_str)
@@ -1687,8 +1787,12 @@ class Theme(Mapping):
     @cached_property
     def list_style_type(self) -> str:
         """The bullet character to use for the list."""
+        if self.theme["list_style_type"] == "inherit" and (
+            parent_theme := self.parent_theme
+        ):
+            return parent_theme.list_style_type
         return _LIST_STYLE_TYPES.get(
-            self.theme["list_style_type"], self.theme["list_style_type"]
+            style_type := self.theme["list_style_type"], style_type
         )
 
     @cached_property
@@ -1721,7 +1825,7 @@ class Theme(Mapping):
         # TODO - calculate position based on top, left, bottom,right, width, height
         soup_theme = self.element.dom.soup.theme
         return DiInt(
-            top=int(
+            top=round(
                 css_dimension(
                     self.theme["top"],
                     vertical=True,
@@ -1729,7 +1833,7 @@ class Theme(Mapping):
                 )
                 or 0
             ),
-            right=int(
+            right=round(
                 css_dimension(
                     self.theme["right"],
                     vertical=False,
@@ -1737,7 +1841,7 @@ class Theme(Mapping):
                 )
                 or 0
             ),
-            bottom=int(
+            bottom=round(
                 css_dimension(
                     self.theme["bottom"],
                     vertical=True,
@@ -1745,7 +1849,7 @@ class Theme(Mapping):
                 )
                 or 0
             ),
-            left=int(
+            left=round(
                 css_dimension(
                     self.theme["left"],
                     vertical=False,
@@ -1793,9 +1897,96 @@ class Theme(Mapping):
         """Determine if the element is "in-flow"."""
         return (
             not self.skip
-            and self.floated is None
             and self.theme["position"] not in {"absolute", "fixed"}
             and self.element.name != "html"
+            and self.floated is None
+        )
+
+    @cached_property
+    def gap(self) -> tuple[int, int]:
+        """Calculate the horizontal & vertical inter-element spacing."""
+        return round(
+            css_dimension(
+                self.theme.get("column_gap", ""),
+                vertical=False,
+                available=self.available_width,
+            )
+            or 0
+        ), round(
+            css_dimension(
+                self.theme.get("row_gap", ""),
+                vertical=True,
+                available=self.available_width,
+            )
+            or 0
+        )
+
+    @cached_property
+    def grid_template(self) -> Iterator[list[str]]:
+        """Calculate the size of the grid tracks."""
+
+        def _multiply_repeats(m: re.Match) -> str:
+            result = m.groupdict()
+            return " ".join(int(result["count"]) * [result["value"]])
+
+        for css_item in ("grid_template_columns", "grid_template_rows"):
+            value = self.theme.get(css_item, "")
+            value = _GRID_TEMPLATE_REPEAT_RE.sub(_multiply_repeats, value)
+            yield [m.group() for m in _GRID_TEMPLATE_RE.finditer(value)]
+
+    @cached_property
+    def grid_column_start(self) -> int | None:
+        """The index of the first grid column spanned by the grid item."""
+        value: int | None = None
+        if "span" not in (value_str := self.theme.get("grid_column_start", "")):
+            value = get_integer(value_str)
+            if isinstance(value, int):
+                value -= 1
+        return value
+
+    @cached_property
+    def grid_column_span(self) -> int:
+        """The number of grid columns spanned by the grid item."""
+        value_start = self.theme.get("grid_column_start", "")
+        value_end = self.theme.get("grid_column_end", "")
+        span = 1
+        for value in (value_start, value_end):
+            if "span" in value:
+                span = max(span, get_integer(value) or 1)
+        return span
+
+    @cached_property
+    def grid_area(self) -> str | None:
+        """The name of the grid area assigned to the grid item."""
+        return self.theme.get("grid_area")
+
+    @cached_property
+    def grid_areas(self) -> dict[int, dict[int, str]]:
+        """The layout of grid-areas in the current node's grid layout."""
+        areas_str = self.theme.get("grid_template_areas", "")
+        return dict(
+            enumerate(
+                [
+                    dict(enumerate(x.split()))
+                    for y in re.findall(r"""(?:"([^"]*)"|'([^']*)')""", areas_str)
+                    for x in y
+                    if x
+                ]
+            )
+        )
+
+    @cached_property
+    def order(self) -> tuple[tuple[bool, int], int, tuple[bool, int]]:
+        """Items are sorted by ascending order value then their source code order."""
+        order = get_integer(self.theme.get("order", "")) or 0
+        index = (self.element.sibling_flow_index or 0) + 1
+        return (
+            # Negative orders first
+            (not order < 0, order),
+            # Index
+            index,
+            # Orders
+            (order > 0, order),
         )
 
     # Mapping methods - these are passed on to the unerlying theme dictionary
@@ -2261,15 +2452,22 @@ _BROWSER_CSS: CssSelectors = {
             "font_weight": "bold",
         },
         # Dataframes for Jupyter
-        ((CssSelector(item=".dataframe"),),): {"_pt_class": "dataframe"},
+        ((CssSelector(item=".dataframe"),),): {
+            "border_top_style": "none !important",
+            "border_left_style": "none !important",
+            "border_bottom_style": "none !important",
+            "border_right_style": "none !important",
+            "border_collapse": "collapse",
+            "_pt_class": "dataframe",
+        },
         (
             (CssSelector(item=".dataframe"), CssSelector(item="td")),
             (CssSelector(item=".dataframe"), CssSelector(item="th")),
         ): {
-            "border_top_style": "hidden",
-            "border_left_style": "hidden",
-            "border_bottom_style": "hidden",
-            "border_right_style": "hidden",
+            "border_top_width": "0",
+            "border_left_width": "0",
+            "border_bottom_width": "0",
+            "border_right_width": "0",
             "padding_left": "1em",
         },
         (
@@ -2647,6 +2845,10 @@ class Node:
             s += f"{dd}{self.text}"
         return s
 
+    def __lt__(self, other: Node) -> bool:
+        """Use `order` attribute from theme as default sort parameter."""
+        return self.theme.order < other.theme.order
+
     @cached_property
     def preceding_text(self) -> str:
         """Return the text preceding this element."""
@@ -2744,21 +2946,30 @@ class Node:
 
         # Add ::before node
         before_node = Node(dom=self.dom, name="::before", parent=self)
-        if text := before_node.theme.theme.get("content", "").strip('"').strip("'"):
-            before_node.contents.append(
-                Node(dom=self.dom, name="text", parent=before_node, text=text)
-            )
-            contents.append(before_node)
+        if text := before_node.theme.theme.get("content", "").strip():
+            if (text.startswith('"') and text.endswith('"')) or (
+                text.startswith("'") and text.endswith("'")
+            ):
+                text = text.strip('"').strip("'")
+                before_node.contents.append(
+                    Node(dom=self.dom, name="text", parent=before_node, text=text)
+                )
+                contents.append(before_node)
 
         contents.extend(self.contents)
 
         # Add ::after node
         after_node = Node(dom=self.dom, name="::after", parent=self)
-        if text := after_node.theme.theme.get("content", "").strip('"').strip("'"):
-            after_node.contents.append(
-                Node(dom=self.dom, name="text", parent=after_node, text=text)
-            )
-            contents.append(after_node)
+
+        if text := after_node.theme.theme.get("content", ""):
+            if (text.startswith('"') and text.endswith('"')) or (
+                text.startswith("'") and text.endswith("'")
+            ):
+                text = text.strip('"').strip("'")
+                after_node.contents.append(
+                    Node(dom=self.dom, name="text", parent=after_node, text=text)
+                )
+                contents.append(after_node)
 
         return contents
 
@@ -2866,7 +3077,18 @@ class Node:
         """Return the index of this element among its siblings."""
         if self.parent:
             for i, child in enumerate(self.parent.child_elements):
-                if child == self:
+                if child is self:
+                    return i
+        return None
+
+    @cached_property
+    def sibling_flow_index(self) -> int | None:
+        """Return the index of this element among its siblings."""
+        if self.parent:
+            for i, child in enumerate(
+                child for child in self.parent.contents if child.theme.in_flow
+            ):
+                if child is self:
                     return i
         return None
 
@@ -2954,7 +3176,17 @@ class CustomHTMLParser(HTMLParser):
 
     def parse(self, markup: str) -> Node:
         """Pare HTML markup."""
-        soup = Node(name="::root", dom=self.dom, parent=None, attrs=[])
+        # Ignore self-closing syntax - HTML5!
+        markup = markup.replace("/>", ">")
+        soup = Node(
+            name="::root",
+            dom=self.dom,
+            parent=None,
+            attrs=[
+                ("_initial_format", self.dom._initial_format),
+                ("_base", str(self.dom.base)),
+            ],
+        )
         self.curr = soup
         self.feed(markup)
         return soup
@@ -2989,7 +3221,7 @@ class CustomHTMLParser(HTMLParser):
             self.curr = self.curr.parent
 
 
-def parse_style_sheet(css_str: str, dom: HTML) -> None:
+def parse_style_sheet(css_str: str, dom: HTML, condition: Filter = always) -> None:
     """Collect all CSS styles from style tags."""
     dom_css = dom.css
     # Remove whitespace and newlines
@@ -3001,7 +3233,7 @@ def parse_style_sheet(css_str: str, dom: HTML) -> None:
     # for compatibility with old CSS and to make root selector work
     css_str = re.sub("(?<!:):(?=before|after|root)", "::", css_str)
 
-    def parse_part(condition: Filter, css_str: str) -> None:
+    def parse_part(part_condition: Filter, css_str: str) -> None:
         """Parse a group of CSS rules."""
         if css_str:
             css_str = css_str.replace("\n", "").strip()
@@ -3018,7 +3250,7 @@ def parse_style_sheet(css_str: str, dom: HTML) -> None:
                             )
                             for selector in map(str.strip, selectors.split(","))
                         )
-                        rules = dom_css.setdefault(condition, {})
+                        rules = dom_css.setdefault(part_condition, {})
                         if parsed_selectors in rules:
                             rules[parsed_selectors].update(rule_content)
                         else:
@@ -3050,7 +3282,7 @@ def parse_style_sheet(css_str: str, dom: HTML) -> None:
                                 target_conditions &= (
                                     always if media_type in {"all", "screen"} else never
                                 )
-                            # Check for media feature confitions
+                            # Check for media feature conditions
                             elif (
                                 media_feature := target_m_dict["feature"]
                             ) is not None:
@@ -3062,11 +3294,11 @@ def parse_style_sheet(css_str: str, dom: HTML) -> None:
                                 target_conditions = ~target_conditions
                     # Logical OR of all media queries
                     query_conditions |= target_conditions
-                # Parse the @media CSS block
-                parse_part(query_conditions, m_dict["part"])
-        # If we are outinside an at-rule block, parse the CSS and always use it
+                # Parse the @media CSS block (may contain nested at-rules)
+                parse_style_sheet(m_dict["part"], dom, condition & query_conditions)
+        # Parse the CSS and always use it
         else:
-            parse_part(always, part)
+            parse_part(condition, part)
 
 
 def parse_media_condition(condition: str, dom: HTML) -> Filter:
@@ -3188,6 +3420,7 @@ class HTML:
         browser_css: CssSelectors | None = None,
         mouse_handler: Callable[[Node, MouseEvent], NotImplementedOrNone] | None = None,
         paste_fixed: bool = True,
+        on_update: Callable[[HTML], None] | None = None,
         _initial_format: str = "",
     ) -> None:
         """Initialize the markdown formatter.
@@ -3206,6 +3439,7 @@ class HTML:
             browser_css: The browser CSS to use
             mouse_handler: A mouse handler function to use when links are clicked
             paste_fixed: Whether fixed elements should be pasted over the output
+            on_update: An optional callback triggered when the DOM updates
             _initial_format: The initial format of the data being displayed
 
         """
@@ -3233,6 +3467,7 @@ class HTML:
         self.fixed_mask: StyleAndTextTuples = []
         self.graphic_info: dict[str, dict] = {}
         # self.anchors = []
+        self.on_update = Event(self, on_update)
 
         self.assets_loaded = False
 
@@ -3253,11 +3488,31 @@ class HTML:
 
         Do not touch element's themes!
         """
+        url_cbs = {}
+
+        def _process_css(data: bytes) -> None:
+            try:
+                css_str = data.decode()
+            except Exception:
+                log.warning("Error decoding stylesheet '%s...'", data[:20])
+            else:
+                parse_style_sheet(css_str, self)
+
+        def _process_img(child: Node, data: bytes) -> None:
+            child.attrs["_data"] = data
+            del child.attrs["_missing"]
+
         for child in self.soup.descendents:
+            # Set base
+            if child.name == "base":
+                if href := child.attrs.get("href"):
+                    self.base = UPath(urljoin(str(self.base), href))
+
             # Set title
-            if child.name == "title":
+            elif child.name == "title":
                 if contents := child.contents:
                     self.title = contents[0].text
+                    self.on_update.fire()
 
             # In case of a <link> style, load the url
             elif (
@@ -3268,35 +3523,34 @@ class HTML:
                 )
                 and (href := attrs.get("href", ""))
             ):
-                css_path = UPath(urljoin(str(self.base), href))
-                log.debug("Loading %s", css_path)
-                try:
-                    css_str = css_path.read_text()
-                except Exception:
-                    log.debug("Could not load file %s", css_path)
-                else:
-                    parse_style_sheet(css_str, self)
+                url = urljoin(str(self.base), href)
+                url_cbs[url] = _process_css
 
             # In case of a <style> tab, load first child's text
             elif child.name == "style":
                 if child.contents:
-                    # Use unprocess text attribute to avoid loading the element's theme
+                    # Use unprocessed text attribute to avoid loading the element's theme
                     css_str = child.contents[0]._text
                     parse_style_sheet(css_str, self)
 
             # Load images
             elif child.name == "img" and (src := child.attrs.get("src")):
-                data_path = UPath(urljoin(str(self.base), src))
-                if data_path.exists():
-                    try:
-                        data = data_path.read_bytes()
-                    except Exception:
-                        log.info("Error loading file '%s'", data_path)
-                    else:
-                        if data:
-                            child.attrs["_data"] = data
+                child.attrs["_missing"] = "true"
+                url = urljoin(str(self.base), src)
+                url_cbs[url] = partial(_process_img, child)
+
+        # Load all remote assets for each protocol using fsspec (where they are loaded
+        # asynchronously in their own thread) and trigger callbacks if the file is
+        # loaded successfully
+        m = [url_to_fs(url) for url in url_cbs]
+        fs_to_urls = {fs: [url for f, url in m if f == fs] for fs in dict(m)}
+        for fs, urls in fs_to_urls.items():
+            for url, result in fs.cat(urls).items():
+                if not isinstance(result, Exception):
+                    log.debug("File %s loaded", url)
+                    url_cbs[url](result)
                 else:
-                    child.attrs["_missing"] = "true"
+                    log.error("Error loading %s", url)
 
         self.assets_loaded = True
 
@@ -3405,6 +3659,9 @@ class HTML:
 
         elif element.theme.d_list_item:
             render_func = self.render_list_item_content
+
+        elif element.theme.d_grid:
+            render_func = self.render_grid_content
 
         else:
             render_func = getattr(
@@ -3534,14 +3791,14 @@ class HTML:
             max=table_theme.max_width or table_theme.content_width,
         )
         table = Table(
-            align=table_theme.text_align,
-            style=table_theme.style,
-            border_line=table_theme.border_line,
-            border_style=table_theme.border_style,
-            padding=DiInt(0, 0, 0, 0),
             width=table_x_dim,
             expand=True if "width" in table_theme else False,
-            collapse_empty_borders=True,
+            align=table_theme.text_align,
+            style=table_theme.style,
+            padding=DiInt(0, 0, 0, 0),
+            border_line=table_theme.border_line,
+            border_style=table_theme.border_style,
+            border_visibility=table_theme.border_visibility,
         )
 
         td_map = {}
@@ -3554,9 +3811,10 @@ class HTML:
                     # tr_theme.update_space(available_width, available_height)
                     row = table.new_row(
                         align=tr_theme.text_align,
+                        style=tr_theme.style,
                         border_line=tr_theme.border_line,
                         border_style=tr_theme.border_style,
-                        style=tr_theme.style,
+                        border_visibility=tr_theme.border_visibility,
                     )
                     for td in tr.contents:
                         if td.name in ("th", "td"):
@@ -3582,6 +3840,7 @@ class HTML:
                                 rowspan=try_eval(td.attrs.get("rowspan", 1)),
                                 style=td_theme.style + " nounderline",
                                 width=td_theme.width if "width" in td_theme else None,
+                                border_visibility=td_theme.border_visibility,
                             )
                             # Save for later so we can add the contents once all the
                             # cells are created and we can calculate the cell widths
@@ -3644,6 +3903,212 @@ class HTML:
 
         return ft
 
+    def render_grid_content(
+        self,
+        element: Node,
+        left: int = 0,
+        fill: bool = True,
+        align_content: bool = True,
+    ) -> StyleAndTextTuples:
+        """Render a element with ``display`` set to ``grid``.
+
+        Args:
+            element: The list of parsed elements to render
+            left: The position on the current line at which to render the output - used
+                to indent subsequent lines when rendering inline blocks like images
+            fill: Whether to fill the remainder of the rendered space with whitespace
+            align_content: Whether to align the element's content
+
+        Returns:
+            Formatted text
+
+        """
+        theme = element.theme
+        theme_style = theme.style
+        table = Table(
+            style=theme.style,
+            padding=DiInt(0, 0, 0, 0),
+            width=theme.content_width,
+            expand=False,
+            background_style=theme_style,
+        )
+
+        available_width = theme.content_width
+        available_height = theme.content_height
+
+        # TODO - calculate grid row heights
+
+        col_width_template, _row_height_template = theme.grid_template
+        grid_areas = theme.grid_areas or {0: {}}
+        n_cols = max(len(col_width_template), len(grid_areas[0]))
+        td_map = {}
+
+        # Assign items to their positions in the table
+
+        ## Sort children into those assigned a grid area and those unassigned
+        child_areas: dict[str, Node] = {}
+        remainder = []
+        for child in element.contents:  # Sort by CSS `order
+            if ga := child.theme.grid_area:
+                child_areas[ga] = child
+            else:
+                remainder.append(child)
+
+        ## Place children assigned a grid area their positions
+        done = set()
+        for y, grid_row in grid_areas.items():
+            for x, area in grid_row.items():
+                if area not in done and area in child_areas:
+                    child = child_areas.pop(area)
+                    colspan = 1
+                    for i in range(x + 1, len(grid_row)):
+                        if grid_row[i] == area:
+                            colspan += 1
+                        else:
+                            break
+                    rowspan = 1
+                    for i in range(y + 1, len(grid_areas)):
+                        if grid_areas[i][x + colspan - 1] == area:
+                            rowspan += 1
+                        else:
+                            break
+
+                    # Add a cell child to the table for this child
+                    cell = Cell(
+                        colspan=colspan,
+                        rowspan=rowspan,
+                        style=child.theme.style,
+                        border_line=NoLine,
+                        border_style=theme_style,
+                    )
+                    table._rows[y].add_cell(cell, index=x)
+                    td_map[cell] = child
+                    done.add(area)
+
+        table.sync_rows_to_cols()
+
+        ## Place children without a grid area wherever they fit
+        x = y = 0
+        for child in sorted((*child_areas.values(), *remainder)):
+            child_theme = child.theme
+
+            # Skip whitespace
+            if not child_theme.in_flow:
+                continue
+
+            colspan = child_theme.grid_column_span
+
+            # Find next available cell
+            # Or skip cells to get to the child's assigned column
+            # or skip cells until cell fits
+            col_start = child_theme.grid_column_start
+            while (
+                x in table._rows[y]._cells
+                or (x > 0 and (x + colspan) > n_cols)
+                or (col_start is not None and x != col_start)
+            ):
+                x += 1
+                if x >= n_cols:
+                    y += 1
+                    x = 0
+
+            # Add a cell child to the table for this child
+            cell = Cell(
+                colspan=colspan,
+                style=child_theme.style,
+                border_line=NoLine,
+                border_style=theme_style,
+            )
+            table._rows[y].add_cell(cell, index=x)
+            td_map[cell] = child
+
+        table.sync_rows_to_cols()
+
+        # Remove outer-most cell borders, and set grid gap
+        gap_x, gap_y = map(bool, theme.gap)
+        border_visibility = DiBool(gap_y, gap_x, gap_y, gap_x)
+        for rowcols, directionss in (
+            (table._cols.values(), ("top", "bottom")),
+            (table._rows.values(), ("left", "right")),
+        ):
+            for rowcol in rowcols:
+                if cells := rowcol._cells:
+                    for func, direction in zip((min, max), directionss):
+                        cell = cells[func(cells)]
+                        cell.border_visibility = (
+                            cell.border_visibility or border_visibility
+                        )._replace(**{direction: False})
+
+        # Calculate column widths
+        n_cols = len(table._cols)
+        available = available_width - gap_x * (n_cols - 1)
+        col_widths = {}
+        frs = {}
+        for x, item in enumerate(col_width_template):
+            if item.endswith("fr"):
+                frs[x] = css_dimension(item, available=available) or 1
+            # TODO
+            elif item == "min-content":
+                content_widths = []
+                for cell in table._cols[x]._cells.values():
+                    content_widths.append(td_map[cell].theme.min_content_width)
+                col_widths[x] = max(content_widths)
+            elif item == "max-content":
+                content_widths = []
+                for cell in table._cols[x]._cells.values():
+                    content_widths.append(td_map[cell].theme.max_content_width)
+                col_widths[x] = max(content_widths)
+            # elif item.startwith("min-max"): # TODO
+            elif (
+                value := css_dimension(item, vertical=False, available=available)
+            ) is not None:
+                col_widths[x] = round(value)
+            else:
+                # Give remaining columns one fraction
+                frs[x] = 1
+
+        # Any undefined columns are min-content
+        for x in set(range(n_cols)) - col_widths.keys() - frs.keys():
+            frs[x] = 1
+
+        ## Divide reminder between `fr` columns
+        if frs:
+            fr_available = available - sum(filter(None, col_widths.values()))
+            fr_count = sum(frs.values())
+            for x, value in frs.items():
+                col_widths[x] = round(value / fr_count * fr_available)
+
+        # Ensure column widths sum to available space
+        col_widths[n_cols - 1] += available - sum(col_widths.values())
+
+        # Set cell widths
+        for row in table._rows.values():
+            for x, cell in row._cells.items():
+                colspan = cell.colspan
+                cell.width = sum(col_widths[x + i] for i in range(colspan)) + gap_x * (
+                    colspan - 1
+                )
+
+        # Allow the table to adjust given cell widths to the available space
+        cell_widths = table.calculate_cell_widths(available_width)
+
+        # Render cell contents at the final calculated widths
+        for row in table._rows.values():
+            for cell in row._cells.values():
+                if td := td_map.get(cell):
+                    width = cell_widths[cell]
+                    td.theme.update_space(width, theme.available_height)
+                    cell.text = self.render_element(
+                        td,
+                        available_width=width or available_width,
+                        available_height=available_height,
+                        left=0,
+                        fill=True,
+                        align_content=align_content,
+                    )
+
+        return table.render()
+
     def _render_image(
         self, data: str | bytes, format_: str, theme: Theme, path: Path | None = None
     ) -> StyleAndTextTuples:
@@ -3658,29 +4123,25 @@ class HTML:
                 cols = min(content_width, cols)
         rows = ceil(cols * aspect)
 
-        # Dont bother rendering a 1x1 block image
-        if rows == 1 and cols == 1:
-            ft: StyleAndTextTuples = [(theme.style, "-")]
-        else:
-            # Convert the image to formatted-text
-            ft = (
-                convert(
-                    data=data,
-                    from_=format_,
-                    to="formatted_text",
-                    cols=cols,
-                    rows=rows or None,
-                    fg=theme.color,
-                    bg=theme.background_color,
-                    path=path,
-                )
-                or []
+        # Convert the image to formatted-text
+        ft = (
+            convert(
+                data=data,
+                from_=format_,
+                to="formatted_text",
+                cols=cols,
+                rows=rows or None,
+                fg=theme.color,
+                bg=theme.background_color,
+                path=path,
             )
+            or []
+        )
         # Remove trailing new-lines
         ft = strip(ft, chars="\n", left=False)
 
         # If we couldn't calculate the image size, use the size of the text output
-        if rows == 0:
+        if rows == 0 and cols:
             rows = min(theme.content_height, len(list(split_lines(ft))))
             aspect = rows / cols
 
@@ -4196,13 +4657,14 @@ class HTML:
                     pad_width = max_line_width(ft)
                 else:
                     pad_width = content_width
-            style = theme.style
-            ft = pad(
-                ft,
-                width=pad_width,
-                char=" ",
-                style=style,
-            )
+            if pad_width is not None:
+                style = theme.style
+                ft = pad(
+                    ft,
+                    width=round(pad_width),
+                    char=" ",
+                    style=style,
+                )
 
         # Use the rendered content width from now on for inline elements
         if d_inline_block or d_inline:
@@ -4314,7 +4776,8 @@ class HTML:
             and callable(handler := self.mouse_handler)
             and (href := parent.attrs.get("href"))
         ):
-            element.attrs["_link_path"] = self.base / href
+            element.attrs["_link_path"] = urljoin(str(self.base), href)
+            element.attrs["title"] = parent.attrs.get("title")
             ft = cast(
                 "StyleAndTextTuples",
                 [
