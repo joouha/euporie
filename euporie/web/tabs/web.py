@@ -69,8 +69,7 @@ class WebTab(Tab):
             return False
         if isinstance(url, str):
             url = UPath(url)
-
-        if not new_tab and get_mime(url) == "text/html":
+        if not new_tab and get_mime(url) in self.mime_types:
             self.webview.load_url(url, **kwargs)
         else:
             get_app().open_file(url)
