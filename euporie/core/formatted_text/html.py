@@ -4051,12 +4051,14 @@ class HTML:
             elif item == "min-content":
                 content_widths = []
                 for cell in table._cols[x]._cells.values():
-                    content_widths.append(td_map[cell].theme.min_content_width)
+                    if cell in td_map:
+                        content_widths.append(td_map[cell].theme.min_content_width)
                 col_widths[x] = max(content_widths)
             # elif item == "max-content":
             #     content_widths = []
             #     for cell in table._cols[x]._cells.values():
-            #         content_widths.append(td_map[cell].theme.max_content_width)
+            #         if cell in td_map:
+            #           content_widths.append(td_map[cell].theme.max_content_width)
             #     col_widths[x] = max(content_widths)
             # elif item.startwith("min-max"): # TODO
             elif (

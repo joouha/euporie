@@ -1390,7 +1390,7 @@ class Table:
                         [
                             (padding_style, " " * (padding_left or 0)),
                             *(cell_line or []),
-                            (cell_style, " " * excess),
+                            (cell_style + " nounderline", " " * excess),
                             (padding_style, " " * (padding_right or 0)),
                         ]
                     )
@@ -1410,7 +1410,7 @@ class Table:
             isinstance(cell, SpacerCell) and cell.span_row_index > 0
             for cell in row_below_cells
         ):
-            raise StopIteration
+            return
 
         # Draw a border row if at least once cell above have a visible bottom border
         # or a cell below has a visible top border
