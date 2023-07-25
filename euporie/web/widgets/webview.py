@@ -68,7 +68,7 @@ class WebViewControl(UIControl):
 
     def __init__(
         self,
-        url: str | Path,
+        url: str | Path = "about:blank",
         link_handler: Callable | None = None,
     ) -> None:
         """Create a new web-view control instance."""
@@ -80,7 +80,7 @@ class WebViewControl(UIControl):
         self.graphic_positions: dict[str, tuple[int, int]] = {}
         self.width = 0
         self.height = 0
-        self.url: Path | None = None
+        self.url: Path = UPath(url)
         self.status: list[AnyFormattedText] = []
         self.link_handler = link_handler or self.load_url
 
@@ -160,6 +160,8 @@ class WebViewControl(UIControl):
     @property
     def title(self) -> str:
         """Return the title of the current HTML page."""
+        if self.loading:
+            return self.url.name
         if dom := self.dom:
             return dom.title
         return ""
@@ -209,7 +211,6 @@ class WebViewControl(UIControl):
         self.loading = True
         # Clear graphics
         self.graphic_positions.clear()
-        get_app().invalidate()
         # Update navigation history
         if self.url and save_to_history:
             self.prev_stack.append(self.url)
@@ -219,9 +220,8 @@ class WebViewControl(UIControl):
         # Scroll to the top
         self.window.vertical_scroll = 0
         self.cursor_position = Point(0, 0)
-        # Reset rendering
+        # Signal that the webview has updated
         self.rendered.fire()
-        get_app().invalidate()
 
     def nav_prev(self) -> None:
         """Navigate forwards through the browser history."""
@@ -242,15 +242,13 @@ class WebViewControl(UIControl):
             assert self.url is not None
             # Potentially redirect url
             self.url = parse_path(self.url)
-            dom = self._dom_cache[self.url,]
-            self.lines = self._line_cache[dom, self.width, self.height]
+            self.lines = self._line_cache[self.dom, self.width, self.height]
             self.loading = False
             self.resizing = False
-            self.rendered.fire()
-            get_app().invalidate()
             self.rendering = False
+            self.rendered.fire()
 
-        if self.url and not self.rendering:
+        if not self.rendering:
             self.rendering = True
             run_in_thread_with_context(_render)
 
@@ -336,11 +334,13 @@ class WebViewControl(UIControl):
                 left=0,  # TODO
             )
 
+            if (width := content_width - bbox.left - bbox.right) < 1:
+                raise NotVisible
+            if (height := content_height - bbox.top - bbox.bottom) < 1:
+                raise NotVisible
+
             write_position = WritePosition(
-                xpos=xpos,
-                ypos=ypos,
-                width=content_width - bbox.left - bbox.right,
-                height=content_height - bbox.top - bbox.bottom,
+                xpos=xpos, ypos=ypos, width=width, height=height
             )
 
             return write_position, bbox
@@ -407,37 +407,38 @@ class WebViewControl(UIControl):
                 return []
 
             # Overlay fixed lines onto this line
-            dom = self._dom_cache[url,]
-            if dom.fixed:
-                visible_line = max(0, i - self.window.vertical_scroll)
-                fixed_lines = list(split_lines(dom.fixed_mask))
-                if visible_line < len(fixed_lines):
-                    # Paste the fixed line over the current line
-                    fixed_line = fixed_lines[visible_line]
-                    line = paste(
-                        fixed_lines[visible_line], line, 0, 0, transparent=True
-                    )
+            if not loading:
+                dom = self._dom_cache[url,]
+                if dom.fixed:
+                    visible_line = max(0, i - self.window.vertical_scroll)
+                    fixed_lines = list(split_lines(dom.fixed_mask))
+                    if visible_line < len(fixed_lines):
+                        # Paste the fixed line over the current line
+                        fixed_line = fixed_lines[visible_line]
+                        line = paste(
+                            fixed_lines[visible_line], line, 0, 0, transparent=True
+                        )
 
-                    # Update graphic positions on the fixed line
-                    x = 0
-                    for style, text, *_ in fixed_line:
-                        for token in style.split():
-                            token = token[1:-1]
-                            if token.startswith("Image_"):
-                                self.graphic_positions[token] = (x, i)
-                                break
-                        if "[ZeroWidthEscape]" not in style:
-                            x += len(text)
+                        # Update graphic positions on the fixed line
+                        x = 0
+                        for style, text, *_ in fixed_line:
+                            for token in style.split():
+                                token = token[1:-1]
+                                if token.startswith("Image_"):
+                                    self.graphic_positions[token] = (x, i)
+                                    break
+                            if "[ZeroWidthEscape]" not in style:
+                                x += len(text)
 
-            # Apply processors
-            # merged_processor = self.cursor_processor
-            # line = lines[i]
-            # transformation = merged_processor.apply_transformation(
-            #     TransformationInput(
-            #         buffer_control=self, document=Document(), lineno=i, source_to_display=lambda i: i, fragments=line, width=width, height=height,
-            #     )
-            # )
-            # return transformation.fragments
+                # Apply processors
+                # merged_processor = self.cursor_processor
+                # line = lines[i]
+                # transformation = merged_processor.apply_transformation(
+                #     TransformationInput(
+                #         buffer_control=self, document=Document(), lineno=i, source_to_display=lambda i: i, fragments=line, width=width, height=height,
+                #     )
+                # )
+                # return transformation.fragments
 
             return line
 
@@ -466,7 +467,7 @@ class WebViewControl(UIControl):
         return self._content_cache[
             self.url,
             self.loading,
-            self.resizing,
+            False,  # self.resizing,
             width,
             # height,
             self.cursor_position,
@@ -604,6 +605,8 @@ class WebViewControl(UIControl):
         """
         yield self.rendered
         yield self.on_cursor_position_changed
+        if dom := self.dom:
+            yield dom.on_update
 
     # ################################### Commands ####################################
 
