@@ -18,6 +18,7 @@ Added
 Fixed
 =====
 
+- Launch kernels from base prefix by default unless ``ipykernel`` is installed inside euporie's environment
 - Use ``.md`` filename suffix when editing markdown cells in external editor
 - Improve CSI-u escape sequence detection
 
