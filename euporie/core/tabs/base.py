@@ -114,11 +114,21 @@ class Tab(metaclass=ABCMeta):
     # ################################### Commands ####################################
 
     @staticmethod
-    @add_cmd(filter=tab_has_focus, title="Reset the current tab")
-    def _reset_tab() -> None:
-        """Reet the current tab, reloading contents from source."""
+    @add_cmd(filter=tab_has_focus, title="Refresh the current tab")
+    def _refresh_tab() -> None:
+        """Reload the tab contents and reset the tab."""
         if (tab := get_app().tab) is not None:
             tab.reset()
+
+    # Depreciated v2.5.0
+    @staticmethod
+    @add_cmd(filter=tab_has_focus, title="Reset the current tab")
+    def _reset_tab() -> None:
+        log.warning(
+            "The `reset-tab` command was been renamed to `refresh-tab` in v2.5.0,"
+            " and will be removed in a future version"
+        )
+        Tab._refresh_tab()
 
     @staticmethod
     @add_cmd(filter=tab_has_focus)
@@ -136,7 +146,7 @@ class Tab(metaclass=ABCMeta):
         {
             "euporie.core.tabs.base.Tab": {
                 "save-file": "c-s",
-                "reset-tab": "f5",
+                "refresh-tab": "f5",
             }
         }
     )

@@ -22,6 +22,11 @@ Fixed
 - Use ``.md`` filename suffix when editing markdown cells in external editor
 - Improve CSI-u escape sequence detection
 
+Changed
+=======
+
+- Rename ``reset-tab`` command to ``refresh-tab``
+
 ----
 
 *******************
