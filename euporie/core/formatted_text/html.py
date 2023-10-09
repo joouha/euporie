@@ -2445,29 +2445,28 @@ _BROWSER_CSS: CssSelectors = {
             (CssSelector(item="ul"), CssSelector(item="ul"), CssSelector(item="ul")),
         ): {"list_style_type": "square"},
         ((CssSelector(item="li"),),): {"display": "list-item"},
-        ((CssSelector(item="details"),),): {
+        # Details & summary
+        ((CssSelector(item="details"), CssSelector(item="summary")),): {
+            "display": "list-item",
             "list_style_type": "disclosure-closed",
             "list_style_position": "inside",
         },
         ((CssSelector(item="details", attr="[open]"), CssSelector(item="summary")),): {
-            "list_style_type": "disclosure-open"
-        },
-        ((CssSelector(item="summary"),),): {
+            "list_style_type": "disclosure-open",
             "display": "list-item",
-            "font_weight": "bold",
         },
         # Dataframes for Jupyter
-        ((CssSelector(item=".dataframe"),),): {
-            "border_top_style": "none !important",
-            "border_left_style": "none !important",
-            "border_bottom_style": "none !important",
-            "border_right_style": "none !important",
+        ((CssSelector(item="table.dataframe"),),): {
+            "border_top_width": "0 !important",
+            "border_left_width": "0 !important",
+            "border_bottom_width": "0 !important",
+            "border_right_width": "0 !important",
             "border_collapse": "collapse",
             "_pt_class": "dataframe",
         },
         (
-            (CssSelector(item=".dataframe"), CssSelector(item="td")),
-            (CssSelector(item=".dataframe"), CssSelector(item="th")),
+            (CssSelector(item="table.dataframe"), CssSelector(item="td")),
+            (CssSelector(item="table.dataframe"), CssSelector(item="th")),
         ): {
             "border_top_width": "0",
             "border_left_width": "0",
@@ -2477,7 +2476,7 @@ _BROWSER_CSS: CssSelectors = {
         },
         (
             (
-                CssSelector(item=".dataframe"),
+                CssSelector(item="table.dataframe"),
                 CssSelector(item="th"),
             ),
         ): {
@@ -2485,7 +2484,7 @@ _BROWSER_CSS: CssSelectors = {
         },
         (
             (
-                CssSelector(item=".dataframe"),
+                CssSelector(item="table.dataframe"),
                 CssSelector(item="th", pseudo=":first-child"),
             ),
             (
@@ -2497,12 +2496,12 @@ _BROWSER_CSS: CssSelectors = {
                 CssSelector(item="td", pseudo=":last-child"),
             ),
         ): {"padding_right": "1em"},
-        ((CssSelector(item=".dataframe"), CssSelector(item="td")),): {
-            "_pt_class": "dataframe,td bg:default"
+        ((CssSelector(item="table.dataframe"), CssSelector(item="td")),): {
+            "_pt_class": "dataframe,td"
         },
         (
             (
-                CssSelector(item=".dataframe"),
+                CssSelector(item="table.dataframe"),
                 CssSelector(item="tr", pseudo=":nth-child(odd)"),
                 CssSelector(item="td"),
             ),
@@ -2740,12 +2739,6 @@ _BROWSER_CSS: CssSelectors = {
                 CssSelector(item=".math"),
             ),
         ): {"text_transform": "latex"},
-        (
-            (
-                CssSelector(item="::root", attr="[_initial_format=markdown]"),
-                CssSelector(item=".block"),
-            ),
-        ): {"display": "block"},
         (
             (
                 CssSelector(item="::root", attr="[_initial_format=markdown]"),
