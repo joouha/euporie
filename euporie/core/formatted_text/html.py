@@ -4139,8 +4139,9 @@ class HTML:
             for x, value in frs.items():
                 col_widths[x] = round(value / fr_count * fr_available)
 
-        # Ensure column widths sum to available space
-        col_widths[n_cols - 1] += available - sum(col_widths.values())
+        # Add remainder to last column to ensure column widths sum to available space
+        if n_cols:
+            col_widths[n_cols - 1] += available - sum(col_widths.values())
 
         # Set cell widths
         for row in table._rows.values():
