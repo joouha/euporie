@@ -878,20 +878,17 @@ class Theme(Mapping):
     def theme(self) -> dict[str, str]:
         """Return the combined computed theme."""
         rules = [
-            (k, v)
-            for part in [
-                _DEFAULT_ELEMENT_CSS,
-                self.inherited_browser_css_theme,
-                self.browser_css_theme,
-                self.inherited_theme,
-                self.dom_css_theme,
-                self.attributes_theme,
-                self.style_attribute_theme,
-            ]
-            for k, v in part.items()
+            *_DEFAULT_ELEMENT_CSS.items(),
+            *self.inherited_browser_css_theme.items(),
+            *self.browser_css_theme.items(),
+            *self.inherited_theme.items(),
+            *self.attributes_theme.items(),
+            *self.dom_css_theme.items(),
+            *self.style_attribute_theme.items(),
         ]
         theme = {
             **dict(rules),
+            # Move !important rules to the end and strip !important string from values
             **{
                 k: v.replace("!important", "").strip()
                 for k, v in rules
@@ -973,7 +970,7 @@ class Theme(Mapping):
                 if (k in _HERITABLE_PROPS or k.startswith("__"))
                 and browser_css.get(k) != "unset"
             ]
-            # Keep !important items
+            # Keep over-ridden !important items
             theme = {**dict(rules), **{k: v for k, v in rules if "!important" in v}}
 
         return theme
@@ -1094,10 +1091,14 @@ class Theme(Mapping):
                             break
 
         # Move !important rules to the end
-        return {
-            k: v
+        rules = [
+            (k, v)
             for rule in sorted(specificity_rules, key=lambda x: x[0])
             for k, v in rule[1].items()
+        ]
+        return {
+            **dict(rules),
+            **{k: v for k, v in rules if "!important" in v},
         }
 
     @cached_property
