@@ -156,7 +156,6 @@ _MARKDOWN_CSS = {
             "_pt_class": "markdown,code",
         },
         ((CssSelector(item=".math"),),): {"text_transform": "latex"},
-        ((CssSelector(item=".block"),),): {"display": "block"},
         ((CssSelector(item=".math.block"),),): {
             "text_align": "center",
         },
