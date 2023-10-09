@@ -33,11 +33,11 @@ class ANSI(PTANSI):
         value = value.replace("\r\n", "\n")
         # Remove anything before a carriage return if there is something after it to
         # emulate a carriage return in the output
-        value = re.sub(r"^.*\r(?!\n)", "", value, 0, re.MULTILINE)
+        value = re.sub(r"^.*\r(?!\n)", "", value, count=0, flags=re.MULTILINE)
         # Clear line by deleting previous characters
-        value = re.sub(r".*\x1b\[2K", "", value, 0)
+        value = re.sub(r".*\x1b\[2K", "", value, count=0)
         # Remove hide & show cursor commands
-        value = re.sub(r"\x1b\[\?25[hl]", "", value, 0)
+        value = re.sub(r"\x1b\[\?25[hl]", "", value, count=0)
 
         super().__init__(value)
 

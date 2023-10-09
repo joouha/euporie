@@ -286,7 +286,7 @@ async def _convert(
         data_hash = hashlib.sha1(  # noqa S324
             data if isinstance(data, bytes) else data.encode()
         ).hexdigest()
-    except TypeError as error:
+    except TypeError:
         log.warning("Cannot hash %s", data)
         key = None
     else:

@@ -50,7 +50,7 @@ from euporie.core.border import (
     UpperRightHalfDottedLine,
     UpperRightHalfLine,
 )
-from euporie.core.convert.core import _convert, convert, get_format, get_loop
+from euporie.core.convert.core import _convert, get_format, get_loop
 from euporie.core.convert.utils import data_pixel_size, pixels_to_cell_size
 from euporie.core.current import get_app
 from euporie.core.data_structures import DiBool, DiInt, DiStr
@@ -3847,6 +3847,7 @@ class HTML:
             preferred=table_theme.content_width if "width" in table_theme else None,
             max=table_theme.max_width or table_theme.content_width,
         )
+
         table = Table(
             width=table_x_dim,
             expand=True if "width" in table_theme else False,
