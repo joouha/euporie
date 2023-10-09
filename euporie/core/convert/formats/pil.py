@@ -38,7 +38,7 @@ def set_background(image: PilImage, bg_color: str | None = None) -> PilImage:
     to="pil",
     filter_=have_modules("PIL"),
 )
-def png_to_pil_py(
+async def png_to_pil_py(
     data: bytes,
     cols: int | None = None,
     rows: int | None = None,

@@ -31,7 +31,7 @@ if TYPE_CHECKING:
     to="base64-svg",
     filter_=True,
 )
-def bytes_to_base64_py(
+async def bytes_to_base64_py(
     data: str | bytes,
     width: int | None = None,
     height: int | None = None,

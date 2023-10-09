@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from functools import partial
 from typing import TYPE_CHECKING
 
@@ -26,7 +27,7 @@ register(
     to="png",
     filter_=commands_exist("dvipng") & commands_exist("latex"),
 )
-def latex_to_png_dvipng(
+async def latex_to_png_dvipng(
     data: str,
     width: int | None = None,
     height: int | None = None,
@@ -34,6 +35,7 @@ def latex_to_png_dvipng(
     bg: str | None = None,
     path: Path | None = None,
     initial_format: str = "",
+    timeout: int = 2,
 ) -> bytes | None:
     """Render LaTeX as a png image using :command:`dvipng`.
 
@@ -54,19 +56,22 @@ def latex_to_png_dvipng(
     with workdir.joinpath("tmp.tex").open("w", encoding="utf8") as f:
         f.writelines(latex_doc)
 
-    # Convert hex color to latax color
+    # Convert hex color to latex color
+    if len(fg) == 4:
+        fg = f"#{fg[1]}{fg[1]}{fg[2]}{fg[2]}{fg[3]}{fg[3]}"
     fg_latex = (
         f"RGB {int(fg[1:3], 16)} {int(fg[3:5], 16)} {int(fg[5:7], 16)}" if fg else ""
     )
 
     # Convert latex document to dvi image, then Convert dvi image to png
     try:
-        subprocess.check_call(
-            ["latex", "-halt-on-error", "-interaction", "batchmode", "tmp.tex"],
+        proc = await asyncio.create_subprocess_exec(
+            *["latex", "-halt-on-error", "-interaction", "batchmode", "tmp.tex"],
+            stdout=asyncio.subprocess.DEVNULL,
+            stderr=asyncio.subprocess.DEVNULL,
             cwd=workdir,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
         )
+        await asyncio.wait_for(proc.wait(), timeout)
 
         dvipng_cmd = [
             "dvipng",
@@ -83,18 +88,16 @@ def latex_to_png_dvipng(
             "tmp.dvi",
         ]
         if fg:
-            dvipng_cmd.extend(
-                [
-                    "-fg",
-                    fg_latex,
-                ]
-            )
-        output = subprocess.check_output(
-            dvipng_cmd,
+            dvipng_cmd += ["-fg", fg_latex]
+
+        proc = await asyncio.create_subprocess_exec(
+            *dvipng_cmd,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.DEVNULL,
             cwd=workdir,
-            stderr=subprocess.DEVNULL,
         )
-    except subprocess.CalledProcessError:
+        output, _ = await asyncio.wait_for(proc.communicate(), timeout)
+    except (subprocess.CalledProcessError, TimeoutError):
         return None
     finally:
         # Clean up temporary folder
@@ -108,7 +111,7 @@ def latex_to_png_dvipng(
     to="png",
     filter_=have_modules("matplotlib"),
 )
-def latex_to_png_py_mpl(
+async def latex_to_png_py_mpl(
     data: str,
     width: int | None = None,
     height: int | None = None,
@@ -152,7 +155,7 @@ register(
     to="png",
     filter_=have_modules("PIL"),
 )
-def pil_to_png_py_pil(
+async def pil_to_png_py_pil(
     data: PilImage,
     cols: int | None = None,
     rows: int | None = None,
@@ -175,7 +178,7 @@ def pil_to_png_py_pil(
     to="png",
     filter_=have_modules("cairosvg"),
 )
-def svg_to_png_py_cairosvg(
+async def svg_to_png_py_cairosvg(
     data: str | bytes,
     width: int | None = None,
     height: int | None = None,

@@ -18,7 +18,7 @@ if TYPE_CHECKING:
     to="rich",
     filter_=have_modules("rich"),
 )
-def markdown_to_rich_py(
+async def markdown_to_rich_py(
     data: str | bytes,
     width: int | None = None,
     height: int | None = None,
