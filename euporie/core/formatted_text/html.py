@@ -1676,9 +1676,9 @@ class Theme(Mapping):
         # TODO - transparency
         color_str = self.theme["color"]
         # Use black as the default color if a bg color is set
-        if color_str.startswith("var("):
-            var, _, default = color_str[4:-1].replace("-", "_").partition(",")
-            color_str = self.theme.get(var.strip(), default.strip() or color_str)
+        while color_str.startswith("var("):
+            var, _, fallback = color_str[4:-1].replace("-", "_").partition(",")
+            color_str = self.theme.get(var.strip(), fallback.strip() or "default")
         if color_str == "default" and self.theme["background_color"] != "default":
             color_str = "#000000"
         elif color_str == "transparent":
@@ -1698,9 +1698,9 @@ class Theme(Mapping):
         # Use white as the default bg color if a fg color is set
         # if color_str == "default" and self.theme["color"] != "default":
         #     color_str = "#ffffff"
-        if color_str.startswith("var("):
-            var = color_str[4:-1].replace("-", "_")
-            color_str = self.theme.get(var, color_str)
+        while color_str.startswith("var("):
+            var, _, fallback = color_str[4:-1].replace("-", "_").partition(",")
+            color_str = self.theme.get(var.strip(), fallback.strip() or "default")
         if color_str == "transparent":
             if parent_theme := self.parent_theme:
                 return parent_theme.background_color
