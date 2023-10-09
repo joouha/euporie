@@ -3526,7 +3526,7 @@ class HTML:
             # Set title
             elif child.name == "title":
                 if contents := child.contents:
-                    self.title = contents[0].text
+                    self.title = contents[0]._text.strip()
                     self.on_update.fire()
 
             # In case of a <link> style, load the url
