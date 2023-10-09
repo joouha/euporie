@@ -34,6 +34,7 @@ from euporie.core.widgets.display import (
     NotVisible,
     select_graphic_control,
 )
+from euporie.core.widgets.page import BoundedWritePosition
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -342,6 +343,13 @@ class WebViewControl(UIControl):
             write_position = WritePosition(
                 xpos=xpos, ypos=ypos, width=width, height=height
             )
+            write_position = BoundedWritePosition(
+                xpos=xpos,
+                ypos=y - vertical_scroll,
+                width=width,
+                height=height,
+                bbox=bbox,
+            )
 
             return write_position, bbox
 
@@ -418,7 +426,6 @@ class WebViewControl(UIControl):
                         line = paste(
                             fixed_lines[visible_line], line, 0, 0, transparent=True
                         )
-
                         # Update graphic positions on the fixed line
                         x = 0
                         for style, text, *_ in fixed_line:
