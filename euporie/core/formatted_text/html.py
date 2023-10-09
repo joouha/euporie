@@ -3182,6 +3182,8 @@ class CustomHTMLParser(HTMLParser):
         """Pare HTML markup."""
         # Ignore self-closing syntax - HTML5!
         markup = markup.replace("/>", ">")
+        # Remove comments as they can confuse the parser if they contain close tags
+        # markup = re.sub(r"<!--.*?-->", "", markup)
         soup = Node(
             name="::root",
             dom=self.dom,
@@ -3215,6 +3217,15 @@ class CustomHTMLParser(HTMLParser):
         self.curr.contents.append(
             Node(dom=self.dom, name="text", text=data, parent=self.curr, attrs=[])
         )
+
+    # def handle_endtag(self, tag: str) -> None:
+    #     """Handle end tags: close the currently opened element."""
+    #     if tag == self.curr.name:
+    #         self.curr.closed = True
+    #         if self.curr.parent:
+    #             self.curr = self.curr.parent
+    #     else:
+    #         self.autoclose()
 
     def handle_endtag(self, tag: str) -> None:
         """Handle end tags: close the currently opened element."""
