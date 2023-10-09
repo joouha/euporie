@@ -1593,7 +1593,8 @@ class Theme(Mapping):
             #     UpperRightEighthLine,
             #     LowerLeftEighthLine,
             # }:
-            style += f" bg:{self.background_color}"
+            if bg := self.background_color:
+                style += f" bg:{bg} "
 
             output[direction] = style
 
@@ -1718,13 +1719,13 @@ class Theme(Mapping):
         style = ""
 
         if "_pt_class" in self.theme:
-            style += f"class:{theme['_pt_class']}"
+            style += f" class:{theme['_pt_class']} "
 
         if fg := self.color:
             style += f" fg:{fg}"
 
         if bg := self.background_color:
-            style += f" bg:{bg}"
+            style += f" bg:{bg} "
 
         if "bold" in self.theme["font_weight"] or (
             isinstance((weight := try_eval(theme["font_weight"])), int)
