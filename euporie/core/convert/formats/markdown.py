@@ -21,7 +21,7 @@ _HTML2TEXT_TABLE_RE = r"(?:(?:.*\|)+[^|]*?(?:\n|$))+"
     to="markdown",
     filter_=have_modules("html2text"),
 )
-def html_to_markdown_py_html2text(
+async def html_to_markdown_py_html2text(
     data: str | bytes,
     width: int | None = None,
     height: int | None = None,
@@ -68,7 +68,7 @@ def html_to_markdown_py_html2text(
     to="markdown",
     filter_=have_modules("mtable", "html5lib"),
 )
-def html_to_markdown_py_mtable(
+async def html_to_markdown_py_mtable(
     data: str | bytes,
     width: int | None = None,
     height: int | None = None,

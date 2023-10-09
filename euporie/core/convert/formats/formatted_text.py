@@ -30,7 +30,7 @@ _html_cache: SimpleCache[int, HTML] = SimpleCache(maxsize=20)
     from_="html",
     to="formatted_text",
 )
-def html_to_ft(
+async def html_to_ft(
     data: str | bytes,
     width: int | None = None,
     height: int | None = None,
@@ -54,14 +54,7 @@ def html_to_ft(
             _initial_format=initial_format,
         ),
     )
-    if (
-        width is not None
-        and height is not None
-        and (html.width != width or html.height != height)
-    ):
-        html.render(width, height)
-
-    return to_formatted_text(html)
+    return await html._render(width, height)
 
 
 _BLACKLISTED_LEXERS = {
@@ -76,7 +69,7 @@ _BLACKLISTED_LEXERS = {
     from_="ansi",
     to="formatted_text",
 )
-def ansi_to_ft(
+async def ansi_to_ft(
     data: str | bytes,
     width: int | None = None,
     height: int | None = None,

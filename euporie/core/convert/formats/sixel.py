@@ -40,7 +40,7 @@ register(
     to="sixel",
     filter_=commands_exist("img2sixel"),
 )
-def png_to_sixel_img2sixel(
+async def png_to_sixel_img2sixel(
     data: bytes,
     cols: int | None = None,
     rows: int | None = None,
@@ -57,7 +57,7 @@ def png_to_sixel_img2sixel(
     if cols is not None:
         px, _ = get_app().term_info.cell_size_px
         cmd += [f"--width={int(cols * px)}"]
-    return call_subproc(data, cmd).decode()
+    return (await call_subproc(data, cmd)).decode()
 
 
 register(
@@ -72,7 +72,7 @@ register(
     to="sixel",
     filter_=have_modules("timg"),
 )
-def pil_to_sixel_py_timg(
+async def pil_to_sixel_py_timg(
     data: PilImage,
     cols: int | None = None,
     rows: int | None = None,
@@ -92,7 +92,7 @@ def pil_to_sixel_py_timg(
     to="sixel",
     filter_=have_modules("teimpy", "numpy"),
 )
-def pil_to_sixel_py_teimpy(
+async def pil_to_sixel_py_teimpy(
     data: PilImage,
     cols: int | None = None,
     rows: int | None = None,

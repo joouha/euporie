@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 
-def base64_to_bytes_py(
+async def base64_to_bytes_py(
     data: str | bytes,
     width: int | None = None,
     height: int | None = None,
@@ -32,7 +32,7 @@ def base64_to_bytes_py(
     return base64.b64decode(data_str)
 
 
-def imagemagick_convert(
+async def imagemagick_convert(
     output_format: str,
     data: str | bytes,
     cols: int | None = None,
@@ -53,14 +53,14 @@ def imagemagick_convert(
     if bg:
         cmd += ["-background", bg]
     cmd += ["-[0]", f"{output_format}:-"]
-    result: bytes | str = call_subproc(data, cmd)
+    result: bytes | str = await call_subproc(data, cmd)
 
     if output_format in {"sixel", "svg"} and isinstance(result, bytes):
         result = result.decode()
     return result
 
 
-def chafa_convert_cmd(
+async def chafa_convert_cmd(
     output_format: str,
     data: str | bytes,
     cols: int | None = None,
@@ -82,10 +82,10 @@ def chafa_convert_cmd(
     if bg:
         cmd += ["--bg", bg]
     cmd += ["--stretch", "/dev/stdin"]
-    return call_subproc(data, cmd).decode()
+    return (await call_subproc(data, cmd)).decode()
 
 
-def chafa_convert_py(
+async def chafa_convert_py(
     output_format: Literal["symbols", "sixels", "kitty", "iterm2"],
     data: PilImage,
     cols: int | None = None,

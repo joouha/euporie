@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import io
 import logging
 import os
@@ -50,7 +51,7 @@ def have_modules(*modules: str) -> Filter:
     return reduce(lambda a, b: a & b, filters, to_filter(True))
 
 
-def call_subproc(
+async def call_subproc(
     data: str | bytes,
     cmd: list[Any],
     use_tempfile: bool = False,
@@ -82,23 +83,20 @@ def call_subproc(
         tfile.write(data)
         tfile.close()
         cmd.append(tfile.name)
-
-    # TODO render asynchronously
-    # proc = await asyncio.create_subprocess_shell(
-    # " ".join(cmd),
-    # stdout=asyncio.subprocess.PIPE,
-    # stdin=asyncio.subprocess.PIPE,
-    # stderr=asyncio.subprocess.DEVNULL,
-    # )
-    # stdout, stderr = await proc.communicate(data)
+        stdinput = None
+    else:
+        stdinput = data
 
     log.debug("Running external command `%s`", cmd)
     error: Exception | None = None
     try:
-        # Execution of untrusted input has been checked for
-        output_bytes = subprocess.check_output(  # noqa S603
-            cmd, input=data, stderr=subprocess.DEVNULL
+        proc = await asyncio.create_subprocess_exec(
+            *cmd,
+            stdin=asyncio.subprocess.PIPE,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.DEVNULL,
         )
+        output_bytes, _ = await proc.communicate(stdinput)
     except FileNotFoundError as error_:
         log.error("Could not run external command `%s`", cmd)
         error = error_

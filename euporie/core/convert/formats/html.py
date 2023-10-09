@@ -59,7 +59,7 @@ markdown_parser = (
 
 
 @register(from_="markdown", to="html")
-def markdown_to_html_markdown_it(
+async def markdown_to_html_markdown_it(
     data: str | bytes,
     width: int | None = None,
     height: int | None = None,

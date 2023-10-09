@@ -146,7 +146,7 @@ run = "mypy {args:--namespace-packages -p euporie -p tests -p scripts}"
 description = "Run tests."
 detached = false
 dependencies = [
-  "pytest", "pytest-cov", "coverage",
+  "pytest", "pytest-asyncio", "pytest-cov", "coverage",
   # Optional non-dependencies
   "python-magic", "html2text",
 ]
@@ -220,3 +220,6 @@ module = [
   "pytest.*",
 ]
 ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"

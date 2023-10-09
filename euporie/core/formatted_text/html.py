@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import re
 from ast import literal_eval
@@ -49,7 +50,7 @@ from euporie.core.border import (
     UpperRightHalfDottedLine,
     UpperRightHalfLine,
 )
-from euporie.core.convert.core import convert, get_format
+from euporie.core.convert.core import _convert, convert, get_format, get_loop
 from euporie.core.convert.utils import data_pixel_size, pixels_to_cell_size
 from euporie.core.current import get_app
 from euporie.core.data_structures import DiBool, DiInt, DiStr
@@ -1741,21 +1742,20 @@ class Theme(Mapping):
 
         return style
 
-    @cached_property
-    def text_transform(self) -> Callable[[str], str] | None:
+    async def text_transform(self, value: str) -> Callable[[str], str] | None:
         """Return a function which transforms text."""
         if "uppercase" in self.theme["text_transform"]:
-            return str.upper
+            return value.upper()
         elif "lowercase" in self.theme["text_transform"]:
-            return str.lower
+            return value.lower()
         elif "capitalize" in self.theme["text_transform"]:
-            return str.capitalize
+            return value.capitalize()
         elif "sub" in self.theme["vertical_align"]:
-            return lambda x: "".join(subscript.get(c, c) for c in x)
+            return "".join(subscript.get(c, c) for c in value)
         elif "super" in self.theme["vertical_align"]:
-            return lambda x: "".join(superscript.get(c, c) for c in x)
+            return "".join(superscript.get(c, c) for c in value)
         elif "latex" in self.theme["text_transform"]:
-            return lambda x: convert(x, "latex", "ansi")
+            return await _convert(value, "latex", "ansi")
         else:
             return None
 
@@ -1992,7 +1992,7 @@ class Theme(Mapping):
             (order > 0, order),
         )
 
-    # Mapping methods - these are passed on to the unerlying theme dictionary
+    # Mapping methods - these are passed on to the underlying theme dictionary
 
     def __getitem__(self, key: str) -> Any:
         """Get an item."""
@@ -2870,13 +2870,10 @@ class Node:
     def text(self) -> str:
         """Get the element's computed text."""
         if text := self._text:
-            if callable(transform := self.theme.text_transform):
-                text = transform(text)
-
             # if False and not (preformatted := self.theme.preformatted):
             if not (preformatted := self.theme.preformatted):
                 # 1. All spaces and tabs immediately before and after a line break are ignored
-                text = re.sub(r"(\s+(?=\n)|(?<=\n)\s+)", "", text, re.MULTILINE)
+                text = re.sub(r"(\s+(?=\n)|(?<=\n)\s+)", "", text, flags=re.MULTILINE)
                 # 2. All tab characters are handled as space characters
                 text = text.replace("\t", " ")
                 # 3. Line breaks are converted to spaces
@@ -2936,7 +2933,9 @@ class Node:
 
     def find_all(self, tag: str, recursive: bool = False) -> list[Node]:
         """Find all child elements of a given tag type."""
-        return [element for element in self.contents if element.name == tag]
+        for element in self.contents:
+            if element.name == tag:
+                yield element
 
     @cached_property
     def renderable_contents(self) -> list[Node]:
@@ -3486,7 +3485,7 @@ class HTML:
         """Parse the markup."""
         return self.parser.parse(self.markup)
 
-    def load_assets(self) -> None:
+    async def load_assets(self) -> None:
         """Load CSS styles and image resources.
 
         Do not touch element's themes!
@@ -3559,6 +3558,14 @@ class HTML:
 
     def render(self, width: int | None, height: int | None) -> StyleAndTextTuples:
         """Render the current markup at a given size."""
+        loop = get_loop()
+        future = asyncio.run_coroutine_threadsafe(self._render(width, height), loop)
+        return future.result()
+
+    async def _render(
+        self, width: int | None, height: int | None
+    ) -> StyleAndTextTuples:
+        """Render the current markup at a given size, asynchronously."""
         # log.debug("Rendering at (%d, %d)", width, height)
         no_w = width is None and self.width is None
         no_h = height is None and self.height is None
@@ -3576,9 +3583,9 @@ class HTML:
         assert self.height is not None
 
         if not self.assets_loaded:
-            self.load_assets()
+            await self.load_assets()
 
-        ft = self.render_element(
+        ft = await self.render_element(
             self.soup,
             available_width=self.width,
             available_height=self.height,
@@ -3643,7 +3650,7 @@ class HTML:
 
         return ft
 
-    def render_element(
+    async def render_element(
         self,
         element: Node,
         available_width: int,
@@ -3672,14 +3679,14 @@ class HTML:
             )
 
         # Render the element
-        ft = render_func(element, left, fill, align_content)
+        ft = await render_func(element, left, fill, align_content)
 
         # Format the contents
-        ft = self.format_element(ft, element, left, fill, align_content)
+        ft = await self.format_element(ft, element, left, fill, align_content)
 
         return ft
 
-    def render_text_content(
+    async def render_text_content(
         self,
         element: Node,
         left: int = 0,
@@ -3701,6 +3708,9 @@ class HTML:
         """
         ft: StyleAndTextTuples = []
         if text := element.text:
+            if transformed := await element.theme.text_transform(text):
+                text = transformed
+
             if parent_theme := element.theme.parent_theme:
                 style = parent_theme.style
             else:
@@ -3708,7 +3718,45 @@ class HTML:
             ft = [(style, text)]
         return ft
 
-    def render_ol_content(
+    async def render_details_content(
+        self,
+        element: Node,
+        left: int = 0,
+        fill: bool = True,
+        align_content: bool = True,
+    ) -> StyleAndTextTuples:
+        """Render details, showing summary at the top and hiding contents if closed."""
+        ft = []
+        theme = element.theme
+        summary = None
+        contents = []
+        for child in element.contents:
+            if not summary and child.name == "summary":
+                summary = child
+            else:
+                contents.append(child)
+        if summary:
+            ft += await self.render_element(
+                summary,
+                available_width=theme.content_width,
+                available_height=theme.content_height,
+                left=left,
+                fill=fill,
+            )
+        if "open" in element.attrs and contents:
+            # Create a dummy node with non-summary children and render it
+            node = Node(dom=self, name="::details", parent=element, contents=contents)
+            ft += [("", "\n")]
+            ft += await self.render_element(
+                node,
+                available_width=theme.content_width,
+                available_height=theme.content_height,
+                left=left,
+                fill=fill,
+            )
+        return ft
+
+    async def render_ol_content(
         self,
         element: Node,
         left: int = 0,
@@ -3722,7 +3770,7 @@ class HTML:
             _curr += 1
             _curr = int(item.attrs.setdefault("value", str(_curr)))
         # Render list as normal
-        return self.render_node_content(
+        return await self.render_node_content(
             element=element,
             left=left,
             fill=fill,
@@ -3731,7 +3779,7 @@ class HTML:
 
     render_ul_content = render_ol_content
 
-    def render_list_item_content(
+    async def render_list_item_content(
         self,
         element: Node,
         left: int = 0,
@@ -3757,7 +3805,7 @@ class HTML:
             else:
                 element.marker = bullet_element
         # Render the list item
-        ft = self.render_node_content(
+        ft = await self.render_node_content(
             element,
             left=left,
             fill=fill,
@@ -3765,7 +3813,7 @@ class HTML:
         )
         return ft
 
-    def render_table_content(
+    async def render_table_content(
         self,
         element: Node,
         left: int = 0,
@@ -3807,7 +3855,7 @@ class HTML:
         td_map = {}
 
         # Stack the elements in the shape of the table
-        def render_rows(elements: list[Node]) -> None:
+        async def render_rows(elements: list[Node]) -> None:
             for tr in elements:
                 if tr.name == "tr":
                     tr_theme = tr.theme
@@ -3829,7 +3877,7 @@ class HTML:
                                 or table_theme.available_width,
                             )
                             cell = row.new_cell(
-                                text=self.render_node_content(
+                                text=await self.render_node_content(
                                     td,
                                     left=0,
                                     align_content=False,
@@ -3851,14 +3899,14 @@ class HTML:
 
         # Render the table head
         for child in element.find_all("thead", recursive=False):
-            render_rows(child.contents)
+            await render_rows(child.contents)
         # Render the table body
         for child in element.find_all("tbody", recursive=False):
-            render_rows(child.contents)
+            await render_rows(child.contents)
         # Render rows not in a head / body / foot as part of the body
-        render_rows(element.contents)
+        await render_rows(element.contents)
         for child in element.find_all("tfoot", recursive=False):
-            render_rows(child.contents)
+            await render_rows(child.contents)
 
         # TODO - process <colgroup> elements
 
@@ -3877,7 +3925,7 @@ class HTML:
                         td.theme.update_space(
                             available_width, table_theme.available_height
                         )
-                        cell.text = self.render_node_content(
+                        cell.text = await self.render_node_content(
                             td,
                             # TODO - get actual colspan cell widths properly
                             left=0,
@@ -3892,7 +3940,7 @@ class HTML:
         if captions:
             table_width = max_line_width(ft_table)
             for child in captions:
-                ft_caption = self.render_element(
+                ft_caption = await self.render_element(
                     child,
                     available_width=table_width,
                     available_height=table_theme.available_height,
@@ -3906,7 +3954,7 @@ class HTML:
 
         return ft
 
-    def render_grid_content(
+    async def render_grid_content(
         self,
         element: Node,
         left: int = 0,
@@ -4098,23 +4146,32 @@ class HTML:
         cell_widths = table.calculate_cell_widths(available_width)
 
         # Render cell contents at the final calculated widths
+        async def _render_cell(cell: Cell, td: None, width: int, height: int) -> None:
+            cell.text = await self.render_element(
+                td,
+                available_width=width,
+                available_height=height,
+                left=0,
+                fill=True,
+                align_content=align_content,
+            )
+
+        coros = []
         for row in table._rows.values():
             for cell in row._cells.values():
                 if td := td_map.get(cell):
                     width = cell_widths[cell]
                     td.theme.update_space(width, theme.available_height)
-                    cell.text = self.render_element(
-                        td,
-                        available_width=width or available_width,
-                        available_height=available_height,
-                        left=0,
-                        fill=True,
-                        align_content=align_content,
+                    coros.append(
+                        _render_cell(
+                            cell, td, width or available_width, available_height
+                        )
                     )
+        await asyncio.gather(*coros)
 
         return table.render()
 
-    def _render_image(
+    async def _render_image(
         self, data: str | bytes, format_: str, theme: Theme, path: Path | None = None
     ) -> StyleAndTextTuples:
         """Render an image and prepare graphic representation."""
@@ -4129,8 +4186,9 @@ class HTML:
         rows = ceil(cols * aspect)
 
         # Convert the image to formatted-text
+        # ft = [("fg:blue", "#" * cols + "\n")] * rows
         ft = (
-            convert(
+            await _convert(
                 data=data,
                 from_=format_,
                 to="formatted_text",
@@ -4171,7 +4229,7 @@ class HTML:
             + [(f"{theme.style} {style}", (text), *rest) for style, text, *rest in ft],
         )
 
-    def render_img_content(
+    async def render_img_content(
         self,
         element: Node,
         left: int = 0,
@@ -4188,7 +4246,7 @@ class HTML:
         if not element.attrs.get("_missing") and (data := element.attrs.get("_data")):
             # Display it graphically
             format_ = get_format(path, default="png")
-            ft = self._render_image(data, format_, theme, path)
+            ft = await self._render_image(data, format_, theme, path)
 
         else:
             style = f"class:image,placeholder {theme.style}"
@@ -4209,7 +4267,7 @@ class HTML:
 
         return ft
 
-    def render_svg_content(
+    async def render_svg_content(
         self,
         element: Node,
         left: int = 0,
@@ -4225,10 +4283,10 @@ class HTML:
         data = element._outer_html().replace(" viewbox=", " viewBox=")
         # Replace "currentColor" with theme foreground color
         data = data.replace("currentColor", theme.color)
-        ft = self._render_image(data, "svg", theme)
+        ft = await self._render_image(data, "svg", theme)
         return ft
 
-    def render_input_content(
+    async def render_input_content(
         self,
         element: Node,
         left: int = 0,
@@ -4246,7 +4304,7 @@ class HTML:
                 text=attrs.get("value", attrs.get("placeholder", " ")) or " ",
             ),
         )
-        ft = self.render_node_content(
+        ft = await self.render_node_content(
             element,
             left=left,
             fill=fill,
@@ -4254,7 +4312,7 @@ class HTML:
         )
         return ft
 
-    def render_node_content(
+    async def render_node_content(
         self,
         element: Node,
         left: int = 0,
@@ -4302,17 +4360,37 @@ class HTML:
             baseline = 0
             new_line = []
 
-        # Render each child node
+        available_width = parent_theme.content_width
+        available_height = parent_theme.content_height
+
+        coros = {}
         for child in element.renderable_descendents:
             theme = child.theme
-
             if theme.skip:
                 continue
+            # Render the element
+            coros[child] = self.render_element(
+                child,
+                available_width=available_width,
+                available_height=available_height,
+                left=0,
+                fill=fill,
+                align_content=align_content,
+            )
+        renderings = await asyncio.gather(*coros.values())
 
+        # Render each child node
+        for child, rendering in zip(coros, renderings):
             # Start a new line if we encounter a <br> element
             if child.name == "br":
                 flush()
                 continue
+
+            # If the rendering was empty, move on
+            if not rendering:
+                continue
+
+            theme = child.theme
 
             # We will start a new line if the previous item was a block
             if ft and d_blocky and last_char(ft) != "\n":
@@ -4324,23 +4402,6 @@ class HTML:
             d_inline = theme.d_inline
             d_inline_block = theme.d_inline_block
             preformatted = theme.preformatted
-
-            available_width = parent_theme.content_width
-            available_height = parent_theme.content_height
-
-            # Render the element
-            rendering = self.render_element(
-                child,
-                available_width=available_width,
-                available_height=available_height,
-                left=0 if d_blocky or d_inline_block else left,
-                fill=fill,
-                align_content=align_content,
-            )
-
-            # If the rendering was empty, move on
-            if not rendering:
-                continue
 
             # If the rendering was a positioned absolutely or fixed, store it and draw it later
             if theme.theme["position"] == "fixed":
@@ -4566,7 +4627,7 @@ class HTML:
 
         return ft
 
-    def format_element(
+    async def format_element(
         self,
         ft: StyleAndTextTuples,
         element: Node,
@@ -4724,7 +4785,7 @@ class HTML:
         # We use [ReverseOverwrite] fragments to ensure the marker is ignored
         # now and written over the margin later.
         if element.marker is not None:
-            marker_ft = self.render_element(
+            marker_ft = await self.render_element(
                 element.marker,
                 available_width=99999,
                 available_height=theme.available_height,

@@ -28,7 +28,7 @@ log = logging.getLogger(__name__)
     to="ansi",
     filter_=commands_exist("w3m"),
 )
-def html_to_ansi_w3m(
+async def html_to_ansi_w3m(
     data: str,
     width: int | None = None,
     height: int | None = None,
@@ -41,7 +41,7 @@ def html_to_ansi_w3m(
     cmd: list[Any] = ["w3m", "-T", "text/html"]
     if width is not None:
         cmd += ["-cols", str(width)]
-    return call_subproc(data.encode(), cmd).decode()
+    return (await call_subproc(data.encode(), cmd)).decode()
 
 
 @register(
@@ -49,7 +49,7 @@ def html_to_ansi_w3m(
     to="ansi",
     filter_=commands_exist("elinks"),
 )
-def html_to_ansi_elinks(
+async def html_to_ansi_elinks(
     data: str,
     width: int | None = None,
     height: int | None = None,
@@ -70,7 +70,7 @@ def html_to_ansi_elinks(
     ]
     if width is not None:
         cmd += ["-dump-width", width]
-    return call_subproc(data.encode(), cmd).decode()
+    return (await call_subproc(data.encode(), cmd)).decode()
 
 
 @register(
@@ -78,7 +78,7 @@ def html_to_ansi_elinks(
     to="ansi",
     filter_=commands_exist("lynx"),
 )
-def html_to_ansi_lynx(
+async def html_to_ansi_lynx(
     data: str,
     width: int | None = None,
     height: int | None = None,
@@ -91,7 +91,7 @@ def html_to_ansi_lynx(
     cmd: list[Any] = ["lynx", "-dump", "-stdin"]
     if width is not None:
         cmd += [f"-width={width}"]
-    return call_subproc(data.encode(), cmd).decode()
+    return (await call_subproc(data.encode(), cmd)).decode()
 
 
 @register(
@@ -99,7 +99,7 @@ def html_to_ansi_lynx(
     to="ansi",
     filter_=commands_exist("links"),
 )
-def html_to_ansi_links(
+async def html_to_ansi_links(
     data: str,
     width: int | None = None,
     height: int | None = None,
@@ -112,7 +112,7 @@ def html_to_ansi_links(
     cmd: list[Any] = ["links", "-dump"]
     if width is not None:
         cmd += ["-width", width]
-    return call_subproc(data.encode(), cmd, use_tempfile=True).decode()
+    return (await call_subproc(data.encode(), cmd, use_tempfile=True)).decode()
 
 
 @register(
@@ -120,7 +120,7 @@ def html_to_ansi_links(
     to="ansi",
     weight=4,
 )
-def html_to_ansi_py_htmlparser(
+async def html_to_ansi_py_htmlparser(
     data: str,
     width: int | None = None,
     height: int | None = None,
@@ -178,7 +178,7 @@ def html_to_ansi_py_htmlparser(
     to="ansi",
     filter_=have_modules("flatlatex.latexfuntypes"),
 )
-def latex_to_ansi_py_flatlatex(
+async def latex_to_ansi_py_flatlatex(
     data: str,
     width: int | None = None,
     height: int | None = None,
@@ -198,7 +198,7 @@ def latex_to_ansi_py_flatlatex(
     to="ansi",
     filter_=have_modules("pylatexenc"),
 )
-def latex_to_ansi_py_pylatexenc(
+async def latex_to_ansi_py_pylatexenc(
     data: str,
     width: int | None = None,
     height: int | None = None,
@@ -218,7 +218,7 @@ def latex_to_ansi_py_pylatexenc(
     to="ansi",
     filter_=have_modules("sympy", "antlr4"),
 )
-def latex_to_ansi_py_sympy(
+async def latex_to_ansi_py_sympy(
     data: str,
     width: int | None = None,
     height: int | None = None,
@@ -243,7 +243,7 @@ def latex_to_ansi_py_sympy(
 
 
 @register(from_="pil", to="ansi", filter_=have_modules("timg"), weight=2)
-def pil_to_ansi_py_timg(
+async def pil_to_ansi_py_timg(
     data: PilImage,
     cols: int | None = None,
     rows: int | None = None,
@@ -286,7 +286,7 @@ def pil_to_ansi_py_timg(
     to="ansi",
     filter_=have_modules("img2unicode"),
 )
-def pil_to_ansi_py_img2unicode(
+async def pil_to_ansi_py_img2unicode(
     data: PilImage,
     cols: int | None = None,
     rows: int | None = None,
@@ -325,7 +325,7 @@ register(from_=("pil"), to="ansi", filter_=have_modules("chafa"))(
     to="ansi",
     filter_=commands_exist("timg") & ~have_modules("timg"),
 )
-def image_to_ansi_timg(
+async def image_to_ansi_timg(
     data: bytes,
     cols: int | None = None,
     rows: int | None = None,
@@ -339,7 +339,7 @@ def image_to_ansi_timg(
     if cols is not None and rows is not None:
         cmd += [f"-g{cols}x{cols}"]
     cmd += ["--compress", "-pq", "--threads=-1", "-"]
-    return call_subproc(data, cmd).decode()
+    return (await call_subproc(data, cmd)).decode()
 
 
 @register(
@@ -347,7 +347,7 @@ def image_to_ansi_timg(
     to="ansi",
     filter_=commands_exist("catimg"),
 )
-def image_to_ansi_catimg(
+async def image_to_ansi_catimg(
     data: bytes,
     cols: int | None = None,
     rows: int | None = None,
@@ -361,7 +361,7 @@ def image_to_ansi_catimg(
     if cols is not None and rows is not None:
         cmd += ["-w", cols * 2]
     cmd += ["-"]
-    return call_subproc(data, cmd).decode()
+    return (await call_subproc(data, cmd)).decode()
 
 
 @register(
@@ -369,7 +369,7 @@ def image_to_ansi_catimg(
     to="ansi",
     filter_=commands_exist("icat"),
 )
-def image_to_ansi_icat(
+async def image_to_ansi_icat(
     data: bytes,
     cols: int | None = None,
     rows: int | None = None,
@@ -383,7 +383,7 @@ def image_to_ansi_icat(
     if cols is not None and rows is not None:
         cmd += ["-w", cols]
     cmd += ["--mode", "24bit", "-"]
-    return call_subproc(data, cmd).decode()
+    return (await call_subproc(data, cmd)).decode()
 
 
 @register(
@@ -391,7 +391,7 @@ def image_to_ansi_icat(
     to="ansi",
     filter_=commands_exist("tiv"),
 )
-def image_to_ansi_tiv(
+async def image_to_ansi_tiv(
     data: bytes,
     cols: int | None = None,
     rows: int | None = None,
@@ -404,7 +404,7 @@ def image_to_ansi_tiv(
     cmd: list[Any] = ["tiv"]
     if cols is not None and rows is not None:
         cmd += ["-w", cols, "-h", rows]
-    return call_subproc(data, cmd, use_tempfile=True).decode()
+    return (await call_subproc(data, cmd, use_tempfile=True)).decode()
 
 
 @register(
@@ -412,7 +412,7 @@ def image_to_ansi_tiv(
     to="ansi",
     filter_=commands_exist("viu"),
 )
-def image_to_ansi_viu(
+async def image_to_ansi_viu(
     data: bytes,
     cols: int | None = None,
     rows: int | None = None,
@@ -426,7 +426,7 @@ def image_to_ansi_viu(
     if cols is not None and rows is not None:
         cmd += ["-w", cols]
     cmd += ["-s", "-"]
-    return call_subproc(data, cmd).decode()
+    return (await call_subproc(data, cmd)).decode()
 
 
 @register(
@@ -434,7 +434,7 @@ def image_to_ansi_viu(
     to="ansi",
     filter_=commands_exist("jp2a"),
 )
-def image_to_ansi_jp2a(
+async def image_to_ansi_jp2a(
     data: bytes,
     cols: int | None = None,
     rows: int | None = None,
@@ -448,7 +448,7 @@ def image_to_ansi_jp2a(
     if cols is not None and rows is not None:
         cmd += [f"--height={rows}"]
     cmd += ["-"]
-    return call_subproc(data, cmd).decode()
+    return (await call_subproc(data, cmd)).decode()
 
 
 @register(
@@ -456,7 +456,7 @@ def image_to_ansi_jp2a(
     to="ansi",
     filter_=commands_exist("img2txt"),
 )
-def png_to_ansi_img2txt(
+async def png_to_ansi_img2txt(
     data: bytes,
     cols: int | None = None,
     rows: int | None = None,
@@ -469,11 +469,11 @@ def png_to_ansi_img2txt(
     cmd: list[Any] = ["img2txt"]
     if cols is not None and rows is not None:
         cmd += ["-W", cols, "-H", rows]
-    return call_subproc(data, cmd, use_tempfile=True).decode()
+    return (await call_subproc(data, cmd, use_tempfile=True)).decode()
 
 
 @register(from_=("png", "jpeg", "svg"), to="ansi", filter_=True, weight=99)
-def png_to_ansi_py_placeholder(
+async def png_to_ansi_py_placeholder(
     data: bytes,
     cols: int | None = None,
     rows: int | None = None,
@@ -507,7 +507,7 @@ def png_to_ansi_py_placeholder(
     to="ansi",
     filter_=have_modules("rich"),
 )
-def rich_to_ansi_py(
+async def rich_to_ansi_py(
     data: RenderableType,
     width: int | None = None,
     height: int | None = None,

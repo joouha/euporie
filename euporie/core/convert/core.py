@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import logging
 import mimetypes
-from functools import lru_cache, partial
+import threading
+from functools import lru_cache
 from typing import TYPE_CHECKING, NamedTuple
 
 from prompt_toolkit.cache import FastDictCache, SimpleCache
@@ -50,6 +52,10 @@ ERROR_OUTPUTS = {
 }
 
 
+_IO_THREAD = [None]  # dedicated conversion IO thread
+_LOOP = [None]  # global event loop for conversion
+
+
 @lru_cache
 def get_mime(path: Path | str) -> str | None:
     """Attempt to determine the mime-type of a path."""
@@ -65,24 +71,6 @@ def get_mime(path: Path | str) -> str | None:
     # Read from path of data URI
     if isinstance(path, DataPath):
         mime = path._mime
-
-    # Guess from file-extension
-    if not mime and path.suffix:
-        # Check for Jupyter notebooks by extension
-        if path.suffix == ".ipynb":
-            return "application/x-ipynb+json"
-        else:
-            mime, _ = mimetypes.guess_type(path)
-
-    # Try using magic
-    if not mime:
-        try:
-            import magic
-        except ModuleNotFoundError:
-            pass
-        else:
-            with path.open(mode="rb") as f:
-                mime = magic.from_buffer(f.read(2048), mime=True)
 
     # If we have a web-address, nsure we have a url
     # Check http-headers and nsure we have a url
@@ -108,6 +96,27 @@ def get_mime(path: Path | str) -> str | None:
                 if content_type is not None:
                     mime = content_type.partition(";")[0]
                     break
+
+    # Try using magic
+    if not mime:
+        try:
+            import magic
+        except ModuleNotFoundError:
+            pass
+        else:
+            try:
+                with path.open(mode="rb") as f:
+                    mime = magic.from_buffer(f.read(2048), mime=True)
+            except FileNotFoundError:
+                pass
+
+    # Guess from file-extension
+    if not mime and path.suffix:
+        # Check for Jupyter notebooks by extension
+        if path.suffix == ".ipynb":
+            return "application/x-ipynb+json"
+        else:
+            mime, _ = mimetypes.guess_type(path)
 
     return mime
 
@@ -211,7 +220,7 @@ _CONVERTOR_ROUTE_CACHE: FastDictCache[tuple[str, str], list | None] = FastDictCa
 )
 
 
-def _convert(
+async def _do_conversion(
     data: str | bytes,
     from_: str,
     to: str,
@@ -239,17 +248,9 @@ def _convert(
                 ],
                 key=lambda x: x.weight,
             )[0].func
-            # Add intermediate steps to the cache
+            # POSSIBLE TODO - Add intermediate steps to the cache
             try:
-                output_hash = hash(data)
-            except TypeError as error:
-                log.warning("Cannot hash %s", data)
-                raise error
-            try:
-                output = _CONVERSION_CACHE.get(
-                    (output_hash, from_, stage_b, cols, rows, fg, bg, path),
-                    partial(func, output, cols, rows, fg, bg, path, from_),
-                )
+                output = await func(output, cols, rows, fg, bg, path, from_)
             except Exception:
                 log.exception("An error occurred during format conversion")
                 output = None
@@ -271,6 +272,38 @@ def _convert(
     return output
 
 
+async def _convert(
+    data: str | bytes,
+    from_: str,
+    to: str,
+    cols: int | None = None,
+    rows: int | None = None,
+    fg: str | None = None,
+    bg: str | None = None,
+    path: Path | None = None,
+) -> Any:
+    try:
+        data_hash = hashlib.sha1(  # noqa S324
+            data if isinstance(data, bytes) else data.encode()
+        ).hexdigest()
+    except TypeError as error:
+        log.warning("Cannot hash %s", data)
+        key = None
+    else:
+        key = (data_hash, from_, to, cols, rows, fg, bg, path)
+
+    if key:
+        if key not in _CONVERSION_CACHE._keys:
+            _data = await _do_conversion(data, from_, to, cols, rows, fg, bg, path)
+            # Pass through cache check function to keep cache size limited
+            data = _CONVERSION_CACHE.get(key, lambda: _data)
+    else:
+        # If we can't hash the data, don't worry about caching the conversion
+        data = await _do_conversion(data, from_, to, cols, rows, fg, bg, path)
+
+    return data
+
+
 def convert(
     data: Any,
     from_: str,
@@ -280,30 +313,48 @@ def convert(
     fg: str | None = None,
     bg: str | None = None,
     path: Path | None = None,
-) -> Any:
+    timeout: int = 10,
+) -> Any | None:
     """Convert between formats."""
-    try:
-        # data_hash = hash(data)
-        data_hash = hashlib.sha1(  # noqa S324
-            data if isinstance(data, bytes) else data.encode()
-        ).hexdigest()
-    except TypeError as error:
-        log.warning("Cannot hash %s", data)
-        raise error
 
-    key = (data_hash, from_, to, cols, rows, fg, bg, path)
+    async def _runner() -> Any:
+        try:
+            result = await _convert(data, from_, to, cols, rows, fg, bg, path)
+        except NotImplementedError:
+            log.warning("Conversion not possible")
+            result = None
+        except Exception:
+            log.exception("Error")
+        return result
 
-    data = _CONVERSION_CACHE.get(
-        key,
-        partial(_convert, data, from_, to, cols, rows, fg, bg, path),
-    )
-
-    # if key in cache:
-    #     data = cache[key]
-    # else:
-    #     data = cache[key] = _convert(data, from_, to, cols, rows, fg, bg, path)
+    future = asyncio.run_coroutine_threadsafe(_runner(), get_loop())
+    data = future.result()
 
     if data is None:
         data = ERROR_OUTPUTS.get(to, b"(Conversion Error)")
 
     return data
+
+
+def get_loop() -> asyncio.EventLoop:
+    """Create or return the conversion IO loop.
+
+    The loop will be running on a separate thread.
+    """
+    if _LOOP[0] is None:
+        _LOOP[0] = asyncio.new_event_loop()
+        thread = threading.Thread(
+            target=_LOOP[0].run_forever, name="EuporieConvertIO", daemon=True
+        )
+        thread.start()
+        _IO_THREAD[0] = thread
+    # Check we are not already in the conversion event loop
+    try:
+        running_loop = asyncio.get_running_loop()
+    except RuntimeError:
+        running_loop = None
+    if _LOOP[0] is running_loop:
+        raise NotImplementedError(
+            "Cannot call `convert` from the conversion event loop"
+        )
+    return _LOOP[0]
