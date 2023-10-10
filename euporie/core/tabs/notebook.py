@@ -131,6 +131,14 @@ class BaseNotebook(KernelTab, metaclass=ABCMeta):
         """Return a dictionary to hold notebook / kernel metadata."""
         return self.json.setdefault("metadata", {})
 
+    async def load_history(self) -> None:
+        """Load kernel history."""
+        await super().load_history()
+        # Re-run history load for cell input-boxes
+        for cell in self._rendered_cells.values():
+            cell.input_box.buffer._load_history_task = None
+            cell.input_box.buffer.load_history_if_not_yet_loaded()
+
     def kernel_started(self, result: dict[str, Any] | None = None) -> None:
         """Task to run when the kernel has started."""
         super().kernel_started(result)

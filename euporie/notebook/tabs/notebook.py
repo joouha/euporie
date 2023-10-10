@@ -1118,10 +1118,19 @@ class Notebook(BaseNotebook):
 
     @staticmethod
     @add_cmd(
+        name="edit-previous-cell-vi",
         filter=cell_has_focus
         & buffer_has_focus
         & cursor_on_first_line
-        & ~has_completions,
+        & ~has_completions
+        & vi_mode
+        & vi_navigation_mode,
+    )
+    @add_cmd(
+        filter=cell_has_focus
+        & buffer_has_focus
+        & cursor_on_first_line
+        & ~has_completions
     )
     def _edit_previous_cell() -> None:
         """Move the cursor up to the previous cell."""
@@ -1134,10 +1143,19 @@ class Notebook(BaseNotebook):
 
     @staticmethod
     @add_cmd(
+        name="edit-next-cell-vi",
         filter=cell_has_focus
         & buffer_has_focus
         & cursor_on_last_line
-        & ~has_completions,
+        & ~has_completions
+        & vi_mode
+        & vi_navigation_mode,
+    )
+    @add_cmd(
+        filter=cell_has_focus
+        & buffer_has_focus
+        & cursor_on_last_line
+        & ~has_completions
     )
     def _edit_next_cell() -> None:
         """Move the cursor down to the next cell."""
@@ -1250,6 +1268,8 @@ class Notebook(BaseNotebook):
                 "split-cell": "c-\\",
                 "edit-previous-cell": "up",
                 "edit-next-cell": "down",
+                "edit-previous-cell-vi": "k",
+                "edit-next-cell-vi": "j",
                 "scroll-output-left": "left",
                 "scroll-output-right": "right",
                 "toggle-expand": "w",

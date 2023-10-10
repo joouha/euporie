@@ -341,7 +341,7 @@ class Console(KernelTab):
         # Input area
 
         def on_cursor_position_changed(buf: Buffer) -> None:
-            """Repond to cursor movements."""
+            """Respond to cursor movements."""
             # Update contextual help
             if self.app.config.autoinspect and buf.name == "code":
                 self.inspect()
@@ -621,22 +621,6 @@ class Console(KernelTab):
         if isinstance(kt := get_app().tab, KernelTab):
             kt.restart_kernel()
 
-    @staticmethod
-    @add_cmd(filter=buffer_is_code & buffer_has_focus)
-    def _history_prev() -> None:
-        """Get the previous history entry."""
-        from euporie.console.app import get_app
-
-        get_app().current_buffer.history_backward()
-
-    @staticmethod
-    @add_cmd(filter=buffer_is_code & buffer_has_focus)
-    def _history_next() -> None:
-        """Get the next history entry."""
-        from euporie.console.app import get_app
-
-        get_app().current_buffer.history_forward()
-
     # ################################### Settings ####################################
 
     add_setting(
@@ -675,13 +659,10 @@ class Console(KernelTab):
         {
             "euporie.console.tabs.console.Console": {
                 "cc-interrupt-kernel": "c-c",
-                "show-contextual-help": "s-tab",
             },
             "euporie.console.app.ConsoleApp": {
                 "clear-input": "c-c",
                 "run-input": ["c-enter", "c-e"],
-                "history-prev": "c-up",
-                "history-next": "c-down",
             },
         }
     )
