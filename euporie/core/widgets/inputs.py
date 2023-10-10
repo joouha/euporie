@@ -295,12 +295,30 @@ class KernelInput(TextArea):
         if isinstance(nb, BaseNotebook):
             nb.cell.input_box.inspect()
 
+    @staticmethod
+    @add_cmd(filter=buffer_is_code & buffer_has_focus)
+    def _history_prev() -> None:
+        """Get the previous history entry."""
+        from euporie.console.app import get_app
+
+        get_app().current_buffer.history_backward()
+
+    @staticmethod
+    @add_cmd(filter=buffer_is_code & buffer_has_focus)
+    def _history_next() -> None:
+        """Get the next history entry."""
+        from euporie.console.app import get_app
+
+        get_app().current_buffer.history_forward()
+
     # ################################# Key Bindings ##################################
 
     register_bindings(
         {
             "euporie.core.widgets.inputs.KernelInput": {
                 "show-contextual-help": "s-tab",
+                "history-prev": "A-up",
+                "history-next": "A-down",
             }
         }
     )
