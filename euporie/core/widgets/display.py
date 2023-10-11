@@ -114,7 +114,7 @@ class DisplayControl(UIControl):
         # Whenever the cursor position changes, the UI has to be updated.
         self.on_cursor_position_changed = Event(self)
         # Allow invalidation events to be added to a specific instance of this control
-        self.invalidate_events = [
+        self.invalidate_events: list[Event] = [
             self.on_data_changed,
             self.on_cursor_position_changed,
         ]
