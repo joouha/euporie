@@ -115,6 +115,8 @@ class CellOutputDataElement(CellOutputElement):
                     format_ = data_format
                     break
 
+        config = get_app().config
+
         self.container = Display(
             data=data,
             format_=format_,
@@ -124,10 +126,15 @@ class CellOutputDataElement(CellOutputElement):
             py=metadata.get("height"),
             focusable=False,
             focus_on_click=False,
-            wrap_lines=False,
+            wrap_lines=config.filter("wrap_cell_outputs"),
             always_hide_cursor=True,
             style=f"class:cell.output.element.data class:mime.{mime.replace('/','.')}",
             scrollbar=False,
+        )
+
+        # Ensure container gets invalidated if `wrap_cell_output` changes
+        self.container.control.invalidate_events.append(
+            config.settings["wrap_cell_outputs"].event
         )
 
     @property

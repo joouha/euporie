@@ -35,6 +35,7 @@ from euporie.core.filters import (
     in_tmux,
     scrollable,
 )
+from euporie.core.ft.utils import wrap
 from euporie.core.key_binding.registry import (
     load_registered_bindings,
     register_bindings,
@@ -76,6 +77,7 @@ class DisplayControl(UIControl):
         sizing_func: Callable[[], tuple[int, float]] | None = None,
         focusable: FilterOrBool = False,
         focus_on_click: FilterOrBool = False,
+        wrap_lines: FilterOrBool = False,
     ) -> None:
         """Create a new data formatter control.
 
@@ -89,6 +91,7 @@ class DisplayControl(UIControl):
                 the output
             focusable: Whether the control can be focused
             focus_on_click: Whether to focus the control when clicked
+            wrap_lines: Whether lines of output should be wrapped
 
         """
         self._data = data
@@ -98,6 +101,7 @@ class DisplayControl(UIControl):
         self.bg_color = bg_color
         self.focusable = to_filter(focusable)
         self.focus_on_click = to_filter(focus_on_click)
+        self.wrap_lines = to_filter(wrap_lines)
         self.key_bindings = load_registered_bindings(
             "euporie.core.widgets.display.Display"
         )
@@ -105,8 +109,15 @@ class DisplayControl(UIControl):
         self.dy = 0
         self.app = get_app()
 
+        # Whenever the data changes, the UI has to be updated.
         self.on_data_changed = Event(self)
+        # Whenever the cursor position changes, the UI has to be updated.
         self.on_cursor_position_changed = Event(self)
+        # Allow invalidation events to be added to a specific instance of this control
+        self.invalidate_events = [
+            self.on_data_changed,
+            self.on_cursor_position_changed,
+        ]
 
         self.sizing_func = sizing_func or (lambda: (0, 0))
         self._max_cols = 0
@@ -207,7 +218,9 @@ class DisplayControl(UIControl):
             else max_available_width
         )
 
-    def get_rendered_lines(self, width: int, height: int) -> list[StyleAndTextTuples]:
+    def get_rendered_lines(
+        self, width: int, height: int, wrap_lines: bool = False
+    ) -> list[StyleAndTextTuples]:
         """Render the output data."""
         return []
 
@@ -222,7 +235,9 @@ class DisplayControl(UIControl):
         if self.aspect:
             return ceil(min(width, self.max_cols) * self.aspect)
         else:
-            self.rendered_lines = self.get_rendered_lines(width, max_available_height)
+            self.rendered_lines = self.get_rendered_lines(
+                width, max_available_height, self.wrap_lines()
+            )
             return len(self.rendered_lines)
 
     def create_content(self, width: int, height: int) -> UIContent:
@@ -238,9 +253,12 @@ class DisplayControl(UIControl):
         """
         cols = min(self.max_cols, width) if self.max_cols else width
         rows = ceil(cols * self.aspect) if self.aspect else height
+        wrap_lines = self.wrap_lines()
 
         def get_content() -> dict[str, Any]:
-            rendered_lines = self.get_rendered_lines(width=cols, height=rows)
+            rendered_lines = self.get_rendered_lines(
+                width=cols, height=rows, wrap_lines=wrap_lines
+            )
             self.rendered_lines = rendered_lines[:]
             line_count = len(rendered_lines)
 
@@ -261,7 +279,7 @@ class DisplayControl(UIControl):
             }
 
         # Re-render if the image width changes, or the terminal character size changes
-        key = (cols, self.app.term_info.cell_size_px)
+        key = (cols, self.app.term_info.cell_size_px, wrap_lines)
         return UIContent(
             cursor_position=self.cursor_position,
             **self._content_cache.get(key, get_content),
@@ -276,9 +294,7 @@ class DisplayControl(UIControl):
 
     def get_invalidate_events(self) -> Iterable[Event[object]]:
         """Return the Window invalidate events."""
-        # Whenever the cursor position changes, the UI has to be updated.
-        yield self.on_data_changed
-        yield self.on_cursor_position_changed
+        yield from self.invalidate_events
 
     @property
     def content_width(self) -> int:
@@ -351,7 +367,9 @@ class FormattedTextDisplayControl(DisplayControl):
     events - i.e. images are downscaled to fit, markdown is re-flowed, etc.
     """
 
-    def get_rendered_lines(self, width: int, height: int) -> list[StyleAndTextTuples]:
+    def get_rendered_lines(
+        self, width: int, height: int, wrap_lines: bool = False
+    ) -> list[StyleAndTextTuples]:
         """Get rendered lines from the cache, or generate them."""
 
         def render_lines() -> list[StyleAndTextTuples]:
@@ -372,6 +390,14 @@ class FormattedTextDisplayControl(DisplayControl):
                     )
                 )
             )
+            if wrap_lines:
+                lines = [
+                    wrapped_line
+                    for line in lines
+                    for wrapped_line in split_lines(
+                        wrap(line, width, truncate_long_words=False)
+                    )
+                ]
 
             # Ensure we have enough lines to fill the data's calculated height
             rows = ceil(min(width, self.max_cols) * self.aspect)
@@ -380,7 +406,7 @@ class FormattedTextDisplayControl(DisplayControl):
             return lines
 
         # Re-render if the image width changes, or the terminal character size changes
-        key = (width, self.app.term_info.cell_size_px)
+        key = (width, self.app.term_info.cell_size_px, wrap_lines)
         return self._format_cache.get(key, render_lines)
 
 
@@ -472,7 +498,9 @@ class GraphicControl(DisplayControl, metaclass=ABCMeta):
 class SixelGraphicControl(GraphicControl):
     """A graphic control which displays images as sixels."""
 
-    def get_rendered_lines(self, width: int, height: int) -> list[StyleAndTextTuples]:
+    def get_rendered_lines(
+        self, width: int, height: int, wrap_lines: bool = False
+    ) -> list[StyleAndTextTuples]:
         """Get rendered lines from the cache, or generate them."""
         cell_size_x, cell_size_y = self.app.term_info.cell_size_px
 
@@ -593,7 +621,9 @@ class ItermGraphicControl(GraphicControl):
         b64data = b64data.replace("\n", "").strip()
         return b64data
 
-    def get_rendered_lines(self, width: int, height: int) -> list[StyleAndTextTuples]:
+    def get_rendered_lines(
+        self, width: int, height: int, wrap_lines: bool = False
+    ) -> list[StyleAndTextTuples]:
         """Get rendered lines from the cache, or generate them."""
 
         def render_lines() -> list[StyleAndTextTuples]:
@@ -746,7 +776,9 @@ class KittyGraphicControl(GraphicControl):
             self.app.output.flush()
             self.loaded = False
 
-    def get_rendered_lines(self, width: int, height: int) -> list[StyleAndTextTuples]:
+    def get_rendered_lines(
+        self, width: int, height: int, wrap_lines: bool = False
+    ) -> list[StyleAndTextTuples]:
         """Get rendered lines from the cache, or generate them."""
         # TODO - wezterm does not scale kitty graphics, so we might want to resize
         # images at this point rather than just loading them once
@@ -1109,13 +1141,14 @@ class Display:
             sizing_func=sizing_func,
             focusable=focusable,
             focus_on_click=focus_on_click,
+            wrap_lines=wrap_lines,
         )
 
         self.window = DisplayWindow(
             content=self.control,
             height=height,
             width=width,
-            wrap_lines=wrap_lines,
+            wrap_lines=False,
             always_hide_cursor=always_hide_cursor,
             dont_extend_height=dont_extend_height,
             style=self.style,

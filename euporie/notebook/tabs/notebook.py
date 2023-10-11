@@ -1273,6 +1273,7 @@ class Notebook(BaseNotebook):
                 "scroll-output-left": "left",
                 "scroll-output-right": "right",
                 "toggle-expand": "w",
+                "toggle-wrap-cell-outputs": "W",
                 "notebook-toggle-line-numbers": "l",
             }
         }
