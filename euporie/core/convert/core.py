@@ -52,8 +52,8 @@ ERROR_OUTPUTS = {
 }
 
 
-_IO_THREAD = [None]  # dedicated conversion IO thread
-_LOOP = [None]  # global event loop for conversion
+_IO_THREAD: list[threading.Thread|None] = [None]  # dedicated conversion IO thread
+_LOOP: list[asyncio.AbstractEventLoop|None] = [None]  # global event loop for conversion
 
 
 @lru_cache
@@ -340,18 +340,20 @@ def convert(
     return data
 
 
-def get_loop() -> asyncio.EventLoop:
+def get_loop() -> asyncio.AbstractEventLoop:
     """Create or return the conversion IO loop.
 
     The loop will be running on a separate thread.
     """
     if _LOOP[0] is None:
-        _LOOP[0] = asyncio.new_event_loop()
+        loop = asyncio.new_event_loop()
+        _LOOP[0] = loop
         thread = threading.Thread(
-            target=_LOOP[0].run_forever, name="EuporieConvertIO", daemon=True
+            target=loop.run_forever, name="EuporieConvertIO", daemon=True
         )
         thread.start()
         _IO_THREAD[0] = thread
+    assert _LOOP[0] is not None
     # Check we are not already in the conversion event loop
     try:
         running_loop = asyncio.get_running_loop()

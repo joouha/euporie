@@ -1744,7 +1744,7 @@ class Theme(Mapping):
 
         return style
 
-    async def text_transform(self, value: str) -> Callable[[str], str] | None:
+    async def text_transform(self, value: str) -> str:
         """Return a function which transforms text."""
         if "uppercase" in self.theme["text_transform"]:
             return value.upper()
@@ -1758,8 +1758,7 @@ class Theme(Mapping):
             return "".join(superscript.get(c, c) for c in value)
         elif "latex" in self.theme["text_transform"]:
             return await _convert(value, "latex", "ansi")
-        else:
-            return None
+        return value
 
     @cached_property
     def preformatted(self) -> bool:
@@ -2926,7 +2925,7 @@ class Node:
 
         return text
 
-    def find_all(self, tag: str, recursive: bool = False) -> list[Node]:
+    def find_all(self, tag: str, recursive: bool = False) -> Iterator[Node]:
         """Find all child elements of a given tag type."""
         for element in self.contents:
             if element.name == tag:
@@ -3714,9 +3713,8 @@ class HTML:
         """
         ft: StyleAndTextTuples = []
         if text := element.text:
-            if transformed := await element.theme.text_transform(text):
+            if transformed := (await element.theme.text_transform(text)):
                 text = transformed
-
             if parent_theme := element.theme.parent_theme:
                 style = parent_theme.style
             else:
@@ -4156,7 +4154,7 @@ class HTML:
         cell_widths = table.calculate_cell_widths(available_width)
 
         # Render cell contents at the final calculated widths
-        async def _render_cell(cell: Cell, td: None, width: int, height: int) -> None:
+        async def _render_cell(cell: Cell, td: Node, width: int, height: int) -> None:
             cell.text = await self.render_element(
                 td,
                 available_width=width,

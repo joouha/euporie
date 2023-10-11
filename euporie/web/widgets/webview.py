@@ -139,11 +139,13 @@ class WebViewControl(UIControl):
 
     def get_dom(self, url: Path) -> HTML:
         """Load a HTML page as renderable formatted text."""
-        markup = convert(
-            data=url.read_text(),
-            from_=(format_ := get_format(url, default="html")),
-            to="html",
-            path=url,
+        markup = str(
+            convert(
+                data=url.read_text(),
+                from_=(format_ := get_format(url, default="html")),
+                to="html",
+                path=url,
+            )
         )
         return HTML(
             markup=markup,

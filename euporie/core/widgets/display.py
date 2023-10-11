@@ -358,15 +358,17 @@ class FormattedTextDisplayControl(DisplayControl):
             """Render the lines to display in the control."""
             lines = list(
                 split_lines(
-                    convert(
-                        data=self.data,
-                        from_=self.format_,
-                        to="formatted_text",
-                        cols=width,
-                        rows=height,
-                        fg=self.fg_color,
-                        bg=self.bg_color,
-                        path=self.path,
+                    to_formatted_text(
+                        convert(
+                            data=self.data,
+                            from_=self.format_,
+                            to="formatted_text",
+                            cols=width,
+                            rows=height,
+                            fg=self.fg_color,
+                            bg=self.bg_color,
+                            path=self.path,
+                        )
                     )
                 )
             )
@@ -478,15 +480,17 @@ class SixelGraphicControl(GraphicControl):
             """Render the lines to display in the control."""
             full_width = width + self.bbox.left + self.bbox.right
             full_height = height + self.bbox.top + self.bbox.bottom
-            cmd = convert(
-                data=self.data,
-                from_=self.format_,
-                to="sixel",
-                cols=full_width,
-                rows=full_height,
-                fg=self.fg_color,
-                bg=self.bg_color,
-                path=self.path,
+            cmd = str(
+                convert(
+                    data=self.data,
+                    from_=self.format_,
+                    to="sixel",
+                    cols=full_width,
+                    rows=full_height,
+                    fg=self.fg_color,
+                    bg=self.bg_color,
+                    path=self.path,
+                )
             )
             if any(self.bbox):
                 from sixelcrop import sixelcrop
@@ -556,21 +560,22 @@ class ItermGraphicControl(GraphicControl):
                 bg=self.bg_color,
                 path=self.path,
             )
-            cell_size_x, cell_size_y = self.app.term_info.cell_size_px
-            # Downscale image to fit target region for precise cropping
-            image.thumbnail((full_width * cell_size_x, full_height * cell_size_y))
-            image = image.crop(
-                (
-                    self.bbox.left * cell_size_x,  # left
-                    self.bbox.top * cell_size_y,  # top
-                    (self.bbox.left + cols) * cell_size_x,  # right
-                    (self.bbox.top + rows) * cell_size_y,  # bottom
+            if image is not None:
+                cell_size_x, cell_size_y = self.app.term_info.cell_size_px
+                # Downscale image to fit target region for precise cropping
+                image.thumbnail((full_width * cell_size_x, full_height * cell_size_y))
+                image = image.crop(
+                    (
+                        self.bbox.left * cell_size_x,  # left
+                        self.bbox.top * cell_size_y,  # top
+                        (self.bbox.left + cols) * cell_size_x,  # right
+                        (self.bbox.top + rows) * cell_size_y,  # bottom
+                    )
                 )
-            )
-            with io.BytesIO() as output:
-                image.save(output, format="PNG")
-                data = output.getvalue()
-            format_ = "png"
+                with io.BytesIO() as output:
+                    image.save(output, format="PNG")
+                    data = output.getvalue()
+                format_ = "png"
 
         if format_.startswith("base64-"):
             b64data = data
@@ -660,15 +665,17 @@ class KittyGraphicControl(GraphicControl):
 
     def convert_data(self, rows: int, cols: int) -> str:
         """Convert the graphic's data to base64 data for kitty graphics protocol."""
-        return convert(
-            self.data,
-            from_=self.format_,
-            to="base64-png",
-            cols=cols,
-            rows=rows,
-            fg=self.fg_color,
-            bg=self.bg_color,
-            path=self.path,
+        return str(
+            convert(
+                self.data,
+                from_=self.format_,
+                to="base64-png",
+                cols=cols,
+                rows=rows,
+                fg=self.fg_color,
+                bg=self.bg_color,
+                path=self.path,
+            )
         ).replace("\n", "")
 
     @staticmethod

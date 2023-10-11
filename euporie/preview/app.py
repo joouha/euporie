@@ -145,6 +145,7 @@ class PreviewApp(BaseApp):
             A container for notebook output
 
         """
+        output_file: TextIO
         if cls.config.page:
             # Use a temporary file as display output if we are going to page the output
             from tempfile import TemporaryFile

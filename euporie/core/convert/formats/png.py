@@ -57,7 +57,7 @@ async def latex_to_png_dvipng(
         f.writelines(latex_doc)
 
     # Convert hex color to latex color
-    if len(fg) == 4:
+    if fg and len(fg) == 4:
         fg = f"#{fg[1]}{fg[1]}{fg[2]}{fg[2]}{fg[3]}{fg[3]}"
     fg_latex = (
         f"RGB {int(fg[1:3], 16)} {int(fg[3:5], 16)} {int(fg[5:7], 16)}" if fg else ""
