@@ -32,7 +32,7 @@ from prompt_toolkit.widgets import Box
 
 from euporie.core.border import OutsetGrid
 from euporie.core.data_structures import DiBool
-from euporie.core.formatted_text.utils import truncate
+from euporie.core.ft.utils import truncate
 from euporie.core.widgets.decor import Border
 
 if TYPE_CHECKING:

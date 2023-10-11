@@ -3,7 +3,7 @@
 from euporie.core.convert.formats import (
     ansi,
     base64,
-    formatted_text,
+    ft,
     html,
     jpeg,
     markdown,
@@ -20,7 +20,7 @@ __all__ = [
     "jpeg",
     "html",
     "markdown",
-    "formatted_text",
+    "ft",
     "pdf",
     "pil",
     "png",

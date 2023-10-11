@@ -111,7 +111,7 @@ class CellOutputDataElement(CellOutputElement):
             if mime_path.match(mime_type):
                 if data_format in BASE64_FORMATS:
                     data_format = f"base64-{data_format}"
-                if find_route(data_format, "formatted_text") is not None:
+                if find_route(data_format, "ft") is not None:
                     format_ = data_format
                     break
 

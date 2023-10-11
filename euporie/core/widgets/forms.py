@@ -49,7 +49,7 @@ from prompt_toolkit.widgets.base import Box, TextArea
 from euporie.core.border import InsetGrid
 from euporie.core.current import get_app
 from euporie.core.data_structures import DiBool
-from euporie.core.formatted_text.utils import FormattedTextAlign, align
+from euporie.core.ft.utils import FormattedTextAlign, align
 from euporie.core.margins import MarginContainer, ScrollbarMargin
 from euporie.core.widgets.decor import Border, Shadow
 from euporie.core.widgets.layout import ConditionalSplit
@@ -720,7 +720,7 @@ class Label:
         else:
             data = value
         if self.html():
-            from euporie.core.formatted_text.html import HTML
+            from euporie.core.ft.html import HTML
 
             return HTML(data, collapse_root_margin=True, fill=False)
         return data

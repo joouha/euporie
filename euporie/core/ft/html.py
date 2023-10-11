@@ -54,8 +54,8 @@ from euporie.core.convert.core import _convert, get_format, get_loop
 from euporie.core.convert.utils import data_pixel_size, pixels_to_cell_size
 from euporie.core.current import get_app
 from euporie.core.data_structures import DiBool, DiInt, DiStr
-from euporie.core.formatted_text.table import Cell, Table, compute_padding
-from euporie.core.formatted_text.utils import (
+from euporie.core.ft.table import Cell, Table, compute_padding
+from euporie.core.ft.utils import (
     FormattedTextAlign,
     add_border,
     align,
@@ -4199,7 +4199,7 @@ class HTML:
             await _convert(
                 data=data,
                 from_=format_,
-                to="formatted_text",
+                to="ft",
                 cols=cols,
                 rows=rows or None,
                 fg=theme.color,

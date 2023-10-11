@@ -78,7 +78,7 @@ async def test_convert_caching() -> None:
     """
     sample_data = "Hello, World!"
     sample_format_from = "ansi"
-    sample_format_to = "formatted_text"
+    sample_format_to = "ft"
 
     # Ensure the cache is empty at the beginning
     assert not _CONVERSION_CACHE._data

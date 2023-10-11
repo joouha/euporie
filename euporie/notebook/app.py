@@ -26,7 +26,7 @@ from euporie.core import __logo__
 from euporie.core.app import BaseApp
 from euporie.core.commands import add_cmd, get_cmd
 from euporie.core.config import add_setting
-from euporie.core.formatted_text.utils import truncate
+from euporie.core.ft.utils import truncate
 from euporie.core.key_binding.registry import register_bindings
 from euporie.core.tabs.base import Tab
 from euporie.core.widgets.decor import Pattern

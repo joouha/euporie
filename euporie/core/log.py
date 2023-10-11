@@ -23,7 +23,7 @@ from prompt_toolkit.styles.style import Style, merge_styles
 from pygments.styles import get_style_by_name
 
 from euporie.core.config import add_setting
-from euporie.core.formatted_text.utils import indent, lex, wrap
+from euporie.core.ft.utils import indent, lex, wrap
 from euporie.core.style import LOG_STYLE
 from euporie.core.utils import dict_merge
 
