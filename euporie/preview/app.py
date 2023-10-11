@@ -177,7 +177,7 @@ class PreviewApp(BaseApp):
                     )
                     output_file = sys.stdout
 
-            # Make the output look like a TTY if color-depth has been configureed
+            # Make the output look like a TTY if color-depth has been configured
             if not output_file.isatty() and cls.config.color_depth is not None:
                 output_file = cast(
                     "TextIO",

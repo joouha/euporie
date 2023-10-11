@@ -818,7 +818,7 @@ class NotVisible(Exception):
 def get_position_func_overlay(
     target_window: Window,
 ) -> Callable[[Screen], tuple[WritePosition, DiInt]]:
-    """Generate function to postioning floats over existing windows."""
+    """Generate function to positioning floats over existing windows."""
 
     def get_position(screen: Screen) -> tuple[WritePosition, DiInt]:
         target_wp = screen.visible_windows_to_write_positions.get(target_window)

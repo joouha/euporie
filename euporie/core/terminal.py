@@ -1,4 +1,4 @@
-"""Contain classes related to querying terminal feautres."""
+"""Contain classes related to querying terminal features."""
 
 from __future__ import annotations
 

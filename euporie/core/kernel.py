@@ -159,7 +159,7 @@ class Kernel:
             kernel_tab: The notebook this kernel belongs to
             threaded: If :py:const:`True`, run kernel communication in a separate thread
             allow_stdin: Whether the kernel is allowed to request input
-            default_callbacks: The default callbacks to use on recipt of a message
+            default_callbacks: The default callbacks to use on receipt of a message
             connection_file: Path to a file from which to load or to hwich to save
                 kernel connection information
 

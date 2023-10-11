@@ -1,4 +1,4 @@
-"""Responible for loading data from urls."""
+"""Responsible for loading data from urls."""
 
 from __future__ import annotations
 

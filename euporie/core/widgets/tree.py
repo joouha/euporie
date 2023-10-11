@@ -23,7 +23,7 @@ if TYPE_CHECKING:
 
 
 class JsonView:
-    """A JSON-view contiainer."""
+    """A JSON-view container."""
 
     def __init__(
         self, data: Any, title: str | None = None, expanded: bool = True
