@@ -383,7 +383,7 @@ class ScrollbarMargin(ClickableMargin):
         """Handle scrollbar mouse events.
 
         Scrolls up or down if the arrows are clicked, repeating while the mouse button
-        is held down. Scolls up or down one page if the background is clicked,
+        is held down. Scrolls up or down one page if the background is clicked,
         repeating while the left mouse button is held down. Scrolls if the
         scrollbar-button is dragged. Scrolls if the scroll-wheel is used on the
         scrollbar.

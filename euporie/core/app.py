@@ -253,7 +253,7 @@ class BaseApp(Application):
             self.menus.values(),
         )
         # Continue loading when the application has been launched
-        # and an event loop has been creeated
+        # and an event loop has been created
         self.pre_run_callables = [self.pre_run]
         self.post_load_callables: list[Callable[[], None]] = []
         # Set default vi input mode to navigate

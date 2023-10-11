@@ -138,7 +138,7 @@ class Cell:
             weak_self.kernel_tab.dirty = True
 
         def on_cursor_position_changed(buf: Buffer) -> None:
-            """Repond to cursor movements."""
+            """Respond to cursor movements."""
             # Update contextual help
             if weak_self.kernel_tab.app.config.autoinspect and weak_self.is_code():
                 weak_self.input_box.inspect()

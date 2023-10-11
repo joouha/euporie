@@ -71,7 +71,7 @@ class FormattedTextArea(TextArea):
         line_numbers: FilterOrBool = False,
         **kwargs: Any,
     ) -> None:
-        """Initialie a `FormattedTextArea` instance.
+        """Initialize a `FormattedTextArea` instance.
 
         Args:
             formatted_text: A list of `(style, text)` tuples to display.

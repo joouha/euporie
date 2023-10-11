@@ -363,7 +363,7 @@ class KernelTab(Tab, metaclass=ABCMeta):
         )
 
     def comm_msg(self, content: dict, buffers: Sequence[bytes]) -> None:
-        """Repond to a Comm message from the kernel."""
+        """Respond to a Comm message from the kernel."""
         comm_id = str(content.get("comm_id"))
         if comm := self.comms.get(comm_id):
             comm.process_data(content.get("data", {}), buffers)
