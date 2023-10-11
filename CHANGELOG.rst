@@ -19,6 +19,7 @@ Added
 Fixed
 =====
 
+- Limit horizontal scrolling of display areas
 - Prevent error when commenting an empty cell
 - Prevent moving through history in vi navigation mode
 - Launch kernels from base prefix by default unless ``ipykernel`` is installed inside euporie's environment
