@@ -292,8 +292,12 @@ async def _convert(
     else:
         key = (data_hash, from_, to, cols, rows, fg, bg, path)
 
+    # We need to do a bit of juggling with the cache as SimpleCache does not support
+    # using async coroutines as the getter function
     if key:
-        if key not in _CONVERSION_CACHE._keys:
+        if key in _CONVERSION_CACHE._keys:
+            data = _CONVERSION_CACHE._data[key]
+        else:
             _data = await _do_conversion(data, from_, to, cols, rows, fg, bg, path)
             # Pass through cache check function to keep cache size limited
             data = _CONVERSION_CACHE.get(key, lambda: _data)
