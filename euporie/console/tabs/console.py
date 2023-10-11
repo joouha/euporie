@@ -46,6 +46,7 @@ from euporie.core.key_binding.registry import (
 )
 from euporie.core.style import KERNEL_STATUS_REPR
 from euporie.core.tabs.base import KernelTab
+from euporie.core.terminal import edit_in_editor
 from euporie.core.validation import KernelValidator
 from euporie.core.widgets.cell_outputs import CellOutputArea
 from euporie.core.widgets.inputs import KernelInput, StdInput
@@ -107,6 +108,8 @@ class Console(KernelTab):
             set_kernel_info=self.set_kernel_info,
             done=self.complete,
             dead=self.kernel_died,
+            set_next_input=self.set_next_input,
+            edit_magic=edit_in_editor,
         )
         self.kernel_tab = self
 
@@ -469,6 +472,10 @@ class Console(KernelTab):
         )
 
         return self.input_layout
+
+    def set_next_input(self, text: str, replace: bool = False) -> None:
+        """Set the text for the next prompt."""
+        self.input_box.buffer.text = text
 
     def accept_stdin(self, buf: Buffer) -> bool:
         """Accept the user's input."""

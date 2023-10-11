@@ -137,6 +137,11 @@ class MsgCallbacks(TypedDict, total=False):
     set_kernel_info: Callable[[dict[str, Any]], None] | None
     completeness_status: Callable[[dict[str, Any]], None] | None
     dead: Callable[[], None] | None
+    # Payloads
+    page: Callable[[list[dict], int], None] | None
+    set_next_input: Callable[[str, bool], None] | None
+    edit_magic: Callable[[str, int], None] | None
+    ask_exit: Callable[[bool], None] | None
 
 
 class Kernel:
@@ -552,16 +557,40 @@ class Kernel:
             ):
                 set_execution_count(execution_count)
 
-        # Show pager output as a cell execution output
         if payloads := content.get("payload", []):
-            if callable(add_output := self.msg_id_callbacks[msg_id]["add_output"]):
-                for payload in payloads:
-                    if data := payload.get("data", {}):
-                        add_output(
-                            nbformat.v4.new_output(
-                                "execute_result",
-                                data=data,
+            for payload in payloads:
+                source = payload.get("source")
+
+                if source == "page":
+                    # Show pager output as a cell execution output
+                    if callable(
+                        add_output := self.msg_id_callbacks[msg_id]["add_output"]
+                    ):
+                        if data := payload.get("data", {}):
+                            add_output(
+                                nbformat.v4.new_output(
+                                    "execute_result",
+                                    data=data,
+                                )
                             )
+                elif source == "set_next_input":
+                    if callable(
+                        set_next_input := self.msg_id_callbacks[msg_id][
+                            "set_next_input"
+                        ]
+                    ):
+                        set_next_input(
+                            payload.get("text", ""),
+                            payload.get("replace", False),
+                        )
+
+                elif source == "edit_magic":
+                    if callable(
+                        edit_magic := self.msg_id_callbacks[msg_id]["edit_magic"]
+                    ):
+                        edit_magic(
+                            payload.get("filename"),
+                            int(payload.get("line_number") or 0),
                         )
 
         if content.get("status") == "ok":

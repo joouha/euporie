@@ -11,6 +11,7 @@ Upcoming
 Added
 =====
 
+- Add support for ``%load`` and ``%edit`` magics
 - Implement ``display: grid`` support in HTML renderer
 - Add terminal graphics support to webview
 - Redirect kernel output to log
@@ -18,6 +19,8 @@ Added
 Fixed
 =====
 
+- Prevent error when commenting an empty cell
+- Prevent moving through history in vi navigation mode
 - Launch kernels from base prefix by default unless ``ipykernel`` is installed inside euporie's environment
 - Use ``.md`` filename suffix when editing markdown cells in external editor
 - Improve CSI-u escape sequence detection
@@ -25,6 +28,7 @@ Fixed
 Changed
 =======
 
+- Perform format conversions asynchronously
 - Rename ``reset-tab`` command to ``refresh-tab``
 
 ----

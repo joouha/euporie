@@ -6,10 +6,14 @@ import array
 import logging
 import os
 import re
+import shlex
+import subprocess
 from functools import lru_cache
 from typing import TYPE_CHECKING
 
 from aenum import extend_enum
+from prompt_toolkit.application.current import get_app
+from prompt_toolkit.application.run_in_terminal import run_in_terminal
 from prompt_toolkit.keys import Keys
 from prompt_toolkit.output import ColorDepth
 from prompt_toolkit.utils import Event
@@ -439,3 +443,40 @@ class TerminalInfo:
         rows, cols = self.output.get_size()
         # If we can't get the pixel size, just guess wildly
         return px // cols or 10, py // rows or 20
+
+
+def edit_in_editor(filename: str, line_number: int = 0) -> None:
+    """Suspend the current app and edit a file in an external editor."""
+    log.debug(filename)
+
+    def _open_file_in_editor(filename: str) -> None:
+        """Call editor executable."""
+        # If the 'VISUAL' or 'EDITOR' environment variable has been set, use that.
+        # Otherwise, fall back to the first available editor that we can find.
+        for editor in [
+            os.environ.get("VISUAL"),
+            os.environ.get("EDITOR"),
+            "editor",
+            "micro",
+            "nano",
+            "pico",
+            "vi",
+            "emacs",
+        ]:
+            if editor:
+                try:
+                    # Use 'shlex.split()' because $VISUAL can contain spaces and quotes
+                    subprocess.call(shlex.split(editor) + [filename])
+                    return
+                except OSError:
+                    # Executable does not exist, try the next one.
+                    pass
+
+    async def run() -> None:
+        # Open in editor
+        # (We need to use `run_in_terminal`, because not all editors go to
+        # the alternate screen buffer, and some could influence the cursor
+        # position)
+        await run_in_terminal(lambda: _open_file_in_editor(filename), in_executor=True)
+
+    get_app().create_background_task(run())

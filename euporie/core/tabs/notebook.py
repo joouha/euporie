@@ -17,6 +17,7 @@ from euporie.core.config import add_setting
 from euporie.core.kernel import MsgCallbacks
 from euporie.core.path import parse_path
 from euporie.core.tabs.base import KernelTab
+from euporie.core.terminal import edit_in_editor
 from euporie.core.widgets.cell import Cell, get_cell_id
 
 try:
@@ -78,6 +79,7 @@ class BaseNotebook(KernelTab, metaclass=ABCMeta):
                 "set_status": self.set_status,
                 "set_kernel_info": self.set_kernel_info,
                 "dead": self.kernel_died,
+                "edit_magic": edit_in_editor,
             }
         )
         self.json = json or {}

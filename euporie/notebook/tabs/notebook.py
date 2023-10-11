@@ -114,6 +114,8 @@ class Notebook(BaseNotebook):
         self.clipboard: list[Cell] = []
         self.undo_buffer: deque[tuple[int, list[Cell]]] = deque(maxlen=10)
 
+        self.default_callbacks["set_next_input"] = self.set_next_input
+
     # Tab stuff
 
     def _statusbar_kernel_handeler(self, event: MouseEvent) -> NotImplementedOrNone:
@@ -354,6 +356,15 @@ class Notebook(BaseNotebook):
         index = self.page.selected_slice.start + 1
         self.add(index)
         self.refresh(slice_=slice(index, index + 1), scroll=True)
+
+    def set_next_input(self, text: str, replace: bool = False) -> None:
+        """Handle ``set_next_input`` payloads, e.g. ``%load`` magic."""
+        if replace:
+            self.cell.input_box.text = text
+        else:
+            index = self.page.selected_slice.start + 1
+            self.add(index, source=text)
+            self.refresh(slice_=slice(index, index + 1), scroll=True)
 
     def cut(self, slice_: slice | None = None) -> None:
         """Remove cells from the notebook and them to the `Notebook`'s clipboard."""
