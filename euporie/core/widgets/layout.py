@@ -568,7 +568,7 @@ class AccordionSplit(StackedSplit):
             ("", " "),
             (
                 "bold" + (" class:selection" if self.active == index else ""),
-                "⮞" if self.active == index else "⮟",
+                "▶" if self.active == index else "▼",
                 cast(
                     "Callable[[MouseEvent], None]", partial(self.mouse_handler, index)
                 ),

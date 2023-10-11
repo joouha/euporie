@@ -777,7 +777,7 @@ class ErrorDialog(Dialog):
 
         checkbox = Checkbox(
             text="Show traceback",
-            prefix=("⮞", "⮟"),
+            prefix=("▶", "▼"),
         )
 
         tb_text = "".join(

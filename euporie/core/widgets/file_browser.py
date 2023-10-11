@@ -26,6 +26,7 @@ from upath import UPath
 
 from euporie.core.app import get_app
 from euporie.core.border import InsetGrid
+from euporie.core.config import add_setting
 from euporie.core.margins import MarginContainer, ScrollbarMargin
 from euporie.core.widgets.decor import Border, FocusedStyle
 from euporie.core.widgets.forms import Button, Text
@@ -470,13 +471,19 @@ class FileBrowserControl(UIControl):
             if i > len(paths) - 1:
                 return []
             is_dir, child = paths[i]
-            icon = (
-                FILE_ICONS["dir"]
-                if is_dir
-                else FILE_ICONS.get(child.suffix)
-                or FILE_ICONS.get(child.name)
-                or FILE_ICONS["file"]
-            )
+
+            row = child.name
+
+            if get_app().config.show_file_icons:
+                icon = (
+                    FILE_ICONS["dir"]
+                    if is_dir
+                    else FILE_ICONS.get(child.suffix)
+                    or FILE_ICONS.get(child.name)
+                    or FILE_ICONS["file"]
+                )
+                row = f"{icon} {row}"
+
             style = "class:row"
             if i % 2:
                 style += " class:alt-row"
@@ -484,7 +491,8 @@ class FileBrowserControl(UIControl):
                 style += " class:hovered"
             if i == self.selected:
                 style += " class:selection"
-            return [(style, f" {icon} {child.name} ".ljust(width))]
+
+            return [(style, f" {row} ".ljust(width))]
 
         return UIContent(
             get_line=get_line,
@@ -697,3 +705,23 @@ class FileBrowser:
     def __pt_status__(self) -> StatusBarFields:
         """Show the selected or hovered path in the statusbar."""
         return self.control.__pt_status__()
+
+    # ################################### Settings ####################################
+
+    add_setting(
+        name="show_file_icons",
+        flags=["--show-file-icons"],
+        type_=bool,
+        title="File icons",
+        help_="Show file icons in the file manager",
+        default=False,
+        schema={
+            "type": "boolean",
+        },
+        description="""
+            Whether file icons should be shown in the file manager.
+
+            These icons exist in the unicode private use area, and may require custom
+            fonts such as ``awesome-terminal-fonts`` or ``nerdfonts`` to be installed.
+        """,
+    )
