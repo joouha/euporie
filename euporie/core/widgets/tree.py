@@ -97,7 +97,7 @@ class JsonView:
         return cast(
             "StyleAndTextTuples",
             [
-                ("class:pygments.operator", "⮟" if self.expanded else "⮞", self.toggle)
+                ("class:pygments.operator", "▼" if self.expanded else "▶", self.toggle)
                 if self.children
                 else ("", " ", self.toggle),
                 ("", " ", self.toggle),
