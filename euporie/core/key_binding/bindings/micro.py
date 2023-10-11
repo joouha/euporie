@@ -417,6 +417,8 @@ def toggle_comment() -> None:
     )
     if uncommenting:
         for i in range(start, end + 1):
+            if not lines:
+                lines = [""]
             # Replace the first instance of the comment in each line
             lines[i] = lines[i].replace(comment, "", 1)
             if len(lines[i]) < len(comment):
