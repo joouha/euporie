@@ -21,8 +21,8 @@ from euporie.core.commands import add_cmd
 from euporie.core.convert.core import convert, get_format
 from euporie.core.current import get_app
 from euporie.core.data_structures import DiInt
-from euporie.core.formatted_text.html import HTML, Node
-from euporie.core.formatted_text.utils import fragment_list_width, paste
+from euporie.core.ft.html import HTML, Node
+from euporie.core.ft.utils import fragment_list_width, paste
 from euporie.core.key_binding.registry import (
     load_registered_bindings,
     register_bindings,

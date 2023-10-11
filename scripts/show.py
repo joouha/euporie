@@ -45,7 +45,7 @@ class ShowApp(BaseApp):
                     convert(
                         data=data,
                         from_=get_format(path),
-                        to="formatted_text",
+                        to="ft",
                         rows=size.rows,
                         cols=size.columns,
                         path=path,

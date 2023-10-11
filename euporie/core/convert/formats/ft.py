@@ -10,8 +10,8 @@ from prompt_toolkit.cache import SimpleCache
 from prompt_toolkit.formatted_text import to_formatted_text
 
 from euporie.core.convert.core import register
-from euporie.core.formatted_text.ansi import ANSI
-from euporie.core.formatted_text.utils import strip_one_trailing_newline
+from euporie.core.ft.ansi import ANSI
+from euporie.core.ft.utils import strip_one_trailing_newline
 from euporie.core.lexers import detect_lexer
 
 if TYPE_CHECKING:
@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 
     from prompt_toolkit.formatted_text.base import StyleAndTextTuples
 
-    from euporie.core.formatted_text.html import HTML
+    from euporie.core.ft.html import HTML
 
 log = logging.getLogger(__name__)
 
@@ -28,7 +28,7 @@ _html_cache: SimpleCache[int, HTML] = SimpleCache(maxsize=20)
 
 @register(
     from_="html",
-    to="formatted_text",
+    to="ft",
 )
 async def html_to_ft(
     data: str | bytes,
@@ -40,7 +40,7 @@ async def html_to_ft(
     initial_format: str = "",
 ) -> StyleAndTextTuples:
     """Convert markdown to formatted text."""
-    from euporie.core.formatted_text.html import HTML
+    from euporie.core.ft.html import HTML
 
     markup = data.decode() if isinstance(data, bytes) else data
     html = _html_cache.get(
@@ -67,7 +67,7 @@ _BLACKLISTED_LEXERS = {
 
 @register(
     from_="ansi",
-    to="formatted_text",
+    to="ft",
 )
 async def ansi_to_ft(
     data: str | bytes,

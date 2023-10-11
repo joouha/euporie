@@ -362,7 +362,7 @@ class FormattedTextDisplayControl(DisplayControl):
                         convert(
                             data=self.data,
                             from_=self.format_,
-                            to="formatted_text",
+                            to="ft",
                             cols=width,
                             rows=height,
                             fg=self.fg_color,

@@ -12,8 +12,8 @@ from prompt_toolkit.shortcuts.utils import print_formatted_text
 
 from euporie.core.border import AsciiLine, AsciiThickLine, DiLineStyle
 from euporie.core.commands import get_cmd
-from euporie.core.formatted_text.table import Table
-from euporie.core.formatted_text.utils import indent
+from euporie.core.ft.table import Table
+from euporie.core.ft.utils import indent
 from euporie.core.key_binding.registry import BINDINGS
 from euporie.core.key_binding.utils import format_keys, parse_keys
 

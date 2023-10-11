@@ -1,11 +1,11 @@
-"""Test cases for :py:mod:`euporie.core.formatted_text.html` module."""
+"""Test cases for :py:mod:`euporie.core.ft.html` module."""
 
 from __future__ import annotations
 
 from prompt_toolkit.formatted_text.base import to_formatted_text
 from prompt_toolkit.formatted_text.utils import to_plain_text
 
-from euporie.core.formatted_text.html import HTML
+from euporie.core.ft.html import HTML
 
 
 def test_inline_whitespace() -> None:

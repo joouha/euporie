@@ -45,7 +45,7 @@ from euporie.core.border import (
 )
 from euporie.core.commands import add_cmd
 from euporie.core.filters import tab_has_focus
-from euporie.core.formatted_text.utils import FormattedTextAlign, align, lex
+from euporie.core.ft.utils import FormattedTextAlign, align, lex
 from euporie.core.key_binding.registry import register_bindings
 from euporie.core.tabs.base import Tab
 from euporie.core.widgets.decor import Border, FocusedStyle, Shadow
@@ -877,7 +877,7 @@ class ShortcutsDialog(Dialog):
 
     def load(self, *args: Any, **kwargs: Any) -> None:
         """Load the dialog body."""
-        from euporie.core.formatted_text.utils import max_line_width
+        from euporie.core.ft.utils import max_line_width
         from euporie.core.margins import MarginContainer, ScrollbarMargin
         from euporie.core.widgets.formatted_text_area import FormattedTextArea
 
@@ -906,8 +906,8 @@ class ShortcutsDialog(Dialog):
         from euporie.core.border import InvisibleLine
         from euporie.core.commands import get_cmd
         from euporie.core.data_structures import DiInt
-        from euporie.core.formatted_text.table import Table
-        from euporie.core.formatted_text.utils import FormattedTextAlign
+        from euporie.core.ft.table import Table
+        from euporie.core.ft.utils import FormattedTextAlign
         from euporie.core.key_binding.registry import BINDINGS
         from euporie.core.key_binding.utils import format_keys, parse_keys
 

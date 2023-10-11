@@ -48,7 +48,7 @@ BASE64_FORMATS = {"png", "jpeg", "pdf", "gif"}
 
 ERROR_OUTPUTS = {
     "ansi": b"(Format Conversion Error)",
-    "formatted_text": [("fg:white bg:darkred", "(Format Conversion Error)")],
+    "ft": [("fg:white bg:darkred", "(Format Conversion Error)")],
 }
 
 
