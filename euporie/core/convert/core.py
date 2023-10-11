@@ -52,8 +52,10 @@ ERROR_OUTPUTS = {
 }
 
 
-_IO_THREAD: list[threading.Thread|None] = [None]  # dedicated conversion IO thread
-_LOOP: list[asyncio.AbstractEventLoop|None] = [None]  # global event loop for conversion
+_IO_THREAD: list[threading.Thread | None] = [None]  # dedicated conversion IO thread
+_LOOP: list[asyncio.AbstractEventLoop | None] = [
+    None
+]  # global event loop for conversion
 
 
 @lru_cache
