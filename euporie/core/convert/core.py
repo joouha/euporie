@@ -282,6 +282,7 @@ async def _convert(
     bg: str | None = None,
     path: Path | None = None,
 ) -> Any:
+    """Perform conversion asynchronously, caching the result."""
     try:
         data_hash = hashlib.sha1(  # noqa S324
             data if isinstance(data, bytes) else data.encode()
@@ -317,7 +318,6 @@ def convert(
     fg: str | None = None,
     bg: str | None = None,
     path: Path | None = None,
-    timeout: int = 10,
 ) -> Any | None:
     """Convert between formats."""
 
