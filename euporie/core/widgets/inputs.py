@@ -317,8 +317,8 @@ class KernelInput(TextArea):
         {
             "euporie.core.widgets.inputs.KernelInput": {
                 "show-contextual-help": "s-tab",
-                "history-prev": "A-up",
-                "history-next": "A-down",
+                "history-prev": "c-A-up",
+                "history-next": "c-A-down",
             }
         }
     )
