@@ -269,7 +269,8 @@ class DisplayControl(UIControl):
                 # This is what PTK does, and fixes a nasty bug which took me ages to
                 # track down the source of, where scrolling would stop working when the
                 # cursor was on an empty line.
-                line += [("", " ")]
+                if not line:
+                    line += [("", " ")]
                 return line
 
             return {
@@ -478,7 +479,8 @@ class GraphicControl(DisplayControl, metaclass=ABCMeta):
                 # This is what PTK does, and fixes a nasty bug which took me ages to
                 # track down the source of, where scrolling would stop working when the
                 # cursor was on an empty line.
-                line += [("", " ")]
+                if not line:
+                    line += [("", " ")]
                 return line
 
             return {
