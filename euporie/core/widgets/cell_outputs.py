@@ -8,7 +8,12 @@ from pathlib import PurePath
 from typing import TYPE_CHECKING
 
 from prompt_toolkit.cache import SimpleCache
-from prompt_toolkit.layout.containers import DynamicContainer, HSplit, to_container
+from prompt_toolkit.layout.containers import (
+    DynamicContainer,
+    HSplit,
+    Window,
+    to_container,
+)
 from prompt_toolkit.widgets.base import Box
 
 from euporie.core.config import add_setting
@@ -284,7 +289,8 @@ class CellOutput:
         # Select the first mime-type to render
         self.parent = parent
         self.json = json
-        self.selected_mime = next(x for x in self.data)
+        data = self.data
+        self.selected_mime = next(x for x in self.data) if data else None
         self._elements: dict[str, CellOutputElement] = {}
 
     @property
@@ -361,7 +367,9 @@ class CellOutput:
     @property
     def element(self) -> CellOutputElement:
         """Get the element for the currently selected mime type."""
-        return self.get_element(self.selected_mime)
+        if mime := self.selected_mime:
+            return self.get_element(mime)
+        return Window()
 
     def __pt_container__(self) -> AnyContainer:
         """Return the cell output container (an :class:`OutputElement`)."""
