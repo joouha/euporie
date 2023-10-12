@@ -6,7 +6,7 @@ from aenum import extend_enum
 from prompt_toolkit.input.ansi_escape_sequences import ANSI_SEQUENCES
 from prompt_toolkit.keys import Keys
 
-# Key-name and emacs style shortcut prefix
+# Map key-modifier to key-name & emacs style shortcut prefix
 _modifiers = {
     # 0b00000000: ("", ""),
     0b00000001: ("Shift", "s"),
@@ -41,6 +41,9 @@ _kitty_functional_codes = {
     "Left": (1, "D"),
     "Home": (1, "H"),
     "End": (1, "F"),
+    "PrintScreen": (57361, "u"),
+    "Pause": (57362, "u"),
+    "Menu": (57363, "u"),
     "F1": (1, "P"),
     "F2": (1, "Q"),
     "F3": (13, "~"),
@@ -53,7 +56,7 @@ _kitty_functional_codes = {
     "F10": (21, "~"),
     "F11": (23, "~"),
     "F12": (24, "~"),
-    "Menu": (29, "~"),
+    # "Menu": (29, "~"),
 }
 
 # Add Alt-key shortcuts
@@ -89,7 +92,8 @@ for n in range(len(_modifiers)):
         for key, (number, suffix) in _kitty_functional_codes.items():
             key_var = f"{mod_name}{key}"
             if not hasattr(Keys, key_var):
-                extend_enum(Keys, key_var, f"{mod_short}-{key.lower()}")
+                mod_str = f"{mod_short}-" if mod_short else ""
+                extend_enum(Keys, key_var, f"{mod_str}{key.lower()}")
             mod_str = str(mod_no)
             num_str = str(number)
             if mod_no == 1:

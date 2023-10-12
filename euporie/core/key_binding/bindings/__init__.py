@@ -1,5 +1,5 @@
 """Define collections of generic key-bindings which do not belong to widgets."""
 
-from euporie.core.key_binding.bindings import completion, micro
+from euporie.core.key_binding.bindings import basic, completion, micro, mouse
 
-__all__ = ["completion", "micro"]
+__all__ = ["basic", "completion", "micro", "mouse"]

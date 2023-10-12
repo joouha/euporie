@@ -9,6 +9,8 @@ from prompt_toolkit.key_binding.key_bindings import _parse_key
 from euporie.core.keys import Keys
 
 if TYPE_CHECKING:
+    from prompt_toolkit.key_binding import KeyPressEvent
+
     from euporie.core.key_binding.registry import AnyKeys
 
 
@@ -19,6 +21,11 @@ KEY_ALIASES: dict[str | Keys, str] = {
     Keys.ControlUnderscore: "c-/",
     Keys.ControlAt: "c-space",
 }
+
+
+def if_no_repeat(event: KeyPressEvent) -> bool:
+    """Return True when the previous event was delivered to another handler."""
+    return not event.is_repeat
 
 
 def parse_keys(keys: AnyKeys) -> list[tuple[str | Keys, ...]]:
