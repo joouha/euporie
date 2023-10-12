@@ -814,19 +814,6 @@ class Cell:
     # ################################### Settings ####################################
 
     add_setting(
-        name="wrap_cell_outputs",
-        title="wrap cell outputs",
-        flags=["--wrap-cell-outputs"],
-        type_=bool,
-        help_="Wrap cell output text.",
-        default=False,
-        schema={"type": "boolean"},
-        description="""
-            Whether text-based cell outputs should be wrapped.
-        """,
-    )
-
-    add_setting(
         name="show_cell_borders",
         title="cell borders",
         flags=["--show-cell-borders"],
