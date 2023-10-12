@@ -21,7 +21,9 @@ from prompt_toolkit.data_structures import Point
 from prompt_toolkit.enums import EditingMode
 from prompt_toolkit.filters import Condition, buffer_has_focus, to_filter
 from prompt_toolkit.input.defaults import create_input
-from prompt_toolkit.key_binding.bindings.basic import load_basic_bindings
+from prompt_toolkit.key_binding.bindings.basic import (
+    load_basic_bindings as load_ptk_basic_bindings,
+)
 from prompt_toolkit.key_binding.bindings.cpr import load_cpr_bindings
 from prompt_toolkit.key_binding.bindings.emacs import (
     load_emacs_bindings,
@@ -94,8 +96,9 @@ if TYPE_CHECKING:
     from asyncio import AbstractEventLoop
     from pathlib import Path
     from types import FrameType
-    from typing import Any, Callable
+    from typing import Any, Callable, TypeVar
 
+    # from prompt_toolkit.application import _AppResult
     from prompt_toolkit.clipboard import Clipboard
     from prompt_toolkit.contrib.ssh import PromptToolkitSSHSession
     from prompt_toolkit.filters import Filter, FilterOrBool
@@ -110,6 +113,8 @@ if TYPE_CHECKING:
     from euporie.core.widgets.dialog import Dialog
     from euporie.core.widgets.pager import Pager
     from euporie.core.widgets.search_bar import SearchBar
+
+    _AppResult = TypeVar("_AppResult")
 
 log = logging.getLogger(__name__)
 
@@ -331,6 +336,9 @@ class BaseApp(Application):
 
     def pre_run(self, app: Application | None = None) -> None:
         """Call during the 'pre-run' stage of application loading."""
+        # Enable extend key support
+        if isinstance(self.output, Vt100_Output):
+            self.output.enable_extended_keys()
         # Load key bindings
         self.load_key_bindings()
         # Determine what color depth to use
@@ -455,6 +463,7 @@ class BaseApp(Application):
 
     def load_key_bindings(self) -> None:
         """Load the application's key bindings."""
+        from euporie.core.key_binding.bindings.basic import load_basic_bindings
         from euporie.core.key_binding.bindings.micro import load_micro_bindings
         from euporie.core.key_binding.bindings.mouse import load_mouse_bindings
 
@@ -468,6 +477,7 @@ class BaseApp(Application):
                     merge_key_bindings(
                         [
                             # Load basic bindings.
+                            load_ptk_basic_bindings(),
                             load_basic_bindings(),
                             # Load micro bindings
                             load_micro_bindings(config=self.config),
@@ -529,6 +539,24 @@ class BaseApp(Application):
             signal.signal(signal.SIGINT, original_sigint)
 
             return result
+
+    def exit(
+        self,
+        result: _AppResult | None = None,
+        exception: BaseException | type[BaseException] | None = None,
+        style: str = "",
+    ) -> None:
+        """Exit the application."""
+        # Reset extended keys on exit
+        if isinstance(self.output, Vt100_Output):
+            self.output.disable_extended_keys()
+
+        if result is not None:
+            super().exit(result=result, style=style)
+        elif exception is not None:
+            super().exit(exception=exception, style=style)
+        else:
+            super().exit()
 
     def cleanup(self, signum: int, frame: FrameType | None) -> None:
         """Restore the state of the terminal on unexpected exit."""

@@ -42,7 +42,9 @@ from euporie.core.widgets.search_bar import SearchBar
 from euporie.core.widgets.status_bar import StatusBar
 
 if TYPE_CHECKING:
-    from typing import Any
+    from typing import Any, TypeVar
+
+    _AppResult = TypeVar("_AppResult")
 
 log = logging.getLogger(__name__)
 
@@ -150,11 +152,22 @@ class ConsoleApp(BaseApp):
             floats=self.floats,  # type: ignore
         )
 
-    def exit(self, **kwargs: Any) -> None:
+    def exit(
+        self,
+        result: _AppResult | None = None,
+        exception: BaseException | type[BaseException] | None = None,
+        style: str = "",
+    ) -> None:
         """Close all tabs on exit."""
         for tab in self.tabs:
             tab.close()
-        super().exit(**kwargs)
+
+        if result is not None:
+            super().exit(result=result, style=style)
+        elif exception is not None:
+            super().exit(exception=exception, style=style)
+        else:
+            super().exit()
 
     # ################################### Commands ####################################
 

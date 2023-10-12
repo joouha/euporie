@@ -914,8 +914,7 @@ class ShortcutsDialog(Dialog):
         table = Table(padding=0)
 
         for group, bindings in BINDINGS.items():
-            log.info(group)
-            if bindings:
+            if any(not get_cmd(cmd_name).hidden() for cmd_name in bindings):
                 mod_name, cls_name = group.rsplit(".", maxsplit=1)
                 mod = importlib.import_module(mod_name)
                 app_cls = getattr(mod, cls_name)

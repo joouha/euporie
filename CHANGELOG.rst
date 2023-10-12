@@ -19,6 +19,8 @@ Added
 Fixed
 =====
 
+- Prevent entry of type escape sequence codes into text areas
+- Reset the terminal extended key mode at exit
 - Limit horizontal scrolling of display areas
 - Prevent error when commenting an empty cell
 - Prevent moving through history in vi navigation mode

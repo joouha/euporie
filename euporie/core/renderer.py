@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
 
 from prompt_toolkit.data_structures import Point, Size
 from prompt_toolkit.filters import to_filter
@@ -12,8 +12,6 @@ from prompt_toolkit.layout.screen import Char, Screen, WritePosition
 from prompt_toolkit.output import ColorDepth, Output
 from prompt_toolkit.renderer import Renderer as PtkRenderer
 from prompt_toolkit.renderer import _StyleStringHasStyleCache, _StyleStringToAttrsCache
-
-from euporie.core.io import Vt100_Output
 
 if TYPE_CHECKING:
     from typing import Any, Callable
@@ -270,40 +268,12 @@ class Renderer(PtkRenderer):
         self.extend_height = to_filter(extend_height)
         self.extend_width = to_filter(extend_width)
 
-    def reset(self, _scroll: bool = False, leave_alternate_screen: bool = True) -> None:
-        """Disable extended keys before resetting the output."""
-        from euporie.core.app import BaseApp
-
-        super().reset(_scroll, leave_alternate_screen)
-
-        output = self.output
-
-        # Disable extended keys
-        app = self.app
-        if (
-            app
-            and isinstance(app, BaseApp)
-            and app.term_info.csiu_status.value
-            and isinstance(output, Vt100_Output)
-        ):
-            cast("Vt100_Output", self.output).disable_extended_keys()
-
     def render(
         self, app: Application[Any], layout: Layout, is_done: bool = False
     ) -> None:
         """Render the current interface to the output."""
-        from euporie.core.app import BaseApp
-
         output = self.output
         self.app = app
-
-        # Enable extended keys
-        if (
-            isinstance(app, BaseApp)
-            # and app.term_info.csiu_status.value
-            and isinstance(output, Vt100_Output)
-        ):
-            output.enable_extended_keys()
 
         # Enter alternate screen.
         if self.full_screen and not self._in_alternate_screen:

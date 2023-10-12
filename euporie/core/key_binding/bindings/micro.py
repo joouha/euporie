@@ -62,6 +62,7 @@ from euporie.core.key_binding.registry import (
     load_registered_bindings,
     register_bindings,
 )
+from euporie.core.key_binding.utils import if_no_repeat
 
 if TYPE_CHECKING:
     from prompt_toolkit.key_binding import KeyBindingsBase, KeyPressEvent
@@ -75,11 +76,6 @@ class EditMode:
     """Micro style editor key-bindings."""
 
 
-def if_no_repeat(event: KeyPressEvent) -> bool:
-    """Return True when the previous event was delivered to another handler."""
-    return not event.is_repeat
-
-
 # Register micro edit mode
 extend_enum(EditingMode, "MICRO", "MICRO")
 
@@ -87,7 +83,6 @@ extend_enum(EditingMode, "MICRO", "MICRO")
 register_bindings(
     {
         "euporie.core.key_binding.bindings.micro.EditMode": {
-            "type-key": "<any>",
             "move-cursor-right": "right",
             "move-cursor-left": "left",
             "newline": "enter",
@@ -201,18 +196,6 @@ def load_micro_bindings(config: Config | None = None) -> KeyBindingsBase:
 
 
 # Commands
-
-
-@add_cmd(
-    filter=buffer_has_focus,
-    save_before=if_no_repeat,
-    hidden=True,
-)
-def type_key(event: KeyPressEvent) -> None:
-    """Enter a key."""
-    event.current_buffer.insert_text(
-        event.data * event.arg, overwrite=micro_replace_mode()
-    )
 
 
 @add_cmd(
