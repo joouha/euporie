@@ -11,6 +11,7 @@ from prompt_toolkit.cache import SimpleCache
 from prompt_toolkit.layout.containers import DynamicContainer, HSplit, to_container
 from prompt_toolkit.widgets.base import Box
 
+from euporie.core.config import add_setting
 from euporie.core.convert.core import BASE64_FORMATS, MIME_FORMATS, find_route
 from euporie.core.current import get_app
 from euporie.core.widgets.display import Display
@@ -485,3 +486,18 @@ class CellOutputArea:
                 ):
                     outputs.append(to_plain_text(line))
         return "\n".join(outputs)
+
+    # ################################### Settings ####################################
+
+    add_setting(
+        name="wrap_cell_outputs",
+        title="wrap cell outputs",
+        flags=["--wrap-cell-outputs"],
+        type_=bool,
+        help_="Wrap cell output text.",
+        default=False,
+        schema={"type": "boolean"},
+        description="""
+            Whether text-based cell outputs should be wrapped.
+        """,
+    )
