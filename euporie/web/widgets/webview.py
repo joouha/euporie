@@ -336,18 +336,14 @@ class WebViewControl(UIControl):
                 ),
                 left=0,  # TODO
             )
-
             if (width := content_width - bbox.left - bbox.right) < 1:
                 raise NotVisible
             if (height := content_height - bbox.top - bbox.bottom) < 1:
                 raise NotVisible
 
-            write_position = WritePosition(
-                xpos=xpos, ypos=ypos, width=width, height=height
-            )
             write_position = BoundedWritePosition(
                 xpos=xpos,
-                ypos=y - vertical_scroll,
+                ypos=ypos,
                 width=width,
                 height=height,
                 bbox=bbox,
