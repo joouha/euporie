@@ -290,7 +290,7 @@ class CellOutput:
         self.parent = parent
         self.json = json
         data = self.data
-        self.selected_mime = next(x for x in self.data) if data else None
+        self.selected_mime = next(x for x in self.data) if data else ""
         self._elements: dict[str, CellOutputElement] = {}
 
     @property
@@ -367,9 +367,7 @@ class CellOutput:
     @property
     def element(self) -> CellOutputElement:
         """Get the element for the currently selected mime type."""
-        if mime := self.selected_mime:
-            return self.get_element(mime)
-        return Window()
+        return self.get_element(self.selected_mime)
 
     def __pt_container__(self) -> AnyContainer:
         """Return the cell output container (an :class:`OutputElement`)."""
