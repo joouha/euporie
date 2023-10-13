@@ -364,7 +364,7 @@ class TerminalInfo:
         self.iterm_graphics_status = self.register(ItermGraphicsStatus)
         self.depth_of_color = self.register(DepthOfColor)
         self.sgr_pixel_status = self.register(SgrPixelStatus)
-        self.csiu_status = self.register(CsiUStatus)
+        # self.csiu_status = self.register(CsiUStatus)
 
     def register(self, query: type[TerminalQuery]) -> TerminalQuery:
         """Instantiate and registers a query's response with the input parser."""
