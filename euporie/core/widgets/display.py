@@ -265,10 +265,9 @@ class DisplayControl(UIControl):
             def get_line(i: int) -> StyleAndTextTuples:
                 # Return blank lines if the renderer expects more content than we have
                 line = rendered_lines[i] if i < line_count else []
-                # Add a space at the end, because that is a possible cursor position.
-                # This is what PTK does, and fixes a nasty bug which took me ages to
-                # track down the source of, where scrolling would stop working when the
-                # cursor was on an empty line.
+                # Add space at end of empty lines as that is a possible cursor position
+                # This is what PTK does, and fixes a bug where scrolling would stop
+                # working when the cursor was on an empty line.
                 if not line:
                     line += [("", " ")]
                 return line
@@ -479,8 +478,7 @@ class GraphicControl(DisplayControl, metaclass=ABCMeta):
                 # This is what PTK does, and fixes a nasty bug which took me ages to
                 # track down the source of, where scrolling would stop working when the
                 # cursor was on an empty line.
-                if not line:
-                    line += [("", " ")]
+                line += [("", " ")]
                 return line
 
             return {
@@ -537,6 +535,9 @@ class SixelGraphicControl(GraphicControl):
                     h=height * cell_size_y,
                 )
 
+            if get_app().config.tmux_graphics:
+                cmd = tmuxify(cmd)
+
             return list(
                 split_lines(
                     to_formatted_text(
@@ -553,7 +554,7 @@ class SixelGraphicControl(GraphicControl):
                             ),
                             ("[ZeroWidthEscape]", f"\x1b[{width}D"),
                             # Place the image without moving cursor
-                            ("[ZeroWidthEscape]", tmuxify(cmd)),
+                            ("[ZeroWidthEscape]", cmd),
                             # Restore the last known cursor position (at the bottom)
                             ("[ZeroWidthEscape]", "\x1b[u"),
                         ]
@@ -985,16 +986,10 @@ class GraphicWindow(Window):
                         screen,
                         MouseHandlers(),  # Do not let the float add mouse events
                         new_write_position,
-                        parent_style,
-                        erase_bg=True,
-                        z_index=z_index,
-                    )
-                    # Apply ``self.style``
-                    self._apply_style(
-                        screen,
-                        new_write_position,
                         # Force renderer refreshes by constantly changing the style
                         f"{parent_style} class:render-{get_app().render_counter}",
+                        erase_bg=True,
+                        z_index=z_index,
                     )
                     return
 
@@ -1009,7 +1004,7 @@ class GraphicWindow(Window):
         write_position: WritePosition,
         erase_bg: bool,
     ) -> None:
-        """Erae/fill the background."""
+        """Erase/fill the background."""
         char: str | None
         if callable(self.char):
             char = self.char()
@@ -1037,18 +1032,21 @@ def select_graphic_control(format_: str) -> type[GraphicControl] | None:
     useable_graphics_controls: list[type[GraphicControl]] = []
     _in_tmux = in_tmux()
 
-    if (
-        not _in_tmux or (_in_tmux and app.config.tmux_graphics)
-    ) and preferred_graphics_protocol != "none":
+    if preferred_graphics_protocol != "none":
         if term_info.iterm_graphics_status.value and find_route(format_, "base64-png"):
             useable_graphics_controls.append(ItermGraphicControl)
         if (
             preferred_graphics_protocol == "iterm"
             and ItermGraphicControl in useable_graphics_controls
+            # Iterm does not work in tmux without pass-through
+            and (not _in_tmux or (_in_tmux and app.config.tmux_graphics))
         ):
             SelectedGraphicControl = ItermGraphicControl
-        elif term_info.kitty_graphics_status.value and find_route(
-            format_, "base64-png"
+        elif (
+            term_info.kitty_graphics_status.value
+            and find_route(format_, "base64-png")
+            # Kitty does not work in tmux without pass-through
+            and (not _in_tmux or (_in_tmux and app.config.tmux_graphics))
         ):
             useable_graphics_controls.append(KittyGraphicControl)
         if (
@@ -1056,6 +1054,7 @@ def select_graphic_control(format_: str) -> type[GraphicControl] | None:
             and KittyGraphicControl in useable_graphics_controls
         ):
             SelectedGraphicControl = KittyGraphicControl
+        # Tmux now supports sixels (>=3.4)
         elif term_info.sixel_graphics_status.value and find_route(format_, "sixel"):
             useable_graphics_controls.append(SixelGraphicControl)
         if (
