@@ -13,6 +13,8 @@ from prompt_toolkit.output import ColorDepth, Output
 from prompt_toolkit.renderer import Renderer as PtkRenderer
 from prompt_toolkit.renderer import _StyleStringHasStyleCache, _StyleStringToAttrsCache
 
+from euporie.core.io import Vt100_Output
+
 if TYPE_CHECKING:
     from typing import Any, Callable
 
@@ -265,8 +267,18 @@ class Renderer(PtkRenderer):
         super().__init__(
             style, output, full_screen, mouse_support, cpr_not_supported_callback
         )
+        self._extended_keys_enabled = False
         self.extend_height = to_filter(extend_height)
         self.extend_width = to_filter(extend_width)
+
+    def reset(self, _scroll: bool = False, leave_alternate_screen: bool = True) -> None:
+        """Disable extended keys before resetting the output."""
+        # Disable extended keys
+        if isinstance(self.output, Vt100_Output):
+            self.output.disable_extended_keys()
+            self._extended_keys_enabled = False
+
+        super().reset(_scroll, leave_alternate_screen)
 
     def render(
         self, app: Application[Any], layout: Layout, is_done: bool = False
@@ -300,6 +312,11 @@ class Renderer(PtkRenderer):
         elif not needs_mouse_support and self._mouse_support_enabled:
             output.disable_mouse_support()
             self._mouse_support_enabled = False
+
+        # Ensable extended keys
+        if not self._extended_keys_enabled and isinstance(self.output, Vt100_Output):
+            self.output.enable_extended_keys()
+            self._extended_keys_enabled = True
 
         # Create screen and write layout to it.
         size = output.get_size()
