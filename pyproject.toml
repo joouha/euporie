@@ -105,14 +105,25 @@ features = [
 python = ["3.8", "3.9", "3.10", "3.11", "pypy3"]
 
 [tool.hatch.envs.check]
-description = "Check and lint the codebase."
-detached = true
+description = "Lint & type check the codebase."
+# detached = true
 dependencies = [
+  # Linting
   "pre-commit",
   "pre-commit-hooks",
   "black",
   "ruff",
   "codespell", "tomli",
+  # LSP
+  "python-lsp-server", "python-lsp-ruff", "python-lsp-black", "pylsp-mypy", "jedi",
+  # Type checking
+  "mypy",
+  # Dependencies
+  "types-appdirs", "importlib_metadata", "types-Pillow", "sixelcrop",
+  # Optional dependencies
+  "rich", "black", "isort", "ssort",
+  # Non-dependencies
+  "html2text", "sympy"
 ]
 
 [tool.hatch.envs.check.scripts]
@@ -126,21 +137,11 @@ fix = [
     "ruff --fix {args:euporie tests scripts}",
     "codespell -i 3 -w {args:euporie tests scripts docs/pages}",
 ]
+type = "mypy {args:--namespace-packages -p euporie -p tests -p scripts}"
 
-[tool.hatch.envs.type]
-description = "Type check the codebase."
-dependencies = [
-  "mypy",
-  # Dependencies
-  "types-appdirs", "importlib_metadata", "types-Pillow", "sixelcrop",
-  # Optional dependencies
-  "rich", "black", "isort", "ssort",
-  # Non-dependencies
-  "html2text", "sympy"
-]
 
 [tool.hatch.envs.type.scripts]
-run = "mypy {args:--namespace-packages -p euporie -p tests -p scripts}"
+
 
 [tool.hatch.envs.test]
 description = "Run tests."
