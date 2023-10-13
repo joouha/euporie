@@ -5,6 +5,17 @@ Changelog
 Notable changes to this project will be documented in this file.
 
 *******************
+v2.5.1 (2023-10-13)
+*******************
+
+Fixed
+=====
+
+- Ensure extended key support is disabled at correct point in rendering process for apps running in alternate screen
+
+----
+
+*******************
 v2.5.0 (2023-10-13)
 *******************
 

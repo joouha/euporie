@@ -336,9 +336,6 @@ class BaseApp(Application):
 
     def pre_run(self, app: Application | None = None) -> None:
         """Call during the 'pre-run' stage of application loading."""
-        # Enable extend key support
-        if isinstance(self.output, Vt100_Output):
-            self.output.enable_extended_keys()
         # Load key bindings
         self.load_key_bindings()
         # Determine what color depth to use
@@ -540,40 +537,22 @@ class BaseApp(Application):
 
             return result
 
-    def exit(
-        self,
-        result: _AppResult | None = None,
-        exception: BaseException | type[BaseException] | None = None,
-        style: str = "",
-    ) -> None:
-        """Exit the application."""
-        # Reset extended keys on exit
-        if isinstance(self.output, Vt100_Output):
-            self.output.disable_extended_keys()
-
-        if result is not None:
-            super().exit(result=result, style=style)
-        elif exception is not None:
-            super().exit(exception=exception, style=style)
-        else:
-            super().exit()
-
     def cleanup(self, signum: int, frame: FrameType | None) -> None:
         """Restore the state of the terminal on unexpected exit."""
         log.critical("Unexpected exit signal, restoring terminal")
         output = self.output
         self.exit()
         # Reset terminal state
-        output.quit_alternate_screen()
-        output.disable_mouse_support()
+        # output.quit_alternate_screen()
+        # output.disable_mouse_support()
         output.reset_cursor_key_mode()
         output.enable_autowrap()
-        output.disable_bracketed_paste()
+        # output.disable_bracketed_paste()
         output.clear_title()
-        output.reset_cursor_shape()
+        # output.reset_cursor_shape()
         output.show_cursor()
         output.reset_attributes()
-        output.flush()
+        self.renderer.reset()
         # Exit the main thread
         sys.exit(1)
 
