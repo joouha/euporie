@@ -319,7 +319,7 @@ class SgrPixelStatus(TerminalQuery):
     pattern = re.compile(r"^\x1b\[\?1016;(?P<Pm>\d)\$\Z")
 
     def verify(self, data: str) -> bool:
-        """Verify the terminal response means sixel graphics are supported."""
+        """Verify the terminal response means SGR pixel-mode is supported."""
         if match := self.pattern.match(data):
             if values := match.groupdict():
                 if values.get("Pm") in {"1", "3"}:

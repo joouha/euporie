@@ -25,14 +25,14 @@ register(
     from_=("png", "jpeg", "svg", "pdf"),
     to="sixel",
     filter_=commands_exist("chafa"),
-)(partial(chafa_convert_cmd, "sixel"))
+)(partial(chafa_convert_cmd, "sixels"))
 
 
 register(
     from_=("pil"),
     to="sixel",
     filter_=have_modules("chafa"),
-)(partial(chafa_convert_py, "sixel"))
+)(partial(chafa_convert_py, "sixels"))
 
 
 @register(
