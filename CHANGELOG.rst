@@ -5,6 +5,18 @@ Changelog
 Notable changes to this project will be documented in this file.
 
 *******************
+v2.5.2 (2023-10-14)
+*******************
+
+Fixed
+=====
+
+- Fix graphic cropping in webview
+- Prevent rare error on format conversion failure
+
+----
+
+*******************
 v2.5.1 (2023-10-13)
 *******************
 

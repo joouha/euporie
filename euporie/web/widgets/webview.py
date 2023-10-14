@@ -332,7 +332,10 @@ class WebViewControl(UIControl):
                 top=max(0, render_info.vertical_scroll - y),
                 right=0,  # TODO
                 bottom=max(
-                    0, (ypos + content_height) - (y_offset + render_info.window_height)
+                    0,
+                    content_height
+                    - render_info.window_height
+                    - (render_info.vertical_scroll - y),
                 ),
                 left=0,  # TODO
             )

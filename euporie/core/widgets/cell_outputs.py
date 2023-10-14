@@ -11,7 +11,6 @@ from prompt_toolkit.cache import SimpleCache
 from prompt_toolkit.layout.containers import (
     DynamicContainer,
     HSplit,
-    Window,
     to_container,
 )
 from prompt_toolkit.widgets.base import Box

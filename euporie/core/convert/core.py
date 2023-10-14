@@ -331,6 +331,7 @@ def convert(
             result = None
         except Exception:
             log.exception("Error")
+            result = None
         return result
 
     future = asyncio.run_coroutine_threadsafe(_runner(), get_loop())
