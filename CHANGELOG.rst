@@ -22,7 +22,9 @@ v2.5.0 (2023-10-13)
 Added
 =====
 
+- Allow wrapping cell outputs
 - Add support for ``%load`` and ``%edit`` magics
+- Make icons in file browser configurable
 - Implement ``display: grid`` support in HTML renderer
 - Add terminal graphics support to webview
 - Redirect kernel output to log
@@ -30,7 +32,7 @@ Added
 Fixed
 =====
 
-- Prevent entry of type escape sequence codes into text areas
+- Prevent entry of typed escape sequence codes into text areas
 - Reset the terminal extended key mode at exit
 - Limit horizontal scrolling of display areas
 - Prevent error when commenting an empty cell
