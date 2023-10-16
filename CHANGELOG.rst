@@ -13,6 +13,11 @@ Added
 
 - Option to use OSC52 for clipboard
 
+Fixed
+=====
+
+- Ensure the color of drop-shadows gets updated if the color scheme is changed while the app is running
+
 ----
 
 *******************

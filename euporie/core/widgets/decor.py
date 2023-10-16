@@ -37,6 +37,7 @@ if TYPE_CHECKING:
     from prompt_toolkit.mouse_events import MouseEvent
 
     from euporie.core.border import GridStyle
+    from euporie.core.style import ColorPalette
 
     MouseHandler = Callable[[MouseEvent], object]
 
@@ -470,9 +471,12 @@ class DropShadow(Container):
     def __init__(self, amount: float = 0.5) -> None:
         """Create a new instance."""
         self.amount = amount
-        app = get_app()
-        self.cp = app.color_palette
-        self.renderer = app.renderer
+        self.renderer = get_app().renderer
+
+    @property
+    def cp(self) -> ColorPalette:
+        """Get the current app's current color palette."""
+        return get_app().color_palette
 
     def reset(self) -> None:
         """Reet the wrapped container - here, do nothing."""
