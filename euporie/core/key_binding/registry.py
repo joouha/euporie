@@ -8,7 +8,6 @@ from prompt_toolkit.key_binding import KeyBindings
 
 from euporie.core.commands import get_cmd
 from euporie.core.config import Config
-from euporie.core.current import get_app
 from euporie.core.keys import Keys
 
 if TYPE_CHECKING:
@@ -35,12 +34,6 @@ def load_registered_bindings(
     *names: str, config: Config | None = None
 ) -> KeyBindingsBase:
     """Assign key-bindings to commands based on a dictionary."""
-    from euporie.core.app import BaseApp
-
-    app = get_app()
-    if config is None and isinstance(app, BaseApp):
-        config = app.config
-
     kb = KeyBindings()
     for name in names:
         binding_dict = BINDINGS.get(name, {})
