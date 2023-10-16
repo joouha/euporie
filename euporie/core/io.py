@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import re
+from base64 import b64encode
 from typing import TYPE_CHECKING
 
 from prompt_toolkit.input import vt100_parser
@@ -97,3 +98,12 @@ class Vt100_Output(PtkVt100_Output):
         self.write_raw("\x1b[>4;0m")
         # kitty
         self.write_raw("\x1b[<1u")
+
+    def set_clipboard(self, text: str) -> None:
+        """Set clipboard data using OSC-52."""
+        b64data = b64encode(text.encode()).decode()
+        self.write_raw(f"\x1b]52;c;{b64data}\x1b\\")
+
+    def get_clipboard(self) -> None:
+        """Get clipboard contents using OSC-52."""
+        self.write_raw("\x1b]52;c;?\x1b\\")

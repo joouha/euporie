@@ -8,12 +8,16 @@ import os
 import re
 import shlex
 import subprocess
+import time
+from base64 import b64decode
+from datetime import datetime as dt
 from functools import lru_cache
 from typing import TYPE_CHECKING
 
 from aenum import extend_enum
 from prompt_toolkit.application.current import get_app
 from prompt_toolkit.application.run_in_terminal import run_in_terminal
+from prompt_toolkit.key_binding.key_processor import KeyProcessor, _Flush
 from prompt_toolkit.keys import Keys
 from prompt_toolkit.output import ColorDepth
 from prompt_toolkit.utils import Event
@@ -67,10 +71,12 @@ class TerminalQuery:
     cmd = ""
     pattern: re.Pattern | None = None
 
-    def __init__(self, output: Output, config: Config) -> None:
+    def __init__(self, input_: Input, output: Output, config: Config) -> None:
         """Create a new instance of the terminal query."""
-        self.config = config
+        self.input = input_
         self.output = output
+        self.config = config
+        self.key: Keys | None = None
         self.waiting = False
         self._value: Any | None = None
         self.event = Event(self)
@@ -88,7 +94,25 @@ class TerminalQuery:
         """Verify the response from the terminal."""
         return None
 
-    async def _handle_response(self, event: KeyPressEvent) -> object:
+    def await_response(self, timeout: float = 0.2) -> bool:
+        """Wait for a response from the terminal."""
+        app = get_app()
+        start = dt.now()
+        while (dt.now() - start).total_seconds() < timeout:
+            time.sleep(0.05)
+            for press in self.input.read_keys():
+                if press.key == self.key:
+                    # If we find the key we're after, process it immediately
+                    tkp = KeyProcessor(key_bindings=get_app().key_processor._bindings)
+                    tkp.feed_multiple([press, _Flush])
+                    tkp.process_keys()
+                    return True
+                else:
+                    # If we get other keys, add them to the input queue
+                    app.key_processor.feed(press)
+        return False
+
+    def _handle_response(self, event: KeyPressEvent) -> object:
         """Run when the terminal receives the response from the terminal.
 
         Args:
@@ -294,9 +318,9 @@ class DepthOfColor(TerminalQuery):
 
     default = ColorDepth.DEPTH_24_BIT
 
-    def __init__(self, output: Output, config: Config) -> None:
+    def __init__(self, input_: Input, output: Output, config: Config) -> None:
         """Detect the terminal's colour support based on environment variables."""
-        super().__init__(output, config)
+        super().__init__(input_, output, config)
         self._value: ColorDepth | None = None
         if os.environ.get("NO_COLOR", "") or os.environ.get("TERM", "") == "dumb":
             self._value = ColorDepth.DEPTH_1_BIT
@@ -343,6 +367,23 @@ class CsiUStatus(TerminalQuery):
         return False
 
 
+class ClipboardData(TerminalQuery):
+    """A terminal query to retrieve clipboard contents."""
+
+    default = ""
+    cache = False
+    cmd = "\x1b]52;c;?\x1b\\"
+    pattern = re.compile(r"^\x1b\]52;(?:c|p)?;(?P<data>[A-Za-z0-9+/=]+)\x1b\\\Z")
+
+    def verify(self, data: str) -> str:
+        """Verify the terminal responds."""
+        if match := self.pattern.match(data):
+            if values := match.groupdict():
+                value = values.get("data", "")
+                return b64decode(value).decode()
+        return ""
+
+
 class TerminalInfo:
     """A class to gather and hold information about the terminal."""
 
@@ -365,6 +406,7 @@ class TerminalInfo:
         self.depth_of_color = self.register(DepthOfColor)
         self.sgr_pixel_status = self.register(SgrPixelStatus)
         # self.csiu_status = self.register(CsiUStatus)
+        self.clipboard_data = self.register(ClipboardData)
 
     def register(self, query: type[TerminalQuery]) -> TerminalQuery:
         """Instantiate and registers a query's response with the input parser."""
@@ -372,7 +414,7 @@ class TerminalInfo:
         query_inst: TerminalQuery | None
 
         if (query_inst := self._queries.get(query)) is None:
-            query_inst = query(self.output, config=self.config)
+            query_inst = query(self.input, self.output, config=self.config)
             self._queries[query] = query_inst
 
             # If the query expects a response from the terminal, we need to add a
@@ -388,6 +430,8 @@ class TerminalInfo:
                 if not hasattr(Keys, key_name):
                     extend_enum(Keys, key_name, key_code)
                 key = getattr(Keys, key_name)
+                # Attach the key to the query instance
+                query_inst.key = key
 
                 # Register this key with the parser if supported
                 if (parser := getattr(self.input, "vt100_parser", None)) and hasattr(
@@ -447,7 +491,6 @@ class TerminalInfo:
 
 def edit_in_editor(filename: str, line_number: int = 0) -> None:
     """Suspend the current app and edit a file in an external editor."""
-    log.debug(filename)
 
     def _open_file_in_editor(filename: str) -> None:
         """Call editor executable."""

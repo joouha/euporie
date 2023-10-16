@@ -4,6 +4,17 @@ Changelog
 
 Notable changes to this project will be documented in this file.
 
+********
+Upcoming
+********
+
+Added
+=====
+
+- Option to use OSC52 for clipboard
+
+----
+
 *******************
 v2.5.2 (2023-10-14)
 *******************

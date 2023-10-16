@@ -14,8 +14,6 @@ from weakref import WeakSet
 
 from prompt_toolkit.application.application import Application, _CombinedRegistry
 from prompt_toolkit.application.current import create_app_session
-from prompt_toolkit.clipboard import InMemoryClipboard
-from prompt_toolkit.clipboard.pyperclip import PyperclipClipboard
 from prompt_toolkit.cursor_shapes import CursorShape, CursorShapeConfig
 from prompt_toolkit.data_structures import Point
 from prompt_toolkit.enums import EditingMode
@@ -59,9 +57,9 @@ from prompt_toolkit.styles import (
 )
 from pygments.styles import STYLE_MAP as pygments_styles
 from pygments.styles import get_style_by_name
-from pyperclip import determine_clipboard
 from upath import UPath
 
+from euporie.core.clipboard import EuporieClipboard
 from euporie.core.commands import add_cmd
 from euporie.core.config import Config, add_setting
 from euporie.core.convert.core import get_mime
@@ -272,9 +270,7 @@ class BaseApp(Application):
         # List of key-bindings groups to load
         self.bindings_to_load = ["euporie.core.app.BaseApp"]
         # Determines which clipboard mechanism to use
-        self.clipboard: Clipboard = (
-            PyperclipClipboard() if determine_clipboard()[0] else InMemoryClipboard()
-        )
+        self.clipboard: Clipboard = EuporieClipboard(self)
         # Allow hiding element when manually redrawing app
         self._redrawing = False
         self.redrawing = Condition(lambda: self._redrawing)
