@@ -11,6 +11,7 @@ Upcoming
 Added
 =====
 
+- Use `justify_content` for alignment in `flex` elements in HTML renderer
 - Option to use OSC52 for clipboard
 
 Fixed

@@ -1139,6 +1139,7 @@ class Theme(Mapping):
             bool(
                 (parent_theme := self.parent_theme) is not None
                 and not parent_theme.d_grid
+                and not parent_theme.d_flex
             )
             # Floated elements are inline-block
             and self.floated is None
@@ -1768,7 +1769,10 @@ class Theme(Mapping):
     @cached_property
     def text_align(self) -> FormattedTextAlign:
         """The text alignment direction."""
-        return _TEXT_ALIGNS.get(self.theme["text_align"], FormattedTextAlign.LEFT)
+        alignment = self.theme.get(
+            "justify_content", self.theme.get("text_align", "left")
+        )
+        return _TEXT_ALIGNS.get(alignment, FormattedTextAlign.LEFT)
 
     @cached_property
     def vertical_align(self) -> float:
