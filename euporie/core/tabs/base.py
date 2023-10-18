@@ -348,7 +348,7 @@ class KernelTab(Tab, metaclass=ABCMeta):
 
         # Automatically select the only kernel if there is only one
         if startup and len(kernel_specs) == 1:
-            self.kernel.change(list(kernel_specs)[0])
+            self.kernel.change(next(iter(kernel_specs)))
             return
 
         self.app.dialogs["change-kernel"].show(
