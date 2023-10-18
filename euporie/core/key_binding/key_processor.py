@@ -82,7 +82,7 @@ class KeyProcessor(PtKeyProcessor):
         def get_next() -> KeyPress:
             if app.is_done:
                 # Only process CPR responses. Everything else is typeahead.
-                cpr = [k for k in self.input_queue if k.key == Keys.CPRResponse][0]
+                cpr = next(k for k in self.input_queue if k.key == Keys.CPRResponse)
                 self.input_queue.remove(cpr)
                 return cpr
             else:
