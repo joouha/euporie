@@ -212,7 +212,12 @@ class ColorPaletteColor:
     ] = SimpleCache()
 
     def __init__(self, base: str, _base_override: str = "") -> None:
-        """Create a new color."""
+        """Create a new color.
+
+        Args:
+            base: The base color as a hexadecimal string.
+            _base_override: An optional base color override.
+        """
         self.base_hex = DEFAULT_COLORS.get(base, base)
         self.base = _base_override or base
 
@@ -278,7 +283,17 @@ class ColorPaletteColor:
         saturation: float = 0.0,
         rel: bool = True,
     ) -> ColorPaletteColor:
-        """Perform a relative of absolute color adjustment."""
+        """Perform a relative of absolute color adjustment.
+
+        Args:
+            hue: The hue adjustment.
+            brightness: The brightness adjustment.
+            saturation: The saturation adjustment.
+            rel: If True, perform a relative adjustment.
+
+        Returns:
+            ColorPaletteColor: The adjusted color.
+        """
         if rel:
             return self._adjust_rel(hue, brightness, saturation)
         else:
@@ -291,28 +306,70 @@ class ColorPaletteColor:
         saturation: float = 0.0,
         rel: bool = True,
     ) -> ColorPaletteColor:
-        """Adjut the hue, saturation, or brightness of the color."""
+        """Adjust the hue, saturation, or brightness of the color.
+
+        Args:
+            hue: The hue adjustment.
+            brightness: The brightness adjustment.
+            saturation: The saturation adjustment.
+            rel: If True, perform a relative adjustment.
+
+        Returns:
+            ColorPaletteColor: The adjusted color.
+        """
         key = (self.base_hex, hue, brightness, saturation, rel)
         return self._cache.get(
             key, partial(self._adjust, hue, brightness, saturation, rel)
         )
 
     def lighter(self, amount: float, rel: bool = True) -> ColorPaletteColor:
-        """Make the color lighter."""
+        """Make the color lighter.
+
+        Args:
+            amount: The amount to lighten the color by.
+            rel: If True, perform a relative adjustment.
+
+        Returns:
+            ColorPaletteColor: The lighter color.
+        """
         return self.adjust(brightness=amount, rel=rel)
 
     def darker(self, amount: float, rel: bool = True) -> ColorPaletteColor:
-        """Make the color darker."""
+        """Make the color darker.
+
+        Args:
+            amount: The amount to darken the color by.
+            rel: If True, perform a relative adjustment.
+
+        Returns:
+            ColorPaletteColor: The darker color.
+        """
         return self.adjust(brightness=-amount, rel=rel)
 
     def more(self, amount: float, rel: bool = True) -> ColorPaletteColor:
-        """Make bright colors darker and dark colors brighter."""
+        """Make bright colors darker and dark colors brighter.
+
+        Args:
+            amount: The amount to adjust the color by.
+            rel: If True, perform a relative adjustment.
+
+        Returns:
+            ColorPaletteColor: The adjusted color.
+        """
         if self.is_light:
             amount *= -1
         return self.adjust(brightness=amount, rel=rel)
 
     def less(self, amount: float, rel: bool = True) -> ColorPaletteColor:
-        """Make bright colors brighter and dark colors darker."""
+        """Make bright colors brighter and dark colors darker.
+
+        Args:
+            amount: The amount to adjust the color by.
+            rel: If True, perform a relative adjustment.
+
+        Returns:
+            ColorPaletteColor: The adjusted color.
+        """
         if self.is_light:
             amount *= -1
         return self.adjust(brightness=-amount, rel=rel)
