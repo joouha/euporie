@@ -353,7 +353,7 @@ class ColorPalette:
             The color-palette color.
 
         """
-        return self.colors.get(name)
+        return self.colors[name]
 
 
 def build_style(
