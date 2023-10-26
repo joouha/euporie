@@ -5,7 +5,7 @@ Changelog
 Notable changes to this project will be documented in this file.
 
 *******************
-v2.5.3 (2023-11-19)
+v2.5.3 (2023-10-19)
 *******************
 
 Added
