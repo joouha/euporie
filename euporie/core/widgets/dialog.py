@@ -806,7 +806,7 @@ class ErrorDialog(Dialog):
                         [
                             fta := FormattedTextArea(
                                 lex([("", tb_text)], "pytb"),
-                                width=80,
+                                width=Dimension(preferred=80),
                                 height=Dimension(min=10),
                                 wrap_lines=False,
                                 style="",
