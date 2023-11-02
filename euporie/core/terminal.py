@@ -224,7 +224,7 @@ class PixelDimensions(TerminalQuery):
     default = (0, 0)
     cmd = "\x1b[14t"
     cache = True
-    pattern = re.compile(r"^\x1b\[4;(?P<y>\d+);(?P<x>\d+)t\x1b\\")
+    pattern = re.compile(r"^\x1b\[4;(?P<y>\d+);(?P<x>\d+)t")
 
     def verify(self, data: str) -> tuple[int, int] | None:
         """Verify the terminal responded with pixel dimensions."""
