@@ -1,5 +1,7 @@
 """Ensure the kernel validator works as expected."""
 
+from __future__ import annotations
+
 from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, Mock
 
