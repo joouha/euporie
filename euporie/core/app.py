@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING, cast
 from weakref import WeakSet
 
 from prompt_toolkit.application.application import Application, _CombinedRegistry
-from prompt_toolkit.application.current import create_app_session
+from prompt_toolkit.application.current import create_app_session, set_app
 from prompt_toolkit.cursor_shapes import CursorShape, CursorShapeConfig
 from prompt_toolkit.data_structures import Point
 from prompt_toolkit.enums import EditingMode
@@ -212,7 +212,6 @@ class BaseApp(Application):
             kwargs: The key-word arguments for the :py:class:`Application`
 
         """
-        self.loaded = False
         # Initialise the application
         super().__init__(
             **{
@@ -268,7 +267,10 @@ class BaseApp(Application):
         # Use a custom key-processor which does not wait after escape keys
         self.key_processor = KeyProcessor(_CombinedRegistry(self))
         # List of key-bindings groups to load
-        self.bindings_to_load = ["euporie.core.app.BaseApp"]
+        self.bindings_to_load = [
+            "euporie.core.app.BaseApp",
+            "euporie.core.terminal.TerminalInfo",
+        ]
         # Determines which clipboard mechanism to use
         self.clipboard: Clipboard = EuporieClipboard(self)
         # Allow hiding element when manually redrawing app
@@ -332,8 +334,6 @@ class BaseApp(Application):
 
     def pre_run(self, app: Application | None = None) -> None:
         """Call during the 'pre-run' stage of application loading."""
-        # Load key bindings
-        self.load_key_bindings()
         # Determine what color depth to use
         self._color_depth = _COLOR_DEPTHS.get(
             self.config.color_depth, self.term_info.depth_of_color.value
@@ -341,63 +341,50 @@ class BaseApp(Application):
         # Set the application's style, and update it when the terminal responds
         self.update_style()
         self.term_info.colors.event += self.update_style
-        # Pause rendering while we load the layout
-        self.pause_rendering()
-        # Load completions menu. This must be done after the app is initialized, because
+        # Load completions menu. This must be done after the app is set, because
         # :py:func:`get_app` is needed to access the config
         self.menus["completions"] = Float(
             content=Shadow(CompletionsMenu()),
             xcursor=True,
             ycursor=True,
         )
+        # Open any files we need to
+        self.open_files()
+        # Load the layout
+        # We delay this until we have terminal responses to allow terminal graphics
+        # support to be detected first
+        self.layout = Layout(self.load_container(), self.focused_element)
 
-        def terminal_ready() -> None:
-            """Command here depend on the result of terminal queries."""
-            # Open any files we need to
-            self.open_files()
-            # Load the layout
-            # We delay this until we have terminal responses to allow terminal graphics
-            # support to be detected first
-            self.layout = Layout(self.load_container(), self.focused_element)
-            # Run any additional steps
-            self.post_load()
-            # Resume rendering
-            self.resume_rendering()
-            # Request cursor position
-            self._request_absolute_cursor_position()
-            # Sending a repaint trigger
-            self.invalidate()
-            # Flag that the app is loaded
-            self.loaded = True
+    async def run_async(
+        self,
+        pre_run: Callable[[], None] | None = None,
+        set_exception_handler: bool = True,
+        handle_sigint: bool = True,
+        slow_callback_duration: float = 0.5,
+    ) -> _AppResult:
+        """Run the application."""
+        with set_app(self):
+            # Load key bindings
+            self.load_key_bindings()
 
-        if self.input.closed:
-            # If we do not have an interactive input, just get on with loading the app:
-            # don't send terminal queries, as we will not get responses
-            terminal_ready()
-        else:
-            # Otherwise, we query the terminal and wait asynchronously to give it
-            # a chance to respond
+            # Send queries to the terminal
+            self.term_info.send_all()
 
-            async def await_terminal_feedback() -> None:
-                try:
-                    # Send queries to the terminal if supported
-                    if self.input.__class__.__name__ == "Vt100Input":
-                        self.term_info.send_all()
-                        # Give the terminal a chance to respond
-                        await asyncio.sleep(0.1)
-                    # Complete loading the application
-                    terminal_ready()
-                except Exception as exception:
-                    # Log exceptions, as this runs in the event loop and, exceptions may
-                    # get hidden from the user
-                    log.critical(
-                        "An error occurred while trying to load the application",
-                        exc_info=True,
-                    )
-                    self.exit(exception=exception)
+            # Read responses
+            kp = self.key_processor
 
-            # Waits until the event loop is ready
-            self.create_background_task(await_terminal_feedback())
+            def read_from_input() -> None:
+                kp.feed_multiple(self.input.read_keys())
+
+            with self.input.raw_mode(), self.input.attach(read_from_input):
+                # Wait up to half a second for the terminal to respond to queries
+                await asyncio.sleep(0.5)
+
+            kp.process_keys()
+
+        return await super().run_async(
+            pre_run, set_exception_handler, handle_sigint, slow_callback_duration
+        )
 
     @classmethod
     def load_input(cls) -> Input:
