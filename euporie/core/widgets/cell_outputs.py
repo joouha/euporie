@@ -505,4 +505,5 @@ class CellOutputArea:
         description="""
             Whether text-based cell outputs should be wrapped.
         """,
+        cmd_filter=~buffer_has_focus,
     )
