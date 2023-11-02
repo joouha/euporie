@@ -5,7 +5,8 @@ from typing import TYPE_CHECKING
 from prompt_toolkit.application.current import set_app
 
 from euporie.core.app import BaseApp
-from euporie.core.convert.core import convert, get_format
+from euporie.core.convert.datum import Datum
+from euporie.core.convert.mime import get_format
 from euporie.core.path import parse_path
 
 if TYPE_CHECKING:
@@ -35,20 +36,9 @@ class ShowApp(BaseApp):
                 path = parse_path(file)
                 data_bytes = path.read_bytes()
 
-                data: str | bytes
-                try:
-                    data = data_bytes.decode()
-                except UnicodeDecodeError:
-                    data = data_bytes
-
                 self.print_text(
-                    convert(
-                        data=data,
-                        from_=get_format(path),
-                        to="ft",
-                        rows=size.rows,
-                        cols=size.columns,
-                        path=path,
+                    Datum(data_bytes, format=get_format(path), path=path).convert(
+                        "ft", rows=size.rows, cols=size.columns
                     ),
                     style=self.create_merged_style(),
                 )

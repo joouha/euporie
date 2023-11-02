@@ -13,7 +13,7 @@ from html.parser import HTMLParser
 from itertools import zip_longest
 from math import ceil
 from operator import eq, ge, gt, le, lt
-from typing import TYPE_CHECKING, NamedTuple, cast
+from typing import TYPE_CHECKING, NamedTuple, cast, overload
 from urllib.parse import urljoin
 
 from flatlatex.data import subscript, superscript
@@ -50,8 +50,8 @@ from euporie.core.border import (
     UpperRightHalfDottedLine,
     UpperRightHalfLine,
 )
-from euporie.core.convert.core import _convert, get_format, get_loop
-from euporie.core.convert.utils import data_pixel_size, pixels_to_cell_size
+from euporie.core.convert.datum import Datum, get_loop
+from euporie.core.convert.mime import get_format
 from euporie.core.current import get_app
 from euporie.core.data_structures import DiBool, DiInt, DiStr
 from euporie.core.ft.table import Cell, Table, compute_padding
@@ -1758,7 +1758,7 @@ class Theme(Mapping):
         elif "super" in self.theme["vertical_align"]:
             return "".join(superscript.get(c, c) for c in value)
         elif "latex" in self.theme["text_transform"]:
-            return await _convert(value, "latex", "ansi")
+            return await Datum(value, "latex").convert_async("ansi")
         return value
 
     @cached_property
@@ -3470,13 +3470,13 @@ class HTML:
         self.paste_fixed = paste_fixed
         self._initial_format = _initial_format
 
+        self.graphic_data: set[Datum] = set()
         self.mouse_handler = mouse_handler
 
         self.formatted_text: StyleAndTextTuples = []
         self.floats: dict[tuple[int, DiBool, DiInt], StyleAndTextTuples] = {}
         self.fixed: dict[tuple[int, DiBool, DiInt], StyleAndTextTuples] = {}
         self.fixed_mask: StyleAndTextTuples = []
-        self.graphic_info: dict[str, dict] = {}
         # self.anchors = []
         self.on_update = Event(self, on_update)
 
@@ -4183,12 +4183,31 @@ class HTML:
 
         return table.render()
 
+    @overload
     async def _render_image(
-        self, data: str | bytes, format_: str, theme: Theme, path: Path | None = None
+        self, data: bytes, format_: str, theme: Theme, path: Path | None = None
     ) -> StyleAndTextTuples:
+        ...
+
+    @overload
+    async def _render_image(
+        self, data: str, format_: str, theme: Theme, path: Path | None = None
+    ) -> StyleAndTextTuples:
+        ...
+
+    async def _render_image(self, data, format_, theme, path=None):
         """Render an image and prepare graphic representation."""
+        datum = Datum(
+            data,
+            format_,
+            fg=theme.color,
+            bg=theme.background_color,
+            path=path,
+        )
+        # Keep reference to this graphic
+        self.graphic_data.add(datum)
         # Scale down the image to fit to width
-        cols, aspect = pixels_to_cell_size(*data_pixel_size(data, format_=format_))
+        cols, aspect = await datum.cell_size_async()
 
         if content_width := theme.content_width:
             if cols == 0:
@@ -4200,15 +4219,10 @@ class HTML:
         # Convert the image to formatted-text
         # ft = [("fg:blue", "#" * cols + "\n")] * rows
         ft = (
-            await _convert(
-                data=data,
-                from_=format_,
+            await datum.convert_async(
                 to="ft",
                 cols=cols,
                 rows=rows or None,
-                fg=theme.color,
-                bg=theme.background_color,
-                path=path,
             )
             or []
         )
@@ -4221,22 +4235,12 @@ class HTML:
             aspect = rows / cols
 
         # Store reference to image element
-        img_key = f"Image_{hash(theme.element)}"
-        self.graphic_info[img_key] = {
-            "data": data,
-            "format_": format_,
-            "path": path,
-            "fg": theme.color,
-            "bg": theme.background_color,
-            "cols": cols,
-            "rows": rows,
-            "aspect": aspect,
-        }
+        key = Datum.add_size(datum, Size(rows, cols))
 
         return cast(
             "StyleAndTextTuples",
             # Flag graphic position
-            [(f"[{img_key}]", "")]
+            [(f"[Image_{key}]", "")]
             # Set default background color on generated content
             + [(f"{theme.style} {style}", (text), *rest) for style, text, *rest in ft],
         )

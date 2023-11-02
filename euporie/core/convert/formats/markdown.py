@@ -5,11 +5,11 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-from euporie.core.convert.core import register
+from euporie.core.convert.registry import register
 from euporie.core.convert.utils import have_modules
 
 if TYPE_CHECKING:
-    from pathlib import Path
+    from euporie.core.convert.datum import Datum
 
 log = logging.getLogger(__name__)
 
@@ -22,13 +22,9 @@ _HTML2TEXT_TABLE_RE = r"(?:(?:.*\|)+[^|]*?(?:\n|$))+"
     filter_=have_modules("html2text"),
 )
 async def html_to_markdown_py_html2text(
-    data: str | bytes,
-    width: int | None = None,
-    height: int | None = None,
-    fg: str | None = None,
-    bg: str | None = None,
-    path: Path | None = None,
-    initial_format: str = "",
+    datum: Datum,
+    cols: int | None = None,
+    rows: int | None = None,
 ) -> str:
     """Convert HTML to markdown tables using :py:mod:`html2text`."""
     import re
@@ -36,6 +32,7 @@ async def html_to_markdown_py_html2text(
     from html2text import HTML2Text
 
     parser = HTML2Text(bodywidth=0)
+    data = datum.data
     markup = data.decode() if isinstance(data, bytes) else data
     result = parser.handle(markup)
 
@@ -69,16 +66,13 @@ async def html_to_markdown_py_html2text(
     filter_=have_modules("mtable", "html5lib"),
 )
 async def html_to_markdown_py_mtable(
-    data: str | bytes,
-    width: int | None = None,
-    height: int | None = None,
-    fg: str | None = None,
-    bg: str | None = None,
-    path: Path | None = None,
-    initial_format: str = "",
+    datum: Datum,
+    cols: int | None = None,
+    rows: int | None = None,
 ) -> str:
     """Convert HTML tables to markdown tables using :py:mod:`mtable`."""
     from mtable import MarkupTable
 
+    data = datum.data
     markup = data.decode() if isinstance(data, bytes) else data
     return "\n\n".join([table.to_md() for table in MarkupTable.from_html(markup)])

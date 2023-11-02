@@ -6,14 +6,12 @@ import asyncio
 from functools import partial
 from typing import TYPE_CHECKING
 
-from euporie.core.convert.core import register
 from euporie.core.convert.formats.common import base64_to_bytes_py, imagemagick_convert
+from euporie.core.convert.registry import register
 from euporie.core.convert.utils import commands_exist, have_modules
 
 if TYPE_CHECKING:
-    from pathlib import Path
-
-    from PIL.Image import Image as PilImage
+    from euporie.core.convert.datum import Datum
 
 
 register(
@@ -28,13 +26,9 @@ register(
     filter_=commands_exist("dvipng") & commands_exist("latex"),
 )
 async def latex_to_png_dvipng(
-    data: str,
-    width: int | None = None,
-    height: int | None = None,
-    fg: str | None = None,
-    bg: str | None = None,
-    path: Path | None = None,
-    initial_format: str = "",
+    datum: Datum,
+    cols: int | None = None,
+    rows: int | None = None,
     timeout: int = 2,
 ) -> bytes | None:
     """Render LaTeX as a png image using :command:`dvipng`.
@@ -48,7 +42,7 @@ async def latex_to_png_dvipng(
 
     latex_doc = (
         r"\documentclass{article}\pagestyle{empty}\begin{document}"
-        + data
+        + datum.data
         + r"\end{document}"
     )
 
@@ -57,7 +51,7 @@ async def latex_to_png_dvipng(
         f.writelines(latex_doc)
 
     # Convert hex color to latex color
-    if fg and len(fg) == 4:
+    if (fg := datum.fg) and len(fg) == 4:
         fg = f"#{fg[1]}{fg[1]}{fg[2]}{fg[2]}{fg[3]}{fg[3]}"
     fg_latex = (
         f"RGB {int(fg[1:3], 16)} {int(fg[3:5], 16)} {int(fg[5:7], 16)}" if fg else ""
@@ -112,13 +106,9 @@ async def latex_to_png_dvipng(
     filter_=have_modules("matplotlib"),
 )
 async def latex_to_png_py_mpl(
-    data: str,
-    width: int | None = None,
-    height: int | None = None,
-    fg: str | None = None,
-    bg: str | None = None,
-    path: Path | None = None,
-    initial_format: str = "",
+    datum: Datum,
+    cols: int | None = None,
+    rows: int | None = None,
 ) -> bytes:
     """Render LaTeX as a png image using :py:module:`matplotlib`.
 
@@ -130,14 +120,14 @@ async def latex_to_png_py_mpl(
     from matplotlib.backends import backend_agg
 
     # mpl mathtext doesn't support display math, force inline
-    data = data.replace("$$", "$")
+    data = datum.data.replace("$$", "$")
 
     buffer = BytesIO()
     prop = font_manager.FontProperties(size=12)
     parser = mathtext.MathTextParser("path")
     width, height, depth, _, _ = parser.parse(data, dpi=72, prop=prop)
     fig = figure.Figure(figsize=(width or 256 / 72, height or 256 / 72))
-    fig.text(0, depth / height, data, fontproperties=prop, color=fg)
+    fig.text(0, depth / height, data, fontproperties=prop, color=datum.fg)
     backend_agg.FigureCanvasAgg(fig)
     fig.savefig(buffer, dpi=120, format="png", transparent=True)
     return buffer.getvalue()
@@ -156,21 +146,16 @@ register(
     filter_=have_modules("PIL"),
 )
 async def pil_to_png_py_pil(
-    data: PilImage,
+    datum: Datum,
     cols: int | None = None,
     rows: int | None = None,
-    fg: str | None = None,
-    bg: str | None = None,
-    path: Path | None = None,
-    initial_format: str = "",
 ) -> bytes:
     """Convert a pillow image to sixels :py:mod:`teimpy`."""
     import io
 
     with io.BytesIO() as output:
-        data.save(output, format="PNG")
-        contents = output.getvalue()
-    return contents
+        datum.data.save(output, format="PNG")
+        return output.getvalue()
 
 
 @register(
@@ -179,16 +164,13 @@ async def pil_to_png_py_pil(
     filter_=have_modules("cairosvg"),
 )
 async def svg_to_png_py_cairosvg(
-    data: str | bytes,
-    width: int | None = None,
-    height: int | None = None,
-    fg: str | None = None,
-    bg: str | None = None,
-    path: Path | None = None,
-    initial_format: str = "",
+    datum: Datum,
+    cols: int | None = None,
+    rows: int | None = None,
 ) -> str:
     """Convert SVG to PNG using :py:mod:`cairosvg`."""
     import cairosvg
 
+    data = datum.data
     markup = data.decode() if isinstance(data, bytes) else data
     return cairosvg.surface.PNGSurface.convert(markup, write_to=None)

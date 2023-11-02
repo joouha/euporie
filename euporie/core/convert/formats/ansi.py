@@ -7,18 +7,16 @@ from functools import partial
 from math import ceil
 from typing import TYPE_CHECKING
 
-from euporie.core.convert.core import register
 from euporie.core.convert.formats.common import chafa_convert_cmd, chafa_convert_py
 from euporie.core.convert.formats.pil import set_background
+from euporie.core.convert.registry import register
 from euporie.core.convert.utils import call_subproc, commands_exist, have_modules
 from euporie.core.current import get_app
 
 if TYPE_CHECKING:
-    from pathlib import Path
     from typing import Any
 
-    from PIL.Image import Image as PilImage
-    from rich.console import RenderableType
+    from euporie.core.convert.datum import Datum
 
 log = logging.getLogger(__name__)
 
@@ -29,19 +27,15 @@ log = logging.getLogger(__name__)
     filter_=commands_exist("w3m"),
 )
 async def html_to_ansi_w3m(
-    data: str,
-    width: int | None = None,
-    height: int | None = None,
-    fg: str | None = None,
-    bg: str | None = None,
-    path: Path | None = None,
-    initial_format: str = "",
+    datum: Datum,
+    cols: int | None = None,
+    rows: int | None = None,
 ) -> str:
     """Convert HTML text to formatted ANSI using :command:`w3m`."""
     cmd: list[Any] = ["w3m", "-T", "text/html"]
-    if width is not None:
-        cmd += ["-cols", str(width)]
-    return (await call_subproc(data.encode(), cmd)).decode()
+    if cols is not None:
+        cmd += ["-cols", str(cols)]
+    return (await call_subproc(datum.data.encode(), cmd)).decode()
 
 
 @register(
@@ -50,13 +44,9 @@ async def html_to_ansi_w3m(
     filter_=commands_exist("elinks"),
 )
 async def html_to_ansi_elinks(
-    data: str,
-    width: int | None = None,
-    height: int | None = None,
-    fg: str | None = None,
-    bg: str | None = None,
-    path: Path | None = None,
-    initial_format: str = "",
+    datum: Datum,
+    cols: int | None = None,
+    rows: int | None = None,
 ) -> str:
     """Convert HTML text to formatted ANSI using :command:`elinks`."""
     cmd: list[Any] = [
@@ -68,9 +58,9 @@ async def html_to_ansi_elinks(
         "-force-html",
         "-no-references",
     ]
-    if width is not None:
-        cmd += ["-dump-width", width]
-    return (await call_subproc(data.encode(), cmd)).decode()
+    if cols is not None:
+        cmd += ["-dump-width", cols]
+    return (await call_subproc(datum.data.encode(), cmd)).decode()
 
 
 @register(
@@ -79,19 +69,15 @@ async def html_to_ansi_elinks(
     filter_=commands_exist("lynx"),
 )
 async def html_to_ansi_lynx(
-    data: str,
-    width: int | None = None,
-    height: int | None = None,
-    fg: str | None = None,
-    bg: str | None = None,
-    path: Path | None = None,
-    initial_format: str = "",
+    datum: Datum,
+    cols: int | None = None,
+    rows: int | None = None,
 ) -> str:
     """Convert HTML text to formatted ANSI using :command:`lynx`."""
     cmd: list[Any] = ["lynx", "-dump", "-stdin"]
-    if width is not None:
-        cmd += [f"-width={width}"]
-    return (await call_subproc(data.encode(), cmd)).decode()
+    if cols is not None:
+        cmd += [f"-width={cols}"]
+    return (await call_subproc(datum.data.encode(), cmd)).decode()
 
 
 @register(
@@ -100,19 +86,15 @@ async def html_to_ansi_lynx(
     filter_=commands_exist("links"),
 )
 async def html_to_ansi_links(
-    data: str,
-    width: int | None = None,
-    height: int | None = None,
-    fg: str | None = None,
-    bg: str | None = None,
-    path: Path | None = None,
-    initial_format: str = "",
+    datum: Datum,
+    cols: int | None = None,
+    rows: int | None = None,
 ) -> str:
     """Convert HTML text to formatted ANSI using :command:`links`."""
     cmd: list[Any] = ["links", "-dump"]
-    if width is not None:
-        cmd += ["-width", width]
-    return (await call_subproc(data.encode(), cmd, use_tempfile=True)).decode()
+    if cols is not None:
+        cmd += ["-width", cols]
+    return (await call_subproc(datum.data.encode(), cmd, use_tempfile=True)).decode()
 
 
 @register(
@@ -121,13 +103,9 @@ async def html_to_ansi_links(
     weight=4,
 )
 async def html_to_ansi_py_htmlparser(
-    data: str,
-    width: int | None = None,
-    height: int | None = None,
-    fg: str | None = None,
-    bg: str | None = None,
-    path: Path | None = None,
-    initial_format: str = "",
+    datum: Datum,
+    cols: int | None = None,
+    rows: int | None = None,
 ) -> str:
     """Convert HTML tables to ANSI text using :py:mod:`HTMLParser`."""
     import io
@@ -164,7 +142,7 @@ async def html_to_ansi_py_htmlparser(
             return self.text.getvalue()
 
     stripper = HTMLStripper()
-    stripper.feed(data)
+    stripper.feed(datum.data)
     output = stripper.get_data()
     # Strip lines
     output = "\n".join([x.strip() for x in output.strip().split("\n")])
@@ -179,18 +157,14 @@ async def html_to_ansi_py_htmlparser(
     filter_=have_modules("flatlatex.latexfuntypes"),
 )
 async def latex_to_ansi_py_flatlatex(
-    data: str,
-    width: int | None = None,
-    height: int | None = None,
-    fg: str | None = None,
-    bg: str | None = None,
-    path: Path | None = None,
-    initial_format: str = "",
+    datum: Datum,
+    cols: int | None = None,
+    rows: int | None = None,
 ) -> str:
     """Convert LaTeX to ANSI using :py:mod:`flatlatex`."""
     import flatlatex
 
-    return flatlatex.converter().convert(data.strip().strip("$").strip())
+    return flatlatex.converter().convert(datum.data.strip().strip("$").strip())
 
 
 @register(
@@ -199,18 +173,14 @@ async def latex_to_ansi_py_flatlatex(
     filter_=have_modules("pylatexenc"),
 )
 async def latex_to_ansi_py_pylatexenc(
-    data: str,
-    width: int | None = None,
-    height: int | None = None,
-    fg: str | None = None,
-    bg: str | None = None,
-    path: Path | None = None,
-    initial_format: str = "",
+    datum: Datum,
+    cols: int | None = None,
+    rows: int | None = None,
 ) -> str:
     """Convert LaTeX to ANSI using :py:mod:`pylatexenc`."""
     from pylatexenc.latex2text import LatexNodes2Text
 
-    return LatexNodes2Text().latex_to_text(data.strip().strip("$").strip())
+    return LatexNodes2Text().latex_to_text(datum.data.strip().strip("$").strip())
 
 
 @register(
@@ -219,13 +189,9 @@ async def latex_to_ansi_py_pylatexenc(
     filter_=have_modules("sympy", "antlr4"),
 )
 async def latex_to_ansi_py_sympy(
-    data: str,
-    width: int | None = None,
-    height: int | None = None,
-    fg: str | None = None,
-    bg: str | None = None,
-    path: Path | None = None,
-    initial_format: str = "",
+    datum: Datum,
+    cols: int | None = None,
+    rows: int | None = None,
 ) -> str:
     """Convert LaTeX to ANSI using :py:mod:`sympy`."""
     from sympy import pretty
@@ -236,25 +202,22 @@ async def latex_to_ansi_py_sympy(
 
     with stdout_to_log(log):
         try:
-            parsed = parse_latex(data.strip().strip("$").strip())
+            parsed = parse_latex(datum.data.strip().strip("$").strip())
         except LaTeXParsingError:
-            parsed = data
+            parsed = datum.data
     return pretty(parsed)
 
 
 @register(from_="pil", to="ansi", filter_=have_modules("timg"), weight=2)
 async def pil_to_ansi_py_timg(
-    data: PilImage,
+    datum: Datum,
     cols: int | None = None,
     rows: int | None = None,
-    fg: str | None = None,
-    bg: str | None = None,
-    path: Path | None = None,
-    initial_format: str = "",
 ) -> str:
     """Convert a PIL image to ANSI text using :py:mod:`timg`."""
     import timg
 
+    data = datum.data
     px, py = get_app().term_info.cell_size_px
 
     # Calculate rows based on image aspect ratio
@@ -274,7 +237,7 @@ async def pil_to_ansi_py_timg(
     # resizing the image
     data = data.resize((cols, ceil(rows * 2 * (px / py) / 0.5)))
 
-    bg = bg or get_app().color_palette.bg.base_hex
+    bg = str(datum.bg) or get_app().color_palette.bg.base_hex
     if bg:
         data = set_background(data, bg)
     data = set_background(data, bg)
@@ -287,13 +250,9 @@ async def pil_to_ansi_py_timg(
     filter_=have_modules("img2unicode"),
 )
 async def pil_to_ansi_py_img2unicode(
-    data: PilImage,
+    datum: Datum,
     cols: int | None = None,
     rows: int | None = None,
-    fg: str | None = None,
-    bg: str | None = None,
-    path: Path | None = None,
-    initial_format: str = "",
 ) -> str:
     """Convert a PIL image to ANSI text using :py:mod:`img2unicode`."""
     import io
@@ -302,7 +261,7 @@ async def pil_to_ansi_py_img2unicode(
 
     output = io.StringIO()
     Renderer(FastQuadDualOptimizer(), max_w=cols, max_h=rows).render_terminal(
-        data, output
+        datum.data, output
     )
     output.seek(0)
     return output.read()
@@ -326,20 +285,16 @@ register(from_=("pil"), to="ansi", filter_=have_modules("chafa"))(
     filter_=commands_exist("timg") & ~have_modules("timg"),
 )
 async def image_to_ansi_timg(
-    data: bytes,
+    datum: Datum,
     cols: int | None = None,
     rows: int | None = None,
-    fg: str | None = None,
-    bg: str | None = None,
-    path: Path | None = None,
-    initial_format: str = "",
 ) -> str:
     """Convert image data to ANSI text using :command:`timg`."""
     cmd: list[Any] = ["timg"]
     if cols is not None and rows is not None:
         cmd += [f"-g{cols}x{cols}"]
     cmd += ["--compress", "-pq", "--threads=-1", "-"]
-    return (await call_subproc(data, cmd)).decode()
+    return (await call_subproc(datum.data, cmd)).decode()
 
 
 @register(
@@ -348,20 +303,16 @@ async def image_to_ansi_timg(
     filter_=commands_exist("catimg"),
 )
 async def image_to_ansi_catimg(
-    data: bytes,
+    datum: Datum,
     cols: int | None = None,
     rows: int | None = None,
-    fg: str | None = None,
-    bg: str | None = None,
-    path: Path | None = None,
-    initial_format: str = "",
 ) -> str:
     """Convert image data to ANSI text using :command:`catimg`."""
     cmd: list[Any] = ["catimg"]
     if cols is not None and rows is not None:
         cmd += ["-w", cols * 2]
     cmd += ["-"]
-    return (await call_subproc(data, cmd)).decode()
+    return (await call_subproc(datum.data, cmd)).decode()
 
 
 @register(
@@ -370,20 +321,16 @@ async def image_to_ansi_catimg(
     filter_=commands_exist("icat"),
 )
 async def image_to_ansi_icat(
-    data: bytes,
+    datum: Datum,
     cols: int | None = None,
     rows: int | None = None,
-    fg: str | None = None,
-    bg: str | None = None,
-    path: Path | None = None,
-    initial_format: str = "",
 ) -> str:
     """Convert image data to ANSI text using :command:`icat`."""
     cmd: list[Any] = ["icat"]
     if cols is not None and rows is not None:
         cmd += ["-w", cols]
     cmd += ["--mode", "24bit", "-"]
-    return (await call_subproc(data, cmd)).decode()
+    return (await call_subproc(datum.data, cmd)).decode()
 
 
 @register(
@@ -392,19 +339,15 @@ async def image_to_ansi_icat(
     filter_=commands_exist("tiv"),
 )
 async def image_to_ansi_tiv(
-    data: bytes,
+    datum: Datum,
     cols: int | None = None,
     rows: int | None = None,
-    fg: str | None = None,
-    bg: str | None = None,
-    path: Path | None = None,
-    initial_format: str = "",
 ) -> str:
     """Convert image data to ANSI text using :command:`tiv`."""
     cmd: list[Any] = ["tiv"]
     if cols is not None and rows is not None:
         cmd += ["-w", cols, "-h", rows]
-    return (await call_subproc(data, cmd, use_tempfile=True)).decode()
+    return (await call_subproc(datum.data, cmd, use_tempfile=True)).decode()
 
 
 @register(
@@ -413,20 +356,16 @@ async def image_to_ansi_tiv(
     filter_=commands_exist("viu"),
 )
 async def image_to_ansi_viu(
-    data: bytes,
+    datum: Datum,
     cols: int | None = None,
     rows: int | None = None,
-    fg: str | None = None,
-    bg: str | None = None,
-    path: Path | None = None,
-    initial_format: str = "",
 ) -> str:
     """Convert image data to ANSI text using :command:`viu`."""
     cmd: list[Any] = ["viu", "-b"]
     if cols is not None and rows is not None:
         cmd += ["-w", cols]
     cmd += ["-s", "-"]
-    return (await call_subproc(data, cmd)).decode()
+    return (await call_subproc(datum.data, cmd)).decode()
 
 
 @register(
@@ -435,20 +374,16 @@ async def image_to_ansi_viu(
     filter_=commands_exist("jp2a"),
 )
 async def image_to_ansi_jp2a(
-    data: bytes,
+    datum: Datum,
     cols: int | None = None,
     rows: int | None = None,
-    fg: str | None = None,
-    bg: str | None = None,
-    path: Path | None = None,
-    initial_format: str = "",
 ) -> str:
     """Convert image data to ANSI text using :command:`jp2a`."""
     cmd: list[Any] = ["jp2a", "--color"]
     if cols is not None and rows is not None:
         cmd += [f"--height={rows}"]
     cmd += ["-"]
-    return (await call_subproc(data, cmd)).decode()
+    return (await call_subproc(datum.data, cmd)).decode()
 
 
 @register(
@@ -457,30 +392,22 @@ async def image_to_ansi_jp2a(
     filter_=commands_exist("img2txt"),
 )
 async def png_to_ansi_img2txt(
-    data: bytes,
+    datum: Datum,
     cols: int | None = None,
     rows: int | None = None,
-    fg: str | None = None,
-    bg: str | None = None,
-    path: Path | None = None,
-    initial_format: str = "",
 ) -> str:
     """Convert PNG data to ANSI text using :command:`img2txt`."""
     cmd: list[Any] = ["img2txt"]
     if cols is not None and rows is not None:
         cmd += ["-W", cols, "-H", rows]
-    return (await call_subproc(data, cmd, use_tempfile=True)).decode()
+    return (await call_subproc(datum.data, cmd, use_tempfile=True)).decode()
 
 
 @register(from_=("png", "jpeg", "svg"), to="ansi", filter_=True, weight=99)
 async def png_to_ansi_py_placeholder(
-    data: bytes,
+    datum: Datum,
     cols: int | None = None,
     rows: int | None = None,
-    fg: str | None = None,
-    bg: str | None = None,
-    path: Path | None = None,
-    initial_format: str = "",
 ) -> str:
     """Draw placeholder ANSI text."""
     from euporie.core.border import RoundedLine
@@ -508,21 +435,17 @@ async def png_to_ansi_py_placeholder(
     filter_=have_modules("rich"),
 )
 async def rich_to_ansi_py(
-    data: RenderableType,
-    width: int | None = None,
-    height: int | None = None,
-    fg: str | None = None,
-    bg: str | None = None,
-    path: Path | None = None,
-    initial_format: str = "",
+    datum: Datum,
+    cols: int | None = None,
+    rows: int | None = None,
 ) -> str:
     """Convert rich objects to formatted ANSI text."""
     import rich
 
     console = rich.get_console()
     options = console.options
-    if width is not None:
-        options = options.update(max_width=width)
-    buffer = console.render(data, options)
+    if cols is not None:
+        options = options.update(max_width=cols)
+    buffer = console.render(datum.data, options)
     rendered_lines = console._render_buffer(buffer)
     return rendered_lines

@@ -8,7 +8,8 @@ from typing import TYPE_CHECKING
 from prompt_toolkit.layout.containers import VSplit
 from prompt_toolkit.layout.dimension import Dimension
 
-from euporie.core.convert.core import MIME_FORMATS, get_format
+from euporie.core.convert.datum import Datum
+from euporie.core.convert.mime import MIME_FORMATS, get_format
 from euporie.core.margins import MarginContainer, ScrollbarMargin
 from euporie.core.tabs.base import Tab
 from euporie.core.utils import run_in_thread_with_context
@@ -62,9 +63,11 @@ class DisplayTab(Tab):
         assert self.path is not None
 
         self.display = Display(
-            data=self.path.read_bytes(),
-            format_=get_format(self.path),
-            path=self.path,
+            Datum(
+                data=self.path.read_bytes(),
+                format=get_format(self.path),
+                path=self.path,
+            ),
             focusable=True,
             focus_on_click=True,
             always_hide_cursor=True,

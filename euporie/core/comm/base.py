@@ -7,6 +7,7 @@ from abc import ABCMeta, abstractmethod
 from typing import TYPE_CHECKING
 from weakref import WeakKeyDictionary
 
+from euporie.core.convert.datum import Datum
 from euporie.core.current import get_app
 from euporie.core.widgets.display import Display
 
@@ -96,7 +97,7 @@ class Comm(metaclass=ABCMeta):
 
     def create_view(self, parent: OutputParent) -> CommView:
         """Create a new :class:`CommView` for this Comm."""
-        return CommView(Display("[Object cannot be rendered]", format_="ansi"))
+        return CommView(Display(Datum("[Object cannot be rendered]", format="ansi")))
 
     def new_view(self, parent: OutputParent) -> CommView:
         """Create and register a new :class:`CommView` for this Comm."""

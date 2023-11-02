@@ -61,7 +61,7 @@ class BoundedWritePosition(WritePosition):
         """Return a string representation of the write position."""
         return (
             f"{self.__class__.__name__}("
-            f"x={self.xpos}, y={self.ypos=}, "
+            f"x={self.xpos}, y={self.ypos}, "
             f"w={self.width}, h={self.height}, "
             f"bbox={self.bbox})"
         )
@@ -143,8 +143,18 @@ class ChildRenderInfo:
             # self.width = self.container.preferred_width(available_width).width
             self.width = available_width
 
+            # Reset the local screen
+            screen = self.screen
+            screen.data_buffer.clear()
+            screen.zero_width_escapes.clear()
+            screen.cursor_positions.clear()
+            screen.menu_positions.clear()
+            screen.visible_windows_to_write_positions.clear()
+            screen._draw_float_functions.clear()
+            screen.width = screen.height = 0
+
             self.container.write_to_screen(
-                self.screen,
+                screen,
                 self.mouse_handlers,
                 WritePosition(
                     0,
@@ -272,26 +282,20 @@ class ChildRenderInfo:
                         modifiers=mouse_event.modifiers,
                     )
 
-                    if mouse_event.event_type == MouseEventType.SCROLL_DOWN:
-                        response = self.parent.scroll(-1)
-                    elif mouse_event.event_type == MouseEventType.SCROLL_UP:
-                        response = self.parent.scroll(1)
-
-                    else:
-                        response = handler(new_event)
+                    response = handler(new_event)
 
                     # Refresh the child if there was a response
                     if response is None:
                         self.invalidate()
                         return response
 
-                    # This would work if windows returned NotImplemented when scrolled
+                    # This relies on windows returning NotImplemented when scrolled
                     # to the start or end
-                    # if response is NotImplemented:
-                    #     if mouse_event.event_type == MouseEventType.SCROLL_DOWN:
-                    #         response = self.parent.scroll(-1)
-                    #     elif mouse_event.event_type == MouseEventType.SCROLL_UP:
-                    #         response = self.parent.scroll(1)
+                    if response is NotImplemented:
+                        if mouse_event.event_type == MouseEventType.SCROLL_DOWN:
+                            response = self.parent.scroll(-1)
+                        elif mouse_event.event_type == MouseEventType.SCROLL_UP:
+                            response = self.parent.scroll(1)
 
                     # Select the clicked child if clicked
                     if mouse_event.event_type == MouseEventType.MOUSE_DOWN:

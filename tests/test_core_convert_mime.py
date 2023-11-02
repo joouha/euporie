@@ -11,7 +11,7 @@ import magic
 from fsspec.implementations.http import HTTPFileSystem
 from upath import UPath
 
-from euporie.core.convert.core import _CONVERSION_CACHE, _convert, get_format, get_mime
+from euporie.core.convert.mime import get_format, get_mime
 from euporie.core.path import HTTPPath
 
 if TYPE_CHECKING:
@@ -69,45 +69,3 @@ def test_get_format() -> None:
     assert get_format("tests/data/images/test.png") == "png"
     assert get_format("tests/data/html/test.html") == "html"
     assert get_format("tests/data/text/test.txt") == "ansi"
-
-
-async def test_convert_caching() -> None:
-    """Test caching of converted data in the _convert coroutine.
-
-    This test checks whether the _convert coroutine correctly caches converted data.
-    """
-    sample_data = "Hello, World!"
-    sample_format_from = "ansi"
-    sample_format_to = "ft"
-
-    # Ensure the cache is empty at the beginning
-    assert not _CONVERSION_CACHE._data
-
-    # First conversion should not be cached
-    result_1 = await _convert(sample_data, sample_format_from, sample_format_to)
-
-    # Ensure the result is not None and has been cached
-    assert result_1 is not None
-    assert _CONVERSION_CACHE._data
-
-    # Second conversion with the same data and formats should use the cache
-    result_2 = await _convert(sample_data, sample_format_from, sample_format_to)
-
-    # Ensure the result is the same as the first conversion
-    assert result_2 == result_1
-
-    # Check that the cache is still not empty
-    assert _CONVERSION_CACHE._data
-
-    # Clear the cache to prepare for the next test
-    _CONVERSION_CACHE.clear()
-
-    # Now, the cache should be empty
-    assert not _CONVERSION_CACHE._data
-
-    # Perform a new conversion
-    result_3 = await _convert(sample_data, sample_format_from, sample_format_to)
-
-    # Ensure the result is not None and has been cached
-    assert result_3 is not None
-    assert _CONVERSION_CACHE._data
