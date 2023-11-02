@@ -19,6 +19,7 @@ from prompt_toolkit.layout.processors import BeforeInput
 from prompt_toolkit.widgets.base import Box
 
 from euporie.core.comm.base import Comm, CommView
+from euporie.core.convert.datum import Datum
 from euporie.core.data_structures import DiBool
 from euporie.core.kernel import MsgCallbacks
 from euporie.core.widgets.cell_outputs import CellOutputArea
@@ -209,7 +210,7 @@ class UnimplementedModel(IpyWidgetComm):
 
     def create_view(self, parent: OutputParent) -> CommView:
         """Create a new view."""
-        return CommView(Display("[Widget not implemented]", format_="ansi"))
+        return CommView(Display(Datum("[Widget not implemented]", format="ansi")))
 
 
 class OutputModel(IpyWidgetComm):
@@ -1257,8 +1258,7 @@ class HTMLModel(IpyWidgetComm):
     def create_view(self, parent: OutputParent) -> CommView:
         """Create a new view of the HTML widget."""
         html = Display(
-            data=self.data["state"].get("value", ""),
-            format_="html",
+            Datum(data=self.data["state"].get("value", ""), format="html"),
         )
         return CommView(
             Box(
@@ -1282,10 +1282,12 @@ class ImageModel(IpyWidgetComm):
     def create_view(self, parent: OutputParent) -> CommView:
         """Create a new view of the image widget."""
         display = Display(
-            data=self.data["state"].get("value", b""),
-            format_="png",
-            px=int(self.data["state"].get("width", 0)),
-            py=int(self.data["state"].get("height", 0)),
+            Datum(
+                data=self.data["state"].get("value", b""),
+                format="png",
+                px=int(self.data["state"].get("width", 0)),
+                py=int(self.data["state"].get("height", 0)),
+            )
         )
         box = Box(
             display,

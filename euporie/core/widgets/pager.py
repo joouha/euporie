@@ -15,7 +15,10 @@ from prompt_toolkit.layout.containers import (
 from prompt_toolkit.widgets import Box
 
 from euporie.core.commands import add_cmd
-from euporie.core.convert.core import BASE64_FORMATS, MIME_FORMATS, find_route
+from euporie.core.convert.datum import Datum
+from euporie.core.convert.formats import BASE64_FORMATS
+from euporie.core.convert.mime import MIME_FORMATS
+from euporie.core.convert.registry import find_route
 from euporie.core.current import get_app
 from euporie.core.filters import pager_has_focus
 from euporie.core.key_binding.registry import (
@@ -74,9 +77,9 @@ class PagerOutputDataElement(CellOutputDataElement):
                     format_ = data_format
                     break
 
+        self._datum = Datum(data, format_)
         self.container = Display(
-            data=data,
-            format_=format_,
+            self._datum,
             focusable=True,
             focus_on_click=True,
             wrap_lines=True,

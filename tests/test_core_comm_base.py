@@ -96,7 +96,7 @@ class TestComm:
         view = comm.create_view(parent)
         assert isinstance(view, CommView)
         assert isinstance(view.container, Display)
-        assert view.container.format_ == "ansi"
+        assert view.container.datum.format == "ansi"
 
     def test_new_view(self, comm: Comm) -> None:
         """Create a new CommView instance."""

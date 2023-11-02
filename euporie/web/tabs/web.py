@@ -11,7 +11,7 @@ from prompt_toolkit.layout.containers import HSplit, VSplit
 from prompt_toolkit.layout.dimension import Dimension
 from upath import UPath
 
-from euporie.core.convert.core import get_mime
+from euporie.core.convert.mime import get_mime
 from euporie.core.current import get_app
 from euporie.core.data_structures import DiBool
 from euporie.core.margins import MarginContainer, ScrollbarMargin

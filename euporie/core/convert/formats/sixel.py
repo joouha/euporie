@@ -5,20 +5,19 @@ from __future__ import annotations
 from functools import partial
 from typing import TYPE_CHECKING
 
-from euporie.core.convert.core import register
 from euporie.core.convert.formats.common import (
     chafa_convert_cmd,
     chafa_convert_py,
     imagemagick_convert,
 )
+from euporie.core.convert.registry import register
 from euporie.core.convert.utils import call_subproc, commands_exist, have_modules
 from euporie.core.current import get_app
 
 if TYPE_CHECKING:
-    from pathlib import Path
     from typing import Any
 
-    from PIL.Image import Image as PilImage
+    from euporie.core.convert.datum import Datum
 
 
 register(
@@ -41,23 +40,19 @@ register(
     filter_=commands_exist("img2sixel"),
 )
 async def png_to_sixel_img2sixel(
-    data: bytes,
+    datum: Datum,
     cols: int | None = None,
     rows: int | None = None,
-    fg: str | None = None,
-    bg: str | None = None,
-    path: Path | None = None,
-    initial_format: str = "",
 ) -> str:
     """Convert PNG data to sixels :command:`img2sixel`."""
-    bg = bg or get_app().color_palette.bg.base_hex
+    bg = datum.bg or get_app().color_palette.bg.base_hex
     cmd: list[Any] = ["img2sixel", "-I"]
     if bg:
         cmd += [f"--bgcolor={bg}"]
     if cols is not None:
         px, _ = get_app().term_info.cell_size_px
         cmd += [f"--width={int(cols * px)}"]
-    return (await call_subproc(data, cmd)).decode()
+    return (await call_subproc(datum.data, cmd)).decode()
 
 
 register(
@@ -73,18 +68,14 @@ register(
     filter_=have_modules("timg"),
 )
 async def pil_to_sixel_py_timg(
-    data: PilImage,
+    datum: Datum,
     cols: int | None = None,
     rows: int | None = None,
-    fg: str | None = None,
-    bg: str | None = None,
-    path: Path | None = None,
-    initial_format: str = "",
 ) -> str:
     """Convert a pillow image to sixels :py:mod:`timg`."""
     import timg
 
-    return timg.SixelMethod(data).to_string()
+    return timg.SixelMethod(datum.data).to_string()
 
 
 @register(
@@ -93,16 +84,12 @@ async def pil_to_sixel_py_timg(
     filter_=have_modules("teimpy", "numpy"),
 )
 async def pil_to_sixel_py_teimpy(
-    data: PilImage,
+    datum: Datum,
     cols: int | None = None,
     rows: int | None = None,
-    fg: str | None = None,
-    bg: str | None = None,
-    path: Path | None = None,
-    initial_format: str = "",
 ) -> str:
     """Convert a pillow image to sixels :py:mod:`teimpy`."""
     import numpy as np
     import teimpy
 
-    return teimpy.get_drawer(teimpy.Mode.SIXEL).draw(np.asarray(data))
+    return teimpy.get_drawer(teimpy.Mode.SIXEL).draw(np.asarray(datum.data))

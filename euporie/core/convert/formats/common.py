@@ -10,37 +10,29 @@ from euporie.core.convert.utils import call_subproc
 from euporie.core.current import get_app
 
 if TYPE_CHECKING:
-    from pathlib import Path
     from typing import Any, Literal
 
-    from PIL.Image import Image as PilImage
+    from euporie.core.convert.datum import Datum
 
 log = logging.getLogger(__name__)
 
 
 async def base64_to_bytes_py(
-    data: str | bytes,
-    width: int | None = None,
-    height: int | None = None,
-    fg: str | None = None,
-    bg: str | None = None,
-    path: Path | None = None,
-    initial_format: str = "",
+    datum: Datum,
+    cols: int | None = None,
+    rows: int | None = None,
 ) -> bytes:
     """Convert base64 encoded data to bytes."""
+    data = datum.data
     data_str = data.decode() if isinstance(data, bytes) else data
     return base64.b64decode(data_str)
 
 
 async def imagemagick_convert(
     output_format: str,
-    data: str | bytes,
+    datum: Datum,
     cols: int | None = None,
     rows: int | None = None,
-    fg: str | None = None,
-    bg: str | None = None,
-    path: Path | None = None,
-    initial_format: str = "",
 ) -> str | bytes:
     """Convert image data to PNG bytes using ``imagemagick``."""
     cmd: list[Any] = ["convert", "-density", "300"]
@@ -48,12 +40,13 @@ async def imagemagick_convert(
     if cols is not None and hasattr(app, "term_info"):
         px, _ = app.term_info.cell_size_px
         cmd += ["-geometry", f"{int(cols * px)}"]
+    bg = datum.bg
     if not bg and hasattr(app, "color_palette"):
         bg = app.color_palette.bg.base_hex
     if bg:
-        cmd += ["-background", bg]
+        cmd += ["-background", str(bg)]
     cmd += ["-[0]", f"{output_format}:-"]
-    result: bytes | str = await call_subproc(data, cmd)
+    result: bytes | str = await call_subproc(datum.data, cmd)
 
     if output_format in {"sixel", "svg"} and isinstance(result, bytes):
         result = result.decode()
@@ -62,13 +55,9 @@ async def imagemagick_convert(
 
 async def chafa_convert_cmd(
     output_format: str,
-    data: str | bytes,
+    datum: Datum,
     cols: int | None = None,
     rows: int | None = None,
-    fg: str | None = None,
-    bg: str | None = None,
-    path: Path | None = None,
-    initial_format: str = "",
 ) -> str | bytes:
     """Convert image data to ANSI text using :command:`chafa`."""
     cmd: list[Any] = ["chafa", f"--format={output_format}"]
@@ -79,21 +68,17 @@ async def chafa_convert_cmd(
         if rows is not None:
             size = f"{size}x{rows}"
         cmd.append(size)
-    if bg:
-        cmd += ["--bg", bg]
+    if bg := datum.bg:
+        cmd += ["--bg", str(bg)]
     cmd += ["--stretch", "/dev/stdin"]
-    return (await call_subproc(data, cmd)).decode()
+    return (await call_subproc(datum.data, cmd)).decode()
 
 
 async def chafa_convert_py(
     output_format: Literal["symbols", "sixels", "kitty", "iterm2"],
-    data: PilImage,
+    datum: Datum,
     cols: int | None = None,
     rows: int | None = None,
-    fg: str | None = None,
-    bg: str | None = None,
-    path: Path | None = None,
-    initial_format: str = "",
 ) -> str | bytes:
     """Convert image data to ANSI text using ::`chafa.py`."""
     from chafa.chafa import Canvas, CanvasConfig, PixelMode, PixelType
@@ -112,6 +97,7 @@ async def chafa_convert_py(
     }
 
     # Convert PIL image to format that chafa can use
+    data = datum.data
     if data.mode not in pil_mode_to_pixel_type:
         from PIL import Image
 
@@ -137,7 +123,7 @@ async def chafa_convert_py(
             config.height = max(1, int(cols / data.size[0] * data.size[1] * px / py))
 
     # Set the foreground color
-    if not fg and hasattr(app, "color_palette"):
+    if not (fg := datum.fg) and hasattr(app, "color_palette"):
         fg = app.color_palette.fg.base_hex
     if fg and (color := fg.lstrip("#")):
         config.fg_color = (
@@ -147,7 +133,7 @@ async def chafa_convert_py(
         )
 
     # Set the background color
-    if not bg and hasattr(app, "color_palette"):
+    if not (bg := datum.bg) and hasattr(app, "color_palette"):
         bg = app.color_palette.bg.base_hex
     if bg and (color := bg.lstrip("#")):
         config.bg_color = (

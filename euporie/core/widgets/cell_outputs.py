@@ -8,6 +8,7 @@ from pathlib import PurePath
 from typing import TYPE_CHECKING
 
 from prompt_toolkit.cache import SimpleCache
+from prompt_toolkit.filters import buffer_has_focus
 from prompt_toolkit.layout.containers import (
     DynamicContainer,
     HSplit,
@@ -16,7 +17,10 @@ from prompt_toolkit.layout.containers import (
 from prompt_toolkit.widgets.base import Box
 
 from euporie.core.config import add_setting
-from euporie.core.convert.core import BASE64_FORMATS, MIME_FORMATS, find_route
+from euporie.core.convert.datum import Datum
+from euporie.core.convert.formats import BASE64_FORMATS
+from euporie.core.convert.mime import MIME_FORMATS
+from euporie.core.convert.registry import find_route
 from euporie.core.current import get_app
 from euporie.core.widgets.display import Display
 from euporie.core.widgets.tree import JsonView
@@ -99,7 +103,6 @@ class CellOutputDataElement(CellOutputElement):
             parent: The cell the output-element is attached to
         """
         self.parent = parent
-        self._data = data
 
         # Get foreground and background colors
         fg_color = None
@@ -120,15 +123,18 @@ class CellOutputDataElement(CellOutputElement):
                     format_ = data_format
                     break
 
+        self._datum = Datum(
+            data,
+            format_,
+            px=metadata.get("width"),
+            py=metadata.get("height"),
+            fg=fg_color,
+            bg=bg_color,
+        )
         config = get_app().config
 
         self.container = Display(
-            data=data,
-            format_=format_,
-            fg_color=fg_color,
-            bg_color=bg_color,
-            px=metadata.get("width"),
-            py=metadata.get("height"),
+            self._datum,
             focusable=False,
             focus_on_click=False,
             wrap_lines=config.filter("wrap_cell_outputs"),
@@ -145,13 +151,20 @@ class CellOutputDataElement(CellOutputElement):
     @property
     def data(self) -> Any:
         """Return the control's display data."""
-        return self._data
+        return self._datum.data
 
     @data.setter
     def data(self, value: Any) -> None:
         """Set the cell output's data."""
-        self._data = value
-        self.container.data = value
+        self._datum = Datum(
+            value,
+            self._datum.format,
+            self._datum.px,
+            self._datum.py,
+            self._datum.fg,
+            self._datum.bg,
+        )
+        self.container.datum = self._datum
 
     def scroll_left(self) -> None:
         """Scroll the output left."""
@@ -486,8 +499,13 @@ class CellOutputArea:
         outputs = []
         for cell_output in self.rendered_outputs:
             if isinstance(cell_output.element, CellOutputDataElement):
-                for line in cell_output.element.container.control.get_rendered_lines(
-                    width=88, height=99999999
+                config = get_app().config
+                control = cell_output.element.container.control
+                for line in control.get_lines(
+                    control.datum,
+                    width=88,
+                    height=99999999,
+                    wrap_lines=config.wrap_cell_outputs,
                 ):
                     outputs.append(to_plain_text(line))
         return "\n".join(outputs)

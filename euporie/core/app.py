@@ -62,7 +62,7 @@ from upath import UPath
 from euporie.core.clipboard import EuporieClipboard
 from euporie.core.commands import add_cmd
 from euporie.core.config import Config, add_setting
-from euporie.core.convert.core import get_mime
+from euporie.core.convert.mime import get_mime
 from euporie.core.current import get_app
 from euporie.core.filters import in_tmux, insert_mode, replace_mode, tab_has_focus
 from euporie.core.io import Vt100_Output, Vt100Parser

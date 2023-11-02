@@ -12,12 +12,12 @@ from mdit_py_plugins.texmath.index import texmath_plugin
 from pygments import highlight
 from pygments.formatters import HtmlFormatter
 
-from euporie.core.convert.core import register
+from euporie.core.convert.registry import register
 from euporie.core.current import get_app
 from euporie.core.lexers import detect_lexer
 
 if TYPE_CHECKING:
-    from pathlib import Path
+    from euporie.core.convert.datum import Datum
 
 log = logging.getLogger(__name__)
 
@@ -60,15 +60,12 @@ markdown_parser = (
 
 @register(from_="markdown", to="html")
 async def markdown_to_html_markdown_it(
-    data: str | bytes,
-    width: int | None = None,
-    height: int | None = None,
-    fg: str | None = None,
-    bg: str | None = None,
-    path: Path | None = None,
-    initial_format: str = "",
+    datum: Datum,
+    cols: int | None = None,
+    rows: int | None = None,
 ) -> str:
     """Convert markdown to HTML using :py:mod:`markdownit_py`."""
     assert markdown_parser is not None
+    data = datum.data
     markup = data.decode() if isinstance(data, bytes) else data
     return markdown_parser.render(markup)

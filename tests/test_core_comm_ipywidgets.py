@@ -177,5 +177,5 @@ class TestUnimplementedModel:
 
         # Check that the CommView container is a Display widget with the expected text
         assert isinstance(view.container, Display)
-        assert view.container.data == "[Widget not implemented]"
-        assert view.container.format_ == "ansi"
+        assert view.container.datum.data == "[Widget not implemented]"
+        assert view.container.datum.format == "ansi"
