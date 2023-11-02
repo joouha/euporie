@@ -177,7 +177,7 @@ class WebViewControl(UIControl):
         # Update url
         self.url = UPath(url)
         # Scroll to the top
-        self.window.vertical_scroll = 0
+        # self.window.vertical_scroll = 0  # TODO - save scroll in history
         self.cursor_position = Point(0, 0)
         # Signal that the webview has updated
         self.rendered.fire()
@@ -329,14 +329,13 @@ class WebViewControl(UIControl):
             ):
                 self.link_handler(url, save_to_history=False, new_tab=True)
                 return None
-        if url or title:
-            if mouse_event.event_type == MouseEventType.MOUSE_MOVE:
-                self.status.clear()
-                if title:
-                    self.status.append(str(title))
-                if url:
-                    self.status.append(str(url))
-                return None
+        if (url or title) and mouse_event.event_type == MouseEventType.MOUSE_MOVE:
+            self.status.clear()
+            if title:
+                self.status.append(str(title))
+            if url:
+                self.status.append(str(url))
+            return None
         return NotImplemented
 
     def mouse_handler(self, mouse_event: MouseEvent) -> NotImplementedOrNone:

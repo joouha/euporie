@@ -96,3 +96,14 @@ class CursorProcessor(Processor):
                 char,
             )
         return Transformation(fragments)
+
+
+# Apply processors
+# merged_processor = self.cursor_processor
+# line = lines[i]
+# transformation = merged_processor.apply_transformation(
+#     TransformationInput(
+#         buffer_control=self, document=Document(), lineno=i, source_to_display=lambda i: i, fragments=line, width=width, height=height,
+#     )
+# )
+# return transformation.fragments
