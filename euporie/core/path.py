@@ -186,10 +186,10 @@ class DataPath(upath.core.UPath):
         else:
             if data_str is None:
                 assert data_bytes is not None
-                decode_kwargs: dict[str, str] = {}
-                if encoding is not None:  #:= kwargs.get("encoding"):
-                    decode_kwargs["encoding"] = str(encoding)
-                data_str = data_bytes.decode(**decode_kwargs)
+                # decode_kwargs: dict[str, str] = {}
+                # if encoding is not None:  #:= kwargs.get("encoding"):
+                # decode_kwargs["encoding"] = str(encoding)
+                data_str = data_bytes.decode()  # **decode_kwargs)
             return io.StringIO(data_str)
 
     def exists(self, **kwargs: Any) -> bool:
