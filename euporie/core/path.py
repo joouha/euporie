@@ -193,7 +193,7 @@ class DataPath(upath.core.UPath):
             return io.StringIO(data_str)
 
     def exists(self, **kwargs: Any) -> bool:
-        """Affirm tat data URIs always exist."""
+        """Affirm that data URIs always exist."""
         return True
 
     @property

@@ -696,7 +696,8 @@ class BaseApp(Application):
             "vi": EditingMode.VI,
             "emacs": EditingMode.EMACS,
         }.get(
-            str(self.config.edit_mode), EditingMode.MICRO  # type: ignore
+            str(self.config.edit_mode),
+            EditingMode.MICRO,  # type: ignore
         )
 
     def update_edit_mode(self, setting: Setting | None = None) -> None:
