@@ -7,6 +7,7 @@ import logging
 from functools import partial
 from typing import TYPE_CHECKING, cast
 
+from prompt_toolkit.application.application import Application
 from prompt_toolkit.filters import Condition
 from prompt_toolkit.formatted_text.base import to_formatted_text
 from prompt_toolkit.layout.containers import (
@@ -108,9 +109,9 @@ class NotebookApp(BaseApp):
             await asyncio.sleep(self.config.terminal_polling_interval)
             self.term_info.colors.send()
 
-    def post_load(self) -> None:
+    def pre_run(self, app: Application | None = None) -> None:
         """Continue loading the app."""
-        super().post_load()
+        super().pre_run(app)
         # Ensure an opened tab is focused
         if self.tab:
             self.tab.focus()

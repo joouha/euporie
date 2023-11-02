@@ -90,7 +90,7 @@ class PreviewApp(BaseApp):
         # Do not load any key bindings
         self.bindings_to_load.append("euporie.preview.app.PreviewApp")
         # Select the first tab after files are opened
-        self.post_load_callables.append(partial(setattr, self, "tab_idx", 0))
+        self.pre_run_callables.append(partial(setattr, self, "tab_idx", 0))
 
     def get_file_tab(self, path: Path) -> type[Tab]:
         """Return the tab to use for a file path."""

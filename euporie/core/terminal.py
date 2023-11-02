@@ -103,7 +103,7 @@ class TerminalQuery:
             for press in self.input.read_keys():
                 if press.key == self.key:
                     # If we find the key we're after, process it immediately
-                    tkp = KeyProcessor(key_bindings=get_app().key_processor._bindings)
+                    tkp = KeyProcessor(key_bindings=app.key_processor._bindings)
                     tkp.feed_multiple([press, _Flush])
                     tkp.process_keys()
                     return True
@@ -136,7 +136,7 @@ class TerminalQuery:
         """Return the query's command."""
         return self.cmd
 
-    def send(self) -> None:
+    def send(self, flush: bool = True) -> None:
         """Send the terminal query command to the output."""
         if self.queryable and self.cmd and not self.waiting:
             cmd = self._cmd()
@@ -146,7 +146,8 @@ class TerminalQuery:
                 self.__class__.__name__,
             )
             self.output.write_raw(cmd)
-            self.output.flush()
+            if flush:
+                self.output.flush()
             self.waiting = True
 
     @property
@@ -445,7 +446,7 @@ class TerminalInfo:
                     query_inst._handle_response
                 )
                 # Add key-binding
-                register_bindings({"euporie.core.app.BaseApp": {name: key}})
+                register_bindings({"euporie.core.terminal.TerminalInfo": {name: key}})
 
         return query_inst
 
@@ -454,7 +455,8 @@ class TerminalInfo:
         # Ensure line wrapping is off before sending queries
         self.output.disable_autowrap()
         for query in self._queries.values():
-            query.send()
+            query.send(flush=False)
+        self.output.flush()
 
     def _tiocgwnsz(self) -> tuple[int, int, int, int]:
         """Get the size and pixel dimensions of the terminal with `termios`."""
