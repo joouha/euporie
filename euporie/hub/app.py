@@ -50,9 +50,7 @@ class EuporieSSHServer(asyncssh.SSHServer):  # type: ignore
     def session_requested(self) -> PromptToolkitSSHSession:
         """Return an SSH session."""
         # Not sure why mypy gives an error here
-        return PromptToolkitSSHSession(
-            self.app_cls.interact, enable_cpr=True
-        )  # type: ignore [call-arg]
+        return PromptToolkitSSHSession(self.app_cls.interact, enable_cpr=True)  # type: ignore [call-arg]
 
 
 class HubApp(BaseApp):

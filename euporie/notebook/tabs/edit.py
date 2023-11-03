@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 from prompt_toolkit.layout.containers import VSplit
 from prompt_toolkit.layout.dimension import Dimension
@@ -34,10 +34,9 @@ class EditorTab(KernelTab):
 
     name = "Text Editor"
     weight = 1
-    mime_types = {"text/*"}
+    mime_types: ClassVar[set[str]] = {"text/*"}
 
     allow_stdin = True
-    _metadata = {}
 
     def __init__(
         self,
@@ -65,10 +64,7 @@ class EditorTab(KernelTab):
 
     def load(self) -> None:
         """Load the text file."""
-        if self.path is not None:
-            text = self.path.read_text()
-        else:
-            text = ""
+        text = self.path.read_text() if self.path is not None else ""
 
         # Set text
         self.input_box.text = text

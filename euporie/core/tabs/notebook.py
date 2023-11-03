@@ -246,19 +246,15 @@ class BaseNotebook(KernelTab, metaclass=ABCMeta):
         scroll: bool = False,
     ) -> None:
         """Select a cell."""
-        pass
 
     def scroll_to(self, index: int) -> None:
         """Scroll to a cell by index."""
-        pass
 
     def refresh(self, slice_: slice | None = None, scroll: bool = False) -> None:
         """Refresh the notebook."""
-        pass
 
     def refresh_cell(self, cell: Cell) -> None:
         """Trigger the refresh of a notebook cell."""
-        pass
 
     def close(self, cb: Callable | None = None) -> None:
         """Check if the user want to save an unsaved notebook, then close the file.

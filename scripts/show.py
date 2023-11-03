@@ -1,4 +1,5 @@
 """A application to show files on the command line."""
+from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
@@ -10,7 +11,7 @@ from euporie.core.convert.mime import get_format
 from euporie.core.path import parse_path
 
 if TYPE_CHECKING:
-    from typing import Any, Callable, Optional
+    from typing import Any, Callable
 
 
 class ShowApp(BaseApp):
@@ -18,17 +19,17 @@ class ShowApp(BaseApp):
 
     name = "show"
 
-    def __init__(self, **kwargs: "Any") -> "None":
+    def __init__(self, **kwargs: Any) -> None:
         """Create an app to preview files."""
         super().__init__(**kwargs)
 
     def run(
         self,
-        pre_run: "Optional[Callable[[], None]]" = None,
-        set_exception_handler: "bool" = True,
-        handle_sigint: "bool" = True,
-        in_thread: "bool" = False,
-    ) -> "None":
+        pre_run: Callable[[], None] | None = None,
+        set_exception_handler: bool = True,
+        handle_sigint: bool = True,
+        in_thread: bool = False,
+    ) -> None:
         """Display a file."""
         with set_app(self):
             size = self.output.get_size()

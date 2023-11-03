@@ -95,9 +95,9 @@ def _separate_buffers(
                 assert isinstance(cloned_substrate, list)
                 cloned_substrate[i] = None
                 buffers.append(v)
-                buffer_paths.append(path + [i])
+                buffer_paths.append([*path, i])
             elif isinstance(v, (dict, list, tuple)):
-                vnew = _separate_buffers(v, path + [i], buffer_paths, buffers)
+                vnew = _separate_buffers(v, [*path, i], buffer_paths, buffers)
                 if v is not vnew:  # only assign when value changed
                     if cloned_substrate is None:
                         cloned_substrate = list(substate)  # shallow clone list/tuple
@@ -110,9 +110,9 @@ def _separate_buffers(
                     cloned_substrate = dict(substate)  # shallow clone dict
                 del cloned_substrate[k]
                 buffers.append(v)
-                buffer_paths.append(path + [k])
+                buffer_paths.append([*path, k])
             elif isinstance(v, (dict, list, tuple)):
-                vnew = _separate_buffers(v, path + [k], buffer_paths, buffers)
+                vnew = _separate_buffers(v, [*path, k], buffer_paths, buffers)
                 if v is not vnew:  # only assign when value changed
                     if cloned_substrate is None:
                         cloned_substrate = dict(substate)  # clone list/tuple
@@ -186,7 +186,7 @@ class IpyWidgetComm(Comm, metaclass=ABCMeta):
         buffers: list[bytes] = []
         state = _separate_buffers(self.data["state"], [], buffer_paths, buffers)
         assert isinstance(state, dict)
-        output = {
+        return {
             "model_name": state.get("_model_name"),
             "model_module": state.get("_model_module"),
             "model_module_version": state.get("_model_module_version"),
@@ -202,7 +202,6 @@ class IpyWidgetComm(Comm, metaclass=ABCMeta):
                 ],
             },
         }
-        return output
 
 
 class UnimplementedModel(IpyWidgetComm):
@@ -264,30 +263,31 @@ class OutputModel(IpyWidgetComm):
 
     def process_data(self, data: dict, buffers: Sequence[bytes]) -> None:
         """Modify the callbacks of a given message to add outputs to this ipywidget."""
-        if data.get("method") == "update" and self.comm_container.kernel:
-            if (msg_id := data.get("state", {}).get("msg_id")) is not None:
-                # Replace the kernel callbacks of the given message ID
-                if msg_id:
-                    # Replace the message's callbacks, saving a copy
-                    self.original_callbacks = copy(
-                        self.comm_container.kernel.msg_id_callbacks[msg_id]
-                    )
-                    del self.comm_container.kernel.msg_id_callbacks[msg_id]
-                    self.comm_container.kernel.msg_id_callbacks[msg_id].update(
-                        self.callbacks
-                    )
+        if (
+            data.get("method") == "update"
+            and self.comm_container.kernel
+            and (msg_id := data.get("state", {}).get("msg_id")) is not None
+        ):
+            # Replace the kernel callbacks of the given message ID
+            if msg_id:
+                # Replace the message's callbacks, saving a copy
+                self.original_callbacks = copy(
+                    self.comm_container.kernel.msg_id_callbacks[msg_id]
+                )
+                del self.comm_container.kernel.msg_id_callbacks[msg_id]
+                self.comm_container.kernel.msg_id_callbacks[msg_id].update(
+                    self.callbacks
+                )
+            else:
+                # Restore the message's callbacks
+                if self.original_callbacks:
+                    self.comm_container.kernel.msg_id_callbacks[
+                        self.prev_msg_id
+                    ] = self.original_callbacks
+                    self.original_callbacks = MsgCallbacks()
                 else:
-                    # Restore the message's callbacks
-                    if self.original_callbacks:
-                        self.comm_container.kernel.msg_id_callbacks[
-                            self.prev_msg_id
-                        ] = self.original_callbacks
-                        self.original_callbacks = MsgCallbacks()
-                    else:
-                        del self.comm_container.kernel.msg_id_callbacks[
-                            self.prev_msg_id
-                        ]
-                self.prev_msg_id = msg_id
+                    del self.comm_container.kernel.msg_id_callbacks[self.prev_msg_id]
+            self.prev_msg_id = msg_id
 
         super().process_data(data, buffers)
 
@@ -546,12 +546,10 @@ class IntOptionsMixin:
         except ValueError:
             return None
         else:
-            if minimum := self.data.get("state", {}).get("min"):
-                if value < minimum:
-                    return None
-            if maximum := self.data.get("state", {}).get("max"):
-                if maximum < value:
-                    return None
+            if (minimum := self.data.get("state", {}).get("min")) and value < minimum:
+                return None
+            if (maximum := self.data.get("state", {}).get("max")) and maximum < value:
+                return None
             return value
 
     @property
@@ -579,12 +577,12 @@ class FloatOptionsMixin:
         except ValueError:
             return None
         else:
-            if minimum := self.data.get("state", {}).get("min"):
-                if value <= minimum:
-                    return None
-            if maximum := self.data.get("state", {}).get("max"):
-                if maximum <= value:
-                    return None
+            if (
+                (minimum := self.data.get("state", {}).get("min")) and value <= minimum
+            ) or (
+                (maximum := self.data.get("state", {}).get("max")) and maximum <= value
+            ):
+                return None
             return value
 
     @property
@@ -597,10 +595,7 @@ class FloatOptionsMixin:
         # Ensure value is in list of options
         value = self.data["state"].get("value", 0.0)
         if value not in options:
-            if isinstance(value, list):
-                values = value
-            else:
-                values = [value]
+            values = value if isinstance(value, list) else [value]
             for value in values:
                 bisect.insort(options, value)
         return options
@@ -711,9 +706,10 @@ class SliderIpyWidgetComm(IpyWidgetComm, metaclass=ABCMeta):
 
     def update_value(self, container: SelectableWidget) -> None:
         """Send a ``comm_message`` updating the value when it changes."""
-        if (index := container.index) is not None:
-            if (value := self.normalize(container.options[index])) is not None:
-                self.set_state("value", value)
+        if (index := container.index) is not None and (
+            value := self.normalize(container.options[index])
+        ) is not None:
+            self.set_state("value", value)
 
     def set_value(self, slider: Slider, value: Any) -> None:
         """Set the selected index when the ipywidget's selected value changes."""
@@ -1179,11 +1175,12 @@ class ToggleButtonsModel(IpyWidgetComm):
     def get_label(self, index: int) -> AnyFormattedText:
         """Return the label for each toggle button (optionally including the icon)."""
         label = str(self.data["state"].get("_options_labels", [])[index])
-        if index < len(self.data["state"].get("icons", [])):
-            if icon := self.data["state"]["icons"][index]:
-                from euporie.core.reference import FA_ICONS
+        if index < len(self.data["state"].get("icons", [])) and (
+            icon := self.data["state"]["icons"][index]
+        ):
+            from euporie.core.reference import FA_ICONS
 
-                label = f"{FA_ICONS.get(icon, '#')} {label}"
+            label = f"{FA_ICONS.get(icon, '#')} {label}"
         return label
 
     def create_view(self, parent: OutputParent) -> CommView:

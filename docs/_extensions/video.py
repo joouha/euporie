@@ -6,14 +6,14 @@ Based on https://github.com/sphinx-contrib/video/
 
 from __future__ import annotations
 
-import os
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from docutils import nodes
 from docutils.parsers.rst import Directive, directives
 
 if TYPE_CHECKING:
-    from typing import Any
+    from typing import Any, ClassVar
 
     from docutils.writers._html_base import HTMLTranslator
     from sphinx.application import Sphinx
@@ -21,19 +21,16 @@ if TYPE_CHECKING:
 
 def get_option(options: dict[str, Any], key: str, default: Any) -> Any:
     """Get an option."""
-    if key not in options.keys():
+    if key not in options:
         return default
 
     if isinstance(default, bool):
         return True
-    else:
-        return options[key]
+    return options[key]
 
 
 class video(nodes.General, nodes.Element):
     """A video node."""
-
-    pass
 
 
 class Video(Directive):
@@ -43,7 +40,12 @@ class Video(Directive):
     required_arguments = 1
     optional_arguments = 5
     final_argument_whitespace = False
-    option_spec = {
+    option_spec: ClassVar[
+        dict[
+            str,
+            Directive,
+        ]
+    ] = {
         "alt": directives.unchanged,
         "width": directives.unchanged,
         "height": directives.unchanged,
@@ -73,7 +75,7 @@ class Video(Directive):
 
 def visit_video_node(self: HTMLTranslator, node: video) -> None:
     """Return an HTML block when the video node is visited."""
-    extension = os.path.splitext(node["path"])[1][1:]
+    extension = Path(node["path"]).suffix[1:]
 
     html_block = """
     <video {width} {height} {nocontrols} {autoplay} preload="metadata">
@@ -94,7 +96,6 @@ def visit_video_node(self: HTMLTranslator, node: video) -> None:
 
 def depart_video_node(self: HTMLTranslator, node: video) -> None:
     """Do nothing when departing a video node."""
-    pass
 
 
 def setup(app: Sphinx) -> None:

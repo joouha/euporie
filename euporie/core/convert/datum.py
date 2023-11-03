@@ -6,7 +6,6 @@ import hashlib
 import io
 import logging
 import threading
-from pathlib import Path
 from typing import TYPE_CHECKING, Generic, TypeVar
 from weakref import ReferenceType, WeakValueDictionary, finalize, ref
 
@@ -22,12 +21,14 @@ from euporie.core.convert.registry import (
 )
 from euporie.core.current import get_app
 from euporie.core.ft.utils import to_plain_text
-from euporie.core.style import ColorPaletteColor
 
 if TYPE_CHECKING:
-    from typing import Any, Coroutine
+    from pathlib import Path
+    from typing import Any, ClassVar, Coroutine
 
     from rich.console import ConsoleRenderable
+
+    from euporie.core.style import ColorPaletteColor
 
 
 T = TypeVar("T", bytes, str, PilImage, "ConsoleRenderable")
@@ -84,7 +85,7 @@ class Datum(Generic[T]):
     _root: ReferenceType[Datum]
 
     _instances: WeakValueDictionary[str, Datum] = WeakValueDictionary()
-    _sizes: dict[str, tuple[ReferenceType[Datum], Size]] = {}
+    _sizes: ClassVar[dict[str, tuple[ReferenceType[Datum], Size]]] = {}
 
     def __new__(cls, data: T, *args: Any, **kwargs: Any) -> Datum:
         """Create a single instance based on unique data."""

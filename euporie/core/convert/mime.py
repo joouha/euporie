@@ -108,9 +108,6 @@ def get_format(path: Path | str, default: str = "") -> str:
     if isinstance(path, str):
         path = UPath(path)
     if not default:
-        if isinstance(path, HTTPPath):
-            default = "html"
-        else:
-            default = "ansi"
+        default = "html" if isinstance(path, HTTPPath) else "ansi"
     mime = get_mime(path)
     return MIME_FORMATS.get(mime, default) if mime else default

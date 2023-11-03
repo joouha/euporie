@@ -7,7 +7,6 @@ import logging
 from functools import partial
 from typing import TYPE_CHECKING, cast
 
-from prompt_toolkit.application.application import Application
 from prompt_toolkit.filters import Condition
 from prompt_toolkit.formatted_text.base import to_formatted_text
 from prompt_toolkit.layout.containers import (
@@ -29,7 +28,6 @@ from euporie.core.commands import add_cmd, get_cmd
 from euporie.core.config import add_setting
 from euporie.core.ft.utils import truncate
 from euporie.core.key_binding.registry import register_bindings
-from euporie.core.tabs.base import Tab
 from euporie.core.widgets.decor import Pattern
 from euporie.core.widgets.dialog import (
     AboutDialog,
@@ -58,9 +56,11 @@ if TYPE_CHECKING:
     from asyncio import AbstractEventLoop
     from typing import Any, Callable, Sequence
 
+    from prompt_toolkit.application.application import Application
     from prompt_toolkit.formatted_text import StyleAndTextTuples
     from prompt_toolkit.layout.containers import AnyContainer, Float
 
+    from euporie.core.tabs.base import Tab
     from euporie.core.widgets.cell import Cell
     from euporie.core.widgets.status_bar import StatusBarFields
 
@@ -555,7 +555,7 @@ class NotebookApp(BaseApp):
             The character to use when drawing the background pattern.
 
             Recommended characters include: "·", "⬤", "╳", "╱", "╲", "░", "▒", "▓", "▞", "╬"
-        """,
+        """,  # ,
     )
 
     add_setting(

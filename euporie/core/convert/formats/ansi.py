@@ -147,8 +147,7 @@ async def html_to_ansi_py_htmlparser(
     # Strip lines
     output = "\n".join([x.strip() for x in output.strip().split("\n")])
     # Remove empty paragraphs
-    output = re.sub("\n\n\n+", "\n\n", output)
-    return output
+    return re.sub("\n\n\n+", "\n\n", output)
 
 
 @register(
@@ -231,7 +230,8 @@ async def pil_to_ansi_py_timg(
     elif rows is None and cols is None:
         cols = ceil(w / px)
         rows = ceil(h / py)
-    assert rows is not None and cols is not None
+    assert rows is not None
+    assert cols is not None
 
     # `timg` assumes a 2x1 terminal cell aspect ratio, so we correct for while
     # resizing the image
@@ -447,5 +447,4 @@ async def rich_to_ansi_py(
     if cols is not None:
         options = options.update(max_width=cols)
     buffer = console.render(datum.data, options)
-    rendered_lines = console._render_buffer(buffer)
-    return rendered_lines
+    return console._render_buffer(buffer)

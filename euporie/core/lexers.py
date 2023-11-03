@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 from typing import TYPE_CHECKING
 
 from pygments.lexers import (
@@ -27,18 +28,12 @@ def detect_lexer(
         try:
             lexer = get_lexer_for_filename(path)
         except ClassNotFound:
-            try:
+            with contextlib.suppress(ClassNotFound):
                 lexer = guess_lexer_for_filename(path, text)
-            except ClassNotFound:
-                pass
     if lexer is None and language:
-        try:
+        with contextlib.suppress(ClassNotFound):
             lexer = get_lexer_by_name(language)
-        except ClassNotFound:
-            pass
     if lexer is None:
-        try:
+        with contextlib.suppress(ClassNotFound):
             lexer = guess_lexer(text)
-        except ClassNotFound:
-            pass
     return lexer

@@ -4,11 +4,11 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import os
-import subprocess  # noqa S404 - Security implications have been considered
+import subprocess  # S404 - Security implications have been considered
 import tempfile
 from functools import partial, reduce
 from importlib import import_module
+from pathlib import Path
 from shutil import which
 from typing import TYPE_CHECKING
 
@@ -117,6 +117,6 @@ async def call_subproc(
         # Clean up any temporary file
         if use_tempfile:
             tfile.close()
-            os.unlink(tfile.name)
+            Path(tfile.name).unlink()
 
     return output_bytes

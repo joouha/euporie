@@ -7,11 +7,12 @@ from typing import TYPE_CHECKING
 from prompt_toolkit.key_binding import KeyBindings
 
 from euporie.core.commands import get_cmd
-from euporie.core.config import Config
-from euporie.core.keys import Keys
 
 if TYPE_CHECKING:
     from prompt_toolkit.key_binding import KeyBindingsBase
+
+    from euporie.core.config import Config
+    from euporie.core.keys import Keys
 
     AnyKey = tuple[Keys | str, ...] | Keys | str
     AnyKeys = list[AnyKey] | AnyKey

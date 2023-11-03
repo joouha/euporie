@@ -427,10 +427,7 @@ class ScrollbarMargin(ClickableMargin):
             delta = window.vertical_scroll - target_scroll
 
             if isinstance(window, Window):
-                if delta < 0:
-                    func = window._scroll_down
-                else:
-                    func = window._scroll_up
+                func = window._scroll_down if delta < 0 else window._scroll_up
                 for _ in range(abs(delta)):
                     func()
             elif hasattr(window, "scrolling"):

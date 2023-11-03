@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import logging
 from abc import ABCMeta, abstractmethod
 from functools import partial
@@ -296,32 +297,30 @@ class TabBarControl(UIControl):
             )
         ]
 
-        result = [top_line, tab_line]
-        return result
+        return [top_line, tab_line]
 
     def mouse_handler(self, mouse_event: MouseEvent) -> NotImplementedOrNone:
         """Handle mouse events."""
         row = mouse_event.position.y
         col = mouse_event.position.x
 
-        if row == 1:
-            if mouse_event.event_type == MouseEventType.MOUSE_UP:
-                if mouse_event.button == MouseButton.LEFT and callable(
-                    handler := self.mouse_handlers.get(col)
-                ):
-                    # Activate the tab
+        if row == 1 and mouse_event.event_type == MouseEventType.MOUSE_UP:
+            if mouse_event.button == MouseButton.LEFT and callable(
+                handler := self.mouse_handlers.get(col)
+            ):
+                # Activate the tab
+                handler()
+                return None
+            elif mouse_event.button == MouseButton.MIDDLE and self.closeable:
+                if callable(handler := self.mouse_handlers.get(col)):
+                    # Activate tab
                     handler()
-                    return None
-                elif mouse_event.button == MouseButton.MIDDLE and self.closeable:
-                    if callable(handler := self.mouse_handlers.get(col)):
-                        # Activate tab
-                        handler()
-                        # Close the now active tab
-                        tabs = self.tabs
-                        on_close = tabs[self.active]
-                        if callable(on_close):
-                            on_close()
-                    return None
+                    # Close the now active tab
+                    tabs = self.tabs
+                    on_close = tabs[self.active]
+                    if callable(on_close):
+                        on_close()
+                return None
 
         tabs = self.tabs
         if mouse_event.event_type == MouseEventType.SCROLL_UP:
@@ -406,10 +405,8 @@ class StackedSplit(metaclass=ABCMeta):
             self.refresh()
             self.on_change.fire()
             if value is not None:
-                try:
+                with contextlib.suppress(ValueError):
                     get_app().layout.focus(self.children[value])
-                except ValueError:
-                    pass
 
     @property
     def children(self) -> list[AnyContainer]:
@@ -439,7 +436,6 @@ class StackedSplit(metaclass=ABCMeta):
 
     def refresh(self) -> None:
         """Reload the widget's container when its children or their titles change."""
-        pass
 
     def __pt_container__(self) -> AnyContainer:
         """Return the widget's container."""

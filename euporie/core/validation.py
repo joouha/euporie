@@ -34,4 +34,4 @@ class KernelValidator(Validator):
         )
         if completeness_status == "incomplete":
             raise ValidationError
-        return None
+        return

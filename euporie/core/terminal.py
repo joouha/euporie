@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import array
 import logging
 import os
 import re
@@ -12,7 +11,7 @@ import time
 from base64 import b64decode
 from datetime import datetime as dt
 from functools import lru_cache
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 from aenum import extend_enum
 from prompt_toolkit.application.current import get_app
@@ -164,7 +163,7 @@ class TerminalQuery:
 class Colors(TerminalQuery):
     """A terminal query to retrieve colours as hex codes."""
 
-    _color_names = {
+    _color_names: ClassVar[dict[str, str]] = {
         "10": "fg",
         "11": "bg",
         "4;0": "ansiblack",
@@ -203,19 +202,17 @@ class Colors(TerminalQuery):
 
     def verify(self, data: str) -> dict[str, str]:
         """Verify the response contains a colour."""
-        if match := self.pattern.match(data):
-            if colors := match.groupdict():
-                c = colors["c"]
-                r, g, b = (
-                    colors.get("r", "00"),
-                    colors.get("g", "00"),
-                    colors.get("b", "00"),
-                )
-                output = {
-                    **self.value,
-                    self._color_names.get(c, c): f"#{r[:2]}{g[:2]}{b[:2]}",
-                }
-                return output
+        if (match := self.pattern.match(data)) and (colors := match.groupdict()):
+            c = colors["c"]
+            r, g, b = (
+                colors.get("r", "00"),
+                colors.get("g", "00"),
+                colors.get("b", "00"),
+            )
+            return {
+                **self.value,
+                self._color_names.get(c, c): f"#{r[:2]}{g[:2]}{b[:2]}",
+            }
         return self.value
 
 
@@ -229,12 +226,13 @@ class PixelDimensions(TerminalQuery):
 
     def verify(self, data: str) -> tuple[int, int] | None:
         """Verify the terminal responded with pixel dimensions."""
-        if match := self.pattern.match(data):
-            if values := match.groupdict():
-                if (x := values.get("x")) is not None and (
-                    y := values.get("y")
-                ) is not None:
-                    return int(x), int(y)
+        if (
+            (match := self.pattern.match(data))
+            and (values := match.groupdict())
+            and (x := values.get("x")) is not None
+            and (y := values.get("y")) is not None
+        ):
+            return int(x), int(y)
         return None
 
 
@@ -253,10 +251,12 @@ class KittyGraphicsStatus(TerminalQuery):
 
     def verify(self, data: str) -> bool:
         """Verify the terminal response means kitty graphics are supported."""
-        if match := self.pattern.match(data):
-            if values := match.groupdict():
-                if values.get("status") == "OK":
-                    return True
+        if (
+            (match := self.pattern.match(data))
+            and (values := match.groupdict())
+            and values.get("status") == "OK"
+        ):
+            return True
         return False
 
 
@@ -276,10 +276,12 @@ class SixelGraphicsStatus(TerminalQuery):
 
     def verify(self, data: str) -> bool:
         """Verify the terminal response means sixel graphics are supported."""
-        if match := self.pattern.match(data):
-            if values := match.groupdict():
-                if values.get("sixel"):
-                    return True
+        if (
+            (match := self.pattern.match(data))
+            and (values := match.groupdict())
+            and values.get("sixel")
+        ):
+            return True
         return False
 
 
@@ -299,15 +301,13 @@ class ItermGraphicsStatus(TerminalQuery):
 
     def verify(self, data: str) -> bool:
         """Verify iterm graphics are supported by the terminal."""
-        if match := self.pattern.match(data):
-            if values := match.groupdict():
-                if term := values.get("term"):
-                    if (
-                        term.startswith("WezTerm")
-                        or term.startswith("Konsole")
-                        or term.startswith("mlterm")
-                    ):
-                        return True
+        if (
+            (match := self.pattern.match(data))
+            and (values := match.groupdict())
+            and (term := values.get("term"))
+            and (term.startswith(("WezTerm", "Konsole", "mlterm")))
+        ):
+            return True
         return False
 
 
@@ -345,10 +345,12 @@ class SgrPixelStatus(TerminalQuery):
 
     def verify(self, data: str) -> bool:
         """Verify the terminal response means SGR pixel-mode is supported."""
-        if match := self.pattern.match(data):
-            if values := match.groupdict():
-                if values.get("Pm") in {"1", "3"}:
-                    return True
+        if (
+            (match := self.pattern.match(data))
+            and (values := match.groupdict())
+            and (values.get("Pm") in {"1", "3"})
+        ):
+            return True
         return False
 
 
@@ -362,9 +364,8 @@ class CsiUStatus(TerminalQuery):
 
     def verify(self, data: str) -> bool:
         """Verify the terminal responds."""
-        if match := self.pattern.match(data):
-            if match:
-                return True
+        if (match := self.pattern.match(data)) and match:
+            return True
         return False
 
 
@@ -378,10 +379,9 @@ class ClipboardData(TerminalQuery):
 
     def verify(self, data: str) -> str:
         """Verify the terminal responds."""
-        if match := self.pattern.match(data):
-            if values := match.groupdict():
-                value = values.get("data", "")
-                return b64decode(value).decode()
+        if (match := self.pattern.match(data)) and (values := match.groupdict()):
+            value = values.get("data", "")
+            return b64decode(value).decode()
         return ""
 
 
@@ -391,7 +391,7 @@ class TerminalInfo:
     input: Input
     output: Output
 
-    _queries: dict[type[TerminalQuery], TerminalQuery] = {}
+    _queries: ClassVar[dict[type[TerminalQuery], TerminalQuery]] = {}
 
     def __init__(self, input_: Input, output: Output, config: Config) -> None:
         """Instantiate the terminal information class."""
@@ -460,15 +460,16 @@ class TerminalInfo:
 
     def _tiocgwnsz(self) -> tuple[int, int, int, int]:
         """Get the size and pixel dimensions of the terminal with `termios`."""
+        import array
+
         output = array.array("H", [0, 0, 0, 0])
         if _have_termios_tty_fcntl():
             import fcntl
             import termios
+            from contextlib import suppress
 
-            try:
+            with suppress(OSError):
                 fcntl.ioctl(1, termios.TIOCGWINSZ, output)
-            except Exception:  # noqa S110
-                pass
         rows, cols, xpixels, ypixels = output
         return rows, cols, xpixels, ypixels
 
@@ -511,7 +512,7 @@ def edit_in_editor(filename: str, line_number: int = 0) -> None:
             if editor:
                 try:
                     # Use 'shlex.split()' because $VISUAL can contain spaces and quotes
-                    subprocess.call(shlex.split(editor) + [filename])
+                    subprocess.call([*shlex.split(editor), filename])
                     return
                 except OSError:
                     # Executable does not exist, try the next one.

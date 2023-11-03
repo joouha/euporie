@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import logging
 import traceback
 from abc import ABCMeta, abstractmethod
@@ -12,7 +13,6 @@ from typing import TYPE_CHECKING
 from prompt_toolkit.cache import SimpleCache
 from prompt_toolkit.clipboard import ClipboardData
 from prompt_toolkit.completion import PathCompleter
-from prompt_toolkit.data_structures import Point
 from prompt_toolkit.filters import (
     Condition,
     buffer_has_focus,
@@ -56,6 +56,7 @@ if TYPE_CHECKING:
     from typing import Any, Callable, Hashable
 
     from prompt_toolkit.buffer import Buffer
+    from prompt_toolkit.data_structures import Point
     from prompt_toolkit.formatted_text.base import StyleAndTextTuples
     from prompt_toolkit.key_binding.key_bindings import NotImplementedOrNone
     from prompt_toolkit.key_binding.key_processor import KeyPressEvent
@@ -336,10 +337,8 @@ class Dialog(Float, metaclass=ABCMeta):
         if self.to_focus is not None:
             self.app.layout.focus(self.to_focus)
         else:
-            try:
+            with contextlib.suppress(ValueError):
                 self.app.layout.focus(self.container)
-            except ValueError:
-                pass
         self.app.layout.focus(self.container)
         self.app.invalidate()
 

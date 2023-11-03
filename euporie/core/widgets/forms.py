@@ -121,10 +121,7 @@ class Swatch:
 
     def get_style(self) -> str:
         """Compute the style for the swatch.."""
-        if callable(self.color):
-            color = self.color()
-        else:
-            color = self.color
+        color = self.color() if callable(self.color) else self.color
         return f"{self.style} bg:{color} "
 
     def __pt_container__(self) -> AnyContainer:
@@ -207,10 +204,7 @@ class Button:
 
     def get_style(self) -> str:
         """Return the style for the button given its current state."""
-        if callable(self.style):
-            style = self.style()
-        else:
-            style = self.style
+        style = self.style() if callable(self.style) else self.style
         style = f"{style} class:button"
         if self.selected:
             style = f"{style} class:selection"
@@ -225,8 +219,7 @@ class Button:
         ]
         ft = align(ft, FormattedTextAlign.CENTER, self.width)
         ft = [(style, text, self.mouse_handler) for style, text, *_ in ft]
-        ft = [("[SetMenuPosition]", ""), *ft]
-        return ft
+        return [("[SetMenuPosition]", ""), *ft]
 
     def get_key_bindings(self) -> KeyBindingsBase:
         """Key bindings for the Button."""
@@ -278,12 +271,11 @@ class Button:
 
             elif mouse_event.event_type == MouseEventType.MOUSE_MOVE:
                 # Unselect the button if the mouse is moved outside of the button
-                if (info := self.window.render_info) is not None:
-                    if (
-                        info._x_offset + mouse_event.position.x,
-                        info._y_offset + mouse_event.position.y,
-                    ) != get_app().mouse_position:
-                        self.selected = False
+                if (info := self.window.render_info) is not None and (
+                    info._x_offset + mouse_event.position.x,
+                    info._y_offset + mouse_event.position.y,
+                ) != get_app().mouse_position:
+                    self.selected = False
                 return None
 
         get_app().mouse_limits = None
@@ -435,8 +427,7 @@ class Checkbox(ToggleableWidget):
             ("", " " if fragment_list_len(self.text) else ""),
             *self.text,
         ]
-        ft = [(style, text, self.mouse_handler) for style, text, *_ in ft]
-        return ft
+        return [(style, text, self.mouse_handler) for style, text, *_ in ft]
 
     def __init__(
         self,
@@ -715,10 +706,7 @@ class Label:
     def get_value(self) -> AnyFormattedText:
         """Return the current value of the label, converting to formatted text."""
         value = self.value
-        if callable(value):
-            data = value()
-        else:
-            data = value
+        data = value() if callable(value) else value
         if self.html():
             from euporie.core.ft.html import HTML
 
@@ -1023,10 +1011,7 @@ class SelectableWidget(metaclass=ABCMeta):
         self.multiple = to_filter(multiple)
 
         if index is None and indices is None:
-            if self.multiple():
-                indices = []
-            else:
-                indices = [0]
+            indices = [] if self.multiple() else [0]
         if indices is None:
             indices = [index or 0]
         self.indices = indices
@@ -1047,10 +1032,7 @@ class SelectableWidget(metaclass=ABCMeta):
     @property
     def style(self) -> str:
         """Return the widget's style."""
-        if callable(self._style):
-            style = self._style()
-        else:
-            style = self._style
+        style = self._style() if callable(self._style) else self._style
         if self.disabled():
             style = f"{style} class:disabled"
         return style
@@ -1132,9 +1114,8 @@ class SelectableWidget(metaclass=ABCMeta):
     def indices(self) -> list[int]:
         """Return a list of the selected indices."""
         output = [i for i, m in enumerate(self.mask) if m]
-        if self.n_values is not None:
-            if len(output) < self.n_values:
-                output = (output * self.n_values)[: self.n_values]
+        if self.n_values is not None and len(output) < self.n_values:
+            output = (output * self.n_values)[: self.n_values]
         return output
 
     @indices.setter
@@ -1476,7 +1457,7 @@ class Dropdown(SelectableWidget):
     def mouse_handler(self, i: int, mouse_event: MouseEvent) -> None:
         """Handle mouse events."""
         if self.disabled():
-            return None
+            return
         super().mouse_handler(i, mouse_event)
         if mouse_event.event_type == MouseEventType.MOUSE_UP:
             self.menu_visible = False
@@ -2010,7 +1991,7 @@ class SliderControl(UIControl):
                 self.mouse_handler_track,
                 index=int((n_options - 0.5) * i / track_len),
             )
-            for i in range(0, left_len)
+            for i in range(left_len)
         ]
 
         # First handle

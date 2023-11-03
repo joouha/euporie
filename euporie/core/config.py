@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 import logging
 import os
@@ -24,7 +25,7 @@ from euporie.core import __app_name__, __copyright__, __version__
 from euporie.core.commands import add_cmd, get_cmd
 
 if TYPE_CHECKING:
-    from typing import IO, Any, Callable, Optional, Sequence
+    from typing import IO, Any, Callable, ClassVar, Optional, Sequence
 
     from prompt_toolkit.filters.base import Filter, FilterOrBool
 
@@ -320,7 +321,7 @@ class Setting:
 class Config:
     """A configuration store."""
 
-    settings: dict[str, Setting] = {}
+    settings: ClassVar[dict[str, Setting]] = {}
     conf_file_name = "config.json"
 
     def __init__(self) -> None:
@@ -334,7 +335,7 @@ class Config:
         json_data.setdefault(self.app_name, {})[setting.name] = setting.value
         if self.valid_user:
             log.debug("Saving setting `%s`", setting)
-            with open(self.config_file_path, "w") as f:
+            with self.config_file_path.open("w") as f:
                 json.dump(json_data, f, indent=2)
 
     def load(self, cls: type[ConfigurableApp]) -> None:
@@ -430,7 +431,7 @@ class Config:
                 try:
                     fastjsonschema.validate(self.schema, json_data)
                 except fastjsonschema.JsonSchemaValueException as error:
-                    log.warning(f"Error in command line parameter `{name}`: {error}")
+                    log.warning("Error in command line parameter `%s`: %s", name, error)
                 else:
                     result[name] = value
         return result
@@ -448,30 +449,25 @@ class Config:
                 parsed_value: Any = value
                 # Attempt to parse the value as a literal
                 if value:
-                    try:
-                        parsed_value = literal_eval(value)
-                    except (
-                        ValueError,
-                        TypeError,
-                        SyntaxError,
-                        MemoryError,
-                        RecursionError,
+                    with contextlib.suppress(
+                        ValueError, TypeError, SyntaxError, MemoryError, RecursionError
                     ):
-                        pass
+                        parsed_value = literal_eval(value)
                 # Attempt to cast the value to the desired type
                 try:
                     parsed_value = setting.type(value)
                 except (ValueError, TypeError):
                     log.warning(
-                        f"Environment variable `{env}` not understood"
-                        f" - `{setting.type.__name__}` expected"
+                        "Environment variable `%s` not understood" " - `%s` expected",
+                        env,
+                        setting.type.__name__,
                     )
                 else:
                     json_data = json.loads(_json_encoder.encode({name: parsed_value}))
                     try:
                         fastjsonschema.validate(self.schema, json_data)
                     except fastjsonschema.JsonSchemaValueException as error:
-                        log.error(f"Error in environment variable: `{env}`\n{error}")
+                        log.error("Error in environment variable: `%s`\n%s", env, error)
                     else:
                         result[name] = parsed_value
         return result
@@ -481,14 +477,13 @@ class Config:
         results = {}
         assert isinstance(self.config_file_path, Path)
         if self.valid_user and self.config_file_path.exists():
-            with open(self.config_file_path) as f:
+            with self.config_file_path.open() as f:
                 try:
                     json_data = json.load(f)
                 except json.decoder.JSONDecodeError:
                     log.error(
-                        "Could not parse the configuration file: "
-                        f"{self.config_file_path}\n"
-                        "Is it valid json?"
+                        "Could not parse the configuration file: %s\nIs it valid json?",
+                        self.config_file_path,
                     )
                     self.valid_user = False
                 else:
@@ -508,7 +503,7 @@ class Config:
             # Validate a copy so the original data is not modified
             fastjsonschema.validate(self.schema, dict(json_data))
         except fastjsonschema.JsonSchemaValueException as error:
-            log.warning(f"Error in config file: `{self.config_file_path}`: {error}")
+            log.warning("Error in config file: `%s`: %s", self.config_file_pathi, error)
             self.valid_user = False
         else:
             results.update(json_data)

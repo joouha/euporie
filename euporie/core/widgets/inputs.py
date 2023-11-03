@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import logging
 from typing import TYPE_CHECKING
 
@@ -211,10 +212,14 @@ class KernelInput(TextArea):
         pager = self.kernel_tab.app.pager
         assert pager is not None
 
-        if pager.visible() and pager.state is not None:
-            if pager.state.code == code and pager.state.cursor_pos == cursor_pos:
-                pager.focus()
-                return
+        if (
+            pager.visible()
+            and pager.state is not None
+            and pager.state.code == code
+            and pager.state.cursor_pos == cursor_pos
+        ):
+            pager.focus()
+            return
 
         def _cb(response: dict) -> None:
             assert pager is not None
@@ -363,10 +368,8 @@ class StdInput:
 
         buffer.text = ""
         if self.last_focused:
-            try:
+            with contextlib.suppress(ValueError):
                 get_app().layout.focus(self.last_focused)
-            except ValueError:
-                pass
         return True
 
     def get_input(

@@ -24,7 +24,7 @@ from euporie.web.widgets.webview import WebViewControl
 
 if TYPE_CHECKING:
     from pathlib import Path
-    from typing import Any, Callable
+    from typing import Any, Callable, ClassVar
 
     from prompt_toolkit.layout.containers import AnyContainer
 
@@ -39,7 +39,7 @@ class WebTab(Tab):
 
     name = "Web Viewer"
     weight = 2
-    mime_types = {"text/html", "text/markdown"}
+    mime_types: ClassVar[set[str]] = {"text/html", "text/markdown"}
 
     def __init__(self, app: BaseApp, path: Path | None) -> None:
         """Call when the tab is created."""
@@ -54,9 +54,8 @@ class WebTab(Tab):
     @property
     def title(self) -> str:
         """Return the tab title."""
-        if webview := getattr(self, "webview", None):
-            if title := webview.title:
-                return title
+        if (webview := getattr(self, "webview", None)) and (title := webview.title):
+            return title
         if self.path is not None:
             return str(self.path.name) or str(self.path)
         else:

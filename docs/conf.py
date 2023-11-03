@@ -1,6 +1,8 @@
 """Configuration file for the Sphinx documentation builder."""
 
-import subprocess  # noqa: S404
+from __future__ import annotations
+
+import subprocess
 import sys
 from pathlib import Path
 
@@ -13,7 +15,7 @@ copyright = "2022, Josiah Outram Halstead"
 author = "Josiah Outram Halstead"
 
 # General configuration
-extensions: "list[str]" = [
+extensions: list[str] = [
     # Link to other packages
     "sphinx.ext.intersphinx",
     # Enable google-style docstring parsing
@@ -36,7 +38,7 @@ extensions: "list[str]" = [
     "_extensions.video",
 ]
 templates_path = ["_templates"]
-exclude_patterns: "list[str]" = []
+exclude_patterns: list[str] = []
 
 # Make sure the target is unique
 autosectionlabel_prefix_document = True
@@ -84,5 +86,5 @@ script_dir = docs_dir.parent / "scripts"
 inc_dir.mkdir(exist_ok=True)
 for script in script_dir.glob("document_*.py"):
     name = script.stem.replace("document_", "")
-    with open((inc_dir / name).with_suffix(".rst"), "w") as f:
-        subprocess.call([sys.executable, script], stdout=f)  # noqa: S603
+    with (inc_dir / name).with_suffix(".rst").open("w") as f:
+        subprocess.call([sys.executable, script], stdout=f)

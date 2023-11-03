@@ -12,7 +12,7 @@ test_colors = {
 }
 
 
-@pytest.fixture
+@pytest.fixture()
 def color_palette() -> ColorPalette:
     """Fixture for creating a ColorPalette with test colors."""
     palette = ColorPalette()

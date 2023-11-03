@@ -870,10 +870,12 @@ def extend_selection(event: KeyPressEvent) -> None:
     # Just move the cursor, like shift was not pressed
     unshift_move(event)
     buff = event.current_buffer
-    if buff.selection_state is not None:
-        if buff.cursor_position == buff.selection_state.original_cursor_position:
-            # selection is now empty, so cancel selection
-            buff.exit_selection()
+    if (
+        buff.selection_state is not None
+        and buff.cursor_position == buff.selection_state.original_cursor_position
+    ):
+        # selection is now empty, so cancel selection
+        buff.exit_selection()
 
 
 @add_cmd(filter=has_selection, hidden=True)

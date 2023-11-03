@@ -22,13 +22,13 @@ if TYPE_CHECKING:
     from euporie.core.commands import CommandHandler
 
 
-@pytest.fixture
+@pytest.fixture()
 def mock_handler() -> CommandHandler:
     """Command handler fixture."""
     return Mock(return_value=None)
 
 
-@pytest.fixture
+@pytest.fixture()
 def command(mock_handler: CommandHandler) -> Command:
     """Command fixture."""
     return Command(
