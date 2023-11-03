@@ -4,6 +4,22 @@ Changelog
 
 Notable changes to this project will be documented in this file.
 
+********
+Upcoming
+********
+
+Added
+=====
+
+- Display inline images in markdown and HTML using terminal graphics
+
+Fixed
+=====
+
+- Prevent error dialog collapsing at small terminal sizes
+- Correct error in escape code for querying terminal dimensions
+- Fix cell output wrap toggle shortcut
+
 *******************
 v2.5.3 (2023-10-19)
 *******************
