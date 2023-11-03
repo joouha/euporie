@@ -1,7 +1,9 @@
 """Key bindings to deal with pixel mouse positioning."""
 
+from __future__ import annotations
+
 import logging
-from typing import TYPE_CHECKING, FrozenSet, NamedTuple
+from typing import TYPE_CHECKING, NamedTuple
 
 from prompt_toolkit.data_structures import Point
 from prompt_toolkit.key_binding.bindings.mouse import (
@@ -23,8 +25,6 @@ from prompt_toolkit.mouse_events import MouseEvent as PtkMouseEvent
 from euporie.core.app import BaseApp
 
 if TYPE_CHECKING:
-    from typing import Optional
-
     from prompt_toolkit.key_binding.key_bindings import NotImplementedOrNone
     from prompt_toolkit.key_binding.key_processor import KeyPressEvent
 
@@ -43,12 +43,12 @@ class MouseEvent(PtkMouseEvent):
 
     def __init__(
         self,
-        position: "Point",
-        event_type: "MouseEventType",
-        button: "MouseButton",
-        modifiers: "FrozenSet[MouseModifier]",
-        cell_position: "Optional[RelativePosition]",
-    ) -> "None":
+        position: Point,
+        event_type: MouseEventType,
+        button: MouseButton,
+        modifiers: frozenset[MouseModifier],
+        cell_position: RelativePosition | None,
+    ) -> None:
         """Create new event instance."""
         super().__init__(
             position=position,
@@ -59,12 +59,12 @@ class MouseEvent(PtkMouseEvent):
         self.cell_position = cell_position or RelativePosition(0.5, 0.5)
 
 
-def load_mouse_bindings() -> "KeyBindings":
+def load_mouse_bindings() -> KeyBindings:
     """Additional key-bindings to deal with SGR-pixel mouse positioning."""
     key_bindings = load_ptk_mouse_bindings()
 
     @key_bindings.add(Keys.Vt100MouseEvent)
-    def _(event: "KeyPressEvent") -> "NotImplementedOrNone":
+    def _(event: KeyPressEvent) -> NotImplementedOrNone:
         """Handle incoming mouse event, include SGR-pixel mode."""
         # Ensure mypy knows this would only run in a euporie app
         assert isinstance(event.app, BaseApp)

@@ -37,16 +37,16 @@ repos:
         language: system
         types: [text]
         stages: [commit, push, manual]
-      - id: black
-        name: black
-        entry: hatch run check:black
+      - id: ruff
+        name: ruff check
+        entry: hatch run check:ruff check
+        args: ["--fix"]
         language: system
         types: [python]
         require_serial: true
-      - id: ruff
-        name: ruff
-        entry: hatch run check:ruff
-        args: ["--fix"]
+      - id: black
+        name: ruff format
+        entry: hatch run check:ruff format
         language: system
         types: [python]
         require_serial: true

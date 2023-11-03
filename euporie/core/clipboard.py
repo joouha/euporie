@@ -75,10 +75,9 @@ class EuporieClipboard(Clipboard):
     def get_clipboard(self, setting: Setting) -> None:
         """Determine which clipboard to use."""
         clipboard: Clipboard | None = None
-        if setting.value == "external":
-            if determine_clipboard()[0]:
-                log.debug("Using pyperclip clipboard")
-                clipboard = PyperclipClipboard()
+        if setting.value == "external" and determine_clipboard()[0]:
+            log.debug("Using pyperclip clipboard")
+            clipboard = PyperclipClipboard()
         if not clipboard:
             if setting.value == "terminal":
                 log.debug("Using terminal clipboard")

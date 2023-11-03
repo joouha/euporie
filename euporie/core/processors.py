@@ -5,7 +5,6 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-from prompt_toolkit.data_structures import Point
 from prompt_toolkit.layout.processors import (
     AppendAutoSuggestion,
     Processor,
@@ -17,6 +16,7 @@ from prompt_toolkit.utils import get_cwidth
 if TYPE_CHECKING:
     from typing import Callable
 
+    from prompt_toolkit.data_structures import Point
     from prompt_toolkit.layout.processors import TransformationInput
 
 
@@ -35,7 +35,7 @@ class AppendLineAutoSuggestion(AppendAutoSuggestion):
                 suggestion = buffer.suggestion.text
             else:
                 suggestion = ""
-            return Transformation(fragments=ti.fragments + [(self.style, suggestion)])
+            return Transformation(fragments=[*ti.fragments, (self.style, suggestion)])
         else:
             return Transformation(fragments=ti.fragments)
 

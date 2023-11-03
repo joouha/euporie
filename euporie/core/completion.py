@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 import logging
-from typing import AsyncGenerator, Iterable
+from typing import TYPE_CHECKING, AsyncGenerator, Iterable
 
 from prompt_toolkit.completion.base import CompleteEvent, Completer, Completion
-from prompt_toolkit.document import Document
 
-from euporie.core.kernel import Kernel
+if TYPE_CHECKING:
+    from prompt_toolkit.document import Document
+
+    from euporie.core.kernel import Kernel
 
 log = logging.getLogger(__name__)
 

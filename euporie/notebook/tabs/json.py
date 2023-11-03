@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 from prompt_toolkit.layout.containers import VSplit
 from prompt_toolkit.layout.dimension import Dimension
@@ -28,8 +28,8 @@ class JsonTab(Tab):
     """Tab class for JSON data."""
 
     name = "JSON Viewer"
-    mime_types = {"*json"}
-    filte_types = {".json"}
+    mime_types: ClassVar[set[str]] = {"*json"}
+    filte_types: ClassVar[set[str]] = {".json"}
 
     def __init__(self, app: BaseApp, path: Path | None = None) -> None:
         """Call when the tab is created."""

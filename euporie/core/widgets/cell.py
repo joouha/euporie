@@ -6,6 +6,7 @@ import logging
 import os
 import weakref
 from functools import partial
+from pathlib import Path
 from typing import TYPE_CHECKING, cast
 
 import nbformat
@@ -724,7 +725,6 @@ class Cell:
     def set_status(self, status: str) -> None:
         """Set the execution status of the cell."""
         # log.debug(status)
-        pass
 
     def get_input(
         self,
@@ -789,12 +789,11 @@ class Cell:
                 success = buffer._open_file_in_editor(filename)
                 # Read content again.
                 if success:
-                    with open(filename, "rb") as f:
-                        text = f.read().decode("utf-8")
-                        # Drop trailing newline
-                        if text.endswith("\n"):
-                            text = text[:-1]
-                        buffer.document = Document(text=text, cursor_position=len(text))
+                    text = Path(filename).read_text()
+                    # Drop trailing newline
+                    if text.endswith("\n"):
+                        text = text[:-1]
+                    buffer.document = Document(text=text, cursor_position=len(text))
                     # Run the cell if configured
                     if app.config.run_after_external_edit:
                         buffer.validate_and_handle()

@@ -402,10 +402,7 @@ class RowCol:
     @property
     def cells(self) -> list[Cell]:
         """List the cells in the row/column."""
-        if self._type == "row":
-            n = len(self.table._cols)
-        else:
-            n = len(self.table._rows)
+        n = len(self.table._cols) if self._type == "row" else len(self.table._rows)
         cells = []
         for i in range(n):
             cell = self._cells[i]
@@ -646,24 +643,24 @@ def compute_border_line(cell: Cell, render_count: int = 0) -> DiLineStyle:
     col_border_line = col.border_line
     table_border_line = table.border_line
 
-    if (value := row_border_line.top) is not NoLine:
+    if (value := row_border_line.top) is not NoLine or (
+        cell == col_cells[0] and (value := table_border_line.top) is not NoLine
+    ):
         output["top"] = value
-    elif cell == col_cells[0] and (value := table_border_line.top) is not NoLine:
-        output["top"] = value
 
-    if (value := row_border_line.bottom) is not NoLine:
-        output["bottom"] = value
-    elif cell == col_cells[-1] and (value := table_border_line.bottom) is not NoLine:
+    if (value := row_border_line.bottom) is not NoLine or (
+        cell == col_cells[-1] and (value := table_border_line.bottom) is not NoLine
+    ):
         output["bottom"] = value
 
-    if (value := col_border_line.left) is not NoLine:
-        output["left"] = value
-    elif cell == row_cells[0] and (value := table_border_line.left) is not NoLine:
+    if (value := col_border_line.left) is not NoLine or (
+        cell == row_cells[0] and (value := table_border_line.left) is not NoLine
+    ):
         output["left"] = value
 
-    if (value := col_border_line.right) is not NoLine:
-        output["right"] = value
-    elif cell == row_cells[-1] and (value := table_border_line.right) is not NoLine:
+    if (value := col_border_line.right) is not NoLine or (
+        cell == row_cells[-1] and (value := table_border_line.right) is not NoLine
+    ):
         output["right"] = value
 
     for direction in ("top", "right", "bottom", "left"):
@@ -1163,8 +1160,8 @@ class Table:
         ]
 
         index = min(
-            min(unfilled + [len(self._rows)]),
-            max([-1] + list(self._rows)) + 1,
+            min([*unfilled, len(self._rows)]),
+            max([-1, *list(self._rows)]) + 1,
         )
 
         # Merge existing row with new row
@@ -1201,8 +1198,8 @@ class Table:
         ]
 
         index = min(
-            min(unfilled + [len(self._cols)]),
-            max([-1] + list(self._cols)) + 1,
+            min([*unfilled, len(self._cols)]),
+            max([-1, *list(self._cols)]) + 1,
         )
 
         # Merge existing col with new col
@@ -1426,9 +1423,12 @@ class Table:
                 cell = se
 
                 # Skip horizontal spacer cells
-                if isinstance(cell, SpacerCell):
-                    if cell.span_col_index and cell.span_row_index:
-                        continue
+                if (
+                    isinstance(cell, SpacerCell)
+                    and cell.span_col_index
+                    and cell.span_row_index
+                ):
+                    continue
 
                 nw_bs = compute_border_style(nw, render_count)
                 ne_bs = compute_border_style(ne, render_count)

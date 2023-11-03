@@ -13,7 +13,6 @@ from prompt_toolkit.key_binding.key_bindings import Binding
 from prompt_toolkit.key_binding.key_processor import KeyPressEvent
 
 from euporie.core.key_binding.utils import parse_keys
-from euporie.core.keys import Keys
 
 if TYPE_CHECKING:
     from typing import Any, Callable, Coroutine
@@ -25,6 +24,7 @@ if TYPE_CHECKING:
         NotImplementedOrNone,
     )
 
+    from euporie.core.keys import Keys
     from euporie.core.widgets.menu import MenuItem
 
     AnyKey = tuple[Keys | str, ...] | Keys | str

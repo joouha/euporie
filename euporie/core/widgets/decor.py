@@ -19,7 +19,6 @@ from prompt_toolkit.layout.containers import (
     to_container,
 )
 from prompt_toolkit.layout.dimension import Dimension
-from prompt_toolkit.layout.mouse_handlers import MouseHandlers
 from prompt_toolkit.layout.screen import Char, Screen, WritePosition
 from prompt_toolkit.mouse_events import MouseEventType
 
@@ -34,6 +33,7 @@ if TYPE_CHECKING:
 
     from prompt_toolkit.key_binding.key_bindings import NotImplementedOrNone
     from prompt_toolkit.layout.containers import AnyContainer
+    from prompt_toolkit.layout.mouse_handlers import MouseHandlers
     from prompt_toolkit.mouse_events import MouseEvent
 
     from euporie.core.border import GridStyle
@@ -143,7 +143,6 @@ class Pattern(Container):
 
     def reset(self) -> None:
         """Reet the pattern. Does nothing."""
-        pass
 
     def preferred_width(self, max_available_width: int) -> Dimension:
         """Return an empty dimension (expand to available width)."""
@@ -179,10 +178,7 @@ class Pattern(Container):
 
         """
         bg = self.bg
-        if callable(self.pattern):
-            pattern = self.pattern()
-        else:
-            pattern = self.pattern
+        pattern = self.pattern() if callable(self.pattern) else self.pattern
         if callable(self.char):
             char = Char(self.char(), "class:pattern")
         else:
@@ -296,7 +292,7 @@ class Border:
                                     style=self.add_style("class:right"),
                                 ),
                                 filter=border_right,
-                            )
+                            ),
                             # Padding is required to make sure that if the content is
                             # too small, the right frame border is still aligned.
                         ],

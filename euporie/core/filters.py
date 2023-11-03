@@ -98,9 +98,8 @@ def has_dialog() -> bool:
 
     app = get_app()
     for dialog in app.dialogs.values():
-        if isinstance(dialog.content, ConditionalContainer):
-            if dialog.content.filter():
-                return True
+        if isinstance(dialog.content, ConditionalContainer) and dialog.content.filter():
+            return True
     return False
 
 
@@ -113,9 +112,8 @@ def has_menus() -> bool:
 
     app = get_app()
     for menu in app.menus.values():
-        if isinstance(menu.content, ConditionalContainer):
-            if menu.content.filter():
-                return True
+        if isinstance(menu.content, ConditionalContainer) and menu.content.filter():
+            return True
     return False
 
 

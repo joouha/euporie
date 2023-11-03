@@ -5,12 +5,13 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-from euporie.core.convert.datum import Datum
 from euporie.core.convert.registry import register
 from euporie.core.convert.utils import have_modules
 
 if TYPE_CHECKING:
     from PIL.Image import Image as PilImage
+
+    from euporie.core.convert.datum import Datum
 
 
 log = logging.getLogger(__name__)
@@ -27,10 +28,9 @@ def set_background(image: PilImage, bg_color: str | None = None) -> PilImage:
         bg = Image.new("RGBA", image.size, bg_color or "#000")
         bg.paste(image, mask=alpha)
         image = bg
-    image = image.convert("P", palette=Image.Palette.ADAPTIVE, colors=16).convert(
+    return image.convert("P", palette=Image.Palette.ADAPTIVE, colors=16).convert(
         "RGB", palette=Image.Palette.ADAPTIVE, colors=16
     )
-    return image
 
 
 @register(

@@ -67,7 +67,6 @@ class KernelHistory(History):
 
     def store_string(self, string: str) -> None:
         """Don't store strings in persistent storage: they are stored by the kernel."""
-        pass
 
     @property
     def recent(self) -> list[str]:

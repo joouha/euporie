@@ -68,15 +68,12 @@ class CellOutputElement(metaclass=ABCMeta):
             parent: The cell the output-element is attached to
 
         """
-        pass
 
     def scroll_left(self) -> None:
         """Scroll the output left."""
-        pass
 
     def scroll_right(self) -> None:
         """Scroll the output right."""
-        pass
 
     @abstractmethod
     def __pt_container__(self) -> AnyContainer:

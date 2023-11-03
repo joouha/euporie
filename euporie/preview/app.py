@@ -107,7 +107,7 @@ class PreviewApp(BaseApp):
         if self.config.page:
             from pydoc import pager
 
-            output_file = getattr(self.output, "output_file")  # noqa B009
+            output_file = getattr(self.output, "output_file")  # noqa: B009
             if output_file is not None:
                 output_file.seek(0)
                 data = output_file.read()
@@ -165,7 +165,7 @@ class PreviewApp(BaseApp):
                 output_file = sys.stderr
             else:
                 try:
-                    output_file = open(cls.config.output_file, "w+")
+                    output_file = cls.config.output_file.open("w+")
                 except (
                     FileNotFoundError,
                     PermissionError,
@@ -173,8 +173,9 @@ class PreviewApp(BaseApp):
                 ) as error:
                     log.error(error)
                     log.error(
-                        f"Output file `{cls.config.output_file}` cannot be opened. "
-                        "Standard output will be used."
+                        "Output file `%s` cannot be opened. "
+                        "Standard output will be used.",
+                        cls.config.output_file,
                     )
                     output_file = sys.stdout
 

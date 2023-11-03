@@ -2,16 +2,16 @@
 
 from __future__ import annotations
 
+import contextlib
 import logging
+from pathlib import Path
 from typing import TYPE_CHECKING
 
-from prompt_toolkit.buffer import Buffer
 from prompt_toolkit.cache import FastDictCache
 from prompt_toolkit.completion import PathCompleter
 from prompt_toolkit.data_structures import Point
 from prompt_toolkit.filters.utils import to_filter
 from prompt_toolkit.key_binding.key_bindings import KeyBindings, KeyBindingsBase
-from prompt_toolkit.key_binding.key_processor import KeyPressEvent
 from prompt_toolkit.layout.containers import (
     ConditionalContainer,
     HSplit,
@@ -32,12 +32,13 @@ from euporie.core.widgets.decor import Border, FocusedStyle
 from euporie.core.widgets.forms import Button, Text
 
 if TYPE_CHECKING:
-    from pathlib import Path
     from typing import Callable
 
+    from prompt_toolkit.buffer import Buffer
     from prompt_toolkit.filters.base import FilterOrBool
     from prompt_toolkit.formatted_text import StyleAndTextTuples
     from prompt_toolkit.key_binding.key_bindings import NotImplementedOrNone
+    from prompt_toolkit.key_binding.key_processor import KeyPressEvent
     from prompt_toolkit.layout.containers import AnyContainer
     from prompt_toolkit.layout.dimension import AnyDimension
     from upath.core import PT
@@ -433,10 +434,8 @@ class FileBrowserControl(UIControl):
     def dir(self, value: PT) -> None:
         """Set the current folder path."""
         dir_path = UPath(value)
-        try:
+        with contextlib.suppress(NotImplementedError):
             dir_path = dir_path.resolve()
-        except NotImplementedError:
-            pass
         if is_dir(dir_path):
             self._dir = dir_path
         else:
@@ -451,10 +450,8 @@ class FileBrowserControl(UIControl):
     def load_path(path: Path) -> list[tuple[bool, Path]]:
         """Return the contents of a folder."""
         paths = [] if path.parent == path else [path / ".."]
-        try:
+        with contextlib.suppress(PermissionError):
             paths += list(path.iterdir())
-        except PermissionError:
-            pass
         is_dirs = []
         for child in paths:
             child_is_dir = is_dir(child)

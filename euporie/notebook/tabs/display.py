@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 from prompt_toolkit.layout.containers import VSplit
 from prompt_toolkit.layout.dimension import Dimension
@@ -30,7 +30,7 @@ class DisplayTab(Tab):
     """Tab class for displaying files."""
 
     name = "File Viewer"
-    mime_types = set(MIME_FORMATS.keys())
+    mime_types: ClassVar[set[str]] = set(MIME_FORMATS.keys())
 
     def __init__(self, app: BaseApp, path: Path | None = None) -> None:
         """Call when the tab is created."""

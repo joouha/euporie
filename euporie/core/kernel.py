@@ -10,7 +10,7 @@ import re
 import sys
 import threading
 from collections import defaultdict
-from subprocess import PIPE, STDOUT  # noqa S404 - Security implications considered
+from subprocess import PIPE, STDOUT  # S404 - Security implications considered
 from typing import TYPE_CHECKING, TypedDict
 from uuid import uuid4
 
@@ -279,6 +279,8 @@ class Kernel:
                 future.add_done_callback(
                     lambda f: callback(f.result()) if callback else None
                 )
+                return None
+            return None
 
     def _set_living_status(self, alive: bool) -> None:
         """Set the life status of the kernel."""
@@ -527,14 +529,16 @@ class Kernel:
         msg_id = rsp.get("parent_header", {}).get("msg_id")
         content = rsp.get("content", {})
         status = rsp.get("content", {}).get("status", "")
-        if status == "ok":
-            if execution_count := content.get("execution_count"):
-                if callable(
-                    set_execution_count := self.msg_id_callbacks[msg_id].get(
-                        "set_execution_count"
-                    )
-                ):
-                    set_execution_count(execution_count)
+        if (
+            status == "ok"
+            and (execution_count := content.get("execution_count"))
+            and callable(
+                set_execution_count := self.msg_id_callbacks[msg_id].get(
+                    "set_execution_count"
+                )
+            )
+        ):
+            set_execution_count(execution_count)
 
     def on_shell_execute_reply(self, rsp: dict[str, Any]) -> None:
         """Call callbacks for a shell execute reply response."""
@@ -549,13 +553,10 @@ class Kernel:
                 rsp["header"]["date"].isoformat(),
             )
 
-        if execution_count := content.get("execution_count"):
-            if callable(
-                set_execution_count := self.msg_id_callbacks[msg_id][
-                    "set_execution_count"
-                ]
-            ):
-                set_execution_count(execution_count)
+        if (execution_count := content.get("execution_count")) and callable(
+            set_execution_count := self.msg_id_callbacks[msg_id]["set_execution_count"]
+        ):
+            set_execution_count(execution_count)
 
         if payloads := content.get("payload", []):
             for payload in payloads:
@@ -565,14 +566,13 @@ class Kernel:
                     # Show pager output as a cell execution output
                     if callable(
                         add_output := self.msg_id_callbacks[msg_id]["add_output"]
-                    ):
-                        if data := payload.get("data", {}):
-                            add_output(
-                                nbformat.v4.new_output(
-                                    "execute_result",
-                                    data=data,
-                                )
+                    ) and (data := payload.get("data", {})):
+                        add_output(
+                            nbformat.v4.new_output(
+                                "execute_result",
+                                data=data,
                             )
+                        )
                 elif source == "set_next_input":
                     if callable(
                         set_next_input := self.msg_id_callbacks[msg_id][
@@ -584,18 +584,18 @@ class Kernel:
                             payload.get("replace", False),
                         )
 
-                elif source == "edit_magic":
-                    if callable(
-                        edit_magic := self.msg_id_callbacks[msg_id]["edit_magic"]
-                    ):
-                        edit_magic(
-                            payload.get("filename"),
-                            int(payload.get("line_number") or 0),
-                        )
+                elif source == "edit_magic" and callable(
+                    edit_magic := self.msg_id_callbacks[msg_id]["edit_magic"]
+                ):
+                    edit_magic(
+                        payload.get("filename"),
+                        int(payload.get("line_number") or 0),
+                    )
 
-        if content.get("status") == "ok":
-            if callable(done := self.msg_id_callbacks[msg_id].get("done")):
-                done(content)
+        if content.get("status") == "ok" and callable(
+            done := self.msg_id_callbacks[msg_id].get("done")
+        ):
+            done(content)
 
     def on_shell_kernel_info_reply(self, rsp: dict[str, Any]) -> None:
         """Call callbacks for a shell kernel info response."""
@@ -651,14 +651,16 @@ class Kernel:
                     rsp["header"]["date"].isoformat(),
                 )
 
-        elif status == "busy":
-            if self.kernel_tab.app.config.record_cell_timing and callable(
+        elif status == "busy" and (
+            self.kernel_tab.app.config.record_cell_timing
+            and callable(
                 set_metadata := self.msg_id_callbacks[msg_id].get("set_metadata")
-            ):
-                set_metadata(
-                    ("execution", "iopub.status.busy"),
-                    rsp["header"]["date"].isoformat(),
-                )
+            )
+        ):
+            set_metadata(
+                ("execution", "iopub.status.busy"),
+                rsp["header"]["date"].isoformat(),
+            )
 
     def on_iopub_execute_input(self, rsp: dict[str, Any]) -> None:
         """Call callbacks for an iopub execute input response."""
@@ -689,13 +691,14 @@ class Kernel:
         if callable(add_output := self.msg_id_callbacks[msg_id]["add_output"]):
             add_output(nbformat.v4.output_from_msg(rsp))
 
-        if execution_count := rsp.get("content", {}).get("execution_count"):
-            if callable(
+        if (execution_count := rsp.get("content", {}).get("execution_count")) and (
+            callable(
                 set_execution_count := self.msg_id_callbacks[msg_id][
                     "set_execution_count"
                 ]
-            ):
-                set_execution_count(execution_count)
+            )
+        ):
+            set_execution_count(execution_count)
 
     def on_iopub_error(self, rsp: dict[str, dict[str, Any]]) -> None:
         """Call callbacks for an iopub error response."""
@@ -818,9 +821,7 @@ class Kernel:
             "done": wrapped_done,
         }
         self.msg_id_callbacks[msg_id].update(
-            MsgCallbacks(
-                filter(lambda x: x[1] is not None, callbacks.items())
-            )  # type: ignore # mypy #8890
+            MsgCallbacks(filter(lambda x: x[1] is not None, callbacks.items()))  # type: ignore # mypy #8890
         )
         # Wait for "done" callback to be called
         try:
@@ -853,9 +854,7 @@ class Kernel:
                 "set_status": _set_status,
             }
             self.msg_id_callbacks[msg_id].update(
-                MsgCallbacks(
-                    filter(lambda x: x[1] is not None, callbacks.items())
-                )  # type: ignore # mypy #8890
+                MsgCallbacks(filter(lambda x: x[1] is not None, callbacks.items()))  # type: ignore # mypy #8890
             )
 
     def comm_info(self, target_name: str | None = None) -> None:
@@ -1009,10 +1008,9 @@ class Kernel:
         def process_inspect_reply(content: dict[str, Any]) -> None:
             """Process responses on the shell channel."""
             status = content.get("status", "")
-            if status == "ok":
-                if content.get("found", False):
-                    result.update(content)
-                    event.set()
+            if status == "ok" and content.get("found", False):
+                result.update(content)
+                event.set()
 
         log.debug("Requesting contextual help from the kernel")
         msg_id = self.kc.inspect(code, cursor_pos=cursor_pos, detail_level=detail_level)

@@ -5,7 +5,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from prompt_toolkit.filters import Condition, has_focus
-from prompt_toolkit.formatted_text.base import FormattedText
 from prompt_toolkit.layout.containers import HSplit, VSplit
 from prompt_toolkit.layout.dimension import Dimension
 from prompt_toolkit.widgets import SearchToolbar
@@ -21,6 +20,8 @@ from euporie.core.widgets.formatted_text_area import FormattedTextArea
 if TYPE_CHECKING:
     from pathlib import Path
     from typing import Callable
+
+    from prompt_toolkit.formatted_text.base import FormattedText
 
     from euporie.core.app import BaseApp
 

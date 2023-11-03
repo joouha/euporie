@@ -4,12 +4,15 @@
 from __future__ import annotations
 
 import sys
+from typing import TYPE_CHECKING
 
 from prompt_toolkit.input.vt100 import raw_mode
-from prompt_toolkit.key_binding import KeyPress
 
 from euporie.core.io import Vt100Parser
 from euporie.core.keys import Keys
+
+if TYPE_CHECKING:
+    from prompt_toolkit.key_binding import KeyPress
 
 
 def callback(key_press: KeyPress) -> None:

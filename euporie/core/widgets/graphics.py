@@ -783,10 +783,9 @@ class GraphicProcessor:
             width = max(0, cols - bbox.left - bbox.right)
             height = max(0, rows - bbox.top - bbox.bottom)
 
-            wp = BoundedWritePosition(
+            return BoundedWritePosition(
                 xpos=xpos, ypos=ypos, width=width, height=height, bbox=bbox
             )
-            return wp
 
         return get_graphic_position
 

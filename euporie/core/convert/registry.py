@@ -70,12 +70,11 @@ def find_route(from_: str, to: str) -> list | None:
             chains.append(chain)
         sources: dict[str, list[Converter]] = converters.get(chain[0], {})
         for link in sources:
-            if link not in chain:
-                if any(
-                    _FILTER_CACHE.get((conv,), conv.filter_)
-                    for conv in sources.get(link, [])
-                ):
-                    find(start, [link, *chain])
+            if link not in chain and any(
+                _FILTER_CACHE.get((conv,), conv.filter_)
+                for conv in sources.get(link, [])
+            ):
+                find(start, [link, *chain])
 
     find(from_, [to])
 

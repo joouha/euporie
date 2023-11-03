@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import ClassVar
+
 from pygments.lexer import RegexLexer
 from pygments.style import Style
 from pygments.token import (
@@ -13,6 +15,7 @@ from pygments.token import (
     Name,
     Operator,
     Text,
+    _TokenType,
 )
 
 
@@ -20,10 +23,12 @@ class ArgparseLexer(RegexLexer):
     """A pygments lexer for agrparse help text."""
 
     name = "argparse"
-    aliases = ["argparse"]
-    filenames: list[str] = []
+    aliases: ClassVar[list[str]] = ["argparse"]
+    filenames: ClassVar[list[str]] = []
 
-    tokens = {
+    tokens: ClassVar[
+        dict[str, list[tuple[str, _TokenType] | tuple[str, _TokenType, str]]]
+    ] = {
         "root": [
             (r"(?<=usage: )[^\s]+", Name.Namespace),
             (r"\{", Operator, "options"),
@@ -47,7 +52,7 @@ class ArgparseLexer(RegexLexer):
 class EuporiePygmentsStyle(Style):
     """Version of pygment's "native" style which works better on light backgrounds."""
 
-    styles = {
+    styles: ClassVar[dict[_TokenType, str]] = {
         Comment: "italic #888888",
         Comment.Preproc: "noitalic bold #cd2828",
         Comment.Special: "noitalic bold #e50808 bg:#520000",

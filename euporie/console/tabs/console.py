@@ -171,8 +171,7 @@ class Console(KernelTab):
             or (completeness_status == "unknown" and code[-2:] != "\n\n")
         ):
             return False
-        else:
-            return True
+        return True
 
     def run(self, buffer: Buffer | None = None) -> None:
         """Run the code in the input box."""
@@ -492,7 +491,6 @@ class Console(KernelTab):
 
     def refresh(self, now: bool = True) -> None:
         """Request the output is refreshed (does nothing)."""
-        pass
 
     def __pt_status__(
         self,
@@ -505,7 +503,7 @@ class Console(KernelTab):
                 [
                     (
                         "",
-                        self.kernel_display_name
+                        self.kernel_display_name,
                         # , self._statusbar_kernel_handeler)],
                     )
                 ],
@@ -524,13 +522,16 @@ class Console(KernelTab):
 
         assert self.app.pager is not None
 
-        if self.app.pager.visible() and self.app.pager.state is not None:
-            if (
+        if (
+            self.app.pager.visible()
+            and self.app.pager.state is not None
+            and (
                 self.app.pager.state.code == code
                 and self.app.pager.state.cursor_pos == cursor_pos
-            ):
-                self.app.pager.focus()
-                return
+            )
+        ):
+            self.app.pager.focus()
+            return
 
         def _cb(response: dict) -> None:
             assert self.app.pager is not None

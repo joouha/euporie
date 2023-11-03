@@ -55,9 +55,7 @@ async def html_to_markdown_py_html2text(
         )
         replaced += table + "\n"
     replaced += remaining_result
-    result = replaced
-
-    return result
+    return replaced
 
 
 @register(

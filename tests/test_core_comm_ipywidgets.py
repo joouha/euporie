@@ -23,7 +23,7 @@ if TYPE_CHECKING:
     from euporie.core.widgets.cell_outputs import OutputParent
 
 
-@pytest.fixture
+@pytest.fixture()
 def kernel_tab() -> KernelTab:
     """Create a `Mock` instance of the `KernelTab` class.
 
@@ -35,7 +35,7 @@ def kernel_tab() -> KernelTab:
     return kt
 
 
-@pytest.fixture
+@pytest.fixture()
 def output_parent(kernel_tab: KernelTab) -> OutputParent:
     """Create a mocked parent for a comm view."""
 
@@ -46,12 +46,11 @@ def output_parent(kernel_tab: KernelTab) -> OutputParent:
 
         def refresh(self, now: bool = True) -> None:
             """Update the parent container."""
-            pass
 
     return MockOutputParent()
 
 
-@pytest.fixture
+@pytest.fixture()
 def icomm(kernel_tab: KernelTab) -> Generator[IpyWidgetComm, None, None]:
     """Create an `UnimplementedModel` instance of the `IpyWidgetComm` class.
 

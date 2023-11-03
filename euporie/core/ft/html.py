@@ -23,7 +23,6 @@ from prompt_toolkit.data_structures import Size
 from prompt_toolkit.filters.base import Condition
 from prompt_toolkit.filters.utils import _always as always
 from prompt_toolkit.filters.utils import _never as never
-from prompt_toolkit.formatted_text.base import StyleAndTextTuples
 from prompt_toolkit.formatted_text.utils import split_lines
 from prompt_toolkit.layout.dimension import Dimension
 from prompt_toolkit.utils import Event
@@ -96,6 +95,7 @@ if TYPE_CHECKING:
     from typing import Any, Callable, Generator, Iterator
 
     from prompt_toolkit.filters.base import Filter
+    from prompt_toolkit.formatted_text.base import StyleAndTextTuples
     from prompt_toolkit.key_binding.key_bindings import NotImplementedOrNone
     from prompt_toolkit.mouse_events import MouseEvent
 
@@ -907,7 +907,8 @@ class Theme(Mapping):
             # Space is given by position
             position = self.position
             dom = self.element.dom
-            assert dom.width is not None and dom.height is not None
+            assert dom.width is not None
+            assert dom.height is not None
             self.available_width = (dom.width - position.right) - position.left
             self.available_height = (dom.height - position.bottom) - position.top
 
@@ -1572,10 +1573,7 @@ class Theme(Mapping):
     @cached_property
     def border_style(self) -> DiStr:
         """Calculate the visibility of the element's borders."""
-        if parent_theme := self.parent_theme:
-            parent_style = parent_theme.style
-        else:
-            parent_style = ""
+        parent_style = parent_theme.style if (parent_theme := self.parent_theme) else ""
 
         output = {}
         for direction in ("top", "left", "bottom", "right"):
@@ -2892,9 +2890,13 @@ class Node:
                         and not parent.theme.d_blocky
                     ):
                         parent = parent.parent
-                    if parent and parent.theme.d_blocky:
-                        if text[0] == " " and (self.is_first_child_node):
-                            text = text[1:]
+                    if (
+                        parent
+                        and parent.theme.d_blocky
+                        and text[0] == " "
+                        and (self.is_first_child_node)
+                    ):
+                        text = text[1:]
                 if text:
                     parent = self.parent
                     while (
@@ -2946,30 +2948,30 @@ class Node:
 
         # Add ::before node
         before_node = Node(dom=self.dom, name="::before", parent=self)
-        if text := before_node.theme.theme.get("content", "").strip():
-            if (text.startswith('"') and text.endswith('"')) or (
-                text.startswith("'") and text.endswith("'")
-            ):
-                text = text.strip('"').strip("'")
-                before_node.contents.append(
-                    Node(dom=self.dom, name="text", parent=before_node, text=text)
-                )
-                contents.append(before_node)
+        if (text := before_node.theme.theme.get("content", "").strip()) and (
+            (text.startswith('"') and text.endswith('"'))
+            or (text.startswith("'") and text.endswith("'"))
+        ):
+            text = text.strip('"').strip("'")
+            before_node.contents.append(
+                Node(dom=self.dom, name="text", parent=before_node, text=text)
+            )
+            contents.append(before_node)
 
         contents.extend(self.contents)
 
         # Add ::after node
         after_node = Node(dom=self.dom, name="::after", parent=self)
 
-        if text := after_node.theme.theme.get("content", ""):
-            if (text.startswith('"') and text.endswith('"')) or (
-                text.startswith("'") and text.endswith("'")
-            ):
-                text = text.strip('"').strip("'")
-                after_node.contents.append(
-                    Node(dom=self.dom, name="text", parent=after_node, text=text)
-                )
-                contents.append(after_node)
+        if (text := after_node.theme.theme.get("content", "")) and (
+            (text.startswith('"') and text.endswith('"'))
+            or (text.startswith("'") and text.endswith("'"))
+        ):
+            text = text.strip('"').strip("'")
+            after_node.contents.append(
+                Node(dom=self.dom, name="text", parent=after_node, text=text)
+            )
+            contents.append(after_node)
 
         return contents
 
@@ -3852,7 +3854,7 @@ class HTML:
 
         table = Table(
             width=table_x_dim,
-            expand=True if "width" in table_theme else False,
+            expand="width" in table_theme,
             align=table_theme.text_align,
             style=table_theme.style,
             padding=DiInt(0, 0, 0, 0),
@@ -4210,10 +4212,7 @@ class HTML:
         cols, aspect = await datum.cell_size_async()
 
         if content_width := theme.content_width:
-            if cols == 0:
-                cols = content_width
-            else:
-                cols = min(content_width, cols)
+            cols = content_width if cols == 0 else min(content_width, cols)
         rows = ceil(cols * aspect)
 
         # Convert the image to formatted-text
@@ -4459,8 +4458,7 @@ class HTML:
 
             elif d_inline and (
                 # parent_theme.d_inline or parent_theme.d_inline_block or preformatted
-                parent_theme.d_inline
-                or preformatted
+                parent_theme.d_inline or preformatted
             ):
                 new_line.extend(rendering)
 
@@ -4735,10 +4733,7 @@ class HTML:
             if d_blocky:
                 pad_width = content_width
             elif d_inline_block:
-                if theme.width is None:
-                    pad_width = max_line_width(ft)
-                else:
-                    pad_width = content_width
+                pad_width = max_line_width(ft) if theme.width is None else content_width
             if pad_width is not None:
                 style = theme.style
                 ft = pad(
@@ -4890,14 +4885,15 @@ if __name__ == "__main__":
 
     path = parse_path(sys.argv[1])
 
-    with create_app_session(input=BaseApp.load_input(), output=BaseApp.load_output()):
-        with set_app(BaseApp()):
-            print_formatted_text(
-                HTML(
-                    path.read_text(),
-                    base=path,
-                    collapse_root_margin=False,
-                    fill=True,
-                ),
-                style=Style(HTML_STYLE),
-            )
+    with create_app_session(
+        input=BaseApp.load_input(), output=BaseApp.load_output()
+    ), set_app(BaseApp()):
+        print_formatted_text(
+            HTML(
+                path.read_text(),
+                base=path,
+                collapse_root_margin=False,
+                fill=True,
+            ),
+            style=Style(HTML_STYLE),
+        )

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import logging
 import weakref
 from typing import TYPE_CHECKING, cast
@@ -121,14 +122,13 @@ class ChildRenderInfo:
         # Check if refresh is needed
         refresh = False
         new_layout_hash = self.layout_hash
-        if self.render_counter != (new_render_counter := get_app().render_counter):
-            if (
-                self._invalid
-                or self.width != available_width
-                or self._layout_hash != (new_layout_hash := self.layout_hash)
-            ):
-                self.render_counter = new_render_counter
-                refresh = True
+        if self.render_counter != (new_render_counter := get_app().render_counter) and (
+            self._invalid
+            or self.width != available_width
+            or self._layout_hash != (new_layout_hash := self.layout_hash)
+        ):
+            self.render_counter = new_render_counter
+            refresh = True
 
         # Refresh if needed
         if refresh:
@@ -346,16 +346,17 @@ class ChildRenderInfo:
                 if layout.current_control == window.content:
                     assert window.render_info is not None
                     if (
-                        window.render_info.ui_content.show_cursor
-                        and not window.always_hide_cursor()
+                        (
+                            window.render_info.ui_content.show_cursor
+                            and not window.always_hide_cursor()
+                        )
+                        and point.x in range(cols.start, cols.stop)
+                        and point.y in range(rows.start, rows.stop)
                     ):
-                        if point.x in range(cols.start, cols.stop) and point.y in range(
-                            rows.start, rows.stop
-                        ):
-                            screen.cursor_positions[window] = Point(
-                                x=left + point.x, y=top + point.y
-                            )
-                            screen.show_cursor = True
+                        screen.cursor_positions[window] = Point(
+                            x=left + point.x, y=top + point.y
+                        )
+                        screen.show_cursor = True
         # Copy menu positions
         for window, point in self.screen.menu_positions.items():
             screen.menu_positions[window] = Point(x=left + point.x, y=top + point.y)
@@ -494,10 +495,8 @@ class ScrollingContainer(Container):
             # Get the first selected child and focus it
             child = self.children[new_slice.start]
             if not app.layout.has_focus(child):
-                try:
+                with contextlib.suppress(ValueError):
                     app.layout.focus(child)
-                except ValueError:
-                    pass
             # Track which child was selected
             self._selected_slice = new_slice
 
@@ -757,7 +756,7 @@ class ScrollingContainer(Container):
                 available_height=available_height,
                 style=f"{parent_style} {self.style}",
             )
-            if 0 < line + child_render_info.height and line < available_height:
+            if line + child_render_info.height > 0 and line < available_height:
                 self.index_positions[i] = line
                 child_render_info.blit(
                     screen=screen,
@@ -799,7 +798,7 @@ class ScrollingContainer(Container):
                 style=f"{parent_style} {self.style}",
             )
             line -= child_render_info.height
-            if 0 < line + child_render_info.height and line < available_height:
+            if line + child_render_info.height > 0 and line < available_height:
                 self.index_positions[i] = line
                 child_render_info.blit(
                     screen=screen,
@@ -971,9 +970,10 @@ class ScrollingContainer(Container):
         sizes = {}
         for i, child in enumerate(self.children):
             child_hash = hash(child)
-            if child_render_info := self.child_render_infos.get(child_hash):
-                if child_render_info.height:
-                    sizes[i] = child_render_info.height
+            if (
+                child_render_info := self.child_render_infos.get(child_hash)
+            ) and child_render_info.height:
+                sizes[i] = child_render_info.height
         return sizes
 
     def _scroll_up(self) -> None:
@@ -1007,10 +1007,7 @@ class PrintingContainer(Container):
     @property
     def children(self) -> Sequence[AnyContainer]:
         """Return the container's children."""
-        if callable(self._children):
-            children = self._children()
-        else:
-            children = self._children
+        children = self._children() if callable(self._children) else self._children
         return children or [Window()]
 
     def get_children(self) -> list[Container]:
@@ -1085,4 +1082,3 @@ class PrintingContainer(Container):
 
         Does nothing as this container is used for dumping output.
         """
-        pass

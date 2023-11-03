@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import base64
 import binascii
+import contextlib
 import io
 import logging
 from pathlib import Path
@@ -43,22 +44,18 @@ def parse_path(path: str | PathLike, resolve: bool = True) -> Path:
     """Parse and resolve a path."""
     if not isinstance(path, Path):
         path = UPath(path)
-    try:
+    with contextlib.suppress(NotImplementedError):
         path = path.expanduser()
-    except NotImplementedError:
-        pass
     if resolve:
         try:
             path = path.resolve()
         except (AttributeError, NotImplementedError, Exception):
             log.info("Path %s not resolvable", path)
-            pass
     return path
 
 
 def _raise_for_status(self: ClientResponse) -> None:
     """Monkey-patch :py:class:`aiohttp.ClientResponse` not to raise for any status."""
-    pass
 
 
 setattr(ClientResponse, "raise_for_status", _raise_for_status)  # noqa B010
@@ -268,7 +265,6 @@ class HTTPFileSystem(FsHTTPFileSystem):
 
     def _raise_not_found_for_status(self, response: ClientResponse, url: str) -> None:
         """Do not raise an exception for 404 errors."""
-        pass
 
 
 fs_register_implementation("http", HTTPFileSystem, clobber=True)

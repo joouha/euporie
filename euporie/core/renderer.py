@@ -9,7 +9,6 @@ from prompt_toolkit.data_structures import Point, Size
 from prompt_toolkit.filters import to_filter
 from prompt_toolkit.layout.mouse_handlers import MouseHandlers
 from prompt_toolkit.layout.screen import Char, Screen, WritePosition
-from prompt_toolkit.output import ColorDepth, Output
 from prompt_toolkit.renderer import Renderer as PtkRenderer
 from prompt_toolkit.renderer import _StyleStringHasStyleCache, _StyleStringToAttrsCache
 
@@ -21,6 +20,7 @@ if TYPE_CHECKING:
     from prompt_toolkit.application import Application
     from prompt_toolkit.filters import FilterOrBool
     from prompt_toolkit.layout.layout import Layout
+    from prompt_toolkit.output import ColorDepth, Output
     from prompt_toolkit.styles import BaseStyle
 
 

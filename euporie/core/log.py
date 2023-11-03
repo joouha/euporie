@@ -9,7 +9,7 @@ import textwrap
 from collections import deque
 from io import StringIO
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 from prompt_toolkit.application.current import get_app_session
 from prompt_toolkit.formatted_text.base import FormattedText
@@ -132,7 +132,7 @@ class QueueHandler(logging.Handler):
 
     formatter: FtFormatter
     hook_id = 0
-    hooks: dict[int, Callable] = {}
+    hooks: ClassVar[dict[int, Callable]] = {}
 
     def __init__(
         self,
@@ -200,7 +200,7 @@ class LogTabFormatter(FtFormatter):
             ("", "\n"),
         ]
         if record.exc_text:
-            output += self.format_traceback(record.exc_text) + [("", "\n")]
+            output += [*self.format_traceback(record.exc_text), ("", "\n")]
         return FormattedText(output)
 
 

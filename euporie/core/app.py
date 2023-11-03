@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import json
 import logging
 import signal
@@ -16,7 +17,6 @@ from prompt_toolkit.application.application import Application, _CombinedRegistr
 from prompt_toolkit.application.current import create_app_session, set_app
 from prompt_toolkit.cursor_shapes import CursorShape, CursorShapeConfig
 from prompt_toolkit.data_structures import Point
-from prompt_toolkit.enums import EditingMode
 from prompt_toolkit.filters import Condition, buffer_has_focus, to_filter
 from prompt_toolkit.input.defaults import create_input
 from prompt_toolkit.key_binding.bindings.basic import (
@@ -99,6 +99,7 @@ if TYPE_CHECKING:
     # from prompt_toolkit.application import _AppResult
     from prompt_toolkit.clipboard import Clipboard
     from prompt_toolkit.contrib.ssh import PromptToolkitSSHSession
+    from prompt_toolkit.enums import EditingMode
     from prompt_toolkit.filters import Filter, FilterOrBool
     from prompt_toolkit.input import Input
     from prompt_toolkit.layout.layout import FocusableElement
@@ -215,12 +216,10 @@ class BaseApp(Application):
         # Initialise the application
         super().__init__(
             **{
-                **{
-                    "color_depth": self.config.color_depth,
-                    "editing_mode": self.get_edit_mode(),
-                    "mouse_support": Condition(lambda: self.need_mouse_support),
-                    "cursor": CursorConfig(),
-                },
+                "color_depth": self.config.color_depth,
+                "editing_mode": self.get_edit_mode(),
+                "mouse_support": Condition(lambda: self.need_mouse_support),
+                "cursor": CursorConfig(),
                 **kwargs,
             }
         )
@@ -398,11 +397,10 @@ class BaseApp(Application):
         """
         input_ = create_input(always_prefer_tty=True)
 
-        if stdin := getattr(input_, "stdin", None):
-            if not stdin.isatty():
-                from euporie.core.io import IgnoredInput
+        if (stdin := getattr(input_, "stdin", None)) and not stdin.isatty():
+            from euporie.core.io import IgnoredInput
 
-                input_ = IgnoredInput()
+            input_ = IgnoredInput()
 
         # Use a custom vt100 parser to allow querying the terminal
         if parser := getattr(input_, "vt100_parser", None):
@@ -591,12 +589,12 @@ class BaseApp(Application):
 
         """
         ppath = parse_path(path)
-        log.info(f"Opening file {path}")
+        log.info("Opening file %s", path)
         for tab in self.tabs:
             if ppath == getattr(tab, "path", "") and (
                 tab_class is None or isinstance(tab, tab_class)
             ):
-                log.info(f"File {path} already open, activating")
+                log.info("File %s already open, activating", path)
                 self.layout.focus(tab)
                 break
         else:
@@ -642,10 +640,8 @@ class BaseApp(Application):
         """Set the current tab by index."""
         self._tab_idx = value % (len(self.tabs) or 1)
         if self.tabs:
-            try:
+            with contextlib.suppress(ValueError):
                 self.layout.focus(self.tabs[self._tab_idx])
-            except ValueError:
-                pass
 
     def focus_tab(self, tab: Tab) -> None:
         """Make a tab visible and focuses it."""
@@ -669,10 +665,8 @@ class BaseApp(Application):
         # If a tab is not open, the status bar is not shown, so focus the logo, so
         # pressing tab focuses the menu
         else:
-            try:
+            with contextlib.suppress(ValueError):
                 self.layout.focus_next()
-            except ValueError:
-                pass
 
     def close_tab(self, tab: Tab | None = None) -> None:
         """Close a notebook tab.

@@ -36,10 +36,9 @@ class _IsPrefixOfLongerMatchCache(vt100_parser._IsPrefixOfLongerMatchCache):
     def __missing__(self, prefix: str) -> bool:
         """Check if the response might match an OSC or APC code, or DA response."""
         result = super().__missing__(prefix)
-        if not result:
-            if _response_prefix_re.match(prefix):
-                result = True
-                self[prefix] = result
+        if not result and _response_prefix_re.match(prefix):
+            result = True
+            self[prefix] = result
         return result
 
 

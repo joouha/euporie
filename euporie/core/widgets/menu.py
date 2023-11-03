@@ -135,7 +135,6 @@ class MenuItem:
     @text.setter
     def text(self, value: Any) -> None:
         """Prevent the inherited `__init__` method setting this property value."""
-        pass
 
     @classmethod
     def from_command(cls, command: Command) -> MenuItem:
@@ -158,7 +157,6 @@ class MenuItem:
     @disabled.setter
     def disabled(self, value: Any) -> None:
         """Prevent the inherited `__init__` method setting this property value."""
-        pass
 
     @property
     def has_toggles(self) -> bool:
@@ -739,12 +737,10 @@ class CompletionsMenuControl(PtkCompletionsMenuControl):
                 output.append((f"{style},border", grid.MID_RIGHT))
 
                 # Apply mouse handler
-                output = [
+                return [
                     (fragment[0], fragment[1], self.mouse_handler)
                     for fragment in output
                 ]
-
-                return output
 
             return UIContent(
                 get_line=get_line,

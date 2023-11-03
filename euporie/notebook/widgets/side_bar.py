@@ -1,5 +1,7 @@
 """Define a side-bar."""
 
+from __future__ import annotations
+
 from functools import partial
 from typing import TYPE_CHECKING
 
@@ -29,7 +31,7 @@ if TYPE_CHECKING:
 class SideBarButtons(ToggleButtons):
     """Vertical toggle-buttons with additional styling for the side-bar."""
 
-    def _get_sep_style(self, i: int) -> "str":
+    def _get_sep_style(self, i: int) -> str:
         if self.index == i:
             return "class:side_bar,buttons,separator,selection,after"
         elif self.index == i - 1:
@@ -37,10 +39,10 @@ class SideBarButtons(ToggleButtons):
         else:
             return "class:side_bar,buttons,separator"
 
-    def load_container(self) -> "AnyContainer":
+    def load_container(self) -> AnyContainer:
         """Load the widget's container."""
-        self.buttons: "list[ToggleButton]" = []
-        children: "list[AnyContainer]" = []
+        self.buttons: list[ToggleButton] = []
+        children: list[AnyContainer] = []
         for i, (label, selected) in enumerate(zip(self.labels, self.mask)):
             children.append(
                 Window(char="▄", height=1, style=partial(self._get_sep_style, i))
@@ -78,10 +80,10 @@ class SideBar:
 
     def __init__(
         self,
-        titles: "Sequence[str]",
-        icons: "Sequence[str]",
-        panels: "Sequence[AnyContainer]",
-    ) -> "None":
+        titles: Sequence[str],
+        icons: Sequence[str],
+        panels: Sequence[AnyContainer],
+    ) -> None:
         """Initialize a new side-bar object."""
         from euporie.core.current import get_app
 
@@ -159,14 +161,14 @@ class SideBar:
             filter=get_app().config.filter("show_side_bar"),
         )
 
-    def toggle_pane(self) -> "None":
+    def toggle_pane(self) -> None:
         """Toggle the visibility of the side-bar."""
         if self.side_bar_buttons.index is None:
             self.side_bar_buttons.index = 0
         else:
             self.side_bar_buttons.index = None
 
-    def __pt_container__(self) -> "AnyContainer":
+    def __pt_container__(self) -> AnyContainer:
         """Return the side_bar's main container."""
         return self.container
 
@@ -191,7 +193,7 @@ class SideBar:
 
     @staticmethod
     @add_cmd()
-    def _toggle_side_bar_pane() -> "None":
+    def _toggle_side_bar_pane() -> None:
         """Open or close the current side-bar pane."""
         from euporie.notebook.current import get_app
 

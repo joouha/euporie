@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
+import contextlib
 import logging
 from abc import ABCMeta
 from collections import deque
 from functools import partial
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 from prompt_toolkit.history import InMemoryHistory
 from prompt_toolkit.layout.containers import Window, WindowAlign
@@ -45,11 +46,11 @@ log = logging.getLogger(__name__)
 class Tab(metaclass=ABCMeta):
     """Base class for interface tabs."""
 
-    _registry: set[type[Tab]] = set()
+    _registry: ClassVar[set[type[Tab]]] = set()
     name: str | None = None
     weight: int = 0
-    mime_types: set[str] = set()
-    file_extensions: set[str] = set()
+    mime_types: ClassVar[set[str]] = set()
+    file_extensions: ClassVar[set[str]] = set()
 
     container: AnyContainer
 
@@ -78,7 +79,6 @@ class Tab(metaclass=ABCMeta):
 
     def reset(self) -> "None":  # noqa B027
         """Reet the state of the tab."""
-        pass
 
     def close(self, cb: Callable | None = None) -> None:
         """Close a tab with a callback.
@@ -135,10 +135,8 @@ class Tab(metaclass=ABCMeta):
     def _save_file() -> None:
         """Save the current file."""
         if (tab := get_app().tab) is not None:
-            try:
+            with contextlib.suppress(NotImplementedError):
                 tab._save()
-            except NotImplementedError:
-                pass
 
     # ################################# Key Bindings ##################################
 
@@ -188,11 +186,9 @@ class KernelTab(Tab, metaclass=ABCMeta):
 
     def pre_init_kernel(self) -> None:
         """Run stuff before the kernel is loaded."""
-        pass
 
     def post_init_kernel(self) -> None:
         """Run stuff after the kernel is loaded."""
-        pass
 
     def init_kernel(
         self,
@@ -295,10 +291,8 @@ class KernelTab(Tab, metaclass=ABCMeta):
 
     async def load_history(self) -> None:
         """Load kernel history."""
-        try:
+        with contextlib.suppress(StopAsyncIteration):
             await self.history.load().__anext__()
-        except StopAsyncIteration:
-            pass
 
     @property
     def metadata(self) -> dict[str, Any]:

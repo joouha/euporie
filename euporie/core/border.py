@@ -4,12 +4,9 @@ from __future__ import annotations
 
 from enum import Enum
 from functools import lru_cache, total_ordering
-from typing import TYPE_CHECKING, NamedTuple
+from typing import NamedTuple
 
 from prompt_toolkit.cache import FastDictCache
-
-if TYPE_CHECKING:
-    pass
 
 
 class GridPart(Enum):
@@ -27,7 +24,7 @@ class GridPart(Enum):
         SPLIT┈> ┣ ━ ╋ ┫
        BOTTOM┈> ┗ ━ ┻ ┛
 
-    """
+    """  # noqa: RUF002
 
     TOP_LEFT = 0
     TOP_MID = 1

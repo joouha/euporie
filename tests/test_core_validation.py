@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from euporie.core.kernel import Kernel
 
 
-@pytest.fixture
+@pytest.fixture()
 def kernel() -> Kernel:
     """Return a mock kernel object."""
     return Mock()

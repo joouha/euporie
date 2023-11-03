@@ -111,11 +111,10 @@ dependencies = [
   # Linting
   "pre-commit",
   "pre-commit-hooks",
-  "black",
   "ruff",
   "codespell", "tomli",
   # LSP
-  "python-lsp-server", "python-lsp-ruff", "python-lsp-black", "pylsp-mypy", "jedi",
+  "python-lsp-server", "jedi", "python-lsp-ruff", "python-lsp-black", # "pylsp-mypy",
   # Type checking
   "mypy",
   # Dependencies
@@ -128,13 +127,13 @@ dependencies = [
 
 [tool.hatch.envs.check.scripts]
 check = [
-    "black --check {args:euporie tests scripts}",
-    "ruff {args:euporie tests scripts}",
+    "ruff check {args:euporie tests scripts}",
+    "ruff format --check {args:euporie tests scripts}",
     "codespell {args:euporie tests scripts docs/pages}",
 ]
 fix = [
-    "black {args:euporie tests scripts}",
-    "ruff --fix {args:euporie tests scripts}",
+    "ruff check --fix {args:euporie tests scripts}",
+    "ruff format {args:euporie tests scripts}",
     "codespell -i 3 -w {args:euporie tests scripts docs/pages}",
 ]
 type = "mypy {args:--namespace-packages -p euporie -p tests -p scripts}"
@@ -176,7 +175,32 @@ autobuild = "sphinx-autobuild docs docs/_build/html"
 
 [tool.ruff]
 line-length = 88
-select = ["ANN", "B", "C", "D", "E", "F", "I", "Q", "S", "T", "UP"]
+select = [ # "ANN", "B", "C", "D", "E", "F", "I", "Q", "S", "T", "UP"]
+  "ANN",   #
+  "ASYNC", #
+  # "ARG",   # Unused arguments
+  "B",
+  "C",
+  "C4",
+  "D",
+  "E",
+  "F",
+  "FA",
+  "G",
+  "I",
+  "PIE", # miscellaneous lints
+  "PT",  # common style issues or inconsistencies with pytest-based tests
+  "PTH", # use pathlib
+  "Q",   # quotes
+  "S",   # bandit security testingi
+  "RUF", # ruff-specific
+  "SIM", # simplify
+  # "RET", # return values
+  "T",
+  "TCH", # type checking import blocks
+  "UP",
+  "W",
+]
 ignore = [
     # Annotations on `self` and `cls`
     "ANN101", "ANN102",
@@ -195,7 +219,9 @@ ignore = [
     # zip() without an explicit strict= parameter
     "B905",
     # Ignore subprocess warnings
-    "S603", "S607"
+    "S603", "S607",
+    # Ignore ambiguous-unicode-character-string warning
+    "RUF001",
 ]
 
 [tool.ruff.per-file-ignores]

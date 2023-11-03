@@ -63,10 +63,9 @@ def accept_completion() -> None:
     """Accept a selected completion."""
     buffer = get_app().current_buffer
     complete_state = buffer.complete_state
-    if complete_state:
-        if isinstance(complete_state.current_completion, Completion):
-            buffer.apply_completion(complete_state.current_completion)
-            get_app().layout.focus(buffer)
+    if complete_state and isinstance(complete_state.current_completion, Completion):
+        buffer.apply_completion(complete_state.current_completion)
+        get_app().layout.focus(buffer)
 
 
 register_bindings(

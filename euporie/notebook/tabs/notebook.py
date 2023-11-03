@@ -6,7 +6,7 @@ import logging
 from collections import deque
 from copy import deepcopy
 from functools import partial
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, ClassVar, cast
 
 import nbformat
 from prompt_toolkit.clipboard.base import ClipboardData
@@ -78,8 +78,8 @@ class Notebook(BaseNotebook):
 
     name = "Notebook Editor"
     weight = 3
-    mime_types = {"application/x-ipynb+json"}
-    file_extensions = {".ipynb"}
+    mime_types: ClassVar[set[str]] = {"application/x-ipynb+json"}
+    file_extensions: ClassVar[set[str]] = {".ipynb"}
     try:
         from jupytext.formats import NOTEBOOK_EXTENSIONS
     except ModuleNotFoundError:
@@ -174,9 +174,8 @@ class Notebook(BaseNotebook):
         """Run when the kernel has started."""
         super().kernel_started(result)
 
-        if self.kernel.status == "idle":
-            if self.app.config.run:
-                self.run_all(wait=False)
+        if self.kernel.status == "idle" and self.app.config.run:
+            self.run_all(wait=False)
 
     def report_kernel_error(self, error: Exception | None) -> None:
         """Report a kernel error to the user."""
@@ -446,7 +445,7 @@ class Notebook(BaseNotebook):
         if slice_ is not None:
             indices = range(*slice_.indices(len(self.json["cells"])))
             index = min(indices) + n
-            if 0 <= index and index + len(indices) <= len(self.json["cells"]):
+            if index >= 0 and index + len(indices) <= len(self.json["cells"]):
                 cells = [
                     x
                     for _, x in sorted(

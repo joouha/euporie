@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+from typing import cast
 from unittest.mock import Mock, call, patch
 
 import pytest
@@ -12,9 +12,6 @@ from euporie.core.comm.base import Comm, CommView, UnimplementedComm
 from euporie.core.tabs.base import KernelTab
 from euporie.core.widgets.display import Display
 
-if TYPE_CHECKING:
-    pass
-
 
 class MockOutputParent:
     """An output's parent."""
@@ -23,10 +20,9 @@ class MockOutputParent:
 
     def refresh(self, now: bool = True) -> None:
         """Update the parent container."""
-        pass
 
 
-@pytest.fixture
+@pytest.fixture()
 def comm() -> UnimplementedComm:
     """Create an `UnimplementedComm` instance of the `Comm` class."""
     comm_container = Mock(spec=KernelTab)

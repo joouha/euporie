@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-import subprocess  # noqa: S404
+import subprocess
 import sys
 from textwrap import dedent, indent
 from typing import TYPE_CHECKING, cast
@@ -99,4 +99,4 @@ if __name__ == "__main__":
                             break
                     break
             else:
-                subprocess.call([sys.executable, __file__, script.name])  # noqa S603
+                subprocess.call([sys.executable, __file__, script.name])  # S603

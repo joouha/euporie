@@ -12,8 +12,6 @@ from prompt_toolkit.filters.utils import to_filter
 from prompt_toolkit.formatted_text.utils import fragment_list_width, split_lines
 from prompt_toolkit.layout.containers import ConditionalContainer, VSplit, Window
 from prompt_toolkit.layout.controls import GetLinePrefixCallable, UIContent, UIControl
-from prompt_toolkit.layout.mouse_handlers import MouseHandlers
-from prompt_toolkit.layout.screen import WritePosition
 from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
 from prompt_toolkit.utils import Event, to_str
 
@@ -44,7 +42,8 @@ if TYPE_CHECKING:
     from prompt_toolkit.key_binding.key_bindings import NotImplementedOrNone
     from prompt_toolkit.layout.containers import AnyContainer
     from prompt_toolkit.layout.dimension import AnyDimension
-    from prompt_toolkit.layout.screen import Screen
+    from prompt_toolkit.layout.mouse_handlers import MouseHandlers
+    from prompt_toolkit.layout.screen import Screen, WritePosition
 
 
 log = logging.getLogger(__name__)
@@ -394,9 +393,7 @@ class DisplayWindow(Window):
         info = self.render_info
         if info is None:
             return NotImplemented
-        horizontal_scroll = getattr(
-            self.render_info, "horizontal_scroll", 0
-        )  # noqa B009
+        horizontal_scroll = getattr(self.render_info, "horizontal_scroll", 0)  # B009
         if horizontal_scroll > 0:
             self.content.move_cursor_left()
             self.horizontal_scroll -= 1
