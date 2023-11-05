@@ -1,4 +1,4 @@
-"""Utilitie for manipulating formatted text."""
+"""Utilities for manipulating formatted text."""
 
 from __future__ import annotations
 
@@ -62,24 +62,6 @@ def fragment_list_width(fragments: StyleAndTextTuples) -> int:
         )
         for c in item[1]
     )
-
-
-def last_line_length(ft: StyleAndTextTuples, rows: int = 1) -> int:
-    """Calculate the length of the last line in formatted text."""
-    lines: list[StyleAndTextTuples] = [[]]
-    for style, text, *_ in reversed(ft):
-        parts = text.split("\n")
-        lines[-1].append((style, parts[-1]))
-        if parts:
-            for part in parts[-2::-1]:
-                if len(lines) == rows:
-                    break
-                lines.append([])
-                lines[-1].append((style, part))
-            else:
-                continue
-            break
-    return max(fragment_list_width(line) for line in lines)
 
 
 def max_line_width(ft: StyleAndTextTuples) -> int:
