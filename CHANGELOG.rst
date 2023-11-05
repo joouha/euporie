@@ -16,6 +16,7 @@ Added
 Fixed
 =====
 
+- Prevent rare error when closing a tab
 - Prevent error dialog collapsing at small terminal sizes
 - Correct error in escape code for querying terminal dimensions
 - Fix cell output wrap toggle shortcut
