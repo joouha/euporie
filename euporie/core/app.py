@@ -655,7 +655,8 @@ class BaseApp(Application):
 
         """
         # Remove tab
-        self.tabs.remove(tab)
+        if tab in self.tabs:
+            self.tabs.remove(tab)
         # Update body container to reflect new tab list
         # assert isinstance(self.body_container.body, HSplit)
         # self.body_container.body.children[0] = VSplit(self.tabs)
