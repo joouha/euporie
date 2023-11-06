@@ -193,6 +193,10 @@ class Datum(Generic[T]):
         rows: int | None = None,
     ) -> Any:
         """Perform conversion asynchronously, caching the result."""
+        if to == self.format:
+            # TODO - crop
+            return self.data
+
         if to in self._conversions:
             return self._conversions[to, cols, rows]
 

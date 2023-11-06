@@ -27,7 +27,30 @@ def test_datum_new() -> None:
     assert datum_1 is datum_2
 
 
-async def test_convert_async() -> None:
+async def test_convert() -> None:
+    """Data is converted to another format."""
+    # Async
+    datum = Datum("Hello", format="ansi")
+    result = await datum.convert_async("ft")
+    assert result == [("", "Hello")]
+
+    # Sync
+    datum = Datum("Hello", format="ansi")
+    result = datum.convert("ft")
+    assert result == [("", "Hello")]
+
+    # Self
+    datum = Datum("Hello", format="ansi")
+    result = datum.convert("ansi")
+    assert result == datum.data
+
+    # Invalid
+    datum = Datum("Hello", format="ansi")
+    result = datum.convert("unknown")
+    assert result == "(Conversion Error)"
+
+
+def test_convert_sync() -> None:
     """Data is converted to another format."""
     # datum = Datum(Image.new("RGB", (60, 30), color="red"), "pil")
     # output = await datum.convert_async("png")
