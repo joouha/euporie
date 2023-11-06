@@ -138,7 +138,7 @@ class DisplayControl(UIControl):
         ft = datum.convert(to="ft", cols=width, rows=height)
         if width and height:
             key = Datum.add_size(datum, Size(height, width))
-            ft = [(f"[Image_{key}]", ""), *ft]
+            ft = [(f"[Graphic_{key}]", ""), *ft]
         lines = list(split_lines(ft))
         if wrap_lines and width:
             lines = [
