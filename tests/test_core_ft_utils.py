@@ -2,64 +2,70 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
+from prompt_toolkit.formatted_text.base import FormattedText as Ft
 from prompt_toolkit.formatted_text.utils import to_plain_text
 
 from euporie.core.data_structures import DiBool
 from euporie.core.ft import utils
 
+if TYPE_CHECKING:
+    from prompt_toolkit.formatted_text.base import StyleAndTextTuples
+
 
 def test_fragment_list_width() -> None:
     """Test for utils.fragment_list_width function."""
-    ft = [("", "AB")]
+    ft = Ft([("", "AB")])
     length = utils.fragment_list_width(ft)
     assert length == 2
 
-    ft = [("", "A"), ("", "B")]
+    ft = Ft([("", "A"), ("", "B")])
     length = utils.fragment_list_width(ft)
     assert length == 2
 
-    ft = [("", "A"), ("[ZeroWidthEscape]", "B"), ("", "C")]
+    ft = Ft([("", "A"), ("[ZeroWidthEscape]", "B"), ("", "C")])
     length = utils.fragment_list_width(ft)
     assert length == 2
 
-    ft = [("", "A"), ("[ReverseOverwrite]", "B"), ("", "C")]
+    ft = Ft([("", "A"), ("[ReverseOverwrite]", "B"), ("", "C")])
     length = utils.fragment_list_width(ft)
     assert length == 2
 
-    ft = [("", "⭐")]
+    ft = Ft([("", "⭐")])
     length = utils.fragment_list_width(ft)
     assert length == 2
 
 
 def test_max_line_width() -> None:
     """Test for utils.max_line_width function."""
-    ft = [("", "AAAAA\nBBBB\nCCC")]
+    ft = Ft([("", "AAAAA\nBBBB\nCCC")])
     length = utils.max_line_width(ft)
     assert length == 5
 
-    ft = [("", "A\n"), ("", "BB"), ("", "\nCCC")]
+    ft = Ft([("", "A\n"), ("", "BB"), ("", "\nCCC")])
     width = utils.max_line_width(ft)
     assert width == 3
 
-    ft = [("", "A\n"), ("", "BB"), ("[ZeroWidthEscape]", "\nCCC")]
+    ft = Ft([("", "A\n"), ("", "BB"), ("[ZeroWidthEscape]", "\nCCC")])
     width = utils.max_line_width(ft)
     assert width == 2
 
-    ft = [("", "A\n"), ("", "⭐")]
+    ft = Ft([("", "A\n"), ("", "⭐")])
     width = utils.max_line_width(ft)
     assert width == 2
 
 
 def test_last_char() -> None:
     """Test for utils.last_char function."""
-    ft = [("", "A\n"), ("", "BB"), ("", "\nCCC")]
+    ft = Ft([("", "A\n"), ("", "BB"), ("", "\nCCC")])
     last = utils.last_char(ft)
     assert last == "C"
 
 
 def test_fragment_list_to_words() -> None:
     """Test for utils.fragment_list_to_words function."""
-    ft = [("fg -> None:red", "This is"), ("fg -> None:blue", " an example")]
+    ft = Ft([("fg -> None:red", "This is"), ("fg -> None:blue", " an example")])
     words = list(utils.fragment_list_to_words(ft))
     assert words == [
         [("fg -> None:red", "This ")],
@@ -71,7 +77,7 @@ def test_fragment_list_to_words() -> None:
 
 def test_apply_style() -> None:
     """Test for utils.apply_style function."""
-    ft = [("class:foo", "A"), ("class:bar", "B")]
+    ft = Ft([("class:foo", "A"), ("class:bar", "B")])
     styled_ft = utils.apply_style(ft, "class:baz")
     assert styled_ft == [
         ("class:foo class:baz", "A"),
@@ -81,7 +87,7 @@ def test_apply_style() -> None:
 
 def test_strip() -> None:
     """Test for utils.strip function."""
-    ft = [("class:foo", "   A  "), ("class:bar", " B  ")]
+    ft = Ft([("class:foo", "   A  "), ("class:bar", " B  ")])
     stripped_ft = utils.strip(ft, chars=None)
     assert stripped_ft == [
         ("class:foo", "A  "),
@@ -91,22 +97,22 @@ def test_strip() -> None:
 
 def test_strip_one_trailing_newline() -> None:
     """Test for utils.strip_one_trailing_newline function."""
-    ft = [("", "A\n"), ("", "B")]
+    ft = Ft([("", "A\n"), ("", "B")])
     stripped_ft = utils.strip_one_trailing_newline(ft)
     assert stripped_ft == [("", "A\n"), ("", "B")]
 
-    ft = [("", "A\n"), ("", "B\n")]
+    ft = Ft([("", "A\n"), ("", "B\n")])
     stripped_ft = utils.strip_one_trailing_newline(ft)
     assert stripped_ft == [("", "A\n"), ("", "B")]
 
-    ft = [("", "A\n"), ("", "B\n\n\n")]
+    ft = Ft([("", "A\n"), ("", "B\n\n\n")])
     stripped_ft = utils.strip_one_trailing_newline(ft)
     assert stripped_ft == [("", "A\n"), ("", "B\n\n")]
 
 
 def test_truncate() -> None:
     """Test for utils.truncate function."""
-    ft = [("class:foo", "This is a long sentence")]
+    ft = Ft([("class:foo", "This is a long sentence")])
     truncated_ft = utils.truncate(ft, 12, placeholder="...")
     assert truncated_ft == [
         ("class:foo", "This is a"),
@@ -114,7 +120,7 @@ def test_truncate() -> None:
     ]
     assert utils.fragment_list_width(truncated_ft) == 12
 
-    ft = [("class:foo", "This is a long sentence")]
+    ft = Ft([("class:foo", "This is a long sentence")])
     truncated_ft = utils.truncate(ft, 12, style="class:bar", placeholder="...")
     assert truncated_ft == [
         ("class:foo", "This is a"),
@@ -124,7 +130,7 @@ def test_truncate() -> None:
 
 def test_substring() -> None:
     """Test for utils.substring function."""
-    ft = [("", "ABCDEFGHIJKLMNOPQRSTUVWXYZ")]
+    ft = Ft([("", "ABCDEFGHIJKLMNOPQRSTUVWXYZ")])
     sub_ft = utils.substring(ft, start=23)
     assert sub_ft == [("", "XYZ")]
     sub_ft = utils.substring(ft, end=3)
@@ -135,7 +141,7 @@ def test_substring() -> None:
 
 def test_wrap() -> None:
     """Test for utils.wrap function."""
-    ft = [("class:foo", "This is a long sentence")]
+    ft = Ft([("class:foo", "This is a long sentence")])
     wrapped_ft = utils.wrap(ft, 7, style="class:baz", placeholder="...")
     assert wrapped_ft == [
         ("class:foo", "This "),
@@ -152,11 +158,13 @@ def test_wrap() -> None:
 
 def test_align() -> None:
     """Test for utils.align function."""
-    ft = [
-        ("class:foo", "A\n"),
-        ("class:bar", "BB\n"),
-        ("class:baz", "CCC"),
-    ]
+    ft = Ft(
+        [
+            ("class:foo", "A\n"),
+            ("class:bar", "BB\n"),
+            ("class:baz", "CCC"),
+        ]
+    )
     aligned_ft = utils.align(
         ft,
         how=utils.FormattedTextAlign.CENTER,
@@ -182,7 +190,7 @@ def test_align() -> None:
 
 def test_valign() -> None:
     """Test for utils.valign function."""
-    ft = [("", "A")]
+    ft = Ft([("", "A")])
     aligned = to_plain_text(
         utils.valign(ft, how=utils.FormattedTextVerticalAlign.TOP, height=3)
     )
@@ -198,7 +206,7 @@ def test_valign() -> None:
     )
     assert aligned == " \n \nA"
 
-    ft = [("class:foo", "A\n"), ("class:bar", "B")]
+    ft = Ft([("class:foo", "A\n"), ("class:bar", "B")])
     aligned_ft = utils.valign(
         ft,
         how=utils.FormattedTextVerticalAlign.MIDDLE,
@@ -215,7 +223,7 @@ def test_valign() -> None:
 
 def test_join_lines() -> None:
     """Test for utils.join_lines function."""
-    lines = [
+    lines: list[StyleAndTextTuples] = [
         [("class:foo", "Sample"), ("class:bar", "Text")],
         [("class:baz", "Python"), ("class:qux", "Rocks")],
     ]
@@ -231,11 +239,13 @@ def test_join_lines() -> None:
 
 def test_pad() -> None:
     """Test for utils.pad function."""
-    ft = [
-        ("class:a", "AAA"),
-        ("class:b", "\nBB"),
-        ("class:c", "\nC"),
-    ]
+    ft = Ft(
+        [
+            ("class:a", "AAA"),
+            ("class:b", "\nBB"),
+            ("class:c", "\nC"),
+        ]
+    )
     padded_ft = utils.pad(ft, width=5, char=" ", style="class:padding")
     assert padded_ft == [
         ("class:a", "AAA"),
@@ -251,21 +261,21 @@ def test_pad() -> None:
 
 def test_paste() -> None:
     """Test for utils.paste function."""
-    bottom_ft = [("class:foo", "ABC"), ("class:bar", "DEF")]
-    top_ft = [("class:baz", "XYZ")]
+    bottom_ft = Ft([("class:foo", "ABC"), ("class:bar", "DEF")])
+    top_ft = Ft([("class:baz", "XYZ")])
     pasted_ft = utils.paste(top_ft, bottom_ft, row=0, col=2, transparent=False)
     assert pasted_ft == [("class:foo", "AB"), ("class:baz", "XYZ"), ("class:bar", "F")]
 
 
 def test_concat() -> None:
     """Concatenating formatted text results in correct placements."""
-    ft_a = []
-    ft_b = []
+    ft_a = Ft([])
+    ft_b = Ft([])
     result = utils.concat(ft_a, ft_b, 0, 0)
     assert result == ([], 0)
 
-    ft_a = [("class:a", "line1\n"), ("class:b", "line2")]
-    ft_b = [("class:c", "line3\n"), ("class:d", "line4")]
+    ft_a = Ft([("class:a", "line1\n"), ("class:b", "line2")])
+    ft_b = Ft([("class:c", "line3\n"), ("class:d", "line4")])
     result_ft, result_baseline = utils.concat(ft_a, ft_b, 0, 1)
     assert to_plain_text(result_ft) == "     line3\nline1line4\nline2"
     assert result_baseline == 1
@@ -285,18 +295,18 @@ def test_concat() -> None:
 
 def test_indent() -> None:
     """Formatted text is indented as expected."""
-    ft = [("fg:red", "A b c d")]
+    ft = Ft([("fg:red", "A b c d")])
     result = utils.indent(ft, margin="#", style="fg:blue")
     assert result == [("fg:blue", "#"), ("fg:red", "A b c d")]
 
-    ft = [("", "A b\nc d")]
+    ft = Ft([("", "A b\nc d")])
     result = utils.indent(ft, margin="#", skip_first=True)
     assert to_plain_text(result) == "A b\n#c d"
 
 
 def test_add_border() -> None:
     """Borders are added around formatted text."""
-    ft = [("", "A")]
+    ft = Ft([("", "A")])
 
     result = to_plain_text(utils.add_border(ft))
     assert result == "┌─┐\n│A│\n└─┘"
@@ -307,15 +317,19 @@ def test_add_border() -> None:
     result = to_plain_text(utils.add_border(ft, padding=1))
     assert result == "┌───┐\n│   │\n│ A │\n│   │\n└───┘"
 
-    result = to_plain_text(utils.add_border(ft, border_visibility=DiBool(0, 1, 0, 1)))
+    result = to_plain_text(
+        utils.add_border(ft, border_visibility=DiBool(False, True, False, True))
+    )
     assert result == "│A│"
 
-    result = to_plain_text(utils.add_border(ft, border_visibility=DiBool(1, 0, 1, 0)))
+    result = to_plain_text(
+        utils.add_border(ft, border_visibility=DiBool(True, False, True, False))
+    )
     assert result == "─\nA\n─"
 
 
 def test_apply_reverse_overwrites() -> None:
     """Applying reverse overwrites replaces previous characters."""
-    ft = [("", "ABCD"), ("[ReverseOverwrite]", "XYZ"), ("", "EFG")]
+    ft = Ft([("", "ABCD"), ("[ReverseOverwrite]", "XYZ"), ("", "EFG")])
     result = utils.apply_reverse_overwrites(ft)
     assert result == [("", "A"), ("", "XYZ"), ("", "EFG")]
