@@ -121,7 +121,7 @@ class Datum(Generic[T]):
 
         self._cell_size: tuple[int, float] | None = None
 
-        self._conversions: dict[str, T] = {format: data}
+        self._conversions: dict[tuple[str, int | None, int | None], T] = {}
 
         self._finalizer = finalize(self, self._cleanup_datum_sizes, self.hash)
         self._finalizer.atexit = False
@@ -194,7 +194,7 @@ class Datum(Generic[T]):
     ) -> Any:
         """Perform conversion asynchronously, caching the result."""
         if to in self._conversions:
-            return self._conversions[to]
+            return self._conversions[to, cols, rows]
 
         routes = _CONVERTOR_ROUTE_CACHE[(self.format, to)]
         # log.debug(
@@ -222,7 +222,7 @@ class Datum(Generic[T]):
                     )[0].func
                     try:
                         output = await func(datum, cols, rows)
-                        self._conversions[stage_b] = output
+                        self._conversions[stage_b, cols, rows] = output
                     except Exception:
                         log.exception("An error occurred during format conversion")
                         output = None
