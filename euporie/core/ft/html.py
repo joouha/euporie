@@ -4239,7 +4239,7 @@ class HTML:
         return cast(
             "StyleAndTextTuples",
             # Flag graphic position
-            [(f"[Image_{key}]", "")]
+            [(f"[Graphic_{key}]", "")]
             # Set default background color on generated content
             + [(f"{theme.style} {style}", (text), *rest) for style, text, *rest in ft],
         )

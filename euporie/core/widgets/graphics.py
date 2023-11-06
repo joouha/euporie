@@ -702,8 +702,8 @@ class GraphicProcessor:
             x = 0
             for style, text, *_ in line:
                 for part in style.split():
-                    if part.startswith("[Image_"):
-                        key = part[7:-1]
+                    if part.startswith("[Graphic_"):
+                        key = part[9:-1]
                         positions[key] = Point(x, y)
                         # Get graphic float for this image and update its position
                         graphic_float = self._float_cache[key,]
