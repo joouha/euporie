@@ -183,7 +183,7 @@ class Button:
             FormattedTextControl(
                 self.get_text_fragments,
                 key_bindings=self.key_bindings,
-                focusable=True,
+                focusable=~self.disabled,
                 show_cursor=False,
                 style="class:face",
             ),
@@ -464,7 +464,7 @@ class Checkbox(ToggleableWidget):
             FormattedTextControl(
                 self._get_text_fragments,
                 key_bindings=self._get_key_bindings(),
-                focusable=True,
+                focusable=~self.disabled,
                 show_cursor=False,
             ),
             style=lambda: f"class:checkbox {style}"
@@ -586,8 +586,8 @@ class Text:
             multiline=multiline,
             height=Dimension(min=min_height, max=height, preferred=height),
             width=width,
-            focusable=True,
-            focus_on_click=True,
+            focusable=~self.disabled,
+            focus_on_click=~self.disabled,
             read_only=self.disabled,
             style=f"{style} class:text,text-area",
             validator=Validator.from_callable(validation) if validation else None,
@@ -1305,7 +1305,7 @@ class Select(SelectableWidget):
                         window := Window(
                             FormattedTextControl(
                                 self.text_fragments,
-                                focusable=True,
+                                focusable=~self.disabled,
                                 show_cursor=False,
                                 key_bindings=self.key_bindings(),
                             ),
@@ -1379,7 +1379,7 @@ class Dropdown(SelectableWidget):
                 Shadow(
                     Window(
                         FormattedTextControl(
-                            self.menu_fragments,
+                            self.menu_fragments, focusable=self.disabled
                         ),
                         style=f"class:dropdown,dropdown.menu {self.style}",
                     )
@@ -1689,6 +1689,7 @@ class SliderControl(UIControl):
         track_char: str | None = None,
         selected_track_char: str | None = None,
         style: str = "class:input",
+        disabled: FilterOrBool = False,
     ) -> None:
         """Create a new slider control instance.
 
@@ -1701,6 +1702,8 @@ class SliderControl(UIControl):
             selected_track_char: The character to use for the selected section of the
                 slider track
             style: A style string to apply to the slider
+            disabled: A filter which when evaluated to :py:const:`True` causes the
+                widget to be disabled
         """
         self.slider = slider
 
@@ -1708,6 +1711,8 @@ class SliderControl(UIControl):
         self.selected_track_char = selected_track_char
         self.show_arrows = to_filter(show_arrows)
         self.handle_char = handle_char
+        self.style = style
+        self.disabled = to_filter(disabled)
 
         self.selected_handle = 0
         self.track_len = 0
@@ -1736,7 +1741,7 @@ class SliderControl(UIControl):
 
     def is_focusable(self) -> bool:
         """Tell whether this user control is focusable."""
-        return True
+        return not self.disabled()
 
     def create_content(self, width: int, height: int) -> UIContent:
         """Create an cache the rendered control fragments."""
@@ -2134,7 +2139,9 @@ class Slider(SelectableWidget):
 
     def load_container(self) -> AnyContainer:
         """Build the slider's container."""
-        self.control = SliderControl(slider=self, show_arrows=self.show_arrows)
+        self.control = SliderControl(
+            slider=self, show_arrows=self.show_arrows, disabled=self.disabled
+        )
         window = Window(self.control, style=lambda: f"class:slider {self.style}")
         self.control.window = window
         self.readout = Text(
@@ -2177,7 +2184,7 @@ class Slider(SelectableWidget):
 
     def validate_readout(self, text: str) -> list[Any] | None:
         """Confirm the value entered in the readout is value."""
-        values = [value.strip() for value in text.split("-")]
+        values = [value.strip() for value in text.split("- ")]
         valid_values = []
         for value in values:
             for option in self.options:

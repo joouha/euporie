@@ -96,7 +96,7 @@ class WebTab(Tab):
         button_prev = Button(
             "◀",
             show_borders=DiBool(top=True, right=False, bottom=True, left=True),
-            disabled=Condition(lambda: not self.webview.prev_stack),
+            disabled=Condition(lambda: not self.webview.prev_stack[:-1]),
             on_click=lambda x: self.webview.nav_prev(),
         )
         button_next = Button(
