@@ -400,7 +400,7 @@ def match_css_selector(
 
     while selector and matched:
         # Universal selector
-        if selector == "*":
+        if selector == "*" and not element_name.startswith("::"):
             break
 
         # Element selectors
@@ -945,7 +945,7 @@ class Theme(Mapping):
         parent = self.element.parent
 
         # Text elements inherit from direct inline parents
-        if self.element.name == "text" and parent is not None:
+        if self.element.name == "::text" and parent is not None:
             inline_parent_themes = []
             while parent.theme.d_inline:
                 inline_parent_themes.append(parent.theme.theme)
@@ -1260,7 +1260,7 @@ class Theme(Mapping):
             }:
                 return try_eval(size) if (size := attrs.get("size")) else 20
 
-        elif element.name == "text":
+        elif element.name == "::text":
             return len(element.text)
 
         return None
@@ -1279,7 +1279,7 @@ class Theme(Mapping):
     @cached_property
     def min_content_width(self) -> int:
         """Get maximum absolute child width."""
-        if self.element.name == "text":
+        if self.element.name == "::text":
             return max([len(x) for x in self.element.text.split()] or [0])
         else:
             return max(
@@ -1293,7 +1293,7 @@ class Theme(Mapping):
     @cached_property
     def max_content_width(self) -> int:
         """Get maximum absolute child width."""
-        if self.element.name == "text":
+        if self.element.name == "::text":
             return max([len(x) for x in self.element.text.split("\n")] or [0])
         else:
             return sum(
@@ -1881,7 +1881,7 @@ class Theme(Mapping):
         return (
             "none" in self.theme["display"]
             or (
-                (element := self.element).name == "text"
+                (element := self.element).name == "::text"
                 and not self.preformatted
                 and not element.text
             )
@@ -2032,7 +2032,7 @@ _BROWSER_CSS: CssSelectors = {
         (
             (CssSelector(item="::before"),),
             (CssSelector(item="::after"),),
-            (CssSelector(item="text"),),
+            (CssSelector(item="::text"),),
             (CssSelector(item="abbr"),),
             (CssSelector(item="acronym"),),
             (CssSelector(item="audio"),),
@@ -2826,7 +2826,7 @@ class Node:
     def _outer_html(self, d: int = 0, attrs: bool = True) -> str:
         dd = " " * d
         s = ""
-        if self.name != "text":
+        if self.name != "::text":
             s += f"{dd}<{self.name}"
             if attrs:
                 for key, value in self.attrs.items():
@@ -2941,7 +2941,7 @@ class Node:
     def renderable_contents(self) -> list[Node]:
         """List the node's contents including '::before' and '::after' elements."""
         # Do not add '::before' and '::after' elements to themselves
-        if self.name.startswith("::") or self.name == "text":
+        if self.name.startswith("::"):
             return self.contents
 
         contents = []
@@ -2954,7 +2954,7 @@ class Node:
         ):
             text = text.strip('"').strip("'")
             before_node.contents.append(
-                Node(dom=self.dom, name="text", parent=before_node, text=text)
+                Node(dom=self.dom, name="::text", parent=before_node, text=text)
             )
             contents.append(before_node)
 
@@ -2969,7 +2969,7 @@ class Node:
         ):
             text = text.strip('"').strip("'")
             after_node.contents.append(
-                Node(dom=self.dom, name="text", parent=after_node, text=text)
+                Node(dom=self.dom, name="::text", parent=after_node, text=text)
             )
             contents.append(after_node)
 
@@ -2989,11 +2989,11 @@ class Node:
             if (
                 child.theme.d_inline
                 and child.renderable_contents
-                and child.name != "text"
+                and child.name != "::text"
             ):
                 yield from child.renderable_descendents
             # elif (
-            #     child.name == "text" and self.name != "::block" and self.theme.d_blocky
+            #     child.name == "::text" and self.name != "::block" and self.theme.d_blocky
             # ):
             #     yield Node(dom=self.dom, name="::block", parent=self, contents=[child])
             else:
@@ -3028,11 +3028,7 @@ class Node:
         """Yield all of the child element nodes."""
         for child in self.contents:
             # Ignore text and comment nodes
-            if (
-                child.name != "text"
-                and child.name != "comment"
-                and not child.name.startswith("::")
-            ):
+            if child.name != "comment" and not child.name.startswith("::"):
                 yield child
 
     @cached_property
@@ -3066,11 +3062,7 @@ class Node:
         if parent := self.parent:
             for child in reversed(parent.contents):
                 # Ignore text and comment nodes
-                if (
-                    child.name != "text"
-                    and child.name != "comment"
-                    and not child.name.startswith("::")
-                ):
+                if child.name != "comment" and not child.name.startswith("::"):
                     return child == self
         return False
 
@@ -3213,7 +3205,7 @@ class CustomHTMLParser(HTMLParser):
         """Create data (text) elements."""
         self.autoclose()
         self.curr.contents.append(
-            Node(dom=self.dom, name="text", text=data, parent=self.curr, attrs=[])
+            Node(dom=self.dom, name="::text", text=data, parent=self.curr, attrs=[])
         )
 
     # def handle_endtag(self, tag: str) -> None:
@@ -3685,8 +3677,9 @@ class HTML:
             render_func = self.render_grid_content
 
         else:
+            name = element.name.lstrip(":")
             render_func = getattr(
-                self, f"render_{element.name}_content", self.render_node_content
+                self, f"render_{name}_content", self.render_node_content
             )
 
         # Render the element
@@ -3755,7 +3748,7 @@ class HTML:
             )
         if "open" in element.attrs and contents:
             # Create a dummy node with non-summary children and render it
-            node = Node(dom=self, name="::details", parent=element, contents=contents)
+            node = Node(dom=self, name="::content", parent=element, contents=contents)
             ft += [("", "\n")]
             ft += await self.render_element(
                 node,
@@ -3808,7 +3801,7 @@ class HTML:
         if bullet:
             bullet_element = Node(dom=self, name="::marker", parent=element)
             bullet_element.contents.append(
-                Node(dom=self, name="text", parent=bullet_element, text=bullet)
+                Node(dom=self, name="::text", parent=bullet_element, text=bullet)
             )
             if theme.list_style_position == "inside":
                 element.contents.insert(0, bullet_element)
@@ -4314,7 +4307,7 @@ class HTML:
             0,
             Node(
                 dom=self,
-                name="text",
+                name="::text",
                 parent=element,
                 text=attrs.get("value", attrs.get("placeholder", " ")) or " ",
             ),
@@ -4765,7 +4758,7 @@ class HTML:
                 )
 
         # Draw borders and padding on text inside inline elements
-        elif element.name == "text":
+        elif element.name == "::text":
             padding = theme.padding
             border_visibility = theme.border_visibility
             if (
