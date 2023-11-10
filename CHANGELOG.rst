@@ -16,6 +16,7 @@ Added
 Fixed
 =====
 
+- Kitty graphics now appear when using non-default color schemes
 - Prevent disabled forms being focused
 - Prevent rare error when closing a tab
 - Prevent error dialog collapsing at small terminal sizes
