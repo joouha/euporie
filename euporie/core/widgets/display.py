@@ -137,7 +137,7 @@ class DisplayControl(UIControl):
         """Render the lines to display in the control."""
         ft = datum.convert(to="ft", cols=width, rows=height)
         if width and height:
-            key = Datum.add_size(datum, Size(height, width))
+            key = Datum.add_size(datum, Size(height, self.width))
             ft = [(f"[Graphic_{key}]", ""), *ft]
         lines = list(split_lines(ft))
         if wrap_lines and width:
