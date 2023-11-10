@@ -421,7 +421,7 @@ class KittyGraphicControl(GraphicControl):
                 w=int(px * width / full_width),
                 # Pixel height of the displayed image region
                 h=int(py * height / full_height),
-                z=-(2**30) - 1,
+                # z=-(2**30) - 1,
             )
             return list(
                 split_lines(
