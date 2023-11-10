@@ -665,8 +665,8 @@ class SliderIpyWidgetComm(IpyWidgetComm, metaclass=ABCMeta):
             on_change=self.update_value,
             style="class:ipywidget",
             arrows=(
-                lambda: "▼" if vertical() else "⮜",
-                lambda: "⮝" if vertical() else "▶",
+                lambda: "▼" if vertical() else "◀",
+                lambda: "▲" if vertical() else "▶",
             ),
             show_arrows=True,
             vertical=Condition(
