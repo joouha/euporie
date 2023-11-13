@@ -53,7 +53,7 @@ DEFAULT_COLORS = {
 
 
 MIME_STYLE = [
-    ("mime.stream.stderr", "fg:ansired"),
+    ("mime-stream-stderr", "fg:ansired"),
 ]
 
 HTML_STYLE = [
@@ -158,10 +158,10 @@ IPYWIDGET_STYLE = [
     ("ipywidget progress warning", "fg:ansiyellow"),
     ("ipywidget progress danger", "fg:ansired"),
     ("ipywidget progress border", "bg:default"),
-    ("ipywidget progress border top", "fg:#606060"),
-    ("ipywidget progress border right", "fg:#E9E7E3"),
-    ("ipywidget progress border bottom", "fg:#E9E7E3"),
-    ("ipywidget progress border left", "fg:#606060"),
+    ("ipywidget progress border top", "fg:#E9E7E3"),
+    ("ipywidget progress border right", "fg:#606060"),
+    ("ipywidget progress border bottom", "fg:#606060"),
+    ("ipywidget progress border left", "fg:#E9E7E3"),
     ("ipywidget dropdown dropdown.menu", "fg:#000000 bg:#ffffff"),
     ("ipywidget dropdown dropdown.menu hovered", "fg:#ffffff bg:ansiblue"),
     ("ipywidget checkbox selection", "fg:default"),
