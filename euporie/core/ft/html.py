@@ -4655,8 +4655,8 @@ class HTML:
         content_height = theme.content_height
 
         # Apply style to inline elements
-        if d_inline:
-            ft = apply_style(ft, theme.style)
+        # if d_inline:
+        #     ft = apply_style(ft, theme.style)
 
         # If an element should not overflow it's width / height, truncate it
         if not d_inline and not preformatted:
@@ -4749,7 +4749,7 @@ class HTML:
             ):
                 ft = add_border(
                     ft,
-                    style=f"{theme.style} nounderline",
+                    style=theme.style,
                     border_grid=theme.border_grid,
                     width=content_width if not ft else None,
                     border_visibility=border_visibility,
@@ -4776,7 +4776,7 @@ class HTML:
                 if any(padding) or any(border_visibility):
                     ft = add_border(
                         ft,
-                        style=f"{theme.style} nounderline",
+                        style=theme.style,
                         border_grid=theme.border_grid,
                         width=content_width if not ft else None,
                         border_visibility=border_visibility,
@@ -4819,7 +4819,7 @@ class HTML:
         elif any(margin := theme.margin):
             ft = add_border(
                 ft=ft,
-                style=f"{parent_style} nounderline",
+                style=theme.style,
                 border_visibility=DiBool.from_value(False),
                 padding=margin,
                 padding_style=parent_style,
