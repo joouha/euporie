@@ -11,6 +11,7 @@ Upcoming
 Added
 =====
 
+- Allow scrolling to top of first cell and bottom of last cell with :kbd:`up` and :kbd:`down` if not visible
 - Display inline images in markdown and HTML using terminal graphics
 
 Fixed

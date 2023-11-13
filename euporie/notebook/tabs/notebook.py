@@ -325,7 +325,7 @@ class Notebook(BaseNotebook):
         self.page.select(index=index, extend=extend, position=position, scroll=scroll)
         # Focus the selected cell - use the current slice in case it did not change
         self.rendered_cells()[self.page.selected_slice.start].focus(
-            position, scroll=scroll
+            position, scroll=False
         )
 
     def scroll_to(self, index: int) -> None:
@@ -871,7 +871,7 @@ class Notebook(BaseNotebook):
         """Select the last cell in the notebook."""
         nb = get_app().tab
         if isinstance(nb, Notebook):
-            nb.select(len(nb.page.children))
+            nb.select(len(nb.page.children) - 1)
 
     @staticmethod
     @add_cmd(
