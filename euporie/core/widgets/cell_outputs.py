@@ -136,7 +136,7 @@ class CellOutputDataElement(CellOutputElement):
             focus_on_click=False,
             wrap_lines=config.filter("wrap_cell_outputs"),
             always_hide_cursor=True,
-            style=f"class:cell.output.element.data class:mime.{mime.replace('/','.')}",
+            style=f"class:mime-{mime.replace('/','-')}",
             scrollbar=False,
         )
 
