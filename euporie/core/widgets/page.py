@@ -28,7 +28,7 @@ from euporie.core.data_structures import DiInt
 from euporie.core.utils import run_in_thread_with_context
 
 if TYPE_CHECKING:
-    from typing import Callable, Iterable, Sequence
+    from typing import Callable, Iterable, Literal, Sequence
 
     from prompt_toolkit.key_binding.key_bindings import (
         KeyBindingsBase,
@@ -468,30 +468,30 @@ class ScrollingContainer(Container):
         return self._children
 
     def _set_selected_slice(
-        self, new_slice: slice, force: bool = False, scroll: bool = True
+        self, req_slice: slice, force: bool = False, scroll: bool = True
     ) -> None:
         # Only update the selected child if it was not selected before
-        if force or new_slice != self._selected_slice:
+        if force or req_slice != self._selected_slice:
             app = get_app()
             self.refresh_children = True
             # Ensure new selected slice is valid
-            new_slice = self.validate_slice(new_slice)
+            new_slice = self.validate_slice(req_slice)
             # Scroll into view
             if scroll:
-                self.scroll_to(new_slice.start)
+                anchor: Literal["top", "bottom"] | None = None
+                if (
+                    new_slice.start == len(self.children) - 1
+                    and req_slice.stop > new_slice.stop
+                ):
+                    anchor = "bottom"
+                elif req_slice.start == -1:
+                    anchor = "top"
+                self.scroll_to(new_slice.start, anchor)
             # Request a refresh of the previously selected children
             render_info: ChildRenderInfo | None
             for render_info in self._selected_child_render_infos:
                 if render_info:
                     render_info.invalidate()
-            # If a child currently has focus, request to refresh it
-            # for child in self.children:
-            #     if (
-            #         render_info := self.child_render_infos.get(hash(child))
-            #     ) is not None:
-            #         if app.layout.has_focus(render_info.child):
-            #             render_info.invalidate()
-            #             break
             # Get the first selected child and focus it
             child = self.children[new_slice.start]
             if not app.layout.has_focus(child):
@@ -919,11 +919,14 @@ class ScrollingContainer(Container):
             index = self.selected_slice.start
         return self.children[index]
 
-    def scroll_to(self, index: int) -> None:
+    def scroll_to(
+        self, index: int, anchor: Literal["top", "bottom"] | None = None
+    ) -> None:
         """Scroll a child into view.
 
         Args:
             index: The child index to scroll into view
+            anchor: Whether to scroll to the top or bottom the given child index
 
         """
         child_render_info = self.get_child_render_info(index)
@@ -953,14 +956,20 @@ class ScrollingContainer(Container):
                     )
 
         if new_top is None or new_top < 0:
-            self.selected_child_position = min(
-                0, self.last_write_position.height - child_render_info.height
-            )
+            if anchor == "top":
+                self.selected_child_position = 0
+            else:
+                self.selected_child_position = min(
+                    0, self.last_write_position.height - child_render_info.height
+                )
         elif new_top > self.last_write_position.height - child_render_info.height:
             self.selected_child_position = max(
-                0,
-                self.last_write_position.height - child_render_info.height,
+                0, self.last_write_position.height - child_render_info.height
             )
+            if anchor == "bottom":
+                self.selected_child_position -= (
+                    child_render_info.height - self.last_write_position.height
+                )
         else:
             self.selected_child_position = new_top
 
