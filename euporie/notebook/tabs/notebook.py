@@ -277,13 +277,17 @@ class Notebook(BaseNotebook):
     def enter_edit_mode(self) -> None:
         """Enter cell edit mode."""
         self.edit_mode = True
+        # Only one cell can be selected in edit mode
         self.select(self.cell.index)
         self.scroll_to(self.cell.index)
 
     def exit_edit_mode(self) -> None:
         """Leave cell edit mode."""
         self.edit_mode = False
-        self.select(self.cell.index)
+        # Focus the first selected cell
+        self.rendered_cells()[self.page.selected_slice.start].focus(
+            self.cell.index, scroll=False
+        )
 
     def mode(self) -> str:
         """Return a symbol representing the current mode.
