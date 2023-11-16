@@ -501,7 +501,7 @@ class CellOutputArea:
                 for line in control.get_lines(
                     control.datum,
                     width=88,
-                    height=99999999,
+                    height=None,
                     wrap_lines=config.wrap_cell_outputs,
                 ):
                     outputs.append(to_plain_text(line))

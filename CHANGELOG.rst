@@ -4,6 +4,16 @@ Changelog
 
 Notable changes to this project will be documented in this file.
 
+
+********
+Upcoming
+********
+
+Fixed
+=====
+
+- Prevent notebook app freezing when copying cell outputs
+
 *******************
 v2.6.0 (2023-11-13)
 *******************
