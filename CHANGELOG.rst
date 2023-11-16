@@ -12,6 +12,7 @@ Upcoming
 Fixed
 =====
 
+- Prevent exception when extending cell selection to include last cell
 - Prevent notebook app freezing when copying cell outputs
 
 *******************
