@@ -481,6 +481,7 @@ class ScrollingContainer(Container):
                 anchor: Literal["top", "bottom"] | None = None
                 if (
                     new_slice.start == len(self.children) - 1
+                    and new_slice.stop
                     and req_slice.stop > new_slice.stop
                 ):
                     anchor = "bottom"
