@@ -12,6 +12,7 @@ Upcoming
 Fixed
 =====
 
+- Do not expand ipywidget HTML widgets (improves appearance of ``tqdm.notebook`` progress bars)
 - Fix data update callbacks for HTML & Image ipywidgets
 - Fix running multiple cells
 - Prevent exception when extending cell selection to include last cell

@@ -30,6 +30,7 @@ async def html_to_ansi_w3m(
     datum: Datum,
     cols: int | None = None,
     rows: int | None = None,
+    extend: bool = True,
 ) -> str:
     """Convert HTML text to formatted ANSI using :command:`w3m`."""
     cmd: list[Any] = ["w3m", "-T", "text/html"]
@@ -47,6 +48,7 @@ async def html_to_ansi_elinks(
     datum: Datum,
     cols: int | None = None,
     rows: int | None = None,
+    extend: bool = True,
 ) -> str:
     """Convert HTML text to formatted ANSI using :command:`elinks`."""
     cmd: list[Any] = [
@@ -72,6 +74,7 @@ async def html_to_ansi_lynx(
     datum: Datum,
     cols: int | None = None,
     rows: int | None = None,
+    extend: bool = True,
 ) -> str:
     """Convert HTML text to formatted ANSI using :command:`lynx`."""
     cmd: list[Any] = ["lynx", "-dump", "-stdin"]
@@ -89,6 +92,7 @@ async def html_to_ansi_links(
     datum: Datum,
     cols: int | None = None,
     rows: int | None = None,
+    extend: bool = True,
 ) -> str:
     """Convert HTML text to formatted ANSI using :command:`links`."""
     cmd: list[Any] = ["links", "-dump"]
@@ -106,6 +110,7 @@ async def html_to_ansi_py_htmlparser(
     datum: Datum,
     cols: int | None = None,
     rows: int | None = None,
+    extend: bool = True,
 ) -> str:
     """Convert HTML tables to ANSI text using :py:mod:`HTMLParser`."""
     import io
@@ -159,6 +164,7 @@ async def latex_to_ansi_py_flatlatex(
     datum: Datum,
     cols: int | None = None,
     rows: int | None = None,
+    extend: bool = True,
 ) -> str:
     """Convert LaTeX to ANSI using :py:mod:`flatlatex`."""
     import flatlatex
@@ -175,6 +181,7 @@ async def latex_to_ansi_py_pylatexenc(
     datum: Datum,
     cols: int | None = None,
     rows: int | None = None,
+    extend: bool = True,
 ) -> str:
     """Convert LaTeX to ANSI using :py:mod:`pylatexenc`."""
     from pylatexenc.latex2text import LatexNodes2Text
@@ -191,6 +198,7 @@ async def latex_to_ansi_py_sympy(
     datum: Datum,
     cols: int | None = None,
     rows: int | None = None,
+    extend: bool = True,
 ) -> str:
     """Convert LaTeX to ANSI using :py:mod:`sympy`."""
     from sympy import pretty
@@ -212,6 +220,7 @@ async def pil_to_ansi_py_timg(
     datum: Datum,
     cols: int | None = None,
     rows: int | None = None,
+    extend: bool = True,
 ) -> str:
     """Convert a PIL image to ANSI text using :py:mod:`timg`."""
     import timg
@@ -253,6 +262,7 @@ async def pil_to_ansi_py_img2unicode(
     datum: Datum,
     cols: int | None = None,
     rows: int | None = None,
+    extend: bool = True,
 ) -> str:
     """Convert a PIL image to ANSI text using :py:mod:`img2unicode`."""
     import io
@@ -288,6 +298,7 @@ async def image_to_ansi_timg(
     datum: Datum,
     cols: int | None = None,
     rows: int | None = None,
+    extend: bool = True,
 ) -> str:
     """Convert image data to ANSI text using :command:`timg`."""
     cmd: list[Any] = ["timg"]
@@ -306,6 +317,7 @@ async def image_to_ansi_catimg(
     datum: Datum,
     cols: int | None = None,
     rows: int | None = None,
+    extend: bool = True,
 ) -> str:
     """Convert image data to ANSI text using :command:`catimg`."""
     cmd: list[Any] = ["catimg"]
@@ -324,6 +336,7 @@ async def image_to_ansi_icat(
     datum: Datum,
     cols: int | None = None,
     rows: int | None = None,
+    extend: bool = True,
 ) -> str:
     """Convert image data to ANSI text using :command:`icat`."""
     cmd: list[Any] = ["icat"]
@@ -342,6 +355,7 @@ async def image_to_ansi_tiv(
     datum: Datum,
     cols: int | None = None,
     rows: int | None = None,
+    extend: bool = True,
 ) -> str:
     """Convert image data to ANSI text using :command:`tiv`."""
     cmd: list[Any] = ["tiv"]
@@ -359,6 +373,7 @@ async def image_to_ansi_viu(
     datum: Datum,
     cols: int | None = None,
     rows: int | None = None,
+    extend: bool = True,
 ) -> str:
     """Convert image data to ANSI text using :command:`viu`."""
     cmd: list[Any] = ["viu", "-b"]
@@ -377,6 +392,7 @@ async def image_to_ansi_jp2a(
     datum: Datum,
     cols: int | None = None,
     rows: int | None = None,
+    extend: bool = True,
 ) -> str:
     """Convert image data to ANSI text using :command:`jp2a`."""
     cmd: list[Any] = ["jp2a", "--color"]
@@ -395,6 +411,7 @@ async def png_to_ansi_img2txt(
     datum: Datum,
     cols: int | None = None,
     rows: int | None = None,
+    extend: bool = True,
 ) -> str:
     """Convert PNG data to ANSI text using :command:`img2txt`."""
     cmd: list[Any] = ["img2txt"]
@@ -408,6 +425,7 @@ async def png_to_ansi_py_placeholder(
     datum: Datum,
     cols: int | None = None,
     rows: int | None = None,
+    extend: bool = True,
 ) -> str:
     """Draw placeholder ANSI text."""
     from euporie.core.border import RoundedLine
@@ -438,6 +456,7 @@ async def rich_to_ansi_py(
     datum: Datum,
     cols: int | None = None,
     rows: int | None = None,
+    extend: bool = True,
 ) -> str:
     """Convert rich objects to formatted ANSI text."""
     import rich

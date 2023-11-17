@@ -25,6 +25,7 @@ async def html_to_markdown_py_html2text(
     datum: Datum,
     cols: int | None = None,
     rows: int | None = None,
+    extend: bool = True,
 ) -> str:
     """Convert HTML to markdown tables using :py:mod:`html2text`."""
     import re
@@ -67,6 +68,7 @@ async def html_to_markdown_py_mtable(
     datum: Datum,
     cols: int | None = None,
     rows: int | None = None,
+    extend: bool = True,
 ) -> str:
     """Convert HTML tables to markdown tables using :py:mod:`mtable`."""
     from mtable import MarkupTable

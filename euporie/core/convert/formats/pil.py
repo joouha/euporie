@@ -42,6 +42,7 @@ async def png_to_pil_py(
     datum: Datum,
     cols: int | None = None,
     rows: int | None = None,
+    extend: bool = True,
 ) -> PilImage:
     """Convert PNG to a pillow image using :py:mod:`PIL`."""
     import io

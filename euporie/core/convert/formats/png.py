@@ -29,6 +29,7 @@ async def latex_to_png_dvipng(
     datum: Datum,
     cols: int | None = None,
     rows: int | None = None,
+    extend: bool = True,
     timeout: int = 2,
 ) -> bytes | None:
     """Render LaTeX as a png image using :command:`dvipng`.
@@ -109,6 +110,7 @@ async def latex_to_png_py_mpl(
     datum: Datum,
     cols: int | None = None,
     rows: int | None = None,
+    extend: bool = True,
 ) -> bytes:
     """Render LaTeX as a png image using :py:module:`matplotlib`.
 
@@ -149,6 +151,7 @@ async def pil_to_png_py_pil(
     datum: Datum,
     cols: int | None = None,
     rows: int | None = None,
+    extend: bool = True,
 ) -> bytes:
     """Convert a pillow image to sixels :py:mod:`teimpy`."""
     import io
@@ -167,6 +170,7 @@ async def svg_to_png_py_cairosvg(
     datum: Datum,
     cols: int | None = None,
     rows: int | None = None,
+    extend: bool = True,
 ) -> str:
     """Convert SVG to PNG using :py:mod:`cairosvg`."""
     import cairosvg

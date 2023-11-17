@@ -121,10 +121,14 @@ class Datum(Generic[T]):
 
         self._cell_size: tuple[int, float] | None = None
 
-        self._conversions: dict[tuple[str, int | None, int | None], T] = {}
+        self._conversions: dict[tuple[str, int | None, int | None, bool], T] = {}
 
         self._finalizer = finalize(self, self._cleanup_datum_sizes, self.hash)
         self._finalizer.atexit = False
+
+    def __repr__(self) -> str:
+        """Return a string representation of object."""
+        return f"{self.__class__.__name__}(format={self.format!r})"
 
     @classmethod
     def _cleanup_datum_sizes(cls, data_hash: str) -> None:
@@ -191,6 +195,7 @@ class Datum(Generic[T]):
         to: str,
         cols: int | None = None,
         rows: int | None = None,
+        extend: bool = True,
     ) -> Any:
         """Perform conversion asynchronously, caching the result."""
         if to == self.format:
@@ -198,7 +203,7 @@ class Datum(Generic[T]):
             return self.data
 
         if to in self._conversions:
-            return self._conversions[to, cols, rows]
+            return self._conversions[to, cols, rows, extend]
 
         routes = _CONVERTOR_ROUTE_CACHE[(self.format, to)]
         # log.debug(
@@ -225,8 +230,8 @@ class Datum(Generic[T]):
                         key=lambda x: x.weight,
                     )[0].func
                     try:
-                        output = await func(datum, cols, rows)
-                        self._conversions[stage_b, cols, rows] = output
+                        output = await func(datum, cols, rows, extend)
+                        self._conversions[stage_b, cols, rows, extend] = output
                     except Exception:
                         log.exception("An error occurred during format conversion")
                         output = None
@@ -271,9 +276,10 @@ class Datum(Generic[T]):
         to: str,
         cols: int | None = None,
         rows: int | None = None,
+        extend: bool = True,
     ) -> Any:
         """Convert between formats."""
-        return self._to_sync(self.convert_async(to, cols, rows))
+        return self._to_sync(self.convert_async(to, cols, rows, extend))
 
     async def pixel_size_async(self) -> tuple[int | None, int | None]:
         """Get the dimensions of displayable data in pixels.
