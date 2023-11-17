@@ -12,6 +12,7 @@ Upcoming
 Fixed
 =====
 
+- Fix data update callbacks for HTML & Image ipywidgets
 - Fix running multiple cells
 - Prevent exception when extending cell selection to include last cell
 - Prevent notebook app freezing when copying cell outputs

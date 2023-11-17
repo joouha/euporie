@@ -1264,7 +1264,9 @@ class HTMLModel(IpyWidgetComm):
                 padding_right=0,
             ),
             setters={
-                "value": partial(setattr, html, "data"),
+                "value": lambda data: setattr(
+                    html, "datum", Datum(data, format="html")
+                ),
             },
         )
 
@@ -1295,9 +1297,11 @@ class ImageModel(IpyWidgetComm):
         return CommView(
             box,
             setters={
-                "value": partial(setattr, display, "data"),
-                "width": lambda x: partial(setattr, display, "px")(int(x)),
-                "height": lambda x: partial(setattr, display, "py")(int(x)),
+                "value": lambda data: setattr(
+                    display, "datum", Datum(data, format="html")
+                ),
+                "width": lambda x: setattr(display, "px", int(x)),
+                "height": lambda y: setattr(display, "py", int(y)),
             },
         )
 
