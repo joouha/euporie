@@ -63,6 +63,7 @@ async def markdown_to_html_markdown_it(
     datum: Datum,
     cols: int | None = None,
     rows: int | None = None,
+    extend: bool = True,
 ) -> str:
     """Convert markdown to HTML using :py:mod:`markdownit_py`."""
     assert markdown_parser is not None

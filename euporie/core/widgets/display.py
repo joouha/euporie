@@ -63,6 +63,7 @@ class DisplayControl(UIControl):
         focusable: FilterOrBool = False,
         focus_on_click: FilterOrBool = False,
         wrap_lines: FilterOrBool = False,
+        dont_extend_width: FilterOrBool = False,
         threaded: bool = False,
     ) -> None:
         """Create a new web-view control instance."""
@@ -70,6 +71,7 @@ class DisplayControl(UIControl):
         self.focusable = to_filter(focusable)
         self.focus_on_click = to_filter(focus_on_click)
         self.wrap_lines = to_filter(wrap_lines)
+        self.dont_extend_width = to_filter(dont_extend_width)
         self.threaded = threaded
 
         self._cursor_position = Point(0, 0)
@@ -135,7 +137,9 @@ class DisplayControl(UIControl):
         wrap_lines: bool = False,
     ) -> list[StyleAndTextTuples]:
         """Render the lines to display in the control."""
-        ft = datum.convert(to="ft", cols=width, rows=height)
+        ft = datum.convert(
+            to="ft", cols=width, rows=height, extend=not self.dont_extend_width()
+        )
         if width and height:
             key = Datum.add_size(datum, Size(height, self.width))
             ft = [(f"[Graphic_{key}]", ""), *ft]
@@ -183,7 +187,13 @@ class DisplayControl(UIControl):
     def preferred_width(self, max_available_width: int) -> int | None:
         """Calculate and return the preferred width of the control."""
         max_cols, aspect = self.datum.cell_size()
-        return min(max_cols, max_available_width) if max_cols else max_available_width
+        if max_cols:
+            return min(max_cols, max_available_width)
+        self.lines = self._line_cache[
+            self.datum, max_available_width, None, self.wrap_lines()
+        ]
+        return max(fragment_list_width(line) for line in self.lines)
+        return max_available_width
 
     def preferred_height(
         self,
@@ -512,6 +522,7 @@ class Display:
         scrollbar: FilterOrBool = True,
         scrollbar_autohide: FilterOrBool = True,
         dont_extend_height: FilterOrBool = True,
+        dont_extend_width: FilterOrBool = False,
         style: str | Callable[[], str] = "",
     ) -> None:
         """Instantiate an Output container object.
@@ -527,6 +538,7 @@ class Display:
             scrollbar: Whether to show a scrollbar
             scrollbar_autohide: Whether to automatically hide the scrollbar
             dont_extend_height: Whether the window should fill the available height
+            dont_extend_width: Whether the content should fill the available width
             style: The style to apply to the output
 
         """
@@ -537,6 +549,7 @@ class Display:
             focusable=focusable,
             focus_on_click=focus_on_click,
             wrap_lines=wrap_lines,
+            dont_extend_width=dont_extend_width,
         )
 
         self.window = DisplayWindow(

@@ -129,7 +129,7 @@ dependencies = [
 check = [
     "ruff check {args:euporie tests scripts}",
     "ruff format --check {args:euporie tests scripts}",
-    "codespell {args:euporie tests scripts docs/pages}",
+    "codespell {args:euporie tests scripts docs/pages README.rst CHANGELOG.rst}",
 ]
 fix = [
     "ruff check --fix {args:euporie tests scripts}",

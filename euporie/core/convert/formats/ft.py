@@ -33,6 +33,7 @@ async def html_to_ft(
     datum: Datum,
     cols: int | None = None,
     rows: int | None = None,
+    extend: bool = True,
 ) -> StyleAndTextTuples:
     """Convert markdown to formatted text."""
     from euporie.core.ft.html import HTML
@@ -47,6 +48,7 @@ async def html_to_ft(
             width=cols,
             base=datum.path,
             collapse_root_margin=True,
+            fill=extend,
             _initial_format=datum.root.format,
         ),
     )
@@ -69,6 +71,7 @@ async def ansi_to_ft(
     datum: Datum,
     cols: int | None = None,
     rows: int | None = None,
+    extend: bool = True,
 ) -> StyleAndTextTuples:
     """Convert ANSI text to formatted text, lexing & formatting automatically."""
     data = datum.data

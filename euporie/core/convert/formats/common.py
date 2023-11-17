@@ -21,6 +21,7 @@ async def base64_to_bytes_py(
     datum: Datum,
     cols: int | None = None,
     rows: int | None = None,
+    extend: bool = True,
 ) -> bytes:
     """Convert base64 encoded data to bytes."""
     data = datum.data
@@ -33,6 +34,7 @@ async def imagemagick_convert(
     datum: Datum,
     cols: int | None = None,
     rows: int | None = None,
+    extend: bool = True,
 ) -> str | bytes:
     """Convert image data to PNG bytes using ``imagemagick``."""
     cmd: list[Any] = ["convert", "-density", "300"]
@@ -58,6 +60,7 @@ async def chafa_convert_cmd(
     datum: Datum,
     cols: int | None = None,
     rows: int | None = None,
+    extend: bool = True,
 ) -> str | bytes:
     """Convert image data to ANSI text using :command:`chafa`."""
     cmd: list[Any] = ["chafa", f"--format={output_format}"]
@@ -79,6 +82,7 @@ async def chafa_convert_py(
     datum: Datum,
     cols: int | None = None,
     rows: int | None = None,
+    extend: bool = True,
 ) -> str | bytes:
     """Convert image data to ANSI text using ::`chafa.py`."""
     from chafa.chafa import Canvas, CanvasConfig, PixelMode, PixelType

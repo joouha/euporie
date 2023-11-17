@@ -1256,6 +1256,7 @@ class HTMLModel(IpyWidgetComm):
         """Create a new view of the HTML widget."""
         html = Display(
             Datum(data=self.data["state"].get("value", ""), format="html"),
+            dont_extend_width=True,
         )
         return CommView(
             Box(
