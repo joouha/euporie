@@ -7,7 +7,6 @@ from functools import partial
 from typing import TYPE_CHECKING, cast
 
 import nbformat
-from prompt_toolkit.application.run_in_terminal import in_terminal
 from prompt_toolkit.buffer import Buffer, ValidationState
 from prompt_toolkit.filters.app import (
     buffer_has_focus,
@@ -239,17 +238,12 @@ class Console(KernelTab):
             self.app.invalidate()
 
     def render_outputs(self, app: Application[Any]) -> None:
-        """Request that any unrendered outputs be rendered."""
+        """Render any unrendered outputs right now."""
         if self.output.json:
-            self.app.create_background_task(self.async_render_outputs())
-
-    async def async_render_outputs(self) -> None:
-        """Render any unrendered outputs above the application."""
-        if self.output.json:
-            # Run the output app in the terminal
-            async with in_terminal():
-                self.app.renderer.render(self.app, self.output_layout, is_done=True)
-            # Remove the outputs so they do not get rendered again
+            original_layout = self.app.layout
+            self.app.layout = self.output_layout
+            self.app.renderer.render(self.app, self.output_layout, is_done=True)
+            self.app.layout = original_layout
             self.output.reset()
 
     def reset(self) -> None:
