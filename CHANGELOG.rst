@@ -6,6 +6,15 @@ Notable changes to this project will be documented in this file.
 
 
 *******************
+v2.6.2 (2023-11-23)
+*******************
+
+Fixed
+=====
+
+- Fix terminal graphics in euporie-console
+
+*******************
 v2.6.1 (2023-11-17)
 *******************
 
