@@ -246,10 +246,9 @@ async def pil_to_ansi_py_timg(
     # resizing the image
     data = data.resize((cols, ceil(rows * 2 * (px / py) / 0.5)))
 
-    bg = str(datum.bg) or get_app().color_palette.bg.base_hex
+    bg = str(datum.bg or get_app().color_palette.bg.base_hex)
     if bg:
         data = set_background(data, bg)
-    data = set_background(data, bg)
     return timg.Ansi24HblockMethod(data).to_string()
 
 
