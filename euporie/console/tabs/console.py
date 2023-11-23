@@ -238,12 +238,15 @@ class Console(KernelTab):
             self.app.invalidate()
 
     def render_outputs(self, app: Application[Any]) -> None:
-        """Render any unrendered outputs right now."""
+        """Request that any unrendered outputs be rendered."""
         if self.output.json:
+            app = self.app
             original_layout = self.app.layout
-            self.app.layout = self.output_layout
-            self.app.renderer.render(self.app, self.output_layout, is_done=True)
-            self.app.layout = original_layout
+            app.layout = self.output_layout
+            app.renderer.render(self.app, self.output_layout, is_done=True)
+            app.renderer.request_absolute_cursor_position()
+            app.layout = original_layout
+            # Remove the outputs so they do not get rendered again
             self.output.reset()
 
     def reset(self) -> None:
