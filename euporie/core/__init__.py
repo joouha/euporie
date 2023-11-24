@@ -6,7 +6,7 @@ __logo__ = "⚈"
 __strapline__ = "Jupyter in the terminal"
 __author__ = "Josiah Outram Halstead"
 __email__ = "josiah@halstead.email"
-__copyright__ = f"© 2022, {__author__}"
+__copyright__ = f"© 2023, {__author__}"
 __license__ = "MIT"
 
 
