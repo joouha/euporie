@@ -365,10 +365,8 @@ class BaseApp(Application):
         with set_app(self):
             # Load key bindings
             self.load_key_bindings()
-
             # Send queries to the terminal
             self.term_info.send_all()
-
             # Read responses
             kp = self.key_processor
 
@@ -376,9 +374,9 @@ class BaseApp(Application):
                 kp.feed_multiple(self.input.read_keys())
 
             with self.input.raw_mode(), self.input.attach(read_from_input):
-                # Wait up to half a second for the terminal to respond to queries
-                await asyncio.sleep(0.5)
-
+                # Give the terminal time to respond and allow the event loop to read
+                # the terminal responses from the input
+                await asyncio.sleep(0.1)
             kp.process_keys()
 
         return await super().run_async(
@@ -495,10 +493,6 @@ class BaseApp(Application):
         setup_logs()
         # Load the app's configuration
         cls.config.load(cls)
-        # Configure the logs
-        setup_logs(cls.config)
-        # Warn about unrecognised configuration items
-        cls.config.warn()
         # Run the application
         with create_app_session(input=cls.load_input(), output=cls.load_output()):
             # Create an instance of the app and run it
@@ -524,13 +518,9 @@ class BaseApp(Application):
         output = self.output
         self.exit()
         # Reset terminal state
-        # output.quit_alternate_screen()
-        # output.disable_mouse_support()
         output.reset_cursor_key_mode()
         output.enable_autowrap()
-        # output.disable_bracketed_paste()
         output.clear_title()
-        # output.reset_cursor_shape()
         output.show_cursor()
         output.reset_attributes()
         self.renderer.reset()
