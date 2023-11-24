@@ -378,19 +378,14 @@ class Config:
 
         # Save a list of unknown configuration options so we can warn about them once
         # the logs are configured
-        self.unrecognised = [
-            (map_name, option_name)
-            for map_name, map_values in config_maps.items()
-            for option_name in map_values.keys() - Config.settings.keys()
-            if not isinstance(set_values[option_name], dict)
-        ]
-
-    def warn(self) -> None:
-        """Warn about unrecognised configuration items."""
-        for map_name, option_name in self.unrecognised:
-            log.warning(
-                "Configuration option '%s' not recognised in %s", option_name, map_name
-            )
+        for map_name, map_values in config_maps.items():
+            for option_name in map_values.keys() - Config.settings.keys():
+                if not isinstance(set_values[option_name], dict):
+                    log.warning(
+                        "Configuration option '%s' not recognised in %s",
+                        option_name,
+                        map_name,
+                    )
 
     @property
     def schema(self) -> dict[str, Any]:
