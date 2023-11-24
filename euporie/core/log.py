@@ -371,7 +371,7 @@ def setup_logs(config: Config | None = None) -> None:
         "disable_existing_loggers": False,
         "formatters": {
             "file_format": {
-                "format": "{asctime} {levelname:<7} [{name}.{funcName}:{lineno}] {message}",
+                "format": "{asctime}.{msecs:03.0f} {levelname:<7} [{name}.{funcName}:{lineno}] {message}",
                 "style": "{",
                 "datefmt": "%Y-%m-%d %H:%M:%S",
             },
