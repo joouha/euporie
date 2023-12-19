@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, NamedTuple
 
+from prompt_toolkit.cache import FastDictCache
 from prompt_toolkit.data_structures import Point
 from prompt_toolkit.key_binding.bindings.mouse import (
     MOUSE_MOVE,
@@ -59,99 +60,131 @@ class MouseEvent(PtkMouseEvent):
         self.cell_position = cell_position or RelativePosition(0.5, 0.5)
 
 
-def load_mouse_bindings() -> KeyBindings:
-    """Additional key-bindings to deal with SGR-pixel mouse positioning."""
-    key_bindings = load_ptk_mouse_bindings()
+def _parse_mouse_data(
+    data: str, sgr_pixels: bool, cell_size_xy: tuple[int, int]
+) -> MouseEvent | None:
+    """Convert key-press data to a mouse event."""
+    rx = ry = 0.5
 
-    @key_bindings.add(Keys.Vt100MouseEvent)
-    def _(event: KeyPressEvent) -> NotImplementedOrNone:
-        """Handle incoming mouse event, include SGR-pixel mode."""
-        # Ensure mypy knows this would only run in a euporie app
-        assert isinstance(event.app, BaseApp)
+    # Parse incoming packet.
+    if data[2] == "M":
+        # Typical.
+        mouse_event, x, y = map(ord, data[3:])
 
-        rx = ry = 0.5
+        # TODO: Is it possible to add modifiers here?
+        mouse_button, mouse_event_type, mouse_modifiers = typical_mouse_events[
+            mouse_event
+        ]
 
-        # Parse incoming packet.
-        if event.data[2] == "M":
-            # Typical.
-            mouse_event, x, y = map(ord, event.data[3:])
+        # Handle situations where `PosixStdinReader` used surrogateescapes.
+        if x >= 0xDC00:
+            x -= 0xDC00
+        if y >= 0xDC00:
+            y -= 0xDC00
 
-            # TODO: Is it possible to add modifiers here?
-            mouse_button, mouse_event_type, mouse_modifiers = typical_mouse_events[
-                mouse_event
-            ]
-
-            # Handle situations where `PosixStdinReader` used surrogateescapes.
-            if x >= 0xDC00:
-                x -= 0xDC00
-            if y >= 0xDC00:
-                y -= 0xDC00
-
-            x -= 32
-            y -= 32
+        x -= 32
+        y -= 32
+    else:
+        # Urxvt and Xterm SGR.
+        # When the '<' is not present, we are not using the Xterm SGR mode,
+        # but Urxvt instead.
+        data = data[2:]
+        if data[:1] == "<":
+            sgr = True
+            data = data[1:]
         else:
-            # Urxvt and Xterm SGR.
-            # When the '<' is not present, we are not using the Xterm SGR mode,
-            # but Urxvt instead.
-            data = event.data[2:]
-            if data[:1] == "<":
-                sgr = True
-                data = data[1:]
-            else:
-                sgr = False
+            sgr = False
 
-            # Extract coordinates.
-            mouse_event, x, y = map(int, data[:-1].split(";"))
-            m = data[-1]
+        # Extract coordinates.
+        mouse_event, x, y = map(int, data[:-1].split(";"))
+        m = data[-1]
 
-            # Parse event type.
-            if sgr:
-                if event.app.term_info.sgr_pixel_status.value:
-                    # Calculate cell position
-                    cell_px, cell_py = event.app.term_info.cell_size_px
-                    px, py = x, y
-                    fx, fy = px / cell_px + 1, py / cell_py + 1
-                    x, y = int(fx), int(fy)
-                    rx, ry = fx - x, fy - y
+        # Parse event type.
+        if sgr:
+            if sgr_pixels:
+                # Calculate cell position
+                cell_x, cell_y = cell_size_xy
+                px, py = x, y
+                fx, fy = px / cell_x + 1, py / cell_y + 1
+                x, y = int(fx), int(fy)
+                rx, ry = fx - x, fy - y
 
-                try:
-                    (
-                        mouse_button,
-                        mouse_event_type,
-                        mouse_modifiers,
-                    ) = xterm_sgr_mouse_events[mouse_event, m]
-                except KeyError:
-                    return NotImplemented
-
-            else:
-                # Some other terminals, like urxvt, Hyper terminal, ...
+            try:
                 (
                     mouse_button,
                     mouse_event_type,
                     mouse_modifiers,
-                ) = urxvt_mouse_events.get(
-                    mouse_event, (UNKNOWN_BUTTON, MOUSE_MOVE, UNKNOWN_MODIFIER)
-                )
+                ) = xterm_sgr_mouse_events[mouse_event, m]
+            except KeyError:
+                return None
 
-        x -= 1
-        y -= 1
+        else:
+            # Some other terminals, like urxvt, Hyper terminal, ...
+            (
+                mouse_button,
+                mouse_event_type,
+                mouse_modifiers,
+            ) = urxvt_mouse_events.get(
+                mouse_event, (UNKNOWN_BUTTON, MOUSE_MOVE, UNKNOWN_MODIFIER)
+            )
+
+    x -= 1
+    y -= 1
+
+    return MouseEvent(
+        position=Point(x=x, y=y),
+        event_type=mouse_event_type,
+        button=mouse_button,
+        modifiers=mouse_modifiers,
+        cell_position=RelativePosition(rx, ry),
+    )
+
+
+_MOUSE_EVENT_CACHE: FastDictCache[
+    tuple[str, bool, tuple[int, int]], MouseEvent | None
+] = FastDictCache(get_value=_parse_mouse_data)
+
+
+def load_mouse_bindings() -> KeyBindings:
+    """Additional key-bindings to deal with SGR-pixel mouse positioning."""
+    key_bindings = load_ptk_mouse_bindings()
+
+    @key_bindings.add(Keys.Vt100MouseEvent, eager=True)
+    def _(event: KeyPressEvent) -> NotImplementedOrNone:
+        """Handle incoming mouse event, include SGR-pixel mode."""
+        # Ensure mypy knows this would only run in a euporie appo
+        assert isinstance(app := event.app, BaseApp)
+
+        if not event.app.renderer.height_is_known:
+            return NotImplemented
+
+        mouse_event = _MOUSE_EVENT_CACHE[
+            event.data, app.term_info.sgr_pixel_status.value, app.term_info.cell_size_px
+        ]
+
+        if mouse_event is None:
+            return NotImplemented
 
         # Only handle mouse events when we know the window height.
-        if event.app.renderer.height_is_known and mouse_event_type is not None:
+        if mouse_event.event_type is not None:
             # Take region above the layout into account. The reported
             # coordinates are absolute to the visible part of the terminal.
             from prompt_toolkit.renderer import HeightIsUnknownError
 
+            x, y = mouse_event.position
+
             try:
-                y -= event.app.renderer.rows_above_layout
+                rows_above = app.renderer.rows_above_layout
             except HeightIsUnknownError:
                 return NotImplemented
+            else:
+                y -= rows_above
 
             # Save global mouse position
-            event.app.mouse_position = Point(x=x, y=y)
+            app.mouse_position = mouse_event.position
 
             # Apply limits to mouse position if enabled
-            if (mouse_limits := event.app.mouse_limits) is not None:
+            if (mouse_limits := app.mouse_limits) is not None:
                 x = max(
                     mouse_limits.xpos,
                     min(x, mouse_limits.xpos + (mouse_limits.width - 1)),
@@ -161,6 +194,8 @@ def load_mouse_bindings() -> KeyBindings:
                     min(y, mouse_limits.ypos + (mouse_limits.height - 1)),
                 )
 
+            mouse_event.position = Point(x=x, y=y)
+
             # Call the mouse handler from the renderer.
             # Note: This can return `NotImplemented` if no mouse handler was
             #       found for this position, or if no repainting needs to
@@ -168,15 +203,7 @@ def load_mouse_bindings() -> KeyBindings:
             #       movements.
             handler = event.app.renderer.mouse_handlers.mouse_handlers[y][x]
 
-            return handler(
-                MouseEvent(
-                    position=Point(x=x, y=y),
-                    event_type=mouse_event_type,
-                    button=mouse_button,
-                    modifiers=mouse_modifiers,
-                    cell_position=RelativePosition(rx, ry),
-                )
-            )
+            return handler(mouse_event)
 
         return NotImplemented
 
