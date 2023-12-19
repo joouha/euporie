@@ -31,8 +31,8 @@ from euporie.core.filters import (
     in_tmux,
 )
 from euporie.core.ft.utils import _ZERO_WIDTH_FRAGMENTS
+from euporie.core.layout.scroll import BoundedWritePosition
 from euporie.core.terminal import tmuxify
-from euporie.core.widgets.page import BoundedWritePosition
 
 if TYPE_CHECKING:
     from typing import Any, Callable
@@ -591,6 +591,8 @@ class GraphicWindow(Window):
                     and new_write_position.width
                     and new_write_position.height
                 ):
+                    # Do not pass the bbox on to the window when writing
+                    new_write_position.bbox = DiInt(0, 0, 0, 0)
                     super().write_to_screen(
                         screen,
                         MouseHandlers(),  # Do not let the float add mouse events
