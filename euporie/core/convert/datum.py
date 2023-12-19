@@ -201,7 +201,7 @@ class Datum(Generic[T], metaclass=_MetaDatum):
             # TODO - crop
             return self.data
 
-        if to in self._conversions:
+        if (to, cols, rows, extend) in self._conversions:
             return self._conversions[to, cols, rows, extend]
 
         routes = _CONVERTOR_ROUTE_CACHE[(self.format, to)]
