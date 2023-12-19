@@ -55,11 +55,11 @@ async def html_to_ft(
     return await html._render(cols, rows)
 
 
-_BLACKLISTED_LEXERS = {
-    "CBM BASIC V2",
-    "Tera Term macro",
-    "Text only",
-    "GDScript",
+_WHITELISTED_LEXERS = {
+    "python",
+    "markdown",
+    "javacript",
+    "json",
 }
 
 
@@ -72,6 +72,7 @@ async def ansi_to_ft(
     cols: int | None = None,
     rows: int | None = None,
     extend: bool = True,
+    lex: bool = False,
 ) -> StyleAndTextTuples:
     """Convert ANSI text to formatted text, lexing & formatting automatically."""
     data = datum.data
@@ -83,9 +84,9 @@ async def ansi_to_ft(
         # Replace tabs with spaces
         markup = markup.expandtabs()
         # Use lexer whitelist
-        if (
+        if lex and (
             lexer := detect_lexer(markup, path=datum.path)
-        ) is not None and lexer.name not in _BLACKLISTED_LEXERS:
+        ) is not None and lexer.name in _WHITELISTED_LEXERS:
             from prompt_toolkit.lexers.pygments import _token_cache
 
             log.debug('Lexing output using "%s" lexer', lexer.name)
