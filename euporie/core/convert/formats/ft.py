@@ -58,7 +58,7 @@ async def html_to_ft(
 _WHITELISTED_LEXERS = {
     "python",
     "markdown",
-    "javacript",
+    "javascript",
     "json",
 }
 
@@ -84,9 +84,11 @@ async def ansi_to_ft(
         # Replace tabs with spaces
         markup = markup.expandtabs()
         # Use lexer whitelist
-        if lex and (
-            lexer := detect_lexer(markup, path=datum.path)
-        ) is not None and lexer.name in _WHITELISTED_LEXERS:
+        if (
+            lex
+            and (lexer := detect_lexer(markup, path=datum.path)) is not None
+            and lexer.name in _WHITELISTED_LEXERS
+        ):
             from prompt_toolkit.lexers.pygments import _token_cache
 
             log.debug('Lexing output using "%s" lexer', lexer.name)
