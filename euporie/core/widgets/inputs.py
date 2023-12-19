@@ -16,7 +16,7 @@ from prompt_toolkit.filters import (
     to_filter,
 )
 from prompt_toolkit.key_binding.key_bindings import merge_key_bindings
-from prompt_toolkit.layout.containers import ConditionalContainer
+from prompt_toolkit.layout.containers import ConditionalContainer, ScrollOffsets
 from prompt_toolkit.layout.margins import ConditionalMargin
 from prompt_toolkit.layout.processors import (  # HighlightSearchProcessor,
     ConditionalProcessor,
@@ -84,6 +84,7 @@ class KernelInput(TextArea):
         complete_while_typing: FilterOrBool = True,
         autosuggest_while_typing: FilterOrBool = True,
         validate_while_typing: FilterOrBool | None = None,
+        scroll_offsets: ScrollOffsets | None = None,
         **kwargs: Any,
     ) -> None:
         """Initiate the cell input box."""
@@ -193,6 +194,11 @@ class KernelInput(TextArea):
         )
 
         self.window.cursorline = self.has_focus
+
+        # Set scroll offsets
+        self.window.scroll_offsets = scroll_offsets or ScrollOffsets(
+            top=1, right=1, bottom=1, left=1
+        )
 
         # Set extra key-bindings
         widgets_key_bindings = load_registered_bindings(
