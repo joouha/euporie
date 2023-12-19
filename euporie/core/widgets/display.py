@@ -167,7 +167,6 @@ class DisplayControl(UIControl):
         rows = ceil(cols * aspect) if aspect else self.height
 
         def _render() -> None:
-            # Potentially redirect url
             self.lines = self._line_cache[datum, cols, rows, wrap_lines]
             self.loading = False
             self.resizing = False
@@ -186,6 +185,8 @@ class DisplayControl(UIControl):
 
     def preferred_width(self, max_available_width: int) -> int | None:
         """Calculate and return the preferred width of the control."""
+        ###### TODOD - use line width cache for speedup ####################
+        return max_available_width
         max_cols, aspect = self.datum.cell_size()
         if max_cols:
             return min(max_cols, max_available_width)
@@ -193,7 +194,6 @@ class DisplayControl(UIControl):
             self.datum, max_available_width, None, self.wrap_lines()
         ]
         return max(fragment_list_width(line) for line in self.lines)
-        return max_available_width
 
     def preferred_height(
         self,

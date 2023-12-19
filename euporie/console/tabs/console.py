@@ -43,13 +43,13 @@ from euporie.core.key_binding.registry import (
     load_registered_bindings,
     register_bindings,
 )
+from euporie.core.layout.print import PrintingContainer
 from euporie.core.style import KERNEL_STATUS_REPR
 from euporie.core.tabs.base import KernelTab
 from euporie.core.terminal import edit_in_editor
 from euporie.core.validation import KernelValidator
 from euporie.core.widgets.cell_outputs import CellOutputArea
 from euporie.core.widgets.inputs import KernelInput, StdInput
-from euporie.core.widgets.page import PrintingContainer
 from euporie.core.widgets.pager import PagerState
 
 if TYPE_CHECKING:
