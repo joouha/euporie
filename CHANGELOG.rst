@@ -9,6 +9,11 @@ Notable changes to this project will be documented in this file.
 v2.6.2 (2023-11-23)
 *******************
 
+Added
+=====
+
+- Set scroll offset to 1 on cell inputs
+
 Fixed
 =====
 
