@@ -12,6 +12,7 @@ v2.6.2 (2023-11-23)
 Fixed
 =====
 
+- Fix issue when moving cursor up between cells cursor, where cursor moved to second last character
 - Fix terminal graphics in euporie-console
 
 *******************
