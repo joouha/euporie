@@ -3494,6 +3494,7 @@ class HTML:
         Do not touch element's themes!
         """
         url_cbs = {}
+        url_fs_map = {}
 
         def _process_css(data: bytes) -> None:
             try:
@@ -3529,6 +3530,8 @@ class HTML:
                 and (href := attrs.get("href", ""))
             ):
                 url = urljoin(str(self.base), href)
+                fs, url = url_to_fs(url)
+                url_fs_map[url] = fs
                 url_cbs[url] = _process_css
 
             # In case of a <style> tab, load first child's text
@@ -3542,20 +3545,29 @@ class HTML:
             elif child.name == "img" and (src := child.attrs.get("src")):
                 child.attrs["_missing"] = "true"
                 url = urljoin(str(self.base), src)
+                fs, url = url_to_fs(url)
+                url_fs_map[url] = fs
                 url_cbs[url] = partial(_process_img, child)
 
         # Load all remote assets for each protocol using fsspec (where they are loaded
         # asynchronously in their own thread) and trigger callbacks if the file is
         # loaded successfully
-        m = [url_to_fs(url) for url in url_cbs]
-        fs_to_urls = {fs: [url for f, url in m if f == fs] for fs in dict(m)}
-        for fs, urls in fs_to_urls.items():
-            for url, result in fs.cat(urls).items():
-                if not isinstance(result, Exception):
-                    log.debug("File %s loaded", url)
-                    url_cbs[url](result)
-                else:
-                    log.error("Error loading %s", url)
+        fs_url_map = {
+            fs: [url for url, f in url_fs_map.items() if f == fs]
+            for fs in set(url_fs_map.values())
+        }
+        for fs, urls in fs_url_map.items():
+            try:
+                results = fs.cat(urls)
+            except Exception:
+                log.warning("Error connecting to %s", fs)
+            else:
+                for url, result in zip(urls, results.values()):
+                    if not isinstance(result, Exception):
+                        log.debug("File %s loaded", url)
+                        url_cbs[url](result)
+                    else:
+                        log.warning("Error loading %s", url)
 
         self.assets_loaded = True
 
