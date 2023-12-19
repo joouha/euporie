@@ -67,6 +67,7 @@ class KeyProcessor(PtKeyProcessor):
     def process_keys(self) -> None:
         """Process all the keys in the input queue."""
         app = get_app()
+        input_queue = self.input_queue
 
         def not_empty() -> bool:
             # When the application result is set, stop processing keys.  (E.g.
@@ -86,7 +87,14 @@ class KeyProcessor(PtKeyProcessor):
                 self.input_queue.remove(cpr)
                 return cpr
             else:
-                return self.input_queue.popleft()
+                return input_queue.popleft()
+
+        # Throttle repeated mouse events - limit to 10 per flush
+        if len(input_queue) >= 10 and not any(
+            input_queue[i].key != Keys.Vt100MouseEvent for i in range(10)
+        ):
+            for _ in range(len(input_queue) - 10):
+                input_queue.popleft()
 
         is_flush = False
 
