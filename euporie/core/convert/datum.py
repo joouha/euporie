@@ -209,10 +209,6 @@ class Datum(Generic[T], metaclass=_MetaDatum):
         #     "Converting from '%s' to '%s' using route: %s", self, to, routes
         # )
         if not routes:
-            # raise NotImplementedError(
-            # f"Cannot convert from `self.format` to `to`"
-            # )
-            log.warning("Cannot convert from `%s` to `%s`", self.format, to)
             output = None
         else:
             datum = self
@@ -298,7 +294,10 @@ class Datum(Generic[T], metaclass=_MetaDatum):
             # Do not bother trying if the format is ANSI
             if self.format != "ansi" and (px is None or py is None):
                 # Try using imagesize to get the size of the output
-                if self.format not in {"png", "svg", "jpeg", "gif", "tiff"}:
+                if (
+                    self.format not in {"png", "svg", "jpeg", "gif", "tiff"}
+                    and _CONVERTOR_ROUTE_CACHE[(self.format, "png")]
+                ):
                     data = await self.convert_async(to="png")
                 else:
                     data = self.data
