@@ -442,7 +442,7 @@ class Cell:
                 self.rendered = False
             if position is not None:
                 self.input_box.buffer.cursor_position = position % (
-                    len(self.input_box.buffer.text) or 1
+                    len(self.input_box.buffer.text) + 1
                 )
         else:
             to_focus = self.kernel_tab.cell.control
