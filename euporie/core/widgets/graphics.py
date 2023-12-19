@@ -800,7 +800,7 @@ class GraphicProcessor:
 
         GraphicControl = select_graphic_control(format_=datum.format)
         if GraphicControl is None:
-            log.debug("Terminal graphics not supported or format not graphical")
+            # log.debug("Terminal graphics not supported or format not graphical")
             return None
 
         bg_color = datum.bg
