@@ -77,26 +77,28 @@ def get_loop() -> asyncio.AbstractEventLoop:
     return _LOOP[0]
 
 
-class Datum(Generic[T]):
+class _MetaDatum(type):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self._instances: WeakValueDictionary[str, Datum] = WeakValueDictionary()
+
+    def __call__(self, data: T, *args: Any, **kwargs: Any) -> Datum[T]:
+        data_hash = Datum.get_hash(data)
+        if data_hash in self._instances:
+            return self._instances[data_hash]
+        instance = super().__call__(data, *args, **kwargs)
+        self._instances[data_hash] = instance
+        return instance
+
+
+class Datum(Generic[T], metaclass=_MetaDatum):
     """Class for storing and converting display data."""
 
     _pixel_size: tuple[int | None, int | None]
     _hash: str
     _root: ReferenceType[Datum]
 
-    _instances: WeakValueDictionary[str, Datum] = WeakValueDictionary()
     _sizes: ClassVar[dict[str, tuple[ReferenceType[Datum], Size]]] = {}
-
-    def __new__(cls, data: T, *args: Any, **kwargs: Any) -> Datum:
-        """Create a single instance based on unique data."""
-        data_hash = cls.get_hash(data)
-
-        if instance := cls._instances.get(data_hash):
-            return instance
-
-        instance = super().__new__(cls)
-        cls._instances[data_hash] = instance
-        return instance
 
     def __init__(
         self,
@@ -118,11 +120,8 @@ class Datum(Generic[T]):
         self.bg = str(bg) if bg else None
         self.path = path
         self.source: ReferenceType[Datum] = ref(source) if source else ref(self)
-
         self._cell_size: tuple[int, float] | None = None
-
         self._conversions: dict[tuple[str, int | None, int | None, bool], T] = {}
-
         self._finalizer = finalize(self, self._cleanup_datum_sizes, self.hash)
         self._finalizer.atexit = False
 
