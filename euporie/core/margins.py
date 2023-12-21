@@ -516,32 +516,29 @@ class NumberedDiffMargin(Margin):
         # Construct margin.
         result: StyleAndTextTuples = []
         last_lineno = None
-        if len(window_render_info.displayed_lines) > 1:
-            for lineno in window_render_info.displayed_lines:
-                # Only display line number if this line is not a continuation of the previous line.
-                if lineno != last_lineno:
-                    if lineno is None:
-                        pass
-                    linestr = str(lineno + 1).rjust(width - 2)
-                    style = self.style
-                    if lineno == current_lineno and get_app().layout.has_focus(
-                        window_render_info.window
-                    ):
-                        style = f"{style} class:line-number.current"
-                    result.extend(
-                        [
-                            (f"{style},edge", "▏"),
-                            (style, linestr),
-                            (f"{style},edge", "▕"),
-                        ]
-                    )
-                last_lineno = lineno
-                result.append(("", "\n"))
-        else:
-            style = f"{self.style} class:line-number.current"
-            result.extend(
-                [(f"{style},edge", "▏"), (style, " "), (f"{style},edge", "▕")]
-            )
+        for lineno in window_render_info.displayed_lines:
+            # Only display line number if this line is not a continuation of the previous line.
+            if lineno != last_lineno:
+                if lineno is None:
+                    pass
+                linestr = str(lineno + 1).rjust(width - 2)
+                style = self.style
+                if (
+                    lineno == current_lineno
+                    and get_app().layout.has_focus(window_render_info.window)
+                    # Only highlight line number if there are multiple lines
+                    and len(window_render_info.displayed_lines) > 1
+                ):
+                    style = f"{style} class:line-number.current"
+                result.extend(
+                    [
+                        (f"{style},edge", "▏"),
+                        (style, linestr),
+                        (f"{style},edge", "▕"),
+                    ]
+                )
+            last_lineno = lineno
+            result.append(("", "\n"))
 
         return result
 
