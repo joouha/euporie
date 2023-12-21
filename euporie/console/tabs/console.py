@@ -407,9 +407,13 @@ class Console(KernelTab):
             height=1,
         )
 
+        def _handler(buffer: Buffer) -> bool:
+            self.run(buffer)
+            return True
+
         self.input_box = KernelInput(
             kernel_tab=self,
-            accept_handler=self.run,
+            accept_handler=_handler,
             on_cursor_position_changed=on_cursor_position_changed,
             validator=KernelValidator(self.kernel),
             # validate_while_typing=False,

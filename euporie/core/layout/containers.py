@@ -56,6 +56,7 @@ class HSplit(containers.HSplit):
         :param screen: The :class:`~prompt_toolkit.layout.screen.Screen` class
             to which the output has to be written.
         """
+        assert isinstance(write_position, BoundedWritePosition)
         sizes = self._divide_heights(write_position)
         style = parent_style + " " + to_str(self.style)
         z_index = z_index if self.z_index is None else self.z_index
@@ -146,7 +147,7 @@ class HSplit(containers.HSplit):
 def _get_divided_heights(
     width: int, height: int, children: list[Container]
 ) -> list[int] | None:
-    dimensions = tuple(c.preferred_height(width, height) for c in children)
+    dimensions = [c.preferred_height(width, height) for c in children]
 
     # Sum dimensions
     sum_dimensions = sum_layout_dimensions(dimensions)
@@ -205,6 +206,7 @@ class VSplit(containers.VSplit):
         :param screen: The :class:`~prompt_toolkit.layout.screen.Screen` class
             to which the output has to be written.
         """
+        assert isinstance(write_position, BoundedWritePosition)
         if not self.children:
             return
 
@@ -303,6 +305,7 @@ class Window(containers.Window):
         z_index: int | None,
     ) -> None:
         """Write window to screen."""
+        assert isinstance(write_position, BoundedWritePosition)
         # If dont_extend_width/height was given. Then reduce width/height in
         # WritePosition if the parent wanted us to paint in a bigger area.
         # (This happens if this window is bundled with another window in a
@@ -356,6 +359,7 @@ class Window(containers.Window):
         parent_style: str,
         erase_bg: bool,
     ) -> None:
+        assert isinstance(write_position, BoundedWritePosition)
         # Don't bother writing invisible windows.
         # (We save some time, but also avoid applying last-line styling.)
         if write_position.height <= 0 or write_position.width <= 0:
@@ -549,6 +553,7 @@ class Window(containers.Window):
         get_line_prefix: Callable[[int, int], AnyFormattedText] | None = None,
     ) -> tuple[dict[int, tuple[int, int]], dict[tuple[int, int], tuple[int, int]]]:
         """Copy the UIContent into the output screen."""
+        assert isinstance(write_position, BoundedWritePosition)
         xpos = write_position.xpos + move_x
         ypos = write_position.ypos
         line_count = ui_content.line_count
@@ -778,6 +783,7 @@ class Window(containers.Window):
         width: int,
     ) -> None:
         """Copy characters from the margin screen to the real screen."""
+        assert isinstance(write_position, BoundedWritePosition)
         xpos = write_position.xpos + move_x
         ypos = write_position.ypos
         wp_bbox = write_position.bbox
@@ -791,6 +797,7 @@ class Window(containers.Window):
         self, screen: Screen, write_position: WritePosition, erase_bg: bool
     ) -> None:
         """Erase/fill the background."""
+        assert isinstance(write_position, BoundedWritePosition)
         char: str | None
         char = self.char() if callable(self.char) else self.char
 
@@ -971,7 +978,7 @@ class FloatContainer(containers.FloatContainer):
                 )
 
 
-containers.HSplit = HSplit
-containers.VSplit = VSplit
-containers.Window = Window
-containers.FloatContainer = FloatContainer
+containers.HSplit = HSplit  # type: ignore[misc]
+containers.VSplit = VSplit  # type: ignore[misc]
+containers.Window = Window  # type: ignore[misc]
+containers.FloatContainer = FloatContainer  # type: ignore[misc]

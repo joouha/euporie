@@ -21,6 +21,7 @@ if TYPE_CHECKING:
     from prompt_toolkit.filters import FilterOrBool
     from prompt_toolkit.layout.layout import Layout
     from prompt_toolkit.layout.screen import Char
+    from prompt_toolkit.layout.screen import Screen as PtkScreen
     from prompt_toolkit.output import ColorDepth, Output
     from prompt_toolkit.styles import BaseStyle
 
@@ -33,10 +34,10 @@ log = logging.getLogger(__name__)
 def _output_screen_diff(
     app: Application[Any],
     output: Output,
-    screen: Screen,
+    screen: PtkScreen,
     current_pos: Point,
     color_depth: ColorDepth,
-    previous_screen: Screen | None,
+    previous_screen: PtkScreen | None,
     last_style: str | None,
     is_done: bool,  # XXX: drop is_done
     full_screen: bool,
