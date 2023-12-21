@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """Publish euporie to PyPi."""
 
 import logging

@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """Prints the application's key bindings as a RST table."""
 
 from __future__ import annotations

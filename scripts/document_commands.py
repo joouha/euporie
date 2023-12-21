@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """Fill in the command reference in euporie's documentation."""
 
 from __future__ import annotations
