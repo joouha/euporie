@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """Fill in the configuration option in euporie's documentation."""
 
 from __future__ import annotations

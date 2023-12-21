@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """Modify pre-commit hook to run inside hatch environment."""
 
 import os
