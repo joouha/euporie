@@ -36,6 +36,7 @@ if TYPE_CHECKING:
     )
     from prompt_toolkit.layout.containers import AnyContainer
     from prompt_toolkit.layout.dimension import AnyDimension
+    from prompt_toolkit.layout.screen import Screen as PtkScreen
     from prompt_toolkit.layout.screen import WritePosition
     from prompt_toolkit.utils import Event
 
@@ -193,7 +194,7 @@ class ChildRenderInfo:
 
     def blit(
         self,
-        screen: Screen,
+        screen: PtkScreen,
         mouse_handlers: MouseHandlers,
         left: int,
         top: int,
@@ -661,7 +662,7 @@ class ScrollingContainer(Container):
 
     def write_to_screen(
         self,
-        screen: Screen,
+        screen: PtkScreen,
         mouse_handlers: MouseHandlers,
         write_position: WritePosition,
         parent_style: str,
@@ -1074,7 +1075,7 @@ class PrintingContainer(Container):
 
     def write_to_screen(
         self,
-        screen: Screen,
+        screen: PtkScreen,
         mouse_handlers: MouseHandlers,
         write_position: WritePosition,
         parent_style: str,

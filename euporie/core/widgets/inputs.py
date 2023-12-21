@@ -70,7 +70,7 @@ if TYPE_CHECKING:
     from typing import Callable, Sequence
 
     from prompt_toolkit.buffer import BufferAcceptHandler
-    from prompt_toolkit.filters import FilterOrBool
+    from prompt_toolkit.filters import Filter, FilterOrBool
     from prompt_toolkit.formatted_text import (
         AnyFormattedText,
     )
@@ -129,7 +129,7 @@ class KernelInput(TextArea):
         on_cursor_position_changed: Callable[[Buffer], None] | None = None,
         tempfile_suffix: str | Callable[[], str] = "",
         key_bindings: KeyBindingsBase | None = None,
-        enable_history_search: FilterOrBool | None = False,
+        enable_history_search: FilterOrBool = False,
         autosuggest_while_typing: FilterOrBool = True,
         validate_while_typing: FilterOrBool = False,
         scroll_offsets: ScrollOffsets | None = None,
@@ -142,7 +142,7 @@ class KernelInput(TextArea):
             history = kernel_tab.history
 
         if search_field is None:
-            search_control = app.search_bar
+            search_field = app.search_bar
         if isinstance(search_field, SearchToolbar):
             search_control = search_field.control
         else:
@@ -271,7 +271,7 @@ class KernelInput(TextArea):
         )
         scrollbar_margin.filter &= scrollable(self.window)
 
-        self.has_focus = has_focus(self.buffer)
+        self.has_focus: Filter = has_focus(self.buffer)
 
     def inspect(self) -> None:
         """Get contextual help for the current cursor position in the current cell."""
