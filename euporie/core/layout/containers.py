@@ -30,7 +30,8 @@ if TYPE_CHECKING:
 
     from prompt_toolkit.formatted_text import AnyFormattedText, StyleAndTextTuples
     from prompt_toolkit.key_binding.key_bindings import NotImplementedOrNone
-    from prompt_toolkit.layout.containers import Container, Float
+    from prompt_toolkit.layout.containers import Float
+    from prompt_toolkit.layout.dimension import Dimension
     from prompt_toolkit.layout.margins import Margin
     from prompt_toolkit.layout.mouse_handlers import MouseHandlers
     from prompt_toolkit.layout.screen import Screen, WritePosition
@@ -140,17 +141,19 @@ class HSplit(containers.HSplit):
         width = write_position.width
         height = write_position.height
 
-        return _get_divided_heights(width, height, tuple(self._all_children))
+        return _get_divided_heights(
+            width,
+            height,
+            tuple(c.preferred_height(width, height) for c in self._all_children),
+        )
 
 
 @lru_cache(maxsize=2048)
 def _get_divided_heights(
-    width: int, height: int, children: list[Container]
+    width: int, height: int, dimensions: tuple[Dimension, ...]
 ) -> list[int] | None:
-    dimensions = [c.preferred_height(width, height) for c in children]
-
     # Sum dimensions
-    sum_dimensions = sum_layout_dimensions(dimensions)
+    sum_dimensions = sum_layout_dimensions(list(dimensions))
 
     # If there is not enough space for both.
     # Don't do anything.
@@ -306,8 +309,8 @@ class Window(containers.Window):
     ) -> None:
         """Write window to screen."""
         assert isinstance(write_position, BoundedWritePosition)
-        # If dont_extend_width/height was given. Then reduce width/height in
-        # WritePosition if the parent wanted us to paint in a bigger area.
+        # If dont_extend_width/height was given, then reduce width/height in
+        # WritePosition, if the parent wanted us to paint in a bigger area.
         # (This happens if this window is bundled with another window in a
         # HSplit/VSplit, but with different size requirements.)
         write_position = BoundedWritePosition(
@@ -372,8 +375,7 @@ class Window(containers.Window):
 
         # Render UserControl.
         ui_content = self.content.create_content(
-            write_position.width - total_margin_width,
-            10,  # write_position.height
+            write_position.width - total_margin_width, write_position.height
         )
         assert isinstance(ui_content, UIContent)
 
