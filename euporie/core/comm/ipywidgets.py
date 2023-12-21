@@ -16,14 +16,13 @@ from typing import TYPE_CHECKING
 from prompt_toolkit.filters.base import Condition
 from prompt_toolkit.layout.containers import HSplit, VSplit
 from prompt_toolkit.layout.processors import BeforeInput
-from prompt_toolkit.widgets.base import Box
 
 from euporie.core.comm.base import Comm, CommView
 from euporie.core.convert.datum import Datum
 from euporie.core.data_structures import DiBool
 from euporie.core.kernel import MsgCallbacks
+from euporie.core.layout.decor import FocusedStyle
 from euporie.core.widgets.cell_outputs import CellOutputArea
-from euporie.core.widgets.decor import FocusedStyle
 from euporie.core.widgets.display import Display
 from euporie.core.widgets.forms import (
     Button,
@@ -39,7 +38,12 @@ from euporie.core.widgets.forms import (
     ToggleButton,
     ToggleButtons,
 )
-from euporie.core.widgets.layout import AccordionSplit, ReferencedSplit, TabbedSplit
+from euporie.core.widgets.layout import (
+    AccordionSplit,
+    Box,
+    ReferencedSplit,
+    TabbedSplit,
+)
 
 if TYPE_CHECKING:
     from typing import Any, Iterable, MutableSequence, Sequence

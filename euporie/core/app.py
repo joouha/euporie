@@ -39,7 +39,7 @@ from prompt_toolkit.key_binding.key_bindings import (
     ConditionalKeyBindings,
     merge_key_bindings,
 )
-from prompt_toolkit.layout.containers import Float, FloatContainer, Window, to_container
+from prompt_toolkit.layout.containers import Float, FloatContainer, to_container
 from prompt_toolkit.layout.layout import Layout
 from prompt_toolkit.output import ColorDepth
 from prompt_toolkit.output.defaults import create_output
@@ -73,6 +73,7 @@ from euporie.core.key_binding.registry import (
     register_bindings,
 )
 from euporie.core.key_binding.vi_state import ViState
+from euporie.core.layout.containers import Window
 from euporie.core.log import setup_logs
 from euporie.core.path import parse_path
 from euporie.core.renderer import Renderer

@@ -44,7 +44,7 @@ from prompt_toolkit.layout.utils import explode_text_fragments
 from prompt_toolkit.mouse_events import MouseButton, MouseEvent, MouseEventType
 from prompt_toolkit.utils import Event
 from prompt_toolkit.validation import Validator
-from prompt_toolkit.widgets.base import Box, TextArea
+from prompt_toolkit.widgets.base import TextArea
 
 from euporie.core.border import InsetGrid
 from euporie.core.current import get_app
@@ -52,7 +52,7 @@ from euporie.core.data_structures import DiBool
 from euporie.core.ft.utils import FormattedTextAlign, align
 from euporie.core.margins import MarginContainer, ScrollbarMargin
 from euporie.core.widgets.decor import Border, Shadow
-from euporie.core.widgets.layout import ConditionalSplit
+from euporie.core.widgets.layout import Box, ConditionalSplit
 
 if TYPE_CHECKING:
     from typing import Any, Callable, Sequence
@@ -631,6 +631,19 @@ class Text:
             focus_on_click=self.text_area.control.focus_on_click,
             key_bindings=self.text_area.control.key_bindings,
             expand=expand,
+        )
+        window = self.text_area.window
+        self.text_area.window = Window(
+            height=window.height,
+            width=window.width,
+            dont_extend_height=window.dont_extend_height,
+            dont_extend_width=window.dont_extend_width,
+            content=self.text_area.control,
+            style=window.style,
+            wrap_lines=window.wrap_lines,
+            left_margins=window.left_margins,
+            right_margins=window.right_margins,
+            get_line_prefix=window.get_line_prefix,
         )
         self.text_area.window.content = self.text_area.control
 

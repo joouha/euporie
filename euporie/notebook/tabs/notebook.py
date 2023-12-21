@@ -39,13 +39,13 @@ from euporie.core.key_binding.registry import (
     load_registered_bindings,
     register_bindings,
 )
+from euporie.core.layout.decor import Line, Pattern
 from euporie.core.layout.scroll import ScrollingContainer
 from euporie.core.margins import MarginContainer, ScrollbarMargin
 from euporie.core.style import KERNEL_STATUS_REPR
 from euporie.core.tabs.base import KernelTab
 from euporie.core.tabs.notebook import BaseNotebook
 from euporie.core.widgets.cell import Cell
-from euporie.core.widgets.decor import Line, Pattern
 from euporie.notebook.filters import (
     cell_has_focus,
     code_cell_selected,

@@ -27,15 +27,12 @@ from prompt_toolkit.layout.containers import (
     ConditionalContainer,
     DynamicContainer,
     Float,
-    HSplit,
-    VSplit,
-    Window,
 )
 from prompt_toolkit.layout.controls import FormattedTextControl, UIContent, UIControl
 from prompt_toolkit.layout.dimension import Dimension
 from prompt_toolkit.layout.screen import WritePosition
 from prompt_toolkit.mouse_events import MouseButton, MouseEventType
-from prompt_toolkit.widgets.base import Box, Label
+from prompt_toolkit.widgets.base import Label
 
 from euporie.core.app import get_app
 from euporie.core.border import (
@@ -47,10 +44,13 @@ from euporie.core.commands import add_cmd
 from euporie.core.filters import tab_has_focus
 from euporie.core.ft.utils import FormattedTextAlign, align, lex
 from euporie.core.key_binding.registry import register_bindings
+from euporie.core.layout.containers import HSplit, VSplit, Window
+from euporie.core.layout.decor import FocusedStyle
 from euporie.core.tabs.base import Tab
-from euporie.core.widgets.decor import Border, FocusedStyle, Shadow
+from euporie.core.widgets.decor import Border, Shadow
 from euporie.core.widgets.file_browser import FileBrowser
 from euporie.core.widgets.forms import Button, LabelledWidget, Select, Text
+from euporie.core.widgets.layout import Box
 
 if TYPE_CHECKING:
     from typing import Any, Callable, Hashable

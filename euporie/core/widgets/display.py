@@ -10,7 +10,7 @@ from prompt_toolkit.cache import FastDictCache
 from prompt_toolkit.data_structures import Point, Size
 from prompt_toolkit.filters.utils import to_filter
 from prompt_toolkit.formatted_text.utils import fragment_list_width, split_lines
-from prompt_toolkit.layout.containers import ConditionalContainer, VSplit, Window
+from prompt_toolkit.layout.containers import ConditionalContainer
 from prompt_toolkit.layout.controls import GetLinePrefixCallable, UIContent, UIControl
 from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
 from prompt_toolkit.utils import Event, to_str
@@ -27,6 +27,7 @@ from euporie.core.key_binding.registry import (
     load_registered_bindings,
     register_bindings,
 )
+from euporie.core.layout.containers import VSplit, Window
 from euporie.core.margins import MarginContainer, ScrollbarMargin
 from euporie.core.utils import run_in_thread_with_context
 from euporie.core.widgets.graphics import (

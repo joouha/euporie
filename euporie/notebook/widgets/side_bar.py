@@ -19,7 +19,7 @@ from prompt_toolkit.layout.controls import FormattedTextControl
 from euporie.core.commands import add_cmd
 from euporie.core.config import add_setting
 from euporie.core.key_binding.registry import register_bindings
-from euporie.core.widgets.decor import Line
+from euporie.core.layout.decor import Line
 from euporie.core.widgets.forms import ToggleButton, ToggleButtons
 
 if TYPE_CHECKING:

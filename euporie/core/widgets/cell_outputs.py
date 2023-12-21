@@ -11,10 +11,8 @@ from prompt_toolkit.cache import SimpleCache
 from prompt_toolkit.filters import buffer_has_focus
 from prompt_toolkit.layout.containers import (
     DynamicContainer,
-    HSplit,
     to_container,
 )
-from prompt_toolkit.widgets.base import Box
 
 from euporie.core.config import add_setting
 from euporie.core.convert.datum import Datum
@@ -22,7 +20,9 @@ from euporie.core.convert.formats import BASE64_FORMATS
 from euporie.core.convert.mime import MIME_FORMATS
 from euporie.core.convert.registry import find_route
 from euporie.core.current import get_app
+from euporie.core.layout.containers import HSplit
 from euporie.core.widgets.display import Display
+from euporie.core.widgets.layout import Box
 from euporie.core.widgets.tree import JsonView
 
 if TYPE_CHECKING:

@@ -13,9 +13,6 @@ from prompt_toolkit.layout.containers import (
     ConditionalContainer,
     DynamicContainer,
     FloatContainer,
-    HSplit,
-    VSplit,
-    Window,
     WindowAlign,
 )
 from prompt_toolkit.layout.controls import FormattedTextControl
@@ -28,7 +25,8 @@ from euporie.core.commands import add_cmd, get_cmd
 from euporie.core.config import add_setting
 from euporie.core.ft.utils import truncate
 from euporie.core.key_binding.registry import register_bindings
-from euporie.core.widgets.decor import Pattern
+from euporie.core.layout.containers import HSplit, VSplit, Window
+from euporie.core.layout.decor import Pattern
 from euporie.core.widgets.dialog import (
     AboutDialog,
     ConfirmDialog,

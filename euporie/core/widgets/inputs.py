@@ -6,6 +6,10 @@ import contextlib
 import logging
 from typing import TYPE_CHECKING
 
+from prompt_toolkit.auto_suggest import AutoSuggest, DynamicAutoSuggest
+from prompt_toolkit.buffer import Buffer
+from prompt_toolkit.completion import Completer, DynamicCompleter
+from prompt_toolkit.document import Document
 from prompt_toolkit.filters import (
     Condition,
     buffer_has_focus,
@@ -13,21 +17,36 @@ from prompt_toolkit.filters import (
     has_selection,
     is_done,
     is_searching,
+    is_true,
     to_filter,
 )
 from prompt_toolkit.key_binding.key_bindings import merge_key_bindings
-from prompt_toolkit.layout.containers import ConditionalContainer, ScrollOffsets
+from prompt_toolkit.layout.containers import (
+    ConditionalContainer,
+    ScrollOffsets,
+)
+from prompt_toolkit.layout.controls import (
+    BufferControl,
+    GetLinePrefixCallable,
+)
+from prompt_toolkit.layout.dimension import AnyDimension
+from prompt_toolkit.layout.dimension import Dimension as D
 from prompt_toolkit.layout.margins import ConditionalMargin
 from prompt_toolkit.layout.processors import (  # HighlightSearchProcessor,
+    BeforeInput,
     ConditionalProcessor,
     DisplayMultipleCursors,
     HighlightIncrementalSearchProcessor,
     HighlightMatchingBracketProcessor,
     HighlightSelectionProcessor,
+    PasswordProcessor,
+    Processor,
     TabsProcessor,
 )
 from prompt_toolkit.lexers import DynamicLexer, PygmentsLexer, SimpleLexer
+from prompt_toolkit.validation import DynamicValidator, Validator
 from prompt_toolkit.widgets import TextArea
+from prompt_toolkit.widgets.toolbars import SearchToolbar
 from pygments.lexers import ClassNotFound, get_lexer_by_name
 
 from euporie.core.commands import add_cmd
@@ -38,6 +57,7 @@ from euporie.core.key_binding.registry import (
     load_registered_bindings,
     register_bindings,
 )
+from euporie.core.layout.containers import Window
 from euporie.core.margins import NumberedDiffMargin, OverflowMargin, ScrollbarMargin
 from euporie.core.processors import (
     AppendLineAutoSuggestion,
@@ -47,10 +67,14 @@ from euporie.core.suggest import ConditionalAutoSuggestAsync
 from euporie.core.widgets.pager import PagerState
 
 if TYPE_CHECKING:
-    from typing import Any, Callable, Sequence
+    from typing import Callable, Sequence
 
-    from prompt_toolkit.buffer import Buffer
+    from prompt_toolkit.buffer import BufferAcceptHandler
     from prompt_toolkit.filters import FilterOrBool
+    from prompt_toolkit.formatted_text import (
+        AnyFormattedText,
+    )
+    from prompt_toolkit.history import History
     from prompt_toolkit.key_binding.key_bindings import KeyBindingsBase
     from prompt_toolkit.layout.containers import AnyContainer
     from prompt_toolkit.layout.layout import FocusableElement
@@ -72,7 +96,33 @@ class KernelInput(TextArea):
     def __init__(
         self,
         kernel_tab: KernelTab,
-        *args: Any,
+        text: str = "",
+        multiline: FilterOrBool = True,
+        password: FilterOrBool = False,
+        lexer: Lexer | None = None,
+        auto_suggest: AutoSuggest | None = None,
+        completer: Completer | None = None,
+        complete_while_typing: FilterOrBool = True,
+        validator: Validator | None = None,
+        accept_handler: BufferAcceptHandler | None = None,
+        history: History | None = None,
+        focusable: FilterOrBool = True,
+        focus_on_click: FilterOrBool = True,
+        wrap_lines: FilterOrBool = False,
+        read_only: FilterOrBool = False,
+        width: AnyDimension = None,
+        height: AnyDimension = None,
+        dont_extend_height: FilterOrBool = False,
+        dont_extend_width: FilterOrBool = False,
+        line_numbers: bool = False,
+        get_line_prefix: GetLinePrefixCallable | None = None,
+        scrollbar: FilterOrBool = True,
+        style: str = "class:kernel-input",
+        search_field: SearchToolbar | None = None,
+        preview_search: FilterOrBool = True,
+        prompt: AnyFormattedText = "",
+        input_processors: list[Processor] | None = None,
+        name: str = "",
         left_margins: Sequence[Margin] | None = None,
         right_margins: Sequence[Margin] | None = None,
         on_text_changed: Callable[[Buffer], None] | None = None,
@@ -80,39 +130,26 @@ class KernelInput(TextArea):
         tempfile_suffix: str | Callable[[], str] = "",
         key_bindings: KeyBindingsBase | None = None,
         enable_history_search: FilterOrBool | None = False,
-        wrap_lines: FilterOrBool = False,
-        complete_while_typing: FilterOrBool = True,
         autosuggest_while_typing: FilterOrBool = True,
-        validate_while_typing: FilterOrBool | None = None,
+        validate_while_typing: FilterOrBool = False,
         scroll_offsets: ScrollOffsets | None = None,
-        **kwargs: Any,
     ) -> None:
         """Initiate the cell input box."""
         self.kernel_tab = kernel_tab
         app = kernel_tab.app
 
-        kwargs.setdefault("wrap_lines", wrap_lines)
-        kwargs.setdefault("style", "class:kernel-input")
-        kwargs.setdefault("history", kernel_tab.history)
-        kwargs.setdefault("search_field", app.search_bar)
-        kwargs.setdefault("focus_on_click", True)
-        kwargs.setdefault("preview_search", True)
-        kwargs.setdefault(
-            "input_processors",
-            [
-                ConditionalProcessor(
-                    HighlightIncrementalSearchProcessor(),
-                    filter=is_searching,
-                ),
-                # HighlightSearchProcessor(),
-                HighlightSelectionProcessor(),
-                DisplayMultipleCursors(),
-                HighlightMatchingBracketProcessor(),
-                TabsProcessor(char1="⇥", char2="┈"),
-                ShowTrailingWhiteSpaceProcessor(),
-            ],
-        )
-        kwargs.setdefault("completer", kernel_tab.completer)
+        if history is None:
+            history = kernel_tab.history
+
+        if search_field is None:
+            search_control = app.search_bar
+        if isinstance(search_field, SearchToolbar):
+            search_control = search_field.control
+        else:
+            search_control = None
+
+        if input_processors is None:
+            input_processors = []
 
         def _get_lexer() -> Lexer:
             try:
@@ -124,80 +161,39 @@ class KernelInput(TextArea):
             else:
                 return PygmentsLexer(pygments_lexer_class, sync_from_start=False)
 
-        kwargs.setdefault("lexer", DynamicLexer(_get_lexer))
-        kwargs.setdefault(
-            "auto_suggest",
-            ConditionalAutoSuggestAsync(
-                self.kernel_tab.suggester,
-                filter=to_filter(autosuggest_while_typing)
-                & Condition(lambda: app.config.autosuggest),
-            ),
-        )
-        kwargs["complete_while_typing"] = Condition(
+        # Writeable attributes.
+        self.completer = completer or kernel_tab.completer
+        self.complete_while_typing = Condition(
             lambda: app.config.autocomplete
         ) & to_filter(complete_while_typing)
-
-        super().__init__(*args, **kwargs)
-
-        if validate_while_typing:
-            self.buffer.validate_while_typing = to_filter(validate_while_typing)
-
-        self.control.include_default_input_processors = False
-        if on_text_changed:
-            self.buffer.on_text_changed += on_text_changed
-        if on_cursor_position_changed:
-            self.buffer.on_cursor_position_changed += on_cursor_position_changed
-        self.buffer.tempfile_suffix = tempfile_suffix or kernel_tab.kernel_lang_file_ext
-
-        if enable_history_search is not None:
-            self.buffer.enable_history_search = to_filter(enable_history_search)
-
-        self.has_focus = has_focus(self)
-
-        # Replace the autosuggest processor
-        # Skip type checking as PT should use "("Optional[Sequence[Processor]]"
-        # instead of "Optional[list[Processor]]"
-        # TODO make a PR for this
-        self.control.input_processors[0] = ConditionalProcessor(  # type: ignore
-            AppendLineAutoSuggestion(),
-            has_focus(self.buffer) & ~is_done,
+        self.auto_suggest = auto_suggest or ConditionalAutoSuggestAsync(
+            self.kernel_tab.suggester,
+            filter=to_filter(autosuggest_while_typing)
+            & Condition(lambda: app.config.autosuggest),
         )
+        self.read_only = read_only
+        self.wrap_lines = wrap_lines
+        self.validator = validator
+        self.lexer = lexer
 
-        # Set style
-        style = kwargs.get("style", "")
-        self.window.style = lambda: (
-            "class:text-area " + ("class:focused " if self.has_focus() else "") + style
-        )
-
-        # Add configurable line numbers
-        self.window.left_margins = (
-            left_margins
-            if left_margins is not None
-            else [
-                ConditionalMargin(
-                    NumberedDiffMargin(),
-                    Condition(lambda: self.kernel_tab.app.config.line_numbers),
-                )
-            ]
-        )
-
-        self.window.right_margins = (
-            right_margins
-            if right_margins is not None
-            else [
-                OverflowMargin(),
-                ConditionalMargin(
-                    ScrollbarMargin(display_arrows=False),
-                    filter=scrollable(self.window),
-                ),
-            ]
-        )
-
-        self.window.cursorline = self.has_focus
-
-        # Set scroll offsets
-        self.window.scroll_offsets = scroll_offsets or ScrollOffsets(
-            top=1, right=1, bottom=1, left=1
+        self.buffer = Buffer(
+            document=Document(text, 0),
+            multiline=multiline,
+            read_only=Condition(lambda: is_true(self.read_only)),
+            completer=DynamicCompleter(lambda: self.completer),
+            complete_while_typing=Condition(
+                lambda: is_true(self.complete_while_typing)
+            ),
+            validator=DynamicValidator(lambda: self.validator),
+            auto_suggest=DynamicAutoSuggest(lambda: self.auto_suggest),
+            accept_handler=accept_handler,
+            history=history,
+            name=name,
+            validate_while_typing=validate_while_typing,
+            on_text_changed=on_text_changed,
+            on_cursor_position_changed=on_cursor_position_changed,
+            tempfile_suffix=tempfile_suffix or kernel_tab.kernel_lang_file_ext,
+            enable_history_search=to_filter(enable_history_search),
         )
 
         # Set extra key-bindings
@@ -208,7 +204,74 @@ class KernelInput(TextArea):
             widgets_key_bindings = merge_key_bindings(
                 [key_bindings, widgets_key_bindings]
             )
-        self.control.key_bindings = widgets_key_bindings
+
+        self.control = BufferControl(
+            buffer=self.buffer,
+            lexer=DynamicLexer(lambda: self.lexer or _get_lexer()),
+            input_processors=[
+                ConditionalProcessor(  # type: ignore
+                    AppendLineAutoSuggestion(),
+                    has_focus(self.buffer) & ~is_done,
+                ),
+                ConditionalProcessor(
+                    processor=PasswordProcessor(), filter=to_filter(password)
+                ),
+                BeforeInput(prompt, style="class:text-area.prompt"),
+                ConditionalProcessor(
+                    HighlightIncrementalSearchProcessor(),
+                    filter=is_searching,
+                ),
+                # HighlightSearchProcessor(),
+                HighlightSelectionProcessor(),
+                DisplayMultipleCursors(),
+                HighlightMatchingBracketProcessor(),
+                TabsProcessor(char1="⇥", char2="┈"),
+                ShowTrailingWhiteSpaceProcessor(),
+                *input_processors,
+            ],
+            search_buffer_control=search_control,
+            preview_search=preview_search,
+            focusable=focusable,
+            focus_on_click=focus_on_click,
+            include_default_input_processors=False,
+            key_bindings=widgets_key_bindings,
+        )
+
+        left_margins = [
+            ConditionalMargin(
+                NumberedDiffMargin(),
+                app.config.filter("line_numbers") & self.buffer.multiline,
+                # & Condition(lambda: len(self.buffer.text.split("\n")) > 1),
+            )
+        ]
+        scrollbar_margin = ConditionalMargin(
+            ScrollbarMargin(), filter=to_filter(scrollbar)
+        )
+        right_margins = [OverflowMargin(), scrollbar_margin]
+        self.window = Window(
+            height=lambda: height or D(min=1)
+            if self.buffer.multiline()
+            else D.exact(1),
+            width=width,
+            dont_extend_height=dont_extend_height,
+            dont_extend_width=dont_extend_width,
+            content=self.control,
+            wrap_lines=Condition(lambda: is_true(self.wrap_lines)),
+            left_margins=left_margins,
+            right_margins=right_margins,
+            get_line_prefix=get_line_prefix,
+            style=lambda: (
+                "class:text-area "
+                + ("class:focused " if self.has_focus() else "")
+                + style
+            ),
+            cursorline=has_focus(self.buffer),
+            scroll_offsets=scroll_offsets
+            or ScrollOffsets(top=1, right=1, bottom=1, left=1),
+        )
+        scrollbar_margin.filter &= scrollable(self.window)
+
+        self.has_focus = has_focus(self.buffer)
 
     def inspect(self) -> None:
         """Get contextual help for the current cursor position in the current cell."""

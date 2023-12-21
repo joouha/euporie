@@ -16,9 +16,6 @@ from prompt_toolkit.formatted_text.utils import fragment_list_width
 from prompt_toolkit.layout.containers import (
     ConditionalContainer,
     DynamicContainer,
-    HSplit,
-    VSplit,
-    Window,
     to_container,
 )
 from prompt_toolkit.layout.controls import (
@@ -27,13 +24,15 @@ from prompt_toolkit.layout.controls import (
     UIContent,
     UIControl,
 )
+from prompt_toolkit.layout.dimension import Dimension as D
+from prompt_toolkit.layout.dimension import to_dimension
 from prompt_toolkit.mouse_events import MouseButton, MouseEventType
 from prompt_toolkit.utils import Event
-from prompt_toolkit.widgets import Box
 
 from euporie.core.border import OutsetGrid
 from euporie.core.data_structures import DiBool
 from euporie.core.ft.utils import truncate
+from euporie.core.layout.containers import HSplit, VSplit, Window
 from euporie.core.widgets.decor import Border
 
 if TYPE_CHECKING:
@@ -41,7 +40,10 @@ if TYPE_CHECKING:
 
     from prompt_toolkit.filters import FilterOrBool
     from prompt_toolkit.formatted_text.base import AnyFormattedText, StyleAndTextTuples
-    from prompt_toolkit.key_binding.key_bindings import NotImplementedOrNone
+    from prompt_toolkit.key_binding.key_bindings import (
+        KeyBindings,
+        NotImplementedOrNone,
+    )
     from prompt_toolkit.layout.containers import AnyContainer, Container, _Split
     from prompt_toolkit.layout.dimension import AnyDimension
     from prompt_toolkit.mouse_events import MouseEvent
@@ -49,6 +51,79 @@ if TYPE_CHECKING:
     from euporie.core.border import GridStyle
 
 log = logging.getLogger(__name__)
+
+
+class Box:
+    """Add padding around a container.
+
+    This also makes sure that the parent can provide more space than required by
+    the child. This is very useful when wrapping a small element with a fixed
+    size into a ``VSplit`` or ``HSplit`` object. The ``HSplit`` and ``VSplit``
+    try to make sure to adapt respectively the width and height, possibly
+    shrinking other elements. Wrapping something in a ``Box`` makes it flexible.
+
+    Args:
+        body: Another container object.
+        padding: The margin to be used around the body. This can be
+        overridden by `padding_left`, padding_right`, `padding_top` and
+            `padding_bottom`.
+        style: A style string.
+        char: Character to be used for filling the space around the body.
+            (This is supposed to be a character with a terminal width of 1.)
+    """
+
+    def __init__(
+        self,
+        body: AnyContainer,
+        padding: AnyDimension = None,
+        padding_left: AnyDimension = None,
+        padding_right: AnyDimension = None,
+        padding_top: AnyDimension = None,
+        padding_bottom: AnyDimension = None,
+        width: AnyDimension = None,
+        height: AnyDimension = None,
+        style: str = "",
+        char: None | str | Callable[[], str] = None,
+        modal: bool = False,
+        key_bindings: KeyBindings | None = None,
+    ) -> None:
+        """Initialize this widget."""
+        if padding is None:
+            padding = D(preferred=0)
+
+        def get(value: AnyDimension) -> D:
+            if value is None:
+                value = padding
+            return to_dimension(value)
+
+        self.padding_left = get(padding_left)
+        self.padding_right = get(padding_right)
+        self.padding_top = get(padding_top)
+        self.padding_bottom = get(padding_bottom)
+        self.body = body
+
+        self.container = HSplit(
+            [
+                Window(height=self.padding_top, char=char),
+                VSplit(
+                    [
+                        Window(width=self.padding_left, char=char),
+                        body,
+                        Window(width=self.padding_right, char=char),
+                    ]
+                ),
+                Window(height=self.padding_bottom, char=char),
+            ],
+            width=width,
+            height=height,
+            style=style,
+            modal=modal,
+            key_bindings=None,
+        )
+
+    def __pt_container__(self) -> Container:
+        """Return the main container for this widget."""
+        return self.container
 
 
 class ConditionalSplit:

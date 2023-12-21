@@ -13,12 +13,12 @@ from prompt_toolkit.layout.containers import (
     Window,
 )
 from prompt_toolkit.layout.dimension import Dimension
-from prompt_toolkit.widgets import Box
 
 from euporie.core.config import add_setting
 from euporie.core.layout.print import PrintingContainer
 from euporie.core.tabs.notebook import BaseNotebook
 from euporie.core.widgets.cell import Cell
+from euporie.core.widgets.layout import Box
 
 if TYPE_CHECKING:
     from pathlib import Path

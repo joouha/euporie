@@ -10,9 +10,7 @@ from prompt_toolkit.filters import Condition
 from prompt_toolkit.layout.containers import (
     ConditionalContainer,
     DynamicContainer,
-    HSplit,
 )
-from prompt_toolkit.widgets import Box
 
 from euporie.core.commands import add_cmd
 from euporie.core.convert.datum import Datum
@@ -25,9 +23,11 @@ from euporie.core.key_binding.registry import (
     load_registered_bindings,
     register_bindings,
 )
+from euporie.core.layout.containers import HSplit
+from euporie.core.layout.decor import Line
 from euporie.core.widgets.cell_outputs import CellOutput, CellOutputDataElement
-from euporie.core.widgets.decor import Line
 from euporie.core.widgets.display import Display
+from euporie.core.widgets.layout import Box
 
 if TYPE_CHECKING:
     from typing import Any

@@ -10,12 +10,7 @@ from prompt_toolkit.cache import FastDictCache
 from prompt_toolkit.filters.utils import to_filter
 from prompt_toolkit.formatted_text import to_formatted_text
 from prompt_toolkit.layout import containers
-from prompt_toolkit.layout.containers import (
-    ConditionalContainer,
-    VSplit,
-    Window,
-    WindowAlign,
-)
+from prompt_toolkit.layout.containers import ConditionalContainer, WindowAlign
 from prompt_toolkit.layout.containers import (
     to_container as ptk_to_container,
 )
@@ -24,6 +19,7 @@ from prompt_toolkit.layout.controls import FormattedTextControl
 from euporie.core.config import add_setting
 from euporie.core.current import get_app
 from euporie.core.filters import is_searching
+from euporie.core.layout.containers import VSplit, Window
 
 if TYPE_CHECKING:
     from typing import Callable, Sequence
