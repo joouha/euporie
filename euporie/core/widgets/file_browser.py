@@ -14,9 +14,6 @@ from prompt_toolkit.filters.utils import to_filter
 from prompt_toolkit.key_binding.key_bindings import KeyBindings, KeyBindingsBase
 from prompt_toolkit.layout.containers import (
     ConditionalContainer,
-    HSplit,
-    VSplit,
-    Window,
 )
 from prompt_toolkit.layout.controls import UIContent, UIControl
 from prompt_toolkit.layout.screen import WritePosition
@@ -27,8 +24,10 @@ from upath import UPath
 from euporie.core.app import get_app
 from euporie.core.border import InsetGrid
 from euporie.core.config import add_setting
+from euporie.core.layout.containers import HSplit, VSplit, Window
+from euporie.core.layout.decor import FocusedStyle
 from euporie.core.margins import MarginContainer, ScrollbarMargin
-from euporie.core.widgets.decor import Border, FocusedStyle
+from euporie.core.widgets.decor import Border
 from euporie.core.widgets.forms import Button, Text
 
 if TYPE_CHECKING:

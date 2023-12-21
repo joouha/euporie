@@ -9,7 +9,6 @@ from typing import TYPE_CHECKING, cast
 
 from prompt_toolkit.data_structures import Point
 from prompt_toolkit.filters import FilterOrBool, to_filter
-from prompt_toolkit.layout.containers import Container, Window
 from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.layout.dimension import Dimension
 from prompt_toolkit.layout.margins import Margin
@@ -18,6 +17,7 @@ from prompt_toolkit.mouse_events import MouseEvent as PtkMouseEvent
 
 from euporie.core.current import get_app
 from euporie.core.key_binding.bindings.mouse import MouseEvent, RelativePosition
+from euporie.core.layout.containers import Window
 
 if TYPE_CHECKING:
     from typing import Callable, Protocol
@@ -27,7 +27,7 @@ if TYPE_CHECKING:
         KeyBindingsBase,
         NotImplementedOrNone,
     )
-    from prompt_toolkit.layout.containers import WindowRenderInfo
+    from prompt_toolkit.layout.containers import Container, WindowRenderInfo
     from prompt_toolkit.layout.controls import UIContent
     from prompt_toolkit.layout.mouse_handlers import MouseHandlers
     from prompt_toolkit.layout.screen import Screen, WritePosition

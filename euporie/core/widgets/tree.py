@@ -5,14 +5,11 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, cast
 
 from prompt_toolkit.filters import Condition
-from prompt_toolkit.layout.containers import (
-    ConditionalContainer,
-    HSplit,
-    VSplit,
-    Window,
-)
+from prompt_toolkit.layout.containers import ConditionalContainer
 from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.mouse_events import MouseButton, MouseEvent, MouseEventType
+
+from euporie.core.layout.containers import HSplit, VSplit, Window
 
 if TYPE_CHECKING:
     from typing import Any

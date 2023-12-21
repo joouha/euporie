@@ -15,9 +15,6 @@ from prompt_toolkit.filters import Condition
 from prompt_toolkit.layout.containers import (
     ConditionalContainer,
     Container,
-    HSplit,
-    VSplit,
-    Window,
 )
 from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.layout.dimension import Dimension
@@ -30,6 +27,7 @@ from euporie.core.config import add_setting
 from euporie.core.current import get_app
 from euporie.core.filters import multiple_cells_selected
 from euporie.core.format import format_code
+from euporie.core.layout.containers import HSplit, VSplit, Window
 from euporie.core.utils import on_click
 from euporie.core.widgets.cell_outputs import CellOutputArea
 from euporie.core.widgets.inputs import KernelInput, StdInput

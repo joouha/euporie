@@ -21,11 +21,10 @@ from prompt_toolkit.layout.controls import UIContent
 from prompt_toolkit.layout.dimension import Dimension, to_dimension
 from prompt_toolkit.layout.layout import walk
 from prompt_toolkit.layout.mouse_handlers import MouseHandlers
-from prompt_toolkit.layout.screen import Screen, WritePosition
 from prompt_toolkit.mouse_events import MouseEvent, MouseEventType, MouseModifier
 
 from euporie.core.data_structures import DiInt
-from euporie.core.layout.screen import BoundedWritePosition
+from euporie.core.layout.screen import BoundedWritePosition, Screen
 from euporie.core.utils import run_in_thread_with_context
 
 if TYPE_CHECKING:
@@ -37,6 +36,7 @@ if TYPE_CHECKING:
     )
     from prompt_toolkit.layout.containers import AnyContainer
     from prompt_toolkit.layout.dimension import AnyDimension
+    from prompt_toolkit.layout.screen import WritePosition
     from prompt_toolkit.utils import Event
 
     MouseHandler = Callable[[MouseEvent], object]
@@ -997,11 +997,6 @@ class ScrollingContainer(Container):
                     0, self.last_write_position.height - child_render_info.height
                 )
         elif new_top > self.last_write_position.height - child_render_info.height:
-            # log.debug("CCC")
-            # log.debug(f"{new_top=} {child_render_info.height=}")
-            # log.debug(
-            #     max(0, self.last_write_position.height - child_render_info.height)
-            # )
             self.selected_child_position = max(
                 0, self.last_write_position.height - child_render_info.height
             )
@@ -1010,8 +1005,6 @@ class ScrollingContainer(Container):
                     child_render_info.height - self.last_write_position.height
                 )
         else:
-            # log.debug("EEEE")
-            # log.debug(f"{new_top=} {child_render_info.height=}")
             self.selected_child_position = new_top
 
         heights = [

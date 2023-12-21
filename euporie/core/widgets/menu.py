@@ -19,10 +19,7 @@ from prompt_toolkit.layout.containers import (
     ConditionalContainer,
     Container,
     Float,
-    HSplit,
     ScrollOffsets,
-    VSplit,
-    Window,
 )
 from prompt_toolkit.layout.controls import FormattedTextControl, UIContent
 from prompt_toolkit.layout.dimension import Dimension
@@ -35,6 +32,7 @@ from prompt_toolkit.utils import get_cwidth
 
 from euporie.core.border import OuterHalfGrid
 from euporie.core.current import get_app
+from euporie.core.layout.containers import HSplit, VSplit, Window
 from euporie.core.widgets.decor import Shadow
 
 if TYPE_CHECKING:

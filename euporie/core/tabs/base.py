@@ -10,7 +10,7 @@ from functools import partial
 from typing import TYPE_CHECKING, ClassVar
 
 from prompt_toolkit.history import InMemoryHistory
-from prompt_toolkit.layout.containers import Window, WindowAlign
+from prompt_toolkit.layout.containers import WindowAlign
 from prompt_toolkit.layout.controls import FormattedTextControl
 
 from euporie.core.comm.registry import open_comm
@@ -24,6 +24,7 @@ from euporie.core.kernel import Kernel, MsgCallbacks
 from euporie.core.key_binding.registry import (
     register_bindings,
 )
+from euporie.core.layout.containers import Window
 from euporie.core.suggest import HistoryAutoSuggest
 from euporie.core.utils import run_in_thread_with_context
 
