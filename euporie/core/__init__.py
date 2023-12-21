@@ -15,4 +15,4 @@ from euporie.core import path  # noqa F401
 from euporie.core import pygments  # noqa F401
 
 # Monkey-patch prompt_toolkit
-from euporie.core.layout import containers
+from euporie.core.layout import containers  # noqa: F401
