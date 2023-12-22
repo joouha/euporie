@@ -17,6 +17,7 @@ Added
 Fixed
 =====
 
+- Print the entirety of a scrolled input in euporie-console after running the input
 - Greatly improved responsiveness when scrolling large cells
 - Fix issue when moving cursor up between cells cursor, where cursor moved to second last character
 - Fix terminal graphics in euporie-console
