@@ -176,8 +176,9 @@ class Console(KernelTab):
         """Run the code in the input box."""
         if buffer is None:
             buffer = self.input_box.buffer
+        app = self.app
         # Auto-reformat code
-        if self.app.config.autoformat:
+        if app.config.autoformat:
             self.reformat()
         # Get the code to run
         text = buffer.text
@@ -186,9 +187,12 @@ class Console(KernelTab):
         # Disable existing output
         self.live_output.style = "class:disabled"
         # Re-render the app and move to below the current output
-        self.app.draw()
+        original_layout = app.layout
+        app.layout = self.input_layout
+        app.draw()
+        app.layout = original_layout
         # Prevent displayed graphics on terminal being cleaned up (bit of a hack)
-        self.app.graphics.clear()
+        app.graphics.clear()
         # Run the previous entry
         if self.kernel.status == "starting":
             self.kernel_queue.append(partial(self.kernel.run, text, wait=False))
@@ -200,15 +204,15 @@ class Console(KernelTab):
         buffer.reset(append_to_history=True)
         # Remove any live outputs and disable mouse support
         self.live_output.reset()
-        if self.app.config.mouse_support is None:
-            self.app.need_mouse_support = False
+        if app.config.mouse_support is None:
+            app.need_mouse_support = False
         # Record the input as a cell in the json
         self.json["cells"].append(
             nbformat.v4.new_code_cell(source=text, execution_count=self.execution_count)
         )
         if (
-            self.app.config.max_stored_outputs
-            and len(self.json["cells"]) > self.app.config.max_stored_outputs
+            app.config.max_stored_outputs
+            and len(self.json["cells"]) > app.config.max_stored_outputs
         ):
             del self.json["cells"][0]
 
@@ -425,8 +429,35 @@ class Console(KernelTab):
         self.app.focused_element = self.input_box.buffer
 
         self.stdin_box = StdInput(self)
+        input_row = [
+            # Spacing
+            ConditionalContainer(
+                Window(height=1, dont_extend_height=True),
+                filter=Condition(lambda: self.execution_count > 0)
+                & (
+                    (
+                        renderer_height_is_known
+                        & Condition(lambda: self.app.renderer.rows_above_layout > 0)
+                    )
+                    | ~renderer_height_is_known
+                    | self.app.redrawing
+                ),
+            ),
+            # Input
+            ConditionalContainer(
+                VSplit(
+                    [
+                        input_prompt,
+                        self.input_box,
+                    ],
+                ),
+                filter=~self.stdin_box.visible,
+            ),
+        ]
 
-        self.input_layout = HSplit(
+        self.input_layout = Layout(PrintingContainer(input_row))
+
+        self.live_layout = HSplit(
             [
                 ConditionalContainer(
                     HSplit(
@@ -443,35 +474,14 @@ class Console(KernelTab):
                     Window(height=1, dont_extend_height=True),
                     filter=self.stdin_box.visible,
                 ),
-                # Spacing
-                ConditionalContainer(
-                    Window(height=1, dont_extend_height=True),
-                    filter=Condition(lambda: self.execution_count > 0)
-                    & (
-                        (
-                            renderer_height_is_known
-                            & Condition(lambda: self.app.renderer.rows_above_layout > 0)
-                        )
-                        | ~renderer_height_is_known
-                    ),
-                ),
-                # Input
-                ConditionalContainer(
-                    VSplit(
-                        [
-                            input_prompt,
-                            self.input_box,
-                        ],
-                    ),
-                    filter=~self.stdin_box.visible,
-                ),
+                *input_row,
             ],
             key_bindings=load_registered_bindings(
                 "euporie.console.tabs.console.Console"
             ),
         )
 
-        return self.input_layout
+        return self.live_layout
 
     def set_next_input(self, text: str, replace: bool = False) -> None:
         """Set the text for the next prompt."""
