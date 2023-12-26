@@ -61,6 +61,7 @@ class MarginContainer(Window):
         self.target = target
         self.render_info: WindowRenderInfo | None = None
         self.content = FormattedTextControl(self.create_fragments)
+        self.always_hide_cursor = to_filter(True)
 
     def create_fragments(self) -> StyleAndTextTuples:
         """Generate text fragments to display."""

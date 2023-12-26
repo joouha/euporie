@@ -2,9 +2,13 @@
 
 from __future__ import annotations
 
+import logging
+
 from prompt_toolkit.layout import screen
 
 from euporie.core.data_structures import DiInt
+
+log = logging.getLogger(__name__)
 
 
 class BoundedWritePosition(screen.WritePosition):
@@ -47,8 +51,8 @@ class Screen(screen.Screen):
         else:
             bbox = DiInt(0, 0, 0, 0)
 
-        xmin = write_position.xpos  # + bbox.left
-        xmax = write_position.xpos + write_position.width  # - bbox.right
+        xmin = write_position.xpos + bbox.left
+        xmax = write_position.xpos + write_position.width - bbox.right
         char_cache = screen._CHAR_CACHE
         data_buffer = self.data_buffer
 
