@@ -533,6 +533,21 @@ class Window(containers.Window):
         # Apply 'self.style'
         self._apply_style(screen, write_position, parent_style)
 
+        # Additionally apply style to line with cursor if it is visible
+        if ui_content.show_cursor and not self.always_hide_cursor():
+            _col, _row = ui_content.cursor_position
+            if cp_yx := rowcol_to_yx.get((_row, _col)):
+                self._apply_style(
+                    screen,
+                    BoundedWritePosition(
+                        xpos=write_position.xpos,
+                        ypos=cp_yx[0],
+                        width=write_position.width,
+                        height=1,
+                    ),
+                    parent_style,
+                )
+
         # Tell the screen that this user control has been painted at this
         # position.
         screen.visible_windows_to_write_positions[self] = write_position
@@ -696,17 +711,20 @@ class Window(containers.Window):
 
         # Render lines down to the end of the visible region (or to the cursor
         # position, whichever is lower)
+        cursor_visible = ui_content.show_cursor and not self.always_hide_cursor()
         while (
             y <= write_position.height - bbox.bottom
-            or lineno <= ui_content.cursor_position.y
+            or (cursor_visible and lineno <= ui_content.cursor_position.y)
         ) and lineno < line_count:
             visible_line_to_row_col[y] = (lineno, horizontal_scroll)
 
             # If lines are wrapped, we need to render all of them so we know how many
             # rows each line occupies.
             # Otherwise, we can skip rendering lines which are not visible.
-            # Also always render the line with the cursor so we know it's position
-            if wrap_lines or bbox.top <= y or lineno == ui_content.cursor_position.y:
+            # Also always render the line with the visible cursor so we know it's position
+            if (wrap_lines or bbox.top <= y) or (
+                cursor_visible and lineno == ui_content.cursor_position.y
+            ):
                 # Take the next line and copy it in the real screen.
                 line = ui_content.get_line(lineno)
                 # Copy margin and actual line.
@@ -817,19 +835,20 @@ class Window(containers.Window):
         self, new_screen: Screen, write_position: WritePosition, parent_style: str
     ) -> None:
         # Apply `self.style`.
-        style = parent_style + " " + to_str(self.style)
+        style = f"{parent_style} {to_str(self.style)}"
 
         new_screen.fill_area(write_position, style=style, after=False)
 
         # Apply the 'last-line' class to the last line of each Window. This can
         # be used to apply an 'underline' to the user control.
-        wp = BoundedWritePosition(
-            write_position.xpos,
-            write_position.ypos + write_position.height - 1,
-            write_position.width,
-            1,
-        )
-        new_screen.fill_area(wp, "class:last-line", after=True)
+        if write_position.bbox.bottom == 0:
+            wp = BoundedWritePosition(
+                write_position.xpos,
+                write_position.ypos + write_position.height - 1,
+                write_position.width,
+                1,
+            )
+            new_screen.fill_area(wp, "class:last-line", after=True)
 
 
 class FloatContainer(containers.FloatContainer):
