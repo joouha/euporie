@@ -63,7 +63,6 @@ class ChildRenderInfo:
         self.screen = Screen()
         self.mouse_handlers = MouseHandlers()
 
-        self.render_counter = -1
         self._invalid = True
         self._invalidate_events: set[Event[object]] = set()
         self._layout_hash = 0
@@ -103,7 +102,7 @@ class ChildRenderInfo:
             end: Rows between top of output and bottom of scrollable pane
 
         """
-        if self.render_counter != (new_render_counter := get_app().render_counter) and (
+        if (
             self._layout_hash != (new_layout_hash := self.layout_hash)
             or self._invalid
             or self.width != available_width
@@ -112,7 +111,6 @@ class ChildRenderInfo:
             self._rowcols_to_yx.clear()
             self._rendered_lines.clear()
             self.mouse_handlers.mouse_handlers.clear()
-            self.render_counter = new_render_counter
 
             # Recalculate child height if this child has been invalidated
             height = self.height = self.container.preferred_height(
@@ -298,10 +296,12 @@ class ChildRenderInfo:
                             modifiers=mouse_event.modifiers,
                         )
                         response = handler(new_event)
+                        # Request a re-render of the child for non-scroll events
+                        if response is None:
+                            self.invalidate()
 
                     # Refresh the child if there was a response
                     if response is None:
-                        self.invalidate()
                         return response
 
                     # This relies on windows returning NotImplemented when scrolled
@@ -372,6 +372,7 @@ class ChildRenderInfo:
                             x=left + point.x, y=top + point.y
                         )
                         screen.show_cursor = True
+
         # Copy menu positions
         for window, point in self.screen.menu_positions.items():
             screen.menu_positions[window] = Point(x=left + point.x, y=top + point.y)
@@ -647,8 +648,11 @@ class ScrollingContainer(Container):
                         return NotImplemented
 
         # Very basic scrolling acceleration
-        self.scrolling += n
-        return None
+        if n:
+            self.scrolling += n
+            return None
+        else:
+            return NotImplemented
 
     def mouse_scroll_handler(self, mouse_event: MouseEvent) -> NotImplementedOrNone:
         """Mouse handler to scroll the pane."""
