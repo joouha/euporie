@@ -111,6 +111,7 @@ class ChildRenderInfo:
             self._rowcols_to_yx.clear()
             self._rendered_lines.clear()
             self.mouse_handlers.mouse_handlers.clear()
+            self.screen = Screen()
 
             # Recalculate child height if this child has been invalidated
             height = self.height = self.container.preferred_height(

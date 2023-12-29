@@ -467,68 +467,6 @@ class NotVisible(Exception):
     """Exception to signal that a graphic is not currently visible."""
 
 
-def get_position_func_overlay(
-    target_window: Window,
-) -> Callable[[Screen], BoundedWritePosition]:
-    """Generate function to positioning floats over existing windows."""
-
-    def get_position(screen: Screen) -> BoundedWritePosition:
-        target_wp = screen.visible_windows_to_write_positions.get(target_window)
-        if target_wp is None:
-            raise NotVisible
-
-        render_info = target_window.render_info
-        if render_info is None:
-            raise NotVisible
-
-        xpos = target_wp.xpos
-        ypos = target_wp.ypos
-
-        content_height = render_info.ui_content.line_count
-        content_width = target_wp.width  # TODO - get the actual content width
-
-        # Calculate the cropping box in case the window is scrolled
-        bbox = DiInt(
-            top=render_info.vertical_scroll,
-            right=max(
-                0,
-                content_height
-                - target_wp.width
-                - getattr(render_info, "horizontal_scroll", 0),
-            ),
-            bottom=max(
-                0,
-                content_height - target_wp.height - render_info.vertical_scroll,
-            ),
-            left=getattr(render_info, "horizontal_scroll", 0),
-        )
-
-        # If the target is within a scrolling container, we might need to adjust
-        # the position of the cropped region so the float covers only the visible
-        # part of the target window
-        if isinstance(target_wp, BoundedWritePosition):
-            bbox = bbox._replace(
-                top=bbox.top + target_wp.bbox.top,
-                right=bbox.right + target_wp.bbox.right,
-                bottom=bbox.bottom + target_wp.bbox.bottom,
-                left=bbox.left + target_wp.bbox.left,
-            )
-            xpos += bbox.left
-            ypos += bbox.top
-            content_height -= bbox.top + bbox.bottom
-            content_width -= bbox.left + bbox.right
-
-        return BoundedWritePosition(
-            xpos=xpos,
-            ypos=ypos,
-            width=max(0, content_width),
-            height=max(0, content_height),
-            bbox=bbox,
-        )
-
-    return get_position
-
-
 class GraphicWindow(Window):
     """A window responsible for displaying terminal graphics content.
 
@@ -605,7 +543,7 @@ class GraphicWindow(Window):
                     return
 
         # Otherwise hide the content (required for kitty graphics)
-        if not filter_value or not get_app().leave_graphics():
+        if not get_app().leave_graphics():
             self.content.hide()
 
     def _fill_bg(
