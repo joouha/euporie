@@ -713,7 +713,7 @@ class Window(containers.Window):
         # position, whichever is lower)
         cursor_visible = ui_content.show_cursor and not self.always_hide_cursor()
         while (
-            y <= write_position.height - bbox.bottom
+            y < write_position.height - bbox.bottom
             or (cursor_visible and lineno <= ui_content.cursor_position.y)
         ) and lineno < line_count:
             visible_line_to_row_col[y] = (lineno, horizontal_scroll)
