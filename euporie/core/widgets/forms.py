@@ -240,7 +240,12 @@ class Button:
         if mouse_event.button == MouseButton.LEFT:
             if mouse_event.event_type == MouseEventType.MOUSE_DOWN:
                 self.selected = True
-                if (render_info := self.window.render_info) is not None:
+                # Set global mouse capture
+                if (
+                    self.window is not None
+                    and (render_info := self.window.render_info) is not None
+                    and render_info._rowcol_to_yx
+                ):
                     y_min, x_min = min(render_info._rowcol_to_yx.values())
                     y_max, x_max = max(render_info._rowcol_to_yx.values())
                     get_app().mouse_limits = WritePosition(
@@ -1838,6 +1843,7 @@ class SliderControl(UIControl):
             if (
                 self.window is not None
                 and (render_info := self.window.render_info) is not None
+                and render_info._rowcol_to_yx
             ):
                 y_min, x_min = min(render_info._rowcol_to_yx.values())
                 y_max, x_max = max(render_info._rowcol_to_yx.values())
