@@ -3558,11 +3558,12 @@ class HTML:
         }
         for fs, urls in fs_url_map.items():
             try:
-                results = fs.cat(urls)
+                results = fs.cat(urls, recursive=False, on_error="return")
             except Exception:
                 log.warning("Error connecting to %s", fs)
             else:
-                for url, result in zip(urls, results.values()):
+                # for url, result in zip(urls, results.values()):
+                for url, result in results.items():
                     if not isinstance(result, Exception):
                         log.debug("File %s loaded", url)
                         url_cbs[url](result)
