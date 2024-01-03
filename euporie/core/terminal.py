@@ -345,13 +345,11 @@ class SgrPixelStatus(TerminalQuery):
 
     def verify(self, data: str) -> bool:
         """Verify the terminal response means SGR pixel-mode is supported."""
-        if (
+        return bool(
             (match := self.pattern.match(data))
             and (values := match.groupdict())
             and (values.get("Pm") in {"1", "3"})
-        ):
-            return True
-        return False
+        )
 
 
 class CsiUStatus(TerminalQuery):
