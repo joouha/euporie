@@ -5,9 +5,9 @@ Changelog
 Notable changes to this project will be documented in this file.
 
 
-*******************
-v2.6.2 (2023-11-23)
-*******************
+********
+Upcoming
+********
 
 Added
 =====
@@ -17,10 +17,21 @@ Added
 Fixed
 =====
 
+- Use private color registers for sixel graphics
 - Print the entirety of a scrolled input in euporie-console after running the input
 - Greatly improved responsiveness when scrolling large cells
 - Fix issue when moving cursor up between cells cursor, where cursor moved to second last character
+
+
+*******************
+v2.6.2 (2023-11-23)
+*******************
+
+Fixed
+=====
+
 - Fix terminal graphics in euporie-console
+
 
 *******************
 v2.6.1 (2023-11-17)

@@ -150,6 +150,7 @@ def _output_screen_diff(
         output.erase_down()
 
         previous_screen = Screen()
+    assert previous_screen is not None
 
     # Get height of the screen.
     # (height changes as we loop over data_buffer, so remember the current value.)
@@ -270,15 +271,20 @@ class Renderer(PtkRenderer):
             style, output, full_screen, mouse_support, cpr_not_supported_callback
         )
         self._extended_keys_enabled = False
+        self._private_sixel_colors_enabled = False
         self.extend_height = to_filter(extend_height)
         self.extend_width = to_filter(extend_width)
 
     def reset(self, _scroll: bool = False, leave_alternate_screen: bool = True) -> None:
-        """Disable extended keys before resetting the output."""
-        # Disable extended keys
+        """Reset the output."""
         if isinstance(self.output, Vt100_Output):
+            # Disable extended keys before resetting the output
             self.output.disable_extended_keys()
             self._extended_keys_enabled = False
+
+            # Disable private sixel colors before resetting the output
+            self.output.disable_private_sixel_colors()
+            self._private_sixel_colors_enabled = False
 
         super().reset(_scroll, leave_alternate_screen)
 
@@ -319,6 +325,13 @@ class Renderer(PtkRenderer):
         if not self._extended_keys_enabled and isinstance(self.output, Vt100_Output):
             self.output.enable_extended_keys()
             self._extended_keys_enabled = True
+
+        # Ensable private sixel graphic color registers
+        if not self._private_sixel_colors_enabled and isinstance(
+            self.output, Vt100_Output
+        ):
+            self.output.enable_private_sixel_colors()
+            self._private_sixel_colors_enabled = True
 
         # Create screen and write layout to it.
         size = output.get_size()
