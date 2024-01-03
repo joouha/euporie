@@ -4262,7 +4262,7 @@ class HTML:
         content_width = theme.content_width
         # content_height = theme.content_height
         src = str(element.attrs.get("src", ""))
-        path = self.base / src
+        path = UPath(urljoin(str(self.base), src))
 
         if not element.attrs.get("_missing") and (data := element.attrs.get("_data")):
             # Display it graphically

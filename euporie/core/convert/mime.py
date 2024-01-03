@@ -10,9 +10,6 @@ from typing import TYPE_CHECKING
 from upath import UPath
 from upath.implementations.http import HTTPPath
 
-# from euporie.core.cache import cache
-from euporie.core.path import DataPath
-
 if TYPE_CHECKING:
     from pathlib import Path
 
@@ -50,11 +47,11 @@ def get_mime(path: Path | str) -> str | None:
     mime = None
 
     # Read from path of data URI
-    if isinstance(path, DataPath):
-        mime = path._mime
+    if path.exists() and isinstance(stat := path.stat(), dict):
+        mime = stat.get("mimetype")
 
-    # If we have a web-address, nsure we have a url
-    # Check http-headers and nsure we have a url
+    # If we have a web-address, ensure we have a url
+    # Check http-headers and ensure we have a url
     if not mime and isinstance(path, HTTPPath) and path._url is not None:
         from fsspec.asyn import sync
 
