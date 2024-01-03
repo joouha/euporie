@@ -224,7 +224,10 @@ class KernelInput(TextArea):
                 # HighlightSearchProcessor(),
                 HighlightSelectionProcessor(),
                 DisplayMultipleCursors(),
-                HighlightMatchingBracketProcessor(),
+                ConditionalProcessor(  # type: ignore
+                    HighlightMatchingBracketProcessor(),
+                    has_focus(self.buffer) & ~is_done,
+                ),
                 TabsProcessor(char1="⇥", char2="┈"),
                 ShowTrailingWhiteSpaceProcessor(),
                 *input_processors,
