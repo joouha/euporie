@@ -832,7 +832,10 @@ class Window(containers.Window):
                     row[x] = char_obj
 
     def _apply_style(
-        self, new_screen: Screen, write_position: WritePosition, parent_style: str
+        self,
+        new_screen: Screen,
+        write_position: WritePosition,
+        parent_style: str,
     ) -> None:
         # Apply `self.style`.
         style = f"{parent_style} {to_str(self.style)}"
@@ -841,14 +844,17 @@ class Window(containers.Window):
 
         # Apply the 'last-line' class to the last line of each Window. This can
         # be used to apply an 'underline' to the user control.
-        if write_position.bbox.bottom == 0:
-            wp = BoundedWritePosition(
-                write_position.xpos,
-                write_position.ypos + write_position.height - 1,
-                write_position.width,
-                1,
-            )
-            new_screen.fill_area(wp, "class:last-line", after=True)
+        if isinstance(write_position, BoundedWritePosition):
+            if write_position.bbox.bottom == 0:
+                wp = BoundedWritePosition(
+                    write_position.xpos,
+                    write_position.ypos + write_position.height - 1,
+                    write_position.width,
+                    1,
+                )
+                new_screen.fill_area(wp, "class:last-line", after=True)
+        else:
+            new_screen.fill_area(write_position, "class:last-line", after=True)
 
 
 class FloatContainer(containers.FloatContainer):
