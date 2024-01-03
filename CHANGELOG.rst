@@ -17,6 +17,7 @@ Added
 Fixed
 =====
 
+- Do not highlight brackets if a kernel input is not focused
 - Use private color registers for sixel graphics
 - Print the entirety of a scrolled input in euporie-console after running the input
 - Greatly improved responsiveness when scrolling large cells
