@@ -5,7 +5,7 @@ from __future__ import annotations
 from io import BytesIO
 from pathlib import Path
 from typing import TYPE_CHECKING
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import MagicMock, patch
 
 import magic
 from fsspec.implementations.http import HTTPFileSystem
@@ -15,6 +15,7 @@ from euporie.core.convert.mime import get_format, get_mime
 from euporie.core.path import HTTPPath
 
 if TYPE_CHECKING:
+    from types import TracebackType
     from typing import Any
 
 
@@ -27,7 +28,10 @@ def test_get_mime() -> None:
         == "text/vnd-example+xyz"
     )
     assert (
-        get_mime("data:image/jpeg;base64,/9j/4AAQSkZJRgABAgAAZABkAAD") == "image/jpeg"
+        get_mime(
+            "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAACklEQVR4nGMAAQAABQAB"
+        )
+        == "image/png"
     )
 
     # Test getting mime-type from file extension
@@ -52,8 +56,20 @@ def test_get_mime() -> None:
     def mock_open_empty(*args: Any, **kwargs: Any) -> BytesIO:
         return BytesIO(b"")
 
+    class MockResponse(MagicMock):
+        async def __aenter__(self) -> None:
+            pass
+
+        async def __aexit__(
+            self,
+            exc_type: type[BaseException] | None,
+            exc_value: BaseException | None,
+            exc_traceback: TracebackType | None,
+        ) -> None:
+            pass
+
     async def mock_response(*args: Any, **kwargs: Any) -> Any:
-        return Mock(url=url, headers={"Content-Type": "image/png"})
+        return MockResponse(status=200, url=url, headers={"Content-Type": "image/png"})
 
     session = MagicMock(head=mock_response, get=mock_response)
 
