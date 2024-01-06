@@ -242,7 +242,7 @@ module = [
   "pyperclip", "upath.*", "chafa.*", "timg", "pylatexenc.*", "aenum", "pygments.*",
   "jupytext.*",
   "ssort",
-  "flatlatex.*", "timg", "img2unicode", "cairosvg", "teimpy", "numpy", "mtable", "imagesize", "matplotlib.*",
+  "flatlatex.*", "timg", "img2unicode", "cairosvg", "teimpy", "numpy", "mtable", "imagesize", "matplotlib.*", "ziamath",
   "magic", "fsspec.*",
   "pytest.*",
 ]

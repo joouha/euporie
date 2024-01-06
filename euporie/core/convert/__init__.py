@@ -12,6 +12,7 @@ from euporie.core.convert.formats import (
     png,
     rich,
     sixel,
+    svg,
 )
 
 __all__ = [
@@ -26,4 +27,5 @@ __all__ = [
     "png",
     "rich",
     "sixel",
+    "svg",
 ]

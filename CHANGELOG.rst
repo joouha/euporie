@@ -12,6 +12,7 @@ Upcoming
 Added
 =====
 
+- Add ``ziamath`` LaTeX to SVG convertor
 - Set scroll offset to 1 on cell inputs
 
 Fixed
