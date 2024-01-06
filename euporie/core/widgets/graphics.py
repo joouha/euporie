@@ -154,56 +154,59 @@ class SixelGraphicControl(GraphicControl):
 
         def render_lines() -> list[StyleAndTextTuples]:
             """Render the lines to display in the control."""
-            full_width = width + self.bbox.left + self.bbox.right
-            full_height = height + self.bbox.top + self.bbox.bottom
-            cmd = str(
-                self.datum.convert(
-                    to="sixel",
-                    cols=full_width,
-                    rows=full_height,
-                )
-            )
-            if any(self.bbox):
-                from sixelcrop import sixelcrop
-
-                cmd = sixelcrop(
-                    data=cmd,
-                    # Horizontal pixel offset of the displayed image region
-                    x=self.bbox.left * cell_size_x,
-                    # Vertical pixel offset of the displayed image region
-                    y=self.bbox.top * cell_size_y,
-                    # Pixel width of the displayed image region
-                    w=width * cell_size_x,
-                    # Pixel height of the displayed image region
-                    h=height * cell_size_y,
-                )
-
-            if self.app.config.tmux_graphics:
-                cmd = tmuxify(cmd)
-
-            return list(
-                split_lines(
-                    to_formatted_text(
-                        [
-                            # Move cursor down and across by image height and width
-                            ("", "\n".join((height) * [" " * (width)])),
-                            # Save position, then move back
-                            ("[ZeroWidthEscape]", "\x1b[s"),
-                            # Move cursor up if there is more than one line to display
-                            *(
-                                [("[ZeroWidthEscape]", f"\x1b[{height-1}A")]
-                                if height > 1
-                                else []
-                            ),
-                            ("[ZeroWidthEscape]", f"\x1b[{width}D"),
-                            # Place the image without moving cursor
-                            ("[ZeroWidthEscape]", cmd),
-                            # Restore the last known cursor position (at the bottom)
-                            ("[ZeroWidthEscape]", "\x1b[u"),
-                        ]
+            ft: list[StyleAndTextTuples] = []
+            if height:
+                full_width = width + self.bbox.left + self.bbox.right
+                full_height = height + self.bbox.top + self.bbox.bottom
+                cmd = str(
+                    self.datum.convert(
+                        to="sixel",
+                        cols=full_width,
+                        rows=full_height,
                     )
                 )
-            )
+                if any(self.bbox):
+                    from sixelcrop import sixelcrop
+
+                    cmd = sixelcrop(
+                        data=cmd,
+                        # Horizontal pixel offset of the displayed image region
+                        x=self.bbox.left * cell_size_x,
+                        # Vertical pixel offset of the displayed image region
+                        y=self.bbox.top * cell_size_y,
+                        # Pixel width of the displayed image region
+                        w=width * cell_size_x,
+                        # Pixel height of the displayed image region
+                        h=height * cell_size_y,
+                    )
+
+                if self.app.config.tmux_graphics:
+                    cmd = tmuxify(cmd)
+
+                ft.extend(
+                    split_lines(
+                        to_formatted_text(
+                            [
+                                # Move cursor down and across by image height and width
+                                ("", "\n".join((height) * [" " * (width)])),
+                                # Save position, then move back
+                                ("[ZeroWidthEscape]", "\x1b[s"),
+                                # Move cursor up if there is more than one line to display
+                                *(
+                                    [("[ZeroWidthEscape]", f"\x1b[{height-1}A")]
+                                    if height > 1
+                                    else []
+                                ),
+                                ("[ZeroWidthEscape]", f"\x1b[{width}D"),
+                                # Place the image without moving cursor
+                                ("[ZeroWidthEscape]", cmd),
+                                # Restore the last known cursor position (at the bottom)
+                                ("[ZeroWidthEscape]", "\x1b[u"),
+                            ]
+                        )
+                    )
+                )
+            return ft
 
         key = (width, self.bbox, (cell_size_x, cell_size_y))
         return self._format_cache.get(key, render_lines)
@@ -232,14 +235,12 @@ class ItermGraphicControl(GraphicControl):
                 cell_size_x, cell_size_y = self.app.term_info.cell_size_px
                 # Downscale image to fit target region for precise cropping
                 image.thumbnail((full_width * cell_size_x, full_height * cell_size_y))
-                image = image.crop(
-                    (
-                        self.bbox.left * cell_size_x,  # left
-                        self.bbox.top * cell_size_y,  # top
-                        (self.bbox.left + cols) * cell_size_x,  # right
-                        (self.bbox.top + rows) * cell_size_y,  # bottom
-                    )
-                )
+                left = self.bbox.left * cell_size_x
+                top = self.bbox.top * cell_size_y
+                right = (self.bbox.left + cols) * cell_size_x
+                bottom = (self.bbox.top + rows) * cell_size_y
+                upper, lower = sorted((top, bottom))
+                image = image.crop((left, upper, right, lower))
                 with io.BytesIO() as output:
                     image.save(output, format="PNG")
                     datum = Datum(data=output.getvalue(), format="png")
@@ -261,31 +262,34 @@ class ItermGraphicControl(GraphicControl):
 
         def render_lines() -> list[StyleAndTextTuples]:
             """Render the lines to display in the control."""
-            b64data = self.convert_data(cols=width, rows=height)
-            cmd = f"\x1b]1337;File=inline=1;width={width}:{b64data}\a"
-            return list(
-                split_lines(
-                    to_formatted_text(
-                        [
-                            # Move cursor down and across by image height and width
-                            ("", "\n".join((height) * [" " * (width)])),
-                            # Save position, then move back
-                            ("[ZeroWidthEscape]", "\x1b[s"),
-                            # Move cursor up if there is more than one line to display
-                            *(
-                                [("[ZeroWidthEscape]", f"\x1b[{height-1}A")]
-                                if height > 1
-                                else []
-                            ),
-                            ("[ZeroWidthEscape]", f"\x1b[{width}D"),
-                            # Place the image without moving cursor
-                            ("[ZeroWidthEscape]", tmuxify(cmd)),
-                            # Restore the last known cursor position (at the bottom)
-                            ("[ZeroWidthEscape]", "\x1b[u"),
-                        ]
+            ft: list[StyleAndTextTuples] = []
+            if height:
+                b64data = self.convert_data(cols=width, rows=height)
+                cmd = f"\x1b]1337;File=inline=1;width={width}:{b64data}\a"
+                ft.extend(
+                    split_lines(
+                        to_formatted_text(
+                            [
+                                # Move cursor down and across by image height and width
+                                ("", "\n".join((height) * [" " * (width)])),
+                                # Save position, then move back
+                                ("[ZeroWidthEscape]", "\x1b[s"),
+                                # Move cursor up if there is more than one line to display
+                                *(
+                                    [("[ZeroWidthEscape]", f"\x1b[{height-1}A")]
+                                    if height > 1
+                                    else []
+                                ),
+                                ("[ZeroWidthEscape]", f"\x1b[{width}D"),
+                                # Place the image without moving cursor
+                                ("[ZeroWidthEscape]", tmuxify(cmd)),
+                                # Restore the last known cursor position (at the bottom)
+                                ("[ZeroWidthEscape]", "\x1b[u"),
+                            ]
+                        )
                     )
                 )
-            )
+            return ft
 
         key = (width, self.bbox, self.app.term_info.cell_size_px)
         return self._format_cache.get(key, render_lines)
@@ -402,50 +406,53 @@ class KittyGraphicControl(GraphicControl):
 
         def render_lines() -> list[StyleAndTextTuples]:
             """Render the lines to display in the control."""
-            full_width = width + self.bbox.left + self.bbox.right
-            full_height = height + self.bbox.top + self.bbox.bottom
-            cmd = self._kitty_cmd(
-                a="p",  # Display a previously transmitted image
-                i=self.kitty_image_id,
-                p=1,  # Placement ID
-                m=0,  # No batches remaining
-                q=2,  # No backchat
-                c=width,
-                r=height,
-                C=1,  # 1 = Do move the cursor
-                # Horizontal pixel offset of the displayed image region
-                x=int(px * self.bbox.left / full_width),
-                # Vertical pixel offset of the displayed image region
-                y=int(py * self.bbox.top / full_height),
-                # Pixel width of the displayed image region
-                w=int(px * width / full_width),
-                # Pixel height of the displayed image region
-                h=int(py * height / full_height),
-                # z=-(2**30) - 1,
-            )
-            return list(
-                split_lines(
-                    to_formatted_text(
-                        [
-                            # Move cursor down and acoss by image height and width
-                            ("", "\n".join((height) * [" " * (width)])),
-                            # Save position, then move back
-                            ("[ZeroWidthEscape]", "\x1b[s"),
-                            # Move cursor up if there is more than one line to display
-                            *(
-                                [("[ZeroWidthEscape]", f"\x1b[{height-1}A")]
-                                if height > 1
-                                else []
-                            ),
-                            ("[ZeroWidthEscape]", f"\x1b[{width}D"),
-                            # Place the image without moving cursor
-                            ("[ZeroWidthEscape]", tmuxify(cmd)),
-                            # Restore the last known cursor position (at the bottom)
-                            ("[ZeroWidthEscape]", "\x1b[u"),
-                        ]
+            ft: list[StyleAndTextTuples] = []
+            if height:
+                full_width = width + self.bbox.left + self.bbox.right
+                full_height = height + self.bbox.top + self.bbox.bottom
+                cmd = self._kitty_cmd(
+                    a="p",  # Display a previously transmitted image
+                    i=self.kitty_image_id,
+                    p=1,  # Placement ID
+                    m=0,  # No batches remaining
+                    q=2,  # No backchat
+                    c=width,
+                    r=height,
+                    C=1,  # 1 = Do move the cursor
+                    # Horizontal pixel offset of the displayed image region
+                    x=int(px * self.bbox.left / full_width),
+                    # Vertical pixel offset of the displayed image region
+                    y=int(py * self.bbox.top / full_height),
+                    # Pixel width of the displayed image region
+                    w=int(px * width / full_width),
+                    # Pixel height of the displayed image region
+                    h=int(py * height / full_height),
+                    # z=-(2**30) - 1,
+                )
+                ft.extend(
+                    split_lines(
+                        to_formatted_text(
+                            [
+                                # Move cursor down and acoss by image height and width
+                                ("", "\n".join((height) * [" " * (width)])),
+                                # Save position, then move back
+                                ("[ZeroWidthEscape]", "\x1b[s"),
+                                # Move cursor up if there is more than one line to display
+                                *(
+                                    [("[ZeroWidthEscape]", f"\x1b[{height-1}A")]
+                                    if height > 1
+                                    else []
+                                ),
+                                ("[ZeroWidthEscape]", f"\x1b[{width}D"),
+                                # Place the image without moving cursor
+                                ("[ZeroWidthEscape]", tmuxify(cmd)),
+                                # Restore the last known cursor position (at the bottom)
+                                ("[ZeroWidthEscape]", "\x1b[u"),
+                            ]
+                        )
                     )
                 )
-            )
+            return ft
 
         key = (width, height, self.bbox, self.app.term_info.cell_size_px)
         return self._format_cache.get(key, render_lines)
