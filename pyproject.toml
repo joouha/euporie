@@ -43,8 +43,8 @@ dependencies = [
   "flatlatex~=0.15",
   "timg~=1.1",
   "Pillow~=9.0",
-  "sixelcrop~=0.1.5",
-  "universal-pathlib>=0.1.4",
+  "sixelcrop~=0.1.6",
+  "universal-pathlib~=0.1.4",
   "fsspec[http]>=2022.12.0",
 ]
 
