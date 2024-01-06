@@ -13,6 +13,7 @@ import imagesize
 from PIL.Image import Image as PilImage
 from prompt_toolkit.cache import SimpleCache
 from prompt_toolkit.data_structures import Size
+from prompt_toolkit.layout.containers import WindowAlign
 
 from euporie.core.convert.registry import (
     _CONVERTOR_ROUTE_CACHE,
@@ -110,6 +111,7 @@ class Datum(Generic[T], metaclass=_MetaDatum):
         bg: ColorPaletteColor | str | None = None,
         path: Path | None = None,
         source: Datum | None = None,
+        align: WindowAlign = WindowAlign.LEFT,
     ) -> None:
         """Create a new instance of display data."""
         # self.self = self
@@ -120,6 +122,7 @@ class Datum(Generic[T], metaclass=_MetaDatum):
         self._bg = str(bg) if bg else None
         self.path = path
         self.source: ReferenceType[Datum] = ref(source) if source else ref(self)
+        self.align = align
         self._cell_size: tuple[int, float] | None = None
         self._conversions: dict[tuple[str, int | None, int | None, bool], T] = {}
         self._finalizer = finalize(self, self._cleanup_datum_sizes, self.hash)
