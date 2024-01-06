@@ -116,14 +116,26 @@ class Datum(Generic[T], metaclass=_MetaDatum):
         self.data: T = data
         self.format = format
         self.px, self.py = px, py
-        self.fg = str(fg) if fg else None
-        self.bg = str(bg) if bg else None
+        self._fg = str(fg) if fg else None
+        self._bg = str(bg) if bg else None
         self.path = path
         self.source: ReferenceType[Datum] = ref(source) if source else ref(self)
         self._cell_size: tuple[int, float] | None = None
         self._conversions: dict[tuple[str, int | None, int | None, bool], T] = {}
         self._finalizer = finalize(self, self._cleanup_datum_sizes, self.hash)
         self._finalizer.atexit = False
+
+    @property
+    def fg(self) -> str:
+        if not (fg := self._fg) and hasattr(app := get_app(), "color_palette"):
+            return app.color_palette.fg.base_hex
+        return fg or "#ffffff"
+
+    @property
+    def bg(self) -> str:
+        if not (bg := self._bg) and hasattr(app := get_app(), "color_palette"):
+            return app.color_palette.bg.base_hex
+        return bg or "#000000"
 
     def __repr__(self) -> str:
         """Return a string representation of object."""
