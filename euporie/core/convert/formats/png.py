@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING
 from euporie.core.convert.formats.common import base64_to_bytes_py, imagemagick_convert
 from euporie.core.convert.registry import register
 from euporie.core.convert.utils import commands_exist, have_modules
+from euporie.core.current import get_app
 
 if TYPE_CHECKING:
     from euporie.core.convert.datum import Datum
@@ -73,7 +74,7 @@ async def latex_to_png_dvipng(
             "-T",
             "tight",
             "-D",
-            "150",
+            "175",
             "-z",
             "9",
             "-bg",

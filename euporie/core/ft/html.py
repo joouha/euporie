@@ -24,6 +24,7 @@ from prompt_toolkit.filters.base import Condition
 from prompt_toolkit.filters.utils import _always as always
 from prompt_toolkit.filters.utils import _never as never
 from prompt_toolkit.formatted_text.utils import split_lines
+from prompt_toolkit.layout.containers import WindowAlign
 from prompt_toolkit.layout.dimension import Dimension
 from prompt_toolkit.utils import Event
 from upath import UPath
@@ -56,6 +57,7 @@ from euporie.core.data_structures import DiBool, DiInt, DiStr
 from euporie.core.ft.table import Cell, Table, compute_padding
 from euporie.core.ft.utils import (
     FormattedTextAlign,
+    FormattedTextVerticalAlign,
     add_border,
     align,
     apply_reverse_overwrites,
@@ -70,6 +72,7 @@ from euporie.core.ft.utils import (
     paste,
     strip,
     truncate,
+    valign,
 )
 
 
@@ -1995,6 +1998,11 @@ class Theme(Mapping):
             (order > 0, order),
         )
 
+    @cached_property
+    def latex(self) -> bool:
+        """If the element should be rendered as LaTeX."""
+        return self.theme.get("_format") == "latex"
+
     # Mapping methods - these are passed on to the underlying theme dictionary
 
     def __getitem__(self, key: str) -> Any:
@@ -2739,7 +2747,13 @@ _BROWSER_CSS: CssSelectors = {
                 CssSelector(item="::root", attr="[_initial_format=markdown]"),
                 CssSelector(item=".math"),
             ),
-        ): {"text_transform": "latex"},
+        ): {
+            "_format": "latex",
+            "text_transform": "latex",
+            "display": "inline-block",
+            "vertical_align": "top",
+            # "margin_right": "1em",
+        },
         (
             (
                 CssSelector(item="::root", attr="[_initial_format=markdown]"),
@@ -2747,6 +2761,7 @@ _BROWSER_CSS: CssSelectors = {
             ),
         ): {
             "text_align": "center",
+            "display": "block",
         },
         (
             (
@@ -3689,6 +3704,9 @@ class HTML:
         elif element.theme.d_grid:
             render_func = self.render_grid_content
 
+        elif element.theme.latex:
+            render_func = self.render_latex_content
+
         else:
             name = element.name.lstrip(":")
             render_func = getattr(
@@ -3724,14 +3742,15 @@ class HTML:
 
         """
         ft: StyleAndTextTuples = []
-        if text := element.text:
-            if transformed := (await element.theme.text_transform(text)):
-                text = transformed
-            if parent_theme := element.theme.parent_theme:
-                style = parent_theme.style
-            else:
-                style = ""
-            ft = [(style, text)]
+
+        text = await element.theme.text_transform(element.text)
+
+        if parent_theme := element.theme.parent_theme:
+            style = parent_theme.style
+        else:
+            style = ""
+
+        ft.append((style, text))
         return ft
 
     async def render_details_content(
@@ -4190,6 +4209,48 @@ class HTML:
         await asyncio.gather(*coros)
 
         return table.render()
+
+    async def render_latex_content(
+        self,
+        element: Node,
+        left: int = 0,
+        fill: bool = True,
+        align_content: bool = True,
+    ) -> StyleAndTextTuples:
+        """Render LaTeX math content."""
+        theme = element.theme
+
+        # Render text representation
+        ft: StyleAndTextTuples = await self.render_node_content(
+            element, left, fill, align_content
+        )
+
+        # Render graphic representation
+        latex = element.text + "".join(
+            child.text for child in element.renderable_descendents
+        )
+        latex = f"${latex}$"
+        if element.theme.d_blocky:
+            latex = f"${latex}$"
+        datum = Datum(
+            latex,
+            "latex",
+            fg=theme.color,
+            bg=theme.background_color,
+            align=WindowAlign.CENTER,
+        )
+        self.graphic_data.add(datum)
+
+        # Calculate size and pad text representation
+        _cols, aspect = await datum.cell_size_async()
+        cols = max_line_width(ft)
+        rows = ceil(cols * aspect)
+
+        ft = valign(ft, height=rows, how=FormattedTextVerticalAlign.TOP)
+
+        key = datum.add_size(Size(rows, cols))
+        ft = [(f"[Graphic_{key}]", ""), *ft]
+        return ft
 
     @overload
     async def _render_image(
