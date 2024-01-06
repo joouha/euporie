@@ -15,7 +15,7 @@ from prompt_toolkit.filters.base import Condition
 from prompt_toolkit.filters.utils import to_filter
 from prompt_toolkit.formatted_text.base import to_formatted_text
 from prompt_toolkit.formatted_text.utils import split_lines
-from prompt_toolkit.layout.containers import Float, Window
+from prompt_toolkit.layout.containers import Float, Window, WindowAlign
 from prompt_toolkit.layout.controls import GetLinePrefixCallable, UIContent, UIControl
 from prompt_toolkit.layout.mouse_handlers import MouseHandlers
 from prompt_toolkit.layout.screen import Char, WritePosition
@@ -749,6 +749,7 @@ class GraphicProcessor:
                 content=(graphic_control := GraphicControl(datum)),
                 get_position=self._get_position(key, rows, cols),
                 style=f"bg:{bg_color}" if bg_color else "",
+                align=datum.align,
             ),
         )
         # Register graphic with application
