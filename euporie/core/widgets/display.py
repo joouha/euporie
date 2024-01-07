@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 import logging
+from functools import partial
 from math import ceil
 from typing import TYPE_CHECKING, cast
 
-from prompt_toolkit.cache import FastDictCache
+from prompt_toolkit.cache import FastDictCache, SimpleCache
 from prompt_toolkit.data_structures import Point, Size
 from prompt_toolkit.filters.utils import to_filter
 from prompt_toolkit.formatted_text.utils import fragment_list_width, split_lines
@@ -97,10 +98,17 @@ class DisplayControl(UIControl):
             self.on_cursor_position_changed,
         ]
 
+        # Caches
+        self._content_cache: FastDictCache = FastDictCache(self.get_content, size=1000)
         self._line_cache: FastDictCache[
             tuple[Datum, int | None, int | None, bool], list[StyleAndTextTuples]
-        ] = FastDictCache(get_value=self.get_lines, size=100_000)
-        self._content_cache: FastDictCache = FastDictCache(self.get_content, size=1_000)
+        ] = FastDictCache(get_value=self.get_lines, size=1000)
+        self._line_width_cache: SimpleCache[
+            tuple[Datum, int | None, int | None, bool, int], int
+        ] = SimpleCache(maxsize=10_000)
+        self._max_line_width_cache: FastDictCache[
+            tuple[Datum, int | None, int | None, bool], int
+        ] = FastDictCache(get_value=self.get_max_line_width, size=1000)
 
     @property
     def datum(self) -> Any:
@@ -158,6 +166,23 @@ class DisplayControl(UIControl):
             lines.extend([[]] * max(0, height - len(lines)))
         return lines
 
+    def get_max_line_width(
+        self,
+        datum: Datum,
+        width: int | None,
+        height: int | None,
+        wrap_lines: bool = False,
+    ) -> int:
+        """Get the maximum lines width for a given rendering."""
+        lines = self._line_cache[datum, width, height, wrap_lines]
+        return max(
+            self._line_width_cache.get(
+                (datum, width, height, wrap_lines, i),
+                partial(fragment_list_width, line),
+            )
+            for i, line in enumerate(lines)
+        )
+
     def render(self) -> None:
         """Render the HTML DOM in a thread."""
         datum = self.datum
@@ -186,15 +211,12 @@ class DisplayControl(UIControl):
 
     def preferred_width(self, max_available_width: int) -> int | None:
         """Calculate and return the preferred width of the control."""
-        ###### TODOD - use line width cache for speedup ####################
-        return max_available_width
         max_cols, aspect = self.datum.cell_size()
         if max_cols:
             return min(max_cols, max_available_width)
-        self.lines = self._line_cache[
+        return self._max_line_width_cache[
             self.datum, max_available_width, None, self.wrap_lines()
         ]
-        return max(fragment_list_width(line) for line in self.lines)
 
     def preferred_height(
         self,
@@ -207,7 +229,6 @@ class DisplayControl(UIControl):
         max_cols, aspect = self.datum.cell_size()
         if aspect:
             return ceil(min(width, max_cols) * aspect)
-
         self.lines = self._line_cache[self.datum, width, None, self.wrap_lines()]
         return len(self.lines)
 
