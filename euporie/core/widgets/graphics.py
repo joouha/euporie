@@ -417,7 +417,7 @@ class KittyGraphicControl(GraphicControl):
                     m=0,  # No batches remaining
                     q=2,  # No backchat
                     c=width,
-                    r=height,
+                    # r=height,
                     C=1,  # 1 = Do move the cursor
                     # Horizontal pixel offset of the displayed image region
                     x=int(px * self.bbox.left / full_width),
