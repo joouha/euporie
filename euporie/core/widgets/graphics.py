@@ -15,7 +15,7 @@ from prompt_toolkit.filters.base import Condition
 from prompt_toolkit.filters.utils import to_filter
 from prompt_toolkit.formatted_text.base import to_formatted_text
 from prompt_toolkit.formatted_text.utils import split_lines
-from prompt_toolkit.layout.containers import Float, Window, WindowAlign
+from prompt_toolkit.layout.containers import Float, Window
 from prompt_toolkit.layout.controls import GetLinePrefixCallable, UIContent, UIControl
 from prompt_toolkit.layout.mouse_handlers import MouseHandlers
 from prompt_toolkit.layout.screen import Char, WritePosition
