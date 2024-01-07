@@ -130,12 +130,14 @@ class Datum(Generic[T], metaclass=_MetaDatum):
 
     @property
     def fg(self) -> str:
+        """The foreground color."""
         if not (fg := self._fg) and hasattr(app := get_app(), "color_palette"):
             return app.color_palette.fg.base_hex
         return fg or "#ffffff"
 
     @property
     def bg(self) -> str:
+        """The background color."""
         if not (bg := self._bg) and hasattr(app := get_app(), "color_palette"):
             return app.color_palette.bg.base_hex
         return bg or "#000000"
