@@ -13,12 +13,13 @@ Added
 =====
 
 - Add support for inline LaTeX math in markdown
-- Add ``ziamath`` LaTeX to SVG convertor
+- Add ``ziamath`` LaTeX to SVG converter
 - Set scroll offset to 1 on cell inputs
 
 Fixed
 =====
 
+- Fix issue with image tearing when using ``chafa.py`` to render images
 - Do not highlight brackets if a kernel input is not focused
 - Use private color registers for sixel graphics
 - Print the entirety of a scrolled input in euporie-console after running the input
