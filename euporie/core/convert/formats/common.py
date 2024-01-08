@@ -86,6 +86,7 @@ async def chafa_convert_py(
 ) -> str | bytes:
     """Convert image data to ANSI text using ::`chafa.py`."""
     from chafa.chafa import Canvas, CanvasConfig, PixelMode, PixelType
+    from PIL import Image
 
     pil_mode_to_pixel_type = {
         "RGBa": PixelType.CHAFA_PIXEL_RGBA8_PREMULTIPLIED,
@@ -102,10 +103,9 @@ async def chafa_convert_py(
 
     # Convert PIL image to format that chafa can use
     data = datum.data
-    if data.mode not in pil_mode_to_pixel_type:
-        from PIL import Image
-
-        data = data.convert("RGBA", palette=Image.Palette.ADAPTIVE, colors=16)
+    # Always convert the image, as unconverted images sometime result in an off-by-one
+    # line width errors resulting in diagonal image striping for some reason
+    data = data.convert("RGBA", palette=Image.Palette.ADAPTIVE, colors=16)
 
     # Init canvas config
     config = CanvasConfig()
@@ -127,9 +127,7 @@ async def chafa_convert_py(
             config.height = max(1, int(cols / data.size[0] * data.size[1] * px / py))
 
     # Set the foreground color
-    if not (fg := datum.fg) and hasattr(app, "color_palette"):
-        fg = app.color_palette.fg.base_hex
-    if fg and (color := fg.lstrip("#")):
+    if (fg := datum.fg) and (color := fg.lstrip("#")):
         config.fg_color = (
             int(color[0:2], 16),
             int(color[2:4], 16),
@@ -137,9 +135,7 @@ async def chafa_convert_py(
         )
 
     # Set the background color
-    if not (bg := datum.bg) and hasattr(app, "color_palette"):
-        bg = app.color_palette.bg.base_hex
-    if bg and (color := bg.lstrip("#")):
+    if (bg := datum.bg) and (color := bg.lstrip("#")):
         config.bg_color = (
             int(color[0:2], 16),
             int(color[2:4], 16),
