@@ -18,6 +18,7 @@ Changed
 Added
 =====
 
+- Pre-render terminal graphics to speed up notebook scrolling
 - Add support for ``ruff`` code formatter
 - Add support for inline LaTeX math in markdown
 - Add ``ziamath`` LaTeX to SVG converter

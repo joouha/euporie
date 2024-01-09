@@ -83,6 +83,11 @@ class GraphicControl(UIControl, metaclass=ABCMeta):
         return len(self.rendered_lines)
 
     @abstractmethod
+    def convert_data(self, wp: WritePosition) -> str:
+        """Convert datum to required format."""
+        return ""
+
+    @abstractmethod
     def get_rendered_lines(
         self, width: int, height: int, wrap_lines: bool = False
     ) -> list[StyleAndTextTuples]:
@@ -146,43 +151,49 @@ class GraphicControl(UIControl, metaclass=ABCMeta):
 class SixelGraphicControl(GraphicControl):
     """A graphic control which displays images as sixels."""
 
+    def convert_data(self, wp: WritePosition) -> str:
+        """Convert datum to required format."""
+        bbox = wp.bbox if isinstance(wp, BoundedWritePosition) else DiInt(0, 0, 0, 0)
+        full_width = wp.width + bbox.left + bbox.right
+        full_height = wp.height + bbox.top + bbox.bottom
+        cmd = str(
+            self.datum.convert(
+                to="sixel",
+                cols=full_width,
+                rows=full_height,
+            )
+        )
+        if any(self.bbox):
+            from sixelcrop import sixelcrop
+
+            cell_size_x, cell_size_y = self.app.term_info.cell_size_px
+
+            cmd = sixelcrop(
+                data=cmd,
+                # Horizontal pixel offset of the displayed image region
+                x=bbox.left * cell_size_x,
+                # Vertical pixel offset of the displayed image region
+                y=bbox.top * cell_size_y,
+                # Pixel width of the displayed image region
+                w=wp.width * cell_size_x,
+                # Pixel height of the displayed image region
+                h=wp.height * cell_size_y,
+            )
+
+        return cmd
+
     def get_rendered_lines(
         self, width: int, height: int, wrap_lines: bool = False
     ) -> list[StyleAndTextTuples]:
         """Get rendered lines from the cache, or generate them."""
-        cell_size_x, cell_size_y = self.app.term_info.cell_size_px
 
         def render_lines() -> list[StyleAndTextTuples]:
             """Render the lines to display in the control."""
             ft: list[StyleAndTextTuples] = []
             if height:
-                full_width = width + self.bbox.left + self.bbox.right
-                full_height = height + self.bbox.top + self.bbox.bottom
-                cmd = str(
-                    self.datum.convert(
-                        to="sixel",
-                        cols=full_width,
-                        rows=full_height,
-                    )
+                cmd = self.convert_data(
+                    BoundedWritePosition(0, 0, width, height, self.bbox)
                 )
-                if any(self.bbox):
-                    from sixelcrop import sixelcrop
-
-                    cmd = sixelcrop(
-                        data=cmd,
-                        # Horizontal pixel offset of the displayed image region
-                        x=self.bbox.left * cell_size_x,
-                        # Vertical pixel offset of the displayed image region
-                        y=self.bbox.top * cell_size_y,
-                        # Pixel width of the displayed image region
-                        w=width * cell_size_x,
-                        # Pixel height of the displayed image region
-                        h=height * cell_size_y,
-                    )
-
-                if self.app.config.tmux_graphics:
-                    cmd = tmuxify(cmd)
-
                 ft.extend(
                     split_lines(
                         to_formatted_text(
@@ -199,7 +210,7 @@ class SixelGraphicControl(GraphicControl):
                                 ),
                                 ("[ZeroWidthEscape]", f"\x1b[{width}D"),
                                 # Place the image without moving cursor
-                                ("[ZeroWidthEscape]", cmd),
+                                ("[ZeroWidthEscape]", tmuxify(cmd)),
                                 # Restore the last known cursor position (at the bottom)
                                 ("[ZeroWidthEscape]", "\x1b[u"),
                             ]
@@ -208,22 +219,23 @@ class SixelGraphicControl(GraphicControl):
                 )
             return ft
 
-        key = (width, self.bbox, (cell_size_x, cell_size_y))
+        key = (width, self.bbox, self.app.term_info.cell_size_px)
         return self._format_cache.get(key, render_lines)
 
 
 class ItermGraphicControl(GraphicControl):
     """A graphic control which displays images using iTerm's graphics protocol."""
 
-    def convert_data(self, rows: int, cols: int) -> str:
+    def convert_data(self, wp: WritePosition) -> str:
         """Convert the graphic's data to base64 data."""
         datum = self.datum
 
-        full_width = cols + self.bbox.left + self.bbox.right
-        full_height = rows + self.bbox.top + self.bbox.bottom
+        bbox = wp.bbox if isinstance(wp, BoundedWritePosition) else DiInt(0, 0, 0, 0)
+        full_width = wp.width + bbox.left + bbox.right
+        full_height = wp.height + bbox.top + bbox.bottom
 
         # Crop image if necessary
-        if any(self.bbox):
+        if any(bbox):
             import io
 
             image = datum.convert(
@@ -237,8 +249,8 @@ class ItermGraphicControl(GraphicControl):
                 image.thumbnail((full_width * cell_size_x, full_height * cell_size_y))
                 left = self.bbox.left * cell_size_x
                 top = self.bbox.top * cell_size_y
-                right = (self.bbox.left + cols) * cell_size_x
-                bottom = (self.bbox.top + rows) * cell_size_y
+                right = (self.bbox.left + wp.width) * cell_size_x
+                bottom = (self.bbox.top + wp.height) * cell_size_y
                 upper, lower = sorted((top, bottom))
                 image = image.crop((left, upper, right, lower))
                 with io.BytesIO() as output:
@@ -264,7 +276,9 @@ class ItermGraphicControl(GraphicControl):
             """Render the lines to display in the control."""
             ft: list[StyleAndTextTuples] = []
             if height:
-                b64data = self.convert_data(cols=width, rows=height)
+                b64data = self.convert_data(
+                    BoundedWritePosition(0, 0, width, height, self.bbox)
+                )
                 cmd = f"\x1b]1337;File=inline=1;width={width}:{b64data}\a"
                 ft.extend(
                     split_lines(
@@ -312,13 +326,16 @@ class KittyGraphicControl(GraphicControl):
         self.kitty_image_id = 0
         self.loaded = False
 
-    def convert_data(self, rows: int, cols: int) -> str:
+    def convert_data(self, wp: WritePosition) -> str:
         """Convert the graphic's data to base64 data for kitty graphics protocol."""
+        bbox = wp.bbox if isinstance(wp, BoundedWritePosition) else DiInt(0, 0, 0, 0)
+        full_width = wp.width + bbox.left + bbox.right
+        full_height = wp.height + bbox.top + bbox.bottom
         return str(
             self.datum.convert(
                 to="base64-png",
-                cols=cols,
-                rows=rows,
+                cols=full_width,
+                rows=full_height,
             )
         ).replace("\n", "")
 
@@ -337,7 +354,9 @@ class KittyGraphicControl(GraphicControl):
         """Send the graphic to the terminal without displaying it."""
         global _kitty_image_count
 
-        data = self.convert_data(rows=rows, cols=cols)
+        data = self.convert_data(
+            BoundedWritePosition(0, 0, width=cols, height=rows, bbox=self.bbox)
+        )
         self.kitty_image_id = _kitty_image_count
         _kitty_image_count += 1
 
@@ -509,6 +528,7 @@ class GraphicWindow(Window):
         self.content = content
         self.get_position = get_position
         self.filter = ~has_completions & ~has_dialog & ~has_menus & to_filter(filter)
+        self._pre_rendered = False
 
     def write_to_screen(
         self,
@@ -520,6 +540,10 @@ class GraphicWindow(Window):
         z_index: int | None,
     ) -> None:
         """Draw the graphic window's contents to the screen if required."""
+        # Pre-convert datum for this write position so result is cached
+        if not self._pre_rendered:
+            self.content.convert_data(write_position)
+            self._pre_rendered = True
         filter_value = self.filter()
         if filter_value:
             try:
@@ -757,15 +781,13 @@ class GraphicProcessor:
                 get_position=self._get_position(key, rows, cols),
                 style=f"bg:{bg_color}" if bg_color else "",
                 align=datum.align,
-            ),
+            )
         )
         # Register graphic with application
-        app = self.app
-        if graphic_float:
-            app.graphics.add(graphic_float)
+        (app_graphics := self.app.graphics).add(graphic_float)
         # Hide the graphic from app if the float is deleted
         weak_float_ref = weakref.ref(graphic_float)
-        graphic_window.filter &= Condition(lambda: weak_float_ref() in app.graphics)
+        graphic_window.filter &= Condition(lambda: weak_float_ref() in app_graphics)
         # Hide the graphic from terminal if the float is deleted
         weakref.finalize(graphic_float, graphic_control.close)
 
