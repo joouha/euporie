@@ -22,7 +22,7 @@ def format_black(text: str) -> str:
     else:
         try:
             text = black.format_str(text, mode=black.Mode()).rstrip()
-        except black.parsing.InvalidInput:
+        except (black.parsing.InvalidInput, KeyError):
             log.warning("Error formatting code with black: invalid input")
     return text
 
