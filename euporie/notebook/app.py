@@ -449,9 +449,10 @@ class NotebookApp(BaseApp):
                         children=[
                             get_cmd("toggle-autoformat").menu,
                             separator,
-                            get_cmd("toggle-format-black").menu,
-                            get_cmd("toggle-format-isort").menu,
-                            get_cmd("toggle-format-ssort").menu,
+                            get_cmd("toggle-formatters-ruff").menu,
+                            get_cmd("toggle-formatters-black").menu,
+                            get_cmd("toggle-formatters-isort").menu,
+                            get_cmd("toggle-formatters-ssort").menu,
                         ],
                     ),
                     get_cmd("toggle-autocomplete").menu,

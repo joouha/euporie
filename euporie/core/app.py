@@ -948,35 +948,27 @@ class BaseApp(Application):
     )
 
     add_setting(
-        name="format_black",
-        flags=["--format-black"],
-        type_=bool,
-        help_="Use black when re-formatting code cells",
-        default=True,
+        name="formatters",
+        flags=["--formatters"],
+        type_=str,
+        choices=["ruff", "black", "isort", "ssort"],
+        help_="List formatters to use when re-formatting code cells",
+        default=["ruff"],
+        action="append",
+        schema={
+            "type": "array",
+            "items": {
+                "description": "Formatters",
+                "type": "string",
+            },
+        },
         description="""
-            Whether to use :py:mod:`black` when reformatting code cells.
-        """,
-    )
-
-    add_setting(
-        name="format_isort",
-        flags=["--format-isort"],
-        type_=bool,
-        help_="Use isort when re-formatting code cells",
-        default=True,
-        description="""
-            Whether to use :py:mod:`isort` when reformatting code cells.
-        """,
-    )
-
-    add_setting(
-        name="format_ssort",
-        flags=["--format-ssort"],
-        type_=bool,
-        help_="Use ssort when re-formatting code cells",
-        default=True,
-        description="""
-            Whether to use :py:mod:`ssort` when reformatting code cells.
+            A list of the names of the formatters to use when reformatting code cells.
+            Supported formatters include:
+            - :py:mod:`ruff`
+            - :py:mod:`black`
+            - :py:mod:`isort`
+            - :py:mod:`ssort`
         """,
     )
 

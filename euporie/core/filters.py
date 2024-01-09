@@ -26,6 +26,18 @@ if TYPE_CHECKING:
 
 @Condition
 @lru_cache
+def have_ruff() -> bool:
+    """Determine if ruff is available."""
+    try:
+        import ruff  # noqa F401
+    except ModuleNotFoundError:
+        return False
+    else:
+        return True
+
+
+@Condition
+@lru_cache
 def have_black() -> bool:
     """Determine if black is available."""
     try:

@@ -41,18 +41,17 @@ dependencies = [
   "linkify-it-py~=1.0",
   "mdit-py-plugins~=0.3.0",
   "flatlatex~=0.15",
-  "timg~=1.1",
+  "chafa.py~=1.0.2",
   "Pillow~=9.0",
   "sixelcrop~=0.1.6",
   "universal-pathlib~=0.1.4",
   "fsspec[http]>=2022.12.0",
+  "jupytext>=1.14.0",
 ]
 
 [project.optional-dependencies]
 hub = ["asyncssh~=2.10.1"]
-format = ["black>=19.3.b0", "isort~=5.10.1"]
-chafa = ["chafa.py>=1.0.2"]
-jupytext = ["jupytext>=1.14.0"]
+format = ["black>=19.3.b0", "isort~=5.10.1", "ruff~=0.1.0"]
 
 [project.urls]
 Documentation = "https://euporie.readthedocs.io/en/latest"
@@ -241,7 +240,7 @@ module = [
   "_frozen_importlib", "ipykernel", "fastjsonschema",
   "pyperclip", "upath.*", "chafa.*", "timg", "pylatexenc.*", "aenum", "pygments.*",
   "jupytext.*",
-  "ssort",
+  "ruff", "ssort",
   "flatlatex.*", "timg", "img2unicode", "cairosvg", "teimpy", "numpy", "mtable", "imagesize", "matplotlib.*", "ziamath",
   "magic", "fsspec.*",
   "pytest.*",

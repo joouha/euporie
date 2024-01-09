@@ -212,17 +212,40 @@ class Setting:
                 filter=self.cmd_filter,
             )(self.toggle)
 
-        for choice in (self.choices or self.schema.get("enum", [])) or []:
-            add_cmd(
-                name=f"set-{name}-{choice}",
-                hidden=self.hidden,
-                toggled=Condition(partial(lambda x: self.value == x, choice)),
-                title=f"Set {self.title} to {choice}",
-                menu_title=str(choice).replace("_", " ").capitalize(),
-                description=f'Set the value of the "{self.name}" '
-                f'configuration option to "{choice}"',
-                filter=self.cmd_filter,
-            )(partial(setattr, self, "value", choice))
+        schema = self.schema
+        if schema.get("type") == "array":
+            for choice in self.choices or schema.get("items", {}).get("enum") or []:
+                add_cmd(
+                    name=f"toggle-{name}-{choice}",
+                    hidden=self.hidden,
+                    toggled=Condition(partial(lambda x: x in self.value, choice)),
+                    title=f"Toggle {choice} into {self.title}",
+                    menu_title=str(choice).replace("_", " ").capitalize(),
+                    description=f'Add or remove "{choice}" to or from the list of "{self.name}"',
+                    filter=self.cmd_filter,
+                )(
+                    partial(
+                        lambda choice: (
+                            self.value.remove
+                            if choice in self.value
+                            else self.value.append
+                        )(choice),
+                        choice,
+                    )
+                )
+
+        else:
+            for choice in self.choices or schema.get("enum", []) or []:
+                add_cmd(
+                    name=f"set-{name}-{choice}",
+                    hidden=self.hidden,
+                    toggled=Condition(partial(lambda x: self.value == x, choice)),
+                    title=f"Set {self.title} to {choice}",
+                    menu_title=str(choice).replace("_", " ").capitalize(),
+                    description=f'Set the value of the "{self.name}" '
+                    f'configuration option to "{choice}"',
+                    filter=self.cmd_filter,
+                )(partial(setattr, self, "value", choice))
 
     def toggle(self) -> None:
         """Toggle the setting's value."""
@@ -256,12 +279,17 @@ class Setting:
     @property
     def schema(self) -> dict[str, Any]:
         """Return a json schema property for the config item."""
-        return {
+        schema = {
             "description": self.help,
-            **({"enum": self.choices} if self.choices is not None else {}),
             **({"default": self.default} if self.default is not None else {}),
             **self._schema,
         }
+        if self.choices:
+            if self.nargs == "*" or "items" in schema:
+                schema["items"]["enum"] = self.choices
+            else:
+                schema["enum"] = self.choices
+        return schema
 
     @property
     def menu(self) -> MenuItem:
@@ -427,6 +455,7 @@ class Config:
                     fastjsonschema.validate(self.schema, json_data)
                 except fastjsonschema.JsonSchemaValueException as error:
                     log.warning("Error in command line parameter `%s`: %s", name, error)
+                    log.warning("%s: %s", name, value)
                 else:
                     result[name] = value
         return result
