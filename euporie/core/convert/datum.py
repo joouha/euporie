@@ -30,6 +30,7 @@ if TYPE_CHECKING:
     from prompt_toolkit.formatted_text.base import StyleAndTextTuples
     from rich.console import ConsoleRenderable
 
+    from euporie.core.data_structures import DiInt
     from euporie.core.style import ColorPaletteColor
 
 
@@ -213,6 +214,7 @@ class Datum(Generic[T], metaclass=_MetaDatum):
         cols: int | None = None,
         rows: int | None = None,
         extend: bool = True,
+        bbox: DiInt | None = None,
     ) -> Any:
         """Perform conversion asynchronously, caching the result."""
         if to == self.format:
@@ -275,6 +277,9 @@ class Datum(Generic[T], metaclass=_MetaDatum):
                 else:
                     # If this route succeeded, stop trying routes
                     break
+
+        # Crop or pad output
+        # if bbox and any(bbox):
 
         if output is None:
             output = ERROR_OUTPUTS.get(to, "(Conversion Error)")
