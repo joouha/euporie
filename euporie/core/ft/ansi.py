@@ -73,7 +73,8 @@ class ANSI(PTANSI):
             # Check for backspace
             elif char == "\x08":
                 # TODO - remove last character from last non-ZeroWidthEscape fragment
-                formatted_text.pop()
+                if formatted_text:
+                    formatted_text.pop()
                 continue
 
             elif char in ("\x1b", "\x9b"):
