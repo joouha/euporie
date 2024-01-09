@@ -12,6 +12,7 @@ Upcoming
 Added
 =====
 
+- Add support for ``ruff`` code formatter
 - Add support for inline LaTeX math in markdown
 - Add ``ziamath`` LaTeX to SVG converter
 - Set scroll offset to 1 on cell inputs

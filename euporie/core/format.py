@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import logging
 from typing import TYPE_CHECKING
 
@@ -11,6 +12,24 @@ if TYPE_CHECKING:
     from euporie.core.config import Config
 
 log = logging.getLogger(__name__)
+
+
+def format_ruff(text: str) -> str:
+    """Format a code string using :py:mod:`ruff`."""
+    from ruff.__main__ import find_ruff_bin
+
+    try:
+        ruff_path = find_ruff_bin()
+    except FileNotFoundError:
+        pass
+    else:
+        import subprocess
+
+        with contextlib.suppress(subprocess.CalledProcessError):
+            text = subprocess.check_output(
+                [ruff_path, "format", "-"], input=text, text=True
+            )
+    return text
 
 
 def format_black(text: str) -> str:
@@ -60,10 +79,13 @@ def format_ssort(text: str) -> str:
 
 def format_code(text: str, config: Config) -> str:
     """Format a code string using :py:mod:``."""
-    if config.format_ssort:
+    formatters = set(config.formatters)
+    if "ssort" in formatters:
         text = format_ssort(text)
-    if config.format_isort:
+    if "isort" in formatters:
         text = format_isort(text)
-    if config.format_black:
+    if "black" in formatters:
         text = format_black(text)
+    if "ruff" in formatters:
+        text = format_ruff(text)
     return text.strip()
