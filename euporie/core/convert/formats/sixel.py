@@ -59,7 +59,7 @@ async def png_to_sixel_img2sixel(
 register(
     from_=("png", "jpeg", "svg", "pdf"),
     to="sixel",
-    filter_=commands_exist("convert", "magick"),
+    filter_=commands_exist("convert", "mogrify"),
 )(partial(imagemagick_convert, "sixel"))
 
 

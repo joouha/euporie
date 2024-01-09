@@ -9,6 +9,12 @@ Notable changes to this project will be documented in this file.
 Upcoming
 ********
 
+Changed
+=======
+
+- Improve ``imagemagick`` detection so it works on Debian
+
+
 Added
 =====
 
