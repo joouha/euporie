@@ -46,7 +46,7 @@ async def imagemagick_convert(
     if not bg and hasattr(app, "color_palette"):
         bg = app.color_palette.bg.base_hex
     if bg:
-        cmd += ["-background", str(bg)]
+        cmd += ["-background", str(bg), "-flatten"]
     cmd += ["-[0]", f"{output_format}:-"]
     result: bytes | str = await call_subproc(datum.data, cmd)
 
