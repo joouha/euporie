@@ -24,6 +24,7 @@ from euporie.core.filters import (
     scrollable,
 )
 from euporie.core.ft.utils import wrap
+from euporie.core.graphics import GraphicProcessor
 from euporie.core.key_binding.registry import (
     load_registered_bindings,
     register_bindings,
@@ -31,9 +32,6 @@ from euporie.core.key_binding.registry import (
 from euporie.core.layout.containers import VSplit, Window
 from euporie.core.margins import MarginContainer, ScrollbarMargin
 from euporie.core.utils import run_in_thread_with_context
-from euporie.core.widgets.graphics import (
-    GraphicProcessor,
-)
 
 if TYPE_CHECKING:
     from typing import Any, Callable, Iterable

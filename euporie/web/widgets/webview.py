@@ -21,15 +21,13 @@ from euporie.core.convert.mime import get_format
 from euporie.core.current import get_app
 from euporie.core.ft.html import HTML, Node
 from euporie.core.ft.utils import fragment_list_width, paste
+from euporie.core.graphics import GraphicProcessor
 from euporie.core.key_binding.registry import (
     load_registered_bindings,
     register_bindings,
 )
 from euporie.core.path import parse_path
 from euporie.core.utils import run_in_thread_with_context
-from euporie.core.widgets.graphics import (
-    GraphicProcessor,
-)
 
 if TYPE_CHECKING:
     from pathlib import Path
