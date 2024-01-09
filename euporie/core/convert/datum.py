@@ -27,18 +27,19 @@ if TYPE_CHECKING:
     from pathlib import Path
     from typing import Any, ClassVar, Coroutine
 
+    from prompt_toolkit.formatted_text.base import StyleAndTextTuples
     from rich.console import ConsoleRenderable
 
     from euporie.core.style import ColorPaletteColor
 
 
-T = TypeVar("T", bytes, str, PilImage, "ConsoleRenderable")
+T = TypeVar("T", bytes, str, "StyleAndTextTuples", PilImage, "ConsoleRenderable")
 
 
 log = logging.getLogger(__name__)
 
 
-ERROR_OUTPUTS = {
+ERROR_OUTPUTS: dict[str, Any] = {
     "ansi": "(Format Conversion Error)",
     "ft": [("fg:white bg:darkred", "(Format Conversion Error)")],
 }
@@ -124,7 +125,7 @@ class Datum(Generic[T], metaclass=_MetaDatum):
         self.source: ReferenceType[Datum] = ref(source) if source else ref(self)
         self.align = align
         self._cell_size: tuple[int, float] | None = None
-        self._conversions: dict[tuple[str, int | None, int | None, bool], T] = {}
+        self._conversions: dict[tuple[str, int | None, int | None, bool], T | None] = {}
         self._finalizer = finalize(self, self._cleanup_datum_sizes, self.hash)
         self._finalizer.atexit = False
 
@@ -225,28 +226,30 @@ class Datum(Generic[T], metaclass=_MetaDatum):
         # log.debug(
         #     "Converting from '%s' to '%s' using route: %s", self, to, routes
         # )
-        if not routes:
-            output = None
-        else:
+        output: T | None = None
+        if routes:
             datum = self
             output = None
             for route in routes:
                 for stage_a, stage_b in zip(route, route[1:]):
-                    # Find converter with lowest weight
-                    func = sorted(
-                        [
-                            conv
-                            for conv in converters[stage_b][stage_a]
-                            if _FILTER_CACHE.get((conv,), conv.filter_)
-                        ],
-                        key=lambda x: x.weight,
-                    )[0].func
-                    try:
-                        output = await func(datum, cols, rows, extend)
-                        self._conversions[stage_b, cols, rows, extend] = output
-                    except Exception:
-                        log.exception("An error occurred during format conversion")
-                        output = None
+                    if (stage_b, cols, rows, extend) in self._conversions:
+                        output = self._conversions[stage_b, cols, rows, extend]
+                    else:
+                        # Find converter with lowest weight
+                        func = sorted(
+                            [
+                                conv
+                                for conv in converters[stage_b][stage_a]
+                                if _FILTER_CACHE.get((conv,), conv.filter_)
+                            ],
+                            key=lambda x: x.weight,
+                        )[0].func
+                        try:
+                            output = await func(datum, cols, rows, extend)
+                            self._conversions[stage_b, cols, rows, extend] = output
+                        except Exception:
+                            log.exception("An error occurred during format conversion")
+                            output = None
                     if output is None:
                         log.error(
                             "Failed to convert `%s`"
