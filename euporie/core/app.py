@@ -495,7 +495,9 @@ class BaseApp(Application):
         # Load the app's configuration
         cls.config.load(cls)
         # Run the application
-        with create_app_session(input=cls.load_input(), output=cls.load_output()):
+        with create_app_session(
+            input=cls.load_input(), output=(output := cls.load_output())
+        ):
             # Create an instance of the app and run it
 
             original_sigterm = signal.getsignal(signal.SIGTERM)
@@ -511,7 +513,10 @@ class BaseApp(Application):
             signal.signal(signal.SIGTERM, original_sigterm)
             signal.signal(signal.SIGINT, original_sigint)
 
-            return result
+        # This seems to be needed for kitty
+        output.enable_autowrap()
+
+        return result
 
     def cleanup(self, signum: int, frame: FrameType | None) -> None:
         """Restore the state of the terminal on unexpected exit."""
