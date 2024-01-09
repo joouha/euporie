@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 
 
 @register(from_="latex", to="svg", filter_=have_modules("ziamath"))
-async def markdown_to_rich_py(
+async def latex_to_svg_py_ziamath(
     datum: Datum,
     cols: int | None = None,
     rows: int | None = None,
