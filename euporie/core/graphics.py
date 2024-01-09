@@ -35,7 +35,7 @@ from euporie.core.layout.scroll import BoundedWritePosition
 from euporie.core.terminal import tmuxify
 
 if TYPE_CHECKING:
-    from typing import Any, Callable
+    from typing import Any, Callable, ClassVar
 
     from prompt_toolkit.filters import FilterOrBool
     from prompt_toolkit.formatted_text import StyleAndTextTuples
@@ -309,11 +309,10 @@ class ItermGraphicControl(GraphicControl):
         return self._format_cache.get(key, render_lines)
 
 
-_kitty_image_count = 1
-
-
 class KittyGraphicControl(GraphicControl):
     """A graphic control which displays images using Kitty's graphics protocol."""
+
+    _kitty_image_count: ClassVar[int] = 1
 
     def __init__(
         self,
@@ -325,14 +324,43 @@ class KittyGraphicControl(GraphicControl):
         super().__init__(datum=datum, scale=scale, bbox=bbox)
         self.kitty_image_id = 0
         self.loaded = False
+        self._datum_pad_cache: FastDictCache[
+            tuple[Datum, int, int], Datum
+        ] = FastDictCache(get_value=self._pad_datum, size=1)
+
+    def _pad_datum(self, datum: Datum, cell_size_x: int, cell_size_y: int) -> Datum:
+        from PIL import ImageOps
+
+        px, py = datum.pixel_size()
+
+        target_width = int((px + cell_size_x - 1) // cell_size_x * cell_size_x)
+        target_height = int((py + cell_size_y - 1) // cell_size_y * cell_size_y)
+
+        image = ImageOps.pad(
+            datum.convert("pil").convert("RGBA"),
+            (target_width, target_height),
+            centering=(0, 0),
+        )
+        return Datum(
+            image,
+            format="pil",
+            fg=datum.fg,
+            bg=datum.bg,
+            px=target_width,
+            py=target_height,
+            path=datum.path,
+            align=datum.align,
+        )
 
     def convert_data(self, wp: WritePosition) -> str:
         """Convert the graphic's data to base64 data for kitty graphics protocol."""
         bbox = wp.bbox if isinstance(wp, BoundedWritePosition) else DiInt(0, 0, 0, 0)
         full_width = wp.width + bbox.left + bbox.right
         full_height = wp.height + bbox.top + bbox.bottom
+
+        datum = self._datum_pad_cache[self.datum, *self.app.term_info.cell_size_px]
         return str(
-            self.datum.convert(
+            datum.convert(
                 to="base64-png",
                 cols=full_width,
                 rows=full_height,
@@ -352,13 +380,13 @@ class KittyGraphicControl(GraphicControl):
 
     def load(self, rows: int, cols: int) -> None:
         """Send the graphic to the terminal without displaying it."""
-        global _kitty_image_count
+        # global _kitty_image_count
 
         data = self.convert_data(
             BoundedWritePosition(0, 0, width=cols, height=rows, bbox=self.bbox)
         )
-        self.kitty_image_id = _kitty_image_count
-        _kitty_image_count += 1
+        self.kitty_image_id = self._kitty_image_count
+        KittyGraphicControl._kitty_image_count += 1
 
         while data:
             chunk, data = data[:4096], data[4096:]
@@ -418,10 +446,9 @@ class KittyGraphicControl(GraphicControl):
         if not self.loaded:
             self.load(cols=width, rows=height)
 
-        px, py = self.datum.pixel_size()
-        if not px or not py:
-            log.warning("Cannot determine image size")
-            px, py = px or 100, py or 100
+        cell_size_px = self.app.term_info.cell_size_px
+        datum = self._datum_pad_cache[self.datum, *cell_size_px]
+        px, py = datum.pixel_size()
 
         def render_lines() -> list[StyleAndTextTuples]:
             """Render the lines to display in the control."""
@@ -436,7 +463,7 @@ class KittyGraphicControl(GraphicControl):
                     m=0,  # No batches remaining
                     q=2,  # No backchat
                     c=width,
-                    # r=height,
+                    r=height,
                     C=1,  # 1 = Do move the cursor
                     # Horizontal pixel offset of the displayed image region
                     x=int(px * self.bbox.left / full_width),
@@ -473,7 +500,7 @@ class KittyGraphicControl(GraphicControl):
                 )
             return ft
 
-        key = (width, height, self.bbox, self.app.term_info.cell_size_px)
+        key = (width, height, self.bbox, cell_size_px)
         return self._format_cache.get(key, render_lines)
 
     def reset(self) -> None:
