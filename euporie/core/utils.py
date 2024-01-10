@@ -78,12 +78,12 @@ def on_click(func: Callable) -> MouseHandler:
 
 def run_in_thread_with_context(
     func: Callable, *args: Any, daemon: bool = True, **kwargs: Any
-) -> None:
+) -> Thread:
     """Run a function in an thread, but make sure it uses the same contextvars.
 
     This is required so that the function will see the right application.
     """
-    Thread(
+    return Thread(
         target=contextvars.copy_context().run,
         args=(func, *args),
         kwargs=kwargs,

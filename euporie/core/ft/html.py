@@ -3441,6 +3441,7 @@ class HTML:
         mouse_handler: Callable[[Node, MouseEvent], NotImplementedOrNone] | None = None,
         paste_fixed: bool = True,
         on_update: Callable[[HTML], None] | None = None,
+        on_change: Callable[[HTML], None] | None = None,
         _initial_format: str = "",
     ) -> None:
         """Initialize the markdown formatter.
@@ -3460,6 +3461,7 @@ class HTML:
             mouse_handler: A mouse handler function to use when links are clicked
             paste_fixed: Whether fixed elements should be pasted over the output
             on_update: An optional callback triggered when the DOM updates
+            on_change: An optional callback triggered when the DOM changes
             _initial_format: The initial format of the data being displayed
 
         """
@@ -3488,7 +3490,9 @@ class HTML:
         self.fixed_mask: StyleAndTextTuples = []
         # self.anchors = []
         self.on_update = Event(self, on_update)
+        self.on_change = Event(self, on_change)
 
+        self.assets_loading = False
         self.assets_loaded = False
 
     # Lazily load attributes
@@ -3498,16 +3502,19 @@ class HTML:
         """Load the HTML parser."""
         return CustomHTMLParser(self)
 
-    @cached_property
-    def soup(self) -> Node:
-        """Parse the markup."""
-        return self.parser.parse(self.markup)
+    # @property
+    # def soup(self) -> Node:
+    #     """Parse the markup."""
+    #     return self.parser.parse(self.markup)
 
     async def load_assets(self) -> None:
         """Load CSS styles and image resources.
 
         Do not touch element's themes!
         """
+        if self.assets_loading:
+            return
+        self.assets_loading = True
         url_cbs = {}
         url_fs_map = {}
 
@@ -3586,15 +3593,17 @@ class HTML:
                         log.warning("Error loading %s", url)
 
         self.assets_loaded = True
+        log.debug("Assets loaded")
 
-    def render(self, width: int | None, height: int | None) -> StyleAndTextTuples:
+
+    def render(self, width: int | None, height: int | None, defer_assets: bool = True) -> StyleAndTextTuples:
         """Render the current markup at a given size."""
         loop = get_loop()
-        future = asyncio.run_coroutine_threadsafe(self._render(width, height), loop)
+        future = asyncio.run_coroutine_threadsafe(self._render(width, height, defer_assets), loop)
         return future.result()
 
     async def _render(
-        self, width: int | None, height: int | None
+        self, width: int | None, height: int | None, defer_assets: bool = False
     ) -> StyleAndTextTuples:
         """Render the current markup at a given size, asynchronously."""
         # log.debug("Rendering at (%d, %d)", width, height)
@@ -3613,7 +3622,9 @@ class HTML:
         assert self.width is not None
         assert self.height is not None
 
-        if not self.assets_loaded:
+        self.soup = self.parser.parse(self.markup)
+
+        if not self.assets_loaded and not defer_assets:
             await self.load_assets()
 
         ft = await self.render_element(
@@ -3679,6 +3690,17 @@ class HTML:
         self.render_count += 1
         self.formatted_text = ft
 
+        if defer_assets and not self.assets_loaded:
+            loop = asyncio.get_running_loop()
+
+            async def _do_asset_load():
+                await self.load_assets()
+                self.on_change.fire()
+
+            loop.create_task(_do_asset_load())
+            log.debug("Tasked")
+
+        log.debug("Rendered")
         return ft
 
     async def render_element(

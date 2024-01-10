@@ -77,6 +77,7 @@ class WebViewControl(UIControl):
         self.status: list[AnyFormattedText] = []
         self.link_handler = link_handler or self.load_url
 
+        self.render_task: asyncio.Task | None = None
         self.rendered = Event(self)
         self.on_cursor_position_changed = Event(self)
 
@@ -126,7 +127,7 @@ class WebViewControl(UIControl):
         if changed:
             self.on_cursor_position_changed.fire()
 
-    def get_dom(self, url: Path) -> HTML:
+    def get_dom(self, url: Path, x:bool=False) -> HTML:
         """Load a HTML page as renderable formatted text."""
         markup = str(
             Datum(
@@ -143,6 +144,7 @@ class WebViewControl(UIControl):
             mouse_handler=self._node_mouse_handler,
             paste_fixed=False,
             _initial_format=format_,
+            on_change=lambda dom: self.render(force=True)
         )
 
     @property
@@ -159,9 +161,9 @@ class WebViewControl(UIControl):
             return dom.title
         return ""
 
-    def get_lines(self, dom: HTML, width: int, height: int) -> list[StyleAndTextTuples]:
+    def get_lines(self, dom: HTML, width: int, height: int, assets_loaded: bool = False) -> list[StyleAndTextTuples]:
         """Render a HTML page as lines of formatted text."""
-        return list(split_lines(dom.render(width, height)))
+        return list(split_lines(dom.render(width, height, defer_assets=not assets_loaded)))
 
     def load_url(self, url: str | Path, **kwargs: Any) -> None:
         """Load a new URL."""
@@ -192,23 +194,27 @@ class WebViewControl(UIControl):
             self.prev_stack.append(self.url)
             self.load_url(self.next_stack.pop(), save_to_history=False)
 
-    def render(self) -> None:
+    def render(self, force: bool = False) -> None:
         """Render the HTML DOM in a thread."""
-        dom = self.dom
 
-        def _render() -> None:
+        async def _render() -> None:
+            dom = self.dom
             assert self.url is not None
             # Potentially redirect url
             self.url = parse_path(self.url)
-            self.lines = self._line_cache[dom, self.width, self.height]
+            # self.lines = self._line_cache[dom, self.width, self.height, dom.assets_loaded]
+            self.lines = list(split_lines(await dom._render(self.width, self.height, defer_assets=not dom.assets_loaded)))
             self.loading = False
             self.resizing = False
             self.rendering = False
             self.rendered.fire()
 
-        if not self.rendering:
+        if not self.rendering or force:
             self.rendering = True
-            run_in_thread_with_context(_render)
+            if self.render_task:
+                self.render_task.cancel()
+            # run_in_thread_with_context(_render)
+            self.render_task = get_app().create_background_task(_render())
 
     def reset(self) -> None:
         """Reset the state of the control."""
@@ -237,10 +243,12 @@ class WebViewControl(UIControl):
         loading: bool,
         resizing: bool,
         width: int,
-        # height: int,
+        height: int,
         cursor_position: Point,
+        assets_loaded: bool
     ) -> UIContent:
         """Create a cacheable UIContent."""
+        dom = self._dom_cache[url,]
         if self.loading:
             lines = [
                 cast("StyleAndTextTuples", []),
@@ -250,17 +258,16 @@ class WebViewControl(UIControl):
                 ),
             ]
         else:
-            lines = self.lines
+            lines = self.lines[:]
 
         def get_line(i: int) -> StyleAndTextTuples:
             try:
                 line = lines[i]
             except IndexError:
-                return []
+                line = []
 
             # Overlay fixed lines onto this line
             if not loading:
-                dom = self._dom_cache[url,]
                 if dom.fixed:
                     visible_line = max(0, i - self.window.vertical_scroll)
                     fixed_lines = list(split_lines(dom.fixed_mask))
@@ -296,10 +303,11 @@ class WebViewControl(UIControl):
         content = self._content_cache[
             self.url,
             self.loading,
-            False,  # self.resizing,
+            self.resizing,
             width,
-            # height,
+            height,
             self.cursor_position,
+            self.dom.render_count,
         ]
 
         # Check for graphics in content
@@ -366,8 +374,9 @@ class WebViewControl(UIControl):
                 self.loading,
                 self.resizing,
                 self.width,
-                # self.height,
+                self.height,
                 self.cursor_position,
+                self.dom.assets_loaded,
             ]
             line = content.get_line(mouse_event.position.y)
         except IndexError:
