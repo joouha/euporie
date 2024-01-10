@@ -360,7 +360,7 @@ class KittyGraphicControl(GraphicControl):
         full_width = wp.width + bbox.left + bbox.right
         full_height = wp.height + bbox.top + bbox.bottom
 
-        datum = self._datum_pad_cache[self.datum, *self.app.term_info.cell_size_px]
+        datum = self._datum_pad_cache[(self.datum, *self.app.term_info.cell_size_px)]
         return str(
             datum.convert(
                 to="base64-png",
@@ -449,7 +449,7 @@ class KittyGraphicControl(GraphicControl):
             self.load(cols=width, rows=height)
 
         cell_size_px = self.app.term_info.cell_size_px
-        datum = self._datum_pad_cache[self.datum, *cell_size_px]
+        datum = self._datum_pad_cache[(self.datum, *cell_size_px)]
         px, py = datum.pixel_size()
 
         px = px or 100
