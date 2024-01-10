@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
+from threading import Thread
 from typing import TYPE_CHECKING, cast
 
 from prompt_toolkit.cache import FastDictCache
@@ -16,7 +18,7 @@ from prompt_toolkit.utils import Event
 from upath import UPath
 
 from euporie.core.commands import add_cmd
-from euporie.core.convert.datum import Datum
+from euporie.core.convert.datum import Datum, get_loop
 from euporie.core.convert.mime import get_format
 from euporie.core.current import get_app
 from euporie.core.ft.html import HTML, Node
@@ -27,9 +29,9 @@ from euporie.core.key_binding.registry import (
     register_bindings,
 )
 from euporie.core.path import parse_path
-from euporie.core.utils import run_in_thread_with_context
 
 if TYPE_CHECKING:
+    from concurrent.futures._base import Future
     from pathlib import Path
     from typing import Any, Callable, Iterable
 
@@ -69,6 +71,7 @@ class WebViewControl(UIControl):
         self.loading = False
         self.resizing = False
         self.rendering = False
+        self.stale = False
         self.lines: list[StyleAndTextTuples] = []
         self.graphic_processor = GraphicProcessor(control=self)
         self.width = 0
@@ -77,6 +80,7 @@ class WebViewControl(UIControl):
         self.status: list[AnyFormattedText] = []
         self.link_handler = link_handler or self.load_url
 
+        self.render_task: Future[None] | None = None
         self.rendered = Event(self)
         self.on_cursor_position_changed = Event(self)
 
@@ -86,6 +90,9 @@ class WebViewControl(UIControl):
         # self.cursor_processor = CursorProcessor(
         #     lambda: self.cursor_position, style="fg:red"
         # )
+
+        self.loop = asyncio.new_event_loop()
+        self.render_thread = Thread(target=self.loop.run_forever, daemon=True)
 
         self.key_bindings = load_registered_bindings(
             "euporie.web.widgets.webview.WebViewControl"
@@ -126,7 +133,7 @@ class WebViewControl(UIControl):
         if changed:
             self.on_cursor_position_changed.fire()
 
-    def get_dom(self, url: Path) -> HTML:
+    def get_dom(self, url: Path, x: bool = False) -> HTML:
         """Load a HTML page as renderable formatted text."""
         markup = str(
             Datum(
@@ -143,7 +150,14 @@ class WebViewControl(UIControl):
             mouse_handler=self._node_mouse_handler,
             paste_fixed=False,
             _initial_format=format_,
+            defer_assets=True,
+            on_change=lambda dom: self.invalidate(),
         )
+
+    def invalidate(self) -> None:
+        """Trigger a redraw of the webview."""
+        self.stale = True
+        self.rendered.fire()
 
     @property
     def dom(self) -> HTML:
@@ -159,7 +173,9 @@ class WebViewControl(UIControl):
             return dom.title
         return ""
 
-    def get_lines(self, dom: HTML, width: int, height: int) -> list[StyleAndTextTuples]:
+    def get_lines(
+        self, dom: HTML, width: int, height: int, assets_loaded: bool = False
+    ) -> list[StyleAndTextTuples]:
         """Render a HTML page as lines of formatted text."""
         return list(split_lines(dom.render(width, height)))
 
@@ -192,23 +208,27 @@ class WebViewControl(UIControl):
             self.prev_stack.append(self.url)
             self.load_url(self.next_stack.pop(), save_to_history=False)
 
-    def render(self) -> None:
+    def render(self, force: bool = False) -> None:
         """Render the HTML DOM in a thread."""
         dom = self.dom
 
-        def _render() -> None:
+        async def _render() -> None:
             assert self.url is not None
             # Potentially redirect url
             self.url = parse_path(self.url)
-            self.lines = self._line_cache[dom, self.width, self.height]
-            self.loading = False
-            self.resizing = False
-            self.rendering = False
+            self.lines = list(split_lines(await dom._render(self.width, self.height)))
+            # Reset all possible reasons for rendering
+            self.loading = self.resizing = self.rendering = self.stale = False
+            # Let the app know we're re-rerenderd and the output needs redrawing
             self.rendered.fire()
 
-        if not self.rendering:
+        if not self.rendering or force:
             self.rendering = True
-            run_in_thread_with_context(_render)
+
+            if self.render_task:
+                self.render_task.cancel()
+
+            self.render_task = asyncio.run_coroutine_threadsafe(_render(), get_loop())
 
     def reset(self) -> None:
         """Reset the state of the control."""
@@ -237,10 +257,12 @@ class WebViewControl(UIControl):
         loading: bool,
         resizing: bool,
         width: int,
-        # height: int,
+        height: int,
         cursor_position: Point,
+        assets_loaded: bool,
     ) -> UIContent:
         """Create a cacheable UIContent."""
+        dom = self._dom_cache[url,]
         if self.loading:
             lines = [
                 cast("StyleAndTextTuples", []),
@@ -250,24 +272,22 @@ class WebViewControl(UIControl):
                 ),
             ]
         else:
-            lines = self.lines
+            lines = self.lines[:]
 
         def get_line(i: int) -> StyleAndTextTuples:
             try:
                 line = lines[i]
             except IndexError:
-                return []
+                line = []
 
             # Overlay fixed lines onto this line
-            if not loading:
-                dom = self._dom_cache[url,]
-                if dom.fixed:
-                    visible_line = max(0, i - self.window.vertical_scroll)
-                    fixed_lines = list(split_lines(dom.fixed_mask))
-                    if visible_line < len(fixed_lines):
-                        # Paste the fixed line over the current line
-                        fixed_line = fixed_lines[visible_line]
-                        line = paste(fixed_line, line, 0, 0, transparent=True)
+            if not loading and dom.fixed:
+                visible_line = max(0, i - self.window.vertical_scroll)
+                fixed_lines = list(split_lines(dom.fixed_mask))
+                if visible_line < len(fixed_lines):
+                    # Paste the fixed line over the current line
+                    fixed_line = fixed_lines[visible_line]
+                    line = paste(fixed_line, line, 0, 0, transparent=True)
 
             return line
 
@@ -285,10 +305,10 @@ class WebViewControl(UIControl):
             A :class:`.UIContent` instance.
         """
         # Trigger a re-render in the future if things have changed
-        if self.loading:
+        if self.stale or self.loading:
             self.render()
         if width != self.width:  # or height != self.height:
-            self.resizing = True
+            # self.resizing = True
             self.width = width
             self.height = height
             self.render()
@@ -296,10 +316,11 @@ class WebViewControl(UIControl):
         content = self._content_cache[
             self.url,
             self.loading,
-            False,  # self.resizing,
+            self.resizing,
             width,
-            # height,
+            height,
             self.cursor_position,
+            self.dom.render_count,
         ]
 
         # Check for graphics in content
@@ -366,8 +387,9 @@ class WebViewControl(UIControl):
                 self.loading,
                 self.resizing,
                 self.width,
-                # self.height,
+                self.height,
                 self.cursor_position,
+                self.dom.render_count,
             ]
             line = content.get_line(mouse_event.position.y)
         except IndexError:
