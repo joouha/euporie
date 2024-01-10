@@ -73,7 +73,7 @@ def have_ssort() -> bool:
 
 
 # Determine if we have at least one formatter
-have_formatter = have_black | have_isort | have_ssort
+have_formatter = have_black | have_isort | have_ssort | have_ruff
 
 # Determine if euporie is running inside tmux.
 in_tmux = to_filter(os.environ.get("TMUX") is not None)
