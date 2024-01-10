@@ -333,24 +333,26 @@ class KittyGraphicControl(GraphicControl):
 
         px, py = datum.pixel_size()
 
-        target_width = int((px + cell_size_x - 1) // cell_size_x * cell_size_x)
-        target_height = int((py + cell_size_y - 1) // cell_size_y * cell_size_y)
+        if px and py:
+            target_width = int((px + cell_size_x - 1) // cell_size_x * cell_size_x)
+            target_height = int((py + cell_size_y - 1) // cell_size_y * cell_size_y)
 
-        image = ImageOps.pad(
-            datum.convert("pil").convert("RGBA"),
-            (target_width, target_height),
-            centering=(0, 0),
-        )
-        return Datum(
-            image,
-            format="pil",
-            fg=datum.fg,
-            bg=datum.bg,
-            px=target_width,
-            py=target_height,
-            path=datum.path,
-            align=datum.align,
-        )
+            image = ImageOps.pad(
+                datum.convert("pil").convert("RGBA"),
+                (target_width, target_height),
+                centering=(0, 0),
+            )
+            datum = Datum(
+                image,
+                format="pil",
+                fg=datum.fg,
+                bg=datum.bg,
+                px=target_width,
+                py=target_height,
+                path=datum.path,
+                align=datum.align,
+            )
+        return datum
 
     def convert_data(self, wp: WritePosition) -> str:
         """Convert the graphic's data to base64 data for kitty graphics protocol."""
@@ -449,6 +451,9 @@ class KittyGraphicControl(GraphicControl):
         cell_size_px = self.app.term_info.cell_size_px
         datum = self._datum_pad_cache[self.datum, *cell_size_px]
         px, py = datum.pixel_size()
+
+        px = px or 100
+        py = py or 100
 
         def render_lines() -> list[StyleAndTextTuples]:
             """Render the lines to display in the control."""
