@@ -21,5 +21,8 @@ async def latex_to_svg_py_ziamath(
     """Convert LaTeX to SVG using :py:mod:`ziamath`."""
     import ziamath as zm
 
-    latex = zm.Text(datum.data, color=datum.fg)
+    data = datum.data.strip()
+    if not data.startswith("$"):
+        data = f"$${data}$$"
+    latex = zm.Text(data, color=datum.fg, size=12)
     return latex.svg()
