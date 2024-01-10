@@ -97,6 +97,7 @@ if TYPE_CHECKING:
     from pathlib import Path
     from typing import Any, Callable, Generator, Iterator
 
+    from fsspec.spec import AbstractFileSystem
     from prompt_toolkit.filters.base import Filter
     from prompt_toolkit.formatted_text.base import StyleAndTextTuples
     from prompt_toolkit.key_binding.key_bindings import NotImplementedOrNone
@@ -876,6 +877,13 @@ class Theme(Mapping):
         self.parent_theme = parent_theme
         self.available_width = available_width
         self.available_height = available_height
+
+    def reset(self) -> None:
+        """Reset all cached properties."""
+        # Iterate ove a copy of keys as dict changes size during loop
+        for attr in list(self.__dict__.keys()):
+            if isinstance(Theme.__dict__.get(attr), cached_property):
+                delattr(self, attr)
 
     @cached_property
     def theme(self) -> dict[str, str]:
@@ -2838,6 +2846,16 @@ class Node:
 
         self.theme = Theme(self, parent_theme=parent.theme if parent else None)
 
+    def reset(self) -> None:
+        """Reset the node and all its children."""
+        for attr in list(self.__dict__.keys()):
+            if isinstance(Node.__dict__.get(attr), cached_property):
+                delattr(self, attr)
+        self.theme.reset()
+        for child in self.contents:
+            child.reset()
+        self.marker = None
+
     def _outer_html(self, d: int = 0, attrs: bool = True) -> str:
         dd = " " * d
         s = ""
@@ -3440,7 +3458,9 @@ class HTML:
         browser_css: CssSelectors | None = None,
         mouse_handler: Callable[[Node, MouseEvent], NotImplementedOrNone] | None = None,
         paste_fixed: bool = True,
+        defer_assets: bool = False,
         on_update: Callable[[HTML], None] | None = None,
+        on_change: Callable[[HTML], None] | None = None,
         _initial_format: str = "",
     ) -> None:
         """Initialize the markdown formatter.
@@ -3459,7 +3479,9 @@ class HTML:
             browser_css: The browser CSS to use
             mouse_handler: A mouse handler function to use when links are clicked
             paste_fixed: Whether fixed elements should be pasted over the output
+            defer_assets: Whether to render the page before remote assets are loaded
             on_update: An optional callback triggered when the DOM updates
+            on_change: An optional callback triggered when the DOM changes
             _initial_format: The initial format of the data being displayed
 
         """
@@ -3469,6 +3491,7 @@ class HTML:
 
         self.browser_css = browser_css or _BROWSER_CSS
         self.css: CssSelectors = css or {}
+        self.defer_assets = defer_assets
 
         self.render_count = 0
         self.width = width
@@ -3488,8 +3511,12 @@ class HTML:
         self.fixed_mask: StyleAndTextTuples = []
         # self.anchors = []
         self.on_update = Event(self, on_update)
+        self.on_change = Event(self, on_change)
 
-        self.assets_loaded = False
+        self._dom_processed = False
+        self._assets_loaded = False
+        self._url_cbs: dict[str, Callable[[Any], None]] = {}
+        self._url_fs_map: dict[str, AbstractFileSystem] = {}
 
     # Lazily load attributes
 
@@ -3503,13 +3530,11 @@ class HTML:
         """Parse the markup."""
         return self.parser.parse(self.markup)
 
-    async def load_assets(self) -> None:
+    def process_dom(self) -> None:
         """Load CSS styles and image resources.
 
         Do not touch element's themes!
         """
-        url_cbs = {}
-        url_fs_map = {}
 
         def _process_css(data: bytes) -> None:
             try:
@@ -3546,8 +3571,8 @@ class HTML:
             ):
                 url = urljoin(str(self.base), href)
                 fs, url = url_to_fs(url)
-                url_fs_map[url] = fs
-                url_cbs[url] = _process_css
+                self._url_fs_map[url] = fs
+                self._url_cbs[url] = _process_css
 
             # In case of a <style> tab, load first child's text
             elif child.name == "style":
@@ -3561,15 +3586,21 @@ class HTML:
                 child.attrs["_missing"] = "true"
                 url = urljoin(str(self.base), src)
                 fs, url = url_to_fs(url)
-                url_fs_map[url] = fs
-                url_cbs[url] = partial(_process_img, child)
+                self._url_fs_map[url] = fs
+                self._url_cbs[url] = partial(_process_img, child)
+
+        self._dom_processed = True
+
+    async def load_assets(self) -> None:
+        """Load remote assets asynchronously."""
+        self._assets_loaded = True
 
         # Load all remote assets for each protocol using fsspec (where they are loaded
         # asynchronously in their own thread) and trigger callbacks if the file is
         # loaded successfully
         fs_url_map = {
-            fs: [url for url, f in url_fs_map.items() if f == fs]
-            for fs in set(url_fs_map.values())
+            fs: [url for url, f in self._url_fs_map.items() if f == fs]
+            for fs in set(self._url_fs_map.values())
         }
         for fs, urls in fs_url_map.items():
             try:
@@ -3581,11 +3612,14 @@ class HTML:
                 for url, result in results.items():
                     if not isinstance(result, Exception):
                         log.debug("File %s loaded", url)
-                        url_cbs[url](result)
+                        self._url_cbs[url](result)
                     else:
                         log.warning("Error loading %s", url)
 
-        self.assets_loaded = True
+        # Reset all nodes so they will update with the new CSS from assets
+        self.soup.reset()
+
+        log.debug("Remote assets loaded")
 
     def render(self, width: int | None, height: int | None) -> StyleAndTextTuples:
         """Render the current markup at a given size."""
@@ -3613,7 +3647,10 @@ class HTML:
         assert self.width is not None
         assert self.height is not None
 
-        if not self.assets_loaded:
+        # The soup gets parsed when we load assets, and asset data gets attached to it
+        if not self._dom_processed:
+            self.process_dom()
+        if not self.defer_assets and not self._assets_loaded:
             await self.load_assets()
 
         ft = await self.render_element(
@@ -3678,6 +3715,12 @@ class HTML:
 
         self.render_count += 1
         self.formatted_text = ft
+
+        # Load assets after initial render and requuest a re-render when loaded
+        if self.defer_assets and not self._assets_loaded:
+            loop = asyncio.get_event_loop()
+            task = loop.create_task(self.load_assets())
+            task.add_done_callback(lambda fut: self.on_change.fire())
 
         return ft
 
