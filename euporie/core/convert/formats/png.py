@@ -122,14 +122,15 @@ async def latex_to_png_py_mpl(
     from matplotlib.backends import backend_agg
 
     # mpl mathtext doesn't support display math, force inline
-    data = datum.data.replace("$$", "$")
-
+    data = datum.data.strip().replace("$$", "$")
+    if not data.startswith("$"):
+        data = f"${data}$"
     buffer = BytesIO()
     prop = font_manager.FontProperties(size=12)
     parser = mathtext.MathTextParser("path")
     width, height, depth, _, _ = parser.parse(data, dpi=72, prop=prop)
-    fig = figure.Figure(figsize=(width or 256 / 72, height or 256 / 72))
-    fig.text(0, depth / height, data, fontproperties=prop, color=datum.fg)
+    fig = figure.Figure(figsize=(width / 72, height / 72))
+    fig.text(0, depth / height, data, fontproperties=prop, color=datum.fg, usetex=False)
     backend_agg.FigureCanvasAgg(fig)
     fig.savefig(buffer, dpi=120, format="png", transparent=True)
     return buffer.getvalue()
