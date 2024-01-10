@@ -6,6 +6,7 @@ import contextlib
 import logging
 from typing import TYPE_CHECKING
 
+from euporie.core.filters import have_black, have_isort, have_ruff, have_ssort
 from euporie.core.log import stdout_to_log
 
 if TYPE_CHECKING:
@@ -80,12 +81,12 @@ def format_ssort(text: str) -> str:
 def format_code(text: str, config: Config) -> str:
     """Format a code string using :py:mod:``."""
     formatters = set(config.formatters)
-    if "ssort" in formatters:
+    if have_ssort() and "ssort" in formatters:
         text = format_ssort(text)
-    if "isort" in formatters:
+    if have_isort() and "isort" in formatters:
         text = format_isort(text)
-    if "black" in formatters:
+    if have_black() and "black" in formatters:
         text = format_black(text)
-    if "ruff" in formatters:
+    if have_ruff() and "ruff" in formatters:
         text = format_ruff(text)
     return text.strip()
