@@ -4242,14 +4242,13 @@ class HTML:
         self.graphic_data.add(datum)
 
         # Calculate size and pad text representation
-        _cols, aspect = await datum.cell_size_async()
-        cols = max_line_width(ft)
-        rows = ceil(cols * aspect)
-
-        ft = valign(ft, height=rows, how=FormattedTextVerticalAlign.TOP)
+        cols, aspect = await datum.cell_size_async()
+        rows = max(len(list(split_lines(ft))), ceil(cols * aspect))
+        cols = max(cols, max_line_width(ft))
 
         key = datum.add_size(Size(rows, cols))
         ft = [(f"[Graphic_{key}]", ""), *ft]
+        ft = valign(ft, height=rows, how=FormattedTextVerticalAlign.TOP)
         return ft
 
     @overload
