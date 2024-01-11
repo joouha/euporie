@@ -28,6 +28,7 @@ Added
 Fixed
 =====
 
+- Fix ``PgUp`` and ``PgDn`` keybindings in ``ScrollingContainer``
 - Fix issue with black code formatter when an unprintable character is entered
 - Fix issue with image tearing when using ``chafa.py`` to render images
 - Do not highlight brackets if a kernel input is not focused
