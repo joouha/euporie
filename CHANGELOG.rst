@@ -14,10 +14,10 @@ Changed
 
 - Improve ``imagemagick`` detection so it works on Debian
 
-
 Added
 =====
 
+- Implement progressive rendering in webview
 - Pre-render terminal graphics to speed up notebook scrolling
 - Add support for ``ruff`` code formatter
 - Add support for inline LaTeX math in markdown
