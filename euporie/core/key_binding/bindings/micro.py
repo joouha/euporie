@@ -36,8 +36,6 @@ from prompt_toolkit.key_binding.bindings.scroll import (
     scroll_half_page_up,
     scroll_one_line_down,
     scroll_one_line_up,
-    scroll_page_down,
-    scroll_page_up,
 )
 from prompt_toolkit.keys import Keys
 from prompt_toolkit.selection import SelectionState, SelectionType
@@ -160,8 +158,6 @@ register_bindings(
             "duplicate-selection": "c-d",
             "paste-clipboard": "c-v",
             "select-all": "c-a",
-            "scroll-page-up": "pageup",
-            "scroll-page-down": "pagedown",
             "delete": "delete",
             "toggle-case": "f4",
             "toggle-overwrite-mode": "insert",
@@ -310,14 +306,6 @@ add_cmd(
     title="Scroll up one line",
     filter=buffer_has_focus,
 )(scroll_one_line_up)
-add_cmd(
-    title="Scroll one one page",
-    filter=buffer_has_focus,
-)(scroll_page_down)
-add_cmd(
-    title="Scroll up one page",
-    filter=buffer_has_focus,
-)(scroll_page_up)
 
 
 @add_cmd(

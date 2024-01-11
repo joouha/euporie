@@ -195,6 +195,7 @@ class BaseApp(Application):
         leave_graphics: FilterOrBool = True,
         extend_renderer_height: FilterOrBool = False,
         extend_renderer_width: FilterOrBool = False,
+        enable_page_navigation_bindings: FilterOrBool | None = True,
         **kwargs: Any,
     ) -> None:
         """Instantiate euporie specific application variables.
@@ -211,6 +212,8 @@ class BaseApp(Application):
                 beyond the height of the display
             extend_renderer_width: Whether the renderer width should be extended
                 beyond the height of the display
+            enable_page_navigation_bindings: Determines if page navigation keybindings
+                should be loaded
             kwargs: The key-word arguments for the :py:class:`Application`
 
         """
@@ -221,6 +224,7 @@ class BaseApp(Application):
                 "editing_mode": self.get_edit_mode(),
                 "mouse_support": Condition(lambda: self.need_mouse_support),
                 "cursor": CursorConfig(),
+                "enable_page_navigation_bindings": enable_page_navigation_bindings,
                 **kwargs,
             }
         )
@@ -271,6 +275,12 @@ class BaseApp(Application):
             "euporie.core.app.BaseApp",
             "euporie.core.terminal.TerminalInfo",
         ]
+
+        from euporie.core.key_binding.bindings.page_navigation import (
+            load_page_navigation_bindings,
+        )
+
+        self._page_navigation_bindings = load_page_navigation_bindings(self.config)
         # Determines which clipboard mechanism to use
         self.clipboard: Clipboard = EuporieClipboard(self)
         # Allow hiding element when manually redrawing app

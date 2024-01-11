@@ -32,15 +32,14 @@ log = logging.getLogger(__name__)
 class TextEntry:
     """Basic key-bindings for text entry."""
 
-
-# Register default bindings for micro edit mode
-register_bindings(
-    {
-        "euporie.core.key_binding.bindings.basic.TextEntry": {
-            "type-key": "<any>",
-        },
-    }
-)
+    # Register default bindings for micro edit mode
+    register_bindings(
+        {
+            "euporie.core.key_binding.bindings.basic.TextEntry": {
+                "type-key": "<any>",
+            },
+        }
+    )
 
 
 def load_basic_bindings(config: Config | None = None) -> KeyBindingsBase:
@@ -56,11 +55,7 @@ def load_basic_bindings(config: Config | None = None) -> KeyBindingsBase:
 # Commands
 
 
-@add_cmd(
-    filter=buffer_has_focus,
-    save_before=if_no_repeat,
-    hidden=True,
-)
+@add_cmd(filter=buffer_has_focus, save_before=if_no_repeat, hidden=True)
 def type_key(event: KeyPressEvent) -> None:
     """Enter a key."""
     # Do not insert escape sequences
