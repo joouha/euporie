@@ -14,7 +14,6 @@ from functools import lru_cache
 from typing import TYPE_CHECKING, ClassVar
 
 from aenum import extend_enum
-from prompt_toolkit.application.current import get_app
 from prompt_toolkit.application.run_in_terminal import run_in_terminal
 from prompt_toolkit.key_binding.key_processor import KeyProcessor, _Flush
 from prompt_toolkit.keys import Keys
@@ -22,7 +21,8 @@ from prompt_toolkit.output import ColorDepth
 from prompt_toolkit.utils import Event
 
 from euporie.core.commands import add_cmd
-from euporie.core.filters import in_tmux
+from euporie.core.current import get_app
+from euporie.core.filters import in_screen, in_tmux
 from euporie.core.key_binding.registry import register_bindings
 from euporie.core.style import DEFAULT_COLORS
 
@@ -50,11 +50,17 @@ def _have_termios_tty_fcntl() -> bool:
         return True
 
 
-def tmuxify(cmd: str) -> str:
-    """Wrap an escape sequence for tmux passthrough."""
-    if in_tmux():
-        cmd = cmd.replace("\x1b", "\x1b\x1b")
-        cmd = f"\x1bPtmux;{cmd}\033\\"
+def passthrough(cmd: str) -> str:
+    """Wrap an escape sequence for terminal passthrough."""
+    if get_app().config.multiplexer_passthrough:
+        if in_tmux():
+            cmd = cmd.replace("\x1b", "\x1b\x1b")
+            cmd = f"\x1bPtmux;{cmd}\x1b\\"
+        elif in_screen():
+            # Screen limits escape sequences to 768 bytes, so we have to chunk it
+            cmd = "".join(
+                f"\x1bP{cmd[i: i+764]}\x1b\\" for i in range(0, len(cmd), 764)
+            )
     return cmd
 
 
@@ -198,7 +204,7 @@ class Colors(TerminalQuery):
     )
 
     def _cmd(self) -> str:
-        return tmuxify(self.cmd)
+        return passthrough(self.cmd)
 
     def verify(self, data: str) -> dict[str, str]:
         """Verify the response contains a colour."""
@@ -247,7 +253,7 @@ class KittyGraphicsStatus(TerminalQuery):
 
     def _cmd(self) -> str:
         """Hide the command in case the terminal does not support this sequence."""
-        return "\x1b[s" + tmuxify(self.cmd) + "\x1b[u\x1b[2K"
+        return "\x1b[s" + passthrough(self.cmd) + "\x1b[u\x1b[2K"
 
     def verify(self, data: str) -> bool:
         """Verify the terminal response means kitty graphics are supported."""
@@ -269,10 +275,7 @@ class SixelGraphicsStatus(TerminalQuery):
     pattern = re.compile(r"^\x1b\[\?(?:\d+;)*(?P<sixel>4)(?:;\d+)*c\Z")
 
     def _cmd(self) -> str:
-        if self.config.tmux_graphics:
-            return tmuxify(self.cmd)
-        else:
-            return self.cmd
+        return passthrough(self.cmd)
 
     def verify(self, data: str) -> bool:
         """Verify the terminal response means sixel graphics are supported."""
@@ -294,10 +297,7 @@ class ItermGraphicsStatus(TerminalQuery):
     pattern = re.compile(r"^\x1bP>\|(?P<term>[^\x1b]+)\x1b\\")
 
     def _cmd(self) -> str:
-        if self.config.tmux_graphics:
-            return tmuxify(self.cmd)
-        else:
-            return self.cmd
+        return passthrough(self.cmd)
 
     def verify(self, data: str) -> bool:
         """Verify iterm graphics are supported by the terminal."""

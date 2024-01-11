@@ -25,14 +25,10 @@ from euporie.core.convert.datum import Datum
 from euporie.core.convert.registry import find_route
 from euporie.core.current import get_app
 from euporie.core.data_structures import DiInt
-from euporie.core.filters import (
-    has_dialog,
-    has_menus,
-    in_tmux,
-)
+from euporie.core.filters import has_dialog, has_menus, in_mplex
 from euporie.core.ft.utils import _ZERO_WIDTH_FRAGMENTS
 from euporie.core.layout.scroll import BoundedWritePosition
-from euporie.core.terminal import tmuxify
+from euporie.core.terminal import passthrough
 
 if TYPE_CHECKING:
     from typing import Any, Callable, ClassVar
@@ -210,7 +206,7 @@ class SixelGraphicControl(GraphicControl):
                                 ),
                                 ("[ZeroWidthEscape]", f"\x1b[{width}D"),
                                 # Place the image without moving cursor
-                                ("[ZeroWidthEscape]", tmuxify(cmd)),
+                                ("[ZeroWidthEscape]", passthrough(cmd)),
                                 # Restore the last known cursor position (at the bottom)
                                 ("[ZeroWidthEscape]", "\x1b[u"),
                             ]
@@ -296,7 +292,7 @@ class ItermGraphicControl(GraphicControl):
                                 ),
                                 ("[ZeroWidthEscape]", f"\x1b[{width}D"),
                                 # Place the image without moving cursor
-                                ("[ZeroWidthEscape]", tmuxify(cmd)),
+                                ("[ZeroWidthEscape]", passthrough(cmd)),
                                 # Restore the last known cursor position (at the bottom)
                                 ("[ZeroWidthEscape]", "\x1b[u"),
                             ]
@@ -404,7 +400,7 @@ class KittyGraphicControl(GraphicControl):
                 C=1,  # Do not move the cursor
                 m=1 if data else 0,  # Data will be chunked
             )
-            self.app.output.write_raw(tmuxify(cmd))
+            self.app.output.write_raw(passthrough(cmd))
         self.app.output.flush()
         self.loaded = True
 
@@ -412,7 +408,7 @@ class KittyGraphicControl(GraphicControl):
         """Hide the graphic from show without deleting it."""
         if self.kitty_image_id > 0:
             self.app.output.write_raw(
-                tmuxify(
+                passthrough(
                     self._kitty_cmd(
                         a="d",
                         d="i",
@@ -427,7 +423,7 @@ class KittyGraphicControl(GraphicControl):
         """Delete the graphic from the terminal."""
         if self.kitty_image_id > 0:
             self.app.output.write_raw(
-                tmuxify(
+                passthrough(
                     self._kitty_cmd(
                         a="D",
                         d="I",
@@ -496,7 +492,7 @@ class KittyGraphicControl(GraphicControl):
                                 ),
                                 ("[ZeroWidthEscape]", f"\x1b[{width}D"),
                                 # Place the image without moving cursor
-                                ("[ZeroWidthEscape]", tmuxify(cmd)),
+                                ("[ZeroWidthEscape]", passthrough(cmd)),
                                 # Restore the last known cursor position (at the bottom)
                                 ("[ZeroWidthEscape]", "\x1b[u"),
                             ]
@@ -638,7 +634,7 @@ def select_graphic_control(format_: str) -> type[GraphicControl] | None:
     term_info = app.term_info
     preferred_graphics_protocol = app.config.graphics
     useable_graphics_controls: list[type[GraphicControl]] = []
-    _in_tmux = in_tmux()
+    _in_mplex = in_mplex()
 
     if preferred_graphics_protocol != "none":
         if term_info.iterm_graphics_status.value and find_route(format_, "base64-png"):
@@ -646,15 +642,15 @@ def select_graphic_control(format_: str) -> type[GraphicControl] | None:
         if (
             preferred_graphics_protocol == "iterm"
             and ItermGraphicControl in useable_graphics_controls
-            # Iterm does not work in tmux without pass-through
-            and (not _in_tmux or (_in_tmux and app.config.tmux_graphics))
+            # Iterm does not work in mplex without pass-through
+            and (not _in_mplex or (_in_mplex and app.config.mplex_graphics))
         ):
             SelectedGraphicControl = ItermGraphicControl
         elif (
             term_info.kitty_graphics_status.value
             and find_route(format_, "base64-png")
-            # Kitty does not work in tmux without pass-through
-            and (not _in_tmux or (_in_tmux and app.config.tmux_graphics))
+            # Kitty does not work in mplex without pass-through
+            and (not _in_mplex or (_in_mplex and app.config.mplex_graphics))
         ):
             useable_graphics_controls.append(KittyGraphicControl)
         if (

@@ -430,7 +430,7 @@ class NotebookApp(BaseApp):
                     self.config.get_item("syntax_theme").menu,
                     get_cmd("toggle-background-pattern").menu,
                     get_cmd("toggle-show-cell-borders").menu,
-                    get_cmd("toggle-tmux-graphics").menu,
+                    get_cmd("toggle-multiplexer-passthrough").menu,
                     separator,
                     get_cmd("toggle-expand").menu,
                     get_cmd("toggle-line-numbers").menu,
