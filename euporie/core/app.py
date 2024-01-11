@@ -64,7 +64,7 @@ from euporie.core.commands import add_cmd
 from euporie.core.config import Config, add_setting
 from euporie.core.convert.mime import get_mime
 from euporie.core.current import get_app
-from euporie.core.filters import in_tmux, insert_mode, replace_mode, tab_has_focus
+from euporie.core.filters import in_mplex, insert_mode, replace_mode, tab_has_focus
 from euporie.core.io import Vt100_Output, Vt100Parser
 from euporie.core.key_binding.key_processor import KeyProcessor
 from euporie.core.key_binding.micro_state import MicroState
@@ -1008,24 +1008,31 @@ class BaseApp(Application):
     )
 
     add_setting(
-        name="tmux_graphics",
-        flags=["--tmux-graphics"],
+        name="multiplexer_passthrough",
+        flags=["--multiplexer-passthrough"],
         type_=bool,
-        help_="Enable terminal graphics in tmux (experimental)",
+        help_="Use passthrough from within terminal multiplexers",
         default=False,
-        hidden=~in_tmux,
+        hidden=~in_mplex,
         description="""
-            If set, terminal graphics will be used if :program:`tmux` is running by
-            performing terminal escape sequence pass-through. You must restart euporie
-            for this to take effect.
+            If set and euporie is running inside a terminal multiplexer
+            (:program:`screen` or :program:`tmux`), then certain escape sequences
+            will be passed-through the multiplexer directly to the terminal.
 
-            You will also need to ensure that ``allow-passthrough`` is set to ``on`` in
-            your :program:`tmux` configuration.
+            This affects things such as terminal color detection and graphics display.
+
+            for tmux, you will also need to ensure that ``allow-passthrough`` is set to
+            ``on`` in your :program:`tmux` configuration.
 
             .. warning::
 
                Terminal graphics in :program:`tmux` is experimental, and is not
                guaranteed to work. Use at your own risk!
+
+            .. note::
+               As of version :command:`tmux` version ``3.4`` sixel graphics are
+               supported, which may result in better terminal graphics then using
+               multiplexer passthrough.
         """,
     )
 

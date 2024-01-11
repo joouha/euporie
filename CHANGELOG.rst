@@ -12,6 +12,7 @@ Upcoming
 Changed
 =======
 
+- Rename ``--tmux-graphics`` option to ``--multiplexer-passthrough``, and make it additionally work with GNU screen
 - Improve ``imagemagick`` detection so it works on Debian
 
 Added
