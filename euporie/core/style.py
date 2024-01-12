@@ -424,6 +424,8 @@ def build_style(
         # status of cursor-line.
         **dict(default_ui_style().style_rules),
         "default": f"fg:{cp.bg.base} bg:{cp.bg.base}",
+        # Remove non-breaking space style from PTK
+        "nbsp": "nounderline fg:default",
         # Logo
         "logo": "fg:#dd0000",
         # Pattern
