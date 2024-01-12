@@ -28,7 +28,10 @@ def format_ruff(text: str) -> str:
 
         with contextlib.suppress(subprocess.CalledProcessError):
             text = subprocess.check_output(
-                [ruff_path, "format", "-"], input=text, text=True
+                [ruff_path, "format", "-"],
+                input=text,
+                text=True,
+                stderr=subprocess.DEVNULL,
             )
     return text
 
