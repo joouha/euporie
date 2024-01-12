@@ -29,6 +29,7 @@ Added
 Fixed
 =====
 
+- Redraw app on theme update
 - Fix ``PgUp`` and ``PgDn`` keybindings in ``ScrollingContainer``
 - Fix issue with black code formatter when an unprintable character is entered
 - Fix issue with image tearing when using ``chafa.py`` to render images
