@@ -784,6 +784,8 @@ class BaseApp(Application):
     ) -> None:
         """Update the application's style when the syntax theme is changed."""
         self.renderer.style = self.create_merged_style()
+        # Trigger a re-draw
+        self.invalidate()
 
     def refresh(self) -> None:
         """Reet all tabs."""
@@ -939,11 +941,11 @@ class BaseApp(Application):
     add_setting(
         name="terminal_polling_interval",
         flags=["--terminal-polling-interval"],
-        type_=int,
+        type_=float,
         help_="Time between terminal colour queries",
-        default=0,
+        default=0.0,
         schema={
-            "min": 0,
+            "min": 0.0,
         },
         description="""
             Determine how frequently the terminal should be polled for changes to the

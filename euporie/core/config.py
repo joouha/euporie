@@ -45,7 +45,7 @@ _SCHEMA_TYPES: dict[type | Callable, str] = {
     bool: "boolean",
     str: "string",
     int: "integer",
-    float: "float",
+    float: "number",
     UPath: "string",
 }
 
