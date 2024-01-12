@@ -744,6 +744,16 @@ class BaseApp(Application):
                 "default" if name in ("fg", "bg") else name,
             )
         # Add accent color
+        # self.color_palette.add_color(
+        #     "hl",
+        #     (bg := self.color_palette.bg)
+        #     .adjust(
+        #         hue=(bg.hue + (bg.hue - 0.036)) % 1,
+        #         saturation=(0.88 - bg.saturation),
+        #         brightness=0.4255 - bg.brightness,
+        #     )
+        #     .base_hex,
+        # )
         self.color_palette.add_color(
             "hl", base_colors.get(self.config.accent_color, self.config.accent_color)
         )
