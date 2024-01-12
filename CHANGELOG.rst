@@ -18,6 +18,7 @@ Changed
 Added
 =====
 
+- Implement CSS blink
 - Implement progressive rendering in webview
 - Pre-render terminal graphics to speed up notebook scrolling
 - Add support for ``ruff`` code formatter

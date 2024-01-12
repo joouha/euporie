@@ -1752,6 +1752,9 @@ class Theme(Mapping):
         if "line-through" in theme["text_decoration"]:
             style = f"{style} strike"
 
+        if "blink" in theme["text_decoration"]:
+            style = f"{style} blink"
+
         if self.hidden:
             style = f"{style} hidden nounderline"
 
@@ -2093,6 +2096,10 @@ _BROWSER_CSS: CssSelectors = {
         ((CssSelector(item="b"),), (CssSelector(item="strong"),)): {
             "display": "inline",
             "font_weight": "bold",
+        },
+        ((CssSelector(item="blink"),),): {
+            "display": "inline",
+            "text_decoration": "blink",
         },
         (
             (CssSelector(item="cite"),),
