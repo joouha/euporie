@@ -42,6 +42,15 @@ def test_hidden() -> None:
     assert style.find("nounderline") > style.find("underline")
 
 
+def test_blink() -> None:
+    """Text with ``text-decoration: blink`` is rendered as spaces."""
+    data = '<span style="text-decoration: blink">a</span>'
+    result = to_formatted_text(HTML(data, width=1))
+    style, text, *_ = result[0]
+    # Hidden attribute is applied
+    assert "blink" in style
+
+
 def test_hidden_underline_removal() -> None:
     """Underline attribute should be removed from hidden elements."""
     data = 'a <u style="visibility:hidden">b</u> c'
