@@ -3627,9 +3627,8 @@ class HTML:
                         log.warning("Error loading %s", url)
 
         # Reset all nodes so they will update with the new CSS from assets
-        self.soup.reset()
-
-        log.debug("Remote assets loaded")
+        if self.defer_assets:
+            self.soup.reset()
 
     def render(self, width: int | None, height: int | None) -> StyleAndTextTuples:
         """Render the current markup at a given size."""
