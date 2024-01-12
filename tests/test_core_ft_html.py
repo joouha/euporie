@@ -31,10 +31,15 @@ def test_nested_list_linebreaks() -> None:
 
 def test_hidden() -> None:
     """Text with ``visibility: hidden`` is rendered as spaces."""
-    data = 'a <u style="visibility:hidden">b</u> c'
-    expected = "a   c"
-    result = HTML(data, width=5)
-    assert to_plain_text(result) == expected
+    data = '<u style="visibility:hidden">a</u>'
+    result = to_formatted_text(HTML(data, width=1))
+    style, text, *_ = result[0]
+    # Hidden attribute is applied
+    assert "hidden" in style
+    # Text is still rendered
+    assert text[0] == "a"
+    # Underline attribute is disabled for hidden text
+    assert style.find("nounderline") > style.find("underline")
 
 
 def test_hidden_underline_removal() -> None:

@@ -1752,6 +1752,9 @@ class Theme(Mapping):
         if "line-through" in theme["text_decoration"]:
             style = f"{style} strike"
 
+        if self.hidden:
+            style = f"{style} hidden nounderline"
+
         return style
 
     async def text_transform(self, value: str) -> str:
@@ -4939,20 +4942,6 @@ class HTML:
                 border_visibility=DiBool.from_value(False),
                 padding=margin,
                 padding_style=parent_style,
-            )
-
-        # Ensure hidden content is blank and styled like the parent
-        if theme.hidden:
-            ft = cast(
-                "StyleAndTextTuples",
-                [
-                    (
-                        parent_style,
-                        "\n".join([" " * len(x) for x in text.split("\n")]),
-                        *rest,
-                    )
-                    for style, text, *rest in ft
-                ],
             )
 
         # Apply mouse handler to links
