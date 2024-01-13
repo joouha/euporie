@@ -51,6 +51,11 @@ class WebTab(Tab):
 
         run_in_thread_with_context(_load)
 
+    def focus(self) -> None:
+        """Focus the webview when this tab is focused."""
+        super().focus()
+        self.app.layout.focus(self.webview)
+
     @property
     def title(self) -> str:
         """Return the tab title."""
