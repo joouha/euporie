@@ -29,6 +29,7 @@ Added
 Fixed
 =====
 
+- Top line of app no longer disappears sometimes when opening file
 - Redraw app on theme update
 - Fix ``PgUp`` and ``PgDn`` keybindings in ``ScrollingContainer``
 - Fix issue with black code formatter when an unprintable character is entered
