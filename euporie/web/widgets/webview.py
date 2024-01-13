@@ -150,7 +150,7 @@ class WebViewControl(UIControl):
             mouse_handler=self._node_mouse_handler,
             paste_fixed=False,
             _initial_format=format_,
-            defer_assets=True,
+            defer_assets=False,
             on_change=lambda dom: self.invalidate(),
         )
 
