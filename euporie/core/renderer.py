@@ -125,7 +125,9 @@ def _output_screen_diff(
                 for index, cell in row.items()
                 if cell.char != " " or style_string_has_style[cell.style]
             }
-            | zwe_row.keys()
+            # Lag ZWE indices by one, as one could exist after the last line character
+            # but we don't want that to count towards the line width
+            | {x - 1 for x in zwe_row}
             | {0}
         )
 
@@ -177,7 +179,8 @@ def _output_screen_diff(
 
         prev_diff_char = False
 
-        # We might have a ZWE sequence just beyond the end of the line
+        # Loop just beyond the line length to check for ZWE sequences right at the end
+        # of the line
         while c <= new_max_line_len + 1:
             new_char = new_row[c]
             old_char = previous_row[c]

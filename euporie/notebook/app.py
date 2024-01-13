@@ -194,6 +194,7 @@ class NotebookApp(BaseApp):
                 self.tab_bar_control,
                 height=2,
                 style="class:app-tab-bar",
+                dont_extend_height=True,
             ),
             filter=Condition(
                 lambda: (len(self.tabs) > 1 or self.config.always_show_tab_bar)
