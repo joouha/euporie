@@ -440,7 +440,6 @@ class Console(KernelTab):
                         & Condition(lambda: self.app.renderer.rows_above_layout > 0)
                     )
                     | ~renderer_height_is_known
-                    | self.app.redrawing
                 ),
             ),
             # Input
@@ -457,7 +456,7 @@ class Console(KernelTab):
 
         self.input_layout = Layout(PrintingContainer(input_row))
 
-        self.live_layout = HSplit(
+        return HSplit(
             [
                 ConditionalContainer(
                     HSplit(
@@ -480,8 +479,6 @@ class Console(KernelTab):
                 "euporie.console.tabs.console.Console"
             ),
         )
-
-        return self.live_layout
 
     def set_next_input(self, text: str, replace: bool = False) -> None:
         """Set the text for the next prompt."""
