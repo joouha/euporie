@@ -6,7 +6,7 @@ Notable changes to this project will be documented in this file.
 
 
 *******************
-v2.7.0 (2024-01-13)
+v2.7.0 (2024-01-15)
 *******************
 
 Added
