@@ -951,6 +951,7 @@ class ScrollingContainer(Container):
         """
         if index is None:
             index = self.selected_slice.start
+        index = max(0, min(len(self.children) - 1, index))
         return self.children[index]
 
     def scroll_to(
