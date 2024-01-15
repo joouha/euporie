@@ -27,8 +27,8 @@ If you're working with Jupyter notebooks in a terminal only environment, like an
      - `Preview <https://euporie.readthedocs.io/en/latest/apps/preview.html>`_
      - `Hub <https://euporie.readthedocs.io/en/latest/apps/hub.html>`_
 
-.. image:: https://user-images.githubusercontent.com/12154190/226652401-f0601134-208d-4edc-9f5d-39fcd9dab288.png
-   :target: https://user-images.githubusercontent.com/12154190/226652401-f0601134-208d-4edc-9f5d-39fcd9dab288.png
+.. image:: https://github.com/joouha/euporie/assets/12154190/c8ea6e23-11bb-4ffc-a9e5-111f788c51ae
+   :target: https://github.com/joouha/euporie/assets/12154190/c8ea6e23-11bb-4ffc-a9e5-111f788c51ae
 
 `View more screenshots here <https://euporie.readthedocs.io/en/latest/pages/gallery.html>`_
 
