@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
+import inspect
 import io
 import logging
 import threading
@@ -83,14 +84,27 @@ def get_loop() -> asyncio.AbstractEventLoop:
 class _MetaDatum(type):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
-        self._instances: WeakValueDictionary[str, Datum] = WeakValueDictionary()
+        self._instances: WeakValueDictionary[
+            tuple[Any, ...], Datum
+        ] = WeakValueDictionary()
 
     def __call__(self, data: T, *args: Any, **kwargs: Any) -> Datum[T]:
         data_hash = Datum.get_hash(data)
-        if data_hash in self._instances:
-            return self._instances[data_hash]
+        key: tuple[Any, ...] = (
+            data_hash,
+            *args,
+            # Get defaults for non-passed kwargs
+            *(
+                kwargs.get(param.name, param.default)
+                for param in inspect.signature(Datum.__init__).parameters.values()
+                if param.default is not inspect._empty
+                and param.name not in {"path", "source"}
+            ),
+        )
+        if key in self._instances:
+            return self._instances[key]
         instance = super().__call__(data, *args, **kwargs)
-        self._instances[data_hash] = instance
+        self._instances[key] = instance
         return instance
 
 
