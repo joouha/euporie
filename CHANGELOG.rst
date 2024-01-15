@@ -5,15 +5,9 @@ Changelog
 Notable changes to this project will be documented in this file.
 
 
-********
-Upcoming
-********
-
-Changed
-=======
-
-- Rename ``--tmux-graphics`` option to ``--multiplexer-passthrough``, and make it additionally work with GNU screen
-- Improve ``imagemagick`` detection so it works on Debian
+*******************
+v2.7.0 (2024-01-13)
+*******************
 
 Added
 =====
@@ -25,6 +19,12 @@ Added
 - Add support for inline LaTeX math in markdown
 - Add ``ziamath`` LaTeX to SVG converter
 - Set scroll offset to 1 on cell inputs
+
+Changed
+=======
+
+- Rename ``--tmux-graphics`` option to ``--multiplexer-passthrough``, and make it additionally work with GNU screen
+- Improve ``imagemagick`` detection so it works on Debian
 
 Fixed
 =====
