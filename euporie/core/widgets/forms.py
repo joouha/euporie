@@ -1586,18 +1586,21 @@ class ToggleButtons(SelectableWidget):
 
     def load_container(self) -> AnyContainer:
         """Load the widget's container."""
-        if self.vertical():
-            show_borders_values = [
-                DiBool(False, True, False, True) for _ in self.options
-            ]
-            show_borders_values[0] = show_borders_values[0]._replace(top=True)
-            show_borders_values[-1] = show_borders_values[-1]._replace(bottom=True)
+        if self.options:
+            if self.vertical():
+                show_borders_values = [
+                    DiBool(False, True, False, True) for _ in self.options
+                ]
+                show_borders_values[0] = show_borders_values[0]._replace(top=True)
+                show_borders_values[-1] = show_borders_values[-1]._replace(bottom=True)
+            else:
+                show_borders_values = [
+                    DiBool(True, False, True, False) for _ in self.options
+                ]
+                show_borders_values[0] = show_borders_values[0]._replace(left=True)
+                show_borders_values[-1] = show_borders_values[-1]._replace(right=True)
         else:
-            show_borders_values = [
-                DiBool(True, False, True, False) for _ in self.options
-            ]
-            show_borders_values[0] = show_borders_values[0]._replace(left=True)
-            show_borders_values[-1] = show_borders_values[-1]._replace(right=True)
+            show_borders_values = []
         self.buttons = [
             ToggleButton(
                 text=label,
