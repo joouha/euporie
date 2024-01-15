@@ -1945,17 +1945,19 @@ class Theme(Mapping):
         )
 
     @cached_property
-    def grid_template(self) -> Iterator[list[str]]:
+    def grid_template(self) -> list[list[str]]:
         """Calculate the size of the grid tracks."""
 
         def _multiply_repeats(m: re.Match) -> str:
             result = m.groupdict()
             return " ".join(int(result["count"]) * [result["value"]])
 
+        template = []
         for css_item in ("grid_template_columns", "grid_template_rows"):
             value = self.theme.get(css_item, "")
             value = _GRID_TEMPLATE_REPEAT_RE.sub(_multiply_repeats, value)
-            yield [m.group() for m in _GRID_TEMPLATE_RE.finditer(value)]
+            template.append([m.group() for m in _GRID_TEMPLATE_RE.finditer(value)])
+        return template
 
     @cached_property
     def grid_column_start(self) -> int | None:
