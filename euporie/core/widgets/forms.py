@@ -15,6 +15,7 @@ from prompt_toolkit.buffer import ValidationState
 from prompt_toolkit.cache import SimpleCache
 from prompt_toolkit.completion.base import ConditionalCompleter
 from prompt_toolkit.completion.word_completer import WordCompleter
+from prompt_toolkit.data_structures import Point
 from prompt_toolkit.filters import (
     Always,
     Condition,
@@ -1060,6 +1061,14 @@ class SelectableWidget(metaclass=ABCMeta):
         """Set the widget's style."""
         self._style = value
 
+    def hover_rel(self, rel: int) -> None:
+        """Hover an index relative to the current hovered index."""
+        self.hovered = max(0, min((self.hovered or 0) + rel, len(self.options) - 1))
+
+    def select_rel(self, rel: int) -> None:
+        """Select an index relative to the current index."""
+        self.toggle_item(max(0, min((self.index or 0) + rel, len(self.options) - 1)))
+
     def key_bindings(self) -> KeyBindingsBase:
         """Key bindings for the selectable widget."""
         kb = KeyBindings()
@@ -1070,12 +1079,11 @@ class SelectableWidget(metaclass=ABCMeta):
 
         @kb.add("up", filter=~self.multiple)
         def _(event: KeyPressEvent) -> None:
-            self.toggle_item(max(0, min((self.index or 0) - 1, len(self.options) - 1)))
-            get_app().invalidate()
+            self.select_rel(-1)
 
         @kb.add("down", filter=~self.multiple)
         def _(event: KeyPressEvent) -> None:
-            self.toggle_item(max(0, min((self.index or 0) + 1, len(self.options) - 1)))
+            self.select_rel(+1)
 
         @kb.add("end", filter=~self.multiple)
         def _(event: KeyPressEvent) -> None:
@@ -1093,11 +1101,11 @@ class SelectableWidget(metaclass=ABCMeta):
 
         @kb.add("up", filter=self.multiple)
         def _(event: KeyPressEvent) -> None:
-            self.hovered = max(0, min((self.hovered or 0) - 1, len(self.options) - 1))
+            self.hover_rel(-1)
 
         @kb.add("down", filter=self.multiple)
         def _(event: KeyPressEvent) -> None:
-            self.hovered = max(0, min((self.hovered or 0) + 1, len(self.options) - 1))
+            self.hover_rel(+1)
 
         @kb.add("end", filter=self.multiple)
         def _(event: KeyPressEvent) -> None:
@@ -1213,6 +1221,49 @@ class SelectableWidget(metaclass=ABCMeta):
         return self.container
 
 
+class NavigableFormattedTextControl(FormattedTextControl):
+    """Formatted text control where the cursor can be moved by scrolling."""
+
+    def __init__(
+        self,
+        text: AnyFormattedText = "",
+        style: str = "",
+        focusable: FilterOrBool = False,
+        key_bindings: KeyBindingsBase | None = None,
+        show_cursor: bool = True,
+        modal: bool = False,
+        get_cursor_position: Callable[[], Point | None] | None = None,
+        move_cursor_up: Callable[[], None] | None = None,
+        move_cursor_down: Callable[[], None] | None = None,
+    ) -> None:
+        """Initialize control with addition of cursor movement functions."""
+        super().__init__(
+            text,
+            style,
+            focusable,
+            key_bindings,
+            show_cursor,
+            modal,
+            get_cursor_position,
+        )
+        self._move_cursor_up = move_cursor_up
+        self._move_cursor_down = move_cursor_down
+
+    def move_cursor_down(self) -> None:
+        """Request to move the cursor down.
+
+        This happens when scrolling down and the cursor is completely at the
+        top.
+        """
+        if callable(self._move_cursor_down):
+            self._move_cursor_down()
+
+    def move_cursor_up(self) -> None:
+        """Request to move the cursor up."""
+        if callable(self._move_cursor_up):
+            self._move_cursor_up()
+
+
 class Select(SelectableWidget):
     """A select widget, which allows one or more items to be selected from a list."""
 
@@ -1280,24 +1331,19 @@ class Select(SelectableWidget):
     def text_fragments(self) -> StyleAndTextTuples:
         """Create a list of formatted text fragments to display."""
         ft: StyleAndTextTuples = []
-        if self.labels:
-            max_width = max(
-                fragment_list_width(to_formatted_text(x)) for x in self.labels
-            )
+        labels = self.labels
+        if labels:
+            max_width = max(fragment_list_width(to_formatted_text(x)) for x in labels)
         else:
             max_width = 1
-        for i, label in enumerate(self.labels):
+        for i, label in enumerate(labels):
             label = to_formatted_text(label)
             label = align(label, FormattedTextAlign.LEFT, width=max_width)
-            if self.multiple():
-                cursor = "[SetCursorPosition]" if i == self.hovered else ""
-            else:
-                cursor = "[SetCursorPosition]" if self.mask[i] else ""
             style = "class:selection" if self.mask[i] else ""
             if self.hovered == i and self.multiple() and self.has_focus():
                 style += " class:hovered"
             ft_option = [
-                (f"class:prefix {cursor}", self.prefix[self.mask[i]]),
+                ("class:prefix", self.prefix[self.mask[i]]),
                 ("", " "),
                 *label,
                 ("", " "),
@@ -1321,11 +1367,26 @@ class Select(SelectableWidget):
                 VSplit(
                     [
                         window := Window(
-                            FormattedTextControl(
+                            NavigableFormattedTextControl(
                                 self.text_fragments,
                                 focusable=~self.disabled,
                                 show_cursor=False,
                                 key_bindings=self.key_bindings(),
+                                get_cursor_position=lambda: Point(
+                                    x=0, y=self.hovered or 0
+                                )
+                                if self.multiple()
+                                else Point(x=0, y=self.index or 0),
+                                move_cursor_up=lambda: (
+                                    self.hover_rel
+                                    if self.multiple()
+                                    else self.select_rel
+                                )(-1),
+                                move_cursor_down=lambda: (
+                                    self.hover_rel
+                                    if self.multiple()
+                                    else self.select_rel
+                                )(+1),
                             ),
                             height=lambda: self.rows,
                             dont_extend_width=self.dont_extend_width,

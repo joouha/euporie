@@ -251,9 +251,10 @@ class ChildRenderInfo:
                     window_height=info.window_height,
                     configured_scroll_offsets=info.configured_scroll_offsets,
                     visible_line_to_row_col=visible_line_to_row_col,
+                    # The following is needed to calculate absolute cursor positions
                     rowcol_to_yx={
-                        # (row, col): (y + top, x + left)
-                        # for (row, col), (y, x) in info._rowcol_to_yx.items()
+                        (row, col): (y + top, x + left)
+                        for (row, col), (y, x) in info._rowcol_to_yx.items()
                     },
                     x_offset=info._x_offset + left,
                     y_offset=info._y_offset + top,

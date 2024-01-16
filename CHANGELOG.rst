@@ -5,6 +5,17 @@ Changelog
 Notable changes to this project will be documented in this file.
 
 
+********
+Upcoming
+********
+
+Fixed
+=====
+
+- Fix issue with Select widget not scrolling beyond selection with scrollbar
+
+----
+
 *******************
 v2.7.0 (2024-01-15)
 *******************
@@ -40,6 +51,7 @@ Fixed
 - Greatly improved responsiveness when scrolling large cells
 - Fix issue when moving cursor up between cells cursor, where cursor moved to second last character
 
+----
 
 *******************
 v2.6.2 (2023-11-23)
@@ -50,6 +62,7 @@ Fixed
 
 - Fix terminal graphics in euporie-console
 
+----
 
 *******************
 v2.6.1 (2023-11-17)
@@ -63,6 +76,8 @@ Fixed
 - Fix running multiple cells
 - Prevent exception when extending cell selection to include last cell
 - Prevent notebook app freezing when copying cell outputs
+
+----
 
 *******************
 v2.6.0 (2023-11-13)
@@ -83,6 +98,8 @@ Fixed
 - Prevent error dialog collapsing at small terminal sizes
 - Correct error in escape code for querying terminal dimensions
 - Fix cell output wrap toggle shortcut
+
+----
 
 *******************
 v2.5.3 (2023-10-19)
