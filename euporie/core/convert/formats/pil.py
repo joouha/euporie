@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 
-def set_background(image: PilImage, bg_color: str | None = None) -> PilImage:
+def set_background(image: PilImage, bg: str | None = None) -> PilImage:
     """Remove the alpha channel from an image and set the background colour."""
     from PIL import Image
 
@@ -25,9 +25,9 @@ def set_background(image: PilImage, bg_color: str | None = None) -> PilImage:
         image.mode == "P" and "transparency" in image.info
     ):
         alpha = image.convert("RGBA").getchannel("A")
-        bg = Image.new("RGBA", image.size, bg_color or "#000")
-        bg.paste(image, mask=alpha)
-        image = bg
+        bg_img = Image.new("RGBA", image.size, bg or "#000")
+        bg_img.paste(image, mask=alpha)
+        image = bg_img
     return image.convert("P", palette=Image.Palette.ADAPTIVE, colors=16).convert(
         "RGB", palette=Image.Palette.ADAPTIVE, colors=16
     )
@@ -42,6 +42,8 @@ async def png_to_pil_py(
     datum: Datum,
     cols: int | None = None,
     rows: int | None = None,
+    fg: str | None = None,
+    bg: str | None = None,
     extend: bool = True,
 ) -> PilImage:
     """Convert PNG to a pillow image using :py:mod:`PIL`."""

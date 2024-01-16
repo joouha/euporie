@@ -706,6 +706,14 @@ class BaseApp(Application):
         self.editing_mode = self.get_edit_mode()
         log.debug("Editing mode set to: %s", self.editing_mode)
 
+    @property
+    def syntax_theme(self) -> str:
+        """Calculate the current syntax theme."""
+        syntax_theme = self.config.syntax_theme
+        if syntax_theme == self.config.settings["syntax_theme"].default:
+            syntax_theme = "tango" if self.color_palette.bg.is_light else "euporie"
+        return syntax_theme
+
     def create_merged_style(self) -> BaseStyle:
         """Generate a new merged style for the application.
 
@@ -736,9 +744,9 @@ class BaseApp(Application):
         }
 
         # Build a color palette from the fg/bg colors
-        self.color_palette = ColorPalette()
+        self.color_palette = cp = ColorPalette()
         for name, color in base_colors.items():
-            self.color_palette.add_color(
+            cp.add_color(
                 name,
                 color or theme_colors["default"][name],
                 "default" if name in ("fg", "bg") else name,
@@ -754,12 +762,12 @@ class BaseApp(Application):
         #     )
         #     .base_hex,
         # )
-        self.color_palette.add_color(
+        cp.add_color(
             "hl", base_colors.get(self.config.accent_color, self.config.accent_color)
         )
 
         # Build app style
-        app_style = build_style(self.color_palette)
+        app_style = build_style(cp)
 
         # Apply style transformations based on the configured color scheme
         self.style_transformation = merge_style_transformations(
@@ -779,7 +787,7 @@ class BaseApp(Application):
 
         return merge_styles(
             [
-                style_from_pygments_cls(get_style_by_name(self.config.syntax_theme)),
+                style_from_pygments_cls(get_style_by_name(self.syntax_theme)),
                 Style(MIME_STYLE),
                 Style(HTML_STYLE),
                 Style(LOG_STYLE),
@@ -794,8 +802,6 @@ class BaseApp(Application):
     ) -> None:
         """Update the application's style when the syntax theme is changed."""
         self.renderer.style = self.create_merged_style()
-        # Trigger a re-draw
-        self.invalidate()
 
     def refresh(self) -> None:
         """Reet all tabs."""

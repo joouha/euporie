@@ -21,6 +21,8 @@ async def base64_to_bytes_py(
     datum: Datum,
     cols: int | None = None,
     rows: int | None = None,
+    fg: str | None = None,
+    bg: str | None = None,
     extend: bool = True,
 ) -> bytes:
     """Convert base64 encoded data to bytes."""
@@ -34,6 +36,8 @@ async def imagemagick_convert(
     datum: Datum,
     cols: int | None = None,
     rows: int | None = None,
+    fg: str | None = None,
+    bg: str | None = None,
     extend: bool = True,
 ) -> str | bytes:
     """Convert image data to PNG bytes using ``imagemagick``."""
@@ -42,11 +46,8 @@ async def imagemagick_convert(
     if cols is not None and hasattr(app, "term_info"):
         px, _ = app.term_info.cell_size_px
         cmd += ["-geometry", f"{int(cols * px)}"]
-    bg = datum.bg
-    if not bg and hasattr(app, "color_palette"):
-        bg = app.color_palette.bg.base_hex
     if bg:
-        cmd += ["-background", str(bg), "-flatten"]
+        cmd += ["-background", bg, "-flatten"]
     cmd += ["-[0]", f"{output_format}:-"]
     result: bytes | str = await call_subproc(datum.data, cmd)
 
@@ -60,6 +61,8 @@ async def chafa_convert_cmd(
     datum: Datum,
     cols: int | None = None,
     rows: int | None = None,
+    fg: str | None = None,
+    bg: str | None = None,
     extend: bool = True,
 ) -> str | bytes:
     """Convert image data to ANSI text using :command:`chafa`."""
@@ -71,8 +74,8 @@ async def chafa_convert_cmd(
         if rows is not None:
             size = f"{size}x{rows}"
         cmd.append(size)
-    if bg := datum.bg:
-        cmd += ["--bg", str(bg)]
+    if bg:
+        cmd += ["--bg", bg]
     cmd += ["--stretch", "/dev/stdin"]
     return (await call_subproc(datum.data, cmd)).decode()
 
@@ -82,6 +85,8 @@ async def chafa_convert_py(
     datum: Datum,
     cols: int | None = None,
     rows: int | None = None,
+    fg: str | None = None,
+    bg: str | None = None,
     extend: bool = True,
 ) -> str | bytes:
     """Convert image data to ANSI text using ::`chafa.py`."""
@@ -127,7 +132,7 @@ async def chafa_convert_py(
             config.height = max(1, int(cols / data.size[0] * data.size[1] * px / py))
 
     # Set the foreground color
-    if (fg := datum.fg) and (color := fg.lstrip("#")):
+    if fg and (color := fg.lstrip("#")):
         config.fg_color = (
             int(color[0:2], 16),
             int(color[2:4], 16),
@@ -135,7 +140,7 @@ async def chafa_convert_py(
         )
 
     # Set the background color
-    if (bg := datum.bg) and (color := bg.lstrip("#")):
+    if bg and (color := bg.lstrip("#")):
         config.bg_color = (
             int(color[0:2], 16),
             int(color[2:4], 16),

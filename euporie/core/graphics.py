@@ -130,7 +130,13 @@ class GraphicControl(UIControl, metaclass=ABCMeta):
             }
 
         # Re-render if the image width changes, or the terminal character size changes
-        key = (cols, rows, self.app.term_info.cell_size_px, self.bbox)
+        key = (
+            cols,
+            rows,
+            self.app.color_palette,
+            self.app.term_info.cell_size_px,
+            self.bbox,
+        )
         return UIContent(
             **self._content_cache.get(key, get_content),
         )
@@ -215,7 +221,12 @@ class SixelGraphicControl(GraphicControl):
                 )
             return ft
 
-        key = (width, self.bbox, self.app.term_info.cell_size_px)
+        key = (
+            width,
+            self.app.color_palette,
+            self.app.term_info.cell_size_px,
+            self.bbox,
+        )
         return self._format_cache.get(key, render_lines)
 
 
@@ -301,7 +312,12 @@ class ItermGraphicControl(GraphicControl):
                 )
             return ft
 
-        key = (width, self.bbox, self.app.term_info.cell_size_px)
+        key = (
+            width,
+            self.app.color_palette,
+            self.app.term_info.cell_size_px,
+            self.bbox,
+        )
         return self._format_cache.get(key, render_lines)
 
 
@@ -341,8 +357,6 @@ class KittyGraphicControl(GraphicControl):
             datum = Datum(
                 image,
                 format="pil",
-                fg=datum.fg,
-                bg=datum.bg,
                 px=target_width,
                 py=target_height,
                 path=datum.path,
@@ -501,7 +515,12 @@ class KittyGraphicControl(GraphicControl):
                 )
             return ft
 
-        key = (width, height, self.bbox, cell_size_px)
+        key = (
+            width,
+            self.app.color_palette,
+            self.app.term_info.cell_size_px,
+            self.bbox,
+        )
         return self._format_cache.get(key, render_lines)
 
     def reset(self) -> None:

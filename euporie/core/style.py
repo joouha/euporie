@@ -384,8 +384,12 @@ class ColorPaletteColor:
         return ColorPaletteColor(new_color)
 
     def __repr__(self) -> str:
+        """Return a representation of the color."""
+        return f"Color({self.base})"
+
+    def __str__(self) -> str:
         """Return a string representation of the color."""
-        return self.base
+        return self.base_hex
 
 
 class ColorPalette:
@@ -521,14 +525,30 @@ def build_style(
         "menu completion-magic": "fg:#888888",
         "menu completion-path": "fg:#aa8800",
         "menu completion-dict-key": "fg:#ddbb00",
-        "menu selection completion-keyword": f"fg:{ColorPaletteColor('#d700af').lighter(0.75)}",
-        "menu selection completion-function": f"fg:{ColorPaletteColor('#005faf').lighter(0.75)}",
-        "menu selection completion-class": f"fg:{ColorPaletteColor('#008700').lighter(0.75)}",
-        "menu selection completion-statement": f"fg:{ColorPaletteColor('#5f0000').lighter(0.75)}",
-        "menu selection completion-instance": f"fg:{ColorPaletteColor('#d75f00').lighter(0.75)}",
-        "menu selection completion-module": f"fg:{ColorPaletteColor('#d70000').lighter(0.75)}",
-        "menu selection completion-magic": f"fg:{ColorPaletteColor('#888888').lighter(0.75)}",
-        "menu selection completion-path": f"fg:{ColorPaletteColor('#aa8800').lighter(0.75)}",
+        "menu selection completion-keyword": (
+            f"fg:{ColorPaletteColor('#d700af').lighter(0.75)}"
+        ),
+        "menu selection completion-function": (
+            f"fg:{ColorPaletteColor('#005faf').lighter(0.75)}"
+        ),
+        "menu selection completion-class": (
+            f"fg:{ColorPaletteColor('#008700').lighter(0.75)}"
+        ),
+        "menu selection completion-statement": (
+            f"fg:{ColorPaletteColor('#5f0000').lighter(0.75)}"
+        ),
+        "menu selection completion-instance": (
+            f"fg:{ColorPaletteColor('#d75f00').lighter(0.75)}"
+        ),
+        "menu selection completion-module": (
+            f"fg:{ColorPaletteColor('#d70000').lighter(0.75)}"
+        ),
+        "menu selection completion-magic": (
+            f"fg:{ColorPaletteColor('#888888').lighter(0.75)}"
+        ),
+        "menu selection completion-path": (
+            f"fg:{ColorPaletteColor('#aa8800').lighter(0.75)}"
+        ),
         # Log
         "log.level.nonset": "fg:grey",
         "log.level.debug": "fg:green",
@@ -574,8 +594,12 @@ def build_style(
         "side_bar buttons hovered": f"fg:{cp.hl}",
         "side_bar buttons selection": f"fg:{cp.fg} bg:{cp.hl}",
         "side_bar buttons separator": f"fg:{cp.bg.less(0.15)} bg:{cp.bg.less(0.15)}",
-        "side_bar buttons separator selection before": f"fg:{cp.bg.less(0.15)} bg:{cp.hl}",
-        "side_bar buttons separator selection after": f"fg:{cp.hl} bg:{cp.bg.less(0.15)}",
+        "side_bar buttons separator selection before": (
+            f"fg:{cp.bg.less(0.15)} bg:{cp.hl}"
+        ),
+        "side_bar buttons separator selection after": (
+            f"fg:{cp.hl} bg:{cp.bg.less(0.15)}"
+        ),
         # Tabbed split
         "tabbed-split border": f"fg:{cp.bg.more(0.2)}",
         "tabbed-split border left": f"bg:{cp.bg.more(0.025)}",

@@ -64,8 +64,10 @@ def test_convert_sync() -> None:
 async def test_convert_caching() -> None:
     """Convert results are cached."""
     datum = Datum("\x1b[31mHello", format="ansi")
-    result = datum.convert("ft", cols=100, rows=100, extend=False)
-    assert datum._conversions["ft", 100, 100, False] == result
+    result = datum.convert(
+        "ft", cols=100, rows=100, fg="#FFFFFF", bg="#000000", extend=False
+    )
+    assert datum._conversions["ft", 100, 100, "#FFFFFF", "#000000", False] == result
 
 
 async def test_pixel_size_async() -> None:

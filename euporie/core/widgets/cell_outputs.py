@@ -102,9 +102,6 @@ class CellOutputDataElement(CellOutputElement):
         self.parent = parent
 
         # Get foreground and background colors
-        fg_color = None
-        if parent is not None:
-            fg_color = get_app().color_palette.fg.base_hex
         bg_color = {"light": "#FFFFFF", "dark": "#000000"}.get(
             str(metadata.get("needs_background"))
         )
@@ -125,7 +122,6 @@ class CellOutputDataElement(CellOutputElement):
             format_,
             px=metadata.get("width"),
             py=metadata.get("height"),
-            fg=fg_color,
             bg=bg_color,
         )
         config = get_app().config
@@ -158,8 +154,6 @@ class CellOutputDataElement(CellOutputElement):
             self._datum.format,
             self._datum.px,
             self._datum.py,
-            self._datum.fg,
-            self._datum.bg,
         )
         self.container.datum = self._datum
 
@@ -502,6 +496,8 @@ class CellOutputArea:
                     control.datum,
                     width=88,
                     height=None,
+                    fg=(cp := get_app().color_palette).fg.base_hex,
+                    bg=cp.bg.base_hex,
                     wrap_lines=config.wrap_cell_outputs,
                 ):
                     outputs.append(to_plain_text(line))

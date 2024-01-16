@@ -30,6 +30,8 @@ async def html_to_ansi_w3m(
     datum: Datum,
     cols: int | None = None,
     rows: int | None = None,
+    fg: str | None = None,
+    bg: str | None = None,
     extend: bool = True,
 ) -> str:
     """Convert HTML text to formatted ANSI using :command:`w3m`."""
@@ -48,6 +50,8 @@ async def html_to_ansi_elinks(
     datum: Datum,
     cols: int | None = None,
     rows: int | None = None,
+    fg: str | None = None,
+    bg: str | None = None,
     extend: bool = True,
 ) -> str:
     """Convert HTML text to formatted ANSI using :command:`elinks`."""
@@ -74,6 +78,8 @@ async def html_to_ansi_lynx(
     datum: Datum,
     cols: int | None = None,
     rows: int | None = None,
+    fg: str | None = None,
+    bg: str | None = None,
     extend: bool = True,
 ) -> str:
     """Convert HTML text to formatted ANSI using :command:`lynx`."""
@@ -92,6 +98,8 @@ async def html_to_ansi_links(
     datum: Datum,
     cols: int | None = None,
     rows: int | None = None,
+    fg: str | None = None,
+    bg: str | None = None,
     extend: bool = True,
 ) -> str:
     """Convert HTML text to formatted ANSI using :command:`links`."""
@@ -110,6 +118,8 @@ async def html_to_ansi_py_htmlparser(
     datum: Datum,
     cols: int | None = None,
     rows: int | None = None,
+    fg: str | None = None,
+    bg: str | None = None,
     extend: bool = True,
 ) -> str:
     """Convert HTML tables to ANSI text using :py:mod:`HTMLParser`."""
@@ -164,6 +174,8 @@ async def latex_to_ansi_py_flatlatex(
     datum: Datum,
     cols: int | None = None,
     rows: int | None = None,
+    fg: str | None = None,
+    bg: str | None = None,
     extend: bool = True,
 ) -> str:
     """Convert LaTeX to ANSI using :py:mod:`flatlatex`."""
@@ -181,6 +193,8 @@ async def latex_to_ansi_py_pylatexenc(
     datum: Datum,
     cols: int | None = None,
     rows: int | None = None,
+    fg: str | None = None,
+    bg: str | None = None,
     extend: bool = True,
 ) -> str:
     """Convert LaTeX to ANSI using :py:mod:`pylatexenc`."""
@@ -198,6 +212,8 @@ async def latex_to_ansi_py_sympy(
     datum: Datum,
     cols: int | None = None,
     rows: int | None = None,
+    fg: str | None = None,
+    bg: str | None = None,
     extend: bool = True,
 ) -> str:
     """Convert LaTeX to ANSI using :py:mod:`sympy`."""
@@ -220,6 +236,8 @@ async def pil_to_ansi_py_timg(
     datum: Datum,
     cols: int | None = None,
     rows: int | None = None,
+    fg: str | None = None,
+    bg: str | None = None,
     extend: bool = True,
 ) -> str:
     """Convert a PIL image to ANSI text using :py:mod:`timg`."""
@@ -246,7 +264,6 @@ async def pil_to_ansi_py_timg(
     # resizing the image
     data = data.resize((cols, ceil(rows * 2 * (px / py) / 0.5)))
 
-    bg = str(datum.bg or get_app().color_palette.bg.base_hex)
     if bg:
         data = set_background(data, bg)
     return timg.Ansi24HblockMethod(data).to_string()
@@ -261,6 +278,8 @@ async def pil_to_ansi_py_img2unicode(
     datum: Datum,
     cols: int | None = None,
     rows: int | None = None,
+    fg: str | None = None,
+    bg: str | None = None,
     extend: bool = True,
 ) -> str:
     """Convert a PIL image to ANSI text using :py:mod:`img2unicode`."""
@@ -297,6 +316,8 @@ async def image_to_ansi_timg(
     datum: Datum,
     cols: int | None = None,
     rows: int | None = None,
+    fg: str | None = None,
+    bg: str | None = None,
     extend: bool = True,
 ) -> str:
     """Convert image data to ANSI text using :command:`timg`."""
@@ -316,6 +337,8 @@ async def image_to_ansi_catimg(
     datum: Datum,
     cols: int | None = None,
     rows: int | None = None,
+    fg: str | None = None,
+    bg: str | None = None,
     extend: bool = True,
 ) -> str:
     """Convert image data to ANSI text using :command:`catimg`."""
@@ -335,6 +358,8 @@ async def image_to_ansi_icat(
     datum: Datum,
     cols: int | None = None,
     rows: int | None = None,
+    fg: str | None = None,
+    bg: str | None = None,
     extend: bool = True,
 ) -> str:
     """Convert image data to ANSI text using :command:`icat`."""
@@ -354,6 +379,8 @@ async def image_to_ansi_tiv(
     datum: Datum,
     cols: int | None = None,
     rows: int | None = None,
+    fg: str | None = None,
+    bg: str | None = None,
     extend: bool = True,
 ) -> str:
     """Convert image data to ANSI text using :command:`tiv`."""
@@ -372,6 +399,8 @@ async def image_to_ansi_viu(
     datum: Datum,
     cols: int | None = None,
     rows: int | None = None,
+    fg: str | None = None,
+    bg: str | None = None,
     extend: bool = True,
 ) -> str:
     """Convert image data to ANSI text using :command:`viu`."""
@@ -391,6 +420,8 @@ async def image_to_ansi_jp2a(
     datum: Datum,
     cols: int | None = None,
     rows: int | None = None,
+    fg: str | None = None,
+    bg: str | None = None,
     extend: bool = True,
 ) -> str:
     """Convert image data to ANSI text using :command:`jp2a`."""
@@ -410,6 +441,8 @@ async def png_to_ansi_img2txt(
     datum: Datum,
     cols: int | None = None,
     rows: int | None = None,
+    fg: str | None = None,
+    bg: str | None = None,
     extend: bool = True,
 ) -> str:
     """Convert PNG data to ANSI text using :command:`img2txt`."""
@@ -424,6 +457,8 @@ async def png_to_ansi_py_placeholder(
     datum: Datum,
     cols: int | None = None,
     rows: int | None = None,
+    fg: str | None = None,
+    bg: str | None = None,
     extend: bool = True,
 ) -> str:
     """Draw placeholder ANSI text."""
@@ -455,6 +490,8 @@ async def rich_to_ansi_py(
     datum: Datum,
     cols: int | None = None,
     rows: int | None = None,
+    fg: str | None = None,
+    bg: str | None = None,
     extend: bool = True,
 ) -> str:
     """Convert rich objects to formatted ANSI text."""

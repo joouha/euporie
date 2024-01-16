@@ -4289,8 +4289,8 @@ class HTML:
         datum = Datum(
             latex,
             "latex",
-            fg=theme.color,
-            bg=theme.background_color,
+            fg=theme.color or None,
+            bg=theme.background_color or None,
             align=WindowAlign.CENTER,
         )
         self.graphic_data.add(datum)
@@ -4322,8 +4322,6 @@ class HTML:
         datum = Datum(
             data,
             format_,
-            fg=theme.color,
-            bg=theme.background_color,
             path=path,
         )
         # Keep reference to this graphic
@@ -4336,12 +4334,13 @@ class HTML:
         rows = ceil(cols * aspect)
 
         # Convert the image to formatted-text
-        # ft = [("fg:blue", "#" * cols + "\n")] * rows
         ft = (
             await datum.convert_async(
                 to="ft",
                 cols=cols,
                 rows=rows or None,
+                fg=theme.color,
+                bg=theme.background_color,
             )
             or []
         )
