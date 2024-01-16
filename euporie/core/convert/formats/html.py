@@ -40,9 +40,11 @@ markdown_parser = (
                     HtmlFormatter(
                         nowrap=True,
                         noclasses=True,
-                        style=app.config.syntax_theme
-                        if hasattr((app := get_app()), "config")
-                        else "default",
+                        style=(
+                            app.syntax_theme
+                            if hasattr((app := get_app()), "syntax_theme")
+                            else "default"
+                        ),
                     ),
                 )
             }
@@ -63,6 +65,8 @@ async def markdown_to_html_markdown_it(
     datum: Datum,
     cols: int | None = None,
     rows: int | None = None,
+    fg: str | None = None,
+    bg: str | None = None,
     extend: bool = True,
 ) -> str:
     """Convert markdown to HTML using :py:mod:`markdownit_py`."""

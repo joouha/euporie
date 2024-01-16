@@ -1,4 +1,5 @@
 """Convert display data between formats."""
+
 from __future__ import annotations
 
 import asyncio
@@ -12,7 +13,6 @@ from weakref import ReferenceType, WeakValueDictionary, finalize, ref
 
 import imagesize
 from PIL.Image import Image as PilImage
-from prompt_toolkit.cache import SimpleCache
 from prompt_toolkit.data_structures import Size
 from prompt_toolkit.layout.containers import WindowAlign
 
@@ -52,8 +52,6 @@ _LOOP: list[asyncio.AbstractEventLoop | None] = [
     None
 ]  # global event loop for conversion
 
-_CONVERSION_CACHE: SimpleCache = SimpleCache(maxsize=2048)
-
 
 def get_loop() -> asyncio.AbstractEventLoop:
     """Create or return the conversion IO loop.
@@ -82,11 +80,10 @@ def get_loop() -> asyncio.AbstractEventLoop:
 
 
 class _MetaDatum(type):
+    _instances: WeakValueDictionary[tuple[Any, ...], Datum] = WeakValueDictionary()
+
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
-        self._instances: WeakValueDictionary[
-            tuple[Any, ...], Datum
-        ] = WeakValueDictionary()
 
     def __call__(self, data: T, *args: Any, **kwargs: Any) -> Datum[T]:
         data_hash = Datum.get_hash(data)
@@ -123,40 +120,27 @@ class Datum(Generic[T], metaclass=_MetaDatum):
         format: str,
         px: int | None = None,
         py: int | None = None,
-        fg: ColorPaletteColor | str | None = None,
-        bg: ColorPaletteColor | str | None = None,
+        fg: str | ColorPaletteColor | None = None,
+        bg: str | ColorPaletteColor | None = None,
         path: Path | None = None,
         source: Datum | None = None,
         align: WindowAlign = WindowAlign.LEFT,
     ) -> None:
         """Create a new instance of display data."""
-        # self.self = self
         self.data: T = data
         self.format = format
         self.px, self.py = px, py
-        self._fg = str(fg) if fg else None
-        self._bg = str(bg) if bg else None
+        self.fg = str(fg) if fg is not None else None
+        self.bg = str(bg) if bg is not None else None
         self.path = path
         self.source: ReferenceType[Datum] = ref(source) if source else ref(self)
         self.align = align
         self._cell_size: tuple[int, float] | None = None
-        self._conversions: dict[tuple[str, int | None, int | None, bool], T | None] = {}
+        self._conversions: dict[
+            tuple[str, int | None, int | None, str | None, str | None, bool], T | None
+        ] = {}
         self._finalizer = finalize(self, self._cleanup_datum_sizes, self.hash)
         self._finalizer.atexit = False
-
-    @property
-    def fg(self) -> str:
-        """The foreground color."""
-        if not (fg := self._fg) and hasattr(app := get_app(), "color_palette"):
-            return app.color_palette.fg.base_hex
-        return fg or "#ffffff"
-
-    @property
-    def bg(self) -> str:
-        """The background color."""
-        if not (bg := self._bg) and hasattr(app := get_app(), "color_palette"):
-            return app.color_palette.bg.base_hex
-        return bg or "#000000"
 
     def __repr__(self) -> str:
         """Return a string representation of object."""
@@ -227,6 +211,8 @@ class Datum(Generic[T], metaclass=_MetaDatum):
         to: str,
         cols: int | None = None,
         rows: int | None = None,
+        fg: str | None = None,
+        bg: str | None = None,
         extend: bool = True,
         bbox: DiInt | None = None,
     ) -> Any:
@@ -235,8 +221,13 @@ class Datum(Generic[T], metaclass=_MetaDatum):
             # TODO - crop
             return self.data
 
-        if (to, cols, rows, extend) in self._conversions:
-            return self._conversions[to, cols, rows, extend]
+        if not fg and hasattr(app := get_app(), "color_palette"):
+            fg = self.fg or app.color_palette.fg.base_hex
+        if not bg and hasattr(app := get_app(), "color_palette"):
+            bg = self.bg or app.color_palette.bg.base_hex
+
+        if (key := (to, cols, rows, fg, bg, extend)) in self._conversions:
+            return self._conversions[key]
 
         routes = _CONVERTOR_ROUTE_CACHE[(self.format, to)]
         # log.debug(
@@ -248,8 +239,9 @@ class Datum(Generic[T], metaclass=_MetaDatum):
             output = None
             for route in routes:
                 for stage_a, stage_b in zip(route, route[1:]):
-                    if (stage_b, cols, rows, extend) in self._conversions:
-                        output = self._conversions[stage_b, cols, rows, extend]
+                    key = (stage_b, cols, rows, fg, bg, extend)
+                    if key in self._conversions:
+                        output = self._conversions[key]
                     else:
                         # Find converter with lowest weight
                         func = sorted(
@@ -261,8 +253,8 @@ class Datum(Generic[T], metaclass=_MetaDatum):
                             key=lambda x: x.weight,
                         )[0].func
                         try:
-                            output = await func(datum, cols, rows, extend)
-                            self._conversions[stage_b, cols, rows, extend] = output
+                            output = await func(datum, cols, rows, fg, bg, extend)
+                            self._conversions[key] = output
                         except Exception:
                             log.exception("An error occurred during format conversion")
                             output = None
@@ -283,8 +275,6 @@ class Datum(Generic[T], metaclass=_MetaDatum):
                             format=stage_b,
                             px=self.px,
                             py=self.py,
-                            fg=self.fg,
-                            bg=self.bg,
                             path=self.path,
                             source=datum,
                         )
@@ -310,10 +300,12 @@ class Datum(Generic[T], metaclass=_MetaDatum):
         to: str,
         cols: int | None = None,
         rows: int | None = None,
+        fg: str | None = None,
+        bg: str | None = None,
         extend: bool = True,
     ) -> Any:
         """Convert between formats."""
-        return self._to_sync(self.convert_async(to, cols, rows, extend))
+        return self._to_sync(self.convert_async(to, cols, rows, fg, bg, extend))
 
     async def pixel_size_async(self) -> tuple[int | None, int | None]:
         """Get the dimensions of displayable data in pixels.

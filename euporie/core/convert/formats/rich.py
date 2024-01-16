@@ -22,6 +22,8 @@ async def markdown_to_rich_py(
     datum: Datum,
     cols: int | None = None,
     rows: int | None = None,
+    fg: str | None = None,
+    bg: str | None = None,
     extend: bool = True,
 ) -> Markdown:
     """Convert base64 encoded data to bytes."""

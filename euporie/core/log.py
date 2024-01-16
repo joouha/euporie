@@ -432,9 +432,8 @@ def setup_logs(config: Config | None = None) -> None:
         else:
             stdout_level = "CRITICAL"
         log_config["handlers"]["stdout"]["level"] = stdout_level
-        log_config["handlers"]["stdout"]["pygments_theme"] = config.get(
-            "syntax_theme", "euporie"
-        )
+        if syntax_theme := config.get("syntax_theme"):
+            log_config["handlers"]["stdout"]["pygments_theme"] = syntax_theme
 
         # Configure euporie logger
         log_config["loggers"]["euporie"]["level"] = config.log_level.upper()

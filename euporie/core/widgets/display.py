@@ -45,6 +45,8 @@ if TYPE_CHECKING:
     from prompt_toolkit.layout.mouse_handlers import MouseHandlers
     from prompt_toolkit.layout.screen import Screen, WritePosition
 
+    from euporie.core.style import ColorPalette
+
 
 log = logging.getLogger(__name__)
 
@@ -78,6 +80,7 @@ class DisplayControl(UIControl):
         self.loading = False
         self.resizing = False
         self.rendering = False
+        self.color_palette = get_app().color_palette
         self.lines: list[StyleAndTextTuples] = []
 
         self.graphic_processor = GraphicProcessor(control=self)
@@ -99,7 +102,8 @@ class DisplayControl(UIControl):
         # Caches
         self._content_cache: FastDictCache = FastDictCache(self.get_content, size=1000)
         self._line_cache: FastDictCache[
-            tuple[Datum, int | None, int | None, bool], list[StyleAndTextTuples]
+            tuple[Datum, int | None, int | None, str, str, bool],
+            list[StyleAndTextTuples],
         ] = FastDictCache(get_value=self.get_lines, size=1000)
         self._line_width_cache: SimpleCache[
             tuple[Datum, int | None, int | None, bool, int], int
@@ -141,11 +145,18 @@ class DisplayControl(UIControl):
         datum: Datum,
         width: int | None,
         height: int | None,
+        fg: str,
+        bg: str,
         wrap_lines: bool = False,
     ) -> list[StyleAndTextTuples]:
         """Render the lines to display in the control."""
         ft = datum.convert(
-            to="ft", cols=width, rows=height, extend=not self.dont_extend_width()
+            to="ft",
+            cols=width,
+            rows=height,
+            fg=fg,
+            bg=bg,
+            extend=not self.dont_extend_width(),
         )
         if width and height:
             key = Datum.add_size(datum, Size(height, self.width))
@@ -172,7 +183,10 @@ class DisplayControl(UIControl):
         wrap_lines: bool = False,
     ) -> int:
         """Get the maximum lines width for a given rendering."""
-        lines = self._line_cache[datum, width, height, wrap_lines]
+        cp = self.color_palette
+        lines = self._line_cache[
+            datum, width, height, cp.fg.base_hex, cp.bg.base_hex, wrap_lines
+        ]
         return max(
             self._line_width_cache.get(
                 (datum, width, height, wrap_lines, i),
@@ -191,7 +205,10 @@ class DisplayControl(UIControl):
         rows = ceil(cols * aspect) if aspect else self.height
 
         def _render() -> None:
-            self.lines = self._line_cache[datum, cols, rows, wrap_lines]
+            cp = self.color_palette
+            self.lines = self._line_cache[
+                datum, cols, rows, cp.fg.base_hex, cp.bg.base_hex, wrap_lines
+            ]
             self.loading = False
             self.resizing = False
             self.rendering = False
@@ -227,7 +244,10 @@ class DisplayControl(UIControl):
         max_cols, aspect = self.datum.cell_size()
         if aspect:
             return ceil(min(width, max_cols) * aspect)
-        self.lines = self._line_cache[self.datum, width, None, self.wrap_lines()]
+        cp = self.color_palette
+        self.lines = self._line_cache[
+            self.datum, width, None, cp.fg.base_hex, cp.bg.base_hex, self.wrap_lines()
+        ]
         return len(self.lines)
 
     def is_focusable(self) -> bool:
@@ -241,6 +261,7 @@ class DisplayControl(UIControl):
         height: int,
         loading: bool,
         cursor_position: Point,
+        color_palette: ColorPalette,
     ) -> UIContent:
         """Create a cacheable UIContent."""
         if self.loading:
@@ -275,7 +296,7 @@ class DisplayControl(UIControl):
         """Generate the content for this user control.
 
         Returns:
-            A :class:`.UIContent` instance.
+            A :py:class:`UIContent` instance.
         """
         # Trigger a re-render in the future if things have changed
         if self.loading:
@@ -285,13 +306,12 @@ class DisplayControl(UIControl):
             self.width = width
             self.height = height
             self.render()
+        if (cp := get_app().color_palette) != self.color_palette:
+            self.color_palette = cp
+            self.render()
 
         content = self._content_cache[
-            self.datum,
-            width,
-            height,
-            self.loading,
-            self.cursor_position,
+            self.datum, width, height, self.loading, self.cursor_position, cp
         ]
 
         # Check for graphics in content

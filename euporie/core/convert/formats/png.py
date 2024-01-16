@@ -29,6 +29,8 @@ async def latex_to_png_dvipng(
     datum: Datum,
     cols: int | None = None,
     rows: int | None = None,
+    fg: str | None = None,
+    bg: str | None = None,
     extend: bool = True,
     timeout: int = 2,
 ) -> bytes | None:
@@ -52,7 +54,7 @@ async def latex_to_png_dvipng(
         f.writelines(latex_doc)
 
     # Convert hex color to latex color
-    if (fg := datum.fg) and len(fg) == 4:
+    if fg and len(fg) == 4:
         fg = f"#{fg[1]}{fg[1]}{fg[2]}{fg[2]}{fg[3]}{fg[3]}"
     fg_latex = (
         f"RGB {int(fg[1:3], 16)} {int(fg[3:5], 16)} {int(fg[5:7], 16)}" if fg else ""
@@ -110,6 +112,8 @@ async def latex_to_png_py_mpl(
     datum: Datum,
     cols: int | None = None,
     rows: int | None = None,
+    fg: str | None = None,
+    bg: str | None = None,
     extend: bool = True,
 ) -> bytes:
     """Render LaTeX as a png image using :py:module:`matplotlib`.
@@ -130,7 +134,7 @@ async def latex_to_png_py_mpl(
     parser = mathtext.MathTextParser("path")
     width, height, depth, _, _ = parser.parse(data, dpi=72, prop=prop)
     fig = figure.Figure(figsize=(width / 72, height / 72))
-    fig.text(0, depth / height, data, fontproperties=prop, color=datum.fg, usetex=False)
+    fig.text(0, depth / height, data, fontproperties=prop, color=fg, usetex=False)
     backend_agg.FigureCanvasAgg(fig)
     fig.savefig(buffer, dpi=120, format="png", transparent=True)
     return buffer.getvalue()
@@ -152,6 +156,8 @@ async def pil_to_png_py_pil(
     datum: Datum,
     cols: int | None = None,
     rows: int | None = None,
+    fg: str | None = None,
+    bg: str | None = None,
     extend: bool = True,
 ) -> bytes:
     """Convert a pillow image to sixels :py:mod:`teimpy`."""
@@ -171,6 +177,8 @@ async def svg_to_png_py_cairosvg(
     datum: Datum,
     cols: int | None = None,
     rows: int | None = None,
+    fg: str | None = None,
+    bg: str | None = None,
     extend: bool = True,
 ) -> str:
     """Convert SVG to PNG using :py:mod:`cairosvg`."""

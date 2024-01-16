@@ -19,6 +19,8 @@ async def bytes_to_base64_py(
     datum: Datum,
     cols: int | None = None,
     rows: int | None = None,
+    fg: str | None = None,
+    bg: str | None = None,
     extend: bool = True,
 ) -> str:
     """Convert bytes to base64 encoded data."""
