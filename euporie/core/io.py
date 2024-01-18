@@ -12,7 +12,7 @@ from prompt_toolkit.input.base import DummyInput, _dummy_context_manager
 from prompt_toolkit.output.vt100 import Vt100_Output as PtkVt100_Output
 
 if TYPE_CHECKING:
-    from typing import Any, Callable, ContextManager
+    from typing import IO, Any, Callable, ContextManager, TextIO
 
     from prompt_toolkit.keys import Keys
 
@@ -114,3 +114,28 @@ class Vt100_Output(PtkVt100_Output):
     def get_clipboard(self) -> None:
         """Get clipboard contents using OSC-52."""
         self.write_raw("\x1b]52;c;?\x1b\\")
+
+
+class PseudoTTY:
+    """Make an output stream look like a TTY."""
+
+    fake_tty = True
+
+    def __init__(self, underlying: IO[str] | TextIO, isatty: bool = True) -> None:
+        """Wrap an underlying output stream.
+
+        Args:
+            underlying: The underlying output stream
+            isatty: The value to return from :py:method:`PseudoTTY.isatty`.
+
+        """
+        self._underlying = underlying
+        self._isatty = isatty
+
+    def isatty(self) -> bool:
+        """Determine if the stream is interpreted as a TTY."""
+        return self._isatty
+
+    def __getattr__(self, name: str) -> Any:
+        """Return an attribute of the wrappeed stream."""
+        return getattr(self._underlying, name)
