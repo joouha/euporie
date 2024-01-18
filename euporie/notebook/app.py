@@ -75,7 +75,6 @@ class NotebookApp(BaseApp):
     """
 
     name = "notebook"
-    need_mouse_support = True
 
     def __init__(self, **kwargs: Any) -> None:
         """Create a new euporie text user interface application instance."""

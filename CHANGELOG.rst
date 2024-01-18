@@ -9,6 +9,11 @@ Notable changes to this project will be documented in this file.
 Upcoming
 ********
 
+Added
+=====
+
+- Automatically disable mouse support on scroll-up in console to allow for terminal scrollback buffer scrolling. Mouse support is re-enabled on the next key-press.
+
 Fixed
 =====
 
