@@ -1145,6 +1145,21 @@ class BaseApp(Application):
     """,
     )
 
+    add_setting(
+        name="force_graphics",
+        flags=["--force-graphics"],
+        type_=bool,
+        default=False,
+        help_="Force use of specified graphics protocol",
+        description="""
+            When set to :py:const:`True`, the graphics protocol specified by the
+            :option:`graphics` configuration option will be used even if the terminal
+            does not support it.
+
+            This is also useful if you want to use graphics in :command:`euporie-hub`.
+    """,
+    )
+
     # ################################# Key Bindings ##################################
 
     register_bindings(
