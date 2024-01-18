@@ -654,9 +654,12 @@ def select_graphic_control(format_: str) -> type[GraphicControl] | None:
     preferred_graphics_protocol = app.config.graphics
     useable_graphics_controls: list[type[GraphicControl]] = []
     _in_mplex = in_mplex()
+    force_graphics = app.config.force_graphics
 
     if preferred_graphics_protocol != "none":
-        if term_info.iterm_graphics_status.value and find_route(format_, "base64-png"):
+        if (term_info.iterm_graphics_status.value or force_graphics) and find_route(
+            format_, "base64-png"
+        ):
             useable_graphics_controls.append(ItermGraphicControl)
         if (
             preferred_graphics_protocol == "iterm"
@@ -666,7 +669,7 @@ def select_graphic_control(format_: str) -> type[GraphicControl] | None:
         ):
             SelectedGraphicControl = ItermGraphicControl
         elif (
-            term_info.kitty_graphics_status.value
+            (term_info.kitty_graphics_status.value or force_graphics)
             and find_route(format_, "base64-png")
             # Kitty does not work in mplex without pass-through
             and (not _in_mplex or (_in_mplex and app.config.mplex_graphics))
@@ -678,7 +681,9 @@ def select_graphic_control(format_: str) -> type[GraphicControl] | None:
         ):
             SelectedGraphicControl = KittyGraphicControl
         # Tmux now supports sixels (>=3.4)
-        elif term_info.sixel_graphics_status.value and find_route(format_, "sixel"):
+        elif (term_info.sixel_graphics_status.value or force_graphics) and find_route(
+            format_, "sixel"
+        ):
             useable_graphics_controls.append(SixelGraphicControl)
         if (
             preferred_graphics_protocol == "sixel"
