@@ -16,12 +16,13 @@ from upath import UPath
 
 from euporie.core.app import BaseApp, get_app
 from euporie.core.config import add_setting
+from euporie.core.io import PseudoTTY
 from euporie.core.key_binding.registry import register_bindings
 from euporie.preview.tabs.notebook import PreviewNotebook
 
 if TYPE_CHECKING:
     from pathlib import Path
-    from typing import IO, Any, TextIO
+    from typing import Any, TextIO
 
     from prompt_toolkit.application.application import _AppResult
     from prompt_toolkit.layout.containers import Float
@@ -30,31 +31,6 @@ if TYPE_CHECKING:
     from euporie.core.tabs.base import Tab
 
 log = logging.getLogger(__name__)
-
-
-class PseudoTTY:
-    """Make an output stream look like a TTY."""
-
-    fake_tty = True
-
-    def __init__(self, underlying: IO[str] | TextIO, isatty: bool = True) -> None:
-        """Wrap an underlying output stream.
-
-        Args:
-            underlying: The underlying output stream
-            isatty: The value to return from :py:method:`PseudoTTY.isatty`.
-
-        """
-        self._underlying = underlying
-        self._isatty = isatty
-
-    def isatty(self) -> bool:
-        """Determine if the stream is interpreted as a TTY."""
-        return self._isatty
-
-    def __getattr__(self, name: str) -> Any:
-        """Return an attribute of the wrappeed stream."""
-        return getattr(self._underlying, name)
 
 
 class PreviewApp(BaseApp):

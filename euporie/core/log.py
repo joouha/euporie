@@ -24,6 +24,7 @@ from pygments.styles import get_style_by_name
 
 from euporie.core.config import add_setting
 from euporie.core.ft.utils import indent, lex, wrap
+from euporie.core.io import PseudoTTY
 from euporie.core.style import LOG_STYLE
 from euporie.core.utils import dict_merge
 
@@ -78,22 +79,28 @@ class FormattedTextHandler(logging.StreamHandler):
 
     def __init__(
         self,
-        *args: Any,
+        stream: str | TextIO | PseudoTTY | None = None,
         share_stream: bool = True,
         style: BaseStyle | None = None,
         pygments_theme: str = "euporie",
-        **kwargs: Any,
     ) -> None:
         """Create a new log handler instance."""
-        super().__init__(*args, **kwargs)
-        self.output = create_output(stdout=self.stream)
+        # If a filename string is passed, open it as a stream
+        if isinstance(stream, str):
+            # We fake a TTY so we can output color
+
+            stream = PseudoTTY(open(stream, "a"))  # noqa: SIM115,PTH123
+
+        super().__init__(stream)
+        self.share_stream = share_stream
         self.style = style or merge_styles(
             [
                 style_from_pygments_cls(get_style_by_name(pygments_theme)),
                 style or Style(LOG_STYLE),
             ]
         )
-        self.share_stream = share_stream
+
+        self.output = create_output(stdout=self.stream)
 
     def ft_format(self, record: logging.LogRecord) -> FormattedText:
         """Format the specified record."""
