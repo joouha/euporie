@@ -124,7 +124,7 @@ class PrintingContainer(Container):
             return Dimension(max_available_width)
 
     def reset(self) -> None:
-        """Reet the state of this container and all the children.
+        """Reset the state of this container and all the children.
 
         Does nothing as this container is used for dumping output.
         """
