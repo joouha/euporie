@@ -189,6 +189,7 @@ class Kernel:
         self._status = "stopped"
         self.error: Exception | None = None
         self.dead = False
+        self.monitor_task: asyncio.Task | None = None
 
         self.coros: dict[str, concurrent.futures.Future] = {}
         self.poll_tasks: list[asyncio.Task] = []
@@ -294,26 +295,29 @@ class Kernel:
                 self.dead = True
                 dead_cb()
 
+    async def monitor_status(self) -> None:
+        """Regularly monitor the kernel status."""
+        while True:
+            await asyncio.sleep(1)
+            # Check kernel is alive - use client rather than manager if we have one
+            # as we could be connected to a kernel not started by the manager
+            if self.kc:
+                alive = await self.kc._async_is_alive()
+                self._set_living_status(alive)
+                # Stop the timer if the kernel is dead
+                if not alive:
+                    break
+            else:
+                break
+
     @property
     def status(self) -> str:
         """Retrieve the current kernel status.
-
-        Trigger a kernel life status check when retrieved
 
         Returns:
             The kernel status
 
         """
-        # Check kernel is alive - use client rather than manager if we have one, as we
-        # could be connected to a kernel which we was not started by the manager
-        if self.kc:
-            self._aodo(
-                self.kc._async_is_alive(),
-                timeout=0.2,
-                callback=self._set_living_status,
-                wait=False,
-            )
-
         return self._status
 
     @status.setter
@@ -453,6 +457,11 @@ class Kernel:
                             asyncio.create_task(self.poll("stdin")),
                         ]
                         self.dead = False
+
+            # Start monitoring the kernel status
+            if self.monitor_task is not None:
+                self.monitor_task.cancel()
+            self.monitor_task = asyncio.create_task(self.monitor_status())
 
     def start(
         self, cb: Callable | None = None, wait: bool = False, timeout: int = 10

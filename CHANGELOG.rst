@@ -17,6 +17,7 @@ Added
 Fixed
 =====
 
+- Notify of dead kernel immediately
 - Handle non-existent file in the text file editor
 - Fix issue with Select widget not scrolling beyond selection with scrollbar
 
