@@ -64,7 +64,10 @@ class EditorTab(KernelTab):
 
     def load(self) -> None:
         """Load the text file."""
-        text = self.path.read_text() if self.path is not None else ""
+        try:
+            text = self.path.read_text() if self.path is not None else ""
+        except FileNotFoundError:
+            text = ""
 
         # Set text
         self.input_box.text = text
