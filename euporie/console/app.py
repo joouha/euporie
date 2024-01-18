@@ -29,6 +29,7 @@ from euporie.core.commands import add_cmd
 from euporie.core.config import add_setting
 from euporie.core.filters import buffer_is_code, buffer_is_empty, has_dialog
 from euporie.core.key_binding.registry import register_bindings
+from euporie.core.layout.mouse import DisableMouseOnScroll
 from euporie.core.widgets.dialog import (
     AboutDialog,
     NoKernelsDialog,
@@ -67,16 +68,12 @@ class ConsoleApp(BaseApp):
 
     def __init__(self, **kwargs: Any) -> None:
         """Create a new euporie text user interface application instance."""
-        # Setup mouse support
-        self.need_mouse_support = False
-        if self.config.mouse_support is not None:
-            self.need_mouse_support = self.config.mouse_support
-
         # Set default application options
         kwargs.setdefault("extend_renderer_height", True)
         kwargs.setdefault("title", "euporie-console")
         kwargs.setdefault("full_screen", False)
         kwargs.setdefault("leave_graphics", True)
+        kwargs.setdefault("mouse_support", self.config.filter("mouse_support"))
 
         # Initialize the application
         super().__init__(**kwargs)
@@ -86,10 +83,6 @@ class ConsoleApp(BaseApp):
 
         self.tabs = []
         self.pager = Pager()
-
-        self.config.get_item("mouse_support").event += lambda x: setattr(
-            self, "need_mouse_support", x.value
-        )
 
     def _get_reserved_height(self) -> Dimension:
         if has_dialog():
@@ -115,39 +108,43 @@ class ConsoleApp(BaseApp):
         self.dialogs["shortcuts"] = ShortcutsDialog(self)
 
         return FloatContainer(
-            HSplit(
-                [
-                    self.tab,
-                    ConditionalContainer(
-                        HSplit(
-                            [
-                                # Fill empty space below input
-                                Window(
-                                    height=self._get_reserved_height,
-                                    style="class:default",
-                                ),
-                                self.pager,
-                                self.search_bar,
-                                ConditionalContainer(
-                                    VSplit(
-                                        [
-                                            Window(
-                                                char=f" {__logo__} ",
-                                                height=1,
-                                                width=3,
-                                                style="class:menu,logo",
-                                                dont_extend_width=True,
-                                            ),
-                                            StatusBar(),
-                                        ]
+            DisableMouseOnScroll(
+                HSplit(
+                    [
+                        self.tab,
+                        ConditionalContainer(
+                            HSplit(
+                                [
+                                    # Fill empty space below input
+                                    Window(
+                                        height=self._get_reserved_height,
+                                        style="class:default",
                                     ),
-                                    filter=~is_searching,
-                                ),
-                            ],
+                                    self.pager,
+                                    self.search_bar,
+                                    ConditionalContainer(
+                                        VSplit(
+                                            [
+                                                Window(
+                                                    char=f" {__logo__} ",
+                                                    height=1,
+                                                    width=3,
+                                                    style="class:menu,logo",
+                                                    dont_extend_width=True,
+                                                ),
+                                                StatusBar(),
+                                            ]
+                                        ),
+                                        filter=~is_searching,
+                                    ),
+                                ],
+                            ),
+                            filter=~self.redrawing
+                            & ~is_done
+                            & renderer_height_is_known,
                         ),
-                        filter=~self.redrawing & ~is_done & renderer_height_is_known,
-                    ),
-                ]
+                    ]
+                )
             ),
             floats=self.floats,  # type: ignore
         )

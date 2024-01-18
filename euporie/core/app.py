@@ -185,7 +185,6 @@ class BaseApp(Application):
     mouse_position: Point
 
     config = Config()
-    need_mouse_support: bool = False
     log_stdout_level: str = "CRITICAL"
 
     def __init__(
@@ -222,7 +221,7 @@ class BaseApp(Application):
             **{
                 "color_depth": self.config.color_depth,
                 "editing_mode": self.get_edit_mode(),
-                "mouse_support": Condition(lambda: self.need_mouse_support),
+                "mouse_support": True,
                 "cursor": CursorConfig(),
                 "enable_page_navigation_bindings": enable_page_navigation_bindings,
                 **kwargs,

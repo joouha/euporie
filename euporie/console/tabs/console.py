@@ -36,6 +36,7 @@ from euporie.core.filters import (
     buffer_is_code,
     buffer_is_empty,
     kernel_tab_has_focus,
+    scrollable,
 )
 from euporie.core.format import format_code
 from euporie.core.kernel import MsgCallbacks
@@ -44,6 +45,7 @@ from euporie.core.key_binding.registry import (
     register_bindings,
 )
 from euporie.core.layout.print import PrintingContainer
+from euporie.core.margins import MarginContainer, ScrollbarMargin
 from euporie.core.style import KERNEL_STATUS_REPR
 from euporie.core.tabs.base import KernelTab
 from euporie.core.terminal import edit_in_editor
@@ -204,8 +206,6 @@ class Console(KernelTab):
         buffer.reset(append_to_history=True)
         # Remove any live outputs and disable mouse support
         self.live_output.reset()
-        if app.config.mouse_support is None:
-            app.need_mouse_support = False
         # Record the input as a cell in the json
         self.json["cells"].append(
             nbformat.v4.new_code_cell(source=text, execution_count=self.execution_count)
@@ -232,9 +232,6 @@ class Console(KernelTab):
         if "application/vnd.jupyter.widget-view+json" in output_json.get("data", {}):
             # Use a live output to display widgets
             self.live_output.add_output(output_json)
-            # Enable mouse support if we have a live output
-            if self.app.config.mouse_support is None:
-                self.app.need_mouse_support = True
         else:
             # Queue the output json
             self.output.add_output(output_json)
@@ -256,8 +253,6 @@ class Console(KernelTab):
     def reset(self) -> None:
         """Reet the state of the tab."""
         self.live_output.reset()
-        if self.app.config.mouse_support is None:
-            self.app.need_mouse_support = False
 
     def complete(self, content: dict | None = None) -> None:
         """Re-render any changes."""
@@ -423,6 +418,7 @@ class Console(KernelTab):
             # validate_while_typing=False,
             enable_history_search=True,
             key_bindings=input_kb,
+            scrollbar=False,
         )
         self.input_box.buffer.name = "code"
 
@@ -448,6 +444,12 @@ class Console(KernelTab):
                     [
                         input_prompt,
                         self.input_box,
+                        ConditionalContainer(
+                            MarginContainer(
+                                ScrollbarMargin(), target=self.input_box.window
+                            ),
+                            filter=scrollable(self.input_box.window),
+                        ),
                     ],
                 ),
                 filter=~self.stdin_box.visible,
