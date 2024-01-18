@@ -72,9 +72,12 @@ class HubApp(BaseApp):
         # Configure some setting defaults
         cls.config.settings["log_file"].value = "-"
         cls.config.settings["log_level"].value = "info"
-        cls.config.settings[
-            "log_config"
-        ].value = '{"loggers": {"asyncssh": {"handlers":["stdout"], "level": "DEBUG"}}}'
+        cls.config.settings["log_config"].value = """
+{
+    "handlers": { "stdout": {"share_stream": false} },
+    "loggers": { "asyncssh": { "handlers":["stdout"], "level": "DEBUG" } }
+}
+        """
 
         # Load the app's configuration
         cls.config.load(cls)
