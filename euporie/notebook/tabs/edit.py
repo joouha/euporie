@@ -83,6 +83,21 @@ class EditorTab(KernelTab):
         self.input_box.control._fragment_cache.clear()
         self.app.invalidate()
 
+    def close(self, cb: Callable | None = None) -> None:
+        """Check if the user want to save an unsaved notebook, then close the file.
+
+        Args:
+            cb: A callback to run if after closing the notebook.
+
+        """
+        if self.dirty and (unsaved := self.app.dialogs.get("unsaved")):
+            unsaved.show(
+                tab=self,
+                cb=cb,
+            )
+        else:
+            super().close(cb)
+
     @property
     def position(self) -> str:
         """Return the position of the cursor in the document."""

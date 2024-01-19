@@ -18,6 +18,7 @@ Added
 Fixed
 =====
 
+- Prompt to save dirty text files
 - Prevent flickering in ``euporie-hub`` clients on server log output
 - Notify of dead kernel immediately
 - Handle non-existent file in the text file editor
