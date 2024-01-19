@@ -27,8 +27,7 @@ from euporie.core import __logo__
 from euporie.core.app import BaseApp
 from euporie.core.commands import add_cmd
 from euporie.core.config import add_setting
-from euporie.core.filters import buffer_is_code, buffer_is_empty, has_dialog
-from euporie.core.key_binding.registry import register_bindings
+from euporie.core.filters import has_dialog
 from euporie.core.layout.mouse import DisableMouseOnScroll
 from euporie.core.widgets.dialog import (
     AboutDialog,
@@ -200,23 +199,6 @@ class ConsoleApp(BaseApp):
 
         app.exit()
 
-    @staticmethod
-    @add_cmd()
-    def _clear_screen() -> None:
-        """Clear the screen and the previous output."""
-        app = get_app()
-        tab = app.tab
-        app.renderer.clear()
-        if isinstance(tab, Console):
-            tab.reset()
-            app.layout.focus(tab.input_box)
-
-    add_cmd(
-        name="end-of-file",
-        filter=buffer_is_code & buffer_is_empty,
-        description="Signals the end of the input, causing the console to exit.",
-    )(BaseApp._quit)
-
     # ################################### Settings ####################################
 
     add_setting(
@@ -233,11 +215,4 @@ class ConsoleApp(BaseApp):
 
     # ################################# Key Bindings ##################################
 
-    register_bindings(
-        {
-            "euporie.console.app.ConsoleApp": {
-                "clear-screen": "c-l",
-                "end-of-file": "c-d",
-            }
-        }
-    )
+    # register_bindings({"euporie.console.app.ConsoleApp": {}})
