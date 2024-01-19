@@ -9,7 +9,9 @@ from collections import deque
 from functools import partial
 from typing import TYPE_CHECKING, ClassVar
 
-from prompt_toolkit.history import InMemoryHistory
+from prompt_toolkit.auto_suggest import DummyAutoSuggest
+from prompt_toolkit.completion.base import DummyCompleter
+from prompt_toolkit.history import DummyHistory, InMemoryHistory
 from prompt_toolkit.layout.containers import WindowAlign
 from prompt_toolkit.layout.controls import FormattedTextControl
 
@@ -175,6 +177,12 @@ class KernelTab(Tab, metaclass=ABCMeta):
         # Init tab
         super().__init__(app, path)
 
+        self.history: History = DummyHistory()
+        self.completer: Completer = DummyCompleter()
+        self.suggester: AutoSuggest = DummyAutoSuggest()
+        # The client-side comm states
+        self.comms: dict[str, Comm] = {}
+
         if self.bg_init:
             # Load kernel in a background thread
             run_in_thread_with_context(
@@ -213,13 +221,13 @@ class KernelTab(Tab, metaclass=ABCMeta):
                 default_callbacks=self.default_callbacks,
                 connection_file=connection_file,
             )
-        self.comms: dict[str, Comm] = comms or {}  # The client-side comm states
-        self.completer: Completer = KernelCompleter(self.kernel)
+        self.comms = comms or {}  # The client-side comm states
+        self.completer = KernelCompleter(self.kernel)
         self.use_kernel_history = use_kernel_history
-        self.history: History = (
+        self.history = (
             KernelHistory(self.kernel) if use_kernel_history else InMemoryHistory()
         )
-        self.suggester: AutoSuggest = HistoryAutoSuggest(self.history)
+        self.suggester = HistoryAutoSuggest(self.history)
 
         self.post_init_kernel()
 
