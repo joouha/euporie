@@ -9,12 +9,11 @@ from prompt_toolkit.cache import FastDictCache
 from prompt_toolkit.layout.containers import (
     ConditionalContainer,
     DynamicContainer,
-    VSplit,
-    Window,
 )
 from prompt_toolkit.layout.dimension import Dimension
 
 from euporie.core.config import add_setting
+from euporie.core.layout.containers import VSplit, Window
 from euporie.core.layout.print import PrintingContainer
 from euporie.core.tabs.notebook import BaseNotebook
 from euporie.core.widgets.cell import Cell
@@ -29,6 +28,8 @@ if TYPE_CHECKING:
     from prompt_toolkit.layout.containers import AnyContainer
 
     from euporie.core.app import BaseApp
+    from euporie.core.comm.base import Comm
+    from euporie.core.kernel import Kernel
 
 log = logging.getLogger(__name__)
 
@@ -77,6 +78,21 @@ class PreviewNotebook(BaseNotebook):
         if self.app.config.run:
             self.app.pause_rendering()
             self.kernel.start(cb=self.kernel_started, wait=True)
+
+    def init_kernel(
+        self,
+        kernel: Kernel | None = None,
+        comms: dict[str, Comm] | None = None,
+        use_kernel_history: bool = False,
+        connection_file: Path | None = None,
+    ) -> None:
+        """Set up the tab's kernel and related components."""
+        # Only load the kernel if running the notebook
+        if self.app.config.run:
+            super().init_kernel(kernel, comms, use_kernel_history, connection_file)
+        else:
+            self.pre_init_kernel()
+            self.post_init_kernel()
 
     def print_title(self) -> None:
         """Print a notebook's filename."""
@@ -134,6 +150,9 @@ class PreviewNotebook(BaseNotebook):
             else:
                 self.app.close_tab(self)
 
+        # Trigger a re-draw of the app right away, now with the next cell
+        self.app.invalidate()
+
     def get_cell(self, index: int) -> Cell:
         """Render a cell by its index."""
         if index < len(self.json["cells"]):
@@ -147,7 +166,7 @@ class PreviewNotebook(BaseNotebook):
         return self.cells[(self.cell_index,)]
 
     def load_container(self) -> AnyContainer:
-        """Abcract method for loading the notebook's main container."""
+        """Load the notebook's main container."""
         return PrintingContainer(
             [
                 VSplit(
