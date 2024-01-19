@@ -92,6 +92,11 @@ path = "euporie/core/__init__.py"
 [tool.hatch.build]
 packages = ["euporie"]
 
+
+## Environment configuration ##################################################
+
+
+# Default development environment
 [tool.hatch.envs.default]
 dev-mode = true
 features = [
@@ -100,22 +105,48 @@ features = [
 ]
 
 
+# Environment for testing on various python versions
 [tool.hatch.envs.multi]
-[[tool.hatch.envs.multi.matrix]]
-python = ["3.8", "3.9", "3.10", "3.11", "pypy3"]
 
-[tool.hatch.envs.check]
-description = "Lint & type check the codebase."
-# detached = true
+[[tool.hatch.envs.multi.matrix]]
+python = ["3.8", "3.9", "3.10", "3.11", "3.12", "pypy3"]
+
+
+# Environment used to run `hatch fmt`
+[tool.hatch.envs.hatch-static-analysis]
+config-path = "none"  # Ignore hatch default format config
+detached = true
 dependencies = [
-  # Linting
-  "pre-commit",
-  "pre-commit-hooks",
-  "ruff",
-  "codespell", "tomli",
-  # LSP
-  "python-lsp-server", "jedi", "python-lsp-ruff", "python-lsp-black", # "pylsp-mypy",
-  # Type checking
+  # Formatting & linting
+  "ruff~=0.1.13",
+  # Spell checking
+  "codespell~=2.2.6", "tomli~=2.0.1",
+  # Pre-commit hooks run in static analysis environment
+  "pre-commit~=3.6.0",
+  "pre-commit-hooks~=4.5.0",
+]
+
+[tool.hatch.envs.hatch-static-analysis.scripts]
+"format-fix" = [
+  "ruff format{env:HATCH_FMT_ARGS} {args:.}",
+]
+"lint-fix" = [
+  "ruff check{env:HATCH_FMT_ARGS} --fix {args:.}",
+  "codespell -i 3 -w {args:.}",
+]
+"format-check" = [
+  "ruff format{env:HATCH_FMT_ARGS} --check --diff {args:.}",
+]
+"lint-check" = [
+  "ruff check{env:HATCH_FMT_ARGS} {args:.}",
+  "codespell {args:.}",
+]
+
+
+# Environment for running static type checking (with mypy)
+[tool.hatch.envs.type]
+description = "Type check the codebase."
+dependencies = [
   "mypy",
   # Dependencies
   "types-appdirs", "importlib_metadata", "types-Pillow", "sixelcrop",
@@ -124,24 +155,11 @@ dependencies = [
   # Non-dependencies
   "html2text", "sympy"
 ]
-
 [tool.hatch.envs.check.scripts]
-check = [
-    "ruff check {args:euporie tests scripts}",
-    "ruff format --check {args:euporie tests scripts}",
-    "codespell {args:euporie tests scripts docs/pages README.rst CHANGELOG.rst}",
-]
-fix = [
-    "ruff check --fix {args:euporie tests scripts}",
-    "ruff format {args:euporie tests scripts}",
-    "codespell -i 3 -w {args:euporie tests scripts docs/pages}",
-]
-type = "mypy {args:--namespace-packages -p euporie -p tests -p scripts}"
+run = "mypy {args:--namespace-packages -p euporie -p tests -p scripts}"
 
 
-[tool.hatch.envs.type.scripts]
-
-
+# Environment for running tests
 [tool.hatch.envs.test]
 description = "Run tests."
 detached = false
@@ -150,6 +168,7 @@ dependencies = [
   # Optional non-dependencies
   "python-magic", "html2text",
 ]
+
 [[tool.hatch.envs.test.matrix]]
 python = ["3.8", "3.9", "3.10", "3.11", "pypy3"]
 
@@ -157,6 +176,8 @@ python = ["3.8", "3.9", "3.10", "3.11", "pypy3"]
 run = "pytest {args}"
 cov = "coverage run --parallel -m pytest {args}"
 
+
+# Environment for building documentation
 [tool.hatch.envs.docs]
 description = "Build documentation."
 dependencies = [
@@ -168,10 +189,15 @@ dependencies = [
   "sphinx-copybutton~=0.5.0",
   "sphinx-design~=0.2.0",
 ]
+
 [tool.hatch.envs.docs.scripts]
 build = "sphinx-build docs docs/_build/html"
 serve = "python -m http.server --directory docs/_build/html/"
 autobuild = "sphinx-autobuild docs docs/_build/html"
+
+
+## Tool configuration #########################################################
+
 
 [tool.ruff]
 line-length = 88
@@ -227,6 +253,10 @@ ignore = [
 [tool.ruff.per-file-ignores]
 "scripts/*.py" = ["T201"]
 
+[tool.ruff.format]
+docstring-code-format = true
+
+
 [tool.codespell]
 ignore-words-list = "iterm,edn,controll,controle"
 skip = "euporie/core/reference.py,.*"
@@ -247,6 +277,7 @@ module = [
   "pytest.*",
 ]
 ignore_missing_imports = true
+
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
