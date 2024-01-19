@@ -72,7 +72,7 @@ class MarginContainer(Window):
         )
 
     def reset(self) -> None:
-        """Reet the state of this container and all the children."""
+        """Reset the state of this container and all the children."""
 
     def preferred_width(self, max_available_width: int) -> Dimension:
         """Return a the desired width for this container."""

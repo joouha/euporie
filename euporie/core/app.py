@@ -802,7 +802,7 @@ class BaseApp(Application):
         self.renderer.style = self.create_merged_style()
 
     def refresh(self) -> None:
-        """Reet all tabs."""
+        """Reset all tabs."""
         for tab in self.tabs:
             to_container(tab).reset()
 

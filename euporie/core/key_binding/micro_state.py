@@ -27,7 +27,7 @@ class MicroState:
         self.input_mode: MicroInputMode = MicroInputMode.INSERT
 
     def reset(self) -> None:
-        """Reet the editing mode state."""
+        """Reset the editing mode state."""
         self.input_mode = MicroInputMode.INSERT
         self.current_recording = None
 
