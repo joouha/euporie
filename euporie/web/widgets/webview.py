@@ -593,7 +593,7 @@ if __name__ == "__main__":
 
     from euporie.core.style import HTML_STYLE
     from euporie.core.widgets.display import DisplayWindow
-    from euporie.web.widgets.webview import WebViewControl  # noqa F811
+    from euporie.web.widgets.webview import WebViewControl
 
     kb = KeyBindings()
     kb.add("q")(lambda event: event.app.exit())
