@@ -57,8 +57,13 @@ from euporie.core.key_binding.registry import (
     load_registered_bindings,
     register_bindings,
 )
-from euporie.core.layout.containers import Window
-from euporie.core.margins import NumberedDiffMargin, OverflowMargin, ScrollbarMargin
+from euporie.core.layout.containers import VSplit, Window
+from euporie.core.margins import (
+    MarginContainer,
+    NumberedDiffMargin,
+    OverflowMargin,
+    ScrollbarMargin,
+)
 from euporie.core.processors import (
     AppendLineAutoSuggestion,
     ShowTrailingWhiteSpaceProcessor,
@@ -76,7 +81,7 @@ if TYPE_CHECKING:
     )
     from prompt_toolkit.history import History
     from prompt_toolkit.key_binding.key_bindings import KeyBindingsBase
-    from prompt_toolkit.layout.containers import AnyContainer
+    from prompt_toolkit.layout.containers import AnyContainer, Container
     from prompt_toolkit.layout.layout import FocusableElement
     from prompt_toolkit.layout.margins import Margin
     from prompt_toolkit.lexers.base import Lexer
@@ -195,6 +200,7 @@ class KernelInput(TextArea):
             tempfile_suffix=tempfile_suffix or kernel_tab.kernel_lang_file_ext,
             enable_history_search=to_filter(enable_history_search),
         )
+        self.has_focus: Filter = has_focus(self.buffer)
 
         # Set extra key-bindings
         widgets_key_bindings = load_registered_bindings(
@@ -247,10 +253,7 @@ class KernelInput(TextArea):
                 # & Condition(lambda: len(self.buffer.text.split("\n")) > 1),
             )
         ]
-        scrollbar_margin = ConditionalMargin(
-            ScrollbarMargin(), filter=to_filter(scrollbar)
-        )
-        right_margins = [OverflowMargin(), scrollbar_margin]
+        right_margins = [OverflowMargin()]
         self.window = Window(
             height=lambda: height or D(min=1)
             if self.buffer.multiline()
@@ -272,9 +275,16 @@ class KernelInput(TextArea):
             scroll_offsets=scroll_offsets
             or ScrollOffsets(top=1, right=1, bottom=1, left=1),
         )
-        scrollbar_margin.filter &= scrollable(self.window)
 
-        self.has_focus: Filter = has_focus(self.buffer)
+        self.container = VSplit(
+            [
+                self.window,
+                ConditionalContainer(
+                    MarginContainer(ScrollbarMargin(), target=self.window),
+                    filter=to_filter(scrollbar) & scrollable(self.window),
+                ),
+            ]
+        )
 
     def inspect(self) -> None:
         """Get contextual help for the current cursor position in the current cell."""
@@ -310,6 +320,10 @@ class KernelInput(TextArea):
             cursor_pos=cursor_pos,
             callback=_cb,
         )
+
+    def __pt_container__(self) -> Container:
+        """Return the widget's container."""
+        return self.container
 
     # ################################### Settings ####################################
 

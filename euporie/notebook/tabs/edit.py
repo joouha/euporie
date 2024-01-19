@@ -12,7 +12,6 @@ from euporie.core.filters import insert_mode, replace_mode
 from euporie.core.kernel import Kernel, MsgCallbacks
 from euporie.core.key_binding.registry import load_registered_bindings
 from euporie.core.lexers import detect_lexer
-from euporie.core.margins import MarginContainer, ScrollbarMargin
 from euporie.core.tabs.base import KernelTab
 from euporie.core.widgets.inputs import KernelInput
 
@@ -136,10 +135,7 @@ class EditorTab(KernelTab):
         self.input_box = KernelInput(kernel_tab=self, right_margins=[], read_only=True)
 
         return VSplit(
-            [
-                self.input_box,
-                MarginContainer(ScrollbarMargin(), target=self.input_box.window),
-            ],
+            [self.input_box],
             width=Dimension(weight=1),
             height=Dimension(weight=1),
             key_bindings=load_registered_bindings("euporie.core.tabs.base.Tab"),
