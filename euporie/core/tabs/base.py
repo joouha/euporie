@@ -81,7 +81,7 @@ class Tab(metaclass=ABCMeta):
         return ""
 
     def reset(self) -> "None":  # noqa B027
-        """Reet the state of the tab."""
+        """Reset the state of the tab."""
 
     def close(self, cb: Callable | None = None) -> None:
         """Close a tab with a callback.

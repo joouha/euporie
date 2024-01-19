@@ -72,7 +72,7 @@ class Line(Container):
         self.collapse = collapse
 
     def reset(self) -> None:
-        """Reet the state of the line. Does nothing."""
+        """Reset the state of the line. Does nothing."""
 
     def preferred_width(self, max_available_width: int) -> Dimension:
         """Return the preferred width of the line."""
@@ -134,7 +134,7 @@ class Pattern(Container):
         self.pattern = pattern
 
     def reset(self) -> None:
-        """Reet the pattern. Does nothing."""
+        """Reset the pattern. Does nothing."""
 
     def preferred_width(self, max_available_width: int) -> Dimension:
         """Return an empty dimension (expand to available width)."""
@@ -221,7 +221,7 @@ class FocusedStyle(Container):
         self.has_focus = has_focus(self.body)
 
     def reset(self) -> None:
-        """Reet the wrapped container."""
+        """Reset the wrapped container."""
         to_container(self.body).reset()
 
     def preferred_width(self, max_available_width: int) -> Dimension:
@@ -320,7 +320,7 @@ class DropShadow(Container):
         return get_app().color_palette
 
     def reset(self) -> None:
-        """Reet the wrapped container - here, do nothing."""
+        """Reset the wrapped container - here, do nothing."""
 
     def preferred_width(self, max_available_width: int) -> Dimension:
         """Return the wrapped container's preferred width."""
