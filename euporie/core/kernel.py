@@ -1207,6 +1207,9 @@ class Kernel:
 
     async def shutdown_(self) -> None:
         """Shut down the kernel and close the event loop if running in a thread."""
+        # Stop monitoring the kernel
+        if self.monitor_task is not None:
+            self.monitor_task.cancel()
         # Clean up connection file
         self.km.cleanup_connection_file()
         # Stop kernel
