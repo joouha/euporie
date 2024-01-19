@@ -57,7 +57,6 @@ if TYPE_CHECKING:
     from pathlib import Path
     from typing import Any, MutableSequence, Sequence
 
-    from prompt_toolkit.formatted_text.base import StyleAndTextTuples
     from prompt_toolkit.key_binding.key_bindings import NotImplementedOrNone
     from prompt_toolkit.layout.containers import AnyContainer
     from prompt_toolkit.mouse_events import MouseEvent
