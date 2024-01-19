@@ -253,6 +253,7 @@ class Console(KernelTab):
     def reset(self) -> None:
         """Reet the state of the tab."""
         self.live_output.reset()
+        get_cmd("stop-search").handler()
 
     def complete(self, content: dict | None = None) -> None:
         """Re-render any changes."""
@@ -639,6 +640,29 @@ class Console(KernelTab):
         if isinstance(kt := get_app().tab, KernelTab):
             kt.restart_kernel()
 
+    @staticmethod
+    @add_cmd(
+        filter=buffer_is_code & buffer_is_empty,
+        hidden=True,
+        description="Signals the end of the input, causing the console to exit.",
+    )
+    def _end_of_file(event: KeyPressEvent) -> None:
+        """Exit when Control-D has been pressed."""
+        event.app.exit(exception=EOFError)
+
+    @staticmethod
+    @add_cmd()
+    def _clear_screen() -> None:
+        """Clear the screen and the previous output."""
+        from euporie.console.app import get_app
+
+        app = get_app()
+        tab = app.tab
+        app.renderer.clear()
+        if isinstance(tab, Console):
+            tab.reset()
+            app.layout.focus(tab.input_box)
+
     # ################################### Settings ####################################
 
     add_setting(
@@ -676,11 +700,12 @@ class Console(KernelTab):
     register_bindings(
         {
             "euporie.console.tabs.console.Console": {
-                "cc-interrupt-kernel": "c-c",
-            },
-            "euporie.console.app.ConsoleApp": {
-                "clear-input": "c-c",
+                "clear-input": ["c-c", "<sigint>"],
+                "cc-interrupt-kernel": ["c-c", "<sigint>"],
                 "run-input": ["c-enter", "c-e"],
+                "end-of-file": "c-d",
+                "clear-screen": "c-l",
             },
+            "euporie.console.app.ConsoleApp": {},
         }
     )
