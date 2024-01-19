@@ -508,19 +508,18 @@ class BaseApp(Application):
             input=cls.load_input(), output=(output := cls.load_output())
         ):
             # Create an instance of the app and run it
-
-            original_sigterm = signal.getsignal(signal.SIGTERM)
-            original_sigint = signal.getsignal(signal.SIGINT)
-
             app = cls()
 
+            # Handle SIGTERM while the app is running
+            original_sigterm = signal.getsignal(signal.SIGTERM)
             signal.signal(signal.SIGTERM, app.cleanup)
-            signal.signal(signal.SIGINT, app.cleanup)
-
-            result = app.run()
-
-            signal.signal(signal.SIGTERM, original_sigterm)
-            signal.signal(signal.SIGINT, original_sigint)
+            # Run the app
+            try:
+                result = app.run()
+            except (EOFError, KeyboardInterrupt):
+                result = None
+            finally:
+                signal.signal(signal.SIGTERM, original_sigterm)
 
         # This seems to be needed for kitty
         output.enable_autowrap()
@@ -1165,7 +1164,7 @@ class BaseApp(Application):
     register_bindings(
         {
             "euporie.core.app.BaseApp": {
-                "quit": "c-q",
+                "quit": ["c-q", "<sigint>"],
                 "close-tab": "c-w",
                 "next-tab": "c-pagedown",
                 "previous-tab": "c-pageup",
