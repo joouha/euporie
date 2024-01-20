@@ -14,6 +14,8 @@ from euporie.core.path import parse_path
 if TYPE_CHECKING:
     from typing import Any, Callable
 
+    from prompt_toolkit.eventloop import InputHook
+
 
 class ShowApp(BaseApp):
     """An app to show files."""
@@ -30,6 +32,7 @@ class ShowApp(BaseApp):
         set_exception_handler: bool = True,
         handle_sigint: bool = True,
         in_thread: bool = False,
+        inputhook: InputHook | None = None,
     ) -> None:
         """Display a file."""
         with set_app(self):
