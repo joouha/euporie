@@ -39,6 +39,7 @@ from euporie.core.key_binding.registry import (
     load_registered_bindings,
     register_bindings,
 )
+from euporie.core.layout.cache import CachedContainer
 from euporie.core.layout.decor import Line, Pattern
 from euporie.core.layout.scroll import ScrollingContainer
 from euporie.core.margins import MarginContainer, ScrollbarMargin
@@ -57,6 +58,7 @@ if TYPE_CHECKING:
     from pathlib import Path
     from typing import Any, MutableSequence, Sequence
 
+    from prompt_toolkit.formatted_text.base import StyleAndTextTuples
     from prompt_toolkit.key_binding.key_bindings import NotImplementedOrNone
     from prompt_toolkit.layout.containers import AnyContainer
     from prompt_toolkit.mouse_events import MouseEvent
@@ -250,7 +252,7 @@ class Notebook(BaseNotebook):
     @property
     def cell(self) -> Cell:
         """Return the currently selected `Cell` in this `Notebook`."""
-        cell = self.page.get_child()
+        cell = self.page.get_child().content
         assert isinstance(cell, Cell)
         return cell
 
@@ -260,9 +262,9 @@ class Notebook(BaseNotebook):
     def cells(self) -> Sequence[Cell]:
         """Return the currently selected `Cells` in this `Notebook`."""
         return [
-            child
-            for child in self.page.children[self.page.selected_slice]
-            if isinstance(child, Cell)
+            child.content
+            for child in self.page.get_children()[self.page.selected_slice]
+            if isinstance(child, CachedContainer) and isinstance(child.content, Cell)
         ]
 
     def check_edit_mode(self) -> bool:
@@ -343,7 +345,7 @@ class Notebook(BaseNotebook):
 
     def refresh_cell(self, cell: Cell) -> None:
         """Trigger the refresh of a notebook cell."""
-        self.page.get_child_render_info(cell.index).invalidate()
+        self.page.get_child(cell.index).invalidate()
 
     def add_cell_above(self) -> None:
         """Inert a cell above the current selection."""
@@ -872,7 +874,7 @@ class Notebook(BaseNotebook):
         """Select the last cell in the notebook."""
         nb = get_app().tab
         if isinstance(nb, Notebook):
-            nb.select(len(nb.page.children) - 1)
+            nb.select(len(nb.page.get_children()) - 1)
 
     @staticmethod
     @add_cmd(
@@ -884,7 +886,7 @@ class Notebook(BaseNotebook):
         if isinstance(nb, Notebook):
             nb.page.selected_slice = slice(
                 0,
-                len(nb.page.children) + 1,
+                len(nb.page.get_children()) + 1,
             )
 
     @staticmethod

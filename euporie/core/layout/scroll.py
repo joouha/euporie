@@ -1,14 +1,12 @@
-"""Contain containers which display children at full height vertially stacked."""
+"""Contains containers which display children at full height vertially stacked."""
 
 from __future__ import annotations
 
 import contextlib
 import logging
-import weakref
 from typing import TYPE_CHECKING, cast
 
 from prompt_toolkit.application.current import get_app
-from prompt_toolkit.data_structures import Point
 from prompt_toolkit.filters import is_searching
 from prompt_toolkit.layout.containers import (
     Container,
@@ -19,12 +17,10 @@ from prompt_toolkit.layout.containers import (
 )
 from prompt_toolkit.layout.controls import UIContent
 from prompt_toolkit.layout.dimension import Dimension, to_dimension
-from prompt_toolkit.layout.layout import walk
-from prompt_toolkit.layout.mouse_handlers import MouseHandlers
 from prompt_toolkit.mouse_events import MouseEvent, MouseEventType, MouseModifier
 
-from euporie.core.data_structures import DiInt
-from euporie.core.layout.screen import BoundedWritePosition, Screen
+from euporie.core.layout.cache import CachedContainer
+from euporie.core.layout.screen import BoundedWritePosition
 from euporie.core.utils import run_in_thread_with_context
 
 if TYPE_CHECKING:
@@ -36,354 +32,17 @@ if TYPE_CHECKING:
     )
     from prompt_toolkit.layout.containers import AnyContainer
     from prompt_toolkit.layout.dimension import AnyDimension
+    from prompt_toolkit.layout.mouse_handlers import MouseHandlers
     from prompt_toolkit.layout.screen import Screen as PtkScreen
     from prompt_toolkit.layout.screen import WritePosition
-    from prompt_toolkit.utils import Event
 
     MouseHandler = Callable[[MouseEvent], object]
 
 log = logging.getLogger(__name__)
 
 
-class ChildRenderInfo:
-    """A class which holds information about a :py:class:`ScrollingContainer` child."""
-
-    def __init__(self, parent: ScrollingContainer, child: AnyContainer) -> None:
-        """Initiate the :py:class:`ChildRenderInfo` object.
-
-        Args:
-            parent: The parent scrolling container this relates to
-            child: The child container (notebook cell) this information concerns
-
-        """
-        self.parent = parent
-        self.child = weakref.proxy(child)
-        self.container = to_container(child)
-
-        self.screen = Screen()
-        self.mouse_handlers = MouseHandlers()
-
-        self._invalid = True
-        self._invalidate_events: set[Event[object]] = set()
-        self._layout_hash = 0
-        self.height = 0
-        self.width = 0
-        self._rendered_lines: set[int] = set()
-        self._rowcols_to_yx: dict[Window, dict[tuple[int, int], tuple[int, int]]] = {}
-
-    def invalidate(self) -> None:
-        """Flag the child's rendering as out-of-date."""
-        self._invalid = True
-
-    def _invalidate_handler(self, sender: object) -> None:
-        self.invalidate()
-
-    @property
-    def layout_hash(self) -> int:
-        """Return a hash of the child's current layout."""
-        return sum(hash(container) for container in walk(self.container))
-
-    def render(
-        self,
-        available_width: int,
-        available_height: int,
-        style: str = "",
-        start: int | None = None,
-        end: int | None = None,
-    ) -> None:
-        """Render the child container at a given size.
-
-        Args:
-            available_width: The height available for rendering
-            available_height: The width available for rendering
-            style: The parent style to apply when rendering
-            bbox: The bounding box for the content to render
-            start: Rows between top of output and top of scrollable pane
-            end: Rows between top of output and bottom of scrollable pane
-
-        """
-        if (
-            self._layout_hash != (new_layout_hash := self.layout_hash)
-            or self._invalid
-            or self.width != available_width
-        ):
-            self._layout_hash = new_layout_hash
-            self._rowcols_to_yx.clear()
-            self._rendered_lines.clear()
-            self.mouse_handlers.mouse_handlers.clear()
-            self.screen = Screen()
-
-            # Recalculate child height if this child has been invalidated
-            height = self.height = self.container.preferred_height(
-                available_width, available_height
-            ).preferred
-
-        else:
-            height = self.height
-
-        # Calculate which lines are visible and which need rendering
-        if start is not None:
-            skip_top = max(0, -start)
-        elif end is not None:
-            skip_top = max(0, -end + height)
-        else:
-            skip_top = 0
-        skip_bottom = max(0, height - available_height - skip_top)
-
-        visible_lines = set(range(skip_top, height - skip_bottom))
-        required_lines = visible_lines - self._rendered_lines
-
-        # Refresh if needed
-        if required_lines:
-            screen = self.screen
-            # TODO - allow horizontal scrolling too
-            # self.width = self.container.preferred_width(available_width).width
-            self.width = available_width
-
-            self._invalid = False
-
-            self.container.write_to_screen(
-                screen,
-                self.mouse_handlers,
-                BoundedWritePosition(
-                    xpos=0,
-                    ypos=0,
-                    width=self.width,
-                    height=self.height,
-                    # Only render lines not already on the current screen
-                    bbox=DiInt(
-                        top=min(required_lines),
-                        right=0,
-                        bottom=height - max(required_lines) - 1,
-                        left=0,
-                    ),
-                ),
-                style,
-                erase_bg=True,
-                z_index=0,
-            )
-            screen.draw_all_floats()
-
-            events = set()
-            rowcols_to_yx = self._rowcols_to_yx
-
-            for container in walk(self.container):
-                if isinstance(container, Window):
-                    # Collect invalidation events
-                    for event in container.content.get_invalidate_events():
-                        event += self._invalidate_handler
-                        events.add(event)
-
-                    if (render_info := container.render_info) is not None:
-                        # Update row/col to x/y mapping based on the lines we just rendereed
-                        if container not in rowcols_to_yx:
-                            rowcols_to_yx[container] = {}
-
-                        rowcols_to_yx[container].update(render_info._rowcol_to_yx)
-                        render_info._rowcol_to_yx = rowcols_to_yx[container]
-
-            # Update the record of lines that've been rendered to the temporary screen
-            self._rendered_lines |= required_lines
-
-            # Remove handler from old invalidation events
-            for event in events - set(self._invalidate_events):
-                event -= self._invalidate_handler
-            # Update the list of handlers
-            self._invalidate_events = events
-
-    def blit(
-        self,
-        screen: PtkScreen,
-        mouse_handlers: MouseHandlers,
-        left: int,
-        top: int,
-        cols: slice,
-        rows: slice,
-    ) -> None:
-        """Copy the rendered child from the local screen to the main screen.
-
-        All locations are adjusted, allowing the pre-rendered child to be placed at any
-        location on the main screen.
-
-        Args:
-            screen: The main screen to copy the pre-rendered screen data to
-            mouse_handlers: The mouse handler collection to copy the pre-rendered
-                handelers to
-            left: The left-most column in which to start placing the data
-            top: The upper row in which to start placing the data
-            cols: The columns to copy
-            rows: The rows to copy
-
-        """
-        layout = get_app().layout
-
-        # Copy write positions
-        for win, wp in self.screen.visible_windows_to_write_positions.items():
-            new_wp = BoundedWritePosition(
-                xpos=wp.xpos + left,
-                ypos=wp.ypos + top,
-                width=wp.width,
-                height=wp.height,
-                bbox=DiInt(
-                    top=max(0, rows.start - wp.ypos),
-                    right=max(0, wp.width - cols.stop),
-                    bottom=max(0, wp.height - (rows.stop - wp.ypos)),
-                    left=max(0, wp.width - (cols.stop - wp.xpos)),
-                ),
-            )
-            screen.visible_windows_to_write_positions[win] = new_wp
-
-            # Modify render info
-            info = win.render_info
-            if info is not None:
-                visible_line_to_row_col = {
-                    line: (y + info._y_offset, new_wp.xpos + info._x_offset)
-                    for line, y in enumerate(
-                        range(new_wp.ypos, new_wp.ypos + new_wp.height)
-                    )
-                }
-                win.render_info = WindowRenderInfo(
-                    window=win,
-                    ui_content=info.ui_content,
-                    horizontal_scroll=0,
-                    vertical_scroll=info.vertical_scroll,
-                    window_width=info.window_width,
-                    window_height=info.window_height,
-                    configured_scroll_offsets=info.configured_scroll_offsets,
-                    visible_line_to_row_col=visible_line_to_row_col,
-                    # The following is needed to calculate absolute cursor positions
-                    rowcol_to_yx={
-                        (row, col): (y + top, x + left)
-                        for (row, col), (y, x) in info._rowcol_to_yx.items()
-                    },
-                    x_offset=info._x_offset + left,
-                    y_offset=info._y_offset + top,
-                    wrap_lines=info.wrap_lines,
-                )
-                # Set horizontal scroll offset - TODO - fix this upstream
-                if (
-                    horizontal_scroll := getattr(info, "horizontal_scroll", None)
-                ) is not None:
-                    setattr(  # noqa B010
-                        win.render_info, "horizontal_scroll", horizontal_scroll
-                    )
-
-        mouse_handler_wrappers: dict[MouseHandler, MouseHandler] = {}
-
-        def _wrap_mouse_handler(
-            handler: Callable,
-        ) -> MouseHandler:
-            if mouse_handler := mouse_handler_wrappers.get(handler):
-                return mouse_handler
-            else:
-
-                def wrapped_mouse_handler(
-                    mouse_event: MouseEvent,
-                ) -> NotImplementedOrNone:
-                    response: NotImplementedOrNone = NotImplemented
-
-                    if mouse_event.event_type == MouseEventType.SCROLL_DOWN:
-                        response = self.parent.scroll(-1)
-                    elif mouse_event.event_type == MouseEventType.SCROLL_UP:
-                        response = self.parent.scroll(1)
-
-                    else:
-                        new_event = MouseEvent(
-                            position=Point(
-                                x=mouse_event.position.x - left,
-                                y=mouse_event.position.y - top,
-                            ),
-                            event_type=mouse_event.event_type,
-                            button=mouse_event.button,
-                            modifiers=mouse_event.modifiers,
-                        )
-                        response = handler(new_event)
-                        # Request a re-render of the child for non-scroll events
-                        if response is None:
-                            self.invalidate()
-
-                    # Refresh the child if there was a response
-                    if response is None:
-                        return response
-
-                    # This relies on windows returning NotImplemented when scrolled
-                    # to the start or end
-                    # if response is NotImplemented:
-                    #     if mouse_event.event_type == MouseEventType.SCROLL_DOWN:
-                    #         response = self.parent.scroll(-1)
-                    #     elif mouse_event.event_type == MouseEventType.SCROLL_UP:
-                    #         response = self.parent.scroll(1)
-
-                    # Select the clicked child if clicked
-                    if mouse_event.event_type == MouseEventType.MOUSE_DOWN:
-                        index = self.parent._children.index(self.child)
-                        if mouse_event.modifiers & {
-                            MouseModifier.SHIFT,
-                            MouseModifier.CONTROL,
-                        }:
-                            self.parent.select(index, extend=True)
-                        else:
-                            self.parent.select(index, extend=False)
-                        response = None
-                        self.invalidate()
-
-                        # Attempt to focus the container
-                        layout.focus(self.child)
-
-                    return response
-
-                mouse_handler_wrappers[handler] = wrapped_mouse_handler
-                return wrapped_mouse_handler
-
-        # Copy screen contents
-        input_db = self.screen.data_buffer
-        input_zwes = self.screen.zero_width_escapes
-        input_mhs = self.mouse_handlers.mouse_handlers
-        output_dbs = screen.data_buffer
-        output_zwes = screen.zero_width_escapes
-        output_mhs = mouse_handlers.mouse_handlers
-        for y in range(max(0, rows.start), min(rows.stop, self.height)):
-            output_dbs_row = output_dbs[top + y]
-            output_zwes_row = output_zwes[top + y]
-            output_mhs_row = output_mhs[top + y]
-            input_db_row = input_db[y]
-            input_zwes_row = input_zwes[y]
-            input_mhs_row = input_mhs[y]
-            for x in range(max(0, cols.start), min(cols.stop, self.width)):
-                # Data
-                output_dbs_row[left + x] = input_db_row[x]
-                # Escape sequences
-                output_zwes_row[left + x] = input_zwes_row[x]
-                # Mouse handlers
-                output_mhs_row[left + x] = _wrap_mouse_handler(input_mhs_row[x])
-
-        # Copy cursors
-        if self.screen.show_cursor:
-            for window, point in self.screen.cursor_positions.items():
-                if layout.current_control == window.content:
-                    assert window.render_info is not None
-                    if (
-                        (
-                            window.render_info.ui_content.show_cursor
-                            and not window.always_hide_cursor()
-                        )
-                        and point.x in range(cols.start, cols.stop)
-                        and point.y in range(rows.start, rows.stop)
-                    ):
-                        screen.cursor_positions[window] = Point(
-                            x=left + point.x, y=top + point.y
-                        )
-                        screen.show_cursor = True
-
-        # Copy menu positions
-        for window, point in self.screen.menu_positions.items():
-            screen.menu_positions[window] = Point(x=left + point.x, y=top + point.y)
-
-
 class ScrollingContainer(Container):
     """A scrollable container which renders only the currently visible children."""
-
-    render_info: WindowRenderInfo | None
 
     def __init__(
         self,
@@ -404,19 +63,16 @@ class ScrollingContainer(Container):
                 return children
 
         self.children_func = _children_func
-        self._children: list[AnyContainer] = []
+        self._child_cache: dict[int, CachedContainer] = {}
+        self._children: list[Container] = []
         self.refresh_children = True
         self.pre_rendered = 0.0
 
         self._selected_slice = slice(
             0, 1
         )  # The index of the currently selected children
-        self._selected_child_render_infos: list[ChildRenderInfo]
         self.selected_child_position: int = 0
 
-        self.child_render_infos: dict[
-            int, ChildRenderInfo
-        ] = {}  # Holds child container wrappers
         self.visible_indicies: set[int] = {0}
         self.index_positions: dict[int, int | None] = {}
 
@@ -439,11 +95,12 @@ class ScrollingContainer(Container):
 
         def render_in_thread() -> None:
             """Render children in  thread."""
-            n_children = len(self.children)
-            for i in range(n_children):
-                if i < len(self.children):
-                    self.get_child_render_info(i).render(width, height)
-                    self.pre_rendered = i / n_children
+            children = self.get_children()
+            n_children = len(children)
+            for i, child in enumerate(children):
+                if isinstance(child, CachedContainer):
+                    child.render(width, height)
+                self.pre_rendered = i / n_children
                 get_app().invalidate()
             self.pre_rendered = 1.0
             get_app().invalidate()
@@ -452,10 +109,9 @@ class ScrollingContainer(Container):
         # render_in_thread()
 
     def reset(self) -> None:
-        """Reet the state of this container and all the children."""
-        for meta in self.child_render_infos.values():
-            meta.container.reset()
-            meta.invalidate()
+        """Reset the state of this container and all the children."""
+        for child in self.get_children():
+            child.reset()
 
     def preferred_width(self, max_available_width: int) -> Dimension:
         """Do not provide a preferred width - grow to fill the available space."""
@@ -469,27 +125,6 @@ class ScrollingContainer(Container):
             return Dimension(min=1, preferred=self.height, weight=1)
         return Dimension(weight=1)
 
-    @property
-    def children(
-        self,
-    ) -> Sequence[AnyContainer]:  # Sequence[Union[Container, MagicContainer]]":
-        """Return the current children of this container instance."""
-        if self.refresh_children:
-            self._children = list(self.children_func())
-            self.refresh_children = False
-            # Clean up metacache
-            for child_hash in set(self.child_render_infos) - set(
-                map(hash, self._children)
-            ):
-                del self.child_render_infos[child_hash]
-            # Clean up positions
-            self.index_positions = {
-                i: pos
-                for i, pos in self.index_positions.items()
-                if i < len(self._children)
-            }
-        return self._children
-
     def _set_selected_slice(
         self, req_slice: slice, force: bool = False, scroll: bool = True
     ) -> None:
@@ -497,13 +132,14 @@ class ScrollingContainer(Container):
         if force or req_slice != self._selected_slice:
             app = get_app()
             self.refresh_children = True
+            children = self.get_children()
             # Ensure new selected slice is valid
             new_slice = self.validate_slice(req_slice)
             # Scroll into view
             if scroll:
                 anchor: Literal["top", "bottom"] | None = None
                 if (
-                    new_slice.start == len(self.children) - 1
+                    new_slice.start == len(children) - 1
                     and new_slice.stop
                     and req_slice.stop > new_slice.stop
                 ):
@@ -512,12 +148,10 @@ class ScrollingContainer(Container):
                     anchor = "top"
                 self.scroll_to(new_slice.start, anchor)
             # Request a refresh of the previously selected children
-            render_info: ChildRenderInfo | None
-            for render_info in self._selected_child_render_infos:
-                if render_info:
-                    render_info.invalidate()
+            for child in self._selected_children:
+                child.invalidate()
             # Get the first selected child and focus it
-            child = self.children[new_slice.start]
+            child = children[new_slice.start]
             if not app.layout.has_focus(child):
                 with contextlib.suppress(ValueError):
                     app.layout.focus(child)
@@ -540,41 +174,18 @@ class ScrollingContainer(Container):
 
     def validate_slice(self, slice_: slice) -> slice:
         """Ensure a slice describes a valid range of children."""
-        start = min(max(slice_.start, 0), len(self.children) - 1)
+        start = min(max(slice_.start, 0), len(self._children) - 1)
         stop = slice_.stop
         if stop == -1:
             stop = None
         if stop is not None:
-            stop = min(max(slice_.stop, int(start == 0)), len(self.children))
+            stop = min(max(slice_.stop, int(start == 0)), len(self._children))
         return slice(start, stop, slice_.step)
 
     @property
     def selected_indices(self) -> list[int]:
         """Return in indices of the currently selected children."""
         return list(range(*self.selected_slice.indices(len(self._children))))
-
-    def get_child_render_info(self, index: int | None = None) -> ChildRenderInfo:
-        """Return a rendered instance of the child at the given index.
-
-        If no index is given, the currently selected child is returned.
-
-        Args:
-            index: The index of the child to return.
-
-        Returns:
-            A rendered instance of the child.
-
-        """
-        if index is None:
-            index = self._selected_slice.start
-        child = self.children[index]
-        child_hash = hash(child)
-        if child_hash not in self.child_render_infos:
-            child_render_info = ChildRenderInfo(self, child)
-            self.child_render_infos[child_hash] = child_render_info
-        else:
-            child_render_info = self.child_render_infos[child_hash]
-        return child_render_info
 
     def select(
         self,
@@ -633,9 +244,9 @@ class ScrollingContainer(Container):
                 if self.index_positions[0] + self.scrolling + n > 0:
                     return NotImplemented
         elif n < 0:
-            bottom_index = len(self.children) - 1
+            bottom_index = len(self._children) - 1
             if bottom_index in self.visible_indicies:
-                bottom_child = self.get_child_render_info(bottom_index)
+                bottom_child = self.get_child(bottom_index)
                 bottom_pos = self.index_positions[bottom_index]
                 if bottom_pos is not None:
                     n = max(
@@ -665,6 +276,47 @@ class ScrollingContainer(Container):
         else:
             return NotImplemented
         return None
+
+    def _mouse_handler_wrapper(
+        self, handler: MouseHandler | None = None, child: CachedContainer | None = None
+    ) -> MouseHandler:
+        def wrapped(mouse_event: MouseEvent) -> NotImplementedOrNone:
+            response: NotImplementedOrNone = NotImplemented
+
+            if mouse_event.event_type == MouseEventType.SCROLL_DOWN:
+                response = self.scroll(-1)
+            elif mouse_event.event_type == MouseEventType.SCROLL_UP:
+                response = self.scroll(1)
+            elif callable(handler):
+                response = handler(mouse_event)
+
+            # Refresh the child if there was a response
+            if response is None:
+                return response
+
+            # This relies on windows returning NotImplemented when scrolled
+            # to the start or end
+            # if response is NotImplemented:
+            #     if mouse_event.event_type == MouseEventType.SCROLL_DOWN:
+            #         response = self.scroll(-1)
+            #     elif mouse_event.event_type == MouseEventType.SCROLL_UP:
+            #         response = self.scroll(1)
+
+            # Select the clicked child if clicked
+            if child and mouse_event.event_type == MouseEventType.MOUSE_DOWN:
+                index = self._children.index(child)
+                if mouse_event.modifiers & {MouseModifier.SHIFT, MouseModifier.CONTROL}:
+                    self.select(index, extend=True)
+                else:
+                    self.select(index, extend=False)
+                response = None
+
+                # Attempt to focus the container
+                get_app().layout.focus(child)
+
+            return response
+
+        return wrapped
 
     def write_to_screen(
         self,
@@ -701,6 +353,9 @@ class ScrollingContainer(Container):
 
         available_width = write_position.width
         available_height = write_position.height
+        # Trigger pre-rendering of children
+        if not self.pre_rendered:
+            self.pre_render_children(available_width, available_height)
 
         # Update screen height
         screen.height = max(screen.height, ypos + write_position.height)
@@ -710,35 +365,32 @@ class ScrollingContainer(Container):
 
         # Force the selected children to refresh
         selected_indices = self.selected_indices
-        self._selected_child_render_infos = []
+        self._selected_children: list[CachedContainer] = []
         for index in selected_indices:
-            render_info = self.get_child_render_info(index)
+            child = self.get_child(index)
             # Do not bother to re-render selected children if we are scrolling
             if not self.scrolling:
-                render_info.invalidate()
-            self._selected_child_render_infos.append(render_info)
+                child.invalidate()
+            self._selected_children.append(child)
             self.index_positions[index] = None
 
-        # Refresh visible children if searching
+        # Refresh **visible** children if searching
         if is_searching():
             for index in self.visible_indicies:
-                self.get_child_render_info(index).invalidate()
+                self.get_child(index).invalidate()
 
         # Scroll to make the cursor visible
         layout = get_app().layout
         if self.scroll_to_cursor:
-            selected_child_render_info = self._selected_child_render_infos[0]
-            selected_child_render_info.render(
+            selected_child = self._selected_children[0]
+            selected_child.render(
                 available_width=available_width,
                 available_height=available_height,
                 style=f"{parent_style} {self.style}",
                 start=self.selected_child_position,
             )
-            if (
-                cursor_position
-                := selected_child_render_info.screen.cursor_positions.get(
-                    layout.current_window
-                )
+            if cursor_position := selected_child.screen.cursor_positions.get(
+                layout.current_window
             ):
                 cursor_row = self.selected_child_position + cursor_position.y
                 scroll_offsets = self.scroll_offsets
@@ -755,7 +407,7 @@ class ScrollingContainer(Container):
         if self.scrolling:
             heights = [
                 # Ensure unrendered cells have at least some height
-                self.get_child_render_info(index).height or 1
+                self.get_child(index).height or 1
                 for index in range(len(self._children))
             ]
             heights_above = sum(heights[: self._selected_slice.start])
@@ -781,17 +433,17 @@ class ScrollingContainer(Container):
 
         # Blit first selected child and those below it that are on screen
         line = self.selected_child_position
-        for i in range(self._selected_slice.start, len(self.children)):
-            child_render_info = self.get_child_render_info(i)
-            child_render_info.render(
+        for i in range(self._selected_slice.start, len(self._children)):
+            child = self.get_child(i)
+            child.render(
                 available_width=available_width,
                 available_height=available_height,
                 style=f"{parent_style} {self.style}",
                 start=line,
             )
-            if line + child_render_info.height > 0 and line < available_height:
+            if line + child.height > 0 and line < available_height:
                 self.index_positions[i] = line
-                child_render_info.blit(
+                child.blit(
                     screen=screen,
                     mouse_handlers=mouse_handlers,
                     left=xpos,
@@ -799,11 +451,11 @@ class ScrollingContainer(Container):
                     cols=slice(0, available_width),
                     rows=slice(
                         max(0, 0 - line),
-                        min(child_render_info.height, available_height - line),
+                        min(child.height, available_height - line),
                     ),
                 )
                 visible_indicies.add(i)
-            line += child_render_info.height
+            line += child.height
             if line >= available_height:
                 break
         else:
@@ -820,22 +472,26 @@ class ScrollingContainer(Container):
                 )
                 for y in range(ypos + line, ypos + available_height):
                     for x in range(xpos, xpos + available_width):
-                        mouse_handlers.mouse_handlers[y][x] = self.mouse_scroll_handler
+                        mouse_handlers.mouse_handlers[y][
+                            x
+                        ] = self._mouse_handler_wrapper(
+                            mouse_handlers.mouse_handlers[y][x]
+                        )
         # Blit children above the selected that are on screen
         line = self.selected_child_position
         for i in range(self._selected_slice.start - 1, -1, -1):
-            child_render_info = self.get_child_render_info(i)
-            child_render_info.render(
+            child = self.get_child(i)
+            child.render(
                 available_width=available_width,
                 available_height=available_height,
                 style=f"{parent_style} {self.style}",
                 end=line,
             )
             # TODOD - prevent lagged child height
-            line -= child_render_info.height
-            if line + child_render_info.height > 0 and line < available_height:
+            line -= child.height
+            if line + child.height > 0 and line < available_height:
                 self.index_positions[i] = line
-                child_render_info.blit(
+                child.blit(
                     screen=screen,
                     mouse_handlers=mouse_handlers,
                     left=xpos,
@@ -843,7 +499,7 @@ class ScrollingContainer(Container):
                     cols=slice(0, available_width),
                     rows=slice(
                         max(0, 0 - line),
-                        min(child_render_info.height, available_height - line),
+                        min(child.height, available_height - line),
                     ),
                 )
                 visible_indicies.add(i)
@@ -861,7 +517,11 @@ class ScrollingContainer(Container):
                 )
                 for y in range(ypos, ypos + line):
                     for x in range(xpos, xpos + available_width):
-                        mouse_handlers.mouse_handlers[y][x] = self.mouse_scroll_handler
+                        mouse_handlers.mouse_handlers[y][
+                            x
+                        ] = self._mouse_handler_wrapper(
+                            mouse_handlers.mouse_handlers[y][x]
+                        )
 
         # Dont bother drawing floats
         # screen.draw_all_floats()
@@ -887,7 +547,7 @@ class ScrollingContainer(Container):
         # Calculate scrollbar info
         sizes = self.known_sizes
         avg_size = sum(sizes.values()) / len(sizes) if sizes else 0
-        n_children = len(self.children)
+        n_children = len(self.get_children())
         for i in range(n_children):
             if i not in sizes:
                 sizes[i] = int(avg_size)
@@ -911,10 +571,6 @@ class ScrollingContainer(Container):
         # Signal that we are no longer scrolling
         self.scrolling = 0
 
-        # Trigger pre-rendering of children
-        if not self.pre_rendered:
-            self.pre_render_children(available_width, available_height)
-
     @property
     def vertical_scroll(self) -> int:
         """The best guess at the absolute vertical scroll position."""
@@ -932,13 +588,34 @@ class ScrollingContainer(Container):
 
     def get_children(self) -> list[Container]:
         """Return the list of currently visible children to include in the layout."""
-        return [
-            self.get_child_render_info(i).container
-            for i in self.visible_indicies
-            if i < len(self.children)
-        ]
+        if self.refresh_children:
+            _children = self._children
+            _children.clear()
+            new_child_hashes = set()
+            for child in self.children_func():
+                if not (
+                    wrapped_child := (self._child_cache.get(child_hash := hash(child)))
+                ):
+                    wrapped_child = self._child_cache[child_hash] = CachedContainer(
+                        child, mouse_handler_wrapper=self._mouse_handler_wrapper
+                    )
+                _children.append(wrapped_child)
+                new_child_hashes.add(child_hash)
 
-    def get_child(self, index: int | None = None) -> AnyContainer:
+            # Clean up metacache
+            for child_hash in set(self._child_cache) - new_child_hashes:
+                del self._child_cache[child_hash]
+
+            self.refresh_children = False
+            # Clean up positions
+            self.index_positions = {
+                i: pos
+                for i, pos in self.index_positions.items()
+                if i < len(self._children)
+            }
+        return self._children
+
+    def get_child(self, index: int | None = None) -> CachedContainer:
         """Return a rendered instance of the child at the given index.
 
         If no index is given, the currently selected child is returned.
@@ -952,8 +629,10 @@ class ScrollingContainer(Container):
         """
         if index is None:
             index = self.selected_slice.start
-        index = max(0, min(len(self.children) - 1, index))
-        return self.children[index]
+        index = max(0, min(len(self._children) - 1, index))
+        child = self._children[index]
+        assert isinstance(child, CachedContainer)
+        return child
 
     def scroll_to(
         self, index: int, anchor: Literal["top", "bottom"] | None = None
@@ -965,16 +644,14 @@ class ScrollingContainer(Container):
             anchor: Whether to scroll to the top or bottom the given child index
 
         """
-        child_render_info = self.get_child_render_info(index)
+        child = self.get_child(index)
 
         new_top: int | None = None
         if index in self.visible_indicies:
             new_top = self.index_positions[index]
         else:
             if index < self._selected_slice.start:
-                new_top = max(
-                    0, child_render_info.height - self.last_write_position.height
-                )
+                new_top = max(0, child.height - self.last_write_position.height)
             elif index == self._selected_slice.start:
                 new_top = self.selected_child_position
             elif index > self._selected_slice.start:
@@ -985,14 +662,14 @@ class ScrollingContainer(Container):
                         min(
                             self.last_write_position.height,
                             (self.index_positions[last_index] or 0)
-                            + self.get_child_render_info(last_index).height,
+                            + self.get_child(last_index).height,
                         ),
                         0,
                     )
 
         # If the child height is not know, we'll need to render it to determine its height
-        if not child_render_info.height:
-            child_render_info.render(
+        if not child.height:
+            child.render(
                 self.last_write_position.width,
                 self.last_write_position.height,
             )
@@ -1002,22 +679,21 @@ class ScrollingContainer(Container):
                 self.selected_child_position = 0
             else:
                 self.selected_child_position = min(
-                    0, self.last_write_position.height - child_render_info.height
+                    0, self.last_write_position.height - child.height
                 )
-        elif new_top > self.last_write_position.height - child_render_info.height:
+        elif new_top > self.last_write_position.height - child.height:
             self.selected_child_position = max(
-                0, self.last_write_position.height - child_render_info.height
+                0, self.last_write_position.height - child.height
             )
             if anchor == "bottom":
                 self.selected_child_position -= (
-                    child_render_info.height - self.last_write_position.height
+                    child.height - self.last_write_position.height
                 )
         else:
             self.selected_child_position = new_top
 
         heights = [
-            self.get_child_render_info(index).height or 1
-            for index in range(len(self._children))
+            self.get_child(index).height or 1 for index in range(len(self._children))
         ]
         # Do not allow bottom child to scroll above screen bottom
         self.selected_child_position += max(
@@ -1034,12 +710,9 @@ class ScrollingContainer(Container):
     def known_sizes(self) -> dict[int, int]:
         """A dictionary mapping child indices to height values."""
         sizes = {}
-        for i, child in enumerate(self.children):
-            child_hash = hash(child)
-            if (
-                child_render_info := self.child_render_infos.get(child_hash)
-            ) and child_render_info.height:
-                sizes[i] = child_render_info.height
+        for i, child in enumerate(self._children):
+            if isinstance(child, CachedContainer) and child.height:
+                sizes[i] = child.height
         return sizes
 
     def _scroll_up(self) -> None:
@@ -1078,7 +751,7 @@ class PrintingContainer(Container):
 
     def get_children(self) -> list[Container]:
         """Return a list of all child containers."""
-        return list(map(to_container, self.children))
+        return [to_container(child) for child in self.children]
 
     def write_to_screen(
         self,
