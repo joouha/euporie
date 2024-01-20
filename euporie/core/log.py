@@ -269,6 +269,7 @@ class StdoutFormatter(FtFormatter):
                 wrap(
                     self.format_traceback(record.exc_text),
                     width=width - msg_pad,
+                    margin="  ",
                 ),
                 margin=" " * msg_pad,
             )

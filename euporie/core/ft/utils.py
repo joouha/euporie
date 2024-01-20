@@ -85,7 +85,7 @@ def fragment_list_to_words(
     """Split formatted text into a list of word fragments which form words."""
     word: StyleAndTextTuples = []
     for style, string, *rest in fragments:
-        parts = re.split(r"(?<=[\s\-])", string)
+        parts = re.split(r"(?<=[\s\-\/])", string)
         if len(parts) == 1:
             word.append(cast("OneStyleAndTextTuple", (style, parts[0], *rest)))
         else:
@@ -252,6 +252,7 @@ def wrap(
     left: int = 0,
     truncate_long_words: bool = True,
     strip_trailing_ws: bool = False,
+    margin: str = "",
 ) -> StyleAndTextTuples:
     """Wrap formatted text at a given width.
 
@@ -267,6 +268,7 @@ def wrap(
             truncated
         strip_trailing_ws: If :const:`True`, trailing whitespace will be removed from
             the ends of lines
+        margin: Text to use a margin for the continuation of wrapped lines
 
     Returns:
         The wrapped formatted text
@@ -284,8 +286,8 @@ def wrap(
         else:
             for word in fragment_list_to_words(line):
                 # Skip empty fragments
-                # if item[1] == "":
-                # continue
+                # if word[0] == word[1] == "":
+                #     continue
 
                 fragment_width = fragment_list_width(word)
 
@@ -303,8 +305,10 @@ def wrap(
 
                     # Start new line
                     result.append(("", "\n"))
+                    if margin:
+                        result.append((style, margin))
                     output_line += 1
-                    left = 0
+                    left = len(margin)
 
                     # If we added trailing whitespace, process the next fragment
                     if not strip_trailing_ws and trailing_ws:
@@ -315,13 +319,24 @@ def wrap(
                 if left == 0:
                     word = strip(word, right=False)
                 # Truncate words longer than a line
-                if truncate_long_words and left == 0 and fragment_width > width - left:
+                if (
+                    truncate_long_words
+                    # Detect start of line
+                    and result
+                    and result[-1][1] == f"\n{margin}"
+                    # Check the word is too long
+                    and fragment_width > width - left
+                ):
                     result += truncate(word, width - left, style, placeholder)
                     left += fragment_width
                 # Otherwise just add the word to the line
                 else:
                     result.extend(word)
                     left += fragment_width
+            left = 0
+            result.append(("", "\n"))
+    if result:
+        result.pop()
 
     if strip_trailing_ws:
         result = strip(result, left=False)
