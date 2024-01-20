@@ -6,7 +6,7 @@ import logging
 from collections import deque
 from copy import deepcopy
 from functools import partial
-from typing import TYPE_CHECKING, ClassVar, cast
+from typing import TYPE_CHECKING, ClassVar
 
 import nbformat
 from prompt_toolkit.clipboard.base import ClipboardData
@@ -117,7 +117,7 @@ class Notebook(BaseNotebook):
 
     # Tab stuff
 
-    def _statusbar_kernel_handeler(self, event: MouseEvent) -> NotImplementedOrNone:
+    def _statusbar_kernel_handler(self, event: MouseEvent) -> NotImplementedOrNone:
         """Event handler for kernel name field in statusbar."""
         if event.event_type == MouseEventType.MOUSE_UP:
             get_cmd("change-kernel").run()
@@ -129,6 +129,13 @@ class Notebook(BaseNotebook):
         """Generate the formatted text for the statusbar."""
         if self.loaded:
             rendered = self.page.pre_rendered
+
+            def _kernel_name() -> StyleAndTextTuples:
+                ft: StyleAndTextTuples = [
+                    ("", self.kernel_display_name, self._statusbar_kernel_handler)
+                ]
+                return ft
+
             return (
                 [
                     self.mode(),
@@ -137,16 +144,7 @@ class Notebook(BaseNotebook):
                     "Saving…" if self.saving else "",
                 ],
                 [
-                    lambda: cast(
-                        "StyleAndTextTuples",
-                        [
-                            (
-                                "",
-                                self.kernel_display_name,
-                                self._statusbar_kernel_handeler,
-                            )
-                        ],
-                    ),
+                    _kernel_name,
                     KERNEL_STATUS_REPR[self.kernel.status] if self.kernel else ".",
                 ],
             )

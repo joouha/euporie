@@ -113,7 +113,8 @@ class EuporieKernelManager(AsyncKernelManager):
         if self.kernel_spec:
             ns["resource_dir"] = self.kernel_spec.resource_dir
 
-        ns.update(self._launch_args)
+        if self._launch_args:
+            ns.update({str(k): str(v) for k, v in self._launch_args.items()})
 
         pat = re.compile(r"\{([A-Za-z0-9_]+)\}")
 
@@ -277,9 +278,7 @@ class Kernel:
             return result
         else:
             if callable(callback):
-                future.add_done_callback(
-                    lambda f: callback(f.result()) if callback else None
-                )
+                future.add_done_callback(lambda f: callback(f.result()))
                 return None
             return None
 
