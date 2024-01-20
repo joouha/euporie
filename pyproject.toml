@@ -155,7 +155,7 @@ dependencies = [
   # Non-dependencies
   "html2text", "sympy"
 ]
-[tool.hatch.envs.check.scripts]
+[tool.hatch.envs.type.scripts]
 run = "mypy {args:--namespace-packages -p euporie -p tests -p scripts}"
 
 
