@@ -181,7 +181,7 @@ def buffer_is_markdown() -> bool:
     """Determine if the current buffer contains markdown."""
     from euporie.core.current import get_app
 
-    return get_app().current_buffer.name == "code"
+    return get_app().current_buffer.name == "markdown"
 
 
 @Condition
