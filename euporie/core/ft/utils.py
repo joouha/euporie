@@ -335,8 +335,6 @@ def wrap(
                     left += fragment_width
             left = 0
             result.append(("", "\n"))
-    if result:
-        result.pop()
 
     if strip_trailing_ws:
         result = strip(result, left=False)
