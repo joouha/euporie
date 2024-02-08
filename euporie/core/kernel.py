@@ -962,7 +962,7 @@ class Kernel:
             if status == "ok":
                 for item in content.get("history", []):
                     results.append(item)
-                    event.set()
+            event.set()
 
         msg_id = self.kc.history(
             pattern=pattern, n=n, hist_access_type=hist_access_type, unique=True
