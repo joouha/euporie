@@ -165,7 +165,7 @@ register_bindings(
             "end-macro": "c-u",
             "run-macro": "c-j",
             "accept-suggestion": ["right", "c-f"],
-            "fill-sugestion": ("A-f"),
+            "fill-suggestion": ("A-f"),
             "toggle-comment": "c-_",
             "go-to-matching-bracket": [("A-("), ("A-)")],
             'wrap-selection-""': '"',
@@ -911,7 +911,7 @@ def accept_suggestion(event: KeyPressEvent) -> None:
 @add_cmd(
     filter=has_suggestion,
 )
-def fill_sugestion(event: KeyPressEvent) -> None:
+def fill_suggestion(event: KeyPressEvent) -> None:
     """Fill partial suggestion."""
     b = get_app().current_buffer
     suggestion = b.suggestion
