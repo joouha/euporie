@@ -275,6 +275,8 @@ class Datum(Generic[T], metaclass=_MetaDatum):
                             format=stage_b,
                             px=self.px,
                             py=self.py,
+                            fg=fg,
+                            bg=bg,
                             path=self.path,
                             source=datum,
                         )
