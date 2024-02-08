@@ -59,7 +59,7 @@ def load_basic_bindings(config: Config | None = None) -> KeyBindingsBase:
 def type_key(event: KeyPressEvent) -> None:
     """Enter a key."""
     # Do not insert escape sequences
-    if not event.data.startswith("\x1b["):
+    if not event.data.startswith("\x1b"):
         event.current_buffer.insert_text(
             event.data * event.arg, overwrite=replace_mode()
         )
