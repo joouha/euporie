@@ -73,7 +73,7 @@ class ScrollingContainer(Container):
         )  # The index of the currently selected children
         self.selected_child_position: int = 0
 
-        self.visible_indicies: set[int] = {0}
+        self.visible_indices: set[int] = {0}
         self.index_positions: dict[int, int | None] = {}
 
         self.last_write_position: WritePosition = BoundedWritePosition(0, 0, 0, 0)
@@ -95,7 +95,7 @@ class ScrollingContainer(Container):
 
         def render_in_thread() -> None:
             """Render children in  thread."""
-            children = self.get_children()
+            children = self.all_children()
             n_children = len(children)
             for i, child in enumerate(children):
                 if isinstance(child, CachedContainer):
@@ -110,7 +110,7 @@ class ScrollingContainer(Container):
 
     def reset(self) -> None:
         """Reset the state of this container and all the children."""
-        for child in self.get_children():
+        for child in self.all_children():
             child.reset()
 
     def preferred_width(self, max_available_width: int) -> Dimension:
@@ -132,7 +132,7 @@ class ScrollingContainer(Container):
         if force or req_slice != self._selected_slice:
             app = get_app()
             self.refresh_children = True
-            children = self.get_children()
+            children = self.all_children()
             # Ensure new selected slice is valid
             new_slice = self.validate_slice(req_slice)
             # Scroll into view
@@ -236,7 +236,7 @@ class ScrollingContainer(Container):
         # self.refresh_children = True
         if n > 0:
             if (
-                min(self.visible_indicies) == 0
+                min(self.visible_indices) == 0
                 and self.index_positions
                 and self.index_positions[0] is not None
             ):
@@ -245,7 +245,7 @@ class ScrollingContainer(Container):
                     return NotImplemented
         elif n < 0:
             bottom_index = len(self._children) - 1
-            if bottom_index in self.visible_indicies:
+            if bottom_index in self.visible_indices:
                 bottom_child = self.get_child(bottom_index)
                 bottom_pos = self.index_positions[bottom_index]
                 if bottom_pos is not None:
@@ -361,7 +361,7 @@ class ScrollingContainer(Container):
         screen.height = max(screen.height, ypos + write_position.height)
 
         # Record children which are currently visible
-        visible_indicies = set()
+        visible_indices = set()
 
         # Force the selected children to refresh
         selected_indices = self.selected_indices
@@ -376,7 +376,7 @@ class ScrollingContainer(Container):
 
         # Refresh **visible** children if searching
         if is_searching():
-            for index in self.visible_indicies:
+            for index in self.visible_indices:
                 self.get_child(index).invalidate()
 
         # Scroll to make the cursor visible
@@ -454,7 +454,7 @@ class ScrollingContainer(Container):
                         min(child.height, available_height - line),
                     ),
                 )
-                visible_indicies.add(i)
+                visible_indices.add(i)
             line += child.height
             if line >= available_height:
                 break
@@ -502,7 +502,7 @@ class ScrollingContainer(Container):
                         min(child.height, available_height - line),
                     ),
                 )
-                visible_indicies.add(i)
+                visible_indices.add(i)
             if line <= 0:
                 break
         else:
@@ -527,10 +527,10 @@ class ScrollingContainer(Container):
         # screen.draw_all_floats()
 
         # Ensure the focused child is always in the layout
-        visible_indicies.add(self._selected_slice.start)
+        visible_indices.add(self._selected_slice.start)
 
         # Update which children will appear in the layout
-        self.visible_indicies = visible_indicies
+        self.visible_indices = visible_indices
 
         # Update parent relations in layout
         def _walk(e: Container) -> None:
@@ -547,7 +547,7 @@ class ScrollingContainer(Container):
         # Calculate scrollbar info
         sizes = self.known_sizes
         avg_size = sum(sizes.values()) / len(sizes) if sizes else 0
-        n_children = len(self.get_children())
+        n_children = len(self.all_children())
         for i in range(n_children):
             if i not in sizes:
                 sizes[i] = int(avg_size)
@@ -586,8 +586,8 @@ class ScrollingContainer(Container):
             sum(list(self.known_sizes.values())[: self._selected_slice.start]) - value
         )
 
-    def get_children(self) -> list[Container]:
-        """Return the list of currently visible children to include in the layout."""
+    def all_children(self) -> list[Container]:
+        """Return the list of all children of this container."""
         if self.refresh_children:
             _children = self._children
             _children.clear()
@@ -614,6 +614,12 @@ class ScrollingContainer(Container):
                 if i < len(self._children)
             }
         return self._children
+
+    def get_children(self) -> list[Container]:
+        """Return the list of currently visible children to include in the layout."""
+        return [
+            self.get_child(i) for i in self.visible_indices if i < len(self._children)
+        ]
 
     def get_child(self, index: int | None = None) -> CachedContainer:
         """Return a rendered instance of the child at the given index.
@@ -647,7 +653,7 @@ class ScrollingContainer(Container):
         child = self.get_child(index)
 
         new_top: int | None = None
-        if index in self.visible_indicies:
+        if index in self.visible_indices:
             new_top = self.index_positions[index]
         else:
             if index < self._selected_slice.start:
