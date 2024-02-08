@@ -3,11 +3,21 @@
 
 def main(name: "str" = "launch") -> "None":
     """Load and launches the application."""
+    try:
+        from importlib.metedata import EntryPoint
+    except ModuleNotFoundError:
+        EntryPoint = None
+
     from importlib.metadata import entry_points
 
-    for entry in entry_points().get("euporie.apps", []):
-        if entry.name == name:
-            return entry.load().launch()
+    eps = entry_points()  # group="euporie.apps")
+    if isinstance(eps, dict):
+        apps = {x.name: x for x in eps.get("euporie.apps")}
+    else:
+        apps = {x.name: x for x in eps.select(group="euporie.apps")}
+
+    if entry := apps.get(name):
+        return entry.load().launch()
     else:
         raise Exception(f"Euporie app `{name}` not installed")
 
