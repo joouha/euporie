@@ -263,7 +263,7 @@ class Notebook(BaseNotebook):
         """Return the currently selected `Cells` in this `Notebook`."""
         return [
             child.content
-            for child in self.page.get_children()[self.page.selected_slice]
+            for child in self.page.all_children()[self.page.selected_slice]
             if isinstance(child, CachedContainer) and isinstance(child.content, Cell)
         ]
 
@@ -874,7 +874,7 @@ class Notebook(BaseNotebook):
         """Select the last cell in the notebook."""
         nb = get_app().tab
         if isinstance(nb, Notebook):
-            nb.select(len(nb.page.get_children()) - 1)
+            nb.select(len(nb.page.all_children()) - 1)
 
     @staticmethod
     @add_cmd(
@@ -886,7 +886,7 @@ class Notebook(BaseNotebook):
         if isinstance(nb, Notebook):
             nb.page.selected_slice = slice(
                 0,
-                len(nb.page.get_children()) + 1,
+                len(nb.page.all_children()) + 1,
             )
 
     @staticmethod
