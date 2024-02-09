@@ -504,7 +504,8 @@ class Console(KernelTab):
         self.lang_info = info.get("language_info", {})
 
     def refresh(self, now: bool = True) -> None:
-        """Request the output is refreshed (does nothing)."""
+        """Request the output is refreshed (refresh the whole app)."""
+        self.app.invalidate()
 
     def __pt_status__(
         self,
