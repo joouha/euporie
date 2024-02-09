@@ -37,16 +37,13 @@ from euporie.core.filters import (
     buffer_is_code,
     buffer_is_empty,
     kernel_tab_has_focus,
-    scrollable,
 )
-from euporie.core.format import format_code
 from euporie.core.kernel import MsgCallbacks
 from euporie.core.key_binding.registry import (
     load_registered_bindings,
     register_bindings,
 )
 from euporie.core.layout.print import PrintingContainer
-from euporie.core.margins import MarginContainer, ScrollbarMargin
 from euporie.core.style import KERNEL_STATUS_REPR
 from euporie.core.tabs.base import KernelTab
 from euporie.core.terminal import edit_in_editor
