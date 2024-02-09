@@ -170,6 +170,7 @@ class Cell:
             tempfile_suffix=self.suffix,
             inspector=self.inspector,
             diagnostics=self.report,
+            formatters=self.formatters,
         )
         self.input_box.buffer.name = self.cell_type
 
@@ -715,7 +716,6 @@ class Cell:
 
     def set_status(self, status: str) -> None:
         """Set the execution status of the cell."""
-        # log.debug(status)
 
     def get_input(
         self,
