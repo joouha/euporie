@@ -444,7 +444,7 @@ class KernelInput(TextArea):
     @add_cmd(filter=buffer_is_code & buffer_has_focus)
     def _history_prev() -> None:
         """Get the previous history entry."""
-        from euporie.console.app import get_app
+        from euporie.core.app import get_app
 
         get_app().current_buffer.history_backward()
 
@@ -452,7 +452,7 @@ class KernelInput(TextArea):
     @add_cmd(filter=buffer_is_code & buffer_has_focus)
     def _history_next() -> None:
         """Get the next history entry."""
-        from euporie.console.app import get_app
+        from euporie.core.app import get_app
 
         get_app().current_buffer.history_forward()
 
