@@ -428,8 +428,6 @@ class NotebookApp(BaseApp):
                     separator,
                     self.config.get_item("color_scheme").menu,
                     self.config.get_item("syntax_theme").menu,
-                    get_cmd("toggle-background-pattern").menu,
-                    get_cmd("toggle-show-cell-borders").menu,
                     get_cmd("toggle-multiplexer-passthrough").menu,
                     separator,
                     get_cmd("toggle-expand").menu,
@@ -437,6 +435,8 @@ class NotebookApp(BaseApp):
                     MenuItem(
                         "UI Elements",
                         children=[
+                            get_cmd("toggle-background-pattern").menu,
+                            get_cmd("toggle-show-cell-borders").menu,
                             get_cmd("toggle-always-show-tab-bar").menu,
                             get_cmd("toggle-show-side-bar").menu,
                             get_cmd("toggle-show-status-bar").menu,
