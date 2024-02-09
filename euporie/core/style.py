@@ -35,7 +35,7 @@ DEFAULT_COLORS = {
     "ansigreen": "#19cb00",
     "ansiyellow": "#cecb00",
     "ansiblue": "#0d73cc",
-    "ansipurple": "#cb1ed1",
+    "ansipurple": "#9841bb",
     "ansimagenta": "#cb1ed1",
     "ansicyan": "#0dcdcd",
     "ansiwhite": "#dddddd",
