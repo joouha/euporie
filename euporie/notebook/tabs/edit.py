@@ -57,9 +57,10 @@ class EditorTab(KernelTab):
         # Load the UI
         self.container = self.load_container()
         self.app.layout.focus(self.container)
-
         # Read file
         self.load()
+        # Continue loading tab
+        super().post_init_kernel()
 
     def load(self) -> None:
         """Load the text file."""

@@ -89,6 +89,11 @@ class Tab(metaclass=ABCMeta):
             align=WindowAlign.CENTER,
         )
 
+        self.on_close = Event(self)
+        self.on_change = Event(self)
+        self.before_save = Event(self)
+        self.after_save = Event(self)
+
         self.dirty = False
         self.saving = False
 
@@ -110,6 +115,7 @@ class Tab(metaclass=ABCMeta):
         # Run callback
         if callable(cb):
             cb()
+        self.on_close.fire()
 
     def focus(self) -> None:
         """Focus the tab (or make it visible)."""
@@ -117,7 +123,15 @@ class Tab(metaclass=ABCMeta):
 
     def _save(self, path: Path | None = None, cb: Callable | None = None) -> None:
         """Perform the file save in a background thread."""
-        run_in_thread_with_context(self.save, path, cb)
+        self.before_save.fire()
+
+        def _wrapped_cb() -> None:
+            """Wrap save callback to trigger post-save event."""
+            if callable(cb):
+                cb()
+            self.after_save.fire()
+
+        run_in_thread_with_context(self.save, path, _wrapped_cb)
 
     def save(self, path: Path | None = None, cb: Callable | None = None) -> None:
         """Save the current notebook."""
@@ -207,6 +221,8 @@ class KernelTab(Tab, metaclass=ABCMeta):
 
         # The client-side comm states
         self.comms: dict[str, Comm] = {}
+        # The current kernel input
+        self._current_input: KernelInput | None = None
 
         if self.bg_init:
             # Load kernel in a background thread

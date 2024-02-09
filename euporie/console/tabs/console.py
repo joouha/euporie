@@ -27,6 +27,7 @@ from prompt_toolkit.layout.containers import (
 )
 from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.layout.layout import Layout
+from prompt_toolkit.utils import Event
 from upath import UPath
 
 from euporie.core.commands import add_cmd, get_cmd
@@ -136,6 +137,8 @@ class Console(KernelTab):
 
         self.app.before_render += self.render_outputs
 
+        self.on_advance = Event(self)
+
     def kernel_died(self) -> None:
         """Call when the kernel dies."""
         log.error("The kernel has died")
@@ -221,6 +224,7 @@ class Console(KernelTab):
             and len(self.json["cells"]) > app.config.max_stored_outputs
         ):
             del self.json["cells"][0]
+        self.on_advance()
 
     def new_output(self, output_json: dict[str, Any]) -> None:
         """Print the previous output and replace it with the new one."""
