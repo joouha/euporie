@@ -577,7 +577,7 @@ def build_style(
         "palette.item.selected": f"fg:{cp.hl.more(1)} bg:{cp.hl}",
         # Pager
         "pager": f"bg:{cp.bg.more(0.05)}",
-        "pager.border": f"fg:{cp.bg.more(0.45)}",
+        "pager.border": f"fg:{cp.bg.towards(cp.ansiblack, 0.15)} reverse",
         # Markdown
         "markdown code": f"bg:{cp.bg.more(0.15)}",
         "markdown code block": f"bg:{cp.bg.less(0.2)}",

@@ -133,6 +133,7 @@ class Pager:
             HSplit(
                 [
                     Line(
+                        char="▅",
                         height=1,
                         collapse=False,
                         style="class:pager.border",
