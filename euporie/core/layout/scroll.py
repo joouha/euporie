@@ -64,7 +64,7 @@ class ScrollingContainer(Container):
 
         self.children_func = _children_func
         self._child_cache: dict[int, CachedContainer] = {}
-        self._children: list[Container] = []
+        self._children: list[CachedContainer] = []
         self.refresh_children = True
         self.pre_rendered = 0.0
 
@@ -93,20 +93,23 @@ class ScrollingContainer(Container):
         # Prevent multiple calls
         self.pre_rendered = 0.000000001
 
-        def render_in_thread() -> None:
+        def _render_in_thread() -> None:
             """Render children in  thread."""
             children = self.all_children()
             n_children = len(children)
+            app = get_app()
             for i, child in enumerate(children):
+                if not app._is_running:
+                    return
                 if isinstance(child, CachedContainer):
                     child.render(width, height)
                 self.pre_rendered = i / n_children
-                get_app().invalidate()
+                app.invalidate()
             self.pre_rendered = 1.0
-            get_app().invalidate()
+            app.invalidate()
 
-        run_in_thread_with_context(render_in_thread)
-        # render_in_thread()
+        run_in_thread_with_context(_render_in_thread)
+        # _render_in_thread()
 
     def reset(self) -> None:
         """Reset the state of this container and all the children."""
@@ -586,7 +589,7 @@ class ScrollingContainer(Container):
             sum(list(self.known_sizes.values())[: self._selected_slice.start]) - value
         )
 
-    def all_children(self) -> list[Container]:
+    def all_children(self) -> Sequence[Container]:
         """Return the list of all children of this container."""
         if self.refresh_children:
             _children = self._children
@@ -635,10 +638,11 @@ class ScrollingContainer(Container):
         """
         if index is None:
             index = self.selected_slice.start
-        index = max(0, min(len(self._children) - 1, index))
-        child = self._children[index]
-        assert isinstance(child, CachedContainer)
-        return child
+        if self._children:
+            index = max(0, min(len(self._children) - 1, index))
+            return self._children[index]
+        else:
+            return CachedContainer(Window())
 
     def scroll_to(
         self, index: int, anchor: Literal["top", "bottom"] | None = None
