@@ -114,6 +114,10 @@ class Console(KernelTab):
         )
         self.kernel_tab = self
 
+        # Set tab path as untitled, so LSP servers know the files do not exist on disk
+        self._untitled_count += 1
+        path = UPath(f"untitled:/console-{self._untitled_count}")
+
         super().__init__(
             app=app,
             path=path,
