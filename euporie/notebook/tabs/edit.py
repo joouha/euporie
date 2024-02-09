@@ -35,7 +35,6 @@ class EditorTab(KernelTab):
     name = "Text Editor"
     weight = 1
     mime_types: ClassVar[set[str]] = {"text/*"}
-
     allow_stdin = True
 
     def __init__(
