@@ -76,7 +76,7 @@ async def chafa_convert_cmd(
         cmd.append(size)
     if bg:
         cmd += ["--bg", bg]
-    cmd += ["--stretch", "/dev/stdin"]
+    # cmd += ["--stretch", "/dev/stdin"]
     return (await call_subproc(datum.data, cmd)).decode()
 
 
