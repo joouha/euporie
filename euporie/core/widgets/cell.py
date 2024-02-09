@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import os
 import weakref
@@ -26,14 +27,18 @@ from prompt_toolkit.layout.dimension import Dimension
 from prompt_toolkit.utils import Event
 
 from euporie.core.border import NoLine, ThickLine, ThinLine
+from euporie.core.completion import DeduplicateCompleter, LspCompleter
 from euporie.core.config import add_setting
 from euporie.core.current import get_app
 from euporie.core.diagnostics import Report
 from euporie.core.filters import multiple_cells_selected
+from euporie.core.format import LspFormatter
 from euporie.core.inspection import (
     FirstInspector,
+    LspInspector,
 )
 from euporie.core.layout.containers import HSplit, VSplit, Window
+from euporie.core.lsp import LspCell
 from euporie.core.utils import on_click
 from euporie.core.widgets.cell_outputs import CellOutputArea
 from euporie.core.widgets.inputs import KernelInput, StdInput
@@ -47,6 +52,7 @@ if TYPE_CHECKING:
 
     from euporie.core.format import Formatter
     from euporie.core.inspection import Inspector
+    from euporie.core.lsp import LspClient
     from euporie.core.tabs.notebook import BaseNotebook
 
 
@@ -175,6 +181,9 @@ class Cell:
             inspector=self.inspector,
             diagnostics=self.report,
             formatters=self.formatters,
+            # show_diagnostics=Condition(
+            #     lambda: kernel_tab.app.layout.has_focus(self.input_box.buffer)
+            # ),
         )
         self.input_box.buffer.name = self.cell_type
 
@@ -426,6 +435,96 @@ class Cell:
             style=_style,
         )
 
+        self.kernel_tab.app.create_background_task(self.setup_lsps()).add_done_callback(
+            lambda result: self.after_open()
+        )
+
+    async def setup_lsps(self) -> None:
+        """Add hooks to the notebook LSP client."""
+        path = self.path
+
+        # Wait for all lsps to be initialized, and setup hooks as they become ready
+        async def _await_load(lsp: LspClient) -> LspClient:
+            await lsp.initialized.wait()
+            return lsp
+
+        for ready in asyncio.as_completed(
+            [_await_load(lsp) for lsp in self.kernel_tab.lsps]
+        ):
+            lsp = await ready
+
+            # Listen for LSP diagnostics
+            lsp.on_diagnostics += self.lsp_update_diagnostics
+
+            change_handler = partial(lambda lsp, tab: self.lsp_change_handler(lsp), lsp)
+
+            self.on_change += change_handler
+
+            # Add completer
+            completer = LspCompleter(lsp, path)
+            self.completers.append(completer)
+
+            # Add inspector
+            inspector = LspInspector(lsp, path)
+            self.inspectors.append(inspector)
+
+            # Add formatter
+            formatter = LspFormatter(lsp, path)
+            self.formatters.append(formatter)
+
+            def lsp_unload(lsp: LspClient) -> None:
+                self.on_change -= change_handler  # noqa: B023
+                if completer in self.completers:  # noqa: B023
+                    self.completers.remove(completer)  # noqa: B023
+                if inspector in self.inspectors:  # noqa: B023
+                    self.inspectors.remove(inspector)  # noqa: B023
+                if formatter in self.formatters:  # noqa: B023
+                    self.formatters.remove(formatter)  # noqa: B023
+
+            lsp.on_exit += lsp_unload
+
+            self.lsp_open_handler(lsp)
+
+    def lsp_open_handler(self, lsp: LspClient) -> None:
+        """If the LSP does not support notebooks, open this cell as a text document."""
+        if not lsp.can_open_nb:
+            lsp.open_doc(
+                path=self.path,
+                language=self.language,
+                text=self.input_box.buffer.text,
+            )
+
+    @property
+    def lsp_cell(self) -> LspCell:
+        """Capture the cell's attributes for an LSP server."""
+        return LspCell(
+            id=self.id,
+            idx=self.index,
+            path=self.path,
+            kind=self.cell_type,
+            language=self.language,
+            execution_count=self.execution_count,
+            metadata=self.json["metadata"],
+            text=self.input,
+        )
+
+    def lsp_change_handler(self, lsp: LspClient) -> None:
+        """Tell the LSP server a file has changed."""
+        if lsp.can_change_nb:
+            lsp.change_nb_edit(path=self.kernel_tab.path, cells=[self.lsp_cell])
+        else:
+            lsp.change_doc(
+                path=self.path,
+                language=self.language,
+                text=self.input_box.buffer.text,
+            )
+
+    def lsp_update_diagnostics(self, lsp: LspClient) -> None:
+        """Process a new diagnostic report from the LSP."""
+        if (diagnostics := lsp.reports.pop(self.path.as_uri(), None)) is not None:
+            self.reports[lsp] = Report.from_lsp(self.input_box.text, diagnostics)
+            self.refresh()
+
     def report(self) -> Report:
         """Return the current diagnostic reports."""
         return Report.from_reports(*self.reports.values())
@@ -598,6 +697,14 @@ class Cell:
         # self.output_area.json = self.output_json
         # Force the input box lexer to re-run
         self.input_box.control._fragment_cache.clear()
+
+    @property
+    def path(self) -> Path:
+        """Return a virtual path for this cell (used by LSP clients)."""
+        # It is necessary to use the notebook' suffix so LSP servers like ruff-lsp know
+        # that the document is from a notebook
+        nb_path = self.kernel_tab.path
+        return (nb_path / f"cell-{self.id}").with_suffix(nb_path.suffix)
 
     @property
     def id(self) -> str:
