@@ -111,9 +111,8 @@ class EditorTab(KernelTab):
         return (
             [
                 ("I" if insert_mode() else ("o" if replace_mode() else ">")),
-                self.position,
             ],
-            [str(self.path)],
+            [self.position, str(self.path)],
         )
 
     @property
