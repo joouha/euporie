@@ -60,7 +60,7 @@ class Osc52Clipboard(Clipboard):
             )
 
 
-class EuporieClipboard(Clipboard):
+class ConfiguredClipboard(Clipboard):
     """Use a clipboard determined by euporie's configuration."""
 
     _clipboard: Clipboard

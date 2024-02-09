@@ -59,7 +59,7 @@ from pygments.styles import STYLE_MAP as pygments_styles
 from pygments.styles import get_style_by_name
 from upath import UPath
 
-from euporie.core.clipboard import EuporieClipboard
+from euporie.core.clipboard import ConfiguredClipboard
 from euporie.core.commands import add_cmd
 from euporie.core.config import Config, add_setting
 from euporie.core.convert.mime import get_mime
@@ -280,8 +280,6 @@ class BaseApp(Application):
         )
 
         self._page_navigation_bindings = load_page_navigation_bindings(self.config)
-        # Determines which clipboard mechanism to use
-        self.clipboard: Clipboard = EuporieClipboard(self)
         # Allow hiding element when manually redrawing app
         self._redrawing = False
         self.redrawing = Condition(lambda: self._redrawing)
@@ -343,6 +341,8 @@ class BaseApp(Application):
 
     def pre_run(self, app: Application | None = None) -> None:
         """Call during the 'pre-run' stage of application loading."""
+        # Determines which clipboard mechanism to use based on configuration
+        self.clipboard: Clipboard = ConfiguredClipboard(self)
         # Determine what color depth to use
         self._color_depth = _COLOR_DEPTHS.get(
             self.config.color_depth, self.term_info.depth_of_color.value
