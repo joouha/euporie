@@ -551,7 +551,7 @@ class Cell:
         """Request that the cell to be re-rendered next time it is drawn."""
         self.kernel_tab.refresh_cell(self)
         if now:
-            get_app().invalidate()
+            self.kernel_tab.app.invalidate()
 
     def ran(self, content: dict | None = None) -> None:
         """Update the cell status and update display when the cell has finished."""
