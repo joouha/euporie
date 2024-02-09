@@ -351,7 +351,7 @@ class Console(KernelTab):
             """Respond to cursor movements."""
             # Update contextual help
             if self.app.config.autoinspect and buf.name == "code":
-                self.inspect()
+                self.input_box.inspect()
             elif (pager := self.app.pager) is not None and pager.visible():
                 pager.hide()
 
@@ -425,10 +425,8 @@ class Console(KernelTab):
             accept_handler=_handler,
             on_cursor_position_changed=on_cursor_position_changed,
             validator=KernelValidator(self.kernel),
-            # validate_while_typing=False,
             enable_history_search=True,
             key_bindings=input_kb,
-            scrollbar=False,
         )
         self.input_box.buffer.name = "code"
 
