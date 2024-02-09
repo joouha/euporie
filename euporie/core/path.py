@@ -119,7 +119,16 @@ class DataPath(upath.core.UPath):
     _default_accessor = _DataAccessor
 
 
+class UntitledPath(upath.core.UPath):
+    """A path for untitled files, as needed for LSP servers."""
+
+    def exists(self) -> bool:
+        """Untitled files are virtual and do not exist."""
+        return False
+
+
 register_implementation("data", DataPath, clobber=True)
+register_implementation("untitled", UntitledPath, clobber=True)
 register_implementation("http", HTTPPath, clobber=True)
 register_implementation("https", HTTPPath, clobber=True)
 
