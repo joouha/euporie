@@ -183,7 +183,7 @@ class Console(KernelTab):
         app = self.app
         # Auto-reformat code
         if app.config.autoformat:
-            self.reformat()
+            self.input_box.reformat()
         # Get the code to run
         text = buffer.text
         # Remove any selections from input
