@@ -25,6 +25,7 @@ from pygments.util import ClassNotFound
 from euporie.core.border import NoLine, ThickLine, ThinLine
 from euporie.core.config import add_setting
 from euporie.core.current import get_app
+from euporie.core.diagnostics import Report
 from euporie.core.filters import multiple_cells_selected
 from euporie.core.format import format_code
 from euporie.core.layout.containers import HSplit, VSplit, Window
@@ -105,6 +106,8 @@ class Cell:
 
         self.state = "idle"
 
+        self.reports: WeakKeyDictionary[LspClient, Report] = WeakKeyDictionary()
+
         show_input = Condition(
             lambda: bool(
                 (weak_self.json.get("cell_type") != "markdown")
@@ -175,6 +178,7 @@ class Cell:
             accept_handler=lambda buffer: self.run_or_render() or True,
             focusable=show_input & ~source_hidden,
             tempfile_suffix=self.tempfile_suffix,
+            diagnostics=self.report,
         )
         self.input_box.buffer.name = self.cell_type
 
@@ -419,6 +423,10 @@ class Cell:
             ],
             style=_style,
         )
+
+    def report(self) -> Report:
+        """Return the current diagnostic reports."""
+        return Report.from_reports(*self.reports.values())
 
     def focus(self, position: int | None = None, scroll: bool = False) -> None:
         """Focus the relevant control in this cell.
