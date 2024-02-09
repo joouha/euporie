@@ -187,11 +187,13 @@ class Console(KernelTab):
         # Get the code to run
         text = buffer.text
         # Remove any selections from input
-        self.input_box.buffer.selection_state = None
+        buffer.selection_state = None
         # Disable existing output
         self.live_output.style = "class:disabled"
         # Reset the diagnostics
         self.reports.clear()
+        # Move cursor to the start of the input
+        buffer.cursor_position = 0
         # Re-render the app and move to below the current output
         original_layout = app.layout
         app.layout = self.input_layout
