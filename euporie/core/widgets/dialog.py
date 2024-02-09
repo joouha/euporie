@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import contextlib
 import logging
 import traceback
 from abc import ABCMeta, abstractmethod
@@ -337,8 +336,10 @@ class Dialog(Float, metaclass=ABCMeta):
         if self.to_focus is not None:
             self.app.layout.focus(self.to_focus)
         else:
-            with contextlib.suppress(ValueError):
+            try:
                 self.app.layout.focus(self.container)
+            except ValueError:
+                pass
         self.app.layout.focus(self.container)
         self.app.invalidate()
 

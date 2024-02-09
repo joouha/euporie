@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import contextlib
 import logging
 from typing import TYPE_CHECKING
 
@@ -557,8 +556,10 @@ class StdInput:
 
         buffer.text = ""
         if self.last_focused:
-            with contextlib.suppress(ValueError):
+            try:
                 get_app().layout.focus(self.last_focused)
+            except ValueError:
+                pass
         return True
 
     def get_input(

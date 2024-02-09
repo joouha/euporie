@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import contextlib
 import logging
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -137,8 +136,10 @@ def parse_path(path: str | PathLike, resolve: bool = True) -> Path:
     """Parse and resolve a path."""
     if not isinstance(path, Path):
         path = UPath(path)
-    with contextlib.suppress(NotImplementedError):
+    try:
         path = path.expanduser()
+    except NotImplementedError:
+        pass
     if resolve:
         try:
             path = path.resolve()

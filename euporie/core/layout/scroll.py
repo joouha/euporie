@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import contextlib
 import logging
 from typing import TYPE_CHECKING, cast
 
@@ -156,8 +155,10 @@ class ScrollingContainer(Container):
             # Get the first selected child and focus it
             child = children[new_slice.start]
             if not app.layout.has_focus(child):
-                with contextlib.suppress(ValueError):
+                try:
                     app.layout.focus(child)
+                except ValueError:
+                    pass
             # Track which child was selected
             self._selected_slice = new_slice
 

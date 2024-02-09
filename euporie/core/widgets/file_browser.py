@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import contextlib
 import logging
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -433,8 +432,10 @@ class FileBrowserControl(UIControl):
     def dir(self, value: PT) -> None:
         """Set the current folder path."""
         dir_path = UPath(value)
-        with contextlib.suppress(NotImplementedError):
+        try:
             dir_path = dir_path.resolve()
+        except NotImplementedError:
+            pass
         if is_dir(dir_path):
             self._dir = dir_path
         else:
@@ -449,8 +450,10 @@ class FileBrowserControl(UIControl):
     def load_path(path: Path) -> list[tuple[bool, Path]]:
         """Return the contents of a folder."""
         paths = [] if path.parent == path else [path / ".."]
-        with contextlib.suppress(PermissionError):
+        try:
             paths += list(path.iterdir())
+        except PermissionError:
+            pass
         is_dirs = []
         for child in paths:
             child_is_dir = is_dir(child)

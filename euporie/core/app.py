@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import asyncio
-import contextlib
 import json
 import logging
 import signal
@@ -686,8 +685,10 @@ class BaseApp(Application):
         """Set the current tab by index."""
         self._tab_idx = value % (len(self.tabs) or 1)
         if self.tabs:
-            with contextlib.suppress(ValueError):
+            try:
                 self.layout.focus(self.tabs[self._tab_idx])
+            except ValueError:
+                pass
 
     def focus_tab(self, tab: Tab) -> None:
         """Make a tab visible and focuses it."""
@@ -712,8 +713,10 @@ class BaseApp(Application):
         # If a tab is not open, the status bar is not shown, so focus the logo, so
         # pressing tab focuses the menu
         else:
-            with contextlib.suppress(ValueError):
+            try:
                 self.layout.focus_next()
+            except ValueError:
+                pass
 
     def close_tab(self, tab: Tab | None = None) -> None:
         """Close a notebook tab.
