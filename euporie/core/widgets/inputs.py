@@ -216,6 +216,17 @@ class KernelInput(TextArea):
         )
         self.has_focus: Filter = has_focus(self.buffer)
 
+        # Set up autoinspect
+        def _on_cursor_position_changed(buf: Buffer) -> None:
+            """Respond to cursor movements."""
+            # Update contextual help
+            if app.config.autoinspect and self.buffer.name == "code":
+                app.create_background_task(self.inspect(auto=True))
+            elif pager := app.pager:
+                pager.hide()
+
+        self.buffer.on_cursor_position_changed += _on_cursor_position_changed
+
         # Set extra key-bindings
         widgets_key_bindings = load_registered_bindings(
             "euporie.core.widgets.inputs.KernelInput"
