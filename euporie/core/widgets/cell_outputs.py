@@ -41,7 +41,6 @@ if TYPE_CHECKING:
 
         def refresh(self, now: bool = True) -> None:
             """Update the parent container."""
-            ...
 
 
 log = logging.getLogger(__name__)
