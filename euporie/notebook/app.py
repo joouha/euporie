@@ -45,7 +45,7 @@ from euporie.core.widgets.menu import MenuBar, MenuItem
 from euporie.core.widgets.pager import Pager
 from euporie.core.widgets.palette import CommandPalette
 from euporie.core.widgets.search_bar import SearchBar
-from euporie.core.widgets.status_bar import StatusBar
+from euporie.core.widgets.status_bar import StatusBar, StatusContainer
 from euporie.notebook.enums import TabMode
 from euporie.notebook.tabs import Notebook
 from euporie.notebook.widgets.side_bar import SideBar
@@ -86,19 +86,6 @@ class NotebookApp(BaseApp):
 
         # Register config hooks
         self.config.get_item("show_cell_borders").event += lambda x: self.refresh()
-
-    def statusbar_defaults(self) -> StatusBarFields | None:
-        """Load the default statusbar fields (run after keybindings are loaded)."""
-        return (
-            [
-                [
-                    ("", "Press "),
-                    ("bold", get_cmd("new-notebook").key_str()),
-                    ("", " to start a new notebook"),
-                ],
-            ],
-            [[("", "Press "), ("bold", get_cmd("quit").key_str()), ("", " to quit")]],
-        )
 
     async def _poll_terminal_colors(self) -> None:
         """Repeatedly query the terminal for its background and foreground colours."""
@@ -156,20 +143,36 @@ class NotebookApp(BaseApp):
                 self.config.background_character, self.config.background_pattern
             )
 
+    def _statusbar_defaults(self) -> StatusBarFields | None:
+        """Load the default statusbar fields (run after keybindings are loaded)."""
+        return (
+            [
+                [
+                    ("", "Press "),
+                    ("bold", get_cmd("new-notebook").key_str()),
+                    ("", " to start a new notebook"),
+                ],
+            ],
+            [[("", "Press "), ("bold", get_cmd("quit").key_str()), ("", " to quit")]],
+        )
+
     def load_container(self) -> FloatContainer:
         """Build the main application layout."""
         have_tabs = Condition(lambda: bool(self.tabs))
 
-        self.logo = Window(
-            FormattedTextControl(
-                [("", f" {__logo__} ")],
-                focusable=~have_tabs,
-                show_cursor=False,
-                style="class:menu,logo",
+        self.logo = StatusContainer(
+            body=Window(
+                FormattedTextControl(
+                    [("", f" {__logo__} ")],
+                    focusable=~have_tabs,
+                    show_cursor=False,
+                    style="class:menu,logo",
+                ),
+                height=1,
+                width=3,
+                dont_extend_width=True,
             ),
-            height=1,
-            width=3,
-            dont_extend_width=True,
+            status=self._statusbar_defaults,
         )
 
         title_bar = ConditionalContainer(
@@ -262,7 +265,7 @@ class NotebookApp(BaseApp):
                         height=Dimension(min=1),
                     ),
                     self.search_bar,
-                    StatusBar(default=self.statusbar_defaults()),
+                    StatusBar(),
                 ],
                 style="class:body",
             ),
