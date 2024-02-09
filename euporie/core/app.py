@@ -108,6 +108,7 @@ if TYPE_CHECKING:
     from prompt_toolkit.output import Output
 
     from euporie.core.config import Setting
+    from euporie.core.format import Formatter
     from euporie.core.tabs.base import Tab
     from euporie.core.terminal import TerminalQuery
     from euporie.core.widgets.dialog import Dialog
@@ -307,6 +308,11 @@ class BaseApp(Application):
         # Set up a write position to limit mouse events to a particular region
         self.mouse_limits: WritePosition | None = None
         self.mouse_position = Point(0, 0)
+
+        # Build list of configured external formatters
+        self.formatters: list[Formatter] = [
+            CliFormatter(**info) for info in self.config.formatters
+        ]
 
     @property
     def title(self) -> str:
@@ -979,25 +985,44 @@ class BaseApp(Application):
     add_setting(
         name="formatters",
         flags=["--formatters"],
-        type_=str,
-        choices=["ruff", "black", "isort", "ssort"],
-        help_="List formatters to use when re-formatting code cells",
-        default=["ruff"],
+        type_=json.loads,
+        help_="List of external code formatters",
+        default=[
+            # {"command": ["ruff", "format", "-"], "languages": ["python"]},
+            # {"command": ["black", "-"], "languages": ["python"]},
+            # {"command": ["isort", "-"], "languages": ["python"]},
+        ],
         action="append",
         schema={
             "type": "array",
             "items": {
-                "description": "Formatters",
-                "type": "string",
+                "type": "object",
+                "properties": {
+                    "command": {
+                        "type": "array",
+                        "items": [{"type": "string"}],
+                    },
+                    "languages": {
+                        "type": "array",
+                        "items": [{"type": "string", "unique": True}],
+                    },
+                },
+                "required": ["command", "languages"],
             },
         },
         description="""
-            A list of the names of the formatters to use when reformatting code cells.
-            Supported formatters include:
-            - :py:mod:`ruff`
-            - :py:mod:`black`
-            - :py:mod:`isort`
-            - :py:mod:`ssort`
+            An array listing languages and commands of formatters to use for
+            reformatting code cells. The command is an array of the command any any
+            arguments. Code to be formatted is pass in via the standard input, and
+            replaced with the standard output.
+
+            e.g.
+
+               [
+                 {"command": ["ruff", "format", "-"], "languages": ["python"]},
+                 {"command": ["black", "-"], "languages": ["python"]},
+                 {"command": ["isort", "-"], "languages": ["python"]}
+               ]
         """,
     )
 

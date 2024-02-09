@@ -130,10 +130,20 @@ class EditorTab(KernelTab):
         return ("* " if self.dirty else "") + self.path_name
 
     def load_container(self) -> AnyContainer:
-        """Abcract method for loading the notebook's main container."""
+        """Load the "tab"'s main container."""
         assert self.path is not None
 
-        self.input_box = KernelInput(kernel_tab=self, right_margins=[], read_only=True)
+        self.input_box = self._current_input = KernelInput(
+            kernel_tab=self,
+            completer=self.completer,
+            read_only=True,
+            name="code",
+            formatters=self.formatters,
+            language=lambda: self.language,
+            inspector=self.inspector,
+            on_text_changed=lambda buf: self.on_change(),
+            diagnostics=self.report,
+        )
 
         return VSplit(
             [self.input_box],
