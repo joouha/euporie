@@ -39,12 +39,14 @@ from euporie.core.filters import (
     buffer_is_empty,
     kernel_tab_has_focus,
 )
+from euporie.core.format import LspFormatter
 from euporie.core.kernel import MsgCallbacks
 from euporie.core.key_binding.registry import (
     load_registered_bindings,
     register_bindings,
 )
 from euporie.core.layout.print import PrintingContainer
+from euporie.core.lsp import LspCell
 from euporie.core.style import KERNEL_STATUS_REPR
 from euporie.core.tabs.base import KernelTab
 from euporie.core.terminal import edit_in_editor
@@ -64,6 +66,7 @@ if TYPE_CHECKING:
     from prompt_toolkit.layout.containers import Float
 
     from euporie.core.app import BaseApp
+    from euporie.core.lsp import LspClient
 
 log = logging.getLogger(__name__)
 
@@ -138,6 +141,25 @@ class Console(KernelTab):
         self.app.before_render += self.render_outputs
 
         self.on_advance = Event(self)
+
+    async def load_lsps(self) -> None:
+        """Load the LSP clients."""
+        await super().load_lsps()
+
+        for lsp in self.lsps:
+            advance_handler = partial(lambda lsp, tab: self.lsp_add_cell(lsp), lsp)
+            self.on_advance += advance_handler
+
+            formatter = LspFormatter(lsp, self.path_cell)
+            self.formatters.append(formatter)
+
+            # Remove hooks if the LSP exits
+            def lsp_unload(lsp: LspClient) -> None:
+                self.on_advance -= advance_handler  # noqa: B023
+                if formatter in self.completers:  # noqa: B023
+                    self.formatters.remove(formatter)  # noqa: B023
+
+            lsp.on_exit += lsp_unload
 
     def kernel_died(self) -> None:
         """Call when the kernel dies."""
@@ -535,19 +557,91 @@ class Console(KernelTab):
             ],
         )
 
-
-
-
-            )
-            )
-
-
     def save(self, path: Path | None = None, cb: Callable | None = None) -> None:
         """Save the console as a notebook."""
         from euporie.core.tabs.notebook import BaseNotebook
 
         if path is not None:
             BaseNotebook.save(cast("BaseNotebook", self), path)
+
+    @property
+    def path_nb(self) -> Path:
+        """Return the virtual path of the console as a notebook."""
+        return self.path.with_suffix(".ipynb")
+
+    @property
+    def path_cell(self) -> Path:
+        """Return the virtual path of the console as a notebook cell."""
+        return (self.path_nb / f"cell-{self.execution_count}").with_suffix(
+            self.path_nb.suffix
+        )
+
+    @property
+    def lsp_cell(self) -> LspCell:
+        """Return a LSP cell representation of the current input."""
+        return LspCell(
+            id=str(self.execution_count),
+            idx=self.execution_count,
+            path=self.path_cell,
+            kind="code",
+            language=self.language,
+            text=self.input_box.text,
+            execution_count=self.execution_count,
+            metadata={},
+        )
+
+    def lsp_open_handler(self, lsp: LspClient) -> None:
+        """Tell the LSP we opened a file."""
+        if lsp.can_open_nb:
+            lsp.open_nb(
+                path=self.path_nb, cells=[self.lsp_cell], metadata=self.metadata
+            )
+        else:
+            lsp.open_doc(
+                path=self.path,
+                language=self.language,
+                text=self.current_input.buffer.text,
+            )
+
+    def lsp_add_cell(self, lsp: LspClient) -> None:
+        """Notify the LSP of a new cell."""
+        lsp.change_nb_add(path=self.path_nb, cells=[self.lsp_cell])
+
+    def lsp_change_handler(self, lsp: LspClient) -> None:
+        """Tell the LSP server a file has changed."""
+        if lsp.can_change_nb:
+            lsp.change_nb_edit(path=self.path_nb, cells=[self.lsp_cell])
+        else:
+            # self.kernel_tab.kernel_lang_file_ext
+            lsp.change_doc(
+                path=self.path,
+                language=self.language,
+                text=self.input_box.buffer.text,
+            )
+
+    def lsp_before_save_handler(self, lsp: LspClient) -> None:
+        """Tell the the LSP we are about to save a document."""
+        # Do nothing for notebooks
+
+    def lsp_after_save_handler(self, lsp: LspClient) -> None:
+        """Tell the the LSP we saved a document."""
+
+    def lsp_close_handler(self, lsp: LspClient) -> None:
+        """Tell the LSP we opened a file."""
+        if lsp.can_close_nb:
+            lsp.close_nb(path=self.path_nb, cells=[])
+        else:
+            lsp.close_doc(self.path)
+
+    def lsp_update_diagnostics(self, lsp: LspClient) -> None:
+        """Process a new diagnostic report from the LSP."""
+        diagnostics = [
+            *lsp.reports.pop(self.path.as_uri(), []),
+            # *lsp.reports.pop(self.path_nb.as_uri(), []),
+            *lsp.reports.pop(self.path_cell.as_uri(), []),
+        ]
+        self.reports[lsp] = Report.from_lsp(self.input_box.text, diagnostics)
+        self.app.invalidate()
 
     # ################################### Commands ####################################
 
