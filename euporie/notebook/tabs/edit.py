@@ -12,6 +12,7 @@ from euporie.core.filters import insert_mode, replace_mode
 from euporie.core.kernel import Kernel, MsgCallbacks
 from euporie.core.key_binding.registry import load_registered_bindings
 from euporie.core.lexers import detect_lexer
+from euporie.core.path import UntitledPath
 from euporie.core.tabs.base import KernelTab
 from euporie.core.widgets.inputs import KernelInput
 
@@ -146,7 +147,7 @@ class EditorTab(KernelTab):
         if path is not None:
             self.path = path
 
-        if self.path is None:
+        if isinstance(self.path, UntitledPath):
             if dialog := self.app.dialogs.get("save-as"):
                 dialog.show(tab=self, cb=cb)
         else:

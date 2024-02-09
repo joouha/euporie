@@ -15,7 +15,7 @@ from euporie.core.comm.registry import open_comm
 from euporie.core.commands import get_cmd
 from euporie.core.config import add_setting
 from euporie.core.kernel import MsgCallbacks
-from euporie.core.path import parse_path
+from euporie.core.path import UntitledPath
 from euporie.core.tabs.base import KernelTab
 from euporie.core.terminal import edit_in_editor
 from euporie.core.widgets.cell import Cell, get_cell_id
@@ -295,7 +295,7 @@ class BaseNotebook(KernelTab, metaclass=ABCMeta):
                     },
                 }
             }
-        if self.path is None:
+        if self.path is None or isinstance(self.path, UntitledPath):
             if dialog := self.app.dialogs.get("save-as"):
                 dialog.show(tab=self, cb=cb)
         else:
