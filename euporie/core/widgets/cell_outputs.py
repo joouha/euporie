@@ -333,7 +333,7 @@ class CellOutput:
         """Update the output by updating all child containers."""
         # log.debug("Updating %s", self)
         data = self.data
-        for mime_type, element in self._elements.items():
+        for mime_type, element in list(self._elements.items()):
             if mime_type in data:
                 element.data = data[mime_type]
             else:
