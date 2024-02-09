@@ -179,7 +179,11 @@ class Cell:
 
             def _inner() -> str:
                 grid = NoLine.grid
-                if get_app().config.show_cell_borders or weak_self.selected:
+                if weak_self and (
+                    weak_self.selected
+                    and weak_self.kernel_tab.app.config.show_cell_borders
+                    or weak_self.selected
+                ):
                     if weak_self.focused and multiple_cells_selected():
                         grid = ThickLine.outer
                     else:
