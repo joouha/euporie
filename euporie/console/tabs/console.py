@@ -613,18 +613,6 @@ class Console(KernelTab):
 
     @staticmethod
     @add_cmd(
-        filter=buffer_is_code & buffer_has_focus & ~has_selection,
-    )
-    def _show_contextual_help() -> None:
-        """Display contextual help."""
-        from euporie.console.app import get_app
-
-        console = get_app().tab
-        assert isinstance(console, Console)
-        console.inspect()
-
-    @staticmethod
-    @add_cmd(
         name="cc-interrupt-kernel",
         hidden=True,
         filter=buffer_is_code & buffer_is_empty,
