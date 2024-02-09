@@ -531,9 +531,6 @@ class Console(KernelTab):
             ],
         )
 
-    def reformat(self) -> None:
-        """Reformat the input."""
-        self.input_box.text = format_code(self.input_box.text, self.app.config)
 
 
 
