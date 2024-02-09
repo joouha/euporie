@@ -31,6 +31,7 @@ from upath import UPath
 
 from euporie.core.commands import add_cmd, get_cmd
 from euporie.core.config import add_setting
+from euporie.core.diagnostics import Report
 from euporie.core.filters import (
     at_end_of_buffer,
     buffer_is_code,
@@ -192,6 +193,8 @@ class Console(KernelTab):
         self.input_box.buffer.selection_state = None
         # Disable existing output
         self.live_output.style = "class:disabled"
+        # Reset the diagnostics
+        self.reports.clear()
         # Re-render the app and move to below the current output
         original_layout = app.layout
         app.layout = self.input_layout
@@ -419,6 +422,7 @@ class Console(KernelTab):
 
         self.input_box = KernelInput(
             kernel_tab=self,
+            diagnostics=self.report,
             accept_handler=_handler,
             on_cursor_position_changed=on_cursor_position_changed,
             validator=KernelValidator(self.kernel),

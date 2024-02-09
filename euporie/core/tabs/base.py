@@ -21,6 +21,7 @@ from euporie.core.commands import add_cmd
 from euporie.core.completion import KernelCompleter
 from euporie.core.config import add_setting
 from euporie.core.current import get_app
+from euporie.core.diagnostics import Report
 from euporie.core.filters import kernel_tab_has_focus, tab_has_focus
 from euporie.core.history import KernelHistory
 from euporie.core.kernel import Kernel, MsgCallbacks
@@ -186,6 +187,7 @@ class KernelTab(Tab, metaclass=ABCMeta):
         self.history: History = DummyHistory()
         self.completer: Completer = DummyCompleter()
         self.suggester: AutoSuggest = DummyAutoSuggest()
+        self.reports: WeakKeyDictionary[LspClient, Report] = WeakKeyDictionary()
         # The client-side comm states
         self.comms: dict[str, Comm] = {}
 
@@ -382,6 +384,10 @@ class KernelTab(Tab, metaclass=ABCMeta):
         comm_id = content.get("comm_id")
         if comm_id in self.comms:
             del self.comms[comm_id]
+
+    def report(self) -> Report:
+        """Return the current diagnostic reports."""
+        return Report.from_reports(*self.reports.values())
 
     # ################################### Commands ####################################
 
