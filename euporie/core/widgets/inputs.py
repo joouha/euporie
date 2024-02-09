@@ -89,6 +89,7 @@ if TYPE_CHECKING:
 
     from euporie.core.inspection import Inspector
     from euporie.core.tabs.base import KernelTab
+    from euporie.core.widgets.status_bar import StatusBarFields
 
 
 log = logging.getLogger(__name__)
@@ -361,6 +362,10 @@ class KernelInput(TextArea):
                         line.append(("", " - "))
                     line.append(("", diagnostic.message))
         return line
+
+    def __pt_status__(self) -> StatusBarFields | None:
+        """Return a list of statusbar field values shown then this tab is active."""
+        return ([self.current_diagnostic_message], [])
 
     def __pt_container__(self) -> Container:
         """Return the widget's container."""
