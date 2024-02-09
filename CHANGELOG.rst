@@ -12,8 +12,14 @@ Upcoming
 Added
 =====
 
+- Implement LSP server support
 - Add new ``--force-graphics`` option, to allow using the graphics protocol even if not supported by the terminal
 - Automatically disable mouse support on scroll-up in console to allow for terminal scrollback buffer scrolling. Mouse support is re-enabled on the next key-press.
+
+Changed
+=======
+
+- Euporie now can use any external code formatting tool instead of a limited ranger of Python code formatters
 
 Fixed
 =====
