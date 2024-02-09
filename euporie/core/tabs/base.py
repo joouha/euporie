@@ -36,6 +36,7 @@ from euporie.core.key_binding.registry import (
     register_bindings,
 )
 from euporie.core.layout.containers import Window
+from euporie.core.path import parse_path
 from euporie.core.suggest import HistoryAutoSuggest
 from euporie.core.utils import run_in_thread_with_context
 
