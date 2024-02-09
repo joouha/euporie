@@ -53,7 +53,6 @@ from euporie.core.terminal import edit_in_editor
 from euporie.core.validation import KernelValidator
 from euporie.core.widgets.cell_outputs import CellOutputArea
 from euporie.core.widgets.inputs import KernelInput, StdInput
-from euporie.core.widgets.pager import PagerState
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -373,14 +372,6 @@ class Console(KernelTab):
 
         # Input area
 
-        def on_cursor_position_changed(buf: Buffer) -> None:
-            """Respond to cursor movements."""
-            # Update contextual help
-            if self.app.config.autoinspect and buf.name == "code":
-                self.input_box.inspect()
-            elif (pager := self.app.pager) is not None and pager.visible():
-                pager.hide()
-
         input_kb = KeyBindings()
 
         @Condition
@@ -456,7 +447,6 @@ class Console(KernelTab):
             on_text_changed=lambda buf: self.on_change(),
             diagnostics=self.report,
             accept_handler=_handler,
-            on_cursor_position_changed=on_cursor_position_changed,
             validator=KernelValidator(self.kernel),
             enable_history_search=True,
             key_bindings=input_kb,
