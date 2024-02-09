@@ -419,8 +419,15 @@ class Console(KernelTab):
             self.run(buffer)
             return True
 
-        self.input_box = KernelInput(
+        self.input_box = self._current_input = KernelInput(
             kernel_tab=self,
+            completer=self.completer,
+            right_margins=[],
+            name="code",
+            formatters=self.formatters,
+            language=lambda: self.language,
+            inspector=self.inspector,
+            on_text_changed=lambda buf: self.on_change(),
             diagnostics=self.report,
             accept_handler=_handler,
             on_cursor_position_changed=on_cursor_position_changed,
