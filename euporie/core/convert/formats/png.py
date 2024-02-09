@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 
 from euporie.core.convert.formats.common import base64_to_bytes_py, imagemagick_convert
 from euporie.core.convert.registry import register
-from euporie.core.convert.utils import commands_exist, have_modules
+from euporie.core.filters import command_exists, have_modules
 
 if TYPE_CHECKING:
     from euporie.core.convert.datum import Datum
@@ -23,7 +23,7 @@ register(
 @register(
     from_="latex",
     to="png",
-    filter_=commands_exist("dvipng") & commands_exist("latex"),
+    filter_=command_exists("dvipng", "latex"),
 )
 async def latex_to_png_dvipng(
     datum: Datum,
@@ -143,7 +143,7 @@ async def latex_to_png_py_mpl(
 register(
     from_=("svg", "jpeg", "pdf", "gif"),
     to="png",
-    filter_=commands_exist("convert", "mogrify"),
+    filter_=command_exists("convert", "mogrify"),
 )(partial(imagemagick_convert, "PNG"))
 
 

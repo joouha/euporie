@@ -11,8 +11,9 @@ from euporie.core.convert.formats.common import (
     imagemagick_convert,
 )
 from euporie.core.convert.registry import register
-from euporie.core.convert.utils import call_subproc, commands_exist, have_modules
+from euporie.core.convert.utils import call_subproc
 from euporie.core.current import get_app
+from euporie.core.filters import command_exists, have_modules
 
 if TYPE_CHECKING:
     from typing import Any
@@ -23,7 +24,7 @@ if TYPE_CHECKING:
 register(
     from_=("png", "jpeg", "svg", "pdf"),
     to="sixel",
-    filter_=commands_exist("chafa"),
+    filter_=command_exists("chafa"),
 )(partial(chafa_convert_cmd, "sixels"))
 
 
@@ -37,7 +38,7 @@ register(
 @register(
     from_=("png", "jpeg"),
     to="sixel",
-    filter_=commands_exist("img2sixel"),
+    filter_=command_exists("img2sixel"),
 )
 async def png_to_sixel_img2sixel(
     datum: Datum,
@@ -60,7 +61,7 @@ async def png_to_sixel_img2sixel(
 register(
     from_=("png", "jpeg", "svg", "pdf"),
     to="sixel",
-    filter_=commands_exist("convert", "mogrify"),
+    filter_=command_exists("convert", "mogrify"),
 )(partial(imagemagick_convert, "sixel"))
 
 

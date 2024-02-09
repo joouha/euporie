@@ -6,7 +6,7 @@ import logging
 from typing import TYPE_CHECKING
 
 from euporie.core.convert.registry import register
-from euporie.core.convert.utils import have_modules
+from euporie.core.filters import have_modules
 
 if TYPE_CHECKING:
     from euporie.core.convert.datum import Datum

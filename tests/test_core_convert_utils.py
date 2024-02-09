@@ -2,29 +2,7 @@
 
 from __future__ import annotations
 
-from euporie.core.convert.utils import (
-    call_subproc,
-    commands_exist,
-    have_modules,
-)
-
-
-def test_commands_exist() -> None:
-    """Existing commands are correctly detected."""
-    # Test with existing commands
-    assert commands_exist("python")()
-
-    # Test with non-existing command
-    assert not commands_exist("nonexistent_command")()
-
-
-def test_have_modules() -> None:
-    """Existing python modules are correctly detected."""
-    # Test with existing modules
-    assert have_modules("os", "subprocess")()
-
-    # Test with non-existing module
-    assert not have_modules("nonexistent_module")()
+from euporie.core.convert.utils import call_subproc
 
 
 async def test_call_subproc() -> None:
