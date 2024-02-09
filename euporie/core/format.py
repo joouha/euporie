@@ -8,9 +8,12 @@ from abc import ABCMeta, abstractmethod
 from typing import TYPE_CHECKING
 
 from euporie.core.filters import command_exists
+from euporie.core.lsp import range_to_slice
 
 if TYPE_CHECKING:
     from pathlib import Path
+
+    from euporie.core.lsp import LspClient
 
 
 log = logging.getLogger(__name__)
@@ -71,4 +74,44 @@ class CliFormatter(Formatter):
             return output
 
 
+class LspFormatter(Formatter):
+    """Format a document using a LSP server."""
 
+    def __init__(
+        self, lsp: LspClient, path: Path, languages: set[str] | None = None
+    ) -> None:
+        """Record the LSP client and file path for formatting."""
+        self.lsp = lsp
+        self.path = path
+        super().__init__(languages=languages)
+
+    def format(self, text: str) -> str:
+        """Format the url with the LSP.
+
+        The LSP already knows the contents of the file, which is why we do not pass the
+        text to the formatting function.
+        """
+        # Ensure that the LSP has the latest version of the file contents
+        try:
+            changes = self.lsp.format(path=self.path)
+        except Exception:  # noqa: S110
+            pass
+        else:
+            for change in changes or []:
+                if new := change.get("newText"):
+                    # Convert line/char to position ranges
+                    range_ = change.get("range", {})
+                    start = range_.get("start", {})
+                    start_line = start.get("line", 0)
+                    start_char = start.get("char", 0)
+                    end = range_.get("end", {})
+                    end_line = end.get("line", 0)
+                    end_char = end.get("char", 0)
+
+                    segment = range_to_slice(
+                        start_line, start_char, end_line, end_char, text
+                    )
+                    text = f"{text[: segment.start]}{new}{text[segment.stop :]}"
+            text = text.rstrip()
+
+        return text
