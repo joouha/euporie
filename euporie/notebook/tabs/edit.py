@@ -78,7 +78,7 @@ class EditorTab(KernelTab):
         # Detect language
         lexer = detect_lexer(text[:1000], self.path)
         if lexer:
-            self._metadata = {"kernelspec": {"language": lexer.name}}
+            self._metadata = {"kernelspec": {"language": lexer.name.casefold()}}
         # Re-lex the file
         self.input_box.control._fragment_cache.clear()
         self.app.invalidate()
