@@ -464,10 +464,11 @@ class TerminalInfo:
         if _have_termios_tty_fcntl():
             import fcntl
             import termios
-            from contextlib import suppress
 
-            with suppress(OSError):
+            try:
                 fcntl.ioctl(1, termios.TIOCGWINSZ, output)
+            except OSError:
+                pass
         rows, cols, xpixels, ypixels = output
         return rows, cols, xpixels, ypixels
 

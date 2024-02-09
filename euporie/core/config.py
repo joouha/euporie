@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import argparse
-import contextlib
 import json
 import logging
 import os
@@ -473,10 +472,16 @@ class Config:
                 parsed_value: Any = value
                 # Attempt to parse the value as a literal
                 if value:
-                    with contextlib.suppress(
-                        ValueError, TypeError, SyntaxError, MemoryError, RecursionError
-                    ):
+                    try:
                         parsed_value = literal_eval(value)
+                    except (
+                        ValueError,
+                        TypeError,
+                        SyntaxError,
+                        MemoryError,
+                        RecursionError,
+                    ):
+                        pass
                 # Attempt to cast the value to the desired type
                 try:
                     parsed_value = setting.type(value)

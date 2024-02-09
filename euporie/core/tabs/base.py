@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import asyncio
-import contextlib
 import logging
 from abc import ABCMeta
 from collections import deque
@@ -176,8 +175,10 @@ class Tab(metaclass=ABCMeta):
     def _save_file() -> None:
         """Save the current file."""
         if (tab := get_app().tab) is not None:
-            with contextlib.suppress(NotImplementedError):
+            try:
                 tab._save()
+            except NotImplementedError:
+                pass
 
     # ################################# Key Bindings ##################################
 
@@ -424,8 +425,10 @@ class KernelTab(Tab, metaclass=ABCMeta):
 
     async def load_history(self) -> None:
         """Load kernel history."""
-        with contextlib.suppress(StopAsyncIteration):
+        try:
             await self.history.load().__anext__()
+        except StopAsyncIteration:
+            pass
 
     @property
     def metadata(self) -> dict[str, Any]:

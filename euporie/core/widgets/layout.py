@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import contextlib
 import logging
 from abc import ABCMeta, abstractmethod
 from functools import partial
@@ -480,8 +479,10 @@ class StackedSplit(metaclass=ABCMeta):
             self.refresh()
             self.on_change.fire()
             if value is not None:
-                with contextlib.suppress(ValueError):
+                try:
                     get_app().layout.focus(self.children[value])
+                except ValueError:
+                    pass
 
     @property
     def children(self) -> list[AnyContainer]:
