@@ -275,6 +275,7 @@ def wrap(
     """
     result: StyleAndTextTuples = []
     lines = list(split_lines(ft))
+    n_lines = len(lines)
     output_line = 0
     for i, line in enumerate(lines):
         if fragment_list_width(line) <= width - left:
@@ -334,7 +335,8 @@ def wrap(
                     result.extend(word)
                     left += fragment_width
             left = 0
-            result.append(("", "\n"))
+            if i + 1 < n_lines:
+                result.append(("", "\n"))
 
     if strip_trailing_ws:
         result = strip(result, left=False)
