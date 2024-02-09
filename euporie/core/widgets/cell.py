@@ -490,9 +490,9 @@ class Cell:
             return self.kernel_tab.kernel_lang_file_ext
 
     @property
-    def execution_count(self) -> str:
+    def execution_count(self) -> int:
         """Retrieve the execution count from the cell's JSON."""
-        return self.json.get("execution_count", " ")
+        return self.json.get("execution_count", 0)
 
     @execution_count.setter
     def execution_count(self, count: int) -> None:
@@ -510,7 +510,7 @@ class Cell:
         if self.state in ("busy", "queued"):
             prompt = "*"
         else:
-            prompt = self.execution_count or " "
+            prompt = str(self.execution_count or " ")
         if prompt:
             prompt = f"[{prompt}]"
         return prompt
