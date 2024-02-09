@@ -8,6 +8,7 @@ import weakref
 from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING, cast
+from weakref import WeakKeyDictionary
 
 import nbformat
 from prompt_toolkit.completion.base import (
@@ -15,7 +16,7 @@ from prompt_toolkit.completion.base import (
     _MergedCompleter,
 )
 from prompt_toolkit.document import Document
-from prompt_toolkit.filters import Condition
+from prompt_toolkit.filters.base import Condition
 from prompt_toolkit.layout.containers import (
     ConditionalContainer,
     Container,

@@ -8,6 +8,7 @@ from abc import ABCMeta
 from collections import deque
 from functools import partial
 from typing import TYPE_CHECKING, ClassVar
+from weakref import WeakKeyDictionary
 
 from prompt_toolkit.auto_suggest import DummyAutoSuggest
 from prompt_toolkit.completion.base import (
@@ -17,6 +18,7 @@ from prompt_toolkit.completion.base import (
 from prompt_toolkit.history import DummyHistory, InMemoryHistory
 from prompt_toolkit.layout.containers import WindowAlign
 from prompt_toolkit.layout.controls import FormattedTextControl
+from prompt_toolkit.utils import Event
 from upath import UPath
 
 from euporie.core.comm.registry import open_comm
@@ -39,6 +41,7 @@ from euporie.core.layout.containers import Window
 from euporie.core.path import parse_path
 from euporie.core.suggest import HistoryAutoSuggest
 from euporie.core.utils import run_in_thread_with_context
+from euporie.core.widgets.inputs import KernelInput
 
 if TYPE_CHECKING:
     from pathlib import Path
