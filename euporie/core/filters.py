@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import os
-from functools import lru_cache
+from functools import lru_cache, partial, reduce
+from importlib import import_module
+from shutil import which
 from typing import TYPE_CHECKING
 
 from prompt_toolkit.enums import EditingMode
@@ -22,6 +24,30 @@ from euporie.core.key_binding.micro_state import MicroInputMode
 if TYPE_CHECKING:
     from prompt_toolkit.filters import Filter
     from prompt_toolkit.layout.containers import Window
+
+
+def command_exists(*cmds: str) -> Filter:
+    """Verify a list of external commands exist on the system."""
+    filters = [
+        Condition(partial(lambda x: bool(which(cmd)), cmd))  # noqa: B023
+        for cmd in cmds
+    ]
+    return reduce(lambda a, b: a & b, filters, to_filter(True))
+
+
+def have_modules(*modules: str) -> Filter:
+    """Verify a list of python modules are importable."""
+
+    def try_import(module: str) -> bool:
+        try:
+            import_module(module)
+        except ModuleNotFoundError:
+            return False
+        else:
+            return True
+
+    filters = [Condition(partial(try_import, module)) for module in modules]
+    return reduce(lambda a, b: a & b, filters, to_filter(True))
 
 
 @Condition

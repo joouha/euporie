@@ -10,8 +10,9 @@ from typing import TYPE_CHECKING
 from euporie.core.convert.formats.common import chafa_convert_cmd, chafa_convert_py
 from euporie.core.convert.formats.pil import set_background
 from euporie.core.convert.registry import register
-from euporie.core.convert.utils import call_subproc, commands_exist, have_modules
+from euporie.core.convert.utils import call_subproc
 from euporie.core.current import get_app
+from euporie.core.filters import command_exists, have_modules
 
 if TYPE_CHECKING:
     from typing import Any
@@ -24,7 +25,7 @@ log = logging.getLogger(__name__)
 @register(
     from_="html",
     to="ansi",
-    filter_=commands_exist("w3m"),
+    filter_=command_exists("w3m"),
 )
 async def html_to_ansi_w3m(
     datum: Datum,
@@ -44,7 +45,7 @@ async def html_to_ansi_w3m(
 @register(
     from_="html",
     to="ansi",
-    filter_=commands_exist("elinks"),
+    filter_=command_exists("elinks"),
 )
 async def html_to_ansi_elinks(
     datum: Datum,
@@ -72,7 +73,7 @@ async def html_to_ansi_elinks(
 @register(
     from_="html",
     to="ansi",
-    filter_=commands_exist("lynx"),
+    filter_=command_exists("lynx"),
 )
 async def html_to_ansi_lynx(
     datum: Datum,
@@ -92,7 +93,7 @@ async def html_to_ansi_lynx(
 @register(
     from_="html",
     to="ansi",
-    filter_=commands_exist("links"),
+    filter_=command_exists("links"),
 )
 async def html_to_ansi_links(
     datum: Datum,
@@ -298,7 +299,7 @@ async def pil_to_ansi_py_img2unicode(
 register(
     from_=("png", "jpeg", "svg", "pdf", "gif"),
     to="ansi",
-    filter_=commands_exist("chafa"),
+    filter_=command_exists("chafa"),
 )(partial(chafa_convert_cmd, "symbols"))
 
 
@@ -310,7 +311,7 @@ register(from_=("pil"), to="ansi", filter_=have_modules("chafa"))(
 @register(
     from_=("png", "jpeg", "pdf", "gif"),
     to="ansi",
-    filter_=commands_exist("timg") & ~have_modules("timg"),
+    filter_=command_exists("timg") & ~have_modules("timg"),
 )
 async def image_to_ansi_timg(
     datum: Datum,
@@ -331,7 +332,7 @@ async def image_to_ansi_timg(
 @register(
     from_=("png", "jpeg"),
     to="ansi",
-    filter_=commands_exist("catimg"),
+    filter_=command_exists("catimg"),
 )
 async def image_to_ansi_catimg(
     datum: Datum,
@@ -352,7 +353,7 @@ async def image_to_ansi_catimg(
 @register(
     from_=("png", "jpeg"),
     to="ansi",
-    filter_=commands_exist("icat"),
+    filter_=command_exists("icat"),
 )
 async def image_to_ansi_icat(
     datum: Datum,
@@ -373,7 +374,7 @@ async def image_to_ansi_icat(
 @register(
     from_=("png", "jpeg", "svg", "pdf"),
     to="ansi",
-    filter_=commands_exist("tiv"),
+    filter_=command_exists("tiv"),
 )
 async def image_to_ansi_tiv(
     datum: Datum,
@@ -393,7 +394,7 @@ async def image_to_ansi_tiv(
 @register(
     from_=("png", "jpeg"),
     to="ansi",
-    filter_=commands_exist("viu"),
+    filter_=command_exists("viu"),
 )
 async def image_to_ansi_viu(
     datum: Datum,
@@ -414,7 +415,7 @@ async def image_to_ansi_viu(
 @register(
     from_=("png", "jpeg"),
     to="ansi",
-    filter_=commands_exist("jp2a"),
+    filter_=command_exists("jp2a"),
 )
 async def image_to_ansi_jp2a(
     datum: Datum,
@@ -435,7 +436,7 @@ async def image_to_ansi_jp2a(
 @register(
     from_="png",
     to="ansi",
-    filter_=commands_exist("img2txt"),
+    filter_=command_exists("img2txt"),
 )
 async def png_to_ansi_img2txt(
     datum: Datum,

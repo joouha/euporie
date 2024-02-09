@@ -6,44 +6,13 @@ import asyncio
 import logging
 import subprocess  # S404 - Security implications have been considered
 import tempfile
-from functools import partial, reduce
-from importlib import import_module
 from pathlib import Path
-from shutil import which
 from typing import TYPE_CHECKING
-
-from prompt_toolkit.filters import Condition, to_filter
 
 if TYPE_CHECKING:
     from typing import Any
 
-    from prompt_toolkit.filters import Filter
-
 log = logging.getLogger(__name__)
-
-
-def commands_exist(*cmds: str) -> Filter:
-    """Verify a list of external commands exist on the system."""
-    filters = [
-        Condition(partial(lambda x: bool(which(cmd)), cmd))  # noqa: B023
-        for cmd in cmds
-    ]
-    return reduce(lambda a, b: a & b, filters, to_filter(True))
-
-
-def have_modules(*modules: str) -> Filter:
-    """Verify a list of python modules are importable."""
-
-    def try_import(module: str) -> bool:
-        try:
-            import_module(module)
-        except ModuleNotFoundError:
-            return False
-        else:
-            return True
-
-    filters = [Condition(partial(try_import, module)) for module in modules]
-    return reduce(lambda a, b: a & b, filters, to_filter(True))
 
 
 async def call_subproc(
