@@ -32,6 +32,8 @@ if TYPE_CHECKING:
     from prompt_toolkit.layout.mouse_handlers import MouseHandlers
     from prompt_toolkit.layout.screen import Screen, WritePosition
 
+    from euporie.core.diagnostics import Report
+
     class ScrollableContainer(Protocol):
         """Protocol for a scrollable container."""
 
@@ -498,10 +500,19 @@ class ScrollbarMargin(ClickableMargin):
         get_app().invalidate()
 
 
-class NumberedDiffMargin(Margin):
+class NumberedMargin(Margin):
     """Margin that displays the line numbers of a :class:`Window`."""
 
     style = "class:line-number"
+
+    def __init__(
+        self,
+        diagnostics: Report | Callable[[], Report] | None = None,
+        show_diagnostics: FilterOrBool = False,
+    ) -> None:
+        """Create a new numbered margin with optional diagnostics."""
+        self.diagnostics = diagnostics
+        self.show_diagnostics = to_filter(show_diagnostics)
 
     def get_width(self, get_ui_content: Callable[[], UIContent]) -> int:
         """Return the width of the margin."""
@@ -512,32 +523,61 @@ class NumberedDiffMargin(Margin):
         self, window_render_info: WindowRenderInfo, width: int, height: int
     ) -> StyleAndTextTuples:
         """Generate the margin's content."""
+        # Get list of visible lines
+        displayed_lines = window_render_info.displayed_lines
+
+        # Get lines with diagnostic reports
+        diagnostic_lines: dict[int, int] = {}
+        if self.show_diagnostics() and self.diagnostics:
+            if callable(self.diagnostics):
+                diagnostics = self.diagnostics()
+            else:
+                diagnostics = self.diagnostics
+            min_line = min(displayed_lines)
+            max_line = max(displayed_lines)
+            for report in diagnostics:
+                start, stop, _stride = report.lines.indices(max_line + 1)
+                for i in list(range(max(min_line, start), stop)):
+                    if (level := report.level) > int(diagnostic_lines.get(i) or 0):
+                        diagnostic_lines[i] = level
+
         # Get current line number.
         current_lineno = window_render_info.ui_content.cursor_position.y
+
         # Construct margin.
         result: StyleAndTextTuples = []
-        last_lineno = None
-        for lineno in window_render_info.displayed_lines:
+        last_lineno: int | None = None
+        self_style = self.style
+        has_focus = get_app().layout.has_focus(window_render_info.window)
+        multiline = len(displayed_lines) > 1
+
+        for lineno in displayed_lines:
+            if (
+                lineno == current_lineno
+                and has_focus
+                # Only highlight line number if there are multiple lines
+                and multiline
+            ):
+                style = f"{self_style} class:line-number.current"
+            else:
+                style = self_style
             # Only display line number if this line is not a continuation of the previous line.
             if lineno != last_lineno:
-                if lineno is None:
-                    pass
                 linestr = str(lineno + 1).rjust(width - 2)
-                style = self.style
-                if (
-                    lineno == current_lineno
-                    and get_app().layout.has_focus(window_render_info.window)
-                    # Only highlight line number if there are multiple lines
-                    and len(window_render_info.displayed_lines) > 1
-                ):
-                    style = f"{style} class:line-number.current"
-                result.extend(
-                    [
-                        (f"{style},edge", "▏"),
-                        (style, linestr),
-                        (f"{style},edge", "▕"),
-                    ]
-                )
+            else:
+                linestr = " " * (width - 2)
+
+            if (level_ := diagnostic_lines.get(lineno)) is not None:
+                left = (f"{style},edge,diagnostic-{level_}", "▎")
+            else:
+                left = (f"{style},edge", "▏")
+            result.extend(
+                [
+                    left,
+                    (style, linestr),
+                    (f"{style},edge", "▕"),
+                ]
+            )
             last_lineno = lineno
             result.append(("", "\n"))
 

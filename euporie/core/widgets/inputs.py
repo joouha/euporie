@@ -61,7 +61,7 @@ from euporie.core.key_binding.registry import (
 from euporie.core.layout.containers import VSplit, Window
 from euporie.core.margins import (
     MarginContainer,
-    NumberedDiffMargin,
+    NumberedMargin,
     OverflowMargin,
     ScrollbarMargin,
 )
@@ -265,10 +265,12 @@ class KernelInput(TextArea):
 
         left_margins = [
             ConditionalMargin(
-                NumberedDiffMargin(),
+                NumberedMargin(
+                    diagnostics=_get_diagnostics,
+                    show_diagnostics=to_filter(show_diagnostics),
+                ),
                 app.config.filter("line_numbers") & self.buffer.multiline,
-                # & Condition(lambda: len(self.buffer.text.split("\n")) > 1),
-            )
+            ),
         ]
         right_margins = [OverflowMargin()]
         self.window = Window(

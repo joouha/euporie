@@ -15,7 +15,7 @@ from prompt_toolkit.layout.margins import ConditionalMargin
 from prompt_toolkit.layout.processors import DynamicProcessor, Processor, Transformation
 from prompt_toolkit.widgets import TextArea
 
-from euporie.core.margins import NumberedDiffMargin
+from euporie.core.margins import NumberedMargin
 
 if TYPE_CHECKING:
     from typing import Any
@@ -94,7 +94,7 @@ class FormattedTextArea(TextArea):
         # Set the left margins
         self.window.left_margins = [
             ConditionalMargin(
-                NumberedDiffMargin(),
+                NumberedMargin(),
                 self.line_numbers,
             )
         ]
