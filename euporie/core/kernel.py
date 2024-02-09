@@ -1017,7 +1017,7 @@ class Kernel:
             """Process responses on the shell channel."""
             status = content.get("status", "")
             if status == "ok" and content.get("found", False):
-                result.update(content)
+                result.update(content.get("data", {}))
                 event.set()
 
         log.debug("Requesting contextual help from the kernel")

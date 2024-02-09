@@ -86,6 +86,7 @@ if TYPE_CHECKING:
     from prompt_toolkit.layout.margins import Margin
     from prompt_toolkit.lexers.base import Lexer
 
+    from euporie.core.inspection import Inspector
     from euporie.core.tabs.base import KernelTab
 
 
@@ -138,6 +139,7 @@ class KernelInput(TextArea):
         autosuggest_while_typing: FilterOrBool = True,
         validate_while_typing: FilterOrBool = False,
         scroll_offsets: ScrollOffsets | None = None,
+        inspector: Inspector | None = None,
     ) -> None:
         """Initiate the cell input box."""
         self.kernel_tab = kernel_tab
@@ -181,6 +183,7 @@ class KernelInput(TextArea):
         self.validator = validator
         self.lexer = lexer
 
+        self.inspector = inspector
         self.buffer = Buffer(
             document=Document(text, 0),
             multiline=multiline,
@@ -287,39 +290,37 @@ class KernelInput(TextArea):
         )
 
     def inspect(self) -> None:
+    async def inspect(self, auto: bool = False) -> None:
         """Get contextual help for the current cursor position in the current cell."""
-        code = self.buffer.text
-        cursor_pos = self.buffer.cursor_position
+        if self.inspector is None:
+            return
 
+        document = self.buffer.document
         pager = self.kernel_tab.app.pager
         assert pager is not None
 
+        prev_state = pager.state
         if (
-            pager.visible()
-            and pager.state is not None
-            and pager.state.code == code
-            and pager.state.cursor_pos == cursor_pos
+            not auto
+            and pager.visible()
+            and prev_state is not None
+            and prev_state.code == document.text
+            and prev_state.cursor_pos == document.cursor_position
         ):
             pager.focus()
             return
 
-        def _cb(response: dict) -> None:
-            assert pager is not None
-            prev_state = pager.state
-            new_state = PagerState(
-                code=code,
-                cursor_pos=cursor_pos,
-                response=response,
+        data = await self.inspector.get_context(document, auto=auto)
+        new_state = (
+            PagerState(
+                code=document.text, cursor_pos=document.cursor_position, data=data
             )
-            if prev_state != new_state:
-                pager.state = new_state
-                self.kernel_tab.app.invalidate()
-
-        self.kernel_tab.kernel.inspect(
-            code=code,
-            cursor_pos=cursor_pos,
-            callback=_cb,
+            if data
+            else None
         )
+        if prev_state != new_state:
+            pager.state = new_state
+            self.kernel_tab.app.invalidate()
 
     def __pt_container__(self) -> Container:
         """Return the widget's container."""
@@ -378,13 +379,13 @@ class KernelInput(TextArea):
     @add_cmd(
         filter=buffer_is_code & buffer_has_focus & ~has_selection,
     )
-    def _show_contextual_help() -> None:
+    async def _show_contextual_help() -> None:
         """Display contextual help."""
-        from euporie.core.tabs.notebook import BaseNotebook
+        from euporie.core.tabs.base import KernelTab
 
-        nb = get_app().tab
-        if isinstance(nb, BaseNotebook):
-            nb.cell.input_box.inspect()
+        tab = get_app().tab
+        if isinstance(tab, KernelTab) and (input_box := tab.current_input) is not None:
+            await input_box.inspect()
 
     @staticmethod
     @add_cmd(filter=buffer_is_code & buffer_has_focus)
