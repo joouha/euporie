@@ -454,12 +454,6 @@ class Console(KernelTab):
                     [
                         input_prompt,
                         self.input_box,
-                        ConditionalContainer(
-                            MarginContainer(
-                                ScrollbarMargin(), target=self.input_box.window
-                            ),
-                            filter=scrollable(self.input_box.window),
-                        ),
                     ],
                 ),
                 filter=~self.stdin_box.visible,
@@ -559,7 +553,7 @@ class Console(KernelTab):
             new_state = PagerState(
                 code=code,
                 cursor_pos=cursor_pos,
-                response=response,
+                data=response.get("data", {}),
             )
             if prev_state != new_state:
                 self.app.pager.state = new_state
