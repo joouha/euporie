@@ -11,7 +11,7 @@ import sys
 from functools import partial
 from pathlib import PurePath
 from typing import TYPE_CHECKING, cast
-from weakref import WeakSet
+from weakref import WeakSet, WeakValueDictionary
 
 from prompt_toolkit.application.application import Application, _CombinedRegistry
 from prompt_toolkit.application.current import create_app_session, set_app
@@ -76,6 +76,7 @@ from euporie.core.key_binding.registry import (
 from euporie.core.key_binding.vi_state import ViState
 from euporie.core.layout.containers import Window
 from euporie.core.log import setup_logs
+from euporie.core.lsp import KNOWN_LSP_SERVERS, LspClient
 from euporie.core.path import parse_path
 from euporie.core.renderer import Renderer
 from euporie.core.style import (
@@ -309,6 +310,9 @@ class BaseApp(Application):
         # Set up a write position to limit mouse events to a particular region
         self.mouse_limits: WritePosition | None = None
         self.mouse_position = Point(0, 0)
+
+        # Store LSP client instances
+        self.lsp_clients: WeakValueDictionary[str, LspClient] = WeakValueDictionary()
 
         # Build list of configured external formatters
         self.formatters: list[Formatter] = [
@@ -585,6 +589,29 @@ class BaseApp(Application):
         if tabs := self.get_file_tabs(path):
             return tabs[0]
         return None
+
+    def get_language_lsps(self, language: str) -> list[LspClient]:
+        """Return the approprrate LSP clients for a given language."""
+        from shutil import which
+
+        clients = []
+        for name, kwargs in KNOWN_LSP_SERVERS.items():
+            if kwargs:
+                client = None
+                if (
+                    (
+                        not (lsp_langs := kwargs.get("languages"))
+                        or language in lsp_langs
+                    )
+                    and not (client := self.lsp_clients.get(name))
+                    and which(kwargs["cmd"][0])
+                ):
+                    client = LspClient(name, **kwargs)
+                    self.lsp_clients[name] = client
+                    client.start()
+                if client:
+                    clients.append(client)
+        return clients
 
     def open_file(
         self, path: Path, read_only: bool = False, tab_class: type[Tab] | None = None
