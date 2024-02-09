@@ -65,6 +65,7 @@ from euporie.core.config import Config, add_setting
 from euporie.core.convert.mime import get_mime
 from euporie.core.current import get_app
 from euporie.core.filters import in_mplex, insert_mode, replace_mode, tab_has_focus
+from euporie.core.format import CliFormatter
 from euporie.core.io import Vt100_Output, Vt100Parser
 from euporie.core.key_binding.key_processor import KeyProcessor
 from euporie.core.key_binding.micro_state import MicroState
