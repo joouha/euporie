@@ -292,9 +292,19 @@ class CellOutput:
         # Select the first mime-type to render
         self.parent = parent
         self.json = json
-        data = self.data
-        self.selected_mime = next(x for x in self.data) if data else ""
+        self._selected_mime: str | None = None
         self._elements: dict[str, CellOutputElement] = {}
+
+    @property
+    def selected_mime(self) -> str:
+        """Return the selected mime-type, selecting the first by default."""
+        if self._selected_mime is None:
+            self._selected_mime = next(x for x in self.data)
+        return self._selected_mime
+
+    @selected_mime.setter
+    def selected_mime(self, value: str) -> None:
+        self._selected_mime = value
 
     @property
     def data(self) -> dict[str, Any]:
