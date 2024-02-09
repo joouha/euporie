@@ -14,6 +14,7 @@ from prompt_toolkit.completion.base import DummyCompleter
 from prompt_toolkit.history import DummyHistory, InMemoryHistory
 from prompt_toolkit.layout.containers import WindowAlign
 from prompt_toolkit.layout.controls import FormattedTextControl
+from upath import UPath
 
 from euporie.core.comm.registry import open_comm
 from euporie.core.commands import add_cmd
@@ -54,6 +55,7 @@ class Tab(metaclass=ABCMeta):
     weight: int = 0
     mime_types: ClassVar[set[str]] = set()
     file_extensions: ClassVar[set[str]] = set()
+    _untitled_count = 0
 
     container: AnyContainer
 
@@ -66,7 +68,11 @@ class Tab(metaclass=ABCMeta):
     def __init__(self, app: BaseApp, path: Path | None = None) -> None:
         """Call when the tab is created."""
         self.app = app
-        self.path = path
+        if path is None:
+            self.__class__._untitled_count += 1
+            ext = next(iter(self.file_extensions), "")
+            path = UPath(f"untitled:/untitled-{self._untitled_count}{ext}")
+        self.path = parse_path(path)
         self.container = Window(
             FormattedTextControl([("fg:#888888", "\nLoading…")], focusable=True),
             align=WindowAlign.CENTER,
