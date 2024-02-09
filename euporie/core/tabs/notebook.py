@@ -86,7 +86,6 @@ class BaseNotebook(KernelTab, metaclass=ABCMeta):
         self.json = json or {}
         self._rendered_cells: dict[str, Cell] = {}
         self.multiple_cells_selected: Filter = Never()
-        self.path = parse_path(path) if path else None
         self.loaded = False
 
         super().__init__(
