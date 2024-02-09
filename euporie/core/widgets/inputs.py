@@ -67,6 +67,7 @@ from euporie.core.margins import (
 )
 from euporie.core.processors import (
     AppendLineAutoSuggestion,
+    DiagnosticProcessor,
     ShowTrailingWhiteSpaceProcessor,
 )
 from euporie.core.suggest import ConditionalAutoSuggestAsync
@@ -80,6 +81,7 @@ if TYPE_CHECKING:
     from prompt_toolkit.formatted_text import (
         AnyFormattedText,
     )
+    from prompt_toolkit.formatted_text.base import StyleAndTextTuples
     from prompt_toolkit.history import History
     from prompt_toolkit.key_binding.key_bindings import KeyBindingsBase
     from prompt_toolkit.layout.containers import AnyContainer, Container
@@ -226,6 +228,10 @@ class KernelInput(TextArea):
             buffer=self.buffer,
             lexer=DynamicLexer(lambda: self.lexer or _get_lexer()),
             input_processors=[
+                ConditionalProcessor(
+                    DiagnosticProcessor(_get_diagnostics),
+                    filter=to_filter(show_diagnostics),
+                ),
                 ConditionalProcessor(  # type: ignore
                     AppendLineAutoSuggestion(),
                     has_focus(self.buffer) & ~is_done,
