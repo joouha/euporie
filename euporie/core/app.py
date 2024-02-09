@@ -504,9 +504,7 @@ class BaseApp(Application):
         # Load the app's configuration
         cls.config.load(cls)
         # Run the application
-        with create_app_session(
-            input=cls.load_input(), output=(output := cls.load_output())
-        ):
+        with create_app_session(input=cls.load_input(), output=cls.load_output()):
             # Create an instance of the app and run it
             app = cls()
 
