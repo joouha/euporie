@@ -584,6 +584,27 @@ class NumberedMargin(Margin):
         return result
 
 
+class BorderMargin(Margin):
+    """A margin which shows a fixed character."""
+
+    def __init__(self, char: str = "│", style: str = "") -> None:
+        """Set the character and style."""
+        self.char = char
+        self.style = style
+
+    def get_width(self, get_ui_content: Callable[[], UIContent]) -> int:
+        """Return the width of the margin."""
+        return len(self.char)
+
+    def create_margin(
+        self, window_render_info: WindowRenderInfo, width: int, height: int
+    ) -> StyleAndTextTuples:
+        """Generate the margin's content."""
+        return [(self.style, f"{self.char}\n")] * len(
+            window_render_info.displayed_lines
+        )
+
+
 class OverflowMargin(Margin):
     """A margin which indicates lines extending beyond the edge of the window."""
 
