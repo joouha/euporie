@@ -11,6 +11,7 @@ from prompt_toolkit.layout.containers import (
     ConditionalContainer,
     DynamicContainer,
 )
+from prompt_toolkit.layout.dimension import Dimension
 
 from euporie.core.commands import add_cmd
 from euporie.core.convert.datum import Datum
@@ -45,7 +46,7 @@ class PagerState(NamedTuple):
 
     code: str
     cursor_pos: int
-    response: dict
+    data: dict
 
 
 class PagerOutputDataElement(CellOutputDataElement):
@@ -86,7 +87,10 @@ class PagerOutputDataElement(CellOutputDataElement):
             always_hide_cursor=True,
             style="class:pager",
             scrollbar_autohide=False,
-            dont_extend_height=False,
+            dont_extend_height=True,
+            height=lambda: Dimension(
+                max=int(get_app().output.get_size().rows // 3.5),
+            ),
         )
 
 
@@ -121,7 +125,7 @@ class Pager:
         """Create a new page instance."""
         self._state: PagerState | None = None
         self.visible = Condition(
-            lambda: self.state is not None and bool(self.state.response.get("found"))
+            lambda: self.state is not None and bool(self.state.data)
         )
         self.output = PagerOutput({}, None)
 
@@ -139,11 +143,11 @@ class Pager:
                         padding_left=1,
                     ),
                 ],
-                height=height or (lambda: get_app().output.get_size().rows // 3),
                 style="class:pager",
                 key_bindings=load_registered_bindings(
                     "euporie.core.widgets.pager.Pager"
                 ),
+                height=height,
             ),
             filter=self.visible,
         )
@@ -173,8 +177,9 @@ class Pager:
         """Set the pager's current state."""
         self._state = new
         if new is not None:
-            self.output.json = new.response
+            self.output.json = {"data": new.data}
             self.output.update()
+        get_app().invalidate()
 
     def __pt_container__(self) -> AnyContainer:
         """Return the pager container."""
