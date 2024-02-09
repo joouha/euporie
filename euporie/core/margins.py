@@ -558,14 +558,15 @@ class OverflowMargin(Margin):
         from prompt_toolkit.formatted_text.utils import fragment_list_width
 
         result: StyleAndTextTuples = []
-
-        for lineno in window_render_info.displayed_lines:
-            line = window_render_info.ui_content.get_line(lineno)
-            if (
-                fragment_list_width(line) - window_render_info.window.horizontal_scroll
-                > window_render_info.window_width + 1
-            ):
-                result.append(("class:input,overflow", "▹"))
-            result.append(("", "\n"))
+        if not window_render_info.wrap_lines:
+            for lineno in window_render_info.displayed_lines:
+                line = window_render_info.ui_content.get_line(lineno)
+                if (
+                    fragment_list_width(line)
+                    - window_render_info.window.horizontal_scroll
+                    > window_render_info.window_width + 1
+                ):
+                    result.append(("class:input,overflow", "▹"))
+                result.append(("", "\n"))
 
         return result

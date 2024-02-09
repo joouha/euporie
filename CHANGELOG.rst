@@ -18,6 +18,7 @@ Added
 Fixed
 =====
 
+- Hide input overflow margin if line wrapping is turned on
 - Do not load clipboard until app starts
 - Make menu widget more a11y friendly by position cursor on selected menu-item
 - Prompt to save dirty text files
