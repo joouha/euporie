@@ -532,7 +532,8 @@ class BaseApp(Application):
 
         # This seems to be needed for kitty
         output.enable_autowrap()
-
+                # Shut down any remaining LSP clients at exit
+                app.shutdown_lsps()
         return result
 
     def cleanup(self, signum: int, frame: FrameType | None) -> None:
@@ -540,6 +541,7 @@ class BaseApp(Application):
         log.critical("Unexpected exit signal, restoring terminal")
         output = self.output
         self.exit()
+        self.shutdown_lsps()
         # Reset terminal state
         output.reset_cursor_key_mode()
         output.enable_autowrap()
@@ -612,6 +614,14 @@ class BaseApp(Application):
                 if client:
                     clients.append(client)
         return clients
+
+    def shutdown_lsps(self) -> None:
+        """Shut down all the remaining LSP servers."""
+        from concurrent.futures import as_completed
+
+        # Wait for all LSP exit calls to complete
+        # The exit calls occur in the LSP event loop thread
+        list(as_completed([lsp.exit() for lsp in self.lsp_clients.values()]))
 
     def open_file(
         self, path: Path, read_only: bool = False, tab_class: type[Tab] | None = None
