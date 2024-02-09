@@ -550,7 +550,7 @@ class Notebook(BaseNotebook):
         """Reformat all code cells in the notebooks."""
         for cell in self.rendered_cells():
             if cell.cell_type == "code":
-                cell.reformat()
+                cell.input_box.reformat()
 
     def run_selected_cells(
         self,
@@ -1082,11 +1082,10 @@ class Notebook(BaseNotebook):
     @staticmethod
     @add_cmd(
         title="Reformat cells",
-        filter=have_formatter
-        & code_cell_selected
-        & kernel_is_python
+        filter=code_cell_selected
         & cell_has_focus
-        & ~buffer_has_focus,
+        & ~buffer_has_focus
+        & notebook_has_focus,
     )
     def _reformat_cells() -> None:
         """Format the selected code cells."""
@@ -1094,7 +1093,7 @@ class Notebook(BaseNotebook):
         if isinstance(nb, Notebook):
             for cell in nb.cells:
                 if cell.cell_type == "code":
-                    cell.reformat()
+                    cell.input_box.reformat()
 
     @staticmethod
     @add_cmd(

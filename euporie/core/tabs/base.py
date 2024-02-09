@@ -10,7 +10,10 @@ from functools import partial
 from typing import TYPE_CHECKING, ClassVar
 
 from prompt_toolkit.auto_suggest import DummyAutoSuggest
-from prompt_toolkit.completion.base import DummyCompleter
+from prompt_toolkit.completion.base import (
+    DynamicCompleter,
+    _MergedCompleter,
+)
 from prompt_toolkit.history import DummyHistory, InMemoryHistory
 from prompt_toolkit.layout.containers import WindowAlign
 from prompt_toolkit.layout.controls import FormattedTextControl
@@ -24,6 +27,10 @@ from euporie.core.current import get_app
 from euporie.core.diagnostics import Report
 from euporie.core.filters import kernel_tab_has_focus, tab_has_focus
 from euporie.core.history import KernelHistory
+from euporie.core.inspection import (
+    FirstInspector,
+    KernelInspector,
+)
 from euporie.core.kernel import Kernel, MsgCallbacks
 from euporie.core.key_binding.registry import (
     register_bindings,
@@ -43,6 +50,8 @@ if TYPE_CHECKING:
 
     from euporie.core.app import BaseApp
     from euporie.core.comm.base import Comm
+    from euporie.core.format import Formatter
+    from euporie.core.inspection import Inspector
     from euporie.core.widgets.status_bar import StatusBarFields
 
 log = logging.getLogger(__name__)
@@ -185,9 +194,16 @@ class KernelTab(Tab, metaclass=ABCMeta):
         super().__init__(app, path)
 
         self.history: History = DummyHistory()
-        self.completer: Completer = DummyCompleter()
-        self.suggester: AutoSuggest = DummyAutoSuggest()
+        self.inspectors: list[Inspector] = []
+        self.inspector = FirstInspector(lambda: self.inspectors)
+        self.suggesters: AutoSuggest = DummyAutoSuggest()
+        self.completers: list[Completer] = []
+        self.completer = DeduplicateCompleter(
+            DynamicCompleter(lambda: _MergedCompleter(self.completers))
+        )
+        self.formatters: list[Formatter] = self.app.formatters
         self.reports: WeakKeyDictionary[LspClient, Report] = WeakKeyDictionary()
+
         # The client-side comm states
         self.comms: dict[str, Comm] = {}
 
@@ -230,12 +246,13 @@ class KernelTab(Tab, metaclass=ABCMeta):
                 connection_file=connection_file,
             )
         self.comms = comms or {}  # The client-side comm states
-        self.completer = KernelCompleter(self.kernel)
+        self.completers.append(KernelCompleter(self.kernel))
+        self.inspectors.append(KernelInspector(self.kernel))
         self.use_kernel_history = use_kernel_history
         self.history = (
             KernelHistory(self.kernel) if use_kernel_history else InMemoryHistory()
         )
-        self.suggester = HistoryAutoSuggest(self.history)
+        self.suggester: AutoSuggest = HistoryAutoSuggest(self.history)
 
         self.post_init_kernel()
 
@@ -342,6 +359,11 @@ class KernelTab(Tab, metaclass=ABCMeta):
     def kernel_lang_file_ext(self) -> str:
         """Return the display name of the kernel defined in the notebook JSON."""
         return self.metadata.get("language_info", {}).get("file_extension", ".py")
+
+    @property
+    def current_input(self) -> KernelInput:
+        """Return the currently active kernel input, if any."""
+        return self._current_input or KernelInput(self)
 
     def set_kernel_info(self, info: dict) -> None:
         """Handle kernel info requests."""

@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 
 from prompt_toolkit.auto_suggest import AutoSuggest, DynamicAutoSuggest
 from prompt_toolkit.buffer import Buffer
-from prompt_toolkit.completion import Completer, DynamicCompleter
+from prompt_toolkit.completion.base import Completer, DynamicCompleter
 from prompt_toolkit.document import Document
 from prompt_toolkit.filters import (
     Condition,
@@ -89,6 +89,7 @@ if TYPE_CHECKING:
     from prompt_toolkit.layout.margins import Margin
     from prompt_toolkit.lexers.base import Lexer
 
+    from euporie.core.format import Formatter
     from euporie.core.inspection import Inspector
     from euporie.core.tabs.base import KernelTab
     from euporie.core.widgets.status_bar import StatusBarFields
@@ -143,6 +144,7 @@ class KernelInput(TextArea):
         autosuggest_while_typing: FilterOrBool = True,
         validate_while_typing: FilterOrBool = False,
         scroll_offsets: ScrollOffsets | None = None,
+        formatters: list[Formatter] | None = None,
         diagnostics: Report | Callable[[], Report] | None = None,
         inspector: Inspector | None = None,
         show_diagnostics: FilterOrBool = True,
@@ -164,18 +166,8 @@ class KernelInput(TextArea):
         if input_processors is None:
             input_processors = []
 
-        def _get_lexer() -> Lexer:
-            try:
-                pygments_lexer_class = get_lexer_by_name(
-                    self.kernel_tab.language
-                ).__class__
-            except ClassNotFound:
-                return SimpleLexer()
-            else:
-                return PygmentsLexer(pygments_lexer_class, sync_from_start=False)
-
         # Writeable attributes.
-        self.completer = completer or kernel_tab.completer
+        self.completer = completer
         self.complete_while_typing = Condition(
             lambda: app.config.autocomplete
         ) & to_filter(complete_while_typing)
@@ -189,8 +181,10 @@ class KernelInput(TextArea):
         self.validator = validator
         self.lexer = lexer
 
+        self.formatters = formatters if formatters is not None else []
         self._diagnostics = diagnostics or Report()
         self.inspector = inspector
+
         self.buffer = Buffer(
             document=Document(text, 0),
             multiline=multiline,
@@ -317,6 +311,15 @@ class KernelInput(TextArea):
     def diagnostics(self, value: Report) -> None:
         """Set the current diagnostics report."""
         self._diagnostics = value
+
+    def reformat(self) -> None:
+        """Reformat the cell's input."""
+        text = self.buffer.text
+        language = self.language
+        for formatter in self.formatters:
+            text = formatter._format(text, language)
+        self.buffer.text = text
+
     async def inspect(self, auto: bool = False) -> None:
         """Get contextual help for the current cursor position in the current cell."""
         if self.inspector is None:
@@ -455,6 +458,20 @@ class KernelInput(TextArea):
         from euporie.core.app import get_app
 
         get_app().current_buffer.history_forward()
+
+    @staticmethod
+    @add_cmd()
+    def _reformat_input() -> None:
+        """Format the contents of the current input field."""
+        from euporie.core.app import get_app
+        from euporie.core.tabs.base import KernelTab
+
+        if (
+            (tab := get_app().tab)
+            and (isinstance(tab, KernelTab))
+            and (current_input := tab.current_input)
+        ):
+            current_input.reformat()
 
     # ################################# Key Bindings ##################################
 

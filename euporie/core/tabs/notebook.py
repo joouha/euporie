@@ -37,6 +37,7 @@ if TYPE_CHECKING:
     from euporie.core.app import BaseApp
     from euporie.core.comm.base import Comm
     from euporie.core.kernel import Kernel
+    from euporie.core.widgets.inputs import KernelInput
 
 log = logging.getLogger(__name__)
 
@@ -189,6 +190,11 @@ class BaseNotebook(KernelTab, metaclass=ABCMeta):
     def cell(self) -> Cell:
         """Return the current cell."""
         ...
+
+    @property
+    def current_input(self) -> KernelInput:
+        """Return the currently active kernel input, if any."""
+        return self.cell.input_box
 
     @property
     def path_name(self) -> str:

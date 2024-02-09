@@ -10,6 +10,10 @@ from pathlib import Path
 from typing import TYPE_CHECKING, cast
 
 import nbformat
+from prompt_toolkit.completion.base import (
+    DynamicCompleter,
+    _MergedCompleter,
+)
 from prompt_toolkit.document import Document
 from prompt_toolkit.filters import Condition
 from prompt_toolkit.layout.containers import (
@@ -37,6 +41,7 @@ if TYPE_CHECKING:
     from typing import Any, Callable, Literal
 
     from prompt_toolkit.buffer import Buffer
+    from prompt_toolkit.completion.base import Completer
     from prompt_toolkit.formatted_text.base import OneStyleAndTextTuple
     from prompt_toolkit.lexers import Lexer
 
@@ -106,6 +111,19 @@ class Cell:
 
         self.state = "idle"
 
+        self.inspectors: list[Inspector] = []
+        self.inspector = FirstInspector(
+            lambda: [*self.kernel_tab.inspectors, *self.inspectors]
+        )
+        self.completers: list[Completer] = []
+        self.completer = DeduplicateCompleter(
+            DynamicCompleter(
+                lambda: _MergedCompleter(
+                    [*self.kernel_tab.completers, *self.completers]
+                )
+            )
+        )
+        self.formatters: list[Formatter] = [*self.kernel_tab.formatters]
         self.reports: WeakKeyDictionary[LspClient, Report] = WeakKeyDictionary()
 
         show_input = Condition(
@@ -160,6 +178,7 @@ class Cell:
         self.input_box = KernelInput(
             kernel_tab=self.kernel_tab,
             text=self.input,
+            completer=self.completer,
             complete_while_typing=self.is_code,
             autosuggest_while_typing=self.is_code,
             wrap_lines=Condition(lambda: weak_self.json.get("cell_type") == "markdown"),
@@ -178,6 +197,7 @@ class Cell:
             accept_handler=lambda buffer: self.run_or_render() or True,
             focusable=show_input & ~source_hidden,
             tempfile_suffix=self.tempfile_suffix,
+            inspector=self.inspector,
             diagnostics=self.report,
         )
         self.input_box.buffer.name = self.cell_type
@@ -613,12 +633,6 @@ class Cell:
         else:
             return "raw"
 
-    def reformat(self) -> None:
-        """Reformat the cell's input."""
-        config = get_app().config
-        self.input = format_code(self.input, config)
-        self.refresh()
-
     def run_or_render(
         self,
         buffer: Buffer | None = None,
@@ -643,7 +657,7 @@ class Cell:
 
         elif self.cell_type == "code":
             if get_app().config.autoformat:
-                self.reformat()
+                self.input_box.reformat()
             self.state = "queued"
             self.refresh()
             self.kernel_tab.run_cell(self, wait=wait, callback=callback)
