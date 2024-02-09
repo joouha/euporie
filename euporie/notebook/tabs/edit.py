@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, ClassVar
 
-from prompt_toolkit.layout.containers import VSplit
+from prompt_toolkit.layout.containers import HSplit
 from prompt_toolkit.layout.dimension import Dimension
 
 from euporie.core.filters import insert_mode, replace_mode
@@ -145,7 +145,7 @@ class EditorTab(KernelTab):
             diagnostics=self.report,
         )
 
-        return VSplit(
+        return HSplit(
             [self.input_box],
             width=Dimension(weight=1),
             height=Dimension(weight=1),
