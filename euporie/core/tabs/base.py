@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import contextlib
 import logging
 from abc import ABCMeta
@@ -23,15 +24,17 @@ from upath import UPath
 
 from euporie.core.comm.registry import open_comm
 from euporie.core.commands import add_cmd
-from euporie.core.completion import KernelCompleter
+from euporie.core.completion import DeduplicateCompleter, KernelCompleter, LspCompleter
 from euporie.core.config import add_setting
 from euporie.core.current import get_app
 from euporie.core.diagnostics import Report
 from euporie.core.filters import kernel_tab_has_focus, tab_has_focus
+from euporie.core.format import LspFormatter
 from euporie.core.history import KernelHistory
 from euporie.core.inspection import (
     FirstInspector,
     KernelInspector,
+    LspInspector,
 )
 from euporie.core.kernel import Kernel, MsgCallbacks
 from euporie.core.key_binding.registry import (
@@ -56,6 +59,7 @@ if TYPE_CHECKING:
     from euporie.core.comm.base import Comm
     from euporie.core.format import Formatter
     from euporie.core.inspection import Inspector
+    from euporie.core.lsp import LspClient
     from euporie.core.widgets.status_bar import StatusBarFields
 
 log = logging.getLogger(__name__)
@@ -211,6 +215,7 @@ class KernelTab(Tab, metaclass=ABCMeta):
         # Init tab
         super().__init__(app, path)
 
+        self.lsps: list[LspClient] = []
         self.history: History = DummyHistory()
         self.inspectors: list[Inspector] = []
         self.inspector = FirstInspector(lambda: self.inspectors)
@@ -237,11 +242,85 @@ class KernelTab(Tab, metaclass=ABCMeta):
         else:
             self.init_kernel(kernel, comms, use_kernel_history, connection_file)
 
+    async def load_lsps(self) -> None:
+        """Load the LSP clients."""
+        path = self.path
+
+        # Load list of LSP clients for the tab's language
+        self.lsps.extend(self.app.get_language_lsps(self.language))
+
+        # Wait for all lsps to be initialized, and setup hooks as they become ready
+        async def _await_load(lsp: LspClient) -> LspClient:
+            await lsp.initialized.wait()
+            return lsp
+
+        for ready in asyncio.as_completed([_await_load(lsp) for lsp in self.lsps]):
+            lsp = await ready
+            # Apply open, save, and close hooks to the tab
+            change_handler = partial(lambda lsp, tab: self.lsp_change_handler(lsp), lsp)
+            close_handler = partial(lambda lsp, tab: self.lsp_close_handler(lsp), lsp)
+            before_save_handler = partial(
+                lambda lsp, tab: self.lsp_before_save_handler(lsp), lsp
+            )
+            after_save_handler = partial(
+                lambda lsp, tab: self.lsp_after_save_handler(lsp), lsp
+            )
+
+            self.on_close += close_handler
+            self.on_change += change_handler
+            self.before_save += before_save_handler
+            self.after_save += after_save_handler
+
+            # Listen for LSP diagnostics
+            lsp.on_diagnostics += self.lsp_update_diagnostics
+
+            # Add completer
+            completer = LspCompleter(lsp=lsp, path=path)
+            self.completers.append(completer)
+
+            # Add inspector
+            inspector = LspInspector(lsp, path)
+            self.inspectors.append(inspector)
+
+            # Add formatter
+            formatter = LspFormatter(lsp, path)
+            self.formatters.append(formatter)
+
+            # Remove hooks if the LSP exits
+            def lsp_unload(lsp: LspClient) -> None:
+                self.on_change -= change_handler  # noqa: B023
+                self.before_save -= before_save_handler  # noqa: B023
+                self.after_save -= after_save_handler  # noqa: B023
+                self.on_close -= close_handler  # noqa: B023
+                if completer in self.completers:  # noqa: B023
+                    self.completers.remove(completer)  # noqa: B023
+                if inspector in self.completers:  # noqa: B023
+                    self.inspectors.remove(inspector)  # noqa: B023
+                if formatter in self.completers:  # noqa: B023
+                    self.formatters.remove(formatter)  # noqa: B023
+                if completer in self.completers:  # noqa: B023
+                    self.completers.remove(completer)  # noqa: B023
+                if inspector in self.inspectors:  # noqa: B023
+                    self.inspectors.remove(inspector)  # noqa: B023
+                if formatter in self.formatters:  # noqa: B023
+                    self.formatters.remove(formatter)  # noqa: B023
+
+            lsp.on_exit += lsp_unload
+
+            # Remove the lsp exit handler if this tab closes
+            self.on_close += lambda tab: (
+                (lsp.on_exit.__isub__(lsp_unload) and None) or None  # noqa: B023
+            )  # Magical typing
+
+            # Tell the LSP we have an open file
+            self.lsp_open_handler(lsp)
+
     def pre_init_kernel(self) -> None:
         """Run stuff before the kernel is loaded."""
 
     def post_init_kernel(self) -> None:
         """Run stuff after the kernel is loaded."""
+        self.app.create_background_task(self.load_lsps())
 
     def init_kernel(
         self,
@@ -426,6 +505,38 @@ class KernelTab(Tab, metaclass=ABCMeta):
         comm_id = content.get("comm_id")
         if comm_id in self.comms:
             del self.comms[comm_id]
+
+    def lsp_open_handler(self, lsp: LspClient) -> None:
+        """Tell the LSP we opened a file."""
+        lsp.open_doc(
+            path=self.path, language=self.language, text=self.current_input.buffer.text
+        )
+
+    def lsp_change_handler(self, lsp: LspClient) -> None:
+        """Tell the LSP server a file has changed."""
+        lsp.change_doc(
+            path=self.path,
+            language=self.language,
+            text=self.current_input.buffer.text,
+        )
+
+    def lsp_before_save_handler(self, lsp: LspClient) -> None:
+        """Tell the the LSP we are about to save a document."""
+        lsp.will_save_doc(self.path)
+
+    def lsp_after_save_handler(self, lsp: LspClient) -> None:
+        """Tell the the LSP we saved a document."""
+        lsp.save_doc(self.path, text=self.current_input.buffer.text)
+
+    def lsp_close_handler(self, lsp: LspClient) -> None:
+        """Tell the LSP we opened a file."""
+        lsp.close_doc(path=self.path)
+
+    def lsp_update_diagnostics(self, lsp: LspClient) -> None:
+        """Process a new diagnostic report from the LSP."""
+        if (diagnostics := lsp.reports.pop(self.path.as_uri(), None)) is not None:
+            self.reports[lsp] = Report.from_lsp(self.current_input.text, diagnostics)
+            self.app.invalidate()
 
     def report(self) -> Report:
         """Return the current diagnostic reports."""
