@@ -22,6 +22,7 @@ from prompt_toolkit.layout.containers import (
 )
 from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.layout.dimension import Dimension
+from prompt_toolkit.utils import Event
 
 from euporie.core.border import NoLine, ThickLine, ThinLine
 from euporie.core.config import add_setting
@@ -95,8 +96,10 @@ class Cell:
         self.kernel_tab: BaseNotebook = kernel_tab
         self.rendered = True
         self.clear_outputs_on_output = False
-
         self.state = "idle"
+
+        self.after_open = Event(self)
+        self.on_change = Event(self)
 
         self.inspectors: list[Inspector] = []
         self.inspector = FirstInspector(
@@ -173,6 +176,8 @@ class Cell:
             formatters=self.formatters,
         )
         self.input_box.buffer.name = self.cell_type
+
+        self.input_box.buffer.on_text_changed += lambda buf: self.on_change()
 
         def border_char(name: str) -> Callable[..., str]:
             """Return a function which returns the cell border character to display."""
