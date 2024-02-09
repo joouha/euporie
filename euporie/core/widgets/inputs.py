@@ -52,6 +52,7 @@ from pygments.lexers import ClassNotFound, get_lexer_by_name
 from euporie.core.commands import add_cmd
 from euporie.core.config import add_setting
 from euporie.core.current import get_app
+from euporie.core.diagnostics import Report
 from euporie.core.filters import buffer_is_code, scrollable
 from euporie.core.key_binding.registry import (
     load_registered_bindings,
@@ -139,7 +140,9 @@ class KernelInput(TextArea):
         autosuggest_while_typing: FilterOrBool = True,
         validate_while_typing: FilterOrBool = False,
         scroll_offsets: ScrollOffsets | None = None,
+        diagnostics: Report | Callable[[], Report] | None = None,
         inspector: Inspector | None = None,
+        show_diagnostics: FilterOrBool = True,
     ) -> None:
         """Initiate the cell input box."""
         self.kernel_tab = kernel_tab
@@ -183,6 +186,7 @@ class KernelInput(TextArea):
         self.validator = validator
         self.lexer = lexer
 
+        self._diagnostics = diagnostics or Report()
         self.inspector = inspector
         self.buffer = Buffer(
             document=Document(text, 0),
@@ -213,6 +217,9 @@ class KernelInput(TextArea):
             widgets_key_bindings = merge_key_bindings(
                 [key_bindings, widgets_key_bindings]
             )
+
+        def _get_diagnostics() -> Report:
+            return self.diagnostics
 
         self.control = BufferControl(
             buffer=self.buffer,
@@ -290,6 +297,17 @@ class KernelInput(TextArea):
         )
 
     def inspect(self) -> None:
+    @property
+    def diagnostics(self) -> Report:
+        """The current diagnostics report."""
+        if callable(self._diagnostics):
+            return self._diagnostics()
+        return self._diagnostics
+
+    @diagnostics.setter
+    def diagnostics(self, value: Report) -> None:
+        """Set the current diagnostics report."""
+        self._diagnostics = value
     async def inspect(self, auto: bool = False) -> None:
         """Get contextual help for the current cursor position in the current cell."""
         if self.inspector is None:
@@ -321,6 +339,28 @@ class KernelInput(TextArea):
         if prev_state != new_state:
             pager.state = new_state
             self.kernel_tab.app.invalidate()
+
+    @property
+    def current_diagnostic_message(self) -> StyleAndTextTuples:
+        """Format the currently selected diagnostic message."""
+        document = self.buffer.document
+        row = document.cursor_position_row
+        col = document.cursor_position_col
+        line: StyleAndTextTuples = []
+        # mypy bug https://github.com/python/mypy/issues/16733
+        for diagnostic in self.diagnostics:  # type: ignore [attr-defined]
+            lines = diagnostic.lines
+            chars = diagnostic.chars
+            if lines.start <= row < lines.stop and chars.start <= col < chars.stop:
+                if diagnostic.code:
+                    line.append(
+                        (f"class:diagnostic-{diagnostic.level}", diagnostic.code)
+                    )
+                if diagnostic.message:
+                    if line:
+                        line.append(("", " - "))
+                    line.append(("", diagnostic.message))
+        return line
 
     def __pt_container__(self) -> Container:
         """Return the widget's container."""
