@@ -261,6 +261,9 @@ docstring-code-format = true
 ignore-words-list = "iterm,edn,controll,controle"
 skip = "euporie/core/reference.py,.*"
 
+[tool.typos.default.extend-words]
+"als" = "als"
+
 
 [tool.mypy]
 # pretty = true
