@@ -30,7 +30,7 @@ class KernelCompleter(Completer):
     def get_completions(
         self, document: Document, complete_event: CompleteEvent
     ) -> Iterable[Completion]:
-        """Doe nothing as completions are retrieved asynchronously."""
+        """Do nothing as completions are retrieved asynchronously."""
         while False:
             yield
 
