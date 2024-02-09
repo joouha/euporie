@@ -741,6 +741,13 @@ def build_style(
         # Dataframes
         "dataframe th": f"bg:{cp.bg.more(0.1)}",
         "dataframe row-odd td": f"bg:{cp.bg.more(0.05)}",
+        # Diagnostic flags
+        "diagnostic-0": "fg:ansigray",
+        "diagnostic-1": "fg:ansigreen",
+        "diagnostic-2": "fg:ansiblue",
+        "diagnostic-3": "fg:ansiyellow",
+        "diagnostic-4": "fg:ansired",
+        "diagnostic-5": "fg:ansiwhite bg:ansired bold",
     }
 
     return Style.from_dict(style_dict)
