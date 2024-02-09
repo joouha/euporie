@@ -447,17 +447,7 @@ class NotebookApp(BaseApp):
                         ],
                     ),
                     separator,
-                    MenuItem(
-                        "Cell formatting",
-                        children=[
-                            get_cmd("toggle-autoformat").menu,
-                            separator,
-                            get_cmd("toggle-formatters-ruff").menu,
-                            get_cmd("toggle-formatters-black").menu,
-                            get_cmd("toggle-formatters-isort").menu,
-                            get_cmd("toggle-formatters-ssort").menu,
-                        ],
-                    ),
+                    get_cmd("toggle-autoformat").menu,
                     get_cmd("toggle-autocomplete").menu,
                     get_cmd("toggle-autosuggest").menu,
                     get_cmd("toggle-autoinspect").menu,
