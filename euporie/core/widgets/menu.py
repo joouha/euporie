@@ -7,7 +7,13 @@ from functools import partial
 from typing import TYPE_CHECKING
 
 from prompt_toolkit.data_structures import Point
-from prompt_toolkit.filters import Condition, has_completions, is_done, to_filter
+from prompt_toolkit.filters import (
+    Condition,
+    has_completions,
+    has_focus,
+    is_done,
+    to_filter,
+)
 from prompt_toolkit.formatted_text.base import to_formatted_text
 from prompt_toolkit.formatted_text.utils import (
     fragment_list_to_text,
@@ -46,6 +52,7 @@ if TYPE_CHECKING:
     )
     from prompt_toolkit.key_binding.key_bindings import NotImplementedOrNone
     from prompt_toolkit.key_binding.key_processor import KeyPressEvent
+    from prompt_toolkit.layout.controls import UIControl
 
     from euporie.core.app import BaseApp
     from euporie.core.border import GridStyle
@@ -277,10 +284,11 @@ class MenuBar:
         self.app = app
         self.menu_items = menu_items
         self.grid = grid
-        self.selected_menu = [0]
+        self.selected_menu: list[int] = []
+        self.last_focused: UIControl | None = None
 
         # Key bindings.
-        kb = KeyBindings()
+        self.kb = kb = KeyBindings()
 
         @Condition
         def in_main_menu() -> bool:
@@ -294,13 +302,13 @@ class MenuBar:
 
         @kb.add("left", filter=in_main_menu)
         def _left(event: KeyPressEvent) -> None:
-            self.selected_menu[0] = max(0, self.selected_menu[0] - 1)
+            self.selected_menu[0] = (self.selected_menu[0] - 1) % len(self.menu_items)
+            self.refocus()
 
         @kb.add("right", filter=in_main_menu)
         def _right(event: KeyPressEvent) -> None:
-            self.selected_menu[0] = min(
-                len(self.menu_items) - 1, self.selected_menu[0] + 1
-            )
+            self.selected_menu[0] = (self.selected_menu[0] + 1) % len(self.menu_items)
+            self.refocus()
 
         @kb.add("down", filter=in_main_menu)
         def _down(event: KeyPressEvent) -> None:
@@ -308,12 +316,15 @@ class MenuBar:
             indices = [i for i, item in enumerate(menu.children) if not item.disabled]
             if indices:
                 self.selected_menu.append(indices[0])
+                self.refocus()
 
         @kb.add("c-c", filter=in_main_menu)
         @kb.add("c-g", filter=in_main_menu)
         def _cancel(event: KeyPressEvent) -> None:
             """Leave menu."""
-            event.app.layout.focus_last()
+            self.selected_menu = []
+            log.debug(self.last_focused)
+            self.refocus()
 
         # Sub menu navigation.
 
@@ -324,6 +335,7 @@ class MenuBar:
             """Go back to parent menu."""
             if len(self.selected_menu) > 1:
                 self.selected_menu.pop()
+                self.refocus()
 
         @kb.add("right", filter=in_sub_menu)
         def _submenu(event: KeyPressEvent) -> None:
@@ -341,6 +353,7 @@ class MenuBar:
                 ]
                 if self.menu_items[self.selected_menu[0]].children:
                     self.selected_menu.append(0)
+            self.refocus()
 
         @kb.add("up", filter=in_sub_menu)
         def _up_in_submenu(event: KeyPressEvent) -> None:
@@ -360,6 +373,7 @@ class MenuBar:
             elif len(self.selected_menu) == 2:
                 # Return to main menu.
                 self.selected_menu.pop()
+            self.refocus()
 
         @kb.add("down", filter=in_sub_menu)
         def _down_in_submenu(event: KeyPressEvent) -> None:
@@ -375,28 +389,32 @@ class MenuBar:
 
             if next_indexes:
                 self.selected_menu[-1] = next_indexes[0]
+                self.refocus()
 
         @kb.add("enter")
         def _click(event: KeyPressEvent) -> None:
             """Click the selected menu item."""
             item = self._get_menu(len(self.selected_menu) - 1)
             if item.handler:
-                event.app.layout.focus_last()
+                self.selected_menu = []
+                self.refocus()
                 item.handler()
 
         @kb.add("escape")
         def _close(event: KeyPressEvent) -> None:
             """Close the current menu."""
-            if len(self.selected_menu) > 1:
+            if self.selected_menu:
                 self.selected_menu = self.selected_menu[:-1]
-            else:
-                app.layout.focus_previous()
+                log.debug(self.selected_menu)
+                log.debug(self.last_focused)
+                self.refocus()
 
         # Add global CUA menu shortcut
         @kb.add("f10", is_global=True)
         def _open_menu_default(event: KeyPressEvent) -> None:
-            self.selected_menu = [0]
-            event.app.layout.focus(self.window)
+            if not self.focused():
+                self.selected_menu = [0]
+                self.refocus()
 
         # Add menu shortcuts
         used_keys = set()
@@ -409,12 +427,12 @@ class MenuBar:
                 def _open_menu(event: KeyPressEvent, index: int = i) -> None:
                     """Open the  menu item."""
                     self.selected_menu = [index]
-                    event.app.layout.focus(self.window)
+                    self.refocus()
 
         # Controls.
         self.control = FormattedTextControl(
             self._get_menu_fragments,
-            key_bindings=kb,
+            key_bindings=self.kb,
             focusable=True,
             show_cursor=False,
         )
@@ -426,15 +444,21 @@ class MenuBar:
         submenu2 = self._submenu(1)
         submenu3 = self._submenu(2)
 
-        @Condition
-        def has_focus() -> bool:
-            return get_app().layout.current_window == self.window
+        self.menu_containers = [self.window, submenu, submenu2, submenu3]
+        self.focused = (
+            has_focus(self.window)
+            | has_focus(submenu)
+            | has_focus(submenu2)
+            | has_focus(submenu3)
+        )
 
         self.app.menus["menu-1"] = Float(
+            attach_to_window=self.window,
             xcursor=True,
             ycursor=True,
             content=ConditionalContainer(
-                content=Shadow(body=submenu), filter=has_focus
+                content=Shadow(body=submenu),
+                filter=Condition(lambda: len(self.selected_menu) > 0),
             ),
         )
         self.app.menus["menu-2"] = Float(
@@ -444,8 +468,7 @@ class MenuBar:
             allow_cover_cursor=True,
             content=ConditionalContainer(
                 content=Shadow(body=submenu2),
-                filter=has_focus
-                & Condition(lambda: len(self.selected_menu) > 1)
+                filter=Condition(lambda: len(self.selected_menu) > 1)
                 & Condition(lambda: bool(self._get_menu(1).children)),
             ),
         )
@@ -456,14 +479,25 @@ class MenuBar:
             allow_cover_cursor=True,
             content=ConditionalContainer(
                 content=Shadow(body=submenu3),
-                filter=has_focus
-                & Condition(lambda: len(self.selected_menu) > 2)
+                filter=Condition(lambda: len(self.selected_menu) > 2)
                 & Condition(lambda: bool(self._get_menu(2).children)),
             ),
         )
 
+    def refocus(self) -> None:
+        """Focus the currently selected menu."""
+        layout = self.app.layout
+        if self.last_focused is None:
+            self.last_focused = layout.current_control
+        if self.selected_menu:
+            layout.focus(self.menu_containers[len(self.selected_menu) - 1])
+        elif self.last_focused:
+            layout.focus(self.last_focused)
+            self.last_focused = None
+
     def _get_menu(self, level: int) -> MenuItem:
-        menu = self.menu_items[self.selected_menu[0]]
+        index = self.selected_menu[0] if self.selected_menu else 0
+        menu = self.menu_items[index]
         for i, index in enumerate(self.selected_menu[1:]):
             if i < level:
                 try:
@@ -473,30 +507,33 @@ class MenuBar:
         return menu
 
     def _get_menu_fragments(self) -> StyleAndTextTuples:
-        focused = get_app().layout.has_focus(self.window)
+        focused = self.focused()
 
         # This is called during the rendering. When we discover that this
         # widget doesn't have the focus anymore. Reset menu state.
         if not focused:
-            self.selected_menu = [0]
+            self.selected_menu = []
 
         def mouse_handler(index: int, mouse_event: MouseEvent) -> NotImplementedOrNone:
+            focused = self.focused()
             hover = mouse_event.event_type == MouseEventType.MOUSE_MOVE
             if mouse_event.event_type == MouseEventType.MOUSE_DOWN or hover and focused:
                 # Toggle focus.
-                app = get_app()
-                if not hover:
-                    if app.layout.has_focus(self.window):
-                        if self.selected_menu == [index]:
-                            app.layout.focus_last()
-                    else:
-                        app.layout.focus(self.window)
+                if not hover and focused and self.selected_menu == [index]:
+                    self.selected_menu = []
                 self.selected_menu = [index]
+                self.refocus()
                 return None
             return NotImplemented
 
         results: StyleAndTextTuples = []
         used_keys = set()
+
+        selected_index: int | None = None
+        if self.selected_menu:
+            selected_index = self.selected_menu[0]
+        elif focused:
+            selected_index = 0
 
         for i, item in enumerate(self.menu_items):
             # Add shortcut key hints
@@ -510,13 +547,21 @@ class MenuBar:
                 ft = item.formatted_text
 
             mh = partial(mouse_handler, i)
-            selected = i == self.selected_menu[0] and focused
+            selected = i == selected_index
             style = "class:selection" if selected else ""
-            first_style = f"{style} [SetMenuPosition]" if selected else style
+            first_style = style
+            if selected:
+                first_style += " [SetMenuPosition]"
+            cursor_style = (
+                "[SetCursorPosition]"
+                if selected and len(self.selected_menu) == 1
+                else ""
+            )
 
             results.extend(
                 [
                     (first_style, " ", mh),
+                    (cursor_style, ""),
                     *[(f"{style} {style_}", text, mh) for style_, text, *_ in ft],
                     (style, " ", mh),
                 ]
@@ -556,12 +601,18 @@ class MenuBar:
                             ):
                                 app = get_app()
                                 if not hover and item.handler:
-                                    app.layout.focus_last()
+                                    self.selected_menu = []
+                                    self.refocus()
                                     item.handler()
                                 else:
                                     self.selected_menu = self.selected_menu[
                                         : level + 1
                                     ] + [i]
+                                    app.layout.focus(
+                                        self.menu_containers[
+                                            len(self.selected_menu) - 1
+                                        ]
+                                    )
 
                         if item.separator:
                             # Show a connected line with no mouse handler
@@ -583,6 +634,7 @@ class MenuBar:
                                 style += "class:menu,selection"
                             yield (f"{style} class:menu,border", grid.MID_LEFT)
                             if i == selected_item:
+                                # XXXXXXX
                                 yield ("[SetCursorPosition]", "")
                             # Construct the menu item contents
                             prefix_padding = " " * (
@@ -653,14 +705,18 @@ class MenuBar:
                     style="class:border",
                 ),
                 Window(
-                    FormattedTextControl(get_text_fragments),
+                    FormattedTextControl(
+                        get_text_fragments,
+                        focusable=True,
+                        show_cursor=False,
+                        key_bindings=self.kb,
+                    ),
                     scroll_offsets=ScrollOffsets(top=1, bottom=1),
                 ),
                 VSplit(
                     [
                         Window(char=grid.BOTTOM_LEFT, width=1, height=1),
                         Window(char=grid.BOTTOM_MID, height=1),
-                        # Window(char="🭑🭆", height=1),
                         Window(char=grid.BOTTOM_RIGHT, width=1, height=1),
                     ],
                     style="class:border",

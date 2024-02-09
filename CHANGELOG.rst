@@ -18,6 +18,7 @@ Added
 Fixed
 =====
 
+- Make menu widget more a11y friendly by position cursor on selected menu-item
 - Prompt to save dirty text files
 - Prevent flickering in ``euporie-hub`` clients on server log output
 - Notify of dead kernel immediately
