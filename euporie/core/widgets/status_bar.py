@@ -107,43 +107,38 @@ class StatusBar:
     def _status(self, render_counter: int = 0) -> list[StyleAndTextTuples]:
         """Load and format the current status bar entries."""
         layout = get_app().layout
-        current: Container = layout.current_window
 
-        entries = self.default
-        while True:
-            if callable(
-                func := (
-                    _CONTAINER_STATUSES.get(current)
-                    or getattr(current, "__pt_status__", None)
+        # entries = self.default
+        entries: tuple[list[AnyFormattedText], list[AnyFormattedText]] = ([], [])
+
+        current: Container | None = layout.current_window
+        while current:
+            if (
+                callable(
+                    func := (
+                        _CONTAINER_STATUSES.get(current)
+                        or getattr(current, "__pt_status__", None)
+                    )
                 )
+                and (result := func()) is not None
             ):
-                result = func()
-                if result is not None:
-                    entries = result
-                    break
-            elif current in layout._child_to_parent:
-                current = layout._child_to_parent[current]
-                continue
-            break
+                # Add parent entries to start of left side
+                entries[0][0:0] = result[0]
+                # Add parent entries to end of right side
+                entries[1].extend(result[1])
+            current = layout._child_to_parent.get(current)
 
+        # Format the status entries
         output: list[StyleAndTextTuples] = []
-        # Show the tab's status fields
         for entry in entries:
             output.append([])
             for field in entry:
                 if field:
-                    if isinstance(field, tuple):
-                        ft = [field]
-                    else:
-                        ft = to_formatted_text(field, style="class:status.field")
                     output[-1] += [
-                        ("class:status.field", " "),
-                        *ft,
-                        ("class:status.field", " "),
-                        ("class:status", " "),
+                        ("class:status-sep", "▌"),
+                        *to_formatted_text(field, style="class:status-field"),
+                        ("class:status-sep", "▐"),
                     ]
-            if output[-1]:
-                output[-1].pop()
         return output
 
     def __pt_container__(self) -> AnyContainer:
