@@ -37,6 +37,7 @@ if TYPE_CHECKING:
     from euporie.core.app import BaseApp
     from euporie.core.comm.base import Comm
     from euporie.core.kernel import Kernel
+    from euporie.core.lsp import LspClient
     from euporie.core.widgets.inputs import KernelInput
 
 log = logging.getLogger(__name__)
@@ -127,6 +128,8 @@ class BaseNotebook(KernelTab, metaclass=ABCMeta):
 
         # Load widgets
         self.load_widgets_from_metadata()
+        # Call remaining tasks, e.g. loading the LSP
+        super().post_init_kernel()
 
     @property
     def metadata(self) -> dict[str, Any]:
@@ -413,6 +416,52 @@ class BaseNotebook(KernelTab, metaclass=ABCMeta):
                 },
                 buffers=buffers,
             )
+
+    def lsp_open_handler(self, lsp: LspClient) -> None:
+        """Tell the LSP we opened a file."""
+        lsp.open_nb(
+            path=self.path,
+            cells=[cell.lsp_cell for cell in self.rendered_cells()],
+            metadata=self.metadata,
+        )
+
+    def lsp_change_handler(self, lsp: LspClient) -> None:
+        """Tell the LSP server a file metadata has changed."""
+        lsp.change_nb_meta(path=self.path, metadata=self.metadata)
+
+    def lsp_add_cell(self, lsp: LspClient, cell: Cell) -> None:
+        """Notify the LSP of a new cell."""
+        lsp.change_nb_add(path=self.path, cells=[cell.lsp_cell])
+
+    def lsp_change_cells(self, lsp: LspClient, cells: list[Cell]) -> None:
+        """Notify the LSP of a changed cell."""
+        lsp.change_nb_edit(path=self.path, cells=[cell.lsp_cell for cell in cells])
+
+    def lsp_delete_cells(self, lsp: LspClient, cells: list[Cell]) -> None:
+        """Notify the LSP of a deleted cell."""
+        lsp.change_nb_delete(path=self.path, cells=[cell.lsp_cell for cell in cells])
+
+    def lsp_before_save_handler(self, lsp: LspClient) -> None:
+        """Tell the the LSP we are about to save a document."""
+        # Do nothing for notebooks
+
+    def lsp_after_save_handler(self, lsp: LspClient) -> None:
+        """Tell the the LSP we saved a document."""
+        lsp.save_nb(self.path)
+
+    def lsp_close_handler(self, lsp: LspClient) -> None:
+        """Tell the LSP we opened a file."""
+        if lsp.can_close_nb:
+            lsp.close_nb(
+                path=self.path, cells=[cell.lsp_cell for cell in self.rendered_cells()]
+            )
+        else:
+            for cell in self.rendered_cells():
+                lsp.close_doc(cell.path)
+
+    def lsp_update_diagnostics(self, lsp: LspClient) -> None:
+        """Process a new diagnostic report from the LSP."""
+        # Do nothing, these are handled by cells
 
     # ################################### Settings ####################################
 
