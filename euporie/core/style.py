@@ -524,7 +524,7 @@ def build_style(
         "menu completion-statement": "fg:#5f0000",
         "menu completion-instance": "fg:#d75f00",
         "menu completion-module": "fg:#d70000",
-        "menu completion-magic": "fg:#888888",
+        "menu completion-magic": "fg:#9841bb",
         "menu completion-path": "fg:#aa8800",
         "menu completion-dict-key": "fg:#ddbb00",
         "menu selection completion-keyword": (
