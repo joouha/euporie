@@ -438,8 +438,10 @@ def build_style(
         "chrome": f"fg:{cp.fg.more(0.05)} bg:{cp.bg.more(0.05)}",
         "tab-padding": f"fg:{cp.bg.more(0.2)} bg:{cp.bg.base}",
         # Statusbar
+        # "status": f"fg:{cp.fg.more(0.05)} bg:{cp.bg.less(0.15)}",
         "status": f"fg:{cp.fg.more(0.05)} bg:{cp.bg.more(0.05)}",
-        "status.field": f"fg:{cp.fg.more(0.1)} bg:{cp.bg.more(0.1)}",
+        "status-field": f"fg:{cp.fg.more(0.1)} bg:{cp.bg.more(0.1)}",
+        "status-sep": f"fg:{cp.bg.more(0.05)} bg:{cp.bg.more(0.1)}",
         # Menus & Menu bar
         "menu": f"fg:{cp.fg.more(0.05)} bg:{cp.bg.more(0.05)}",
         "menu bar": f"bg:{cp.bg.less(0.15)}",
