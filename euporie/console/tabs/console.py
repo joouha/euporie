@@ -521,7 +521,7 @@ class Console(KernelTab):
                     (
                         "",
                         self.kernel_display_name,
-                        # , self._statusbar_kernel_handeler)],
+                        # , self._statusbar_kernel_handler)],
                     )
                 ],
                 KERNEL_STATUS_REPR.get(self.kernel.status, "."),
