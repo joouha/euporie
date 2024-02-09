@@ -22,16 +22,15 @@ from prompt_toolkit.layout.containers import (
 )
 from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.layout.dimension import Dimension
-from prompt_toolkit.lexers import DynamicLexer, PygmentsLexer, SimpleLexer
-from pygments.lexers import get_lexer_by_name
-from pygments.util import ClassNotFound
 
 from euporie.core.border import NoLine, ThickLine, ThinLine
 from euporie.core.config import add_setting
 from euporie.core.current import get_app
 from euporie.core.diagnostics import Report
 from euporie.core.filters import multiple_cells_selected
-from euporie.core.format import format_code
+from euporie.core.inspection import (
+    FirstInspector,
+)
 from euporie.core.layout.containers import HSplit, VSplit, Window
 from euporie.core.utils import on_click
 from euporie.core.widgets.cell_outputs import CellOutputArea
@@ -43,8 +42,9 @@ if TYPE_CHECKING:
     from prompt_toolkit.buffer import Buffer
     from prompt_toolkit.completion.base import Completer
     from prompt_toolkit.formatted_text.base import OneStyleAndTextTuple
-    from prompt_toolkit.lexers import Lexer
 
+    from euporie.core.format import Formatter
+    from euporie.core.inspection import Inspector
     from euporie.core.tabs.notebook import BaseNotebook
 
 
@@ -69,19 +69,6 @@ def get_cell_id(cell_json: dict) -> str:
     if not cell_id:
         cell_json["id"] = cell_id = nbformat.v4.new_code_cell().get("id")
     return cell_id
-
-
-def get_pygments_lexer(language: str) -> Lexer:
-    """Get a pygments lexer class by name, ignoring errors."""
-    try:
-        lexer_class = get_lexer_by_name(language).__class__
-    except ClassNotFound:
-        return SimpleLexer()
-    else:
-        return PygmentsLexer(
-            lexer_class,
-            sync_from_start=False,
-        )
 
 
 class Cell:
@@ -184,19 +171,10 @@ class Cell:
             wrap_lines=Condition(lambda: weak_self.json.get("cell_type") == "markdown"),
             on_text_changed=on_text_changed,
             on_cursor_position_changed=on_cursor_position_changed,
-            lexer=DynamicLexer(
-                partial(
-                    lambda cell: (
-                        get_pygments_lexer(cell.language)
-                        if cell.cell_type != "raw"
-                        else SimpleLexer()
-                    ),
-                    weakref.proxy(self),
-                )
-            ),
+            language=partial(lambda cell: cell.language, weakref.proxy(self)),
             accept_handler=lambda buffer: self.run_or_render() or True,
             focusable=show_input & ~source_hidden,
-            tempfile_suffix=self.tempfile_suffix,
+            tempfile_suffix=self.suffix,
             inspector=self.inspector,
             diagnostics=self.report,
         )
@@ -503,7 +481,7 @@ class Cell:
         return self.json.get("cell_type", "code")
 
     @property
-    def tempfile_suffix(self) -> str:
+    def suffix(self) -> str:
         """Return the file suffix matching the current cell type."""
         cell_type = self.cell_type
         if cell_type == "markdown":

@@ -145,6 +145,7 @@ class KernelInput(TextArea):
         validate_while_typing: FilterOrBool = False,
         scroll_offsets: ScrollOffsets | None = None,
         formatters: list[Formatter] | None = None,
+        language: str | Callable[[], str] | None = None,
         diagnostics: Report | Callable[[], Report] | None = None,
         inspector: Inspector | None = None,
         show_diagnostics: FilterOrBool = True,
@@ -179,7 +180,16 @@ class KernelInput(TextArea):
         self.read_only = read_only
         self.wrap_lines = wrap_lines
         self.validator = validator
+        self._language = language
         self.lexer = lexer
+
+        def _get_lexer() -> Lexer:
+            try:
+                pygments_lexer_class = get_lexer_by_name(self.language).__class__
+            except ClassNotFound:
+                return SimpleLexer()
+            else:
+                return PygmentsLexer(pygments_lexer_class, sync_from_start=False)
 
         self.formatters = formatters if formatters is not None else []
         self._diagnostics = diagnostics or Report()
@@ -299,7 +309,18 @@ class KernelInput(TextArea):
             ]
         )
 
-    def inspect(self) -> None:
+    @property
+    def language(self) -> str:
+        """The current language of the text in the input box."""
+        return str(
+            self._language() if callable(self._language) else self.language
+        ).casefold()
+
+    @language.setter
+    def language(self, value: str) -> None:
+        """Set the current language of the text in the input box."""
+        self._language = value
+
     @property
     def diagnostics(self) -> Report:
         """The current diagnostics report."""
