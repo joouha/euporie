@@ -535,42 +535,11 @@ class Console(KernelTab):
         """Reformat the input."""
         self.input_box.text = format_code(self.input_box.text, self.app.config)
 
-    def inspect(self) -> None:
-        """Get contextual help for the current cursor position in the current cell."""
-        code = self.input_box.text
-        cursor_pos = self.input_box.buffer.cursor_position
 
-        assert self.app.pager is not None
 
-        if (
-            self.app.pager.visible()
-            and self.app.pager.state is not None
-            and (
-                self.app.pager.state.code == code
-                and self.app.pager.state.cursor_pos == cursor_pos
             )
-        ):
-            self.app.pager.focus()
-            return
-
-        def _cb(response: dict) -> None:
-            assert self.app.pager is not None
-            prev_state = self.app.pager.state
-            new_state = PagerState(
-                code=code,
-                cursor_pos=cursor_pos,
-                data=response.get("data", {}),
             )
-            if prev_state != new_state:
-                self.app.pager.state = new_state
-                self.app.invalidate()
 
-        assert self.kernel is not None
-        self.kernel.inspect(
-            code=code,
-            cursor_pos=cursor_pos,
-            callback=_cb,
-        )
 
     def save(self, path: Path | None = None, cb: Callable | None = None) -> None:
         """Save the console as a notebook."""
