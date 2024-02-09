@@ -146,13 +146,6 @@ class Cell:
 
         def on_cursor_position_changed(buf: Buffer) -> None:
             """Respond to cursor movements."""
-            # Update contextual help
-            if weak_self.kernel_tab.app.config.autoinspect and weak_self.is_code():
-                weak_self.input_box.inspect()
-            else:
-                if pager := get_app().pager:
-                    pager.hide()
-
             # Tell the scrolling container to scroll the cursor into view on the next render
             weak_self.kernel_tab.page.scroll_to_cursor = True
 
