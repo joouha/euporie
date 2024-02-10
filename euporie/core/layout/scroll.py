@@ -89,8 +89,6 @@ class ScrollingContainer(Container):
 
     def pre_render_children(self, width: int, height: int) -> None:
         """Render all unrendered children in a background thread."""
-        # Prevent multiple calls
-        self.pre_rendered = 0.000000001
 
         def _render_in_thread() -> None:
             """Render children in  thread."""
@@ -108,7 +106,6 @@ class ScrollingContainer(Container):
             app.invalidate()
 
         run_in_thread_with_context(_render_in_thread)
-        # _render_in_thread()
 
     def reset(self) -> None:
         """Reset the state of this container and all the children."""
@@ -357,15 +354,15 @@ class ScrollingContainer(Container):
 
         available_width = write_position.width
         available_height = write_position.height
-        # Trigger pre-rendering of children
-        if not self.pre_rendered:
-            self.pre_render_children(available_width, available_height)
 
         # Update screen height
         screen.height = max(screen.height, ypos + write_position.height)
 
         # Record children which are currently visible
         visible_indices = set()
+
+        # Ensure we have the right children
+        all_children = self.all_children()
 
         # Force the selected children to refresh
         selected_indices = self.selected_indices
@@ -551,7 +548,7 @@ class ScrollingContainer(Container):
         # Calculate scrollbar info
         sizes = self.known_sizes
         avg_size = sum(sizes.values()) / len(sizes) if sizes else 0
-        n_children = len(self.all_children())
+        n_children = len(all_children)
         for i in range(n_children):
             if i not in sizes:
                 sizes[i] = int(avg_size)
@@ -574,6 +571,10 @@ class ScrollingContainer(Container):
         )
         # Signal that we are no longer scrolling
         self.scrolling = 0
+
+        # Trigger pre-rendering of children
+        if not self.pre_rendered:
+            self.pre_render_children(available_width, available_height)
 
     @property
     def vertical_scroll(self) -> int:
