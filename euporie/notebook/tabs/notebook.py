@@ -142,7 +142,7 @@ class Notebook(BaseNotebook):
                 [
                     self.mode(),
                     f"Cell {self.page.selected_slice.start+1}",
-                    f"Rendering… ({rendered:.0%})" if rendered < 1 else "",
+                    f"Rendering… ({rendered:.0%})" if rendered and rendered < 1 else "",
                     "Saving…" if self.saving else "",
                 ],
                 [
