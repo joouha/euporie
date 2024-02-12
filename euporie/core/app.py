@@ -597,7 +597,7 @@ class BaseApp(Application):
         if self.config.enable_language_servers:
             from shutil import which
 
-            lsps = KNOWN_LSP_SERVERS
+            lsps = {**KNOWN_LSP_SERVERS, **self.config.language_servers}
             for name, kwargs in lsps.items():
                 if kwargs:
                     client = None
@@ -1238,6 +1238,62 @@ class BaseApp(Application):
             Additional language servers can be added using the
             :option:`language-servers` option.
     """,
+    )
+
+    add_setting(
+        name="language_servers",
+        flags=["--language-servers"],
+        type_=json.loads,
+        help_="Language server configurations",
+        default={
+            # "ruff": {"cmd": ["ruff-lsp"], "languages": {"python"}},
+        },
+        schema={
+            "type": "object",
+            "items": {
+                "type": "object",
+                "patternProperties": {
+                    "^[0-9]+$": {
+                        "type": "object",
+                        "properties": {
+                            "command": {
+                                "type": "array",
+                                "items": [{"type": "string"}],
+                            },
+                            "language": {
+                                "type": "array",
+                                "items": [{"type": "string", "unique": True}],
+                            },
+                        },
+                        "required": ["command"],
+                    }
+                },
+            },
+        },
+        description="""
+            Additional language servers can be defined here, e.g.:
+
+               {
+                "ruff": {"command": ["ruff-lsp"], "languages": ["python"]},
+                "pylsp": {"command": ["pylsp"], "languages": ["python"]},
+                "typos": {"command": ["typos-lsp"], "languages": []}
+               }
+
+            The following properties are required:
+            - The name to be given to the the language server, must be unique
+            - The command list consists of the process to launch, followed by any
+              command line arguments
+            - A list of language the language server supports. If no languages are
+            given, the language server will be used for documents of any language.
+
+            To disable one of the default language servers, its name can be set to an
+            empty dictionary. For example, the following would disable the awk language
+            server:
+
+               {
+                 "awk-language-server": {},
+               }
+        """,
     )
 
     # ################################# Key Bindings ##################################
