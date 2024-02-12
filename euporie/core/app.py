@@ -1214,8 +1214,9 @@ class BaseApp(Application):
     add_setting(
         name="enable_language_servers",
         flags=["--enable-language-servers", "--lsp"],
+        menu_title="Language servers",
         type_=bool,
-        default=True,
+        default=False,
         help_="Enable language server support",
         description="""
             When set to :py:const:`True`, language servers will be used for liniting,
@@ -1231,9 +1232,7 @@ class BaseApp(Application):
         flags=["--language-servers"],
         type_=json.loads,
         help_="Language server configurations",
-        default={
-            # "ruff": {"cmd": ["ruff-lsp"], "languages": {"python"}},
-        },
+        default={},
         schema={
             "type": "object",
             "items": {
