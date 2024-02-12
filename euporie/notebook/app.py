@@ -456,6 +456,7 @@ class NotebookApp(BaseApp):
                         "Code tools",
                         children=[
                             get_cmd("toggle-enable-language-servers").menu,
+                            separator,
                             get_cmd("toggle-autoformat").menu,
                             get_cmd("toggle-autocomplete").menu,
                             get_cmd("toggle-autosuggest").menu,
