@@ -29,7 +29,7 @@ if TYPE_CHECKING:
     from prompt_toolkit.layout.containers import AnyContainer
 
     from euporie.core.app import BaseApp
-    from euporie.core.widgets.status_bar import StatusBarFields
+    from euporie.core.widgets.status import StatusBarFields
 
 log = logging.getLogger(__name__)
 
