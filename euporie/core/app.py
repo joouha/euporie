@@ -528,9 +528,6 @@ class BaseApp(Application):
                 result = None
             finally:
                 signal.signal(signal.SIGTERM, original_sigterm)
-
-        # This seems to be needed for kitty
-        output.enable_autowrap()
                 # Shut down any remaining LSP clients at exit
                 app.shutdown_lsps()
         return result
