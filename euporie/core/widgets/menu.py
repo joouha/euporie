@@ -26,6 +26,7 @@ from prompt_toolkit.layout.containers import (
     Container,
     Float,
     ScrollOffsets,
+    to_container,
 )
 from prompt_toolkit.layout.controls import FormattedTextControl, UIContent
 from prompt_toolkit.layout.dimension import Dimension
@@ -40,6 +41,7 @@ from euporie.core.border import OuterHalfGrid
 from euporie.core.current import get_app
 from euporie.core.layout.containers import HSplit, VSplit, Window
 from euporie.core.widgets.decor import Shadow
+from euporie.core.widgets.status import StatusContainer
 
 if TYPE_CHECKING:
     from typing import Any, Callable, Iterable, Sequence
@@ -462,7 +464,7 @@ class MenuBar:
             ),
         )
         self.app.menus["menu-2"] = Float(
-            attach_to_window=submenu.get_children()[1],
+            attach_to_window=to_container(submenu).get_children()[1],
             xcursor=True,
             ycursor=True,
             allow_cover_cursor=True,
@@ -473,7 +475,7 @@ class MenuBar:
             ),
         )
         self.app.menus["menu-3"] = Float(
-            attach_to_window=submenu2.get_children()[1],
+            attach_to_window=to_container(submenu2).get_children()[1],
             xcursor=True,
             ycursor=True,
             allow_cover_cursor=True,
@@ -694,35 +696,38 @@ class MenuBar:
 
             return result
 
-        return HSplit(
-            [
-                VSplit(
-                    [
-                        Window(char=grid.TOP_LEFT, width=1, height=1),
-                        Window(char=grid.TOP_MID, height=1),
-                        Window(char=grid.TOP_RIGHT, width=1, height=1),
-                    ],
-                    style="class:border",
-                ),
-                Window(
-                    FormattedTextControl(
-                        get_text_fragments,
-                        focusable=True,
-                        show_cursor=False,
-                        key_bindings=self.kb,
+        return StatusContainer(
+            body=HSplit(
+                [
+                    VSplit(
+                        [
+                            Window(char=grid.TOP_LEFT, width=1, height=1),
+                            Window(char=grid.TOP_MID, height=1),
+                            Window(char=grid.TOP_RIGHT, width=1, height=1),
+                        ],
+                        style="class:border",
                     ),
-                    scroll_offsets=ScrollOffsets(top=1, bottom=1),
-                ),
-                VSplit(
-                    [
-                        Window(char=grid.BOTTOM_LEFT, width=1, height=1),
-                        Window(char=grid.BOTTOM_MID, height=1),
-                        Window(char=grid.BOTTOM_RIGHT, width=1, height=1),
-                    ],
-                    style="class:border",
-                ),
-            ],
-            style="class:menu",
+                    Window(
+                        FormattedTextControl(
+                            get_text_fragments,
+                            focusable=True,
+                            show_cursor=False,
+                            key_bindings=self.kb,
+                        ),
+                        scroll_offsets=ScrollOffsets(top=1, bottom=1),
+                    ),
+                    VSplit(
+                        [
+                            Window(char=grid.BOTTOM_LEFT, width=1, height=1),
+                            Window(char=grid.BOTTOM_MID, height=1),
+                            Window(char=grid.BOTTOM_RIGHT, width=1, height=1),
+                        ],
+                        style="class:border",
+                    ),
+                ],
+                style="class:menu",
+            ),
+            status=self.__pt_status__,
         )
 
     def __pt_container__(self) -> Container:
@@ -733,9 +738,9 @@ class MenuBar:
         """Return the description of the currently selected menu item."""
         selected_item = self._get_menu(len(self.selected_menu) - 1)
         if isinstance(selected_item, MenuItem):
-            return (["", selected_item.description], [])
+            return ([selected_item.description], [])
         else:
-            return (["", ""], [])
+            return ([], [])
 
 
 class CompletionsMenuControl(PtkCompletionsMenuControl):
