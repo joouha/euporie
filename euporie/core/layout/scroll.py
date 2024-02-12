@@ -622,6 +622,9 @@ class ScrollingContainer(Container):
 
     def get_children(self) -> list[Container]:
         """Return the list of currently visible children to include in the layout."""
+        # Ensure children are loaded
+        self.all_children()
+        # Return only the visible children
         return [
             self.get_child(i) for i in self.visible_indices if i < len(self._children)
         ]
