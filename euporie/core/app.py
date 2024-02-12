@@ -114,7 +114,7 @@ if TYPE_CHECKING:
     from euporie.core.terminal import TerminalQuery
     from euporie.core.widgets.dialog import Dialog
     from euporie.core.widgets.pager import Pager
-    from euporie.core.widgets.search_bar import SearchBar
+    from euporie.core.widgets.search import SearchBar
 
     _AppResult = TypeVar("_AppResult")
 
