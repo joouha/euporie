@@ -283,7 +283,7 @@ class Console(KernelTab):
 
     def reset(self) -> None:
         """Reset the state of the tab."""
-        from euporie.core.widgets.search_bar import stop_search
+        from euporie.core.widgets.search import stop_search
 
         self.live_output.reset()
         stop_search()

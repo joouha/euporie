@@ -55,7 +55,7 @@ class SearchBar(PtkSearchToolbar):
             ],
         )
         self.control.key_bindings = load_registered_bindings(
-            "euporie.core.widgets.search_bar.SearchBar"
+            "euporie.core.widgets.search.SearchBar"
         )
 
     register_bindings(
@@ -65,7 +65,7 @@ class SearchBar(PtkSearchToolbar):
                 "find-next": "c-g",
                 "find-previous": "c-p",
             },
-            "euporie.core.widgets.search_bar.SearchBar": {
+            "euporie.core.widgets.search.SearchBar": {
                 "accept-search": "enter",
                 "stop-search": "escape",
             },
