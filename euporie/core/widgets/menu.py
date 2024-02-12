@@ -132,9 +132,9 @@ class MenuItem:
     # Type checking disabled for the following property methods due to open mypy bug:
     # https://github.com/python/mypy/issues/4125
 
-    @property  # type: ignore
-    def text(self) -> str:  # type: ignore
-        """Return plain text verision of the item's formatted text."""
+    @property
+    def text(self) -> str:
+        """Return plain text version of the item's formatted text."""
         return fragment_list_to_text(self.formatted_text)
 
     @text.setter
