@@ -225,7 +225,7 @@ class BaseNotebook(KernelTab, metaclass=ABCMeta):
                 cells[cell_id] = self._rendered_cells[cell_id]
             else:
                 # Pytype doesn't like this..
-                cells[cell_id] = Cell(i, cell_json, self)  # type: ignore
+                cells[cell_id] = Cell(i, cell_json, self)
             cells[cell_id].index = i
         # These cells will be removed
         for cell in set(self._rendered_cells.values()) - set(cells.values()):
