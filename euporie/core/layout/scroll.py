@@ -304,16 +304,23 @@ class ScrollingContainer(Container):
             #         response = self.scroll(1)
 
             # Select the clicked child if clicked
-            if child and mouse_event.event_type == MouseEventType.MOUSE_DOWN:
-                index = self._children.index(child)
-                if mouse_event.modifiers & {MouseModifier.SHIFT, MouseModifier.CONTROL}:
-                    self.select(index, extend=True)
+            if mouse_event.event_type == MouseEventType.MOUSE_DOWN:
+                if child:
+                    index = self._children.index(child)
+                    if mouse_event.modifiers & {
+                        MouseModifier.SHIFT,
+                        MouseModifier.CONTROL,
+                    }:
+                        self.select(index, extend=True)
+                    else:
+                        self.select(index, extend=False)
+                    get_app().layout.focus(child)
                 else:
-                    self.select(index, extend=False)
+                    try:
+                        get_app().layout.focus(self)
+                    except Exception:
+                        ...
                 response = None
-
-                # Attempt to focus the container
-                get_app().layout.focus(child)
 
             return response
 
