@@ -188,37 +188,15 @@ class Setting:
     def register_commands(self) -> None:
         """Register commands to set this setting."""
         name = self.name.replace("_", "-")
-        if self.type in (bool, int) or self.choices is not None:
-            toggled_filter = None
-            if self.type == bool:
-
-                def _toggled() -> bool:
-                    from euporie.core.current import get_app
-
-                    app = get_app()
-                    value = app.config.get(self.name)
-                    return bool(getattr(app.config, self.name, not value))
-
-                toggled_filter = Condition(_toggled)
-
-            add_cmd(
-                name=f"toggle-{name}",
-                toggled=toggled_filter,
-                hidden=self.hidden,
-                title=f"Toggle {self.title}",
-                menu_title=self.kwargs.get("menu_title"),
-                description=f'Toggle the value of the "{self.name}" configuration option.',
-                filter=self.cmd_filter,
-            )(self.toggle)
-
         schema = self.schema
+
         if schema.get("type") == "array":
             for choice in self.choices or schema.get("items", {}).get("enum") or []:
                 add_cmd(
                     name=f"toggle-{name}-{choice}",
                     hidden=self.hidden,
                     toggled=Condition(partial(lambda x: x in self.value, choice)),
-                    title=f"Toggle {choice} into {self.title}",
+                    title=f"Add {choice} to {self.title} setting",
                     menu_title=str(choice).replace("_", " ").capitalize(),
                     description=f'Add or remove "{choice}" to or from the list of "{self.name}"',
                     filter=self.cmd_filter,
@@ -233,18 +211,48 @@ class Setting:
                     )
                 )
 
-        else:
-            for choice in self.choices or schema.get("enum", []) or []:
-                add_cmd(
-                    name=f"set-{name}-{choice}",
-                    hidden=self.hidden,
-                    toggled=Condition(partial(lambda x: self.value == x, choice)),
-                    title=f"Set {self.title} to {choice}",
-                    menu_title=str(choice).replace("_", " ").capitalize(),
-                    description=f'Set the value of the "{self.name}" '
-                    f'configuration option to "{choice}"',
-                    filter=self.cmd_filter,
-                )(partial(setattr, self, "value", choice))
+        elif self.type == bool:
+
+            def _toggled() -> bool:
+                from euporie.core.current import get_app
+
+                app = get_app()
+                value = app.config.get(self.name)
+                return bool(getattr(app.config, self.name, not value))
+
+            toggled_filter = Condition(_toggled)
+
+            add_cmd(
+                name=f"toggle-{name}",
+                toggled=toggled_filter,
+                hidden=self.hidden,
+                title=f"Toggle {self.title}",
+                menu_title=self.kwargs.get("menu_title", self.title.capitalize()),
+                description=f'Toggle the value of the "{self.name}" configuration option.',
+                filter=self.cmd_filter,
+            )(self.toggle)
+
+        elif self.type == int or self.choices is not None:
+            add_cmd(
+                name=f"switch-{name}",
+                hidden=self.hidden,
+                title=f"Switch {self.title}",
+                menu_title=self.kwargs.get("menu_title"),
+                description=f'Switch the value of the "{self.name}" configuration option.',
+                filter=self.cmd_filter,
+            )(self.toggle)
+
+        for choice in self.choices or schema.get("enum", []) or []:
+            add_cmd(
+                name=f"set-{name}-{choice}",
+                hidden=self.hidden,
+                toggled=Condition(partial(lambda x: self.value == x, choice)),
+                title=f"Set {self.title} to {choice}",
+                menu_title=str(choice).replace("_", " ").capitalize(),
+                description=f'Set the value of the "{self.name}" '
+                f'configuration option to "{choice}"',
+                filter=self.cmd_filter,
+            )(partial(setattr, self, "value", choice))
 
     def toggle(self) -> None:
         """Toggle the setting's value."""
