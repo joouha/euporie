@@ -428,6 +428,17 @@ class KernelInput(TextArea):
     )
 
     add_setting(
+        name="autoformat",
+        flags=["--autoformat"],
+        type_=bool,
+        help_="Automatically re-format code cells when run",
+        default=False,
+        description="""
+            Whether to automatically reformat code cells before they are run.
+        """,
+    )
+
+    add_setting(
         name="autocomplete",
         flags=["--autocomplete"],
         type_=bool,
