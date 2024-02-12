@@ -98,13 +98,13 @@ class LspClient:
     def __init__(
         self,
         name: str,
-        cmd: str,
+        command: str,
         languages: Sequence[str] | None = None,
         settings: dict | None = None,
     ) -> None:
         """Initialize the LSP client."""
         self.name = name
-        self.cmd = cmd
+        self.command = command
         self.languages = set(languages) if languages else set()
         self.settings = settings or {}
         self.started = False
@@ -173,7 +173,7 @@ class LspClient:
     async def start_(self, root: Path | None = None) -> None:
         """Launch the LSP server subprocess."""
         self.process = await asyncio.create_subprocess_exec(
-            *self.cmd,
+            *self.command,
             stdin=asyncio.subprocess.PIPE,
             stdout=asyncio.subprocess.PIPE,
             # stderr=asyncio.subprocess.PIPE,
@@ -795,7 +795,7 @@ class LspClient:
 
     def close_doc(self, path: Path) -> None:
         """Tell the server we have closed a document file."""
-        log.debug("%s closing %s", self, path)
+        # log.debug("%s closing %s", self, path)
         self._cleanup_path(path)
         asyncio.run_coroutine_threadsafe(
             self.send_msg(
@@ -809,7 +809,7 @@ class LspClient:
 
     def close_nb(self, path: Path, cells: Sequence[LspCell]) -> None:
         """Tell the server we closed a notebook document."""
-        log.debug("%s closing %s", self, path)
+        # log.debug("%s closing %s", self, path)
         params = {"notebookDocument": {"uri": path.as_uri()}, "cellTextDocuments": []}
         for cell in cells:
             self._cleanup_path(cell.path)
@@ -1033,78 +1033,87 @@ class LspClient:
 
 KNOWN_LSP_SERVERS: dict[str, dict[str, Any]] = {
     # Custom additions
-    "ruff": {"cmd": ["ruff-lsp"], "languages": {"python"}},
-    "typos": {"cmd": ["typos-lsp"], "languages": set()},
+    "ruff": {"command": ["ruff-lsp"], "languages": {"python"}},
+    "typos": {"command": ["typos-lsp"], "languages": set()},
     # Helix's known LSPs
-    "als": {"cmd": ["als"]},
-    "awk-language-server": {"cmd": ["awk-language-server"], "languages": {"awk"}},
+    "als": {"command": ["als"]},
+    "awk-language-server": {"command": ["awk-language-server"], "languages": {"awk"}},
     "bash-language-server": {
-        "cmd": ["bash-language-server", "start"],
+        "command": ["bash-language-server", "start"],
         "languages": {"bash"},
     },
-    "bass": {"cmd": ["bass", "--lsp"], "languages": {"bass"}},
-    "bicep-langserver": {"cmd": ["bicep-langserver"], "languages": {"bicep"}},
-    "bufls": {"cmd": ["bufls", "serve"], "languages": {"protobuf"}},
-    "cairo-language-server": {"cmd": ["cairo-language-server"], "languages": {"cairo"}},
-    "cl-lsp": {"cmd": ["cl-lsp", "stdio"], "languages": {"common-lisp"}},
-    "clangd": {"cmd": ["clangd"], "languages": {"opencl", "cpp", "c"}},
-    "clojure-lsp": {"cmd": ["clojure-lsp"], "languages": {"clojure"}},
-    "cmake-language-server": {"cmd": ["cmake-language-server"], "languages": {"cmake"}},
-    "crystalline": {"cmd": ["crystalline", "--stdio"], "languages": {"crystal"}},
+    "bass": {"command": ["bass", "--lsp"], "languages": {"bass"}},
+    "bicep-langserver": {"command": ["bicep-langserver"], "languages": {"bicep"}},
+    "bufls": {"command": ["bufls", "serve"], "languages": {"protobuf"}},
+    "cairo-language-server": {
+        "command": ["cairo-language-server"],
+        "languages": {"cairo"},
+    },
+    "cl-lsp": {"command": ["cl-lsp", "stdio"], "languages": {"common-lisp"}},
+    "clangd": {"command": ["clangd"], "languages": {"opencl", "cpp", "c"}},
+    "clojure-lsp": {"command": ["clojure-lsp"], "languages": {"clojure"}},
+    "cmake-language-server": {
+        "command": ["cmake-language-server"],
+        "languages": {"cmake"},
+    },
+    "crystalline": {"command": ["crystalline", "--stdio"], "languages": {"crystal"}},
     "cs": {
-        "cmd": ["cs", "launch", "--contrib", "smithy-language-server", "--", "0"],
+        "command": ["cs", "launch", "--contrib", "smithy-language-server", "--", "0"],
         "languages": {"smithy"},
     },
-    "csharp-ls": {"cmd": ["csharp-ls"]},
-    "cuelsp": {"cmd": ["cuelsp"], "languages": {"cue"}},
+    "csharp-ls": {"command": ["csharp-ls"]},
+    "cuelsp": {"command": ["cuelsp"], "languages": {"cue"}},
     "dart": {
-        "cmd": ["dart", "language-server", "--client-id=helix"],
+        "command": ["dart", "language-server", "--client-id=helix"],
         "languages": {"dart"},
     },
-    "dhall-lsp-server": {"cmd": ["dhall-lsp-server"], "languages": {"dhall"}},
+    "dhall-lsp-server": {"command": ["dhall-lsp-server"], "languages": {"dhall"}},
     "docker-langserver": {
-        "cmd": ["docker-langserver", "--stdio"],
+        "command": ["docker-langserver", "--stdio"],
         "languages": {"dockerfile"},
     },
     "dot-language-server": {
-        "cmd": ["dot-language-server", "--stdio"],
+        "command": ["dot-language-server", "--stdio"],
         "languages": {"dot"},
     },
     "elixir-ls": {
         "settings": {"elixirLS": {"dialyzerEnabled": False}},
-        "cmd": ["elixir-ls"],
+        "command": ["elixir-ls"],
         "languages": {"elixir", "heex"},
     },
-    "elm-language-server": {"cmd": ["elm-language-server"], "languages": {"elm"}},
-    "elvish": {"cmd": ["elvish", "-lsp"], "languages": {"elvish"}},
-    "erlang-ls": {"cmd": ["erlang_ls"], "languages": {"erlang"}},
-    "forc": {"cmd": ["forc", "lsp"], "languages": {"sway"}},
-    "forth-lsp": {"cmd": ["forth-lsp"], "languages": {"forth"}},
-    "fortls": {"cmd": ["fortls", "--lowercase_intrinsics"], "languages": {"fortran"}},
+    "elm-language-server": {"command": ["elm-language-server"], "languages": {"elm"}},
+    "elvish": {"command": ["elvish", "-lsp"], "languages": {"elvish"}},
+    "erlang-ls": {"command": ["erlang_ls"], "languages": {"erlang"}},
+    "forc": {"command": ["forc", "lsp"], "languages": {"sway"}},
+    "forth-lsp": {"command": ["forth-lsp"], "languages": {"forth"}},
+    "fortls": {
+        "command": ["fortls", "--lowercase_intrinsics"],
+        "languages": {"fortran"},
+    },
     "fsharp-ls": {
         "settings": {"AutomaticWorkspaceInit": True},
-        "cmd": ["fsautocomplete"],
+        "command": ["fsautocomplete"],
         "languages": {"fsharp"},
     },
-    "gleam": {"cmd": ["gleam", "lsp"], "languages": {"gleam"}},
+    "gleam": {"command": ["gleam", "lsp"], "languages": {"gleam"}},
     "graphql-language-service": {
-        "cmd": ["graphql-lsp", "server", "-m", "stream"],
+        "command": ["graphql-lsp", "server", "-m", "stream"],
         "languages": {"graphql"},
     },
     "haskell-language-server": {
-        "cmd": ["haskell-language-server-wrapper", "--lsp"],
+        "command": ["haskell-language-server-wrapper", "--lsp"],
         "languages": {"cabal", "haskell"},
     },
-    "idris2-lsp": {"cmd": ["idris2-lsp"], "languages": {"idris"}},
-    "intelephense": {"cmd": ["intelephense", "--stdio"], "languages": {"php"}},
-    "jdtls": {"cmd": ["jdtls"], "languages": {"java"}},
+    "idris2-lsp": {"command": ["idris2-lsp"], "languages": {"idris"}},
+    "intelephense": {"command": ["intelephense", "--stdio"], "languages": {"php"}},
+    "jdtls": {"command": ["jdtls"], "languages": {"java"}},
     "jsonnet-language-server": {
-        "cmd": ["jsonnet-language-server", "-t", "--lint"],
+        "command": ["jsonnet-language-server", "-t", "--lint"],
         "languages": {"jsonnet"},
     },
     "julia": {
         "timeout": 60,
-        "cmd": [
+        "command": [
             "julia",
             "--startup-file=no",
             "--history-file=no",
@@ -1115,61 +1124,67 @@ KNOWN_LSP_SERVERS: dict[str, dict[str, Any]] = {
         "languages": {"julia"},
     },
     "kotlin-language-server": {
-        "cmd": ["kotlin-language-server"],
+        "command": ["kotlin-language-server"],
         "languages": {"kotlin"},
     },
-    "lean": {"cmd": ["lean", "--server"], "languages": {"lean"}},
-    "ltex-ls": {"cmd": ["ltex-ls"]},
-    "markdoc-ls": {"cmd": ["markdoc-ls", "--stdio"], "languages": {"markdoc"}},
-    "marksman": {"cmd": ["marksman", "server"], "languages": {"markdown"}},
+    "lean": {"command": ["lean", "--server"], "languages": {"lean"}},
+    "ltex-ls": {"command": ["ltex-ls"]},
+    "markdoc-ls": {"command": ["markdoc-ls", "--stdio"], "languages": {"markdoc"}},
+    "marksman": {"command": ["marksman", "server"], "languages": {"markdown"}},
     "metals": {
         "settings": {"isHttpEnabled": True},
-        "cmd": ["metals"],
+        "command": ["metals"],
         "languages": {"scala"},
     },
-    "mint": {"cmd": ["mint", "ls"], "languages": {"mint"}},
-    "nil": {"cmd": ["nil"], "languages": {"nix"}},
-    "nimlangserver": {"cmd": ["nimlangserver"], "languages": {"nim"}},
-    "nls": {"cmd": ["nls"], "languages": {"nickel"}},
-    "nu-lsp": {"cmd": ["nu", "--lsp"], "languages": {"nu"}},
-    "ocamllsp": {"cmd": ["ocamllsp"], "languages": {"ocaml", "ocaml-interface"}},
-    "ols": {"cmd": ["ols"], "languages": {"odin"}},
-    "omnisharp": {"cmd": ["OmniSharp", "--languageserver"], "languages": {"c-sharp"}},
-    "openscad-lsp": {"cmd": ["openscad-lsp", "--stdio"], "languages": {"openscad"}},
-    "pasls": {"cmd": ["pasls"], "languages": {"pascal"}},
-    "pbkit": {"cmd": ["pb", "lsp"], "languages": {"protobuf"}},
-    "perlnavigator": {"cmd": ["perlnavigator", "--stdio"], "languages": {"perl"}},
+    "mint": {"command": ["mint", "ls"], "languages": {"mint"}},
+    "nil": {"command": ["nil"], "languages": {"nix"}},
+    "nimlangserver": {"command": ["nimlangserver"], "languages": {"nim"}},
+    "nls": {"command": ["nls"], "languages": {"nickel"}},
+    "nu-lsp": {"command": ["nu", "--lsp"], "languages": {"nu"}},
+    "ocamllsp": {"command": ["ocamllsp"], "languages": {"ocaml", "ocaml-interface"}},
+    "ols": {"command": ["ols"], "languages": {"odin"}},
+    "omnisharp": {
+        "command": ["OmniSharp", "--languageserver"],
+        "languages": {"c-sharp"},
+    },
+    "openscad-lsp": {"command": ["openscad-lsp", "--stdio"], "languages": {"openscad"}},
+    "pasls": {"command": ["pasls"], "languages": {"pascal"}},
+    "pbkit": {"command": ["pb", "lsp"], "languages": {"protobuf"}},
+    "perlnavigator": {"command": ["perlnavigator", "--stdio"], "languages": {"perl"}},
     "prisma-language-server": {
-        "cmd": ["prisma-language-server", "--stdio"],
+        "command": ["prisma-language-server", "--stdio"],
         "languages": {"prisma"},
     },
     "purescript-language-server": {
-        "cmd": ["purescript-language-server", "--stdio"],
+        "command": ["purescript-language-server", "--stdio"],
         "languages": {"purescript"},
     },
-    "pylsp": {"cmd": ["pylsp"], "languages": {"python"}},
-    "pyright": {"settings": {}, "cmd": ["pyright-langserver", "--stdio"]},
-    "pylyzer": {"cmd": ["pylyzer", "--server"]},
-    "qmlls": {"cmd": ["qmlls"], "languages": {"qml"}},
+    "pylsp": {"command": ["pylsp"], "languages": {"python"}},
+    "pyright": {"settings": {}, "command": ["pyright-langserver", "--stdio"]},
+    "pylyzer": {"command": ["pylyzer", "--server"]},
+    "qmlls": {"command": ["qmlls"], "languages": {"qml"}},
     "r": {
-        "cmd": ["R", "--no-echo", "-e", "languageserver::run()"],
+        "command": ["R", "--no-echo", "-e", "languageserver::run()"],
         "languages": {"r", "rmarkdown"},
     },
-    "racket": {"cmd": ["racket", "-l", "racket-langserver"], "languages": {"racket"}},
-    "regols": {"cmd": ["regols"], "languages": {"rego"}},
+    "racket": {
+        "command": ["racket", "-l", "racket-langserver"],
+        "languages": {"racket"},
+    },
+    "regols": {"command": ["regols"], "languages": {"rego"}},
     "rescript-language-server": {
-        "cmd": ["rescript-language-server", "--stdio"],
+        "command": ["rescript-language-server", "--stdio"],
         "languages": {"rescript"},
     },
-    "robotframework_ls": {"cmd": ["robotframework_ls"], "languages": {"robot"}},
-    "serve-d": {"cmd": ["serve-d"], "languages": {"d"}},
-    "slint-lsp": {"cmd": ["slint-lsp"], "languages": {"slint"}},
-    "solargraph": {"cmd": ["solargraph", "stdio"], "languages": {"ruby"}},
-    "solc": {"cmd": ["solc", "--lsp"], "languages": {"solidity"}},
-    "sourcekit-lsp": {"cmd": ["sourcekit-lsp"], "languages": {"swift"}},
-    "svlangserver": {"cmd": ["svlangserver"], "languages": {"verilog"}},
+    "robotframework_ls": {"command": ["robotframework_ls"], "languages": {"robot"}},
+    "serve-d": {"command": ["serve-d"], "languages": {"d"}},
+    "slint-lsp": {"command": ["slint-lsp"], "languages": {"slint"}},
+    "solargraph": {"command": ["solargraph", "stdio"], "languages": {"ruby"}},
+    "solc": {"command": ["solc", "--lsp"], "languages": {"solidity"}},
+    "sourcekit-lsp": {"command": ["sourcekit-lsp"], "languages": {"swift"}},
+    "svlangserver": {"command": ["svlangserver"], "languages": {"verilog"}},
     "swipl": {
-        "cmd": [
+        "command": [
             "swipl",
             "-g",
             "use_module(library(lsp_server))",
@@ -1182,47 +1197,53 @@ KNOWN_LSP_SERVERS: dict[str, dict[str, Any]] = {
         ],
         "languages": {"prolog"},
     },
-    "tailwindcss-ls": {"cmd": ["tailwindcss-language-server", "--stdio"]},
-    "taplo": {"cmd": ["taplo", "lsp", "stdio"], "languages": {"toml"}},
-    "templ": {"cmd": ["templ", "lsp"], "languages": {"templ"}},
-    "terraform-ls": {"cmd": ["terraform-ls", "serve"], "languages": {"tfvars", "hcl"}},
-    "texlab": {"cmd": ["texlab"], "languages": {"latex", "bibtex"}},
-    "vala-language-server": {"cmd": ["vala-language-server"], "languages": {"vala"}},
-    "vhdl_ls": {"cmd": ["vhdl_ls"], "languages": {"vhdl"}},
-    "vlang-language-server": {"cmd": ["v-analyzer"], "languages": {"v"}},
+    "tailwindcss-ls": {"command": ["tailwindcss-language-server", "--stdio"]},
+    "taplo": {"command": ["taplo", "lsp", "stdio"], "languages": {"toml"}},
+    "templ": {"command": ["templ", "lsp"], "languages": {"templ"}},
+    "terraform-ls": {
+        "command": ["terraform-ls", "serve"],
+        "languages": {"tfvars", "hcl"},
+    },
+    "texlab": {"command": ["texlab"], "languages": {"latex", "bibtex"}},
+    "vala-language-server": {
+        "command": ["vala-language-server"],
+        "languages": {"vala"},
+    },
+    "vhdl_ls": {"command": ["vhdl_ls"], "languages": {"vhdl"}},
+    "vlang-language-server": {"command": ["v-analyzer"], "languages": {"v"}},
     "vscode-css-language-server": {
         "settings": {"provideFormatter": True, "css": {"validate": {"enable": True}}},
-        "cmd": ["vscode-css-language-server", "--stdio"],
+        "command": ["vscode-css-language-server", "--stdio"],
         "languages": {"scss", "css"},
     },
     "vscode-html-language-server": {
         "settings": {"provideFormatter": True},
-        "cmd": ["vscode-html-language-server", "--stdio"],
+        "command": ["vscode-html-language-server", "--stdio"],
         "languages": {"html"},
     },
     "vscode-json-language-server": {
         "settings": {"provideFormatter": True, "json": {"validate": {"enable": True}}},
-        "cmd": ["vscode-json-language-server", "--stdio"],
+        "command": ["vscode-json-language-server", "--stdio"],
         "languages": {"json"},
     },
     "vuels": {
         "settings": {"typescript": {"tsdk": "node_modules/typescript/lib/"}},
-        "cmd": ["vue-language-server", "--stdio"],
+        "command": ["vue-language-server", "--stdio"],
         "languages": {"vue"},
     },
-    "wgsl_analyzer": {"cmd": ["wgsl_analyzer"], "languages": {"wgsl"}},
+    "wgsl_analyzer": {"command": ["wgsl_analyzer"], "languages": {"wgsl"}},
     "yaml-language-server": {
-        "cmd": ["yaml-language-server", "--stdio"],
+        "command": ["yaml-language-server", "--stdio"],
         "languages": {"yaml"},
     },
-    "zls": {"cmd": ["zls"], "languages": {"zig"}},
+    "zls": {"command": ["zls"], "languages": {"zig"}},
     "blueprint-compiler": {
-        "cmd": ["blueprint-compiler", "lsp"],
+        "command": ["blueprint-compiler", "lsp"],
         "languages": {"blueprint"},
     },
-    "typst-lsp": {"cmd": ["typst-lsp"], "languages": {"typst"}},
+    "typst-lsp": {"command": ["typst-lsp"], "languages": {"typst"}},
     "ansible-language-server": {
-        "cmd": ["ansible-language-server", "--stdio"],
+        "command": ["ansible-language-server", "--stdio"],
         "languages": {"yaml"},
     },
     "lua-language-server": {
@@ -1238,7 +1259,7 @@ KNOWN_LSP_SERVERS: dict[str, dict[str, Any]] = {
                 }
             }
         },
-        "cmd": ["lua-language-server"],
+        "command": ["lua-language-server"],
         "languages": {"lua"},
     },
     "gopls": {
@@ -1252,7 +1273,7 @@ KNOWN_LSP_SERVERS: dict[str, dict[str, Any]] = {
                 "rangeVariableTypes": True,
             }
         },
-        "cmd": ["gopls"],
+        "command": ["gopls"],
         "languages": {"gotmpl", "gowork", "go", "gomod"},
     },
     "golangci-lint-lsp": {
@@ -1265,7 +1286,7 @@ KNOWN_LSP_SERVERS: dict[str, dict[str, Any]] = {
                 "--issues-exit-code=1",
             ]
         },
-        "cmd": ["golangci-lint-langserver"],
+        "command": ["golangci-lint-langserver"],
         "languages": {"go"},
     },
     "rust-analyzer": {
@@ -1279,7 +1300,7 @@ KNOWN_LSP_SERVERS: dict[str, dict[str, Any]] = {
                 "typeHints": {"hideClosureInitialization": False},
             }
         },
-        "cmd": ["rust-analyzer"],
+        "command": ["rust-analyzer"],
         "languages": {"rust"},
     },
     "typescript-language-server": {
@@ -1308,7 +1329,7 @@ KNOWN_LSP_SERVERS: dict[str, dict[str, Any]] = {
                 }
             },
         },
-        "cmd": ["typescript-language-server", "--stdio"],
+        "command": ["typescript-language-server", "--stdio"],
         "languages": {"tsx", "typescript", "jsx", "javascript"},
     },
     "svelteserver": {
@@ -1336,7 +1357,7 @@ KNOWN_LSP_SERVERS: dict[str, dict[str, Any]] = {
                 },
             }
         },
-        "cmd": ["svelteserver", "--stdio"],
+        "command": ["svelteserver", "--stdio"],
         "languages": {"svelte"},
     },
 }
