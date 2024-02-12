@@ -196,6 +196,11 @@ serve = "python -m http.server --directory docs/_build/html/"
 autobuild = "sphinx-autobuild docs docs/_build/html"
 
 
+# Environment for prototyping using Jupyter
+[tool.hatch.envs.kernel]
+description = "Euporie Jupyter kernel development environment."
+dependencies = [ "ipykernel~=6.29" ]
+
 ## Tool configuration #########################################################
 
 
