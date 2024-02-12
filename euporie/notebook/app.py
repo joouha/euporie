@@ -374,6 +374,7 @@ class NotebookApp(BaseApp):
                     separator,
                     get_cmd("quit").menu,
                 ],
+                description="File management",
             ),
             MenuItem(
                 "Edit",
@@ -392,6 +393,7 @@ class NotebookApp(BaseApp):
                     get_cmd("reformat-cells").menu,
                     get_cmd("reformat-notebook").menu,
                 ],
+                description="Make changes to the current file",
             ),
             MenuItem(
                 "Run",
@@ -399,6 +401,7 @@ class NotebookApp(BaseApp):
                     get_cmd("run-selected-cells").menu,
                     get_cmd("run-all-cells").menu,
                 ],
+                description="Run notebook cells",
             ),
             MenuItem(
                 "Kernel",
@@ -407,6 +410,7 @@ class NotebookApp(BaseApp):
                     get_cmd("restart-kernel").menu,
                     get_cmd("change-kernel").menu,
                 ],
+                description="Manage the current notebook's kernel",
             ),
             MenuItem(
                 "Tabs",
@@ -422,6 +426,7 @@ class NotebookApp(BaseApp):
                         ],
                     ),
                 ],
+                description="Tab management",
             ),
             MenuItem(
                 "Settings",
@@ -437,6 +442,7 @@ class NotebookApp(BaseApp):
                             get_cmd("toggle-show-scroll-bar").menu,
                             get_cmd("toggle-multiplexer-passthrough").menu,
                         ],
+                        description="Turn elements of euporie's interface on or off",
                     ),
                     self.config.get_item("color_scheme").menu,
                     self.config.get_item("syntax_theme").menu,
@@ -447,7 +453,7 @@ class NotebookApp(BaseApp):
                     self.config.get_item("edit_mode").menu,
                     separator,
                     MenuItem(
-                        "Code Tools",
+                        "Code tools",
                         children=[
                             get_cmd("toggle-enable-language-servers").menu,
                             get_cmd("toggle-autoformat").menu,
@@ -455,9 +461,11 @@ class NotebookApp(BaseApp):
                             get_cmd("toggle-autosuggest").menu,
                             get_cmd("toggle-autoinspect").menu,
                         ],
+                        description="Turn code assistance tools on or off",
                     ),
                     get_cmd("toggle-run-after-external-edit").menu,
                 ],
+                description="Make changes to euporie's configuration",
             ),
             MenuItem(
                 "Help",
@@ -470,6 +478,7 @@ class NotebookApp(BaseApp):
                     separator,
                     get_cmd("about").menu,
                 ],
+                description="Get help",
             ),
         ]
 

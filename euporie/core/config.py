@@ -228,7 +228,7 @@ class Setting:
                 hidden=self.hidden,
                 title=f"Toggle {self.title}",
                 menu_title=self.kwargs.get("menu_title", self.title.capitalize()),
-                description=f'Toggle the value of the "{self.name}" configuration option.',
+                description=self.help,
                 filter=self.cmd_filter,
             )(self.toggle)
 
@@ -317,6 +317,7 @@ class Setting:
                         key=lambda x: x.menu_title,
                     )
                 ],
+                description=self.help,
             )
         elif self.type in (bool, int):
             return get_cmd(f"toggle-{self.name.replace('_', '-')}").menu
