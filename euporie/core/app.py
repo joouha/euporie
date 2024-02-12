@@ -593,25 +593,27 @@ class BaseApp(Application):
 
     def get_language_lsps(self, language: str) -> list[LspClient]:
         """Return the approprrate LSP clients for a given language."""
-        from shutil import which
-
         clients = []
-        for name, kwargs in KNOWN_LSP_SERVERS.items():
-            if kwargs:
-                client = None
-                if (
-                    (
-                        not (lsp_langs := kwargs.get("languages"))
-                        or language in lsp_langs
-                    )
-                    and not (client := self.lsp_clients.get(name))
-                    and which(kwargs["cmd"][0])
-                ):
-                    client = LspClient(name, **kwargs)
-                    self.lsp_clients[name] = client
-                    client.start()
-                if client:
-                    clients.append(client)
+        if self.config.enable_language_servers:
+            from shutil import which
+
+            lsps = KNOWN_LSP_SERVERS
+            for name, kwargs in lsps.items():
+                if kwargs:
+                    client = None
+                    if (
+                        (
+                            not (lsp_langs := kwargs.get("languages"))
+                            or language in lsp_langs
+                        )
+                        and not (client := self.lsp_clients.get(name))
+                        and which(kwargs["command"][0])
+                    ):
+                        client = LspClient(name, **kwargs)
+                        self.lsp_clients[name] = client
+                        client.start()
+                    if client:
+                        clients.append(client)
         return clients
 
     def shutdown_lsps(self) -> None:
@@ -1220,6 +1222,21 @@ class BaseApp(Application):
             does not support it.
 
             This is also useful if you want to use graphics in :command:`euporie-hub`.
+    """,
+    )
+
+    add_setting(
+        name="enable_language_servers",
+        flags=["--enable-language-servers", "--lsp"],
+        type_=bool,
+        default=True,
+        help_="Enable language server support",
+        description="""
+            When set to :py:const:`True`, language servers will be used for liniting,
+            code inspection, and code formatting.
+
+            Additional language servers can be added using the
+            :option:`language-servers` option.
     """,
     )
 
