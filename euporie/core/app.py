@@ -684,10 +684,11 @@ class BaseApp(Application):
         """Set the current tab by index."""
         self._tab_idx = value % (len(self.tabs) or 1)
         if self.tabs:
+            container = to_container(self.tabs[self._tab_idx])
             try:
-                self.layout.focus(self.tabs[self._tab_idx])
+                self.layout.focus(container)
             except ValueError:
-                pass
+                self.to_focus = container
 
     def focus_tab(self, tab: Tab) -> None:
         """Make a tab visible and focuses it."""

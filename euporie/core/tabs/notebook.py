@@ -116,16 +116,13 @@ class BaseNotebook(KernelTab, metaclass=ABCMeta):
         prev = self.container
         self.container = self.load_container()
         self.loaded = True
-        self.app.invalidate()
 
         # Update the focus if the old container had focus
-        if (layout := self.app.layout).has_focus(prev):
+        if self.app.layout.has_focus(prev):
+            self.focus()
+            log.debug(self.app.layout.current_control)
 
-            async def _focus_new_container() -> None:
-                layout.focus(self.container)
-
-            self.app.create_background_task(_focus_new_container())
-
+        self.app.invalidate()
         # Load widgets
         self.load_widgets_from_metadata()
         # Call remaining tasks, e.g. loading the LSP
