@@ -57,7 +57,7 @@ if TYPE_CHECKING:
     from euporie.core.app import BaseApp
     from euporie.core.border import GridStyle
     from euporie.core.commands import Command
-    from euporie.core.widgets.status_bar import StatusBarFields
+    from euporie.core.widgets.status import StatusBarFields
 
 
 log = logging.getLogger(__name__)

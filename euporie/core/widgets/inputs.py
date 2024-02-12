@@ -91,7 +91,7 @@ if TYPE_CHECKING:
     from euporie.core.format import Formatter
     from euporie.core.inspection import Inspector
     from euporie.core.tabs.base import KernelTab
-    from euporie.core.widgets.status_bar import StatusBarFields
+    from euporie.core.widgets.status import StatusBarFields
 
 
 log = logging.getLogger(__name__)

@@ -44,8 +44,8 @@ from euporie.core.widgets.layout import TabBarControl, TabBarTab
 from euporie.core.widgets.menu import MenuBar, MenuItem
 from euporie.core.widgets.pager import Pager
 from euporie.core.widgets.palette import CommandPalette
-from euporie.core.widgets.status_bar import StatusBar, StatusContainer
 from euporie.core.widgets.search import SearchBar
+from euporie.core.widgets.status import StatusBar, StatusContainer
 from euporie.notebook.enums import TabMode
 from euporie.notebook.tabs import Notebook
 from euporie.notebook.widgets.side_bar import SideBar
@@ -60,7 +60,7 @@ if TYPE_CHECKING:
 
     from euporie.core.tabs.base import Tab
     from euporie.core.widgets.cell import Cell
-    from euporie.core.widgets.status_bar import StatusBarFields
+    from euporie.core.widgets.status import StatusBarFields
 
 log = logging.getLogger(__name__)
 

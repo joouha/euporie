@@ -22,7 +22,7 @@ from euporie.core.layout.decor import FocusedStyle
 from euporie.core.margins import MarginContainer, ScrollbarMargin
 from euporie.core.widgets.dialog import Dialog
 from euporie.core.widgets.forms import Text
-from euporie.core.widgets.status_bar import StatusContainer
+from euporie.core.widgets.status import StatusContainer
 
 if TYPE_CHECKING:
     from prompt_toolkit.buffer import Buffer
@@ -32,7 +32,7 @@ if TYPE_CHECKING:
     from prompt_toolkit.layout.controls import GetLinePrefixCallable
 
     from euporie.core.app import BaseApp
-    from euporie.core.widgets.status_bar import StatusBarFields
+    from euporie.core.widgets.status import StatusBarFields
 
 log = logging.getLogger(__name__)
 

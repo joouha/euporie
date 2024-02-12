@@ -24,7 +24,7 @@ if TYPE_CHECKING:
 
     from euporie.core.app import BaseApp
     from euporie.core.comm.base import Comm
-    from euporie.core.widgets.status_bar import StatusBarFields
+    from euporie.core.widgets.status import StatusBarFields
 
 log = logging.getLogger(__name__)
 
