@@ -720,10 +720,8 @@ class LspClient:
                         "cells": {
                             "structure": {
                                 "array": {
-                                    {
-                                        "start": min(cell.idx for cell in cells),
-                                        "deleteCount": len(cells),
-                                    }
+                                    "start": min(cell.idx for cell in cells),
+                                    "deleteCount": len(cells),
                                 },
                                 "didClose": [
                                     {"uri": cell.path.as_uri()} for cell in cells
