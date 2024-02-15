@@ -321,7 +321,6 @@ class KernelTab(Tab, metaclass=ABCMeta):
 
     def post_init_kernel(self) -> None:
         """Run stuff after the kernel is loaded."""
-        self.app.create_background_task(self.load_lsps())
 
     def init_kernel(
         self,
@@ -353,6 +352,8 @@ class KernelTab(Tab, metaclass=ABCMeta):
             KernelHistory(self.kernel) if use_kernel_history else InMemoryHistory()
         )
         self.suggester: AutoSuggest = HistoryAutoSuggest(self.history)
+
+        self.app.create_background_task(self.load_lsps())
 
         self.post_init_kernel()
 
