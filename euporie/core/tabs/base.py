@@ -220,7 +220,7 @@ class KernelTab(Tab, metaclass=ABCMeta):
         self.history: History = DummyHistory()
         self.inspectors: list[Inspector] = []
         self.inspector = FirstInspector(lambda: self.inspectors)
-        self.suggesters: AutoSuggest = DummyAutoSuggest()
+        self.suggester: AutoSuggest = DummyAutoSuggest()
         self.completers: list[Completer] = []
         self.completer = DeduplicateCompleter(
             DynamicCompleter(lambda: _MergedCompleter(self.completers))
