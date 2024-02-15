@@ -275,8 +275,9 @@ class LspClient:
         msg: dict[str, Any] = {
             "jsonrpc": "2.0",
             "method": method,
-            "params": params or {},
         }
+        if params is not None:
+            msg["params"] = params
         if cb:
             msg["id"] = msg_id
         body = json.dumps(msg, separators=(",", ":"))
@@ -394,7 +395,7 @@ class LspClient:
         # for name, value in rsp.get("capabilities", {}).items():
         #     log.debug("%s: %s: %s", self, name, value)
 
-        await self.send_msg(method="initialized")
+        await self.send_msg(method="initialized", params={})
         self.initialized.set()
 
         # Send settings
