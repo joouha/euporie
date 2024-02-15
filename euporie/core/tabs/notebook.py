@@ -125,8 +125,6 @@ class BaseNotebook(KernelTab, metaclass=ABCMeta):
         self.app.invalidate()
         # Load widgets
         self.load_widgets_from_metadata()
-        # Call remaining tasks, e.g. loading the LSP
-        super().post_init_kernel()
 
     @property
     def metadata(self) -> dict[str, Any]:
