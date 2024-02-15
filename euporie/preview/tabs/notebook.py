@@ -79,6 +79,9 @@ class PreviewNotebook(BaseNotebook):
             self.app.pause_rendering()
             self.kernel.start(cb=self.kernel_started, wait=True)
 
+    async def load_lsps(self) -> None:
+        """We do not need LSP support for preview notebook."""
+
     def init_kernel(
         self,
         kernel: Kernel | None = None,
