@@ -700,11 +700,14 @@ class Cell:
 
     @property
     def path(self) -> Path:
-        """Return a virtual path for this cell (used by LSP clients)."""
-        # It is necessary to use the notebook' suffix so LSP servers like ruff-lsp know
-        # that the document is from a notebook
+        """Return a virtual path for this cell (used by LSP clients).
+
+        Pylance appears to use URIs like:
+        ``../folder.notebook.ipynb:pylance-notebook-cell:W0sZmlsZQ==.py``, which I've
+        emulated here.
+        """
         nb_path = self.kernel_tab.path
-        return (nb_path / f"cell-{self.id}").with_suffix(nb_path.suffix)
+        return nb_path.parent / f"{nb_path.name}:cell:{self.id}{self.suffix}"
 
     @property
     def id(self) -> str:
