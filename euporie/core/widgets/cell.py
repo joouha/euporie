@@ -162,7 +162,9 @@ class Cell:
         # Now we generate the main container used to represent a kernel_tab cell
 
         source_hidden = Condition(
-            lambda: self.json["metadata"].get("jupyter", {}).get("source_hidden", False)
+            lambda: weak_self.json["metadata"]
+            .get("jupyter", {})
+            .get("source_hidden", False)
         )
 
         self.input_box = KernelInput(
@@ -175,7 +177,7 @@ class Cell:
             on_text_changed=on_text_changed,
             on_cursor_position_changed=on_cursor_position_changed,
             language=partial(lambda cell: cell.language, weakref.proxy(self)),
-            accept_handler=lambda buffer: self.run_or_render() or True,
+            accept_handler=lambda buffer: weak_self.run_or_render() or True,
             focusable=show_input & ~source_hidden,
             tempfile_suffix=self.suffix,
             inspector=self.inspector,
@@ -187,7 +189,7 @@ class Cell:
         )
         self.input_box.buffer.name = self.cell_type
 
-        self.input_box.buffer.on_text_changed += lambda buf: self.on_change()
+        self.input_box.buffer.on_text_changed += lambda buf: weak_self.on_change()
 
         def border_char(name: str) -> Callable[..., str]:
             """Return a function which returns the cell border character to display."""
@@ -225,7 +227,7 @@ class Cell:
         def _send_input(buf: Buffer) -> bool:
             return False
 
-        self.stdin_box = StdInput(self.kernel_tab)
+        self.stdin_box = StdInput(weak_self.kernel_tab)
 
         top_border = VSplit(
             [
@@ -323,10 +325,10 @@ class Cell:
         )
 
         outputs_hidden = Condition(
-            lambda: self.json["metadata"]
+            lambda: weak_self.json["metadata"]
             .get("jupyter", {})
             .get("outputs_hidden", False)
-            or self.json["metadata"].get("collapsed", False)
+            or weak_self.json["metadata"].get("collapsed", False)
         )
 
         output_row = ConditionalContainer(
@@ -442,6 +444,7 @@ class Cell:
     async def setup_lsps(self) -> None:
         """Add hooks to the notebook LSP client."""
         path = self.path
+        weak_self = weakref.proxy(self)
 
         # Wait for all lsps to be initialized, and setup hooks as they become ready
         async def _await_load(lsp: LspClient) -> LspClient:
@@ -454,7 +457,7 @@ class Cell:
             lsp = await ready
 
             # Listen for LSP diagnostics
-            lsp.on_diagnostics += self.lsp_update_diagnostics
+            lsp.on_diagnostics += weak_self.lsp_update_diagnostics
 
             change_handler = partial(lambda lsp, tab: self.lsp_change_handler(lsp), lsp)
 
@@ -474,11 +477,11 @@ class Cell:
 
             def lsp_unload(lsp: LspClient) -> None:
                 self.on_change -= change_handler  # noqa: B023
-                if completer in self.completers:  # noqa: B023
+                if completer in weak_self.completers:  # noqa: B023
                     self.completers.remove(completer)  # noqa: B023
-                if inspector in self.inspectors:  # noqa: B023
+                if inspector in weak_self.inspectors:  # noqa: B023
                     self.inspectors.remove(inspector)  # noqa: B023
-                if formatter in self.formatters:  # noqa: B023
+                if formatter in weak_self.formatters:  # noqa: B023
                     self.formatters.remove(formatter)  # noqa: B023
 
             lsp.on_exit += lsp_unload
