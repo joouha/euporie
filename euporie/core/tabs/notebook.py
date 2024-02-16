@@ -227,6 +227,7 @@ class BaseNotebook(KernelTab, metaclass=ABCMeta):
             cells[cell_id].index = i
         # These cells will be removed
         for cell in set(self._rendered_cells.values()) - set(cells.values()):
+            cell.close()
             del cell
         self._rendered_cells = cells
         return list(self._rendered_cells.values())
@@ -423,18 +424,6 @@ class BaseNotebook(KernelTab, metaclass=ABCMeta):
     def lsp_change_handler(self, lsp: LspClient) -> None:
         """Tell the LSP server a file metadata has changed."""
         lsp.change_nb_meta(path=self.path, metadata=self.metadata)
-
-    def lsp_add_cell(self, lsp: LspClient, cell: Cell) -> None:
-        """Notify the LSP of a new cell."""
-        lsp.change_nb_add(path=self.path, cells=[cell.lsp_cell])
-
-    def lsp_change_cells(self, lsp: LspClient, cells: list[Cell]) -> None:
-        """Notify the LSP of a changed cell."""
-        lsp.change_nb_edit(path=self.path, cells=[cell.lsp_cell for cell in cells])
-
-    def lsp_delete_cells(self, lsp: LspClient, cells: list[Cell]) -> None:
-        """Notify the LSP of a deleted cell."""
-        lsp.change_nb_delete(path=self.path, cells=[cell.lsp_cell for cell in cells])
 
     def lsp_before_save_handler(self, lsp: LspClient) -> None:
         """Tell the the LSP we are about to save a document."""

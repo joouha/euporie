@@ -105,8 +105,8 @@ class Cell:
         self.clear_outputs_on_output = False
         self.state = "idle"
 
-        self.after_open = Event(self)
         self.on_change = Event(self)
+        self.on_close = Event(self)
 
         self.inspectors: list[Inspector] = []
         self.inspector = FirstInspector(
@@ -437,11 +437,9 @@ class Cell:
             style=_style,
         )
 
-        self.kernel_tab.app.create_background_task(self.setup_lsps()).add_done_callback(
-            lambda result: self.after_open()
-        )
+        self.kernel_tab.app.create_background_task(self.load_lsps())
 
-    async def setup_lsps(self) -> None:
+    async def load_lsps(self) -> None:
         """Add hooks to the notebook LSP client."""
         path = self.path
         weak_self = weakref.proxy(self)
@@ -460,8 +458,10 @@ class Cell:
             lsp.on_diagnostics += weak_self.lsp_update_diagnostics
 
             change_handler = partial(lambda lsp, tab: self.lsp_change_handler(lsp), lsp)
+            close_handler = partial(lambda lsp, tab: self.lsp_close_handler(lsp), lsp)
 
             self.on_change += change_handler
+            self.on_close += close_handler
 
             # Add completer
             completer = LspCompleter(lsp, path)
@@ -477,6 +477,7 @@ class Cell:
 
             def lsp_unload(lsp: LspClient) -> None:
                 self.on_change -= change_handler  # noqa: B023
+                self.on_close -= close_handler  # noqa: B023
                 if completer in weak_self.completers:  # noqa: B023
                     self.completers.remove(completer)  # noqa: B023
                 if inspector in weak_self.inspectors:  # noqa: B023
@@ -486,16 +487,7 @@ class Cell:
 
             lsp.on_exit += lsp_unload
 
-            self.lsp_open_handler(lsp)
-
-    def lsp_open_handler(self, lsp: LspClient) -> None:
-        """If the LSP does not support notebooks, open this cell as a text document."""
-        if not lsp.can_open_nb:
-            lsp.open_doc(
-                path=self.path,
-                language=self.language,
-                text=self.input_box.buffer.text,
-            )
+            # self.lsp_open_handler(lsp)
 
     @property
     def lsp_cell(self) -> LspCell:
@@ -511,8 +503,19 @@ class Cell:
             text=self.input,
         )
 
+    def lsp_open_handler(self, lsp: LspClient) -> None:
+        """If the LSP does not support notebooks, open this cell as a text document."""
+        if lsp.can_open_nb:
+            lsp.change_nb_add(path=self.kernel_tab.path, cells=[self.lsp_cell])
+        else:
+            lsp.open_doc(
+                path=self.path,
+                language=self.language,
+                text=self.input_box.buffer.text,
+            )
+
     def lsp_change_handler(self, lsp: LspClient) -> None:
-        """Tell the LSP server a file has changed."""
+        """Tell the LSP server a cell has changed."""
         if lsp.can_change_nb:
             lsp.change_nb_edit(path=self.kernel_tab.path, cells=[self.lsp_cell])
         else:
@@ -521,6 +524,13 @@ class Cell:
                 language=self.language,
                 text=self.input_box.buffer.text,
             )
+
+    def lsp_close_handler(self, lsp: LspClient) -> None:
+        """Notify the LSP of a deleted cell."""
+        if lsp.can_change_nb:
+            lsp.change_nb_delete(path=self.kernel_tab.path, cells=[self.lsp_cell])
+        else:
+            lsp.close_doc(self.path)
 
     def lsp_update_diagnostics(self, lsp: LspClient) -> None:
         """Process a new diagnostic report from the LSP."""
@@ -700,6 +710,8 @@ class Cell:
         # self.output_area.json = self.output_json
         # Force the input box lexer to re-run
         self.input_box.control._fragment_cache.clear()
+        # Trigger callbacks
+        self.on_change()
 
     @property
     def path(self) -> Path:
@@ -923,6 +935,10 @@ class Cell:
         # Restore VISUAL environment variable
         if visual is not None:
             os.environ["VISUAL"] = visual
+
+    def close(self) -> None:
+        """Signal that the cell is no longer present in the notebook."""
+        self.on_close()
 
     # ################################### Settings ####################################
 
