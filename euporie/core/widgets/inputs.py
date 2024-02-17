@@ -403,6 +403,7 @@ class KernelInput(TextArea):
                     if line:
                         line.append(("", " - "))
                     line.append(("", diagnostic.message))
+                    break
         return line
 
     def __pt_status__(self) -> StatusBarFields | None:
