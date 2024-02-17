@@ -88,7 +88,9 @@ class Cell:
 
     input_box: KernelInput
 
-    def __init__(self, index: int, json: dict, kernel_tab: BaseNotebook) -> None:
+    def __init__(
+        self, index: int, json: dict, kernel_tab: BaseNotebook, is_new: bool = False
+    ) -> None:
         """Initiate the cell element.
 
         Args:
@@ -104,7 +106,9 @@ class Cell:
         self.rendered = True
         self.clear_outputs_on_output = False
         self.state = "idle"
+        self.is_new = is_new
 
+        self.on_open = Event(self)
         self.on_change = Event(self)
         self.on_close = Event(self)
 
@@ -457,9 +461,11 @@ class Cell:
             # Listen for LSP diagnostics
             lsp.on_diagnostics += weak_self.lsp_update_diagnostics
 
+            open_handler = partial(lambda lsp, tab: self.lsp_open_handler(lsp), lsp)
             change_handler = partial(lambda lsp, tab: self.lsp_change_handler(lsp), lsp)
             close_handler = partial(lambda lsp, tab: self.lsp_close_handler(lsp), lsp)
 
+            self.on_open += open_handler
             self.on_change += change_handler
             self.on_close += close_handler
 
@@ -476,6 +482,7 @@ class Cell:
             self.formatters.append(formatter)
 
             def lsp_unload(lsp: LspClient) -> None:
+                self.on_open -= open_handler  # noqa: B023
                 self.on_change -= change_handler  # noqa: B023
                 self.on_close -= close_handler  # noqa: B023
                 if completer in weak_self.completers:  # noqa: B023
@@ -487,7 +494,8 @@ class Cell:
 
             lsp.on_exit += lsp_unload
 
-            # self.lsp_open_handler(lsp)
+            if self.is_new:
+                self.on_open()
 
     @property
     def lsp_cell(self) -> LspCell:
