@@ -494,7 +494,10 @@ class MenuBar:
         if self.selected_menu:
             layout.focus(self.menu_containers[len(self.selected_menu) - 1])
         elif self.last_focused:
-            layout.focus(self.last_focused)
+            try:
+                layout.focus(self.last_focused)
+            except ValueError:
+                layout.focus_previous()
             self.last_focused = None
 
     def _get_menu(self, level: int) -> MenuItem:
