@@ -1134,7 +1134,7 @@ class BaseApp(Application):
         flags=["--custom-background-color", "--custom-bg-color", "--bg"],
         type_=str,
         help_='Background color for "Custom" color theme',
-        default="",
+        default="#073642",
         schema={
             "maxLength": 7,
         },
@@ -1149,7 +1149,7 @@ class BaseApp(Application):
         flags=["--custom-foreground-color", "--custom-fg-color", "--fg"],
         type_=str,
         help_='Foreground color for "Custom" color theme',
-        default="",
+        default="#839496",
         schema={
             "maxLength": 7,
         },
