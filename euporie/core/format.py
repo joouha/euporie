@@ -71,7 +71,7 @@ class CliFormatter(Formatter):
         except Exception:
             return text
         else:
-            return output
+            return output.rstrip("\r\n")
 
 
 class LspFormatter(Formatter):
