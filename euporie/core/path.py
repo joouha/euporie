@@ -11,10 +11,10 @@ from aiohttp.client_reqrep import ClientResponse
 from fsspec.implementations.http import HTTPFileSystem as FsHTTPFileSystem
 from fsspec.registry import register_implementation as fs_register_implementation
 from upath import UPath
-from upath.registry import register_implementation
 
 if TYPE_CHECKING:
     from os import PathLike
+    from typing import Any, Mapping
 
 
 log = logging.getLogger(__name__)
@@ -50,12 +50,19 @@ fs_register_implementation("https", HTTPFileSystem, clobber=True)
 class UntitledPath(upath.core.UPath):
     """A path for untitled files, as needed for LSP servers."""
 
+    @classmethod
+    def _parse_storage_options(
+        cls, urlpath: str, protocol: str, storage_options: Mapping[str, Any]
+    ) -> dict[str, Any]:
+        """Parse storage_options from the urlpath."""
+        try:
+            return super()._parse_storage_options(urlpath, protocol, storage_options)
+        except ValueError:
+            return {}
+
     def exists(self) -> bool:
         """Untitled files are virtual and do not exist."""
         return False
-
-
-register_implementation("untitled", UntitledPath, clobber=True)
 
 
 def parse_path(path: str | PathLike, resolve: bool = True) -> Path:

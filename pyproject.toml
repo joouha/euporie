@@ -83,6 +83,9 @@ euporie = 'euporie.core.pygments:EuporiePygmentsStyle'
 [project.entry-points."jupyter_client.kernel_provisioners"]
 logging-local-provisioner = "euporie.core.kernel:LoggingLocalProvisioner"
 
+[project.entry-points."universal_pathlib.implementations"]
+untitled = "euporie.core.path:UntitledPath"
+
 [tool.hatch.build.targets.wheel.shared-data]
 "euporie/data/desktop" = "share/applications/"
 
@@ -265,7 +268,7 @@ docstring-code-format = true
 
 
 [tool.codespell]
-ignore-words-list = "iterm,edn,controll,controle"
+ignore-words-list = "iterm,edn,controll,controle,als"
 skip = "euporie/core/reference.py,.*"
 
 [tool.typos.default.extend-words]
