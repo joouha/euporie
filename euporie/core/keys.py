@@ -31,6 +31,7 @@ _key_nos = {
 
 # Kitty style legacy function keys
 _kitty_functional_codes = {
+    "Escape": (27, "u"),
     "Insert": (2, "~"),
     "Delete": (3, "~"),
     "PageUp": (5, "~"),
@@ -56,7 +57,8 @@ _kitty_functional_codes = {
     "F10": (21, "~"),
     "F11": (23, "~"),
     "F12": (24, "~"),
-    # "Menu": (29, "~"),
+    "Backspace": (127, "u"),
+    "Enter": (13, "u"),
 }
 
 # Add Alt-key shortcuts
@@ -67,9 +69,6 @@ for key in _key_nos.values():
     key_enum = getattr(Keys, key_var)
     # Alias escape + key for Alt-key
     ANSI_SEQUENCES[f"\x1b{key}"] = key_enum  # type: ignore
-
-# Add CSI-u escape key
-ANSI_SEQUENCES["\x1b[27u"] = Keys.Escape
 
 # Add various CSI-u style keys
 for n in range(len(_modifiers)):
