@@ -1240,8 +1240,8 @@ class Notebook(BaseNotebook):
             "euporie.notebook.tabs.notebook.Notebook": {
                 "enter-cell-edit-mode": "enter",
                 "exit-edit-mode": "escape",
-                "run-selected-cells": ["c-enter", "c-e"],
-                "run-and-select-next": ["s-enter", "c-r"],
+                "run-selected-cells": ["c-enter", "c-e", "c-s-f8"],
+                "run-and-select-next": ["s-enter", "c-r", "s-f9"],
                 "run-cell-and-insert-below": ("A-enter"),
                 "add-cell-above": "a",
                 "add-cell-below": "b",
