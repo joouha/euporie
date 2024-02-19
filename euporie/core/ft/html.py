@@ -14,7 +14,6 @@ from itertools import zip_longest
 from math import ceil
 from operator import eq, ge, gt, le, lt
 from typing import TYPE_CHECKING, NamedTuple, cast, overload
-from urllib.parse import urljoin
 
 from flatlatex.data import subscript, superscript
 from fsspec.core import url_to_fs
@@ -3564,7 +3563,7 @@ class HTML:
             # Set base
             if child.name == "base":
                 if href := child.attrs.get("href"):
-                    self.base = UPath(urljoin(str(self.base), href))
+                    self.base = self.base.joinuri(href)
 
             # Set title
             elif child.name == "title":
@@ -3581,8 +3580,8 @@ class HTML:
                 )
                 and (href := attrs.get("href", ""))
             ):
-                url = urljoin(str(self.base), href)
-                fs, url = url_to_fs(url)
+                url = self.base.joinuri(href)
+                fs, url = url_to_fs(str(url))
                 self._url_fs_map[url] = fs
                 self._url_cbs[url] = _process_css
 
@@ -3596,8 +3595,8 @@ class HTML:
             # Load images
             elif child.name == "img" and (src := child.attrs.get("src")):
                 child.attrs["_missing"] = "true"
-                url = urljoin(str(self.base), src)
-                fs, url = url_to_fs(url)
+                url = self.base.joinuri(src)
+                fs, url = url_to_fs(str(url))
                 self._url_fs_map[url] = fs
                 self._url_cbs[url] = partial(_process_img, child)
 
@@ -4375,7 +4374,7 @@ class HTML:
         content_width = theme.content_width
         # content_height = theme.content_height
         src = str(element.attrs.get("src", ""))
-        path = UPath(urljoin(str(self.base), src))
+        path = self.base.joinuri(src)
 
         if not element.attrs.get("_missing") and (data := element.attrs.get("_data")):
             # Display it graphically
@@ -4958,7 +4957,7 @@ class HTML:
             and callable(handler := self.mouse_handler)
             and (href := parent.attrs.get("href"))
         ):
-            element.attrs["_link_path"] = urljoin(str(self.base), href)
+            element.attrs["_link_path"] = self.base.joinuri(href)
             element.attrs["title"] = parent.attrs.get("title")
             ft = cast(
                 "StyleAndTextTuples",
