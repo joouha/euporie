@@ -97,6 +97,7 @@ class Cell:
             index: The position of this cell in the kernel_tab
             json: A reference to the cell's json object
             kernel_tab: The kernel_tab instance this cell belongs to
+            is_new: Flag a newly inserted cell
 
         """
         weak_self = weakref.proxy(self)
