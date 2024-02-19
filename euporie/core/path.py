@@ -17,7 +17,6 @@ if TYPE_CHECKING:
     from os import PathLike
 
 
-
 log = logging.getLogger(__name__)
 
 
@@ -48,69 +47,6 @@ fs_register_implementation("https", HTTPFileSystem, clobber=True)
 # Define custom universal_pathlib path implementations
 
 
-# class CachingHTTPAccessor(_HTTPAccessor):
-#     """A :py:module:`universal_pathlib` accessor which caches content."""
-
-#     def __init__(self, parsed_url: SplitResult | None, **kwargs: Any) -> None:
-#         """Load a caching filesystem."""
-#         cls = WholeFileCacheFileSystem
-#         assert parsed_url is not None
-#         url_kwargs = cls._get_kwargs_from_urls(urlunsplit(parsed_url))
-#         url_kwargs.update(kwargs)
-#         url_kwargs.setdefault("target_protocol", "http")
-#         # url_kwargs.setdefault(
-#         #     "cache_storage", str(Path(user_cache_dir("euporie")) / "web")
-#         # )
-#         self._fs = cls(**url_kwargs)
-
-#     def _format_path(self, path: upath.UPath) -> str:
-#         if (url := path._url) is not None:
-#             return url.geturl()
-#         return super()._format_path(path)
-
-
-# class HTTPPath(_HTTPPath):
-#     """An HTTP path which caches content."""
-
-#     _hash: int
-#     _default_accessor = CachingHTTPAccessor
-
-#     def __truediv__(self: PT, key: str | PathLike) -> PT:
-#         """Join a path to a HTTP URI."""
-#         return self.__class__(urljoin(str(self), str(key)))
-
-#     def __str__(self) -> str:
-#         """Represent the path as a string."""
-#         try:
-#             return self._str
-#         except AttributeError:
-#             if url := self._url:
-#                 self._str = url.geturl()
-#             else:
-#                 return super().__str__()
-#             return self._str
-
-#     def __hash__(self) -> int:
-#         """Provide a unique hash of the path."""
-#         try:
-#             return self._hash
-#         except AttributeError:
-#             self._hash = hash(self._url)
-#             return self._hash
-
-
-# class _DataAccessor(upath.core._FSSpecAccessor):
-#     def _format_path(self, path: upath.core.UPath) -> str:
-#         """Return the full URI as a string."""
-#         return str(path)
-
-
-# class DataPath(upath.core.UPath):
-#     """A :py:class:`pathlib` compatible class for reading data URIs."""
-
-#     _default_accessor = _DataAccessor
-
-
 class UntitledPath(upath.core.UPath):
     """A path for untitled files, as needed for LSP servers."""
 
@@ -119,10 +55,7 @@ class UntitledPath(upath.core.UPath):
         return False
 
 
-# register_implementation("data", DataPath, clobber=True)
 register_implementation("untitled", UntitledPath, clobber=True)
-# register_implementation("http", HTTPPath, clobber=True)
-# register_implementation("https", HTTPPath, clobber=True)
 
 
 def parse_path(path: str | PathLike, resolve: bool = True) -> Path:
