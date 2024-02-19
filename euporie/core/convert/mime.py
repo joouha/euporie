@@ -47,8 +47,8 @@ def get_mime(path: Path | str) -> str | None:
     mime = None
 
     # Read from path of data URI
-    if path.exists() and isinstance(stat := path.stat(), dict):
-        mime = stat.get("mimetype")
+    if path.exists() and hasattr(stat := path.stat(), "as_info"):
+        mime = stat.as_info().get("mimetype")
 
     # If we have a web-address, ensure we have a url
     # Check http-headers and ensure we have a url
@@ -58,7 +58,7 @@ def get_mime(path: Path | str) -> str | None:
         # Get parsed url
         url = path._url.geturl()
         # Get the fsspec fs
-        fs = path._accessor._fs
+        fs = path.fs
         # Ensure we have a session
         session = sync(fs.loop, fs.set_session)
         # Use HEAD requests if the server allows it, falling back to GETs
@@ -74,7 +74,6 @@ def get_mime(path: Path | str) -> str | None:
                 if content_type is not None:
                     mime = content_type.partition(";")[0]
                     break
-
     # Try using magic
     if not mime:
         try:
