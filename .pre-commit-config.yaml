@@ -8,52 +8,52 @@ repos:
     hooks:
       - id: fix-byte-order-marker
         name: Fix Byte Order Marker
-        entry: hatch run check:fix-byte-order-marker
+        entry: hatch run hatch-static-analysis:fix-byte-order-marker
         language: system
         types: [text]
       - id: check-added-large-files
         name: Check for added large files
-        entry: hatch run check:check-added-large-files
+        entry: hatch run hatch-static-analysis:check-added-large-files
         language: system
       - id: check-toml
         name: Check Toml
-        entry: hatch run check:check-toml
+        entry: hatch run hatch-static-analysis:check-toml
         language: system
         types: [toml]
       - id: check-yaml
         name: Check Yaml
-        entry: hatch run check:check-yaml
+        entry: hatch run hatch-static-analysis:check-yaml
         language: system
         types: [yaml]
       - id: trailing-whitespace
         name: Trim Trailing Whitespace
-        entry: hatch run check:trailing-whitespace-fixer
+        entry: hatch run hatch-static-analysis:trailing-whitespace-fixer
         language: system
         types: [text]
         stages: [commit, push, manual]
       - id: end-of-file-fixer
         name: Fix End of Files
-        entry: hatch run check:end-of-file-fixer
+        entry: hatch run hatch-static-analysis:end-of-file-fixer
         language: system
         types: [text]
         stages: [commit, push, manual]
       - id: ruff
         name: ruff check
-        entry: hatch run check:ruff check
+        entry: hatch run hatch-static-analysis:ruff check
         args: ["--fix"]
         language: system
         types: [python]
         require_serial: true
       - id: black
         name: ruff format
-        entry: hatch run check:ruff format
+        entry: hatch run hatch-static-analysis:ruff format
         language: system
         types: [python]
         require_serial: true
       - id: codespell
         name: codespell
         description: Checks for common misspellings in text files.
-        entry: hatch run check:codespell
+        entry: hatch run hatch-static-analysis:codespell
         language: system
         types: [text]
       - id: tests
