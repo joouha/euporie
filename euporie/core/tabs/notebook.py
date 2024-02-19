@@ -120,7 +120,6 @@ class BaseNotebook(KernelTab, metaclass=ABCMeta):
         # Update the focus if the old container had focus
         if self.app.layout.has_focus(prev):
             self.focus()
-            log.debug(self.app.layout.current_control)
 
         self.app.invalidate()
         # Load widgets
