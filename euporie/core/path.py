@@ -55,13 +55,10 @@ class UntitledPath(upath.core.UPath):
         cls, urlpath: str, protocol: str, storage_options: Mapping[str, Any]
     ) -> dict[str, Any]:
         """Parse storage_options from the urlpath."""
-        try:
-            return super()._parse_storage_options(urlpath, protocol, storage_options)
-        except ValueError:
-            return {}
+        return {}
 
-    def exists(self) -> bool:
-        """Untitled files are virtual and do not exist."""
+    def exists(self, *, follow_symlinks: bool = True) -> bool:
+        """Untitled files are unsaved and do not exist."""
         return False
 
 
