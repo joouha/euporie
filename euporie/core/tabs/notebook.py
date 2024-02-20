@@ -317,12 +317,21 @@ class BaseNotebook(KernelTab, metaclass=ABCMeta):
             else:
                 try:
                     try:
-                        with open_file as f:
-                            write_nb(nb=nbformat.from_dict(self.json), fp=f)
+                        write_nb(nb=nbformat.from_dict(self.json), fp=open_file)
                     except AssertionError:
-                        # Jupytext requires a filename if we don't give it a format
-                        write_nb(nb=nbformat.from_dict(self.json), fp=temp_path)
+                        try:
+                            # Jupytext requires a filename if we don't give it a format
+                            write_nb(nb=nbformat.from_dict(self.json), fp=temp_path)
+                        except Exception:
+                            # Jupytext requires a format if the path has no extension
+                            # We just use ipynb as the default format
+                            write_nb(
+                                nb=nbformat.from_dict(self.json),
+                                fp=open_file,
+                                fmt="ipynb",
+                            )
                 except Exception:
+                    log.exception("An error occurred while saving the file")
                     if dialog := self.app.dialogs.get("save-as"):
                         dialog.show(tab=self, cb=cb)
                 else:
