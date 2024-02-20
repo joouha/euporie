@@ -80,13 +80,13 @@ class Notebook(BaseNotebook):
     name = "Notebook Editor"
     weight = 3
     mime_types: ClassVar[set[str]] = {"application/x-ipynb+json"}
-    file_extensions: ClassVar[set[str]] = {".ipynb"}
+    file_extensions: ClassVar[dict[str, None]] = {".ipynb": None}
     try:
         from jupytext.formats import NOTEBOOK_EXTENSIONS
     except ModuleNotFoundError:
         pass
     else:
-        file_extensions |= set(NOTEBOOK_EXTENSIONS)
+        file_extensions |= dict.fromkeys(NOTEBOOK_EXTENSIONS)
 
     allow_stdin = True
 

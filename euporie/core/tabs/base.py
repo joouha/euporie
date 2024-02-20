@@ -71,7 +71,7 @@ class Tab(metaclass=ABCMeta):
     name: str | None = None
     weight: int = 0
     mime_types: ClassVar[set[str]] = set()
-    file_extensions: ClassVar[set[str]] = set()
+    file_extensions: ClassVar[dict[str, None]] = {}
     _untitled_count = 0
 
     container: AnyContainer
