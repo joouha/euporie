@@ -879,7 +879,7 @@ class Theme(Mapping):
 
     def reset(self) -> None:
         """Reset all cached properties."""
-        # Iterate ove a copy of keys as dict changes size during loop
+        # Iterate over a copy of keys as dict changes size during loop
         for attr in list(self.__dict__.keys()):
             if isinstance(Theme.__dict__.get(attr), cached_property):
                 delattr(self, attr)
