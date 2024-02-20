@@ -351,7 +351,7 @@ class KernelTab(Tab, metaclass=ABCMeta):
         self.history = (
             KernelHistory(self.kernel) if use_kernel_history else InMemoryHistory()
         )
-        self.suggester: AutoSuggest = HistoryAutoSuggest(self.history)
+        self.suggester = HistoryAutoSuggest(self.history)
 
         self.app.create_background_task(self.load_lsps())
 

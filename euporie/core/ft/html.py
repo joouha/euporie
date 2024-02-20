@@ -3526,8 +3526,8 @@ class HTML:
 
         self._dom_processed = False
         self._assets_loaded = False
-        self._url_cbs: dict[str, Callable[[Any], None]] = {}
-        self._url_fs_map: dict[str, AbstractFileSystem] = {}
+        self._url_cbs: dict[Path, Callable[[Any], None]] = {}
+        self._url_fs_map: dict[Path, AbstractFileSystem] = {}
 
     # Lazily load attributes
 
