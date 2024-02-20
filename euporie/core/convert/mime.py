@@ -8,6 +8,7 @@ from functools import lru_cache
 from typing import TYPE_CHECKING
 
 from upath import UPath
+from upath._stat import UPathStatResult
 from upath.implementations.http import HTTPPath
 
 if TYPE_CHECKING:
@@ -47,7 +48,7 @@ def get_mime(path: Path | str) -> str | None:
     mime = None
 
     # Read from path of data URI
-    if path.exists() and hasattr(stat := path.stat(), "as_info"):
+    if path.exists() and isinstance(stat := path.stat(), UPathStatResult):
         mime = stat.as_info().get("mimetype")
 
     # If we have a web-address, ensure we have a url

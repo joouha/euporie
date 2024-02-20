@@ -54,6 +54,7 @@ if TYPE_CHECKING:
     )
     from prompt_toolkit.key_binding.key_bindings import NotImplementedOrNone
     from prompt_toolkit.key_binding.key_processor import KeyPressEvent
+    from prompt_toolkit.layout.containers import AnyContainer
     from prompt_toolkit.layout.controls import UIControl
 
     from euporie.core.app import BaseApp
@@ -574,7 +575,7 @@ class MenuBar:
 
         return results
 
-    def _submenu(self, level: int = 0) -> Container:
+    def _submenu(self, level: int = 0) -> AnyContainer:
         grid = self.grid
 
         def get_text_fragments() -> StyleAndTextTuples:
