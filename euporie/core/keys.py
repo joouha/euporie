@@ -59,6 +59,7 @@ _kitty_functional_codes = {
     "F12": (24, "~"),
     "Backspace": (127, "u"),
     "Enter": (13, "u"),
+    "Tab": (9, "u"),
 }
 
 # Add Alt-key shortcuts
