@@ -12,6 +12,7 @@ Upcoming
 Added
 =====
 
+- Support Python 3.12
 - Implement LSP server support
 - Add new ``--force-graphics`` option, to allow using the graphics protocol even if not supported by the terminal
 - Automatically disable mouse support on scroll-up in console to allow for terminal scrollback buffer scrolling. Mouse support is re-enabled on the next key-press.
