@@ -5,9 +5,20 @@ Changelog
 Notable changes to this project will be documented in this file.
 
 
-********
-Upcoming
-********
+*******************
+v2.8.1 (2024-03-01)
+*******************
+
+Fixed
+=====
+
+- Fix ``Tab`` key when numlock is enabled in kitty
+
+----
+
+*******************
+v2.8.0 (2024-03-01)
+*******************
 
 Added
 =====
