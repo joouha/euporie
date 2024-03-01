@@ -12,6 +12,7 @@ v2.8.1 (2024-03-01)
 Fixed
 =====
 
+- Prevent pager mime selection issue
 - Fix ``Tab`` key when numlock is enabled in kitty
 
 ----

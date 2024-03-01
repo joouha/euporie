@@ -358,7 +358,7 @@ class CellOutput:
                         metadata=self.json.get("metadata", {}).get(mime, {}),
                         parent=self.parent,
                     )
-                except NotImplementedError:
+                except (NotImplementedError, KeyError):
                     self.selected_mime = mime = list(data.keys())[-1]
                     continue
                 else:

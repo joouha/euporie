@@ -106,6 +106,7 @@ class PagerOutput(CellOutput):
         Returns:
             A :class:`PagerOutputDataElement` container for the currently selected mime-type.
         """
+        self._selected_mime = None
         return PagerOutputDataElement(
             mime=self.selected_mime,
             data=self.data[self.selected_mime],
