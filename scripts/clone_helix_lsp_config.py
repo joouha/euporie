@@ -11,7 +11,8 @@ lsps = c.get("language-server", {})
 
 for lsp in lsps.values():
     # Margs command and args
-    lsp["cmd"] = [lsp["command"], *lsp.get("args", [])]
+    cmd = [lsp["command"], *lsp.get("args", [])]
+    lsp["cmd"] = cmd
     del lsp["command"]
     if "args" in lsp:
         del lsp["args"]
@@ -23,9 +24,9 @@ for lsp in lsps.values():
 # Assign languages to LSPs
 for lang in c.get("language", []):
     for name in lang.get("language-servers", []):
-        if lsp := lsps.get(name, {}):
-            if "languages" not in lsp:
-                lsp["languages"] = set()
-            lsp["languages"].add(lang["name"])
+        lsp = lsps.get(name, {})
+        if "languages" not in lsp:
+            lsp["languages"] = set()
+        lsp["languages"].add(lang["name"])
 
 print(lsps)
