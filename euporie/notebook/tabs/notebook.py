@@ -28,9 +28,7 @@ from euporie.core.filters import (
     cursor_on_first_line,
     cursor_on_last_line,
     display_has_focus,
-    have_formatter,
     insert_mode,
-    kernel_is_python,
     kernel_tab_has_focus,
     multiple_cells_selected,
     replace_mode,
@@ -1096,12 +1094,7 @@ class Notebook(BaseNotebook):
                     cell.input_box.reformat()
 
     @staticmethod
-    @add_cmd(
-        filter=have_formatter
-        & kernel_is_python
-        & notebook_has_focus
-        & ~buffer_has_focus,
-    )
+    @add_cmd(filter=notebook_has_focus & ~buffer_has_focus)
     def _reformat_notebook() -> None:
         """Automatically reformat all code cells in the notebook."""
         nb = get_app().tab

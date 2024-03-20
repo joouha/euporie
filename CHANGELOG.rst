@@ -4,6 +4,16 @@ Changelog
 
 Notable changes to this project will be documented in this file.
 
+********
+Upcoming
+********
+
+Fixed
+=====
+
+- Prevent ruff formatter deleting buffer contents
+
+----
 
 *******************
 v2.8.1 (2024-03-01)

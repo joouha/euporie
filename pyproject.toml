@@ -52,7 +52,6 @@ dependencies = [
 
 [project.optional-dependencies]
 hub = ["asyncssh~=2.10.1"]
-format = ["black>=19.3.b0", "isort~=5.10.1", "ruff~=0.1.0"]
 
 [project.urls]
 Documentation = "https://euporie.readthedocs.io/en/latest"
@@ -102,10 +101,7 @@ packages = ["euporie"]
 # Default development environment
 [tool.hatch.envs.default]
 dev-mode = true
-features = [
-  "hub",
-  "format",
-]
+features = ["hub"]
 
 
 # Environment for testing on various python versions
@@ -184,6 +180,7 @@ cov = "coverage run --parallel -m pytest {args}"
 [tool.hatch.envs.docs]
 description = "Build documentation."
 dependencies = [
+  "importlib_metadata",
   "Sphinx~=4.4.0",
   "sphinx-autobuild~=2021.3.14",
   "sphinx-rtd-theme~=1.0.0",
