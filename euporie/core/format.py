@@ -67,11 +67,18 @@ class CliFormatter(Formatter):
         except Exception:
             return text
         try:
-            output, _error = proc.communicate(text)
+            output, error = proc.communicate(text)
         except Exception:
             return text
         else:
-            return output.rstrip("\r\n")
+            if output and not error:
+                return output.rstrip("\r\n")
+            else:
+                return text
+
+    def __repr__(self) -> str:
+        """Return representation of the formatter as a string."""
+        return f"{self.command[0].title()}Formatter()"
 
 
 class LspFormatter(Formatter):
@@ -115,3 +122,7 @@ class LspFormatter(Formatter):
             text = text.rstrip()
 
         return text
+
+    def __repr__(self) -> str:
+        """Return representation of the formatter as a string."""
+        return f"{self.lsp.title()}Formatter()"

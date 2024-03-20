@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import os
-from functools import lru_cache, partial, reduce
+from functools import partial, reduce
 from importlib import import_module
 from shutil import which
 from typing import TYPE_CHECKING
@@ -49,57 +49,6 @@ def have_modules(*modules: str) -> Filter:
     filters = [Condition(partial(try_import, module)) for module in modules]
     return reduce(lambda a, b: a & b, filters, to_filter(True))
 
-
-@Condition
-@lru_cache
-def have_ruff() -> bool:
-    """Determine if ruff is available."""
-    try:
-        import ruff  # noqa F401
-    except ModuleNotFoundError:
-        return False
-    else:
-        return True
-
-
-@Condition
-@lru_cache
-def have_black() -> bool:
-    """Determine if black is available."""
-    try:
-        import black.const  # noqa F401
-    except ModuleNotFoundError:
-        return False
-    else:
-        return True
-
-
-@Condition
-@lru_cache
-def have_isort() -> bool:
-    """Determine if isort is available."""
-    try:
-        import isort  # noqa F401
-    except ModuleNotFoundError:
-        return False
-    else:
-        return True
-
-
-@Condition
-@lru_cache
-def have_ssort() -> bool:
-    """Determine if ssort is available."""
-    try:
-        import ssort  # noqa F401
-    except ModuleNotFoundError:
-        return False
-    else:
-        return True
-
-
-# Determine if we have at least one formatter
-have_formatter = have_black | have_isort | have_ssort | have_ruff
 
 # Determine if euporie is running inside a multiplexer.
 in_screen = to_filter(os.environ.get("TERM", "").startswith("screen"))
