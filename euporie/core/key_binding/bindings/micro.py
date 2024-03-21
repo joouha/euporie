@@ -722,7 +722,7 @@ def indent_lines(event: KeyPressEvent) -> None:
 @add_cmd(
     filter=buffer_has_focus
     & (cursor_in_leading_ws | has_selection)
-    & ~cursor_at_start_of_line,
+    & (~cursor_at_start_of_line | cursor_at_start_of_line),
 )
 def unindent_lines(event: KeyPressEvent) -> None:
     """Unindent the current or selected lines."""
