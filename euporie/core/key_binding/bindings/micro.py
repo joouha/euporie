@@ -680,6 +680,9 @@ def dent_buffer(event: KeyPressEvent, indenting: bool = True) -> None:
             )
             * sign
         )
+        selection_state.original_cursor_position = max(
+            min(selection_state.original_cursor_position, len(buffer.text)), 0
+        )
     # Maintain the selection state before indentation
     buffer.selection_state = selection_state
 
