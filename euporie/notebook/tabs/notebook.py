@@ -250,9 +250,9 @@ class Notebook(BaseNotebook):
     @property
     def cell(self) -> Cell:
         """Return the currently selected `Cell` in this `Notebook`."""
-        cell = self.page.get_child().content
-        assert isinstance(cell, Cell)
-        return cell
+        if isinstance(cell := self.page.get_child().content, Cell):
+            return cell
+        return Cell(0, {}, self)
 
     # Editing specific stuff
 
