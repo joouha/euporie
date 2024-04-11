@@ -601,6 +601,7 @@ class ScrollingContainer(Container):
     def all_children(self) -> Sequence[Container]:
         """Return the list of all children of this container."""
         if self.refresh_children:
+            self.refresh_children = False
             _children = self._children
             _children.clear()
             new_child_hashes = set()
@@ -618,7 +619,6 @@ class ScrollingContainer(Container):
             for child_hash in set(self._child_cache) - new_child_hashes:
                 del self._child_cache[child_hash]
 
-            self.refresh_children = False
             # Clean up positions
             self.index_positions = {
                 i: pos
