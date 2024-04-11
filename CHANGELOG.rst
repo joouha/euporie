@@ -11,6 +11,7 @@ Upcoming
 Fixed
 =====
 
+- Prevent race condition causing duplicate cells at startup
 - Mark notebook as modified when changing cell type
 - Prevent ruff formatter deleting buffer contents
 
