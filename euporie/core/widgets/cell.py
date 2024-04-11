@@ -720,6 +720,8 @@ class Cell:
         self.input_box.control._fragment_cache.clear()
         # Trigger callbacks
         self.on_change()
+        # Flag notebook as modified
+        self.kernel_tab.dirty = True
 
     @property
     def path(self) -> Path:
