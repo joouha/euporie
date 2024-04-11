@@ -11,6 +11,7 @@ Upcoming
 Fixed
 =====
 
+- Mark notebook as modified when changing cell type
 - Prevent ruff formatter deleting buffer contents
 
 ----
