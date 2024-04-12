@@ -600,10 +600,10 @@ class ScrollingContainer(Container):
 
     def all_children(self) -> Sequence[Container]:
         """Return the list of all children of this container."""
-        if self.refresh_children:
+        _children = self._children
+        if self.refresh_children or not self._children:
             self.refresh_children = False
-            _children = self._children
-            _children.clear()
+            new_children = []
             new_child_hashes = set()
             for child in self.children_func():
                 if not (
@@ -612,8 +612,9 @@ class ScrollingContainer(Container):
                     wrapped_child = self._child_cache[child_hash] = CachedContainer(
                         child, mouse_handler_wrapper=self._mouse_handler_wrapper
                     )
-                _children.append(wrapped_child)
+                new_children.append(wrapped_child)
                 new_child_hashes.add(child_hash)
+            _children[:] = new_children
 
             # Clean up metacache
             for child_hash in set(self._child_cache) - new_child_hashes:
@@ -625,7 +626,7 @@ class ScrollingContainer(Container):
                 for i, pos in self.index_positions.items()
                 if i < len(self._children)
             }
-        return self._children
+        return _children
 
     def get_children(self) -> list[Container]:
         """Return the list of currently visible children to include in the layout."""
