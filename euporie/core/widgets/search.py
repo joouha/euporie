@@ -5,7 +5,9 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
+from prompt_toolkit.document import Document
 from prompt_toolkit.filters.app import is_searching
+from prompt_toolkit.filters.base import Condition
 from prompt_toolkit.key_binding.vi_state import InputMode
 from prompt_toolkit.layout.controls import BufferControl, SearchBufferControl
 from prompt_toolkit.search import SearchDirection
@@ -57,6 +59,10 @@ class SearchBar(PtkSearchToolbar):
         self.control.key_bindings = load_registered_bindings(
             "euporie.core.widgets.search.SearchBar"
         )
+        search_state = self.control.searcher_search_state
+        search_state.ignore_case = Condition(
+            lambda: self.search_buffer.text.islower() or search_state.text.islower()
+        )
 
     register_bindings(
         {
@@ -73,28 +79,32 @@ class SearchBar(PtkSearchToolbar):
     )
 
 
-def start_global_search(
-    buffer_control: BufferControl | None = None,
-    direction: SearchDirection = SearchDirection.FORWARD,
-) -> None:
-    """Start a search through all searchable `buffer_controls` in the layout."""
+def find_search_control() -> tuple[SearchBufferControl, BufferControl]:
+    """Find the current search buffer and buffer control."""
     app = get_app()
     layout = app.layout
-    current_control = layout.current_control
-    # Find the search buffer control
-    if app.search_bar is not None:
+    current_control = app.layout.current_control
+    if isinstance(current_control, SearchBufferControl):
+        search_buffer_control = current_control
+        current_control = layout.search_links[search_buffer_control]
+    elif isinstance(current_control, BufferControl):
+        if current_control.search_buffer_control is not None:
+            search_buffer_control = current_control.search_buffer_control
+    elif app.search_bar is not None:
         search_buffer_control = app.search_bar.control
-    elif (
-        isinstance(current_control, BufferControl)
-        and current_control.search_buffer_control is not None
-    ):
-        search_buffer_control = current_control.search_buffer_control
-    else:
-        return
-    # Find all searchable controls
+    return search_buffer_control, current_control
+
+
+def find_searchable_controls(
+    search_buffer_control: SearchBufferControl, current_control: BufferControl
+) -> list[BufferControl]:
+    """Find list of searchable controls and the index of the next control."""
     searchable_controls: list[BufferControl] = []
     next_control_index = 0
-    for control in layout.find_all_controls():
+    layout = get_app().layout
+    if current_control is None:
+        current_control = layout.current_control
+    for control in get_app().layout.find_all_controls():
         # Find the index of the next searchable control so we can link the search
         # control to it if the currently focused control is not searchable. This is so
         # that the next searchable control can be focused when search is completed.
@@ -105,24 +115,38 @@ def start_global_search(
             isinstance(control, BufferControl)
             and control.search_buffer_control == search_buffer_control
         ):
-            # Set its search direction
-            control.search_state.direction = direction
             # Add it to our list
             searchable_controls.append(control)
+    searchable_controls = (
+        searchable_controls[next_control_index:]
+        + searchable_controls[:next_control_index]
+    )
+    return searchable_controls
+
+
+def start_global_search(
+    buffer_control: BufferControl | None = None,
+    direction: SearchDirection = SearchDirection.FORWARD,
+) -> None:
+    """Start a search through all searchable `buffer_controls` in the layout."""
+    search_buffer_control, current_control = find_search_control()
+    searchable_controls = find_searchable_controls(
+        search_buffer_control, current_control
+    )
 
     # Stop the search if we did not find any searchable controls
     if not searchable_controls:
         return
 
     # If the current control is searchable, link it
+    app = get_app()
+    layout = app.layout
     if current_control in searchable_controls:
         assert isinstance(current_control, BufferControl)
         layout.search_links[search_buffer_control] = current_control
     else:
         # otherwise use the next after the currently selected control
-        layout.search_links[search_buffer_control] = searchable_controls[
-            next_control_index % len(searchable_controls)
-        ]
+        layout.search_links[search_buffer_control] = searchable_controls[0]
     # Make sure to focus the search BufferControl
     layout.focus(search_buffer_control)
     # If we're in Vi mode, make sure to go into insert mode.
@@ -137,31 +161,82 @@ def find() -> None:
 
 def find_prev_next(direction: SearchDirection) -> None:
     """Find the previous or next search match."""
-    app = get_app()
-    layout = app.layout
-    control = app.layout.current_control
-    # Determine search buffer and searched buffer
-    search_buffer_control = None
-    if isinstance(control, SearchBufferControl):
-        search_buffer_control = control
-        control = layout.search_links[search_buffer_control]
-    elif isinstance(control, BufferControl):
-        if control.search_buffer_control is not None:
-            search_buffer_control = control.search_buffer_control
-    elif app.search_bar is not None:
-        search_buffer_control = app.search_bar.control
-    if isinstance(control, BufferControl) and search_buffer_control is not None:
+    if is_searching():
+        accept_search()
+
+    search_buffer_control, current_control = find_search_control()
+    searchable_controls = find_searchable_controls(
+        search_buffer_control, current_control
+    )
+
+    if direction == SearchDirection.BACKWARD:
+        searchable_controls = searchable_controls[:1] + searchable_controls[1:][::-1]
+
+    # Search over all searchable buffers
+    for i, control in enumerate(searchable_controls):
         # Update search_state.
         search_state = control.search_state
         search_state.direction = direction
         # Apply search to buffer
         buffer = control.buffer
-        buffer.apply_search(search_state, include_current_position=False, count=1)
-        # Set selection
-        buffer.selection_state = SelectionState(
-            buffer.cursor_position + len(search_state.text)
-        )
-        buffer.selection_state.enter_shift_mode()
+
+        # If we are searching history, use the PTK buffer search implementation
+        if buffer.enable_history_search():
+            search_result = buffer._search(search_state)
+
+        # Otherwise, only search the buffer's current "working line"
+        else:
+            document = buffer.document
+            # If have move to the next buffer, set the cursor position for the start of
+            # the search to the start or the end of the text, depending on if we are
+            # searching forwards or backwards
+            if i > 0:
+                if direction == SearchDirection.FORWARD:
+                    document = Document(document.text, 0)
+                else:
+                    document = Document(document.text, len(document.text))
+
+            text = search_state.text
+            ignore_case = search_state.ignore_case()
+            search_result: tuple[int, int] | None = None
+
+            if direction == SearchDirection.FORWARD:
+                # Try find at the current input.
+                new_index = document.find(
+                    text,
+                    # If we have moved to the next buffer, include the current position
+                    # which will be the start of the document text
+                    include_current_position=i > 0,
+                    ignore_case=ignore_case,
+                )
+                if new_index is not None:
+                    search_result = (
+                        buffer.working_index,
+                        document.cursor_position + new_index,
+                    )
+            else:
+                # Try find at the current input.
+                new_index = document.find_backwards(text, ignore_case=ignore_case)
+                if new_index is not None:
+                    search_result = (
+                        buffer.working_index,
+                        document.cursor_position + new_index,
+                    )
+
+        if search_result is not None:
+            working_index, cursor_position = search_result
+            buffer.working_index = working_index
+            buffer.cursor_position = cursor_position
+            # Set SelectionState
+            buffer.selection_state = SelectionState(
+                buffer.cursor_position + len(search_state.text)
+            )
+            buffer.selection_state.enter_shift_mode()
+
+            # Trigger a cursor position changed event on this buffer
+            buffer._cursor_position_changed()
+
+            break
 
 
 @add_cmd()

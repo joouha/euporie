@@ -17,6 +17,7 @@ from prompt_toolkit.completion.base import (
     _MergedCompleter,
 )
 from prompt_toolkit.document import Document
+from prompt_toolkit.filters.app import is_searching
 from prompt_toolkit.filters.base import Condition
 from prompt_toolkit.layout.containers import (
     ConditionalContainer,
@@ -163,6 +164,11 @@ class Cell:
             """Respond to cursor movements."""
             # Tell the scrolling container to scroll the cursor into view on the next render
             weak_self.kernel_tab.page.scroll_to_cursor = True
+            if not is_searching():
+                if not self.selected:
+                    weak_self.kernel_tab.select(self.index, scroll=True)
+                if not weak_self.kernel_tab.in_edit_mode():
+                    weak_self.kernel_tab.enter_edit_mode()
 
         # Now we generate the main container used to represent a kernel_tab cell
 
