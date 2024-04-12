@@ -129,7 +129,7 @@ class KernelInput(TextArea):
         scrollbar: FilterOrBool = True,
         style: str = "class:kernel-input",
         search_field: SearchToolbar | None = None,
-        preview_search: FilterOrBool = True,
+        preview_search: FilterOrBool = False,
         prompt: AnyFormattedText = "",
         input_processors: list[Processor] | None = None,
         name: str = "",
