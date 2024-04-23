@@ -19,10 +19,7 @@ from prompt_toolkit.utils import Event, to_str
 from euporie.core.commands import add_cmd
 from euporie.core.convert.datum import Datum
 from euporie.core.current import get_app
-from euporie.core.filters import (
-    display_has_focus,
-    scrollable,
-)
+from euporie.core.filters import display_has_focus, scrollable
 from euporie.core.ft.utils import wrap
 from euporie.core.graphics import GraphicProcessor
 from euporie.core.key_binding.registry import (
@@ -159,7 +156,7 @@ class DisplayControl(UIControl):
             extend=not self.dont_extend_width(),
         )
         if width and height:
-            key = Datum.add_size(datum, Size(height, self.width))
+            key = Datum.add_size(datum, Size(self.height, self.width))
             ft = [(f"[Graphic_{key}]", ""), *ft]
         lines = list(split_lines(ft))
         if wrap_lines and width:
@@ -241,12 +238,18 @@ class DisplayControl(UIControl):
         get_line_prefix: GetLinePrefixCallable | None,
     ) -> int | None:
         """Calculate and return the preferred height of the control."""
+        height = None
         max_cols, aspect = self.datum.cell_size()
         if aspect:
-            return ceil(min(width, max_cols) * aspect)
+            height = ceil(min(width, max_cols) * aspect)
         cp = self.color_palette
         self.lines = self._line_cache[
-            self.datum, width, None, cp.fg.base_hex, cp.bg.base_hex, self.wrap_lines()
+            self.datum,
+            width,
+            height,
+            cp.fg.base_hex,
+            cp.bg.base_hex,
+            self.wrap_lines(),
         ]
         return len(self.lines)
 
@@ -299,17 +302,19 @@ class DisplayControl(UIControl):
             A :py:class:`UIContent` instance.
         """
         # Trigger a re-render in the future if things have changed
+        render = False
         if self.loading:
-            self.render()
-        if width != self.width:
+            render = True
+        if width != self.width or height != self.height:
             self.resizing = True
             self.width = width
             self.height = height
-            self.render()
+            render = True
         if (cp := get_app().color_palette) != self.color_palette:
             self.color_palette = cp
+            render = True
+        if render:
             self.render()
-
         content = self._content_cache[
             self.datum, width, height, self.loading, self.cursor_position, cp
         ]
