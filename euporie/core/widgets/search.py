@@ -79,31 +79,43 @@ class SearchBar(PtkSearchToolbar):
     )
 
 
-def find_search_control() -> tuple[SearchBufferControl, BufferControl]:
+def find_search_control() -> tuple[SearchBufferControl | None, BufferControl | None]:
     """Find the current search buffer and buffer control."""
+    current_buffer_control: BufferControl | None = None
+    search_buffer_control: SearchBufferControl | None = None
+
     app = get_app()
     layout = app.layout
     current_control = app.layout.current_control
+
     if isinstance(current_control, SearchBufferControl):
         search_buffer_control = current_control
-        current_control = layout.search_links[search_buffer_control]
-    elif isinstance(current_control, BufferControl):
-        if current_control.search_buffer_control is not None:
-            search_buffer_control = current_control.search_buffer_control
-    elif app.search_bar is not None:
+
+    if search_buffer_control is None and app.search_bar is not None:
         search_buffer_control = app.search_bar.control
-    return search_buffer_control, current_control
+
+    if search_buffer_control is not None and current_buffer_control is None:
+        current_buffer_control = layout.search_links.get(search_buffer_control)
+
+    if current_buffer_control is None and isinstance(current_control, BufferControl):
+        current_buffer_control = current_control
+
+    if (
+        search_buffer_control is None
+        and current_buffer_control is not None
+        and current_buffer_control.search_buffer_control is not None
+    ):
+        search_buffer_control = current_buffer_control.search_buffer_control
+
+    return search_buffer_control, current_buffer_control
 
 
 def find_searchable_controls(
-    search_buffer_control: SearchBufferControl, current_control: BufferControl
+    search_buffer_control: SearchBufferControl, current_control: BufferControl | None
 ) -> list[BufferControl]:
     """Find list of searchable controls and the index of the next control."""
     searchable_controls: list[BufferControl] = []
     next_control_index = 0
-    layout = get_app().layout
-    if current_control is None:
-        current_control = layout.current_control
     for control in get_app().layout.find_all_controls():
         # Find the index of the next searchable control so we can link the search
         # control to it if the currently focused control is not searchable. This is so
@@ -130,6 +142,8 @@ def start_global_search(
 ) -> None:
     """Start a search through all searchable `buffer_controls` in the layout."""
     search_buffer_control, current_control = find_search_control()
+    if search_buffer_control is None:
+        return
     searchable_controls = find_searchable_controls(
         search_buffer_control, current_control
     )
@@ -165,6 +179,8 @@ def find_prev_next(direction: SearchDirection) -> None:
         accept_search()
 
     search_buffer_control, current_control = find_search_control()
+    if search_buffer_control is None:
+        return
     searchable_controls = find_searchable_controls(
         search_buffer_control, current_control
     )
@@ -179,6 +195,8 @@ def find_prev_next(direction: SearchDirection) -> None:
         search_state.direction = direction
         # Apply search to buffer
         buffer = control.buffer
+
+        search_result: tuple[int, int] | None = None
 
         # If we are searching history, use the PTK buffer search implementation
         if buffer.enable_history_search():
@@ -198,7 +216,6 @@ def find_prev_next(direction: SearchDirection) -> None:
 
             text = search_state.text
             ignore_case = search_state.ignore_case()
-            search_result: tuple[int, int] | None = None
 
             if direction == SearchDirection.FORWARD:
                 # Try find at the current input.
