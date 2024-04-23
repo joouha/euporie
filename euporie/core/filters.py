@@ -13,6 +13,7 @@ from prompt_toolkit.filters import (
     Condition,
     emacs_insert_mode,
     emacs_mode,
+    has_completions,
     to_filter,
     vi_insert_mode,
     vi_mode,
@@ -104,6 +105,9 @@ def has_menus() -> bool:
         if isinstance(menu.content, ConditionalContainer) and menu.content.filter():
             return True
     return False
+
+
+has_float = has_dialog | has_menus | has_completions
 
 
 @Condition
