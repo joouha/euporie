@@ -10,7 +10,6 @@ from typing import TYPE_CHECKING
 
 from prompt_toolkit.cache import FastDictCache, SimpleCache
 from prompt_toolkit.data_structures import Point
-from prompt_toolkit.filters.app import has_completions
 from prompt_toolkit.filters.base import Condition
 from prompt_toolkit.filters.utils import to_filter
 from prompt_toolkit.formatted_text.base import to_formatted_text
@@ -25,7 +24,7 @@ from euporie.core.convert.datum import Datum
 from euporie.core.convert.registry import find_route
 from euporie.core.current import get_app
 from euporie.core.data_structures import DiInt
-from euporie.core.filters import has_dialog, has_menus, in_mplex
+from euporie.core.filters import has_float, in_mplex
 from euporie.core.ft.utils import _ZERO_WIDTH_FRAGMENTS
 from euporie.core.layout.scroll import BoundedWritePosition
 from euporie.core.terminal import passthrough
@@ -192,7 +191,7 @@ class SixelGraphicControl(GraphicControl):
         def render_lines() -> list[StyleAndTextTuples]:
             """Render the lines to display in the control."""
             ft: list[StyleAndTextTuples] = []
-            if height:
+            if height >= 0:
                 cmd = self.convert_data(
                     BoundedWritePosition(0, 0, width, height, self.bbox)
                 )
@@ -282,7 +281,7 @@ class ItermGraphicControl(GraphicControl):
         def render_lines() -> list[StyleAndTextTuples]:
             """Render the lines to display in the control."""
             ft: list[StyleAndTextTuples] = []
-            if height:
+            if height > 0 and width > 0:
                 b64data = self.convert_data(
                     BoundedWritePosition(0, 0, width, height, self.bbox)
                 )
@@ -574,7 +573,7 @@ class GraphicWindow(Window):
         super().__init__(*args, **kwargs)
         self.content = content
         self.get_position = get_position
-        self.filter = ~has_completions & ~has_dialog & ~has_menus & to_filter(filter)
+        self.filter = ~has_float & to_filter(filter)
         self._pre_rendered = False
 
     def write_to_screen(
