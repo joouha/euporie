@@ -230,9 +230,7 @@ class Datum(Generic[T], metaclass=_MetaDatum):
             return self._conversions[key]
 
         routes = _CONVERTOR_ROUTE_CACHE[(self.format, to)]
-        # log.debug(
-        #     "Converting from '%s' to '%s' using route: %s", self, to, routes
-        # )
+        # log.debug("Converting from '%s' to '%s' using route: %s", self, to, routes)
         output: T | None = None
         if routes:
             datum = self
@@ -244,18 +242,25 @@ class Datum(Generic[T], metaclass=_MetaDatum):
                         output = self._conversions[key]
                     else:
                         # Find converter with lowest weight
-                        func = sorted(
+                        for converter in sorted(
                             [
                                 conv
                                 for conv in converters[stage_b][stage_a]
                                 if _FILTER_CACHE.get((conv,), conv.filter_)
                             ],
                             key=lambda x: x.weight,
-                        )[0].func
-                        try:
-                            output = await func(datum, cols, rows, fg, bg, extend)
-                            self._conversions[key] = output
-                        except Exception:
+                        ):
+                            try:
+                                output = await converter.func(
+                                    datum, cols, rows, fg, bg, extend
+                                )
+                                self._conversions[key] = output
+                            except Exception:
+                                log.debug("Conversion step %s failed", converter)
+                                continue
+                            else:
+                                break
+                        else:
                             log.exception("An error occurred during format conversion")
                             output = None
                     if output is None:

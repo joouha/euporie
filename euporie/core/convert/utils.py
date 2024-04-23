@@ -61,28 +61,18 @@ async def call_subproc(
             stderr=asyncio.subprocess.DEVNULL,
         )
         output_bytes, _ = await proc.communicate(stdinput)
-    except FileNotFoundError as error_:
+    except FileNotFoundError as error:
         log.error("Could not run external command `%s`", cmd)
-        error = error_
-    except subprocess.CalledProcessError as error_:
+        raise error
+    except subprocess.CalledProcessError as error:
         log.error("There was an error while running external command `%s`", cmd)
-        error = error_
+        raise error
+    else:
+        if (proc.returncode or 0) > 0 or error:
+            # Raise an exception if the process failed so we can continue on the the
+            # next conversion method
+            raise subprocess.CalledProcessError(proc.returncode or 0, cmd)
     finally:
-        if error is not None:
-            # Generate an output stating there was an error
-            output_bytes = (
-                b"\x1b[33m"  # Set fg to yellow
-                b"\xee\x82\xb6"  # Draw left pill side
-                b"\x1b[43m\x1b[30m"  # Set fg to black, bg to yellow
-                b"\xe2\x9a\xa0"  # Draw warning symbol
-                b" Rendering Error"
-                b"\x1b[33m\x1b[49m"  # Set fg to yellow, reset bg
-                b"\xee\x82\xb4"  # Draw right pill side
-                b"\x1b[n"  # Reset style
-            )
-
-        # TODO Log any stderr
-
         # Clean up any temporary file
         if use_tempfile:
             tfile.close()
