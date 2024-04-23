@@ -84,7 +84,7 @@ class Notebook(BaseNotebook):
     except ModuleNotFoundError:
         pass
     else:
-        file_extensions |= dict.fromkeys(NOTEBOOK_EXTENSIONS)
+        file_extensions.update(dict.fromkeys(NOTEBOOK_EXTENSIONS))
 
     allow_stdin = True
 
