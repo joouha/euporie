@@ -125,4 +125,4 @@ class LspFormatter(Formatter):
 
     def __repr__(self) -> str:
         """Return representation of the formatter as a string."""
-        return f"{self.lsp.title()}Formatter()"
+        return f"{self.lsp.name.title()}Formatter()"
