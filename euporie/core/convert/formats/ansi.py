@@ -169,9 +169,10 @@ async def html_to_ansi_py_htmlparser(
 @register(
     from_="latex",
     to="ansi",
-    filter_=have_modules("flatlatex.latexfuntypes"),
+    filter_=command_exists("utftex"),
+    weight=0,
 )
-async def latex_to_ansi_py_flatlatex(
+async def latex_to_ansi_utftex(
     datum: Datum,
     cols: int | None = None,
     rows: int | None = None,
@@ -179,16 +180,15 @@ async def latex_to_ansi_py_flatlatex(
     bg: str | None = None,
     extend: bool = True,
 ) -> str:
-    """Convert LaTeX to ANSI using :py:mod:`flatlatex`."""
-    import flatlatex
-
-    return flatlatex.converter().convert(datum.data.strip().strip("$").strip())
+    """Render LaTeX maths as unicode."""
+    return (await call_subproc(datum.data, ["utftex"])).decode()
 
 
 @register(
     from_="latex",
     to="ansi",
     filter_=have_modules("pylatexenc"),
+    weight=0,
 )
 async def latex_to_ansi_py_pylatexenc(
     datum: Datum,
@@ -202,6 +202,36 @@ async def latex_to_ansi_py_pylatexenc(
     from pylatexenc.latex2text import LatexNodes2Text
 
     return LatexNodes2Text().latex_to_text(datum.data.strip().strip("$").strip())
+
+
+@register(
+    from_="latex",
+    to="ansi",
+    filter_=have_modules("flatlatex.latexfuntypes"),
+    weight=0,
+)
+async def latex_to_ansi_py_flatlatex(
+    datum: Datum,
+    cols: int | None = None,
+    rows: int | None = None,
+    fg: str | None = None,
+    bg: str | None = None,
+    extend: bool = True,
+) -> str:
+    """Convert LaTeX to ANSI using :py:mod:`flatlatex`."""
+    import flatlatex
+    from flatlatex.latexfuntypes import latexfun
+
+    converter = flatlatex.converter()
+    for style in (
+        r"\textstyle",
+        r"\displaystyle",
+        r"\scriptstyle",
+        r"\scriptscriptstyle",
+    ):
+        converter._converter__cmds[style] = latexfun(lambda x: "", 0)
+
+    return converter.convert(datum.data.strip().strip("$").strip())
 
 
 @register(
@@ -261,7 +291,7 @@ async def pil_to_ansi_py_timg(
     assert rows is not None
     assert cols is not None
 
-    # `timg` assumes a 2x1 terminal cell aspect ratio, so we correct for while
+    # `timg` assumes a 2x1 terminal cell aspect ratio, so we correct for this while
     # resizing the image
     data = data.resize((cols, ceil(rows * 2 * (px / py) / 0.5)))
 
