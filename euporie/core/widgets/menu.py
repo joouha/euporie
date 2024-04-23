@@ -408,8 +408,6 @@ class MenuBar:
             """Close the current menu."""
             if self.selected_menu:
                 self.selected_menu = self.selected_menu[:-1]
-                log.debug(self.selected_menu)
-                log.debug(self.last_focused)
                 self.refocus()
 
         # Add global CUA menu shortcut
@@ -516,7 +514,7 @@ class MenuBar:
         focused = self.focused()
 
         # This is called during the rendering. When we discover that this
-        # widget doesn't have the focus anymore. Reset menu state.
+        # widget doesn't have the focus anymore, reset the menu state.
         if not focused:
             self.selected_menu = []
 
@@ -527,9 +525,11 @@ class MenuBar:
                 # Toggle focus.
                 if not hover and focused and self.selected_menu == [index]:
                     self.selected_menu = []
-                self.selected_menu = [index]
+                else:
+                    self.selected_menu = [index]
                 self.refocus()
                 return None
+
             return NotImplemented
 
         results: StyleAndTextTuples = []
