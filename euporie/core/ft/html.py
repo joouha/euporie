@@ -15,7 +15,6 @@ from math import ceil
 from operator import eq, ge, gt, le, lt
 from typing import TYPE_CHECKING, NamedTuple, cast, overload
 
-from flatlatex.data import subscript, superscript
 from fsspec.core import url_to_fs
 from prompt_toolkit.application.current import get_app_session
 from prompt_toolkit.data_structures import Size
@@ -72,6 +71,16 @@ from euporie.core.ft.utils import (
     strip,
     truncate,
     valign,
+)
+
+sub_trans = str.maketrans(
+    "0123456789+-=()aeijoruvxβγρφχ",
+    "₀₁₂₃₄₅₆₇₈₉₊₋₌₍₎ₐₑᵢⱼₒᵣᵤᵥₓᵦᵧᵨᵩᵪ",
+)
+
+sup_trans = str.maketrans(
+    "0123456789+-=()abcdefghijklmnoprstuvwxyzABDEGHIJKLMNOPRTUVWαβγδ∊θιΦφχ",
+    "⁰¹²³⁴⁵⁶⁷⁸⁹⁺⁻⁼⁽⁾ᵃᵇᶜᵈᵉᶠᵍʰⁱʲᵏˡᵐⁿᵒᵖʳˢᵗᵘᵛʷˣʸᶻᴬᴮᴰᴱᴳᴴᴵᴶᴷᴸᴹᴺᴼᴾᴿᵀᵁⱽᵂᵅᵝᵞᵟᵋᶿᶥᶲᵠᵡ",
 )
 
 
@@ -343,6 +352,7 @@ _HERITABLE_PROPS = {
     "text_transform",
     "text_decoration",
     "text_align",
+    "vertical_align",
     "visibility",
     "white_space",
     "list_style_type",
@@ -1761,18 +1771,19 @@ class Theme(Mapping):
 
     async def text_transform(self, value: str) -> str:
         """Return a function which transforms text."""
-        if "uppercase" in self.theme["text_transform"]:
+        transform = self.theme["text_transform"]
+        if "uppercase" in transform:
             return value.upper()
-        elif "lowercase" in self.theme["text_transform"]:
+        elif "lowercase" in transform:
             return value.lower()
-        elif "capitalize" in self.theme["text_transform"]:
+        elif "capitalize" in transform:
             return value.capitalize()
-        elif "sub" in self.theme["vertical_align"]:
-            return "".join(subscript.get(c, c) for c in value)
-        elif "super" in self.theme["vertical_align"]:
-            return "".join(superscript.get(c, c) for c in value)
-        elif "latex" in self.theme["text_transform"]:
+        elif "latex" in transform:
             return await Datum(value, "latex").convert_async("ansi")
+        if "sub" in self.theme["vertical_align"]:
+            return value.translate(sub_trans)
+        elif "super" in self.theme["vertical_align"]:
+            return value.translate(sup_trans)
         return value
 
     @cached_property
@@ -2771,7 +2782,7 @@ _BROWSER_CSS: CssSelectors = {
             "text_transform": "latex",
             "display": "inline-block",
             "vertical_align": "top",
-            # "margin_right": "1em",
+            "white_space": "pre",
         },
         (
             (
@@ -4275,7 +4286,7 @@ class HTML:
 
         # Render text representation
         ft: StyleAndTextTuples = await self.render_node_content(
-            element, left, fill, align_content
+            element, left=0, fill=False, align_content=False
         )
 
         # Render graphic representation
