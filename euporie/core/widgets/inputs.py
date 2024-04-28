@@ -228,7 +228,8 @@ class KernelInput(TextArea):
 
         # Set extra key-bindings
         widgets_key_bindings = load_registered_bindings(
-            "euporie.core.widgets.inputs.KernelInput"
+            "euporie.core.widgets.inputs.KernelInput",
+            config=app.config,
         )
         if key_bindings:
             widgets_key_bindings = merge_key_bindings(

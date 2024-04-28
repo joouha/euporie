@@ -244,6 +244,7 @@ class Notebook(BaseNotebook):
             key_bindings=load_registered_bindings(
                 "euporie.core.tabs.base.Tab",
                 "euporie.notebook.tabs.notebook.Notebook",
+                config=self.app.config,
             ),
         )
 
