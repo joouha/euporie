@@ -503,7 +503,8 @@ class Console(KernelTab):
                 *input_row,
             ],
             key_bindings=load_registered_bindings(
-                "euporie.console.tabs.console.Console"
+                "euporie.console.tabs.console.Console",
+                config=self.app.config,
             ),
         )
 

@@ -95,7 +95,8 @@ class WebViewControl(UIControl):
         self.render_thread = Thread(target=self.loop.run_forever, daemon=True)
 
         self.key_bindings = load_registered_bindings(
-            "euporie.web.widgets.webview.WebViewControl"
+            "euporie.web.widgets.webview.WebViewControl",
+            config=get_app().config,
         )
 
         self._dom_cache: FastDictCache[tuple[Path], HTML] = FastDictCache(

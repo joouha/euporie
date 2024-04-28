@@ -147,7 +147,8 @@ class Pager:
                 ],
                 style="class:pager",
                 key_bindings=load_registered_bindings(
-                    "euporie.core.widgets.pager.Pager"
+                    "euporie.core.widgets.pager.Pager",
+                    config=get_app().config,
                 ),
                 height=height,
             ),

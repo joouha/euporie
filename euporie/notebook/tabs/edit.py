@@ -148,7 +148,10 @@ class EditorTab(KernelTab):
             [self.input_box],
             width=Dimension(weight=1),
             height=Dimension(weight=1),
-            key_bindings=load_registered_bindings("euporie.core.tabs.base.Tab"),
+            key_bindings=load_registered_bindings(
+                "euporie.core.tabs.base.Tab",
+                config=self.app.config,
+            ),
         )
 
     def save(self, path: Path | None = None, cb: Callable | None = None) -> None:

@@ -57,7 +57,8 @@ class SearchBar(PtkSearchToolbar):
             ],
         )
         self.control.key_bindings = load_registered_bindings(
-            "euporie.core.widgets.search.SearchBar"
+            "euporie.core.widgets.search.SearchBar",
+            config=get_app().config,
         )
         search_state = self.control.searcher_search_state
         search_state.ignore_case = Condition(
