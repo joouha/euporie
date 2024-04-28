@@ -86,7 +86,8 @@ class DisplayControl(UIControl):
         self.height = 0
 
         self.key_bindings = load_registered_bindings(
-            "euporie.core.widgets.display.DisplayControl"
+            "euporie.core.widgets.display.DisplayControl",
+            config=get_app().config,
         )
 
         self.rendered = Event(self)
