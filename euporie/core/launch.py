@@ -11,6 +11,12 @@ APP_ALIASES = {
     "edit": "notebook",
 }
 
+_EPS = entry_points()
+if isinstance(_EPS, dict):
+    APP_ENTRY_POINTS = _EPS.get("euporie.apps")
+else:
+    APP_ENTRY_POINTS = _EPS.select(group="euporie.apps")
+
 
 class CoreApp:
     """Launch a euporie application."""
@@ -50,8 +56,7 @@ class CoreApp:
         required=False,
         help_="The application to launch",
         choices=sorted(
-            {entry.name for entry in entry_points()["euporie.apps"]} - {"launch"}
-            | APP_ALIASES.keys()
+            {entry.name for entry in APP_ENTRY_POINTS} - {"launch"} | APP_ALIASES.keys()
         ),
         description="""
             The name of the application to launch.
