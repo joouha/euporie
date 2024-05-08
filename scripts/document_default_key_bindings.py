@@ -11,7 +11,11 @@ from prompt_toolkit.formatted_text.base import to_formatted_text
 from prompt_toolkit.layout.dimension import Dimension
 from prompt_toolkit.shortcuts.utils import print_formatted_text
 
-from euporie.core.border import AsciiLine, AsciiThickLine, DiLineStyle
+from euporie.core.border import (
+    AsciiLine,
+    AsciiThickLine,
+    DiLineStyle,
+)
 from euporie.core.commands import get_cmd
 from euporie.core.ft.table import Table
 from euporie.core.ft.utils import indent
@@ -49,26 +53,32 @@ for group in groups:
     section_title = dedent(cls.__doc__).strip().split("\n")[0].rstrip(".")
 
     table = Table(border_line=AsciiLine)
-    head = table.new_row(style="bold", border_line=DiLineStyle(bottom=AsciiThickLine))
-    head.new_cell("Keys")
-    head.new_cell("Description")
-    head.new_cell("Command")
+    head = table.new_row(style="bold")
+    head_line = DiLineStyle(
+        top=AsciiLine, right=AsciiLine, bottom=AsciiThickLine, left=AsciiLine
+    )
+    head.new_cell("Keys", border_line=head_line)
+    head.new_cell("Description", border_line=head_line)
+    head.new_cell("Command", border_line=head_line)
     for cmd_name, raw_keys in BINDINGS.get(group, {}).items():
         cmd = get_cmd(cmd_name)
-        row = table.new_row()
+        row = table.new_row(border_line=AsciiLine)
 
         formatted_keys = [
             key.replace("\\", "\\\\").replace("`", r"\`")
             for key in format_keys(parse_keys(raw_keys))
         ]
-        row.new_cell("\n\n".join(f":kbd:`{key}`" for key in formatted_keys))
+        row.new_cell(
+            "\n\n".join(f":kbd:`{key}`" for key in formatted_keys),
+            border_line=AsciiLine,
+        )
 
         cmd_title = cmd.title.replace("`", r"\`")
         cmd_desc = cmd.description.replace("`", r"\`")
         # row.new_cell(f":abbr:`{cmd_title}\n({cmd_desc})`")
-        row.new_cell(cmd_desc)
+        row.new_cell(cmd_desc, border_line=AsciiLine)
 
-        row.new_cell(f":command:`{cmd_name}`")
+        row.new_cell(f":command:`{cmd_name}`", border_line=AsciiLine)
 
     sections[section_title] = table
 
@@ -81,6 +91,9 @@ col_widths = [
 ]
 
 for title, table in sections.items():
+    if len(table.rows) == 1:
+        continue
+
     # Set column widths
     for i, val in enumerate(col_widths):
         table.rows[0].cells[i].width = val
