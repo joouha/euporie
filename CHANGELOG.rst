@@ -16,6 +16,8 @@ Added
 Fixed
 =====
 
+- Only patch `prompt_toolkit` when an app is launched, not at import
+- Ensure all key-bindings are configurable (thanks @matheusfillipe)
 - Fix rare bug causing exception when notebook has no cells
 - Prevent race condition causing duplicate cells at startup
 - Mark notebook as modified when changing cell type
