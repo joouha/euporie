@@ -103,7 +103,7 @@ def main() -> "bool":
     status("PASS")
 
     item("Upload to PyPi")
-    check_output("hatch", "publish")
+    check_output("hatch", "publish", "-u", "__token__")
     status("PASS")
 
     item("Creating git tag")
