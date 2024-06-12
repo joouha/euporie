@@ -1,30 +1,25 @@
 #!/usr/bin/env python
 """Fill in the CLI reference in euporie's documentation."""
 
-from __future__ import annotations
-
 import subprocess
 import sys
 from textwrap import dedent, indent
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Callable
 
 if TYPE_CHECKING:
     import argparse
-    from typing import Callable
 
-if sys.version_info[0] >= 3 and sys.version_info[1] >= 10:
+if sys.version_info[:2] >= (3, 10):
     from importlib.metadata import entry_points
 else:
     from importlib_metadata import entry_points
-
 
 def format_action(action: argparse.Action) -> str:
     """Format an action as RST."""
     s = ""
     type_ = ""
     if action.type and action.type != bool:
-        action.type = cast("Callable", action.type)
-        type_ = f"<{action.type.__name__}>"  # typing: ignore
+        type_ = f"<{action.type.__name__}>"
     if action.choices:
         type_ = f"{{{','.join(map(str, action.choices))}}}"
 
@@ -38,17 +33,11 @@ def format_action(action: argparse.Action) -> str:
 """
     return s
 
-
 def format_parser(
     title: str, parser: argparse.ArgumentParser, description: str = ""
 ) -> str:
     """Format a parser's arguments as RST."""
     s = ""
-
-    # s = "\n"
-    # s += ("*" * len(title)) + "\n" + title + "\n" + ("*" * len(title)) + "\n\n"
-    # s += description or dedent(parser.description or "").strip()
-    # s += "\n\n"
 
     s += "\nUsage\n=====\n\n"
     s += ".. code-block:: console\n\n"
@@ -77,7 +66,6 @@ def format_parser(
 
     return s
 
-
 if __name__ == "__main__":
     for script in entry_points(group="console_scripts"):
         if script.module.split(".")[0] == "euporie":
@@ -100,4 +88,4 @@ if __name__ == "__main__":
                             break
                     break
             else:
-                subprocess.call([sys.executable, __file__, script.name])  # S603
+                subprocess.call([sys.executable, __file__, script.name])
