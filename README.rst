@@ -52,14 +52,15 @@ You can also try euporie online `here <https://mybinder.org/v2/gh/joouha/euporie
 Features
 ********
 
-* Edit and run notebooks in the terminal
-* Run code interactively in a console
-* Display images using terminal graphics (sixel / iterm / kitty)
-* Use Jupyter widgets interactively in the terminal
-* Render rich kernel output (markdown, tables, images, LaTeX, HTML, SVG, & PDF)
-* Tab-completion, line suggestions  and contextual help
-* Convert a console session to a notebook
-* Micro / Vim / Emacs style key-bindings
+* Edit and run notebooks in the terminal.
+* Run code interactively in a console.
+* Display images using terminal graphics (sixel / iterm / kitty).
+* Use Jupyter widgets interactively in the terminal.
+* Render rich kernel output (markdown, tables, images, LaTeX, HTML, SVG, & PDF).
+* Tab-completion, line suggestions  and contextual help.
+* Convert a console session to a notebook.
+* Micro / Vim / Emacs style key-bindings.
+* Jupyter kernels support e.g. `xonsh <https://github.com/xonsh/xontrib-jupyter>`_.
 
 *****
 Usage
