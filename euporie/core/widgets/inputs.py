@@ -99,9 +99,11 @@ log = logging.getLogger(__name__)
 
 
 @lru_cache
-def _get_lexer(lexer: Lexer | None, language: str) -> Lexer:
+def _get_lexer(highlight: bool, lexer: Lexer | None, language: str) -> Lexer:
     """Determine which lexer should be used for syntax highlighting."""
-    if lexer is not None:
+    if not highlight:
+        return SimpleLexer()
+    elif lexer is not None:
         return lexer
     try:
         pygments_lexer_class = get_lexer_by_name(language).__class__
@@ -247,7 +249,11 @@ class KernelInput(TextArea):
 
         self.control = BufferControl(
             buffer=self.buffer,
-            lexer=DynamicLexer(lambda: _get_lexer(self.lexer, self.language)),
+            lexer=DynamicLexer(
+                lambda: _get_lexer(
+                    app.config.syntax_highlighting, self.lexer, self.language
+                )
+            ),
             input_processors=[
                 ConditionalProcessor(
                     DiagnosticProcessor(_get_diagnostics),
