@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from functools import lru_cache
 from typing import TYPE_CHECKING
 
 from prompt_toolkit.auto_suggest import AutoSuggest, DynamicAutoSuggest
@@ -97,6 +98,19 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 
+@lru_cache
+def _get_lexer(lexer: Lexer | None, language: str) -> Lexer:
+    """Determine which lexer should be used for syntax highlighting."""
+    if lexer is not None:
+        return lexer
+    try:
+        pygments_lexer_class = get_lexer_by_name(language).__class__
+    except ClassNotFound:
+        return SimpleLexer()
+    else:
+        return PygmentsLexer(pygments_lexer_class, sync_from_start=False)
+
+
 class KernelInput(TextArea):
     """Kernel input text areas.
 
@@ -182,14 +196,6 @@ class KernelInput(TextArea):
         self._language = language
         self.lexer = lexer
 
-        def _get_lexer() -> Lexer:
-            try:
-                pygments_lexer_class = get_lexer_by_name(self.language).__class__
-            except ClassNotFound:
-                return SimpleLexer()
-            else:
-                return PygmentsLexer(pygments_lexer_class, sync_from_start=False)
-
         self.formatters = formatters if formatters is not None else []
         self._diagnostics = diagnostics or Report()
         self.inspector = inspector
@@ -241,7 +247,7 @@ class KernelInput(TextArea):
 
         self.control = BufferControl(
             buffer=self.buffer,
-            lexer=DynamicLexer(lambda: self.lexer or _get_lexer()),
+            lexer=DynamicLexer(lambda: _get_lexer(self.lexer, self.language)),
             input_processors=[
                 ConditionalProcessor(
                     DiagnosticProcessor(_get_diagnostics),
