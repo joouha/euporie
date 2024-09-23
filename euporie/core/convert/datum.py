@@ -153,7 +153,10 @@ class Datum(Generic[T], metaclass=_MetaDatum):
         for key, (datum_ref, _size) in list(size_instances.items()):
             datum = datum_ref()
             if not datum or datum.hash == data_hash:
-                del size_instances[key]
+                try:
+                    del size_instances[key]
+                except KeyError:
+                    pass
             del datum
 
     def to_bytes(self) -> bytes:
