@@ -1057,6 +1057,17 @@ class BaseApp(Application):
     )
 
     add_setting(
+        name="syntax_highlighting",
+        flags=["--syntax-highlighting"],
+        type_=bool,
+        help_="Syntax highlighting",
+        default=True,
+        description="""
+            Enable or disable syntax highlighting in code input fields.
+        """,
+    )
+
+    add_setting(
         name="syntax_theme",
         flags=["--syntax-theme"],
         type_=str,

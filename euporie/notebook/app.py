@@ -445,7 +445,15 @@ class NotebookApp(BaseApp):
                         description="Turn elements of euporie's interface on or off",
                     ),
                     self.config.get_item("color_scheme").menu,
-                    self.config.get_item("syntax_theme").menu,
+                    MenuItem(
+                        "Syntax highlighting",
+                        children=[
+                            self.config.get_item("syntax_highlighting").menu,
+                            separator,
+                            *self.config.get_item("syntax_theme").menu.children,
+                        ],
+                        description="Configure syntax highlighting",
+                    ),
                     get_cmd("toggle-expand").menu,
                     get_cmd("toggle-line-numbers").menu,
                     self.config.get_item("set_cursor_shape").menu,

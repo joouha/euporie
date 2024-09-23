@@ -4,6 +4,24 @@ Changelog
 
 Notable changes to this project will be documented in this file.
 
+----
+
+*******************
+v2.8.3 (2024-09-23)
+*******************
+
+Added
+=====
+
+- Add setting to disable syntax highlighting
+
+Fixed
+=====
+
+- Improve performance with large input cells by caching lexer selection
+
+----
+
 *******************
 v2.8.2 (2024-05-13)
 *******************
