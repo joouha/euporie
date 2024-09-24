@@ -284,24 +284,18 @@ class ScrollingContainer(Container):
         def wrapped(mouse_event: MouseEvent) -> NotImplementedOrNone:
             response: NotImplementedOrNone = NotImplemented
 
-            if mouse_event.event_type == MouseEventType.SCROLL_DOWN:
-                response = self.scroll(-1)
-            elif mouse_event.event_type == MouseEventType.SCROLL_UP:
-                response = self.scroll(1)
-            elif callable(handler):
+            if callable(handler):
                 response = handler(mouse_event)
+
+            if response is NotImplemented:
+                if mouse_event.event_type == MouseEventType.SCROLL_DOWN:
+                    response = self.scroll(-1)
+                elif mouse_event.event_type == MouseEventType.SCROLL_UP:
+                    response = self.scroll(1)
 
             # Refresh the child if there was a response
             if response is None:
                 return response
-
-            # This relies on windows returning NotImplemented when scrolled
-            # to the start or end
-            # if response is NotImplemented:
-            #     if mouse_event.event_type == MouseEventType.SCROLL_DOWN:
-            #         response = self.scroll(-1)
-            #     elif mouse_event.event_type == MouseEventType.SCROLL_UP:
-            #         response = self.scroll(1)
 
             # Select the clicked child if clicked
             if mouse_event.event_type == MouseEventType.MOUSE_DOWN:
