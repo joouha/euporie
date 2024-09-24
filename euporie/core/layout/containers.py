@@ -8,8 +8,9 @@ from typing import TYPE_CHECKING
 
 from prompt_toolkit.application.current import get_app
 from prompt_toolkit.data_structures import Point
-from prompt_toolkit.layout import containers
+from prompt_toolkit.layout import containers as ptk_containers
 from prompt_toolkit.layout.containers import WindowAlign, WindowRenderInfo
+from prompt_toolkit.layout.controls import DummyControl as PtkDummyControl
 from prompt_toolkit.layout.controls import (
     FormattedTextControl,
     UIContent,
@@ -19,14 +20,15 @@ from prompt_toolkit.layout.controls import (
 from prompt_toolkit.layout.dimension import sum_layout_dimensions
 from prompt_toolkit.layout.screen import _CHAR_CACHE
 from prompt_toolkit.layout.utils import explode_text_fragments
-from prompt_toolkit.mouse_events import MouseEvent
+from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
 from prompt_toolkit.utils import get_cwidth, take_using_weights, to_str
 
 from euporie.core.data_structures import DiInt
+from euporie.core.layout.controls import DummyControl
 from euporie.core.layout.screen import BoundedWritePosition
 
 if TYPE_CHECKING:
-    from typing import Callable
+    from typing import Any, Callable
 
     from prompt_toolkit.formatted_text import AnyFormattedText, StyleAndTextTuples
     from prompt_toolkit.key_binding.key_bindings import NotImplementedOrNone
@@ -40,7 +42,7 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 
-class HSplit(containers.HSplit):
+class HSplit(ptk_containers.HSplit):
     """Several layouts, one stacked above/under the other."""
 
     def write_to_screen(
@@ -192,7 +194,7 @@ def _get_divided_heights(
     return sizes
 
 
-class VSplit(containers.VSplit):
+class VSplit(ptk_containers.VSplit):
     """Several layouts, one stacked left/right of the other."""
 
     def write_to_screen(
@@ -295,8 +297,14 @@ class VSplit(containers.VSplit):
             )
 
 
-class Window(containers.Window):
+class Window(ptk_containers.Window):
     """Container that holds a control."""
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        """Initialize `Windows`, updating the default control for empty windows."""
+        super().__init__(*args, **kwargs)
+        if isinstance(self.content, PtkDummyControl):
+            self.content = DummyControl()
 
     def write_to_screen(
         self,
@@ -856,8 +864,55 @@ class Window(containers.Window):
         else:
             new_screen.fill_area(write_position, "class:last-line", after=True)
 
+    def _mouse_handler(self, mouse_event: MouseEvent) -> NotImplementedOrNone:
+        """Mouse handler. Called when the UI control doesn't handle this particular event.
 
-class FloatContainer(containers.FloatContainer):
+        Return `NotImplemented` if nothing was done as a consequence of this
+        key binding (no UI invalidate required in that case).
+        """
+        if mouse_event.event_type == MouseEventType.SCROLL_DOWN:
+            return self._scroll_down()
+        elif mouse_event.event_type == MouseEventType.SCROLL_UP:
+            return self._scroll_up()
+
+        return NotImplemented
+
+    def _scroll_down(self) -> NotImplementedOrNone:
+        """Scroll window down."""
+        info = self.render_info
+
+        if info is None:
+            return NotImplemented
+
+        if self.vertical_scroll < info.content_height - info.window_height:
+            if info.cursor_position.y <= info.configured_scroll_offsets.top:
+                self.content.move_cursor_down()
+            self.vertical_scroll += 1
+            return None
+
+        return NotImplemented
+
+    def _scroll_up(self) -> NotImplementedOrNone:
+        """Scroll window up."""
+        info = self.render_info
+
+        if info is None:
+            return NotImplemented
+
+        if info.vertical_scroll > 0:
+            # TODO: not entirely correct yet in case of line wrapping and long lines.
+            if (
+                info.cursor_position.y
+                >= info.window_height - 1 - info.configured_scroll_offsets.bottom
+            ):
+                self.content.move_cursor_up()
+            self.vertical_scroll -= 1
+            return None
+
+        return NotImplemented
+
+
+class FloatContainer(ptk_containers.FloatContainer):
     """A `FloatContainer` which uses :py`BoundedWritePosition`s."""
 
     def _draw_float(
@@ -1005,7 +1060,7 @@ class FloatContainer(containers.FloatContainer):
                 )
 
 
-containers.HSplit = HSplit  # type: ignore[misc]
-containers.VSplit = VSplit  # type: ignore[misc]
-containers.Window = Window  # type: ignore[misc]
-containers.FloatContainer = FloatContainer  # type: ignore[misc]
+ptk_containers.HSplit = HSplit  # type: ignore[misc]
+ptk_containers.VSplit = VSplit  # type: ignore[misc]
+ptk_containers.Window = Window  # type: ignore[misc]
+ptk_containers.FloatContainer = FloatContainer  # type: ignore[misc]
