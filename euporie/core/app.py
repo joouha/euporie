@@ -30,10 +30,7 @@ from prompt_toolkit.key_binding.bindings.emacs import (
 from prompt_toolkit.key_binding.bindings.mouse import (
     load_mouse_bindings as load_ptk_mouse_bindings,
 )
-from prompt_toolkit.key_binding.bindings.vi import (
-    load_vi_bindings,
-    load_vi_search_bindings,
-)
+from prompt_toolkit.key_binding.bindings.vi import load_vi_search_bindings
 from prompt_toolkit.key_binding.key_bindings import (
     ConditionalKeyBindings,
     merge_key_bindings,
@@ -462,6 +459,7 @@ class BaseApp(Application):
         from euporie.core.key_binding.bindings.basic import load_basic_bindings
         from euporie.core.key_binding.bindings.micro import load_micro_bindings
         from euporie.core.key_binding.bindings.mouse import load_mouse_bindings
+        from euporie.core.key_binding.bindings.vi import load_vi_bindings
 
         self._default_bindings = merge_key_bindings(
             [

@@ -6,6 +6,7 @@ from euporie.core.key_binding.bindings import (
     micro,
     mouse,
     page_navigation,
+    vi,
 )
 
-__all__ = ["basic", "completion", "micro", "mouse", "page_navigation"]
+__all__ = ["basic", "completion", "micro", "mouse", "page_navigation", "vi"]

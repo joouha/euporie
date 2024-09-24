@@ -6,6 +6,17 @@ Notable changes to this project will be documented in this file.
 
 ----
 
+********
+Upcoming
+********
+
+Added
+=====
+
+- Add ability to indent and unindent in vi insert mode using ``tab`` and ``shift-tab`` key-bindings
+
+----
+
 *******************
 v2.8.3 (2024-09-23)
 *******************
