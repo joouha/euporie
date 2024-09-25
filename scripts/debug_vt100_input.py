@@ -1,21 +1,14 @@
 #!/usr/bin/env python
 """Parse vt100 input and print keys."""
 
-from __future__ import annotations
-
 import sys
-from typing import TYPE_CHECKING
-
 from prompt_toolkit.input.vt100 import raw_mode
 
 from euporie.core.io import Vt100Parser
 from euporie.core.keys import Keys
 
-if TYPE_CHECKING:
-    from prompt_toolkit.key_binding import KeyPress
 
-
-def callback(key_press: KeyPress) -> None:
+def callback(key_press):
     """Run when a key press event is received."""
     print(key_press)
     if key_press.key == Keys.ControlC:
@@ -24,7 +17,7 @@ def callback(key_press: KeyPress) -> None:
         sys.exit(0)
 
 
-def main() -> None:
+def main():
     """Run the main event loop."""
     print("\x1b[>4;1m")
     print("\x1b[>1u")
