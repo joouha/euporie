@@ -49,7 +49,7 @@ if TYPE_CHECKING:
 
     from prompt_toolkit.buffer import Buffer
     from prompt_toolkit.completion.base import Completer
-    from prompt_toolkit.formatted_text.base import OneStyleAndTextTuple
+    from prompt_toolkit.formatted_text.base import StyleAndTextTuples
 
     from euporie.core.format import Formatter
     from euporie.core.inspection import Inspector
@@ -290,16 +290,26 @@ class Cell:
                     ConditionalContainer(
                         Window(
                             FormattedTextControl(
-                                [
-                                    cast(
-                                        "OneStyleAndTextTuple",
+                                cast(
+                                    "StyleAndTextTuples",
+                                    [
                                         (
-                                            "class:cell,show,inputs",
-                                            " … ",
+                                            "class:cell,show,inputs,border",
+                                            "▏",
                                             on_click(self.show_input),
                                         ),
-                                    )
-                                ]
+                                        (
+                                            "class:cell,show,inputs",
+                                            "…",
+                                            on_click(self.show_input),
+                                        ),
+                                        (
+                                            "class:cell,show,inputs,border",
+                                            "▕",
+                                            on_click(self.show_input),
+                                        ),
+                                    ],
+                                )
                             )
                         ),
                         filter=source_hidden,
@@ -380,16 +390,26 @@ class Cell:
                             ConditionalContainer(
                                 Window(
                                     FormattedTextControl(
-                                        [
-                                            cast(
-                                                "OneStyleAndTextTuple",
+                                        cast(
+                                            "StyleAndTextTuples",
+                                            [
                                                 (
-                                                    "class:cell,show,outputs",
-                                                    " … ",
+                                                    "class:cell,show,outputs,border",
+                                                    "▏",
                                                     on_click(self.show_output),
                                                 ),
-                                            ),
-                                        ]
+                                                (
+                                                    "class:cell,show,outputs",
+                                                    "…",
+                                                    on_click(self.show_output),
+                                                ),
+                                                (
+                                                    "class:cell,show,outputs,border",
+                                                    "▕",
+                                                    on_click(self.show_output),
+                                                ),
+                                            ],
+                                        )
                                     )
                                 ),
                                 filter=outputs_hidden,

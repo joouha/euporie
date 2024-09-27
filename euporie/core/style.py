@@ -496,8 +496,10 @@ def build_style(
         "cell border edit": f"fg:{cp.hl.adjust(hue=-0.3333, rel=False)}",
         "cell input prompt": "fg:blue",
         "cell output prompt": "fg:red",
-        "cell show outputs": "bg:#888",
-        "cell show inputs": "bg:#888",
+        "cell show outputs": f"fg:{cp.fg.more(0.5)} bg:{cp.bg.more(0.05)}",
+        "cell show inputs": f"fg:{cp.fg.more(0.5)} bg:{cp.bg.more(0.05)}",
+        "cell show inputs border": f"fg:{cp.bg.darker(0.1)}",
+        "cell show outputs border": f"fg:{cp.bg.darker(0.1)}",
         # Scrollbars
         "scrollbar": f"fg:{cp.bg.more(0.75)} bg:{cp.bg.more(0.15)}",
         "scrollbar.background": f"fg:{cp.bg.more(0.75)} bg:{cp.bg.more(0.15)}",
