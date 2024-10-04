@@ -877,7 +877,7 @@ class Window(ptk_containers.Window):
 
         return NotImplemented
 
-    def _scroll_down(self) -> NotImplementedOrNone:
+    def _scroll_down(self) -> NotImplementedOrNone:  # type: ignore [override]
         """Scroll window down."""
         info = self.render_info
 
@@ -892,7 +892,7 @@ class Window(ptk_containers.Window):
 
         return NotImplemented
 
-    def _scroll_up(self) -> NotImplementedOrNone:
+    def _scroll_up(self) -> NotImplementedOrNone:  # type: ignore [override]
         """Scroll window up."""
         info = self.render_info
 

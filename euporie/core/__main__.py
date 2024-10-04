@@ -14,7 +14,7 @@ def main(name: "str" = "launch") -> "None":
     # Monkey-patch prompt_toolkit
     from euporie.core.layout import containers  # noqa: F401
 
-    eps = entry_points()  # group="euporie.apps")
+    eps = entry_points()
     if isinstance(eps, dict):
         points = eps.get("euporie.apps")
     else:
