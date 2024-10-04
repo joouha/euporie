@@ -32,12 +32,10 @@ class ChainedList(Sequence[T]):
         return list(chain.from_iterable(self.lists))
 
     @overload
-    def __getitem__(self, i: int) -> T:
-        ...
+    def __getitem__(self, i: int) -> T: ...
 
     @overload
-    def __getitem__(self, i: slice) -> list[T]:
-        ...
+    def __getitem__(self, i: slice) -> list[T]: ...
 
     def __getitem__(self, i):
         """Get an item from the chained lists."""

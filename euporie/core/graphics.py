@@ -335,9 +335,9 @@ class KittyGraphicControl(GraphicControl):
         super().__init__(datum=datum, scale=scale, bbox=bbox)
         self.kitty_image_id = 0
         self.loaded = False
-        self._datum_pad_cache: FastDictCache[
-            tuple[Datum, int, int], Datum
-        ] = FastDictCache(get_value=self._pad_datum, size=1)
+        self._datum_pad_cache: FastDictCache[tuple[Datum, int, int], Datum] = (
+            FastDictCache(get_value=self._pad_datum, size=1)
+        )
 
     def _pad_datum(self, datum: Datum, cell_size_x: int, cell_size_y: int) -> Datum:
         from PIL import ImageOps
@@ -704,9 +704,9 @@ class GraphicProcessor:
         self.control = control
 
         self.positions: dict[str, Point] = {}
-        self._position_cache: FastDictCache[
-            tuple[UIContent], dict[str, Point]
-        ] = FastDictCache(self._load_positions, size=1_000)
+        self._position_cache: FastDictCache[tuple[UIContent], dict[str, Point]] = (
+            FastDictCache(self._load_positions, size=1_000)
+        )
         self._float_cache: FastDictCache[tuple[str], Float | None] = FastDictCache(
             self.get_graphic_float, size=1_000
         )

@@ -4318,14 +4318,12 @@ class HTML:
     @overload
     async def _render_image(
         self, data: bytes, format_: str, theme: Theme, path: Path | None = None
-    ) -> StyleAndTextTuples:
-        ...
+    ) -> StyleAndTextTuples: ...
 
     @overload
     async def _render_image(
         self, data: str, format_: str, theme: Theme, path: Path | None = None
-    ) -> StyleAndTextTuples:
-        ...
+    ) -> StyleAndTextTuples: ...
 
     async def _render_image(self, data, format_, theme, path=None):
         """Render an image and prepare graphic representation."""

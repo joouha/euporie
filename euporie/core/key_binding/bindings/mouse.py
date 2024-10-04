@@ -153,9 +153,10 @@ def load_mouse_bindings() -> KeyBindings:
     def _(event: KeyPressEvent) -> NotImplementedOrNone:
         """Handle incoming mouse event, include SGR-pixel mode."""
         # Ensure mypy knows this would only run in a euporie appo
-        assert isinstance(app := event.app, BaseApp)
+        app = event.app
+        assert isinstance(app, BaseApp)
 
-        if not event.app.renderer.height_is_known:
+        if not app.renderer.height_is_known:
             return NotImplemented
 
         mouse_event = _MOUSE_EVENT_CACHE[
@@ -201,7 +202,7 @@ def load_mouse_bindings() -> KeyBindings:
             #       found for this position, or if no repainting needs to
             #       happen. this way, we avoid excessive repaints during mouse
             #       movements.
-            handler = event.app.renderer.mouse_handlers.mouse_handlers[y][x]
+            handler = app.renderer.mouse_handlers.mouse_handlers[y][x]
 
             return handler(mouse_event)
 

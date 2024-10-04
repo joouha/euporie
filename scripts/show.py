@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 """A application to show files on the command line."""
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING

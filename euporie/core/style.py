@@ -207,9 +207,9 @@ IPYWIDGET_STYLE = [
 class ColorPaletteColor:
     """A representation of a color with adjustment methods."""
 
-    _cache: SimpleCache[
-        tuple[str, float, float, float, bool], ColorPaletteColor
-    ] = SimpleCache()
+    _cache: SimpleCache[tuple[str, float, float, float, bool], ColorPaletteColor] = (
+        SimpleCache()
+    )
 
     def __init__(self, base: str, _base_override: str = "") -> None:
         """Create a new color.

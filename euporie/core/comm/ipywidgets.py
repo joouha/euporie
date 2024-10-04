@@ -122,7 +122,7 @@ def _separate_buffers(
                         cloned_substrate = dict(substate)  # clone list/tuple
                     cloned_substrate[k] = vnew
     else:
-        raise ValueError("expected state to be a list or dict, not %r" % substate)
+        raise ValueError(f"Expected state to be a list or dict, not {substate!r}")
     return cloned_substrate if cloned_substrate is not None else substate
 
 
@@ -285,9 +285,9 @@ class OutputModel(IpyWidgetComm):
             else:
                 # Restore the message's callbacks
                 if self.original_callbacks:
-                    self.comm_container.kernel.msg_id_callbacks[
-                        self.prev_msg_id
-                    ] = self.original_callbacks
+                    self.comm_container.kernel.msg_id_callbacks[self.prev_msg_id] = (
+                        self.original_callbacks
+                    )
                     self.original_callbacks = MsgCallbacks()
                 else:
                     del self.comm_container.kernel.msg_id_callbacks[self.prev_msg_id]

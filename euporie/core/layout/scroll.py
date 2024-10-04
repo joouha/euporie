@@ -474,10 +474,10 @@ class ScrollingContainer(Container):
                 )
                 for y in range(ypos + line, ypos + available_height):
                     for x in range(xpos, xpos + available_width):
-                        mouse_handlers.mouse_handlers[y][
-                            x
-                        ] = self._mouse_handler_wrapper(
-                            mouse_handlers.mouse_handlers[y][x]
+                        mouse_handlers.mouse_handlers[y][x] = (
+                            self._mouse_handler_wrapper(
+                                mouse_handlers.mouse_handlers[y][x]
+                            )
                         )
         # Blit children above the selected that are on screen
         line = self.selected_child_position
@@ -519,10 +519,10 @@ class ScrollingContainer(Container):
                 )
                 for y in range(ypos, ypos + line):
                     for x in range(xpos, xpos + available_width):
-                        mouse_handlers.mouse_handlers[y][
-                            x
-                        ] = self._mouse_handler_wrapper(
-                            mouse_handlers.mouse_handlers[y][x]
+                        mouse_handlers.mouse_handlers[y][x] = (
+                            self._mouse_handler_wrapper(
+                                mouse_handlers.mouse_handlers[y][x]
+                            )
                         )
 
         # Dont bother drawing floats

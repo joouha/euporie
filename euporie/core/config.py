@@ -211,7 +211,7 @@ class Setting:
                     )
                 )
 
-        elif self.type == bool:
+        elif self.type is bool:
 
             def _toggled() -> bool:
                 from euporie.core.current import get_app
@@ -232,7 +232,7 @@ class Setting:
                 filter=self.cmd_filter,
             )(self.toggle)
 
-        elif self.type == int or self.choices is not None:
+        elif self.type is int or self.choices is not None:
             add_cmd(
                 name=f"switch-{name}",
                 hidden=self.hidden,
@@ -256,10 +256,10 @@ class Setting:
 
     def toggle(self) -> None:
         """Toggle the setting's value."""
-        if self.type == bool:
+        if self.type is bool:
             new = not self.value
         elif (
-            self.type == int
+            self.type is int
             and "minimum" in (schema := self.schema)
             and "maximum" in schema
         ):

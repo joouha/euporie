@@ -22,7 +22,7 @@ def format_action(action: argparse.Action) -> str:
     """Format an action as RST."""
     s = ""
     type_ = ""
-    if action.type and action.type != bool:
+    if action.type and action.type is not bool:
         action.type = cast("Callable", action.type)
         type_ = f"<{action.type.__name__}>"  # typing: ignore
     if action.choices:

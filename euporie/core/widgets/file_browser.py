@@ -377,9 +377,9 @@ class FileBrowserControl(UIControl):
         self.dir = path or UPath(".")
         self.hovered: int | None = None
         self.selected: int | None = None
-        self._dir_cache: FastDictCache[
-            tuple[Path], list[tuple[bool, Path]]
-        ] = FastDictCache(get_value=self.load_path, size=1)
+        self._dir_cache: FastDictCache[tuple[Path], list[tuple[bool, Path]]] = (
+            FastDictCache(get_value=self.load_path, size=1)
+        )
         self.on_select = Event(self, on_select)
         self.on_chdir = Event(self, on_chdir)
         self.on_open = Event(self, on_open)
