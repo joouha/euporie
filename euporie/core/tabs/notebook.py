@@ -75,7 +75,7 @@ class BaseNotebook(KernelTab, metaclass=ABCMeta):
                     prompt, password
                 ),
                 "set_execution_count": lambda n: self.cell.set_execution_count(n),
-                "add_output": lambda output_json: self.cell.add_output(output_json),
+                "add_output": self.new_output_default,
                 "clear_output": lambda wait: self.cell.clear_output(wait),
                 "set_metadata": lambda path, data: self.cell.set_metadata(path, data),
                 "set_status": self.set_status,
@@ -384,6 +384,11 @@ class BaseNotebook(KernelTab, metaclass=ABCMeta):
                 set_status=cell.set_status,
                 done=cell.ran,
             )
+
+    def new_output_default(self, output_json: dict[str, Any], own: bool) -> None:
+        """Add a new output without a cell to the currently selected cell."""
+        if self.app.config.show_remote_outputs:
+            self.cell.add_output(output_json, own)
 
     def load_widgets_from_metadata(self) -> None:
         """Load widgets from state saved in notebook metadata."""

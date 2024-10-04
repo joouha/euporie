@@ -815,7 +815,7 @@ class Cell:
         """Set the execution count of the cell."""
         self.json["execution_count"] = n
 
-    def add_output(self, output_json: dict[str, Any]) -> None:
+    def add_output(self, output_json: dict[str, Any], own: bool) -> None:
         """Add a new output to the cell."""
         # Clear the output if we were previously asked to
         if self.clear_outputs_on_output:
