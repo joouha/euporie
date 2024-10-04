@@ -517,7 +517,7 @@ class NumberedMargin(Margin):
     def get_width(self, get_ui_content: Callable[[], UIContent]) -> int:
         """Return the width of the margin."""
         line_count = get_ui_content().line_count
-        return len("%s" % line_count) + 2
+        return len(f"{line_count}") + 2
 
     def create_margin(
         self, window_render_info: WindowRenderInfo, width: int, height: int
@@ -561,8 +561,10 @@ class NumberedMargin(Margin):
                 style = f"{self_style} class:line-number.current"
             else:
                 style = self_style
+            if last_lineno is None and lineno == 0 and not multiline:
+                linestr = ">"
             # Only display line number if this line is not a continuation of the previous line.
-            if lineno != last_lineno:
+            elif lineno != last_lineno:
                 linestr = str(lineno + 1).rjust(width - 2)
             else:
                 linestr = " " * (width - 2)
