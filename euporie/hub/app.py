@@ -89,9 +89,13 @@ class HubApp(BaseApp):
             )
 
         # Import the hubbed app
-        if entry_point := {
-            entry.name: entry for entry in entry_points()["euporie.apps"]
-        }.get(cls.config.app):
+        eps = entry_points()
+        if isinstance(eps, dict):
+            points = eps.get("euporie.apps")
+        else:
+            points = eps.select(group="euporie.apps")
+        apps = {x.name: x for x in points} if points else {}
+        if entry_point := apps.get(cls.config.app):
             app_cls = entry_point.load()
         else:
             raise ValueError("Application `%s` not found", cls.config.app)
