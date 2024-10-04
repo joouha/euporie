@@ -62,7 +62,7 @@ if TYPE_CHECKING:
     from prompt_toolkit.formatted_text import AnyFormattedText, StyleAndTextTuples
     from prompt_toolkit.key_binding.key_bindings import NotImplementedOrNone
     from prompt_toolkit.key_binding.key_processor import KeyPressEvent
-    from prompt_toolkit.layout.containers import Float
+    from prompt_toolkit.layout.containers import Container, Float
 
     from euporie.core.app import BaseApp
     from euporie.core.lsp import LspClient
@@ -103,6 +103,7 @@ class Console(KernelTab):
                 prompt, password
             ),
             set_execution_count=partial(setattr, self, "execution_count"),
+            add_input=self.new_input,
             add_output=self.new_output,
             clear_output=self.clear_output,
             # set_metadata=self.misc_callback,
@@ -132,6 +133,7 @@ class Console(KernelTab):
 
         self.json = nbformat.v4.new_notebook()
         self.json["metadata"] = self._metadata
+        self.render_queue: list[dict[str, Any]] = []
 
         self.container = self.load_container()
 
@@ -192,13 +194,12 @@ class Console(KernelTab):
         completeness_status = self.kernel.is_complete(code, wait=True).get(
             "status", "unknown"
         )
-        if (
+        return not (
             not code.strip()
             or completeness_status == "incomplete"
-            or (completeness_status == "unknown" and code[-2:] != "\n\n")
-        ):
-            return False
-        return True
+            or completeness_status == "unknown"
+            and code[-2:] != "\n\n"
+        )
 
     def run(self, buffer: Buffer | None = None) -> None:
         """Run the code in the input box."""
@@ -208,78 +209,125 @@ class Console(KernelTab):
         # Auto-reformat code
         if app.config.autoformat:
             self.input_box.reformat()
-        # Get the code to run
+        # # Get the code to run
         text = buffer.text
-        # Remove any selections from input
+        # # Remove any selections from input
         buffer.selection_state = None
         # Disable existing output
-        self.live_output.style = "class:disabled"
+        # self.live_output.style = "class:disabled"
         # Reset the diagnostics
         self.reports.clear()
+        # Increment this for display purposes until we get the response from the kernel
+        self.execution_count += 1
         # Move cursor to the start of the input
         buffer.cursor_position = 0
-        # Re-render the app and move to below the current output
-        original_layout = app.layout
-        app.layout = self.input_layout
-        app.draw()
-        app.layout = original_layout
-        # Prevent displayed graphics on terminal being cleaned up (bit of a hack)
-        app.graphics.clear()
+        # Render input
+        self.new_input({"code": text}, own=True, force=True)
         # Run the previous entry
         if self.kernel.status == "starting":
             self.kernel_queue.append(partial(self.kernel.run, text, wait=False))
         else:
             self.kernel.run(text, wait=False)
-        # Increment this for display purposes until we get the response from the kernel
-        self.execution_count += 1
         # Reset the input & output
         buffer.reset(append_to_history=True)
-        # Remove any live outputs and disable mouse support
-        self.live_output.reset()
+        self.on_advance()
+
+    def new_input(
+        self, input_json: dict[str, Any], own: bool, force: bool = False
+    ) -> None:
+        """Create new cell inputs in response to kernel ``execute_input`` messages."""
+        # Skip our own inputs when relayed from the kernel
+        # We render them immediately when they are run to avoid delays in the UI
+        if own and not force:
+            return
+
+        app = self.app
+        if not own and not app.config.show_remote_inputs:
+            return
+
+        self.flush_live_output()
+
         # Record the input as a cell in the json
-        self.json["cells"].append(
-            nbformat.v4.new_code_cell(source=text, execution_count=self.execution_count)
+        cell_json = nbformat.v4.new_code_cell(
+            source=input_json["code"],
+            execution_count=input_json.get("execution_count", self.execution_count),
         )
+        self.render_queue.append(cell_json)
+        self.json["cells"].append(cell_json)
         if (
             app.config.max_stored_outputs
             and len(self.json["cells"]) > app.config.max_stored_outputs
         ):
             del self.json["cells"][0]
-        self.on_advance()
 
-    def new_output(self, output_json: dict[str, Any]) -> None:
+        # Invalidate the app so the new input gets printed
+        app.invalidate()
+
+    def new_output(self, output_json: dict[str, Any], own: bool) -> None:
         """Print the previous output and replace it with the new one."""
+        if not own and not self.app.config.show_remote_outputs:
+            return
+
         # Clear the output if we were previously asked to
         if self.clear_outputs_on_output:
             self.clear_outputs_on_output = False
             # Clear the screen
             get_cmd("clear-screen").run()
 
-        # Add to record
-        if self.json["cells"]:
-            self.json["cells"][-1]["outputs"].append(output_json)
+        # If there is no cell in the virtual notebook, add an empty cell
+        if not self.json["cells"]:
+            self.json["cells"].append(
+                nbformat.v4.new_code_cell(execution_count=self.execution_count)
+            )
+        cell = self.json.cells[-1]
 
-        # Set output
+        # If there is no code cell in the render queue, add a dummy cell with no input
+        if cell not in self.render_queue:
+            # Add to end of previous cell in virtual notebook
+            # cell["outputs"].append(output_json)
+            # Create virtual cell
+            cell = nbformat.v4.new_code_cell(
+                id=cell.id, execution_count=self.execution_count
+            )
+            self.render_queue.append(cell)
+
+        # Add widgets to the live output
         if "application/vnd.jupyter.widget-view+json" in output_json.get("data", {}):
-            # Use a live output to display widgets
             self.live_output.add_output(output_json)
         else:
-            # Queue the output json
-            self.output.add_output(output_json)
-            # Invalidate the app so the output get printed
-            self.app.invalidate()
+            cell["outputs"].append(output_json)
+
+        # Invalidate the app so the output get printed
+        self.app.invalidate()
+
+    def flush_live_output(self) -> None:
+        """Flush any active live outputs to the terminal."""
+        if self.live_output.json:
+            self.render_queue.append(
+                nbformat.v4.new_code_cell(
+                    execution_count=None,
+                    outputs=self.live_output.json[:],
+                ),
+            )
+            self.live_output.reset()
 
     def render_outputs(self, app: Application[Any]) -> None:
         """Request that any unrendered outputs be rendered."""
-        if self.output.json:
+        # Check for unrendered cells or new output
+
+        # Clear the render queue so it does not get rendered again
+        render_queue = list(self.render_queue)
+        self.render_queue.clear()
+
+        if render_queue:
+            # Render the echo layout with any new cells / outputs
             app = self.app
             original_layout = self.app.layout
-            app.layout = self.output_layout
-            app.renderer.render(self.app, self.output_layout, is_done=True)
-            app.renderer.request_absolute_cursor_position()
+            new_layout = self.echo_layout(render_queue)
+            app.layout = new_layout
+            app.renderer.render(app, new_layout, is_done=True)
             app.layout = original_layout
-            # Remove the outputs so they do not get rendered again
-            self.output.reset()
+            app.renderer.request_absolute_cursor_position()
 
     def reset(self) -> None:
         """Reset the state of the tab."""
@@ -293,10 +341,16 @@ class Console(KernelTab):
         self.app.invalidate()
 
     def prompt(
-        self, text: str, offset: int = 0, show_busy: bool = False
+        self,
+        text: str,
+        count: int | None = None,
+        offset: int = 0,
+        show_busy: bool = False,
     ) -> StyleAndTextTuples:
         """Determine what should be displayed in the prompt of the cell."""
-        prompt = str(self.execution_count + offset)
+        if count is None:
+            count = self.execution_count
+        prompt = str(count + offset)
         if show_busy and self.kernel.status in ("busy", "queued"):
             prompt = "*".center(len(prompt))
         ft: StyleAndTextTuples = [
@@ -317,58 +371,139 @@ class Console(KernelTab):
         """Return the file extension for scripts in the notebook's language."""
         return self.lang_info.get("file_extension", ".py")
 
-    def load_container(self) -> HSplit:
-        """Build the main application layout."""
-        # Output area
+        # Echo area
 
-        self.output = CellOutputArea([], parent=self)
+    def echo_layout(self, render_queue: list) -> Layout:
+        """Generate a layout for displaying executed cells."""
+        children: list[Container] = []
+        height_known = renderer_height_is_known()
+        rows_above_layout = self.app.renderer.rows_above_layout if height_known else 1
+        json_cells = self.json.cells
+        for i, cell in enumerate(render_queue):
+            if cell.source:
+                # Spacing between cells
+                if ((json_cells and cell.id != json_cells[0].id) or i > 0) and (
+                    (height_known and rows_above_layout > 0) or not height_known
+                ):
+                    children.append(
+                        Window(
+                            height=1,
+                            dont_extend_height=True,
+                        )
+                    )
 
-        @Condition
-        def first_output() -> bool:
-            """Check if the current outputs contain the first output."""
-            if self.output.json:
-                for output in self.json["cells"][-1].get("outputs", []):
-                    if output in self.live_output.json:
-                        continue
-                    return output == self.output.json[0]
-            return False
+                # Cell input
+                children.append(
+                    VSplit(
+                        [
+                            Window(
+                                FormattedTextControl(
+                                    partial(
+                                        self.prompt,
+                                        "In ",
+                                        count=cell.execution_count,
+                                    )
+                                ),
+                                dont_extend_width=True,
+                                style="class:cell,input,prompt",
+                                height=1,
+                            ),
+                            KernelInput(
+                                text=cell.source,
+                                kernel_tab=self,
+                                language=lambda: self.language,
+                                read_only=True,
+                            ),
+                        ],
+                    ),
+                )
 
-        output_prompt = Window(
-            FormattedTextControl(partial(self.prompt, "Out", show_busy=False)),
-            dont_extend_width=True,
-            style="class:cell,output,prompt",
-            height=1,
-        )
-        output_margin = Window(
-            char=" ", width=lambda: len(str(self.execution_count)) + 7
-        )
+            # Outputs
+            if outputs := cell.outputs:
+                children.append(
+                    Window(
+                        height=1,
+                        dont_extend_height=True,
+                    )
+                )
 
-        output_area = PrintingContainer(
-            [
-                ConditionalContainer(
-                    Window(height=1, dont_extend_height=True), filter=first_output
-                ),
-                VSplit(
-                    [
-                        ConditionalContainer(output_prompt, filter=first_output),
-                        ConditionalContainer(output_margin, filter=~first_output),
-                        self.output,
-                    ]
-                ),
-            ],
-        )
-        # We need to ensure the output layout also has the application's floats so that
-        # graphics are displayed
-        self.output_layout = Layout(
+                def _flush(
+                    buffer: list[dict[str, Any]], prompt: AnyFormattedText
+                ) -> None:
+                    if buffer:
+                        children.append(
+                            VSplit(
+                                [
+                                    Window(
+                                        FormattedTextControl(prompt),
+                                        dont_extend_width=True,
+                                        dont_extend_height=True,
+                                        style="class:cell,output,prompt",
+                                        height=1,
+                                    ),
+                                    CellOutputArea(
+                                        buffer, parent=self, style="class:disabled"
+                                    ),
+                                ]
+                            ),
+                        )
+                        buffer.clear()
+
+                buffer: list[dict[str, Any]] = []
+                ec = cell.execution_count
+                prompt: AnyFormattedText = ""
+                next_prompt: AnyFormattedText
+                for output in outputs:
+                    if (next_ec := output.get("execution_count")) is None:
+                        next_prompt = " " * (len(str(ec)) + 7)
+                    else:
+                        next_prompt = self.prompt("Out", count=next_ec, show_busy=False)
+                        ec = next_ec
+                    if next_prompt != prompt:
+                        _flush(buffer, prompt)
+                        prompt = next_prompt
+                    buffer.append(output)
+                _flush(buffer, prompt)
+
+        return Layout(
             FloatContainer(
-                output_area,
+                PrintingContainer(children),
                 floats=cast("list[Float]", self.app.graphics),
             )
         )
 
+    def load_container(self) -> HSplit:
+        """Build the main application layout."""
         # Live output area
 
         self.live_output = CellOutputArea([], parent=self)
+
+        live_output_row = ConditionalContainer(
+            HSplit(
+                [
+                    Window(height=1, dont_extend_height=True),
+                    VSplit(
+                        [
+                            Window(
+                                FormattedTextControl(
+                                    lambda: self.prompt(
+                                        "Out",
+                                        count=self.live_output.json[0][
+                                            "execution_count"
+                                        ],
+                                    )
+                                ),
+                                dont_extend_width=True,
+                                style="class:cell,output,prompt",
+                                height=1,
+                            ),
+                            self.live_output,
+                        ]
+                    ),
+                ]
+            ),
+            filter=Condition(lambda: bool(self.live_output.json)),
+        )
 
         # Input area
 
@@ -425,13 +560,6 @@ class Console(KernelTab):
             """Force new line on Shift-Enter."""
             event.current_buffer.newline(copy_margin=not in_paste_mode())
 
-        input_prompt = Window(
-            FormattedTextControl(partial(self.prompt, "In ", offset=1)),
-            dont_extend_width=True,
-            style="class:cell,input,prompt",
-            height=1,
-        )
-
         def _handler(buffer: Buffer) -> bool:
             self.run(buffer)
             return True
@@ -460,7 +588,7 @@ class Console(KernelTab):
             # Spacing
             ConditionalContainer(
                 Window(height=1, dont_extend_height=True),
-                filter=Condition(lambda: self.execution_count > 0)
+                filter=Condition(lambda: len(self.json["cells"]) > 0)
                 & (
                     (
                         renderer_height_is_known
@@ -473,7 +601,12 @@ class Console(KernelTab):
             ConditionalContainer(
                 VSplit(
                     [
-                        input_prompt,
+                        Window(
+                            FormattedTextControl(partial(self.prompt, "In ", offset=1)),
+                            dont_extend_width=True,
+                            style="class:cell,input,prompt",
+                            height=1,
+                        ),
                         self.input_box,
                     ],
                 ),
@@ -481,19 +614,9 @@ class Console(KernelTab):
             ),
         ]
 
-        self.input_layout = Layout(PrintingContainer(input_row))
-
         return HSplit(
             [
-                ConditionalContainer(
-                    HSplit(
-                        [
-                            Window(height=1, dont_extend_height=True),
-                            VSplit([output_margin, self.live_output]),
-                        ]
-                    ),
-                    filter=Condition(lambda: bool(self.live_output.json)),
-                ),
+                live_output_row,
                 # StdIn
                 self.stdin_box,
                 ConditionalContainer(

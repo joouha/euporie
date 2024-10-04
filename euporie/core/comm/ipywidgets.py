@@ -250,7 +250,7 @@ class OutputModel(IpyWidgetComm):
             {"outputs": partial(setattr, container, "json")},
         )
 
-    def add_output(self, json: dict[str, Any]) -> None:
+    def add_output(self, json: dict[str, Any], own: bool) -> None:
         """Add a new output to this widget."""
         if self.clear_output_wait:
             self.set_state("outputs", [json])

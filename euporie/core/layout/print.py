@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
+from prompt_toolkit.application.current import get_app
 from prompt_toolkit.layout.containers import (
     Container,
     Window,
@@ -42,8 +43,9 @@ class PrintingContainer(Container):
     ) -> None:
         """Initiate the container."""
         self.width = width
-        self.rendered = False
         self._children = children
+        self._render_count = -1
+        self._cached_children: Sequence[AnyContainer] | None = None
         self.key_bindings = key_bindings
 
     def get_key_bindings(self) -> KeyBindingsBase | None:
@@ -53,7 +55,17 @@ class PrintingContainer(Container):
     @property
     def children(self) -> Sequence[AnyContainer]:
         """Return the container's children."""
-        children = self._children() if callable(self._children) else self._children
+        # Only load the children from a callable once per render cycle
+        if callable(self._children):
+            if (
+                self._cached_children is None
+                or self._render_count != get_app().render_counter
+            ):
+                self._cached_children = self._children()
+                self._render_count = get_app().render_counter
+            children = self._cached_children
+        else:
+            children = self._children
         return children or [Window()]
 
     def get_children(self) -> list[Container]:
