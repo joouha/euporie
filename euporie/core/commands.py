@@ -243,4 +243,4 @@ def get_cmd(name: str) -> Command:
     try:
         return commands[name]
     except KeyError as e:
-        raise KeyError("Unknown command: %r" % name) from e
+        raise KeyError(f"Unknown command: {name}") from e

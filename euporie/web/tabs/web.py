@@ -1,6 +1,5 @@
 """Defines a web-view tab."""
 
-
 from __future__ import annotations
 
 import logging

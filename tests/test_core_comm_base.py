@@ -22,7 +22,7 @@ class MockOutputParent:
         """Update the parent container."""
 
 
-@pytest.fixture()
+@pytest.fixture
 def comm() -> UnimplementedComm:
     """Create an `UnimplementedComm` instance of the `Comm` class."""
     comm_container = Mock(spec=KernelTab)

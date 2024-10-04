@@ -257,13 +257,11 @@ class KittyGraphicsStatus(TerminalQuery):
 
     def verify(self, data: str) -> bool:
         """Verify the terminal response means kitty graphics are supported."""
-        if (
+        return bool(
             (match := self.pattern.match(data))
             and (values := match.groupdict())
             and values.get("status") == "OK"
-        ):
-            return True
-        return False
+        )
 
 
 class SixelGraphicsStatus(TerminalQuery):
@@ -279,13 +277,11 @@ class SixelGraphicsStatus(TerminalQuery):
 
     def verify(self, data: str) -> bool:
         """Verify the terminal response means sixel graphics are supported."""
-        if (
+        return bool(
             (match := self.pattern.match(data))
             and (values := match.groupdict())
             and values.get("sixel")
-        ):
-            return True
-        return False
+        )
 
 
 class ItermGraphicsStatus(TerminalQuery):
@@ -301,14 +297,12 @@ class ItermGraphicsStatus(TerminalQuery):
 
     def verify(self, data: str) -> bool:
         """Verify iterm graphics are supported by the terminal."""
-        if (
+        return bool(
             (match := self.pattern.match(data))
             and (values := match.groupdict())
             and (term := values.get("term"))
-            and (term.startswith(("WezTerm", "Konsole", "mlterm")))
-        ):
-            return True
-        return False
+            and term.startswith(("WezTerm", "Konsole", "mlterm"))
+        )
 
 
 class DepthOfColor(TerminalQuery):
@@ -362,9 +356,7 @@ class CsiUStatus(TerminalQuery):
 
     def verify(self, data: str) -> bool:
         """Verify the terminal responds."""
-        if (match := self.pattern.match(data)) and match:
-            return True
-        return False
+        return bool((match := self.pattern.match(data)) and match)
 
 
 class ClipboardData(TerminalQuery):

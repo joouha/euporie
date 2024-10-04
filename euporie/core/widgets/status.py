@@ -77,9 +77,9 @@ class StatusBar:
     ) -> None:
         """Create a new status bar instance."""
         self.default: StatusBarFields = default or ([], [])
-        self._status_cache: FastDictCache[
-            tuple[int], list[StyleAndTextTuples]
-        ] = FastDictCache(self._status, size=1)
+        self._status_cache: FastDictCache[tuple[int], list[StyleAndTextTuples]] = (
+            FastDictCache(self._status, size=1)
+        )
         self.container = ConditionalContainer(
             content=VSplit(
                 [
