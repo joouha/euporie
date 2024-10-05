@@ -256,7 +256,8 @@ class CachedContainer(Container):
             cols: The columns to copy
             rows: The rows to copy
                                                                                                                                                                                        .
-        """  # Copy write positions
+        """
+        # Copy write positions
         for win, wp in self.screen.visible_windows_to_write_positions.items():
             new_wp = BoundedWritePosition(
                 xpos=wp.xpos + left,
@@ -273,7 +274,7 @@ class CachedContainer(Container):
             screen.visible_windows_to_write_positions[win] = new_wp
             screen.height = max(screen.height, self.screen.height)
 
-            # # Modify render info
+            # Modify render info
             info = win.render_info
             if info is not None:
                 visible_line_to_row_col = {
