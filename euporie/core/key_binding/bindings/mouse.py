@@ -22,6 +22,7 @@ from prompt_toolkit.key_binding.bindings.mouse import (
 from prompt_toolkit.keys import Keys
 from prompt_toolkit.mouse_events import MouseButton, MouseEventType, MouseModifier
 from prompt_toolkit.mouse_events import MouseEvent as PtkMouseEvent
+from prompt_toolkit.renderer import HeightIsUnknownError
 
 from euporie.core.app import BaseApp
 
@@ -102,29 +103,23 @@ def _parse_mouse_data(
         # Parse event type.
         if sgr:
             if sgr_pixels:
-                # Calculate cell position
+                # Scale down pixel-wise mouse position to cell based, and calculate
+                # relative position of mouse within the cell
                 cell_x, cell_y = cell_size_xy
                 px, py = x, y
                 fx, fy = px / cell_x + 1, py / cell_y + 1
                 x, y = int(fx), int(fy)
                 rx, ry = fx - x, fy - y
-
             try:
-                (
-                    mouse_button,
-                    mouse_event_type,
-                    mouse_modifiers,
-                ) = xterm_sgr_mouse_events[mouse_event, m]
+                (mouse_button, mouse_event_type, mouse_modifiers) = (
+                    xterm_sgr_mouse_events[mouse_event, m]
+                )
             except KeyError:
                 return None
 
         else:
             # Some other terminals, like urxvt, Hyper terminal, ...
-            (
-                mouse_button,
-                mouse_event_type,
-                mouse_modifiers,
-            ) = urxvt_mouse_events.get(
+            (mouse_button, mouse_event_type, mouse_modifiers) = urxvt_mouse_events.get(
                 mouse_event, (UNKNOWN_BUTTON, MOUSE_MOVE, UNKNOWN_MODIFIER)
             )
 
@@ -170,10 +165,9 @@ def load_mouse_bindings() -> KeyBindings:
         if mouse_event.event_type is not None:
             # Take region above the layout into account. The reported
             # coordinates are absolute to the visible part of the terminal.
-            from prompt_toolkit.renderer import HeightIsUnknownError
-
             x, y = mouse_event.position
 
+            # Adjust position to take into account space above non-full screen apps
             try:
                 rows_above = app.renderer.rows_above_layout
             except HeightIsUnknownError:
@@ -181,21 +175,28 @@ def load_mouse_bindings() -> KeyBindings:
             else:
                 y -= rows_above
 
-            # Save global mouse position
-            app.mouse_position = mouse_event.position
+            # Save mouse position within the app
+            app.mouse_position = Point(x=x, y=y)
 
             # Apply limits to mouse position if enabled
             if (mouse_limits := app.mouse_limits) is not None:
                 x = max(
                     mouse_limits.xpos,
-                    min(x, mouse_limits.xpos + (mouse_limits.width - 1)),
+                    min(x, mouse_limits.xpos + (mouse_limits.width) - 1),
                 )
                 y = max(
                     mouse_limits.ypos,
-                    min(y, mouse_limits.ypos + (mouse_limits.height - 1)),
+                    min(y, mouse_limits.ypos + (mouse_limits.height) - 1),
                 )
 
-            mouse_event.position = Point(x=x, y=y)
+            # Do not modify the mouse event in the cache, instead create a new instance
+            mouse_event = MouseEvent(
+                position=Point(x=x, y=y),
+                event_type=mouse_event.event_type,
+                button=mouse_event.button,
+                modifiers=mouse_event.modifiers,
+                cell_position=mouse_event.cell_position,
+            )
 
             # Call the mouse handler from the renderer.
             # Note: This can return `NotImplemented` if no mouse handler was

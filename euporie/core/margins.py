@@ -9,9 +9,11 @@ from typing import TYPE_CHECKING, cast
 
 from prompt_toolkit.data_structures import Point
 from prompt_toolkit.filters import FilterOrBool, to_filter
+from prompt_toolkit.layout.containers import ScrollOffsets, WindowRenderInfo
 from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.layout.dimension import Dimension
 from prompt_toolkit.layout.margins import Margin
+from prompt_toolkit.layout.screen import WritePosition
 from prompt_toolkit.mouse_events import MouseButton, MouseEventType
 from prompt_toolkit.mouse_events import MouseEvent as PtkMouseEvent
 
@@ -27,10 +29,10 @@ if TYPE_CHECKING:
         KeyBindingsBase,
         NotImplementedOrNone,
     )
-    from prompt_toolkit.layout.containers import Container, WindowRenderInfo
+    from prompt_toolkit.layout.containers import Container
     from prompt_toolkit.layout.controls import UIContent
     from prompt_toolkit.layout.mouse_handlers import MouseHandlers
-    from prompt_toolkit.layout.screen import Screen, WritePosition
+    from prompt_toolkit.layout.screen import Screen
 
     from euporie.core.diagnostics import Report
 
@@ -49,9 +51,9 @@ class ClickableMargin(Margin, metaclass=ABCMeta):
 
     write_position: WritePosition | None
 
-    def set_write_position(self, write_position: WritePosition) -> None:
+    def set_margin_window(self, margin_window: Window) -> None:
         """Set the write position of the menu."""
-        self.write_position = write_position
+        self.margin_window = margin_window
 
 
 class MarginContainer(Window):
@@ -64,6 +66,9 @@ class MarginContainer(Window):
         self.render_info: WindowRenderInfo | None = None
         self.content = FormattedTextControl(self.create_fragments)
         self.always_hide_cursor = to_filter(True)
+
+        if isinstance(self.margin, ClickableMargin):
+            self.margin.set_margin_window(self)
 
     def create_fragments(self) -> StyleAndTextTuples:
         """Generate text fragments to display."""
@@ -102,14 +107,27 @@ class MarginContainer(Window):
     ) -> None:
         """Write the actual content to the screen."""
         self.write_position = write_position
-        if isinstance(self.margin, ClickableMargin):
-            self.margin.set_write_position(write_position)
 
         margin_content: UIContent = self.content.create_content(
             write_position.width + 1, write_position.height
         )
         visible_line_to_row_col, rowcol_to_yx = self._copy_body(
             margin_content, screen, write_position, 0, write_position.width
+        )
+
+        self.render_info = WindowRenderInfo(
+            window=self,
+            ui_content=margin_content,
+            horizontal_scroll=0,
+            vertical_scroll=0,
+            window_width=write_position.width,
+            window_height=write_position.height,
+            configured_scroll_offsets=ScrollOffsets(),
+            visible_line_to_row_col=visible_line_to_row_col,
+            rowcol_to_yx=rowcol_to_yx,
+            x_offset=write_position.xpos,
+            y_offset=write_position.ypos,
+            wrap_lines=False,
         )
 
         # Set mouse handlers.
@@ -164,6 +182,8 @@ class MarginContainer(Window):
             handler=mouse_handler,
         )
 
+        screen.visible_windows_to_write_positions[self] = write_position
+
     def is_modal(self) -> bool:
         """When this container is modal."""
         return False
@@ -214,8 +234,7 @@ class ScrollbarMargin(ClickableMargin):
         self.thumb_top = 0.0
         self.thumb_size = 0.0
 
-        self.window_render_info: WindowRenderInfo | None = None
-        self.write_position: WritePosition | None = None
+        self.target_render_info: WindowRenderInfo | None = None
 
     def get_width(self, get_ui_content: Callable[[], UIContent]) -> int:
         """Return the scrollbar width: always 1."""
@@ -226,13 +245,11 @@ class ScrollbarMargin(ClickableMargin):
         window_render_info: WindowRenderInfo | None,
         width: int,
         height: int,
-        margin_render_info: WindowRenderInfo | None = None,
     ) -> StyleAndTextTuples:
         """Create the margin's formatted text."""
         result: StyleAndTextTuples = []
 
-        self.window_render_info = window_render_info
-        self.margin_render_info = margin_render_info
+        self.target_render_info = window_render_info
 
         # If this is the first time the target is being drawn, it may not yet have a
         # render_info yet. Thus, invalidate the app so we can immediately redraw the
@@ -400,11 +417,11 @@ class ScrollbarMargin(ClickableMargin):
             :py:const:`None` is returned when the mouse event is handled successfully
 
         """
-        render_info = self.window_render_info
-        if render_info is None:
+        target_render_info = self.target_render_info
+        if target_render_info is None:
             return NotImplemented
 
-        content_height = render_info.content_height
+        content_height = target_render_info.content_height
         if isinstance(mouse_event, MouseEvent):
             cell_position = mouse_event.cell_position
         else:
@@ -413,9 +430,9 @@ class ScrollbarMargin(ClickableMargin):
 
         # Handle scroll events on the scrollbar
         if mouse_event.event_type == MouseEventType.SCROLL_UP:
-            render_info.window._scroll_up()
+            target_render_info.window._scroll_up()
         elif mouse_event.event_type == MouseEventType.SCROLL_DOWN:
-            render_info.window._scroll_down()
+            target_render_info.window._scroll_down()
 
         # Mouse drag events
         elif self.dragging and mouse_event.event_type == MouseEventType.MOUSE_MOVE:
@@ -425,8 +442,8 @@ class ScrollbarMargin(ClickableMargin):
                 + 0.5
             )
             # Use the window's current vertical scroll as it may have changed since the
-            # window_render_info was generated
-            window = render_info.window
+            # target_render_info was generated
+            window = target_render_info.window
             delta = window.vertical_scroll - target_scroll
 
             if isinstance(window, Window):
@@ -435,7 +452,7 @@ class ScrollbarMargin(ClickableMargin):
                     func()
             # Hack to speed up scrolling on the :py:`ScrollingContainer`
             elif hasattr(window, "scrolling"):
-                setattr(render_info.window, "scrolling", delta)  # noqa: B010
+                setattr(target_render_info.window, "scrolling", delta)  # noqa: B010
 
         # Mouse down events
         elif mouse_event.event_type == MouseEventType.MOUSE_DOWN:
@@ -443,20 +460,30 @@ class ScrollbarMargin(ClickableMargin):
             arrows = self.display_arrows()
             if arrows and int(row) == 0:
                 offset = -1
-            elif arrows and int(row) == render_info.window_height - 1:
+            elif arrows and int(row) == target_render_info.window_height - 1:
                 offset = 1
             # Scroll up or down one page if clicking on the background
             elif row < self.thumb_top + 1 or self.thumb_top + 1 + self.thumb_size < row:
                 direction = (row < (self.thumb_top + self.thumb_size // 2)) * -2 + 1
-                offset = direction * render_info.window_height
+                offset = direction * target_render_info.window_height
             # We are on the scroll button - start a drag event if this is not a
             # repeated mouse event
             elif not repeated:
-                self.dragging = True
-                self.drag_start_scroll = render_info.vertical_scroll
-                self.drag_start_offset = row - self.thumb_top
-                # Restrict mouse events to this area
-                get_app().mouse_limits = self.write_position
+                # Restrict mouse events to the scrollbar's area. Recalculate the area
+                # based on the margin's window's render_info, in case this is not the
+                # main screen
+                if margin_render_info := self.margin_window.render_info:
+                    y_min, x_min = min(margin_render_info._rowcol_to_yx.values())
+                    y_max, x_max = max(margin_render_info._rowcol_to_yx.values())
+                    get_app().mouse_limits = WritePosition(
+                        xpos=x_min,
+                        ypos=y_min,
+                        width=x_max - x_min + 1,
+                        height=y_max - y_min + 1,
+                    )
+                    self.dragging = True
+                    self.drag_start_scroll = target_render_info.vertical_scroll
+                    self.drag_start_offset = row - self.thumb_top
                 return None
             # Otherwise this is a click on the centre scroll button - do nothing
             else:
@@ -465,9 +492,9 @@ class ScrollbarMargin(ClickableMargin):
             if mouse_event.button == MouseButton.LEFT:
                 func = None
                 if offset < 0:
-                    func = render_info.window._scroll_up
+                    func = target_render_info.window._scroll_up
                 elif offset > 0:
-                    func = render_info.window._scroll_down
+                    func = target_render_info.window._scroll_down
                 if func is not None:
                     # Scroll the window multiple times to scroll by the offset
                     for _ in range(abs(int(offset))):
