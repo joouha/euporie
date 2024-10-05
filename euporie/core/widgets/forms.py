@@ -236,6 +236,7 @@ class Button:
 
     def default_mouse_handler(self, mouse_event: MouseEvent) -> NotImplementedOrNone:
         """Handle mouse events."""
+        app = get_app()
         if self.disabled():
             return NotImplemented
         if mouse_event.button == MouseButton.LEFT:
@@ -249,16 +250,15 @@ class Button:
                 ):
                     y_min, x_min = min(render_info._rowcol_to_yx.values())
                     y_max, x_max = max(render_info._rowcol_to_yx.values())
-                    get_app().mouse_limits = WritePosition(
+                    app.mouse_limits = WritePosition(
                         xpos=x_min,
                         ypos=y_min,
-                        width=x_max - x_min,
-                        height=y_max - y_min,
+                        width=x_max - x_min + 1,
+                        height=y_max - y_min + 1,
                     )
                 self.on_mouse_down.fire()
 
                 if not self.has_focus():
-                    app = get_app()
                     app.layout.focus(self)
                     # Invalidate the app - we don't do it by returning None so the
                     # event can bubble
@@ -269,7 +269,7 @@ class Button:
                     return None
 
             elif mouse_event.event_type == MouseEventType.MOUSE_UP:
-                get_app().mouse_limits = None
+                app.mouse_limits = None
                 if self.selected:
                     self.selected = False
                     self.on_click.fire()
@@ -280,11 +280,12 @@ class Button:
                 if (info := self.window.render_info) is not None and (
                     info._x_offset + mouse_event.position.x,
                     info._y_offset + mouse_event.position.y,
-                ) != get_app().mouse_position:
+                ) != app.mouse_position:
+                    app.mouse_limits = None
                     self.selected = False
                 return None
 
-        get_app().mouse_limits = None
+        app.mouse_limits = None
         self.selected = False
         return NotImplemented
 

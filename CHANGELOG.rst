@@ -17,6 +17,11 @@ Added
 - Add option to display remote inputs and outputs
 - Reduce confusion in single-line inputs showing line numbers
 
+Fixed
+=====
+
+- Various mouse issues with scrollbars and buttons
+
 ----
 
 *******************
