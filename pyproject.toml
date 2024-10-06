@@ -100,12 +100,14 @@ packages = ["euporie"]
 
 # Default development environment
 [tool.hatch.envs.default]
+installer = "uv"
 dev-mode = true
 features = ["hub"]
 
 
 # Environment for testing on various python versions
 [tool.hatch.envs.multi]
+installer = "uv"
 
 [[tool.hatch.envs.multi.matrix]]
 python = ["3.8", "3.9", "3.10", "3.11", "3.12", "pypy3"]
@@ -113,6 +115,7 @@ python = ["3.8", "3.9", "3.10", "3.11", "3.12", "pypy3"]
 
 # Environment used to run `hatch fmt`
 [tool.hatch.envs.hatch-static-analysis]
+installer = "uv"
 config-path = "none"  # Ignore hatch default format config
 detached = true
 dependencies = [
@@ -160,6 +163,7 @@ run = "mypy {args:--namespace-packages -p euporie -p tests -p scripts}"
 
 # Environment for running tests
 [tool.hatch.envs.test]
+installer = "uv"
 description = "Run tests."
 detached = false
 dependencies = [
@@ -178,6 +182,7 @@ cov = "coverage run --parallel -m pytest {args}"
 
 # Environment for building documentation
 [tool.hatch.envs.docs]
+installer = "uv"
 description = "Build documentation."
 dependencies = [
   "importlib_metadata",
@@ -198,6 +203,7 @@ autobuild = "sphinx-autobuild docs docs/_build/html"
 
 # Environment for prototyping using Jupyter
 [tool.hatch.envs.kernel]
+installer = "uv"
 description = "Euporie Jupyter kernel development environment."
 dependencies = [ "ipykernel~=6.29" ]
 
