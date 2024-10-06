@@ -234,36 +234,11 @@ class Cell:
         fill = partial(Window, style="class:border")
 
         # Create textbox for standard input
-        def _send_input(buf: Buffer) -> bool:
-            return False
-
         self.stdin_box = StdInput(weak_self.kernel_tab)
-
-        top_border = VSplit(
-            [
-                self.control,
-                ConditionalContainer(
-                    content=fill(
-                        char=border_char("TOP_MID"),
-                        width=lambda: len(weak_self.prompt),
-                        height=1,
-                    ),
-                    filter=show_prompt,
-                ),
-                ConditionalContainer(
-                    content=fill(width=1, height=1, char=border_char("TOP_SPLIT")),
-                    filter=show_prompt,
-                ),
-                fill(char=border_char("TOP_MID"), height=1),
-                fill(width=1, height=1, char=border_char("TOP_RIGHT")),
-            ],
-            height=1,
-        )
 
         input_row = ConditionalContainer(
             VSplit(
                 [
-                    fill(width=1, char=border_char("MID_LEFT")),
                     ConditionalContainer(
                         content=Window(
                             FormattedTextControl(
@@ -276,14 +251,10 @@ class Cell:
                                     ("", "\n ", lambda e: NotImplemented),
                                 ]
                             ),
-                            width=lambda: len(weak_self.prompt),
+                            width=lambda: len(weak_self.prompt) + 1,
                             height=Dimension(preferred=1),
                             style="class:input,prompt",
                         ),
-                        filter=show_prompt,
-                    ),
-                    ConditionalContainer(
-                        fill(width=1, char=border_char("MID_SPLIT")),
                         filter=show_prompt,
                     ),
                     ConditionalContainer(self.input_box, filter=~source_hidden),
@@ -314,34 +285,9 @@ class Cell:
                         ),
                         filter=source_hidden,
                     ),
-                    fill(width=1, char=border_char("MID_RIGHT")),
                 ],
             ),
             filter=show_input,
-        )
-        middle_line = ConditionalContainer(
-            content=VSplit(
-                [
-                    fill(width=1, height=1, char=border_char("SPLIT_LEFT")),
-                    ConditionalContainer(
-                        content=fill(
-                            char=border_char("SPLIT_MID"),
-                            width=lambda: len(weak_self.prompt),
-                        ),
-                        filter=show_prompt,
-                    ),
-                    ConditionalContainer(
-                        content=fill(
-                            width=1, height=1, char=border_char("SPLIT_SPLIT")
-                        ),
-                        filter=show_prompt,
-                    ),
-                    fill(char=border_char("SPLIT_MID")),
-                    fill(width=1, height=1, char=border_char("SPLIT_RIGHT")),
-                ],
-                height=1,
-            ),
-            filter=(show_input & show_output) | self.stdin_box.visible,
         )
 
         outputs_hidden = Condition(
@@ -354,7 +300,6 @@ class Cell:
         output_row = ConditionalContainer(
             VSplit(
                 [
-                    fill(width=1, char=border_char("MID_LEFT")),
                     ConditionalContainer(
                         content=Window(
                             FormattedTextControl(
@@ -367,19 +312,11 @@ class Cell:
                                     ("", "\n ", lambda e: NotImplemented),
                                 ],
                             ),
-                            width=lambda: len(weak_self.prompt),
+                            width=lambda: len(weak_self.prompt) + 1,
                             height=Dimension(preferred=1),
                             style="class:output,prompt",
                         ),
                         filter=show_prompt,
-                    ),
-                    ConditionalContainer(
-                        content=fill(width=1, char=border_char("MID_SPLIT")),
-                        filter=show_prompt,
-                    ),
-                    ConditionalContainer(
-                        fill(width=1, char=border_char("MID_MID")),
-                        filter=~show_prompt,
                     ),
                     HSplit(
                         [
@@ -417,33 +354,9 @@ class Cell:
                             self.stdin_box,
                         ]
                     ),
-                    ConditionalContainer(
-                        fill(width=1, char=border_char("MID_MID")),
-                        filter=~show_prompt,
-                    ),
-                    fill(width=1, char=border_char("MID_RIGHT")),
                 ],
             ),
             filter=show_output | self.stdin_box.visible,
-        )
-        bottom_border = VSplit(
-            [
-                fill(width=1, height=1, char=border_char("BOTTOM_LEFT")),
-                ConditionalContainer(
-                    content=fill(
-                        char=border_char("BOTTOM_MID"),
-                        width=lambda: len(weak_self.prompt),
-                    ),
-                    filter=show_prompt,
-                ),
-                ConditionalContainer(
-                    content=fill(width=1, height=1, char=border_char("BOTTOM_SPLIT")),
-                    filter=show_prompt,
-                ),
-                fill(char=border_char("BOTTOM_MID")),
-                fill(width=1, height=1, char=border_char("BOTTOM_RIGHT")),
-            ],
-            height=1,
         )
 
         def _style() -> str:
@@ -458,11 +371,32 @@ class Cell:
 
         self.container = HSplit(
             [
-                top_border,
-                input_row,
-                middle_line,
-                output_row,
-                bottom_border,
+                VSplit(
+                    [
+                        self.control,
+                        fill(char=border_char("TOP_MID"), height=1),
+                        fill(width=1, height=1, char=border_char("TOP_RIGHT")),
+                    ],
+                    height=1,
+                ),
+                VSplit(
+                    [
+                        fill(width=1, char=border_char("MID_LEFT")),
+                        HSplit(
+                            [input_row, output_row],
+                            padding=lambda: 1 if show_input() and show_output() else 0,
+                        ),
+                        fill(width=1, char=border_char("MID_RIGHT")),
+                    ]
+                ),
+                VSplit(
+                    [
+                        fill(width=1, height=1, char=border_char("BOTTOM_LEFT")),
+                        fill(char=border_char("BOTTOM_MID")),
+                        fill(width=1, height=1, char=border_char("BOTTOM_RIGHT")),
+                    ],
+                    height=1,
+                ),
             ],
             style=_style,
         )
