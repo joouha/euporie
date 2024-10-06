@@ -5,7 +5,6 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-from prompt_toolkit.cache import FastDictCache
 from prompt_toolkit.layout.containers import (
     ConditionalContainer,
     DynamicContainer,
@@ -47,14 +46,12 @@ class PreviewNotebook(BaseNotebook):
     ) -> None:
         """Create a new instance."""
         self.cell_index = 0
-        self.cells: FastDictCache[tuple[int], Cell] = FastDictCache(
-            get_value=self.get_cell
-        )
-
         super().__init__(app, path, use_kernel_history=use_kernel_history)
 
         self.app.before_render += self.before_render
         self.app.after_render += self.after_render
+
+        self._cell = Cell(0, {}, self)
 
     def pre_init_kernel(self) -> None:
         """Filter cells before kernel is loaded."""
@@ -156,17 +153,15 @@ class PreviewNotebook(BaseNotebook):
         # Trigger a re-draw of the app right away, now with the next cell
         self.app.invalidate()
 
-    def get_cell(self, index: int) -> Cell:
-        """Render a cell by its index."""
-        if index < len(self.json["cells"]):
-            return Cell(index, self.json["cells"][index], self)
-        else:
-            return Cell(0, {}, self)
-
     @property
     def cell(self) -> Cell:
-        """Return the current cell."""
-        return self.cells[(self.cell_index,)]
+        """Load the current cell's data into our cell instance."""
+        cell = self._cell
+        cell_json = self.json["cells"][self.cell_index]
+        cell.json = cell_json
+        cell.input = cell_json["source"]
+        cell.output_area.json = cell.output_json
+        return cell
 
     def load_container(self) -> AnyContainer:
         """Load the notebook's main container."""
