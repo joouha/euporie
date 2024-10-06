@@ -189,6 +189,9 @@ class PreviewApp(BaseApp):
         # time.sleep(0.1)
         super()._redraw(render_as_done=True)
 
+    def _update_invalidate_events(self) -> None:
+        """Do nothing, as we don't need invalidation events for the preview app."""
+
     # ################################### Settings ####################################
 
     add_setting(
