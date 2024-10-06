@@ -58,7 +58,7 @@ def register(
     return decorator
 
 
-def find_route(from_: str, to: str) -> list | None:
+def _find_route(from_: str, to: str) -> list | None:
     """Find the shortest conversion path between two formats."""
     if from_ == to:
         return [from_]
@@ -100,5 +100,10 @@ def find_route(from_: str, to: str) -> list | None:
 
 
 _CONVERTOR_ROUTE_CACHE: FastDictCache[tuple[str, str], list | None] = FastDictCache(
-    find_route
+    _find_route
 )
+
+
+def find_route(from_: str, to: str) -> list | None:
+    """Find and cache conversion routes."""
+    return _CONVERTOR_ROUTE_CACHE[from_, to]
