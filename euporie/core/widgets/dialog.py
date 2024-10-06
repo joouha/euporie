@@ -333,15 +333,13 @@ class Dialog(Float, metaclass=ABCMeta):
         self._load(**params)
         self.last_focused = self.app.layout.current_control
         self._visible = True
-        if self.to_focus is not None:
-            self.app.layout.focus(self.to_focus)
-        else:
-            try:
-                self.app.layout.focus(self.container)
-            except ValueError:
-                pass
-        self.app.layout.focus(self.container)
-        self.app.invalidate()
+        to_focus = self.to_focus or self.container
+        try:
+            self.app.layout.focus(to_focus)
+        except ValueError:
+            pass
+        finally:
+            self.app.invalidate()
 
     def hide(self, event: KeyPressEvent | None = None) -> None:
         """Hide the dialog."""
