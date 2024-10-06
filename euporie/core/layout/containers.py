@@ -3,13 +3,19 @@
 from __future__ import annotations
 
 import logging
-from functools import lru_cache, partial
+from functools import partial
 from typing import TYPE_CHECKING
 
 from prompt_toolkit.application.current import get_app
+from prompt_toolkit.cache import FastDictCache
 from prompt_toolkit.data_structures import Point
 from prompt_toolkit.layout import containers as ptk_containers
-from prompt_toolkit.layout.containers import WindowAlign, WindowRenderInfo
+from prompt_toolkit.layout.containers import (
+    HorizontalAlign,
+    VerticalAlign,
+    WindowAlign,
+    WindowRenderInfo,
+)
 from prompt_toolkit.layout.controls import DummyControl as PtkDummyControl
 from prompt_toolkit.layout.controls import (
     FormattedTextControl,
@@ -17,23 +23,29 @@ from prompt_toolkit.layout.controls import (
     fragment_list_width,
     to_formatted_text,
 )
-from prompt_toolkit.layout.dimension import sum_layout_dimensions
 from prompt_toolkit.layout.screen import _CHAR_CACHE
 from prompt_toolkit.layout.utils import explode_text_fragments
 from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
-from prompt_toolkit.utils import get_cwidth, take_using_weights, to_str
+from prompt_toolkit.utils import get_cwidth, to_str
 
 from euporie.core.data_structures import DiInt
 from euporie.core.layout.controls import DummyControl
 from euporie.core.layout.screen import BoundedWritePosition
 
 if TYPE_CHECKING:
-    from typing import Any, Callable
+    from typing import Any, Callable, Sequence
 
     from prompt_toolkit.formatted_text import AnyFormattedText, StyleAndTextTuples
-    from prompt_toolkit.key_binding.key_bindings import NotImplementedOrNone
-    from prompt_toolkit.layout.containers import Float
-    from prompt_toolkit.layout.dimension import Dimension
+    from prompt_toolkit.key_binding.key_bindings import (
+        KeyBindingsBase,
+        NotImplementedOrNone,
+    )
+    from prompt_toolkit.layout.containers import (
+        AnyContainer,
+        AnyDimension,
+        Container,
+        Float,
+    )
     from prompt_toolkit.layout.margins import Margin
     from prompt_toolkit.layout.mouse_handlers import MouseHandlers
     from prompt_toolkit.layout.screen import Screen, WritePosition
@@ -44,6 +56,44 @@ log = logging.getLogger(__name__)
 
 class HSplit(ptk_containers.HSplit):
     """Several layouts, one stacked above/under the other."""
+
+    def __init__(
+        self,
+        children: Sequence[AnyContainer],
+        window_too_small: Container | None = None,
+        align: VerticalAlign = VerticalAlign.JUSTIFY,
+        padding: AnyDimension = 0,
+        padding_char: str | None = None,
+        padding_style: str = "",
+        width: AnyDimension = None,
+        height: AnyDimension = None,
+        z_index: int | None = None,
+        modal: bool = False,
+        key_bindings: KeyBindingsBase | None = None,
+        style: str | Callable[[], str] = "",
+    ) -> None:
+        """Initialize the HSplit with a cache."""
+        super().__init__(
+            children=children,
+            window_too_small=window_too_small,
+            align=align,
+            padding=padding,
+            padding_char=padding_char,
+            padding_style=padding_style,
+            width=width,
+            height=height,
+            z_index=z_index,
+            modal=modal,
+            key_bindings=key_bindings,
+            style=style,
+        )
+        _split_cache_getter = super()._divide_heights
+        self._split_cache: FastDictCache[
+            tuple[int, WritePosition], list[int] | None
+        ] = FastDictCache(lambda rc, wp: _split_cache_getter(wp), size=100)
+
+    def _divide_heights(self, write_position: WritePosition) -> list[int] | None:
+        return self._split_cache[get_app().render_counter, write_position]
 
     def write_to_screen(
         self,
@@ -134,68 +184,48 @@ class HSplit(ptk_containers.HSplit):
                     z_index,
                 )
 
-    def _divide_heights(self, write_position: WritePosition) -> list[int] | None:
-        """Return the heights for all rows, or None when there is not enough space."""
-        if not self.children:
-            return []
-
-        # Calculate heights.
-        width = write_position.width
-        height = write_position.height
-
-        return _get_divided_heights(
-            width,
-            height,
-            tuple(c.preferred_height(width, height) for c in self._all_children),
-        )
-
-
-@lru_cache(maxsize=2048)
-def _get_divided_heights(
-    width: int, height: int, dimensions: tuple[Dimension, ...]
-) -> list[int] | None:
-    # Sum dimensions
-    sum_dimensions = sum_layout_dimensions(list(dimensions))
-
-    # If there is not enough space for both.
-    # Don't do anything.
-    if sum_dimensions.min > height:
-        return None
-
-    # Find optimal sizes. (Start with minimal size, increase until we cover
-    # the whole height.)
-    sizes = [d.min for d in dimensions]
-
-    child_generator = take_using_weights(
-        items=list(range(len(dimensions))), weights=[d.weight for d in dimensions]
-    )
-
-    i = next(child_generator)
-
-    # Increase until we meet at least the 'preferred' size.
-    preferred_stop = min(height, sum_dimensions.preferred)
-    preferred_dimensions = [d.preferred for d in dimensions]
-
-    while sum(sizes) < preferred_stop:
-        if sizes[i] < preferred_dimensions[i]:
-            sizes[i] += 1
-        i = next(child_generator)
-
-    # Increase until we use all the available space. (or until "max")
-    if not get_app().is_done:
-        max_stop = min(height, sum_dimensions.max)
-        max_dimensions = [d.max for d in dimensions]
-
-        while sum(sizes) < max_stop:
-            if sizes[i] < max_dimensions[i]:
-                sizes[i] += 1
-            i = next(child_generator)
-
-    return sizes
-
 
 class VSplit(ptk_containers.VSplit):
     """Several layouts, one stacked left/right of the other."""
+
+    def __init__(
+        self,
+        children: Sequence[AnyContainer],
+        window_too_small: Container | None = None,
+        align: HorizontalAlign = HorizontalAlign.JUSTIFY,
+        padding: AnyDimension = 0,
+        padding_char: str | None = None,
+        padding_style: str = "",
+        width: AnyDimension = None,
+        height: AnyDimension = None,
+        z_index: int | None = None,
+        modal: bool = False,
+        key_bindings: KeyBindingsBase | None = None,
+        style: str | Callable[[], str] = "",
+    ) -> None:
+        """Initialize the VSplit with a cache."""
+        super().__init__(
+            children=children,
+            window_too_small=window_too_small,
+            align=align,
+            padding=padding,
+            padding_char=padding_char,
+            padding_style=padding_style,
+            width=width,
+            height=height,
+            z_index=z_index,
+            modal=modal,
+            key_bindings=key_bindings,
+            style=style,
+        )
+        _split_cache_getter = super()._divide_widths
+        self._split_cache: FastDictCache[tuple[int, int], list[int] | None] = (
+            FastDictCache(lambda rc, w: _split_cache_getter(w), size=100)
+        )
+
+    def _divide_widths(self, width: int) -> list[int] | None:
+        """Calculate and cache widths for all columns."""
+        return self._split_cache[get_app().render_counter, width]
 
     def write_to_screen(
         self,
