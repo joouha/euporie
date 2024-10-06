@@ -13,6 +13,7 @@ Upcoming
 Added
 =====
 
+- Various optimizations, making euporie faster
 - Add ability to indent and unindent in vi insert mode using ``tab`` and ``shift-tab`` key-bindings
 - Add option to display remote inputs and outputs
 - Reduce confusion in single-line inputs showing line numbers
