@@ -258,6 +258,8 @@ class CachedContainer(Container):
                                                                                                                                                                                        .
         """
         # Copy write positions
+        new_wps = {}
+
         for win, wp in self.screen.visible_windows_to_write_positions.items():
             new_wp = BoundedWritePosition(
                 xpos=wp.xpos + left,
@@ -271,8 +273,7 @@ class CachedContainer(Container):
                     left=max(0, wp.width - (cols.stop - wp.xpos)),
                 ),
             )
-            screen.visible_windows_to_write_positions[win] = new_wp
-            screen.height = max(screen.height, self.screen.height)
+            new_wps[win] = new_wp
 
             # Modify render info
             info = win.render_info
@@ -309,7 +310,10 @@ class CachedContainer(Container):
                         win.render_info, "horizontal_scroll", horizontal_scroll
                     )
 
-        @lru_cache
+        screen.visible_windows_to_write_positions.update(new_wps)
+        screen.height = max(screen.height, self.screen.height)
+
+        @lru_cache(maxsize=None)
         def _wrap_mouse_handler(handler: Callable) -> MouseHandler:
             def _wrapped(mouse_event: MouseEvent) -> NotImplementedOrNone:
                 # Modify mouse events to reflect position of content
@@ -335,14 +339,17 @@ class CachedContainer(Container):
         output_db = screen.data_buffer
         output_zwes = screen.zero_width_escapes
         output_mhs = mouse_handlers.mouse_handlers
-        for y in range(max(0, rows.start), rows.stop):
+
+        rows_range = range(max(0, rows.start), rows.stop)
+        cols_range = range(max(0, cols.start), cols.stop)
+        for y in rows_range:
             input_db_row = input_db[y]
             input_zwes_row = input_zwes[y]
             input_mhs_row = input_mhs[y]
             output_dbs_row = output_db[top + y]
             output_zwes_row = output_zwes[top + y]
             output_mhs_row = output_mhs[top + y]
-            for x in range(max(0, cols.start), cols.stop):
+            for x in cols_range:
                 # Data
                 output_dbs_row[left + x] = input_db_row[x]
                 # Escape sequences
@@ -354,24 +361,26 @@ class CachedContainer(Container):
         layout = get_app().layout
         if self.screen.show_cursor:
             for window, point in self.screen.cursor_positions.items():
-                if layout.current_control == window.content:
-                    assert window.render_info is not None
-                    if (
-                        (
-                            window.render_info.ui_content.show_cursor
-                            and not window.always_hide_cursor()
-                        )
-                        and point.x in range(cols.start, cols.stop)
-                        and point.y in range(rows.start, rows.stop)
-                    ):
-                        screen.cursor_positions[window] = Point(
-                            x=left + point.x, y=top + point.y
-                        )
-                        screen.show_cursor = True
+                if (
+                    layout.current_control == window.content
+                    and window.render_info is not None
+                    and window.render_info.ui_content.show_cursor
+                    and not window.always_hide_cursor()
+                    and cols.start <= point.x < cols.stop
+                    and rows.start <= point.y < rows.stop
+                ):
+                    screen.cursor_positions[window] = Point(
+                        x=left + point.x, y=top + point.y
+                    )
+                    screen.show_cursor = True
 
         # Copy menu positions
-        for window, point in self.screen.menu_positions.items():
-            screen.menu_positions[window] = Point(x=left + point.x, y=top + point.y)
+        screen.menu_positions.update(
+            {
+                window: Point(x=left + point.x, y=top + point.y)
+                for window, point in self.screen.menu_positions.items()
+            }
+        )
 
     def get_children(self) -> list[Container]:
         """Return a list of all child containers."""
