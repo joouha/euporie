@@ -155,7 +155,7 @@ class ConditionalSplit:
         return self._cache.get(vertical, partial(self.load_container, vertical))
 
     def __pt_container__(self) -> AnyContainer:
-        """Return a dymanic container."""
+        """Return a dynamic container."""
         return DynamicContainer(self.container)
 
 
