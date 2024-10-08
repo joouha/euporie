@@ -287,7 +287,7 @@ class TabBarControl(UIControl):
 
     def is_focusable(self) -> bool:
         """Tell whether this user control is focusable."""
-        return True
+        return False
 
     def create_content(self, width: int, height: int) -> UIContent:
         """Generate the formatted text fragments which make the controls output."""
