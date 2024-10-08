@@ -117,7 +117,7 @@ class Box:
             height=height,
             style=style,
             modal=modal,
-            key_bindings=None,
+            key_bindings=key_bindings,
         )
 
     def __pt_container__(self) -> Container:
