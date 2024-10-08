@@ -26,6 +26,7 @@ from prompt_toolkit.layout.containers import (
     ConditionalContainer,
     DynamicContainer,
     Float,
+    to_container,
 )
 from prompt_toolkit.layout.controls import FormattedTextControl, UIContent, UIControl
 from prompt_toolkit.layout.dimension import Dimension
@@ -189,7 +190,7 @@ class Dialog(Float, metaclass=ABCMeta):
         # Set default body & buttons
         self.body: AnyContainer = Window()
         self.buttons: dict[str, Callable | None] = {"OK": None}
-        self.button_widgets: list[AnyContainer] = []
+        self._button_widgets: list[AnyContainer] = []
 
         # Create key-bindings
         kb = KeyBindings()
@@ -225,16 +226,12 @@ class Dialog(Float, metaclass=ABCMeta):
         )
 
         # The buttons.
+        self.button_split = VSplit(self.button_widgets, padding=1)
         buttons_row = ConditionalContainer(
             Box(
-                body=DynamicContainer(
-                    lambda: VSplit(
-                        self.button_widgets,
-                        padding=1,
-                        key_bindings=DynamicKeyBindings(lambda: self.buttons_kb),
-                    )
-                ),
+                body=self.button_split,
                 height=Dimension(min=1, max=3, preferred=3),
+                key_bindings=DynamicKeyBindings(lambda: self.buttons_kb),
             ),
             filter=Condition(lambda: bool(self.buttons)),
         )
@@ -263,6 +260,16 @@ class Dialog(Float, metaclass=ABCMeta):
         # Set the body as the float's contents
         super().__init__(content=self.container)
 
+    @property
+    def button_widgets(self) -> list[AnyContainer]:
+        """A list of button widgets to show in the dialog's row of buttons."""
+        return self._button_widgets
+
+    @button_widgets.setter
+    def button_widgets(self, value: list[AnyContainer]) -> None:
+        self._button_widgets = value
+        self.button_split.children = [to_container(c) for c in value]
+
     def _button_handler(
         self, button: str = "", event: KeyPressEvent | None = None
     ) -> None:
@@ -280,8 +287,7 @@ class Dialog(Float, metaclass=ABCMeta):
         self.load(**params)
 
         # Create button widgets & callbacks
-        self.button_widgets.clear()
-
+        new_button_widgets = []
         if self.buttons:
             width = max(map(len, self.buttons)) + 2
             used_keys = set()
@@ -296,7 +302,7 @@ class Dialog(Float, metaclass=ABCMeta):
                     rest = text
                 # Add a button with a handler
                 handler = partial(self._button_handler, text)
-                self.button_widgets.append(
+                new_button_widgets.append(
                     FocusedStyle(
                         Button(
                             [("underline", key), ("", rest)],
@@ -309,6 +315,7 @@ class Dialog(Float, metaclass=ABCMeta):
                 # Add a key-handler
                 if key:
                     self.buttons_kb.add(f"A-{key.lower()}", is_global=True)(handler)
+        self.button_widgets = new_button_widgets
 
         # When a button is selected, handle left/right key bindings.
         if len(self.button_widgets) > 1:
