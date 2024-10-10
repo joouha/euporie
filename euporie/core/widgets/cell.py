@@ -352,9 +352,10 @@ class Cell:
                                 filter=outputs_hidden,
                             ),
                             self.stdin_box,
-                        ]
+                        ],
                     ),
                 ],
+                width=Dimension(min=1),
             ),
             filter=show_output | self.stdin_box.visible,
         )
