@@ -274,6 +274,8 @@ class Notebook(BaseNotebook):
 
     def enter_edit_mode(self) -> None:
         """Enter cell edit mode."""
+        # Signal the page to scroll so the cursor is visible on next render
+        self.page.scroll_to_cursor = True
         self.edit_mode = True
         # Only one cell can be selected in edit mode
         self.select(self.cell.index)
