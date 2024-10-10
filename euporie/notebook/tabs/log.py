@@ -106,5 +106,5 @@ class LogView(Tab):
                 break
         else:
             tab = LogView(app)
-            app.tabs.append(tab)
+            app.add_tab(tab)
         tab.focus()

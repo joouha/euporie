@@ -74,6 +74,8 @@ class NotebookApp(BaseApp):
     notebooks in the terminal.
     """
 
+    _tab_container: AnyContainer
+
     name = "notebook"
 
     def __init__(self, **kwargs: Any) -> None:
@@ -84,8 +86,13 @@ class NotebookApp(BaseApp):
         super().__init__(**kwargs)
         self.bindings_to_load.append("euporie.notebook.app.NotebookApp")
 
+        self.on_tabs_change += self.set_tab_container
+
         # Register config hooks
         self.config.get_item("show_cell_borders").event += lambda x: self.refresh()
+        self.config.get_item("tab_mode").event += self.set_tab_container
+        self.config.get_item("background_pattern").event += self.set_tab_container
+        self.config.get_item("background_character").event += self.set_tab_container
 
     async def _poll_terminal_colors(self) -> None:
         """Repeatedly query the terminal for its background and foreground colours."""
@@ -96,10 +103,6 @@ class NotebookApp(BaseApp):
     def pre_run(self, app: Application | None = None) -> None:
         """Continue loading the app."""
         super().pre_run(app)
-        # Ensure an opened tab is focused
-        if self.tab:
-            self.tab.focus()
-
         # Load style hooks and start polling terminal style
         if self.config.terminal_polling_interval and hasattr(
             self.input, "vt100_parser"
@@ -118,29 +121,58 @@ class NotebookApp(BaseApp):
         """Return a container with all opened tabs.
 
         Returns:
-            A layout displaying the opened tab containers.
-
+            A layout container displaying the opened tab containers.
         """
-        if self.tabs:
-            if TabMode(self.config.tab_mode) == TabMode.TILE_HORIZONTALLY:
-                return HSplit(
-                    children=self.tabs,
-                    padding=1,
-                    padding_style="class:tab-padding",
-                    padding_char="─",
-                )
-            elif TabMode(self.config.tab_mode) == TabMode.TILE_VERTICALLY:
-                return VSplit(
-                    children=self.tabs,
-                    padding=1,
-                    padding_style="class:tab-padding",
-                    padding_char="│",
-                )
-            else:
-                return DynamicContainer(lambda: self.tabs[self._tab_idx])
+        try:
+            return self._tab_container
+        except AttributeError:
+            self.set_tab_container()
+            return self._tab_container
+
+    def set_tab_container(self, app: BaseApp | None = None) -> None:
+        """Set the container to use to display opened tabs."""
+        if not self.tabs:
+            self._tab_container = Pattern(
+                self.config.background_character,
+                self.config.background_pattern,
+            )
+        elif TabMode(self.config.tab_mode) == TabMode.TILE_HORIZONTALLY:
+            self._tab_container = HSplit(
+                children=self.tabs,
+                padding=1,
+                padding_style="class:tab-padding",
+                padding_char="─",
+            )
+        elif TabMode(self.config.tab_mode) == TabMode.TILE_VERTICALLY:
+            self._tab_container = VSplit(
+                children=self.tabs,
+                padding=1,
+                padding_style="class:tab-padding",
+                padding_char="│",
+            )
         else:
-            return Pattern(
-                self.config.background_character, self.config.background_pattern
+            self._tab_container = HSplit(
+                [
+                    ConditionalContainer(
+                        Window(
+                            TabBarControl(
+                                tabs=self.tab_bar_tabs,
+                                active=lambda: self._tab_idx,
+                                closeable=True,
+                            ),
+                            height=2,
+                            style="class:app-tab-bar",
+                            dont_extend_height=True,
+                        ),
+                        filter=Condition(
+                            lambda: (
+                                len(self.tabs) > 1 or self.config.always_show_tab_bar
+                            )
+                            and TabMode(self.config.tab_mode) == TabMode.STACK
+                        ),
+                    ),
+                    DynamicContainer(lambda: self.tabs[self._tab_idx]),
+                ]
             )
 
     def _statusbar_defaults(self) -> StatusBarFields | None:
@@ -184,24 +216,6 @@ class NotebookApp(BaseApp):
                 align=WindowAlign.RIGHT,
             ),
             filter=have_tabs,
-        )
-
-        self.tab_bar_control = TabBarControl(
-            tabs=self.tab_bar_tabs,
-            active=lambda: self._tab_idx,
-            closeable=True,
-        )
-        tab_bar = ConditionalContainer(
-            Window(
-                self.tab_bar_control,
-                height=2,
-                style="class:app-tab-bar",
-                dont_extend_height=True,
-            ),
-            filter=Condition(
-                lambda: (len(self.tabs) > 1 or self.config.always_show_tab_bar)
-                and TabMode(self.config.tab_mode) == TabMode.STACK
-            ),
         )
 
         self.pager = Pager()
@@ -255,7 +269,6 @@ class NotebookApp(BaseApp):
                             self.side_bar,
                             HSplit(
                                 [
-                                    tab_bar,
                                     DynamicContainer(self.tab_container),
                                     self.pager,
                                 ],
@@ -500,8 +513,8 @@ class NotebookApp(BaseApp):
         from euporie.notebook.current import get_app
 
         app = get_app()
-        app.tabs.append(Notebook(app, None))
-        app.tabs[-1].focus()
+        app.add_tab(tab := Notebook(app, None))
+        tab.focus()
 
     @staticmethod
     @add_cmd()
