@@ -21,6 +21,7 @@ Added
 Fixed
 =====
 
+- Scroll cursor to view when entering cell edit mode
 - Various mouse issues with scrollbars and buttons
 
 ----
