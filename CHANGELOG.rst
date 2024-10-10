@@ -6,9 +6,9 @@ Notable changes to this project will be documented in this file.
 
 ----
 
-********
-Upcoming
-********
+*******************
+v2.8.4 (2024-10-10)
+*******************
 
 Added
 =====
