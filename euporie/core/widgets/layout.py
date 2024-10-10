@@ -40,7 +40,7 @@ if TYPE_CHECKING:
     from prompt_toolkit.filters import FilterOrBool
     from prompt_toolkit.formatted_text.base import AnyFormattedText, StyleAndTextTuples
     from prompt_toolkit.key_binding.key_bindings import (
-        KeyBindings,
+        KeyBindingsBase,
         NotImplementedOrNone,
     )
     from prompt_toolkit.layout.containers import AnyContainer, Container, _Split
@@ -84,7 +84,7 @@ class Box:
         style: str = "",
         char: None | str | Callable[[], str] = None,
         modal: bool = False,
-        key_bindings: KeyBindings | None = None,
+        key_bindings: KeyBindingsBase | None = None,
     ) -> None:
         """Initialize this widget."""
         if padding is None:

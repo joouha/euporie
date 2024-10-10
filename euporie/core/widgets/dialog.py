@@ -267,7 +267,7 @@ class Dialog(Float, metaclass=ABCMeta):
 
     @button_widgets.setter
     def button_widgets(self, value: list[AnyContainer]) -> None:
-        self._button_widgets = value
+        self._button_widgets = list(value)
         self.button_split.children = [to_container(c) for c in value]
 
     def _button_handler(
@@ -287,7 +287,7 @@ class Dialog(Float, metaclass=ABCMeta):
         self.load(**params)
 
         # Create button widgets & callbacks
-        new_button_widgets = []
+        new_button_widgets: list[AnyContainer] = []
         if self.buttons:
             width = max(map(len, self.buttons)) + 2
             used_keys = set()
