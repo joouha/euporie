@@ -116,12 +116,10 @@ class BaseNotebook(KernelTab, metaclass=ABCMeta):
         prev = self.container
         self.container = self.load_container()
         self.loaded = True
-
         # Update the focus if the old container had focus
         if self.app.layout.has_focus(prev):
             self.focus()
 
-        self.app.invalidate()
         # Load widgets
         self.load_widgets_from_metadata()
 

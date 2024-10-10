@@ -51,6 +51,7 @@ from prompt_toolkit.styles import (
     merge_styles,
     style_from_pygments_cls,
 )
+from prompt_toolkit.utils import Event
 from pygments.styles import STYLE_MAP as pygments_styles
 from pygments.styles import get_style_by_name
 from upath import UPath
@@ -238,6 +239,7 @@ class BaseApp(Application):
         )
         # Contains the opened tab containers
         self.tabs: list[Tab] = []
+        self.on_tabs_change = Event(self)
         # Holds the search bar to pass to cell inputs
         self.search_bar: SearchBar | None = None
         # Holds the index of the current tab
@@ -364,12 +366,12 @@ class BaseApp(Application):
             xcursor=True,
             ycursor=True,
         )
-        # Open any files we need to
-        self.open_files()
         # Load the layout
         # We delay this until we have terminal responses to allow terminal graphics
         # support to be detected first
         self.layout = Layout(self.load_container(), self.focused_element)
+        # Open any files we need to
+        self.open_files()
 
     async def run_async(
         self,
@@ -646,7 +648,7 @@ class BaseApp(Application):
                 log.error("Unable to display file %s", path)
             else:
                 tab = tab_class(self, ppath)
-                self.tabs.append(tab)
+                self.add_tab(tab)
                 # Ensure the opened tab is focused at app start
                 self.focused_element = tab
                 # Ensure the newly opened tab is selected
@@ -686,7 +688,7 @@ class BaseApp(Application):
             try:
                 self.layout.focus(container)
             except ValueError:
-                self.to_focus = container
+                log.exception("Cannot focus tab")
 
     def focus_tab(self, tab: Tab) -> None:
         """Make a tab visible and focuses it."""
@@ -702,19 +704,21 @@ class BaseApp(Application):
         # Remove tab
         if tab in self.tabs:
             self.tabs.remove(tab)
-        # Update body container to reflect new tab list
-        # assert isinstance(self.body_container.body, HSplit)
-        # self.body_container.body.children[0] = VSplit(self.tabs)
-        # Focus another tab if one exists
-        if self.tab:
-            self.layout.focus(self.tab)
-        # If a tab is not open, the status bar is not shown, so focus the logo, so
-        # pressing tab focuses the menu
+            self.on_tabs_change()
+        # Focus the next active tab if one exists
+        if next_tab := self.tab:
+            next_tab.focus()
+        # If no tab is open, ensure something is focused
         else:
             try:
                 self.layout.focus_next()
             except ValueError:
                 pass
+
+    def add_tab(self, tab: Tab) -> None:
+        """Add a tab to the current tabs list."""
+        self.tabs.append(tab)
+        self.on_tabs_change()
 
     def close_tab(self, tab: Tab | None = None) -> None:
         """Close a notebook tab.
@@ -1300,8 +1304,8 @@ class BaseApp(Application):
                 "close-tab": "c-w",
                 "next-tab": "c-pagedown",
                 "previous-tab": "c-pageup",
-                "focus-next": "s-tab",
-                "focus-previous": "tab",
+                "focus-next": "tab",
+                "focus-previous": "s-tab",
                 "clear-screen": "c-l",
             }
         }

@@ -155,12 +155,12 @@ class Notebook(BaseNotebook):
 
     def post_init_kernel(self) -> None:
         """Start the kernel after if has been loaded."""
+        # Load container
+        super().post_init_kernel()
+
         # Start kernel
         if self.kernel._status == "stopped":
             self.kernel.start(cb=self.kernel_started, wait=False)
-
-        # Load container
-        super().post_init_kernel()
 
     @property
     def selected_indices(self) -> list[int]:
