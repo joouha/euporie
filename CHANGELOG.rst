@@ -21,6 +21,7 @@ Added
 Fixed
 =====
 
+- Do not query clipboard unless terminal clipboard is selected
 - Scroll cursor to view when entering cell edit mode
 - Various mouse issues with scrollbars and buttons
 

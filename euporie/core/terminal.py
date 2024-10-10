@@ -75,6 +75,7 @@ class TerminalQuery:
     cache = False
     cmd = ""
     pattern: re.Pattern | None = None
+    run_at_startup: bool = True
 
     def __init__(self, input_: Input, output: Output, config: Config) -> None:
         """Create a new instance of the terminal query."""
@@ -366,6 +367,7 @@ class ClipboardData(TerminalQuery):
     cache = False
     cmd = "\x1b]52;c;?\x1b\\"
     pattern = re.compile(r"^\x1b\]52;(?:c|p)?;(?P<data>[A-Za-z0-9+/=]+)\x1b\\\Z")
+    run_at_startup = False
 
     def verify(self, data: str) -> str:
         """Verify the terminal responds."""
@@ -445,7 +447,8 @@ class TerminalInfo:
         # Ensure line wrapping is off before sending queries
         self.output.disable_autowrap()
         for query in self._queries.values():
-            query.send(flush=False)
+            if query.run_at_startup:
+                query.send(flush=False)
         self.output.flush()
 
     def _tiocgwnsz(self) -> tuple[int, int, int, int]:

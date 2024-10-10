@@ -47,7 +47,7 @@ class Osc52Clipboard(Clipboard):
         if isinstance(output, Vt100_Output):
             output.get_clipboard()
             output.flush()
-            self.app.term_info.clipboard_data.await_response()
+            self.app.term_info.clipboard_data.await_response(timeout=5)
         return self._data
 
     def _update_clipboard(self, query: TerminalQuery) -> None:
