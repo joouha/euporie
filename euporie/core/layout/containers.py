@@ -11,6 +11,7 @@ from prompt_toolkit.cache import FastDictCache
 from prompt_toolkit.data_structures import Point
 from prompt_toolkit.layout import containers as ptk_containers
 from prompt_toolkit.layout.containers import (
+    Container,
     HorizontalAlign,
     VerticalAlign,
     WindowAlign,
@@ -23,6 +24,7 @@ from prompt_toolkit.layout.controls import (
     fragment_list_width,
     to_formatted_text,
 )
+from prompt_toolkit.layout.dimension import Dimension
 from prompt_toolkit.layout.screen import _CHAR_CACHE
 from prompt_toolkit.layout.utils import explode_text_fragments
 from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
@@ -43,7 +45,6 @@ if TYPE_CHECKING:
     from prompt_toolkit.layout.containers import (
         AnyContainer,
         AnyDimension,
-        Container,
         Float,
     )
     from prompt_toolkit.layout.margins import Margin
@@ -56,6 +57,8 @@ log = logging.getLogger(__name__)
 
 class HSplit(ptk_containers.HSplit):
     """Several layouts, one stacked above/under the other."""
+
+    _pad_window: Window
 
     def __init__(
         self,
@@ -184,9 +187,46 @@ class HSplit(ptk_containers.HSplit):
                     z_index,
                 )
 
+    @property
+    def pad_window(self) -> Window:
+        """Create a single instance of the padding window."""
+        try:
+            return self._pad_window
+        except AttributeError:
+            self._pad_window = Window(
+                height=self.padding,
+                char=self.padding_char,
+                style=self.padding_style,
+            )
+            return self._pad_window
+
+    @property
+    def _all_children(self) -> list[Container]:
+        """List of child objects, including padding."""
+
+        def get() -> list[Container]:
+            result: list[Container] = []
+            # Padding Top.
+            if self.align in (VerticalAlign.CENTER, VerticalAlign.BOTTOM):
+                result.append(Window(width=Dimension(preferred=0)))
+            # The children with padding.
+            for child in self.children:
+                result.append(child)
+                result.append(self.pad_window)
+            if result:
+                result.pop()
+            # Padding right.
+            if self.align in (VerticalAlign.CENTER, VerticalAlign.TOP):
+                result.append(Window(width=Dimension(preferred=0)))
+            return result
+
+        return self._children_cache.get(tuple(self.children), get)
+
 
 class VSplit(ptk_containers.VSplit):
     """Several layouts, one stacked left/right of the other."""
+
+    _pad_window: Window
 
     def __init__(
         self,
@@ -325,6 +365,43 @@ class VSplit(ptk_containers.VSplit):
                 erase_bg,
                 z_index,
             )
+
+    @property
+    def pad_window(self) -> Window:
+        """Create a single instance of the padding window."""
+        try:
+            return self._pad_window
+        except AttributeError:
+            self._pad_window = Window(
+                width=self.padding,
+                char=self.padding_char,
+                style=self.padding_style,
+            )
+            return self._pad_window
+
+    @property
+    def _all_children(self) -> list[Container]:
+        """List of child objects, including padding."""
+
+        def get() -> list[Container]:
+            result: list[Container] = []
+
+            # Padding left.
+            if self.align in (HorizontalAlign.CENTER, HorizontalAlign.RIGHT):
+                result.append(Window(width=Dimension(preferred=0)))
+            # The children with padding.
+            for child in self.children:
+                result.append(child)
+                result.append(self.pad_window)
+            if result:
+                result.pop()
+            # Padding right.
+            if self.align in (HorizontalAlign.CENTER, HorizontalAlign.LEFT):
+                result.append(Window(width=Dimension(preferred=0)))
+
+            return result
+
+        return self._children_cache.get(tuple(self.children), get)
 
 
 class Window(ptk_containers.Window):
