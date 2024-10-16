@@ -389,7 +389,9 @@ class Datum(Generic[T], metaclass=_MetaDatum):
 
     def cell_size(self) -> Any:
         """Get cell width and aspect synchronously."""
-        return self._to_sync(self.cell_size_async())
+        if self._cell_size is None:
+            return self._to_sync(self.cell_size_async())
+        return self._cell_size
 
     # def crop(self, bbox: DiInt) -> T:
     #     """Crop displayable data."""
