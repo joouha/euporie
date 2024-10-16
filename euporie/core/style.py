@@ -4,15 +4,18 @@ from __future__ import annotations
 
 import logging
 from colorsys import hls_to_rgb, rgb_to_hls
-from functools import partial
+from functools import lru_cache, partial
 from typing import TYPE_CHECKING
 
 from prompt_toolkit.cache import SimpleCache
 from prompt_toolkit.styles.defaults import default_ui_style
 from prompt_toolkit.styles.style import Style
+from pygments.styles import get_style_by_name as pyg_get_style_by_name
 
 if TYPE_CHECKING:
     from typing import Any
+
+    from pygments.style import Style as PygmentsStyle
 
 
 log = logging.getLogger(__name__)
@@ -753,3 +756,9 @@ def build_style(
     }
 
     return Style.from_dict(style_dict)
+
+
+@lru_cache(maxsize=None)
+def get_style_by_name(name: str) -> type[PygmentsStyle]:
+    """Get Pygments style, caching the result."""
+    return pyg_get_style_by_name(name)

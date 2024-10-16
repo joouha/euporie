@@ -20,12 +20,11 @@ from prompt_toolkit.renderer import (
 from prompt_toolkit.shortcuts.utils import print_formatted_text
 from prompt_toolkit.styles.pygments import style_from_pygments_cls
 from prompt_toolkit.styles.style import Style, merge_styles
-from pygments.styles import get_style_by_name
 
 from euporie.core.config import add_setting
 from euporie.core.ft.utils import indent, lex, wrap
 from euporie.core.io import PseudoTTY
-from euporie.core.style import LOG_STYLE
+from euporie.core.style import LOG_STYLE, get_style_by_name
 from euporie.core.utils import dict_merge
 
 if TYPE_CHECKING:

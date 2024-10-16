@@ -53,7 +53,6 @@ from prompt_toolkit.styles import (
 )
 from prompt_toolkit.utils import Event
 from pygments.styles import STYLE_MAP as pygments_styles
-from pygments.styles import get_style_by_name
 from upath import UPath
 
 from euporie.core.clipboard import ConfiguredClipboard
@@ -84,6 +83,7 @@ from euporie.core.style import (
     MIME_STYLE,
     ColorPalette,
     build_style,
+    get_style_by_name,
 )
 from euporie.core.terminal import TerminalInfo
 from euporie.core.utils import ChainedList
