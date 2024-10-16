@@ -276,11 +276,12 @@ class BaseApp(Application):
             "euporie.core.terminal.TerminalInfo",
         ]
 
-        from euporie.core.key_binding.bindings.page_navigation import (
-            load_page_navigation_bindings,
-        )
+        if enable_page_navigation_bindings:
+            from euporie.core.key_binding.bindings.page_navigation import (
+                load_page_navigation_bindings,
+            )
 
-        self._page_navigation_bindings = load_page_navigation_bindings(self.config)
+            self._page_navigation_bindings = load_page_navigation_bindings(self.config)
         # Allow hiding element when manually redrawing app
         self._redrawing = False
         self.redrawing = Condition(lambda: self._redrawing)
