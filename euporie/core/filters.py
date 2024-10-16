@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import os
 from functools import lru_cache, partial, reduce
-from importlib import import_module
+from importlib.util import find_spec
 from shutil import which
 from typing import TYPE_CHECKING
 
@@ -42,12 +42,8 @@ def have_modules(*modules: str) -> Filter:
     """Verify a list of python modules are importable."""
 
     def try_import(module: str) -> bool:
-        try:
-            import_module(module)
-        except ModuleNotFoundError:
-            return False
-        else:
-            return True
+        loader = find_spec(module)
+        return loader is not None
 
     filters = [Condition(partial(try_import, module)) for module in modules]
     return reduce(lambda a, b: a & b, filters, to_filter(True))
