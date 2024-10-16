@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 from abc import ABCMeta, abstractmethod
+from functools import lru_cache
 from pathlib import PurePath
 from typing import TYPE_CHECKING
 
@@ -260,17 +261,23 @@ MIME_ORDER = [
 ]
 
 
-def _calculate_mime_rank(mime_data: tuple[str, Any]) -> int:
+@lru_cache(maxsize=None)
+def _calculate_mime_rank(mime: str, have_escapes: bool) -> int:
     """Score the richness of mime output types."""
-    mime, data = mime_data
     for i, ranked_mime in enumerate(MIME_ORDER):
         # Uprank plain text with escape sequences
-        if mime == "text/plain" and "\x1b[" in data:
+        if mime == "text/plain" and have_escapes:
             i -= 7
         if PurePath(mime).match(ranked_mime):
             return i
     else:
         return 999
+
+
+def _mime_ranker(mime_data: tuple[str, Any]) -> int:
+    """Score the richness of mime output types."""
+    mime, data = mime_data
+    return _calculate_mime_rank(mime, isinstance(data, str) and "\x1b[" in data)
 
 
 class CellOutput:
@@ -327,7 +334,7 @@ class CellOutput:
             data = {"text/x-python-traceback": f"{ename}: {evalue}\n{traceback}"}
         else:
             data = self.json.get("data", {"text/plain": ""})
-        return dict(sorted(data.items(), key=_calculate_mime_rank))
+        return dict(sorted(data.items(), key=_mime_ranker))
 
     def update(self) -> None:
         """Update the output by updating all child containers."""
@@ -372,9 +379,8 @@ class CellOutput:
         if mime not in self._elements:
             element = self.make_element(mime)
             self._elements[mime] = element
-        else:
-            element = self._elements[mime]
-        return element
+            return element
+        return self._elements[mime]
 
     @property
     def element(self) -> CellOutputElement:
