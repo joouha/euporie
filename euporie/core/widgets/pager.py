@@ -9,7 +9,6 @@ from typing import TYPE_CHECKING, NamedTuple
 from prompt_toolkit.filters import Condition
 from prompt_toolkit.layout.containers import (
     ConditionalContainer,
-    DynamicContainer,
 )
 from prompt_toolkit.layout.dimension import Dimension
 
@@ -139,11 +138,7 @@ class Pager:
                         collapse=False,
                         style="class:pager.border",
                     ),
-                    Box(
-                        DynamicContainer(lambda: self.output),
-                        padding=0,
-                        padding_left=1,
-                    ),
+                    Box(self.output, padding=0, padding_left=1),
                 ],
                 style="class:pager",
                 key_bindings=load_registered_bindings(
