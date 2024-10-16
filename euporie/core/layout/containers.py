@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from functools import partial
+from functools import lru_cache, partial
 from typing import TYPE_CHECKING
 
 from prompt_toolkit.application.current import get_app
@@ -55,6 +55,37 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 
+@lru_cache(maxsize=None)
+class DummyContainer(Container):
+    """Base class for user interface layout."""
+
+    def reset(self) -> None:
+        """Reset the state of this container (does nothing)."""
+
+    def preferred_width(self, max_available_width: int) -> Dimension:
+        """Return a zero-width dimension."""
+        return Dimension.exact(0)
+
+    def preferred_height(self, width: int, max_available_height: int) -> Dimension:
+        """Return a zero-height dimension."""
+        return Dimension.exact(0)
+
+    def write_to_screen(
+        self,
+        screen: Screen,
+        mouse_handlers: MouseHandlers,
+        write_position: WritePosition,
+        parent_style: str,
+        erase_bg: bool,
+        z_index: int | None,
+    ) -> None:
+        """Write the actual content to the screen. Does nothing."""
+
+    def get_children(self) -> list[Container]:
+        """Return an empty list of child :class:`.Container` objects."""
+        return []
+
+
 class HSplit(ptk_containers.HSplit):
     """Several layouts, one stacked above/under the other."""
 
@@ -76,6 +107,8 @@ class HSplit(ptk_containers.HSplit):
         style: str | Callable[[], str] = "",
     ) -> None:
         """Initialize the HSplit with a cache."""
+        if window_too_small is None:
+            window_too_small = DummyContainer()
         super().__init__(
             children=children,
             window_too_small=window_too_small,
@@ -244,6 +277,8 @@ class VSplit(ptk_containers.VSplit):
         style: str | Callable[[], str] = "",
     ) -> None:
         """Initialize the VSplit with a cache."""
+        if window_too_small is None:
+            window_too_small = DummyContainer()
         super().__init__(
             children=children,
             window_too_small=window_too_small,
