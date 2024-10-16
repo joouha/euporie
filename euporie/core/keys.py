@@ -15,7 +15,7 @@ _modifiers = {
     # 0b00001000: ("Super", "S"),
     # 0b00010000: ("Meta", "M"),
     # 0b00100000: ("Hyper", "H"),
-    0b01000000: ("", ""),  # ScollLock - pass-through
+    0b01000000: ("", ""),  # ScrollLock - pass-through
     0b10000000: ("", ""),  # NumLock - pass-through
 }
 
