@@ -91,7 +91,7 @@ if TYPE_CHECKING:
 
     from euporie.core.format import Formatter
     from euporie.core.inspection import Inspector
-    from euporie.core.tabs.base import KernelTab
+    from euporie.core.tabs.kernel import KernelTab
     from euporie.core.widgets.status import StatusBarFields
 
 

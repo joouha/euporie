@@ -46,7 +46,6 @@ from euporie.core.ft.utils import FormattedTextAlign, align, lex
 from euporie.core.key_binding.registry import register_bindings
 from euporie.core.layout.containers import HSplit, VSplit, Window
 from euporie.core.layout.decor import FocusedStyle
-from euporie.core.tabs.base import Tab
 from euporie.core.widgets.decor import Border, Shadow
 from euporie.core.widgets.file_browser import FileBrowser
 from euporie.core.widgets.forms import Button, LabelledWidget, Select, Text
@@ -65,7 +64,7 @@ if TYPE_CHECKING:
     from prompt_toolkit.mouse_events import MouseEvent
 
     from euporie.core.app import BaseApp
-    from euporie.core.tabs.base import KernelTab
+    from euporie.core.tabs.kernel import KernelTab
     from euporie.core.widgets.file_browser import FileBrowserControl
 
 log = logging.getLogger(__name__)
@@ -859,6 +858,8 @@ class UnsavedDialog(Dialog):
             tab.save(cb=partial(tab.close, cb))
 
         def no_cb() -> None:
+            from euporie.core.tabs.base import Tab
+
             assert tab is not None
             self.hide()
             Tab.close(tab, cb)

@@ -47,7 +47,6 @@ from euporie.core.widgets.palette import CommandPalette
 from euporie.core.widgets.search import SearchBar
 from euporie.core.widgets.status import StatusBar, StatusContainer
 from euporie.notebook.enums import TabMode
-from euporie.notebook.tabs import Notebook
 from euporie.notebook.widgets.side_bar import SideBar
 
 if TYPE_CHECKING:
@@ -58,6 +57,7 @@ if TYPE_CHECKING:
     from prompt_toolkit.formatted_text import StyleAndTextTuples
     from prompt_toolkit.layout.containers import AnyContainer, Float
 
+    from euporie.core.tabs import TabRegistryEntry
     from euporie.core.tabs.base import Tab
     from euporie.core.widgets.cell import Cell
     from euporie.core.widgets.status import StatusBarFields
@@ -108,6 +108,13 @@ class NotebookApp(BaseApp):
             self.input, "vt100_parser"
         ):
             self.create_background_task(self._poll_terminal_colors())
+
+    @property
+    def tab_registry(self) -> list[TabRegistryEntry]:
+        """Return the tab registry."""
+        from euporie.notebook.tabs import _TAB_REGISTRY
+
+        return _TAB_REGISTRY
 
     def format_title(self) -> StyleAndTextTuples:
         """Format the tab's title for display in the top right of the app."""
@@ -360,6 +367,8 @@ class NotebookApp(BaseApp):
     @property
     def notebook(self) -> Notebook | None:
         """Return the currently active notebook."""
+        from euporie.notebook.tabs import Notebook
+
         if isinstance(self.tab, Notebook):
             return self.tab
         return None
@@ -367,6 +376,8 @@ class NotebookApp(BaseApp):
     @property
     def cell(self) -> Cell | None:
         """Return the currently active cell."""
+        from euporie.notebook.tabs import Notebook
+
         if isinstance(self.tab, Notebook):
             return self.tab.cell
         return None
@@ -511,6 +522,7 @@ class NotebookApp(BaseApp):
     def _new_notebook() -> None:
         """Create a new file."""
         from euporie.notebook.current import get_app
+        from euporie.notebook.tabs import Notebook
 
         app = get_app()
         app.add_tab(tab := Notebook(app, None))

@@ -9,7 +9,7 @@ import pytest
 from prompt_toolkit.layout.containers import Window
 
 from euporie.core.comm.base import Comm, CommView, UnimplementedComm
-from euporie.core.tabs.base import KernelTab
+from euporie.core.tabs.kernel import KernelTab
 from euporie.core.widgets.display import Display
 
 

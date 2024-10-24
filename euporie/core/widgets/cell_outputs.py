@@ -31,7 +31,7 @@ if TYPE_CHECKING:
 
     from prompt_toolkit.layout.containers import AnyContainer
 
-    from euporie.core.comm.base import KernelTab
+    from euporie.core.comm.kernel import KernelTab
 
     KTParent = TypeVar("KTParent", bound=KernelTab)
 

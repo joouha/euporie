@@ -7,7 +7,7 @@ from unittest.mock import Mock
 from euporie.core.comm.base import UnimplementedComm
 from euporie.core.comm.ipywidgets import IpyWidgetComm
 from euporie.core.comm.registry import TARGET_CLASSES, open_comm
-from euporie.core.tabs.base import KernelTab
+from euporie.core.tabs.kernel import KernelTab
 
 
 def test_open_comm_ipywidgets() -> None:

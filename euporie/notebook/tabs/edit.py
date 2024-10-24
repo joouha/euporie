@@ -9,11 +9,11 @@ from prompt_toolkit.layout.containers import HSplit
 from prompt_toolkit.layout.dimension import Dimension
 
 from euporie.core.filters import insert_mode, replace_mode
-from euporie.core.kernel import Kernel, MsgCallbacks
+from euporie.core.kernel.client import Kernel, MsgCallbacks
 from euporie.core.key_binding.registry import load_registered_bindings
 from euporie.core.lexers import detect_lexer
 from euporie.core.path import UntitledPath
-from euporie.core.tabs.base import KernelTab
+from euporie.core.tabs.kernel import KernelTab
 from euporie.core.widgets.inputs import KernelInput
 
 if TYPE_CHECKING:

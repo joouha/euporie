@@ -1,0 +1,417 @@
+"""Contain kernel tab base class."""
+
+from __future__ import annotations
+
+import asyncio
+import logging
+from abc import ABCMeta
+from collections import deque
+from functools import partial
+from typing import TYPE_CHECKING
+from weakref import WeakKeyDictionary
+
+from prompt_toolkit.auto_suggest import DummyAutoSuggest
+from prompt_toolkit.completion.base import (
+    DynamicCompleter,
+    _MergedCompleter,
+)
+from prompt_toolkit.history import DummyHistory, InMemoryHistory
+
+from euporie.core.comm.registry import open_comm
+from euporie.core.commands import add_cmd
+from euporie.core.completion import DeduplicateCompleter, KernelCompleter, LspCompleter
+from euporie.core.current import get_app
+from euporie.core.diagnostics import Report
+from euporie.core.filters import kernel_tab_has_focus
+from euporie.core.format import LspFormatter
+from euporie.core.history import KernelHistory
+from euporie.core.inspection import (
+    FirstInspector,
+    KernelInspector,
+    LspInspector,
+)
+from euporie.core.kernel.client import Kernel, MsgCallbacks
+from euporie.core.suggest import HistoryAutoSuggest
+from euporie.core.tabs.base import Tab
+from euporie.core.utils import run_in_thread_with_context
+from euporie.core.widgets.inputs import KernelInput
+
+if TYPE_CHECKING:
+    from pathlib import Path
+    from typing import Any, Callable, Sequence
+
+    from prompt_toolkit.auto_suggest import AutoSuggest
+    from prompt_toolkit.completion.base import Completer
+    from prompt_toolkit.history import History
+
+    from euporie.core.app import BaseApp
+    from euporie.core.comm.base import Comm
+    from euporie.core.format import Formatter
+    from euporie.core.inspection import Inspector
+    from euporie.core.lsp import LspClient
+
+log = logging.getLogger(__name__)
+
+
+class KernelTab(Tab, metaclass=ABCMeta):
+    """A Tab which connects to a kernel."""
+
+    kernel: Kernel
+    kernel_language: str
+    _metadata: dict[str, Any]
+    bg_init = True
+
+    default_callbacks: MsgCallbacks
+    allow_stdin: bool
+
+    def __init__(
+        self,
+        app: BaseApp,
+        path: Path | None = None,
+        kernel: Kernel | None = None,
+        comms: dict[str, Comm] | None = None,
+        use_kernel_history: bool = False,
+        connection_file: Path | None = None,
+    ) -> None:
+        """Create a new instance of a tab with a kernel."""
+        # Init tab
+        super().__init__(app, path)
+
+        self.lsps: list[LspClient] = []
+        self.history: History = DummyHistory()
+        self.inspectors: list[Inspector] = []
+        self.inspector = FirstInspector(lambda: self.inspectors)
+        self.suggester: AutoSuggest = DummyAutoSuggest()
+        self.completers: list[Completer] = []
+        self.completer = DeduplicateCompleter(
+            DynamicCompleter(lambda: _MergedCompleter(self.completers))
+        )
+        self.formatters: list[Formatter] = self.app.formatters
+        self.reports: WeakKeyDictionary[LspClient, Report] = WeakKeyDictionary()
+
+        # The client-side comm states
+        self.comms: dict[str, Comm] = {}
+        # The current kernel input
+        self._current_input: KernelInput | None = None
+
+        if self.bg_init:
+            # Load kernel in a background thread
+            run_in_thread_with_context(
+                partial(
+                    self.init_kernel, kernel, comms, use_kernel_history, connection_file
+                )
+            )
+        else:
+            self.init_kernel(kernel, comms, use_kernel_history, connection_file)
+
+    async def load_lsps(self) -> None:
+        """Load the LSP clients."""
+        path = self.path
+
+        # Load list of LSP clients for the tab's language
+        self.lsps.extend(self.app.get_language_lsps(self.language))
+
+        # Wait for all lsps to be initialized, and setup hooks as they become ready
+        async def _await_load(lsp: LspClient) -> LspClient:
+            await lsp.initialized.wait()
+            return lsp
+
+        for ready in asyncio.as_completed([_await_load(lsp) for lsp in self.lsps]):
+            lsp = await ready
+            # Apply open, save, and close hooks to the tab
+            change_handler = partial(lambda lsp, tab: self.lsp_change_handler(lsp), lsp)
+            close_handler = partial(lambda lsp, tab: self.lsp_close_handler(lsp), lsp)
+            before_save_handler = partial(
+                lambda lsp, tab: self.lsp_before_save_handler(lsp), lsp
+            )
+            after_save_handler = partial(
+                lambda lsp, tab: self.lsp_after_save_handler(lsp), lsp
+            )
+
+            self.on_close += close_handler
+            self.on_change += change_handler
+            self.before_save += before_save_handler
+            self.after_save += after_save_handler
+
+            # Listen for LSP diagnostics
+            lsp.on_diagnostics += self.lsp_update_diagnostics
+
+            # Add completer
+            completer = LspCompleter(lsp=lsp, path=path)
+            self.completers.append(completer)
+
+            # Add inspector
+            inspector = LspInspector(lsp, path)
+            self.inspectors.append(inspector)
+
+            # Add formatter
+            formatter = LspFormatter(lsp, path)
+            self.formatters.append(formatter)
+
+            # Remove hooks if the LSP exits
+            def lsp_unload(lsp: LspClient) -> None:
+                self.on_change -= change_handler  # noqa: B023
+                self.before_save -= before_save_handler  # noqa: B023
+                self.after_save -= after_save_handler  # noqa: B023
+                self.on_close -= close_handler  # noqa: B023
+                if completer in self.completers:  # noqa: B023
+                    self.completers.remove(completer)  # noqa: B023
+                if inspector in self.completers:  # noqa: B023
+                    self.inspectors.remove(inspector)  # noqa: B023
+                if formatter in self.completers:  # noqa: B023
+                    self.formatters.remove(formatter)  # noqa: B023
+                if completer in self.completers:  # noqa: B023
+                    self.completers.remove(completer)  # noqa: B023
+                if inspector in self.inspectors:  # noqa: B023
+                    self.inspectors.remove(inspector)  # noqa: B023
+                if formatter in self.formatters:  # noqa: B023
+                    self.formatters.remove(formatter)  # noqa: B023
+
+            lsp.on_exit += lsp_unload
+
+            # Remove the lsp exit handler if this tab closes
+            self.on_close += lambda tab: (
+                (lsp.on_exit.__isub__(lsp_unload) and None) or None  # noqa: B023
+            )  # Magical typing
+
+            # Tell the LSP we have an open file
+            self.lsp_open_handler(lsp)
+
+    def pre_init_kernel(self) -> None:
+        """Run stuff before the kernel is loaded."""
+
+    def post_init_kernel(self) -> None:
+        """Run stuff after the kernel is loaded."""
+
+    def init_kernel(
+        self,
+        kernel: Kernel | None = None,
+        comms: dict[str, Comm] | None = None,
+        use_kernel_history: bool = False,
+        connection_file: Path | None = None,
+    ) -> None:
+        """Set up the tab's kernel and related components."""
+        self.pre_init_kernel()
+
+        self.kernel_queue: deque[Callable] = deque()
+
+        if kernel:
+            self.kernel = kernel
+            self.kernel.default_callbacks = self.default_callbacks
+        else:
+            self.kernel = Kernel(
+                kernel_tab=self,
+                allow_stdin=self.allow_stdin,
+                default_callbacks=self.default_callbacks,
+                connection_file=connection_file,
+            )
+        self.comms = comms or {}  # The client-side comm states
+        self.completers.append(KernelCompleter(self.kernel))
+        self.inspectors.append(KernelInspector(self.kernel))
+        self.use_kernel_history = use_kernel_history
+        self.history = (
+            KernelHistory(self.kernel) if use_kernel_history else InMemoryHistory()
+        )
+        self.suggester = HistoryAutoSuggest(self.history)
+
+        self.app.create_background_task(self.load_lsps())
+
+        self.post_init_kernel()
+
+    def close(self, cb: Callable | None = None) -> None:
+        """Shut down kernel when tab is closed."""
+        if hasattr(self, "kernel"):
+            self.kernel.shutdown()
+        super().close(cb)
+
+    def interrupt_kernel(self) -> None:
+        """Interrupt the current `Notebook`'s kernel."""
+        self.kernel.interrupt()
+
+    def restart_kernel(self, cb: Callable | None = None) -> None:
+        """Restart the current `Notebook`'s kernel."""
+
+        def _cb(result: dict[str, Any]) -> None:
+            if callable(cb):
+                cb()
+
+        if confirm := self.app.dialogs.get("confirm"):
+            confirm.show(
+                message="Are you sure you want to restart the kernel?",
+                cb=partial(self.kernel.restart, cb=_cb),
+            )
+        else:
+            self.kernel.restart(cb=_cb)
+
+    def kernel_started(self, result: dict[str, Any] | None = None) -> None:
+        """Task to run when the kernel has started."""
+        # Check kernel has not failed
+        if not self.kernel_name or self.kernel.missing:
+            if not self.kernel_name:
+                msg = "No kernel selected"
+            else:
+                msg = f"Kernel '{self.kernel_display_name}' not installed"
+            self.change_kernel(
+                msg=msg,
+                startup=True,
+            )
+
+        elif self.kernel.status == "error":
+            self.report_kernel_error(self.kernel.error)
+
+        else:
+            # Wait for an idle kernel
+            if self.kernel.status != "idle":
+                self.kernel.wait_for_status("idle")
+
+            # Load widget comm info
+            # self.kernel.comm_info(target_name="jupyter.widget")
+
+            # Load kernel info
+            self.kernel.info(set_kernel_info=self.set_kernel_info)
+
+            # Load kernel history
+            if self.use_kernel_history:
+                self.app.create_background_task(self.load_history())
+
+            # Run queued kernel tasks when the kernel is idle
+            log.debug("Running %d kernel tasks", len(self.kernel_queue))
+            while self.kernel_queue:
+                self.kernel_queue.popleft()()
+
+        self.app.invalidate()
+
+    def report_kernel_error(self, error: Exception | None) -> None:
+        """Report a kernel error to the user."""
+        log.debug("Kernel error", exc_info=error)
+
+    async def load_history(self) -> None:
+        """Load kernel history."""
+        try:
+            await self.history.load().__anext__()
+        except StopAsyncIteration:
+            pass
+
+    @property
+    def metadata(self) -> dict[str, Any]:
+        """Return a dictionary to hold notebook / kernel metadata."""
+        return self._metadata
+
+    @property
+    def kernel_name(self) -> str:
+        """Return the name of the kernel defined in the notebook JSON."""
+        return self.metadata.get("kernelspec", {}).get(
+            "name", self.app.config.kernel_name
+        )
+
+    @kernel_name.setter
+    def kernel_name(self, value: str) -> None:
+        """Return the name of the kernel defined in the notebook JSON."""
+        self.metadata.setdefault("kernelspec", {})["name"] = value
+
+    @property
+    def language(self) -> str:
+        """Return the name of the kernel defined in the notebook JSON."""
+        return self.metadata.get("kernelspec", {}).get("language")
+
+    @property
+    def kernel_display_name(self) -> str:
+        """Return the display name of the kernel defined in the notebook JSON."""
+        return self.metadata.get("kernelspec", {}).get("display_name", self.kernel_name)
+
+    @property
+    def kernel_lang_file_ext(self) -> str:
+        """Return the display name of the kernel defined in the notebook JSON."""
+        return self.metadata.get("language_info", {}).get("file_extension", ".py")
+
+    @property
+    def current_input(self) -> KernelInput:
+        """Return the currently active kernel input, if any."""
+        return self._current_input or KernelInput(self)
+
+    def set_kernel_info(self, info: dict) -> None:
+        """Handle kernel info requests."""
+        self.metadata["language_info"] = info.get("language_info", {})
+
+    def change_kernel(self, msg: str | None = None, startup: bool = False) -> None:
+        """Prompt the user to select a new kernel."""
+        kernel_specs = self.kernel.specs
+
+        # Warn the user if no kernels are installed
+        if not kernel_specs:
+            if startup and "no-kernels" in self.app.dialogs:
+                self.app.dialogs["no-kernels"].show()
+            return
+
+        # Automatically select the only kernel if there is only one
+        if startup and len(kernel_specs) == 1:
+            self.kernel.change(next(iter(kernel_specs)))
+            return
+
+        self.app.dialogs["change-kernel"].show(
+            tab=self, message=msg, kernel_specs=kernel_specs
+        )
+
+    def comm_open(self, content: dict, buffers: Sequence[bytes]) -> None:
+        """Register a new kernel Comm object in the notebook."""
+        comm_id = str(content.get("comm_id"))
+        self.comms[comm_id] = open_comm(
+            comm_container=self, content=content, buffers=buffers
+        )
+
+    def comm_msg(self, content: dict, buffers: Sequence[bytes]) -> None:
+        """Respond to a Comm message from the kernel."""
+        comm_id = str(content.get("comm_id"))
+        if comm := self.comms.get(comm_id):
+            comm.process_data(content.get("data", {}), buffers)
+
+    def comm_close(self, content: dict, buffers: Sequence[bytes]) -> None:
+        """Close a notebook Comm."""
+        comm_id = content.get("comm_id")
+        if comm_id in self.comms:
+            del self.comms[comm_id]
+
+    def lsp_open_handler(self, lsp: LspClient) -> None:
+        """Tell the LSP we opened a file."""
+        lsp.open_doc(
+            path=self.path, language=self.language, text=self.current_input.buffer.text
+        )
+
+    def lsp_change_handler(self, lsp: LspClient) -> None:
+        """Tell the LSP server a file has changed."""
+        lsp.change_doc(
+            path=self.path,
+            language=self.language,
+            text=self.current_input.buffer.text,
+        )
+
+    def lsp_before_save_handler(self, lsp: LspClient) -> None:
+        """Tell the the LSP we are about to save a document."""
+        lsp.will_save_doc(self.path)
+
+    def lsp_after_save_handler(self, lsp: LspClient) -> None:
+        """Tell the the LSP we saved a document."""
+        lsp.save_doc(self.path, text=self.current_input.buffer.text)
+
+    def lsp_close_handler(self, lsp: LspClient) -> None:
+        """Tell the LSP we opened a file."""
+        lsp.close_doc(path=self.path)
+
+    def lsp_update_diagnostics(self, lsp: LspClient) -> None:
+        """Process a new diagnostic report from the LSP."""
+        if (diagnostics := lsp.reports.pop(self.path.as_uri(), None)) is not None:
+            self.reports[lsp] = Report.from_lsp(self.current_input.text, diagnostics)
+            self.app.invalidate()
+
+    def report(self) -> Report:
+        """Return the current diagnostic reports."""
+        return Report.from_reports(*self.reports.values())
+
+    # ################################### Commands ####################################
+
+    @staticmethod
+    @add_cmd(filter=kernel_tab_has_focus)
+    def _change_kernel() -> None:
+        """Change the notebook's kernel."""
+        if isinstance(kt := get_app().tab, KernelTab):
+            kt.change_kernel()

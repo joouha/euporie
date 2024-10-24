@@ -42,7 +42,7 @@ from euporie.core.layout.decor import Line, Pattern
 from euporie.core.layout.scroll import ScrollingContainer
 from euporie.core.margins import MarginContainer, ScrollbarMargin
 from euporie.core.style import KERNEL_STATUS_REPR
-from euporie.core.tabs.base import KernelTab
+from euporie.core.tabs.kernel import KernelTab
 from euporie.core.tabs.notebook import BaseNotebook
 from euporie.core.widgets.cell import Cell
 from euporie.notebook.filters import (
@@ -63,7 +63,7 @@ if TYPE_CHECKING:
 
     from euporie.core.app import BaseApp
     from euporie.core.comm.base import Comm
-    from euporie.core.kernel import Kernel
+    from euporie.core.kernel.client import Kernel
     from euporie.core.widgets.status import StatusBarFields
 
 log = logging.getLogger(__name__)
