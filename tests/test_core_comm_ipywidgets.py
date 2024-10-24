@@ -13,8 +13,8 @@ from euporie.core.comm.ipywidgets import (
     UnimplementedModel,
     _separate_buffers,
 )
-from euporie.core.kernel import Kernel
-from euporie.core.tabs.base import KernelTab
+from euporie.core.kernel.client import Kernel
+from euporie.core.tabs.kernel import KernelTab
 from euporie.core.widgets.display import Display
 
 if TYPE_CHECKING:

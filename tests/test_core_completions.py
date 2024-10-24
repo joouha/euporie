@@ -9,7 +9,7 @@ from prompt_toolkit.completion import CompleteEvent, Completion
 from prompt_toolkit.document import Document
 
 from euporie.core.completion import KernelCompleter
-from euporie.core.kernel import Kernel
+from euporie.core.kernel.client import Kernel
 
 
 def test_kernel_completer_init() -> None:

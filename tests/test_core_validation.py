@@ -12,7 +12,7 @@ from prompt_toolkit.validation import ValidationError
 from euporie.core.validation import KernelValidator
 
 if TYPE_CHECKING:
-    from euporie.core.kernel import Kernel
+    from euporie.core.kernel.client import Kernel
 
 
 @pytest.fixture

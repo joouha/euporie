@@ -6,8 +6,6 @@ import asyncio
 import concurrent.futures
 import logging
 import os
-import re
-import sys
 import threading
 from _frozen_importlib import _DeadlockError
 from collections import defaultdict
@@ -15,114 +13,18 @@ from subprocess import PIPE, STDOUT  # S404 - Security implications considered
 from typing import TYPE_CHECKING, TypedDict
 from uuid import uuid4
 
-import nbformat
-from jupyter_client import AsyncKernelManager, KernelManager
-from jupyter_client.kernelspec import NATIVE_KERNEL_NAME, NoSuchKernel
-from jupyter_client.provisioning import KernelProvisionerFactory as KPF
-from jupyter_client.provisioning.local_provisioner import LocalProvisioner
-from jupyter_core.paths import jupyter_path, jupyter_runtime_dir
 from upath import UPath
 
 if TYPE_CHECKING:
     from pathlib import Path
-    from typing import Any, Callable, Coroutine, TextIO
+    from typing import Any, Callable, Coroutine
 
     from jupyter_client import KernelClient
-    from jupyter_client.connect import KernelConnectionInfo
 
-    from euporie.core.comm.base import KernelTab
+    from euporie.core.comm.kernel import KernelTab
 
 
 log = logging.getLogger(__name__)
-
-
-class LoggingLocalProvisioner(LocalProvisioner):  # type:ignore[misc]
-    """A Jupyter kernel provisionser which logs kernel output."""
-
-    async def launch_kernel(
-        self, cmd: list[str], **kwargs: Any
-    ) -> KernelConnectionInfo:
-        """Launch a kernel with a command."""
-        await super().launch_kernel(cmd, **kwargs)
-
-        def log_kernel_output(pipe: TextIO, log_func: Callable) -> None:
-            try:
-                with pipe:
-                    for line in iter(pipe.readline, ""):
-                        log_func(line.rstrip())
-            except StopIteration:
-                pass
-
-        if self.process is not None:
-            # Start thread to listen for kernel output
-            threading.Thread(
-                target=log_kernel_output,
-                args=(self.process.stdout, log.warning),
-                daemon=True,
-            ).start()
-
-        return self.connection_info
-
-
-KPF.instance().default_provisioner_name = "logging-local-provisioner"
-
-
-class EuporieKernelManager(AsyncKernelManager):
-    """Kernel Manager subclass.
-
-    ``jupyter_client`` replaces a plain ``python`` command with the current executable,
-    but this is not desirable if the client is running in its own prefix (e.g. with
-    ``pipx``). We work around this here.
-
-    See https://github.com/jupyter/jupyter_client/issues/949
-    """
-
-    def format_kernel_cmd(self, extra_arguments: list[str] | None = None) -> list[str]:
-        """Replace templated args (e.g. {connection_file})."""
-        extra_arguments = extra_arguments or []
-        assert self.kernel_spec is not None
-        cmd = self.kernel_spec.argv + extra_arguments
-
-        v_major, v_minor = sys.version_info[:2]
-        if cmd and cmd[0] in {
-            "python",
-            f"python{v_major}",
-            f"python{v_major}.{v_minor}",
-        }:
-            # If the command is `python` without an absolute path and euporie is
-            # running in the same prefix as the kernel_spec file is located, use
-            # sys.executable: otherwise fall back to the executable in the base prefix
-            if (
-                os.path.commonpath((sys.prefix, self.kernel_spec.resource_dir))
-                == sys.prefix
-            ):
-                cmd[0] = sys.executable
-            else:
-                cmd[0] = sys._base_executable  # type: ignore [attr-defined]
-
-        # Make sure to use the realpath for the connection_file
-        # On windows, when running with the store python, the connection_file path
-        # is not usable by non python kernels because the path is being rerouted when
-        # inside of a store app.
-        # See this bug here: https://bugs.python.org/issue41196
-        ns = {
-            "connection_file": os.path.realpath(self.connection_file),
-            "prefix": sys.prefix,
-        }
-
-        if self.kernel_spec:
-            ns["resource_dir"] = self.kernel_spec.resource_dir
-
-        if self._launch_args:
-            ns.update({str(k): str(v) for k, v in self._launch_args.items()})
-
-        pat = re.compile(r"\{([A-Za-z0-9_]+)\}")
-
-        def _from_ns(match: re.Match) -> str:
-            """Get the key out of ns if it's there, otherwise no change."""
-            return ns.get(match.group(1), match.group())
-
-        return [pat.sub(_from_ns, arg) for arg in cmd]
 
 
 class MsgCallbacks(TypedDict, total=False):
@@ -173,6 +75,15 @@ class Kernel:
                 kernel connection information
 
         """
+        from jupyter_core.paths import jupyter_path
+
+        from euporie.core.kernel.manager import (
+            EuporieKernelManager,
+            set_default_provisioner,
+        )
+
+        set_default_provisioner()
+
         self.threaded = threaded
         if threaded:
             self.loop = asyncio.new_event_loop()
@@ -344,6 +255,8 @@ class Kernel:
     @property
     def missing(self) -> bool:
         """Return True if the requested kernel is not found."""
+        from jupyter_client.kernelspec import NoSuchKernel
+
         try:
             self.km.kernel_spec  # noqa B018
         except NoSuchKernel:
@@ -376,6 +289,8 @@ class Kernel:
 
     async def start_(self) -> None:
         """Start the kernel asynchronously and set its status."""
+        from jupyter_core.paths import jupyter_runtime_dir
+
         if self.km.kernel_name is None:
             self.status = "error"
         log.debug("Starting kernel")
@@ -427,6 +342,8 @@ class Kernel:
 
     async def post_start_(self) -> None:
         """Wait for the kernel to become ready."""
+        from jupyter_client.kernelspec import NoSuchKernel
+
         try:
             ks = self.km.kernel_spec
         except NoSuchKernel as e:
@@ -479,6 +396,8 @@ class Kernel:
             timeout: How long to wait until failure is assumed
 
         """
+        from jupyter_client.kernelspec import NATIVE_KERNEL_NAME
+
         # Attempt to import ipykernel if it is installed
         # ipykernel is imported by jupyter_client, but since starting the kernel runs
         # in another thread, we do the import here first to prevent import deadlocks,
@@ -583,6 +502,8 @@ class Kernel:
                     if callable(
                         add_output := self.msg_id_callbacks[msg_id]["add_output"]
                     ) and (data := payload.get("data", {})):
+                        import nbformat
+
                         add_output(
                             nbformat.v4.new_output(
                                 "execute_result",
@@ -709,18 +630,24 @@ class Kernel:
         """Call callbacks for an iopub display data response."""
         msg_id = rsp.get("parent_header", {}).get("msg_id")
         if callable(add_output := self.msg_id_callbacks[msg_id]["add_output"]):
+            import nbformat
+
             add_output(nbformat.v4.output_from_msg(rsp), own)
 
     def on_iopub_update_display_data(self, rsp: dict[str, Any], own: bool) -> None:
         """Call callbacks for an iopub update display data response."""
         msg_id = rsp.get("parent_header", {}).get("msg_id")
         if callable(add_output := self.msg_id_callbacks[msg_id]["add_output"]):
+            import nbformat
+
             add_output(nbformat.v4.output_from_msg(rsp), own)
 
     def on_iopub_execute_result(self, rsp: dict[str, Any], own: bool) -> None:
         """Call callbacks for an iopub execute result response."""
         msg_id = rsp.get("parent_header", {}).get("msg_id")
         if callable(add_output := self.msg_id_callbacks[msg_id]["add_output"]):
+            import nbformat
+
             add_output(nbformat.v4.output_from_msg(rsp), own)
 
         if (execution_count := rsp.get("content", {}).get("execution_count")) and (
@@ -736,6 +663,8 @@ class Kernel:
         """Call callbacks for an iopub error response."""
         msg_id = rsp.get("parent_header", {}).get("msg_id", "")
         if callable(add_output := self.msg_id_callbacks[msg_id].get("add_output")):
+            import nbformat
+
             add_output(nbformat.v4.output_from_msg(rsp), own)
         if callable(done := self.msg_id_callbacks[msg_id].get("done")):
             done(rsp.get("content", {}))
@@ -744,6 +673,8 @@ class Kernel:
         """Call callbacks for an iopub stream response."""
         msg_id = rsp.get("parent_header", {}).get("msg_id")
         if callable(add_output := self.msg_id_callbacks[msg_id]["add_output"]):
+            import nbformat
+
             add_output(nbformat.v4.output_from_msg(rsp), own)
 
     def on_iopub_clear_output(self, rsp: dict[str, Any], own: bool) -> None:
@@ -1145,6 +1076,8 @@ class Kernel:
         kernel's event loop to finish.
         """
         if self.km.has_kernel:
+            from jupyter_client import KernelManager
+
             log.debug("Interrupting kernel %s", self.id)
             KernelManager.interrupt_kernel(self.km)
 
@@ -1180,6 +1113,8 @@ class Kernel:
             cb: Callback to run once restarted
 
         """
+        from euporie.core.kernel.manager import EuporieKernelManager
+
         self.connection_file = connection_file
         self.status = "starting"
 

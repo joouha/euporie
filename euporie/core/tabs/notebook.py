@@ -1,4 +1,4 @@
-"""Contain the main class for a notebook file."""
+"""Contain the base class for a notebook tabs."""
 
 from __future__ import annotations
 
@@ -13,10 +13,9 @@ from prompt_toolkit.filters import Never, buffer_has_focus
 
 from euporie.core.comm.registry import open_comm
 from euporie.core.commands import get_cmd
-from euporie.core.config import add_setting
-from euporie.core.kernel import MsgCallbacks
+from euporie.core.kernel.client import MsgCallbacks
 from euporie.core.path import UntitledPath
-from euporie.core.tabs.base import KernelTab
+from euporie.core.tabs.kernel import KernelTab
 from euporie.core.terminal import edit_in_editor
 from euporie.core.widgets.cell import Cell, get_cell_id
 
@@ -36,7 +35,7 @@ if TYPE_CHECKING:
 
     from euporie.core.app import BaseApp
     from euporie.core.comm.base import Comm
-    from euporie.core.kernel import Kernel
+    from euporie.core.kernel.client import Kernel
     from euporie.core.lsp import LspClient
     from euporie.core.widgets.inputs import KernelInput
 

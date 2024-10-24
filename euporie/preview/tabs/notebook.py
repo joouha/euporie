@@ -28,7 +28,7 @@ if TYPE_CHECKING:
 
     from euporie.core.app import BaseApp
     from euporie.core.comm.base import Comm
-    from euporie.core.kernel import Kernel
+    from euporie.core.kernel.client import Kernel
 
 log = logging.getLogger(__name__)
 

@@ -29,7 +29,7 @@ class JsonTab(Tab):
 
     name = "JSON Viewer"
     mime_types: ClassVar[set[str]] = {"*json"}
-    filte_types: ClassVar[set[str]] = {".json"}
+    file_types: ClassVar[dict[str, None]] = {".json": None}
 
     def __init__(self, app: BaseApp, path: Path | None = None) -> None:
         """Call when the tab is created."""
