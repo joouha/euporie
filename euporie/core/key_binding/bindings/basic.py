@@ -44,6 +44,9 @@ class TextEntry:
 
 def load_basic_bindings(config: Config | None = None) -> KeyBindingsBase:
     """Load basic key-bindings for text entry."""
+    # Load additional key definiitions
+    from euporie.core import keys  # noqa: F401
+
     return ConditionalKeyBindings(
         load_registered_bindings(
             "euporie.core.key_binding.bindings.basic.TextEntry", config=config
