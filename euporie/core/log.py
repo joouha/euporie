@@ -41,6 +41,65 @@ log = logging.getLogger(__name__)
 LOG_QUEUE: deque = deque(maxlen=1000)
 
 
+class BufferedLogs(logging.Handler):
+    """A handler that collects log records and replays them on exit."""
+
+    def __init__(self, logger: logging.Logger | None = None) -> None:
+        """Initialize the collector.
+
+        Args:
+            logger: Logger to collect from and replay to. If None, uses root logger.
+        """
+        super().__init__()
+        self.records: list[logging.LogRecord] = []
+        self._logger = logger or logging.getLogger()
+        self._original_handlers: list[logging.Handler] = []
+
+    def emit(self, record: logging.LogRecord) -> None:
+        """Store the log record."""
+        self.records.append(record)
+
+    def replay(self) -> None:
+        """Replay collected logs through the original logger."""
+        for record in self.records:
+            if record.exc_info:
+                # Create a new record to avoid issues with stale exc_info
+                record = logging.LogRecord(
+                    record.name,
+                    record.levelno,
+                    record.pathname,
+                    record.lineno,
+                    record.msg,
+                    record.args,
+                    record.exc_info,
+                    record.funcName,
+                )
+            self._logger.handle(record)
+
+    def __enter__(self) -> BufferedLogs:
+        """Store and replace the log handlers."""
+        # Save and remove existing handlers
+        self._original_handlers = self._logger.handlers[:]
+        self._logger.handlers.clear()
+        # Add ourselves as the only handler
+        self._logger.addHandler(self)
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        exc_traceback: TracebackType | None,
+    ) -> None:
+        """Restore the original handlers."""
+        # Remove ourselves
+        self._logger.removeHandler(self)
+        # Restore original handlers
+        self._logger.handlers = self._original_handlers
+        # Replay collected records through original handlers
+        self.replay()
+
+
 class FtFormatter(logging.Formatter):
     """Base class for formatted text logging formatter."""
 
