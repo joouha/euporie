@@ -50,9 +50,10 @@ def _have_termios_tty_fcntl() -> bool:
         return True
 
 
-def passthrough(cmd: str) -> str:
+def passthrough(cmd: str, config: Config | None = None) -> str:
     """Wrap an escape sequence for terminal passthrough."""
-    if get_app().config.multiplexer_passthrough:
+    config = config or get_app().config
+    if config.multiplexer_passthrough:
         if in_tmux():
             cmd = cmd.replace("\x1b", "\x1b\x1b")
             cmd = f"\x1bPtmux;{cmd}\x1b\\"
@@ -205,7 +206,7 @@ class Colors(TerminalQuery):
     )
 
     def _cmd(self) -> str:
-        return passthrough(self.cmd)
+        return passthrough(self.cmd, self.config)
 
     def verify(self, data: str) -> dict[str, str]:
         """Verify the response contains a colour."""
@@ -254,7 +255,7 @@ class KittyGraphicsStatus(TerminalQuery):
 
     def _cmd(self) -> str:
         """Hide the command in case the terminal does not support this sequence."""
-        return "\x1b[s" + passthrough(self.cmd) + "\x1b[u\x1b[2K"
+        return "\x1b[s" + passthrough(self.cmd, self.config) + "\x1b[u\x1b[2K"
 
     def verify(self, data: str) -> bool:
         """Verify the terminal response means kitty graphics are supported."""
@@ -274,7 +275,7 @@ class SixelGraphicsStatus(TerminalQuery):
     pattern = re.compile(r"^\x1b\[\?(?:\d+;)*(?P<sixel>4)(?:;\d+)*c\Z")
 
     def _cmd(self) -> str:
-        return passthrough(self.cmd)
+        return passthrough(self.cmd, self.config)
 
     def verify(self, data: str) -> bool:
         """Verify the terminal response means sixel graphics are supported."""
@@ -294,7 +295,7 @@ class ItermGraphicsStatus(TerminalQuery):
     pattern = re.compile(r"^\x1bP>\|(?P<term>[^\x1b]+)\x1b\\")
 
     def _cmd(self) -> str:
-        return passthrough(self.cmd)
+        return passthrough(self.cmd, self.config)
 
     def verify(self, data: str) -> bool:
         """Verify iterm graphics are supported by the terminal."""
