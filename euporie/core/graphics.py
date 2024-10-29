@@ -664,14 +664,14 @@ def select_graphic_control(format_: str) -> type[GraphicControl] | None:
             preferred_graphics_protocol == "iterm"
             and ItermGraphicControl in useable_graphics_controls
             # Iterm does not work in mplex without pass-through
-            and (not _in_mplex or (_in_mplex and app.config.mplex_graphics))
+            and (not _in_mplex or (_in_mplex and force_graphics))
         ):
             SelectedGraphicControl = ItermGraphicControl
         elif (
             (term_info.kitty_graphics_status.value or force_graphics)
             and find_route(format_, "base64-png")
             # Kitty does not work in mplex without pass-through
-            and (not _in_mplex or (_in_mplex and app.config.mplex_graphics))
+            and (not _in_mplex or (_in_mplex and force_graphics))
         ):
             useable_graphics_controls.append(KittyGraphicControl)
         if (
