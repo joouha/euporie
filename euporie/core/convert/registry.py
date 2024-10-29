@@ -8,17 +8,12 @@ from typing import TYPE_CHECKING, NamedTuple
 from prompt_toolkit.cache import FastDictCache, SimpleCache
 from prompt_toolkit.filters import to_filter
 
-# from euporie.core.cache import cache
-
 if TYPE_CHECKING:
     from typing import Callable, Iterable
 
     from prompt_toolkit.filters import Filter, FilterOrBool
 
 log = logging.getLogger(__name__)
-
-
-BASE64_FORMATS = {"png", "jpeg", "pdf", "gif"}
 
 
 class Converter(NamedTuple):
@@ -60,6 +55,8 @@ def register(
 
 def _find_route(from_: str, to: str) -> list | None:
     """Find the shortest conversion path between two formats."""
+    from euporie.core.convert import formats  # noqa: F401
+
     if from_ == to:
         return [from_]
 

@@ -34,7 +34,6 @@ from euporie.core.kernel.client import Kernel, MsgCallbacks
 from euporie.core.suggest import HistoryAutoSuggest
 from euporie.core.tabs.base import Tab
 from euporie.core.utils import run_in_thread_with_context
-from euporie.core.widgets.inputs import KernelInput
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -49,6 +48,7 @@ if TYPE_CHECKING:
     from euporie.core.format import Formatter
     from euporie.core.inspection import Inspector
     from euporie.core.lsp import LspClient
+    from euporie.core.widgets.inputs import KernelInput
 
 log = logging.getLogger(__name__)
 
@@ -327,6 +327,8 @@ class KernelTab(Tab, metaclass=ABCMeta):
     @property
     def current_input(self) -> KernelInput:
         """Return the currently active kernel input, if any."""
+        from euporie.core.widgets.inputs import KernelInput
+
         return self._current_input or KernelInput(self)
 
     def set_kernel_info(self, info: dict) -> None:

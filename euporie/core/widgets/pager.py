@@ -13,9 +13,6 @@ from prompt_toolkit.layout.containers import (
 from prompt_toolkit.layout.dimension import Dimension
 
 from euporie.core.commands import add_cmd
-from euporie.core.convert.datum import Datum
-from euporie.core.convert.formats import BASE64_FORMATS
-from euporie.core.convert.mime import MIME_FORMATS
 from euporie.core.convert.registry import find_route
 from euporie.core.current import get_app
 from euporie.core.filters import pager_has_focus
@@ -66,6 +63,10 @@ class PagerOutputDataElement(CellOutputDataElement):
             metadata: Any metadata relating to the data
             parent: The parent container the output-element is attached to
         """
+        from euporie.core.convert.datum import Datum
+        from euporie.core.convert.formats import BASE64_FORMATS
+        from euporie.core.convert.mime import MIME_FORMATS
+
         # Get internal format
         format_ = "ansi"
         mime_path = PurePath(mime)

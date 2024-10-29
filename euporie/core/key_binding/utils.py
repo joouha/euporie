@@ -5,8 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from prompt_toolkit.key_binding.key_bindings import _parse_key
-
-from euporie.core.keys import Keys
+from prompt_toolkit.keys import Keys
 
 if TYPE_CHECKING:
     from prompt_toolkit.key_binding import KeyPressEvent

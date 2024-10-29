@@ -18,12 +18,9 @@ from prompt_toolkit.layout.containers import HSplit, VSplit
 from prompt_toolkit.layout.processors import BeforeInput
 
 from euporie.core.comm.base import Comm, CommView
-from euporie.core.convert.datum import Datum
 from euporie.core.data_structures import DiBool
 from euporie.core.kernel.client import MsgCallbacks
 from euporie.core.layout.decor import FocusedStyle
-from euporie.core.widgets.cell_outputs import CellOutputArea
-from euporie.core.widgets.display import Display
 from euporie.core.widgets.forms import (
     Button,
     Checkbox,
@@ -213,6 +210,9 @@ class UnimplementedModel(IpyWidgetComm):
 
     def create_view(self, parent: OutputParent) -> CommView:
         """Create a new view."""
+        from euporie.core.convert.datum import Datum
+        from euporie.core.widgets.display import Display
+
         return CommView(Display(Datum("[Widget not implemented]", format="ansi")))
 
 
@@ -242,6 +242,8 @@ class OutputModel(IpyWidgetComm):
 
     def create_view(self, parent: OutputParent) -> CommView:
         """Create a new view of this output ipywidget."""
+        from euporie.core.widgets.cell_outputs import CellOutputArea
+
         container = CellOutputArea(
             self.data.get("state", {}).get("outputs", []), parent
         )
@@ -1258,6 +1260,9 @@ class HTMLModel(IpyWidgetComm):
 
     def create_view(self, parent: OutputParent) -> CommView:
         """Create a new view of the HTML widget."""
+        from euporie.core.convert.datum import Datum
+        from euporie.core.widgets.display import Display
+
         html = Display(
             Datum(data=self.data["state"].get("value", ""), format="html"),
             dont_extend_width=True,
@@ -1285,6 +1290,9 @@ class ImageModel(IpyWidgetComm):
 
     def create_view(self, parent: OutputParent) -> CommView:
         """Create a new view of the image widget."""
+        from euporie.core.convert.datum import Datum
+        from euporie.core.widgets.display import Display
+
         display = Display(
             Datum(
                 data=self.data["state"].get("value", b""),

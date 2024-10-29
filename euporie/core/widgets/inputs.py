@@ -71,7 +71,6 @@ from euporie.core.processors import (
     ShowTrailingWhiteSpaceProcessor,
 )
 from euporie.core.suggest import ConditionalAutoSuggestAsync
-from euporie.core.widgets.pager import PagerState
 
 if TYPE_CHECKING:
     from typing import Callable, Sequence
@@ -366,6 +365,8 @@ class KernelInput(TextArea):
 
     async def inspect(self, auto: bool = False) -> None:
         """Get contextual help for the current cursor position in the current cell."""
+        from euporie.core.widgets.pager import PagerState
+
         if self.inspector is None:
             return
 

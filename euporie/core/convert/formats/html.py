@@ -3,61 +3,66 @@
 from __future__ import annotations
 
 import logging
+from functools import lru_cache
 from typing import TYPE_CHECKING
-
-from markdown_it import MarkdownIt
-from mdit_py_plugins.amsmath import amsmath_plugin
-from mdit_py_plugins.dollarmath.index import dollarmath_plugin
-from mdit_py_plugins.texmath.index import texmath_plugin
-from pygments import highlight
-from pygments.formatters import HtmlFormatter
 
 from euporie.core.convert.registry import register
 from euporie.core.current import get_app
 from euporie.core.lexers import detect_lexer
 
 if TYPE_CHECKING:
+    from markdown_it import MarkdownIt
+
     from euporie.core.convert.datum import Datum
 
 log = logging.getLogger(__name__)
 
 
-class MarkdownParser(MarkdownIt):
-    """Subclas the markdown parser to allow ``file:`` URIs."""
+@lru_cache(maxsize=None)
+def markdown_parser() -> MarkdownIt:
+    """Lazy-load a markdown parser."""
+    from markdown_it import MarkdownIt
+    from mdit_py_plugins.amsmath import amsmath_plugin
+    from mdit_py_plugins.dollarmath.index import dollarmath_plugin
+    from mdit_py_plugins.texmath.index import texmath_plugin
+    from pygments import highlight
+    from pygments.formatters import HtmlFormatter
 
-    def validateLink(self, url: str) -> bool:
-        """Allow all link URIs."""
-        return True
+    class MarkdownParser(MarkdownIt):
+        """Subclas the markdown parser to allow ``file:`` URIs."""
 
+        def validateLink(self, url: str) -> bool:
+            """Allow all link URIs."""
+            return True
 
-markdown_parser = (
-    (
-        MarkdownParser(
-            options_update={
-                "highlight": lambda text, language, lang_args: highlight(
-                    text,
-                    detect_lexer(text, language=language),
-                    HtmlFormatter(
-                        nowrap=True,
-                        noclasses=True,
-                        style=(
-                            app.syntax_theme
-                            if hasattr((app := get_app()), "syntax_theme")
-                            else "default"
+    return (
+        (
+            MarkdownParser(
+                options_update={
+                    "highlight": lambda text, language, lang_args: highlight(
+                        text,
+                        detect_lexer(text, language=language),
+                        HtmlFormatter(
+                            nowrap=True,
+                            noclasses=True,
+                            style=(
+                                app.syntax_theme
+                                if hasattr((app := get_app()), "syntax_theme")
+                                else "default"
+                            ),
                         ),
-                    ),
-                )
-            }
+                    )
+                }
+            )
+            .enable("linkify")
+            .enable("table")
+            .enable("strikethrough")
         )
-        .enable("linkify")
-        .enable("table")
-        .enable("strikethrough")
+        .use(texmath_plugin)
+        .use(dollarmath_plugin)
+        .use(amsmath_plugin)
+        # .use(tasklists_plugin)
     )
-    .use(texmath_plugin)
-    .use(dollarmath_plugin)
-    .use(amsmath_plugin)
-    # .use(tasklists_plugin)
-)
 
 
 @register(from_="markdown", to="html")
@@ -70,7 +75,7 @@ async def markdown_to_html_markdown_it(
     extend: bool = True,
 ) -> str:
     """Convert markdown to HTML using :py:mod:`markdownit_py`."""
-    assert markdown_parser is not None
+    parser = markdown_parser()
     data = datum.data
     markup = data.decode() if isinstance(data, bytes) else data
-    return markdown_parser.render(markup)
+    return parser.render(markup)
