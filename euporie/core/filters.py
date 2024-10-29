@@ -286,7 +286,7 @@ def multiple_cells_selected() -> bool:
 def kernel_tab_has_focus() -> bool:
     """Determine if there is a focused kernel tab."""
     from euporie.core.current import get_app
-    from euporie.core.tabs.base import KernelTab
+    from euporie.core.tabs.kernel import KernelTab
 
     return isinstance(get_app().tab, KernelTab)
 

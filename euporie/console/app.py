@@ -107,7 +107,7 @@ class ConsoleApp(BaseApp):
             DisableMouseOnScroll(
                 HSplit(
                     [
-                        self.tab,
+                        self.tabs[0],
                         ConditionalContainer(
                             HSplit(
                                 [
