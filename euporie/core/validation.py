@@ -9,7 +9,7 @@ from prompt_toolkit.validation import ValidationError, Validator
 if TYPE_CHECKING:
     from prompt_toolkit.document import Document
 
-    from euporie.core.kernel import Kernel
+    from euporie.core.kernel.client import Kernel
 
 
 class KernelValidator(Validator):

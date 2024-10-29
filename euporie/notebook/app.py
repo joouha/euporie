@@ -61,6 +61,7 @@ if TYPE_CHECKING:
     from euporie.core.tabs.base import Tab
     from euporie.core.widgets.cell import Cell
     from euporie.core.widgets.status import StatusBarFields
+    from euporie.notebook.tabs.notebook import Notebook
 
 log = logging.getLogger(__name__)
 
@@ -367,7 +368,7 @@ class NotebookApp(BaseApp):
     @property
     def notebook(self) -> Notebook | None:
         """Return the currently active notebook."""
-        from euporie.notebook.tabs import Notebook
+        from euporie.notebook.tabs.notebook import Notebook
 
         if isinstance(self.tab, Notebook):
             return self.tab
@@ -376,7 +377,7 @@ class NotebookApp(BaseApp):
     @property
     def cell(self) -> Cell | None:
         """Return the currently active cell."""
-        from euporie.notebook.tabs import Notebook
+        from euporie.notebook.tabs.notebook import Notebook
 
         if isinstance(self.tab, Notebook):
             return self.tab.cell

@@ -10,7 +10,7 @@ from prompt_toolkit.history import History
 if TYPE_CHECKING:
     from typing import AsyncGenerator, Iterable
 
-    from euporie.core.kernel import Kernel
+    from euporie.core.kernel.client import Kernel
 
 log = logging.getLogger(__name__)
 
