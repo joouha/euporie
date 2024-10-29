@@ -66,7 +66,9 @@ class ArgumentParser(argparse.ArgumentParser):
                 FormattedText(
                     [
                         (_token_cache[t], v)
-                        for _, t, v in ArgparseLexer().get_tokens_unprocessed(message)
+                        for _, t, v in ArgparseLexer().get_tokens_unprocessed(
+                            message.rstrip("\n")
+                        )
                     ]
                 ),
                 file=file,
