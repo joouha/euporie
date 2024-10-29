@@ -8,6 +8,7 @@ from base64 import b64encode
 from typing import TYPE_CHECKING
 
 from prompt_toolkit.input import vt100_parser
+from prompt_toolkit.input.ansi_escape_sequences import ANSI_SEQUENCES
 from prompt_toolkit.input.base import DummyInput, _dummy_context_manager
 from prompt_toolkit.output.vt100 import Vt100_Output as PtkVt100_Output
 
@@ -18,27 +19,37 @@ if TYPE_CHECKING:
 
 log = logging.getLogger(__name__)
 
-_response_prefix_re = re.compile(
-    r"""^\x1b(
-        \][^\\\x07]*  # Operating System Commands
-        |
-        _[^\\]*  # Application Program Command
-        |
-        \[\?[\d;]*  # Primary device attribute responses
-        |
-        P[ -~]*(\x1b|x1b\\)?
-    )\Z""",
-    re.VERBOSE,
-)
-
 
 class _IsPrefixOfLongerMatchCache(vt100_parser._IsPrefixOfLongerMatchCache):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self._response_prefix_re = re.compile(
+            r"""^\x1b(
+                \][^\\\x07]*  # Operating System Commands
+                |
+                _[^\\]*  # Application Program Command
+                |
+                \[\?[\d;]*  # Primary device attribute responses
+                |
+                P[ -~]*(\x1b|x1b\\)?
+            )\Z""",
+            re.VERBOSE,
+        )
+        self._ansi_sequence_prefixes = {
+            seq[:i] for seq in ANSI_SEQUENCES for i in range(len(seq))
+        }
+
     def __missing__(self, prefix: str) -> bool:
         """Check if the response might match an OSC or APC code, or DA response."""
-        result = super().__missing__(prefix)
-        if not result and _response_prefix_re.match(prefix):
-            result = True
-            self[prefix] = result
+        result = bool(
+            # (hard coded) If this could be a prefix of a CPR response, return True.
+            vt100_parser._cpr_response_prefix_re.match(prefix)
+            or vt100_parser._mouse_event_prefix_re.match(prefix)
+            # If this could be a prefix of anything else, also return True.
+            or prefix in self._ansi_sequence_prefixes
+            or self._response_prefix_re.match(prefix)
+        )
+        self[prefix] = result
         return result
 
 
