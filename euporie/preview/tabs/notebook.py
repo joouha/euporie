@@ -165,13 +165,12 @@ class PreviewNotebook(BaseNotebook):
 
     def load_container(self) -> AnyContainer:
         """Load the notebook's main container."""
+        no_expand = ~self.app.config.filters.expand
         return PrintingContainer(
             [
                 VSplit(
                     [
-                        ConditionalContainer(
-                            Window(), filter=~self.app.config.filter("expand")
-                        ),
+                        ConditionalContainer(Window(), filter=no_expand),
                         Box(
                             body=DynamicContainer(lambda: self.cell),
                             padding=0,
@@ -179,9 +178,7 @@ class PreviewNotebook(BaseNotebook):
                                 preferred=self.app.config.max_notebook_width
                             ),
                         ),
-                        ConditionalContainer(
-                            Window(), filter=~self.app.config.filter("expand")
-                        ),
+                        ConditionalContainer(Window(), filter=no_expand),
                     ]
                 )
             ]
