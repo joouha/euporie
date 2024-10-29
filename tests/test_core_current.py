@@ -6,8 +6,8 @@ from unittest.mock import Mock
 
 from prompt_toolkit.application.current import get_app_session, set_app
 
-from euporie.core.app import BaseApp
-from euporie.core.current import get_app
+from euporie.core.app.app import BaseApp
+from euporie.core.app.current import get_app
 
 
 def test_get_app_with_running_session() -> None:

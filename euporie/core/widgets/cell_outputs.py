@@ -9,18 +9,13 @@ from pathlib import PurePath
 from typing import TYPE_CHECKING
 
 from prompt_toolkit.cache import SimpleCache
-from prompt_toolkit.filters import buffer_has_focus
 from prompt_toolkit.layout.containers import (
     DynamicContainer,
     to_container,
 )
 
-from euporie.core.config import add_setting
-from euporie.core.convert.datum import Datum
-from euporie.core.convert.formats import BASE64_FORMATS
-from euporie.core.convert.mime import MIME_FORMATS
+from euporie.core.app.current import get_app
 from euporie.core.convert.registry import find_route
-from euporie.core.current import get_app
 from euporie.core.layout.containers import HSplit
 from euporie.core.widgets.display import Display
 from euporie.core.widgets.layout import Box
@@ -99,6 +94,10 @@ class CellOutputDataElement(CellOutputElement):
             metadata: Any metadata relating to the data
             parent: The cell the output-element is attached to
         """
+        from euporie.core.convert.datum import Datum
+        from euporie.core.convert.formats import BASE64_FORMATS
+        from euporie.core.convert.mime import MIME_FORMATS
+
         self.parent = parent
 
         # Get foreground and background colors
@@ -130,16 +129,14 @@ class CellOutputDataElement(CellOutputElement):
             self._datum,
             focusable=False,
             focus_on_click=False,
-            wrap_lines=config.filter("wrap_cell_outputs"),
+            wrap_lines=config.filters.wrap_cell_outputs,
             always_hide_cursor=True,
             style=f"class:mime-{mime.replace('/','-')}",
             scrollbar=False,
         )
 
         # Ensure container gets invalidated if `wrap_cell_output` changes
-        self.container.control.invalidate_events.append(
-            config.settings["wrap_cell_outputs"].event
-        )
+        self.container.control.invalidate_events.append(config.events.wrap_cell_outputs)
 
     @property
     def data(self) -> Any:
@@ -149,6 +146,8 @@ class CellOutputDataElement(CellOutputElement):
     @data.setter
     def data(self, value: Any) -> None:
         """Set the cell output's data."""
+        from euporie.core.convert.datum import Datum
+
         self._datum = Datum(
             value,
             self._datum.format,
@@ -517,19 +516,3 @@ class CellOutputArea:
                 ):
                     outputs.append(to_plain_text(line))
         return "\n".join(outputs)
-
-    # ################################### Settings ####################################
-
-    add_setting(
-        name="wrap_cell_outputs",
-        title="wrap cell outputs",
-        flags=["--wrap-cell-outputs"],
-        type_=bool,
-        help_="Wrap cell output text.",
-        default=False,
-        schema={"type": "boolean"},
-        description="""
-            Whether text-based cell outputs should be wrapped.
-        """,
-        cmd_filter=~buffer_has_focus,
-    )

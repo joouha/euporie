@@ -14,8 +14,8 @@ from prompt_toolkit.search import SearchDirection
 from prompt_toolkit.selection import SelectionState
 from prompt_toolkit.widgets import SearchToolbar as PtkSearchToolbar
 
+from euporie.core.app.current import get_app
 from euporie.core.commands import add_cmd
-from euporie.core.current import get_app
 from euporie.core.key_binding.registry import (
     load_registered_bindings,
     register_bindings,

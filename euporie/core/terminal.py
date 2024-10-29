@@ -20,8 +20,8 @@ from prompt_toolkit.keys import Keys
 from prompt_toolkit.output import ColorDepth
 from prompt_toolkit.utils import Event
 
+from euporie.core.app.current import get_app
 from euporie.core.commands import add_cmd
-from euporie.core.current import get_app
 from euporie.core.filters import in_screen, in_tmux
 from euporie.core.key_binding.registry import register_bindings
 from euporie.core.style import DEFAULT_COLORS

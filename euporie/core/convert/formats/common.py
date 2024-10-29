@@ -6,8 +6,8 @@ import base64
 import logging
 from typing import TYPE_CHECKING
 
+from euporie.core.app.current import get_app
 from euporie.core.convert.utils import call_subproc
-from euporie.core.current import get_app
 
 if TYPE_CHECKING:
     from typing import Any, Literal

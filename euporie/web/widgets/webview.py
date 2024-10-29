@@ -17,10 +17,10 @@ from prompt_toolkit.mouse_events import MouseButton, MouseEvent, MouseEventType
 from prompt_toolkit.utils import Event
 from upath import UPath
 
+from euporie.core.app.current import get_app
 from euporie.core.commands import add_cmd
 from euporie.core.convert.datum import Datum, get_loop
 from euporie.core.convert.mime import get_format
-from euporie.core.current import get_app
 from euporie.core.ft.html import HTML, Node
 from euporie.core.ft.utils import fragment_list_width, paste
 from euporie.core.graphics import GraphicProcessor

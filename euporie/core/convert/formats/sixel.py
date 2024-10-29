@@ -5,6 +5,7 @@ from __future__ import annotations
 from functools import partial
 from typing import TYPE_CHECKING
 
+from euporie.core.app.current import get_app
 from euporie.core.convert.formats.common import (
     chafa_convert_cmd,
     chafa_convert_py,
@@ -12,7 +13,6 @@ from euporie.core.convert.formats.common import (
 )
 from euporie.core.convert.registry import register
 from euporie.core.convert.utils import call_subproc
-from euporie.core.current import get_app
 from euporie.core.filters import command_exists, have_modules
 
 if TYPE_CHECKING:

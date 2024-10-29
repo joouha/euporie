@@ -17,10 +17,10 @@ from prompt_toolkit.completion.base import (
 )
 from prompt_toolkit.history import DummyHistory, InMemoryHistory
 
+from euporie.core.app.current import get_app
 from euporie.core.comm.registry import open_comm
 from euporie.core.commands import add_cmd
 from euporie.core.completion import DeduplicateCompleter, KernelCompleter, LspCompleter
-from euporie.core.current import get_app
 from euporie.core.diagnostics import Report
 from euporie.core.filters import kernel_tab_has_focus
 from euporie.core.format import LspFormatter
@@ -43,7 +43,7 @@ if TYPE_CHECKING:
     from prompt_toolkit.completion.base import Completer
     from prompt_toolkit.history import History
 
-    from euporie.core.app import BaseApp
+    from euporie.core.app.app import BaseApp
     from euporie.core.comm.base import Comm
     from euporie.core.format import Formatter
     from euporie.core.inspection import Inspector

@@ -10,8 +10,8 @@ from prompt_toolkit.layout.containers import HSplit, VSplit
 from prompt_toolkit.layout.dimension import Dimension
 from upath import UPath
 
+from euporie.core.app.current import get_app
 from euporie.core.convert.mime import get_mime
-from euporie.core.current import get_app
 from euporie.core.data_structures import DiBool
 from euporie.core.layout.decor import FocusedStyle
 from euporie.core.margins import MarginContainer, ScrollbarMargin
@@ -27,7 +27,7 @@ if TYPE_CHECKING:
 
     from prompt_toolkit.layout.containers import AnyContainer
 
-    from euporie.core.app import BaseApp
+    from euporie.core.app.app import BaseApp
     from euporie.core.widgets.status import StatusBarFields
 
 log = logging.getLogger(__name__)

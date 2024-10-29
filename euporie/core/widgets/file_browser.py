@@ -20,9 +20,8 @@ from prompt_toolkit.mouse_events import MouseButton, MouseEvent, MouseEventType
 from prompt_toolkit.utils import Event
 from upath import UPath
 
-from euporie.core.app import get_app
+from euporie.core.app.current import get_app
 from euporie.core.border import InsetGrid
-from euporie.core.config import add_setting
 from euporie.core.layout.containers import HSplit, VSplit, Window
 from euporie.core.layout.decor import FocusedStyle
 from euporie.core.margins import MarginContainer, ScrollbarMargin
@@ -704,23 +703,3 @@ class FileBrowser:
     def __pt_status__(self) -> StatusBarFields:
         """Show the selected or hovered path in the statusbar."""
         return self.control.__pt_status__()
-
-    # ################################### Settings ####################################
-
-    add_setting(
-        name="show_file_icons",
-        flags=["--show-file-icons"],
-        type_=bool,
-        title="File icons",
-        help_="Show file icons in the file manager",
-        default=False,
-        schema={
-            "type": "boolean",
-        },
-        description="""
-            Whether file icons should be shown in the file manager.
-
-            These icons exist in the unicode private use area, and may require custom
-            fonts such as ``awesome-terminal-fonts`` or ``nerdfonts`` to be installed.
-        """,
-    )

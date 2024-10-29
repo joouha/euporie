@@ -11,7 +11,6 @@ from prompt_toolkit.layout.containers import (
 )
 from prompt_toolkit.layout.dimension import Dimension
 
-from euporie.core.config import add_setting
 from euporie.core.layout.containers import VSplit, Window
 from euporie.core.layout.print import PrintingContainer
 from euporie.core.tabs.notebook import BaseNotebook
@@ -26,7 +25,7 @@ if TYPE_CHECKING:
     from prompt_toolkit.formatted_text.base import StyleAndTextTuples
     from prompt_toolkit.layout.containers import AnyContainer
 
-    from euporie.core.app import BaseApp
+    from euporie.core.app.app import BaseApp
     from euporie.core.comm.base import Comm
     from euporie.core.kernel.client import Kernel
 
@@ -183,63 +182,3 @@ class PreviewNotebook(BaseNotebook):
                 )
             ]
         )
-
-    # ################################### Settings ####################################
-
-    add_setting(
-        name="run",
-        flags=["--run"],
-        type_=bool,
-        help_="Run the notebook files when loaded",
-        default=False,
-        description="""
-            If set, notebooks will be run automatically when opened, or if previewing a
-            file, the notebooks will be run before being output.
-        """,
-    )
-
-    add_setting(
-        name="save",
-        flags=["--save"],
-        type_=bool,
-        help_="Save the notebook after running it",
-        default=False,
-        description="""
-            If set, notebooks will be saved after they have been run. This setting only
-            has any affect if the :option:`run` setting is active.
-        """,
-    )
-
-    add_setting(
-        name="show_filenames",
-        flags=["--show-filenames"],
-        type_=bool,
-        help_="Show the notebook filenames when previewing multiple notebooks",
-        default=False,
-        description="""
-            If set, the notebook filenames will be printed above each notebook's output
-            when multiple notebooks are being previewed.
-        """,
-    )
-
-    add_setting(
-        name="cell_start",
-        flags=["--cell-start"],
-        type_=int,
-        help_="The first cell to include in the preview",
-        default=None,
-        description="""
-            When set, only cells after the given cell index will be shown.
-        """,
-    )
-
-    add_setting(
-        name="cell_stop",
-        flags=["--cell-stop"],
-        type_=int,
-        help_="The last cell to include in the preview",
-        default=None,
-        description="""
-            When set, only cells before the given cell index will be shown.
-        """,
-    )

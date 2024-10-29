@@ -15,8 +15,8 @@ from prompt_toolkit.layout.dimension import Dimension
 from prompt_toolkit.layout.screen import Char, Screen, WritePosition
 from prompt_toolkit.mouse_events import MouseEventType
 
+from euporie.core.app.current import get_app
 from euporie.core.border import ThinLine
-from euporie.core.current import get_app
 from euporie.core.style import ColorPaletteColor
 
 if TYPE_CHECKING:

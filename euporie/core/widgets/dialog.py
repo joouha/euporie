@@ -34,7 +34,7 @@ from prompt_toolkit.layout.screen import WritePosition
 from prompt_toolkit.mouse_events import MouseButton, MouseEventType
 from prompt_toolkit.widgets.base import Label
 
-from euporie.core.app import get_app
+from euporie.core.app.current import get_app
 from euporie.core.border import (
     FullLine,
     LowerLeftHalfLine,
@@ -63,7 +63,8 @@ if TYPE_CHECKING:
     from prompt_toolkit.layout.layout import FocusableElement
     from prompt_toolkit.mouse_events import MouseEvent
 
-    from euporie.core.app import BaseApp
+    from euporie.core.app.app import BaseApp
+    from euporie.core.tabs.base import Tab
     from euporie.core.tabs.kernel import KernelTab
     from euporie.core.widgets.file_browser import FileBrowserControl
 
@@ -408,7 +409,7 @@ class AboutDialog(Dialog):
     @add_cmd()
     def _about() -> None:
         """Show the about dialog."""
-        from euporie.core.current import get_app
+        from euporie.core.app.current import get_app
 
         if dialog := get_app().dialogs.get("about"):
             dialog.toggle()
@@ -555,7 +556,7 @@ class OpenFileDialog(FileDialog):
     @add_cmd(menu_title="Open File…")
     def _open_file() -> None:
         """Open a file."""
-        from euporie.core.current import get_app
+        from euporie.core.app.current import get_app
 
         if dialog := get_app().dialogs.get("open-file"):
             dialog.show()
@@ -601,7 +602,7 @@ class SaveAsDialog(FileDialog):
     )
     def _save_as() -> None:
         """Save the current file at a new location."""
-        from euporie.core.current import get_app
+        from euporie.core.app.current import get_app
 
         app = get_app()
         if dialog := app.dialogs.get("save-as"):
@@ -966,7 +967,7 @@ class ShortcutsDialog(Dialog):
     @add_cmd()
     def _keyboard_shortcuts() -> None:
         """Display details of registered key-bindings in a dialog."""
-        from euporie.core.current import get_app
+        from euporie.core.app.current import get_app
 
         if dialog := get_app().dialogs.get("shortcuts"):
             dialog.toggle()

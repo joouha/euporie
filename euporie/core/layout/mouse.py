@@ -13,7 +13,7 @@ from prompt_toolkit.layout.containers import (
 )
 from prompt_toolkit.mouse_events import MouseEventType
 
-from euporie.core.current import get_app
+from euporie.core.app.current import get_app
 
 if TYPE_CHECKING:
     from typing import Callable

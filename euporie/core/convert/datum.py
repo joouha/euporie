@@ -16,12 +16,12 @@ from PIL.Image import Image as PilImage
 from prompt_toolkit.data_structures import Size
 from prompt_toolkit.layout.containers import WindowAlign
 
+from euporie.core.app.current import get_app
 from euporie.core.convert.registry import (
     _CONVERTOR_ROUTE_CACHE,
     _FILTER_CACHE,
     converters,
 )
-from euporie.core.current import get_app
 from euporie.core.ft.utils import to_plain_text
 
 if TYPE_CHECKING:

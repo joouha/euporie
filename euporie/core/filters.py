@@ -82,7 +82,7 @@ def has_dialog() -> bool:
     """Determine if a dialog is being displayed."""
     from prompt_toolkit.layout.containers import ConditionalContainer
 
-    from euporie.core.current import get_app
+    from euporie.core.app.current import get_app
 
     app = get_app()
     for dialog in app.dialogs.values():
@@ -111,7 +111,7 @@ has_float = has_dialog | has_menus | has_completions
 @Condition
 def tab_has_focus() -> bool:
     """Determine if there is a currently focused tab."""
-    from euporie.core.current import get_app
+    from euporie.core.app.current import get_app
 
     return get_app().tab is not None
 
@@ -119,7 +119,7 @@ def tab_has_focus() -> bool:
 @Condition
 def pager_has_focus() -> bool:
     """Determine if there is a currently focused notebook."""
-    from euporie.core.current import get_app
+    from euporie.core.app.current import get_app
 
     app = get_app()
     pager = app.pager
@@ -131,7 +131,7 @@ def pager_has_focus() -> bool:
 @Condition
 def display_has_focus() -> bool:
     """Determine if there is a currently focused cell."""
-    from euporie.core.current import get_app
+    from euporie.core.app.current import get_app
     from euporie.core.widgets.display import DisplayControl
 
     return isinstance(get_app().layout.current_control, DisplayControl)
@@ -140,7 +140,7 @@ def display_has_focus() -> bool:
 @Condition
 def buffer_is_empty() -> bool:
     """Determine if the current buffer contains nothing."""
-    from euporie.core.current import get_app
+    from euporie.core.app.current import get_app
 
     return not get_app().current_buffer.text
 
@@ -148,7 +148,7 @@ def buffer_is_empty() -> bool:
 @Condition
 def buffer_is_code() -> bool:
     """Determine if the current buffer contains code."""
-    from euporie.core.current import get_app
+    from euporie.core.app.current import get_app
 
     return get_app().current_buffer.name == "code"
 
@@ -156,7 +156,7 @@ def buffer_is_code() -> bool:
 @Condition
 def buffer_is_markdown() -> bool:
     """Determine if the current buffer contains markdown."""
-    from euporie.core.current import get_app
+    from euporie.core.app.current import get_app
 
     return get_app().current_buffer.name == "markdown"
 
@@ -164,7 +164,7 @@ def buffer_is_markdown() -> bool:
 @Condition
 def micro_mode() -> bool:
     """When the micro key-bindings are active."""
-    from euporie.core.current import get_app
+    from euporie.core.app.current import get_app
 
     return get_app().editing_mode == EditingMode.MICRO  # type: ignore
 
@@ -172,7 +172,7 @@ def micro_mode() -> bool:
 @Condition
 def micro_replace_mode() -> bool:
     """Determine if the editor is in overwrite mode."""
-    from euporie.core.current import get_app
+    from euporie.core.app.current import get_app
 
     app = get_app()
     return app.micro_state.input_mode == MicroInputMode.REPLACE
@@ -181,7 +181,7 @@ def micro_replace_mode() -> bool:
 @Condition
 def micro_insert_mode() -> bool:
     """Determine if the editor is in insert mode."""
-    from euporie.core.current import get_app
+    from euporie.core.app.current import get_app
 
     app = get_app()
     return app.micro_state.input_mode == MicroInputMode.INSERT
@@ -190,7 +190,7 @@ def micro_insert_mode() -> bool:
 @Condition
 def micro_recording_macro() -> bool:
     """Determine if a micro macro is being recorded."""
-    from euporie.core.current import get_app
+    from euporie.core.app.current import get_app
 
     return get_app().micro_state.current_recording is not None
 
@@ -198,7 +198,7 @@ def micro_recording_macro() -> bool:
 @Condition
 def is_returnable() -> bool:
     """Determine if the current buffer has an accept handler."""
-    from euporie.core.current import get_app
+    from euporie.core.app.current import get_app
 
     return get_app().current_buffer.is_returnable
 
@@ -206,7 +206,7 @@ def is_returnable() -> bool:
 @Condition
 def cursor_at_start_of_line() -> bool:
     """Determine if the cursor is at the start of a line."""
-    from euporie.core.current import get_app
+    from euporie.core.app.current import get_app
 
     return get_app().current_buffer.document.cursor_position_col == 0
 
@@ -214,7 +214,7 @@ def cursor_at_start_of_line() -> bool:
 @Condition
 def cursor_on_first_line() -> bool:
     """Determine if the cursor is on the first line of a buffer."""
-    from euporie.core.current import get_app
+    from euporie.core.app.current import get_app
 
     return get_app().current_buffer.document.on_first_line
 
@@ -222,7 +222,7 @@ def cursor_on_first_line() -> bool:
 @Condition
 def cursor_on_last_line() -> bool:
     """Determine if the cursor is on the last line of a buffer."""
-    from euporie.core.current import get_app
+    from euporie.core.app.current import get_app
 
     return get_app().current_buffer.document.on_last_line
 
@@ -241,7 +241,7 @@ replace_mode = micro_replace_mode | vi_replace_mode
 @Condition
 def is_searching() -> bool:
     """Determine if the app is in search mode."""
-    from euporie.core.current import get_app
+    from euporie.core.app.current import get_app
 
     app = get_app()
     return (
@@ -261,8 +261,8 @@ def at_end_of_buffer() -> bool:
 @Condition
 def kernel_is_python() -> bool:
     """Determine if the current notebook has a python kernel."""
-    from euporie.core.current import get_app
-    from euporie.core.tabs.base import KernelTab
+    from euporie.core.app.current import get_app
+    from euporie.core.tabs.kernel import KernelTab
 
     kernel_tab = get_app().tab
     if isinstance(kernel_tab, KernelTab):
@@ -273,7 +273,7 @@ def kernel_is_python() -> bool:
 @Condition
 def multiple_cells_selected() -> bool:
     """Determine if there is more than one selected cell."""
-    from euporie.core.current import get_app
+    from euporie.core.app.current import get_app
     from euporie.core.tabs.notebook import BaseNotebook
 
     nb = get_app().tab
@@ -285,7 +285,7 @@ def multiple_cells_selected() -> bool:
 @Condition
 def kernel_tab_has_focus() -> bool:
     """Determine if there is a focused kernel tab."""
-    from euporie.core.current import get_app
+    from euporie.core.app.current import get_app
     from euporie.core.tabs.kernel import KernelTab
 
     return isinstance(get_app().tab, KernelTab)

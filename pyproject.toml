@@ -67,7 +67,7 @@ euporie-preview = "euporie.preview.__main__:main"
 euporie-hub = "euporie.hub.__main__:main"
 
 [project.entry-points."euporie.apps"]
-launch = "euporie.core.launch:CoreApp"
+launch = "euporie.core.app.launch:LaunchApp"
 console = "euporie.console.app:ConsoleApp"
 notebook = "euporie.notebook.app:NotebookApp"
 preview = "euporie.preview.app:PreviewApp"

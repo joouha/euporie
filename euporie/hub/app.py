@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import logging
 from asyncio import get_event_loop
-from importlib.metadata import entry_points
 from typing import TYPE_CHECKING
 
 try:
@@ -18,12 +17,15 @@ except ModuleNotFoundError as err:
 from prompt_toolkit.contrib.ssh import PromptToolkitSSHSession
 from upath import UPath
 
-from euporie.core.app import BaseApp
+from euporie.core.__main__ import available_apps
+from euporie.core.app import APP_ALIASES
+from euporie.core.app.base import ConfigurableApp
 from euporie.core.config import add_setting
-from euporie.core.log import setup_logs
 
 if TYPE_CHECKING:
-    from typing import Awaitable
+    from typing import Any, Awaitable, ClassVar
+
+    from euporie.core.app.app import BaseApp
 
 log = logging.getLogger(__name__)
 
@@ -53,7 +55,7 @@ class EuporieSSHServer(asyncssh.SSHServer):  # type: ignore
         return PromptToolkitSSHSession(self.app_cls.interact, enable_cpr=True)  # type: ignore [call-arg]
 
 
-class HubApp(BaseApp):
+class HubApp(ConfigurableApp):
     """Hub App.
 
     An app which runs as a multi-user SSH server.
@@ -61,26 +63,21 @@ class HubApp(BaseApp):
     This app never actually gets run, but is used to run another app in an SSH server.
     """
 
-    name = "hub"
-
-    @classmethod
-    def launch(cls) -> None:
-        """Launch the HubApp SSH server."""
-        # Default logging configuration
-        setup_logs()
-
-        # Configure some setting defaults
-        cls.config.settings["log_file"].value = "-"
-        cls.config.settings["log_level"].value = "info"
-        cls.config.settings["log_config"].value = """
+    _config_defaults: ClassVar[dict[str, Any]] = {
+        "log_file": "-",
+        "log_level": "info",
+        "log_config": """
 {
     "handlers": { "stdout": {"share_stream": false} },
     "loggers": { "asyncssh": { "handlers":["stdout"], "level": "DEBUG" } }
 }
-        """
+        """,
+    }
 
-        # Load the app's configuration
-        cls.config.load(cls)
+    @classmethod
+    def launch(cls) -> None:
+        """Launch the HubApp SSH server."""
+        # Configure some setting defaults
 
         if not cls.config.auth:
             log.warning(
@@ -88,15 +85,14 @@ class HubApp(BaseApp):
                 "meaning anyone can connect"
             )
 
+        # Detect selected app
+        chosen_app = cls.config.app
+        chosen_app = APP_ALIASES.get(chosen_app, chosen_app)
+
         # Import the hubbed app
-        eps = entry_points()
-        if isinstance(eps, dict):
-            points = eps.get("euporie.apps")
-        else:
-            points = eps.select(group="euporie.apps")
-        apps = {x.name: x for x in points} if points else {}
-        if entry_point := apps.get(cls.config.app):
-            app_cls = entry_point.load()
+        apps = available_apps()
+        if entry := apps.get(chosen_app):
+            app_cls = entry.load()
         else:
             raise ValueError("Application `%s` not found", cls.config.app)
 
@@ -117,19 +113,8 @@ class HubApp(BaseApp):
     # ################################### Settings ####################################
 
     add_setting(
-        name="app",
-        flags=["--app"],
-        default="notebook",
-        type_=str,
-        choices=["notebook", "console"],
-        help_="App to run under euporie hub",
-        description="""
-            Determine which euporie app should be launched under euporie hub.
-        """,
-    )
-
-    add_setting(
         name="host",
+        group="euporie.hub.app",
         flags=["--host"],
         type_=str,
         help_="The host address to bind to",
@@ -141,6 +126,7 @@ class HubApp(BaseApp):
 
     add_setting(
         name="port",
+        group="euporie.hub.app",
         flags=["--port"],
         type_=int,
         help_="The port for the ssh server to use",
@@ -157,6 +143,7 @@ class HubApp(BaseApp):
 
     add_setting(
         name="host_keys",
+        group="euporie.hub.app",
         flags=["--host-keys"],
         nargs="*",
         type_=UPath,
@@ -176,6 +163,7 @@ class HubApp(BaseApp):
 
     add_setting(
         name="client_keys",
+        group="euporie.hub.app",
         flags=["--client-keys"],
         nargs="*",
         type_=UPath,
@@ -196,6 +184,7 @@ class HubApp(BaseApp):
 
     add_setting(
         name="auth",
+        group="euporie.hub.app",
         flags=["--auth"],
         type_=bool,
         help_="Allow unauthenticated access to euporie hub",

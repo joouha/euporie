@@ -11,8 +11,8 @@ from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.utils import Event
 from upath import UPath
 
+from euporie.core.app.current import get_app
 from euporie.core.commands import add_cmd
-from euporie.core.current import get_app
 from euporie.core.filters import tab_has_focus
 from euporie.core.key_binding.registry import (
     register_bindings,
@@ -27,7 +27,7 @@ if TYPE_CHECKING:
 
     from prompt_toolkit.layout.containers import AnyContainer
 
-    from euporie.core.app import BaseApp
+    from euporie.core.app.app import BaseApp
     from euporie.core.widgets.status import StatusBarFields
 
 log = logging.getLogger(__name__)
