@@ -21,7 +21,7 @@ if TYPE_CHECKING:
 
     from jupyter_client import KernelClient
 
-    from euporie.core.comm.kernel import KernelTab
+    from euporie.core.tabs.kernel import KernelTab
 
 
 log = logging.getLogger(__name__)
