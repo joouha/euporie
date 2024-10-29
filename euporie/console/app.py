@@ -77,11 +77,9 @@ class ConsoleApp(BaseApp):
         # Initialize the application
         super().__init__(**kwargs)
 
-        self.search_bar = SearchBar()
         self.bindings_to_load += ["euporie.console.app.ConsoleApp"]
 
         self.tabs = []
-        self.pager = Pager()
 
     def _get_reserved_height(self) -> Dimension:
         if has_dialog():
@@ -95,9 +93,8 @@ class ConsoleApp(BaseApp):
         """Return a container with all opened tabs."""
         self.tabs = [Console(self)]
 
-        assert self.pager is not None
-        assert self.search_bar is not None
-        assert self.tab is not None
+        self.search_bar = SearchBar()
+        self.pager = Pager()
 
         self.dialogs["command-palette"] = CommandPalette(self)
         self.dialogs["about"] = AboutDialog(self)
