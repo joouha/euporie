@@ -13,9 +13,8 @@ from prompt_toolkit.layout.containers import (
     FloatContainer,
 )
 
+from euporie.core.app.current import get_app
 from euporie.core.border import ThinLine
-from euporie.core.config import add_setting
-from euporie.core.current import get_app
 from euporie.core.data_structures import DiBool
 from euporie.core.layout.containers import HSplit, VSplit, Window
 from euporie.core.layout.decor import DropShadow
@@ -193,7 +192,7 @@ class Shadow:
         Args:
             body: Another container object.
         """
-        filter_ = get_app().config.filter("show_shadows")
+        filter_ = get_app().config.filters.show_shadows
         shadow = FloatContainer(
             content=body,
             floats=[
@@ -227,16 +226,3 @@ class Shadow:
     def __pt_container__(self) -> AnyContainer:
         """Return the container's content."""
         return self.container
-
-    # ################################### Settings ####################################
-
-    add_setting(
-        name="show_shadows",
-        flags=["--show-shadows"],
-        type_=bool,
-        help_="Show or hide shadows under menus and dialogs",
-        default=True,
-        description="""
-            Sets whether shadows are shown under dialogs and popup-menus.
-        """,
-    )

@@ -9,8 +9,6 @@ from prompt_toolkit.layout.containers import HSplit, VSplit
 from prompt_toolkit.layout.dimension import Dimension
 from prompt_toolkit.widgets import SearchToolbar
 
-from euporie.core.commands import add_cmd
-from euporie.core.current import get_app
 from euporie.core.log import LOG_QUEUE, QueueHandler
 from euporie.core.margins import MarginContainer, ScrollbarMargin
 from euporie.core.path import parse_path
@@ -23,7 +21,7 @@ if TYPE_CHECKING:
 
     from prompt_toolkit.formatted_text.base import FormattedText
 
-    from euporie.core.app import BaseApp
+    from euporie.core.app.app import BaseApp
 
 
 class LogView(Tab):
@@ -93,18 +91,3 @@ class LogView(Tab):
         """Remove log queue handler hook on close."""
         QueueHandler.unhook(self.hook_id)
         super().close(cb=cb)
-
-    # ################################### Commands ####################################
-
-    @staticmethod
-    @add_cmd()
-    def _view_logs() -> None:
-        """Open the logs in a new tab."""
-        app = get_app()
-        for tab in app.tabs:
-            if isinstance(tab, LogView):
-                break
-        else:
-            tab = LogView(app)
-            app.add_tab(tab)
-        tab.focus()

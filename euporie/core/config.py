@@ -8,10 +8,19 @@ import logging
 import os
 import sys
 from ast import literal_eval
-from collections import ChainMap
-from functools import partial
+from functools import cached_property, partial
 from pathlib import Path
-from typing import TYPE_CHECKING, Protocol, TextIO, cast
+from types import SimpleNamespace
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Iterable,
+    Mapping,
+    Optional,
+    TextIO,
+    cast,
+)
 
 import fastjsonschema
 from platformdirs import user_config_dir
@@ -20,22 +29,15 @@ from prompt_toolkit.filters.utils import to_filter
 from prompt_toolkit.utils import Event
 from upath import UPath
 
-from euporie.core import __app_name__, __copyright__, __version__
+from euporie.core import __app_name__, __copyright__
 from euporie.core.commands import add_cmd, get_cmd
 
 if TYPE_CHECKING:
     from typing import IO, Any, Callable, ClassVar, Optional, Sequence
 
-    from prompt_toolkit.filters.base import Filter, FilterOrBool
+    from prompt_toolkit.filters.base import FilterOrBool
 
     from euporie.core.widgets.menu import MenuItem
-
-    class ConfigurableApp(Protocol):
-        """An application with configuration."""
-
-        config: Config
-        name: str
-        log_stdout_level: str
 
 
 log = logging.getLogger(__name__)
@@ -52,16 +54,23 @@ _SCHEMA_TYPES: dict[type | Callable, str] = {
 class ArgumentParser(argparse.ArgumentParser):
     """An argument parser which lexes and formats the help message before printing it."""
 
+    def __init__(self, *args: Any, config: Config, **kwargs: Any) -> None:
+        """Initialize while saving a reference to the current config."""
+        super().__init__(*args, **kwargs)
+        self.config = config
+
     def _print_message(self, message: str, file: IO[str] | None = None) -> None:
         from prompt_toolkit.formatted_text.base import FormattedText
         from prompt_toolkit.lexers.pygments import _token_cache
         from prompt_toolkit.shortcuts.utils import print_formatted_text
         from prompt_toolkit.styles.pygments import style_from_pygments_cls
 
-        from euporie.core.pygments import ArgparseLexer, EuporiePygmentsStyle
+        from euporie.core.pygments import ArgparseLexer
+        from euporie.core.style import get_style_by_name
 
         if message:
             file = cast("Optional[TextIO]", file)
+            style = style_from_pygments_cls(get_style_by_name(self.config.syntax_theme))
             print_formatted_text(
                 FormattedText(
                     [
@@ -72,7 +81,7 @@ class ArgumentParser(argparse.ArgumentParser):
                     ]
                 ),
                 file=file,
-                style=style_from_pygments_cls(EuporiePygmentsStyle),
+                style=style,
                 include_default_pygments_style=False,
             )
 
@@ -146,12 +155,13 @@ class Setting:
     def __init__(
         self,
         name: str,
-        default: Any,
-        help_: str,
-        description: str,
+        group: str | Sequence[str],
+        default: Any = None,
+        help_: str = "",
+        description: str = "",
         type_: Callable[[Any], Any] | None = None,
         title: str | None = None,
-        choices: list[Any] | None = None,
+        choices: list[Any] | Callable[[], list[Any]] | None = None,
         action: argparse.Action | str | None = None,
         flags: list[str] | None = None,
         schema: dict[str, Any] | None = None,
@@ -163,12 +173,13 @@ class Setting:
     ) -> None:
         """Create a new configuration item."""
         self.name = name
+        self.groups = {group} if isinstance(group, str) else set(group)
         self.default = default
         self._value = default
         self.title = title or self.name.replace("_", " ")
         self.help = help_
         self.description = description
-        self.choices = choices
+        self._choices = choices
         self.type = type_ or type(default)
         self.action = action or TYPE_ACTIONS.get(self.type)
         self.flags = flags or [f"--{name.replace('_','-')}"]
@@ -178,112 +189,17 @@ class Setting:
         }
         self.nargs = nargs
         self.hidden = to_filter(hidden)
-        self.kwargs = kwargs
+        self.hooks = hooks
         self.cmd_filter = cmd_filter
+        self.kwargs = kwargs
 
-        self.event = Event(self)
-        for hook in hooks or []:
-            self.event += hook
-
-        self.register_commands()
-
-    def register_commands(self) -> None:
-        """Register commands to set this setting."""
-        name = self.name.replace("_", "-")
-        schema = self.schema
-
-        if schema.get("type") == "array":
-            for choice in self.choices or schema.get("items", {}).get("enum") or []:
-                add_cmd(
-                    name=f"toggle-{name}-{choice}",
-                    hidden=self.hidden,
-                    toggled=Condition(partial(lambda x: x in self.value, choice)),
-                    title=f"Add {choice} to {self.title} setting",
-                    menu_title=str(choice).replace("_", " ").capitalize(),
-                    description=f'Add or remove "{choice}" to or from the list of "{self.name}"',
-                    filter=self.cmd_filter,
-                )(
-                    partial(
-                        lambda choice: (
-                            self.value.remove
-                            if choice in self.value
-                            else self.value.append
-                        )(choice),
-                        choice,
-                    )
-                )
-
-        elif self.type is bool:
-
-            def _toggled() -> bool:
-                from euporie.core.current import get_app
-
-                app = get_app()
-                value = app.config.get(self.name)
-                return bool(getattr(app.config, self.name, not value))
-
-            toggled_filter = Condition(_toggled)
-
-            add_cmd(
-                name=f"toggle-{name}",
-                toggled=toggled_filter,
-                hidden=self.hidden,
-                title=f"Toggle {self.title}",
-                menu_title=self.kwargs.get("menu_title", self.title.capitalize()),
-                description=self.help,
-                filter=self.cmd_filter,
-            )(self.toggle)
-
-        elif self.type is int or self.choices is not None:
-            add_cmd(
-                name=f"switch-{name}",
-                hidden=self.hidden,
-                title=f"Switch {self.title}",
-                menu_title=self.kwargs.get("menu_title"),
-                description=f'Switch the value of the "{self.name}" configuration option.',
-                filter=self.cmd_filter,
-            )(self.toggle)
-
-        for choice in self.choices or schema.get("enum", []) or []:
-            add_cmd(
-                name=f"set-{name}-{choice}",
-                hidden=self.hidden,
-                toggled=Condition(partial(lambda x: self.value == x, choice)),
-                title=f"Set {self.title} to {choice}",
-                menu_title=str(choice).replace("_", " ").capitalize(),
-                description=f'Set the value of the "{self.name}" '
-                f'configuration option to "{choice}"',
-                filter=self.cmd_filter,
-            )(partial(setattr, self, "value", choice))
-
-    def toggle(self) -> None:
-        """Toggle the setting's value."""
-        if self.type is bool:
-            new = not self.value
-        elif (
-            self.type is int
-            and "minimum" in (schema := self.schema)
-            and "maximum" in schema
-        ):
-            new = schema["minimum"] + (self.value - schema["minimum"] + 1) % (
-                schema["maximum"] + 1
-            )
-        elif self.choices is not None:
-            new = self.choices[(self.choices.index(self.value) + 1) % len(self.choices)]
+    @cached_property
+    def choices(self) -> list[Any] | None:
+        """Compute the setting's available options."""
+        if callable(self._choices):
+            return self._choices()
         else:
-            raise NotImplementedError
-        self.value = new
-
-    @property
-    def value(self) -> Any:
-        """Return the current value."""
-        return self._value
-
-    @value.setter
-    def value(self, new: Any) -> None:
-        """Set the current value."""
-        self._value = new
-        self.event.fire()
+            return self._choices
 
     @property
     def schema(self) -> dict[str, Any]:
@@ -329,13 +245,17 @@ class Setting:
     @property
     def parser_args(self) -> tuple[list[str], dict[str, Any]]:
         """Return arguments for construction of an :class:`argparse.ArgumentParser`."""
-        # Do not set defaults for command line arguments, as default values
-        # would override values set in the configuration file
+        # If empty flags are passed, do not expose setting on command line
+        if self.flags is not None and not self.flags:
+            return [], {}
         args = self.flags or [self.name]
 
         kwargs: dict[str, Any] = {
             "action": self.action,
-            "help": self.help,
+            "help": argparse.SUPPRESS if self.hidden() else self.help,
+            # Do not set defaults for command line arguments, as default values
+            # would override values set in the configuration file
+            # "default": self.default,
         }
 
         if self.nargs:
@@ -353,131 +273,246 @@ class Setting:
 
     def __repr__(self) -> str:
         """Represent a :py:class`Setting` instance as a string."""
-        return f"<Setting {self.name}={self.value.__repr__()}>"
+        return f"<Setting {self.name}: {self.type}>"
+
+
+class DefaultNamespace(SimpleNamespace):
+    """A namespace that creates default values for undefined attributes using a factory function.
+
+    This class extends SimpleNamespace to provide automatic creation of default values when
+    accessing undefined attributes, similar to collections.defaultdict but for object attributes.
+
+    Attributes:
+        _factory: A callable that generates default values for undefined attributes.
+            If None, AttributeError will be raised for undefined attributes.
+
+    Examples:
+        >>> # Create namespace with list factory
+        >>> ns = DefaultNamespace(default_factory=list)
+        >>> ns.numbers.append(1)  # Creates new list automatically
+        >>> ns.numbers
+        [1]
+
+        >>> # Create with initial values
+        >>> ns = DefaultNamespace(default_factory=int, x=1, y=2)
+        >>> ns.x
+        1
+        >>> ns.z  # Creates new int (0) automatically
+        0
+    """
+
+    def __init__(
+        self,
+        default_factory: Callable[[str], Any] | None = None,
+        mapping_or_iterable: Mapping | Iterable[tuple[str, Any]] | None = None,
+        /,
+        **kwargs: Any,
+    ) -> None:
+        """Initialize the DefaultNamespace.
+
+        Args:
+            default_factory: A callable that takes an attribute name and returns a default value
+                when accessing undefined attributes. If None, AttributeError is raised for
+                undefined attributes.
+            mapping_or_iterable: An optional mapping or iterable of (key, value) pairs to
+                initialize the namespace with.
+            **kwargs: Additional keyword arguments to initialize the namespace with.
+        """
+        if mapping_or_iterable is None:
+            mapping_or_iterable = {}
+        super().__init__(**dict(mapping_or_iterable), **kwargs)
+        self._factory = default_factory
+
+    def __getattribute__(self, name: str) -> Any:
+        """Get an attribute value, creating it if undefined using the default_factory.
+
+        This method intercepts attribute access to provide default value creation
+        for undefined attributes using the default_factory.
+
+        Args:
+            name: The name of the attribute to access.
+
+        Returns:
+            The attribute value, either existing or newly created.
+
+        Raises:
+            AttributeError: If the attribute doesn't exist and no default_factory is set.
+        """
+        try:
+            return super().__getattribute__(name)
+        except AttributeError:
+            factory = super().__getattribute__("_factory")
+            if factory is None:
+                raise
+            value = factory(name)
+            setattr(self, name, value)
+            return value
 
 
 class Config:
     """A configuration store."""
 
-    settings: ClassVar[dict[str, Setting]] = {}
-    conf_file_name = "config.json"
+    _conf_file_name = "config.json"
+    _settings: ClassVar[dict[str, Setting]] = {}
 
-    def __init__(self) -> None:
+    def __init__(self, _help: str = "", **kwargs: Any) -> None:
         """Create a new configuration object instance."""
-        self.app_name: str = "base"
-        self.app_cls: type[ConfigurableApp] | None = None
+        from euporie.core.log import BufferedLogs, setup_logs
 
-    def _save(self, setting: Setting) -> None:
-        """Save settings to user's configuration file."""
-        json_data = self.load_config_file()
-        json_data.setdefault(self.app_name, {})[setting.name] = setting.value
-        if self.valid_user:
-            log.debug("Saving setting `%s`", setting)
-            with self.config_file_path.open("w") as f:
-                json.dump(json_data, f, indent=2)
+        self._help = _help
 
-    def load(self, cls: type[ConfigurableApp]) -> None:
-        """Load the command line, environment, and user configuration."""
-        from euporie.core.log import setup_logs
-
-        self.app_cls = cls
-        self.app_name = cls.name
-        log.debug("Loading config for %s", self.app_name)
+        # Create stores
+        self.events = DefaultNamespace(
+            lambda name: Event(self._settings[name], self._save)
+        )
+        self.filters = DefaultNamespace(
+            lambda name: Condition(lambda: bool(self._values[name]))
+        )
+        self.defaults = DefaultNamespace(lambda x: self._settings[x].default)
+        self.choices = DefaultNamespace(lambda x: self._settings[x].choices)
+        self.menus = DefaultNamespace(lambda x: self._settings[x].menu)
 
         user_conf_dir = Path(user_config_dir(__app_name__, appauthor=None))
         user_conf_dir.mkdir(exist_ok=True, parents=True)
-        self.config_file_path = (user_conf_dir / self.conf_file_name).with_suffix(
+        self._config_file_path = (user_conf_dir / self._conf_file_name).with_suffix(
             ".json"
         )
-        self.valid_user = True
+        self._valid_user = True
+        self._schema_validate = fastjsonschema.compile(self._schema, use_default=False)
 
-        config_maps = {
-            # Load command line arguments
-            "command line arguments": self.load_args(),
-            # Load app specific env vars
-            "app-specific environment variable": self.load_env(app_name=self.app_name),
-            # Load global env vars
-            "global environment variable": self.load_env(),
-            # Load app specific user config
-            "app-specific user configuration": self.load_user(app_name=self.app_name),
-            # Load global user config
-            "user configuration": self.load_user(),
+        # Register commands for each setting
+        for setting in self._settings.values():
+            self._register_commands(setting)
+
+        self._values = {
+            # Setting defaults
+            **{k: v.default for k, v in self._settings.items()},
+            # Key-word arguments
+            **kwargs,
         }
-        set_values = ChainMap(*config_maps.values())
 
-        for name, setting in Config.settings.items():
-            if setting.name in set_values:
-                # Set value without triggering hooks
-                setting._value = set_values[name]
-            setting.event += self._save
-
-        # Set-up logs
-        setup_logs(self)
-
-        # Save a list of unknown configuration options so we can warn about them once
-        # the logs are configured
-        for map_name, map_values in config_maps.items():
-            for option_name in map_values.keys() - Config.settings.keys():
-                if not isinstance(set_values[option_name], dict):
-                    log.warning(
-                        "Configuration option '%s' not recognised in %s",
-                        option_name,
-                        map_name,
+        # Buffer logs and replay them after settings are configured
+        with BufferedLogs(logger=log):
+            try:
+                # Validate configured values
+                self._values.update(self._validate(self._load_user(), "config file"))
+                self._values.update(
+                    self._validate(self._load_user(prefix=self.app), "app config file")
+                )
+                self._values.update(
+                    self._validate(self._load_env(), "environment variable")
+                )
+                self._values.update(
+                    self._validate(
+                        self._load_env(prefix=self.app), "app environment variable"
                     )
+                )
+                self._values.update(
+                    self._validate(self._load_args(), "command line parameter")
+                )
+            finally:
+                # Set-up logs even if configuration validation fails
+                setup_logs(self)
+
+    def _validate(self, data: dict[str, Any], group: str) -> dict[str, Any]:
+        """Validate settings values."""
+        validated = {}
+        for name, value in data.items():
+            if name in self._settings:
+                # Convert to json and back to attain json types
+                json_data = json.loads(_json_encoder.encode({name: value}))
+                try:
+                    self._schema_validate(json_data)
+                except fastjsonschema.JsonSchemaValueException as error:
+                    # Warn about badly configured settings
+                    log.warning(
+                        "Error in %s setting: `%s = %s`\n%s",
+                        group,
+                        name,
+                        repr(value),
+                        error.message.replace("data.", ""),
+                    )
+                else:
+                    # Store validated setting values
+                    validated[name] = value
+            else:
+                # Warn about unknown configuration options
+                if not isinstance(value, dict):
+                    log.warning(
+                        "Configuration option '%s' not recognised in %s", name, group
+                    )
+        return validated
+
+    def _save(self, setting: Setting) -> None:
+        """Save settings to user's configuration file."""
+        json_data = self._load_config_file()
+        json_data.setdefault(self.app, {})[setting.name] = getattr(self, setting.name)
+        if self._valid_user:
+            log.debug("Saving setting `%s`", setting)
+            with self._config_file_path.open("w") as f:
+                json.dump(json_data, f, indent=2)
 
     @property
-    def schema(self) -> dict[str, Any]:
+    def _schema(self) -> dict[str, Any]:
         """Return a JSON schema for the config."""
         return {
             "title": "Euporie Configuration",
             "description": "A configuration for euporie",
             "type": "object",
-            "properties": {name: item.schema for name, item in self.settings.items()},
+            "properties": {name: item.schema for name, item in self._settings.items()},
         }
 
-    def load_parser(self) -> argparse.ArgumentParser:
+    @property
+    def settings(self) -> dict[str, Setting]:
+        """Return the currently active settings."""
+        return {
+            name: setting
+            for name, setting in self._settings.items()
+            if any(group in sys.modules or group == "*" for group in setting.groups)
+        }
+
+    def _load_parser(self) -> argparse.ArgumentParser:
         """Construct an :py:class:`ArgumentParser`."""
         parser = ArgumentParser(
-            description=self.app_cls.__doc__,
+            description=self._help,
             epilog=__copyright__,
             allow_abbrev=True,
             formatter_class=argparse.MetavarTypeHelpFormatter,
+            config=self,
+            argument_default=argparse.SUPPRESS,
+            # exit_on_error=False,
         )
         # Add options to the relevant subparsers
         for setting in self.settings.values():
+            # if self._values[setting.name] != setting.default:
             args, kwargs = setting.parser_args
+            # Make already specified positional arguments optional
+            if (
+                not any(x.startswith("-") for x in setting.flags)
+                and getattr(self, setting.name) != setting.default
+            ):
+                kwargs["nargs"] = "?"
             parser.add_argument(*args, **kwargs)
         return parser
 
-    def load_args(self) -> dict[str, Any]:
+    def _load_args(self) -> dict[str, Any]:
         """Attempt to load configuration settings from commandline flags."""
-        result = {}
         # Parse known arguments
-        namespace, remainder = self.load_parser().parse_known_intermixed_args()
+        namespace, remainder = self._load_parser().parse_known_intermixed_args()
         # Update argv to leave the remaining arguments for subsequent apps
         sys.argv[1:] = remainder
         # Validate arguments
-        for name, value in vars(namespace).items():
-            if value is not None:
-                # Convert to json and back to attain json types
-                json_data = json.loads(_json_encoder.encode({name: value}))
-                try:
-                    fastjsonschema.validate(self.schema, json_data)
-                except fastjsonschema.JsonSchemaValueException as error:
-                    log.warning("Error in command line parameter `%s`: %s", name, error)
-                    log.warning("%s: %s", name, value)
-                else:
-                    result[name] = value
-        return result
+        return vars(namespace)
 
-    def load_env(self, app_name: str = "") -> dict[str, Any]:
+    def _load_env(self, prefix: str = "") -> dict[str, Any]:
         """Attempt to load configuration settings from environment variables."""
         result = {}
-        for name, setting in self.settings.items():
-            if app_name:
-                env = f"{__app_name__.upper()}_{self.app_name.upper()}_{setting.name.upper()}"
+        for name, setting in self._settings.items():
+            if prefix:
+                env = f"{__app_name__}_{prefix}_{setting.name}"
             else:
-                env = f"{__app_name__.upper()}_{setting.name.upper()}"
+                env = f"{__app_name__}_{setting.name}"
+            env = env.upper()
             if env in os.environ:
                 value = os.environ.get(env)
                 parsed_value: Any = value
@@ -497,163 +532,154 @@ class Config:
                 try:
                     parsed_value = setting.type(value)
                 except (ValueError, TypeError):
-                    log.warning(
-                        "Environment variable `%s` not understood" " - `%s` expected",
-                        env,
-                        setting.type.__name__,
-                    )
-                else:
-                    json_data = json.loads(_json_encoder.encode({name: parsed_value}))
-                    try:
-                        fastjsonschema.validate(self.schema, json_data)
-                    except fastjsonschema.JsonSchemaValueException as error:
-                        log.error("Error in environment variable: `%s`\n%s", env, error)
-                    else:
-                        result[name] = parsed_value
+                    pass
+                result[name] = parsed_value
         return result
 
-    def load_config_file(self) -> dict[str, Any]:
+    def _load_config_file(self) -> dict[str, Any]:
         """Attempt to load JSON configuration file."""
         results = {}
-        assert isinstance(self.config_file_path, Path)
-        if self.valid_user and self.config_file_path.exists():
-            with self.config_file_path.open() as f:
+        assert isinstance(self._config_file_path, Path)
+        if self._valid_user and self._config_file_path.exists():
+            with self._config_file_path.open() as f:
                 try:
                     json_data = json.load(f)
                 except json.decoder.JSONDecodeError:
                     log.error(
                         "Could not parse the configuration file: %s\nIs it valid json?",
-                        self.config_file_path,
+                        self._config_file_path,
                     )
-                    self.valid_user = False
+                    self._valid_user = False
                 else:
                     results.update(json_data)
         return results
 
-    def load_user(self, app_name: str = "") -> dict[str, Any]:
+    def _load_user(self, prefix: str | None = None) -> dict[str, Any]:
         """Attempt to load JSON configuration file."""
         results = {}
         # Load config file
-        json_data = self.load_config_file()
+        json_data = self._load_config_file()
         # Load section for the current app
-        if app_name:
-            json_data = json_data.get(self.app_name, {})
-        # Validate the configuration file
-        try:
-            # Validate a copy so the original data is not modified
-            fastjsonschema.validate(self.schema, dict(json_data))
-        except fastjsonschema.JsonSchemaValueException as error:
-            log.warning("Error in config file: `%s`: %s", self.config_file_pathi, error)
-            self.valid_user = False
-        else:
-            results.update(json_data)
+        if prefix is not None:
+            json_data = json_data.get(prefix, {})
+        for name, value in json_data.items():
+            if (setting := self._settings.get(name)) is not None:
+                # Attempt to cast the value to the desired type
+                try:
+                    value = setting.type(value)
+                except (ValueError, TypeError):
+                    pass
+            results[name] = value
         return results
 
-    def get(self, name: str, default: Any = None) -> Any:
-        """Access a configuration value, falling back to the default value if unset.
+    def _register_commands(self, setting: Setting) -> None:
+        """Register commands to set this setting."""
+        cmd_name = setting.name.replace("_", "-")
+        schema = setting.schema
 
-        Args:
-            name: The name of the attribute to access.
-            default: The value to return if the name is not found
+        if schema.get("type") == "array":
+            for choice in setting.choices or schema.get("items", {}).get("enum") or []:
+                add_cmd(
+                    name=f"toggle-{cmd_name}-{choice}",
+                    hidden=setting.hidden,
+                    toggled=Condition(
+                        partial(lambda x: x in self._values[setting.name], choice)
+                    ),
+                    title=f"Add {choice} to {setting.title} setting",
+                    menu_title=str(choice).replace("_", " ").capitalize(),
+                    description=f'Add or remove "{choice}" to or from the list of "{setting.name}"',
+                    filter=setting.cmd_filter,
+                )(
+                    partial(
+                        lambda choice: (
+                            self._values[setting.name].remove
+                            if choice in getattr(self, setting.name)
+                            else self._values[setting.name].append
+                        )(choice),
+                        choice,
+                    )
+                )
 
-        Returns:
-            The configuration variable value.
+        elif setting.type is bool:
+            add_cmd(
+                name=f"toggle-{cmd_name}",
+                toggled=Condition(lambda: bool(self._values[setting.name])),
+                hidden=setting.hidden,
+                title=f"Toggle {setting.title}",
+                menu_title=setting.kwargs.get("menu_title", setting.title.capitalize()),
+                description=setting.help,
+                filter=setting.cmd_filter,
+            )(partial(self.toggle, setting.name))
 
-        """
-        if name in self.settings:
-            return self.settings[name].value
+        elif setting.type is int or setting.choices is not None:
+            add_cmd(
+                name=f"switch-{cmd_name}",
+                hidden=setting.hidden,
+                title=f"Switch {setting.title}",
+                menu_title=setting.kwargs.get("menu_title"),
+                description=f'Switch the value of the "{setting.name}" configuration option.',
+                filter=setting.cmd_filter,
+            )(partial(self.toggle, setting.name))
+
+        for choice in setting.choices or schema.get("enum", []) or []:
+            add_cmd(
+                name=f"set-{cmd_name}-{choice}",
+                hidden=setting.hidden,
+                toggled=Condition(
+                    partial(lambda x: self._values[setting.name] == x, choice)
+                ),
+                title=f"Set {setting.title} to {choice}",
+                menu_title=str(choice).replace("_", " ").capitalize(),
+                description=f'Set the value of the "{setting.name}" '
+                f'configuration option to "{choice}"',
+                filter=setting.cmd_filter,
+            )(partial(setattr, self, setting.name, choice))
+
+    def toggle(self, name: str) -> None:
+        """Toggle the setting's value."""
+        setting = self._settings[name]
+        value = self._values[name]
+
+        if setting.type is bool:
+            new = not value
+        elif (
+            setting.type is int
+            and "minimum" in (schema := setting.schema)
+            and "maximum" in schema
+        ):
+            new = schema["minimum"] + (value - schema["minimum"] + 1) % (
+                schema["maximum"] + 1
+            )
+        elif setting.choices is not None:
+            new = setting.choices[
+                (setting.choices.index(value) + 1) % len(setting.choices)
+            ]
         else:
-            return default
+            raise NotImplementedError
+        setattr(self, name, new)
 
-    def get_item(self, name: str) -> Any:
-        """Access a configuration item.
+    def __getattribute__(self, name: str) -> Any:
+        """Enable access of config elements via dotted attributes."""
+        try:
+            return super().__getattribute__(name)
+        except AttributeError as exc:
+            if name in self._values:
+                return self._values[name]
+            raise exc
 
-        Args:
-            name: The name of the attribute to access.
+    def __setattr__(self, name: str, value: Any) -> None:
+        """Set a configuration attribute."""
+        if name in self._settings:
+            self._values[name] = value
+            getattr(self.events, name)()
+        else:
+            super().__setattr__(name, value)
 
-        Returns:
-            The configuration item.
-
-        """
-        return self.settings.get(name)
-
-    def filter(self, name: str) -> Filter:
-        """Return a :py:class:`Filter` for a configuration item."""
-        return Condition(partial(self.get, name))
-
-    def __getattr__(self, name: str) -> Any:
-        """Enable access of config elements via dotted attributes.
-
-        Args:
-            name: The name of the attribute to access.
-
-        Returns:
-            The configuration variable value.
-
-        """
-        return self.get(name)
-
-    def __setitem__(self, name: str, value: Any) -> None:
-        """Set a configuration attribute.
-
-        Args:
-            name: The name of the attribute to set.
-            value: The value to give the attribute.
-
-        """
-        setting = self.settings[name]
-        setting.value = value
+    @classmethod
+    def add_setting(cls, name: str, *args: Any, **kwargs: Any) -> None:
+        """Register a new config item."""
+        setting = Setting(name, *args, **kwargs)
+        Config._settings[name] = setting
 
 
-def add_setting(
-    name: str,
-    default: Any,
-    help_: str,
-    description: str,
-    type_: Callable[[Any], Any] | None = None,
-    action: argparse.Action | str | None = None,
-    flags: list[str] | None = None,
-    schema: dict[str, Any] | None = None,
-    nargs: str | int | None = None,
-    hidden: FilterOrBool = False,
-    hooks: list[Callable[[Setting], None]] | None = None,
-    cmd_filter: FilterOrBool = True,
-    **kwargs: Any,
-) -> None:
-    """Register a new config item."""
-    Config.settings[name] = Setting(
-        name=name,
-        default=default,
-        help_=help_,
-        description=description,
-        type_=type_,
-        action=action,
-        flags=flags,
-        schema=schema,
-        nargs=nargs,
-        hidden=hidden,
-        hooks=hooks,
-        cmd_filter=cmd_filter,
-        **kwargs,
-    )
-
-
-# ################################### Settings ####################################
-
-add_setting(
-    name="version",
-    default=False,
-    flags=["--version", "-V"],
-    action="version",
-    hidden=True,
-    version=f"%(prog)s {__version__}",
-    help_="Show the version number and exit",
-    description="""
-        If set, euporie will print the current version number of the application and exit.
-        All other configuration options will be ignored.
-
-        .. note::
-
-           This cannot be set in the configuration file or via an environment variable
-    """,
-)
+add_setting = Config.add_setting

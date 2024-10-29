@@ -37,8 +37,8 @@ from prompt_toolkit.layout.utils import explode_text_fragments
 from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
 from prompt_toolkit.utils import get_cwidth
 
+from euporie.core.app.current import get_app
 from euporie.core.border import OuterHalfGrid
-from euporie.core.current import get_app
 from euporie.core.layout.containers import HSplit, VSplit, Window
 from euporie.core.widgets.decor import Shadow
 from euporie.core.widgets.status import StatusContainer
@@ -57,7 +57,7 @@ if TYPE_CHECKING:
     from prompt_toolkit.layout.containers import AnyContainer
     from prompt_toolkit.layout.controls import UIControl
 
-    from euporie.core.app import BaseApp
+    from euporie.core.app.app import BaseApp
     from euporie.core.border import GridStyle
     from euporie.core.commands import Command
     from euporie.core.widgets.status import StatusBarFields

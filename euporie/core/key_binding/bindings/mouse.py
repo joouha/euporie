@@ -24,7 +24,7 @@ from prompt_toolkit.mouse_events import MouseButton, MouseEventType, MouseModifi
 from prompt_toolkit.mouse_events import MouseEvent as PtkMouseEvent
 from prompt_toolkit.renderer import HeightIsUnknownError
 
-from euporie.core.app import BaseApp
+from euporie.core.app.app import BaseApp
 
 if TYPE_CHECKING:
     from prompt_toolkit.key_binding.key_bindings import NotImplementedOrNone

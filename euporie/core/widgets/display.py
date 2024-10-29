@@ -16,9 +16,9 @@ from prompt_toolkit.layout.controls import GetLinePrefixCallable, UIContent, UIC
 from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
 from prompt_toolkit.utils import Event, to_str
 
+from euporie.core.app.current import get_app
 from euporie.core.commands import add_cmd
 from euporie.core.convert.datum import Datum
-from euporie.core.current import get_app
 from euporie.core.filters import display_has_focus, scrollable
 from euporie.core.ft.utils import wrap
 from euporie.core.graphics import GraphicProcessor

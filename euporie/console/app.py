@@ -6,7 +6,6 @@ import logging
 from typing import TYPE_CHECKING, cast
 
 from prompt_toolkit.application.current import get_app as ptk_get_app
-from prompt_toolkit.application.run_in_terminal import in_terminal
 from prompt_toolkit.filters.app import (
     has_completions,
     is_done,
@@ -24,9 +23,7 @@ from prompt_toolkit.layout.dimension import Dimension
 
 from euporie.console.tabs.console import Console
 from euporie.core import __logo__
-from euporie.core.app import BaseApp
-from euporie.core.commands import add_cmd
-from euporie.core.config import add_setting
+from euporie.core.app.app import BaseApp
 from euporie.core.filters import has_dialog
 from euporie.core.layout.mouse import DisableMouseOnScroll
 from euporie.core.widgets.dialog import (
@@ -63,7 +60,6 @@ class ConsoleApp(BaseApp):
     """
 
     name = "console"
-    log_stdout_level = "ERROR"
 
     def __init__(self, **kwargs: Any) -> None:
         """Create a new euporie text user interface application instance."""
@@ -72,7 +68,7 @@ class ConsoleApp(BaseApp):
         kwargs.setdefault("title", "euporie-console")
         kwargs.setdefault("full_screen", False)
         kwargs.setdefault("leave_graphics", True)
-        kwargs.setdefault("mouse_support", self.config.filter("mouse_support"))
+        kwargs.setdefault("mouse_support", self.config.filters.mouse_support)
 
         # Initialize the application
         super().__init__(**kwargs)
@@ -161,54 +157,6 @@ class ConsoleApp(BaseApp):
             super().exit(exception=exception, style=style)
         else:
             super().exit()
-
-    # ################################### Commands ####################################
-
-    @staticmethod
-    @add_cmd()
-    async def _convert_to_notebook() -> None:
-        """Convert the current console session to a notebook."""
-        from euporie.notebook.app import NotebookApp
-        from euporie.notebook.tabs.notebook import Notebook
-
-        app = get_app()
-        nb_app = NotebookApp()
-        for tab in app.tabs:
-            if isinstance(tab, Console):
-                nb = Notebook(
-                    app=nb_app,
-                    path=tab.path,
-                    kernel=tab.kernel,
-                    comms=tab.comms,
-                    json=tab.json,
-                )
-                # Set the history to the console's history
-                nb.history = tab.history
-                # Add the current input
-                nb.add(len(nb.json["cells"]) + 1, source=tab.input_box.buffer.text)
-                # Add the new notebook to the notebook app
-                nb_app.tabs.append(nb)
-                # Tell notebook that the kernel has already started
-                nb.kernel_started()
-
-        async with in_terminal():
-            await nb_app.run_async()
-
-        app.exit()
-
-    # ################################### Settings ####################################
-
-    add_setting(
-        name="mouse_support",
-        flags=["--mouse-support"],
-        type_=bool,
-        help_="Enable or disable mouse support",
-        default=None,
-        description="""
-            When set to True, mouse support is enabled. When set to False, mouse
-            support is disabled.
-        """,
-    )
 
     # ################################# Key Bindings ##################################
 

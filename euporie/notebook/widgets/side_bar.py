@@ -16,8 +16,6 @@ from prompt_toolkit.layout.containers import (
 )
 from prompt_toolkit.layout.controls import FormattedTextControl
 
-from euporie.core.commands import add_cmd
-from euporie.core.config import add_setting
 from euporie.core.key_binding.registry import register_bindings
 from euporie.core.layout.decor import Line
 from euporie.core.widgets.forms import ToggleButton, ToggleButtons
@@ -85,7 +83,7 @@ class SideBar:
         panels: Sequence[AnyContainer],
     ) -> None:
         """Initialize a new side-bar object."""
-        from euporie.core.current import get_app
+        from euporie.core.app.current import get_app
 
         self.side_bar_buttons = SideBarButtons(
             options=list(icons),
@@ -158,7 +156,7 @@ class SideBar:
                 ],
                 style="class:side_bar",
             ),
-            filter=get_app().config.filter("show_side_bar"),
+            filter=get_app().config.filters.show_side_bar,
         )
 
     def toggle_pane(self) -> None:
@@ -171,33 +169,6 @@ class SideBar:
     def __pt_container__(self) -> AnyContainer:
         """Return the side_bar's main container."""
         return self.container
-
-    # ################################### Settings ####################################
-
-    add_setting(
-        name="show_side_bar",
-        flags=["--show-side-bar"],
-        type_=bool,
-        title="side-bar",
-        help_="Show the side-bar",
-        default=False,
-        schema={
-            "type": "boolean",
-        },
-        description="""
-            Whether the side-bar should be shown at the side of the screen.
-        """,
-    )
-
-    # ################################### Commands ####################################
-
-    @staticmethod
-    @add_cmd()
-    def _toggle_side_bar_pane() -> None:
-        """Open or close the current side-bar pane."""
-        from euporie.notebook.current import get_app
-
-        get_app().side_bar.toggle_pane()
 
     # ################################# Key Bindings ##################################
 

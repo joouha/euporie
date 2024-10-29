@@ -49,9 +49,8 @@ from prompt_toolkit.widgets import TextArea
 from prompt_toolkit.widgets.toolbars import SearchToolbar
 from pygments.lexers import ClassNotFound, get_lexer_by_name
 
+from euporie.core.app.current import get_app
 from euporie.core.commands import add_cmd
-from euporie.core.config import add_setting
-from euporie.core.current import get_app
 from euporie.core.diagnostics import Report
 from euporie.core.filters import buffer_is_code, scrollable
 from euporie.core.key_binding.registry import (
@@ -295,7 +294,7 @@ class KernelInput(TextArea):
                     diagnostics=_get_diagnostics,
                     show_diagnostics=to_filter(show_diagnostics),
                 ),
-                app.config.filter("line_numbers") & self.buffer.multiline,
+                app.config.filters.line_numbers & self.buffer.multiline,
             ),
         ]
         right_margins = [OverflowMargin()]
@@ -428,64 +427,6 @@ class KernelInput(TextArea):
         """Return the widget's container."""
         return self.container
 
-    # ################################### Settings ####################################
-
-    add_setting(
-        name="line_numbers",
-        flags=["--line-numbers"],
-        type_=bool,
-        help_="Show or hide line numbers",
-        default=True,
-        description="""
-            Whether line numbers are shown by default.
-        """,
-        hooks=[lambda x: get_app().refresh()],
-    )
-
-    add_setting(
-        name="autoformat",
-        flags=["--autoformat"],
-        type_=bool,
-        help_="Automatically re-format code cells when run",
-        default=False,
-        description="""
-            Whether to automatically reformat code cells before they are run.
-        """,
-    )
-
-    add_setting(
-        name="autocomplete",
-        flags=["--autocomplete"],
-        type_=bool,
-        help_="Provide completions suggestions automatically",
-        default=False,
-        description="""
-            Whether to automatically suggestion completions while typing in code cells.
-        """,
-    )
-
-    add_setting(
-        name="autosuggest",
-        flags=["--autosuggest"],
-        type_=bool,
-        help_="Provide line completion suggestions",
-        default=True,
-        description="""
-            Whether to automatically suggestion line content while typing in code cells.
-        """,
-    )
-
-    add_setting(
-        name="autoinspect",
-        flags=["--autoinspect"],
-        type_=bool,
-        help_="Display contextual help automatically",
-        default=False,
-        description="""
-            Whether to automatically display contextual help when navigating through code cells.
-        """,
-    )
-
     # ################################### Commands ####################################
 
     @staticmethod
@@ -494,7 +435,7 @@ class KernelInput(TextArea):
     )
     async def _show_contextual_help() -> None:
         """Display contextual help."""
-        from euporie.core.tabs.base import KernelTab
+        from euporie.core.tabs.kernel import KernelTab
 
         tab = get_app().tab
         if isinstance(tab, KernelTab) and (input_box := tab.current_input) is not None:
@@ -504,7 +445,7 @@ class KernelInput(TextArea):
     @add_cmd(filter=buffer_is_code & buffer_has_focus)
     def _history_prev() -> None:
         """Get the previous history entry."""
-        from euporie.core.app import get_app
+        from euporie.core.app.current import get_app
 
         get_app().current_buffer.history_backward()
 
@@ -512,7 +453,7 @@ class KernelInput(TextArea):
     @add_cmd(filter=buffer_is_code & buffer_has_focus)
     def _history_next() -> None:
         """Get the next history entry."""
-        from euporie.core.app import get_app
+        from euporie.core.app.current import get_app
 
         get_app().current_buffer.history_forward()
 
@@ -520,8 +461,8 @@ class KernelInput(TextArea):
     @add_cmd()
     def _reformat_input() -> None:
         """Format the contents of the current input field."""
-        from euporie.core.app import get_app
-        from euporie.core.tabs.base import KernelTab
+        from euporie.core.app.current import get_app
+        from euporie.core.tabs.kernel import KernelTab
 
         if (
             (tab := get_app().tab)

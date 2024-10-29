@@ -47,8 +47,8 @@ from prompt_toolkit.utils import Event
 from prompt_toolkit.validation import Validator
 from prompt_toolkit.widgets.base import TextArea
 
+from euporie.core.app.current import get_app
 from euporie.core.border import InsetGrid
-from euporie.core.current import get_app
 from euporie.core.data_structures import DiBool
 from euporie.core.ft.utils import FormattedTextAlign, align
 from euporie.core.margins import MarginContainer, ScrollbarMargin

@@ -12,10 +12,8 @@ from typing import TYPE_CHECKING, cast
 from prompt_toolkit.layout.containers import DynamicContainer, FloatContainer, Window
 from prompt_toolkit.output.defaults import create_output
 from prompt_toolkit.output.vt100 import Vt100_Output
-from upath import UPath
 
-from euporie.core.app import BaseApp, get_app
-from euporie.core.config import add_setting
+from euporie.core.app.app import BaseApp, get_app
 from euporie.core.io import PseudoTTY
 from euporie.core.key_binding.registry import register_bindings
 from euporie.preview.tabs.notebook import PreviewNotebook
@@ -193,33 +191,8 @@ class PreviewApp(BaseApp):
     def _update_invalidate_events(self) -> None:
         """Do nothing, as we don't need invalidation events for the preview app."""
 
-    # ################################### Settings ####################################
-
-    add_setting(
-        name="output_file",
-        flags=["--output-file"],
-        nargs="?",
-        default="-",
-        const="-",
-        type_=UPath,
-        help_="Output path when previewing file",
-        description="""
-            When set to a file path, the formatted output will be written to the
-            given path. If no value is given (or the default "-" is passed) output
-            will be printed to standard output.
-        """,
-    )
-
-    add_setting(
-        name="page",
-        flags=["--page"],
-        type_=bool,
-        help_="Pass output to pager",
-        default=False,
-        description="""
-            Whether to pipe output to the system pager when previewing a notebook.
-        """,
-    )
+    # def load_key_bindings(self) -> None:
+    #     """Do no load any additional key-bindings for the preview app."""
 
     # ################################# Key Bindings ##################################
 

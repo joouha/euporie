@@ -6,8 +6,8 @@ import logging
 from functools import lru_cache
 from typing import TYPE_CHECKING
 
+from euporie.core.app.current import get_app
 from euporie.core.convert.registry import register
-from euporie.core.current import get_app
 from euporie.core.lexers import detect_lexer
 
 if TYPE_CHECKING:

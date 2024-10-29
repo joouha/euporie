@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 
     from prompt_toolkit.layout.containers import AnyContainer
 
-    from euporie.core.app import BaseApp
+    from euporie.core.app.app import BaseApp
     from euporie.core.comm.base import Comm
     from euporie.core.widgets.status import StatusBarFields
 

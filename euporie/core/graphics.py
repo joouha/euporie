@@ -20,9 +20,9 @@ from prompt_toolkit.layout.mouse_handlers import MouseHandlers
 from prompt_toolkit.layout.screen import Char, WritePosition
 from prompt_toolkit.utils import get_cwidth
 
+from euporie.core.app.current import get_app
 from euporie.core.convert.datum import Datum
 from euporie.core.convert.registry import find_route
-from euporie.core.current import get_app
 from euporie.core.data_structures import DiInt
 from euporie.core.filters import has_float, in_mplex
 from euporie.core.ft.utils import _ZERO_WIDTH_FRAGMENTS

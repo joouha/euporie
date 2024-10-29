@@ -17,7 +17,7 @@ from prompt_toolkit.layout.layout import walk
 from prompt_toolkit.layout.mouse_handlers import MouseHandlers
 from prompt_toolkit.mouse_events import MouseEvent
 
-from euporie.core.current import get_app
+from euporie.core.app.current import get_app
 from euporie.core.data_structures import DiInt
 from euporie.core.layout.screen import BoundedWritePosition, Screen
 

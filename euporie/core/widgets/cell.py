@@ -27,10 +27,9 @@ from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.layout.dimension import Dimension
 from prompt_toolkit.utils import Event
 
+from euporie.core.app.current import get_app
 from euporie.core.border import NoLine, ThickLine, ThinLine
 from euporie.core.completion import DeduplicateCompleter, LspCompleter
-from euporie.core.config import add_setting
-from euporie.core.current import get_app
 from euporie.core.diagnostics import Report
 from euporie.core.filters import multiple_cells_selected
 from euporie.core.format import LspFormatter
@@ -218,6 +217,23 @@ class Cell:
                 return getattr(grid, name.upper())
 
             return _inner
+
+        # @lru_cache(maxsize=None)
+        # def _cell_border_char(
+        #     name: str,
+        #     show_cell_borders: bool,
+        #     focused: bool,
+        #     selected: bool,
+        #     multiple_cells_selected: bool,
+        # ) -> str:
+        #     if show_cell_borders or selected:
+        #         if focused and multiple_cells_selected:
+        #             grid = ThickLine.outer
+        #         else:
+        #             grid = ThinLine.outer
+        #     else:
+        #         grid = NoLine.grid
+        #     return getattr(grid, name.upper())
 
         self.control = Window(
             FormattedTextControl(
@@ -910,49 +926,3 @@ class Cell:
     def close(self) -> None:
         """Signal that the cell is no longer present in the notebook."""
         self.on_close()
-
-    # ################################### Settings ####################################
-
-    add_setting(
-        name="show_cell_borders",
-        title="cell borders",
-        flags=["--show-cell-borders"],
-        type_=bool,
-        help_="Show or hide cell borders.",
-        default=False,
-        schema={
-            "type": "boolean",
-        },
-        description="""
-            Whether cell borders should be drawn for unselected cells.
-        """,
-    )
-
-    add_setting(
-        name="external_editor",
-        flags=["--external-editor"],
-        type_=str,
-        help_="Set the external editor to use.",
-        default=None,
-        description="""
-            A command to run when editing cells externally. The following strings in
-            the command will be replaced with values which locate the cell being
-            edited:
-
-            * ``{top}``
-            * ``{left}``
-            * ``{bottom}``
-            * ``{right}``
-            * ``{width}``
-            * ``{height}``
-
-            This is useful if you run euporie inside a tmux session, and wish to launch
-            your editor in a pop-up pane. This can be achieved by setting this parameter
-            to something like the following:
-
-            .. code-block::
-
-               "tmux display-popup -x {left} -y {bottom} -w {width} -h {height} -B -E micro"
-
-        """,
-    )

@@ -27,6 +27,7 @@ from prompt_toolkit.layout.dimension import Dimension
 from prompt_toolkit.utils import Event
 from upath import UPath
 
+from euporie.core.app.current import get_app
 from euporie.core.border import (
     DiLineStyle,
     DoubleLine,
@@ -50,7 +51,6 @@ from euporie.core.border import (
 )
 from euporie.core.convert.datum import Datum, get_loop
 from euporie.core.convert.mime import get_format
-from euporie.core.current import get_app
 from euporie.core.data_structures import DiBool, DiInt, DiStr
 from euporie.core.ft.table import Cell, Table, compute_padding
 from euporie.core.ft.utils import (
@@ -4992,15 +4992,15 @@ if __name__ == "__main__":
     from prompt_toolkit.shortcuts.utils import print_formatted_text
     from prompt_toolkit.styles.style import Style
 
-    from euporie.core.app import BaseApp
+    from euporie.core.app.dummy import DummyApp
     from euporie.core.path import parse_path
     from euporie.core.style import HTML_STYLE
 
     path = parse_path(sys.argv[1])
 
     with create_app_session(
-        input=BaseApp.load_input(), output=BaseApp.load_output()
-    ), set_app(BaseApp()):
+        input=DummyApp.load_input(), output=DummyApp.load_output()
+    ), set_app(DummyApp()):
         print_formatted_text(
             HTML(
                 path.read_text(),

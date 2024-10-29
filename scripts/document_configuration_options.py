@@ -18,7 +18,7 @@ else:
 for entry in APP_ENTRY_POINTS:
     entry.load()
 
-for name, setting in Config.settings.items():
+for name, setting in Config._settings.items():
     print(f".. option:: {name}\n")
     if setting.flags and setting.flags[0].startswith("-"):
         print(

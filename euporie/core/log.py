@@ -21,7 +21,6 @@ from prompt_toolkit.shortcuts.utils import print_formatted_text
 from prompt_toolkit.styles.pygments import style_from_pygments_cls
 from prompt_toolkit.styles.style import Style, merge_styles
 
-from euporie.core.config import add_setting
 from euporie.core.ft.utils import indent, lex, wrap
 from euporie.core.io import PseudoTTY
 from euporie.core.style import LOG_STYLE, get_style_by_name
@@ -479,7 +478,7 @@ def setup_logs(config: Config | None = None) -> None:
     }
 
     if config is not None:
-        log_file = config.get("log_file", "")
+        log_file = config.log_file or ""
         log_file_is_stdout = log_file in {"-", "/dev/stdout"}
         log_level = config.log_level.upper()
 
@@ -496,18 +495,14 @@ def setup_logs(config: Config | None = None) -> None:
         # Configure stdout handler
         if log_file_is_stdout:
             stdout_level = log_level
-        elif (app_cls := config.app_cls) is not None and (
-            log_stdout_level := app_cls.log_stdout_level
-        ):
-            stdout_level = log_stdout_level.upper()
         else:
-            stdout_level = "CRITICAL"
+            stdout_level = config.log_level_stdout.upper()
         log_config["handlers"]["stdout"]["level"] = stdout_level
-        if syntax_theme := config.get("syntax_theme"):
+        if syntax_theme := config.syntax_theme:
             log_config["handlers"]["stdout"]["pygments_theme"] = syntax_theme
 
         # Configure euporie logger
-        log_config["loggers"]["euporie"]["level"] = config.log_level.upper()
+        log_config["loggers"]["euporie"]["level"] = log_level
 
         # Update log_config based on additional config dict provided
         if config.log_config:
@@ -526,46 +521,3 @@ def setup_logs(config: Config | None = None) -> None:
 
     # Log uncaught exceptions
     sys.excepthook = handle_exception
-
-
-# ################################### Settings ########################################
-
-
-add_setting(
-    name="log_file",
-    flags=["--log-file"],
-    nargs="?",
-    default="",
-    type_=str,
-    title="the log file path",
-    help_="File path for logs",
-    description="""
-        When set to a file path, the log output will be written to the given path.
-        If no value is given output will be sent to the standard output.
-    """,
-)
-
-add_setting(
-    name="log_level",
-    flags=["--log-level"],
-    type_=str,
-    default="warning",
-    title="the log level",
-    help_="Set the log level",
-    choices=["debug", "info", "warning", "error", "critical"],
-    description="""
-        When set, logging events at the given level are emitted.
-    """,
-)
-
-add_setting(
-    name="log_config",
-    flags=["--log-config"],
-    type_=str,
-    default=None,
-    title="additional logging configuration",
-    help_="Additional logging configuration",
-    description="""
-        A JSON string specifying additional logging configuration.
-    """,
-)

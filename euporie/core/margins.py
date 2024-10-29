@@ -17,7 +17,7 @@ from prompt_toolkit.layout.screen import WritePosition
 from prompt_toolkit.mouse_events import MouseButton, MouseEventType
 from prompt_toolkit.mouse_events import MouseEvent as PtkMouseEvent
 
-from euporie.core.current import get_app
+from euporie.core.app.current import get_app
 from euporie.core.key_binding.bindings.mouse import MouseEvent, RelativePosition
 from euporie.core.layout.containers import Window
 

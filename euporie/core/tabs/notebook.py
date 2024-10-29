@@ -9,7 +9,7 @@ from functools import partial
 from typing import TYPE_CHECKING
 
 import nbformat
-from prompt_toolkit.filters import Never, buffer_has_focus
+from prompt_toolkit.filters import Never
 
 from euporie.core.comm.registry import open_comm
 from euporie.core.commands import get_cmd
@@ -33,7 +33,7 @@ if TYPE_CHECKING:
     from prompt_toolkit.filters import Filter
     from prompt_toolkit.layout.containers import AnyContainer
 
-    from euporie.core.app import BaseApp
+    from euporie.core.app.app import BaseApp
     from euporie.core.comm.base import Comm
     from euporie.core.kernel.client import Kernel
     from euporie.core.lsp import LspClient
@@ -457,44 +457,3 @@ class BaseNotebook(KernelTab, metaclass=ABCMeta):
     def lsp_update_diagnostics(self, lsp: LspClient) -> None:
         """Process a new diagnostic report from the LSP."""
         # Do nothing, these are handled by cells
-
-    # ################################### Settings ####################################
-
-    add_setting(
-        name="save_widget_state",
-        flags=["--save-widget-state"],
-        type_=bool,
-        help_="Save a notebook's widget state in the notebook metadata",
-        default=True,
-        description="""
-            When set to ``True``, the state of any widgets in the current notebook will
-            be saves in the notebook's metadata. This enables widgets to be displayed
-            when the notebook is re-opened without having to re-run the notebook.
-        """,
-    )
-
-    add_setting(
-        name="max_notebook_width",
-        flags=["--max-notebook-width"],
-        type_=int,
-        help_="Maximum width of notebooks",
-        default=120,
-        schema={
-            "minimum": 1,
-        },
-        description="""
-            The maximum width at which to display a notebook.
-        """,
-    )
-
-    add_setting(
-        name="expand",
-        flags=["--expand"],
-        type_=bool,
-        help_="Use the full width to display notebooks",
-        default=False,
-        description="""
-            Whether the notebook page should expand to fill the available width
-        """,
-        cmd_filter=~buffer_has_focus,
-    )

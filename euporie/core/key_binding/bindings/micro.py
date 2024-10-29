@@ -40,8 +40,8 @@ from prompt_toolkit.key_binding.bindings.scroll import (
 from prompt_toolkit.keys import Keys
 from prompt_toolkit.selection import SelectionState, SelectionType
 
+from euporie.core.app.current import get_app
 from euporie.core.commands import add_cmd, get_cmd
-from euporie.core.current import get_app
 from euporie.core.filters import (
     buffer_is_code,
     buffer_is_markdown,
