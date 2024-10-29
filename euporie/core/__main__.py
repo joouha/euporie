@@ -1,10 +1,32 @@
 """Main entry point into euporie.core."""
 
+from __future__ import annotations
 
-def main(name: "str" = "launch") -> "None":
+from functools import lru_cache
+from importlib.metadata import entry_points
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from importlib.metadata import EntryPoint
+
+
+@lru_cache(maxsize=None)
+def available_apps() -> dict[str, EntryPoint]:
+    """Return a list of loadable euporie apps."""
+    try:
+        eps = entry_points(group="euporie.apps")
+    except TypeError:
+        eps = entry_points()
+    if isinstance(eps, dict):
+        points = eps.get("euporie.apps")
+    else:
+        points = eps.select(group="euporie.apps")
+    apps = {x.name: x for x in points} if points else {}
+    return apps
+
+
+def main(name: str = "launch") -> None:
     """Load and launches the application."""
-    from importlib.metadata import entry_points
-
     # Register extensions to external packages
     from euporie.core import (
         path,  # noqa F401
@@ -14,13 +36,7 @@ def main(name: "str" = "launch") -> "None":
     # Monkey-patch prompt_toolkit
     from euporie.core.layout import containers  # noqa: F401
 
-    eps = entry_points()
-    if isinstance(eps, dict):
-        points = eps.get("euporie.apps")
-    else:
-        points = eps.select(group="euporie.apps")
-    apps = {x.name: x for x in points} if points else {}
-
+    apps = available_apps()
     if entry := apps.get(name):
         return entry.load().launch()
     else:
