@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 
     from prompt_toolkit.document import Document
 
-    from euporie.core.kernel import Kernel
+    from euporie.core.kernel.client import Kernel
     from euporie.core.lsp import LspClient
 
 log = logging.getLogger(__name__)

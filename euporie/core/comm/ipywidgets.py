@@ -20,7 +20,7 @@ from prompt_toolkit.layout.processors import BeforeInput
 from euporie.core.comm.base import Comm, CommView
 from euporie.core.convert.datum import Datum
 from euporie.core.data_structures import DiBool
-from euporie.core.kernel import MsgCallbacks
+from euporie.core.kernel.client import MsgCallbacks
 from euporie.core.layout.decor import FocusedStyle
 from euporie.core.widgets.cell_outputs import CellOutputArea
 from euporie.core.widgets.display import Display
@@ -52,7 +52,7 @@ if TYPE_CHECKING:
     from prompt_toolkit.formatted_text.base import AnyFormattedText
     from prompt_toolkit.layout.containers import AnyContainer, _Split
 
-    from euporie.core.comm.base import KernelTab
+    from euporie.core.tabs.kernel import KernelTab
     from euporie.core.widgets.cell_outputs import OutputParent
     from euporie.core.widgets.forms import SelectableWidget, ToggleableWidget
     from euporie.core.widgets.layout import StackedSplit

@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from prompt_toolkit.filters import Filter
     from prompt_toolkit.history import History
 
-    from euporie.core.kernel import Kernel
+    from euporie.core.kernel.client import Kernel
 
 log = logging.getLogger(__name__)
 
