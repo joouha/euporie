@@ -239,12 +239,17 @@ class StdoutFormatter(FtFormatter):
         msg_pad = len(date) + 10
         msg_pad_1st_line = msg_pad + 1 + len(ref)
 
-        msg_lines = textwrap.wrap(
-            record.message,
-            width=width,
-            initial_indent=" " * msg_pad_1st_line,
-            subsequent_indent=" " * msg_pad,
-        )
+        msg_lines = "\n".join(
+            textwrap.wrap(
+                record.message,
+                width=width,
+                initial_indent=" " * msg_pad_1st_line,
+                replace_whitespace=False,
+            )
+        ).split("\n")
+        subsequent_indent = " " * msg_pad
+        for i in range(1, len(msg_lines)):
+            msg_lines[i] = f"{subsequent_indent}{msg_lines[i]}"
 
         output: StyleAndTextTuples = [
             ("class:pygments.literal.date", date),
