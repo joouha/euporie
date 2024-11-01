@@ -157,7 +157,7 @@ class DisplayControl(UIControl):
             extend=not self.dont_extend_width(),
         )
         if width and height:
-            key = Datum.add_size(datum, Size(self.height, self.width))
+            key = Datum.add_size(datum, Size(height, width))
             ft = [(f"[Graphic_{key}]", ""), *ft]
         lines = list(split_lines(ft))
         if wrap_lines and width:
@@ -194,13 +194,14 @@ class DisplayControl(UIControl):
         )
 
     def render(self) -> None:
-        """Render the HTML DOM in a thread."""
+        """Render the content in a thread."""
         datum = self.datum
         wrap_lines = self.wrap_lines()
 
-        max_cols, aspect = self.datum.cell_size()
-        cols = min(max_cols, self.width) if max_cols else self.width
-        rows = ceil(cols * aspect) if aspect else self.height
+        cols = self.preferred_width(self.width)
+        rows = self.preferred_height(
+            self.width, self.height, wrap_lines=wrap_lines, get_line_prefix=None
+        )
 
         def _render() -> None:
             cp = self.color_palette
@@ -224,9 +225,6 @@ class DisplayControl(UIControl):
 
     def preferred_width(self, max_available_width: int) -> int | None:
         """Calculate and return the preferred width of the control."""
-        max_cols, aspect = self.datum.cell_size()
-        if max_cols:
-            return min(max_cols, max_available_width)
         return self._max_line_width_cache[
             self.datum, max_available_width, None, self.wrap_lines()
         ]
