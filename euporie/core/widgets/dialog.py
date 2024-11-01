@@ -543,7 +543,7 @@ class OpenFileDialog(FileDialog):
                     self.file_browser.control.dir = path
                 elif path.is_file():
                     self.hide()
-                    self.app.open_file(path, tab_class=self.tab_dd.value)
+                    self.app.open_file(path, tab_class=self.tab_dd.value.tab_class)
                 return
             else:
                 self.show(
