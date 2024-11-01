@@ -11,8 +11,6 @@ import threading
 from typing import TYPE_CHECKING, Generic, TypeVar
 from weakref import ReferenceType, WeakValueDictionary, finalize, ref
 
-import imagesize
-from PIL.Image import Image as PilImage
 from prompt_toolkit.data_structures import Size
 from prompt_toolkit.layout.containers import WindowAlign
 
@@ -28,6 +26,7 @@ if TYPE_CHECKING:
     from pathlib import Path
     from typing import Any, ClassVar, Coroutine
 
+    from PIL.Image import Image as PilImage
     from prompt_toolkit.formatted_text.base import StyleAndTextTuples
     from rich.console import ConsoleRenderable
 
@@ -35,7 +34,7 @@ if TYPE_CHECKING:
     from euporie.core.style import ColorPaletteColor
 
 
-T = TypeVar("T", bytes, str, "StyleAndTextTuples", PilImage, "ConsoleRenderable")
+T = TypeVar("T", bytes, str, "StyleAndTextTuples", "PilImage", "ConsoleRenderable")
 
 
 log = logging.getLogger(__name__)
@@ -166,22 +165,28 @@ class Datum(Generic[T], metaclass=_MetaDatum):
             return data.encode()
         elif isinstance(data, list):
             return to_plain_text(data).encode()
-        elif isinstance(data, PilImage):
-            return data.tobytes()
         elif isinstance(data, bytes):
             return data
         else:
-            return b"Error"
+            from PIL.Image import Image as PilImage
+
+            if isinstance(data, PilImage):
+                return data.tobytes()
+            else:
+                return b"Error"
 
     @staticmethod
     def get_hash(data: Any) -> str:
         """Calculate a hash of data."""
         if isinstance(data, str):
             hash_data = data.encode()
-        elif isinstance(data, PilImage):
-            hash_data = data.tobytes()
         else:
-            hash_data = data
+            from PIL.Image import Image as PilImage
+
+            if isinstance(data, PilImage):
+                hash_data = data.tobytes()
+            else:
+                hash_data = data
         return hashlib.sha1(hash_data).hexdigest()  # noqa S324
 
     @property
@@ -345,6 +350,8 @@ class Datum(Generic[T], metaclass=_MetaDatum):
                 if isinstance(data, str):
                     data = data.encode()
                 try:
+                    import imagesize
+
                     px_calc, py_calc = imagesize.get(io.BytesIO(data))
                 except ValueError:
                     pass
