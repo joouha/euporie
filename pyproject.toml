@@ -263,6 +263,8 @@ ignore = [
     "RUF001",
     # Do not use `contextlib.suppress` instead of `try...except...pass`
     "SIM105",
+    # Do not enforce ternary operators
+    "SIM108",
 ]
 
 [tool.ruff.lint.per-file-ignores]
