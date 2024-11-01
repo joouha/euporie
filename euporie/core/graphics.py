@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 import weakref
 from abc import ABCMeta, abstractmethod
-from math import ceil
+from math import ceil, floor
 from typing import TYPE_CHECKING
 
 from prompt_toolkit.cache import FastDictCache, SimpleCache
@@ -84,7 +84,7 @@ class GraphicControl(UIControl, metaclass=ABCMeta):
 
     @abstractmethod
     def get_rendered_lines(
-        self, width: int, height: int, wrap_lines: bool = False
+        self, visible_width: int, visible_height: int, wrap_lines: bool = False
     ) -> list[StyleAndTextTuples]:
         """Render the output data."""
         return []
@@ -100,13 +100,9 @@ class GraphicControl(UIControl, metaclass=ABCMeta):
             `UIContent` for the given output size.
 
         """
-        max_cols, aspect = self.datum.cell_size()
-        bbox = self.bbox
-        cols = min(max_cols, width) if max_cols else width
-        rows = ceil(cols * aspect) - bbox.top - bbox.bottom if aspect else height
 
         def get_content() -> dict[str, Any]:
-            rendered_lines = self.get_rendered_lines(width=cols, height=rows)
+            rendered_lines = self.get_rendered_lines(width, height)
             self.rendered_lines = rendered_lines[:]
             line_count = len(rendered_lines)
 
@@ -130,8 +126,8 @@ class GraphicControl(UIControl, metaclass=ABCMeta):
 
         # Re-render if the image width changes, or the terminal character size changes
         key = (
-            cols,
-            rows,
+            width,
+            height,
             self.app.color_palette,
             self.app.term_info.cell_size_px,
             self.bbox,
@@ -155,16 +151,8 @@ class SixelGraphicControl(GraphicControl):
     def convert_data(self, wp: WritePosition) -> str:
         """Convert datum to required format."""
         bbox = wp.bbox if isinstance(wp, BoundedWritePosition) else DiInt(0, 0, 0, 0)
-        full_width = wp.width + bbox.left + bbox.right
-        full_height = wp.height + bbox.top + bbox.bottom
-        cmd = str(
-            self.datum.convert(
-                to="sixel",
-                cols=full_width,
-                rows=full_height,
-            )
-        )
-        if any(self.bbox):
+        cmd = str(self.datum.convert(to="sixel", cols=wp.width, rows=wp.height)).strip()
+        if any(bbox):
             from sixelcrop import sixelcrop
 
             cell_size_x, cell_size_y = self.app.term_info.cell_size_px
@@ -176,42 +164,80 @@ class SixelGraphicControl(GraphicControl):
                 # Vertical pixel offset of the displayed image region
                 y=bbox.top * cell_size_y,
                 # Pixel width of the displayed image region
-                w=wp.width * cell_size_x,
+                w=(wp.width - bbox.left - bbox.right) * cell_size_x,
                 # Pixel height of the displayed image region
-                h=wp.height * cell_size_y,
+                h=(wp.height - bbox.top - bbox.bottom) * cell_size_y,
             )
 
         return cmd
 
     def get_rendered_lines(
-        self, width: int, height: int, wrap_lines: bool = False
+        self, visible_width: int, visible_height: int, wrap_lines: bool = False
     ) -> list[StyleAndTextTuples]:
         """Get rendered lines from the cache, or generate them."""
+        bbox = self.bbox
+
+        d_cols, d_aspect = self.datum.cell_size()
+        d_rows = d_cols * d_aspect
+
+        total_available_width = visible_width + bbox.left + bbox.right
+        total_available_height = visible_height + bbox.top + bbox.bottom
+
+        # Scale down the graphic to fit in the available space
+        if d_rows > total_available_height or d_cols > total_available_width:
+            if d_rows / total_available_height > d_cols / total_available_width:
+                ratio = min(1, total_available_height / d_rows)
+            else:
+                ratio = min(1, total_available_width / d_cols)
+        else:
+            ratio = 1
+
+        # Calculate the size and cropping bbox at which we want to display the graphic
+        cols = floor(d_cols * ratio)
+        rows = ceil(cols * d_aspect)
+        d_bbox = DiInt(
+            top=self.bbox.top,
+            right=max(0, cols - (total_available_width - self.bbox.right)),
+            bottom=max(0, rows - (total_available_height - self.bbox.bottom)),
+            left=self.bbox.left,
+        )
 
         def render_lines() -> list[StyleAndTextTuples]:
             """Render the lines to display in the control."""
             ft: list[StyleAndTextTuples] = []
-            if height >= 0:
-                cmd = self.convert_data(
-                    BoundedWritePosition(0, 0, width, height, self.bbox)
-                )
+            if visible_height >= 0:
+                cmd = self.convert_data(BoundedWritePosition(0, 0, cols, rows, d_bbox))
                 ft.extend(
                     split_lines(
                         to_formatted_text(
                             [
                                 # Move cursor down and across by image height and width
-                                ("", "\n".join((height) * [" " * (width)])),
+                                (
+                                    "",
+                                    "\n".join(
+                                        (visible_height) * [" " * (visible_width)]
+                                    ),
+                                ),
                                 # Save position, then move back
                                 ("[ZeroWidthEscape]", "\x1b[s"),
                                 # Move cursor up if there is more than one line to display
                                 *(
-                                    [("[ZeroWidthEscape]", f"\x1b[{height-1}A")]
-                                    if height > 1
+                                    [
+                                        (
+                                            "[ZeroWidthEscape]",
+                                            f"\x1b[{visible_height-1}A",
+                                        )
+                                    ]
+                                    if visible_height > 1
                                     else []
                                 ),
-                                ("[ZeroWidthEscape]", f"\x1b[{width}D"),
+                                ("[ZeroWidthEscape]", f"\x1b[{visible_width}D"),
                                 # Place the image without moving cursor
-                                ("[ZeroWidthEscape]", passthrough(cmd)),
+                                (
+                                    "[ZeroWidthEscape]",
+                                    passthrough(cmd, self.app.config),
+                                ),
+                                # ("[ZeroWidthEscape]", "XXXXX"),
                                 # Restore the last known cursor position (at the bottom)
                                 ("[ZeroWidthEscape]", "\x1b[u"),
                             ]
@@ -221,7 +247,7 @@ class SixelGraphicControl(GraphicControl):
             return ft
 
         key = (
-            width,
+            visible_width,
             self.app.color_palette,
             self.app.term_info.cell_size_px,
             self.bbox,
@@ -235,28 +261,20 @@ class ItermGraphicControl(GraphicControl):
     def convert_data(self, wp: WritePosition) -> str:
         """Convert the graphic's data to base64 data."""
         datum = self.datum
-
         bbox = wp.bbox if isinstance(wp, BoundedWritePosition) else DiInt(0, 0, 0, 0)
-        full_width = wp.width + bbox.left + bbox.right
-        full_height = wp.height + bbox.top + bbox.bottom
-
         # Crop image if necessary
         if any(bbox):
             import io
 
-            image = datum.convert(
-                to="pil",
-                cols=full_width,
-                rows=full_height,
-            )
+            image = datum.convert(to="pil", cols=wp.width, rows=wp.height)
             if image is not None:
                 cell_size_x, cell_size_y = self.app.term_info.cell_size_px
                 # Downscale image to fit target region for precise cropping
-                image.thumbnail((full_width * cell_size_x, full_height * cell_size_y))
-                left = self.bbox.left * cell_size_x
-                top = self.bbox.top * cell_size_y
-                right = (self.bbox.left + wp.width) * cell_size_x
-                bottom = (self.bbox.top + wp.height) * cell_size_y
+                image.thumbnail((wp.width * cell_size_x, wp.height * cell_size_y))
+                left = bbox.left * cell_size_x
+                top = bbox.top * cell_size_y
+                right = (wp.width - bbox.right) * cell_size_x
+                bottom = (wp.height - bbox.bottom) * cell_size_y
                 upper, lower = sorted((top, bottom))
                 image = image.crop((left, upper, right, lower))
                 with io.BytesIO() as output:
@@ -266,43 +284,81 @@ class ItermGraphicControl(GraphicControl):
         if datum.format.startswith("base64-"):
             b64data = datum.data
         else:
-            b64data = datum.convert(
-                to="base64-png",
-                cols=full_width,
-                rows=full_height,
-            )
+            b64data = datum.convert(to="base64-png", cols=wp.width, rows=wp.height)
         return b64data.replace("\n", "").strip()
 
     def get_rendered_lines(
-        self, width: int, height: int, wrap_lines: bool = False
+        self, visible_width: int, visible_height: int, wrap_lines: bool = False
     ) -> list[StyleAndTextTuples]:
         """Get rendered lines from the cache, or generate them."""
+        bbox = self.bbox
+
+        d_cols, d_aspect = self.datum.cell_size()
+        d_rows = d_cols * d_aspect
+
+        total_available_width = visible_width + bbox.left + bbox.right
+        total_available_height = visible_height + bbox.top + bbox.bottom
+
+        # Scale down the graphic to fit in the available space
+        if d_rows > total_available_height or d_cols > total_available_width:
+            if d_rows / total_available_height > d_cols / total_available_width:
+                ratio = min(1, total_available_height / d_rows)
+            else:
+                ratio = min(1, total_available_width / d_cols)
+        else:
+            ratio = 1
+
+        # Calculate the size and cropping bbox at which we want to display the graphic
+        cols = floor(d_cols * ratio)
+        rows = ceil(cols * d_aspect)
+        d_bbox = DiInt(
+            top=self.bbox.top,
+            right=max(0, cols - (total_available_width - self.bbox.right)),
+            bottom=max(0, rows - (total_available_height - self.bbox.bottom)),
+            left=self.bbox.left,
+        )
 
         def render_lines() -> list[StyleAndTextTuples]:
             """Render the lines to display in the control."""
             ft: list[StyleAndTextTuples] = []
-            if height > 0 and width > 0:
+            if (
+                rows - d_bbox.top - d_bbox.bottom > 0
+                and cols - d_bbox.left - d_bbox.right > 0
+            ):
                 b64data = self.convert_data(
-                    BoundedWritePosition(0, 0, width, height, self.bbox)
+                    BoundedWritePosition(0, 0, cols, rows, d_bbox)
                 )
-                cmd = f"\x1b]1337;File=inline=1;width={width}:{b64data}\a"
+                cmd = f"\x1b]1337;File=inline=1;width={cols}:{b64data}\a"
                 ft.extend(
                     split_lines(
                         to_formatted_text(
                             [
                                 # Move cursor down and across by image height and width
-                                ("", "\n".join((height) * [" " * (width)])),
+                                (
+                                    "",
+                                    "\n".join(
+                                        (visible_height) * [" " * (visible_width)]
+                                    ),
+                                ),
                                 # Save position, then move back
                                 ("[ZeroWidthEscape]", "\x1b[s"),
                                 # Move cursor up if there is more than one line to display
                                 *(
-                                    [("[ZeroWidthEscape]", f"\x1b[{height-1}A")]
-                                    if height > 1
+                                    [
+                                        (
+                                            "[ZeroWidthEscape]",
+                                            f"\x1b[{visible_height-1}A",
+                                        )
+                                    ]
+                                    if visible_height > 1
                                     else []
                                 ),
-                                ("[ZeroWidthEscape]", f"\x1b[{width}D"),
+                                ("[ZeroWidthEscape]", f"\x1b[{visible_width}D"),
                                 # Place the image without moving cursor
-                                ("[ZeroWidthEscape]", passthrough(cmd)),
+                                (
+                                    "[ZeroWidthEscape]",
+                                    passthrough(cmd, self.app.config),
+                                ),
                                 # Restore the last known cursor position (at the bottom)
                                 ("[ZeroWidthEscape]", "\x1b[u"),
                             ]
@@ -312,7 +368,7 @@ class ItermGraphicControl(GraphicControl):
             return ft
 
         key = (
-            width,
+            visible_width,
             self.app.color_palette,
             self.app.term_info.cell_size_px,
             self.bbox,
@@ -389,12 +445,10 @@ class KittyGraphicControl(GraphicControl):
         cmd += "\x1b\\"
         return cmd
 
-    def load(self, rows: int, cols: int) -> None:
+    def load(self, rows: int, cols: int, bbox: DiInt) -> None:
         """Send the graphic to the terminal without displaying it."""
-        # global _kitty_image_count
-
         data = self.convert_data(
-            BoundedWritePosition(0, 0, width=cols, height=rows, bbox=self.bbox)
+            BoundedWritePosition(0, 0, width=cols, height=rows, bbox=bbox)
         )
         self.kitty_image_id = self._kitty_image_count
         KittyGraphicControl._kitty_image_count += 1
@@ -413,23 +467,26 @@ class KittyGraphicControl(GraphicControl):
                 C=1,  # Do not move the cursor
                 m=1 if data else 0,  # Data will be chunked
             )
-            self.app.output.write_raw(passthrough(cmd))
+            self.app.output.write_raw(passthrough(cmd, self.app.config))
         self.app.output.flush()
         self.loaded = True
+
+    def hide_cmd(self) -> str:
+        """Generate a command to hide the graphic."""
+        return passthrough(
+            self._kitty_cmd(
+                a="d",
+                d="i",
+                i=self.kitty_image_id,
+                q=1,
+            ),
+            self.app.config,
+        )
 
     def hide(self) -> None:
         """Hide the graphic from show without deleting it."""
         if self.kitty_image_id > 0:
-            self.app.output.write_raw(
-                passthrough(
-                    self._kitty_cmd(
-                        a="d",
-                        d="i",
-                        i=self.kitty_image_id,
-                        q=1,
-                    )
-                )
-            )
+            self.app.output.write_raw(self.hide_cmd())
             self.app.output.flush()
 
     def delete(self) -> None:
@@ -442,80 +499,117 @@ class KittyGraphicControl(GraphicControl):
                         d="I",
                         i=self.kitty_image_id,
                         q=2,
-                    )
+                    ),
+                    self.app.config,
                 )
             )
             self.app.output.flush()
             self.loaded = False
 
     def get_rendered_lines(
-        self, width: int, height: int, wrap_lines: bool = False
+        self, visible_width: int, visible_height: int, wrap_lines: bool = False
     ) -> list[StyleAndTextTuples]:
         """Get rendered lines from the cache, or generate them."""
-        # TODO - wezterm does not scale kitty graphics, so we might want to resize
-        # images at this point rather than just loading them once
-        if not self.loaded:
-            self.load(cols=width, rows=height)
+        bbox = self.bbox
 
         cell_size_px = self.app.term_info.cell_size_px
         datum = self._datum_pad_cache[(self.datum, *cell_size_px)]
         px, py = datum.pixel_size()
-
+        # Fall back to a default pixel size
         px = px or 100
         py = py or 100
+
+        d_cols, d_aspect = datum.cell_size()
+        d_rows = d_cols * d_aspect
+
+        total_available_width = visible_width + bbox.left + bbox.right
+        total_available_height = visible_height + bbox.top + bbox.bottom
+
+        # Scale down the graphic to fit in the available space
+        if d_rows > total_available_height or d_cols > total_available_width:
+            if d_rows / total_available_height > d_cols / total_available_width:
+                ratio = min(1, total_available_height / d_rows)
+            else:
+                ratio = min(1, total_available_width / d_cols)
+        else:
+            ratio = 1
+
+        # Calculate the size and cropping bbox at which we want to display the graphic
+        cols = floor(d_cols * ratio)
+        rows = ceil(cols * d_aspect)
+        d_bbox = DiInt(
+            top=self.bbox.top,
+            right=max(0, cols - (total_available_width - self.bbox.right)),
+            bottom=max(0, rows - (total_available_height - self.bbox.bottom)),
+            left=self.bbox.left,
+        )
+        if not self.loaded:
+            self.load(cols=cols, rows=rows, bbox=d_bbox)
 
         def render_lines() -> list[StyleAndTextTuples]:
             """Render the lines to display in the control."""
             ft: list[StyleAndTextTuples] = []
-            if height:
-                full_width = width + self.bbox.left + self.bbox.right
-                full_height = height + self.bbox.top + self.bbox.bottom
+            if display_rows := rows - d_bbox.top - d_bbox.bottom:
                 cmd = self._kitty_cmd(
                     a="p",  # Display a previously transmitted image
                     i=self.kitty_image_id,
                     p=1,  # Placement ID
                     m=0,  # No batches remaining
                     q=2,  # No backchat
-                    c=width,
-                    r=height,
+                    c=cols - d_bbox.left - d_bbox.right,
+                    r=display_rows,
                     C=1,  # 1 = Do move the cursor
                     # Horizontal pixel offset of the displayed image region
-                    x=int(px * self.bbox.left / full_width),
+                    x=int(px * d_bbox.left / cols),
                     # Vertical pixel offset of the displayed image region
-                    y=int(py * self.bbox.top / full_height),
+                    y=int(py * d_bbox.top / rows),
                     # Pixel width of the displayed image region
-                    w=int(px * width / full_width),
+                    w=int(px * (cols - d_bbox.left - d_bbox.right) / cols),
                     # Pixel height of the displayed image region
-                    h=int(py * height / full_height),
-                    # z=-(2**30) - 1,
+                    h=int(py * (rows - d_bbox.top - d_bbox.bottom) / rows),
                 )
                 ft.extend(
                     split_lines(
                         to_formatted_text(
                             [
                                 # Move cursor down and acoss by image height and width
-                                ("", "\n".join((height) * [" " * (width)])),
+                                (
+                                    "",
+                                    "\n".join(
+                                        (visible_height) * [" " * (visible_width)]
+                                    ),
+                                ),
                                 # Save position, then move back
                                 ("[ZeroWidthEscape]", "\x1b[s"),
                                 # Move cursor up if there is more than one line to display
                                 *(
-                                    [("[ZeroWidthEscape]", f"\x1b[{height-1}A")]
-                                    if height > 1
+                                    [
+                                        (
+                                            "[ZeroWidthEscape]",
+                                            f"\x1b[{visible_height-1}A",
+                                        )
+                                    ]
+                                    if visible_height > 1
                                     else []
                                 ),
-                                ("[ZeroWidthEscape]", f"\x1b[{width}D"),
+                                ("[ZeroWidthEscape]", f"\x1b[{visible_width}D"),
                                 # Place the image without moving cursor
-                                ("[ZeroWidthEscape]", passthrough(cmd)),
+                                (
+                                    "[ZeroWidthEscape]",
+                                    passthrough(cmd, self.app.config),
+                                ),
                                 # Restore the last known cursor position (at the bottom)
                                 ("[ZeroWidthEscape]", "\x1b[u"),
                             ]
                         )
                     )
                 )
+            else:
+                ft.append([("[ZeroWidthEscape]", self.hide_cmd())])
             return ft
 
         key = (
-            width,
+            visible_width,
             self.app.color_palette,
             self.app.term_info.cell_size_px,
             self.bbox,
