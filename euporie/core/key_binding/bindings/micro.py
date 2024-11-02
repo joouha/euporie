@@ -7,10 +7,8 @@ import re
 from functools import partial
 from typing import TYPE_CHECKING
 
-from aenum import extend_enum
 from prompt_toolkit.buffer import indent, unindent
 from prompt_toolkit.document import Document
-from prompt_toolkit.enums import EditingMode
 from prompt_toolkit.filters import (
     buffer_has_focus,
     has_selection,
@@ -73,9 +71,6 @@ log = logging.getLogger(__name__)
 class EditMode:
     """Micro style editor key-bindings."""
 
-
-# Register micro edit mode
-extend_enum(EditingMode, "MICRO", "MICRO")
 
 # Register default bindings for micro edit mode
 register_bindings(
