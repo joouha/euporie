@@ -8,7 +8,7 @@ from importlib.util import find_spec
 from shutil import which
 from typing import TYPE_CHECKING
 
-from prompt_toolkit.enums import EditingMode
+# from prompt_toolkit.enums import EditingMode
 from prompt_toolkit.filters import (
     Condition,
     emacs_insert_mode,
@@ -164,9 +164,10 @@ def buffer_is_markdown() -> bool:
 @Condition
 def micro_mode() -> bool:
     """When the micro key-bindings are active."""
+    from euporie.core.app.app import ExtraEditingMode
     from euporie.core.app.current import get_app
 
-    return get_app().editing_mode == EditingMode.MICRO  # type: ignore
+    return get_app().editing_mode == ExtraEditingMode.MICRO
 
 
 @Condition

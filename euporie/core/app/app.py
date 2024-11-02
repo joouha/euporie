@@ -7,6 +7,7 @@ import logging
 import signal
 import sys
 from abc import ABC, abstractmethod
+from enum import Enum
 from functools import partial
 from pathlib import PurePath
 from typing import TYPE_CHECKING, cast
@@ -15,6 +16,7 @@ from weakref import WeakSet, WeakValueDictionary
 from prompt_toolkit.application.application import Application, _CombinedRegistry
 from prompt_toolkit.application.current import create_app_session, set_app
 from prompt_toolkit.data_structures import Point
+from prompt_toolkit.enums import EditingMode
 from prompt_toolkit.filters import Condition, buffer_has_focus, to_filter
 from prompt_toolkit.input.defaults import create_input
 from prompt_toolkit.key_binding.bindings.basic import (
@@ -97,7 +99,6 @@ if TYPE_CHECKING:
     # from prompt_toolkit.application import _AppResult
     from prompt_toolkit.clipboard import Clipboard
     from prompt_toolkit.contrib.ssh import PromptToolkitSSHSession
-    from prompt_toolkit.enums import EditingMode
     from prompt_toolkit.filters import Filter, FilterOrBool
     from prompt_toolkit.input import Input
     from prompt_toolkit.layout.containers import AnyContainer
@@ -125,6 +126,12 @@ _COLOR_DEPTHS = {
     8: ColorDepth.DEPTH_8_BIT,
     24: ColorDepth.DEPTH_24_BIT,
 }
+
+
+class ExtraEditingMode(str, Enum):
+    """Additional editing modes."""
+
+    MICRO = "MICRO"
 
 
 class BaseApp(ConfigurableApp, Application, ABC):
@@ -694,16 +701,13 @@ class BaseApp(ConfigurableApp, Application, ABC):
 
     def get_edit_mode(self) -> EditingMode:
         """Return the editing mode enum defined in the configuration."""
-        from euporie.core.key_binding.bindings.micro import EditingMode
+        micro_mode = cast("EditingMode", ExtraEditingMode.MICRO)
 
         return {
-            "micro": EditingMode.MICRO,  # type: ignore
+            "micro": micro_mode,
             "vi": EditingMode.VI,
             "emacs": EditingMode.EMACS,
-        }.get(
-            str(self.config.edit_mode),
-            EditingMode.MICRO,  # type: ignore
-        )
+        }.get(str(self.config.edit_mode), micro_mode)
 
     def update_edit_mode(self, setting: Setting | None = None) -> None:
         """Set the keybindings for editing mode."""
