@@ -21,6 +21,7 @@ Added
 Fixed
 =====
 
+- Create parent folders if output path does not exist when saving files
 - Fix various bugs with terminal graphics
 - Do not query clipboard unless terminal clipboard is selected
 - Scroll cursor to view when entering cell edit mode

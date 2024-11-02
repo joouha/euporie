@@ -303,9 +303,11 @@ class BaseNotebook(KernelTab, metaclass=ABCMeta):
             log.debug("Saving notebook..")
             self.saving = True
             self.app.invalidate()
-
+            # Ensure parent path exists
+            parent = self.path.parent
+            parent.mkdir(exist_ok=True, parents=True)
             # Save to a temp file, then replace the original
-            temp_path = self.path.parent / f".{self.path.stem}.tmp{self.path.suffix}"
+            temp_path = parent / f".{self.path.stem}.tmp{self.path.suffix}"
             log.debug("Using temporary file %s", temp_path.name)
             try:
                 open_file = temp_path.open("w")
