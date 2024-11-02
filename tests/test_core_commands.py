@@ -12,9 +12,9 @@ from prompt_toolkit.application.current import set_app
 from prompt_toolkit.formatted_text.base import to_formatted_text
 from prompt_toolkit.key_binding.key_bindings import Binding
 from prompt_toolkit.key_binding.key_processor import KeyPressEvent, KeyProcessor
+from prompt_toolkit.keys import Keys
 
 from euporie.core.commands import Command, add_cmd, commands, get_cmd
-from euporie.core.keys import Keys
 
 if TYPE_CHECKING:
     from prompt_toolkit.key_binding.key_bindings import NotImplementedOrNone

@@ -13,17 +13,13 @@ from datetime import datetime as dt
 from functools import lru_cache
 from typing import TYPE_CHECKING, ClassVar
 
-from aenum import extend_enum
 from prompt_toolkit.application.run_in_terminal import run_in_terminal
 from prompt_toolkit.key_binding.key_processor import KeyProcessor, _Flush
-from prompt_toolkit.keys import Keys
 from prompt_toolkit.output import ColorDepth
 from prompt_toolkit.utils import Event
 
 from euporie.core.app.current import get_app
-from euporie.core.commands import add_cmd
 from euporie.core.filters import in_screen, in_tmux
-from euporie.core.key_binding.registry import register_bindings
 from euporie.core.style import DEFAULT_COLORS
 
 if TYPE_CHECKING:
@@ -34,6 +30,7 @@ if TYPE_CHECKING:
     from prompt_toolkit.output import Output
 
     from euporie.core.config import Config
+    from euporie.core.keys import MoreKeys
 
 log = logging.getLogger(__name__)
 
@@ -83,7 +80,7 @@ class TerminalQuery:
         self.input = input_
         self.output = output
         self.config = config
-        self.key: Keys | None = None
+        self.key: MoreKeys | None = None
         self.waiting = False
         self._value: Any | None = None
         self.event = Event(self)
@@ -404,6 +401,10 @@ class TerminalInfo:
 
     def register(self, query: type[TerminalQuery]) -> TerminalQuery:
         """Instantiate and registers a query's response with the input parser."""
+        from euporie.core.commands import add_cmd
+        from euporie.core.key_binding.registry import register_bindings
+        from euporie.core.keys import MoreKeys
+
         # Create an instance of this query
         query_inst: TerminalQuery | None
 
@@ -419,11 +420,7 @@ class TerminalInfo:
 
                 # Add a "key" definition for this query
                 key_name = f"{query.__name__}Response"
-                key_code = f"<{name}-response>"
-                # Do not register the same key multiple times
-                if not hasattr(Keys, key_name):
-                    extend_enum(Keys, key_name, key_code)
-                key = getattr(Keys, key_name)
+                key = MoreKeys[key_name]
                 # Attach the key to the query instance
                 query_inst.key = key
 
