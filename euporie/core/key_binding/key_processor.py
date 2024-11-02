@@ -7,16 +7,33 @@ import logging
 from typing import TYPE_CHECKING
 
 from prompt_toolkit.application.current import get_app
+from prompt_toolkit.key_binding.key_processor import KeyPress, _Flush
 from prompt_toolkit.key_binding.key_processor import KeyProcessor as PtKeyProcessor
-from prompt_toolkit.key_binding.key_processor import _Flush
 from prompt_toolkit.keys import Keys
+
+from euporie.core.keys import MoreKeys
 
 if TYPE_CHECKING:
     from typing import Any
 
-    from prompt_toolkit.key_binding.key_processor import KeyPress
 
 log = logging.getLogger(__name__)
+
+
+def _kp_init(
+    self: KeyPress, key: Keys | MoreKeys | str, data: str | None = None
+) -> None:
+    """Include more keys when creating a KeyPress."""
+    assert (
+        isinstance(key, (Keys | MoreKeys)) or len(key) == 1
+    ), f"key {key!r} ({type(key)}) not recoognised {MoreKeys(key)}"
+    if data is None:
+        data = key.value if isinstance(key, (Keys, MoreKeys)) else key
+    self.key = key
+    self.data = data
+
+
+setattr(KeyPress, "__init__", _kp_init)  # noqa: B010
 
 
 class KeyProcessor(PtKeyProcessor):

@@ -4,8 +4,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from prompt_toolkit.key_binding.key_bindings import _parse_key
+from prompt_toolkit.key_binding import key_bindings
+from prompt_toolkit.key_binding.key_bindings import _parse_key as _ptk_parse_key
 from prompt_toolkit.keys import Keys
+
+from euporie.core.keys import MoreKeys
 
 if TYPE_CHECKING:
     from prompt_toolkit.key_binding import KeyPressEvent
@@ -25,6 +28,24 @@ KEY_ALIASES: dict[str | Keys, str] = {
 def if_no_repeat(event: KeyPressEvent) -> bool:
     """Return True when the previous event was delivered to another handler."""
     return not event.is_repeat
+
+
+def _parse_key(key: AnyKeys | MoreKeys | str) -> Keys | MoreKeys | str:
+    """Parse a key or string, including additional keys."""
+    if isinstance(key, (Keys, str)):
+        try:
+            return _ptk_parse_key(key)
+        except ValueError:
+            pass
+    if isinstance(key, MoreKeys):
+        return key
+    try:
+        return MoreKeys(key)
+    except ValueError as err:
+        raise ValueError("Key binding not recognised") from err
+
+
+key_bindings._parse_key = _parse_key
 
 
 def parse_keys(keys: AnyKeys) -> list[tuple[str | Keys, ...]]:
