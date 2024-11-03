@@ -178,7 +178,9 @@ class Datum(Generic[T], metaclass=_MetaDatum):
     @staticmethod
     def get_hash(data: Any) -> str:
         """Calculate a hash of data."""
-        if isinstance(data, str):
+        if isinstance(data, bytes):
+            hash_data = data
+        elif isinstance(data, str):
             hash_data = data.encode()
         else:
             from PIL.Image import Image as PilImage
