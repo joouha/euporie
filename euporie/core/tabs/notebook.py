@@ -106,11 +106,14 @@ class BaseNotebook(KernelTab, metaclass=ABCMeta):
 
     def pre_init_kernel(self) -> None:
         """Run stuff before the kernel is loaded."""
+        super().pre_init_kernel()
         # Load notebook file
         self.load()
 
     def post_init_kernel(self) -> None:
         """Load the notebook container after the kernel has been loaded."""
+        super().post_init_kernel()
+
         # Replace the tab's container
         prev = self.container
         self.container = self.load_container()
