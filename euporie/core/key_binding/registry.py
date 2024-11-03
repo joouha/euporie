@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from functools import lru_cache
 from typing import TYPE_CHECKING
 
 from prompt_toolkit.key_binding import KeyBindings
@@ -31,6 +32,7 @@ def register_bindings(bindings: dict[str, KeyBindingDefs]) -> None:
             BINDINGS[group][command] = keys
 
 
+@lru_cache
 def load_registered_bindings(
     *names: str, config: Config | None = None
 ) -> KeyBindingsBase:
