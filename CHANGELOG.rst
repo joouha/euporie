@@ -13,6 +13,7 @@ v2.8.4 (2024-10-10)
 Added
 =====
 
+- Add Python 3.13 support
 - Various optimizations, making euporie faster
 - Add ability to indent and unindent in vi insert mode using ``tab`` and ``shift-tab`` key-bindings
 - Add option to display remote inputs and outputs
