@@ -35,6 +35,8 @@ async def _convert_to_notebook() -> None:
     NotebookApp.load_settings()
     NotebookApp.config.__init__(app="notebook")  # type: ignore [misc]
     nb_app = NotebookApp()
+    # Use same event loop
+    nb_app.loop = app.loop
     for tab in app.tabs:
         if isinstance(tab, Console):
             from euporie.notebook.tabs.notebook import Notebook
