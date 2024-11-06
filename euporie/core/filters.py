@@ -78,6 +78,14 @@ def has_suggestion() -> bool:
 
 
 @Condition
+def has_tabs() -> bool:
+    """Filter to show if any tabs are open in an app."""
+    from euporie.core.app.current import get_app
+
+    return bool(get_app().tabs)
+
+
+@Condition
 def has_dialog() -> bool:
     """Determine if a dialog is being displayed."""
     from prompt_toolkit.layout.containers import ConditionalContainer
