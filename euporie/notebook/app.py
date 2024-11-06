@@ -18,9 +18,9 @@ from prompt_toolkit.layout.containers import (
 from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.layout.dimension import Dimension
 
-from euporie.core import __logo__
 from euporie.core.app.app import BaseApp
 from euporie.core.commands import get_cmd
+from euporie.core.filters import has_tabs
 from euporie.core.ft.utils import truncate
 from euporie.core.key_binding.registry import register_bindings
 from euporie.core.layout.containers import HSplit, VSplit, Window
@@ -39,6 +39,7 @@ from euporie.core.widgets.dialog import (
 )
 from euporie.core.widgets.file_browser import FileBrowser
 from euporie.core.widgets.layout import TabBarControl, TabBarTab
+from euporie.core.widgets.logo import Logo
 from euporie.core.widgets.menu import MenuBar, MenuItem
 from euporie.core.widgets.pager import Pager
 from euporie.core.widgets.palette import CommandPalette
@@ -196,22 +197,7 @@ class NotebookApp(BaseApp):
 
     def load_container(self) -> FloatContainer:
         """Build the main application layout."""
-        have_tabs = Condition(lambda: bool(self.tabs))
-
-        self.logo = StatusContainer(
-            body=Window(
-                FormattedTextControl(
-                    [("", f" {__logo__} ")],
-                    focusable=~have_tabs,
-                    show_cursor=False,
-                    style="class:menu,logo",
-                ),
-                height=1,
-                width=3,
-                dont_extend_width=True,
-            ),
-            status=self._statusbar_defaults,
-        )
+        self.logo = StatusContainer(body=Logo(), status=self._statusbar_defaults)
 
         title_bar = ConditionalContainer(
             Window(
@@ -221,7 +207,7 @@ class NotebookApp(BaseApp):
                 dont_extend_width=True,
                 align=WindowAlign.RIGHT,
             ),
-            filter=have_tabs,
+            filter=has_tabs,
         )
 
         self.pager = Pager()

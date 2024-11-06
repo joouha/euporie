@@ -22,7 +22,6 @@ from prompt_toolkit.layout.containers import (
 from prompt_toolkit.layout.dimension import Dimension
 
 from euporie.console.tabs.console import Console
-from euporie.core import __logo__
 from euporie.core.app.app import BaseApp
 from euporie.core.filters import has_dialog
 from euporie.core.layout.mouse import DisableMouseOnScroll
@@ -33,6 +32,7 @@ from euporie.core.widgets.dialog import (
     SelectKernelDialog,
     ShortcutsDialog,
 )
+from euporie.core.widgets.logo import Logo
 from euporie.core.widgets.pager import Pager
 from euporie.core.widgets.palette import CommandPalette
 from euporie.core.widgets.search import SearchBar
@@ -117,13 +117,7 @@ class ConsoleApp(BaseApp):
                                     ConditionalContainer(
                                         VSplit(
                                             [
-                                                Window(
-                                                    char=f" {__logo__} ",
-                                                    height=1,
-                                                    width=3,
-                                                    style="class:menu,logo",
-                                                    dont_extend_width=True,
-                                                ),
+                                                Logo(),
                                                 StatusBar(),
                                             ]
                                         ),
