@@ -61,6 +61,7 @@ from euporie.core.clipboard import ConfiguredClipboard
 from euporie.core.commands import add_cmd
 from euporie.core.convert.mime import get_mime
 from euporie.core.filters import tab_has_focus
+from euporie.core.filters import has_toolbar
 from euporie.core.format import CliFormatter
 from euporie.core.io import Vt100_Output, Vt100Parser
 from euporie.core.key_binding.key_processor import KeyProcessor
@@ -106,6 +107,7 @@ if TYPE_CHECKING:
     from prompt_toolkit.layout.screen import WritePosition
     from prompt_toolkit.output import Output
 
+    from euporie.core.bars.command import CommandBar
     from euporie.core.config import Setting
     from euporie.core.format import Formatter
     from euporie.core.tabs import TabRegistryEntry
@@ -202,8 +204,9 @@ class BaseApp(ConfigurableApp, Application, ABC):
         # Contains the opened tab containers
         self.tabs: list[Tab] = []
         self.on_tabs_change = Event(self)
-        # Holds the search bar to pass to cell inputs
+        # Holds the optional toolbars
         self.search_bar: SearchBar | None = None
+        self.command_bar: CommandBar | None = None
         # Holds the index of the current tab
         self._tab_idx = 0
         # Add state for micro key-bindings
@@ -325,7 +328,7 @@ class BaseApp(ConfigurableApp, Application, ABC):
         # Load completions menu. This must be done after the app is set, because
         # :py:func:`get_app` is needed to access the config
         self.menus["completions"] = Float(
-            content=Shadow(CompletionsMenu()),
+            content=Shadow(CompletionsMenu(extra_filter=~has_toolbar)),
             xcursor=True,
             ycursor=True,
         )

@@ -12,6 +12,7 @@ from prompt_toolkit.formatted_text.base import to_formatted_text
 from prompt_toolkit.layout.containers import (
     ConditionalContainer,
     DynamicContainer,
+    Float,
     FloatContainer,
     WindowAlign,
 )
@@ -19,6 +20,8 @@ from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.layout.dimension import Dimension
 
 from euporie.core.app.app import BaseApp
+from euporie.core.bars.command import CommandBar
+from euporie.core.bars.menu import ToolbarCompletionsMenu
 from euporie.core.commands import get_cmd
 from euporie.core.filters import has_tabs
 from euporie.core.ft.utils import truncate
@@ -54,7 +57,7 @@ if TYPE_CHECKING:
 
     from prompt_toolkit.application.application import Application
     from prompt_toolkit.formatted_text import StyleAndTextTuples
-    from prompt_toolkit.layout.containers import AnyContainer, Float
+    from prompt_toolkit.layout.containers import AnyContainer
 
     from euporie.core.tabs import TabRegistryEntry
     from euporie.core.tabs.base import Tab
@@ -103,6 +106,10 @@ class NotebookApp(BaseApp):
     def pre_run(self, app: Application | None = None) -> None:
         """Continue loading the app."""
         super().pre_run(app)
+        # Add a toolbar completion menu
+        self.menus["toolbar_completions"] = Float(
+            content=ToolbarCompletionsMenu(), ycursor=True, transparent=True
+        )
         # Load style hooks and start polling terminal style
         if self.config.terminal_polling_interval and hasattr(
             self.input, "vt100_parser"
@@ -212,6 +219,7 @@ class NotebookApp(BaseApp):
 
         self.pager = Pager()
         self.search_bar = SearchBar()
+        self.command_bar = CommandBar()
 
         self.dialogs["command-palette"] = CommandPalette(self)
         self.dialogs["about"] = AboutDialog(self)
@@ -269,6 +277,7 @@ class NotebookApp(BaseApp):
                         ],
                         height=Dimension(min=1),
                     ),
+                    self.command_bar,
                     self.search_bar,
                     StatusBar(),
                 ],

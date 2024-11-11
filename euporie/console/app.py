@@ -14,6 +14,7 @@ from prompt_toolkit.filters.app import (
 )
 from prompt_toolkit.layout.containers import (
     ConditionalContainer,
+    Float,
     FloatContainer,
     HSplit,
     VSplit,
@@ -23,6 +24,8 @@ from prompt_toolkit.layout.dimension import Dimension
 
 from euporie.console.tabs.console import Console
 from euporie.core.app.app import BaseApp
+from euporie.core.bars.command import CommandBar
+from euporie.core.bars.menu import ToolbarCompletionsMenu
 from euporie.core.filters import has_dialog
 from euporie.core.layout.mouse import DisableMouseOnScroll
 from euporie.core.widgets.dialog import (
@@ -40,6 +43,8 @@ from euporie.core.widgets.status import StatusBar
 
 if TYPE_CHECKING:
     from typing import Any, TypeVar
+
+    from prompt_toolkit.application.application import Application
 
     _AppResult = TypeVar("_AppResult")
 
@@ -77,6 +82,14 @@ class ConsoleApp(BaseApp):
 
         self.tabs = []
 
+    def pre_run(self, app: Application | None = None) -> None:
+        """Continue loading the app."""
+        super().pre_run(app)
+        # Add a toolbar completion menu
+        self.menus["toolbar_completions"] = Float(
+            content=ToolbarCompletionsMenu(), ycursor=True, transparent=True
+        )
+
     def _get_reserved_height(self) -> Dimension:
         if has_dialog():
             return Dimension(min=15)
@@ -89,6 +102,7 @@ class ConsoleApp(BaseApp):
         """Return a container with all opened tabs."""
         self.tabs = [Console(self)]
 
+        self.command_bar = CommandBar()
         self.search_bar = SearchBar()
         self.pager = Pager()
 
@@ -113,11 +127,12 @@ class ConsoleApp(BaseApp):
                                         style="class:default",
                                     ),
                                     self.pager,
-                                    self.search_bar,
                                     ConditionalContainer(
                                         VSplit(
                                             [
                                                 Logo(),
+                                                self.command_bar,
+                                                self.search_bar,
                                                 StatusBar(),
                                             ]
                                         ),
