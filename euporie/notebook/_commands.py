@@ -3,7 +3,7 @@
 from euporie.core.commands import add_cmd
 
 
-@add_cmd()
+@add_cmd(aliases=["n"])
 def _new_notebook() -> None:
     """Create a new file."""
     from euporie.notebook.current import get_app
