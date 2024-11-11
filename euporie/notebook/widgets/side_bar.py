@@ -37,13 +37,22 @@ class SideBarButtons(ToggleButtons):
         else:
             return "class:side_bar,buttons,separator"
 
+    def _get_sep_char(self, i: int) -> str:
+        if self.index in {i, i - 1}:
+            return "▄"
+        return ""
+
     def load_container(self) -> AnyContainer:
         """Load the widget's container."""
         self.buttons: list[ToggleButton] = []
         children: list[AnyContainer] = []
         for i, (label, selected) in enumerate(zip(self.labels, self.mask)):
             children.append(
-                Window(char="▄", height=1, style=partial(self._get_sep_style, i))
+                Window(
+                    char=partial(self._get_sep_char, i),
+                    height=1,
+                    style=partial(self._get_sep_style, i),
+                )
             )
             button = ToggleButton(
                 text=label,
@@ -58,7 +67,7 @@ class SideBarButtons(ToggleButtons):
         children.extend(
             [
                 Window(
-                    char="▄",
+                    char=partial(self._get_sep_char, i),
                     height=1,
                     style=partial(self._get_sep_style, len(self.options)),
                 ),

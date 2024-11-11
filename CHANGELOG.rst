@@ -15,6 +15,11 @@ Added
 
 - Added a vi-style command bar
 
+Changed
+=======
+
+- Improved app styles when using 1-bit color mode
+
 *******************
 v2.8.4 (2024-10-10)
 *******************
