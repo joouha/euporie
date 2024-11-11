@@ -109,18 +109,18 @@ class Command:
 
         self.keys: list[tuple[str | Keys, ...]] = []
 
-    def run(self) -> None:
+    def run(self, arg: str | None = None) -> None:
         """Run the command's handler."""
         if self.filter():
             app = get_app()
             result = self.key_handler(
                 KeyPressEvent(
                     key_processor_ref=weakref.ref(app.key_processor),
-                    arg=None,
+                    arg=arg,
                     key_sequence=[],
                     previous_key_sequence=[],
                     is_repeat=False,
-                )
+                ),
             )
             if isawaitable(result):
 
