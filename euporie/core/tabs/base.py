@@ -140,8 +140,8 @@ class Tab(metaclass=ABCMeta):
         Tab._refresh_tab()
 
     @staticmethod
-    @add_cmd(filter=tab_has_focus)
     def _save_file() -> None:
+    @add_cmd(filter=tab_has_focus, aliases=["w"])
         """Save the current file."""
         if (tab := get_app().tab) is not None:
             try:

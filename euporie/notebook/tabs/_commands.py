@@ -578,7 +578,7 @@ def _reformat_cells() -> None:
                 cell.input_box.reformat()
 
 
-@add_cmd(filter=notebook_has_focus & ~buffer_has_focus)
+@add_cmd(aliases=["fmt"], filter=notebook_has_focus & ~buffer_has_focus)
 def _reformat_notebook() -> None:
     """Automatically reformat all code cells in the notebook."""
     from euporie.notebook.tabs.notebook import Notebook
