@@ -55,12 +55,9 @@ from prompt_toolkit.styles import (
 from prompt_toolkit.utils import Event
 
 from euporie.core.app.base import ConfigurableApp
-from euporie.core.app.current import get_app
 from euporie.core.app.cursor import CursorConfig
 from euporie.core.clipboard import ConfiguredClipboard
-from euporie.core.commands import add_cmd
 from euporie.core.convert.mime import get_mime
-from euporie.core.filters import tab_has_focus
 from euporie.core.filters import has_toolbar
 from euporie.core.format import CliFormatter
 from euporie.core.io import Vt100_Output, Vt100Parser
@@ -860,62 +857,6 @@ class BaseApp(ConfigurableApp, Application, ABC):
     # print(task)
     # print(task.get_loop())
     # await asyncio.wait([task])
-
-    # ################################### Commands ####################################
-
-    @staticmethod
-    @add_cmd()
-    def _quit() -> None:
-        """Quit euporie."""
-        get_app().exit()
-
-    @staticmethod
-    @add_cmd(
-        name="close-tab",
-        filter=tab_has_focus,
-        menu_title="Close File",
-    )
-    def _close_tab() -> None:
-        """Close the current tab."""
-        get_app().close_tab()
-
-    @staticmethod
-    @add_cmd(
-        filter=tab_has_focus,
-    )
-    def _next_tab() -> None:
-        """Switch to the next tab."""
-        get_app().tab_idx += 1
-
-    @staticmethod
-    @add_cmd(
-        filter=tab_has_focus,
-    )
-    def _previous_tab() -> None:
-        """Switch to the previous tab."""
-        get_app().tab_idx -= 1
-
-    @staticmethod
-    @add_cmd(
-        filter=~buffer_has_focus,
-    )
-    def _focus_next() -> None:
-        """Focus the next control."""
-        get_app().layout.focus_next()
-
-    @staticmethod
-    @add_cmd(
-        filter=~buffer_has_focus,
-    )
-    def _focus_previous() -> None:
-        """Focus the previous control."""
-        get_app().layout.focus_previous()
-
-    @staticmethod
-    @add_cmd()
-    def _clear_screen() -> None:
-        """Clear the screen."""
-        get_app().renderer.clear()
 
     # ################################# Key Bindings ##################################
 
