@@ -341,7 +341,7 @@ class DropShadow(Container):
     ) -> None:
         """Draw the wrapped container with the additional style."""
         attr_cache = self.renderer._attrs_for_style
-        if attr_cache is not None:
+        if attr_cache is not None and self.amount:
             ypos = write_position.ypos
             xpos = write_position.xpos
             amount = self.amount

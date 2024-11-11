@@ -59,16 +59,21 @@ log = logging.getLogger(__name__)
 class DummyContainer(Container):
     """Base class for user interface layout."""
 
+    def __init__(self, width: int = 0, height: int = 0) -> None:
+        """Define width and height if any."""
+        self.width = width
+        self.height = height
+
     def reset(self) -> None:
         """Reset the state of this container (does nothing)."""
 
     def preferred_width(self, max_available_width: int) -> Dimension:
         """Return a zero-width dimension."""
-        return Dimension.exact(0)
+        return Dimension.exact(self.width)
 
     def preferred_height(self, width: int, max_available_height: int) -> Dimension:
         """Return a zero-height dimension."""
-        return Dimension.exact(0)
+        return Dimension.exact(self.height)
 
     def write_to_screen(
         self,
