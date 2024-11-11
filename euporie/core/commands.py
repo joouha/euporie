@@ -50,6 +50,7 @@ class Command:
         filter: FilterOrBool = True,
         hidden: FilterOrBool = False,
         name: str | None = None,
+        aliases: list[str] | None = None,
         title: str | None = None,
         menu_title: str | None = None,
         description: str | None = None,
@@ -66,6 +67,7 @@ class Command:
             filter: The condition under which the command is allowed to run
             hidden: The condition under the command is visible to the user
             name: The name of the command, for accessing the command from the registry
+            aliases: List of additional names for the command
             title: The title of the command for display
             menu_title: The title to display in menus if different
             description: The description of the command to explain it's function
@@ -77,6 +79,7 @@ class Command:
 
         """
         self.handler = handler
+        self.aliases = aliases or []
         self.filter = to_filter(filter)
         self.hidden = to_filter(hidden)
         if name is None:
@@ -222,6 +225,8 @@ def add_cmd(**kwargs: Any) -> Callable:
     def decorator(handler: Callable) -> Callable:
         cmd = Command(handler, **kwargs)
         commands[cmd.name] = cmd
+        for alias in cmd.aliases:
+            commands[alias] = cmd
         return handler
 
     return decorator
