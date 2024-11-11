@@ -242,7 +242,7 @@ class CommandPalette(Dialog):
         regex = re.compile(
             "(?=({}))".format(".*?".join(map(re.escape, buffer.text))), re.IGNORECASE
         )
-        for cmd in commands.values():
+        for cmd in set(commands.values()):
             if not cmd.hidden():
                 matches = list(regex.finditer(cmd.title))
                 if matches:
