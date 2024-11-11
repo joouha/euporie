@@ -23,7 +23,7 @@ from euporie.web.widgets.webview import WebViewControl
 
 if TYPE_CHECKING:
     from pathlib import Path
-    from typing import Any, Callable, ClassVar
+    from typing import Any, Callable
 
     from prompt_toolkit.layout.containers import AnyContainer
 
@@ -38,7 +38,6 @@ class WebTab(Tab):
 
     name = "Web Viewer"
     weight = 2
-    mime_types: ClassVar[set[str]] = {"text/html", "text/markdown"}
 
     def __init__(self, app: BaseApp, path: Path | None) -> None:
         """Call when the tab is created."""

@@ -102,9 +102,6 @@ class WebViewControl(UIControl):
         self._dom_cache: FastDictCache[tuple[Path], HTML] = FastDictCache(
             get_value=self.get_dom, size=100
         )
-        self._line_cache: FastDictCache[
-            tuple[HTML, int, int], list[StyleAndTextTuples]
-        ] = FastDictCache(get_value=self.get_lines, size=100_000)
         self._content_cache: FastDictCache = FastDictCache(self.get_content, size=1_000)
 
         self.load_url(url)
@@ -173,12 +170,6 @@ class WebViewControl(UIControl):
         if dom := self.dom:
             return dom.title
         return ""
-
-    def get_lines(
-        self, dom: HTML, width: int, height: int, assets_loaded: bool = False
-    ) -> list[StyleAndTextTuples]:
-        """Render a HTML page as lines of formatted text."""
-        return list(split_lines(dom.render(width, height)))
 
     def load_url(self, url: str | Path, **kwargs: Any) -> None:
         """Load a new URL."""
