@@ -16,7 +16,7 @@ from prompt_toolkit.layout.containers import (
 from euporie.core.app.current import get_app
 from euporie.core.border import ThinLine
 from euporie.core.data_structures import DiBool
-from euporie.core.layout.containers import HSplit, VSplit, Window
+from euporie.core.layout.containers import DummyContainer, HSplit, VSplit, Window
 from euporie.core.layout.decor import DropShadow
 
 if TYPE_CHECKING:
@@ -182,8 +182,7 @@ class Border:
 class Shadow:
     """Draw a shadow underneath/behind this container.
 
-    This is a globally configurable version of the
-    :py:class:`prompt_toolkit.widows.base.Shadow` class.
+    The container must be in a float.
     """
 
     def __init__(self, body: AnyContainer) -> None:
@@ -193,26 +192,13 @@ class Shadow:
             body: Another container object.
         """
         filter_ = get_app().config.filters.show_shadows
-        shadow = FloatContainer(
-            content=body,
-            floats=[
-                Float(
-                    bottom=-1,
-                    height=1,
-                    left=1,
-                    right=0,
-                    transparent=True,
-                    content=DropShadow(),
-                ),
-                Float(
-                    bottom=-1,
-                    top=1,
-                    width=1,
-                    right=-1,
-                    transparent=True,
-                    content=DropShadow(),
-                ),
-            ],
+
+        spacer = DummyContainer(width=1, height=1)
+        shadow = VSplit(
+            [
+                HSplit([body, VSplit([spacer, DropShadow()])]),
+                HSplit([spacer, DropShadow()]),
+            ]
         )
 
         def get_contents() -> AnyContainer:

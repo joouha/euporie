@@ -139,8 +139,12 @@ class DialogTitleControl(UIControl):
                             dl_width, max_y
                         ).preferred
                         # Calculate new dialog position
-                        new_x = max(1, min(gx - self.drag_start.x, max_x - dl_width))
-                        new_y = max(1, min(gy - self.drag_start.y, max_y - dl_height))
+                        new_x = max(
+                            1, min(gx - self.drag_start.x, max_x - dl_width + 1)
+                        )
+                        new_y = max(
+                            1, min(gy - self.drag_start.y, max_y - dl_height + 1)
+                        )
                         # Move dialog
                         self.dialog.left = new_x - 1
                         self.dialog.top = new_y - 1
