@@ -5,9 +5,11 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
+from prompt_toolkit.buffer import Buffer
 from prompt_toolkit.document import Document
 from prompt_toolkit.filters.app import is_searching
 from prompt_toolkit.filters.base import Condition
+from prompt_toolkit.formatted_text.base import to_formatted_text
 from prompt_toolkit.key_binding.vi_state import InputMode
 from prompt_toolkit.layout.controls import BufferControl, SearchBufferControl
 from prompt_toolkit.search import SearchDirection
@@ -15,6 +17,7 @@ from prompt_toolkit.selection import SelectionState
 from prompt_toolkit.widgets import SearchToolbar as PtkSearchToolbar
 
 from euporie.core.app.current import get_app
+from euporie.core.bars import SEARCH_BAR_BUFFER
 from euporie.core.commands import add_cmd
 from euporie.core.key_binding.registry import (
     load_registered_bindings,
@@ -22,7 +25,6 @@ from euporie.core.key_binding.registry import (
 )
 
 if TYPE_CHECKING:
-    from prompt_toolkit.buffer import Buffer
     from prompt_toolkit.filters import FilterOrBool
     from prompt_toolkit.formatted_text.base import AnyFormattedText
 
@@ -40,21 +42,23 @@ class SearchBar(PtkSearchToolbar):
         search_buffer: Buffer | None = None,
         vi_mode: bool = False,
         text_if_not_searching: AnyFormattedText = "",
-        forward_search_prompt: AnyFormattedText = "I-search: ",
-        backward_search_prompt: AnyFormattedText = "I-search backward: ",
+        forward_search_prompt: AnyFormattedText = " Find: ",
+        backward_search_prompt: AnyFormattedText = " Find (up): ",
         ignore_case: FilterOrBool = False,
     ) -> None:
         """Create a new search bar instance."""
+        if search_buffer is None:
+            search_buffer = Buffer(name=SEARCH_BAR_BUFFER)
         super().__init__(
-            text_if_not_searching="",
-            forward_search_prompt=[
-                ("class:search-toolbar.title", " Find: "),
-                ("", " "),
-            ],
-            backward_search_prompt=[
-                ("class:search-toolbar.title", " Find (up): "),
-                ("", " "),
-            ],
+            search_buffer=search_buffer,
+            vi_mode=vi_mode,
+            text_if_not_searching=text_if_not_searching,
+            forward_search_prompt=to_formatted_text(
+                forward_search_prompt, "class:status-field"
+            ),
+            backward_search_prompt=to_formatted_text(
+                backward_search_prompt, "class:status-field"
+            ),
         )
         self.control.key_bindings = load_registered_bindings(
             "euporie.core.widgets.search.SearchBar",
