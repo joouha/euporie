@@ -458,17 +458,20 @@ class Window(ptk_containers.Window):
         z_index: int | None,
     ) -> None:
         """Write window to screen."""
-        assert isinstance(write_position, BoundedWritePosition)
         # If dont_extend_width/height was given, then reduce width/height in
         # WritePosition, if the parent wanted us to paint in a bigger area.
         # (This happens if this window is bundled with another window in a
         # HSplit/VSplit, but with different size requirements.)
+        if isinstance(write_position, BoundedWritePosition):
+            bbox = write_position.bbox
+        else:
+            bbox = DiInt(0, 0, 0, 0)
         write_position = BoundedWritePosition(
             xpos=write_position.xpos,
             ypos=write_position.ypos,
             width=write_position.width,
             height=write_position.height,
-            bbox=write_position.bbox,
+            bbox=bbox,
         )
 
         if self.dont_extend_width():
