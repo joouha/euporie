@@ -3263,15 +3263,6 @@ class CustomHTMLParser(HTMLParser):
             Node(dom=self.dom, name="::text", text=data, parent=self.curr, attrs=[])
         )
 
-    # def handle_endtag(self, tag: str) -> None:
-    #     """Handle end tags: close the currently opened element."""
-    #     if tag == self.curr.name:
-    #         self.curr.closed = True
-    #         if self.curr.parent:
-    #             self.curr = self.curr.parent
-    #     else:
-    #         self.autoclose()
-
     def handle_endtag(self, tag: str) -> None:
         """Handle end tags: close the currently opened element."""
         if tag != self.curr.name:
@@ -3285,7 +3276,6 @@ def parse_style_sheet(css_str: str, dom: HTML, condition: Filter = always) -> No
     """Collect all CSS styles from style tags."""
     dom_css = dom.css
     # Remove whitespace and newlines
-    # css_str = css_str.strip().replace("\n", "")
     css_str = re.sub(r"\s*\n\s*", " ", css_str)
     # Remove comments
     css_str = re.sub(r"\/\*[^\*]+\*\/", "", css_str)
