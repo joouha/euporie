@@ -6,6 +6,15 @@ Notable changes to this project will be documented in this file.
 
 ----
 
+********
+Upcoming
+********
+
+Added
+=====
+
+- Added a vi-style command bar
+
 *******************
 v2.8.4 (2024-10-10)
 *******************
