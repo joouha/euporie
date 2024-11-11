@@ -7,17 +7,14 @@ from math import ceil
 from typing import TYPE_CHECKING
 
 from prompt_toolkit.data_structures import Point
-from prompt_toolkit.filters import (
-    Condition,
-    has_completions,
-    is_done,
-)
+from prompt_toolkit.filters import Condition, has_completions, is_done
 from prompt_toolkit.layout.containers import ConditionalContainer, Window
 from prompt_toolkit.layout.controls import GetLinePrefixCallable, UIContent, UIControl
 from prompt_toolkit.layout.dimension import Dimension
 from prompt_toolkit.utils import get_cwidth
 
 from euporie.core.app.current import get_app
+from euporie.core.filters import has_toolbar
 from euporie.core.ft.utils import apply_style, pad, truncate
 from euporie.core.layout.containers import HSplit
 
@@ -257,5 +254,5 @@ class ToolbarCompletionsMenu(ConditionalContainer):
                 ],
                 style="class:toolbar,menu",
             ),
-            filter=has_completions & ~is_done,
+            filter=has_toolbar & has_completions & ~is_done,
         )
