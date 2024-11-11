@@ -13,7 +13,8 @@ from prompt_toolkit.layout.containers import DynamicContainer, FloatContainer, W
 from prompt_toolkit.output.defaults import create_output
 from prompt_toolkit.output.vt100 import Vt100_Output
 
-from euporie.core.app.app import BaseApp, get_app
+from euporie.core.app.app import BaseApp
+from euporie.core.app.current import get_app
 from euporie.core.io import PseudoTTY
 from euporie.core.key_binding.registry import register_bindings
 from euporie.preview.tabs.notebook import PreviewNotebook
