@@ -18,18 +18,14 @@ from prompt_toolkit.key_binding.bindings.named_commands import (
 )
 
 from euporie.core.commands import add_cmd
-from euporie.core.filters import buffer_is_code, cursor_in_leading_ws, insert_mode
+from euporie.core.filters import cursor_in_leading_ws, insert_mode
 from euporie.core.key_binding.registry import register_bindings
 
 log = logging.getLogger(__name__)
 
 
 add_cmd(
-    filter=buffer_has_focus
-    & insert_mode
-    & ~has_selection
-    & buffer_is_code
-    & ~cursor_in_leading_ws,
+    filter=buffer_has_focus & insert_mode & ~has_selection & ~cursor_in_leading_ws,
     hidden=True,
     name="next-completion",
     description="Show the completion menu and select the next completion.",
