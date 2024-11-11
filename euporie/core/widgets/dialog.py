@@ -570,7 +570,7 @@ class OpenFileDialog(FileDialog):
 
     register_bindings(
         {
-            "euporie.core.app.BaseApp": {
+            "euporie.core.app.app:BaseApp": {
                 "open-file": "c-o",
             }
         }
@@ -617,7 +617,7 @@ class SaveAsDialog(FileDialog):
 
     register_bindings(
         {
-            "euporie.core.app.BaseApp": {
+            "euporie.core.app.app:BaseApp": {
                 "save-as": ("A-s"),
             }
         }
@@ -910,7 +910,7 @@ class ShortcutsDialog(Dialog):
 
     def format_key_info(self) -> StyleAndTextTuples:
         """Generate a table with the current key bindings."""
-        import importlib
+        import pkgutil
         from textwrap import dedent
 
         from prompt_toolkit.formatted_text.base import to_formatted_text
@@ -927,9 +927,7 @@ class ShortcutsDialog(Dialog):
 
         for group, bindings in BINDINGS.items():
             if any(not get_cmd(cmd_name).hidden() for cmd_name in bindings):
-                mod_name, cls_name = group.rsplit(".", maxsplit=1)
-                mod = importlib.import_module(mod_name)
-                app_cls = getattr(mod, cls_name)
+                app_cls = pkgutil.resolve_name(group)
                 section_title = (
                     dedent(app_cls.__doc__).strip().split("\n")[0].rstrip(".")
                 )

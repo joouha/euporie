@@ -128,7 +128,7 @@ class CommandBar:
 
     register_bindings(
         {
-            "euporie.core.app.BaseApp": {
+            "euporie.core.app.app:BaseApp": {
                 "activate-command-bar": ":",
                 "activate-command-bar-alt": "A-:",
                 "activate-command-bar-shell": "!",

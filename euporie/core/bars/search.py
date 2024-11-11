@@ -71,7 +71,7 @@ class SearchBar(PtkSearchToolbar):
 
     register_bindings(
         {
-            "euporie.core.app.BaseApp": {
+            "euporie.core.app.app:BaseApp": {
                 "find": ["c-f", "f3", "f7"],
                 "find-next": "c-g",
                 "find-previous": "c-p",
