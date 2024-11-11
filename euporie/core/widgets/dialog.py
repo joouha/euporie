@@ -502,12 +502,13 @@ class OpenFileDialog(FileDialog):
 
         self.tab_dd = tab_dd = Dropdown(options=[])
 
-        def _update_options(fb: FileBrowserControl) -> None:
-            tabs = get_app().get_file_tabs(path) if (path := fb.path).is_file() else []
+        def _update_options(path: Path) -> None:
+            tabs = get_app().get_file_tabs(path) if path.is_file() else []
             tab_dd.options = tabs
             tab_dd.labels = [tab.name for tab in tabs]
 
-        self.file_browser.control.on_select += _update_options
+        self.file_browser.control.on_select += lambda fb: _update_options(fb.path)
+        self.filepath.buffer.on_text_changed += lambda b: _update_options(Path(b.text))
 
         if isinstance(self.body, HSplit):
             self.body.children.append(
