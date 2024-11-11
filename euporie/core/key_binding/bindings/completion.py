@@ -66,7 +66,7 @@ def accept_completion() -> None:
 
 register_bindings(
     {
-        "euporie.core.app.BaseApp": {
+        "euporie.core.app.app:BaseApp": {
             "next-completion": "c-i",
             "previous-completion": "s-tab",
             "cancel-completion": "escape",

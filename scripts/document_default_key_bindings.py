@@ -23,7 +23,7 @@ from euporie.core.key_binding.registry import BINDINGS
 from euporie.core.key_binding.utils import format_keys, parse_keys
 
 groups = [
-    "euporie.core.app.BaseApp",
+    "euporie.core.app.app:BaseApp",
     "euporie.core.tabs.base.Tab",
     "euporie.notebook.app.NotebookApp",
     "euporie.notebook.tabs.notebook.Notebook",

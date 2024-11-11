@@ -234,7 +234,7 @@ class BaseApp(ConfigurableApp, Application, ABC):
         self.key_processor = KeyProcessor(_CombinedRegistry(self))
         # List of key-bindings groups to load
         self.bindings_to_load = [
-            "euporie.core.app.BaseApp",
+            "euporie.core.app.app:BaseApp",
             "euporie.core.terminal.TerminalInfo",
         ]
 
@@ -862,7 +862,7 @@ class BaseApp(ConfigurableApp, Application, ABC):
 
     register_bindings(
         {
-            "euporie.core.app.BaseApp": {
+            "euporie.core.app.app:BaseApp": {
                 "quit": ["c-q", "<sigint>"],
                 "close-tab": "c-w",
                 "next-tab": "c-pagedown",
