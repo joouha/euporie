@@ -443,8 +443,8 @@ def build_style(
         # Statusbar
         # "status": f"fg:{cp.fg.more(0.05)} bg:{cp.bg.less(0.15)}",
         "status": f"fg:{cp.fg.more(0.05)} bg:{cp.bg.more(0.05)}",
-        "status-field": f"fg:{cp.fg.more(0.1)} bg:{cp.bg.more(0.1)}",
-        "status-sep": f"fg:{cp.bg.more(0.05)} bg:{cp.bg.more(0.1)}",
+        "status-field": f"bg:{cp.fg.more(0.1)} fg:{cp.bg.more(0.1)} reverse",
+        "status-sep": f"bg:{cp.bg.more(0.05)} fg:{cp.bg.more(0.1)} reverse",
         # Menus & Menu bar
         "menu": f"fg:{cp.fg.more(0.05)} bg:{cp.bg.more(0.05)}",
         "menu bar": f"bg:{cp.bg.less(0.15)}",
@@ -453,11 +453,11 @@ def build_style(
         "menu shortcut disabled": f"fg:{cp.fg.more(0.4).towards(cp.bg, 0.5)}",
         "menu prefix": f"fg:{cp.fg.more(0.2)}",
         "menu prefix disabled": f"fg:{cp.fg.more(0.2).towards(cp.bg, 0.5)}",
-        "menu selection": f"fg:{cp.hl.more(1)} bg:{cp.hl}",
-        "menu selection shortcut": f"fg:{cp.hl.more(1).more(0.05)} bg:{cp.hl}",
-        "menu selection prefix": f"fg:{cp.hl.more(1).more(0.05)} bg:{cp.hl}",
+        "menu selection": f"bg:{cp.hl.more(1)} fg:{cp.hl} reverse",
+        "menu selection shortcut": f"bg:{cp.hl.more(1).more(0.05)} fg:{cp.hl} reverse",
+        "menu selection prefix": f"bg:{cp.hl.more(1).more(0.05)} fg:{cp.hl} reverse",
         "menu border": f"fg:{cp.bg.more(0.15)} bg:{cp.bg.more(0.05)}",
-        "menu border selection": f"bg:{cp.hl}",
+        "menu border selection": f"bg:{cp.bg.more(0.15)} fg:{cp.hl} reverse",
         # Tab bar
         "app-tab-bar": f"bg:{cp.bg.less(0.15)}",
         "app-tab-bar border": f"fg:{cp.bg.more(0.1)}",
@@ -469,10 +469,10 @@ def build_style(
         # Tabs
         "loading": "fg:#888888",
         # Buffer
-        "line-number": f"fg:{cp.fg.more(0.5)} bg:{cp.bg.more(0.05)}",
-        "line-number.current": f"bold orange bg:{cp.bg.more(0.1)}",
-        "line-number edge": f"fg:{cp.bg.darker(0.1)}",
-        "line-number.current edge": f"fg:{cp.bg.darker(0.1)}",
+        "line-number": f"bg:{cp.fg.more(0.5)} fg:{cp.bg.more(0.05)} reverse",
+        "line-number.current": f"bg:orange fg:{cp.bg.more(0.1)} bold",
+        "line-number edge": f"bg:{cp.bg.darker(0.1)}",
+        "line-number.current edge": f"bg:{cp.bg.darker(0.1)}",
         "cursor-line": f"bg:{cp.bg.more(0.05)}",
         "cursor-line search": f"bg:{cp.bg.more(0.02)}",
         "cursor-line search.current": f"bg:{cp.bg.more(0.02)}",
@@ -497,22 +497,22 @@ def build_style(
         "cell border edit": f"fg:{cp.hl.adjust(hue=-0.3333, rel=False)}",
         "cell input prompt": "fg:blue",
         "cell output prompt": "fg:red",
-        "cell show outputs": f"fg:{cp.fg.more(0.5)} bg:{cp.bg.more(0.05)}",
-        "cell show inputs": f"fg:{cp.fg.more(0.5)} bg:{cp.bg.more(0.05)}",
-        "cell show inputs border": f"fg:{cp.bg.darker(0.1)}",
-        "cell show outputs border": f"fg:{cp.bg.darker(0.1)}",
+        "cell show outputs": f"bg:{cp.fg.more(0.5)} fg:{cp.bg.more(0.05)} reverse",
+        "cell show inputs": f"bg:{cp.fg.more(0.5)} fg:{cp.bg.more(0.05)} reverse",
+        "cell show inputs border": f"bg:{cp.bg.darker(0.1)} fg:{cp.bg.more(0.05)} reverse",
+        "cell show outputs border": f"bg:{cp.bg.darker(0.1)} fg:{cp.bg.more(0.05)} reverse",
         # Scrollbars
         "scrollbar": f"fg:{cp.bg.more(0.75)} bg:{cp.bg.more(0.15)}",
         "scrollbar.background": f"fg:{cp.bg.more(0.75)} bg:{cp.bg.more(0.15)}",
-        "scrollbar.arrow": f"fg:{cp.bg.more(0.75)} bg:{cp.bg.more(0.20)}",
+        "scrollbar.arrow": f"bg:{cp.bg.more(0.75)} fg:{cp.bg.more(0.20)} reverse",
         "scrollbar.start": "",
         # "scrollbar.start": f"fg:{cp.bg.more(0.75)} bg:{cp.bg.more(0.25)}",
-        "scrollbar.button": f"fg:{cp.bg.more(0.75)} bg:{cp.bg.more(0.75)}",
-        "scrollbar.end": f"fg:{cp.bg.more(0.15)} bg:{cp.bg.more(0.75)}",
+        "scrollbar.button": f"bg:{cp.bg.more(0.75)} fg:{cp.bg.more(0.75)} reverse",
+        "scrollbar.end": f"bg:{cp.bg.more(0.15)} fg:{cp.bg.more(0.75)} reverse",
         # Overflow margin
         "overflow": f"fg:{cp.fg.more(0.5)}",
         # Dialogs
-        "dialog dialog-title": f"fg:white bg:{cp.hl.darker(0.25)} bold",
+        "dialog dialog-title": f"bg:white fg:{cp.hl.darker(0.25)} bold reverse",
         "dialog": f"fg:{cp.fg.base} bg:{cp.bg.darker(0.1)}",
         "dialog text-area": f"bg:{cp.bg.lighter(0.05)}",
         "dialog input text text-area": f"fg:default bg:{cp.bg.less(0.1)}",
@@ -579,7 +579,7 @@ def build_style(
         "file-browser face": f"bg:{cp.bg.lighter(0.1)}",
         "file-browser face row alt-row": f"bg:{cp.bg.lighter(0.1).more(0.01)}",
         "file-browser face row hovered": f"bg:{cp.bg.more(0.2)}",
-        "file-browser face row selection": f"bg:{cp.hl}",
+        "file-browser face row selection": f"bg:{cp.fg} fg:{cp.hl} reverse",
         # Shortcuts
         "shortcuts.group": f"bg:{cp.bg.more(0.4)} bold underline",
         # "shortcuts.row": f"bg:{cp.bg.base} nobold",
@@ -588,7 +588,7 @@ def build_style(
         # Palette
         "palette.item": f"fg:{cp.fg.more(0.05)} bg:{cp.bg.more(0.05)}",
         "palette.item.alt": f"bg:{cp.bg.more(0.15)}",
-        "palette.item.selected": f"fg:{cp.hl.more(1)} bg:{cp.hl}",
+        "palette.item.selected": f"bg:{cp.hl.more(1)} fg:{cp.hl} reverse",
         # Pager
         "pager": f"bg:{cp.bg.more(0.05)}",
         "pager.border": f"fg:{cp.bg.towards(cp.ansiblack, 0.15)} reverse",
@@ -608,13 +608,13 @@ def build_style(
         "side_bar border outer": f"bg:{cp.bg}",
         "side_bar buttons": f"bg:{cp.bg.less(0.15)}",
         "side_bar buttons hovered": f"fg:{cp.hl}",
-        "side_bar buttons selection": f"fg:{cp.fg} bg:{cp.hl}",
-        "side_bar buttons separator": f"fg:{cp.bg.less(0.15)} bg:{cp.bg.less(0.15)}",
+        "side_bar buttons separator": f"bg:{cp.bg.less(0.15)} fg:{cp.bg.less(0.15)}",
+        "side_bar buttons selection": f"bg:{cp.fg} fg:{cp.hl} reverse",
         "side_bar buttons separator selection before": (
-            f"fg:{cp.bg.less(0.15)} bg:{cp.hl}"
+            f"bg:{cp.bg.less(0.15)} fg:{cp.hl} reverse"
         ),
         "side_bar buttons separator selection after": (
-            f"fg:{cp.hl} bg:{cp.bg.less(0.15)}"
+            f"fg:{cp.hl} bg:{cp.bg.less(0.15)} noreverse"
         ),
         # Tabbed split
         "tabbed-split border": f"fg:{cp.bg.more(0.2)}",
@@ -689,9 +689,9 @@ def build_style(
         "text-area focused selected": "reverse",
         # Buttons
         "input button face": f"fg:default bg:{cp.bg.more(0.05)}",
-        "input button face hovered": f"fg:default bg:{cp.bg.more(0.2)}",
-        "input button face selection": f"bg:{cp.bg.more(0.05)}",
-        "input button face focused": f"fg:default bg:{cp.bg.towards(cp.hl, 0.1)}",
+        "input button face hovered": f"fg:{cp.fg} bg:{cp.bg.more(0.2)}",
+        "input button face selection": f"bg:{cp.fg} fg:{cp.bg.more(0.05)} reverse",
+        "input button face focused": f"bg:{cp.fg} fg:{cp.bg.towards(cp.hl, 0.1)} reverse",
         # Input widgets
         "input border top": f"fg:{cp.bg.lighter(0.5)}",
         "input border left": f"fg:{cp.bg.lighter(0.5)}",
