@@ -92,7 +92,7 @@ if TYPE_CHECKING:
     from asyncio import AbstractEventLoop
     from pathlib import Path
     from types import FrameType
-    from typing import Any, Callable, TypeVar
+    from typing import Any, Callable, ClassVar, TypeVar
 
     # from prompt_toolkit.application import _AppResult
     from prompt_toolkit.clipboard import Clipboard
@@ -146,7 +146,7 @@ class BaseApp(ConfigurableApp, Application, ABC):
     color_palette: ColorPalette
     mouse_position: Point
 
-    log_level_stdout: str = "CRITICAL"
+    _config_defaults: ClassVar[dict[str, Any]] = {"log_level_stdout": "critical"}
 
     def __init__(
         self,
