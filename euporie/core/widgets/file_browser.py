@@ -40,7 +40,7 @@ if TYPE_CHECKING:
     from prompt_toolkit.layout.dimension import AnyDimension
     from upath.core import PT
 
-    from euporie.core.widgets.status import StatusBarFields
+    from euporie.core.bars.status import StatusBarFields
 
 log = logging.getLogger(__name__)
 

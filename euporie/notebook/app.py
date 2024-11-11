@@ -22,6 +22,8 @@ from prompt_toolkit.layout.dimension import Dimension
 from euporie.core.app.app import BaseApp
 from euporie.core.bars.command import CommandBar
 from euporie.core.bars.menu import ToolbarCompletionsMenu
+from euporie.core.bars.search import SearchBar
+from euporie.core.bars.status import StatusBar, StatusContainer
 from euporie.core.commands import get_cmd
 from euporie.core.filters import has_tabs
 from euporie.core.ft.utils import truncate
@@ -46,8 +48,6 @@ from euporie.core.widgets.logo import Logo
 from euporie.core.widgets.menu import MenuBar, MenuItem
 from euporie.core.widgets.pager import Pager
 from euporie.core.widgets.palette import CommandPalette
-from euporie.core.widgets.search import SearchBar
-from euporie.core.widgets.status import StatusBar, StatusContainer
 from euporie.notebook.enums import TabMode
 from euporie.notebook.widgets.side_bar import SideBar
 
@@ -59,10 +59,10 @@ if TYPE_CHECKING:
     from prompt_toolkit.formatted_text import StyleAndTextTuples
     from prompt_toolkit.layout.containers import AnyContainer
 
+    from euporie.core.bars.status import StatusBarFields
     from euporie.core.tabs import TabRegistryEntry
     from euporie.core.tabs.base import Tab
     from euporie.core.widgets.cell import Cell
-    from euporie.core.widgets.status import StatusBarFields
     from euporie.notebook.tabs.notebook import Notebook
 
 log = logging.getLogger(__name__)

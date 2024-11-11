@@ -6,7 +6,6 @@ import logging
 from math import ceil
 from typing import TYPE_CHECKING
 
-from prompt_toolkit.application.current import get_app
 from prompt_toolkit.data_structures import Point
 from prompt_toolkit.filters import (
     Condition,
@@ -30,6 +29,7 @@ if TYPE_CHECKING:
         NotImplementedOrNone,
     )
     from prompt_toolkit.mouse_events import MouseEvent
+
 log = logging.getLogger(__name__)
 
 

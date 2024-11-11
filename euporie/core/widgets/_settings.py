@@ -107,11 +107,11 @@ add_setting(
 )
 
 
-# euporie.core.widgets.status:StatusBar
+# euporie.core.bars.status:StatusBar
 
 add_setting(
     name="show_status_bar",
-    group="euporie.core.widgets.status",
+    group="euporie.core.bars.status",
     flags=["--show-status-bar"],
     type_=bool,
     title="status bar",
