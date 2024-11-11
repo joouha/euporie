@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-import traceback
 from abc import ABCMeta, abstractmethod
 from functools import partial
 from pathlib import Path
@@ -66,7 +65,6 @@ if TYPE_CHECKING:
     from euporie.core.app.app import BaseApp
     from euporie.core.tabs.base import Tab
     from euporie.core.tabs.kernel import KernelTab
-    from euporie.core.widgets.file_browser import FileBrowserControl
 
 log = logging.getLogger(__name__)
 
@@ -778,6 +776,8 @@ class ErrorDialog(Dialog):
 
     def load(self, exception: Exception | None = None, when: str = "") -> None:
         """Load dialog body & buttons."""
+        import traceback
+
         from euporie.core.margins import MarginContainer, ScrollbarMargin
         from euporie.core.widgets.formatted_text_area import FormattedTextArea
         from euporie.core.widgets.forms import Checkbox
