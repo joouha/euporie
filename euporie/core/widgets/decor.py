@@ -9,8 +9,6 @@ from prompt_toolkit.filters import to_filter
 from prompt_toolkit.layout.containers import (
     ConditionalContainer,
     DynamicContainer,
-    Float,
-    FloatContainer,
 )
 
 from euporie.core.app.current import get_app
