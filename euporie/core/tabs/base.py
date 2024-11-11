@@ -25,6 +25,7 @@ if TYPE_CHECKING:
     from pathlib import Path
     from typing import Any, Callable
 
+    from prompt_toolkit.key_binding.key_processor import KeyPressEvent
     from prompt_toolkit.layout.containers import AnyContainer
 
     from euporie.core.app.app import BaseApp
@@ -109,7 +110,7 @@ class Tab(metaclass=ABCMeta):
         run_in_thread_with_context(self.save, path, _wrapped_cb)
 
     def save(self, path: Path | None = None, cb: Callable | None = None) -> None:
-        """Save the current notebook."""
+        """Save the current tab."""
         raise NotImplementedError
 
     def __pt_status__(self) -> StatusBarFields | None:
@@ -140,12 +141,12 @@ class Tab(metaclass=ABCMeta):
         Tab._refresh_tab()
 
     @staticmethod
-    def _save_file() -> None:
     @add_cmd(filter=tab_has_focus, aliases=["w"])
+    def _save_file(event: KeyPressEvent) -> None:
         """Save the current file."""
         if (tab := get_app().tab) is not None:
             try:
-                tab._save()
+                tab._save(UPath(event._arg) if event._arg else None)
             except NotImplementedError:
                 pass
 
