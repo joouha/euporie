@@ -17,7 +17,7 @@ from prompt_toolkit.layout.containers import (
 from prompt_toolkit.layout.controls import FormattedTextControl
 
 from euporie.core.app.current import get_app
-from euporie.core.filters import is_searching
+from euporie.core.filters import has_toolbar
 from euporie.core.layout.containers import VSplit, Window
 
 if TYPE_CHECKING:
@@ -99,7 +99,7 @@ class StatusBar:
                 height=1,
             ),
             filter=get_app().config.filters.show_status_bar
-            & ~is_searching
+            & ~has_toolbar
             & to_filter(extra_filter),
         )
 

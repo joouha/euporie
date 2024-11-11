@@ -117,6 +117,15 @@ has_float = has_dialog | has_menus | has_completions
 
 
 @Condition
+def has_toolbar() -> bool:
+    """Is there an active toolbar?"""
+    from euporie.core.app.current import get_app
+    from euporie.core.bars import BAR_BUFFERS
+
+    return get_app().current_buffer.name in BAR_BUFFERS
+
+
+@Condition
 def tab_has_focus() -> bool:
     """Determine if there is a currently focused tab."""
     from euporie.core.app.current import get_app
