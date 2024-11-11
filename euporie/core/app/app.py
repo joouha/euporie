@@ -105,6 +105,7 @@ if TYPE_CHECKING:
     from prompt_toolkit.output import Output
 
     from euporie.core.bars.command import CommandBar
+    from euporie.core.bars.search import SearchBar
     from euporie.core.config import Setting
     from euporie.core.format import Formatter
     from euporie.core.tabs import TabRegistryEntry
@@ -112,7 +113,6 @@ if TYPE_CHECKING:
     from euporie.core.terminal import TerminalQuery
     from euporie.core.widgets.dialog import Dialog
     from euporie.core.widgets.pager import Pager
-    from euporie.core.widgets.search import SearchBar
 
     _AppResult = TypeVar("_AppResult")
 

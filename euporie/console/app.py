@@ -26,6 +26,8 @@ from euporie.console.tabs.console import Console
 from euporie.core.app.app import BaseApp
 from euporie.core.bars.command import CommandBar
 from euporie.core.bars.menu import ToolbarCompletionsMenu
+from euporie.core.bars.search import SearchBar
+from euporie.core.bars.status import StatusBar
 from euporie.core.filters import has_dialog
 from euporie.core.layout.mouse import DisableMouseOnScroll
 from euporie.core.widgets.dialog import (
@@ -38,8 +40,6 @@ from euporie.core.widgets.dialog import (
 from euporie.core.widgets.logo import Logo
 from euporie.core.widgets.pager import Pager
 from euporie.core.widgets.palette import CommandPalette
-from euporie.core.widgets.search import SearchBar
-from euporie.core.widgets.status import StatusBar
 
 if TYPE_CHECKING:
     from typing import Any, TypeVar

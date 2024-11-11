@@ -38,10 +38,10 @@ from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
 from prompt_toolkit.utils import get_cwidth
 
 from euporie.core.app.current import get_app
+from euporie.core.bars.status import StatusContainer
 from euporie.core.border import OuterHalfGrid
 from euporie.core.layout.containers import HSplit, VSplit, Window
 from euporie.core.widgets.decor import Shadow
-from euporie.core.widgets.status import StatusContainer
 
 if TYPE_CHECKING:
     from typing import Any, Callable, Iterable, Sequence
@@ -58,9 +58,9 @@ if TYPE_CHECKING:
     from prompt_toolkit.layout.controls import UIControl
 
     from euporie.core.app.app import BaseApp
+    from euporie.core.bars.status import StatusBarFields
     from euporie.core.border import GridStyle
     from euporie.core.commands import Command
-    from euporie.core.widgets.status import StatusBarFields
 
 
 log = logging.getLogger(__name__)

@@ -45,9 +45,9 @@ if TYPE_CHECKING:
     from prompt_toolkit.mouse_events import MouseEvent
 
     from euporie.core.app.app import BaseApp
+    from euporie.core.bars.status import StatusBarFields
     from euporie.core.comm.base import Comm
     from euporie.core.kernel.client import Kernel
-    from euporie.core.widgets.status import StatusBarFields
 
 log = logging.getLogger(__name__)
 

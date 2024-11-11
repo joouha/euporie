@@ -15,6 +15,7 @@ from prompt_toolkit.layout.controls import UIContent, UIControl
 from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
 
 from euporie.core.app.current import get_app
+from euporie.core.bars.status import StatusContainer
 from euporie.core.commands import Command, add_cmd, commands
 from euporie.core.key_binding.registry import register_bindings
 from euporie.core.layout.containers import HSplit, VSplit, Window
@@ -22,7 +23,6 @@ from euporie.core.layout.decor import FocusedStyle
 from euporie.core.margins import MarginContainer, ScrollbarMargin
 from euporie.core.widgets.dialog import Dialog
 from euporie.core.widgets.forms import Text
-from euporie.core.widgets.status import StatusContainer
 
 if TYPE_CHECKING:
     from prompt_toolkit.buffer import Buffer
@@ -32,7 +32,7 @@ if TYPE_CHECKING:
     from prompt_toolkit.layout.controls import GetLinePrefixCallable
 
     from euporie.core.app.app import BaseApp
-    from euporie.core.widgets.status import StatusBarFields
+    from euporie.core.bars.status import StatusBarFields
 
 log = logging.getLogger(__name__)
 

@@ -87,10 +87,10 @@ if TYPE_CHECKING:
     from prompt_toolkit.layout.margins import Margin
     from prompt_toolkit.lexers.base import Lexer
 
+    from euporie.core.bars.status import StatusBarFields
     from euporie.core.format import Formatter
     from euporie.core.inspection import Inspector
     from euporie.core.tabs.kernel import KernelTab
-    from euporie.core.widgets.status import StatusBarFields
 
 
 log = logging.getLogger(__name__)
