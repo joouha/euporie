@@ -482,13 +482,11 @@ def build_style(
         "matching-bracket.other": "fg:yellow bold",
         "trailing-whitespace": f"fg:{cp.fg.more(0.66)}",
         "tab": f"fg:{cp.fg.more(0.66)}",
-        # Search
+        # Search results
         "search": f"bg:{cp.bg.more(0.05)}",
         "search.current": f"bg:{cp.bg.more(0.05)}",
         "incsearch": "bg:ansibrightyellow",
         "incsearch.current": "bg:ansibrightgreen",
-        "search-toolbar": f"fg:{cp.fg.more(0.05)} bg:{cp.bg.more(0.05)}",
-        "search-toolbar.title": f"fg:{cp.fg.more(0.1)} bg:{cp.bg.more(0.1)}",
         # Inputs
         "kernel-input": f"fg:default bg:{cp.bg.more(0.02)}",
         # Cells
@@ -522,6 +520,17 @@ def build_style(
         "dialog border": f"fg:{cp.bg.darker(0.1).more(0.1)}",
         # Horizontals rule
         "hr": "fg:ansired",
+        # Toolbars
+        "toolbar": f"fg:{cp.fg.more(0.05)} bg:{cp.bg.more(0.05)}",
+        "toolbar.title": f"fg:{cp.fg.more(0.1)} bg:{cp.bg.more(0.1)}",
+        # Search bar
+        "search-toolbar": f"fg:{cp.fg.more(0.05)} bg:{cp.bg.more(0.05)}",
+        # Command bar
+        "toolbar menu": f"fg:{cp.fg.more(0.05)} bg:{cp.bg.more(0.05)}",
+        "toolbar menu completion": f"fg:{cp.fg.more(0.1)} bg:{cp.bg.more(0.1)}",
+        "toolbar menu completion current": f"fg:{cp.hl} bg:{cp.fg} reverse",
+        "toolbar menu overflow": f"fg:{cp.fg.more(0.5)}",
+        "toolbar menu meta": f"bg:{cp.bg.more(0.25)} bold",
         # Completions menu
         "menu completion-keyword": "fg:#d700af",
         "menu completion-function": "fg:#005faf",
