@@ -457,7 +457,7 @@ def build_style(
         "menu selection shortcut": f"bg:{cp.hl.more(1).more(0.05)} fg:{cp.hl} reverse",
         "menu selection prefix": f"bg:{cp.hl.more(1).more(0.05)} fg:{cp.hl} reverse",
         "menu border": f"fg:{cp.bg.more(0.15)} bg:{cp.bg.more(0.05)}",
-        "menu border selection": f"bg:{cp.bg.more(0.15)} fg:{cp.hl} reverse",
+        "menu border selection": f"fg:{cp.bg.more(0.15)} bg:{cp.hl} noreverse",
         # Tab bar
         "app-tab-bar": f"bg:{cp.bg.less(0.15)}",
         "app-tab-bar border": f"fg:{cp.bg.more(0.1)}",
@@ -542,28 +542,28 @@ def build_style(
         "menu completion-path": "fg:#aa8800",
         "menu completion-dict-key": "fg:#ddbb00",
         "menu selection completion-keyword": (
-            f"fg:{ColorPaletteColor('#d700af').lighter(0.75)}"
+            f"bg:{ColorPaletteColor('#d700af').lighter(0.75)} fg:{cp.hl} reverse"
         ),
         "menu selection completion-function": (
-            f"fg:{ColorPaletteColor('#005faf').lighter(0.75)}"
+            f"bg:{ColorPaletteColor('#005faf').lighter(0.75)} fg:{cp.hl} reverse"
         ),
         "menu selection completion-class": (
-            f"fg:{ColorPaletteColor('#008700').lighter(0.75)}"
+            f"bg:{ColorPaletteColor('#008700').lighter(0.75)} fg:{cp.hl} reverse"
         ),
         "menu selection completion-statement": (
-            f"fg:{ColorPaletteColor('#5f0000').lighter(0.75)}"
+            f"bg:{ColorPaletteColor('#5f0000').lighter(0.75)} fg:{cp.hl} reverse"
         ),
         "menu selection completion-instance": (
-            f"fg:{ColorPaletteColor('#d75f00').lighter(0.75)}"
+            f"bg:{ColorPaletteColor('#d75f00').lighter(0.75)} fg:{cp.hl} reverse"
         ),
         "menu selection completion-module": (
-            f"fg:{ColorPaletteColor('#d70000').lighter(0.75)}"
+            f"bg:{ColorPaletteColor('#d70000').lighter(0.75)} fg:{cp.hl} reverse"
         ),
         "menu selection completion-magic": (
-            f"fg:{ColorPaletteColor('#888888').lighter(0.75)}"
+            f"bg:{ColorPaletteColor('#888888').lighter(0.75)} fg:{cp.hl} reverse"
         ),
         "menu selection completion-path": (
-            f"fg:{ColorPaletteColor('#aa8800').lighter(0.75)}"
+            f"bg:{ColorPaletteColor('#aa8800').lighter(0.75)} fg:{cp.hl} reverse"
         ),
         # Log
         "log.level.nonset": "fg:grey",
