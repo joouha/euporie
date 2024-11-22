@@ -6,7 +6,9 @@ import subprocess
 import sys
 from pathlib import Path
 
-# Add the docs folder to the path for local extensions
+from intersphinx_registry import get_intersphinx_mapping
+
+# # Add the docs folder to the path for local extensions
 sys.path.append(str(Path(__file__).parent.absolute()))
 
 # Project information
@@ -62,22 +64,11 @@ autosummary_generate = True
 autosummary_imported_members = True
 
 # Intersphinx options
-intersphinx_mapping = {
-    "python": ("https://docs.python.org/3", None),
-    "prompt_toolkit": ("https://python-prompt-toolkit.readthedocs.io/en/master/", None),
+intersphinx_mapping = intersphinx_mapping = {
+    **get_intersphinx_mapping(packages={"python", "prompt_toolkit", "sympy"}),
     "rich": ("https://rich.readthedocs.io/en/stable/", None),
     "commonmark": ("https://commonmarkpy.readthedocs.io/en/latest/", None),
-    "sympy": ("https://docs.sympy.org/latest/", None),
-    # "ipywidgets": ("https://ipywidgets.readthedocs.io/latest/", None),
 }
-
-# "https://github.com/jb-leger/flatlatex"
-#  <https://github.com/phfaist/pylatexenc/>`_
-#  <https://github.com/liuyug/mtable>`_
-# cairosvg <https://www.courtbouillon.org/cairosvg>`_
-#  <https://github.com/adzierzanowski/timg>`_
-#  <https://github.com/ar90n/teimpy>`_
-#  <https://github.com/davidbrochart/akernel
 
 # Run scripts to generate rst includes
 docs_dir = Path(__file__).parent
