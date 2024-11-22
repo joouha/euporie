@@ -40,7 +40,7 @@ def main(name: str = "launch") -> None:
     if entry := apps.get(name):
         return entry.load().launch()
     else:
-        raise Exception(f"Euporie app `{name}` not installed")
+        raise ModuleNotFoundError(f"Euporie app `{name}` not installed")
 
 
 if __name__ == "__main__":
