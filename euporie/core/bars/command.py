@@ -117,7 +117,7 @@ class CommandBar:
         """Return value determines if the text is kept."""
         # TODO - lookup and run command with args
         get_app().layout.focus_last()
-        text = buffer.text
+        text = buffer.text.strip()
         cmd, _, args = text.partition(" ")
         get_cmd(cmd).run(args)
         return False
