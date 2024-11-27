@@ -64,11 +64,9 @@ autosummary_generate = True
 autosummary_imported_members = True
 
 # Intersphinx options
-intersphinx_mapping = intersphinx_mapping = {
-    **get_intersphinx_mapping(packages={"python", "prompt_toolkit", "sympy"}),
-    "rich": ("https://rich.readthedocs.io/en/stable/", None),
-    "commonmark": ("https://commonmarkpy.readthedocs.io/en/latest/", None),
-}
+intersphinx_mapping = intersphinx_mapping = get_intersphinx_mapping(
+    packages={"python", "prompt_toolkit", "sympy", "rich", "commonmark"}
+)
 
 # Run scripts to generate rst includes
 docs_dir = Path(__file__).parent
