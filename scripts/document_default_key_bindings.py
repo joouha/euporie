@@ -3,8 +3,8 @@
 
 from __future__ import annotations
 
-import importlib
 import json
+from pkgutil import resolve_name
 from textwrap import dedent
 
 from prompt_toolkit.formatted_text.base import to_formatted_text
@@ -24,17 +24,17 @@ from euporie.core.key_binding.utils import format_keys, parse_keys
 
 groups = [
     "euporie.core.app.app:BaseApp",
-    "euporie.core.tabs.base.Tab",
-    "euporie.notebook.app.NotebookApp",
-    "euporie.notebook.tabs.notebook.Notebook",
-    "euporie.console.app.ConsoleApp",
-    "euporie.console.tabs.console.Console",
-    "euporie.preview.app.PreviewApp",
-    "euporie.core.key_binding.bindings.micro.EditMode",
-    "euporie.core.widgets.pager.Pager",
-    "euporie.core.widgets.inputs.KernelInput",
-    "euporie.core.widgets.display.Display",
-    "euporie.web.widgets.webview.WebViewControl",
+    "euporie.core.tabs.base:Tab",
+    "euporie.notebook.app:NotebookApp",
+    "euporie.notebook.tabs.notebook:Notebook",
+    "euporie.console.app:ConsoleApp",
+    "euporie.console.tabs.console:Console",
+    "euporie.preview.app:PreviewApp",
+    "euporie.core.key_binding.bindings.micro:EditMode",
+    "euporie.core.widgets.pager:Pager",
+    "euporie.core.widgets.inputs:KernelInput",
+    "euporie.core.widgets.display:Display",
+    "euporie.web.widgets.webview:WebViewControl",
 ]
 
 sections = {}
@@ -43,13 +43,10 @@ available_width = Dimension(max=9999)
 
 # Pre-import everything
 for group in groups:
-    mod_name, cls_name = group.rsplit(".", maxsplit=1)
-    importlib.import_module(mod_name)
+    resolve_name(group)
 
 for group in groups:
-    mod_name, cls_name = group.rsplit(".", maxsplit=1)
-    mod = importlib.import_module(mod_name)
-    cls = getattr(mod, cls_name)
+    cls = resolve_name(group)
     section_title = dedent(cls.__doc__).strip().split("\n")[0].rstrip(".")
 
     table = Table(border_line=AsciiLine)
