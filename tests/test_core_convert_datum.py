@@ -6,8 +6,10 @@ import gc
 from unittest.mock import patch
 
 from PIL import Image
+from prompt_toolkit.application.current import set_app
 from prompt_toolkit.data_structures import Size
 
+from euporie.core.app.dummy import DummyApp
 from euporie.core.convert.datum import Datum, get_loop
 from euporie.core.terminal import TerminalInfo
 
@@ -84,7 +86,9 @@ async def test_pixel_size_async() -> None:
 async def test_cell_size_async() -> None:
     """Tests the asynchronous retrieval of a Datum object's cell size."""
     datum = Datum(Image.new("RGB", (256, 128), color="red"), format="pil")
-    with patch.object(TerminalInfo, "cell_size_px", (8, 16)):
+    app = DummyApp()
+    with set_app(app), patch.object(TerminalInfo, "cell_size_px", (8, 16)):
+        app.term_info = TerminalInfo(app.input, app.output, app.config)
         cols, aspect = await datum.cell_size_async()
     assert cols == 32
     assert aspect == 0.25

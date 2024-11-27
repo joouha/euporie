@@ -26,7 +26,7 @@ def _euporie_core_launch_app_choices() -> list[str]:
 
 add_setting(
     name="app",
-    group={"euporie.core.app.launch", "euporie.hub.app"},
+    group="euporie.core.app.launch",
     flags=["app"],
     type_=str,
     help_="The application to launch",
