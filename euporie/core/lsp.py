@@ -1032,10 +1032,24 @@ class LspClient:
 
 KNOWN_LSP_SERVERS: dict[str, dict[str, Any]] = {
     # Custom additions
-    "ruff": {"command": ["ruff-lsp"], "languages": {"python"}},
     "typos": {"command": ["typos-lsp"], "languages": set()},
     # Helix's known LSPs
     "als": {"command": ["als"]},
+    "ada-language-server": {"command": ["ada_language_server"], "languages": {"ada"}},
+    "ada-gpr-language-server": {
+        "command": ["ada_language_server", "--language-gpr"],
+        "languages": {"ada"},
+    },
+    "angular": {
+        "command": [
+            "ngserver",
+            "--stdio",
+            "--tsProbeLocations",
+            ".",
+            "--ngProbeLocations",
+            ".",
+        ]
+    },
     "awk-language-server": {"command": ["awk-language-server"], "languages": {"awk"}},
     "bash-language-server": {
         "command": ["bash-language-server", "start"],
@@ -1043,11 +1057,16 @@ KNOWN_LSP_SERVERS: dict[str, dict[str, Any]] = {
     },
     "bass": {"command": ["bass", "--lsp"], "languages": {"bass"}},
     "bicep-langserver": {"command": ["bicep-langserver"], "languages": {"bicep"}},
+    "bitbake-language-server": {
+        "command": ["bitbake-language-server"],
+        "languages": {"bitbake"},
+    },
     "bufls": {"command": ["bufls", "serve"], "languages": {"protobuf"}},
     "cairo-language-server": {
         "command": ["cairo-language-server"],
         "languages": {"cairo"},
     },
+    "circom-lsp": {"command": ["circom-lsp"], "languages": {"circom"}},
     "cl-lsp": {"command": ["cl-lsp", "stdio"], "languages": {"common-lisp"}},
     "clangd": {"command": ["clangd"], "languages": {"opencl", "cpp", "c"}},
     "clojure-lsp": {"command": ["clojure-lsp"], "languages": {"clojure"}},
@@ -1071,16 +1090,22 @@ KNOWN_LSP_SERVERS: dict[str, dict[str, Any]] = {
         "command": ["docker-langserver", "--stdio"],
         "languages": {"dockerfile"},
     },
+    "docker-compose-langserver": {
+        "command": ["docker-compose-langserver", "--stdio"],
+        "languages": {"docker-compose"},
+    },
     "dot-language-server": {
         "command": ["dot-language-server", "--stdio"],
         "languages": {"dot"},
     },
+    "earthlyls": {"command": ["earthlyls"], "languages": {"earthfile"}},
     "elixir-ls": {
-        "settings": {"elixirLS": {"dialyzerEnabled": False}},
+        "config": {"elixirLS": {"dialyzerEnabled": False}},
         "command": ["elixir-ls"],
-        "languages": {"elixir", "heex"},
+        "languages": {"heex", "elixir"},
     },
     "elm-language-server": {"command": ["elm-language-server"], "languages": {"elm"}},
+    "elp": {"command": ["elp", "server"], "languages": {"erlang"}},
     "elvish": {"command": ["elvish", "-lsp"], "languages": {"elvish"}},
     "erlang-ls": {"command": ["erlang_ls"], "languages": {"erlang"}},
     "forc": {"command": ["forc", "lsp"], "languages": {"sway"}},
@@ -1090,11 +1115,12 @@ KNOWN_LSP_SERVERS: dict[str, dict[str, Any]] = {
         "languages": {"fortran"},
     },
     "fsharp-ls": {
-        "settings": {"AutomaticWorkspaceInit": True},
+        "config": {"AutomaticWorkspaceInit": True},
         "command": ["fsautocomplete"],
         "languages": {"fsharp"},
     },
     "gleam": {"command": ["gleam", "lsp"], "languages": {"gleam"}},
+    "glsl_analyzer": {"command": ["glsl_analyzer"], "languages": {"glsl"}},
     "graphql-language-service": {
         "command": ["graphql-lsp", "server", "-m", "stream"],
         "languages": {"graphql"},
@@ -1103,9 +1129,12 @@ KNOWN_LSP_SERVERS: dict[str, dict[str, Any]] = {
         "command": ["haskell-language-server-wrapper", "--lsp"],
         "languages": {"cabal", "haskell"},
     },
+    "hyprls": {"command": ["hyprls"], "languages": {"hyprlang"}},
     "idris2-lsp": {"command": ["idris2-lsp"], "languages": {"idris"}},
     "intelephense": {"command": ["intelephense", "--stdio"], "languages": {"php"}},
     "jdtls": {"command": ["jdtls"], "languages": {"java"}},
+    "jedi": {"command": ["jedi-language-server"], "languages": {"python"}},
+    "jq-lsp": {"command": ["jq-lsp"], "languages": {"jq"}},
     "jsonnet-language-server": {
         "command": ["jsonnet-language-server", "-t", "--lint"],
         "languages": {"jsonnet"},
@@ -1122,22 +1151,39 @@ KNOWN_LSP_SERVERS: dict[str, dict[str, Any]] = {
         ],
         "languages": {"julia"},
     },
+    "koka": {
+        "command": ["koka", "--language-server", "--lsstdio"],
+        "languages": {"koka"},
+    },
     "kotlin-language-server": {
         "command": ["kotlin-language-server"],
         "languages": {"kotlin"},
     },
-    "lean": {"command": ["lean", "--server"], "languages": {"lean"}},
+    "lean": {"command": ["lean", "--server", "--memory=1024"], "languages": {"lean"}},
     "ltex-ls": {"command": ["ltex-ls"]},
     "markdoc-ls": {"command": ["markdoc-ls", "--stdio"], "languages": {"markdoc"}},
+    "markdown-oxide": {"command": ["markdown-oxide"], "languages": {"markdown"}},
     "marksman": {"command": ["marksman", "server"], "languages": {"markdown"}},
     "metals": {
-        "settings": {"isHttpEnabled": True},
+        "config": {
+            "isHttpEnabled": True,
+            "metals": {
+                "inlayHints": {
+                    "typeParameters": {"enable": True},
+                    "hintsInPatternMatch": {"enable": True},
+                }
+            },
+        },
         "command": ["metals"],
         "languages": {"scala"},
     },
+    "mesonlsp": {"command": ["mesonlsp", "--lsp"], "languages": {"meson"}},
     "mint": {"command": ["mint", "ls"], "languages": {"mint"}},
+    "mojo-lsp": {"command": ["mojo-lsp-server"], "languages": {"mojo"}},
     "nil": {"command": ["nil"], "languages": {"nix"}},
     "nimlangserver": {"command": ["nimlangserver"], "languages": {"nim"}},
+    "nimlsp": {"command": ["nimlsp"]},
+    "nixd": {"command": ["nixd"], "languages": {"nix"}},
     "nls": {"command": ["nls"], "languages": {"nickel"}},
     "nu-lsp": {"command": ["nu", "--lsp"], "languages": {"nu"}},
     "ocamllsp": {"command": ["ocamllsp"], "languages": {"ocaml", "ocaml-interface"}},
@@ -1150,6 +1196,10 @@ KNOWN_LSP_SERVERS: dict[str, dict[str, Any]] = {
     "pasls": {"command": ["pasls"], "languages": {"pascal"}},
     "pbkit": {"command": ["pb", "lsp"], "languages": {"protobuf"}},
     "perlnavigator": {"command": ["perlnavigator", "--stdio"], "languages": {"perl"}},
+    "pest-language-server": {
+        "command": ["pest-language-server"],
+        "languages": {"pest"},
+    },
     "prisma-language-server": {
         "command": ["prisma-language-server", "--stdio"],
         "languages": {"prisma"},
@@ -1158,13 +1208,18 @@ KNOWN_LSP_SERVERS: dict[str, dict[str, Any]] = {
         "command": ["purescript-language-server", "--stdio"],
         "languages": {"purescript"},
     },
-    "pylsp": {"command": ["pylsp"], "languages": {"python"}},
-    "pyright": {"settings": {}, "command": ["pyright-langserver", "--stdio"]},
+    "pylsp": {"command": ["pylsp"], "languages": {"snakemake", "python"}},
+    "pyright": {"config": {}, "command": ["pyright-langserver", "--stdio"]},
+    "basedpyright": {"config": {}, "command": ["basedpyright-langserver", "--stdio"]},
     "pylyzer": {"command": ["pylyzer", "--server"]},
     "qmlls": {"command": ["qmlls"], "languages": {"qml"}},
+    "quint-language-server": {
+        "command": ["quint-language-server", "--stdio"],
+        "languages": {"quint"},
+    },
     "r": {
         "command": ["R", "--no-echo", "-e", "languageserver::run()"],
-        "languages": {"r", "rmarkdown"},
+        "languages": {"rmarkdown", "r"},
     },
     "racket": {
         "command": ["racket", "-l", "racket-langserver"],
@@ -1176,11 +1231,16 @@ KNOWN_LSP_SERVERS: dict[str, dict[str, Any]] = {
         "languages": {"rescript"},
     },
     "robotframework_ls": {"command": ["robotframework_ls"], "languages": {"robot"}},
+    "ruff": {"command": ["ruff", "server"], "languages": {"python"}},
     "serve-d": {"command": ["serve-d"], "languages": {"d"}},
     "slint-lsp": {"command": ["slint-lsp"], "languages": {"slint"}},
     "solargraph": {"command": ["solargraph", "stdio"], "languages": {"ruby"}},
     "solc": {"command": ["solc", "--lsp"], "languages": {"solidity"}},
     "sourcekit-lsp": {"command": ["sourcekit-lsp"], "languages": {"swift"}},
+    "spade-language-server": {
+        "command": ["spade-language-server"],
+        "languages": {"spade"},
+    },
     "svlangserver": {"command": ["svlangserver"], "languages": {"verilog"}},
     "swipl": {
         "command": [
@@ -1196,6 +1256,7 @@ KNOWN_LSP_SERVERS: dict[str, dict[str, Any]] = {
         ],
         "languages": {"prolog"},
     },
+    "superhtml": {"command": ["superhtml", "lsp"], "languages": {"html"}},
     "tailwindcss-ls": {"command": ["tailwindcss-language-server", "--stdio"]},
     "taplo": {"command": ["taplo", "lsp", "stdio"], "languages": {"toml"}},
     "templ": {"command": ["templ", "lsp"], "languages": {"templ"}},
@@ -1204,36 +1265,38 @@ KNOWN_LSP_SERVERS: dict[str, dict[str, Any]] = {
         "languages": {"tfvars", "hcl"},
     },
     "texlab": {"command": ["texlab"], "languages": {"latex", "bibtex"}},
+    "typespec": {"command": ["tsp-server", "--stdio"], "languages": {"typespec"}},
     "vala-language-server": {
         "command": ["vala-language-server"],
         "languages": {"vala"},
     },
+    "vale-ls": {"command": ["vale-ls"]},
     "vhdl_ls": {"command": ["vhdl_ls"], "languages": {"vhdl"}},
     "vlang-language-server": {"command": ["v-analyzer"], "languages": {"v"}},
     "vscode-css-language-server": {
-        "settings": {"provideFormatter": True, "css": {"validate": {"enable": True}}},
+        "config": {"provideFormatter": True, "css": {"validate": {"enable": True}}},
         "command": ["vscode-css-language-server", "--stdio"],
         "languages": {"scss", "css"},
     },
     "vscode-html-language-server": {
-        "settings": {"provideFormatter": True},
+        "config": {"provideFormatter": True},
         "command": ["vscode-html-language-server", "--stdio"],
         "languages": {"html"},
     },
     "vscode-json-language-server": {
-        "settings": {"provideFormatter": True, "json": {"validate": {"enable": True}}},
+        "config": {"provideFormatter": True, "json": {"validate": {"enable": True}}},
         "command": ["vscode-json-language-server", "--stdio"],
-        "languages": {"json"},
+        "languages": {"jsonc", "json"},
     },
     "vuels": {
-        "settings": {"typescript": {"tsdk": "node_modules/typescript/lib/"}},
+        "config": {"typescript": {"tsdk": "node_modules/typescript/lib/"}},
         "command": ["vue-language-server", "--stdio"],
         "languages": {"vue"},
     },
     "wgsl_analyzer": {"command": ["wgsl_analyzer"], "languages": {"wgsl"}},
     "yaml-language-server": {
         "command": ["yaml-language-server", "--stdio"],
-        "languages": {"yaml"},
+        "languages": {"yaml", "docker-compose"},
     },
     "zls": {"command": ["zls"], "languages": {"zig"}},
     "blueprint-compiler": {
@@ -1241,12 +1304,22 @@ KNOWN_LSP_SERVERS: dict[str, dict[str, Any]] = {
         "languages": {"blueprint"},
     },
     "typst-lsp": {"command": ["typst-lsp"], "languages": {"typst"}},
+    "tinymist": {"command": ["tinymist"], "languages": {"typst"}},
+    "pkgbuild-language-server": {
+        "command": ["pkgbuild-language-server"],
+        "languages": {"pkgbuild"},
+    },
+    "helm_ls": {"command": ["helm_ls", "serve"], "languages": {"helm"}},
+    "ember-language-server": {
+        "command": ["ember-language-server", "--stdio"],
+        "languages": {"gts", "gjs", "glimmer"},
+    },
     "ansible-language-server": {
         "command": ["ansible-language-server", "--stdio"],
         "languages": {"yaml"},
     },
     "lua-language-server": {
-        "settings": {
+        "config": {
             "Lua": {
                 "hint": {
                     "enable": True,
@@ -1262,7 +1335,7 @@ KNOWN_LSP_SERVERS: dict[str, dict[str, Any]] = {
         "languages": {"lua"},
     },
     "gopls": {
-        "settings": {
+        "config": {
             "hints": {
                 "assignVariableTypes": True,
                 "compositeLiteralFields": True,
@@ -1273,10 +1346,10 @@ KNOWN_LSP_SERVERS: dict[str, dict[str, Any]] = {
             }
         },
         "command": ["gopls"],
-        "languages": {"gotmpl", "gowork", "go", "gomod"},
+        "languages": {"go", "gowork", "gotmpl", "gomod"},
     },
     "golangci-lint-lsp": {
-        "settings": {
+        "config": {
             "command": [
                 "golangci-lint",
                 "run",
@@ -1289,7 +1362,7 @@ KNOWN_LSP_SERVERS: dict[str, dict[str, Any]] = {
         "languages": {"go"},
     },
     "rust-analyzer": {
-        "settings": {
+        "config": {
             "inlayHints": {
                 "bindingModeHints": {"enable": False},
                 "closingBraceHints": {"minLines": 10},
@@ -1303,7 +1376,7 @@ KNOWN_LSP_SERVERS: dict[str, dict[str, Any]] = {
         "languages": {"rust"},
     },
     "typescript-language-server": {
-        "settings": {
+        "config": {
             "hostInfo": "helix",
             "typescript": {
                 "inlayHints": {
@@ -1329,10 +1402,10 @@ KNOWN_LSP_SERVERS: dict[str, dict[str, Any]] = {
             },
         },
         "command": ["typescript-language-server", "--stdio"],
-        "languages": {"tsx", "typescript", "jsx", "javascript"},
+        "languages": {"jsx", "typescript", "javascript", "tsx"},
     },
     "svelteserver": {
-        "settings": {
+        "config": {
             "configuration": {
                 "typescript": {
                     "inlayHints": {
@@ -1358,5 +1431,22 @@ KNOWN_LSP_SERVERS: dict[str, dict[str, Any]] = {
         },
         "command": ["svelteserver", "--stdio"],
         "languages": {"svelte"},
+    },
+    "vscode-eslint-language-server": {
+        "config": {
+            "validate": "on",
+            "experimental": {"useFlatConfig": False},
+            "rulesCustomizations": [],
+            "run": "onType",
+            "problems": {"shortenToSingleLine": False},
+            "nodePath": "",
+            "codeAction": {
+                "disableRuleComment": {"enable": True, "location": "separateLine"},
+                "showDocumentation": {"enable": True},
+            },
+            "workingDirectory": {"mode": "location"},
+        },
+        "command": ["vscode-eslint-language-server", "--stdio"],
+        "languages": {"gts", "gjs"},
     },
 }
