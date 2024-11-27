@@ -44,9 +44,11 @@ class _IsPrefixOfLongerMatchCache(vt100_parser._IsPrefixOfLongerMatchCache):
         result = bool(
             # (hard coded) If this could be a prefix of a CPR response, return True.
             vt100_parser._cpr_response_prefix_re.match(prefix)
+            # True if this could be a mouse event sequence
             or vt100_parser._mouse_event_prefix_re.match(prefix)
-            # If this could be a prefix of anything else, also return True.
+            # True if this could be the prefix of an expected escape sequence
             or prefix in self._ansi_sequence_prefixes
+            # If this could be a prefix of any other escape sequence, return True
             or self._response_prefix_re.match(prefix)
         )
         self[prefix] = result

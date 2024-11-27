@@ -52,7 +52,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-hub = ["asyncssh~=2.10.1"]
+hub = ["asyncssh~=2.18"]
 
 [project.urls]
 Documentation = "https://euporie.readthedocs.io/en/latest"

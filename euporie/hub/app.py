@@ -30,6 +30,17 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 
+def _euporie_hub_app_choices() -> list[str]:
+    """List known euporie-apps and their aliases."""
+    from euporie.core.__main__ import available_apps
+    from euporie.core.app import APP_ALIASES
+
+    return sorted(
+        {entry.name for entry in available_apps().values()} - {"launch", "hub"}
+        | APP_ALIASES.keys()
+    )
+
+
 class EuporieSSHServer(asyncssh.SSHServer):  # type: ignore
     """Launch euporie hub, which serves a euporie app over SSH.
 
@@ -63,9 +74,9 @@ class HubApp(ConfigurableApp):
     This app never actually gets run, but is used to run another app in an SSH server.
     """
 
+    name = "hub"
     _config_defaults: ClassVar[dict[str, Any]] = {
-        "log_file": "-",
-        "log_level": "info",
+        "log_level_stdout": "info",
         "log_config": """
 {
     "handlers": { "stdout": {"share_stream": false} },
@@ -87,7 +98,7 @@ class HubApp(ConfigurableApp):
             )
 
         # Detect selected app
-        chosen_app = cls.config.app
+        chosen_app = cls.config.hub_app
         chosen_app = APP_ALIASES.get(chosen_app, chosen_app)
 
         # Import the hubbed app
@@ -95,7 +106,7 @@ class HubApp(ConfigurableApp):
         if entry := apps.get(chosen_app):
             app_cls = entry.load()
         else:
-            raise ValueError("Application `%s` not found", cls.config.app)
+            raise ModuleNotFoundError("Application `%s` not found", cls.config.app)
 
         # Run the HubApp in an SSH server
         loop = get_event_loop()
@@ -109,9 +120,24 @@ class HubApp(ConfigurableApp):
             )
         )
         log.info("Running euporie hub on port %s", cls.config.port)
-        loop.run_forever()
+        try:
+            loop.run_forever()
+        except KeyboardInterrupt:
+            log.info("Exiting euporie hub")
 
     # ################################### Settings ####################################
+
+    add_setting(
+        name="hub_app",
+        group="euporie.hub.app",
+        flags=["hub_app"],
+        type_=str,
+        help_="The application to launch",
+        choices=_euporie_hub_app_choices,
+        description="""
+            The name of the application to launch.
+        """,
+    )
 
     add_setting(
         name="host",

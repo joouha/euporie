@@ -142,7 +142,6 @@ class BaseApp(ConfigurableApp, Application, ABC):
     wide methods can be easily added.
     """
 
-    name: str
     color_palette: ColorPalette
     mouse_position: Point
 
@@ -209,7 +208,7 @@ class BaseApp(ConfigurableApp, Application, ABC):
         # Add state for micro key-bindings
         self.micro_state = MicroState()
         # Load the terminal information system
-        self.term_info = TerminalInfo(self.input, self.output, self.config)
+        # self.term_info = TerminalInfo(self.input, self.output, self.config)
         # Floats at the app level
         self.leave_graphics = to_filter(leave_graphics)
         self.graphics: WeakSet[Float] = WeakSet()
@@ -322,8 +321,7 @@ class BaseApp(ConfigurableApp, Application, ABC):
         # Set the application's style, and update it when the terminal responds
         self.update_style()
         self.term_info.colors.event += self.update_style
-        # Load completions menu. This must be done after the app is set, because
-        # :py:func:`get_app` is needed to access the config
+        # Load completions menu.
         self.menus["completions"] = Float(
             content=Shadow(CompletionsMenu(extra_filter=~has_toolbar)),
             xcursor=True,
@@ -345,8 +343,17 @@ class BaseApp(ConfigurableApp, Application, ABC):
     ) -> _AppResult:
         """Run the application."""
         with set_app(self):
+            # Use a custom vt100 parser to allow querying the terminal
+            if parser := getattr(self.input, "vt100_parser", None):
+                setattr(  # noqa B010
+                    self.input, "vt100_parser", Vt100Parser(parser.feed_key_callback)
+                )
+
             # Load key bindings
             self.load_key_bindings()
+
+            # Load the terminal information system
+            self.term_info = TerminalInfo(self.input, self.output, self.config)
             # Send queries to the terminal
             self.term_info.send_all()
             # Read responses
@@ -366,6 +373,14 @@ class BaseApp(ConfigurableApp, Application, ABC):
         )
 
     @classmethod
+    async def interact(cls, ssh_session: PromptToolkitSSHSession) -> None:
+        """Run the app asynchronously for the hub SSH server."""
+        try:
+            await cls().run_async()
+        except EOFError:
+            pass
+
+    @classmethod
     def load_input(cls) -> Input:
         """Create the input for this application to use.
 
@@ -381,12 +396,6 @@ class BaseApp(ConfigurableApp, Application, ABC):
             from euporie.core.io import IgnoredInput
 
             input_ = IgnoredInput()
-
-        # Use a custom vt100 parser to allow querying the terminal
-        if parser := getattr(input_, "vt100_parser", None):
-            setattr(  # noqa B010
-                input_, "vt100_parser", Vt100Parser(parser.feed_key_callback)
-            )
 
         return input_
 
@@ -507,11 +516,6 @@ class BaseApp(ConfigurableApp, Application, ABC):
         self.renderer.reset()
         # Exit the main thread
         sys.exit(1)
-
-    @classmethod
-    async def interact(cls, ssh_session: PromptToolkitSSHSession) -> None:
-        """Run the app asynchronously for the hub SSH server."""
-        await cls().run_async()
 
     @abstractmethod
     def load_container(self) -> AnyContainer:

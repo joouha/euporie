@@ -199,7 +199,7 @@ class Colors(TerminalQuery):
         r"(?P<g>[0-9A-Fa-f]{2,4})\/"
         r"(?P<b>[0-9A-Fa-f]{2,4})"
         # Allow BEL or ST as terminator
-        r"(\x1b\\\Z|\x07)"
+        r"(\x1b\\|\x9c|\x07)"
     )
 
     def _cmd(self) -> str:
@@ -248,7 +248,7 @@ class KittyGraphicsStatus(TerminalQuery):
     cache = True
     cmd = "\x1b_Gi=4294967295,s=1,v=1,a=q,t=d,f=24;AAAA\x1b\\"
     # Konsole responds with 'i=0' - I'll allow it
-    pattern = re.compile(r"^\x1b_Gi=(4294967295|0);(?P<status>OK)\x1b\\\Z")
+    pattern = re.compile(r"^\x1b_Gi=(4294967295|0);(?P<status>OK)\x1b\\")
 
     def _cmd(self) -> str:
         """Hide the command in case the terminal does not support this sequence."""
@@ -269,7 +269,7 @@ class SixelGraphicsStatus(TerminalQuery):
     default = False
     cache = True
     cmd = "\x1b[c"
-    pattern = re.compile(r"^\x1b\[\?(?:\d+;)*(?P<sixel>4)(?:;\d+)*c\Z")
+    pattern = re.compile(r"^\x1b\[\?(?:\d+;)*(?P<sixel>4)(?:;\d+)*c")
 
     def _cmd(self) -> str:
         return passthrough(self.cmd, self.config)
@@ -334,7 +334,7 @@ class SgrPixelStatus(TerminalQuery):
     default = False
     cache = True
     cmd = "\x1b[?1016h\x1b[?1016$p\x1b[?1016l"  # Enable, check, disable
-    pattern = re.compile(r"^\x1b\[\?1016;(?P<Pm>\d)\$\Z")
+    pattern = re.compile(r"^\x1b\[\?1016;(?P<Pm>\d)\$")
 
     def verify(self, data: str) -> bool:
         """Verify the terminal response means SGR pixel-mode is supported."""
@@ -364,7 +364,7 @@ class ClipboardData(TerminalQuery):
     default = ""
     cache = False
     cmd = "\x1b]52;c;?\x1b\\"
-    pattern = re.compile(r"^\x1b\]52;(?:c|p)?;(?P<data>[A-Za-z0-9+/=]+)\x1b\\\Z")
+    pattern = re.compile(r"^\x1b\]52;(?:c|p)?;(?P<data>[A-Za-z0-9+/=]+)\x1b\\")
     run_at_startup = False
 
     def verify(self, data: str) -> str:
