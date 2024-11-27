@@ -11,7 +11,9 @@ class LaunchApp(ConfigurableApp):
 
     @classmethod
     def launch(cls) -> None:
-        """Launch the app."""
+        """Launch an app."""
+        super().launch()
+
         # Detect selected app
         chosen_app = cls.config.app
         chosen_app = APP_ALIASES.get(chosen_app, chosen_app)

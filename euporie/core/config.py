@@ -357,8 +357,6 @@ class Config:
 
     def __init__(self, _help: str = "", **kwargs: Any) -> None:
         """Create a new configuration object instance."""
-        from euporie.core.log import BufferedLogs, setup_logs
-
         self._help = _help
 
         # Create stores
@@ -390,6 +388,10 @@ class Config:
             # Key-word arguments
             **kwargs,
         }
+
+    def load(self) -> None:
+        """Load the configuration options from non-local sources."""
+        from euporie.core.log import BufferedLogs, setup_logs
 
         # Buffer logs and replay them after settings are configured
         with BufferedLogs(logger=log):
@@ -499,8 +501,6 @@ class Config:
         """Attempt to load configuration settings from commandline flags."""
         # Parse known arguments
         namespace, remainder = self._load_parser().parse_known_intermixed_args()
-        # Update argv to leave the remaining arguments for subsequent apps
-        sys.argv[1:] = remainder
         # Validate arguments
         return vars(namespace)
 
