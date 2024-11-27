@@ -61,7 +61,6 @@ def accept_completion() -> None:
     complete_state = buffer.complete_state
     if complete_state and isinstance(complete_state.current_completion, Completion):
         buffer.apply_completion(complete_state.current_completion)
-        get_app().layout.focus(buffer)
 
 
 register_bindings(
