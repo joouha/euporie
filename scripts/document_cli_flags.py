@@ -86,7 +86,7 @@ if __name__ == "__main__":
                     for app in entry_points(group="euporie.apps"):
                         if app.value.split(".")[:2] == script.value.split(".")[:2]:
                             App = app.load()
-                            parser = App.config.load_parser()
+                            parser = App.config._load_parser()
                             parser.prog = script.name
                             print(f".. _cli-{script.name}-start:")
                             print(

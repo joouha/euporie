@@ -78,6 +78,7 @@ class HubApp(ConfigurableApp):
     def launch(cls) -> None:
         """Launch the HubApp SSH server."""
         # Configure some setting defaults
+        super().launch()
 
         if not cls.config.auth:
             log.warning(

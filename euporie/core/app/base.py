@@ -48,3 +48,4 @@ class ConfigurableApp(ABC):
     @classmethod
     def launch(cls) -> None:
         """Launch the app."""
+        cls.config.load()
