@@ -348,12 +348,10 @@ class BaseApp(ConfigurableApp, Application, ABC):
                 setattr(  # noqa B010
                     self.input, "vt100_parser", Vt100Parser(parser.feed_key_callback)
                 )
-
-            # Load key bindings
-            self.load_key_bindings()
-
             # Load the terminal information system
             self.term_info = TerminalInfo(self.input, self.output, self.config)
+            # Load key bindings
+            self.load_key_bindings()
             # Send queries to the terminal
             self.term_info.send_all()
             # Read responses
