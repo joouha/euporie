@@ -326,7 +326,6 @@ class MenuBar:
         def _cancel(event: KeyPressEvent) -> None:
             """Leave menu."""
             self.selected_menu = []
-            log.debug(self.last_focused)
             self.refocus()
 
         # Sub menu navigation.
