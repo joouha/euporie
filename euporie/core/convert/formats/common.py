@@ -41,14 +41,14 @@ async def imagemagick_convert(
     extend: bool = True,
 ) -> str | bytes:
     """Convert image data to PNG bytes using ``imagemagick``."""
-    cmd: list[Any] = ["convert", "-density", "300"]
+    cmd: list[Any] = ["magick", "-[0]", "-density", "300"]
     app = get_app()
     if cols is not None and hasattr(app, "term_info"):
         px, _ = app.term_info.cell_size_px
         cmd += ["-geometry", f"{int(cols * px)}"]
     if bg:
         cmd += ["-background", bg, "-flatten"]
-    cmd += ["-[0]", f"{output_format}:-"]
+    cmd += [f"{output_format}:-"]
     result: bytes | str = await call_subproc(datum.data, cmd)
 
     if output_format in {"sixel", "svg"} and isinstance(result, bytes):

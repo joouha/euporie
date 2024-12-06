@@ -143,7 +143,7 @@ async def latex_to_png_py_mpl(
 register(
     from_=("svg", "jpeg", "pdf", "gif"),
     to="png",
-    filter_=command_exists("convert", "mogrify"),
+    filter_=command_exists("magick"),
 )(partial(imagemagick_convert, "PNG"))
 
 
