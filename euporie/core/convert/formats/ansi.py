@@ -291,6 +291,13 @@ async def pil_to_ansi_py_timg(
     assert rows is not None
     assert cols is not None
 
+    # Scale to fit while maintaining aspect ratio
+    _width, aspect = await datum.cell_size_async()
+    if cols * aspect < rows:
+        rows = int(cols * aspect)
+    else:
+        cols = int(rows / aspect)
+
     # `timg` assumes a 2x1 terminal cell aspect ratio, so we correct for this while
     # resizing the image
     data = data.resize((cols, ceil(rows * 2 * (px / py) / 0.5)))
