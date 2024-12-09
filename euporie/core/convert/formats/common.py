@@ -7,7 +7,7 @@ import logging
 from typing import TYPE_CHECKING
 
 from euporie.core.app.current import get_app
-from euporie.core.convert.utils import call_subproc
+from euporie.core.convert.utils import call_subproc, scale_to_fit
 
 if TYPE_CHECKING:
     from typing import Any, Literal
@@ -112,25 +112,12 @@ async def chafa_convert_py(
     # Always convert the image, as unconverted images sometime result in an off-by-one
     # line width errors resulting in diagonal image striping for some reason
     data = data.convert("RGBA", palette=Image.Palette.ADAPTIVE, colors=16)
-
     # Init canvas config
     config = CanvasConfig()
     # Set output mode
     config.pixel_mode = str_to_pixel_mode[output_format]
     # Configure the canvas geometry based on our cell size
-    if hasattr(app := get_app(), "term_info"):
-        px, py = app.term_info.cell_size_px
-    else:
-        px, py = 10, 20
-    config.cell_width, config.cell_height = px, py
-    # Set canvas height and width
-    if cols:
-        config.width = cols
-        if rows:
-            config.height = max(1, rows)
-        # If we don't have specified, use the image's aspect
-        else:
-            config.height = max(1, int(cols / data.size[0] * data.size[1] * px / py))
+    config.width, config.height = await scale_to_fit(datum, cols, rows)
 
     # Set the foreground color
     if fg and (color := fg.lstrip("#")):

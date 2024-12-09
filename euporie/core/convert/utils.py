@@ -6,13 +6,45 @@ import asyncio
 import logging
 import subprocess  # S404 - Security implications have been considered
 import tempfile
+from math import ceil
 from pathlib import Path
 from typing import TYPE_CHECKING
+
+from euporie.core.app.current import get_app
 
 if TYPE_CHECKING:
     from typing import Any
 
+    from euporie.core.convert.datum import Datum
+
 log = logging.getLogger(__name__)
+
+
+async def scale_to_fit(datum: Datum, cols: int, rows: int) -> tuple[int, int]:
+    """Calculate image size based on aspect ratio, and scale to fit."""
+    data = datum.data
+    px, py = get_app().term_info.cell_size_px
+
+    # Calculate rows based on image aspect ratio
+    w, h = data.size
+    if rows is None and cols is not None:
+        rows = ceil(cols / w * h)
+    elif cols is None and rows is not None:
+        cols = ceil(rows / h * w)
+    elif rows is None and cols is None:
+        cols = ceil(w / px)
+        rows = ceil(h / py)
+    assert rows is not None
+    assert cols is not None
+
+    # Scale to fit while maintaining aspect ratio
+    _width, aspect = await datum.cell_size_async()
+    if cols * aspect < rows:
+        rows = ceil(cols * aspect)
+    else:
+        cols = ceil(rows / aspect)
+
+    return cols, rows
 
 
 async def call_subproc(

@@ -11,7 +11,7 @@ from euporie.core.app.current import get_app
 from euporie.core.convert.formats.common import chafa_convert_cmd, chafa_convert_py
 from euporie.core.convert.formats.pil import set_background
 from euporie.core.convert.registry import register
-from euporie.core.convert.utils import call_subproc
+from euporie.core.convert.utils import call_subproc, scale_to_fit
 from euporie.core.filters import command_exists, have_modules
 
 if TYPE_CHECKING:
@@ -274,34 +274,14 @@ async def pil_to_ansi_py_timg(
     """Convert a PIL image to ANSI text using :py:mod:`timg`."""
     import timg
 
-    data = datum.data
-    px, py = get_app().term_info.cell_size_px
-
-    # Calculate rows based on image aspect ratio
-    w, h = data.size
-    if rows is None and cols is not None:
-        w, h = data.size
-        rows = ceil(cols / w * h)
-    elif cols is None and rows is not None:
-        w, h = data.size
-        cols = ceil(rows / h * w)
-    elif rows is None and cols is None:
-        cols = ceil(w / px)
-        rows = ceil(h / py)
-    assert rows is not None
-    assert cols is not None
-
-    # Scale to fit while maintaining aspect ratio
-    _width, aspect = await datum.cell_size_async()
-    if cols * aspect < rows:
-        rows = int(cols * aspect)
-    else:
-        cols = int(rows / aspect)
-
+    # Scale image to fit available space
+    cols, rows = await scale_to_fit(datum, cols, rows)
     # `timg` assumes a 2x1 terminal cell aspect ratio, so we correct for this while
-    # resizing the image
-    data = data.resize((cols, ceil(rows * 2 * (px / py) / 0.5)))
-
+    px, py = get_app().term_info.cell_size_px
+    rows = int(rows * 2 * (px / py) / 0.5)
+    # Resize the image
+    data = datum.data.resize((cols, rows))
+    # Set background if necessary
     if bg:
         data = set_background(data, bg)
     return timg.Ansi24HblockMethod(data).to_string()
