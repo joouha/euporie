@@ -83,7 +83,11 @@ async def call_subproc(
     else:
         stdinput = data
 
-    log.debug("Running external command `%s`", cmd)
+    if log.level <= 0:
+        import shlex
+
+        log.debug("Running external command `%s`", shlex.join(cmd))
+
     error: Exception | None = None
     try:
         proc = await asyncio.create_subprocess_exec(
