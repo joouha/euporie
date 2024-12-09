@@ -266,12 +266,16 @@ class Datum(Generic[T], metaclass=_MetaDatum):
                                 )
                                 self._conversions[key] = output
                             except Exception:
-                                log.debug("Conversion step %s failed", converter)
+                                log.debug(
+                                    "Conversion step %s failed",
+                                    converter,
+                                    exc_info=True,
+                                )
                                 continue
                             else:
                                 break
                         else:
-                            log.exception("An error occurred during format conversion")
+                            log.warning("An error occurred during format conversion")
                             output = None
                     if output is None:
                         log.error(
@@ -338,38 +342,63 @@ class Datum(Generic[T], metaclass=_MetaDatum):
         try:
             return self._pixel_size
         except AttributeError:
-            px, py = self.px, self.py
+            pass
+
+        px, py = self.px, self.py
+        data = self.data
+
+        while px is None or py is None:
             # Do not bother trying if the format is ANSI
-            if self.format != "ansi" and (px is None or py is None):
+            if self.format == "ansi":
+                break
+
+            from PIL.Image import Image as PilImage
+
+            if isinstance(data, PilImage):
+                px, py = data.size
+                break
+
+            # Decode base64 data
+            if self.format.startswith("base64-"):
+                data = await self.convert_async(to=self.format[7:])
+
+            # Encode string data
+            if isinstance(data, str):
+                data = data.encode()
+
+            while True:
                 # Try using imagesize to get the size of the output
-                if (
-                    self.format not in {"png", "svg", "jpeg", "gif", "tiff"}
-                    and _CONVERTOR_ROUTE_CACHE[(self.format, "png")]
-                ):
-                    data = await self.convert_async(to="png")
-                else:
-                    data = self.data
-                if isinstance(data, str):
-                    data = data.encode()
                 try:
                     import imagesize
 
                     px_calc, py_calc = imagesize.get(io.BytesIO(data))
                 except ValueError:
-                    pass
-                else:
-                    if px is None and px_calc > 0:
-                        if py is not None and py_calc > 0:
-                            px = px_calc * py / py_calc
-                        else:
-                            px = px_calc
-                    if py is None and py_calc > 0:
-                        if px is not None and px_calc > 0:
-                            py = py_calc * px / px_calc
-                        else:
-                            py = py_calc
-            self._pixel_size = (px, py)
-            return self._pixel_size
+                    px_calc = py_calc = -1
+
+                if (
+                    px_calc <= 0
+                    and py_calc <= 0
+                    and _CONVERTOR_ROUTE_CACHE[(self.format, "png")]
+                ):
+                    # Try converting to PNG on failure
+                    data = await self.convert_async(to="png")
+                    continue
+
+                if px is None and px_calc > 0:
+                    if py is not None and py_calc > 0:
+                        px = int(px_calc * py / py_calc)
+                    else:
+                        px = px_calc
+                if py is None and py_calc > 0:
+                    if px is not None and px_calc > 0:
+                        py = int(py_calc * px / px_calc)
+                    else:
+                        py = py_calc
+                break
+            break
+
+        self._pixel_size = (px, py)
+        return self._pixel_size
 
     def pixel_size(self) -> Any:
         """Get data dimensions synchronously."""
