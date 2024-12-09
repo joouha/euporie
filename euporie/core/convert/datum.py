@@ -138,6 +138,10 @@ class Datum(Generic[T], metaclass=_MetaDatum):
         self._conversions: dict[
             tuple[str, int | None, int | None, str | None, str | None, bool], T | None
         ] = {}
+        self._queue: dict[
+            tuple[str, int | None, int | None, str | None, str | None, bool],
+            asyncio.Event,
+        ] = {}
         self._finalizer = finalize(self, self._cleanup_datum_sizes, self.hash)
         self._finalizer.atexit = False
 
@@ -236,20 +240,30 @@ class Datum(Generic[T], metaclass=_MetaDatum):
         if not bg and hasattr(app := get_app(), "color_palette"):
             bg = self.bg or app.color_palette.bg.base_hex
 
-        if (key := (to, cols, rows, fg, bg, extend)) in self._conversions:
-            return self._conversions[key]
+        if (key_conv := (to, cols, rows, fg, bg, extend)) in self._queue:
+            await self._queue[key_conv].wait()
+        if key_conv in self._conversions:
+            return self._conversions[key_conv]
+
+        self._queue[key_conv] = event = asyncio.Event()
 
         routes = _CONVERTOR_ROUTE_CACHE[(self.format, to)]
-        # log.debug("Converting from '%s' to '%s' using route: %s", self, to, routes)
+        log.debug(
+            "Converting %s->'%s'@%s using routes: %s",
+            self,
+            to,
+            (cols, rows),
+            routes,
+        )
         output: T | None = None
         if routes:
             datum = self
             output = None
             for route in routes:
                 for stage_a, stage_b in zip(route, route[1:]):
-                    key = (stage_b, cols, rows, fg, bg, extend)
-                    if key in self._conversions:
-                        output = self._conversions[key]
+                    key_stage = (stage_b, cols, rows, fg, bg, extend)
+                    if key_stage in self._conversions:
+                        output = self._conversions[key_stage]
                     else:
                         # Find converter with lowest weight
                         for converter in sorted(
@@ -264,7 +278,7 @@ class Datum(Generic[T], metaclass=_MetaDatum):
                                 output = await converter.func(
                                     datum, cols, rows, fg, bg, extend
                                 )
-                                self._conversions[key] = output
+                                self._conversions[key_stage] = output
                             except Exception:
                                 log.debug(
                                     "Conversion step %s failed",
@@ -308,6 +322,9 @@ class Datum(Generic[T], metaclass=_MetaDatum):
 
         if output is None:
             output = ERROR_OUTPUTS.get(to, "(Conversion Error)")
+
+        event.set()
+        del self._queue[key_conv]
 
         return output
 
