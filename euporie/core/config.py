@@ -428,10 +428,10 @@ class Config:
                 except fastjsonschema.JsonSchemaValueException as error:
                     # Warn about badly configured settings
                     log.warning(
-                        "Error in %s setting: `%s = %s`\n%s",
+                        "Error in %s setting: `%s = %r`\n%s",
                         group,
                         name,
-                        repr(value),
+                        value,
                         error.message.replace("data.", ""),
                     )
                 else:

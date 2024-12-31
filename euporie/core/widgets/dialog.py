@@ -803,7 +803,7 @@ class ErrorDialog(Dialog):
                             ("bold", f" when {when}" if when else ""),
                             ("bold", ":"),
                             ("", "\n\n"),
-                            ("fg:ansired", exception.__repr__()),
+                            ("fg:ansired", repr(exception)),
                             ("", "\n"),
                         ],
                     )
