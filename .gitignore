@@ -1,7 +1,12 @@
+# Euporie development specific folders
 /media
 /examples
 
+# Python version specifier file
 .python-version
+
+# AI tools
+.aider*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
