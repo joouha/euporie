@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import logging
 from functools import partial
-from math import ceil
 from typing import TYPE_CHECKING
 
 from euporie.core.app.current import get_app
