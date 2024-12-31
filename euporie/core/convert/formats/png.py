@@ -13,7 +13,6 @@ from euporie.core.filters import command_exists, have_modules
 if TYPE_CHECKING:
     from euporie.core.convert.datum import Datum
 
-
 register(
     from_="base64-png",
     to="png",
@@ -126,9 +125,8 @@ async def latex_to_png_py_mpl(
     from matplotlib.backends import backend_agg
 
     # mpl mathtext doesn't support display math, force inline
-    data = datum.data.strip().replace("$$", "$")
-    if not data.startswith("$"):
-        data = f"${data}$"
+    data = datum.data.replace("$", "").strip()
+    data = f"${data}$"
     buffer = BytesIO()
     prop = font_manager.FontProperties(size=12)
     parser = mathtext.MathTextParser("path")
