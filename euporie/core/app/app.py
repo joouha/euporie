@@ -503,7 +503,8 @@ class BaseApp(ConfigurableApp, Application, ABC):
         """Restore the state of the terminal on unexpected exit."""
         log.critical("Unexpected exit signal, restoring terminal")
         output = self.output
-        self.exit()
+        if self.is_running:
+            self.exit()
         self.shutdown_lsps()
         # Reset terminal state
         output.reset_cursor_key_mode()
