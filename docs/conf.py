@@ -64,7 +64,7 @@ autosummary_generate = True
 autosummary_imported_members = True
 
 # Intersphinx options
-intersphinx_mapping = intersphinx_mapping = get_intersphinx_mapping(
+intersphinx_mapping = get_intersphinx_mapping(
     packages={"python", "prompt_toolkit", "sympy", "rich", "commonmark"}
 )
 
