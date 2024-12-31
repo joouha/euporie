@@ -363,11 +363,12 @@ class Datum(Generic[T], metaclass=_MetaDatum):
 
         px, py = self.px, self.py
         self_data = self.data
+        format = self.format
         data: bytes
 
         while px is None or py is None:
             # Do not bother trying if the format is ANSI
-            if self.format == "ansi":
+            if format == "ansi":
                 break
 
             from PIL.Image import Image as PilImage
@@ -377,42 +378,45 @@ class Datum(Generic[T], metaclass=_MetaDatum):
                 break
 
             # Decode base64 data
-            if self.format.startswith("base64-"):
-                data = await self.convert_async(to=self.format[7:])
+            if format.startswith("base64-"):
+                data = await self.convert_async(to=format[7:])
 
             # Encode string data
             if isinstance(self_data, str):
                 data = self_data.encode()
 
-            while True:
-                # Try using imagesize to get the size of the output
-                try:
-                    import imagesize
+            if isinstance(self_data, bytes):
+                data = self_data
 
-                    px_calc, py_calc = imagesize.get(io.BytesIO(data))
-                except ValueError:
-                    px_calc = py_calc = -1
+            # Try using imagesize to get the size of the output
+            try:
+                import imagesize
 
-                if (
-                    px_calc <= 0
-                    and py_calc <= 0
-                    and _CONVERTOR_ROUTE_CACHE[(self.format, "png")]
-                ):
-                    # Try converting to PNG on failure
-                    data = await self.convert_async(to="png")
-                    continue
+                px_calc, py_calc = imagesize.get(io.BytesIO(data))
+            except ValueError:
+                px_calc = py_calc = -1
 
-                if px is None and px_calc > 0:
-                    if py is not None and py_calc > 0:
-                        px = int(px_calc * py / py_calc)
-                    else:
-                        px = px_calc
-                if py is None and py_calc > 0:
-                    if px is not None and px_calc > 0:
-                        py = int(py_calc * px / px_calc)
-                    else:
-                        py = py_calc
-                break
+            if (
+                format != "png"
+                and px_calc <= 0
+                and py_calc <= 0
+                and _CONVERTOR_ROUTE_CACHE[(format, "png")]
+            ):
+                # Try converting to PNG on failure
+                self_data = await self.convert_async(to="png")
+                format = "png"
+                continue
+
+            if px is None and px_calc > 0:
+                if py is not None and py_calc > 0:
+                    px = int(px_calc * py / py_calc)
+                else:
+                    px = px_calc
+            if py is None and py_calc > 0:
+                if px is not None and px_calc > 0:
+                    py = int(py_calc * px / px_calc)
+                else:
+                    py = py_calc
             break
 
         self._pixel_size = (px, py)
