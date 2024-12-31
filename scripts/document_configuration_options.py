@@ -29,13 +29,11 @@ for name, setting in Config._settings.items():
     if name not in {"version"}:
         print(f":environment variable: :envvar:`EUPORIE_{name.upper()}`")
     if setting.default is not None:
-        print(f":default: ``{setting.default.__repr__()}``")
+        print(f":default: ``{setting.default!r}``")
     if (type_ := setting.schema.get("type")) is not None:
         print(f":type: :keyword:`{type_}`")
     if setting.choices:
-        print(
-            f":options: [``{'``, ``'.join([x.__repr__() for x in setting.choices])}``]"
-        )
+        print(f":options: [``{'``, ``'.join([repr(x) for x in setting.choices])}``]")
     print(f":description: {setting.help}")
     print(indent(dedent(setting.description), "   "))
     print()

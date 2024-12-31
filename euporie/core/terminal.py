@@ -127,7 +127,11 @@ class TerminalQuery:
             response from the terminal is received
 
         """
-        log.debug("Got terminal response for '%s'", self.__class__.__name__)
+        log.debug(
+            "Got terminal response %r for '%s'",
+            event.data,
+            self.__class__.__name__,
+        )
         self.waiting = False
         new_value = self.verify(event.data)
         # Only fire the event if the value has changed
