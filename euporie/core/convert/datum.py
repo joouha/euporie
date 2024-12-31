@@ -362,7 +362,8 @@ class Datum(Generic[T], metaclass=_MetaDatum):
             pass
 
         px, py = self.px, self.py
-        data = self.data
+        self_data = self.data
+        data: bytes
 
         while px is None or py is None:
             # Do not bother trying if the format is ANSI
@@ -371,8 +372,8 @@ class Datum(Generic[T], metaclass=_MetaDatum):
 
             from PIL.Image import Image as PilImage
 
-            if isinstance(data, PilImage):
-                px, py = data.size
+            if isinstance(self_data, PilImage):
+                px, py = self_data.size
                 break
 
             # Decode base64 data
@@ -380,8 +381,8 @@ class Datum(Generic[T], metaclass=_MetaDatum):
                 data = await self.convert_async(to=self.format[7:])
 
             # Encode string data
-            if isinstance(data, str):
-                data = data.encode()
+            if isinstance(self_data, str):
+                data = self_data.encode()
 
             while True:
                 # Try using imagesize to get the size of the output

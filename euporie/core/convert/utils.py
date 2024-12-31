@@ -20,7 +20,9 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 
-async def scale_to_fit(datum: Datum, cols: int, rows: int) -> tuple[int, int]:
+async def scale_to_fit(
+    datum: Datum, cols: int | None, rows: int | None
+) -> tuple[int, int]:
     """Calculate image size based on aspect ratio, and scale to fit."""
     data = datum.data
     px, py = get_app().term_info.cell_size_px
