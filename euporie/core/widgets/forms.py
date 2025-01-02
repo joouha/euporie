@@ -728,9 +728,11 @@ class Label:
         value = self.value
         data = value() if callable(value) else value
         if self.html():
+            from prompt_toolkit.formatted_text.utils import to_plain_text
+
             from euporie.core.ft.html import HTML
 
-            return HTML(data, collapse_root_margin=True, fill=False)
+            return HTML(to_plain_text(data), collapse_root_margin=True, fill=False)
         return data
 
     def __pt_container__(self) -> AnyContainer:

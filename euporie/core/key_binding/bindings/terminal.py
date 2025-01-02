@@ -12,8 +12,6 @@ from euporie.core.key_binding.registry import (
 )
 
 if TYPE_CHECKING:
-    import re
-
     from prompt_toolkit.key_binding import KeyBindingsBase, KeyPressEvent
 
     from euporie.core.config import Config
@@ -42,7 +40,7 @@ _COLOR_NAMES: dict[str, str] = {
 }
 
 
-def get_match(event: KeyPressEvent) -> re.Match | None:
+def get_match(event: KeyPressEvent) -> dict[str, str] | None:
     """Get pattern matches from a key press event."""
     if (
         (parser := getattr(event.app.input, "vt100_parser", None))
@@ -52,6 +50,7 @@ def get_match(event: KeyPressEvent) -> re.Match | None:
         and (values := match.groupdict())
     ):
         return values
+    return None
 
 
 @add_cmd(hidden=True, is_global=True)
@@ -66,67 +65,85 @@ def _set_terminal_color(event: KeyPressEvent) -> object:
         response from the terminal is received
 
     """
-    if colors := get_match(event):
+    from euporie.core.app.app import BaseApp
+
+    if isinstance(app := event.app, BaseApp) and (colors := get_match(event)):
         c = colors["c"]
         r, g, b = colors.get("r", "00"), colors.get("g", "00"), colors.get("b", "00")
-        event.app.term_colors[_COLOR_NAMES.get(c, c)] = f"#{r[:2]}{g[:2]}{b[:2]}"
-        event.app.update_style()
+        app.term_colors[_COLOR_NAMES.get(c, c)] = f"#{r[:2]}{g[:2]}{b[:2]}"
+        app.update_style()
     return NotImplemented
 
 
 @add_cmd(hidden=True, is_global=True)
 def _set_terminal_pixel_size(event: KeyPressEvent) -> object:
     """Run when the terminal receives a pixel dimension query response."""
+    from euporie.core.app.app import BaseApp
+
     if (
-        (values := get_match(event))
+        isinstance(app := event.app, BaseApp)
+        and (values := get_match(event))
         and (x := values.get("x"))
         and (y := values.get("y"))
     ):
-        event.app.term_size_px = int(x), int(y)
+        app.term_size_px = int(x), int(y)
     return NotImplemented
 
 
 @add_cmd(hidden=True, is_global=True)
 def _set_terminal_graphics_sixel(event: KeyPressEvent) -> object:
     """Run when the terminal receives a sixel graphics support query response."""
-    if (values := get_match(event)) and values.get("sixel"):
-        event.app.term_graphics_sixel = True
+    from euporie.core.app.app import BaseApp
+
+    if (
+        isinstance(app := event.app, BaseApp)
+        and (values := get_match(event))
+        and values.get("sixel")
+    ):
+        app.term_graphics_sixel = True
     return NotImplemented
 
 
 @add_cmd(hidden=True, is_global=True)
 def _set_terminal_graphics_iterm(event: KeyPressEvent) -> object:
     """Run when the terminal receives a iterm graphics support query response."""
+    from euporie.core.app.app import BaseApp
+
     if (
-        (values := get_match(event))
+        isinstance(app := event.app, BaseApp)
+        and (values := get_match(event))
         and (term := values.get("term"))
         and term.startswith(("WezTerm", "Konsole", "mlterm"))
     ):
-        event.app.term_graphics_iterm = True
+        app.term_graphics_iterm = True
     return NotImplemented
 
 
 @add_cmd(hidden=True, is_global=True)
 def _set_terminal_graphics_kitty(event: KeyPressEvent) -> object:
     """Run when the terminal receives a kitty graphics support query response."""
-    if (values := get_match(event)) and values.get("status") == "OK":
-        event.app.term_graphics_kitty = True
+    from euporie.core.app.app import BaseApp
+
+    if (
+        isinstance(app := event.app, BaseApp)
+        and (values := get_match(event))
+        and values.get("status") == "OK"
+    ):
+        app.term_graphics_kitty = True
     return NotImplemented
 
 
 @add_cmd(hidden=True, is_global=True)
 def _set_terminal_sgr_pixel(event: KeyPressEvent) -> object:
     """Run when the terminal receives a SGR-pixel mode support query response."""
-    if (values := get_match(event)) and (values.get("Pm") in {"1", "3"}):
-        event.app.term_sgr_pixel = True
-    return NotImplemented
+    from euporie.core.app.app import BaseApp
 
-
-@add_cmd(hidden=True, is_global=True)
-def _set_terminal_csiu(event: KeyPressEvent) -> object:
-    """Run when the terminal receives a CSI-u support query response."""
-    if get_match(event):
-        event.app.term_csiu = True
+    if (
+        isinstance(app := event.app, BaseApp)
+        and (values := get_match(event))
+        and (values.get("Pm") in {"1", "3"})
+    ):
+        app.term_sgr_pixel = True
     return NotImplemented
 
 
@@ -135,10 +152,13 @@ def _set_terminal_clipboard_data(event: KeyPressEvent) -> object:
     """Run when the terminal receives a clipboard data query response."""
     from base64 import b64decode
 
+    from euporie.core.app.app import BaseApp
     from euporie.core.clipboard import Osc52Clipboard
 
-    if isinstance(clipboard := event.app.clipboard, Osc52Clipboard) and (
-        values := get_match(event)
+    if (
+        isinstance(app := event.app, BaseApp)
+        and isinstance(clipboard := app.clipboard, Osc52Clipboard)
+        and (values := get_match(event))
     ):
         value = values.get("data", "")
         text = b64decode(value).decode()
@@ -159,9 +179,7 @@ register_bindings(
             "set-terminal-graphics-kitty": "<kitty-graphics-status-response>",
             "set-terminal-graphics-sixel": "<sixel-graphics-status-response>",
             "set-terminal-graphics-iterm": "<iterm-graphics-status-response>",
-            # "set-terminal-": "<depth-of-color-response>",
             "set-terminal-sgr-pixel": "<sgr-pixel-status-response>",
-            "set-terminal-csiu": "<csi-u-status-response>",
             "set-terminal-clipboard-data": "<clipboard-data-response>",
         }
     }

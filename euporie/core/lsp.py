@@ -475,6 +475,7 @@ class LspClient:
             "cellTextDocuments": [],
         }
         langs = self.can_change_nb_langs
+        lsp_notebook_cell: dict[str, Any]
         for cell in cells:
             if langs and cell.language not in langs:
                 continue
@@ -598,6 +599,7 @@ class LspClient:
             },
         }
         langs = self.can_change_nb_langs
+        lsp_notebook_cell: dict[str, Any]
         for cell in cells:
             # If specified, only sync cells with the languages the server has requested
             if langs and cell.language not in langs:
@@ -657,6 +659,7 @@ class LspClient:
                 "change": {"cells": (change := {"data": [], "textContent": []})},
             }
             langs = self.can_change_nb_langs
+            lsp_notebook_cell: dict[str, Any]
             for cell in cells:
                 self._doc_versions[cell.path] += 1
                 # If specified, only sync cells with the languages the server has requested
