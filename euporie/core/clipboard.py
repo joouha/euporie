@@ -11,6 +11,7 @@ from prompt_toolkit.selection import SelectionType
 
 from euporie.core.app.current import get_app
 from euporie.core.io import Vt100_Output
+from euporie.core.key_binding.key_processor import KeyProcessor
 
 log = logging.getLogger(__name__)
 
@@ -42,7 +43,8 @@ class Osc52Clipboard(Clipboard):
             output.get_clipboard()
             output.flush()
             # Wait for terminal response
-            app.key_processor.await_key(MoreKeys.ClipboardDataResponse)
+            if isinstance(app.key_processor, KeyProcessor):
+                app.key_processor.await_key(MoreKeys.ClipboardDataResponse)
         return self._data
 
     def sync(self, text: str) -> None:

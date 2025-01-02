@@ -107,7 +107,6 @@ if TYPE_CHECKING:
     from euporie.core.bars.search import SearchBar
     from euporie.core.config import Setting
     from euporie.core.format import Formatter
-    from euporie.core.io import TerminalQuery
     from euporie.core.tabs import TabRegistryEntry
     from euporie.core.tabs.base import Tab
     from euporie.core.widgets.dialog import Dialog
@@ -207,6 +206,7 @@ class BaseApp(ConfigurableApp, Application, ABC):
         self.term_graphics_iterm = False
         self.term_graphics_kitty = False
         self.term_sgr_pixel = False
+        self._term_size_px: tuple[int, int]
         # Floats at the app level
         self.leave_graphics = to_filter(leave_graphics)
         self.graphics: WeakSet[Float] = WeakSet()
@@ -284,17 +284,17 @@ class BaseApp(ConfigurableApp, Application, ABC):
     def term_size_px(self) -> tuple[int, int]:
         """The dimensions of the terminal in pixels."""
         try:
-            return self._term_pixel_size
+            return self._term_size_px
         except AttributeError:
             from euporie.core.io import _tiocgwinsz
 
             _rows, _cols, px, py = _tiocgwinsz()
-            self._term_pixel_size = (px, py)
-        return self._term_pixel_size
+            self._term_size_px = (px, py)
+        return self._term_size_px
 
     @term_size_px.setter
     def term_size_px(self, value: tuple[int, int]) -> None:
-        self._term_pixel_size = value
+        self._term_size_px = value
 
     @property
     def cell_size_px(self) -> tuple[int, int]:
@@ -359,9 +359,10 @@ class BaseApp(ConfigurableApp, Application, ABC):
 
     async def _poll_terminal_colors(self) -> None:
         """Repeatedly query the terminal for its background and foreground colours."""
-        while self.config.terminal_polling_interval:
-            await asyncio.sleep(self.config.terminal_polling_interval)
-            self.output.get_colors()
+        if isinstance(output := self.output, Vt100_Output):
+            while self.config.terminal_polling_interval:
+                await asyncio.sleep(self.config.terminal_polling_interval)
+                output.get_colors()
 
     async def run_async(
         self,
@@ -512,7 +513,8 @@ class BaseApp(ConfigurableApp, Application, ABC):
 
     def _on_resize(self) -> None:
         """Query the terminal dimensions on a resize event."""
-        self.output.get_pixel_size()
+        if isinstance(output := self.output, Vt100_Output):
+            output.get_pixel_size()
         super()._on_resize()
 
     @classmethod
@@ -779,7 +781,7 @@ class BaseApp(ConfigurableApp, Application, ABC):
             elif "256" in os.environ.get("TERM", ""):
                 self._color_depth = ColorDepth.DEPTH_8_BIT
 
-        return Application.color_depth.fget(self)
+        return super().color_depth
 
     @property
     def syntax_theme(self) -> str:
@@ -871,10 +873,7 @@ class BaseApp(ConfigurableApp, Application, ABC):
             ]
         )
 
-    def update_style(
-        self,
-        query: TerminalQuery | Setting | None = None,
-    ) -> None:
+    def update_style(self, query: Setting | None = None) -> None:
         """Update the application's style when the syntax theme is changed."""
         self.renderer.style = self.create_merged_style()
 

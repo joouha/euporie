@@ -6,7 +6,7 @@ import logging
 import re
 from base64 import b64encode
 from functools import lru_cache
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from prompt_toolkit.input import vt100_parser
 from prompt_toolkit.input.ansi_escape_sequences import ANSI_SEQUENCES
@@ -128,7 +128,7 @@ class Vt100Parser(vt100_parser.Vt100Parser):
         from euporie.core.keys import MoreKeys
 
         super().__init__(*args, **kwargs)
-        self.patterns: dict[Keys, re.Pattern] = {
+        self.patterns: dict[Keys | MoreKeys, re.Pattern] = {
             MoreKeys.ColorsResponse: re.compile(
                 r"^\x1b\](?P<c>(\d+;)?\d+)+;rgb:"
                 r"(?P<r>[0-9A-Fa-f]{2,4})\/"
@@ -147,9 +147,7 @@ class Vt100Parser(vt100_parser.Vt100Parser):
             MoreKeys.ItermGraphicsStatusResponse: re.compile(
                 r"^\x1bP>\|(?P<term>[^\x1b]+)\x1b\\"
             ),
-            # MoreKeys.DepthOfColorResponse: None,
             MoreKeys.SgrPixelStatusResponse: re.compile(r"^\x1b\[\?1016;(?P<Pm>\d)\$"),
-            MoreKeys.CsiUStatusResponse: re.compile(r"^\x1b\[\?\d+u"),
             MoreKeys.ClipboardDataResponse: re.compile(
                 r"^\x1b\]52;(?:c|p)?;(?P<data>[A-Za-z0-9+/=]+)\x1b\\"
             ),
@@ -159,7 +157,7 @@ class Vt100Parser(vt100_parser.Vt100Parser):
         """Check for additional key matches first."""
         for key, pattern in self.patterns.items():
             if pattern.match(prefix):
-                return key
+                return cast("Keys", key)
 
         return super()._get_match(prefix)
 

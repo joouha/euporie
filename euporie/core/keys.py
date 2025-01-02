@@ -12,6 +12,16 @@ if TYPE_CHECKING:
 class MoreKeys(str, Enum):
     """Additional key definitions."""
 
+    # Special terminal response keys
+    ColorsResponse = "<colors-response>"
+    PixelSizeResponse = "<pixel-size-response>"
+    KittyGraphicsStatusResponse = "<kitty-graphics-status-response>"
+    SixelGraphicsStatusResponse = "<sixel-graphics-status-response>"
+    ItermGraphicsStatusResponse = "<iterm-graphics-status-response>"
+    SgrPixelStatusResponse = "<sgr-pixel-status-response>"
+    ClipboardDataResponse = "<clipboard-data-response>"
+
+    # Regular keys
     AltTab = "A-tab"
     AltEnter = "A-enter"
     AltEscape = "A-escape"
@@ -909,17 +919,6 @@ class MoreKeys(str, Enum):
     ControlAltShiftF10 = "c-A-s-f10"
     ControlAltShiftF11 = "c-A-s-f11"
     ControlAltShiftF12 = "c-A-s-f12"
-
-    # Special terminal response keys
-    ColorsResponse = "<colors-response>"
-    PixelSizeResponse = "<pixel-size-response>"
-    KittyGraphicsStatusResponse = "<kitty-graphics-status-response>"
-    SixelGraphicsStatusResponse = "<sixel-graphics-status-response>"
-    ItermGraphicsStatusResponse = "<iterm-graphics-status-response>"
-    DepthOfColorResponse = "<depth-of-color-response>"
-    SgrPixelStatusResponse = "<sgr-pixel-status-response>"
-    CsiUStatusResponse = "<csi-u-status-response>"
-    ClipboardDataResponse = "<clipboard-data-response>"
 
 
 # Update PTK's mapping of escape codes to known key-presses

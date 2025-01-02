@@ -25,7 +25,6 @@ if TYPE_CHECKING:
     from prompt_toolkit.output import ColorDepth, Output
     from prompt_toolkit.styles import BaseStyle
 
-
 __all__ = ["Renderer"]
 
 log = logging.getLogger(__name__)
@@ -281,17 +280,18 @@ class Renderer(PtkRenderer):
 
     def reset(self, _scroll: bool = False, leave_alternate_screen: bool = True) -> None:
         """Reset the output."""
-        if isinstance(self.output, Vt100_Output):
+        output = self.output
+        if isinstance(output, Vt100_Output):
             # Disable extended keys before resetting the output
-            self.output.disable_extended_keys()
+            output.disable_extended_keys()
             self._extended_keys_enabled = False
 
             # Disable private sixel colors before resetting the output
-            self.output.disable_private_sixel_colors()
+            output.disable_private_sixel_colors()
             self._private_sixel_colors_enabled = False
 
             # Disable sgr pixel mode
-            self.output.disable_sgr_pixel()
+            output.disable_sgr_pixel()
             self._sgr_pixel_enabled = False
 
         super().reset(_scroll, leave_alternate_screen)
@@ -300,6 +300,8 @@ class Renderer(PtkRenderer):
         self, app: Application[Any], layout: Layout, is_done: bool = False
     ) -> None:
         """Render the current interface to the output."""
+        from euporie.core.app.app import BaseApp
+
         output = self.output
         self.app = app
 
@@ -325,7 +327,11 @@ class Renderer(PtkRenderer):
             output.enable_mouse_support()
             self._mouse_support_enabled = True
 
-            if app.term_sgr_pixel:
+            if (
+                isinstance(output, Vt100_Output)
+                and isinstance(app, BaseApp)
+                and app.term_sgr_pixel
+            ):
                 output.enable_sgr_pixel()
                 self._sgr_pixel_enabled = True
 
@@ -333,13 +339,17 @@ class Renderer(PtkRenderer):
             output.disable_mouse_support()
             self._mouse_support_enabled = False
 
-            if app.term_sgr_pixel or self._sgr_pixel_enabled:
+            if (
+                isinstance(output, Vt100_Output)
+                and isinstance(app, BaseApp)
+                and (app.term_sgr_pixel or self._sgr_pixel_enabled)
+            ):
                 output.disable_sgr_pixel()
                 self._sgr_pixel_enabled = False
 
         # Ensable extended keys
-        if not self._extended_keys_enabled and isinstance(self.output, Vt100_Output):
-            self.output.enable_extended_keys()
+        if not self._extended_keys_enabled and isinstance(output, Vt100_Output):
+            output.enable_extended_keys()
             self._extended_keys_enabled = True
 
         # Ensable private sixel graphic color registers

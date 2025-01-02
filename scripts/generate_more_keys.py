@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import re
 import unicodedata
 from itertools import combinations
 
@@ -134,9 +133,7 @@ class MoreKeys(str, Enum):
     KittyGraphicsStatusResponse = "<kitty-graphics-status-response>"
     SixelGraphicsStatusResponse = "<sixel-graphics-status-response>"
     ItermGraphicsStatusResponse = "<iterm-graphics-status-response>"
-    DepthOfColorResponse = "<depth-of-color-response>"
     SgrPixelStatusResponse = "<sgr-pixel-status-response>"
-    CsiUStatusResponse = "<csi-u-status-response>"
     ClipboardDataResponse = "<clipboard-data-response>"
 
     # Regular key-presses
