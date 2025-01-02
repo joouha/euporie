@@ -912,7 +912,7 @@ class MoreKeys(str, Enum):
 
     # Special terminal response keys
     ColorsResponse = "<colors-response>"
-    PixelDimensionsResponse = "<pixel-dimensions-response>"
+    PixelSizeResponse = "<pixel-size-response>"
     KittyGraphicsStatusResponse = "<kitty-graphics-status-response>"
     SixelGraphicsStatusResponse = "<sixel-graphics-status-response>"
     ItermGraphicsStatusResponse = "<iterm-graphics-status-response>"

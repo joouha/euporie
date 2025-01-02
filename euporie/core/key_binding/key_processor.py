@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import time
 from typing import TYPE_CHECKING
 
 from prompt_toolkit.application.current import get_app
@@ -142,3 +143,26 @@ class KeyProcessor(PtKeyProcessor):
         # Skip timeout if the last key was flush.
         if not is_flush:
             self._start_timeout()
+
+    def await_key(self, key: Keys, timeout: float = 1.0) -> None:
+        """Wait for a particular key, processing it before all other keys.
+
+        Args:
+            key: The key to wait for
+            timeout: How long to wait for the key, in seconds
+        """
+        # Wait up to 1 second for response from terminal
+        start = time.monotonic()
+        input = get_app().input
+        tkp = self.__class__(key_bindings=self._bindings)
+        while (time.monotonic() - start) < timeout:
+            time.sleep(0.05)
+            for press in input.read_keys():
+                if press.key == key:
+                    # If we find the key we're after, process it immediately
+                    tkp.feed_multiple([press, _Flush])
+                    tkp.process_keys()
+                    return
+                else:
+                    # If we get other keys, add them to the input queue
+                    self.feed(press)

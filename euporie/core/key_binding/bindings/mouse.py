@@ -155,7 +155,7 @@ def load_mouse_bindings() -> KeyBindings:
             return NotImplemented
 
         mouse_event = _MOUSE_EVENT_CACHE[
-            event.data, app.term_info.sgr_pixel_status.value, app.term_info.cell_size_px
+            event.data, app.term_sgr_pixel, app.cell_size_px
         ]
 
         if mouse_event is None:

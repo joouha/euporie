@@ -275,6 +275,7 @@ class Renderer(PtkRenderer):
         )
         self._extended_keys_enabled = False
         self._private_sixel_colors_enabled = False
+        self._sgr_pixel_enabled = False
         self.extend_height = to_filter(extend_height)
         self.extend_width = to_filter(extend_width)
 
@@ -288,6 +289,10 @@ class Renderer(PtkRenderer):
             # Disable private sixel colors before resetting the output
             self.output.disable_private_sixel_colors()
             self._private_sixel_colors_enabled = False
+
+            # Disable sgr pixel mode
+            self.output.disable_sgr_pixel()
+            self._sgr_pixel_enabled = False
 
         super().reset(_scroll, leave_alternate_screen)
 
@@ -320,9 +325,17 @@ class Renderer(PtkRenderer):
             output.enable_mouse_support()
             self._mouse_support_enabled = True
 
+            if app.term_sgr_pixel:
+                output.enable_sgr_pixel()
+                self._sgr_pixel_enabled = True
+
         elif not needs_mouse_support and self._mouse_support_enabled:
             output.disable_mouse_support()
             self._mouse_support_enabled = False
+
+            if app.term_sgr_pixel or self._sgr_pixel_enabled:
+                output.disable_sgr_pixel()
+                self._sgr_pixel_enabled = False
 
         # Ensable extended keys
         if not self._extended_keys_enabled and isinstance(self.output, Vt100_Output):

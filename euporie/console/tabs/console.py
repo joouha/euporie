@@ -48,7 +48,7 @@ from euporie.core.layout.print import PrintingContainer
 from euporie.core.lsp import LspCell
 from euporie.core.style import KERNEL_STATUS_REPR
 from euporie.core.tabs.kernel import KernelTab
-from euporie.core.terminal import edit_in_editor
+from euporie.core.io import edit_in_editor
 from euporie.core.validation import KernelValidator
 from euporie.core.widgets.cell_outputs import CellOutputArea
 from euporie.core.widgets.inputs import KernelInput, StdInput

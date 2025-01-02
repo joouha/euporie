@@ -27,7 +27,7 @@ from euporie.core.data_structures import DiInt
 from euporie.core.filters import has_float, in_mplex
 from euporie.core.ft.utils import _ZERO_WIDTH_FRAGMENTS
 from euporie.core.layout.scroll import BoundedWritePosition
-from euporie.core.terminal import passthrough
+from euporie.core.io import passthrough
 
 if TYPE_CHECKING:
     from typing import Any, Callable, ClassVar
@@ -129,7 +129,7 @@ class GraphicControl(UIControl, metaclass=ABCMeta):
             width,
             height,
             self.app.color_palette,
-            self.app.term_info.cell_size_px,
+            self.app.cell_size_px,
             self.bbox,
         )
         return UIContent(
@@ -155,7 +155,7 @@ class SixelGraphicControl(GraphicControl):
         if any(bbox):
             from sixelcrop import sixelcrop
 
-            cell_size_x, cell_size_y = self.app.term_info.cell_size_px
+            cell_size_x, cell_size_y = self.app.cell_size_px
 
             cmd = sixelcrop(
                 data=cmd,
@@ -249,7 +249,7 @@ class SixelGraphicControl(GraphicControl):
         key = (
             visible_width,
             self.app.color_palette,
-            self.app.term_info.cell_size_px,
+            self.app.cell_size_px,
             self.bbox,
         )
         return self._format_cache.get(key, render_lines)
@@ -268,7 +268,7 @@ class ItermGraphicControl(GraphicControl):
 
             image = datum.convert(to="pil", cols=wp.width, rows=wp.height)
             if image is not None:
-                cell_size_x, cell_size_y = self.app.term_info.cell_size_px
+                cell_size_x, cell_size_y = self.app.cell_size_px
                 # Downscale image to fit target region for precise cropping
                 image.thumbnail((wp.width * cell_size_x, wp.height * cell_size_y))
                 left = bbox.left * cell_size_x
@@ -370,7 +370,7 @@ class ItermGraphicControl(GraphicControl):
         key = (
             visible_width,
             self.app.color_palette,
-            self.app.term_info.cell_size_px,
+            self.app.cell_size_px,
             self.bbox,
         )
         return self._format_cache.get(key, render_lines)
@@ -425,7 +425,7 @@ class KittyGraphicControl(GraphicControl):
         full_width = wp.width + bbox.left + bbox.right
         full_height = wp.height + bbox.top + bbox.bottom
 
-        datum = self._datum_pad_cache[(self.datum, *self.app.term_info.cell_size_px)]
+        datum = self._datum_pad_cache[(self.datum, *self.app.cell_size_px)]
         return str(
             datum.convert(
                 to="base64-png",
@@ -512,7 +512,7 @@ class KittyGraphicControl(GraphicControl):
         """Get rendered lines from the cache, or generate them."""
         bbox = self.bbox
 
-        cell_size_px = self.app.term_info.cell_size_px
+        cell_size_px = self.app.cell_size_px
         datum = self._datum_pad_cache[(self.datum, *cell_size_px)]
         px, py = datum.pixel_size()
         # Fall back to a default pixel size
@@ -611,7 +611,7 @@ class KittyGraphicControl(GraphicControl):
         key = (
             visible_width,
             self.app.color_palette,
-            self.app.term_info.cell_size_px,
+            self.app.cell_size_px,
             self.bbox,
         )
         return self._format_cache.get(key, render_lines)
@@ -743,14 +743,13 @@ def select_graphic_control(format_: str) -> type[GraphicControl] | None:
     """Determine which graphic control to use."""
     SelectedGraphicControl: type[GraphicControl] | None = None
     app = get_app()
-    term_info = app.term_info
     preferred_graphics_protocol = app.config.graphics
     useable_graphics_controls: list[type[GraphicControl]] = []
     _in_mplex = in_mplex()
     force_graphics = app.config.force_graphics
 
     if preferred_graphics_protocol != "none":
-        if (term_info.iterm_graphics_status.value or force_graphics) and find_route(
+        if (app.term_graphics_iterm or force_graphics) and find_route(
             format_, "base64-png"
         ):
             useable_graphics_controls.append(ItermGraphicControl)
@@ -762,7 +761,7 @@ def select_graphic_control(format_: str) -> type[GraphicControl] | None:
         ):
             SelectedGraphicControl = ItermGraphicControl
         elif (
-            (term_info.kitty_graphics_status.value or force_graphics)
+            (app.term_graphics_kitty or force_graphics)
             and find_route(format_, "base64-png")
             # Kitty does not work in mplex without pass-through
             and (not _in_mplex or (_in_mplex and force_graphics))
@@ -774,7 +773,7 @@ def select_graphic_control(format_: str) -> type[GraphicControl] | None:
         ):
             SelectedGraphicControl = KittyGraphicControl
         # Tmux now supports sixels (>=3.4)
-        elif (term_info.sixel_graphics_status.value or force_graphics) and find_route(
+        elif (app.term_graphics_sixel or force_graphics) and find_route(
             format_, "sixel"
         ):
             useable_graphics_controls.append(SixelGraphicControl)

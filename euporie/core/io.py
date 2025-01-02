@@ -5,24 +5,83 @@ from __future__ import annotations
 import logging
 import re
 from base64 import b64encode
+from functools import lru_cache
 from typing import TYPE_CHECKING
 
 from prompt_toolkit.input import vt100_parser
 from prompt_toolkit.input.ansi_escape_sequences import ANSI_SEQUENCES
 from prompt_toolkit.input.base import DummyInput, _dummy_context_manager
+from prompt_toolkit.output.color_depth import ColorDepth
 from prompt_toolkit.output.vt100 import Vt100_Output as PtkVt100_Output
+
+from euporie.core.app.current import get_app
+from euporie.core.filters import in_screen, in_tmux
 
 if TYPE_CHECKING:
     from typing import IO, Any, Callable, ContextManager, TextIO
 
     from prompt_toolkit.keys import Keys
 
+    from euporie.core.config import Config
+
 log = logging.getLogger(__name__)
+
+COLOR_DEPTHS = {
+    1: ColorDepth.DEPTH_1_BIT,
+    4: ColorDepth.DEPTH_4_BIT,
+    8: ColorDepth.DEPTH_8_BIT,
+    24: ColorDepth.DEPTH_24_BIT,
+}
+
+
+@lru_cache
+def _have_termios_tty_fcntl() -> bool:
+    try:
+        import fcntl  # noqa F401
+        import termios  # noqa F401
+        import tty  # noqa F401
+    except ModuleNotFoundError:
+        return False
+    else:
+        return True
+
+
+def _tiocgwinsz() -> tuple[int, int, int, int]:
+    """Get the size and pixel dimensions of the terminal with `termios`."""
+    import array
+
+    output = array.array("H", [0, 0, 0, 0])
+    if _have_termios_tty_fcntl():
+        import fcntl
+        import termios
+
+        try:
+            fcntl.ioctl(1, termios.TIOCGWINSZ, output)
+        except OSError:
+            pass
+    rows, cols, xpixels, ypixels = output
+    return rows, cols, xpixels, ypixels
+
+
+def passthrough(cmd: str, config: Config | None = None) -> str:
+    """Wrap an escape sequence for terminal passthrough."""
+    config = config or get_app().config
+    if config.multiplexer_passthrough:
+        if in_tmux():
+            cmd = cmd.replace("\x1b", "\x1b\x1b")
+            cmd = f"\x1bPtmux;{cmd}\x1b\\"
+        elif in_screen():
+            # Screen limits escape sequences to 768 bytes, so we have to chunk it
+            cmd = "".join(
+                f"\x1bP{cmd[i: i+764]}\x1b\\" for i in range(0, len(cmd), 764)
+            )
+    return cmd
 
 
 class _IsPrefixOfLongerMatchCache(vt100_parser._IsPrefixOfLongerMatchCache):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
+        # Pattern for any ANSI escape sequence
         self._response_prefix_re = re.compile(
             r"""^\x1b(
                 \][^\\\x07]*  # Operating System Commands
@@ -35,6 +94,8 @@ class _IsPrefixOfLongerMatchCache(vt100_parser._IsPrefixOfLongerMatchCache):
             )\Z""",
             re.VERBOSE,
         )
+        # Generate prefix matches for all known ansi escape sequences
+        # This is faster than PTK's method
         self._ansi_sequence_prefixes = {
             seq[:i] for seq in ANSI_SEQUENCES for i in range(len(seq))
         }
@@ -64,12 +125,39 @@ class Vt100Parser(vt100_parser.Vt100Parser):
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Create a new VT100 parser."""
+        from euporie.core.keys import MoreKeys
+
         super().__init__(*args, **kwargs)
-        self.queries: dict[Keys, re.Pattern] = {}
+        self.patterns: dict[Keys, re.Pattern] = {
+            MoreKeys.ColorsResponse: re.compile(
+                r"^\x1b\](?P<c>(\d+;)?\d+)+;rgb:"
+                r"(?P<r>[0-9A-Fa-f]{2,4})\/"
+                r"(?P<g>[0-9A-Fa-f]{2,4})\/"
+                r"(?P<b>[0-9A-Fa-f]{2,4})"
+                # Allow BEL or ST as terminator
+                r"(?:\x1b\\|\x9c|\x07)"
+            ),
+            MoreKeys.PixelSizeResponse: re.compile(r"^\x1b\[4;(?P<y>\d+);(?P<x>\d+)t"),
+            MoreKeys.KittyGraphicsStatusResponse: re.compile(
+                r"^\x1b_Gi=(4294967295|0);(?P<status>OK)\x1b\\"
+            ),
+            MoreKeys.SixelGraphicsStatusResponse: re.compile(
+                r"^\x1b\[\?(?:\d+;)*(?P<sixel>4)(?:;\d+)*c"
+            ),
+            MoreKeys.ItermGraphicsStatusResponse: re.compile(
+                r"^\x1bP>\|(?P<term>[^\x1b]+)\x1b\\"
+            ),
+            # MoreKeys.DepthOfColorResponse: None,
+            MoreKeys.SgrPixelStatusResponse: re.compile(r"^\x1b\[\?1016;(?P<Pm>\d)\$"),
+            MoreKeys.CsiUStatusResponse: re.compile(r"^\x1b\[\?\d+u"),
+            MoreKeys.ClipboardDataResponse: re.compile(
+                r"^\x1b\]52;(?:c|p)?;(?P<data>[A-Za-z0-9+/=]+)\x1b\\"
+            ),
+        }
 
     def _get_match(self, prefix: str) -> None | Keys | tuple[Keys, ...]:
         """Check for additional key matches first."""
-        for key, pattern in self.queries.items():
+        for key, pattern in self.patterns.items():
             if pattern.match(prefix):
                 return key
 
@@ -87,14 +175,12 @@ class IgnoredInput(DummyInput):
 class Vt100_Output(PtkVt100_Output):
     """A Vt100 output which enables SGR pixel mouse positioning."""
 
-    def enable_mouse_support(self) -> None:
-        """Additionally enable SGR-pixel mouse positioning."""
-        super().enable_mouse_support()
+    def enable_sgr_pixel(self) -> None:
+        """Enable SGR-pixel mouse positioning."""
         self.write_raw("\x1b[?1016h")
 
-    def disable_mouse_support(self) -> None:
-        """Additionally disable SGR-pixel mouse positioning."""
-        super().disable_mouse_support()
+    def disable_sgr_pixel(self) -> None:
+        """Disable SGR-pixel mouse positioning."""
         self.write_raw("\x1b[?1016l")
 
     def enable_private_sixel_colors(self) -> None:
@@ -128,6 +214,44 @@ class Vt100_Output(PtkVt100_Output):
         """Get clipboard contents using OSC-52."""
         self.write_raw("\x1b]52;c;?\x1b\\")
 
+    def get_colors(self) -> None:
+        """Query terminal colors."""
+        self.write_raw(
+            passthrough(
+                ("\x1b]10;?\x1b\\" "\x1b]11;?\x1b\\")
+                + "".join(f"\x1b]4;{i};?\x1b\\" for i in range(16))
+            )
+        )
+
+    def get_pixel_size(self) -> None:
+        """Check the terminal's dimensions in pixels."""
+        self.write_raw("\x1b[14t")
+
+    def get_kitty_graphics_status(self) -> None:
+        """Query terminal to check for kitty graphics support."""
+        self.write_raw(
+            "\x1b[s"
+            + passthrough("\x1b_gi=4294967295,s=1,v=1,a=q,t=d,f=24;aaaa\x1b\\")
+            + "\x1b[u\x1b[2k"
+        )
+
+    def get_sixel_graphics_status(self) -> None:
+        """Query terminal for sixel graphics support."""
+        self.write_raw(passthrough("\x1b[c"))
+
+    def get_iterm_graphics_status(self) -> None:
+        """Query terminal for iTerm graphics support."""
+        self.write_raw(passthrough("\x1b[>q"))
+
+    def get_sgr_pixel_status(self) -> None:
+        """Query terminal to check for Pixel SGR support."""
+        # Enable, check, disable
+        self.write_raw("\x1b[?1016h\x1b[?1016$p\x1b[?1016l")
+
+    def get_csiu_status(self) -> None:
+        """Query terminal to check for CSI-u support."""
+        self.write_raw("\x1b[?u")
+
 
 class PseudoTTY:
     """Make an output stream look like a TTY."""
@@ -152,3 +276,44 @@ class PseudoTTY:
     def __getattr__(self, name: str) -> Any:
         """Return an attribute of the wrappeed stream."""
         return getattr(self._underlying, name)
+
+
+def edit_in_editor(filename: str, line_number: int = 0) -> None:
+    """Suspend the current app and edit a file in an external editor."""
+    import os
+    import shlex
+    import subprocess
+
+    from prompt_toolkit.application.run_in_terminal import run_in_terminal
+
+    def _open_file_in_editor(filename: str) -> None:
+        """Call editor executable."""
+        # If the 'VISUAL' or 'EDITOR' environment variable has been set, use that.
+        # Otherwise, fall back to the first available editor that we can find.
+        for editor in [
+            os.environ.get("VISUAL"),
+            os.environ.get("EDITOR"),
+            "editor",
+            "micro",
+            "nano",
+            "pico",
+            "vi",
+            "emacs",
+        ]:
+            if editor:
+                try:
+                    # Use 'shlex.split()' because $VISUAL can contain spaces and quotes
+                    subprocess.call([*shlex.split(editor), filename])
+                    return
+                except OSError:
+                    # Executable does not exist, try the next one.
+                    pass
+
+    async def run() -> None:
+        # Open in editor
+        # (We need to use `run_in_terminal`, because not all editors go to
+        # the alternate screen buffer, and some could influence the cursor
+        # position)
+        await run_in_terminal(lambda: _open_file_in_editor(filename), in_executor=True)
+
+    get_app().create_background_task(run())
