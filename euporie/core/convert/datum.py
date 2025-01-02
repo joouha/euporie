@@ -438,8 +438,8 @@ class Datum(Generic[T], metaclass=_MetaDatum):
             px, py = await self.pixel_size_async()
             if px is not None and py is not None:
                 app = get_app()
-                if hasattr(app, "term_info"):
-                    cell_px, cell_py = app.term_info.cell_size_px
+                if hasattr(app, "cell_size_px"):
+                    cell_px, cell_py = app.cell_size_px
                 else:
                     cell_px, cell_py = 10, 20
                 cols = max(1, int(px // cell_px))

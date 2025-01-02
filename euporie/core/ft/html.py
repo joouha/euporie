@@ -595,8 +595,8 @@ def css_dimension(
 
     # Get cell pixel dimensions
     app = get_app()
-    if hasattr(app, "term_info"):
-        cell_px, cell_py = get_app().term_info.cell_size_px
+    if hasattr(app, "cell_size_px"):
+        cell_px, cell_py = get_app().cell_size_px
     else:
         cell_px, cell_py = 10, 20
 

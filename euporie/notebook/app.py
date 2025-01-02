@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 import logging
 from functools import partial
 from typing import TYPE_CHECKING, cast
@@ -97,12 +96,6 @@ class NotebookApp(BaseApp):
         self.config.events.background_pattern += self.set_tab_container
         self.config.events.background_character += self.set_tab_container
 
-    async def _poll_terminal_colors(self) -> None:
-        """Repeatedly query the terminal for its background and foreground colours."""
-        while self.config.terminal_polling_interval:
-            await asyncio.sleep(self.config.terminal_polling_interval)
-            self.term_info.colors.send()
-
     def pre_run(self, app: Application | None = None) -> None:
         """Continue loading the app."""
         super().pre_run(app)
@@ -110,11 +103,6 @@ class NotebookApp(BaseApp):
         self.menus["toolbar_completions"] = Float(
             content=ToolbarCompletionsMenu(), ycursor=True, transparent=True
         )
-        # Load style hooks and start polling terminal style
-        if self.config.terminal_polling_interval and hasattr(
-            self.input, "vt100_parser"
-        ):
-            self.create_background_task(self._poll_terminal_colors())
 
     @property
     def tab_registry(self) -> list[TabRegistryEntry]:

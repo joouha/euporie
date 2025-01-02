@@ -6,8 +6,6 @@ import re
 import unicodedata
 from itertools import combinations
 
-from euporie.core.terminal import TerminalQuery
-
 # Map key-modifier to key-name & emacs style shortcut prefix
 _modifiers = {
     # 0b00000000: ("", ""),
@@ -129,19 +127,24 @@ if TYPE_CHECKING:
 
 class MoreKeys(str, Enum):
     """Additional key definitions."""
+
+    # Special terminal response keys
+    ColorsResponse = "<colors-response>"
+    PixelSizeResponse = "<pixel-size-response>"
+    KittyGraphicsStatusResponse = "<kitty-graphics-status-response>"
+    SixelGraphicsStatusResponse = "<sixel-graphics-status-response>"
+    ItermGraphicsStatusResponse = "<iterm-graphics-status-response>"
+    DepthOfColorResponse = "<depth-of-color-response>"
+    SgrPixelStatusResponse = "<sgr-pixel-status-response>"
+    CsiUStatusResponse = "<csi-u-status-response>"
+    ClipboardDataResponse = "<clipboard-data-response>"
+
+    # Regular key-presses
 ''')
 
 for k, v in new_keys.items():
     print(f"    {k} = {v!r}")
 
-# Add terminal query keys
-print()
-print("    # Special terminal response keys")
-for query in TerminalQuery.__subclasses__():
-    name = re.sub(r"(?<!^)(?=[A-Z])", "-", query.__name__).lower()
-    key_name = f"{query.__name__}Response"
-    key_code = f"<{name}-response>"
-    print(f"    {key_name} = {key_code!r}")
 
 print("""
 # Update PTK's mapping of escape codes to known key-presses

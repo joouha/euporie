@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
 import signal
 import sys
 from abc import ABC, abstractmethod
@@ -56,11 +57,11 @@ from prompt_toolkit.utils import Event
 
 from euporie.core.app.base import ConfigurableApp
 from euporie.core.app.cursor import CursorConfig
-from euporie.core.clipboard import ConfiguredClipboard
+from euporie.core.clipboard import CONFIGURED_CLIPBOARDS
 from euporie.core.convert.mime import get_mime
 from euporie.core.filters import has_toolbar
 from euporie.core.format import CliFormatter
-from euporie.core.io import Vt100_Output, Vt100Parser
+from euporie.core.io import COLOR_DEPTHS, Vt100_Output, Vt100Parser
 from euporie.core.key_binding.key_processor import KeyProcessor
 from euporie.core.key_binding.micro_state import MicroState
 from euporie.core.key_binding.registry import (
@@ -83,7 +84,6 @@ from euporie.core.style import (
     build_style,
     get_style_by_name,
 )
-from euporie.core.terminal import TerminalInfo
 from euporie.core.utils import ChainedList
 from euporie.core.widgets.decor import Shadow
 from euporie.core.widgets.menu import CompletionsMenu
@@ -95,7 +95,6 @@ if TYPE_CHECKING:
     from typing import Any, Callable, ClassVar, TypeVar
 
     # from prompt_toolkit.application import _AppResult
-    from prompt_toolkit.clipboard import Clipboard
     from prompt_toolkit.contrib.ssh import PromptToolkitSSHSession
     from prompt_toolkit.filters import Filter, FilterOrBool
     from prompt_toolkit.input import Input
@@ -108,23 +107,15 @@ if TYPE_CHECKING:
     from euporie.core.bars.search import SearchBar
     from euporie.core.config import Setting
     from euporie.core.format import Formatter
+    from euporie.core.io import TerminalQuery
     from euporie.core.tabs import TabRegistryEntry
     from euporie.core.tabs.base import Tab
-    from euporie.core.terminal import TerminalQuery
     from euporie.core.widgets.dialog import Dialog
     from euporie.core.widgets.pager import Pager
 
     _AppResult = TypeVar("_AppResult")
 
 log = logging.getLogger(__name__)
-
-
-_COLOR_DEPTHS = {
-    1: ColorDepth.DEPTH_1_BIT,
-    4: ColorDepth.DEPTH_4_BIT,
-    8: ColorDepth.DEPTH_8_BIT,
-    24: ColorDepth.DEPTH_24_BIT,
-}
 
 
 class ExtraEditingMode(str, Enum):
@@ -179,7 +170,10 @@ class BaseApp(ConfigurableApp, Application, ABC):
         # Initialise the application
         super().__init__(
             **{
-                "color_depth": self.config.color_depth,
+                "clipboard": CONFIGURED_CLIPBOARDS.get(
+                    self.config.clipboard, lambda: None
+                )(),
+                "color_depth": COLOR_DEPTHS.get(self.config.color_depth),
                 "editing_mode": self.get_edit_mode(),
                 "mouse_support": True,
                 "cursor": CursorConfig(),
@@ -207,8 +201,12 @@ class BaseApp(ConfigurableApp, Application, ABC):
         self._tab_idx = 0
         # Add state for micro key-bindings
         self.micro_state = MicroState()
-        # Load the terminal information system
-        # self.term_info = TerminalInfo(self.input, self.output, self.config)
+        # Default terminal info values
+        self.term_colors = dict(DEFAULT_COLORS)
+        self.term_graphics_sixel = False
+        self.term_graphics_iterm = False
+        self.term_graphics_kitty = False
+        self.term_sgr_pixel = False
         # Floats at the app level
         self.leave_graphics = to_filter(leave_graphics)
         self.graphics: WeakSet[Float] = WeakSet()
@@ -234,7 +232,7 @@ class BaseApp(ConfigurableApp, Application, ABC):
         # List of key-bindings groups to load
         self.bindings_to_load = [
             "euporie.core.app.app:BaseApp",
-            "euporie.core.terminal.TerminalInfo",
+            "euporie.core.io.TerminalInfo",
         ]
 
         if enable_page_navigation_bindings:
@@ -261,7 +259,10 @@ class BaseApp(ConfigurableApp, Application, ABC):
         self.config.events.log_file += lambda x: setup_logs(self.config)
         self.config.events.log_config += lambda x: setup_logs(self.config)
         self.config.events.color_depth += lambda x: setattr(
-            self, "_color_depth", _COLOR_DEPTHS[x.value]
+            self, "_color_depth", COLOR_DEPTHS[x.value]
+        )
+        self.config.events.clipboard += lambda x: setattr(
+            self, "clipboard", CONFIGURED_CLIPBOARDS[x.value]
         )
         # Set up the color palette
         self.color_palette = ColorPalette()
@@ -278,6 +279,30 @@ class BaseApp(ConfigurableApp, Application, ABC):
         self.formatters: list[Formatter] = [
             CliFormatter(**info) for info in self.config.formatters
         ]
+
+    @property
+    def term_size_px(self) -> tuple[int, int]:
+        """The dimensions of the terminal in pixels."""
+        try:
+            return self._term_pixel_size
+        except AttributeError:
+            from euporie.core.io import _tiocgwinsz
+
+            _rows, _cols, px, py = _tiocgwinsz()
+            self._term_pixel_size = (px, py)
+        return self._term_pixel_size
+
+    @term_size_px.setter
+    def term_size_px(self, value: tuple[int, int]) -> None:
+        self._term_pixel_size = value
+
+    @property
+    def cell_size_px(self) -> tuple[int, int]:
+        """Get the pixel size of a single terminal cell."""
+        px, py = self.term_size_px
+        rows, cols = self.output.get_size()
+        # If we can't get the pixel size, just guess wildly
+        return px // cols or 10, py // rows or 20
 
     @property
     def title(self) -> str:
@@ -312,15 +337,8 @@ class BaseApp(ConfigurableApp, Application, ABC):
 
     def pre_run(self, app: Application | None = None) -> None:
         """Call during the 'pre-run' stage of application loading."""
-        # Determines which clipboard mechanism to use based on configuration
-        self.clipboard: Clipboard = ConfiguredClipboard(self)
-        # Determine what color depth to use
-        self._color_depth = _COLOR_DEPTHS.get(
-            self.config.color_depth, self.term_info.depth_of_color.value
-        )
-        # Set the application's style, and update it when the terminal responds
+        # Set the application's style
         self.update_style()
-        self.term_info.colors.event += self.update_style
         # Load completions menu.
         self.menus["completions"] = Float(
             content=Shadow(CompletionsMenu(extra_filter=~has_toolbar)),
@@ -333,6 +351,17 @@ class BaseApp(ConfigurableApp, Application, ABC):
         self.layout = Layout(self.load_container(), self.focused_element)
         # Open any files we need to
         self.open_files()
+        # Start polling terminal style if configured
+        if self.config.terminal_polling_interval and hasattr(
+            self.input, "vt100_parser"
+        ):
+            self.create_background_task(self._poll_terminal_colors())
+
+    async def _poll_terminal_colors(self) -> None:
+        """Repeatedly query the terminal for its background and foreground colours."""
+        while self.config.terminal_polling_interval:
+            await asyncio.sleep(self.config.terminal_polling_interval)
+            self.output.get_colors()
 
     async def run_async(
         self,
@@ -348,23 +377,32 @@ class BaseApp(ConfigurableApp, Application, ABC):
                 setattr(  # noqa B010
                     self.input, "vt100_parser", Vt100Parser(parser.feed_key_callback)
                 )
-            # Load the terminal information system
-            self.term_info = TerminalInfo(self.input, self.output, self.config)
+
             # Load key bindings
             self.load_key_bindings()
-            # Send queries to the terminal
-            self.term_info.send_all()
-            # Read responses
-            kp = self.key_processor
 
-            def read_from_input() -> None:
-                kp.feed_multiple(self.input.read_keys())
+            if isinstance(self.output, Vt100_Output):
+                # Send terminal queries
+                self.output.get_colors()
+                self.output.get_pixel_size()
+                self.output.get_kitty_graphics_status()
+                self.output.get_sixel_graphics_status()
+                self.output.get_iterm_graphics_status()
+                self.output.get_sgr_pixel_status()
+                self.output.get_csiu_status()
+                self.output.flush()
 
-            with self.input.raw_mode(), self.input.attach(read_from_input):
-                # Give the terminal time to respond and allow the event loop to read
-                # the terminal responses from the input
-                await asyncio.sleep(0.1)
-            kp.process_keys()
+                # Read responses
+                kp = self.key_processor
+
+                def read_from_input() -> None:
+                    kp.feed_multiple(self.input.read_keys())
+
+                with self.input.raw_mode(), self.input.attach(read_from_input):
+                    # Give the terminal time to respond and allow the event loop to read
+                    # the terminal responses from the input
+                    await asyncio.sleep(0.1)
+                kp.process_keys()
 
         return await super().run_async(
             pre_run, set_exception_handler, handle_sigint, slow_callback_duration
@@ -431,6 +469,7 @@ class BaseApp(ConfigurableApp, Application, ABC):
         from euporie.core.key_binding.bindings.basic import load_basic_bindings
         from euporie.core.key_binding.bindings.micro import load_micro_bindings
         from euporie.core.key_binding.bindings.mouse import load_mouse_bindings
+        from euporie.core.key_binding.bindings.terminal import load_terminal_bindings
         from euporie.core.key_binding.bindings.vi import load_vi_bindings
 
         self._default_bindings = merge_key_bindings(
@@ -464,7 +503,7 @@ class BaseApp(ConfigurableApp, Application, ABC):
                 # Load extra mouse bindings
                 load_mouse_bindings(),
                 # Load terminal query response key bindings
-                # load_command_bindings("terminal"),
+                load_terminal_bindings(),
             ]
         )
         self.key_bindings = load_registered_bindings(
@@ -473,7 +512,7 @@ class BaseApp(ConfigurableApp, Application, ABC):
 
     def _on_resize(self) -> None:
         """Query the terminal dimensions on a resize event."""
-        self.term_info.pixel_dimensions.send()
+        self.output.get_pixel_size()
         super()._on_resize()
 
     @classmethod
@@ -718,6 +757,31 @@ class BaseApp(ConfigurableApp, Application, ABC):
         log.debug("Editing mode set to: %s", self.editing_mode)
 
     @property
+    def color_depth(self) -> ColorDepth:
+        """The active :class:`.ColorDepth`.
+
+        The current value is determined as follows:
+
+        - If a color depth was given explicitly to this application, use that
+          value.
+        - Otherwise, fall back to the color depth that is reported by the
+          :class:`.Output` implementation. If the :class:`.Output` class was
+          created using `output.defaults.create_output`, then this value is
+          coming from the $PROMPT_TOOLKIT_COLOR_DEPTH environment variable.
+        """
+        # Detect terminal color depth
+        if self._color_depth is None:
+            if os.environ.get("NO_COLOR", "") or os.environ.get("TERM", "") == "dumb":
+                self._color_depth = ColorDepth.DEPTH_1_BIT
+            colorterm = os.environ.get("COLORTERM", "")
+            if "truecolor" in colorterm or "24bit" in colorterm:
+                self._color_depth = ColorDepth.DEPTH_24_BIT
+            elif "256" in os.environ.get("TERM", ""):
+                self._color_depth = ColorDepth.DEPTH_8_BIT
+
+        return Application.color_depth.fget(self)
+
+    @property
     def syntax_theme(self) -> str:
         """Calculate the current syntax theme."""
         syntax_theme = self.config.syntax_theme
@@ -750,7 +814,7 @@ class BaseApp(ConfigurableApp, Application, ABC):
         }
         base_colors: dict[str, str] = {
             **DEFAULT_COLORS,
-            **self.term_info.colors.value,
+            **self.term_colors,
             **theme_colors.get(self.config.color_scheme, theme_colors["default"]),
         }
 
