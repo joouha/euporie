@@ -113,8 +113,10 @@ class NotebookApp(BaseApp):
 
     def format_title(self) -> StyleAndTextTuples:
         """Format the tab's title for display in the top right of the app."""
-        if self.tab:
-            title = truncate(to_formatted_text(self.tab.title, style="bold"), 30)
+        if self.tabs:
+            # Get tab without re-focusing it
+            tab = self.tabs[self._tab_idx]
+            title = truncate(to_formatted_text(tab.title, style="bold"), 30)
             return [("", " "), *title, ("", " ")]
         else:
             return []

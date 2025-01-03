@@ -166,6 +166,9 @@ class Notebook(BaseNotebook):
         self.page = ScrollingContainer(
             self.rendered_cells, width=self.app.config.max_notebook_width
         )
+        # Ensure all cells get initialized ASAP to prevent race conditions
+        # creating multiple version of cells across threads
+        self.page.all_children()
 
         expand = Condition(lambda: self.app.config.expand)
 
