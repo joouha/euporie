@@ -39,6 +39,7 @@ from euporie.core.filters import (
     kernel_tab_has_focus,
 )
 from euporie.core.format import LspFormatter
+from euporie.core.io import edit_in_editor
 from euporie.core.kernel.client import MsgCallbacks
 from euporie.core.key_binding.registry import (
     load_registered_bindings,
@@ -48,7 +49,6 @@ from euporie.core.layout.print import PrintingContainer
 from euporie.core.lsp import LspCell
 from euporie.core.style import KERNEL_STATUS_REPR
 from euporie.core.tabs.kernel import KernelTab
-from euporie.core.io import edit_in_editor
 from euporie.core.validation import KernelValidator
 from euporie.core.widgets.cell_outputs import CellOutputArea
 from euporie.core.widgets.inputs import KernelInput, StdInput
@@ -75,8 +75,6 @@ class Console(KernelTab):
     An interactive console which connects to a Jupyter kernel.
 
     """
-
-    bg_init = False
 
     def __init__(
         self,

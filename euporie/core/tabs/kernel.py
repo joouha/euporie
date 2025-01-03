@@ -59,7 +59,7 @@ class KernelTab(Tab, metaclass=ABCMeta):
     kernel: Kernel
     kernel_language: str
     _metadata: dict[str, Any]
-    bg_init = True
+    bg_init = False
 
     default_callbacks: MsgCallbacks
     allow_stdin: bool

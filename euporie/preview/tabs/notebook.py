@@ -35,8 +35,6 @@ log = logging.getLogger(__name__)
 class PreviewNotebook(BaseNotebook):
     """A notebook tab which renders cells sequentially."""
 
-    bg_init = False
-
     def __init__(
         self,
         app: BaseApp,

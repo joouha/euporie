@@ -13,10 +13,10 @@ from prompt_toolkit.filters import Never
 
 from euporie.core.comm.registry import open_comm
 from euporie.core.commands import get_cmd
+from euporie.core.io import edit_in_editor
 from euporie.core.kernel.client import MsgCallbacks
 from euporie.core.path import UntitledPath
 from euporie.core.tabs.kernel import KernelTab
-from euporie.core.io import edit_in_editor
 from euporie.core.widgets.cell import Cell, get_cell_id
 
 try:
@@ -47,6 +47,7 @@ class BaseNotebook(KernelTab, metaclass=ABCMeta):
 
     allow_stdin = False
     edit_mode = False
+    bg_init = True
 
     def __init__(
         self,
