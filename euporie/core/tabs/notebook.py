@@ -47,7 +47,6 @@ class BaseNotebook(KernelTab, metaclass=ABCMeta):
 
     allow_stdin = False
     edit_mode = False
-    bg_init = True
 
     def __init__(
         self,
