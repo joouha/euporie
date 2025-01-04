@@ -70,6 +70,7 @@ class Notebook(BaseNotebook):
         file_extensions.update(dict.fromkeys(NOTEBOOK_EXTENSIONS))
 
     allow_stdin = True
+    bg_init = True
 
     def __init__(
         self,

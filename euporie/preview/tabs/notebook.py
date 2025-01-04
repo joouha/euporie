@@ -129,7 +129,7 @@ class PreviewNotebook(BaseNotebook):
         ):
             self.print_title()
 
-        if not self.json["cells"]:
+        if not self.json.get("cells", []):
             log.error("No cells")
             self.app.print_text([("", "(No cells to display)\n")])
             self.app.close_tab(self)
