@@ -18,6 +18,7 @@ Added
 Changed
 =======
 
+- Improved quality and responsiveness of line suggestions
 - Improved app styles when using 1-bit color mode
 
 *******************
