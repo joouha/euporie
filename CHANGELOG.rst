@@ -20,6 +20,14 @@ Changed
 
 - Improved quality and responsiveness of line suggestions
 - Improved app styles when using 1-bit color mode
+- Update LSP server config defaults
+
+Fixed
+=====
+
+- Fixed issue with notebooks loosing focus at startup
+- Improve styling with 1-bit color depth
+- Various data conversion fixes
 
 *******************
 v2.8.4 (2024-10-10)
