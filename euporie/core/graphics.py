@@ -26,8 +26,8 @@ from euporie.core.convert.registry import find_route
 from euporie.core.data_structures import DiInt
 from euporie.core.filters import has_float, in_mplex
 from euporie.core.ft.utils import _ZERO_WIDTH_FRAGMENTS
-from euporie.core.layout.scroll import BoundedWritePosition
 from euporie.core.io import passthrough
+from euporie.core.layout.scroll import BoundedWritePosition
 
 if TYPE_CHECKING:
     from typing import Any, Callable, ClassVar
