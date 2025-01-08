@@ -289,10 +289,30 @@ class Console(KernelTab):
             self.render_queue.append(cell)
 
         # Add widgets to the live output
-        if "application/vnd.jupyter.widget-view+json" in output_json.get("data", {}):
-            self.live_output.add_output(output_json)
+        if output_json.get("output_type") == "stream":
+            # Use live output to enable emulation of carriage returns
+            text = output_json.get("text", "")
+            tail = ""
+            _text, _, _tail = text.rpartition("\n")
+            if "\r" in _tail:  # or "\x1b[" in _tail:
+                text, tail = _text, _tail
+            if text:
+                # Partially Flush live output streams
+                cell["outputs"].extend(self.live_output.json)
+                self.live_output.reset()
+                output_json["text"] = text
+                cell["outputs"].append(output_json)
+            if tail:
+                self.live_output.add_output(
+                    nbformat.v4.new_output(**{**output_json, "text": tail})
+                )
         else:
-            cell["outputs"].append(output_json)
+            if "application/vnd.jupyter.widget-view+json" in output_json.get(
+                "data", {}
+            ):
+                self.live_output.add_output(output_json)
+            else:
+                cell["outputs"].append(output_json)
 
         # Invalidate the app so the output get printed
         self.app.invalidate()
