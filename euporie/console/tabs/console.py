@@ -131,6 +131,7 @@ class Console(KernelTab):
         self.json = nbformat.v4.new_notebook()
         self.json["metadata"] = self._metadata
         self.render_queue: list[dict[str, Any]] = []
+        self.last_rendered: nbformat.v4.NotebookNode | None = None
 
         self.container = self.load_container()
 
@@ -345,7 +346,7 @@ class Console(KernelTab):
     ) -> StyleAndTextTuples:
         """Determine what should be displayed in the prompt of the cell."""
         if count is None:
-            count = self.execution_count
+            return [("", " " * (len(text) + 4 + len(str(self.execution_count))))]
         prompt = str(count + offset)
         if show_busy and self.kernel.status in ("busy", "queued"):
             prompt = "*".center(len(prompt))
@@ -416,12 +417,18 @@ class Console(KernelTab):
 
             # Outputs
             if outputs := cell.outputs:
-                children.append(
-                    Window(
-                        height=1,
-                        dont_extend_height=True,
+                # Add space before an output if last rendered cell did not have outputs
+                # or we are rendering a new output
+                if self.last_rendered is not None and (
+                    not self.last_rendered.outputs
+                    or cell.execution_count != self.last_rendered.execution_count
+                ):
+                    children.append(
+                        Window(
+                            height=1,
+                            dont_extend_height=True,
+                        )
                     )
-                )
 
                 def _flush(
                     buffer: list[dict[str, Any]], prompt: AnyFormattedText
@@ -446,20 +453,19 @@ class Console(KernelTab):
                         buffer.clear()
 
                 buffer: list[dict[str, Any]] = []
-                ec = cell.execution_count
+                # ec = cell.execution_count
                 prompt: AnyFormattedText = ""
                 next_prompt: AnyFormattedText
                 for output in outputs:
-                    if (next_ec := output.get("execution_count")) is None:
-                        next_prompt = " " * (len(str(ec)) + 7)
-                    else:
-                        next_prompt = self.prompt("Out", count=next_ec, show_busy=False)
-                        ec = next_ec
+                    next_ec = output.get("execution_count")
+                    next_prompt = self.prompt("Out", count=next_ec, show_busy=False)
                     if next_prompt != prompt:
                         _flush(buffer, prompt)
                         prompt = next_prompt
                     buffer.append(output)
                 _flush(buffer, prompt)
+
+            self.last_rendered = cell
 
         return Layout(
             FloatContainer(
@@ -484,9 +490,9 @@ class Console(KernelTab):
                                 FormattedTextControl(
                                     lambda: self.prompt(
                                         "Out",
-                                        count=self.live_output.json[0][
-                                            "execution_count"
-                                        ],
+                                        count=self.live_output.json[0].get(
+                                            "execution_count",
+                                        ),
                                     )
                                 ),
                                 dont_extend_width=True,
@@ -598,7 +604,11 @@ class Console(KernelTab):
                 VSplit(
                     [
                         Window(
-                            FormattedTextControl(partial(self.prompt, "In ", offset=1)),
+                            FormattedTextControl(
+                                lambda: self.prompt(
+                                    "In ", self.execution_count, offset=1
+                                )
+                            ),
                             dont_extend_width=True,
                             style="class:cell,input,prompt",
                             height=1,
