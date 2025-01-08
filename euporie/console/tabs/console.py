@@ -194,8 +194,7 @@ class Console(KernelTab):
         return not (
             not code.strip()
             or completeness_status == "incomplete"
-            or completeness_status == "unknown"
-            and code[-2:] != "\n\n"
+            or (completeness_status == "unknown" and code[-2:] != "\n\n")
         )
 
     def run(self, buffer: Buffer | None = None) -> None:
