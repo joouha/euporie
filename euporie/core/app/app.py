@@ -259,10 +259,10 @@ class BaseApp(ConfigurableApp, Application, ABC):
         self.config.events.log_file += lambda x: setup_logs(self.config)
         self.config.events.log_config += lambda x: setup_logs(self.config)
         self.config.events.color_depth += lambda x: setattr(
-            self, "_color_depth", COLOR_DEPTHS[x.value]
+            self, "_color_depth", COLOR_DEPTHS[self.config.color_depth]
         )
         self.config.events.clipboard += lambda x: setattr(
-            self, "clipboard", CONFIGURED_CLIPBOARDS[x.value]
+            self, "clipboard", CONFIGURED_CLIPBOARDS[self.config.clipboard]
         )
         # Set up the color palette
         self.color_palette = ColorPalette()
