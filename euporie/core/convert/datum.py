@@ -3,11 +3,11 @@
 from __future__ import annotations
 
 import asyncio
-import hashlib
 import inspect
 import io
 import logging
 import threading
+from hashlib import md5
 from typing import TYPE_CHECKING, Generic, TypeVar
 from weakref import ReferenceType, WeakValueDictionary, finalize, ref
 
@@ -193,7 +193,7 @@ class Datum(Generic[T], metaclass=_MetaDatum):
                 hash_data = data.tobytes()
             else:
                 hash_data = data
-        return hashlib.sha1(hash_data).hexdigest()  # noqa S324
+        return md5(hash_data, usedforsecurity=False).hexdigest()
 
     @property
     def hash(self) -> str:
