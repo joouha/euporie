@@ -6,7 +6,7 @@ build-backend = "hatchling.build"
 name = "euporie"
 description = 'Euporie is a suite of terminal applications for interacting with Jupyter kernels'
 readme = "README.rst"
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 # license = "MIT"
 keywords = ["euporie", "jupyter", "ipython", "markdown", "terminal", "notebook"]
 authors = [
@@ -16,7 +16,6 @@ dynamic = ["version"]
 classifiers = [
   "Development Status :: 4 - Beta",
   "Programming Language :: Python",
-  "Programming Language :: Python :: 3.8",
   "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
@@ -111,7 +110,7 @@ features = ["hub"]
 installer = "uv"
 
 [[tool.hatch.envs.multi.matrix]]
-python = ["3.8", "3.9", "3.10", "3.11", "3.12", "3.13", "3.13t", "pypy3"]
+python = ["3.9", "3.10", "3.11", "3.12", "3.13", "3.13t", "pypy3"]
 
 
 # Environment used to run `hatch fmt`
@@ -174,7 +173,7 @@ dependencies = [
 ]
 
 [[tool.hatch.envs.test.matrix]]
-python = ["3.8", "3.9", "3.10", "3.11", "3.12", "3.13", "pypy3"]
+python = ["3.9", "3.10", "3.11", "3.12", "3.13", "pypy3"]
 
 [tool.hatch.envs.test.scripts]
 run = "pytest {args}"
