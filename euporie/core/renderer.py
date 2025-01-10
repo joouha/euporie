@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import logging
+from hashlib import md5
 from typing import TYPE_CHECKING
 
 from prompt_toolkit.data_structures import Point, Size
 from prompt_toolkit.filters import to_filter
 from prompt_toolkit.layout.mouse_handlers import MouseHandlers
+from prompt_toolkit.layout.screen import Char
 from prompt_toolkit.renderer import Renderer as PtkRenderer
 from prompt_toolkit.renderer import _StyleStringHasStyleCache, _StyleStringToAttrsCache
 
@@ -116,19 +118,27 @@ def _output_screen_diff(
             write(char.char)
             last_style = char.style
 
+    def hash_screen_row(row: dict[int, Char], zwe_row: dict[int, str]) -> str:
+        """Generate a hash for a screen row to quickly detect changes."""
+        hasher = md5(usedforsecurity=False)
+        # Hash the character data
+        for idx in sorted(row.keys()):
+            cell = row[idx]
+            hasher.update(f"{idx}:{cell.char}:{cell.style}".encode())
+        # Hash the zero-width escapes
+        for idx in sorted(zwe_row.keys()):
+            hasher.update(f"{idx}:{zwe_row[idx]}".encode())
+        return hasher.hexdigest()
+
     def get_max_column_index(row: dict[int, Char], zwe_row: dict[int, str]) -> int:
         """Return max used column index, ignoring trailing unstyled whitespace."""
-        return max(
-            {
-                index
-                for index, cell in row.items()
-                if cell.char != " " or style_string_has_style[cell.style]
-            }
-            # Lag ZWE indices by one, as one could exist after the last line character
-            # but we don't want that to count towards the line width
-            | {x - 1 for x in zwe_row}
-            | {0}
-        )
+        max_idx = 0
+        for idx, cell in row.items():
+            if cell.char != " " or style_string_has_style[cell.style]:
+                max_idx = max(max_idx, idx)
+        for idx in zwe_row:
+            max_idx = max(max_idx, idx - 1)
+        return max_idx
 
     # Render for the first time: reset styling.
     if not previous_screen:
@@ -167,6 +177,14 @@ def _output_screen_diff(
         previous_row = previous_screen.data_buffer[y]
         zwe_row = screen.zero_width_escapes[y]
         previous_zwe_row = previous_screen.zero_width_escapes[y]
+
+        # Quick comparison using row hashes
+        new_hash = hash_screen_row(new_row, zwe_row)
+        prev_hash = hash_screen_row(previous_row, previous_zwe_row)
+
+        if new_hash == prev_hash:
+            # Rows are identical, skip to next row
+            continue
 
         new_max_line_len = min(width - 1, get_max_column_index(new_row, zwe_row))
         previous_max_line_len = min(
