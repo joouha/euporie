@@ -78,13 +78,15 @@ class CachedContainer(Container):
         self.container.reset()
         self.invalidate()
 
-    def preferred_width(self, max_available_width: int) -> Dimension:
+    async def preferred_width(self, max_available_width: int) -> Dimension:
         """Return the desired width for this container."""
-        return self.container.preferred_width(max_available_width)
+        return await self.container.preferred_width(max_available_width)
 
-    def preferred_height(self, width: int, max_available_height: int) -> Dimension:
+    async def preferred_height(
+        self, width: int, max_available_height: int
+    ) -> Dimension:
         """Return the desired height for this container."""
-        return self.container.preferred_height(width, max_available_height)
+        return await self.container.preferred_height(width, max_available_height)
 
     async def render(
         self,
@@ -117,8 +119,8 @@ class CachedContainer(Container):
             self.screen = Screen()
 
             # Recalculate child height if this child has been invalidated
-            height = self.height = self.container.preferred_height(
-                available_width, available_height
+            height = self.height = (
+                await self.container.preferred_height(available_width, available_height)
             ).preferred
 
         else:

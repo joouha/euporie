@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
-from functools import lru_cache, partial
+from functools import lru_cache
 from typing import TYPE_CHECKING
 
 from prompt_toolkit.application.current import get_app
-from prompt_toolkit.cache import FastDictCache
 from prompt_toolkit.data_structures import Point
 from prompt_toolkit.layout import containers as ptk_containers
 from prompt_toolkit.layout.containers import (
@@ -30,6 +30,7 @@ from prompt_toolkit.layout.utils import explode_text_fragments
 from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
 from prompt_toolkit.utils import get_cwidth, to_str
 
+from euporie.core.cache import AFastDictCache
 from euporie.core.data_structures import DiInt
 from euporie.core.layout.controls import DummyControl
 from euporie.core.layout.screen import BoundedWritePosition
@@ -68,11 +69,13 @@ class DummyContainer(Container):
     def reset(self) -> None:
         """Reset the state of this container (does nothing)."""
 
-    def preferred_width(self, max_available_width: int) -> Dimension:
+    async def preferred_width(self, max_available_width: int) -> Dimension:
         """Return a zero-width dimension."""
         return Dimension.exact(self.width)
 
-    def preferred_height(self, width: int, max_available_height: int) -> Dimension:
+    async def preferred_height(
+        self, width: int, max_available_height: int
+    ) -> Dimension:
         """Return a zero-height dimension."""
         return Dimension.exact(self.height)
 
@@ -129,13 +132,18 @@ class HSplit(ptk_containers.HSplit):
             key_bindings=key_bindings,
             style=style,
         )
-        _split_cache_getter = super()._divide_heights
-        self._split_cache: FastDictCache[
-            tuple[int, WritePosition], list[int] | None
-        ] = FastDictCache(lambda rc, wp: _split_cache_getter(wp), size=100)
 
-    def _divide_heights(self, write_position: WritePosition) -> list[int] | None:
-        return self._split_cache[get_app().render_counter, write_position]
+        super_divide_heights = super()._divide_heights
+
+        async def _split_cache_getter(rc, wp):
+            return await super_divide_heights(wp)
+
+        self._split_cache: AFastDictCache[
+            tuple[int, WritePosition], list[int] | None
+        ] = AFastDictCache(_split_cache_getter, size=100)
+
+    async def _divide_heights(self, write_position: WritePosition) -> list[int] | None:
+        return await self._split_cache.aget(get_app().render_counter, write_position)
 
     async def write_to_screen(
         self,
@@ -152,7 +160,7 @@ class HSplit(ptk_containers.HSplit):
             to which the output has to be written.
         """
         assert isinstance(write_position, BoundedWritePosition)
-        sizes = self._divide_heights(write_position)
+        sizes = await self._divide_heights(write_position)
         style = parent_style + " " + to_str(self.style)
         z_index = z_index if self.z_index is None else self.z_index
 
@@ -299,14 +307,19 @@ class VSplit(ptk_containers.VSplit):
             key_bindings=key_bindings,
             style=style,
         )
-        _split_cache_getter = super()._divide_widths
-        self._split_cache: FastDictCache[tuple[int, int], list[int] | None] = (
-            FastDictCache(lambda rc, w: _split_cache_getter(w), size=100)
+
+        super_divide_widths = super()._divide_widths
+
+        async def _split_cache_getter(rc, wp):
+            return await super_divide_widths(wp)
+
+        self._split_cache: AFastDictCache[tuple[int, int], list[int] | None] = (
+            AFastDictCache(_split_cache_getter, size=100)
         )
 
-    def _divide_widths(self, width: int) -> list[int] | None:
+    async def _divide_widths(self, width: int) -> list[int] | None:
         """Calculate and cache widths for all columns."""
-        return self._split_cache[get_app().render_counter, width]
+        return await self._split_cache.aget(get_app().render_counter, width)
 
     async def write_to_screen(
         self,
@@ -327,7 +340,7 @@ class VSplit(ptk_containers.VSplit):
             return
 
         children = self._all_children
-        sizes = self._divide_widths(write_position.width)
+        sizes = await self._divide_widths(write_position.width)
         style = parent_style + " " + to_str(self.style)
         z_index = z_index if self.z_index is None else self.z_index
 
@@ -341,8 +354,15 @@ class VSplit(ptk_containers.VSplit):
         # Calculate heights, take the largest possible, but not larger than
         # write_position.height.
         heights = [
-            child.preferred_height(width, write_position.height).preferred
-            for width, child in zip(sizes, children)
+            x.preferred
+            for x in (
+                await asyncio.gather(
+                    *(
+                        child.preferred_height(width, write_position.height)
+                        for width, child in zip(sizes, children)
+                    )
+                )
+            )
         ]
         height = max(write_position.height, min(write_position.height, max(heights)))
 
@@ -483,14 +503,16 @@ class Window(ptk_containers.Window):
         if self.dont_extend_width():
             write_position.width = min(
                 write_position.width,
-                self.preferred_width(write_position.width).preferred,
+                (await self.preferred_width(write_position.width)).preferred,
             )
 
         if self.dont_extend_height():
             write_position.height = min(
                 write_position.height,
-                self.preferred_height(
-                    write_position.width, write_position.height
+                (
+                    await self.preferred_height(
+                        write_position.width, write_position.height
+                    )
                 ).preferred,
             )
 
@@ -527,12 +549,16 @@ class Window(ptk_containers.Window):
             return
 
         # Calculate margin sizes.
-        left_margin_widths = [self._get_margin_width(m) for m in self.left_margins]
-        right_margin_widths = [self._get_margin_width(m) for m in self.right_margins]
+        left_margin_widths = await asyncio.gather(
+            *(self._get_margin_width(m) for m in self.left_margins)
+        )
+        right_margin_widths = await asyncio.gather(
+            *(self._get_margin_width(m) for m in self.right_margins)
+        )
         total_margin_width = sum(left_margin_widths + right_margin_widths)
 
         # Render UserControl.
-        ui_content = self.content.create_content(
+        ui_content = await self.content.create_content(
             write_position.width - total_margin_width, write_position.height
         )
         assert isinstance(ui_content, UIContent)
@@ -658,21 +684,21 @@ class Window(ptk_containers.Window):
         # Render and copy margins.
         move_x = 0
 
-        def render_margin(m: Margin, width: int) -> UIContent:
+        async def render_margin(m: Margin, width: int) -> UIContent:
             """Render margin. Return `Screen`."""
             # Retrieve margin fragments.
             fragments = m.create_margin(render_info, width, write_position.height)
 
             # Turn it into a UIContent object.
             # already rendered those fragments using this size.)
-            return FormattedTextControl(fragments).create_content(
+            return await FormattedTextControl(fragments).create_content(
                 width + 1, write_position.height
             )
 
         for m, width in zip(self.left_margins, left_margin_widths):
             if width > 0:  # (ConditionalMargin returns a zero width. -- Don't render.)
                 # Create screen for margin.
-                margin_content = render_margin(m, width)
+                margin_content = await render_margin(m, width)
 
                 # Copy and shift X.
                 self._copy_margin(margin_content, screen, write_position, move_x, width)
@@ -682,7 +708,7 @@ class Window(ptk_containers.Window):
 
         for m, width in zip(self.right_margins, right_margin_widths):
             # Create screen for margin.
-            margin_content = render_margin(m, width)
+            margin_content = await render_margin(m, width)
 
             # Copy and shift X.
             self._copy_margin(margin_content, screen, write_position, move_x, width)
@@ -1110,7 +1136,9 @@ class FloatContainer(ptk_containers.FloatContainer):
         # Near x position of cursor.
         elif fl.xcursor:
             if fl_width is None:
-                width = fl.content.preferred_width(write_position.width).preferred
+                width = (
+                    await fl.content.preferred_width(write_position.width)
+                ).preferred
                 width = min(write_position.width, width)
             else:
                 width = fl_width
@@ -1124,7 +1152,7 @@ class FloatContainer(ptk_containers.FloatContainer):
             width = fl_width
         # Otherwise, take preferred width from float content.
         else:
-            width = fl.content.preferred_width(write_position.width).preferred
+            width = (await fl.content.preferred_width(write_position.width)).preferred
 
             if fl.left is not None:
                 xpos = fl.left
@@ -1153,8 +1181,8 @@ class FloatContainer(ptk_containers.FloatContainer):
             ypos = cursor_position.y + (0 if fl.allow_cover_cursor else 1)
 
             if fl_height is None:
-                height = fl.content.preferred_height(
-                    width, write_position.height
+                height = (
+                    await fl.content.preferred_height(width, write_position.height)
                 ).preferred
             else:
                 height = fl_height
@@ -1177,7 +1205,9 @@ class FloatContainer(ptk_containers.FloatContainer):
             height = fl_height
         # Otherwise, take preferred height from content.
         else:
-            height = fl.content.preferred_height(width, write_position.height).preferred
+            height = (
+                await fl.content.preferred_height(width, write_position.height)
+            ).preferred
 
             if fl.top is not None:
                 ypos = fl.top

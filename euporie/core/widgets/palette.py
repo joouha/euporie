@@ -51,7 +51,7 @@ class CommandMenuControl(UIControl):
         self.palette = command_palette
         self.width = width
 
-    def create_content(self, width: int, height: int) -> UIContent:
+    async def create_content(self, width: int, height: int) -> UIContent:
         """Create a UIContent object for this control."""
 
         def get_line(i: int) -> StyleAndTextTuples:
@@ -104,11 +104,11 @@ class CommandMenuControl(UIControl):
             line_count=len(self.palette.matches),
         )
 
-    def preferred_width(self, max_available_width: int) -> int | None:
+    async def preferred_width(self, max_available_width: int) -> int | None:
         """Return the preferred width of the command list."""
         return min(self.width, max_available_width)
 
-    def preferred_height(
+    async def preferred_height(
         self,
         width: int,
         max_available_height: int,

@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 class DummyControl(UIControl):
     """A dummy control object that doesn't paint any content."""
 
-    def create_content(self, width: int, height: int) -> UIContent:
+    async def create_content(self, width: int, height: int) -> UIContent:
         """Return one blank line only."""
 
         def get_line(i: int) -> StyleAndTextTuples:

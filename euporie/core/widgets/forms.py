@@ -514,7 +514,7 @@ class ExpandingBufferControl(BufferControl):
         )
         self.expand = to_filter(expand)
 
-    def preferred_width(self, max_available_width: int) -> int | None:
+    async def preferred_width(self, max_available_width: int) -> int | None:
         """Enure text box expands to available width.
 
         Args:
@@ -836,11 +836,11 @@ class ProgressControl(UIControl):
 
         self._content_cache: SimpleCache = SimpleCache(maxsize=50)
 
-    def preferred_width(self, max_available_width: int) -> int | None:
+    async def preferred_width(self, max_available_width: int) -> int | None:
         """Determine the width of the progress-bar depending on its orientation."""
         return 1 if self.vertical() else max_available_width
 
-    def preferred_height(
+    async def preferred_height(
         self,
         width: int,
         max_available_height: int,
@@ -869,7 +869,7 @@ class ProgressControl(UIControl):
         else:
             return [ft]
 
-    def create_content(self, width: int, height: int) -> UIContent:
+    async def create_content(self, width: int, height: int) -> UIContent:
         """Get or render content for a given output size."""
 
         def get_content() -> UIContent:
@@ -1811,11 +1811,11 @@ class SliderControl(UIControl):
         self._content_cache: SimpleCache = SimpleCache(maxsize=50)
         self.window: Window | None = None
 
-    def preferred_width(self, max_available_width: int) -> int | None:
+    async def preferred_width(self, max_available_width: int) -> int | None:
         """Return the preferred width of the slider control given its orientation."""
         return 1 if self.slider.vertical() else max_available_width
 
-    def preferred_height(
+    async def preferred_height(
         self,
         width: int,
         max_available_height: int,
@@ -1829,7 +1829,7 @@ class SliderControl(UIControl):
         """Tell whether this user control is focusable."""
         return not self.disabled()
 
-    def create_content(self, width: int, height: int) -> UIContent:
+    async def create_content(self, width: int, height: int) -> UIContent:
         """Create an cache the rendered control fragments."""
 
         def get_content() -> UIContent:

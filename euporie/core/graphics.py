@@ -58,12 +58,12 @@ class GraphicControl(UIControl, metaclass=ABCMeta):
         self._content_cache: SimpleCache = SimpleCache(maxsize=50)
         self._format_cache: SimpleCache = SimpleCache(maxsize=50)
 
-    def preferred_width(self, max_available_width: int) -> int | None:
+    async def preferred_width(self, max_available_width: int) -> int | None:
         """Return the width of the rendered content."""
         cols, _aspect = self.datum.cell_size()
         return min(cols, max_available_width) if cols else max_available_width
 
-    def preferred_height(
+    async def preferred_height(
         self,
         width: int,
         max_available_height: int,
@@ -89,7 +89,7 @@ class GraphicControl(UIControl, metaclass=ABCMeta):
         """Render the output data."""
         return []
 
-    def create_content(self, width: int, height: int) -> UIContent:
+    async def create_content(self, width: int, height: int) -> UIContent:
         """Generate rendered output at a given size.
 
         Args:

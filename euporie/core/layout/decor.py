@@ -74,11 +74,13 @@ class Line(Container):
     def reset(self) -> None:
         """Reset the state of the line. Does nothing."""
 
-    def preferred_width(self, max_available_width: int) -> Dimension:
+    async def preferred_width(self, max_available_width: int) -> Dimension:
         """Return the preferred width of the line."""
         return Dimension(min=int(not self.collapse), max=self.width)
 
-    def preferred_height(self, width: int, max_available_height: int) -> Dimension:
+    async def preferred_height(
+        self, width: int, max_available_height: int
+    ) -> Dimension:
         """Return the preferred height of the line."""
         return Dimension(min=int(not self.collapse), max=self.height)
 
@@ -136,11 +138,13 @@ class Pattern(Container):
     def reset(self) -> None:
         """Reset the pattern. Does nothing."""
 
-    def preferred_width(self, max_available_width: int) -> Dimension:
+    async def preferred_width(self, max_available_width: int) -> Dimension:
         """Return an empty dimension (expand to available width)."""
         return Dimension()
 
-    def preferred_height(self, width: int, max_available_height: int) -> Dimension:
+    async def preferred_height(
+        self, width: int, max_available_height: int
+    ) -> Dimension:
         """Return an empty dimension (expand to available height)."""
         return Dimension()
 
@@ -224,13 +228,17 @@ class FocusedStyle(Container):
         """Reset the wrapped container."""
         to_container(self.body).reset()
 
-    def preferred_width(self, max_available_width: int) -> Dimension:
+    async def preferred_width(self, max_available_width: int) -> Dimension:
         """Return the wrapped container's preferred width."""
-        return to_container(self.body).preferred_width(max_available_width)
+        return await to_container(self.body).preferred_width(max_available_width)
 
-    def preferred_height(self, width: int, max_available_height: int) -> Dimension:
+    async def preferred_height(
+        self, width: int, max_available_height: int
+    ) -> Dimension:
         """Return the wrapped container's preferred height."""
-        return to_container(self.body).preferred_height(width, max_available_height)
+        return await to_container(self.body).preferred_height(
+            width, max_available_height
+        )
 
     async def write_to_screen(
         self,
@@ -322,11 +330,13 @@ class DropShadow(Container):
     def reset(self) -> None:
         """Reset the wrapped container - here, do nothing."""
 
-    def preferred_width(self, max_available_width: int) -> Dimension:
+    async def preferred_width(self, max_available_width: int) -> Dimension:
         """Return the wrapped container's preferred width."""
         return Dimension(weight=1)
 
-    def preferred_height(self, width: int, max_available_height: int) -> Dimension:
+    async def preferred_height(
+        self, width: int, max_available_height: int
+    ) -> Dimension:
         """Return the wrapped container's preferred height."""
         return Dimension(weight=1)
 

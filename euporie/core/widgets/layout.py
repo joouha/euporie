@@ -272,11 +272,11 @@ class TabBarControl(UIControl):
         """Set the currently active tab."""
         self._active = active
 
-    def preferred_width(self, max_available_width: int) -> int | None:
+    async def preferred_width(self, max_available_width: int) -> int | None:
         """Return the preferred width of the tab-bar control, the maximum available."""
         return max_available_width
 
-    def preferred_height(
+    async def preferred_height(
         self,
         width: int,
         max_available_height: int,
@@ -290,7 +290,7 @@ class TabBarControl(UIControl):
         """Tell whether this user control is focusable."""
         return False
 
-    def create_content(self, width: int, height: int) -> UIContent:
+    async def create_content(self, width: int, height: int) -> UIContent:
         """Generate the formatted text fragments which make the controls output."""
 
         def get_content() -> UIContent:

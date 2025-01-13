@@ -226,11 +226,11 @@ class WebViewControl(UIControl):
     def reset(self) -> None:
         """Reset the state of the control."""
 
-    def preferred_width(self, max_available_width: int) -> int | None:
+    async def preferred_width(self, max_available_width: int) -> int | None:
         """Calculate and return the preferred width of the control."""
         return None
 
-    def preferred_height(
+    async def preferred_height(
         self,
         width: int,
         max_available_height: int,
@@ -291,7 +291,7 @@ class WebViewControl(UIControl):
             show_cursor=False,
         )
 
-    def create_content(self, width: int, height: int) -> UIContent:
+    async def create_content(self, width: int, height: int) -> UIContent:
         """Generate the content for this user control.
 
         Returns:

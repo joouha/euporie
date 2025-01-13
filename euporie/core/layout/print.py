@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from typing import TYPE_CHECKING
 
@@ -105,7 +106,9 @@ class PrintingContainer(Container):
 
         children = self.get_children()
         for child in children:
-            height = child.preferred_height(write_position.width, 999999).preferred
+            height = (
+                await child.preferred_height(write_position.width, 999999)
+            ).preferred
             await child.write_to_screen(
                 screen,
                 mouse_handlers,
@@ -116,19 +119,26 @@ class PrintingContainer(Container):
             )
             ypos += height
 
-    def preferred_height(self, width: int, max_available_height: int) -> Dimension:
+    async def preferred_height(
+        self, width: int, max_available_height: int
+    ) -> Dimension:
         """Return the preferred height, equal to the sum of the child heights."""
         return Dimension(
             min=1,
             preferred=sum(
                 [
-                    c.preferred_height(width, max_available_height).preferred
-                    for c in self.get_children()
+                    x.preferred
+                    for x in await asyncio.gather(
+                        *(
+                            c.preferred_height(width, max_available_height)
+                            for c in self.get_children()
+                        )
+                    )
                 ]
             ),
         )
 
-    def preferred_width(self, max_available_width: int) -> Dimension:
+    async def preferred_width(self, max_available_width: int) -> Dimension:
         """Calculate and returns the desired width for this container."""
         if self.width is not None:
             dim = to_dimension(self.width).preferred

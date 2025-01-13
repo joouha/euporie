@@ -7,7 +7,7 @@ from functools import partial
 from math import ceil
 from typing import TYPE_CHECKING, cast
 
-from prompt_toolkit.cache import FastDictCache, SimpleCache
+from euporie.core.cache import AFastDictCache, ASimpleCache
 from prompt_toolkit.data_structures import Point, Size
 from prompt_toolkit.filters.utils import to_filter
 from prompt_toolkit.formatted_text.utils import fragment_list_width, split_lines
@@ -99,17 +99,19 @@ class DisplayControl(UIControl):
         ]
 
         # Caches
-        self._content_cache: FastDictCache = FastDictCache(self.get_content, size=1000)
-        self._line_cache: FastDictCache[
+        self._content_cache: AFastDictCache = AFastDictCache(
+            self.get_content, size=1000
+        )
+        self._line_cache: AFastDictCache[
             tuple[Datum, int | None, int | None, str, str, bool],
             list[StyleAndTextTuples],
-        ] = FastDictCache(get_value=self.get_lines, size=1000)
-        self._line_width_cache: SimpleCache[
+        ] = AFastDictCache(get_value=self.get_lines, size=1000)
+        self._line_width_cache: ASimpleCache[
             tuple[Datum, int | None, int | None, bool, int], int
-        ] = SimpleCache(maxsize=10_000)
-        self._max_line_width_cache: FastDictCache[
+        ] = ASimpleCache(maxsize=10_000)
+        self._max_line_width_cache: AFastDictCache[
             tuple[Datum, int | None, int | None, bool], int
-        ] = FastDictCache(get_value=self.get_max_line_width, size=1000)
+        ] = AFastDictCache(get_value=self.get_max_line_width, size=1000)
 
     @property
     def datum(self) -> Any:
@@ -139,7 +141,7 @@ class DisplayControl(UIControl):
         if changed:
             self.on_cursor_position_changed.fire()
 
-    def get_lines(
+    async def get_lines(
         self,
         datum: Datum,
         width: int | None,
@@ -149,7 +151,7 @@ class DisplayControl(UIControl):
         wrap_lines: bool = False,
     ) -> list[StyleAndTextTuples]:
         """Render the lines to display in the control."""
-        ft = datum.convert(
+        ft = await datum.convert_async(
             to="ft",
             cols=width,
             rows=height,
@@ -174,7 +176,7 @@ class DisplayControl(UIControl):
             lines.extend([[]] * max(0, height - len(lines)))
         return lines
 
-    def get_max_line_width(
+    async def get_max_line_width(
         self,
         datum: Datum,
         width: int | None,
@@ -183,52 +185,46 @@ class DisplayControl(UIControl):
     ) -> int:
         """Get the maximum lines width for a given rendering."""
         cp = self.color_palette
-        lines = self._line_cache[
+        lines = await self._line_cache.aget(
             datum, width, height, cp.fg.base_hex, cp.bg.base_hex, wrap_lines
-        ]
+        )
         return max(
-            self._line_width_cache.get(
+            await self._line_width_cache.aget(
                 (datum, width, height, wrap_lines, i),
                 partial(fragment_list_width, line),
             )
             for i, line in enumerate(lines)
         )
 
-    def render(self) -> None:
+    async def render(self) -> None:
         """Render the content in a thread."""
         datum = self.datum
         wrap_lines = self.wrap_lines()
 
-        cols = self.preferred_width(self.width)
-        rows = self.preferred_height(
+        cols = await self.preferred_width(self.width)
+        rows = await self.preferred_height(
             self.width, self.height, wrap_lines=wrap_lines, get_line_prefix=None
         )
 
-        def _render() -> None:
+        if not self.rendering:
+            self.rendering = True
             cp = self.color_palette
-            self.lines = self._line_cache[
+            self.lines = await self._line_cache.aget(
                 datum, cols, rows, cp.fg.base_hex, cp.bg.base_hex, wrap_lines
-            ]
+            )
             self.loading = False
             self.resizing = False
             self.rendering = False
             self.rendered.fire()
 
-        if not self.rendering:
-            self.rendering = True
-            if self.threaded:
-                run_in_thread_with_context(_render)
-            else:
-                _render()
-
     def reset(self) -> None:
         """Reset the state of the control."""
 
-    def preferred_width(self, max_available_width: int) -> int | None:
+    async def preferred_width(self, max_available_width: int) -> int | None:
         """Calculate and return the preferred width of the control."""
         return max_available_width
 
-    def preferred_height(
+    async def preferred_height(
         self,
         width: int,
         max_available_height: int,
@@ -237,25 +233,25 @@ class DisplayControl(UIControl):
     ) -> int | None:
         """Calculate and return the preferred height of the control."""
         height = None
-        max_cols, aspect = self.datum.cell_size()
+        max_cols, aspect = await self.datum.cell_size_async()
         if aspect:
             height = ceil(min(width, max_cols) * aspect)
         cp = self.color_palette
-        self.lines = self._line_cache[
+        self.lines = await self._line_cache.aget(
             self.datum,
             width,
             height,
             cp.fg.base_hex,
             cp.bg.base_hex,
             self.wrap_lines(),
-        ]
+        )
         return len(self.lines)
 
     def is_focusable(self) -> bool:
         """Tell whether this user control is focusable."""
         return self.focusable()
 
-    def get_content(
+    async def get_content(
         self,
         datum: Datum,
         width: int,
@@ -293,7 +289,7 @@ class DisplayControl(UIControl):
             show_cursor=False,
         )
 
-    def create_content(self, width: int, height: int) -> UIContent:
+    async def create_content(self, width: int, height: int) -> UIContent:
         """Generate the content for this user control.
 
         Returns:
@@ -312,10 +308,10 @@ class DisplayControl(UIControl):
             self.color_palette = cp
             render = True
         if render:
-            self.render()
-        content = self._content_cache[
+            await self.render()
+        content = await self._content_cache.aget(
             self.datum, width, height, self.loading, self.cursor_position, cp
-        ]
+        )
 
         # Check for graphics in content
         self.graphic_processor.load(content)

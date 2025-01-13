@@ -89,7 +89,7 @@ class DialogTitleControl(UIControl):
         self.drag_start: Point | None = None
         self._content_cache: SimpleCache[Hashable, UIContent] = SimpleCache(maxsize=18)
 
-    def create_content(self, width: int, height: int | None) -> UIContent:
+    async def create_content(self, width: int, height: int | None) -> UIContent:
         """Create the title text content."""
 
         def get_content() -> UIContent:
@@ -108,56 +108,56 @@ class DialogTitleControl(UIControl):
 
         return self._content_cache.get((width,), get_content)
 
-    def mouse_handler(self, mouse_event: MouseEvent) -> NotImplementedOrNone:
-        """Move the dialog when the titlebar is dragged."""
-        if (info := self.window.render_info) is not None:
-            # Get the global mouse position
-            app = self.dialog.app
-            gx, gy = app.mouse_position
-            if mouse_event.button == MouseButton.LEFT:
-                if mouse_event.event_type == MouseEventType.MOUSE_DOWN:
-                    # Start the drag event
-                    self.drag_start = mouse_event.position
-                    # Send all mouse events to this position
-                    y_min, x_min = min(info._rowcol_to_yx.values())
-                    y_max, x_max = max(info._rowcol_to_yx.values())
-                    app.mouse_limits = WritePosition(
-                        xpos=x_min,
-                        ypos=y_min,
-                        width=x_max - x_min,
-                        height=y_max - y_min,
-                    )
-                    return NotImplemented
-                elif mouse_event.event_type == MouseEventType.MOUSE_MOVE:
-                    if self.drag_start is not None:
-                        # Get available space
-                        max_y, max_x = app.output.get_size()
-                        # Calculate dialog dimensions
-                        dl_width = self.dialog.content.preferred_width(max_x).preferred
-                        dl_height = self.dialog.content.preferred_height(
-                            dl_width, max_y
-                        ).preferred
-                        # Calculate new dialog position
-                        new_x = max(
-                            1, min(gx - self.drag_start.x, max_x - dl_width + 1)
-                        )
-                        new_y = max(
-                            1, min(gy - self.drag_start.y, max_y - dl_height + 1)
-                        )
-                        # Move dialog
-                        self.dialog.left = new_x - 1
-                        self.dialog.top = new_y - 1
-                        # change the mouse capture position
-                        if app.mouse_limits is not None:
-                            app.mouse_limits.xpos = new_x
-                            app.mouse_limits.ypos = new_y
-                        return None
+    # def mouse_handler(self, mouse_event: MouseEvent) -> NotImplementedOrNone:
+    #     """Move the dialog when the titlebar is dragged."""
+    #     if (info := self.window.render_info) is not None:
+    #         # Get the global mouse position
+    #         app = self.dialog.app
+    #         gx, gy = app.mouse_position
+    #         if mouse_event.button == MouseButton.LEFT:
+    #             if mouse_event.event_type == MouseEventType.MOUSE_DOWN:
+    #                 # Start the drag event
+    #                 self.drag_start = mouse_event.position
+    #                 # Send all mouse events to this position
+    #                 y_min, x_min = min(info._rowcol_to_yx.values())
+    #                 y_max, x_max = max(info._rowcol_to_yx.values())
+    #                 app.mouse_limits = WritePosition(
+    #                     xpos=x_min,
+    #                     ypos=y_min,
+    #                     width=x_max - x_min,
+    #                     height=y_max - y_min,
+    #                 )
+    #                 return NotImplemented
+    #             elif mouse_event.event_type == MouseEventType.MOUSE_MOVE:
+    #                 if self.drag_start is not None:
+    #                     # Get available space
+    #                     max_y, max_x = app.output.get_size()
+    #                     # Calculate dialog dimensions
+    #                     dl_width = self.dialog.content.preferred_width(max_x).preferred
+    #                     dl_height = self.dialog.content.preferred_height(
+    #                         dl_width, max_y
+    #                     ).preferred
+    #                     # Calculate new dialog position
+    #                     new_x = max(
+    #                         1, min(gx - self.drag_start.x, max_x - dl_width + 1)
+    #                     )
+    #                     new_y = max(
+    #                         1, min(gy - self.drag_start.y, max_y - dl_height + 1)
+    #                     )
+    #                     # Move dialog
+    #                     self.dialog.left = new_x - 1
+    #                     self.dialog.top = new_y - 1
+    #                     # change the mouse capture position
+    #                     if app.mouse_limits is not None:
+    #                         app.mouse_limits.xpos = new_x
+    #                         app.mouse_limits.ypos = new_y
+    #                     return None
 
-            # End the drag event
-            self.drag_start = None
-            # Stop capturing all mouse events
-            app.mouse_limits = None
-        return NotImplemented
+    #         # End the drag event
+    #         self.drag_start = None
+    #         # Stop capturing all mouse events
+    #         app.mouse_limits = None
+    #     return NotImplemented
 
 
 class Dialog(Float, metaclass=ABCMeta):

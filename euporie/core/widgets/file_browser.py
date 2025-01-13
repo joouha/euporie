@@ -461,7 +461,7 @@ class FileBrowserControl(UIControl):
             is_dirs.append(child_is_dir)
         return sorted(zip(is_dirs, paths), key=lambda x: (not x[0], x[1].name))
 
-    def create_content(self, width: int, height: int) -> UIContent:
+    async def create_content(self, width: int, height: int) -> UIContent:
         """Generate the content for this user control."""
         paths = self.contents
 

@@ -81,18 +81,20 @@ class MarginContainer(Window):
     def reset(self) -> None:
         """Reset the state of this container and all the children."""
 
-    def preferred_width(self, max_available_width: int) -> Dimension:
+    async def preferred_width(self, max_available_width: int) -> Dimension:
         """Return a the desired width for this container."""
 
-        def _get_ui_content() -> UIContent:
+        async def _get_ui_content() -> UIContent:
             render_info = self.target.render_info
             assert render_info is not None
             return render_info.ui_content
 
-        width = self.margin.get_width(_get_ui_content)
+        width = await self.margin.get_width(_get_ui_content)
         return Dimension(min=width, max=width)
 
-    def preferred_height(self, width: int, max_available_height: int) -> Dimension:
+    async def preferred_height(
+        self, width: int, max_available_height: int
+    ) -> Dimension:
         """Return a thedesired height for this container."""
         return Dimension()
 
@@ -108,7 +110,7 @@ class MarginContainer(Window):
         """Write the actual content to the screen."""
         self.write_position = write_position
 
-        margin_content: UIContent = self.content.create_content(
+        margin_content: UIContent = await self.content.create_content(
             write_position.width + 1, write_position.height
         )
         visible_line_to_row_col, rowcol_to_yx = self._copy_body(
@@ -236,7 +238,7 @@ class ScrollbarMargin(ClickableMargin):
 
         self.target_render_info: WindowRenderInfo | None = None
 
-    def get_width(self, get_ui_content: Callable[[], UIContent]) -> int:
+    async def get_width(self, get_ui_content: Callable[[], UIContent]) -> int:
         """Return the scrollbar width: always 1."""
         return 1
 
@@ -541,9 +543,9 @@ class NumberedMargin(Margin):
         self.diagnostics = diagnostics
         self.show_diagnostics = to_filter(show_diagnostics)
 
-    def get_width(self, get_ui_content: Callable[[], UIContent]) -> int:
+    async def get_width(self, get_ui_content: Callable[[], UIContent]) -> int:
         """Return the width of the margin."""
-        line_count = get_ui_content().line_count
+        line_count = (await get_ui_content()).line_count
         return len(f"{line_count}") + 2
 
     def create_margin(
@@ -621,7 +623,7 @@ class BorderMargin(Margin):
         self.char = char
         self.style = style
 
-    def get_width(self, get_ui_content: Callable[[], UIContent]) -> int:
+    async def get_width(self, get_ui_content: Callable[[], UIContent]) -> int:
         """Return the width of the margin."""
         return len(self.char)
 
@@ -637,7 +639,7 @@ class BorderMargin(Margin):
 class OverflowMargin(Margin):
     """A margin which indicates lines extending beyond the edge of the window."""
 
-    def get_width(self, get_ui_content: Callable[[], UIContent]) -> int:
+    async def get_width(self, get_ui_content: Callable[[], UIContent]) -> int:
         """Return the width of the margin."""
         return 1
 

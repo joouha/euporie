@@ -752,7 +752,7 @@ class MenuBar:
 class CompletionsMenuControl(PtkCompletionsMenuControl):
     """A custom completions menu control."""
 
-    def create_content(self, width: int, height: int) -> UIContent:
+    async def create_content(self, width: int, height: int) -> UIContent:
         """Create a UIContent object for this control."""
         complete_state = get_app().current_buffer.complete_state
         if complete_state:

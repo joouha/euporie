@@ -55,13 +55,15 @@ class DisableMouseOnScroll(Container):
         """Reset the state of this container."""
         self.content.reset()
 
-    def preferred_width(self, max_available_width: int) -> Dimension:
+    async def preferred_width(self, max_available_width: int) -> Dimension:
         """Return the desired width for this container."""
-        return self.content.preferred_width(max_available_width)
+        return await self.content.preferred_width(max_available_width)
 
-    def preferred_height(self, width: int, max_available_height: int) -> Dimension:
+    async def preferred_height(
+        self, width: int, max_available_height: int
+    ) -> Dimension:
         """Return the desired height for this container."""
-        return self.content.preferred_height(width, max_available_height)
+        return await self.content.preferred_height(width, max_available_height)
 
     async def write_to_screen(
         self,

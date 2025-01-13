@@ -111,18 +111,22 @@ class ScrollingContainer(Container):
         await asyncio.gather(*[_render(child) for child in children])
         self.pre_rendered = 1.0
 
+        # get_app().exit()
+
     def reset(self) -> None:
         """Reset the state of this container and all the children."""
         for child in self.all_children():
             child.reset()
 
-    def preferred_width(self, max_available_width: int) -> Dimension:
+    async def preferred_width(self, max_available_width: int) -> Dimension:
         """Do not provide a preferred width - grow to fill the available space."""
         if self.width is not None:
             return Dimension(min=1, preferred=self.width, weight=1)
         return Dimension(weight=1)
 
-    def preferred_height(self, width: int, max_available_height: int) -> Dimension:
+    async def preferred_height(
+        self, width: int, max_available_height: int
+    ) -> Dimension:
         """Return the preferred height only if one is provided."""
         if self.height is not None:
             return Dimension(min=1, preferred=self.height, weight=1)
@@ -819,7 +823,9 @@ class PrintingContainer(Container):
             )
             ypos += height
 
-    def preferred_height(self, width: int, max_available_height: int) -> Dimension:
+    async def preferred_height(
+        self, width: int, max_available_height: int
+    ) -> Dimension:
         """Return the preferred height, equal to the sum of the child heights."""
         return Dimension(
             min=1,
@@ -831,7 +837,7 @@ class PrintingContainer(Container):
             ),
         )
 
-    def preferred_width(self, max_available_width: int) -> Dimension:
+    async def preferred_width(self, max_available_width: int) -> Dimension:
         """Calculate and returns the desired width for this container."""
         if self.width is not None:
             dim = to_dimension(self.width).preferred

@@ -38,11 +38,11 @@ class ToolbarCompletionMenuControl(UIControl):
         self.max_item_width = max_item_width
         self.min_item_width = min_item_width
 
-    def preferred_width(self, max_available_width: int) -> int | None:
+    async def preferred_width(self, max_available_width: int) -> int | None:
         """Fill available width."""
         return max_available_width
 
-    def preferred_height(
+    async def preferred_height(
         self,
         width: int,
         max_available_height: int,
@@ -85,7 +85,7 @@ class ToolbarCompletionMenuControl(UIControl):
             col_width = item_width
         return col_width
 
-    def create_content(self, width: int, height: int) -> UIContent:
+    async def create_content(self, width: int, height: int) -> UIContent:
         """Create a UIContent object for this control."""
         complete_state = get_app().current_buffer.complete_state
         if complete_state is None:
@@ -183,7 +183,7 @@ class ToolbarCompletionMenuControl(UIControl):
 class SelectedCompletionMetaControl(UIControl):
     """Control that shows the meta information of the selected completion."""
 
-    def preferred_width(self, max_available_width: int) -> int | None:
+    async def preferred_width(self, max_available_width: int) -> int | None:
         """Report the width of the active meta text."""
         if (
             (state := get_app().current_buffer.complete_state)
@@ -193,7 +193,7 @@ class SelectedCompletionMetaControl(UIControl):
             return get_cwidth(text) + 2
         return 0
 
-    def preferred_height(
+    async def preferred_height(
         self,
         width: int,
         max_available_height: int,
@@ -203,7 +203,7 @@ class SelectedCompletionMetaControl(UIControl):
         """Maintain a single line."""
         return 1
 
-    def create_content(self, width: int, height: int) -> UIContent:
+    async def create_content(self, width: int, height: int) -> UIContent:
         """Format the current completion meta text."""
         ft: StyleAndTextTuples = []
         state = get_app().current_buffer.complete_state

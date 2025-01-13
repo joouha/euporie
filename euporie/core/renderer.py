@@ -118,18 +118,6 @@ def _output_screen_diff(
             write(char.char)
             last_style = char.style
 
-    def hash_screen_row(row: dict[int, Char], zwe_row: dict[int, str]) -> str:
-        """Generate a hash for a screen row to quickly detect changes."""
-        hasher = md5(usedforsecurity=False)
-        # Hash the character data
-        for idx in sorted(row.keys()):
-            cell = row[idx]
-            hasher.update(f"{idx}:{cell.char}:{cell.style}".encode())
-        # Hash the zero-width escapes
-        for idx in sorted(zwe_row.keys()):
-            hasher.update(f"{idx}:{zwe_row[idx]}".encode())
-        return hasher.hexdigest()
-
     def get_max_column_index(row: dict[int, Char], zwe_row: dict[int, str]) -> int:
         """Return max used column index, ignoring trailing unstyled whitespace."""
         max_idx = 0
@@ -177,14 +165,6 @@ def _output_screen_diff(
         previous_row = previous_screen.data_buffer[y]
         zwe_row = screen.zero_width_escapes[y]
         previous_zwe_row = previous_screen.zero_width_escapes[y]
-
-        # Quick comparison using row hashes
-        new_hash = hash_screen_row(new_row, zwe_row)
-        prev_hash = hash_screen_row(previous_row, previous_zwe_row)
-
-        if new_hash == prev_hash:
-            # Rows are identical, skip to next row
-            continue
 
         new_max_line_len = min(width - 1, get_max_column_index(new_row, zwe_row))
         previous_max_line_len = min(
@@ -389,15 +369,17 @@ class Renderer(PtkRenderer):
             height = size.rows
         elif is_done:
             # When we are done, we don't necessary want to fill up until the bottom.
-            height = layout.container.preferred_height(
-                size.columns, size.rows
+            height = (
+                await layout.container.preferred_height(size.columns, size.rows)
             ).preferred
         else:
             last_height = self._last_screen.height if self._last_screen else 0
             height = max(
                 self._min_available_height,
                 last_height,
-                layout.container.preferred_height(size.columns, size.rows).preferred,
+                (
+                    await layout.container.preferred_height(size.columns, size.rows)
+                ).preferred,
             )
 
         height = min(height, size.rows)
