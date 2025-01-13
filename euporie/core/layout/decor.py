@@ -82,7 +82,7 @@ class Line(Container):
         """Return the preferred height of the line."""
         return Dimension(min=int(not self.collapse), max=self.height)
 
-    def write_to_screen(
+    async def write_to_screen(
         self,
         screen: Screen,
         mouse_handlers: MouseHandlers,
@@ -144,7 +144,7 @@ class Pattern(Container):
         """Return an empty dimension (expand to available height)."""
         return Dimension()
 
-    def write_to_screen(
+    async def write_to_screen(
         self,
         screen: Screen,
         mouse_handlers: MouseHandlers,
@@ -232,7 +232,7 @@ class FocusedStyle(Container):
         """Return the wrapped container's preferred height."""
         return to_container(self.body).preferred_height(width, max_available_height)
 
-    def write_to_screen(
+    async def write_to_screen(
         self,
         screen: Screen,
         mouse_handlers: MouseHandlers,
@@ -242,7 +242,7 @@ class FocusedStyle(Container):
         z_index: int | None,
     ) -> None:
         """Draw the wrapped container with the additional style."""
-        to_container(self.body).write_to_screen(
+        await to_container(self.body).write_to_screen(
             screen,
             mouse_handlers,
             write_position,
@@ -330,7 +330,7 @@ class DropShadow(Container):
         """Return the wrapped container's preferred height."""
         return Dimension(weight=1)
 
-    def write_to_screen(
+    async def write_to_screen(
         self,
         screen: Screen,
         mouse_handlers: MouseHandlers,

@@ -86,7 +86,7 @@ class CachedContainer(Container):
         """Return the desired height for this container."""
         return self.container.preferred_height(width, max_available_height)
 
-    def render(
+    async def render(
         self,
         available_width: int,
         available_height: int,
@@ -145,7 +145,7 @@ class CachedContainer(Container):
 
             self._invalid = False
 
-            self.container.write_to_screen(
+            await self.container.write_to_screen(
                 screen,
                 self.mouse_handlers,
                 BoundedWritePosition(
@@ -194,7 +194,7 @@ class CachedContainer(Container):
             # Update the list of handlers
             self._invalidate_events = events
 
-    def write_to_screen(
+    async def write_to_screen(
         self,
         screen: PtkScreen,
         mouse_handlers: MouseHandlers,
@@ -219,7 +219,7 @@ class CachedContainer(Container):
             z_index: Used for propagating z_index from parent to child.
 
         """
-        self.render(
+        await self.render(
             available_width=write_position.width,
             available_height=write_position.height,
             style=parent_style,

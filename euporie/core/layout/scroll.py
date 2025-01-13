@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from typing import TYPE_CHECKING, cast
 
@@ -90,25 +91,25 @@ class ScrollingContainer(Container):
         self.scroll_to_cursor = False
         self.scrolling = 0
 
-    def pre_render_children(self, width: int, height: int) -> None:
+    async def pre_render_children(self, width: int, height: int) -> None:
         """Render all unrendered children in a background thread."""
+        self.pre_rendered = 1e-99
+        app = get_app()
+        if not app._is_running:
+            return
 
-        def _render_in_thread() -> None:
-            """Render children in  thread."""
-            children = self.all_children()
-            n_children = len(children)
-            app = get_app()
-            for i, child in enumerate(children):
-                if not app._is_running:
-                    return
-                if isinstance(child, CachedContainer):
-                    child.render(width, height)
-                self.pre_rendered = i / n_children
+        children = self.all_children()
+        nth = 1 / len(children)
+
+        async def _render(child: Container) -> None:
+            if isinstance(child, CachedContainer):
+                await child.render(width, height)
+                self.pre_rendered += nth
+                log.debug(self.pre_rendered)
                 app.invalidate()
-            self.pre_rendered = 1.0
-            app.invalidate()
 
-        run_in_thread_with_context(_render_in_thread)
+        await asyncio.gather(*[_render(child) for child in children])
+        self.pre_rendered = 1.0
 
     def reset(self) -> None:
         """Reset the state of this container and all the children."""
@@ -323,7 +324,7 @@ class ScrollingContainer(Container):
 
         return wrapped
 
-    def write_to_screen(
+    async def write_to_screen(
         self,
         screen: PtkScreen,
         mouse_handlers: MouseHandlers,
@@ -388,7 +389,7 @@ class ScrollingContainer(Container):
         layout = get_app().layout
         if self.scroll_to_cursor:
             selected_child = self._selected_children[0]
-            selected_child.render(
+            await selected_child.render(
                 available_width=available_width,
                 available_height=available_height,
                 style=f"{parent_style} {self.style}",
@@ -440,7 +441,7 @@ class ScrollingContainer(Container):
         line = self.selected_child_position
         for i in range(self._selected_slice.start, len(self._children)):
             child = self.get_child(i)
-            child.render(
+            await child.render(
                 available_width=available_width,
                 available_height=available_height,
                 style=f"{parent_style} {self.style}",
@@ -465,7 +466,7 @@ class ScrollingContainer(Container):
                 break
         else:
             if line < available_height:
-                Window(char=" ").write_to_screen(
+                await Window(char=" ").write_to_screen(
                     screen,
                     mouse_handlers,
                     BoundedWritePosition(
@@ -486,7 +487,7 @@ class ScrollingContainer(Container):
         line = self.selected_child_position
         for i in range(self._selected_slice.start - 1, -1, -1):
             child = self.get_child(i)
-            child.render(
+            await child.render(
                 available_width=available_width,
                 available_height=available_height,
                 style=f"{parent_style} {self.style}",
@@ -512,7 +513,7 @@ class ScrollingContainer(Container):
                 break
         else:
             if line > 0:
-                Window(char=" ").write_to_screen(
+                await Window(char=" ").write_to_screen(
                     screen,
                     mouse_handlers,
                     BoundedWritePosition(xpos, ypos, available_width, line),
@@ -578,7 +579,9 @@ class ScrollingContainer(Container):
 
         # Trigger pre-rendering of children
         if not self.pre_rendered:
-            self.pre_render_children(available_width, available_height)
+            asyncio.create_task(
+                self.pre_render_children(available_width, available_height)
+            )
 
     @property
     def vertical_scroll(self) -> int:
@@ -688,11 +691,11 @@ class ScrollingContainer(Container):
                     )
 
         # If the child height is not know, we'll need to render it to determine its height
-        if not child.height:
-            child.render(
-                self.last_write_position.width,
-                self.last_write_position.height,
-            )
+        # if not child.height:
+        #     await child.render(
+        #         self.last_write_position.width,
+        #         self.last_write_position.height,
+        #     )
 
         if new_top is None or new_top < 0:
             if anchor == "top":
@@ -773,7 +776,7 @@ class PrintingContainer(Container):
         """Return a list of all child containers."""
         return [to_container(child) for child in self.children]
 
-    def write_to_screen(
+    async def write_to_screen(
         self,
         screen: PtkScreen,
         mouse_handlers: MouseHandlers,
@@ -806,7 +809,7 @@ class PrintingContainer(Container):
         children = self.get_children()
         for child in children:
             height = child.preferred_height(write_position.width, 999999).preferred
-            child.write_to_screen(
+            await child.write_to_screen(
                 screen,
                 mouse_handlers,
                 BoundedWritePosition(xpos, ypos, write_position.width, height),

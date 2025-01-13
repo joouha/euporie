@@ -314,7 +314,7 @@ class Renderer(PtkRenderer):
 
         super().reset(_scroll, leave_alternate_screen)
 
-    def render(
+    async def render(
         self, app: Application[Any], layout: Layout, is_done: bool = False
     ) -> None:
         """Render the current interface to the output."""
@@ -432,7 +432,7 @@ class Renderer(PtkRenderer):
         self._last_transformation_hash = app.style_transformation.invalidation_hash()
         self._last_color_depth = app.color_depth
 
-        layout.container.write_to_screen(
+        await layout.container.write_to_screen(
             screen,
             mouse_handlers,
             BoundedWritePosition(
@@ -445,7 +445,7 @@ class Renderer(PtkRenderer):
             erase_bg=False,
             z_index=None,
         )
-        screen.draw_all_floats()
+        await screen.draw_all_floats()
 
         # When grayed. Replace all styles in the new screen.
         if app.exit_style:

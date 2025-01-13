@@ -73,7 +73,7 @@ class PrintingContainer(Container):
         """Return a list of all child containers."""
         return list(map(to_container, self.children))
 
-    def write_to_screen(
+    async def write_to_screen(
         self,
         screen: Screen,
         mouse_handlers: MouseHandlers,
@@ -106,7 +106,7 @@ class PrintingContainer(Container):
         children = self.get_children()
         for child in children:
             height = child.preferred_height(write_position.width, 999999).preferred
-            child.write_to_screen(
+            await child.write_to_screen(
                 screen,
                 mouse_handlers,
                 BoundedWritePosition(xpos, ypos, write_position.width, height),

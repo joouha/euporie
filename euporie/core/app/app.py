@@ -511,11 +511,11 @@ class BaseApp(ConfigurableApp, Application, ABC):
             *self.bindings_to_load, config=self.config
         )
 
-    def _on_resize(self) -> None:
+    async def _on_resize(self) -> None:
         """Query the terminal dimensions on a resize event."""
         if isinstance(output := self.output, Vt100_Output):
             output.get_pixel_size()
-        super()._on_resize()
+        await super()._on_resize()
 
     @classmethod
     def launch(cls) -> None:

@@ -374,7 +374,7 @@ class DisplayWindow(Window):
     content: DisplayControl
     vertical_scroll: int
 
-    def _write_to_screen_at_index(
+    async def _write_to_screen_at_index(
         self,
         screen: Screen,
         mouse_handlers: MouseHandlers,
@@ -383,7 +383,7 @@ class DisplayWindow(Window):
         erase_bg: bool,
     ) -> None:
         """Enure the :attr:`horizontal_scroll` is recorded."""
-        super()._write_to_screen_at_index(
+        await super()._write_to_screen_at_index(
             screen,
             mouse_handlers,
             write_position,

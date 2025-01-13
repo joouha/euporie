@@ -63,7 +63,7 @@ class DisableMouseOnScroll(Container):
         """Return the desired height for this container."""
         return self.content.preferred_height(width, max_available_height)
 
-    def write_to_screen(
+    async def write_to_screen(
         self,
         screen: Screen,
         mouse_handlers: MouseHandlers,
@@ -92,7 +92,7 @@ class DisableMouseOnScroll(Container):
 
         """
         self.mouse_support = True
-        self.content.write_to_screen(
+        await self.content.write_to_screen(
             screen,
             mouse_handlers,
             write_position,

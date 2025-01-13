@@ -183,11 +183,9 @@ class PreviewApp(BaseApp):
 
         return output
 
-    def _redraw(self, render_as_done: bool = False) -> None:
+    async def _redraw(self, render_as_done: bool = False) -> None:
         """Ensure the output is always rendered as done."""
-        # import time
-        # time.sleep(0.1)
-        super()._redraw(render_as_done=True)
+        await super()._redraw(render_as_done=True)
 
     def _update_invalidate_events(self) -> None:
         """Do nothing, as we don't need invalidation events for the preview app."""

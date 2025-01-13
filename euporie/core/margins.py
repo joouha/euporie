@@ -96,7 +96,7 @@ class MarginContainer(Window):
         """Return a thedesired height for this container."""
         return Dimension()
 
-    def write_to_screen(
+    async def write_to_screen(
         self,
         screen: Screen,
         mouse_handlers: MouseHandlers,

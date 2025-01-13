@@ -670,7 +670,7 @@ class GraphicWindow(Window):
         self.filter = ~has_float & to_filter(filter)
         self._pre_rendered = False
 
-    def write_to_screen(
+    async def write_to_screen(
         self,
         screen: Screen,
         mouse_handlers: MouseHandlers,
@@ -702,7 +702,7 @@ class GraphicWindow(Window):
                 ):
                     # Do not pass the bbox on to the window when writing
                     new_write_position.bbox = DiInt(0, 0, 0, 0)
-                    super().write_to_screen(
+                    await super().write_to_screen(
                         screen,
                         MouseHandlers(),  # Do not let the float add mouse events
                         new_write_position,

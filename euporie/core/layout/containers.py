@@ -76,7 +76,7 @@ class DummyContainer(Container):
         """Return a zero-height dimension."""
         return Dimension.exact(self.height)
 
-    def write_to_screen(
+    async def write_to_screen(
         self,
         screen: Screen,
         mouse_handlers: MouseHandlers,
@@ -137,7 +137,7 @@ class HSplit(ptk_containers.HSplit):
     def _divide_heights(self, write_position: WritePosition) -> list[int] | None:
         return self._split_cache[get_app().render_counter, write_position]
 
-    def write_to_screen(
+    async def write_to_screen(
         self,
         screen: Screen,
         mouse_handlers: MouseHandlers,
@@ -157,7 +157,7 @@ class HSplit(ptk_containers.HSplit):
         z_index = z_index if self.z_index is None else self.z_index
 
         if sizes is None:
-            self.window_too_small.write_to_screen(
+            await self.window_too_small.write_to_screen(
                 screen, mouse_handlers, write_position, style, erase_bg, z_index
             )
         else:
@@ -169,7 +169,7 @@ class HSplit(ptk_containers.HSplit):
 
             # Draw child panes.
             for s, c in zip(sizes, self._all_children):
-                c.write_to_screen(
+                await c.write_to_screen(
                     screen,
                     mouse_handlers,
                     BoundedWritePosition(
@@ -206,7 +206,7 @@ class HSplit(ptk_containers.HSplit):
             # when it's not required. This is required to apply the styling.
             remaining_height = write_position.ypos + write_position.height - ypos
             if remaining_height > 0:
-                self._remaining_space_window.write_to_screen(
+                await self._remaining_space_window.write_to_screen(
                     screen,
                     mouse_handlers,
                     BoundedWritePosition(
@@ -308,7 +308,7 @@ class VSplit(ptk_containers.VSplit):
         """Calculate and cache widths for all columns."""
         return self._split_cache[get_app().render_counter, width]
 
-    def write_to_screen(
+    async def write_to_screen(
         self,
         screen: Screen,
         mouse_handlers: MouseHandlers,
@@ -333,7 +333,7 @@ class VSplit(ptk_containers.VSplit):
 
         # If there is not enough space.
         if sizes is None:
-            self.window_too_small.write_to_screen(
+            await self.window_too_small.write_to_screen(
                 screen, mouse_handlers, write_position, style, erase_bg, z_index
             )
             return
@@ -353,7 +353,7 @@ class VSplit(ptk_containers.VSplit):
 
         # Draw all child panes.
         for s, c in zip(sizes, children):
-            c.write_to_screen(
+            await c.write_to_screen(
                 screen,
                 mouse_handlers,
                 BoundedWritePosition(
@@ -384,7 +384,7 @@ class VSplit(ptk_containers.VSplit):
         # when it's not required. This is required to apply the styling.
         remaining_width = write_position.xpos + write_position.width - xpos
         if remaining_width > 0:
-            self._remaining_space_window.write_to_screen(
+            await self._remaining_space_window.write_to_screen(
                 screen,
                 mouse_handlers,
                 BoundedWritePosition(
@@ -454,7 +454,7 @@ class Window(ptk_containers.Window):
         if isinstance(self.content, PtkDummyControl):
             self.content = DummyControl()
 
-    def write_to_screen(
+    async def write_to_screen(
         self,
         screen: Screen,
         mouse_handlers: MouseHandlers,
@@ -497,8 +497,7 @@ class Window(ptk_containers.Window):
         # Draw
         z_index = z_index if self.z_index is None else self.z_index
 
-        draw_func = partial(
-            self._write_to_screen_at_index,
+        draw_func = self._write_to_screen_at_index(
             screen,
             mouse_handlers,
             write_position,
@@ -508,12 +507,12 @@ class Window(ptk_containers.Window):
 
         if z_index is None or z_index <= 0:
             # When no z_index is given, draw right away.
-            draw_func()
+            await draw_func
         else:
             # Otherwise, postpone.
             screen.draw_with_z_index(z_index=z_index, draw_func=draw_func)
 
-    def _write_to_screen_at_index(
+    async def _write_to_screen_at_index(
         self,
         screen: Screen,
         mouse_handlers: MouseHandlers,
@@ -1066,7 +1065,7 @@ class Window(ptk_containers.Window):
 class FloatContainer(ptk_containers.FloatContainer):
     """A `FloatContainer` which uses :py`BoundedWritePosition`s."""
 
-    def _draw_float(
+    async def _draw_float(
         self,
         fl: Float,
         screen: Screen,
@@ -1201,7 +1200,7 @@ class FloatContainer(ptk_containers.FloatContainer):
             )
 
             if not fl.hide_when_covering_content or self._area_is_empty(screen, wp):
-                fl.content.write_to_screen(
+                await fl.content.write_to_screen(
                     screen,
                     mouse_handlers,
                     wp,
