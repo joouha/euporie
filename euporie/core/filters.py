@@ -245,6 +245,7 @@ def cursor_on_last_line() -> bool:
     return get_app().current_buffer.document.on_last_line
 
 
+@cache
 def char_after_cursor(char: str) -> Condition:
     """Generate a condition to check for a character after the cursor."""
     from euporie.core.app.current import get_app
