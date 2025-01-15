@@ -28,7 +28,7 @@ from euporie.core.key_binding.registry import (
 )
 
 if TYPE_CHECKING:
-    from typing import Iterable
+    from collections.abc import Iterable
 
     from prompt_toolkit.completion.base import CompleteEvent
     from prompt_toolkit.document import Document

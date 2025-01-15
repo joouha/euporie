@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import os
-from functools import lru_cache, partial, reduce
+from functools import cache, partial, reduce
 from importlib.util import find_spec
 from shutil import which
 from typing import TYPE_CHECKING
@@ -27,7 +27,7 @@ if TYPE_CHECKING:
     from prompt_toolkit.layout.containers import Window
 
 
-@lru_cache(maxsize=None)
+@cache
 def command_exists(*cmds: str) -> Filter:
     """Verify a list of external commands exist on the system."""
     filters = [
@@ -37,7 +37,7 @@ def command_exists(*cmds: str) -> Filter:
     return reduce(lambda a, b: a & b, filters, to_filter(True))
 
 
-@lru_cache(maxsize=None)
+@cache
 def have_modules(*modules: str) -> Filter:
     """Verify a list of python modules are importable."""
 

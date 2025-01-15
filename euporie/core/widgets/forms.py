@@ -8,7 +8,7 @@ from abc import ABCMeta, abstractmethod
 from collections import deque
 from functools import partial
 from math import ceil, floor
-from typing import TYPE_CHECKING, Dict, cast
+from typing import TYPE_CHECKING, cast
 from weakref import finalize
 
 from prompt_toolkit.buffer import ValidationState
@@ -56,7 +56,8 @@ from euporie.core.widgets.decor import Border, Shadow
 from euporie.core.widgets.layout import Box, ConditionalSplit
 
 if TYPE_CHECKING:
-    from typing import Any, Callable, Sequence
+    from collections.abc import Sequence
+    from typing import Any, Callable
 
     from prompt_toolkit.buffer import Buffer, BufferAcceptHandler
     from prompt_toolkit.completion.base import Completer
@@ -958,7 +959,7 @@ class Progress:
         return self.container
 
 
-class SizedMask(Dict[int, bool]):
+class SizedMask(dict[int, bool]):
     """Mask with restricted number of True items."""
 
     def __init__(self, size: int | None = None) -> None:

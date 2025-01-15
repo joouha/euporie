@@ -9,7 +9,8 @@ from prompt_toolkit.cache import FastDictCache, SimpleCache
 from prompt_toolkit.filters import to_filter
 
 if TYPE_CHECKING:
-    from typing import Callable, Iterable
+    from collections.abc import Iterable
+    from typing import Callable
 
     from prompt_toolkit.filters import Filter, FilterOrBool
 

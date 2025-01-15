@@ -15,7 +15,8 @@ from prompt_toolkit.key_binding.key_processor import KeyPressEvent
 from euporie.core.key_binding.utils import parse_keys
 
 if TYPE_CHECKING:
-    from typing import Any, Callable, Coroutine
+    from collections.abc import Coroutine
+    from typing import Any, Callable
 
     from prompt_toolkit.filters import Filter, FilterOrBool
     from prompt_toolkit.key_binding.key_bindings import (

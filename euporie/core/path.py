@@ -13,8 +13,9 @@ from fsspec.registry import register_implementation as fs_register_implementatio
 from upath import UPath
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
     from os import PathLike
-    from typing import Any, Mapping
+    from typing import Any
 
 
 log = logging.getLogger(__name__)

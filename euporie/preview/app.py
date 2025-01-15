@@ -126,7 +126,7 @@ class PreviewApp(BaseApp):
             # Use a temporary file as display output if we are going to page the output
             from tempfile import TemporaryFile
 
-            output_file = TemporaryFile("w+")
+            output_file = TemporaryFile("w+")  # noqa: SIM115
             # Make this file look like a tty so we get colorful output
             output_file = cast("TextIO", PseudoTTY(output_file, isatty=True))
 

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from functools import lru_cache
+from functools import cache
 from typing import TYPE_CHECKING
 
 from euporie.core.app.current import get_app
@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 
-@lru_cache(maxsize=None)
+@cache
 def markdown_parser() -> MarkdownIt:
     """Lazy-load a markdown parser."""
     from markdown_it import MarkdownIt

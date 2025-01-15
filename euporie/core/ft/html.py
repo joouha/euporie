@@ -102,8 +102,9 @@ class CssSelector(NamedTuple):
 
 
 if TYPE_CHECKING:
+    from collections.abc import Generator, Iterator
     from pathlib import Path
-    from typing import Any, Callable, Generator, Iterator
+    from typing import Any, Callable
 
     from fsspec.spec import AbstractFileSystem
     from prompt_toolkit.filters.base import Filter
@@ -1149,8 +1150,7 @@ class Theme(Mapping):
                     and parent_theme["flex_direction"].startswith("col")
                 )
             )
-            or (parent_theme is not None and parent_theme.d_grid)
-        )
+        ) or (parent_theme is not None and parent_theme.d_grid)
 
     @cached_property
     def d_inline(self) -> bool:
@@ -2892,7 +2892,7 @@ class Node:
                 s += ">"
                 if self.contents:
                     for child in self.contents:
-                        s += f"\n{dd} {child._outer_html(d+1, attrs=attrs)}"
+                        s += f"\n{dd} {child._outer_html(d + 1, attrs=attrs)}"
                     s += f"\n{dd}{dd}"
                 s += f"</{self.name}>"
         else:
@@ -4988,9 +4988,10 @@ if __name__ == "__main__":
 
     path = parse_path(sys.argv[1])
 
-    with create_app_session(
-        input=DummyApp.load_input(), output=DummyApp.load_output()
-    ), set_app(DummyApp()):
+    with (
+        create_app_session(input=DummyApp.load_input(), output=DummyApp.load_output()),
+        set_app(DummyApp()),
+    ):
         print_formatted_text(
             HTML(
                 path.read_text(),

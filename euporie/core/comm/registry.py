@@ -8,7 +8,8 @@ from euporie.core.comm.base import UnimplementedComm
 from euporie.core.comm.ipywidgets import open_comm_ipywidgets
 
 if TYPE_CHECKING:
-    from typing import Any, Callable, Sequence
+    from collections.abc import Sequence
+    from typing import Any, Callable
 
     from euporie.core.comm.base import Comm, KernelTab
 

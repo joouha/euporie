@@ -23,7 +23,8 @@ from euporie.core.layout.screen import BoundedWritePosition
 from euporie.core.utils import run_in_thread_with_context
 
 if TYPE_CHECKING:
-    from typing import Callable, Literal, Sequence
+    from collections.abc import Sequence
+    from typing import Callable, Literal
 
     from prompt_toolkit.key_binding.key_bindings import (
         KeyBindingsBase,

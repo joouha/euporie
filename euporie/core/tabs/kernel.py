@@ -36,8 +36,9 @@ from euporie.core.tabs.base import Tab
 from euporie.core.utils import run_in_thread_with_context
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
     from pathlib import Path
-    from typing import Any, Callable, Sequence
+    from typing import Any, Callable
 
     from prompt_toolkit.auto_suggest import AutoSuggest
     from prompt_toolkit.completion.base import Completer

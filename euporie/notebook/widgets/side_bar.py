@@ -21,7 +21,7 @@ from euporie.core.layout.decor import Line
 from euporie.core.widgets.forms import ToggleButton, ToggleButtons
 
 if TYPE_CHECKING:
-    from typing import Sequence
+    from collections.abc import Sequence
 
     from prompt_toolkit.layout.containers import AnyContainer
 

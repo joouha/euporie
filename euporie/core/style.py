@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from colorsys import hls_to_rgb, rgb_to_hls
-from functools import lru_cache, partial
+from functools import cache, partial
 from typing import TYPE_CHECKING
 
 from prompt_toolkit.cache import SimpleCache
@@ -767,7 +767,7 @@ def build_style(
     return Style.from_dict(style_dict)
 
 
-@lru_cache(maxsize=None)
+@cache
 def get_style_by_name(name: str) -> type[PygmentsStyle]:
     """Get Pygments style, caching the result."""
     return pyg_get_style_by_name(name)

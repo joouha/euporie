@@ -77,9 +77,8 @@ async def call_subproc(
     if use_tempfile:
         # If the command cannot read from stdin, create a temporary file to pass to
         # the command
-        tfile = tempfile.NamedTemporaryFile(delete=False, suffix=suffix)
-        tfile.write(data)
-        tfile.close()
+        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tfile:
+            tfile.write(data)
         cmd.append(tfile.name)
         stdinput = None
     else:

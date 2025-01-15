@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 from prompt_toolkit.formatted_text import ANSI as PTANSI
 
 if TYPE_CHECKING:
-    from typing import Generator
+    from collections.abc import Generator
 
 log = logging.getLogger(__name__)
 
