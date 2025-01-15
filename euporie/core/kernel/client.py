@@ -7,7 +7,6 @@ import concurrent.futures
 import logging
 import os
 import threading
-from _frozen_importlib import _DeadlockError
 from collections import defaultdict
 from subprocess import PIPE, STDOUT  # S404 - Security implications considered
 from typing import TYPE_CHECKING, TypedDict
@@ -320,16 +319,18 @@ class Kernel:
         # Otherwise, start a new kernel using the kernel manager
         else:
             runtime_dir.mkdir(exist_ok=True, parents=True)
-            while True:
+            for attempt in range(1, 4):
                 try:
                     # TODO - send stdout to log
                     await self.km.start_kernel(stdout=PIPE, stderr=STDOUT, text=True)
-                except _DeadlockError:
-                    # Keep trying if we get an import deadlock
-                    await asyncio.sleep(0.1)
-                    continue
                 except Exception as e:
-                    log.error("Kernel '%s' could not start", self.km.kernel_name)
+                    log.error(
+                        "Kernel '%s' could not start on attempt %s",
+                        self.km.kernel_name,
+                        attempt,
+                    )
+                    if attempt > 2:
+                        continue
                     self.status = "error"
                     self.error = e
                 else:
@@ -337,7 +338,7 @@ class Kernel:
                     # Create a client for the newly started kernel
                     if self.km.has_kernel:
                         self.kc = self.km.client()
-                break
+                    break
 
         await self.post_start_()
 
