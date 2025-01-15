@@ -245,6 +245,26 @@ def cursor_on_last_line() -> bool:
     return get_app().current_buffer.document.on_last_line
 
 
+def char_after_cursor(char: str) -> Condition:
+    """Generate a condition to check for a character after the cursor."""
+    from euporie.core.app.current import get_app
+
+    return Condition(
+        lambda: bool(
+            (post := get_app().current_buffer.document.text_after_cursor)
+            and post[0] == char
+        )
+    )
+
+
+@Condition
+def has_matching_bracket() -> bool:
+    """Determine if the bracket at the cursor has a matching pair."""
+    from euporie.core.app.current import get_app
+
+    return bool(get_app().current_buffer.document.find_matching_bracket_position())
+
+
 """Determine if any binding style is in insert mode."""
 insert_mode = (
     (vi_mode & vi_insert_mode)

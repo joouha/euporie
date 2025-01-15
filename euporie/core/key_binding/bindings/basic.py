@@ -3,16 +3,18 @@
 from __future__ import annotations
 
 import logging
+from functools import partial
 from typing import TYPE_CHECKING
 
 from prompt_toolkit.filters import (
     buffer_has_focus,
 )
-from prompt_toolkit.key_binding import ConditionalKeyBindings
 
 from euporie.core.commands import add_cmd
 from euporie.core.filters import (
-    micro_mode,
+    char_after_cursor,
+    has_matching_bracket,
+    insert_mode,
     replace_mode,
 )
 from euporie.core.key_binding.registry import (
@@ -37,6 +39,12 @@ class TextEntry:
         {
             "euporie.core.key_binding.bindings.basic.TextEntry": {
                 "type-key": "<any>",
+                "complete-bracket-()": "(",
+                "complete-bracket-[]": "[",
+                "complete-bracket-{}": "{",
+                "close-bracket-()": ")",
+                "close-bracket-[]": "]",
+                "close-bracket-{}": "}",
             },
         }
     )
@@ -44,18 +52,17 @@ class TextEntry:
 
 def load_basic_bindings(config: Config | None = None) -> KeyBindingsBase:
     """Load basic key-bindings for text entry."""
-    # Load additional key definiitions
+    # Load additional key definitions
     from euporie.core import keys  # noqa: F401
 
-    return ConditionalKeyBindings(
-        load_registered_bindings(
-            "euporie.core.key_binding.bindings.basic.TextEntry", config=config
-        ),
-        micro_mode,
+    return load_registered_bindings(
+        "euporie.core.key_binding.bindings.basic.TextEntry", config=config
     )
 
 
 # Commands
+
+## Typing keys
 
 
 @add_cmd(filter=buffer_has_focus, save_before=if_no_repeat, hidden=True)
@@ -66,3 +73,33 @@ def type_key(event: KeyPressEvent) -> None:
         event.current_buffer.insert_text(
             event.data * event.arg, overwrite=replace_mode()
         )
+
+
+## Add automatic bracket completion
+
+
+def _complete_bracket(right: str, event: KeyPressEvent) -> None:
+    event.current_buffer.insert_text(right, move_cursor=False)
+    event.key_processor.feed(event.key_sequence[0], first=True)
+
+
+def _close_bracket(right: str, event: KeyPressEvent) -> None:
+    event.current_buffer.cursor_position += 1
+
+
+for left, right in ["()", "[]", "{}"]:
+    add_cmd(
+        name=f"complete-bracket-{left}{right}",
+        filter=buffer_has_focus & insert_mode & ~char_after_cursor(right),
+        save_before=if_no_repeat,
+        hidden=True,
+    )(partial(_complete_bracket, right))
+    add_cmd(
+        name=f"close-bracket-{left}{right}",
+        filter=buffer_has_focus
+        & insert_mode
+        & char_after_cursor(right)
+        & has_matching_bracket,
+        save_before=if_no_repeat,
+        hidden=True,
+    )(partial(_close_bracket, right))
