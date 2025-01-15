@@ -13,6 +13,7 @@ Upcoming
 Added
 =====
 
+- Added key-bindings to automatically close brackets
 - Added a vi-style command bar
 
 Changed
