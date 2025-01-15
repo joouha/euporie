@@ -58,6 +58,7 @@ if TYPE_CHECKING:
     from pathlib import Path
     from typing import Any, Callable
 
+    from nbformat.notebooknode import NotebookNode
     from prompt_toolkit.application.application import Application
     from prompt_toolkit.formatted_text import AnyFormattedText, StyleAndTextTuples
     from prompt_toolkit.key_binding.key_bindings import NotImplementedOrNone
@@ -132,7 +133,7 @@ class Console(KernelTab):
         self.json = nbformat.v4.new_notebook()
         self.json["metadata"] = self._metadata
         self.render_queue: list[dict[str, Any]] = []
-        self.last_rendered: nbformat.v4.NotebookNode | None = None
+        self.last_rendered: NotebookNode | None = None
 
         self.container = self.load_container()
 

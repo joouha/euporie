@@ -15,8 +15,9 @@ else:
     APP_ENTRY_POINTS = _EPS.select(group="euporie.apps")
 
 # Import all app classes to load config settings
-for entry in APP_ENTRY_POINTS:
-    entry.load()
+if APP_ENTRY_POINTS is not None:
+    for entry in APP_ENTRY_POINTS:
+        entry.load()
 
 for name, setting in Config._settings.items():
     print(f".. option:: {name}\n")

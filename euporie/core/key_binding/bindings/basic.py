@@ -87,7 +87,7 @@ def _close_bracket(right: str, event: KeyPressEvent) -> None:
     event.current_buffer.cursor_position += 1
 
 
-for left, right in ["()", "[]", "{}"]:
+for left, right in [("(", ")"), ("[", "]"), ("{", "}")]:
     add_cmd(
         name=f"complete-bracket-{left}{right}",
         filter=buffer_has_focus & insert_mode & ~char_after_cursor(right),

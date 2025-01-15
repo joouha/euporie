@@ -7,12 +7,13 @@ from importlib.metadata import entry_points
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from importlib.metadata import EntryPoint
+    from importlib.metadata import EntryPoint, EntryPoints, SelectableGroups
 
 
 @cache
 def available_apps() -> dict[str, EntryPoint]:
     """Return a list of loadable euporie apps."""
+    eps: dict | SelectableGroups | EntryPoints
     try:
         eps = entry_points(group="euporie.apps")
     except TypeError:
