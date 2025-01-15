@@ -30,7 +30,8 @@ def activate_virtualenv_in_precommit_hooks() -> "None":
         text = hook.read_text()
 
         if not (
-            Path("A") == Path("a") and bindir.lower() in text.lower() or bindir in text
+            (Path("A") == Path("a") and bindir.lower() in text.lower())
+            or bindir in text
         ):
             continue
 

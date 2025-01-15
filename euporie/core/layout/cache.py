@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from functools import lru_cache
+from functools import cache
 from typing import TYPE_CHECKING
 
 from prompt_toolkit.data_structures import Point
@@ -313,7 +313,7 @@ class CachedContainer(Container):
         screen.visible_windows_to_write_positions.update(new_wps)
         screen.height = max(screen.height, self.screen.height)
 
-        @lru_cache(maxsize=None)
+        @cache
         def _wrap_mouse_handler(handler: Callable) -> MouseHandler:
             def _wrapped(mouse_event: MouseEvent) -> NotImplementedOrNone:
                 # Modify mouse events to reflect position of content

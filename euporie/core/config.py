@@ -15,8 +15,6 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
-    Iterable,
-    Mapping,
     Optional,
     TextIO,
     cast,
@@ -33,7 +31,8 @@ from euporie.core import __app_name__, __copyright__
 from euporie.core.commands import add_cmd, get_cmd
 
 if TYPE_CHECKING:
-    from typing import IO, Any, Callable, ClassVar, Optional, Sequence
+    from collections.abc import Iterable, Mapping, Sequence
+    from typing import IO, Any, Callable, ClassVar, Optional
 
     from prompt_toolkit.filters.base import FilterOrBool
 
@@ -182,7 +181,7 @@ class Setting:
         self._choices = choices
         self.type = type_ or type(default)
         self.action = action or TYPE_ACTIONS.get(self.type)
-        self.flags = flags or [f"--{name.replace('_','-')}"]
+        self.flags = flags or [f"--{name.replace('_', '-')}"]
         self._schema: dict[str, Any] = {
             "type": _SCHEMA_TYPES.get(self.type),
             **(schema or {}),

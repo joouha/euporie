@@ -18,7 +18,7 @@ from euporie.core.tabs.kernel import KernelTab
 from euporie.core.widgets.display import Display
 
 if TYPE_CHECKING:
-    from typing import Generator
+    from collections.abc import Generator
 
     from euporie.core.widgets.cell_outputs import OutputParent
 

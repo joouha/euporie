@@ -43,7 +43,8 @@ from euporie.core.widgets.layout import (
 )
 
 if TYPE_CHECKING:
-    from typing import Any, Iterable, MutableSequence, Sequence
+    from collections.abc import Iterable, MutableSequence, Sequence
+    from typing import Any
 
     from prompt_toolkit.buffer import Buffer
     from prompt_toolkit.formatted_text.base import AnyFormattedText
@@ -1416,7 +1417,7 @@ class ColorPickerModel(TextBoxIpyWidgetComm):
         if value in NAMED_COLORS:
             value = NAMED_COLORS[value]
         elif 4 <= len(value) < 7:
-            value = f"#{value[1]*2}{value[2]*2}{value[3]*2}"
+            value = f"#{value[1] * 2}{value[2] * 2}{value[3] * 2}"
         else:
             value = value[:7]
         return value

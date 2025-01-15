@@ -23,7 +23,8 @@ from euporie.core.app.base import ConfigurableApp
 from euporie.core.config import add_setting
 
 if TYPE_CHECKING:
-    from typing import Any, Awaitable, ClassVar
+    from collections.abc import Awaitable
+    from typing import Any, ClassVar
 
     from euporie.core.app.app import BaseApp
 

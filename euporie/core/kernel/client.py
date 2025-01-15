@@ -16,8 +16,9 @@ from uuid import uuid4
 from upath import UPath
 
 if TYPE_CHECKING:
+    from collections.abc import Coroutine
     from pathlib import Path
-    from typing import Any, Callable, Coroutine
+    from typing import Any, Callable
 
     from jupyter_client import KernelClient
 

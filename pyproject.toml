@@ -120,12 +120,12 @@ config-path = "none"  # Ignore hatch default format config
 detached = true
 dependencies = [
   # Formatting & linting
-  "ruff~=0.6.8",
+  "ruff~=0.9",
   # Spell checking
   "codespell~=2.3", "tomli~=2.0.2",
   # Pre-commit hooks run in static analysis environment
-  "pre-commit~=3.8.0",
-  "pre-commit-hooks~=4.6.0",
+  "pre-commit~=4.0",
+  "pre-commit-hooks~=5.0",
 ]
 
 [tool.hatch.envs.hatch-static-analysis.scripts]
@@ -242,8 +242,6 @@ select = [ # "ANN", "B", "C", "D", "E", "F", "I", "Q", "S", "T", "UP"]
   "W",
 ]
 ignore = [
-    # Annotations on `self` and `cls`
-    "ANN101", "ANN102",
     # Use of typing.Any
     "ANN401",
     # Function too complex

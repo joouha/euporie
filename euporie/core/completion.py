@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, AsyncGenerator, Iterable
+from typing import TYPE_CHECKING
 
 from prompt_toolkit.completion.base import CompleteEvent, Completer, Completion
 
 if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator, Iterable
     from pathlib import Path
 
     from prompt_toolkit.document import Document

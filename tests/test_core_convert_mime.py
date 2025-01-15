@@ -73,9 +73,11 @@ def test_get_mime() -> None:
 
     session = MagicMock(head=mock_response, get=mock_response)
 
-    with patch.object(HTTPPath, "open", mock_open_empty), patch.object(
-        magic, "from_buffer", return_value=None
-    ), patch.object(HTTPFileSystem, "set_session", return_value=session):
+    with (
+        patch.object(HTTPPath, "open", mock_open_empty),
+        patch.object(magic, "from_buffer", return_value=None),
+        patch.object(HTTPFileSystem, "set_session", return_value=session),
+    ):
         path = UPath(url)
         assert get_mime(path) == "image/png"
 

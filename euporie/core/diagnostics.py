@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from abc import ABCMeta
-from typing import TYPE_CHECKING, List, NamedTuple
+from typing import TYPE_CHECKING, NamedTuple
 
 if TYPE_CHECKING:
     from typing import Literal
@@ -23,7 +23,7 @@ class Diagnostic(NamedTuple):
     chars: slice
 
 
-class Report(List[Diagnostic], metaclass=ABCMeta):
+class Report(list[Diagnostic], metaclass=ABCMeta):
     """Class for storing a diagnostic report."""
 
     @classmethod

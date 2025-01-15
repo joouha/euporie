@@ -31,7 +31,8 @@ from euporie.core.margins import MarginContainer, ScrollbarMargin
 from euporie.core.utils import run_in_thread_with_context
 
 if TYPE_CHECKING:
-    from typing import Any, Callable, Iterable
+    from collections.abc import Iterable
+    from typing import Any, Callable
 
     from prompt_toolkit.filters import FilterOrBool
     from prompt_toolkit.formatted_text import StyleAndTextTuples

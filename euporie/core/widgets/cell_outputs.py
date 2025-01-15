@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from abc import ABCMeta, abstractmethod
-from functools import lru_cache
+from functools import cache
 from pathlib import PurePath
 from typing import TYPE_CHECKING
 
@@ -131,7 +131,7 @@ class CellOutputDataElement(CellOutputElement):
             focus_on_click=False,
             wrap_lines=config.filters.wrap_cell_outputs,
             always_hide_cursor=True,
-            style=f"class:mime-{mime.replace('/','-')}",
+            style=f"class:mime-{mime.replace('/', '-')}",
             scrollbar=False,
         )
 
@@ -260,7 +260,7 @@ MIME_ORDER = [
 ]
 
 
-@lru_cache(maxsize=None)
+@cache
 def _calculate_mime_rank(mime: str, have_escapes: bool) -> int:
     """Score the richness of mime output types."""
     for i, ranked_mime in enumerate(MIME_ORDER):
@@ -325,7 +325,7 @@ class CellOutput:
         data = {}
         output_type = self.json.get("output_type", "unknown")
         if output_type == "stream":
-            data = {f'stream/{self.json.get("name")}': self.json.get("text", "")}
+            data = {f"stream/{self.json.get('name')}": self.json.get("text", "")}
         elif output_type == "error":
             ename = self.json.get("ename", "")
             evalue = self.json.get("evalue", "")

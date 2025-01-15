@@ -25,9 +25,9 @@ def _kp_init(
     self: KeyPress, key: Keys | MoreKeys | str, data: str | None = None
 ) -> None:
     """Include more keys when creating a KeyPress."""
-    assert (
-        isinstance(key, (Keys | MoreKeys)) or len(key) == 1
-    ), f"key {key!r} ({type(key)}) not recoognised {MoreKeys(key)}"
+    assert isinstance(key, (Keys | MoreKeys)) or len(key) == 1, (
+        f"key {key!r} ({type(key)}) not recoognised {MoreKeys(key)}"
+    )
     if data is None:
         data = key.value if isinstance(key, (Keys, MoreKeys)) else key
     self.key = key

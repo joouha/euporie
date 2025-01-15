@@ -36,11 +36,9 @@ from euporie.core.ft.utils import (
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable, Iterator, Sequence
     from typing import (
         Any,
-        Iterable,
-        Iterator,
-        Sequence,
         TypeVar,
     )
 

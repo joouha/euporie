@@ -3,16 +3,18 @@
 from __future__ import annotations
 
 import contextvars
-from functools import lru_cache
+from collections.abc import Sequence
+from functools import cache
 from itertools import chain
 from threading import Thread
-from typing import TYPE_CHECKING, Sequence, TypeVar, overload
+from typing import TYPE_CHECKING, TypeVar, overload
 
 from prompt_toolkit.mouse_events import MouseButton, MouseEventType
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
     from types import ModuleType
-    from typing import Any, Callable, Iterable
+    from typing import Any, Callable
 
     from prompt_toolkit.key_binding.key_bindings import NotImplementedOrNone
     from prompt_toolkit.layout.mouse_handlers import MouseHandler
@@ -91,7 +93,7 @@ def run_in_thread_with_context(
     ).start()
 
 
-@lru_cache(maxsize=None)
+@cache
 def root_module(name: str) -> ModuleType:
     """Find and load the root module of a given module name by traversing up the module hierarchy.
 
@@ -136,7 +138,7 @@ def root_module(name: str) -> ModuleType:
     raise ModuleNotFoundError(name=name)
 
 
-@lru_cache(maxsize=None)
+@cache
 def import_submodules(root: ModuleType, names: tuple[str]) -> list[ModuleType]:
     """Import all submodules with a specific name within a root module's package hierarchy.
 

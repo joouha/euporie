@@ -18,7 +18,8 @@ from euporie.core.app.current import get_app
 from euporie.core.filters import in_screen, in_tmux
 
 if TYPE_CHECKING:
-    from typing import IO, Any, Callable, ContextManager, TextIO
+    from contextlib import AbstractContextManager
+    from typing import IO, Any, Callable, TextIO
 
     from prompt_toolkit.keys import Keys
 
@@ -73,7 +74,7 @@ def passthrough(cmd: str, config: Config | None = None) -> str:
         elif in_screen():
             # Screen limits escape sequences to 768 bytes, so we have to chunk it
             cmd = "".join(
-                f"\x1bP{cmd[i: i+764]}\x1b\\" for i in range(0, len(cmd), 764)
+                f"\x1bP{cmd[i : i + 764]}\x1b\\" for i in range(0, len(cmd), 764)
             )
     return cmd
 
@@ -165,7 +166,9 @@ class Vt100Parser(vt100_parser.Vt100Parser):
 class IgnoredInput(DummyInput):
     """An input which ignores input but does not immediately close the app."""
 
-    def attach(self, input_ready_callback: Callable[[], None]) -> ContextManager[None]:
+    def attach(
+        self, input_ready_callback: Callable[[], None]
+    ) -> AbstractContextManager[None]:
         """Do not call the callback, so the input is never closed."""
         return _dummy_context_manager()
 
@@ -216,7 +219,7 @@ class Vt100_Output(PtkVt100_Output):
         """Query terminal colors."""
         self.write_raw(
             passthrough(
-                ("\x1b]10;?\x1b\\" "\x1b]11;?\x1b\\")
+                ("\x1b]10;?\x1b\\\x1b]11;?\x1b\\")
                 + "".join(f"\x1b]4;{i};?\x1b\\" for i in range(16))
             )
         )

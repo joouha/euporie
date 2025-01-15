@@ -225,7 +225,7 @@ class SixelGraphicControl(GraphicControl):
                                     [
                                         (
                                             "[ZeroWidthEscape]",
-                                            f"\x1b[{visible_height-1}A",
+                                            f"\x1b[{visible_height - 1}A",
                                         )
                                     ]
                                     if visible_height > 1
@@ -347,7 +347,7 @@ class ItermGraphicControl(GraphicControl):
                                     [
                                         (
                                             "[ZeroWidthEscape]",
-                                            f"\x1b[{visible_height-1}A",
+                                            f"\x1b[{visible_height - 1}A",
                                         )
                                     ]
                                     if visible_height > 1
@@ -586,7 +586,7 @@ class KittyGraphicControl(GraphicControl):
                                     [
                                         (
                                             "[ZeroWidthEscape]",
-                                            f"\x1b[{visible_height-1}A",
+                                            f"\x1b[{visible_height - 1}A",
                                         )
                                     ]
                                     if visible_height > 1

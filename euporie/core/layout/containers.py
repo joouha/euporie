@@ -35,7 +35,8 @@ from euporie.core.layout.controls import DummyControl
 from euporie.core.layout.screen import BoundedWritePosition
 
 if TYPE_CHECKING:
-    from typing import Any, Callable, Sequence
+    from collections.abc import Sequence
+    from typing import Any, Callable
 
     from prompt_toolkit.formatted_text import AnyFormattedText, StyleAndTextTuples
     from prompt_toolkit.key_binding.key_bindings import (

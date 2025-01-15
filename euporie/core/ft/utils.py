@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 from enum import Enum
-from typing import Iterable, cast
+from typing import TYPE_CHECKING, cast
 
 from prompt_toolkit.formatted_text.base import OneStyleAndTextTuple, StyleAndTextTuples
 from prompt_toolkit.formatted_text.utils import (
@@ -19,6 +19,9 @@ from pygments.util import ClassNotFound
 
 from euporie.core.border import GridStyle, ThinGrid
 from euporie.core.data_structures import DiBool, DiInt, DiStr
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
 
 _ZERO_WIDTH_FRAGMENTS = ("[ZeroWidthEscape]", "[ReverseOverwrite]")
 

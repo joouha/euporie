@@ -23,8 +23,9 @@ from euporie.core.convert.registry import (
 from euporie.core.ft.utils import to_plain_text
 
 if TYPE_CHECKING:
+    from collections.abc import Coroutine
     from pathlib import Path
-    from typing import Any, ClassVar, Coroutine
+    from typing import Any, ClassVar
 
     from PIL.Image import Image as PilImage
     from prompt_toolkit.formatted_text.base import StyleAndTextTuples

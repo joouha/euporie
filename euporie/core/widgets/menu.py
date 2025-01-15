@@ -44,7 +44,8 @@ from euporie.core.layout.containers import HSplit, VSplit, Window
 from euporie.core.widgets.decor import Shadow
 
 if TYPE_CHECKING:
-    from typing import Any, Callable, Iterable, Sequence
+    from collections.abc import Iterable, Sequence
+    from typing import Any, Callable
 
     from prompt_toolkit.filters import Filter, FilterOrBool
     from prompt_toolkit.formatted_text.base import (
@@ -520,7 +521,9 @@ class MenuBar:
         def mouse_handler(index: int, mouse_event: MouseEvent) -> NotImplementedOrNone:
             focused = self.focused()
             hover = mouse_event.event_type == MouseEventType.MOUSE_MOVE
-            if mouse_event.event_type == MouseEventType.MOUSE_DOWN or hover and focused:
+            if mouse_event.event_type == MouseEventType.MOUSE_DOWN or (
+                hover and focused
+            ):
                 # Toggle focus.
                 if not hover and focused and self.selected_menu == [index]:
                     self.selected_menu = []

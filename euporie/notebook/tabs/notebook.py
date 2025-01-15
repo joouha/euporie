@@ -36,8 +36,9 @@ from euporie.core.tabs.notebook import BaseNotebook
 from euporie.core.widgets.cell import Cell
 
 if TYPE_CHECKING:
+    from collections.abc import MutableSequence, Sequence
     from pathlib import Path
-    from typing import Any, MutableSequence, Sequence
+    from typing import Any
 
     from prompt_toolkit.formatted_text.base import StyleAndTextTuples
     from prompt_toolkit.key_binding.key_bindings import NotImplementedOrNone
@@ -123,7 +124,7 @@ class Notebook(BaseNotebook):
             return (
                 [
                     self.mode(),
-                    f"Cell {self.page.selected_slice.start+1}",
+                    f"Cell {self.page.selected_slice.start + 1}",
                     f"Rendering… ({rendered:.0%})" if rendered and rendered < 1 else "",
                     "Saving…" if self.saving else "",
                 ],

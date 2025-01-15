@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from functools import lru_cache
+from functools import cache
 from importlib.metadata import entry_points
 from typing import TYPE_CHECKING
 
@@ -10,7 +10,7 @@ if TYPE_CHECKING:
     from importlib.metadata import EntryPoint
 
 
-@lru_cache(maxsize=None)
+@cache
 def available_apps() -> dict[str, EntryPoint]:
     """Return a list of loadable euporie apps."""
     try:

@@ -10,7 +10,8 @@ from weakref import WeakKeyDictionary
 from euporie.core.app.current import get_app
 
 if TYPE_CHECKING:
-    from typing import Any, Callable, Mapping, Sequence
+    from collections.abc import Mapping, Sequence
+    from typing import Any, Callable
 
     from prompt_toolkit.layout.containers import AnyContainer
 

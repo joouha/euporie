@@ -31,9 +31,10 @@ from euporie.core.key_binding.registry import (
 from euporie.core.path import parse_path
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
     from concurrent.futures._base import Future
     from pathlib import Path
-    from typing import Any, Callable, Iterable
+    from typing import Any, Callable
 
     from prompt_toolkit.formatted_text.base import AnyFormattedText, StyleAndTextTuples
     from prompt_toolkit.key_binding.key_bindings import (

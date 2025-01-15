@@ -13,8 +13,9 @@ from typing import TYPE_CHECKING, NamedTuple
 from prompt_toolkit.utils import Event
 
 if TYPE_CHECKING:
+    from collections.abc import Coroutine, Sequence
     from concurrent.futures import Future
-    from typing import Any, Callable, Coroutine, Sequence
+    from typing import Any, Callable
 
 
 log = logging.getLogger(__name__)
