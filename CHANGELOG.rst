@@ -6,9 +6,9 @@ Notable changes to this project will be documented in this file.
 
 ----
 
-********
-Upcoming
-********
+*******************
+v2.8.5 (2025-01-17)
+*******************
 
 Added
 =====
@@ -26,7 +26,7 @@ Changed
 Fixed
 =====
 
-- Fixed issue with notebooks loosing focus at startup
+- Fixed issue with notebooks losing focus at startup
 - Improve styling with 1-bit color depth
 - Various data conversion fixes
 
