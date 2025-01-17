@@ -87,7 +87,7 @@ def main() -> "bool":
     status("PASS")
 
     item("Checking build with twine")
-    if "ERROR" in check_output("pipx", "run", "twine", "check", "dist/*.*"):
+    if "ERROR" in check_output("uvx", "twine", "check", "dist/*.*"):
         status("FAIL")
         error("Twine check failed")
         return False
