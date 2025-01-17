@@ -26,14 +26,12 @@ Changed
 Fixed
 =====
 
+- Fix issue where tempfile suffixes were no being calculated dynamically
 - Fixed issue with notebooks losing focus at startup
 - Improve styling with 1-bit color depth
 - Various data conversion fixes
 
-Fixed
-=====
-
-- Fix issue where tempfile suffixes were no being calculated dynamically
+----
 
 *******************
 v2.8.4 (2024-10-10)
