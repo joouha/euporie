@@ -581,7 +581,6 @@ class Cell:
         """Determine the current cell type."""
         return self.json.get("cell_type", "code")
 
-    @property
     def suffix(self) -> str:
         """Return the file suffix matching the current cell type."""
         cell_type = self.cell_type
