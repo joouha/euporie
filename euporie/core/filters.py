@@ -134,6 +134,27 @@ def tab_has_focus() -> bool:
 
 
 @Condition
+def kernel_tab_has_focus() -> bool:
+    """Determine if there is a focused kernel tab."""
+    from euporie.core.app.current import get_app
+    from euporie.core.tabs.kernel import KernelTab
+
+    return isinstance(get_app().tab, KernelTab)
+
+
+@cache
+def tab_type_has_focus(tab_class_path: str) -> Condition:
+    """Determine if the focused tab is of a particular type."""
+    from pkgutil import resolve_name
+
+    from euporie.core.app.current import get_app
+
+    tab_class = cache(resolve_name)
+
+    return Condition(lambda: isinstance(get_app().tab, tab_class(tab_class_path)))
+
+
+@Condition
 def pager_has_focus() -> bool:
     """Determine if there is a currently focused notebook."""
     from euporie.core.app.current import get_app
@@ -319,15 +340,6 @@ def multiple_cells_selected() -> bool:
     if isinstance(nb, BaseNotebook):
         return len(nb.selected_indices) > 1
     return False
-
-
-@Condition
-def kernel_tab_has_focus() -> bool:
-    """Determine if there is a focused kernel tab."""
-    from euporie.core.app.current import get_app
-    from euporie.core.tabs.kernel import KernelTab
-
-    return isinstance(get_app().tab, KernelTab)
 
 
 def scrollable(window: Window) -> Filter:
