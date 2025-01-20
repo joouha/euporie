@@ -8,7 +8,7 @@ from prompt_toolkit.filters import buffer_has_focus
 
 from euporie.core.app.current import get_app
 from euporie.core.commands import add_cmd
-from euporie.core.filters import tab_has_focus
+from euporie.core.filters import tab_has_focus, tab_type_has_focus
 
 if TYPE_CHECKING:
     from prompt_toolkit.key_binding.key_processor import KeyPressEvent
@@ -76,3 +76,20 @@ def _focus_previous() -> None:
 def _clear_screen() -> None:
     """Clear the screen."""
     get_app().renderer.clear()
+
+
+@add_cmd(hidden=True, aliases=[""])
+def _go_to(event: KeyPressEvent) -> None:
+    """Go to a line or cell by number."""
+    try:
+        idx = int(event._arg or "") - 1
+    except (ValueError, TypeError):
+        return
+    if buffer_has_focus():
+        buffer = get_app().current_buffer
+        buffer.cursor_position = len("".join(buffer.text.splitlines(True)[:idx]))
+    elif tab_type_has_focus("euporie.notebook.tabs.notebook:Notebook")():
+        from euporie.notebook.tabs.notebook import Notebook
+
+        if isinstance(nb := get_app().tab, Notebook):
+            nb.select(idx)
