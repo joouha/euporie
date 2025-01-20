@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from importlib import import_module
+from pkgutil import resolve_name
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -23,9 +23,7 @@ class TabRegistryEntry:
     @property
     def tab_class(self) -> type[Tab]:
         """Import and return the tab class."""
-        module_path, _, attribute = self.path.partition(":")
-        module = import_module(module_path)
-        return getattr(module, attribute)
+        return resolve_name(self.path)
 
     def __lt__(self, other: TabRegistryEntry) -> bool:
         """Sort by weight."""
