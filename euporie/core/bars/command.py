@@ -49,7 +49,11 @@ class CommandCompleter(Completer):
         prefix = document.text
         found_so_far: set[Command] = set()
         for alias, command in commands.items():
-            if alias.startswith(prefix) and command not in found_so_far:
+            if (
+                alias.startswith(prefix)
+                and command not in found_so_far
+                and not command.hidden()
+            ):
                 yield Completion(
                     command.name,
                     start_position=-len(prefix),
