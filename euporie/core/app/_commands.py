@@ -20,6 +20,14 @@ def _quit() -> None:
     get_app().exit()
 
 
+@add_cmd(aliases=["q!"])
+def _force_quit() -> None:
+    """Quit euporie without saving any changes."""
+    from prompt_toolkit.application.application import Application
+
+    Application.exit(get_app())
+
+
 @add_cmd(aliases=["wq", "x"])
 def _save_and_quit(event: KeyPressEvent) -> None:
     """Save the current tab then quits euporie."""
