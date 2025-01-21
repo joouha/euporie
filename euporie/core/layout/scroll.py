@@ -365,9 +365,6 @@ class ScrollingContainer(Container):
         # Record children which are currently visible
         visible_indices = set()
 
-        # Ensure we have the right children
-        all_children = self.all_children()
-
         # Force the selected children to refresh
         selected_indices = self.selected_indices
         self._selected_children: list[CachedContainer] = []
@@ -549,19 +546,10 @@ class ScrollingContainer(Container):
         # are partially obscured
         self.last_write_position = write_position
 
-        # Calculate scrollbar info
-        sizes = self.known_sizes
-        avg_size = sum(sizes.values()) / len(sizes) if sizes else 0
-        n_children = len(all_children)
-        for i in range(n_children):
-            if i not in sizes:
-                sizes[i] = int(avg_size)
-        content_height = max(sum(sizes.values()), 1)
-
         # Mock up a WindowRenderInfo so we can draw a scrollbar margin
         self.render_info = WindowRenderInfo(
             window=cast("Window", self),
-            ui_content=UIContent(line_count=content_height),
+            ui_content=UIContent(line_count=max(sum(self.known_sizes.values()), 1)),
             horizontal_scroll=0,
             vertical_scroll=self.vertical_scroll,
             window_width=available_width,
@@ -730,9 +718,14 @@ class ScrollingContainer(Container):
     def known_sizes(self) -> dict[int, int]:
         """A dictionary mapping child indices to height values."""
         sizes = {}
+        missing = set()
         for i, child in enumerate(self._children):
             if isinstance(child, CachedContainer) and child.height:
                 sizes[i] = child.height
+            else:
+                missing.add(i)
+        avg = int(sum(sizes.values()) / len(sizes))
+        sizes.update(dict.fromkeys(missing, avg))
         return sizes
 
     def _scroll_up(self) -> None:
