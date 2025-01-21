@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from functools import partial
 from math import ceil
@@ -28,7 +29,6 @@ from euporie.core.key_binding.registry import (
 )
 from euporie.core.layout.containers import VSplit, Window
 from euporie.core.margins import MarginContainer, ScrollbarMargin
-from euporie.core.utils import run_in_thread_with_context
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -217,7 +217,7 @@ class DisplayControl(UIControl):
         if not self.rendering:
             self.rendering = True
             if self.threaded:
-                run_in_thread_with_context(_render)
+                get_app().create_background_task(asyncio.to_thread(_render))
             else:
                 _render()
 

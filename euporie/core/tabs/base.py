@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from abc import ABCMeta
 from typing import TYPE_CHECKING, ClassVar
@@ -19,7 +20,6 @@ from euporie.core.key_binding.registry import (
 )
 from euporie.core.layout.containers import Window
 from euporie.core.path import parse_path
-from euporie.core.utils import run_in_thread_with_context
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -107,7 +107,7 @@ class Tab(metaclass=ABCMeta):
                 cb()
             self.after_save.fire()
 
-        run_in_thread_with_context(self.save, path, _wrapped_cb)
+        self.app.create_background_task(asyncio.to_thread(self.save, path, _wrapped_cb))
 
     def save(self, path: Path | None = None, cb: Callable | None = None) -> None:
         """Save the current tab."""

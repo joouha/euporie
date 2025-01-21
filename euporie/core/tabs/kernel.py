@@ -33,7 +33,6 @@ from euporie.core.inspection import (
 from euporie.core.kernel.client import Kernel, MsgCallbacks
 from euporie.core.suggest import HistoryAutoSuggest
 from euporie.core.tabs.base import Tab
-from euporie.core.utils import run_in_thread_with_context
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -97,8 +96,8 @@ class KernelTab(Tab, metaclass=ABCMeta):
 
         if self.bg_init:
             # Load kernel in a background thread
-            run_in_thread_with_context(
-                partial(
+            app.create_background_task(
+                asyncio.to_thread(
                     self.init_kernel, kernel, comms, use_kernel_history, connection_file
                 )
             )

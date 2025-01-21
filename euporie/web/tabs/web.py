@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from typing import TYPE_CHECKING
 
@@ -16,7 +17,6 @@ from euporie.core.data_structures import DiBool
 from euporie.core.layout.decor import FocusedStyle
 from euporie.core.margins import MarginContainer, ScrollbarMargin
 from euporie.core.tabs.base import Tab
-from euporie.core.utils import run_in_thread_with_context
 from euporie.core.widgets.display import DisplayWindow
 from euporie.core.widgets.forms import Button, Text
 from euporie.web.widgets.webview import WebViewControl
@@ -47,7 +47,7 @@ class WebTab(Tab):
         def _load() -> None:
             self.container = self.load_container()
 
-        run_in_thread_with_context(_load)
+        app.create_background_task(asyncio.to_thread(_load))
 
     def focus(self) -> None:
         """Focus the webview when this tab is focused."""
