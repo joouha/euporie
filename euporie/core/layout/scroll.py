@@ -68,7 +68,7 @@ class ScrollingContainer(Container):
         self._child_cache: dict[int, CachedContainer] = {}
         self._children: list[CachedContainer] = []
         self.refresh_children = True
-        self.pre_rendered = 0.0
+        self.pre_rendered: float | None = None
 
         self._selected_slice = slice(
             0, 1
@@ -92,6 +92,7 @@ class ScrollingContainer(Container):
 
     def pre_render_children(self, width: int, height: int) -> None:
         """Render all unrendered children in a background thread."""
+        self.pre_rendered = 0.0
 
         def _render_in_thread() -> None:
             """Render children in  thread."""
@@ -576,7 +577,7 @@ class ScrollingContainer(Container):
         self.scrolling = 0
 
         # Trigger pre-rendering of children
-        if not self.pre_rendered:
+        if self.pre_rendered is None:
             self.pre_render_children(available_width, available_height)
 
     @property
