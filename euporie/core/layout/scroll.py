@@ -237,7 +237,6 @@ class ScrollingContainer(Container):
                 :py:const:`None`
 
         """
-        # self.refresh_children = True
         if n > 0:
             if (
                 min(self.visible_indices) == 0
@@ -255,8 +254,8 @@ class ScrollingContainer(Container):
                 if bottom_pos is not None:
                     n = max(
                         n,
-                        self.last_write_position.height
-                        - (bottom_pos + bottom_child.height + self.scrolling),
+                        (bottom_pos + bottom_child.height + self.scrolling)
+                        - self.last_write_position.height,
                     )
                     if (
                         bottom_pos + bottom_child.height + self.scrolling + n
