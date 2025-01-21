@@ -172,7 +172,7 @@ class Cell:
         # Now we generate the main container used to represent a kernel_tab cell
 
         source_hidden = Condition(
-            lambda: weak_self.json["metadata"]
+            lambda: weak_self.json.get("metadata", {})
             .get("jupyter", {})
             .get("source_hidden", False)
         )
