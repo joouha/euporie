@@ -1,7 +1,8 @@
-"""Contains containers which display children at full height vertially stacked."""
+"""Contains containers which display children at full height vertically stacked."""
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from typing import TYPE_CHECKING, cast
 
@@ -20,7 +21,6 @@ from prompt_toolkit.mouse_events import MouseEvent, MouseEventType, MouseModifie
 
 from euporie.core.layout.cache import CachedContainer
 from euporie.core.layout.screen import BoundedWritePosition
-from euporie.core.utils import run_in_thread_with_context
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -93,23 +93,31 @@ class ScrollingContainer(Container):
     def pre_render_children(self, width: int, height: int) -> None:
         """Render all unrendered children in a background thread."""
         self.pre_rendered = 0.0
+        children = self.all_children()
+        incr = 1 / len(children)
+        app = get_app()
 
-        def _render_in_thread() -> None:
-            """Render children in  thread."""
-            children = self.all_children()
-            n_children = len(children)
-            app = get_app()
-            for i, child in enumerate(children):
-                if not app._is_running:
-                    return
-                if isinstance(child, CachedContainer):
-                    child.render(width, height)
-                self.pre_rendered = i / n_children
-                app.invalidate()
-            self.pre_rendered = 1.0
+        def _cb(task: asyncio.Task) -> None:
+            """Task callback to update pre-rendering percentage."""
+            self.pre_rendered += incr
             app.invalidate()
 
-        run_in_thread_with_context(_render_in_thread)
+        tasks = set()
+        for child in children:
+            if isinstance(child, CachedContainer):
+                task = app.create_background_task(
+                    asyncio.to_thread(child.render, width, height)
+                )
+                task.add_done_callback(_cb)
+                tasks.add(task)
+
+        async def _finish() -> None:
+            await asyncio.gather(*tasks)
+            self.pre_rendered = 1.0
+            app.invalidate()
+            # app.exit()
+
+        app.create_background_task(_finish())
 
     def reset(self) -> None:
         """Reset the state of this container and all the children."""
