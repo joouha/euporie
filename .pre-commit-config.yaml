@@ -30,13 +30,13 @@ repos:
         entry: hatch run hatch-static-analysis:trailing-whitespace-fixer
         language: system
         types: [text]
-        stages: [commit, push, manual]
+        stages: [pre-commit, pre-push, manual]
       - id: end-of-file-fixer
         name: Fix End of Files
         entry: hatch run hatch-static-analysis:end-of-file-fixer
         language: system
         types: [text]
-        stages: [commit, push, manual]
+        stages: [pre-commit, pre-push, manual]
       - id: ruff
         name: ruff check
         entry: hatch run hatch-static-analysis:ruff check
