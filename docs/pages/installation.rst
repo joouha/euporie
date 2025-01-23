@@ -149,7 +149,9 @@ Euporie can display the first page of PDF files using one of the following:
 HTML
 ====
 
-Euporie will attempt to render HTML outputs. This requires one of the following:
+Euporie includes its own custom HTML renderer, which it uses to render HTML outputs, meaning that external programs are not longer required to display HTML.
+
+If HTML rendering fails for some reason, euporie will fall back on one of the following for rendering HTML:
 
 * Python packages
    .. hlist::
@@ -173,7 +175,7 @@ Euporie will attempt to render HTML outputs. This requires one of the following:
 LaTeX
 =====
 
-Euporie will render LaTeX in markdown and cell output using unicode text, using any of the following if they are installed:
+Euporie will render LaTeX in markdown and cell outputs using terminal graphics or unicode text, using any of the following if they are installed:
 
 * Python packages
    .. hlist::
@@ -189,9 +191,8 @@ Euporie will render LaTeX in markdown and cell output using unicode text, using 
       :columns: 3
 
       * :command:`dvipng`
+      * `utftex <https://github.com/bartp5/libtexprintf>`_
 
 .. note::
    :py:mod:`flatlatex` is a dependency of euporie, so will be installed by default
 
-.. note::
-   :py:mod:`ipython` and :command:`dvipng` are both required to display rendered LaTeX as graphics
