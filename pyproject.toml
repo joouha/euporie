@@ -186,14 +186,14 @@ installer = "uv"
 description = "Build documentation."
 dependencies = [
   "importlib_metadata",
-  "Sphinx~=5.3",
-  "sphinx-autobuild~=2024.4",
-  "sphinx-rtd-theme~=2.0.0",
-  "sphinx-argparse-cli~=1.8.3",
-  "sphinxext-opengraph~=0.6.2",
-  "sphinx-copybutton~=0.5.0",
-  "sphinx-design~=0.2.0",
-  "intersphinx-registry>=0.2411.25"
+  "Sphinx~=8.1",
+  "sphinx-autobuild~=2024.10",
+  "sphinx-rtd-theme~=3.0",
+  "sphinx-argparse-cli~=1.19",
+  "sphinxext-opengraph~=0.9",
+  "sphinx-copybutton~=0.5",
+  "sphinx-design~=0.6.0",
+  "intersphinx-registry~=0.2411"
 ]
 
 [tool.hatch.envs.docs.scripts]
