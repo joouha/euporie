@@ -1,8 +1,8 @@
-sphinx==5.3.0
-sphinx-rtd-theme==2.0.0
-sphinx-argparse-cli==1.8.3
-sphinxext-opengraph==0.6.3
-sphinx-copybutton==0.5.2
-sphinx-design==0.2.0
+sphinx-autobuild~=2024.10
+sphinx-rtd-theme~=3.0
+sphinx-argparse-cli~=1.19
+sphinxext-opengraph~=0.9
+sphinx-copybutton~=0.5
+sphinx-design~=0.6.0
+intersphinx-registry~=0.2411
 asyncssh==2.10.1
-sphinxcontrib-video==0.0.1.dev3
