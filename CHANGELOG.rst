@@ -10,6 +10,11 @@ Notable changes to this project will be documented in this file.
 Upcoming
 ********
 
+Added
+=====
+
+- Add configuration option for customizing individual style elements
+
 Changed
 =======
 
