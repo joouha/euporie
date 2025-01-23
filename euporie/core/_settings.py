@@ -1,5 +1,7 @@
 """Defines core settings."""
 
+import json
+
 from euporie.core import __version__
 from euporie.core.config import add_setting
 
@@ -73,8 +75,11 @@ add_setting(
     name="log_config",
     group="euporie.core.log",
     flags=["--log-config"],
-    type_=str,
-    default="{}",
+    type_=json.loads,
+    default={},
+    schema={
+        "type": "object",
+    },
     title="additional logging configuration",
     help_="Additional logging configuration",
     description="""
