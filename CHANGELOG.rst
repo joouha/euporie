@@ -6,6 +6,17 @@ Notable changes to this project will be documented in this file.
 
 ----
 
+********
+Upcoming
+********
+
+Changed
+=======
+
+- Prevent the need to use an escaped JSON string when defining custom logging configuration
+
+----
+
 *******************
 v2.8.5 (2025-01-17)
 *******************
