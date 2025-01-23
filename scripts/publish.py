@@ -102,16 +102,16 @@ def main() -> "bool":
         return False
     status("PASS")
 
-    item("Upload to PyPi")
-    check_output("hatch", "publish", "-u", "__token__")
-    status("PASS")
-
     item("Creating git tag")
     check_output("git", "tag", "-a", git_tag, "-m", f"Release version {version}")
     status("PASS")
 
     item("Push tag to server")
     check_output("git", "push", "--tags", "-q")
+    status("PASS")
+
+    item("Upload to PyPi")
+    check_output("hatch", "publish", "-u", "__token__")
     status("PASS")
 
     return True
