@@ -129,6 +129,23 @@ Euporie can display SVG output by first rasterizing it, for which one of the fol
 
       * `imagemagick <https://www.imagemagick.org>`_
 
+PDF
+===
+
+Euporie can display the first page of PDF files using one of the following:
+
+* External applications
+   .. hlist::
+      :columns: 3
+
+      * `imagemagick <https://www.imagemagick.org>`_
+      * `chafa <https://hpjansson.org/chafa/>`_
+      * `timg <https://github.com/hzeller/timg>`_
+      * `tiv <https://github.com/radare/tiv>`_
+
+.. note::
+   Currently only the first page of PDF files can be displayed.
+
 HTML
 ====
 
