@@ -140,6 +140,8 @@ add_setting(
 
         e.g.
 
+        .. code-block:: json
+
            [
              {"command": ["ruff", "format", "-"], "languages": ["python"]},
              {"command": ["black", "-"], "languages": ["python"]},
@@ -288,12 +290,12 @@ add_setting(
     type_=json.loads,
     help_="Additional key binding definitions",
     default={},
-    description="""
-        A mapping of component names to mappings of command name to key-binding lists.
-""",
     schema={
         "type": "object",
     },
+    description="""
+        A mapping of component names to mappings of command name to key-binding lists.
+""",
 )
 
 add_setting(
@@ -375,6 +377,8 @@ add_setting(
     description="""
         Additional language servers can be defined here, e.g.:
 
+        .. code-block:: json
+
            {
             "ruff": {"command": ["ruff-lsp"], "languages": ["python"]},
             "pylsp": {"command": ["pylsp"], "languages": ["python"]},
@@ -391,6 +395,8 @@ add_setting(
         To disable one of the default language servers, its name can be set to an
         empty dictionary. For example, the following would disable the awk language
         server:
+
+        .. code-block:: json
 
            {
              "awk-language-server": {},
