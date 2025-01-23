@@ -791,6 +791,13 @@ class BaseApp(ConfigurableApp, Application, ABC):
             syntax_theme = "tango" if self.color_palette.bg.is_light else "euporie"
         return syntax_theme
 
+    base_styles = (
+        Style(MIME_STYLE),
+        Style(HTML_STYLE),
+        Style(LOG_STYLE),
+        Style(IPYWIDGET_STYLE),
+    )
+
     def create_merged_style(self) -> BaseStyle:
         """Generate a new merged style for the application.
 
@@ -801,6 +808,11 @@ class BaseApp(ConfigurableApp, Application, ABC):
             Return a combined style to use for the application
 
         """
+        styles: list[BaseStyle] = [
+            style_from_pygments_cls(get_style_by_name(self.syntax_theme)),
+            *self.base_styles,
+        ]
+
         # Get foreground and background colors based on the configured colour scheme
         theme_colors: dict[str, dict[str, str]] = {
             "default": {},
@@ -844,7 +856,7 @@ class BaseApp(ConfigurableApp, Application, ABC):
         )
 
         # Build app style
-        app_style = build_style(cp)
+        styles.append(build_style(cp))
 
         # Apply style transformations based on the configured color scheme
         self.style_transformation = merge_style_transformations(
@@ -862,16 +874,11 @@ class BaseApp(ConfigurableApp, Application, ABC):
             ]
         )
 
-        return merge_styles(
-            [
-                style_from_pygments_cls(get_style_by_name(self.syntax_theme)),
-                Style(MIME_STYLE),
-                Style(HTML_STYLE),
-                Style(LOG_STYLE),
-                Style(IPYWIDGET_STYLE),
-                app_style,
-            ]
-        )
+        # Add user style customizations
+        if custom_style_dict := self.config.custom_styles:
+            styles.append(Style.from_dict(custom_style_dict))
+
+        return merge_styles(styles)
 
     def update_style(self, query: Setting | None = None) -> None:
         """Update the application's style when the syntax theme is changed."""

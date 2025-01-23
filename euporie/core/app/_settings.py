@@ -284,6 +284,30 @@ add_setting(
 )
 
 add_setting(
+    name="custom_styles",
+    group="euporie.core.style",
+    flags=["--custom-styles"],
+    type_=json.loads,
+    default={},
+    schema={
+        "type": "object",
+    },
+    help_="Additional style settings",
+    description="""
+        A JSON object mapping style names to prompt-toolkit style values.
+
+        The style keys used in euporie can be found in :py:func:`euporie.core.style.build_style`.
+
+        e.g.:
+
+        .. code-block:: json
+
+           { "cell input prompt":"fg:purple", "cell output prompt": "fg:green" }
+
+    """,
+)
+
+add_setting(
     name="key_bindings",
     group="euporie.core.app.app",
     flags=["--key-bindings"],
