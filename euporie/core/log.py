@@ -506,10 +506,7 @@ def setup_logs(config: Config | None = None) -> None:
 
         # Update log_config based on additional config dict provided
         if config.log_config:
-            import json
-
-            extra_config = json.loads(config.log_config)
-            dict_merge(log_config, extra_config)
+            dict_merge(log_config, config.log_config)
 
     # Configure the logger
     # Pytype used TypedDicts to validate the dictionary structure, but I cannot get
