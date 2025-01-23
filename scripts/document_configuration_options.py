@@ -3,21 +3,13 @@
 
 from __future__ import annotations
 
-from importlib.metadata import entry_points
 from textwrap import dedent, indent
 
+from euporie.core.__main__ import available_apps
 from euporie.core.config import Config
 
-_EPS = entry_points()
-if isinstance(_EPS, dict):
-    APP_ENTRY_POINTS = _EPS.get("euporie.apps")
-else:
-    APP_ENTRY_POINTS = _EPS.select(group="euporie.apps")
-
-# Import all app classes to load config settings
-if APP_ENTRY_POINTS is not None:
-    for entry in APP_ENTRY_POINTS:
-        entry.load()
+for app in available_apps().values():
+    app.load()
 
 for name, setting in Config._settings.items():
     print(f".. option:: {name}\n")
