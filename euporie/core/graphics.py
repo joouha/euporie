@@ -376,8 +376,8 @@ class ItermGraphicControl(GraphicControl):
         return self._format_cache.get(key, render_lines)
 
 
-class KittyGraphicControl(GraphicControl):
-    """A graphic control which displays images using Kitty's graphics protocol."""
+class BaseKittyGraphicControl(GraphicControl):
+    """Base graphic control with common methods for both styles of kitty display."""
 
     _kitty_image_count: ClassVar[int] = 1
 
@@ -451,7 +451,7 @@ class KittyGraphicControl(GraphicControl):
             BoundedWritePosition(0, 0, width=cols, height=rows, bbox=bbox)
         )
         self.kitty_image_id = self._kitty_image_count
-        KittyGraphicControl._kitty_image_count += 1
+        self.__class__._kitty_image_count += 1
 
         while data:
             chunk, data = data[:4096], data[4096:]
@@ -471,24 +471,6 @@ class KittyGraphicControl(GraphicControl):
         self.app.output.flush()
         self.loaded = True
 
-    def hide_cmd(self) -> str:
-        """Generate a command to hide the graphic."""
-        return passthrough(
-            self._kitty_cmd(
-                a="d",
-                d="i",
-                i=self.kitty_image_id,
-                q=1,
-            ),
-            self.app.config,
-        )
-
-    def hide(self) -> None:
-        """Hide the graphic from show without deleting it."""
-        if self.kitty_image_id > 0:
-            self.app.output.write_raw(self.hide_cmd())
-            self.app.output.flush()
-
     def delete(self) -> None:
         """Delete the graphic from the terminal."""
         if self.kitty_image_id > 0:
@@ -505,6 +487,22 @@ class KittyGraphicControl(GraphicControl):
             )
             self.app.output.flush()
             self.loaded = False
+
+    def reset(self) -> None:
+        """Hide and delete the kitty graphic from the terminal."""
+        self.hide()
+        self.delete()
+        super().reset()
+
+    def close(self) -> None:
+        """Remove the displayed object entirely."""
+        super().close()
+        if not self.app.leave_graphics():
+            self.delete()
+
+
+class KittyGraphicControl(BaseKittyGraphicControl):
+    """A graphic control which displays images using Kitty's graphics protocol."""
 
     def get_rendered_lines(
         self, visible_width: int, visible_height: int, wrap_lines: bool = False
@@ -616,17 +614,173 @@ class KittyGraphicControl(GraphicControl):
         )
         return self._format_cache.get(key, render_lines)
 
-    def reset(self) -> None:
-        """Hide and delete the kitty graphic from the terminal."""
-        self.hide()
-        self.delete()
-        super().reset()
+    def hide_cmd(self) -> str:
+        """Generate a command to hide the graphic."""
+        return passthrough(
+            self._kitty_cmd(
+                a="d",
+                d="i",
+                i=self.kitty_image_id,
+                q=1,
+            ),
+            self.app.config,
+        )
 
-    def close(self) -> None:
-        """Remove the displayed object entirely."""
-        super().close()
-        if not self.app.leave_graphics():
-            self.delete()
+    def hide(self) -> None:
+        """Hide the graphic from show without deleting it."""
+        if self.kitty_image_id > 0:
+            self.app.output.write_raw(self.hide_cmd())
+            self.app.output.flush()
+
+
+class KittyUnicodeGraphicControl(BaseKittyGraphicControl):
+    """A graphic control which displays images using Kitty's Unicode placeholder mechanism."""
+
+    PLACEHOLDER = "\U0010eeee"  # U+10EEEE placeholder character
+    # fmt: off
+    DIACRITICS = (  # Diacritics for encoding row/column numbers (0-9)
+        "\u0305", "\u030d", "\u030e", "\u0310", "\u0312", "\u033d", "\u033e", "\u033f",
+        "\u0346", "\u034a", "\u034b", "\u034c", "\u0350", "\u0351", "\u0352", "\u0357",
+        "\u035b", "\u0363", "\u0364", "\u0365", "\u0366", "\u0367", "\u0368", "\u0369",
+        "\u036a", "\u036b", "\u036c", "\u036d", "\u036e", "\u036f", "\u0483", "\u0484",
+        "\u0485", "\u0486", "\u0487", "\u0592", "\u0593", "\u0594", "\u0595", "\u0597",
+        "\u0598", "\u0599", "\u059c", "\u059d", "\u059e", "\u059f", "\u05a0", "\u05a1",
+        "\u05a8", "\u05a9", "\u05ab", "\u05ac", "\u05af", "\u05c4", "\u0610", "\u0611",
+        "\u0612", "\u0613", "\u0614", "\u0615", "\u0616", "\u0617", "\u0657", "\u0658",
+        "\u0659", "\u065a", "\u065b", "\u065d", "\u065e", "\u06d6", "\u06d7", "\u06d8",
+        "\u06d9", "\u06da", "\u06db", "\u06dc", "\u06df", "\u06e0", "\u06e1", "\u06e2",
+        "\u06e4", "\u06e7", "\u06e8", "\u06eb", "\u06ec", "\u0730", "\u0732", "\u0733",
+        "\u0735", "\u0736", "\u073a", "\u073d", "\u073f", "\u0740", "\u0741", "\u0743",
+        "\u0745", "\u0747", "\u0749", "\u074a", "\u07eb", "\u07ec", "\u07ed", "\u07ee",
+        "\u07ef", "\u07f0", "\u07f1", "\u07f3", "\u0816", "\u0817", "\u0818", "\u0819",
+        "\u081b", "\u081c", "\u081d", "\u081e", "\u081f", "\u0820", "\u0821", "\u0822",
+        "\u0823", "\u0825", "\u0826", "\u0827", "\u0829", "\u082a", "\u082b", "\u082c",
+        "\u082d", "\u0951", "\u0953", "\u0954", "\u0f82", "\u0f83", "\u0f86", "\u0f87",
+        "\u135d", "\u135e", "\u135f", "\u17dd", "\u193a", "\u1a17", "\u1a75", "\u1a76",
+        "\u1a77", "\u1a78", "\u1a79", "\u1a7a", "\u1a7b", "\u1a7c", "\u1b6b", "\u1b6d",
+        "\u1b6e", "\u1b6f", "\u1b70", "\u1b71", "\u1b72", "\u1b73", "\u1cd0", "\u1cd1",
+        "\u1cd2", "\u1cda", "\u1cdb", "\u1ce0", "\u1dc0", "\u1dc1", "\u1dc3", "\u1dc4",
+        "\u1dc5", "\u1dc6", "\u1dc7", "\u1dc8", "\u1dc9", "\u1dcb", "\u1dcc", "\u1dd1",
+        "\u1dd2", "\u1dd3", "\u1dd4", "\u1dd5", "\u1dd6", "\u1dd7", "\u1dd8", "\u1dd9",
+        "\u1dda", "\u1ddb", "\u1ddc", "\u1ddd", "\u1dde", "\u1ddf", "\u1de0", "\u1de1",
+        "\u1de2", "\u1de3", "\u1de4", "\u1de5", "\u1de6", "\u1dfe", "\u20d0", "\u20d1",
+        "\u20d4", "\u20d5", "\u20d6", "\u20d7", "\u20db", "\u20dc", "\u20e1", "\u20e7",
+        "\u20e9", "\u20f0", "\u2cef", "\u2cf0", "\u2cf1", "\u2de0", "\u2de1", "\u2de2",
+        "\u2de3", "\u2de4", "\u2de5", "\u2de6", "\u2de7", "\u2de8", "\u2de9", "\u2dea",
+        "\u2deb", "\u2dec", "\u2ded", "\u2dee", "\u2def", "\u2df0", "\u2df1", "\u2df2",
+        "\u2df3", "\u2df4", "\u2df5", "\u2df6", "\u2df7", "\u2df8", "\u2df9", "\u2dfa",
+        "\u2dfb", "\u2dfc", "\u2dfd", "\u2dfe", "\u2dff", "\ua66f", "\ua67c", "\ua67d",
+        "\ua6f0", "\ua6f1", "\ua8e0", "\ua8e1", "\ua8e2", "\ua8e3", "\ua8e4", "\ua8e5",
+        "\ua8e6", "\ua8e7", "\ua8e8", "\ua8e9", "\ua8ea", "\ua8eb", "\ua8ec", "\ua8ed",
+        "\ua8ee", "\ua8ef", "\ua8f0", "\ua8f1", "\uaab0", "\uaab2", "\uaab3", "\uaab7",
+        "\uaab8", "\uaabe", "\uaabf", "\uaac1", "\ufe20", "\ufe21", "\ufe22", "\ufe23",
+        "\ufe24", "\ufe25", "\ufe26",
+        "\U00010a0f", "\U00010a38", "\U0001d185", "\U0001d186", "\U0001d187",
+        "\U0001d188", "\U0001d189", "\U0001d1aa", "\U0001d1ab", "\U0001d1ac",
+        "\U0001d1ad", "\U0001d242", "\U0001d243", "\U0001d244",
+    )
+    # fmt: on
+
+    def __init__(
+        self,
+        datum: Datum,
+        scale: float = 0,
+        bbox: DiInt | None = None,
+    ) -> None:
+        """Create a new kitty graphic instance."""
+        super().__init__(datum, scale, bbox)
+        self.placements: set[tuple[int, int]] = set()
+
+    def get_rendered_lines(
+        self, visible_width: int, visible_height: int, wrap_lines: bool = False
+    ) -> list[StyleAndTextTuples]:
+        """Get rendered lines from the cache, or generate them."""
+        bbox = self.bbox
+
+        cell_size_px = self.app.cell_size_px
+        datum = self._datum_pad_cache[(self.datum, *cell_size_px)]
+        px, py = datum.pixel_size()
+        # Fall back to a default pixel size
+        px = px or 100
+        py = py or 100
+
+        d_cols, d_aspect = datum.cell_size()
+        d_rows = d_cols * d_aspect
+
+        total_available_width = visible_width + bbox.left + bbox.right
+        total_available_height = visible_height + bbox.top + bbox.bottom
+
+        # Scale down the graphic to fit in the available space
+        if d_rows > total_available_height or d_cols > total_available_width:
+            if d_rows / total_available_height > d_cols / total_available_width:
+                ratio = min(1, total_available_height / d_rows)
+            else:
+                ratio = min(1, total_available_width / d_cols)
+        else:
+            ratio = 1
+
+        # Calculate the size and cropping bbox at which we want to display the graphic
+        cols = floor(d_cols * ratio)
+        rows = ceil(cols * d_aspect)
+        if not self.loaded:
+            self.load(cols=cols, rows=rows, bbox=DiInt(0, 0, 0, 0))
+
+        # Add virtual placement for this size if required
+        if (cols, rows) not in self.placements:
+            cmd = self._kitty_cmd(
+                a="p",  # Display a previously transmitted image
+                i=self.kitty_image_id,
+                p=1,  # Placement ID
+                U=1,  # Create a virtual placement
+                c=cols,
+                r=rows,
+                q=2,
+            )
+            self.app.output.write_raw(passthrough(cmd, self.app.config))
+            self.app.output.flush()
+            self.placements.add((cols, rows))
+
+        def render_lines() -> list[StyleAndTextTuples]:
+            """Render the lines to display in the control."""
+            ft: StyleAndTextTuples = []
+
+            # Generate placeholder grid
+            col_start = bbox.left
+            col_stop = cols - bbox.right
+            placeholder = self.PLACEHOLDER
+            diacritics = self.DIACRITICS
+            for row in range(bbox.top, rows - bbox.bottom):
+                for col in range(col_start, col_stop):
+                    ft.extend(
+                        [
+                            # We set the ptk-color for the last column so the renderer
+                            # knows to change the color back after this gets rendered.
+                            ("fg:#888" if col == col_stop - 1 else "", " "),
+                            (
+                                "[ZeroWidthEscape]",
+                                # We move the cursor back a cell before writing the
+                                # kitty unicode char using a ZWE
+                                "\b"
+                                # Set the kitty graphic and placement we want to render
+                                # by manually setting an 8-bit foregroun color.
+                                # The placement ID is set to 1 using underline color.
+                                f"\x1b[38;5;{self.kitty_image_id}m\x1b[58;1m"
+                                # Writing the unicode char moves the cursor forward
+                                # again to where the renderer expects it to be
+                                f"{placeholder}{diacritics[row]}{diacritics[col]}",
+                            ),
+                        ]
+                    )
+                ft.append(("", "\n"))
+            return list(split_lines(ft))
+
+        key = (
+            visible_width,
+            self.app.color_palette,
+            self.app.cell_size_px,
+            bbox,
+        )
+        return self._format_cache.get(key, render_lines)
 
 
 class NotVisible(Exception):
@@ -767,11 +921,17 @@ def select_graphic_control(format_: str) -> type[GraphicControl] | None:
             and (not _in_mplex or (_in_mplex and force_graphics))
         ):
             useable_graphics_controls.append(KittyGraphicControl)
+            useable_graphics_controls.append(KittyUnicodeGraphicControl)
         if (
             preferred_graphics_protocol == "kitty"
             and KittyGraphicControl in useable_graphics_controls
         ):
             SelectedGraphicControl = KittyGraphicControl
+        elif (
+            preferred_graphics_protocol == "kitty-unicode"
+            and KittyUnicodeGraphicControl in useable_graphics_controls
+        ):
+            SelectedGraphicControl = KittyUnicodeGraphicControl
         # Tmux now supports sixels (>=3.4)
         elif (app.term_graphics_sixel or force_graphics) and find_route(
             format_, "sixel"

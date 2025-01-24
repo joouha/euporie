@@ -13,6 +13,7 @@ Upcoming
 Added
 =====
 
+- Add initial implementation of kitty graphics unicode placeholders (https://sw.kovidgoyal.net/kitty/graphics-protocol/#unicode-placeholders)
 - Add configuration option for customizing individual style elements
 
 Changed
