@@ -326,7 +326,7 @@ add_setting(
     name="graphics",
     group="euporie.core.app.app",
     flags=["--graphics"],
-    choices=["none", "sixel", "kitty", "iterm"],
+    choices=["none", "sixel", "kitty", "kitty-unicode", "iterm"],
     type_=str,
     default=None,
     help_="The preferred graphics protocol",
