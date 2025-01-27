@@ -63,8 +63,15 @@ class UntitledPath(upath.core.UPath):
         return False
 
 
-def parse_path(path: str | PathLike, resolve: bool = True) -> Path:
+def parse_path(path: str | PathLike, resolve: bool | None = None) -> Path:
     """Parse and resolve a path."""
+    if resolve is None:
+        from upath.implementations.http import HTTPPath
+
+        if isinstance(path, HTTPPath):
+            resolve = True
+        else:
+            resolve = False
     if not isinstance(path, Path):
         path = UPath(path)
     try:
