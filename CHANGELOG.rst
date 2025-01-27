@@ -19,6 +19,7 @@ Added
 Changed
 =======
 
+- Create backup file when saving a file
 - Prevent the need to use an escaped JSON string when defining custom logging configuration
 
 ----

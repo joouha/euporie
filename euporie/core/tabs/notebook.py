@@ -275,18 +275,15 @@ class BaseNotebook(KernelTab, metaclass=ABCMeta):
         else:
             super().close(cb)
 
-    def save(self, path: Path | None = None, cb: Callable | None = None) -> None:
+    def write_file(self, path: Path) -> None:
         """Write the notebook's JSON to the current notebook's file.
 
         Additionally save the widget state to the notebook metadata.
 
         Args:
-            path: An optional new path at which to save the tab
-            cb: A callback to run if after saving the notebook.
+            path: An path at which to save the file
 
         """
-        if path is not None:
-            self.path = path
         if self.app.config.save_widget_state:
             self.json.setdefault("metadata", {})["widgets"] = {
                 "application/vnd.jupyter.widget-state+json": {
@@ -299,58 +296,21 @@ class BaseNotebook(KernelTab, metaclass=ABCMeta):
                     },
                 }
             }
-        if self.path is None or isinstance(self.path, UntitledPath):
-            if dialog := self.app.dialogs.get("save-as"):
-                dialog.show(tab=self, cb=cb)
-        else:
-            log.debug("Saving notebook..")
-            self.saving = True
-            self.app.invalidate()
-            # Ensure parent path exists
-            parent = self.path.parent
-            parent.mkdir(exist_ok=True, parents=True)
-            # Save to a temp file, then replace the original
-            temp_path = parent / f".{self.path.stem}.tmp{self.path.suffix}"
-            log.debug("Using temporary file %s", temp_path.name)
+        with path.open("w") as open_file:
             try:
-                open_file = temp_path.open("w")
-            except NotImplementedError:
-                get_cmd("save-as").run()
-            else:
+                write_nb(nb=nbformat.from_dict(self.json), fp=open_file)
+            except AssertionError:
                 try:
-                    try:
-                        write_nb(nb=nbformat.from_dict(self.json), fp=open_file)
-                    except AssertionError:
-                        try:
-                            # Jupytext requires a filename if we don't give it a format
-                            write_nb(nb=nbformat.from_dict(self.json), fp=temp_path)
-                        except Exception:
-                            # Jupytext requires a format if the path has no extension
-                            # We just use ipynb as the default format
-                            write_nb(
-                                nb=nbformat.from_dict(self.json),
-                                fp=open_file,
-                                fmt="ipynb",
-                            )
+                    # Jupytext requires a filename if we don't give it a format
+                    write_nb(nb=nbformat.from_dict(self.json), fp=path)
                 except Exception:
-                    log.exception("An error occurred while saving the file")
-                    if dialog := self.app.dialogs.get("save-as"):
-                        dialog.show(tab=self, cb=cb)
-                else:
-                    open_file.close()
-                    try:
-                        temp_path.rename(self.path)
-                    except Exception:
-                        if dialog := self.app.dialogs.get("save-as"):
-                            dialog.show(tab=self, cb=cb)
-                    else:
-                        self.dirty = False
-                        self.saving = False
-                        self.app.invalidate()
-                        log.debug("Notebook saved")
-            # Run the callback
-            if callable(cb):
-                cb()
+                    # Jupytext requires a format if the path has no extension
+                    # We just use ipynb as the default format
+                    write_nb(
+                        nb=nbformat.from_dict(self.json),
+                        fp=open_file,
+                        fmt="ipynb",
+                    )
 
     def run_cell(
         self,
