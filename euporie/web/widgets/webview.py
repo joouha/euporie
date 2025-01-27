@@ -139,9 +139,7 @@ class WebViewControl(UIControl):
                 data=url.read_text(),
                 format=(format_ := get_format(url, default="html")),
                 path=url,
-            ).convert(
-                to="html",
-            )
+            ).convert(to="html")
         )
         return HTML(
             markup=markup,
