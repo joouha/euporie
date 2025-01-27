@@ -834,7 +834,36 @@ class ErrorDialog(Dialog):
         def _copy_traceback() -> None:
             self.app.clipboard.set_data(ClipboardData(tb_text))
 
-        self.buttons = {"Close": None, "Copy Traceback": _copy_traceback}
+        def _report() -> None:
+            import webbrowser
+            from importlib.metadata import metadata
+            from urllib.parse import urlencode, urlparse, urlunparse
+
+            data = metadata("euporie")
+            if issue_url := dict(
+                x.split(", ", 1) for x in data.json["project_url"]
+            ).get("Issues"):
+                parsed_url = urlparse(issue_url)
+                url = urlunparse(
+                    parsed_url._replace(
+                        path=f"{parsed_url.path.rstrip('/')}/new"
+                    )._replace(
+                        query=urlencode(
+                            {
+                                "title": f"Error: {exception!r}",
+                                "body": "(Please describe what you did)\n\n"
+                                f"## Traceback\n\n```python\n{tb_text}\n```\n",
+                            }
+                        )
+                    )
+                )
+                webbrowser.open(url, new=2, autoraise=True)
+
+        self.buttons = {
+            "Report on GitHub": _report,
+            "Copy Traceback": _copy_traceback,
+            "Close": None,
+        }
 
 
 class UnsavedDialog(Dialog):
