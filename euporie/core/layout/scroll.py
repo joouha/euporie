@@ -99,6 +99,7 @@ class ScrollingContainer(Container):
 
         def _cb(task: asyncio.Task) -> None:
             """Task callback to update pre-rendering percentage."""
+            assert isinstance(self.pre_rendered, float)
             self.pre_rendered += incr
             app.invalidate()
 
