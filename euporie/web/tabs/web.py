@@ -44,14 +44,19 @@ class WebTab(Tab):
         super().__init__(app, path)
         self.status: Callable[[], StatusBarFields] | None = None
 
-        def _load() -> None:
-            self.container = self.load_container()
+        # self.container = self.load_container()
 
-        app.create_background_task(asyncio.to_thread(_load))
+        def _load() -> None:
+            old_container = self.container
+            self.container = self.load_container()
+            if self.app.layout.has_focus(old_container):
+                self.focus()
+            self.app.invalidate()
+
+        self._load_task = app.create_background_task(asyncio.to_thread(_load))
 
     def focus(self) -> None:
         """Focus the webview when this tab is focused."""
-        super().focus()
         self.app.layout.focus(self.webview)
 
     @property
