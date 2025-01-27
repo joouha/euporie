@@ -154,46 +154,11 @@ class EditorTab(KernelTab):
             ),
         )
 
-    def save(self, path: Path | None = None, cb: Callable | None = None) -> None:
-        """Save the current file."""
-        if path is not None:
-            self.path = path
+    def write_file(self, path: Path) -> None:
+        """Write the file's text data to a path.
 
-        if isinstance(self.path, UntitledPath):
-            if dialog := self.app.dialogs.get("save-as"):
-                dialog.show(tab=self, cb=cb)
-        else:
-            log.debug("Saving file...")
-            self.saving = True
-            self.app.invalidate()
-            # Ensure parent path exists
-            parent = self.path.parent
-            parent.mkdir(exist_ok=True, parents=True)
-            # Save to a temp file, then replace the original
-            temp_path = parent / f".{self.path.stem}.tmp{self.path.suffix}"
-            log.debug("Using temporary file %s", temp_path.name)
-            try:
-                open_file = temp_path.open("w")
-            except NotImplementedError:
-                if dialog := self.app.dialogs.get("save-as"):
-                    dialog.show(tab=self, cb=cb)
-            else:
-                try:
-                    open_file.write(self.input_box.buffer.text)
-                except Exception:
-                    if dialog := self.app.dialogs.get("save-as"):
-                        dialog.show(tab=self, cb=cb)
-                else:
-                    try:
-                        temp_path.rename(self.path)
-                    except Exception:
-                        if dialog := self.app.dialogs.get("save-as"):
-                            dialog.show(tab=self, cb=cb)
-                    else:
-                        self.dirty = False
-                        self.saving = False
-                        self.app.invalidate()
-                        log.debug("File saved")
-            # Run the callback
-            if callable(cb):
-                cb()
+        Args:
+            path: An path at which to save the file
+
+        """
+        path.write_text(self.input_box.buffer.text)

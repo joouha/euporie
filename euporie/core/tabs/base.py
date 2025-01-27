@@ -19,7 +19,7 @@ from euporie.core.key_binding.registry import (
     register_bindings,
 )
 from euporie.core.layout.containers import Window
-from euporie.core.path import parse_path
+from euporie.core.path import UntitledPath, parse_path
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -110,8 +110,74 @@ class Tab(metaclass=ABCMeta):
         self.app.create_background_task(asyncio.to_thread(self.save, path, _wrapped_cb))
 
     def save(self, path: Path | None = None, cb: Callable | None = None) -> None:
-        """Save the current tab."""
-        raise NotImplementedError
+        """Save the current file."""
+        if path is not None:
+            self.path = path
+
+        if (self.path is None or isinstance(self.path, UntitledPath)) and (
+            dialog := self.app.dialogs.get("save-as")
+        ):
+            dialog.show(tab=self, cb=cb)
+            return
+
+        path = self.path
+        try:
+            # Ensure parent path exists
+            parent = path.parent
+            parent.mkdir(exist_ok=True, parents=True)
+
+            # Create backup if original file exists
+            backup_path: Path | None = None
+            if path.exists():
+                name = f"{path.name}.bak"
+                if not name.startswith("."):
+                    name = f".{name}"
+                backup_path = parent / name
+                try:
+                    import shutil
+
+                    shutil.copy2(path, backup_path)
+                except Exception as e:
+                    log.error("Failed to create backup: %s", e)
+                    raise
+
+            # Write new content directly to original file
+            try:
+                self.write_file(path)
+            except Exception as e:
+                log.error("Failed to write file: %s", e)
+                # Restore from backup if it exists
+                if backup_path is not None:
+                    log.info("Restoring backup")
+                    backup_path.replace(path)
+                raise
+
+            self.dirty = False
+            self.saving = False
+            self.app.invalidate()
+            log.debug("File saved successfully")
+
+            # Run the callback
+            if callable(cb):
+                cb()
+
+        except Exception:
+            log.exception("An error occurred while saving the file")
+            if dialog := self.app.dialogs.get("save-as"):
+                dialog.show(tab=self, cb=cb)
+
+    def write_file(self, path: Path) -> None:
+        """Write the tab's data to a path.
+
+        Not implement in the base tab.
+
+        Args:
+            path: An path at which to save the file
+
+        """
+        raise NotImplementedError(
+            f"File saving not implement for `{self.__class__.__name__}` tab"
+        )
 
     def __pt_status__(self) -> StatusBarFields | None:
         """Return a list of statusbar field values shown then this tab is active."""
