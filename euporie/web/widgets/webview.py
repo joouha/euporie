@@ -132,7 +132,7 @@ class WebViewControl(UIControl):
         if changed:
             self.on_cursor_position_changed.fire()
 
-    def get_dom(self, url: Path, x: bool = False) -> HTML:
+    def get_dom(self, url: Path) -> HTML:
         """Load a HTML page as renderable formatted text."""
         markup = str(
             Datum(
