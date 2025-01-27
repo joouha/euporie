@@ -192,22 +192,6 @@ class Command:
         return ""
 
     @property
-    def menu_handler(self) -> Callable[[], None]:
-        """Return a menu handler for the command."""
-        handler = self.handler
-        if isawaitable(handler):
-
-            def _menu_handler() -> None:
-                task = cast("CommandHandlerNoArgs", handler)()
-                task = cast("Coroutine[Any, Any, None]", task)
-                if task is not None:
-                    get_app().create_background_task(task)
-
-            return _menu_handler
-        else:
-            return cast("Callable[[], None]", handler)
-
-    @property
     def menu(self) -> MenuItem:
         """Return a menu item for the command."""
         from euporie.core.widgets.menu import MenuItem
