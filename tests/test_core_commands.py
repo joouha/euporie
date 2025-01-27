@@ -226,7 +226,7 @@ def test_key_str(command: Command) -> None:
 def test_command_menu_handler(command: Command, mock_handler: CommandHandler) -> None:
     """Commands menu handlers run the command's handler."""
     # Run the menu handler
-    handler = command.menu_handler
+    handler = command.run
     result = handler()
     # Assert that the command handler gets run
     cast("Mock", mock_handler).assert_called_once()

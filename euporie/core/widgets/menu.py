@@ -150,7 +150,7 @@ class MenuItem:
         """Create a menu item from a command."""
         return cls(
             formatted_text=command.menu_title,
-            handler=command.menu_handler,
+            handler=command.run,
             shortcut=command.key_str,
             disabled=~command.filter,
             hidden=command.hidden,
