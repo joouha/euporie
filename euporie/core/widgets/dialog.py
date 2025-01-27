@@ -40,7 +40,7 @@ from euporie.core.border import (
     UpperRightHalfLine,
 )
 from euporie.core.commands import add_cmd
-from euporie.core.filters import tab_has_focus
+from euporie.core.filters import tab_can_save
 from euporie.core.ft.utils import FormattedTextAlign, align, lex
 from euporie.core.key_binding.registry import register_bindings
 from euporie.core.layout.containers import HSplit, VSplit, Window
@@ -602,7 +602,7 @@ class SaveAsDialog(FileDialog):
     @staticmethod
     @add_cmd(
         menu_title="Save As…",
-        filter=tab_has_focus,
+        filter=tab_can_save,
     )
     def _save_as() -> None:
         """Save the current file at a new location."""

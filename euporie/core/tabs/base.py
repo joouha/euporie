@@ -14,7 +14,7 @@ from upath import UPath
 
 from euporie.core.app.current import get_app
 from euporie.core.commands import add_cmd
-from euporie.core.filters import tab_has_focus
+from euporie.core.filters import tab_can_save, tab_has_focus
 from euporie.core.key_binding.registry import (
     register_bindings,
 )
@@ -207,7 +207,7 @@ class Tab(metaclass=ABCMeta):
         Tab._refresh_tab()
 
     @staticmethod
-    @add_cmd(filter=tab_has_focus, aliases=["w"])
+    @add_cmd(filter=tab_can_save, aliases=["w"])
     def _save_file(event: KeyPressEvent) -> None:
         """Save the current file."""
         if (tab := get_app().tab) is not None:

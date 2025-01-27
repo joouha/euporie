@@ -155,6 +155,17 @@ def tab_type_has_focus(tab_class_path: str) -> Condition:
 
 
 @Condition
+def tab_can_save() -> bool:
+    """Determine if the current tab can save it's contents."""
+    from euporie.core.app.current import get_app
+    from euporie.core.tabs.base import Tab
+
+    return (
+        tab := get_app().tab
+    ) is not None and tab.__class__.write_file != Tab.write_file
+
+
+@Condition
 def pager_has_focus() -> bool:
     """Determine if there is a currently focused notebook."""
     from euporie.core.app.current import get_app
