@@ -108,6 +108,7 @@ features = ["hub"]
 # Environment for testing on various python versions
 [tool.hatch.envs.multi]
 installer = "uv"
+features = []
 
 [[tool.hatch.envs.multi.matrix]]
 python = ["3.9", "3.10", "3.11", "3.12", "3.13", "3.13t", "pypy3"]
