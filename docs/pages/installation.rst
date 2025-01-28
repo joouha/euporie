@@ -2,26 +2,57 @@
 Installation
 ############
 
-Euporie is on `pypi <https://pypi.org/project/euporie/>`_, so can be installed using `pip <https://pip.pypa.io/en/stable/>`_ or `pipx <https://pipxproject.github.io/pipx/>`_.
+Euporie is on `pypi <https://pypi.org/project/euporie/>`_, so can be installed like any other Python package.
 
-To install euporie globally, run:
+To install euporie globally, use the following:
 
-.. code-block:: console
+.. tab-set::
 
-   $ pipx install euporie
+   .. tab-item:: uv
+      :sync: uv
 
+      .. code-block:: console
 
-To install inside a virtualenv, run:
+         $ uv tool install euporie
 
-.. code-block:: console
+   .. tab-item:: pipx
+      :sync: pipx
 
-   $ pip install euporie
+      .. code-block:: console
+
+         $ pipx install euporie
+
+   .. tab-item:: pip
+      :sync: pip
+
+      .. code-block:: console
+
+         $ pip install euporie
 
 If you want to try the latest and potentially unstable unreleased changes, you can install euporie from git:
 
-.. code-block:: console
+.. tab-set::
 
-   $ pipx install git+https://github.com/joouha/euporie.git@dev
+   .. tab-item:: uv
+      :sync: uv
+
+      .. code-block:: console
+
+         $ uv tool install git+https://github.com/joouha/euporie.git@dev
+
+   .. tab-item:: pipx
+      :sync: pipx
+
+      .. code-block:: console
+
+         $ pipx install git+https://github.com/joouha/euporie.git@dev
+
+   .. tab-item:: pip
+      :sync: pip
+
+      .. code-block:: console
+
+         $ pip install git+https://github.com/joouha/euporie.git@dev
 
 
 .. note::
@@ -32,11 +63,23 @@ If you want to try the latest and potentially unstable unreleased changes, you c
 Try without installing
 **********************
 
-You can use :program:`pipx` to try euporie before installing it:
+You can use :program:`uv` or :program:`pipx` to try euporie without installing it:
 
-.. code-block:: console
+.. tab-set::
 
-   $ pipx run --spec 'euporie[all]' euporie notebook
+   .. tab-item:: uv
+      :sync: uv
+
+      .. code-block:: console
+
+         $ uvx euporie notebook
+
+   .. tab-item:: pipx
+      :sync: pipx
+
+      .. code-block:: console
+
+         $ pipx run --spec 'euporie[all]' euporie notebook
 
 You can also try euporie online here:
 
@@ -96,6 +139,7 @@ If all else fails, euporie will fall back to using ansi art to display images.
    .. hlist::
       :columns: 3
 
+      * :py:mod:`chafa.py`
       * :py:mod:`timg`
 
 * External applications
@@ -195,4 +239,3 @@ Euporie will render LaTeX in markdown and cell outputs using terminal graphics o
 
 .. note::
    :py:mod:`flatlatex` is a dependency of euporie, so will be installed by default
-
