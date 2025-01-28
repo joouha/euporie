@@ -38,10 +38,12 @@ If you're working with Jupyter notebooks in a terminal only environment, like an
 Install
 *******
 
-You can install euporie with `pipx <https://pipxproject.github.io/>`_ (recommended) or ``pip``:
+You can install euporie with `uv <https://docs.astral.sh/uv/>`_  (recommended), or with `pipx <https://pipxproject.github.io/>`_ or ``pip``):
 
 .. code-block:: console
 
+   $ uv tool install euporie
+   $ # OR
    $ pipx install euporie
    $ # OR
    $ python -m pip install --user euporie
