@@ -110,11 +110,10 @@ class LspFormatter(Formatter):
                     range_ = change.get("range", {})
                     start = range_.get("start", {})
                     start_line = start.get("line", 0)
-                    start_char = start.get("char", 0)
+                    start_char = start.get("character", 0)
                     end = range_.get("end", {})
                     end_line = end.get("line", 0)
-                    end_char = end.get("char", 0)
-
+                    end_char = end.get("character", 0)
                     segment = range_to_slice(
                         start_line, start_char, end_line, end_char, text
                     )
