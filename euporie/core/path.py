@@ -83,4 +83,9 @@ def parse_path(path: str | PathLike, resolve: bool | None = None) -> Path:
             path = path.resolve()
         except (AttributeError, NotImplementedError, Exception):
             log.info("Path %s not resolvable", path)
+    else:
+        try:
+            path = path.absolute()
+        except NotImplementedError:
+            pass
     return path
