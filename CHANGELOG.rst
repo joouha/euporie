@@ -13,6 +13,7 @@ Upcoming
 Fixed
 =====
 
+- Fix issue where deleteing the contents of a large cell results in scrolling the notebook out of view
 - Fix ``pageup`` and ``pagedown`` key press detection
 
 ----

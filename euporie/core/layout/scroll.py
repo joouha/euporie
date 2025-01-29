@@ -7,6 +7,7 @@ import logging
 from typing import TYPE_CHECKING, cast
 
 from prompt_toolkit.application.current import get_app
+from prompt_toolkit.cache import FastDictCache
 from prompt_toolkit.filters import is_searching
 from prompt_toolkit.layout.containers import (
     Container,
@@ -67,6 +68,9 @@ class ScrollingContainer(Container):
         self.children_func = _children_func
         self._child_cache: dict[int, CachedContainer] = {}
         self._children: list[CachedContainer] = []
+        self._known_sizes_cache: FastDictCache[tuple[int], list[int]] = FastDictCache(
+            self._known_sizes
+        )
         self.refresh_children = True
         self.pre_rendered: float | None = None
 
@@ -79,6 +83,7 @@ class ScrollingContainer(Container):
         self.index_positions: dict[int, int | None] = {}
 
         self.last_write_position: WritePosition = BoundedWritePosition(0, 0, 0, 0)
+        self.last_total_height = 0
 
         self.width = to_dimension(width).preferred
         self.height = to_dimension(height).preferred
@@ -362,6 +367,10 @@ class ScrollingContainer(Container):
                 their style down to the windows that they contain.
             z_index: Used for propagating z_index from parent to child.
         """
+        # Record where the container was last drawn so we can determine if cell outputs
+        # are partially obscured
+        self.last_write_position = write_position
+
         ypos = write_position.ypos
         xpos = write_position.xpos
 
@@ -415,12 +424,9 @@ class ScrollingContainer(Container):
             self.scroll_to_cursor = False
 
         # Adjust scrolling offset
-        if self.scrolling:
-            heights = [
-                # Ensure unrendered cells have at least some height
-                self.get_child(index).height or 1
-                for index in range(len(self._children))
-            ]
+        heights = self.known_sizes
+        total_height = sum(heights)
+        if self.scrolling or total_height != self.last_total_height:
             heights_above = sum(heights[: self._selected_slice.start])
             new_child_position = self.selected_child_position + self.scrolling
             # Do not allow scrolling if there is no overflow
@@ -441,6 +447,8 @@ class ScrollingContainer(Container):
                         # Scroll as far as we are able without underscrolling
                         self.scrolling = min(0, self.scrolling - underscroll)
             self.selected_child_position += self.scrolling
+
+        self.last_total_height = total_height
 
         # Blit first selected child and those below it that are on screen
         line = self.selected_child_position
@@ -551,14 +559,10 @@ class ScrollingContainer(Container):
 
         _walk(self)
 
-        # Record where the contain was last drawn so we can determine if cell outputs
-        # are partially obscured
-        self.last_write_position = write_position
-
         # Mock up a WindowRenderInfo so we can draw a scrollbar margin
         self.render_info = WindowRenderInfo(
             window=cast("Window", self),
-            ui_content=UIContent(line_count=max(sum(self.known_sizes.values()), 1)),
+            ui_content=UIContent(line_count=max(sum(heights), 1)),
             horizontal_scroll=0,
             vertical_scroll=self.vertical_scroll,
             window_width=available_width,
@@ -578,10 +582,32 @@ class ScrollingContainer(Container):
             self.pre_render_children(available_width, available_height)
 
     @property
+    def known_sizes(self) -> list[int]:
+        """Map of child indices to height values."""
+        return self._known_sizes_cache[get_app().render_counter,]
+
+    def _known_sizes(self, render_counter: int) -> list[int]:
+        """Calculate sizes of children once per render cycle."""
+        sizes = {}
+        missing = set()
+        available_width = self.last_write_position.width
+        available_height = self.last_write_position.height
+        for i, child in enumerate(self._children):
+            if isinstance(child, CachedContainer) and child.height:
+                sizes[i] = child.preferred_height(
+                    available_width, available_height
+                ).preferred
+            else:
+                missing.add(i)
+        avg = int(sum(sizes.values()) / (len(sizes) or 1))
+        sizes.update(dict.fromkeys(missing, avg))
+        return [v for k, v in sorted(sizes.items())]
+
+    @property
     def vertical_scroll(self) -> int:
         """The best guess at the absolute vertical scroll position."""
         return (
-            sum(list(self.known_sizes.values())[: self._selected_slice.start])
+            sum(self.known_sizes[: self._selected_slice.start])
             - self.selected_child_position
         )
 
@@ -589,7 +615,7 @@ class ScrollingContainer(Container):
     def vertical_scroll(self, value: int) -> None:
         """Set the absolute vertical scroll position."""
         self.selected_child_position = (
-            sum(list(self.known_sizes.values())[: self._selected_slice.start]) - value
+            sum(self.known_sizes[: self._selected_slice.start]) - value
         )
 
     def all_children(self) -> Sequence[Container]:
@@ -708,34 +734,6 @@ class ScrollingContainer(Container):
                 )
         else:
             self.selected_child_position = new_top
-
-        heights = [
-            self.get_child(index).height or 1 for index in range(len(self._children))
-        ]
-        # Do not allow bottom child to scroll above screen bottom
-        self.selected_child_position += max(
-            0,
-            self.last_write_position.height
-            - (self.selected_child_position + sum(heights[index:])),
-        )
-        # Do not allow top child to scroll below screen top
-        self.selected_child_position -= max(
-            0, self.selected_child_position - sum(heights[:index])
-        )
-
-    @property
-    def known_sizes(self) -> dict[int, int]:
-        """A dictionary mapping child indices to height values."""
-        sizes = {}
-        missing = set()
-        for i, child in enumerate(self._children):
-            if isinstance(child, CachedContainer) and child.height:
-                sizes[i] = child.height
-            else:
-                missing.add(i)
-        avg = int(sum(sizes.values()) / len(sizes))
-        sizes.update(dict.fromkeys(missing, avg))
-        return sizes
 
     def _scroll_up(self) -> None:
         """Scroll up one line: for compatibility with :py:class:`Window`."""

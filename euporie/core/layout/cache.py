@@ -6,6 +6,7 @@ import logging
 from functools import cache
 from typing import TYPE_CHECKING
 
+from prompt_toolkit.cache import FastDictCache
 from prompt_toolkit.data_structures import Point
 from prompt_toolkit.layout.containers import (
     Container,
@@ -56,10 +57,25 @@ class CachedContainer(Container):
         self._invalid = True
         self._invalidate_events: set[Event[object]] = set()
         self._layout_hash = 0
+        self.render_counter = 0
         self.height = 0
         self.width = 0
         self._rendered_lines: set[int] = set()
         self._rowcols_to_yx: dict[Window, dict[tuple[int, int], tuple[int, int]]] = {}
+
+        self._width_cache: FastDictCache[tuple[int, int], Dimension] = FastDictCache(
+            get_value=lambda _render_count,
+            max_available_width: self.container.preferred_width(max_available_width)
+        )
+        self._height_cache: FastDictCache[tuple[int, int, int], Dimension] = (
+            FastDictCache(
+                get_value=lambda _render_count,
+                width,
+                max_available_height: self.container.preferred_height(
+                    width, max_available_height
+                )
+            )
+        )
 
     @property
     def layout_hash(self) -> int:
@@ -80,11 +96,11 @@ class CachedContainer(Container):
 
     def preferred_width(self, max_available_width: int) -> Dimension:
         """Return the desired width for this container."""
-        return self.container.preferred_width(max_available_width)
+        return self._width_cache[self.render_counter, max_available_width]
 
     def preferred_height(self, width: int, max_available_height: int) -> Dimension:
         """Return the desired height for this container."""
-        return self.container.preferred_height(width, max_available_height)
+        return self._height_cache[self.render_counter, width, max_available_height]
 
     def render(
         self,
@@ -115,6 +131,7 @@ class CachedContainer(Container):
             self._rendered_lines.clear()
             self.mouse_handlers.mouse_handlers.clear()
             self.screen = Screen()
+            self.render_counter += 1
 
             # Recalculate child height if this child has been invalidated
             height = self.height = self.container.preferred_height(
