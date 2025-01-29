@@ -1,15 +1,17 @@
 #!/usr/bin/env python
 """Parse vt100 input and print keys."""
 
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
 import sys
 from typing import TYPE_CHECKING
 
+from euporie.core.key_binding import key_processor  # noqa: F401
+
 from prompt_toolkit.input.vt100 import raw_mode
+from prompt_toolkit.keys import Keys
 
 from euporie.core.io import Vt100Parser
-from euporie.core.keys import Keys
 
 if TYPE_CHECKING:
     from prompt_toolkit.key_binding import KeyPress
