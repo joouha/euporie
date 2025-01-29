@@ -25,6 +25,7 @@ Changed
 Fixed
 =====
 
+- Fix issues with web viewer not loading due to loss of focus
 - Fix issue with parsing of LSP formatting changes
 
 ----
