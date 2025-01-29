@@ -15,6 +15,7 @@ Added
 
 - Add initial implementation of kitty graphics unicode placeholders (https://sw.kovidgoyal.net/kitty/graphics-protocol/#unicode-placeholders)
 - Add configuration option for customizing individual style elements
+- Add a go to cell / go to line number command for command bar
 
 Changed
 =======
