@@ -6,6 +6,17 @@ Notable changes to this project will be documented in this file.
 
 ----
 
+********
+Upcoming
+********
+
+Fixed
+=====
+
+- Fix ``pageup`` and ``pagedown`` key press detection
+
+----
+
 *********************
 v2.8.6 - (2025-01-17)
 *********************
