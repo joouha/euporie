@@ -89,6 +89,8 @@ class WebTab(Tab):
         if url is not None:
             self.path = UPath(url)
             self.url_bar.text = str(url)
+        # Focus the webview
+        self.app.layout.current_control = self.webview
 
     def load_container(self) -> AnyContainer:
         """Abcract method for loading the notebook's main container."""
