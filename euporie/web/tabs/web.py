@@ -116,6 +116,11 @@ class WebTab(Tab):
             disabled=Condition(lambda: not self.webview.next_stack),
             on_click=lambda x: self.webview.nav_next(),
         )
+        button_refresh = Button(
+            "↻",
+            on_click=lambda x: self.load_url(self.path),
+        )
+
         def _select_url() -> None:
             """Select all in url bar when it gains focus."""
             from prompt_toolkit.selection import SelectionState
@@ -144,6 +149,7 @@ class WebTab(Tab):
                     [
                         FocusedStyle(button_prev),
                         FocusedStyle(button_next),
+                        FocusedStyle(button_refresh),
                         FocusedStyle(self.url_bar),
                         FocusedStyle(button_go),
                     ],
