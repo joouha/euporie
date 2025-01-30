@@ -45,8 +45,6 @@ class WebTab(Tab):
         super().__init__(app, path)
         self.status: Callable[[], StatusBarFields] | None = None
 
-        # self.container = self.load_container()
-
         def _load() -> None:
             old_container = self.container
             self.container = self.load_container()
