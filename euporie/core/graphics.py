@@ -722,6 +722,12 @@ class KittyUnicodeGraphicControl(BaseKittyGraphicControl):
         # Calculate the size and cropping bbox at which we want to display the graphic
         cols = floor(d_cols * ratio)
         rows = ceil(cols * d_aspect)
+        d_bbox = DiInt(
+            top=self.bbox.top,
+            right=max(0, cols - (total_available_width - self.bbox.right)),
+            bottom=max(0, rows - (total_available_height - self.bbox.bottom)),
+            left=self.bbox.left,
+        )
         if not self.loaded:
             self.load(cols=cols, rows=rows, bbox=DiInt(0, 0, 0, 0))
 
@@ -745,11 +751,13 @@ class KittyUnicodeGraphicControl(BaseKittyGraphicControl):
             ft: StyleAndTextTuples = []
 
             # Generate placeholder grid
-            col_start = bbox.left
-            col_stop = cols - bbox.right
+            row_start = d_bbox.top
+            row_stop = rows - d_bbox.bottom
+            col_start = d_bbox.left
+            col_stop = cols - d_bbox.right
             placeholder = self.PLACEHOLDER
             diacritics = self.DIACRITICS
-            for row in range(bbox.top, rows - bbox.bottom):
+            for row in range(row_start, row_stop):
                 for col in range(col_start, col_stop):
                     ft.extend(
                         [
