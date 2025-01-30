@@ -119,7 +119,7 @@ class WebTab(Tab):
         )
         button_refresh = Button(
             "↻",
-            on_click=lambda x: self.load_url(self.path),
+            on_click=lambda x: (self.load_url(self.path) and False) or None,
         )
 
         def _select_url() -> None:
