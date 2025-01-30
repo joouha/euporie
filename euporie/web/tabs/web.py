@@ -71,6 +71,8 @@ class WebTab(Tab):
     def load_url(self, url: str | Path, new_tab: bool = False, **kwargs: Any) -> bool:
         """Load a new URL, or the URL in the address-bar."""
         log.debug("Loading %s", url)
+        self.webview.loading = True
+        self.app.invalidate()
         if not url:
             return False
         if isinstance(url, str):
@@ -78,6 +80,7 @@ class WebTab(Tab):
         if not new_tab and get_mime(url) in self.mime_types:
             self.webview.load_url(url, **kwargs)
         else:
+            self.webview.loading = False
             get_app().open_file(url)
         return True
 
