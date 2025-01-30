@@ -114,10 +114,20 @@ class WebTab(Tab):
             disabled=Condition(lambda: not self.webview.next_stack),
             on_click=lambda x: self.webview.nav_next(),
         )
+        def _select_url() -> None:
+            """Select all in url bar when it gains focus."""
+            from prompt_toolkit.selection import SelectionState
+
+            buffer = self.url_bar.buffer
+            buffer.selection_state = SelectionState(0)
+            buffer.cursor_position = len(buffer.text)
+            buffer.selection_state.enter_shift_mode()
+
         self.url_bar = Text(
             text=str(path),
             show_borders=DiBool(top=True, right=False, bottom=True, left=True),
             accept_handler=lambda buf: self.load_url(buf.text),
+            on_focus=_select_url,
         )
         button_go = Button(
             "➜",
