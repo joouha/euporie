@@ -269,8 +269,8 @@ class ScrollingContainer(Container):
                 if bottom_pos is not None:
                     n = max(
                         n,
-                        (bottom_pos + bottom_child.height + self.scrolling)
-                        - self.last_write_position.height,
+                        self.last_write_position.height
+                        - (bottom_pos + bottom_child.height + self.scrolling),
                     )
                     if (
                         bottom_pos + bottom_child.height + self.scrolling + n
