@@ -4949,22 +4949,26 @@ class HTML:
                 padding_style=parent_style,
             )
 
-        # Apply mouse handler to links
-        if (
-            (parent := element.parent)
-            and parent.name == "a"
-            and callable(handler := self.mouse_handler)
-            and (href := parent.attrs.get("href"))
-        ):
-            element.attrs["_link_path"] = self.base.joinuri(href)
-            element.attrs["title"] = parent.attrs.get("title")
-            ft = cast(
-                "StyleAndTextTuples",
-                [
-                    (style, text, *(rest or [partial(handler, element)]))
-                    for style, text, *rest in ft
-                ],
-            )
+        # Apply mouse handler to elements with href, title, alt
+        if callable(handler := self.mouse_handler):
+            attrs = element.attrs
+            # Inline elements inherit from parents
+            if d_inline and (parent := element.parent):
+                p_attrs = parent.attrs
+                attrs.setdefault("href", p_attrs.get("href"))
+                attrs.setdefault("title", p_attrs.get("title"))
+                attrs.setdefault("alt", p_attrs.get("alt"))
+            # Resolve link paths
+            if href := attrs.get("href"):
+                attrs["_link_path"] = self.base.joinuri(href)
+            if {"title", "alt", "href"} & set(attrs):
+                ft = cast(
+                    "StyleAndTextTuples",
+                    [
+                        (style, text, *(rest or [partial(handler, element)]))
+                        for style, text, *rest in ft
+                    ],
+                )
 
         return ft
 

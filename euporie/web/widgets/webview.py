@@ -325,6 +325,7 @@ class WebViewControl(UIControl):
         """Handle click events."""
         url = node.attrs.get("_link_path")
         title = node.attrs.get("title")
+        alt = node.attrs.get("alt")
         if url:
             # TODO - Check for #anchor links and scroll accordingly
             if (
@@ -343,6 +344,8 @@ class WebViewControl(UIControl):
             self.status.clear()
             if title:
                 self.status.append(str(title))
+            if title:
+                self.status.append(str(alt))
             if url:
                 self.status.append(str(url))
             return None
