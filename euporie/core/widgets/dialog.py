@@ -16,6 +16,7 @@ from prompt_toolkit.filters import (
     buffer_has_focus,
     has_completions,
     has_focus,
+    vi_insert_mode,
 )
 from prompt_toolkit.formatted_text import AnyFormattedText, to_formatted_text
 from prompt_toolkit.formatted_text.utils import split_lines
@@ -197,7 +198,7 @@ class Dialog(Float, metaclass=ABCMeta):
 
         # Create key-bindings
         kb = KeyBindings()
-        kb.add("escape")(lambda event: self.hide())
+        kb.add("escape", filter=~(buffer_has_focus & vi_insert_mode))(self.hide)
         kb.add("tab", filter=~has_completions)(focus_next)
         kb.add("s-tab", filter=~has_completions)(focus_previous)
 

@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, NamedTuple
 from prompt_toolkit.data_structures import Point
 from prompt_toolkit.filters import Condition
 from prompt_toolkit.key_binding.bindings.focus import focus_next, focus_previous
+from prompt_toolkit.key_binding.vi_state import InputMode
 from prompt_toolkit.layout.containers import ScrollOffsets
 from prompt_toolkit.layout.controls import UIContent, UIControl
 from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
@@ -167,7 +168,6 @@ class CommandPalette(Dialog):
         # self.kb = KeyBindings()
         self.kb.add("s-tab")(focus_previous)
         self.kb.add("tab")(focus_next)
-        self.kb.add("escape")(self.hide)
         self.kb.add("up", filter=Condition(lambda: bool(self.matches)))(
             partial(self.select, -1)
         )
@@ -222,6 +222,8 @@ class CommandPalette(Dialog):
         """Reset the dialog ready for display."""
         self.text_area.buffer.text = ""
         self.to_focus = self.text_area
+        app = get_app()
+        app.vi_state.input_mode = InputMode.INSERT
 
     def select(self, n: int, event: KeyPressEvent | None = None) -> None:
         """Change the index of the selected command.
