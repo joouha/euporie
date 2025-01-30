@@ -76,7 +76,7 @@ class WebTab(Tab):
         if not url:
             return False
         if isinstance(url, str):
-            url = UPath(url)
+            url = UPath(url, protocol="https" if ":" not in url else None)
         if not new_tab and get_mime(url) in self.mime_types:
             self.webview.load_url(url, **kwargs)
         else:
