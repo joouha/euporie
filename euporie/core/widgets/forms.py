@@ -11,17 +11,19 @@ from math import ceil, floor
 from typing import TYPE_CHECKING, cast
 from weakref import finalize
 
-from prompt_toolkit.buffer import ValidationState
+from prompt_toolkit.auto_suggest import DynamicAutoSuggest
+from prompt_toolkit.buffer import Buffer, ValidationState
 from prompt_toolkit.cache import SimpleCache
-from prompt_toolkit.completion.base import ConditionalCompleter
-from prompt_toolkit.completion.word_completer import WordCompleter
+from prompt_toolkit.completion import Completer, ConditionalCompleter, WordCompleter
 from prompt_toolkit.data_structures import Point
+from prompt_toolkit.document import Document
 from prompt_toolkit.filters import (
     Always,
     Condition,
     Filter,
     FilterOrBool,
     has_focus,
+    is_true,
     to_filter,
 )
 from prompt_toolkit.formatted_text.base import to_formatted_text
@@ -39,13 +41,19 @@ from prompt_toolkit.layout.controls import (
     UIControl,
 )
 from prompt_toolkit.layout.dimension import Dimension
-from prompt_toolkit.layout.processors import AfterInput, ConditionalProcessor
+from prompt_toolkit.layout.processors import (
+    AfterInput,
+    BeforeInput,
+    ConditionalProcessor,
+    PasswordProcessor,
+    Processor,
+)
 from prompt_toolkit.layout.screen import WritePosition
 from prompt_toolkit.layout.utils import explode_text_fragments
+from prompt_toolkit.lexers import DynamicLexer, Lexer
 from prompt_toolkit.mouse_events import MouseButton, MouseEvent, MouseEventType
 from prompt_toolkit.utils import Event
 from prompt_toolkit.validation import Validator
-from prompt_toolkit.widgets.base import TextArea
 
 from euporie.core.app.current import get_app
 from euporie.core.border import InsetGrid
@@ -59,7 +67,8 @@ if TYPE_CHECKING:
     from collections.abc import Sequence
     from typing import Any, Callable
 
-    from prompt_toolkit.buffer import Buffer, BufferAcceptHandler
+    from prompt_toolkit.auto_suggest import AutoSuggest
+    from prompt_toolkit.buffer import BufferAcceptHandler
     from prompt_toolkit.completion.base import Completer
     from prompt_toolkit.formatted_text.base import (
         AnyFormattedText,
@@ -498,6 +507,7 @@ class ExpandingBufferControl(BufferControl):
         focus_on_click: FilterOrBool = False,
         key_bindings: KeyBindingsBase | None = None,
         expand: FilterOrBool = True,
+        on_focus: Callable[[], None] | None = None,
     ) -> None:
         """Add an ``expand`` parameter to the buffer control."""
         super().__init__(
@@ -513,6 +523,7 @@ class ExpandingBufferControl(BufferControl):
             key_bindings=key_bindings,
         )
         self.expand = to_filter(expand)
+        self.on_focus = on_focus
 
     def preferred_width(self, max_available_width: int) -> int | None:
         """Enure text box expands to available width.
@@ -527,6 +538,16 @@ class ExpandingBufferControl(BufferControl):
             return max_available_width
         else:
             return None
+
+    def mouse_handler(self, mouse_event: MouseEvent) -> NotImplementedOrNone:
+        """Optionally call focus handler when focused."""
+        layout = get_app().layout
+        was_focused = layout.current_control == self
+        result = super().mouse_handler(mouse_event)
+        is_focused = layout.current_control == self
+        if not was_focused and is_focused and callable(self.on_focus):
+            self.on_focus()
+        return result
 
 
 class Text:
@@ -554,6 +575,9 @@ class Text:
         password: FilterOrBool = False,
         wrap_lines: FilterOrBool = False,
         prompt: AnyFormattedText | None = None,
+        on_focus: Callable[[], None] | None = None,
+        complete_while_typing: FilterOrBool = True,
+        auto_suggest: AutoSuggest | None = None,
     ) -> None:
         """Create a new text widget instance.
 
@@ -580,33 +604,42 @@ class Text:
             disabled: A filter which when evaluated to :py:const:`True` causes the
                 widget to be disabled
             password: A filter to determine if the text input is a password field
-            prompt: Text to display before the input
             wrap_lines: Whether to wrap lines wider than the text area
+            prompt: Text to display before the input
+            on_focus: Function to call when the buffer gains focus
         """
         self.style = style
         self.options = options or []
         self.disabled = to_filter(disabled)
-
         self.placeholder = placeholder
+        self.wrap_lines = wrap_lines
+        self.complete_while_typing = complete_while_typing
+        self.auto_suggest = auto_suggest
+        self.lexer = lexer
 
-        self.text_area = TextArea(
-            str(text),
+        self.buffer = Buffer(
+            document=Document(str(text), 0),
             multiline=multiline,
-            height=Dimension(min=min_height, max=height, preferred=height),
-            width=width,
-            focusable=~self.disabled,
-            focus_on_click=~self.disabled,
             read_only=self.disabled,
-            style=f"{style} class:text,text-area",
-            validator=Validator.from_callable(validation) if validation else None,
-            accept_handler=accept_handler,
             completer=completer
             or ConditionalCompleter(
                 WordCompleter(self.options),
                 filter=Condition(lambda: bool(self.options)),
             ),
-            lexer=lexer,
+            complete_while_typing=Condition(
+                lambda: is_true(self.complete_while_typing)
+            ),
+            validator=Validator.from_callable(validation) if validation else None,
+            validate_while_typing=validation is not None,
+            auto_suggest=DynamicAutoSuggest(lambda: self.auto_suggest),
+            accept_handler=accept_handler,
+        )
+
+        self.control = ExpandingBufferControl(
+            buffer=self.buffer,
+            lexer=DynamicLexer(lambda: self.lexer),
             input_processors=[
+                BeforeInput(prompt, style="class:text-area.prompt"),
                 ConditionalProcessor(
                     AfterInput(
                         lambda: self.placeholder, style="class:text,placeholder"
@@ -615,58 +648,35 @@ class Text:
                         lambda: self.placeholder is not None and self.buffer.text == ""
                     ),
                 ),
+                ConditionalProcessor(
+                    processor=PasswordProcessor(), filter=to_filter(password)
+                ),
                 *(input_processors or []),
             ],
-            password=password,
-            wrap_lines=wrap_lines,
-        )
-        self.buffer = self.text_area.buffer
-
-        # Patch text area control's to expand to fill available width
-        # Do this without monkey-pathing by sub-classing :class:`BufferControl` and
-        # re-assigning the text-area's control
-        self.text_area.control = ExpandingBufferControl(
-            buffer=self.text_area.control.buffer,
-            input_processors=self.text_area.control.input_processors,
-            include_default_input_processors=(
-                self.text_area.control.include_default_input_processors
-            ),
-            lexer=self.text_area.control.lexer,
-            preview_search=self.text_area.control.preview_search,
-            focusable=self.text_area.control.focusable,
-            search_buffer_control=self.text_area.control._search_buffer_control,
-            menu_position=self.text_area.control.menu_position,
-            focus_on_click=self.text_area.control.focus_on_click,
-            key_bindings=self.text_area.control.key_bindings,
+            focusable=~self.disabled,
+            focus_on_click=~self.disabled,
             expand=expand,
+            on_focus=on_focus,
         )
-        window = self.text_area.window
-        self.text_area.window = Window(
-            height=window.height,
-            width=window.width,
-            dont_extend_height=window.dont_extend_height,
-            dont_extend_width=window.dont_extend_width,
-            content=self.text_area.control,
-            style=window.style,
-            wrap_lines=window.wrap_lines,
-            left_margins=window.left_margins,
-            right_margins=window.right_margins,
-            get_line_prefix=window.get_line_prefix,
+
+        self.window = Window(
+            height=Dimension(min=min_height, max=height, preferred=height),
+            width=width,
+            content=self.control,
+            wrap_lines=Condition(lambda: is_true(self.wrap_lines)),
+            style=f"{style} class:text,text-area",
         )
-        self.text_area.window.content = self.text_area.control
 
         if on_text_changed:
-            self.text_area.buffer.on_text_changed += on_text_changed
+            self.buffer.on_text_changed += on_text_changed
         if validation:
-            self.text_area.buffer.validate_while_typing = Always()
+            self.buffer.validate_while_typing = Always()
         self.container = Border(
             VSplit(
                 [
-                    self.text_area,
+                    self.window,
                     ConditionalContainer(
-                        MarginContainer(
-                            ScrollbarMargin(), target=self.text_area.window
-                        ),
+                        MarginContainer(ScrollbarMargin(), target=self.window),
                         filter=to_filter(multiline),
                     ),
                 ]
@@ -678,7 +688,7 @@ class Text:
 
     def border_style(self) -> str:
         """Calculate the style to apply to the widget's border."""
-        if self.text_area.buffer.validation_state == ValidationState.INVALID:
+        if self.buffer.validation_state == ValidationState.INVALID:
             return f"{self.style} class:text,border,invalid"
         else:
             return f"{self.style} class:text,border"

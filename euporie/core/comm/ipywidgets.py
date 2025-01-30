@@ -518,7 +518,7 @@ class TextBoxIpyWidgetComm(IpyWidgetComm, metaclass=ABCMeta):
             container,
             setters={
                 "value": lambda x: setattr(text.buffer, "text", str(x)),
-                "rows": partial(setattr, text.text_area.window, "height"),
+                "rows": partial(setattr, text.window, "height"),
                 "placeholder": partial(setattr, text, "placeholder"),
                 "description_allow_html": partial(setattr, labelled_widget, "html"),
             },
@@ -1403,7 +1403,7 @@ class ColorPickerModel(TextBoxIpyWidgetComm):
             container,
             setters={
                 "value": lambda x: setattr(text.buffer, "text", str(x)),
-                "rows": partial(setattr, text.text_area.window, "height"),
+                "rows": partial(setattr, text.window, "height"),
                 "placeholder": partial(setattr, text, "placeholder"),
             },
         )

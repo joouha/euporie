@@ -506,7 +506,7 @@ class StdInput:
             password=Condition(lambda: self.password),
             style="class:input",
         )
-        self.window = text.text_area.window
+        self.window = text.window
         self.container = ConditionalContainer(
             LabelledWidget(
                 body=text,
