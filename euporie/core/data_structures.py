@@ -28,6 +28,18 @@ class DiInt(NamedTuple):
     bottom: int = 0
     left: int = 0
 
+    def __add__(self, other: DiInt) -> DiInt:
+        """Add two DiInt instances together."""
+        if not isinstance(other, DiInt):
+            raise TypeError("Can only add DiInt instances together")
+
+        return DiInt(
+            top=self.top + other.top,
+            right=self.right + other.right,
+            bottom=self.bottom + other.bottom,
+            left=self.left + other.left,
+        )
+
     @classmethod
     def from_value(cls, value: int) -> DiInt:
         """Construct an instance from a single value."""

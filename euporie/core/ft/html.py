@@ -39,6 +39,7 @@ from euporie.core.border import (
     LowerLeftHalfDottedLine,
     LowerLeftHalfLine,
     NoLine,
+    RoundedLine,
     ThickDoubleDashedLine,
     ThickLine,
     ThickQuadrupleDashedLine,
@@ -558,7 +559,7 @@ def css_dimension(
     digits = ""
     i = 0
     try:
-        while (c := value[i]) in "0123456789.":
+        while (c := value[i]) in "-0123456789.":
             digits += c
             i += 1
     except IndexError:
@@ -924,18 +925,14 @@ class Theme(Mapping):
         available_height: int,
     ) -> None:
         """Set the space available to the element for rendering."""
-        if self.theme["position"] == "fixed":
+        if self.theme["position"] in {"fixed"}:
             # Space is given by position
-            position = self.position
             dom = self.element.dom
             assert dom.width is not None
             assert dom.height is not None
+            position = self.position
             self.available_width = (dom.width - position.right) - position.left
             self.available_height = (dom.height - position.bottom) - position.top
-
-        # elif parent_theme := self.parent_theme:
-        #     self.available_width = parent_theme.content_width
-        #     self.available_height = parent_theme.content_height
 
         else:
             self.available_width = available_width
@@ -1527,6 +1524,7 @@ class Theme(Mapping):
             # Replace the margin on the parent
             if (
                 (first_child := element.first_child_element)
+                and first_child.theme.in_flow
                 and first_child.prev_node_in_flow is None
                 and not self.border_visibility.top
                 and not self.padding.top
@@ -1541,6 +1539,7 @@ class Theme(Mapping):
                     values["top"] = max(child_theme.base_margin.top, values["top"])
             if (
                 (last_child := element.last_child_element)
+                and last_child.theme.in_flow
                 and last_child.next_node_in_flow is None
                 and not self.padding.bottom
                 and not self.border_visibility.bottom
@@ -1670,6 +1669,10 @@ class Theme(Mapping):
                     direction,
                     NoLine,
                 )
+
+                # TODO - parse border_radius properly and check for corner radii
+                if output[direction] == ThinLine and self.theme.get("border_radius"):
+                    output[direction] = RoundedLine
 
         return DiLineStyle(**output)
 
@@ -1857,7 +1860,11 @@ class Theme(Mapping):
         """The position of an element with a relative, absolute or fixed position."""
         # TODO - calculate position based on top, left, bottom,right, width, height
         soup_theme = self.element.dom.soup.theme
-        return DiInt(
+        position = DiInt(0, 0, 0, 0)
+        # if self.parent_theme is not None:
+        #     position += self.parent_theme.position
+        position += self.base_margin
+        position += DiInt(
             top=round(
                 css_dimension(
                     self.theme["top"],
@@ -1891,6 +1898,7 @@ class Theme(Mapping):
                 or 0
             ),
         )
+        return position
 
     @cached_property
     def anchors(self) -> DiBool:
@@ -1912,10 +1920,7 @@ class Theme(Mapping):
                 and not self.preformatted
                 and not element.text
             )
-            or (
-                self.theme["position"] == "absolute"
-                and try_eval(self.theme["opacity"]) == 0
-            )
+            or (self.theme["position"] == "absolute" and self.hidden)
         )
 
     @cached_property
@@ -3746,19 +3751,20 @@ class HTML:
     ) -> StyleAndTextTuples:
         """Render a Node."""
         # Update the element theme with the available space
-        element.theme.update_space(available_width, available_height)
+        theme = element.theme
+        theme.update_space(available_width, available_height)
 
         # Render the contents
-        if element.theme.d_table:
+        if theme.d_table:
             render_func = self.render_table_content
 
-        elif element.theme.d_list_item:
+        elif theme.d_list_item:
             render_func = self.render_list_item_content
 
-        elif element.theme.d_grid:
+        elif theme.d_grid:
             render_func = self.render_grid_content
 
-        elif element.theme.latex:
+        elif theme.latex:
             render_func = self.render_latex_content
 
         else:
@@ -4471,8 +4477,6 @@ class HTML:
         float_lines_right: list[StyleAndTextTuples] = []
         float_width_right = 0
 
-        content_width = parent_theme.content_width
-
         new_line: StyleAndTextTuples = []
 
         def flush() -> None:
@@ -4607,7 +4611,7 @@ class HTML:
                     # from each active float
                     if (
                         new_line
-                        and (content_width - float_width_left - float_width_right)
+                        and (available_width - float_width_left - float_width_right)
                         - left
                         - token_width
                         < 0
@@ -4633,7 +4637,7 @@ class HTML:
                             fillvalue=empty,
                         ):
                             line_width = (
-                                content_width
+                                available_width
                                 - fragment_list_width(ft_left)
                                 - fragment_list_width(ft_right)
                             )
@@ -4724,7 +4728,7 @@ class HTML:
                     fragment_list_width(float_lines_left[0]) if float_lines_left else 0
                 )
                 line_width = (
-                    content_width
+                    available_width
                     - fragment_list_width(ft_left)
                     - fragment_list_width(ft_right)
                 )
@@ -4844,7 +4848,7 @@ class HTML:
                     placeholder="",
                 )
 
-        # # Fill space around block elements so they fill the content width
+        # Fill space around block elements so they fill the content width
         if ft and ((fill and d_blocky and not theme.d_table) or d_inline_block):
             pad_width = None
             if d_blocky:
@@ -4929,7 +4933,6 @@ class HTML:
         parent_style = parent_theme.style if parent_theme else ""
 
         # Render the margin
-        # if d_blocky and (alignment := theme.block_align) != FormattedTextAlign.LEFT:
         if (alignment := theme.block_align) != FormattedTextAlign.LEFT:
             # Center block contents if margin_left and margin_right are "auto"
             ft = align(
