@@ -13,7 +13,7 @@ Code Formatting
 
 - Use 4 spaces for indentation. Do not use tabs.
 - Limit all lines to a maximum of 88 characters.
-- Use `ruff` for code formatting. Run `uv run ruff format` before committing changes.
+- Use the configured `hatch fmt` for code formatting. Run `hatch fmt` before committing changes.
 
 Imports
 -------
