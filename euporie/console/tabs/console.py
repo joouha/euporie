@@ -404,12 +404,7 @@ class Console(KernelTab):
                 if ((json_cells and cell.id != json_cells[0].id) or i > 0) and (
                     (height_known and rows_above_layout > 0) or not height_known
                 ):
-                    children.append(
-                        Window(
-                            height=1,
-                            dont_extend_height=True,
-                        )
-                    )
+                    children.append(Window(height=1, dont_extend_height=True))
 
                 # Cell input
                 children.append(
@@ -441,9 +436,12 @@ class Console(KernelTab):
             if outputs := cell.outputs:
                 # Add space before an output if last rendered cell did not have outputs
                 # or we are rendering a new output
-                if self.last_rendered is not None and (
-                    not self.last_rendered.outputs
-                    or cell.execution_count != self.last_rendered.execution_count
+                if self.last_rendered is None or (
+                    self.last_rendered is not None
+                    and (
+                        not self.last_rendered.outputs
+                        or cell.execution_count != self.last_rendered.execution_count
+                    )
                 ):
                     children.append(
                         Window(
