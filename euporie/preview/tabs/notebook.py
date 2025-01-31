@@ -27,7 +27,7 @@ if TYPE_CHECKING:
 
     from euporie.core.app.app import BaseApp
     from euporie.core.comm.base import Comm
-    from euporie.core.kernel.client import Kernel
+    from euporie.core.kernel.jupyter import JupyterKernel
 
 log = logging.getLogger(__name__)
 
@@ -78,7 +78,7 @@ class PreviewNotebook(BaseNotebook):
 
     def init_kernel(
         self,
-        kernel: Kernel | None = None,
+        kernel: JupyterKernel | None = None,
         comms: dict[str, Comm] | None = None,
         use_kernel_history: bool = False,
         connection_file: Path | None = None,

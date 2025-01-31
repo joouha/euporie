@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 
     from prompt_toolkit.document import Document
 
-    from euporie.core.kernel.client import Kernel
+    from euporie.core.kernel.jupyter import JupyterKernel
     from euporie.core.lsp import LspClient
 
 log = logging.getLogger(__name__)
@@ -22,7 +22,7 @@ log = logging.getLogger(__name__)
 class KernelCompleter(Completer):
     """A prompt_toolkit completer which provides completions from a Jupyter kernel."""
 
-    def __init__(self, kernel: Kernel) -> None:
+    def __init__(self, kernel: JupyterKernel) -> None:
         """Instantiate the completer for a given notebook.
 
         Args:

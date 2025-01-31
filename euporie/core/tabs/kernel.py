@@ -30,7 +30,7 @@ from euporie.core.inspection import (
     KernelInspector,
     LspInspector,
 )
-from euporie.core.kernel.client import Kernel, MsgCallbacks
+from euporie.core.kernel.base import BaseKernel, MsgCallbacks
 from euporie.core.suggest import HistoryAutoSuggest
 from euporie.core.tabs.base import Tab
 
@@ -56,7 +56,7 @@ log = logging.getLogger(__name__)
 class KernelTab(Tab, metaclass=ABCMeta):
     """A Tab which connects to a kernel."""
 
-    kernel: Kernel
+    kernel: BaseKernel
     kernel_language: str
     _metadata: dict[str, Any]
     bg_init = False
@@ -185,7 +185,7 @@ class KernelTab(Tab, metaclass=ABCMeta):
 
     def init_kernel(
         self,
-        kernel: Kernel | None = None,
+        kernel: BaseKernel | None = None,
         comms: dict[str, Comm] | None = None,
         use_kernel_history: bool = False,
         connection_file: Path | None = None,
@@ -199,7 +199,10 @@ class KernelTab(Tab, metaclass=ABCMeta):
             self.kernel = kernel
             self.kernel.default_callbacks = self.default_callbacks
         else:
-            self.kernel = Kernel(
+            from euporie.core.kernel import create_kernel
+
+            self.kernel = create_kernel(
+                "local",
                 kernel_tab=self,
                 allow_stdin=self.allow_stdin,
                 default_callbacks=self.default_callbacks,

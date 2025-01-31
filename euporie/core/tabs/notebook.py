@@ -13,7 +13,7 @@ from prompt_toolkit.filters import Never
 
 from euporie.core.comm.registry import open_comm
 from euporie.core.io import edit_in_editor
-from euporie.core.kernel.client import MsgCallbacks
+from euporie.core.kernel.jupyter import MsgCallbacks
 from euporie.core.tabs.kernel import KernelTab
 from euporie.core.widgets.cell import Cell, get_cell_id
 
@@ -33,7 +33,7 @@ if TYPE_CHECKING:
 
     from euporie.core.app.app import BaseApp
     from euporie.core.comm.base import Comm
-    from euporie.core.kernel.client import Kernel
+    from euporie.core.kernel.jupyter import JupyterKernel
     from euporie.core.lsp import LspClient
     from euporie.core.widgets.inputs import KernelInput
 
@@ -50,7 +50,7 @@ class BaseNotebook(KernelTab, metaclass=ABCMeta):
         self,
         app: BaseApp,
         path: Path | None = None,
-        kernel: Kernel | None = None,
+        kernel: JupyterKernel | None = None,
         comms: dict[str, Comm] | None = None,
         use_kernel_history: bool = False,
         json: dict[str, Any] | None = None,

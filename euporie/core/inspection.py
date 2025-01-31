@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 
     from prompt_toolkit.document import Document
 
-    from euporie.core.kernel.client import Kernel
+    from euporie.core.kernel.jupyter import JupyterKernel
     from euporie.core.lsp import LspClient
 
 
@@ -29,7 +29,7 @@ class Inspector(metaclass=ABCMeta):
 class KernelInspector(Inspector):
     """Inspector which retrieves contextual help from a Jupyter kernel."""
 
-    def __init__(self, kernel: Kernel) -> None:
+    def __init__(self, kernel: JupyterKernel) -> None:
         """Initialize a new inspector which queries a Jupyter kernel."""
         self.kernel = kernel
 

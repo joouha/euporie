@@ -9,7 +9,7 @@ from prompt_toolkit.layout.containers import HSplit
 from prompt_toolkit.layout.dimension import Dimension
 
 from euporie.core.filters import insert_mode, replace_mode
-from euporie.core.kernel.client import Kernel, MsgCallbacks
+from euporie.core.kernel.jupyter import JupyterKernel, MsgCallbacks
 from euporie.core.key_binding.registry import load_registered_bindings
 from euporie.core.lexers import detect_lexer
 from euporie.core.tabs.kernel import KernelTab
@@ -40,7 +40,7 @@ class EditorTab(KernelTab):
         self,
         app: BaseApp,
         path: Path | None = None,
-        kernel: Kernel | None = None,
+        kernel: JupyterKernel | None = None,
         comms: dict[str, Comm] | None = None,
         use_kernel_history: bool = False,
     ) -> None:

@@ -40,7 +40,7 @@ from euporie.core.filters import (
 )
 from euporie.core.format import LspFormatter
 from euporie.core.io import edit_in_editor
-from euporie.core.kernel.client import MsgCallbacks
+from euporie.core.kernel.base import MsgCallbacks
 from euporie.core.key_binding.registry import (
     load_registered_bindings,
     register_bindings,

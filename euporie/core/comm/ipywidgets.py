@@ -19,7 +19,7 @@ from prompt_toolkit.layout.processors import BeforeInput
 
 from euporie.core.comm.base import Comm, CommView
 from euporie.core.data_structures import DiBool
-from euporie.core.kernel.client import MsgCallbacks
+from euporie.core.kernel.jupyter import MsgCallbacks
 from euporie.core.layout.decor import FocusedStyle
 from euporie.core.widgets.forms import (
     Button,

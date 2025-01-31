@@ -9,7 +9,7 @@ import os
 import threading
 from collections import defaultdict
 from subprocess import PIPE, STDOUT  # S404 - Security implications considered
-from typing import TYPE_CHECKING, TypedDict
+from typing import TYPE_CHECKING
 from uuid import uuid4
 
 from upath import UPath
@@ -23,32 +23,12 @@ if TYPE_CHECKING:
 
     from euporie.core.tabs.kernel import KernelTab
 
+from euporie.core.kernel.base import BaseKernel, MsgCallbacks
 
 log = logging.getLogger(__name__)
 
 
-class MsgCallbacks(TypedDict, total=False):
-    """Typed dictionary for named message callbacks."""
-
-    get_input: Callable[[str, bool], None] | None
-    set_execution_count: Callable[[int], None] | None
-    add_output: Callable[[dict[str, Any], bool], None] | None
-    add_input: Callable[[dict[str, Any], bool], None] | None
-    clear_output: Callable[[bool], None] | None
-    done: Callable[[dict[str, Any]], None] | None
-    set_metadata: Callable[[tuple[str, ...], Any], None] | None
-    set_status: Callable[[str], None] | None
-    set_kernel_info: Callable[[dict[str, Any]], None] | None
-    completeness_status: Callable[[dict[str, Any]], None] | None
-    dead: Callable[[], None] | None
-    # Payloads
-    page: Callable[[list[dict], int], None] | None
-    set_next_input: Callable[[str, bool], None] | None
-    edit_magic: Callable[[str, int], None] | None
-    ask_exit: Callable[[bool], None] | None
-
-
-class Kernel:
+class JupyterKernel(BaseKernel):
     """Run a notebook kernel and communicates with it asynchronously.
 
     Has the ability to run itself in it's own thread.
@@ -64,17 +44,22 @@ class Kernel:
         default_callbacks: MsgCallbacks | None = None,
         connection_file: Path | None = None,
     ) -> None:
-        """Call when the :py:class:`Kernel` is initialized.
+        """Initialize the JupyterKernel.
 
         Args:
             kernel_tab: The notebook this kernel belongs to
             threaded: If :py:const:`True`, run kernel communication in a separate thread
             allow_stdin: Whether the kernel is allowed to request input
             default_callbacks: The default callbacks to use on receipt of a message
-            connection_file: Path to a file from which to load or to hwich to save
+            connection_file: Path to a file from which to load or to which to save
                 kernel connection information
-
         """
+        super().__init__(
+            kernel_tab=kernel_tab,
+            allow_stdin=allow_stdin,
+            default_callbacks=default_callbacks,
+            connection_file=connection_file,
+        )
         from jupyter_core.paths import jupyter_path
 
         from euporie.core.kernel.manager import (

@@ -9,13 +9,13 @@ from prompt_toolkit.validation import ValidationError, Validator
 if TYPE_CHECKING:
     from prompt_toolkit.document import Document
 
-    from euporie.core.kernel.client import Kernel
+    from euporie.core.kernel.jupyter import JupyterKernel
 
 
 class KernelValidator(Validator):
     """Validate kernel input using a kernel code completeness call."""
 
-    def __init__(self, kernel: Kernel) -> None:
+    def __init__(self, kernel: JupyterKernel) -> None:
         """Initialize the validator."""
         self.kernel = kernel
 

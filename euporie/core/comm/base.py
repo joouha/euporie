@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 
     from prompt_toolkit.layout.containers import AnyContainer
 
-    from euporie.core.kernel.client import Kernel
+    from euporie.core.kernel.jupyter import JupyterKernel
     from euporie.core.tabs.kernel import KernelTab
     from euporie.core.widgets.cell_outputs import OutputParent
 
@@ -40,7 +40,7 @@ class CommView:
         """
         self.container = container
         self.setters: dict[str, Callable[..., None]] = dict(setters or {})
-        self.kernel: Kernel | None = None
+        self.kernel: JupyterKernel | None = None
 
     def update(self, changes: dict[str, Any]) -> None:
         """Update the view to reflect changes in the Comm.
