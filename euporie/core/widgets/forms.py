@@ -607,6 +607,8 @@ class Text:
             wrap_lines: Whether to wrap lines wider than the text area
             prompt: Text to display before the input
             on_focus: Function to call when the buffer gains focus
+            complete_while_typing: Whether to show completions while typing
+            auto_suggest: Auto-suggestion behavior for the text input
         """
         self.style = style
         self.options = options or []
