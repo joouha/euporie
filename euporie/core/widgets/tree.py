@@ -84,21 +84,19 @@ class JsonView:
 
             # Apply mouse_handler to rows with children
             if has_children:
-                row = [(style, text, mouse_handler) for style, text in row]
+                row = [(style, text, mouse_handler) for (style, text, *_) in row]
 
             result.extend(row)
 
             if is_expanded and has_children:
-                if isinstance(data, dict):
-                    items = data.items()
-                else:  # list
-                    items = enumerate(data)
+                if isinstance(data, list):
+                    data = {str(i): v for i, v in enumerate(data)}
 
-                for k, v in items:
+                for k, v in data.items():
                     new_path = (*path, str(k)) if path else (str(k),)
                     format_node(v, new_path, indent + 1, k)
 
-        format_node(self.data, "", 0, self.title)
+        format_node(self.data, tuple(), 0, self.title)
         return result
 
     def _toggle(
