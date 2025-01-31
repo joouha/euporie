@@ -146,6 +146,8 @@ Version Control
 
 - Use descriptive commit messages that explain the purpose of the change.
 - Keep commits focused and atomic (i.e., each commit should represent a single logical change).
+- Always update CHANGELOG.rst when making changes that would be noticeable to users.
+  Add entries under the "Upcoming" section in the appropriate category (Added/Changed/Fixed).
 
 API Design
 ----------
