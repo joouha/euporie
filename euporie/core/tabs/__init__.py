@@ -17,7 +17,7 @@ class TabRegistryEntry:
     path: str
     name: str
     mime_types: set = field(default_factory=set)
-    file_extensions: set = field(default_factory=set)
+    file_extensions: dict[str, None] = field(default_factory=dict)
     weight: int = 0
 
     @property
