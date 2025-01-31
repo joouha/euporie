@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 from functools import lru_cache
-from typing import NamedTuple
+from typing import NamedTuple, TypeVar, overload
+
+_T = TypeVar("_T")
 
 
 class DiBool(NamedTuple):
@@ -28,10 +30,15 @@ class DiInt(NamedTuple):
     bottom: int = 0
     left: int = 0
 
-    def __add__(self, other: DiInt) -> DiInt:
+    @overload
+    def __add__(self, other: tuple[int, ...], /) -> DiInt: ...
+    @overload
+    def __add__(self, other: tuple[_T, ...], /) -> DiInt: ...
+
+    def __add__(self, other):
         """Add two DiInt instances together."""
         if not isinstance(other, DiInt):
-            raise TypeError("Can only add DiInt instances together")
+            return NotImplemented
 
         return DiInt(
             top=self.top + other.top,
