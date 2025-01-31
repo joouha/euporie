@@ -9,13 +9,13 @@ from prompt_toolkit.validation import ValidationError, Validator
 if TYPE_CHECKING:
     from prompt_toolkit.document import Document
 
-    from euporie.core.kernel.jupyter import JupyterKernel
+    from euporie.core.kernel.base import BaseKernel
 
 
 class KernelValidator(Validator):
     """Validate kernel input using a kernel code completeness call."""
 
-    def __init__(self, kernel: JupyterKernel) -> None:
+    def __init__(self, kernel: BaseKernel) -> None:
         """Initialize the validator."""
         self.kernel = kernel
 
@@ -29,9 +29,9 @@ class KernelValidator(Validator):
 
     async def validate_async(self, document: Document) -> None:
         """Return a `Future` which is set when the validation is ready."""
-        completeness_status = (await self.kernel.is_complete_(code=document.text)).get(
-            "status", "unknown"
-        )
+        completeness_status = (
+            await self.kernel.is_complete_async(code=document.text)
+        ).get("status", "unknown")
         if completeness_status == "incomplete":
             raise ValidationError
         return

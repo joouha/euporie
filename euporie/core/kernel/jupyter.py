@@ -3,10 +3,8 @@
 from __future__ import annotations
 
 import asyncio
-import concurrent.futures
 import logging
 import os
-import threading
 from collections import defaultdict
 from subprocess import PIPE, STDOUT  # S404 - Security implications considered
 from typing import TYPE_CHECKING
@@ -14,8 +12,9 @@ from uuid import uuid4
 
 from upath import UPath
 
+from euporie.core.kernel.base import BaseKernel, MsgCallbacks
+
 if TYPE_CHECKING:
-    from collections.abc import Coroutine
     from pathlib import Path
     from typing import Any, Callable
 
@@ -23,7 +22,6 @@ if TYPE_CHECKING:
 
     from euporie.core.tabs.kernel import KernelTab
 
-from euporie.core.kernel.base import BaseKernel, MsgCallbacks
 
 log = logging.getLogger(__name__)
 
@@ -39,7 +37,6 @@ class JupyterKernel(BaseKernel):
     def __init__(
         self,
         kernel_tab: KernelTab,
-        threaded: bool = True,
         allow_stdin: bool = False,
         default_callbacks: MsgCallbacks | None = None,
         connection_file: Path | None = None,
@@ -48,7 +45,6 @@ class JupyterKernel(BaseKernel):
 
         Args:
             kernel_tab: The notebook this kernel belongs to
-            threaded: If :py:const:`True`, run kernel communication in a separate thread
             allow_stdin: Whether the kernel is allowed to request input
             default_callbacks: The default callbacks to use on receipt of a message
             connection_file: Path to a file from which to load or to which to save
@@ -58,7 +54,6 @@ class JupyterKernel(BaseKernel):
             kernel_tab=kernel_tab,
             allow_stdin=allow_stdin,
             default_callbacks=default_callbacks,
-            connection_file=connection_file,
         )
         from jupyter_core.paths import jupyter_path
 
@@ -69,44 +64,14 @@ class JupyterKernel(BaseKernel):
 
         set_default_provisioner()
 
-        self.threaded = threaded
-        if threaded:
-            self.loop = asyncio.new_event_loop()
-            self.thread = threading.Thread(target=self._setup_loop)
-            self.thread.daemon = True
-            self.thread.start()
-        else:
-            self.loop = asyncio.get_event_loop()
-
-        self.allow_stdin = allow_stdin
-
-        self.kernel_tab = kernel_tab
         self.connection_file = connection_file
         self.kc: KernelClient | None = None
         self.km = EuporieKernelManager(
             kernel_name=str(kernel_tab.kernel_name),
         )
-        self._status = "stopped"
-        self.error: Exception | None = None
-        self.dead = False
         self.monitor_task: asyncio.Task | None = None
 
-        self.coros: dict[str, concurrent.futures.Future] = {}
         self.poll_tasks: list[asyncio.Task] = []
-
-        self.default_callbacks = MsgCallbacks(
-            {
-                "get_input": None,
-                "set_execution_count": None,
-                "add_output": None,
-                "clear_output": None,
-                "done": None,
-                "set_metadata": None,
-                "set_status": None,
-            }
-        )
-        if default_callbacks is not None:
-            self.default_callbacks.update(default_callbacks)
 
         self.msg_id_callbacks: dict[str, MsgCallbacks] = defaultdict(
             # Return a copy of the default callbacks
@@ -121,65 +86,6 @@ class JupyterKernel(BaseKernel):
         # displaying LaTeX and in the kernel thread to discover kernel paths.
         # Also this speeds up launch since importing IPython is pretty slow.
         self.km.kernel_spec_manager.kernel_dirs = jupyter_path("kernels")
-
-    def _setup_loop(self) -> None:
-        """Set the current loop the the kernel's event loop.
-
-        This method is intended to be run in the kernel thread.
-        """
-        asyncio.set_event_loop(self.loop)
-        self.status_change_event = asyncio.Event()
-        self.loop.run_forever()
-
-    def _aodo(
-        self,
-        coro: Coroutine,
-        wait: bool = False,
-        callback: Callable | None = None,
-        timeout: int | float | None = None,
-        single: bool = False,
-    ) -> Any:
-        """Schedule a coroutine in the kernel's event loop.
-
-        Optionally waits for the results (blocking the main thread). Optionally
-        schedules a callback to run when the coroutine has completed or timed out.
-
-        Args:
-            coro: The coroutine to run
-            wait: If :py:const:`True`, block until the kernel has started
-            callback: A function to run when the coroutine completes. The result from
-                the coroutine will be passed as an argument
-            timeout: The number of seconds to allow the coroutine to run if waiting
-            single: If :py:const:`True`, any futures for previous instances of the
-                coroutine will be cancelled
-
-        Returns:
-            The result of the coroutine
-
-        """
-        future = asyncio.run_coroutine_threadsafe(coro, self.loop)
-
-        # Cancel previous future instances if required
-        if single and self.coros.get(coro.__name__):
-            self.coros[coro.__name__].cancel()
-        self.coros[coro.__name__] = future
-
-        if wait:
-            result = None
-            try:
-                result = future.result(timeout)
-            except concurrent.futures.TimeoutError:
-                log.error("Operation '%s' timed out", coro)
-                future.cancel()
-            finally:
-                if callable(callback):
-                    callback(result)
-            return result
-        else:
-            if callable(callback):
-                future.add_done_callback(lambda f: callback(f.result()))
-                return None
-            return None
 
     def _set_living_status(self, alive: bool) -> None:
         """Set the life status of the kernel."""
@@ -209,35 +115,6 @@ class JupyterKernel(BaseKernel):
                 break
 
     @property
-    def status(self) -> str:
-        """Retrieve the current kernel status.
-
-        Returns:
-            The kernel status
-
-        """
-        return self._status
-
-    @status.setter
-    def status(self, value: str) -> None:
-        """Set the kernel status."""
-        self.status_change_event.set()
-        self._status = value
-        self.status_change_event.clear()
-
-    def wait_for_status(self, status: str = "idle") -> None:
-        """Block until the kernel reaches a given status value."""
-        if self.status != status:
-
-            async def _wait() -> None:
-                while self.status != status:
-                    await asyncio.wait_for(
-                        self.status_change_event.wait(), timeout=None
-                    )
-
-            self._aodo(_wait(), wait=True)
-
-    @property
     def missing(self) -> bool:
         """Return True if the requested kernel is not found."""
         from jupyter_client.kernelspec import NoSuchKernel
@@ -262,7 +139,7 @@ class JupyterKernel(BaseKernel):
         """Return a list of available kernelspecs."""
         return self.km.kernel_spec_manager.get_all_specs()
 
-    async def stop_(self, cb: Callable[[], Any] | None = None) -> None:
+    async def stop_async(self, cb: Callable[[], Any] | None = None) -> None:
         """Stop the kernel asynchronously."""
         for task in self.poll_tasks:
             task.cancel()
@@ -272,7 +149,7 @@ class JupyterKernel(BaseKernel):
             await self.km.shutdown_kernel()
         log.debug("Kernel %s shutdown", self.id)
 
-    async def start_(self) -> None:
+    async def start_async(self) -> None:
         """Start the kernel asynchronously and set its status."""
         from jupyter_core.paths import jupyter_runtime_dir
 
@@ -325,9 +202,9 @@ class JupyterKernel(BaseKernel):
                         self.kc = self.km.client()
                     break
 
-        await self.post_start_()
+        await self.post_start()
 
-    async def post_start_(self) -> None:
+    async def post_start(self) -> None:
         """Wait for the kernel to become ready."""
         from jupyter_client.kernelspec import NoSuchKernel
 
@@ -399,7 +276,7 @@ class JupyterKernel(BaseKernel):
 
         # Start the kernel
         self._aodo(
-            self.start_(),
+            self.start_async(),
             timeout=timeout,
             wait=wait,
             callback=cb,
@@ -726,13 +603,9 @@ class JupyterKernel(BaseKernel):
             log.debug("Cannot run cell because kernel has not started")
             # TODO - queue cells for execution
         else:
-            self._aodo(
-                self.run_(source, **callbacks),
-                wait=wait,
-                callback=callback,
-            )
+            super().run(source, wait, callback, **callbacks)
 
-    async def run_(
+    async def run_async(
         self,
         source: str,
         get_input: Callable[[str, bool], None] | None = None,
@@ -812,7 +685,7 @@ class JupyterKernel(BaseKernel):
         if self.kc is not None:
             self.kc.comm_info(target_name=target_name)
 
-    async def complete_(
+    async def complete_async(
         self, code: str, cursor_pos: int, timeout: int = 60
     ) -> list[dict]:
         """Request code completions from the kernel, asynchronously."""
@@ -861,27 +734,7 @@ class JupyterKernel(BaseKernel):
 
         return results
 
-    def complete(self, code: str, cursor_pos: int) -> list[dict]:
-        """Request code completions from the kernel.
-
-        Args:
-            code: The code string to retrieve completions for
-            cursor_pos: The position of the cursor in the code string
-
-        Returns:
-            A list of dictionaries defining completion entries. The dictionaries
-            contain ``text`` (the completion text), ``start_position`` (the stating
-            position of the completion text), and optionally ``display_meta``
-            (a string containing additional data about the completion type)
-
-        """
-        return self._aodo(
-            self.complete_(code, cursor_pos),
-            wait=True,
-            single=True,
-        )
-
-    async def history_(
+    async def history_async(
         self,
         pattern: str = "",
         n: int = 1,
@@ -918,27 +771,7 @@ class JupyterKernel(BaseKernel):
 
         return results
 
-    def history(
-        self, pattern: str = "", n: int = 1, hist_access_type: str = "search"
-    ) -> list[tuple[int, int, str]] | None:
-        """Retrieve history from the kernel.
-
-        Args:
-            pattern: The pattern to search for
-            n: the number of history items to return
-            hist_access_type: How to access the history ('range', 'tail' or 'search')
-
-        Returns:
-            A list of history items, consisting of tuples (session, line_number, input)
-
-        """
-        return self._aodo(
-            self.history_(pattern, n, hist_access_type),
-            wait=True,
-            single=True,
-        )
-
-    async def inspect_(
+    async def inspect_async(
         self,
         code: str,
         cursor_pos: int,
@@ -973,33 +806,7 @@ class JupyterKernel(BaseKernel):
 
         return result
 
-    def inspect(
-        self,
-        code: str,
-        cursor_pos: int,
-        callback: Callable[[dict[str, Any]], None] | None = None,
-    ) -> str:
-        """Request code inspection from the kernel.
-
-        Args:
-            code: The code string to retrieve completions for
-            cursor_pos: The position of the cursor in the code string
-            callback: A function to run when the inspection result arrives. The result
-                is passed as an argument.
-
-        Returns:
-            A string containing useful information about the code at the current cursor
-            position
-
-        """
-        return self._aodo(
-            self.inspect_(code, cursor_pos),
-            wait=False,
-            callback=callback,
-            single=True,
-        )
-
-    async def is_complete_(
+    async def is_complete_async(
         self,
         code: str,
         timeout: int | float = 0.1,
@@ -1029,32 +836,6 @@ class JupyterKernel(BaseKernel):
 
         return result
 
-    def is_complete(
-        self,
-        code: str,
-        timeout: int | float = 0.1,
-        wait: bool = False,
-        callback: Callable[[dict[str, Any]], None] | None = None,
-    ) -> dict[str, Any]:
-        """Request code completeness status from the kernel.
-
-        Args:
-            code: The code string to check the completeness status of
-            timeout: How long to wait for a kernel response
-            wait: Whether to wait for the response
-            callback: A function to run when the inspection result arrives. The result
-                is passed as an argument.
-
-        Returns:
-            A string describing the completeness status
-
-        """
-        return self._aodo(
-            self.is_complete_(code, timeout),
-            wait=wait,
-            callback=callback,
-        )
-
     def interrupt(self) -> None:
         """Interrupt the kernel.
 
@@ -1068,7 +849,7 @@ class JupyterKernel(BaseKernel):
             log.debug("Interrupting kernel %s", self.id)
             KernelManager.interrupt_kernel(self.km)
 
-    async def restart_(self) -> None:
+    async def restart_async(self) -> None:
         """Restart the kernel asyncchronously."""
         self.dead = True
         log.debug("Restarting kernel `%s`", self.id)
@@ -1077,14 +858,6 @@ class JupyterKernel(BaseKernel):
         await self.km.restart_kernel(now=True)
         log.debug("Kernel %s restarted", self.id)
         await self.post_start_()
-
-    def restart(self, wait: bool = False, cb: Callable | None = None) -> None:
-        """Restart the current kernel."""
-        self._aodo(
-            self.restart_(),
-            wait=wait,
-            callback=cb,
-        )
 
     def change(
         self,
@@ -1140,17 +913,9 @@ class JupyterKernel(BaseKernel):
             if callable(cb):
                 cb()
         else:
-            log.debug("Stopping kernel %s (wait=%s)", self.id, wait)
-            # This helps us leave a little earlier
-            if not wait:
-                self.interrupt()
-            self._aodo(
-                self.stop_(),
-                callback=cb,
-                wait=wait,
-            )
+            super().stop(cb, wait)
 
-    async def shutdown_(self) -> None:
+    async def shutdown_async(self) -> None:
         """Shut down the kernel and close the event loop if running in a thread."""
         # Stop monitoring the kernel
         if self.monitor_task is not None:
@@ -1163,20 +928,3 @@ class JupyterKernel(BaseKernel):
         # Stop event loop
         if self.threaded:
             self.loop.stop()
-
-    def shutdown(self, wait: bool = False) -> None:
-        """Shutdown the kernel and close the kernel's thread.
-
-        This is intended to be run when the notebook is closed: the
-        :py:class:`~euporie.core.tabs.notebook.Kernel` cannot be restarted after this.
-
-        Args:
-            wait: Whether to block until shutdown completes
-
-        """
-        self._aodo(
-            self.shutdown_(),
-            wait=wait,
-        )
-        if self.threaded:
-            self.thread.join(timeout=5)

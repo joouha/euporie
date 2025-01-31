@@ -68,7 +68,7 @@ class KernelTab(Tab, metaclass=ABCMeta):
         self,
         app: BaseApp,
         path: Path | None = None,
-        kernel: Kernel | None = None,
+        kernel: BaseKernel | None = None,
         comms: dict[str, Comm] | None = None,
         use_kernel_history: bool = False,
         connection_file: Path | None = None,
@@ -202,7 +202,7 @@ class KernelTab(Tab, metaclass=ABCMeta):
             from euporie.core.kernel import create_kernel
 
             self.kernel = create_kernel(
-                "local",
+                "jupyter",
                 kernel_tab=self,
                 allow_stdin=self.allow_stdin,
                 default_callbacks=self.default_callbacks,

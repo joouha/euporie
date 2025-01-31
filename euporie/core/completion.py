@@ -42,7 +42,7 @@ class KernelCompleter(Completer):
         self, document: Document, complete_event: CompleteEvent
     ) -> AsyncGenerator[Completion, None]:
         """Retrieve completions from a :class:`Kernel`."""
-        for kwargs in await self.kernel.complete_(
+        for kwargs in await self.kernel.complete_async(
             code=document.text,
             cursor_pos=document.cursor_position,
         ):

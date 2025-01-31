@@ -48,7 +48,7 @@ if TYPE_CHECKING:
     from euporie.core.app.app import BaseApp
     from euporie.core.bars.status import StatusBarFields
     from euporie.core.comm.base import Comm
-    from euporie.core.kernel.jupyter import JupyterKernel
+    from euporie.core.kernel.base import BaseKernel
 
 log = logging.getLogger(__name__)
 
@@ -77,7 +77,7 @@ class Notebook(BaseNotebook):
         self,
         app: BaseApp,
         path: Path | None = None,
-        kernel: JupyterKernel | None = None,
+        kernel: BaseKernel | None = None,
         comms: dict[str, Comm] | None = None,
         use_kernel_history: bool = True,
         json: dict[str, Any] | None = None,

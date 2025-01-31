@@ -41,7 +41,7 @@ class KernelHistory(History):
         """
         if not self.loading and not self._loaded and self.kernel.kc:
             self.loading = True
-            items = await self.kernel.history_(n=self.n, hist_access_type="tail")
+            items = await self.kernel.history_async(n=self.n, hist_access_type="tail")
             if items:
                 self._loaded_strings = [item[2] for item in reversed(items)]
                 # Remove sequential duplicates

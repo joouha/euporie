@@ -35,7 +35,7 @@ class KernelInspector(Inspector):
 
     async def get_context(self, document: Document, auto: bool) -> dict[str, Any]:
         """Request contextual help from the kernel."""
-        return await self.kernel.inspect_(document.text, document.cursor_position)
+        return await self.kernel.inspect_async(document.text, document.cursor_position)
 
 
 class LspInspector(Inspector):

@@ -13,7 +13,7 @@ from euporie.core.comm.ipywidgets import (
     UnimplementedModel,
     _separate_buffers,
 )
-from euporie.core.kernel.client import Kernel
+from euporie.core.kernel.jupyter import JupyterKernel
 from euporie.core.tabs.kernel import KernelTab
 from euporie.core.widgets.display import Display
 
@@ -31,7 +31,7 @@ def kernel_tab() -> KernelTab:
         A `Mock` instance of the `KernelTab` class.
     """
     kt = Mock(spec=KernelTab)
-    kt.kernel = Mock(spec=Kernel)
+    kt.kernel = Mock(spec=JupyterKernel)
     return kt
 
 

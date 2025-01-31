@@ -2,21 +2,69 @@
 
 from __future__ import annotations
 
+import asyncio
 import io
 import logging
 import sys
 import threading
 from code import InteractiveInterpreter
+from io import TextIOBase
 from typing import TYPE_CHECKING, Any, Callable
 
 from euporie.core.kernel.base import BaseKernel, MsgCallbacks
 
 if TYPE_CHECKING:
     from pathlib import Path
+    from typing import Literal
 
     from euporie.core.tabs.kernel import KernelTab
 
 log = logging.getLogger(__name__)
+
+
+class LocalKernelIO(TextIOBase):
+    """StringIO that calls a callback when written to."""
+
+    def __init__(self, name: str, callback: Callable[[dict, bool], None]) -> None:
+        """Create a new IO object for the local kernel.
+
+        Args:
+            name: The name of the stream (stdout or stderr)
+            callback: The callback to add output to the kernel tab
+        """
+        self._name = name
+        self._callback = callback
+        self._buffer = ""
+
+    def write(self, s: str) -> None:
+        """Write the written data as a cell output."""
+        if s:
+            self._buffer += s
+            if "\n" in self._buffer:
+                lines = self._buffer.split("\n")
+                # Keep any remaining text after last newline
+                self._buffer = lines[-1]
+                self._callback(
+                    {
+                        "output_type": "stream",
+                        "name": self._name,
+                        "text": "\n".join(lines[:-1]) + "\n",
+                    },
+                    True,
+                )
+
+    def flush(self) -> None:
+        """Flush any remaining buffered content."""
+        if self._buffer:
+            self._callback(
+                {"output_type": "stream", "name": self._name, "text": self._buffer},
+                True,
+            )
+            self._buffer = ""
+
+
+class LocalInterpreter(InteractiveInterpreter):
+    """A Python interpreter which can be run locally."""
 
 
 class LocalPythonKernel(BaseKernel):
@@ -27,7 +75,6 @@ class LocalPythonKernel(BaseKernel):
         kernel_tab: KernelTab,
         allow_stdin: bool = False,
         default_callbacks: dict | None = None,
-        connection_file: Path | None = None,
     ) -> None:
         """Initialize the local Python interpreter kernel.
 
@@ -41,13 +88,24 @@ class LocalPythonKernel(BaseKernel):
             kernel_tab=kernel_tab,
             allow_stdin=allow_stdin,
             default_callbacks=default_callbacks,
-            connection_file=connection_file,
         )
         self._interpreter = InteractiveInterpreter()
-        self._stdout = io.StringIO()
-        self._stderr = io.StringIO()
         self._execution_count = 0
         self._lock = threading.Lock()
+
+        self.loop = asyncio.new_event_loop()
+        self.thread = threading.Thread(target=self._setup_loop)
+        self.thread.daemon = True
+        self.thread.start()
+
+    def _setup_loop(self) -> None:
+        """Set the current loop the the kernel's event loop.
+
+        This method is intended to be run in the kernel thread.
+        """
+        asyncio.set_event_loop(self.loop)
+        self.status_change_event = asyncio.Event()
+        self.loop.run_forever()
 
     @property
     def specs(self) -> dict[str, dict]:
@@ -131,7 +189,7 @@ class LocalPythonKernel(BaseKernel):
         if callable(cb):
             cb()
 
-    def run(
+    async def run_async(
         self,
         source: str,
         wait: bool = False,
@@ -147,95 +205,80 @@ class LocalPythonKernel(BaseKernel):
                 **{k: v for k, v in callbacks.items() if v is not None},
             }
         )
-        with self._lock:
-            # Capture stdout/stderr
-            old_stdout, old_stderr = sys.stdout, sys.stderr
-            sys.stdout, sys.stderr = self._stdout, self._stderr
 
-            try:
-                self.status = "busy"
-                self._execution_count += 1
+        add_output = callbacks["add_output"]
+        old_stdout, old_stderr = sys.stdout, sys.stderr
+        sys.stdout, sys.stderr = (
+            LocalKernelIO("stdout", add_output),
+            LocalKernelIO("stderr", add_output),
+        )
 
-                # Set execution count
-                if callable(set_execution_count := callbacks.get("set_execution_count")):
-                    set_execution_count(self._execution_count)
+        try:
+            self.status = "busy"
+            self._execution_count += 1
 
-                # Run the code
-                try:
-                    # Parse the source into an AST
-                    tree = ast.parse(source)
+            # Set execution count
+            if callable(set_execution_count := callbacks.get("set_execution_count")):
+                set_execution_count(self._execution_count)
 
-                    # No statements
-                    if not tree.body:
-                        result = None
-                        status = "ok"
-                    else:
-                        # Split into statements and final expression
-                        last = tree.body[-1]
-                        is_expr = isinstance(last, ast.Expr)
+            # Parse the source into an AST
+            tree = ast.parse(source)
 
-                        # Execute all but the last statement
-                        if len(tree.body) > 1:
-                            exec_code = compile(ast.Module(body=tree.body[:-1], type_ignores=[]), "<string>", "exec")
-                            self._interpreter.runcode(exec_code)
+            status = "ok"
+            result = None
 
-                        # Handle the last statement
-                        if is_expr:
-                            # Last statement is an expression - eval it
-                            eval_code = compile(ast.Expression(body=last.value), "<string>", "eval")
-                            result = eval(eval_code, self._interpreter.locals)
-                        else:
-                            # Last statement is not an expression - exec it
-                            exec_code = compile(ast.Module(body=[last], type_ignores=[]), "<string>", "exec")
-                            self._interpreter.runcode(exec_code)
-                            result = None
+            if tree.body:
+                # Split into statements and final expression
+                last = tree.body[-1]
+                is_last_expr = isinstance(last, ast.Expr)
+                body = tree.body[:-1] if is_last_expr else tree.body
 
-                        status = "ok"
-
-                    # If we got a result and have an output callback, display it
-                    if result is not None and callable(add_output := callbacks.get("add_output")):
-                        add_output(
-                            {
-                                "output_type": "execute_result",
-                                "execution_count": self._execution_count,
-                                "data": {"text/plain": repr(result)},
-                                "metadata": {},
-                            },
-                            True,
+                with self._lock:
+                    # Execute body
+                    if body:
+                        self._interpreter.runcode(
+                            compile(
+                                ast.Module(body=body, type_ignores=[]),
+                                filename="<input>",
+                                mode="exec",
+                            )
+                        )
+                    # Last statement is an expression - eval it
+                    if is_last_expr:
+                        result = eval(  # noqa: S307
+                            compile(
+                                ast.Expression(body=last.value),
+                                filename="<input>",
+                                mode="eval",
+                            ),
+                            self._interpreter.locals,
                         )
 
-                except Exception as e:
-                    log.debug(e)
-                    status = "error"
+            # If we got a result and have an output callback, display it
+            if result is not None and callable(
+                add_output := callbacks.get("add_output")
+            ):
+                add_output(
+                    {
+                        "output_type": "execute_result",
+                        "execution_count": self._execution_count,
+                        "data": {"text/plain": repr(result)},
+                        "metadata": {},
+                    },
+                    True,
+                )
 
-                # Get output
-                output = self._stdout.getvalue()
-                error = self._stderr.getvalue()
+            if callable(callback):
+                callback({"status": status})
 
-                # Call output callback if provided
-                if callable(add_output := callbacks.get("add_output")):
-                    if output:
-                        add_output(
-                            {"output_type": "stream", "name": "stdout", "text": output},
-                            True,
-                        )
-                    if error:
-                        add_output(
-                            {"output_type": "stream", "name": "stderr", "text": error},
-                            True,
-                        )
+        finally:
+            # Restore stdout/stderr
+            sys.stdout, sys.stderr = old_stdout, old_stderr
+            self._stdout = io.StringIO()
+            self._stderr = io.StringIO()
+            self.status = "idle"
 
-                if callable(callback):
-                    callback({"status": status})
-
-            finally:
-                # Restore stdout/stderr
-                sys.stdout, sys.stderr = old_stdout, old_stderr
-                self._stdout = io.StringIO()
-                self._stderr = io.StringIO()
-                self.status = "idle"
-
-    def complete(self, code: str, cursor_pos: int) -> list[dict]:
+    async def complete_async(self, code: str, cursor_pos: int) -> list[dict]:
         """Get code completions."""
         import rlcompleter
 
@@ -262,12 +305,12 @@ class LocalPythonKernel(BaseKernel):
 
         return completions
 
-    def inspect(
+    async def inspect_async(
         self,
         code: str,
         cursor_pos: int,
         callback: Callable[[dict[str, Any]], None] | None = None,
-    ) -> Any:
+    ) -> None:
         """Get code inspection/documentation."""
         import inspect
 
@@ -286,7 +329,7 @@ class LocalPythonKernel(BaseKernel):
             if callable(callback):
                 callback({"status": "ok", "data": {}, "found": False})
 
-    def is_complete(
+    async def is_complete_async(
         self,
         code: str,
         timeout: int | float = 0.1,
@@ -315,13 +358,15 @@ class LocalPythonKernel(BaseKernel):
         """Interrupt the kernel."""
         # Local interpreter runs in the main thread, so we can't really interrupt it
 
-    def restart(self, wait: bool = False, cb: Callable | None = None) -> None:
+    async def restart_async(
+        self, wait: bool = False, cb: Callable | None = None
+    ) -> None:
         """Restart the kernel."""
         self._interpreter = InteractiveInterpreter()
         self._execution_count = 0
         if callable(cb):
             cb({"status": "ok"})
 
-    def shutdown(self, wait: bool = False) -> None:
+    async def shutdown_async(self, wait: bool = False) -> None:
         """Shutdown the kernel."""
         self.stop()

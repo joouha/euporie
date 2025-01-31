@@ -3,17 +3,22 @@
 from __future__ import annotations
 
 import abc
+import asyncio
+import concurrent
 import logging
+import threading
 from typing import TYPE_CHECKING, TypedDict
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-    from pathlib import Path
+    from collections.abc import Callable, Coroutine
     from typing import Any
 
     from euporie.core.tabs.kernel import KernelTab
 
 log = logging.getLogger(__name__)
+
+_THREAD: list[threading.Thread | None] = [None]
+_LOOP: list[asyncio.AbstractEventLoop | None] = [None]
 
 
 class MsgCallbacks(TypedDict, total=False):
@@ -37,6 +42,30 @@ class MsgCallbacks(TypedDict, total=False):
     ask_exit: Callable[[bool], None] | None
 
 
+def get_loop() -> asyncio.AbstractEventLoop:
+    """Create or return the conversion IO loop.
+
+    The loop will be running on a separate thread.
+    """
+    if _LOOP[0] is None:
+        loop = asyncio.new_event_loop()
+        _LOOP[0] = loop
+        thread = threading.Thread(
+            target=loop.run_forever, name="EuporieKernelLoop", daemon=True
+        )
+        thread.start()
+        _THREAD[0] = thread
+    assert _LOOP[0] is not None
+    # Check we are not already in the conversion event loop
+    try:
+        running_loop = asyncio.get_running_loop()
+    except RuntimeError:
+        running_loop = None
+    if _LOOP[0] is running_loop:
+        raise NotImplementedError("Cannot nest event loop access")
+    return _LOOP[0]
+
+
 class BaseKernel(abc.ABC):
     """Abstract base class for euporie kernels."""
 
@@ -45,7 +74,6 @@ class BaseKernel(abc.ABC):
         kernel_tab: KernelTab,
         allow_stdin: bool = False,
         default_callbacks: MsgCallbacks | None = None,
-        connection_file: Path | None = None,
     ) -> None:
         """Initialize the kernel.
 
@@ -53,14 +81,15 @@ class BaseKernel(abc.ABC):
             kernel_tab: The notebook this kernel belongs to
             allow_stdin: Whether the kernel is allowed to request input
             default_callbacks: The default callbacks to use on receipt of a message
-            connection_file: Path to a file from which to load or to which to save
-                kernel connection information
         """
+        self.loop = get_loop()
         self.kernel_tab = kernel_tab
         self.allow_stdin = allow_stdin
         self._status = "stopped"
         self.error: Exception | None = None
         self.dead = False
+        self.coros: dict[str, concurrent.futures.Future] = {}
+        self.status_change_event = asyncio.Event()
 
         self.default_callbacks = MsgCallbacks(
             {
@@ -76,10 +105,84 @@ class BaseKernel(abc.ABC):
         if default_callbacks is not None:
             self.default_callbacks.update(default_callbacks)
 
+    def _aodo(
+        self,
+        coro: Coroutine,
+        wait: bool = False,
+        callback: Callable | None = None,
+        timeout: int | float | None = None,
+        single: bool = False,
+    ) -> Any:
+        """Schedule a coroutine in the kernel's event loop.
+
+        Optionally waits for the results (blocking the main thread). Optionally
+        schedules a callback to run when the coroutine has completed or timed out.
+
+        Args:
+            coro: The coroutine to run
+            wait: If :py:const:`True`, block until the kernel has started
+            callback: A function to run when the coroutine completes. The result from
+                the coroutine will be passed as an argument
+            timeout: The number of seconds to allow the coroutine to run if waiting
+            single: If :py:const:`True`, any futures for previous instances of the
+                coroutine will be cancelled
+
+        Returns:
+            The result of the coroutine
+
+        """
+        future = asyncio.run_coroutine_threadsafe(coro, self.loop)
+
+        # Cancel previous future instances if required
+        if single and self.coros.get(coro.__name__):
+            self.coros[coro.__name__].cancel()
+        self.coros[coro.__name__] = future
+
+        if wait:
+            result = None
+            try:
+                result = future.result(timeout)
+            except concurrent.futures.TimeoutError:
+                log.error("Operation '%s' timed out", coro)
+                future.cancel()
+            finally:
+                if callable(callback):
+                    callback(result)
+            return result
+        else:
+            if callable(callback):
+                future.add_done_callback(lambda f: callback(f.result()))
+                return None
+            return None
+
     @property
     def status(self) -> str:
-        """Get the current kernel status."""
+        """Retrieve the current kernel status.
+
+        Returns:
+            The kernel status
+
+        """
         return self._status
+
+    @status.setter
+    def status(self, value: str) -> None:
+        """Set the kernel status."""
+        self.status_change_event.set()
+        self._status = value
+        self.status_change_event.clear()
+
+    def wait_for_status(self, status: str = "idle") -> None:
+        """Block until the kernel reaches a given status value."""
+        if self.status != status:
+
+            async def _wait() -> None:
+                while self.status != status:
+                    await asyncio.wait_for(
+                        self.status_change_event.wait(), timeout=None
+                    )
+
+            self._aodo(_wait(), wait=True)
 
     @status.setter
     def status(self, value: str) -> None:
@@ -95,12 +198,15 @@ class BaseKernel(abc.ABC):
     @abc.abstractmethod
     def stop(self, cb: Callable | None = None, wait: bool = False) -> None:
         """Stop the kernel."""
+        log.debug("Stopping kernel %s (wait=%s)", self.id, wait)
+        if not wait:
+            self.interrupt()
+        self._aodo(self.stop_async(), callback=cb, wait=wait)
 
-    async def stop_(self, cb: Callable | None = None) -> None:
+    async def stop_async(self, cb: Callable | None = None) -> None:
         """Stop the kernel asynchronously."""
         self.stop(cb)
 
-    @abc.abstractmethod
     def run(
         self,
         source: str,
@@ -109,8 +215,14 @@ class BaseKernel(abc.ABC):
         **callbacks: Callable[..., Any],
     ) -> None:
         """Execute code in the kernel."""
+        self._aodo(
+            self.run_async(source, **callbacks),
+            wait=wait,
+            callback=callback,
+        )
 
-    async def run_(
+    @abc.abstractmethod
+    async def run_async(
         self,
         source: str,
         wait: bool = False,
@@ -118,35 +230,96 @@ class BaseKernel(abc.ABC):
         **callbacks: Callable[..., Any],
     ) -> None:
         """Execute code in the kernel asynchronously."""
-        self.run(source, wait, callback, **callbacks)
 
-    @abc.abstractmethod
     def complete(self, code: str, cursor_pos: int) -> list[dict]:
-        """Get code completions."""
+        """Request code completions from the kernel.
 
-    async def complete_(self, code: str, cursor_pos: int) -> list[dict]:
-        """Get code completions asynchronously."""
-        return self.complete(code, cursor_pos)
+        Args:
+            code: The code string to retrieve completions for
+            cursor_pos: The position of the cursor in the code string
+
+        Returns:
+            A list of dictionaries defining completion entries. The dictionaries
+            contain ``text`` (the completion text), ``start_position`` (the stating
+            position of the completion text), and optionally ``display_meta``
+            (a string containing additional data about the completion type)
+
+        """
+        return self._aodo(
+            self.complete_async(code, cursor_pos),
+            wait=True,
+            single=True,
+        )
 
     @abc.abstractmethod
+    async def complete_async(self, code: str, cursor_pos: int) -> list[dict]:
+        """Get code completions asynchronously."""
+
+    def history(
+        self, pattern: str = "", n: int = 1, hist_access_type: str = "search"
+    ) -> list[tuple[int, int, str]] | None:
+        """Retrieve history from the kernel.
+
+        Args:
+            pattern: The pattern to search for
+            n: the number of history items to return
+            hist_access_type: How to access the history ('range', 'tail' or 'search')
+
+        Returns:
+            A list of history items, consisting of tuples (session, line_number, input)
+
+        """
+        return self._aodo(
+            self.history_async(pattern, n, hist_access_type),
+            wait=True,
+            single=True,
+        )
+
+    async def history_async(
+        self,
+        pattern: str = "",
+        n: int = 1,
+        hist_access_type: str = "search",
+        timeout: int = 1,
+    ) -> list[tuple[int, int, str]] | None:
+        """Retrieve history from the kernel asynchronously."""
+        return []
+
     def inspect(
         self,
         code: str,
         cursor_pos: int,
         callback: Callable[[dict[str, Any]], None] | None = None,
-    ) -> Any:
-        """Get code inspection/documentation."""
+    ) -> str:
+        """Request code inspection from the kernel.
 
-    async def inspect_(
+        Args:
+            code: The code string to retrieve completions for
+            cursor_pos: The position of the cursor in the code string
+            callback: A function to run when the inspection result arrives. The result
+                is passed as an argument.
+
+        Returns:
+            A string containing useful information about the code at the current cursor
+            position
+
+        """
+        return self._aodo(
+            self.inspect_async(code, cursor_pos),
+            wait=False,
+            callback=callback,
+            single=True,
+        )
+
+    @abc.abstractmethod
+    async def inspect_async(
         self,
         code: str,
         cursor_pos: int,
         callback: Callable[[dict[str, Any]], None] | None = None,
-    ) -> Any:
+    ) -> None:
         """Get code inspection/documentation asynchronously."""
-        return self.inspect(code, cursor_pos, callback)
 
-    @abc.abstractmethod
     def is_complete(
         self,
         code: str,
@@ -154,33 +327,64 @@ class BaseKernel(abc.ABC):
         wait: bool = False,
         callback: Callable[[dict[str, Any]], None] | None = None,
     ) -> dict[str, Any]:
-        """Check if code is complete."""
+        """Request code completeness status from the kernel.
 
-    async def is_complete_(
+        Args:
+            code: The code string to check the completeness status of
+            timeout: How long to wait for a kernel response
+            wait: Whether to wait for the response
+            callback: A function to run when the inspection result arrives. The result
+                is passed as an argument.
+
+        Returns:
+            A string describing the completeness status
+
+        """
+        return self._aodo(
+            self.is_complete_async(code, timeout),
+            wait=wait,
+            callback=callback,
+        )
+
+    @abc.abstractmethod
+    async def is_complete_async(
         self,
         code: str,
         timeout: int | float = 0.1,
     ) -> dict[str, Any]:
         """Check if code is complete asynchronously."""
-        return self.is_complete(code, timeout)
 
     @abc.abstractmethod
     def interrupt(self) -> None:
         """Interrupt the kernel."""
 
-    @abc.abstractmethod
     def restart(self, wait: bool = False, cb: Callable | None = None) -> None:
-        """Restart the kernel."""
+        """Restart the current kernel."""
+        self._aodo(
+            self.restart_async(),
+            wait=wait,
+            callback=cb,
+        )
 
-    async def restart_(self) -> None:
+    @abc.abstractmethod
+    async def restart_async(self) -> None:
         """Restart the kernel asynchronously."""
         self.restart()
 
-    @abc.abstractmethod
     def shutdown(self, wait: bool = False) -> None:
-        """Shutdown the kernel."""
+        """Shutdown the kernel.
 
-    async def shutdown_(self) -> None:
+        This is intended to be run when the notebook is closed: the
+        :py:class:`~euporie.core.kernel.base.BaseKernel` cannot be restarted after this.
+
+        Args:
+            wait: Whether to block until shutdown completes
+
+        """
+        self._aodo(self.shutdown_async(), wait=wait)
+
+    @abc.abstractmethod
+    async def shutdown_async(self) -> None:
         """Shutdown the kernel asynchronously."""
         self.shutdown()
 
