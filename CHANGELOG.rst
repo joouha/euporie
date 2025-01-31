@@ -10,12 +10,17 @@ Notable changes to this project will be documented in this file.
 Upcoming
 ********
 
+Changed
+=======
+
+- Improve performance of JSON view
+
 Fixed
 =====
 
 - Set command palette input to vi-insert when opened
 - Fix issue with notebook scrolling
-- Fix issue where deleteing the contents of a large cell results in scrolling the notebook out of view
+- Fix issue where deleting the contents of a large cell results in scrolling the notebook out of view
 - Fix ``pageup`` and ``pagedown`` key press detection
 
 ----
