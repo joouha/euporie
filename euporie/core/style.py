@@ -436,7 +436,7 @@ def build_style(
         # Logo
         "logo": "fg:#dd0000",
         # Pattern
-        "pattern": f"fg:{cp.bg.more(0.075)}",
+        "pattern": f"fg:{cp.bg.more(0.05)}",
         # Chrome
         "chrome": f"fg:{cp.fg.more(0.05)} bg:{cp.bg.more(0.05)}",
         "tab-padding": f"fg:{cp.bg.more(0.2)} bg:{cp.bg.base}",
