@@ -10,6 +10,8 @@ from typing import TYPE_CHECKING, ClassVar
 from prompt_toolkit.layout.containers import VSplit
 from prompt_toolkit.layout.dimension import Dimension
 
+from euporie.core.layout.scroll import ScrollingContainer
+from euporie.core.margins import MarginContainer, ScrollbarMargin
 from euporie.core.tabs.base import Tab
 from euporie.core.widgets.tree import JsonView
 
@@ -65,8 +67,10 @@ class JsonTab(Tab):
 
         return VSplit(
             [
-                JsonView(data, title=self.path.name, expanded=True),
-                # MarginContainer(ScrollbarMargin(), target=self.display.window),
+                scroll := ScrollingContainer(
+                    children=[JsonView(data, title=self.path.name, expanded=True)]
+                ),
+                MarginContainer(ScrollbarMargin(), target=scroll),
             ],
             width=Dimension(weight=1),
             height=Dimension(weight=1),

@@ -2,108 +2,120 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+from functools import partial
+from typing import TYPE_CHECKING
 
-from prompt_toolkit.filters import Condition
-from prompt_toolkit.layout.containers import ConditionalContainer
+from prompt_toolkit.layout.containers import Window
 from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.mouse_events import MouseButton, MouseEvent, MouseEventType
-
-from euporie.core.layout.containers import HSplit, VSplit, Window
 
 if TYPE_CHECKING:
     from typing import Any
 
     from prompt_toolkit.formatted_text import StyleAndTextTuples
     from prompt_toolkit.key_binding.key_bindings import NotImplementedOrNone
-    from prompt_toolkit.layout.containers import AnyContainer
 
 
 class JsonView:
     """A JSON-view container."""
 
     def __init__(
-        self, data: Any, title: str | None = None, expanded: bool = True
+        self, data: Any, title: str | None = None, expanded: bool = False
     ) -> None:
         """Create a new instance."""
-        if title is None:
-            self.title = "root"
-        else:
-            self.title = title
-        self.expanded = expanded
-
-        self.children = []
-        self.value_style = ""
-        self.value = ""
-
-        if isinstance(data, list):
-            data = dict(enumerate(data))
-            self.value = f"[] {len(data)} items"
-            self.value_style = "class:pygments.comment"
-        if isinstance(data, dict):
-            self.value = f"{{}} {len(data)} items"
-            self.value_style = "class:pygments.comment"
-            self.children = [
-                JsonView(data=value, title=key, expanded=expanded)
-                for key, value in data.items()
-            ]
-        else:
-            self.value = f"{data!r}"
-            self.value_style = {
-                str: "class:pygments.literal.string",
-                int: "class:pygments.literal.number",
-                float: "class:pygments.literal.number",
-                bool: "class:pygments.keyword.constant",
-            }.get(type(data), "")
-
-        self.container = HSplit(
-            [
-                Window(
-                    FormattedTextControl(self.format_title),
-                    dont_extend_height=True,
-                ),
-                ConditionalContainer(
-                    VSplit(
-                        [
-                            Window(
-                                width=2,
-                                char="  ",
-                                style="",
-                            ),
-                            HSplit(self.children),
-                        ]
-                    ),
-                    filter=Condition(lambda: self.expanded and bool(self.children)),
-                ),
-            ],
+        self.data = data
+        self.title = "root" if title is None else title
+        self.start_expanded = expanded
+        self._toggled_paths: set[tuple[str, ...]] = set()
+        self.container = Window(
+            FormattedTextControl(self._get_formatted_text, focusable=True),
             style="class:tree",
         )
 
-    def toggle(self, mouse_event: MouseEvent) -> NotImplementedOrNone:
-        """Toggle the expansion state."""
+    def _get_value_style(self, value: Any) -> str:
+        """Return the style for a given value type."""
+        return {
+            str: "class:pygments.literal.string",
+            int: "class:pygments.literal.number",
+            float: "class:pygments.literal.number",
+            bool: "class:pygments.keyword.constant",
+        }.get(type(value), "")
+
+    def _format_value(self, value: Any) -> tuple[str, str]:
+        """Return the formatted value and its style."""
+        if isinstance(value, (list, dict)):
+            length = len(value)
+            if isinstance(value, list):
+                return f" [] {length} items", "class:pygments.comment"
+            return f" {{}} {length} items", "class:pygments.comment"
+        return repr(value), self._get_value_style(value)
+
+    def _get_formatted_text(self) -> StyleAndTextTuples:
+        """Generate the complete tree view as formatted text."""
+        result: StyleAndTextTuples = []
+        toggled_paths = self._toggled_paths
+        start_expanded = self.start_expanded
+        toggle = self._toggle
+        format_value = self._format_value
+
+        def format_node(
+            data: Any, path: tuple[str, ...], indent: int, key: str
+        ) -> None:
+            is_expanded = (path in toggled_paths) ^ start_expanded
+            has_children = isinstance(data, (dict, list))
+            mouse_handler = partial(toggle, path=path)
+
+            value, style = format_value(data)
+            row: StyleAndTextTuples = [
+                # Add indentation
+                ("", "  " * indent),
+                # Add toggle symbol
+                (
+                    ("class:pygments.operator", "▼" if is_expanded else "▶")
+                    if has_children
+                    else ("", " ")
+                ),
+                ("", " "),
+                ("class:pygments.keyword", str(key)),
+                ("class:pygments.punctuation", ": "),
+                (style, value),
+                ("", "\n"),
+            ]
+
+            # Apply mouse_handler to rows with children
+            if has_children:
+                row = [(style, text, mouse_handler) for style, text in row]
+
+            result.extend(row)
+
+            if is_expanded and has_children:
+                if isinstance(data, dict):
+                    items = data.items()
+                else:  # list
+                    items = enumerate(data)
+
+                for k, v in items:
+                    new_path = (*path, str(k)) if path else (str(k),)
+                    format_node(v, new_path, indent + 1, k)
+
+        format_node(self.data, "", 0, self.title)
+        return result
+
+    def _toggle(
+        self, mouse_event: MouseEvent, path: tuple[str, ...]
+    ) -> NotImplementedOrNone:
+        """Toggle the expansion state of a node."""
         if (
             mouse_event.button == MouseButton.LEFT
             and mouse_event.event_type == MouseEventType.MOUSE_UP
         ):
-            self.expanded = not self.expanded
+            if path in self._toggled_paths:
+                self._toggled_paths.remove(path)
+            else:
+                self._toggled_paths.add(path)
             return None
         return NotImplemented
 
-    def format_title(self) -> StyleAndTextTuples:
-        """Return the tree node toggle and title."""
-        return cast(
-            "StyleAndTextTuples",
-            [
-                ("class:pygments.operator", "▼" if self.expanded else "▶", self.toggle)
-                if self.children
-                else ("", " ", self.toggle),
-                ("", " ", self.toggle),
-                ("class:pygments.keyword", f"{self.title}", self.toggle),
-                ("class:pygments.punctuation", ": ", self.toggle),
-                (self.value_style, self.value, self.toggle),
-            ],
-        )
-
-    def __pt_container__(self) -> AnyContainer:
+    def __pt_container__(self) -> Window:
         """Return the tree-view container's content."""
         return self.container
