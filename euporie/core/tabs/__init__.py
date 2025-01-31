@@ -17,7 +17,7 @@ class TabRegistryEntry:
     path: str
     name: str
     mime_types: set = field(default_factory=set)
-    file_extensions: dict[str, None] = field(default_factory=dict)
+    file_extensions: set = field(default_factory=set)
     weight: int = 0
 
     @property
@@ -28,6 +28,16 @@ class TabRegistryEntry:
     def __lt__(self, other: TabRegistryEntry) -> bool:
         """Sort by weight."""
         return self.weight < other.weight
+
+    def __hash__(self) -> int:
+        """Make the class hashable based on its path."""
+        return hash(self.path)
+
+    def __eq__(self, other: object) -> bool:
+        """Compare TabRegistryEntry objects based on their path."""
+        if not isinstance(other, TabRegistryEntry):
+            return NotImplemented
+        return self.path == other.path
 
 
 _TAB_REGISTRY: list[TabRegistryEntry] = []

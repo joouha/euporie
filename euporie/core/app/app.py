@@ -582,14 +582,16 @@ class BaseApp(ConfigurableApp, Application, ABC):
         path_mime = get_mime(path) or "text/plain"
         log.debug("File %s has mime type: %s", path, path_mime)
 
-        tab_options: list[TabRegistryEntry] = []
+        # Use a set to automatically handle duplicates
+        tab_options: set[TabRegistryEntry] = set()
         for entry in self.tab_registry:
             for mime_type in entry.mime_types:
                 if PurePath(path_mime).match(mime_type):
-                    tab_options.append(entry)
+                    tab_options.add(entry)
             if path.suffix in entry.file_extensions:
-                tab_options.append(entry)
+                tab_options.add(entry)
 
+        # Sort by weight (TabRegistryEntry.__lt__ handles this)
         return sorted(tab_options, reverse=True)
 
     def get_file_tab(self, path: Path) -> type[Tab] | None:
