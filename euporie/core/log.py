@@ -340,7 +340,7 @@ class StdoutFormatter(FtFormatter):
 
 
 class stdout_to_log:
-    """A decorator which captures standard output and logs it."""
+    """A context manager which captures standard output and logs it."""
 
     def __init__(
         self, log: logging.Logger, output: str = "Literal['stdout','stderr']"
