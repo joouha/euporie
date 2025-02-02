@@ -3,26 +3,24 @@
 from __future__ import annotations
 
 import asyncio
-import io
 import logging
 import sys
 import threading
-from code import InteractiveInterpreter
+import traceback
+from contextlib import redirect_stderr, redirect_stdout
 from io import TextIOBase
+from linecache import cache as line_cache
 from typing import TYPE_CHECKING, Any, Callable
 
 from euporie.core.kernel.base import BaseKernel, MsgCallbacks
 
 if TYPE_CHECKING:
-    from pathlib import Path
-    from typing import Literal
-
     from euporie.core.tabs.kernel import KernelTab
 
 log = logging.getLogger(__name__)
 
 
-class LocalKernelIO(TextIOBase):
+class StdStream(TextIOBase):
     """StringIO that calls a callback when written to."""
 
     def __init__(self, name: str, callback: Callable[[dict, bool], None]) -> None:
@@ -63,10 +61,6 @@ class LocalKernelIO(TextIOBase):
             self._buffer = ""
 
 
-class LocalInterpreter(InteractiveInterpreter):
-    """A Python interpreter which can be run locally."""
-
-
 class LocalPythonKernel(BaseKernel):
     """Run code in a local Python interpreter."""
 
@@ -89,7 +83,8 @@ class LocalPythonKernel(BaseKernel):
             allow_stdin=allow_stdin,
             default_callbacks=default_callbacks,
         )
-        self._interpreter = InteractiveInterpreter()
+        # Create interpreter with callback for error handling
+        self.locals = {}
         self._execution_count = 0
         self._lock = threading.Lock()
 
@@ -189,6 +184,35 @@ class LocalPythonKernel(BaseKernel):
         if callable(cb):
             cb()
 
+    def showtraceback(self, filename: str, cb: Callable[dict[str, Any], bool]) -> None:
+        """Format and display tracebacks for exceptions."""
+        typ, value, tb = sys.exc_info()
+        stack_summary = traceback.extract_tb(tb)
+        # Filter items from stack prior to executed code
+        for i, frame in enumerate(stack_summary):
+            if frame.filename == filename:
+                stack_summary = stack_summary[i:]
+                break
+        else:
+            stack_summary = []
+
+        cb(
+            {
+                "output_type": "error",
+                "ename": typ,
+                "evalue": str(value),
+                "traceback": "".join(
+                    [
+                        *traceback.format_list(stack_summary),
+                        *traceback.format_exception_only(typ, value),
+                    ]
+                ).splitlines(),
+            },
+            own=True,
+        )
+
+        # Send the error through the callback
+
     async def run_async(
         self,
         source: str,
@@ -207,13 +231,23 @@ class LocalPythonKernel(BaseKernel):
         )
 
         add_output = callbacks["add_output"]
-        old_stdout, old_stderr = sys.stdout, sys.stderr
-        sys.stdout, sys.stderr = (
-            LocalKernelIO("stdout", add_output),
-            LocalKernelIO("stderr", add_output),
-        )
 
-        try:
+        def display_hook(value: Any) -> None:
+            if value is not None:
+                add_output(
+                    {
+                        "output_type": "execute_result",
+                        "execution_count": self._execution_count,
+                        "data": {"text/plain": repr(value)},
+                        "metadata": {},
+                    },
+                    True,
+                )
+
+        with (
+            redirect_stdout(StdStream("stdout", add_output)),
+            redirect_stderr(StdStream("stderr", add_output)),
+        ):
             self.status = "busy"
             self._execution_count += 1
 
@@ -221,69 +255,80 @@ class LocalPythonKernel(BaseKernel):
             if callable(set_execution_count := callbacks.get("set_execution_count")):
                 set_execution_count(self._execution_count)
 
-            # Parse the source into an AST
-            tree = ast.parse(source)
-
             status = "ok"
-            result = None
 
-            if tree.body:
-                # Split into statements and final expression
-                last = tree.body[-1]
-                is_last_expr = isinstance(last, ast.Expr)
-                body = tree.body[:-1] if is_last_expr else tree.body
+            filename = f"<input_{self._execution_count}>"
 
-                with self._lock:
-                    # Execute body
-                    if body:
-                        self._interpreter.runcode(
-                            compile(
-                                ast.Module(body=body, type_ignores=[]),
-                                filename="<input>",
-                                mode="exec",
-                            )
-                        )
-                    # Last statement is an expression - eval it
-                    if is_last_expr:
-                        result = eval(  # noqa: S307
-                            compile(
-                                ast.Expression(body=last.value),
-                                filename="<input>",
-                                mode="eval",
-                            ),
-                            self._interpreter.locals,
-                        )
+            line_cache[filename] = (
+                len(source),
+                None,
+                source.splitlines(keepends=True),
+                filename,
+            )
+            try:
+                # Parse the source into an AST
+                tree = ast.parse(source, filename=filename)
+            except Exception:
+                # Check for syntax errors
+                status = "error"
+                self.showtraceback(filename, cb=callbacks["add_output"])
+            else:
+                if tree.body:
+                    # Split into statements and final expression
+                    body = tree.body
+                    last = None
+                    if isinstance(tree.body[-1], ast.Expr):
+                        last = tree.body.pop()
 
-            # If we got a result and have an output callback, display it
-            if result is not None and callable(
-                add_output := callbacks.get("add_output")
-            ):
-                add_output(
-                    {
-                        "output_type": "execute_result",
-                        "execution_count": self._execution_count,
-                        "data": {"text/plain": repr(result)},
-                        "metadata": {},
-                    },
-                    True,
-                )
+                    with self._lock:
+                        # Execute body
+                        try:
+                            sys.displayhook = display_hook
+                            if body:
+                                exec(  # noqa: S102
+                                    compile(
+                                        ast.Module(body=body, type_ignores=[]),
+                                        # ast.Interactive(body),
+                                        filename=filename,
+                                        # mode="single",
+                                        mode="exec",
+                                    ),
+                                    self.locals,
+                                )
+                            # Last statement is an expression - eval it
+                            if last is not None:
+                                exec(  # noqa: S102
+                                    compile(
+                                        ast.Interactive([last]),
+                                        filename=filename,
+                                        mode="single",
+                                    ),
+                                    self.locals,
+                                )
+                        except SystemExit:
+                            from euporie.core.app.current import get_app
 
-            if callable(callback):
-                callback({"status": status})
+                            get_app().exit()
+                        except Exception:
+                            log.exception("")
+                            try:
+                                self.showtraceback(filename, cb=callbacks["add_output"])
+                            except Exception:
+                                log.exception("")
+                        finally:
+                            sys.displayhook = sys.__displayhook__
 
-        finally:
-            # Restore stdout/stderr
-            sys.stdout, sys.stderr = old_stdout, old_stderr
-            self._stdout = io.StringIO()
-            self._stderr = io.StringIO()
-            self.status = "idle"
+        if callable(callback):
+            callback({"status": status})
+
+        self.status = "idle"
 
     async def complete_async(self, code: str, cursor_pos: int) -> list[dict]:
         """Get code completions."""
         import rlcompleter
 
         # Create namespace for completer
-        namespace = self._interpreter.locals
+        namespace = self.locals
         completer = rlcompleter.Completer(namespace)
 
         # Find the last word before cursor
@@ -321,7 +366,7 @@ class LocalPythonKernel(BaseKernel):
 
         obj_name = tokens[-1]
         try:
-            obj = eval(obj_name, self._interpreter.locals)  # noqa: S307
+            obj = eval(obj_name, self.locals)  # noqa: S307
             doc = inspect.getdoc(obj)
             if doc and callable(callback):
                 callback({"status": "ok", "data": {"text/plain": doc}, "found": True})
@@ -339,7 +384,7 @@ class LocalPythonKernel(BaseKernel):
         """Check if code is complete."""
         try:
             # Try to compile the code
-            compiled = code.compile(code, "<string>", "exec")
+            compiled = code.compile(code, "<input>", "exec")
             status = "complete" if compiled else "incomplete"
         except SyntaxError as e:
             if e.msg == "unexpected EOF while parsing":
@@ -362,7 +407,7 @@ class LocalPythonKernel(BaseKernel):
         self, wait: bool = False, cb: Callable | None = None
     ) -> None:
         """Restart the kernel."""
-        self._interpreter = InteractiveInterpreter()
+        self.locals.clear()
         self._execution_count = 0
         if callable(cb):
             cb({"status": "ok"})
