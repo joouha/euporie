@@ -6,7 +6,7 @@ import logging
 import sys
 import threading
 import traceback
-from contextlib import redirect_stderr, redirect_stdout
+from contextlib import contextmanager, redirect_stderr, redirect_stdout
 from io import TextIOBase
 from linecache import cache as line_cache
 from typing import TYPE_CHECKING, Any, Callable
@@ -262,73 +262,83 @@ class LocalPythonKernel(BaseKernel):
                     True,
                 )
 
+        @contextmanager
+        def set_displayhook():
+            sys.displayhook = displayhook
+            try:
+                yield
+            finally:
+                sys.displayhook = sys.__displayhook__
+
+        self.status = "busy"
+        # Set execution count
+        self._execution_count += 1
+        if callable(set_execution_count := callbacks.get("set_execution_count")):
+            set_execution_count(self._execution_count)
+        # Add source to line cache (for display in tracebacks)
+        filename = f"<input_{self._execution_count}>"
+        line_cache[filename] = (
+            len(source),
+            None,
+            source.splitlines(keepends=True),
+            filename,
+        )
+        try:
+            # Parse the source into an AST
+            tree = ast.parse(source, filename=filename)
+        except Exception:
+            # Check for syntax errors
+            self.showtraceback(filename, cb=callbacks["add_output"])
+            return
+        else:
+            if not tree.body:
+                return
+
+        # Split into statements and final expression
+        body = tree.body
+        last = None
+        if isinstance(tree.body[-1], ast.Expr):
+            last = tree.body.pop()
+
         with (
             redirect_stdout(StdStream("stdout", add_output)),
             redirect_stderr(StdStream("stderr", add_output)),
+            self._lock,
+            set_displayhook(),
         ):
-            self.status = "busy"
-            self._execution_count += 1
-
-            # Set execution count
-            if callable(set_execution_count := callbacks.get("set_execution_count")):
-                set_execution_count(self._execution_count)
-
-            filename = f"<input_{self._execution_count}>"
-            line_cache[filename] = (
-                len(source),
-                None,
-                source.splitlines(keepends=True),
-                filename,
-            )
+            # Execute body
             try:
-                # Parse the source into an AST
-                tree = ast.parse(source, filename=filename)
+                if body:
+                    exec(  # noqa: S102
+                        compile(
+                            ast.Module(body=body, type_ignores=[]),
+                            # ast.Interactive(body),
+                            filename=filename,
+                            # mode="single",
+                            mode="exec",
+                        ),
+                        self.locals,
+                    )
+                # Last statement is an expression - eval it
+                if last is not None:
+                    exec(  # noqa: S102
+                        compile(
+                            ast.Interactive([last]),
+                            filename=filename,
+                            mode="single",
+                        ),
+                        self.locals,
+                    )
+            except SystemExit:
+                get_app().exit()
             except Exception:
-                # Check for syntax errors
-                self.showtraceback(filename, cb=callbacks["add_output"])
-            else:
-                if tree.body:
-                    # Split into statements and final expression
-                    body = tree.body
-                    last = None
-                    if isinstance(tree.body[-1], ast.Expr):
-                        last = tree.body.pop()
-
-                    with self._lock:
-                        # Execute body
-                        try:
-                            sys.displayhook = displayhook
-                            if body:
-                                exec(  # noqa: S102
-                                    compile(
-                                        ast.Module(body=body, type_ignores=[]),
-                                        # ast.Interactive(body),
-                                        filename=filename,
-                                        # mode="single",
-                                        mode="exec",
-                                    ),
-                                    self.locals,
-                                )
-                            # Last statement is an expression - eval it
-                            if last is not None:
-                                exec(  # noqa: S102
-                                    compile(
-                                        ast.Interactive([last]),
-                                        filename=filename,
-                                        mode="single",
-                                    ),
-                                    self.locals,
-                                )
-                        except SystemExit:
-                            get_app().exit()
-                        except Exception:
-                            log.exception("")
-                            try:
-                                self.showtraceback(filename, cb=callbacks["add_output"])
-                            except Exception:
-                                log.exception("")
-                        finally:
-                            sys.displayhook = sys.__displayhook__
+                log.exception("")
+                try:
+                    self.showtraceback(filename, cb=callbacks["add_output"])
+                except Exception:
+                    log.exception("")
+            finally:
+                sys.displayhook = sys.__displayhook__
 
         self.status = "idle"
 
