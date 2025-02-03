@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 import logging
 import sys
 import threading
@@ -12,6 +11,11 @@ from io import TextIOBase
 from linecache import cache as line_cache
 from typing import TYPE_CHECKING, Any, Callable
 
+from pygments import highlight
+from pygments.formatters import Terminal256Formatter
+from pygments.lexers import Python3TracebackLexer
+
+from euporie.core.app.current import get_app
 from euporie.core.kernel.base import BaseKernel, MsgCallbacks
 
 if TYPE_CHECKING:
@@ -88,20 +92,6 @@ class LocalPythonKernel(BaseKernel):
         self._execution_count = 0
         self._lock = threading.Lock()
 
-        self.loop = asyncio.new_event_loop()
-        self.thread = threading.Thread(target=self._setup_loop)
-        self.thread.daemon = True
-        self.thread.start()
-
-    def _setup_loop(self) -> None:
-        """Set the current loop the the kernel's event loop.
-
-        This method is intended to be run in the kernel thread.
-        """
-        asyncio.set_event_loop(self.loop)
-        self.status_change_event = asyncio.Event()
-        self.loop.run_forever()
-
     @property
     def specs(self) -> dict[str, dict]:
         """Return available kernel specifications."""
@@ -128,11 +118,6 @@ class LocalPythonKernel(BaseKernel):
         """Return the kernel ID."""
         return "local-python"
 
-    @property
-    def kc(self) -> None:
-        """Return None as local kernels don't have a kernel client."""
-        return None
-
     def info(
         self,
         set_kernel_info: Callable[[dict[str, Any]], None] | None = None,
@@ -150,14 +135,14 @@ class LocalPythonKernel(BaseKernel):
                 "version": sys.version.split()[0],
                 "mimetype": "text/x-python",
                 "file_extension": ".py",
-                "pygments_lexer": "ipython3",
+                "pygments_lexer": "python3",
                 "codemirror_mode": {
                     "name": "python",
-                    "version": 3,
+                    "version": sys.version_info.major,
                 },
                 "nbconvert_exporter": "python",
             },
-            "implementation": "cpython",
+            "implementation": sys.implementation.name,
             "implementation_version": sys.version.split()[0],
             "banner": f"Python {sys.version}",
             "help_links": [],
@@ -188,6 +173,7 @@ class LocalPythonKernel(BaseKernel):
         """Format and display tracebacks for exceptions."""
         typ, value, tb = sys.exc_info()
         stack_summary = traceback.extract_tb(tb)
+
         # Filter items from stack prior to executed code
         for i, frame in enumerate(stack_summary):
             if frame.filename == filename:
@@ -196,28 +182,36 @@ class LocalPythonKernel(BaseKernel):
         else:
             stack_summary = []
 
+        # Format the traceback text
+        traceback_text = "".join(
+            [
+                *traceback.format_list(stack_summary),
+                *traceback.format_exception_only(typ, value),
+            ]
+        )
+
+        # Color the traceback using Pygments
+        colored_traceback = highlight(
+            traceback_text,
+            Python3TracebackLexer(),
+            Terminal256Formatter(style=get_app().config.syntax_theme),
+        ).rstrip()
+
+        # Send the error through the callback
         cb(
             {
                 "output_type": "error",
-                "ename": typ,
+                "ename": typ.__name__,
                 "evalue": str(value),
-                "traceback": "".join(
-                    [
-                        *traceback.format_list(stack_summary),
-                        *traceback.format_exception_only(typ, value),
-                    ]
-                ).splitlines(),
+                "traceback": colored_traceback.splitlines(),
             },
             own=True,
         )
-
-        # Send the error through the callback
 
     async def run_async(
         self,
         source: str,
         wait: bool = False,
-        callback: Callable[..., None] | None = None,
         **callbacks: Callable[..., Any],
     ) -> None:
         """Execute code in the local interpreter."""
@@ -232,13 +226,37 @@ class LocalPythonKernel(BaseKernel):
 
         add_output = callbacks["add_output"]
 
-        def display_hook(value: Any) -> None:
+        def displayhook(value: Any) -> None:
+            # Save reference to output
+            self.locals[f"_{self._execution_count}"] = value
+            # Display output
             if value is not None:
+                if hasattr(value, "_repr_mimebundle_"):
+                    data = value._repr_mimebundle_()
+                else:
+                    data = {}
+                    for method, mime in [
+                        # ("_repr_javascript_", "application/javascript"),
+                        ("_repr_latex_", "text/latex"),
+                        ("_repr_html_", "text/html"),
+                        ("_repr_markdown_", "text/markdown"),
+                        ("_repr_svg_", "image/svg+xml"),
+                        ("_repr_jpeg_", "image/jpeg"),
+                        ("_repr_png_", "image/png"),
+                        # ("_repr_pretty_", "text/plain"),
+                    ]:
+                        if (
+                            hasattr(value, method)
+                            and (output := getattr(value, method)()) is not None
+                        ):
+                            data[mime] = output
+                    if not data:
+                        data = {"text/plain": repr(value)}
                 add_output(
                     {
                         "output_type": "execute_result",
                         "execution_count": self._execution_count,
-                        "data": {"text/plain": repr(value)},
+                        "data": data,
                         "metadata": {},
                     },
                     True,
@@ -255,10 +273,7 @@ class LocalPythonKernel(BaseKernel):
             if callable(set_execution_count := callbacks.get("set_execution_count")):
                 set_execution_count(self._execution_count)
 
-            status = "ok"
-
             filename = f"<input_{self._execution_count}>"
-
             line_cache[filename] = (
                 len(source),
                 None,
@@ -270,7 +285,6 @@ class LocalPythonKernel(BaseKernel):
                 tree = ast.parse(source, filename=filename)
             except Exception:
                 # Check for syntax errors
-                status = "error"
                 self.showtraceback(filename, cb=callbacks["add_output"])
             else:
                 if tree.body:
@@ -283,7 +297,7 @@ class LocalPythonKernel(BaseKernel):
                     with self._lock:
                         # Execute body
                         try:
-                            sys.displayhook = display_hook
+                            sys.displayhook = displayhook
                             if body:
                                 exec(  # noqa: S102
                                     compile(
@@ -306,8 +320,6 @@ class LocalPythonKernel(BaseKernel):
                                     self.locals,
                                 )
                         except SystemExit:
-                            from euporie.core.app.current import get_app
-
                             get_app().exit()
                         except Exception:
                             log.exception("")
@@ -318,18 +330,13 @@ class LocalPythonKernel(BaseKernel):
                         finally:
                             sys.displayhook = sys.__displayhook__
 
-        if callable(callback):
-            callback({"status": status})
-
         self.status = "idle"
 
     async def complete_async(self, code: str, cursor_pos: int) -> list[dict]:
         """Get code completions."""
         import rlcompleter
 
-        # Create namespace for completer
-        namespace = self.locals
-        completer = rlcompleter.Completer(namespace)
+        completer = rlcompleter.Completer(self.locals)
 
         # Find the last word before cursor
         tokens = code[:cursor_pos].split()
@@ -354,25 +361,32 @@ class LocalPythonKernel(BaseKernel):
         self,
         code: str,
         cursor_pos: int,
-        callback: Callable[[dict[str, Any]], None] | None = None,
-    ) -> None:
+        detail_level: int = 0,
+        timeout: int = 2,
+    ) -> dict[str, Any]:
         """Get code inspection/documentation."""
         import inspect
 
-        # Try to get the object name at cursor position
-        tokens = code[:cursor_pos].split()
-        if not tokens:
-            return None
-
-        obj_name = tokens[-1]
+        # Find the start of the word (going backwards from cursor)
+        start = cursor_pos
+        while (start >= 0 and code[start - 1].isalnum()) or code[start - 1] in "._":
+            start -= 1
+        # Find the end of the word (going forwards from cursor)
+        end = cursor_pos
+        while end < len(code) and (code[end].isalnum() or code[end] in "._"):
+            end += 1
+        # Extract the complete word
+        obj_name = code[start:end].strip()
+        if not obj_name:
+            return {}
         try:
             obj = eval(obj_name, self.locals)  # noqa: S307
-            doc = inspect.getdoc(obj)
-            if doc and callable(callback):
-                callback({"status": "ok", "data": {"text/plain": doc}, "found": True})
-        except:  # noqa: E722
-            if callable(callback):
-                callback({"status": "ok", "data": {}, "found": False})
+        except Exception:
+            return {}
+        else:
+            if doc := inspect.getdoc(obj):
+                return {"text/plain": doc}
+        return {}
 
     async def is_complete_async(
         self,

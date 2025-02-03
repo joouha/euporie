@@ -226,7 +226,6 @@ class BaseKernel(abc.ABC):
         self,
         source: str,
         wait: bool = False,
-        callback: Callable[..., None] | None = None,
         **callbacks: Callable[..., Any],
     ) -> None:
         """Execute code in the kernel asynchronously."""
@@ -289,6 +288,8 @@ class BaseKernel(abc.ABC):
         self,
         code: str,
         cursor_pos: int,
+        detail_level: int = 0,
+        timeout: int = 2,
         callback: Callable[[dict[str, Any]], None] | None = None,
     ) -> str:
         """Request code inspection from the kernel.
@@ -305,7 +306,7 @@ class BaseKernel(abc.ABC):
 
         """
         return self._aodo(
-            self.inspect_async(code, cursor_pos),
+            self.inspect_async(code, cursor_pos, detail_level),
             wait=False,
             callback=callback,
             single=True,
@@ -316,7 +317,8 @@ class BaseKernel(abc.ABC):
         self,
         code: str,
         cursor_pos: int,
-        callback: Callable[[dict[str, Any]], None] | None = None,
+        detail_level: int = 0,
+        timeout: int = 2,
     ) -> None:
         """Get code inspection/documentation asynchronously."""
 
@@ -369,7 +371,6 @@ class BaseKernel(abc.ABC):
     @abc.abstractmethod
     async def restart_async(self) -> None:
         """Restart the kernel asynchronously."""
-        self.restart()
 
     def shutdown(self, wait: bool = False) -> None:
         """Shutdown the kernel.
@@ -386,7 +387,6 @@ class BaseKernel(abc.ABC):
     @abc.abstractmethod
     async def shutdown_async(self) -> None:
         """Shutdown the kernel asynchronously."""
-        self.shutdown()
 
     @property
     @abc.abstractmethod
@@ -402,3 +402,8 @@ class BaseKernel(abc.ABC):
     @abc.abstractmethod
     def id(self) -> str | None:
         """Return the kernel ID."""
+
+    @property
+    def kc(self) -> None:
+        """Return None as local kernels don't have a kernel client."""
+        return None
