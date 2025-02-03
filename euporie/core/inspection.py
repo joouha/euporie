@@ -56,7 +56,7 @@ class LspInspector(Inspector):
 
 
 class FirstInspector(Inspector):
-    """Return results of the first inspector to response."""
+    """Return results of the first inspector to respond."""
 
     def __init__(
         self, inspectors: Sequence[Inspector] | Callable[[], Sequence[Inspector]]
