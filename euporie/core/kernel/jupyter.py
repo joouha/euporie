@@ -57,7 +57,7 @@ class JupyterKernel(BaseKernel):
         )
         from jupyter_core.paths import jupyter_path
 
-        from euporie.core.kernel.manager import (
+        from euporie.core.kernel.jupyter_manager import (
             EuporieKernelManager,
             set_default_provisioner,
         )

@@ -80,7 +80,7 @@ argparse = 'euporie.core.pygments:ArgparseLexer'
 euporie = 'euporie.core.pygments:EuporiePygmentsStyle'
 
 [project.entry-points."jupyter_client.kernel_provisioners"]
-logging-local-provisioner = "euporie.core.kernel.manager:LoggingLocalProvisioner"
+logging-local-provisioner = "euporie.core.kernel.jupyter_manager:LoggingLocalProvisioner"
 
 [project.entry-points."universal_pathlib.implementations"]
 untitled = "euporie.core.path:UntitledPath"
