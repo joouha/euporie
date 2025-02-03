@@ -96,7 +96,7 @@ class JsonView:
                     new_path = (*path, str(k)) if path else (str(k),)
                     format_node(v, new_path, indent + 1, k)
 
-        format_node(self.data, tuple(), 0, self.title)
+        format_node(self.data, (), 0, self.title)
         return result
 
     def _toggle(
