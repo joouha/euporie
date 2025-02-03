@@ -9,19 +9,19 @@ from prompt_toolkit.completion import CompleteEvent, Completion
 from prompt_toolkit.document import Document
 
 from euporie.core.completion import KernelCompleter
-from euporie.core.kernel.client import Kernel
+from euporie.core.kernel.base import BaseKernel
 
 
 def test_kernel_completer_init() -> None:
     """The kernel completer saves a reference to the passed kernel on init."""
-    kernel = Mock(spec=Kernel)
+    kernel = Mock(spec=BaseKernel)
     completer = KernelCompleter(kernel)
     assert completer.kernel == kernel
 
 
 def test_kernel_completer_get_completions() -> None:
     """The synchronous "get_completions" method yields nothing."""
-    kernel = Mock(spec=Kernel)
+    kernel = Mock(spec=BaseKernel)
     completer = KernelCompleter(kernel)
     document = Document("print(", cursor_position=6)
     completions = list(completer.get_completions(document, CompleteEvent()))
@@ -32,11 +32,11 @@ def test_kernel_completer_get_completions_async() -> None:
     """The asynchronous "get_completions" method yields completions."""
 
     async def mock_complete_async(
-        code: str, cursor_pos: int, timeout: int = 60
+        source: str, cursor_pos: int, timeout: int = 60
     ) -> list[dict]:
         return [{"text": "print"}]
 
-    kernel = Mock(spec=Kernel, complete_=mock_complete_async)
+    kernel = Mock(spec=BaseKernel, complete_async=mock_complete_async)
     completer = KernelCompleter(kernel)
     document = Document("prin", cursor_position=4)
 

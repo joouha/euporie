@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 
     from prompt_toolkit.document import Document
 
-    from euporie.core.kernel.jupyter import JupyterKernel
+    from euporie.core.kernel.base import BaseKernel
     from euporie.core.lsp import LspClient
 
 
@@ -27,10 +27,10 @@ class Inspector(metaclass=ABCMeta):
 
 
 class KernelInspector(Inspector):
-    """Inspector which retrieves contextual help from a Jupyter kernel."""
+    """Inspector which retrieves contextual help from a kernel."""
 
-    def __init__(self, kernel: JupyterKernel) -> None:
-        """Initialize a new inspector which queries a Jupyter kernel."""
+    def __init__(self, kernel: BaseKernel) -> None:
+        """Initialize a new inspector which queries a kernel."""
         self.kernel = kernel
 
     async def get_context(self, document: Document, auto: bool) -> dict[str, Any]:
@@ -42,7 +42,7 @@ class LspInspector(Inspector):
     """Inspector which retrieves contextual help from a Language Server."""
 
     def __init__(self, lsp: LspClient, path: Path) -> None:
-        """Initialize a new inspector which queries a Jupyter kernel."""
+        """Initialize a new inspector which queries a kernel."""
         self.lsp = lsp
         self.path = path
 
@@ -61,7 +61,7 @@ class FirstInspector(Inspector):
     def __init__(
         self, inspectors: Sequence[Inspector] | Callable[[], Sequence[Inspector]]
     ) -> None:
-        """Initialize a new inspector which queries a Jupyter kernel."""
+        """Initialize a new inspector which queries a kernel."""
         self.inspectors = inspectors
 
     async def get_context(self, document: Document, auto: bool) -> dict[str, Any]:

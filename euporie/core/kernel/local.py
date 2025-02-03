@@ -2,14 +2,16 @@
 
 from __future__ import annotations
 
+import ast
+import code
 import logging
 import sys
 import threading
 import traceback
-from contextlib import contextmanager, redirect_stderr, redirect_stdout
-from io import TextIOBase
+from contextlib import ExitStack, contextmanager, redirect_stderr, redirect_stdout
+from io import TextIOWrapper
 from linecache import cache as line_cache
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, cast
 
 from pygments import highlight
 from pygments.formatters import Terminal256Formatter
@@ -19,15 +21,20 @@ from euporie.core.app.current import get_app
 from euporie.core.kernel.base import BaseKernel, MsgCallbacks
 
 if TYPE_CHECKING:
+    from collections.abc import Iterator
+    from typing import Any, Callable, Unpack
+
     from euporie.core.tabs.kernel import KernelTab
 
 log = logging.getLogger(__name__)
 
 
-class StdStream(TextIOBase):
+class StdStream(TextIOWrapper):
     """StringIO that calls a callback when written to."""
 
-    def __init__(self, name: str, callback: Callable[[dict, bool], None]) -> None:
+    def __init__(
+        self, name: str, callback: Callable[[dict[str, Any], bool], None] | None
+    ) -> None:
         """Create a new IO object for the local kernel.
 
         Args:
@@ -35,10 +42,11 @@ class StdStream(TextIOBase):
             callback: The callback to add output to the kernel tab
         """
         self._name = name
-        self._callback = callback
+        self.callback = callback
         self._buffer = ""
+        self.kc = None
 
-    def write(self, s: str) -> None:
+    def write(self, s: str) -> int:
         """Write the written data as a cell output."""
         if s:
             self._buffer += s
@@ -46,19 +54,21 @@ class StdStream(TextIOBase):
                 lines = self._buffer.split("\n")
                 # Keep any remaining text after last newline
                 self._buffer = lines[-1]
-                self._callback(
-                    {
-                        "output_type": "stream",
-                        "name": self._name,
-                        "text": "\n".join(lines[:-1]) + "\n",
-                    },
-                    True,
-                )
+                if callable(self.callback):
+                    self.callback(
+                        {
+                            "output_type": "stream",
+                            "name": self._name,
+                            "text": "\n".join(lines[:-1]) + "\n",
+                        },
+                        True,
+                    )
+        return len(s)
 
     def flush(self) -> None:
         """Flush any remaining buffered content."""
-        if self._buffer:
-            self._callback(
+        if self._buffer and callable(self.callback):
+            self.callback(
                 {"output_type": "stream", "name": self._name, "text": self._buffer},
                 True,
             )
@@ -72,7 +82,8 @@ class LocalPythonKernel(BaseKernel):
         self,
         kernel_tab: KernelTab,
         allow_stdin: bool = False,
-        default_callbacks: dict | None = None,
+        default_callbacks: MsgCallbacks | None = None,
+        **kwargs: Any,
     ) -> None:
         """Initialize the local Python interpreter kernel.
 
@@ -81,6 +92,7 @@ class LocalPythonKernel(BaseKernel):
             allow_stdin: Whether the kernel is allowed to request input
             default_callbacks: The default callbacks to use on receipt of a message
             connection_file: Not used for local kernel
+            **kwargs: Additional keyword arguments
         """
         super().__init__(
             kernel_tab=kernel_tab,
@@ -88,9 +100,10 @@ class LocalPythonKernel(BaseKernel):
             default_callbacks=default_callbacks,
         )
         # Create interpreter with callback for error handling
-        self.locals = {}
+        self.locals: dict[str, object] = {}
         self._execution_count = 0
         self._lock = threading.Lock()
+        self.kc = None
 
     @property
     def specs(self) -> dict[str, dict]:
@@ -153,15 +166,16 @@ class LocalPythonKernel(BaseKernel):
             set_kernel_info(kernel_info)
 
         if callable(set_status):
-            set_status("idle")
+            set_status(self.status)
 
-    def start(
-        self, cb: Callable | None = None, wait: bool = False, timeout: int = 10
-    ) -> None:
+    async def start_async(self) -> None:
         """Start the local interpreter."""
+        self.kernel_tab.metadata["kernelspec"] = {
+            "name": f"python{sys.version_info.major}",
+            "display_name": "Local Python",
+            "language": "python",
+        }
         self.status = "idle"
-        if callable(cb):
-            cb({"status": "ok"})
 
     def stop(self, cb: Callable | None = None, wait: bool = False) -> None:
         """Stop the local interpreter."""
@@ -169,10 +183,12 @@ class LocalPythonKernel(BaseKernel):
         if callable(cb):
             cb()
 
-    def showtraceback(self, filename: str, cb: Callable[dict[str, Any], bool]) -> None:
+    def showtraceback(
+        self, filename: str, cb: Callable[[dict[str, Any], bool], None] | None
+    ) -> None:
         """Format and display tracebacks for exceptions."""
         typ, value, tb = sys.exc_info()
-        stack_summary = traceback.extract_tb(tb)
+        stack_summary = list(traceback.extract_tb(tb))
 
         # Filter items from stack prior to executed code
         for i, frame in enumerate(stack_summary):
@@ -198,29 +214,28 @@ class LocalPythonKernel(BaseKernel):
         ).rstrip()
 
         # Send the error through the callback
-        cb(
-            {
-                "output_type": "error",
-                "ename": typ.__name__,
-                "evalue": str(value),
-                "traceback": colored_traceback.splitlines(),
-            },
-            own=True,
-        )
+        if callable(cb):
+            cb(
+                {
+                    "output_type": "error",
+                    "ename": "Exception" if typ is None else typ.__name__,
+                    "evalue": str(value),
+                    "traceback": colored_traceback.splitlines(),
+                },
+                True,
+            )
 
     async def run_async(
-        self,
-        source: str,
-        wait: bool = False,
-        **callbacks: Callable[..., Any],
+        self, source: str, **local_callbacks: Unpack[MsgCallbacks]
     ) -> None:
         """Execute code in the local interpreter."""
-        import ast
-
         callbacks = MsgCallbacks(
             {
                 **self.default_callbacks,
-                **{k: v for k, v in callbacks.items() if v is not None},
+                **cast(
+                    "MsgCallbacks",
+                    {k: v for k, v in local_callbacks.items() if v is not None},
+                ),
             }
         )
 
@@ -252,18 +267,19 @@ class LocalPythonKernel(BaseKernel):
                             data[mime] = output
                     if not data:
                         data = {"text/plain": repr(value)}
-                add_output(
-                    {
-                        "output_type": "execute_result",
-                        "execution_count": self._execution_count,
-                        "data": data,
-                        "metadata": {},
-                    },
-                    True,
-                )
+                if callable(add_output):
+                    add_output(
+                        {
+                            "output_type": "execute_result",
+                            "execution_count": self._execution_count,
+                            "data": data,
+                            "metadata": {},
+                        },
+                        True,
+                    )
 
         @contextmanager
-        def set_displayhook():
+        def set_displayhook() -> Iterator[None]:
             sys.displayhook = displayhook
             try:
                 yield
@@ -300,12 +316,17 @@ class LocalPythonKernel(BaseKernel):
         if isinstance(tree.body[-1], ast.Expr):
             last = tree.body.pop()
 
-        with (
-            redirect_stdout(StdStream("stdout", add_output)),
-            redirect_stderr(StdStream("stderr", add_output)),
-            self._lock,
-            set_displayhook(),
-        ):
+        with ExitStack() as stack:
+            stack.enter_context(
+                redirect_stdout(stdout := StdStream("stdout", add_output))
+            )
+            stack.callback(stdout.flush)
+            stack.enter_context(
+                redirect_stderr(stderr := StdStream("stderr", add_output))
+            )
+            stack.callback(stderr.flush)
+            stack.enter_context(self._lock)
+            stack.enter_context(set_displayhook())
             # Execute body
             try:
                 if body:
@@ -400,27 +421,20 @@ class LocalPythonKernel(BaseKernel):
 
     async def is_complete_async(
         self,
-        code: str,
+        source: str,
         timeout: int | float = 0.1,
-        wait: bool = False,
-        callback: Callable[[dict[str, Any]], None] | None = None,
     ) -> dict[str, Any]:
         """Check if code is complete."""
         try:
-            # Try to compile the code
-            compiled = code.compile(code, "<input>", "exec")
-            status = "complete" if compiled else "incomplete"
-        except SyntaxError as e:
-            if e.msg == "unexpected EOF while parsing":
-                status = "incomplete"
-            else:
-                status = "invalid"
+            compiled = code.compile_command(
+                source, f"<input_{self._execution_count}>", "exec"
+            )
         except Exception:
             status = "invalid"
+        else:
+            status = "incomplete" if compiled is None else "complete"
 
-        result = {"status": status}
-        if callable(callback):
-            callback(result)
+        result = {"status": status, "indent": "    " if source[-1:] in ":({[" else ""}
         return result
 
     def interrupt(self) -> None:

@@ -22,7 +22,7 @@ class KernelValidator(Validator):
     def validate(self, document: Document) -> None:
         """Validate the input synchronously."""
         completeness_status = self.kernel.is_complete(
-            code=document.text, wait=True
+            source=document.text, wait=True
         ).get("status", "unknown")
         if completeness_status == "incomplete":
             raise ValidationError
@@ -30,7 +30,7 @@ class KernelValidator(Validator):
     async def validate_async(self, document: Document) -> None:
         """Return a `Future` which is set when the validation is ready."""
         completeness_status = (
-            await self.kernel.is_complete_async(code=document.text)
+            await self.kernel.is_complete_async(source=document.text)
         ).get("status", "unknown")
         if completeness_status == "incomplete":
             raise ValidationError

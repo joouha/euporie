@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, TypedDict
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Coroutine
-    from typing import Any
+    from typing import Any, Unpack
 
     from euporie.core.tabs.kernel import KernelTab
 
@@ -74,6 +74,7 @@ class BaseKernel(abc.ABC):
         kernel_tab: KernelTab,
         allow_stdin: bool = False,
         default_callbacks: MsgCallbacks | None = None,
+        **kwargs: Any,
     ) -> None:
         """Initialize the kernel.
 
@@ -81,6 +82,7 @@ class BaseKernel(abc.ABC):
             kernel_tab: The notebook this kernel belongs to
             allow_stdin: Whether the kernel is allowed to request input
             default_callbacks: The default callbacks to use on receipt of a message
+            **kwargs: Additional keyword arguments passed to parent classes
         """
         self.loop = get_loop()
         self.kernel_tab = kernel_tab
@@ -88,8 +90,10 @@ class BaseKernel(abc.ABC):
         self._status = "stopped"
         self.error: Exception | None = None
         self.dead = False
-        self.coros: dict[str, concurrent.futures.Future] = {}
         self.status_change_event = asyncio.Event()
+        self.coros: dict[str, concurrent.futures.Future] = {}
+        self.msg_id_callbacks: dict[str, MsgCallbacks] = {}
+        self.threaded = False
 
         self.default_callbacks = MsgCallbacks(
             {
@@ -184,15 +188,26 @@ class BaseKernel(abc.ABC):
 
             self._aodo(_wait(), wait=True)
 
-    @status.setter
-    def status(self, value: str) -> None:
-        """Set the kernel status."""
-        self._status = value
-
-    @abc.abstractmethod
     def start(
         self, cb: Callable | None = None, wait: bool = False, timeout: int = 10
     ) -> None:
+        """Start the kernel.
+
+        Args:
+            cb: An optional callback to run after the kernel has started
+            wait: If :py:const:`True`, block until the kernel has started
+            timeout: How long to wait until failure is assumed
+
+        """
+        self._aodo(
+            self.start_async(),
+            timeout=timeout,
+            wait=wait,
+            callback=cb,
+        )
+
+    @abc.abstractmethod
+    async def start_async(self) -> None:
         """Start the kernel."""
 
     @abc.abstractmethod
@@ -223,10 +238,7 @@ class BaseKernel(abc.ABC):
 
     @abc.abstractmethod
     async def run_async(
-        self,
-        source: str,
-        wait: bool = False,
-        **callbacks: Callable[..., Any],
+        self, source: str, **local_callbacks: Unpack[MsgCallbacks]
     ) -> None:
         """Execute code in the kernel asynchronously."""
 
@@ -297,6 +309,8 @@ class BaseKernel(abc.ABC):
         Args:
             code: The code string to retrieve completions for
             cursor_pos: The position of the cursor in the code string
+            detail_level: Level of detail for the inspection (0-2)
+            timeout: Number of seconds to wait for inspection results
             callback: A function to run when the inspection result arrives. The result
                 is passed as an argument.
 
@@ -319,12 +333,12 @@ class BaseKernel(abc.ABC):
         cursor_pos: int,
         detail_level: int = 0,
         timeout: int = 2,
-    ) -> None:
+    ) -> dict[str, Any]:
         """Get code inspection/documentation asynchronously."""
 
     def is_complete(
         self,
-        code: str,
+        source: str,
         timeout: int | float = 0.1,
         wait: bool = False,
         callback: Callable[[dict[str, Any]], None] | None = None,
@@ -332,7 +346,7 @@ class BaseKernel(abc.ABC):
         """Request code completeness status from the kernel.
 
         Args:
-            code: The code string to check the completeness status of
+            source: The code string to check the completeness status of
             timeout: How long to wait for a kernel response
             wait: Whether to wait for the response
             callback: A function to run when the inspection result arrives. The result
@@ -343,7 +357,7 @@ class BaseKernel(abc.ABC):
 
         """
         return self._aodo(
-            self.is_complete_async(code, timeout),
+            self.is_complete_async(source, timeout),
             wait=wait,
             callback=callback,
         )
@@ -351,7 +365,7 @@ class BaseKernel(abc.ABC):
     @abc.abstractmethod
     async def is_complete_async(
         self,
-        code: str,
+        source: str,
         timeout: int | float = 0.1,
     ) -> dict[str, Any]:
         """Check if code is complete asynchronously."""
@@ -402,8 +416,3 @@ class BaseKernel(abc.ABC):
     @abc.abstractmethod
     def id(self) -> str | None:
         """Return the kernel ID."""
-
-    @property
-    def kc(self) -> None:
-        """Return None as local kernels don't have a kernel client."""
-        return None

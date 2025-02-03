@@ -10,7 +10,7 @@ from prompt_toolkit.history import History
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, Iterable
 
-    from euporie.core.kernel.jupyter import JupyterKernel
+    from euporie.core.kernel.base import BaseKernel
 
 log = logging.getLogger(__name__)
 
@@ -18,7 +18,7 @@ log = logging.getLogger(__name__)
 class KernelHistory(History):
     """Load the kernel's command history."""
 
-    def __init__(self, kernel: JupyterKernel, n: int = 1000) -> None:
+    def __init__(self, kernel: BaseKernel, n: int = 1000) -> None:
         """Create a new instance of the kernel history loader."""
         super().__init__()
         self.kernel = kernel

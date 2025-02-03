@@ -13,16 +13,16 @@ if TYPE_CHECKING:
 
     from prompt_toolkit.document import Document
 
-    from euporie.core.kernel.jupyter import JupyterKernel
+    from euporie.core.kernel.base import BaseKernel
     from euporie.core.lsp import LspClient
 
 log = logging.getLogger(__name__)
 
 
 class KernelCompleter(Completer):
-    """A prompt_toolkit completer which provides completions from a Jupyter kernel."""
+    """A prompt_toolkit completer which provides completions from a kernel."""
 
-    def __init__(self, kernel: JupyterKernel) -> None:
+    def __init__(self, kernel: BaseKernel) -> None:
         """Instantiate the completer for a given notebook.
 
         Args:
@@ -43,7 +43,7 @@ class KernelCompleter(Completer):
     ) -> AsyncGenerator[Completion, None]:
         """Retrieve completions from a :class:`Kernel`."""
         for kwargs in await self.kernel.complete_async(
-            code=document.text,
+            source=document.text,
             cursor_pos=document.cursor_position,
         ):
             if completion_type := kwargs.get("display_meta"):

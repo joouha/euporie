@@ -12,11 +12,11 @@ from prompt_toolkit.validation import ValidationError
 from euporie.core.validation import KernelValidator
 
 if TYPE_CHECKING:
-    from euporie.core.kernel.client import Kernel
+    from euporie.core.kernel.base import BaseKernel
 
 
 @pytest.fixture
-def kernel() -> Kernel:
+def kernel() -> BaseKernel:
     """Return a mock kernel object."""
     return Mock()
 
@@ -35,7 +35,7 @@ async def test_validate_async(kernel: Mock) -> None:
     """Test the validate_async method of KernelValidator."""
     validator = KernelValidator(kernel)
     document = Document("incomplete code")
-    kernel.is_complete_ = AsyncMock(return_value={"status": "incomplete"})
+    kernel.is_complete_async = AsyncMock(return_value={"status": "incomplete"})
 
     with pytest.raises(ValidationError):
         await validator.validate_async(document)
@@ -54,6 +54,6 @@ async def test_validate_async_complete(kernel: Mock) -> None:
     """Test the validate_async method of KernelValidator when the code is complete."""
     validator = KernelValidator(kernel)
     document = Document("complete code")
-    kernel.is_complete_ = AsyncMock(return_value={"status": "complete"})
+    kernel.is_complete_async = AsyncMock(return_value={"status": "complete"})
 
     await validator.validate_async(document)  # Should not raise ValidationError

@@ -7,7 +7,7 @@ import logging
 import os
 from collections import defaultdict
 from subprocess import PIPE, STDOUT  # S404 - Security implications considered
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 from uuid import uuid4
 
 from upath import UPath
@@ -16,7 +16,7 @@ from euporie.core.kernel.base import BaseKernel, MsgCallbacks
 
 if TYPE_CHECKING:
     from pathlib import Path
-    from typing import Any, Callable
+    from typing import Any, Callable, Unpack
 
     from jupyter_client import KernelClient
 
@@ -273,14 +273,7 @@ class JupyterKernel(BaseKernel):
                 log.debug("Imported `ipykernel` to prevent import deadlock")
             except ImportError:
                 pass
-
-        # Start the kernel
-        self._aodo(
-            self.start_async(),
-            timeout=timeout,
-            wait=wait,
-            callback=cb,
-        )
+        super().start(cb, wait, timeout)
 
     async def poll(self, channel: str) -> None:
         """Poll for messages on a channel, and signal when they arrive.
@@ -606,15 +599,7 @@ class JupyterKernel(BaseKernel):
             super().run(source, wait, callback, **callbacks)
 
     async def run_async(
-        self,
-        source: str,
-        get_input: Callable[[str, bool], None] | None = None,
-        set_execution_count: Callable[[int], None] | None = None,
-        add_output: Callable[[dict[str, Any], bool], None] | None = None,
-        clear_output: Callable[[bool], None] | None = None,
-        done: Callable[[dict[str, Any]], None] | None = None,
-        set_metadata: Callable[[tuple[str, ...], Any], None] | None = None,
-        set_status: Callable[[str], None] | None = None,
+        self, source: str, **local_callbacks: Unpack[MsgCallbacks]
     ) -> None:
         """Run the code cell and and set the response callbacks, optionally waiting."""
         if self.kc is None:
@@ -626,25 +611,23 @@ class JupyterKernel(BaseKernel):
             allow_stdin=self.allow_stdin,
         )
 
-        def wrapped_done(content: dict[str, Any]) -> None:
-            """Set the event after the ``done`` callback has completed."""
-            # Run the original callback
-            if callable(done):
-                done(content)
-            # Set the event
-            event.set()
+        if done := local_callbacks.get("done"):
 
-        callbacks = {
-            "get_input": get_input,
-            "set_execution_count": set_execution_count,
-            "add_output": add_output,
-            "clear_output": clear_output,
-            "set_metadata": set_metadata,
-            "set_status": set_status,
-            "done": wrapped_done,
-        }
+            def wrapped_done(content: dict[str, Any]) -> None:
+                """Set the event after the ``done`` callback has completed."""
+                # Run the original callback
+                if callable(done):
+                    done(content)
+                # Set the event
+                event.set()
+
+            local_callbacks["done"] = wrapped_done
+
         self.msg_id_callbacks[msg_id].update(
-            MsgCallbacks(filter(lambda x: x[1] is not None, callbacks.items()))  # type: ignore # mypy #8890
+            cast(
+                "MsgCallbacks",
+                {k: v for k, v in local_callbacks.items() if v is not None},
+            )
         )
         # Wait for "done" callback to be called
         try:
@@ -808,7 +791,7 @@ class JupyterKernel(BaseKernel):
 
     async def is_complete_async(
         self,
-        code: str,
+        source: str,
         timeout: int | float = 0.1,
     ) -> dict[str, Any]:
         """Ask the kernel to determine if code is complete asynchronously."""
@@ -824,7 +807,7 @@ class JupyterKernel(BaseKernel):
             result.update(content)
             event.set()
 
-        msg_id = self.kc.is_complete(code)
+        msg_id = self.kc.is_complete(source)
         self.msg_id_callbacks[msg_id].update(
             {"completeness_status": process_is_complete_reply}
         )
@@ -857,7 +840,7 @@ class JupyterKernel(BaseKernel):
         self.status = "starting"
         await self.km.restart_kernel(now=True)
         log.debug("Kernel %s restarted", self.id)
-        await self.post_start_()
+        await self.post_start()
 
     def change(
         self,
