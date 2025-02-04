@@ -97,8 +97,10 @@ class ScrollingContainer(Container):
 
     def pre_render_children(self, width: int, height: int) -> None:
         """Render all unrendered children in a background thread."""
-        self.pre_rendered = 0.0
         children = self.all_children()
+        if not children:
+            return
+        self.pre_rendered = 0.0
         incr = 1 / len(children)
         app = get_app()
 
