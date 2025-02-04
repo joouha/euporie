@@ -29,9 +29,16 @@ class Inspector(metaclass=ABCMeta):
 class KernelInspector(Inspector):
     """Inspector which retrieves contextual help from a kernel."""
 
-    def __init__(self, kernel: BaseKernel) -> None:
+    def __init__(self, kernel: BaseKernel | Callable[[], BaseKernel]) -> None:
         """Initialize a new inspector which queries a kernel."""
-        self.kernel = kernel
+        self._kernel = kernel
+
+    @property
+    def kernel(self) -> BaseKernel:
+        """Return the current kernel."""
+        if callable(self._kernel):
+            return self._kernel()
+        return self._kernel
 
     async def get_context(self, document: Document, auto: bool) -> dict[str, Any]:
         """Request contextual help from the kernel."""

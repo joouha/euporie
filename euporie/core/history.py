@@ -9,6 +9,7 @@ from prompt_toolkit.history import History
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, Iterable
+    from typing import Callable
 
     from euporie.core.kernel.base import BaseKernel
 
@@ -18,14 +19,23 @@ log = logging.getLogger(__name__)
 class KernelHistory(History):
     """Load the kernel's command history."""
 
-    def __init__(self, kernel: BaseKernel, n: int = 1000) -> None:
+    def __init__(
+        self, kernel: BaseKernel | Callable[[], BaseKernel], n: int = 1000
+    ) -> None:
         """Create a new instance of the kernel history loader."""
         super().__init__()
-        self.kernel = kernel
+        self._kernel = kernel
         # How many items to load
         self.n = n
         self.n_loaded = 0
         self.loading = False
+
+    @property
+    def kernel(self) -> BaseKernel:
+        """Return the current kernel."""
+        if callable(self._kernel):
+            return self._kernel()
+        return self._kernel
 
     async def load(self) -> AsyncGenerator[str, None]:
         """Load the history and yield all entries, most recent history first.

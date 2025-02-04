@@ -10,6 +10,7 @@ from prompt_toolkit.completion.base import CompleteEvent, Completer, Completion
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, Iterable
     from pathlib import Path
+    from typing import Callable
 
     from prompt_toolkit.document import Document
 
@@ -22,14 +23,21 @@ log = logging.getLogger(__name__)
 class KernelCompleter(Completer):
     """A prompt_toolkit completer which provides completions from a kernel."""
 
-    def __init__(self, kernel: BaseKernel) -> None:
+    def __init__(self, kernel: BaseKernel | Callable[[], BaseKernel]) -> None:
         """Instantiate the completer for a given notebook.
 
         Args:
             kernel: A `Notebook` instance
 
         """
-        self.kernel = kernel
+        self._kernel = kernel
+
+    @property
+    def kernel(self) -> BaseKernel:
+        """Return the current kernel."""
+        if callable(self._kernel):
+            return self._kernel()
+        return self._kernel
 
     def get_completions(
         self, document: Document, complete_event: CompleteEvent
