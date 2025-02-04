@@ -26,7 +26,7 @@ add_setting(
     flags=["--kernel-name", "--kernel"],
     type_=str,
     help_="The name of the kernel to start by default",
-    default="local-python",
+    default="python3",
     description="""
         The name of the kernel selected automatically by the console app or in new
         notebooks. If set to an empty string, the user will be asked which kernel
