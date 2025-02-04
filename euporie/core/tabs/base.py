@@ -133,13 +133,14 @@ class Tab(metaclass=ABCMeta):
                 if not name.startswith("."):
                     name = f".{name}"
                 backup_path = parent / name
-                try:
-                    import shutil
+                if self.app.config.backup_on_save:
+                    try:
+                        import shutil
 
-                    shutil.copy2(path, backup_path)
-                except Exception as e:
-                    log.error("Failed to create backup: %s", e)
-                    raise
+                        shutil.copy2(path, backup_path)
+                    except Exception as e:
+                        log.error("Failed to create backup: %s", e)
+                        raise
 
             # Write new content directly to original file
             try:

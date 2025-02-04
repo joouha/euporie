@@ -10,6 +10,11 @@ Notable changes to this project will be documented in this file.
 Upcoming
 ********
 
+Added
+=====
+
+- Add setting to determine backup-on-save behaviour
+
 Changed
 =======
 

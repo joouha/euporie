@@ -5,6 +5,22 @@ from prompt_toolkit.filters import buffer_has_focus
 from euporie.core.config import add_setting
 
 add_setting(
+    name="backup_on_save",
+    group="euporie.core.tabs.base",
+    flags=["--backup-on-save"],
+    type_=bool,
+    help_="Create backups before saving files",
+    default=False,
+    description="""
+        Determines whether a backup file should be created before saving a file.
+
+        If set to ``True``, the original file will be copied to a new file with the
+        same name but prefixed with ``.`` and suffixed with ``.bak`` before writing the
+        updated contents.
+    """,
+)
+
+add_setting(
     name="kernel_name",
     group="euporie.core.tabs.kernel",
     flags=["--kernel-name", "--kernel"],
