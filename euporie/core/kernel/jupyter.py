@@ -6,19 +6,21 @@ import asyncio
 import logging
 import os
 from collections import defaultdict
+from functools import partial
 from subprocess import PIPE, STDOUT  # S404 - Security implications considered
 from typing import TYPE_CHECKING, cast
 from uuid import uuid4
 
 from upath import UPath
 
-from euporie.core.kernel.base import BaseKernel, MsgCallbacks
+from euporie.core.kernel.base import BaseKernel, KernelInfo, MsgCallbacks
 
 if TYPE_CHECKING:
     from pathlib import Path
     from typing import Any, Callable, Unpack
 
     from jupyter_client import KernelClient
+    from jupyter_client.kernelspec import KernelSpecManager
 
     from euporie.core.tabs.kernel import KernelTab
 
@@ -32,14 +34,59 @@ class JupyterKernel(BaseKernel):
     Has the ability to run itself in it's own thread.
     """
 
-    _CLIENT_ID = f"euporie-{os.getpid()}"
+    _client_id = f"euporie-{os.getpid()}"
+    _spec_manager: KernelSpecManager
+
+    @classmethod
+    def variants(cls) -> list[dict[str, Any]]:
+        """Return available kernel specifications."""
+        from jupyter_core.paths import jupyter_runtime_dir
+
+        try:
+            manager = cls._sepc_manager
+        except AttributeError:
+            from jupyter_client.kernelspec import KernelSpecManager
+            from jupyter_core.paths import jupyter_path
+
+            manager = cls._spec_manager = KernelSpecManager()
+            # Set the kernel folder list to prevent the default method from running.
+            # This prevents the kernel spec manager from loading IPython, just for the
+            # purpose of adding the depreciated :file:`.ipython/kernels` folder to the list
+            # of kernel search paths. Without this, having IPython installed causes a
+            # import race condition error where IPython was imported in the main thread for
+            # displaying LaTeX and in the kernel thread to discover kernel paths.
+            # Also this speeds up launch since importing IPython is pretty slow.
+            manager.kernel_dirs = jupyter_path("kernels")
+
+        return [
+            KernelInfo(
+                name=name,
+                display_name=info.get("spec", {}).get("display_name", name),
+                factory=partial(cls, kernel_name=name),
+                kind="new",
+                type=cls,
+            )
+            for name, info in manager.get_all_specs().items()
+        ] + [
+            KernelInfo(
+                name=path.name,
+                display_name=path.name,
+                factory=partial(cls, connection_file=path),
+                kind="existing",
+                type=cls,
+            )
+            for path in UPath(jupyter_runtime_dir()).glob("kernel-*.json")
+        ]
 
     def __init__(
         self,
         kernel_tab: KernelTab,
-        allow_stdin: bool = False,
         default_callbacks: MsgCallbacks | None = None,
+        allow_stdin: bool = False,
+        *,
+        kernel_name: str | None = None,
         connection_file: Path | None = None,
+        **kwargs: Any,
     ) -> None:
         """Initialize the JupyterKernel.
 
@@ -55,7 +102,6 @@ class JupyterKernel(BaseKernel):
             allow_stdin=allow_stdin,
             default_callbacks=default_callbacks,
         )
-        from jupyter_core.paths import jupyter_path
 
         from euporie.core.kernel.jupyter_manager import (
             EuporieKernelManager,
@@ -64,28 +110,27 @@ class JupyterKernel(BaseKernel):
 
         set_default_provisioner()
 
+        if kernel_name is None:
+            import json
+
+            try:
+                connection_info = json.loads(connection_file.read_text())
+            except json.decoder.JSONDecodeError:
+                connection_info = {}
+            kernel_name = connection_info.get("kernel_name", "python3")
+
+        if kernel_name is None and connection_file is None:
+            raise ValueError("Must provide `kernel_name` or `connection_file`")
+
         self.connection_file = connection_file
+        self.km = EuporieKernelManager(kernel_name=kernel_name)
         self.kc: KernelClient | None = None
-        self.km = EuporieKernelManager(
-            kernel_name=str(kernel_tab.kernel_name),
-        )
         self.monitor_task: asyncio.Task | None = None
-
         self.poll_tasks: list[asyncio.Task] = []
-
         self.msg_id_callbacks: dict[str, MsgCallbacks] = defaultdict(
             # Return a copy of the default callbacks
             lambda: MsgCallbacks(dict(self.default_callbacks))  # type: ignore # mypy #8890
         )
-
-        # Set the kernel folder list to prevent the default method from running.
-        # This prevents the kernel spec manager from loading IPython, just for the
-        # purpose of adding the depreciated :file:`.ipython/kernels` folder to the list
-        # of kernel search paths. Without this, having IPython installed causes a
-        # import race condition error where IPython was imported in the main thread for
-        # displaying LaTeX and in the kernel thread to discover kernel paths.
-        # Also this speeds up launch since importing IPython is pretty slow.
-        self.km.kernel_spec_manager.kernel_dirs = jupyter_path("kernels")
 
     def _set_living_status(self, alive: bool) -> None:
         """Set the life status of the kernel."""
@@ -133,11 +178,6 @@ class JupyterKernel(BaseKernel):
             return self.km.kernel_id
         else:
             return None
-
-    @property
-    def specs(self) -> dict[str, dict]:
-        """Return a list of available kernelspecs."""
-        return self.km.kernel_spec_manager.get_all_specs()
 
     async def stop_async(self, cb: Callable[[], Any] | None = None) -> None:
         """Stop the kernel asynchronously."""
@@ -204,6 +244,15 @@ class JupyterKernel(BaseKernel):
 
         await self.post_start()
 
+    @property
+    def spec(self) -> dict[str, str]:
+        """The kernelspec metadata for the current kernel instance."""
+        return {
+            "name": self.km.kernel_name,
+            "display_name": self.km.kernel_spec.display_name,
+            "language": self.km.kernel_spec.language,
+        }
+
     async def post_start(self) -> None:
         """Wait for the kernel to become ready."""
         from jupyter_client.kernelspec import NoSuchKernel
@@ -215,34 +264,27 @@ class JupyterKernel(BaseKernel):
             self.status = "error"
             log.error("Selected kernel '%s' not registered", self.km.kernel_name)
         else:
-            if ks is not None:
-                self.kernel_tab.metadata["kernelspec"] = {
-                    "name": self.km.kernel_name,
-                    "display_name": ks.display_name,
-                    "language": ks.language,
-                }
+            if ks is not None and self.kc is not None:
+                log.debug("Waiting for kernel to become ready")
+                try:
+                    await self.kc._async_wait_for_ready(timeout=10)
+                except RuntimeError as e:
+                    log.error("Error connecting to kernel")
+                    self.error = e
+                    self.status = "error"
+                else:
+                    log.debug("Kernel %s ready", self.id)
+                    self.status = "idle"
+                    self.error = None
+                    self.poll_tasks = [
+                        asyncio.create_task(self.poll("shell")),
+                        asyncio.create_task(self.poll("iopub")),
+                        asyncio.create_task(self.poll("stdin")),
+                    ]
+                    self.dead = False
 
-                if self.kc is not None:
-                    log.debug("Waiting for kernel to become ready")
-                    try:
-                        await self.kc._async_wait_for_ready(timeout=10)
-                    except RuntimeError as e:
-                        log.error("Error connecting to kernel")
-                        self.error = e
-                        self.status = "error"
-                    else:
-                        log.debug("Kernel %s ready", self.id)
-                        self.status = "idle"
-                        self.error = None
-                        self.poll_tasks = [
-                            asyncio.create_task(self.poll("shell")),
-                            asyncio.create_task(self.poll("iopub")),
-                            asyncio.create_task(self.poll("stdin")),
-                        ]
-                        self.dead = False
-
-                    # Set username so we can identify our own messages
-                    self.kc.session.username = self._CLIENT_ID
+                # Set username so we can identify our own messages
+                self.kc.session.username = self._client_id
 
             # Start monitoring the kernel status
             if self.monitor_task is not None:
@@ -289,7 +331,7 @@ class JupyterKernel(BaseKernel):
             rsp = await msg_getter_coro()
             # Run msg type handler
             msg_type = rsp.get("header", {}).get("msg_type")
-            own = rsp.get("parent_header", {}).get("username") == self._CLIENT_ID
+            own = rsp.get("parent_header", {}).get("username") == self._client_id
             if callable(handler := getattr(self, f"on_{channel}_{msg_type}", None)):
                 handler(rsp, own)
             else:
@@ -669,7 +711,7 @@ class JupyterKernel(BaseKernel):
             self.kc.comm_info(target_name=target_name)
 
     async def complete_async(
-        self, code: str, cursor_pos: int, timeout: int = 60
+        self, source: str, cursor_pos: int, timeout: int = 60
     ) -> list[dict]:
         """Request code completions from the kernel, asynchronously."""
         results: list[dict] = []
@@ -707,7 +749,7 @@ class JupyterKernel(BaseKernel):
                         )
                 event.set()
 
-        msg_id = self.kc.complete(code, cursor_pos)
+        msg_id = self.kc.complete(source, cursor_pos)
         self.msg_id_callbacks[msg_id].update({"done": process_complete_reply})
 
         try:
@@ -756,7 +798,7 @@ class JupyterKernel(BaseKernel):
 
     async def inspect_async(
         self,
-        code: str,
+        source: str,
         cursor_pos: int,
         detail_level: int = 0,
         timeout: int = 2,
@@ -779,7 +821,9 @@ class JupyterKernel(BaseKernel):
                 event.set()
 
         log.debug("Requesting contextual help from the kernel")
-        msg_id = self.kc.inspect(code, cursor_pos=cursor_pos, detail_level=detail_level)
+        msg_id = self.kc.inspect(
+            source, cursor_pos=cursor_pos, detail_level=detail_level
+        )
         self.msg_id_callbacks[msg_id].update({"done": process_inspect_reply})
 
         try:
@@ -841,46 +885,6 @@ class JupyterKernel(BaseKernel):
         await self.km.restart_kernel(now=True)
         log.debug("Kernel %s restarted", self.id)
         await self.post_start()
-
-    def change(
-        self,
-        name: str | None,
-        connection_file: Path | None = None,
-        cb: Callable | None = None,
-    ) -> None:
-        """Change the kernel.
-
-        Args:
-            name: The name of the kernel to change to
-            connection_file: The path to the connection file to use
-            cb: Callback to run once restarted
-
-        """
-        from euporie.core.kernel.manager import EuporieKernelManager
-
-        self.connection_file = connection_file
-        self.status = "starting"
-
-        # Update the tab's kernel spec
-        spec = self.specs.get(name or "", {}).get("spec", {})
-        self.kernel_tab.metadata["kernelspec"] = {
-            "name": name,
-            "display_name": spec.get("display_name", ""),
-            "language": spec.get("language", ""),
-        }
-
-        # Stop the old kernel
-        if self.km.has_kernel:
-            self.stop()
-
-        # Create a new kernel manager instance
-        del self.km
-        kwargs = {} if name is None else {"kernel_name": name}
-        self.km = EuporieKernelManager(**kwargs)
-        self.error = None
-
-        # Start the kernel
-        self.start(cb=cb)
 
     def stop(self, cb: Callable | None = None, wait: bool = False) -> None:
         """Stop the current kernel.

@@ -1,19 +1,53 @@
 """Concerns the interaction with kernels."""
 
-from typing import Any, Literal
+from __future__ import annotations
 
-from euporie.core.kernel.base import BaseKernel
-from euporie.core.kernel.jupyter import JupyterKernel
-from euporie.core.kernel.local import LocalPythonKernel
+from importlib.util import find_spec
+from pkgutil import resolve_name
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from typing import Any, Callable, Literal
+
+    from euporie.core.kernel.base import BaseKernel, KernelInfo, MsgCallbacks
+    from euporie.core.tabs.kernel import KernelTab
+
+KERNEL_REGISTRY = {
+    "local": "euporie.core.kernel.local:LocalPythonKernel",
+}
+if find_spec("jupyter_client"):
+    KERNEL_REGISTRY["jupyter"] = "euporie.core.kernel.jupyter:JupyterKernel"
+
+
+def list_kernels() -> list[KernelInfo]:
+    """Get specifications for all available kernel types.
+
+    Returns:
+        A dictionary mapping kernel type names to their specifications.
+    """
+    return [
+        variant
+        for type_path in KERNEL_REGISTRY.values()
+        for variant in resolve_name(type_path).variants()
+    ]
 
 
 def create_kernel(
-    kernel_type: Literal["jupyter", "local"], **kwargs: Any
+    type_name: Literal["jupyter", "local"],
+    kernel_tab: KernelTab,
+    default_callbacks: MsgCallbacks | None = None,
+    allow_stdin: bool = False,
+    **kwargs: Any,
 ) -> BaseKernel:
     """Create and return appropriate kernel instance."""
-    if kernel_type == "jupyter":
-        return JupyterKernel(**kwargs)
-    elif kernel_type == "local":
-        return LocalPythonKernel(**kwargs)
+    type_path = KERNEL_REGISTRY.get(type_name)
+    if type_path is not None:
+        type_class = resolve_name(type_path)
+        return type_class(
+            kernel_tab=kernel_tab,
+            default_callbacks=default_callbacks,
+            allow_stdin=allow_stdin,
+            **kwargs,
+        )
     else:
-        raise ValueError(f"Unknown kernel type: {kernel_type}")
+        raise ValueError(f"Unknown kernel type: {type_name}")

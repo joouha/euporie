@@ -18,7 +18,7 @@ from pygments.formatters import Terminal256Formatter
 from pygments.lexers import Python3TracebackLexer
 
 from euporie.core.app.current import get_app
-from euporie.core.kernel.base import BaseKernel, MsgCallbacks
+from euporie.core.kernel.base import BaseKernel, KernelInfo, MsgCallbacks
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -29,60 +29,29 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 
-class StdStream(TextIOWrapper):
-    """StringIO that calls a callback when written to."""
-
-    def __init__(
-        self, name: str, callback: Callable[[dict[str, Any], bool], None] | None
-    ) -> None:
-        """Create a new IO object for the local kernel.
-
-        Args:
-            name: The name of the stream (stdout or stderr)
-            callback: The callback to add output to the kernel tab
-        """
-        self._name = name
-        self.callback = callback
-        self._buffer = ""
-        self.kc = None
-
-    def write(self, s: str) -> int:
-        """Write the written data as a cell output."""
-        if s:
-            self._buffer += s
-            if "\n" in self._buffer:
-                lines = self._buffer.split("\n")
-                # Keep any remaining text after last newline
-                self._buffer = lines[-1]
-                if callable(self.callback):
-                    self.callback(
-                        {
-                            "output_type": "stream",
-                            "name": self._name,
-                            "text": "\n".join(lines[:-1]) + "\n",
-                        },
-                        True,
-                    )
-        return len(s)
-
-    def flush(self) -> None:
-        """Flush any remaining buffered content."""
-        if self._buffer and callable(self.callback):
-            self.callback(
-                {"output_type": "stream", "name": self._name, "text": self._buffer},
-                True,
-            )
-            self._buffer = ""
-
-
 class LocalPythonKernel(BaseKernel):
     """Run code in a local Python interpreter."""
+
+    @classmethod
+    def variants(
+        cls,
+    ) -> dict[str, Callable[[KernelTab, MsgCallbacks, bool], BaseKernel]]:
+        """Return available kernel specifications."""
+        return [
+            KernelInfo(
+                name="local-python",
+                display_name="Local Python",
+                factory=cls,
+                kind="new",
+                type=cls,
+            )
+        ]
 
     def __init__(
         self,
         kernel_tab: KernelTab,
-        allow_stdin: bool = False,
         default_callbacks: MsgCallbacks | None = None,
+        allow_stdin: bool = False,
         **kwargs: Any,
     ) -> None:
         """Initialize the local Python interpreter kernel.
@@ -104,22 +73,6 @@ class LocalPythonKernel(BaseKernel):
         self._execution_count = 0
         self._lock = threading.Lock()
         self.kc = None
-
-    @property
-    def specs(self) -> dict[str, dict]:
-        """Return available kernel specifications."""
-        return {
-            "local-python": {
-                "spec": {
-                    "argv": [sys.executable],
-                    "env": {},
-                    "display_name": "Local Python",
-                    "language": "python",
-                    "interrupt_mode": "message",
-                    "metadata": {},
-                }
-            }
-        }
 
     @property
     def missing(self) -> bool:
@@ -158,7 +111,7 @@ class LocalPythonKernel(BaseKernel):
             "implementation": sys.implementation.name,
             "implementation_version": sys.version.split()[0],
             "banner": f"Python {sys.version}",
-            "help_links": [],
+            "help_links": ["https://euporie.readthedocs.io/"],
             "status": "ok",
         }
 
@@ -170,12 +123,17 @@ class LocalPythonKernel(BaseKernel):
 
     async def start_async(self) -> None:
         """Start the local interpreter."""
-        self.kernel_tab.metadata["kernelspec"] = {
-            "name": f"python{sys.version_info.major}",
+        self.error = None
+        self.status = "idle"
+
+    @property
+    def spec(self) -> dict[str, str]:
+        """The kernelspec metadata for the current kernel instance."""
+        return {
+            "name": "local-python",
             "display_name": "Local Python",
             "language": "python",
         }
-        self.status = "idle"
 
     def stop(self, cb: Callable | None = None, wait: bool = False) -> None:
         """Stop the local interpreter."""
@@ -246,10 +204,17 @@ class LocalPythonKernel(BaseKernel):
             self.locals[f"_{self._execution_count}"] = value
             # Display output
             if value is not None:
+                data = {}
+                metadata = {}
                 if hasattr(value, "_repr_mimebundle_"):
-                    data = value._repr_mimebundle_()
+                    output = value._repr_mimebundle_()
+                    if isinstance(output, tuple):
+                        data, metadata = output
+                    else:
+                        data = output
                 else:
                     data = {}
+                    metadata = {}
                     for method, mime in [
                         # ("_repr_javascript_", "application/javascript"),
                         ("_repr_latex_", "text/latex"),
@@ -273,7 +238,7 @@ class LocalPythonKernel(BaseKernel):
                             "output_type": "execute_result",
                             "execution_count": self._execution_count,
                             "data": data,
-                            "metadata": {},
+                            "metadata": metadata,
                         },
                         True,
                     )
@@ -287,10 +252,12 @@ class LocalPythonKernel(BaseKernel):
                 sys.displayhook = sys.__displayhook__
 
         self.status = "busy"
+
         # Set execution count
         self._execution_count += 1
         if callable(set_execution_count := callbacks.get("set_execution_count")):
             set_execution_count(self._execution_count)
+
         # Add source to line cache (for display in tracebacks)
         filename = f"<input_{self._execution_count}>"
         line_cache[filename] = (
@@ -358,19 +325,20 @@ class LocalPythonKernel(BaseKernel):
                     self.showtraceback(filename, cb=callbacks["add_output"])
                 except Exception:
                     log.exception("")
-            finally:
-                sys.displayhook = sys.__displayhook__
 
         self.status = "idle"
 
-    async def complete_async(self, code: str, cursor_pos: int) -> list[dict]:
+        if callable(done := callbacks.get("done")):
+            done()
+
+    async def complete_async(self, source: str, cursor_pos: int) -> list[dict]:
         """Get code completions."""
         import rlcompleter
 
         completer = rlcompleter.Completer(self.locals)
 
         # Find the last word before cursor
-        tokens = code[:cursor_pos].split()
+        tokens = source[:cursor_pos].split()
         if not tokens:
             return []
 
@@ -390,7 +358,7 @@ class LocalPythonKernel(BaseKernel):
 
     async def inspect_async(
         self,
-        code: str,
+        source: str,
         cursor_pos: int,
         detail_level: int = 0,
         timeout: int = 2,
@@ -400,14 +368,14 @@ class LocalPythonKernel(BaseKernel):
 
         # Find the start of the word (going backwards from cursor)
         start = cursor_pos
-        while (start >= 0 and code[start - 1].isalnum()) or code[start - 1] in "._":
+        while (start >= 0 and source[start - 1].isalnum()) or source[start - 1] in "._":
             start -= 1
         # Find the end of the word (going forwards from cursor)
         end = cursor_pos
-        while end < len(code) and (code[end].isalnum() or code[end] in "._"):
+        while end < len(source) and (source[end].isalnum() or source[end] in "._"):
             end += 1
         # Extract the complete word
-        obj_name = code[start:end].strip()
+        obj_name = source[start:end].strip()
         if not obj_name:
             return {}
         try:
@@ -447,9 +415,56 @@ class LocalPythonKernel(BaseKernel):
         """Restart the kernel."""
         self.locals.clear()
         self._execution_count = 0
+        await self.start_async()
         if callable(cb):
             cb({"status": "ok"})
 
     async def shutdown_async(self, wait: bool = False) -> None:
         """Shutdown the kernel."""
         self.stop()
+
+
+class StdStream(TextIOWrapper):
+    """StringIO that calls a callback when written to."""
+
+    def __init__(
+        self, name: str, callback: Callable[[dict[str, Any], bool], None] | None
+    ) -> None:
+        """Create a new IO object for the local kernel.
+
+        Args:
+            name: The name of the stream (stdout or stderr)
+            callback: The callback to add output to the kernel tab
+        """
+        self._name = name
+        self.callback = callback
+        self._buffer = ""
+        self.kc = None
+
+    def write(self, s: str) -> int:
+        """Write the written data as a cell output."""
+        if s:
+            self._buffer += s
+            if "\n" in self._buffer:
+                lines = self._buffer.split("\n")
+                # Keep any remaining text after last newline
+                self._buffer = lines[-1]
+                if callable(self.callback):
+                    self.callback(
+                        {
+                            "output_type": "stream",
+                            "name": self._name,
+                            "text": "\n".join(lines[:-1]) + "\n",
+                        },
+                        True,
+                    )
+        return len(s)
+
+    def flush(self) -> None:
+        """Flush any remaining buffered content."""
+        if self._buffer and callable(self.callback):
+            self.callback(
+                {"output_type": "stream", "name": self._name, "text": self._buffer},
+                True,
+            )
+            self._buffer = ""

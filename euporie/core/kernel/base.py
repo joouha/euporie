@@ -7,11 +7,11 @@ import asyncio
 import concurrent
 import logging
 import threading
-from typing import TYPE_CHECKING, TypedDict
+from typing import TYPE_CHECKING, NamedTuple, TypedDict
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Coroutine
-    from typing import Any, Unpack
+    from typing import Any, Literal, Unpack
 
     from euporie.core.tabs.kernel import KernelTab
 
@@ -69,11 +69,18 @@ def get_loop() -> asyncio.AbstractEventLoop:
 class BaseKernel(abc.ABC):
     """Abstract base class for euporie kernels."""
 
+    @classmethod
+    def variants(
+        cls,
+    ) -> dict[str, Callable[[KernelTab, MsgCallbacks, bool], BaseKernel]]:
+        """Return a list of parameterized variants of this kernel."""
+        return {}
+
     def __init__(
         self,
         kernel_tab: KernelTab,
-        allow_stdin: bool = False,
         default_callbacks: MsgCallbacks | None = None,
+        allow_stdin: bool = False,
         **kwargs: Any,
     ) -> None:
         """Initialize the kernel.
@@ -108,6 +115,11 @@ class BaseKernel(abc.ABC):
         )
         if default_callbacks is not None:
             self.default_callbacks.update(default_callbacks)
+
+    @property
+    @abc.abstractmethod
+    def spec(self) -> dict[str, str]:
+        """The kernelspec metadata for the current kernel instance."""
 
     def _aodo(
         self,
@@ -146,9 +158,10 @@ class BaseKernel(abc.ABC):
             result = None
             try:
                 result = future.result(timeout)
-            except concurrent.futures.TimeoutError:
+            except concurrent.futures.TimeoutError as exc:
                 log.error("Operation '%s' timed out", coro)
                 future.cancel()
+                result = exc
             finally:
                 if callable(callback):
                     callback(result)
@@ -386,7 +399,7 @@ class BaseKernel(abc.ABC):
     async def restart_async(self) -> None:
         """Restart the kernel asynchronously."""
 
-    def shutdown(self, wait: bool = False) -> None:
+    def shutdown(self, wait: bool = False, cb: Callable | None = None) -> None:
         """Shutdown the kernel.
 
         This is intended to be run when the notebook is closed: the
@@ -394,18 +407,14 @@ class BaseKernel(abc.ABC):
 
         Args:
             wait: Whether to block until shutdown completes
+            cb: Callback run after shutdown completes
 
         """
-        self._aodo(self.shutdown_async(), wait=wait)
+        self._aodo(self.shutdown_async(), wait=wait, callback=cb)
 
     @abc.abstractmethod
     async def shutdown_async(self) -> None:
         """Shutdown the kernel asynchronously."""
-
-    @property
-    @abc.abstractmethod
-    def specs(self) -> dict[str, dict]:
-        """Return available kernel specifications."""
 
     @property
     @abc.abstractmethod
@@ -416,3 +425,23 @@ class BaseKernel(abc.ABC):
     @abc.abstractmethod
     def id(self) -> str | None:
         """Return the kernel ID."""
+
+    def kc_comm(self, comm_id: str, data: dict[str, Any]) -> str:
+        """By default kernels do not implement COMM communication."""
+        log.warning("The %s kernel does not implement COMMs", self.__class__.__name__)
+
+    def comm_info(self, target_name: str | None = None) -> None:
+        """Request information about the current comms.
+
+        Does nothing by default.
+        """
+
+
+class KernelInfo(NamedTuple):
+    """Named tuple representing a launchable kernel."""
+
+    name: str
+    display_name: str
+    type: BaseKernel
+    kind: Literal["new", "existing"]
+    factory: Callable[[], BaseKernel]
