@@ -65,6 +65,7 @@ if TYPE_CHECKING:
     from prompt_toolkit.mouse_events import MouseEvent
 
     from euporie.core.app.app import BaseApp
+    from euporie.core.kernel.base import KernelInfo
     from euporie.core.tabs.base import Tab
     from euporie.core.tabs.kernel import KernelTab
 
@@ -656,20 +657,13 @@ class SelectKernelDialog(Dialog):
 
     title = "Select Kernel"
 
-    def load(
-        self,
-        # kernel_specs: dict[str, Any] | None = None,
-        # runtime_dirs: dict[str, Path] | None = None,
-        tab: KernelTab | None = None,
-        message: str = "",
-    ) -> None:
+    def load(self, tab: KernelTab | None = None, message: str = "") -> None:
         """Load dialog body & buttons."""
-
         from euporie.core.kernel import list_kernels
         from euporie.core.widgets.layout import TabbedSplit
 
         infos = list_kernels()
-        infos_by_kind = {}
+        infos_by_kind: dict[str, list[KernelInfo]] = {}
         for info in infos:
             infos_by_kind.setdefault(info.kind, []).append(info)
 
@@ -702,8 +696,9 @@ class SelectKernelDialog(Dialog):
         def _change_kernel() -> None:
             self.hide()
             assert tab is not None
-            info = list(selects.values())[tabs.active].value
-            tab.switch_kernel(info.factory)
+            if (index := tabs.active) is not None:
+                info = list(selects.values())[index].value
+                tab.switch_kernel(info.factory)
 
         self.buttons = {
             "Select": _change_kernel,

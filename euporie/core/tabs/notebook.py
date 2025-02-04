@@ -167,8 +167,7 @@ class BaseNotebook(KernelTab, metaclass=ABCMeta):
 
     @abstractmethod
     def load_container(self) -> AnyContainer:
-        """Abcract method for loading the notebook's main container."""
-        self.loaded = True
+        """Absract method for loading the notebook's main container."""
 
     @abstractproperty
     def cell(self) -> Cell:

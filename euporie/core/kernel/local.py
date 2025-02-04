@@ -33,9 +33,7 @@ class LocalPythonKernel(BaseKernel):
     """Run code in a local Python interpreter."""
 
     @classmethod
-    def variants(
-        cls,
-    ) -> dict[str, Callable[[KernelTab, MsgCallbacks, bool], BaseKernel]]:
+    def variants(cls) -> list[KernelInfo]:
         """Return available kernel specifications."""
         return [
             KernelInfo(
@@ -323,13 +321,15 @@ class LocalPythonKernel(BaseKernel):
                 log.exception("")
                 try:
                     self.showtraceback(filename, cb=callbacks["add_output"])
+                    if callable(done := callbacks.get("done")):
+                        done({"status": "error"})
                 except Exception:
                     log.exception("")
 
         self.status = "idle"
 
         if callable(done := callbacks.get("done")):
-            done()
+            done({"status": "ok"})
 
     async def complete_async(self, source: str, cursor_pos: int) -> list[dict]:
         """Get code completions."""
@@ -405,9 +405,13 @@ class LocalPythonKernel(BaseKernel):
         result = {"status": status, "indent": "    " if source[-1:] in ":({[" else ""}
         return result
 
+    def input(self, text: str) -> None:
+        """Send input to the kernel."""
+        raise NotImplementedError()
+
     def interrupt(self) -> None:
         """Interrupt the kernel."""
-        # Local interpreter runs in the main thread, so we can't really interrupt it
+        log.warning("Cannot interrupt kernel %r", self)
 
     async def restart_async(
         self, wait: bool = False, cb: Callable | None = None

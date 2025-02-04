@@ -191,9 +191,7 @@ class Console(KernelTab):
     def validate_input(self, code: str) -> bool:
         """Determine if the entered code is ready to run."""
         assert self.kernel is not None
-        completeness_status = self.kernel.is_complete(code, wait=True).get(
-            "status", "unknown"
-        )
+        completeness_status = self.kernel.is_complete(code).get("status", "unknown")
         return not (
             not code.strip()
             or completeness_status == "incomplete"

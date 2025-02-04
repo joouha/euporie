@@ -517,8 +517,8 @@ class StdInput:
 
     def accept(self, buffer: Buffer) -> bool:
         """Send the input to the kernel and hide the input box."""
-        if self.kernel_tab.kernel.kc is not None:
-            self.kernel_tab.kernel.kc.input(buffer.text)
+        if self.kernel_tab.kernel is not None:
+            self.kernel_tab.kernel.input(buffer.text)
         # Cleanup
         self.active = False
 

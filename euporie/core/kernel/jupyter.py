@@ -38,12 +38,12 @@ class JupyterKernel(BaseKernel):
     _spec_manager: KernelSpecManager
 
     @classmethod
-    def variants(cls) -> list[dict[str, Any]]:
+    def variants(cls) -> list[KernelInfo]:
         """Return available kernel specifications."""
         from jupyter_core.paths import jupyter_runtime_dir
 
         try:
-            manager = cls._sepc_manager
+            manager = cls._spec_manager
         except AttributeError:
             from jupyter_client.kernelspec import KernelSpecManager
             from jupyter_core.paths import jupyter_path
@@ -110,7 +110,7 @@ class JupyterKernel(BaseKernel):
 
         set_default_provisioner()
 
-        if kernel_name is None:
+        if kernel_name is None and connection_file is not None:
             import json
 
             try:
@@ -247,6 +247,7 @@ class JupyterKernel(BaseKernel):
     @property
     def spec(self) -> dict[str, str]:
         """The kernelspec metadata for the current kernel instance."""
+        assert self.km.kernel_spec is not None
         return {
             "name": self.km.kernel_name,
             "display_name": self.km.kernel_spec.display_name,
@@ -862,6 +863,11 @@ class JupyterKernel(BaseKernel):
             log.debug("Timed out waiting for kernel completion response")
 
         return result
+
+    def input(self, text: str) -> None:
+        """Send input to the kernel."""
+        if self.kc:
+            self.kc.input(text)
 
     def interrupt(self) -> None:
         """Interrupt the kernel.

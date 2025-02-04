@@ -31,6 +31,7 @@ from euporie.core.inspection import (
     LspInspector,
 )
 from euporie.core.kernel import list_kernels
+from euporie.core.kernel.base import NoKernel
 from euporie.core.suggest import HistoryAutoSuggest
 from euporie.core.tabs.base import Tab
 
@@ -47,7 +48,7 @@ if TYPE_CHECKING:
     from euporie.core.comm.base import Comm
     from euporie.core.format import Formatter
     from euporie.core.inspection import Inspector
-    from euporie.core.kernel.base import BaseKernel, MsgCallbacks
+    from euporie.core.kernel.base import BaseKernel, KernelFactory, MsgCallbacks
     from euporie.core.lsp import LspClient
     from euporie.core.widgets.inputs import KernelInput
 
@@ -57,7 +58,6 @@ log = logging.getLogger(__name__)
 class KernelTab(Tab, metaclass=ABCMeta):
     """A Tab which connects to a kernel."""
 
-    kernel: BaseKernel
     kernel_language: str
     _metadata: dict[str, Any]
     bg_init = False
@@ -78,7 +78,7 @@ class KernelTab(Tab, metaclass=ABCMeta):
         # Init tab
         super().__init__(app, path)
 
-        self.kernel = None
+        self.kernel: BaseKernel = NoKernel(self)
         self.lsps: list[LspClient] = []
         self.history: History = DummyHistory()
         self.inspectors: list[Inspector] = []
@@ -184,7 +184,7 @@ class KernelTab(Tab, metaclass=ABCMeta):
 
     def post_init_kernel(self) -> None:
         """Run stuff after the kernel is loaded."""
-        if self.kernel is not None:
+        if not isinstance(self.kernel, NoKernel):
             self.metadata["kernelspec"] = self.kernel.spec
 
     def init_kernel(
@@ -363,14 +363,14 @@ class KernelTab(Tab, metaclass=ABCMeta):
         # Prompt user to select a kernel
         self.app.dialogs["change-kernel"].show(tab=self, message=msg)
 
-    def switch_kernel(self, factory: Callable[[], BaseKernel]) -> None:
+    def switch_kernel(self, factory: KernelFactory) -> None:
         """Shut down the current kernel and change to another."""
         if (old_kernel := self.kernel) is not None:
             old_kernel.shutdown(wait=True)
         kernel = factory(
             kernel_tab=self,
-            allow_stdin=self.allow_stdin,
             default_callbacks=self.default_callbacks,
+            allow_stdin=self.allow_stdin,
         )
         self.init_kernel(kernel)
 

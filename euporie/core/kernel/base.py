@@ -2,23 +2,47 @@
 
 from __future__ import annotations
 
-import abc
 import asyncio
 import concurrent
 import logging
 import threading
-from typing import TYPE_CHECKING, NamedTuple, TypedDict
+from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING, NamedTuple, TypedDict, overload
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Coroutine
-    from typing import Any, Literal, Unpack
+    from typing import Any, Literal, Protocol, TypeVar, Unpack
 
     from euporie.core.tabs.kernel import KernelTab
+
+    class KernelFactory(Protocol):
+        """Type for kernel factory functions."""
+
+        def __call__(
+            self,
+            kernel_tab: KernelTab,
+            default_callbacks: MsgCallbacks | None = None,
+            allow_stdin: bool = False,
+            **kwargs: Any,
+        ) -> BaseKernel:
+            """Signature for creating a new Kernel instance."""
+
+    T = TypeVar("T")
 
 log = logging.getLogger(__name__)
 
 _THREAD: list[threading.Thread | None] = [None]
 _LOOP: list[asyncio.AbstractEventLoop | None] = [None]
+
+
+class KernelInfo(NamedTuple):
+    """Named tuple representing a launchable kernel."""
+
+    name: str
+    display_name: str
+    type: type[BaseKernel]
+    kind: Literal["new", "existing"]
+    factory: KernelFactory
 
 
 class MsgCallbacks(TypedDict, total=False):
@@ -66,15 +90,13 @@ def get_loop() -> asyncio.AbstractEventLoop:
     return _LOOP[0]
 
 
-class BaseKernel(abc.ABC):
+class BaseKernel(ABC):
     """Abstract base class for euporie kernels."""
 
     @classmethod
-    def variants(
-        cls,
-    ) -> dict[str, Callable[[KernelTab, MsgCallbacks, bool], BaseKernel]]:
+    def variants(cls) -> list[KernelInfo]:
         """Return a list of parameterized variants of this kernel."""
-        return {}
+        return []
 
     def __init__(
         self,
@@ -117,18 +139,38 @@ class BaseKernel(abc.ABC):
             self.default_callbacks.update(default_callbacks)
 
     @property
-    @abc.abstractmethod
+    @abstractmethod
     def spec(self) -> dict[str, str]:
         """The kernelspec metadata for the current kernel instance."""
 
+    @overload
     def _aodo(
         self,
-        coro: Coroutine,
+        coro: Coroutine[Any, Any, T],
+        wait: Literal[True] = True,
+        callback: Callable | None = None,
+        timeout: int | float | None = None,
+        single: bool = False,
+    ) -> T | None: ...
+    @overload
+    def _aodo(
+        self,
+        coro: Coroutine[Any, Any, T],
+        wait: Literal[False] = False,
+        callback: Callable | None = None,
+        timeout: int | float | None = None,
+        single: bool = False,
+    ) -> concurrent.futures.Future: ...
+    @overload
+    def _aodo(
+        self,
+        coro: Coroutine[Any, Any, T],
         wait: bool = False,
         callback: Callable | None = None,
         timeout: int | float | None = None,
         single: bool = False,
-    ) -> Any:
+    ) -> T | None | concurrent.futures.Future: ...
+    def _aodo(self, coro, wait=False, callback=None, timeout=None, single=False):
         """Schedule a coroutine in the kernel's event loop.
 
         Optionally waits for the results (blocking the main thread). Optionally
@@ -158,10 +200,10 @@ class BaseKernel(abc.ABC):
             result = None
             try:
                 result = future.result(timeout)
-            except concurrent.futures.TimeoutError as exc:
+            except concurrent.futures.TimeoutError:
                 log.error("Operation '%s' timed out", coro)
                 future.cancel()
-                result = exc
+                return result
             finally:
                 if callable(callback):
                     callback(result)
@@ -169,8 +211,7 @@ class BaseKernel(abc.ABC):
         else:
             if callable(callback):
                 future.add_done_callback(lambda f: callback(f.result()))
-                return None
-            return None
+            return future
 
     @property
     def status(self) -> str:
@@ -219,11 +260,10 @@ class BaseKernel(abc.ABC):
             callback=cb,
         )
 
-    @abc.abstractmethod
+    @abstractmethod
     async def start_async(self) -> None:
         """Start the kernel."""
 
-    @abc.abstractmethod
     def stop(self, cb: Callable | None = None, wait: bool = False) -> None:
         """Stop the kernel."""
         log.debug("Stopping kernel %s (wait=%s)", self.id, wait)
@@ -249,17 +289,17 @@ class BaseKernel(abc.ABC):
             callback=callback,
         )
 
-    @abc.abstractmethod
+    @abstractmethod
     async def run_async(
         self, source: str, **local_callbacks: Unpack[MsgCallbacks]
     ) -> None:
         """Execute code in the kernel asynchronously."""
 
-    def complete(self, code: str, cursor_pos: int) -> list[dict]:
+    def complete(self, source: str, cursor_pos: int) -> list[dict]:
         """Request code completions from the kernel.
 
         Args:
-            code: The code string to retrieve completions for
+            source: The code string to retrieve completions for
             cursor_pos: The position of the cursor in the code string
 
         Returns:
@@ -269,14 +309,17 @@ class BaseKernel(abc.ABC):
             (a string containing additional data about the completion type)
 
         """
-        return self._aodo(
-            self.complete_async(code, cursor_pos),
-            wait=True,
-            single=True,
+        return (
+            self._aodo(
+                self.complete_async(source, cursor_pos),
+                wait=True,
+                single=True,
+            )
+            or []
         )
 
-    @abc.abstractmethod
-    async def complete_async(self, code: str, cursor_pos: int) -> list[dict]:
+    @abstractmethod
+    async def complete_async(self, source: str, cursor_pos: int) -> list[dict]:
         """Get code completions asynchronously."""
 
     def history(
@@ -311,16 +354,16 @@ class BaseKernel(abc.ABC):
 
     def inspect(
         self,
-        code: str,
+        source: str,
         cursor_pos: int,
         detail_level: int = 0,
         timeout: int = 2,
         callback: Callable[[dict[str, Any]], None] | None = None,
-    ) -> str:
+    ) -> dict[str, Any]:
         """Request code inspection from the kernel.
 
         Args:
-            code: The code string to retrieve completions for
+            source: The code string to retrieve completions for
             cursor_pos: The position of the cursor in the code string
             detail_level: Level of detail for the inspection (0-2)
             timeout: Number of seconds to wait for inspection results
@@ -332,17 +375,20 @@ class BaseKernel(abc.ABC):
             position
 
         """
-        return self._aodo(
-            self.inspect_async(code, cursor_pos, detail_level),
-            wait=False,
-            callback=callback,
-            single=True,
+        return (
+            self._aodo(
+                self.inspect_async(source, cursor_pos, detail_level),
+                wait=True,
+                callback=callback,
+                single=True,
+            )
+            or {}
         )
 
-    @abc.abstractmethod
+    @abstractmethod
     async def inspect_async(
         self,
-        code: str,
+        source: str,
         cursor_pos: int,
         detail_level: int = 0,
         timeout: int = 2,
@@ -353,7 +399,6 @@ class BaseKernel(abc.ABC):
         self,
         source: str,
         timeout: int | float = 0.1,
-        wait: bool = False,
         callback: Callable[[dict[str, Any]], None] | None = None,
     ) -> dict[str, Any]:
         """Request code completeness status from the kernel.
@@ -369,13 +414,14 @@ class BaseKernel(abc.ABC):
             A string describing the completeness status
 
         """
-        return self._aodo(
-            self.is_complete_async(source, timeout),
-            wait=wait,
-            callback=callback,
+        return (
+            self._aodo(
+                self.is_complete_async(source, timeout), wait=True, callback=callback
+            )
+            or {}
         )
 
-    @abc.abstractmethod
+    @abstractmethod
     async def is_complete_async(
         self,
         source: str,
@@ -383,7 +429,11 @@ class BaseKernel(abc.ABC):
     ) -> dict[str, Any]:
         """Check if code is complete asynchronously."""
 
-    @abc.abstractmethod
+    @abstractmethod
+    def input(self, text: str) -> None:
+        """Send input to the kernel."""
+
+    @abstractmethod
     def interrupt(self) -> None:
         """Interrupt the kernel."""
 
@@ -395,7 +445,7 @@ class BaseKernel(abc.ABC):
             callback=cb,
         )
 
-    @abc.abstractmethod
+    @abstractmethod
     async def restart_async(self) -> None:
         """Restart the kernel asynchronously."""
 
@@ -412,23 +462,32 @@ class BaseKernel(abc.ABC):
         """
         self._aodo(self.shutdown_async(), wait=wait, callback=cb)
 
-    @abc.abstractmethod
+    @abstractmethod
     async def shutdown_async(self) -> None:
         """Shutdown the kernel asynchronously."""
 
     @property
-    @abc.abstractmethod
+    @abstractmethod
     def missing(self) -> bool:
         """Return whether the kernel is missing."""
 
     @property
-    @abc.abstractmethod
+    @abstractmethod
     def id(self) -> str | None:
         """Return the kernel ID."""
+
+    @abstractmethod
+    def info(
+        self,
+        set_kernel_info: Callable[[dict[str, Any]], None] | None = None,
+        set_status: Callable[[str], None] | None = None,
+    ) -> None:
+        """Request information about the kernel."""
 
     def kc_comm(self, comm_id: str, data: dict[str, Any]) -> str:
         """By default kernels do not implement COMM communication."""
         log.warning("The %s kernel does not implement COMMs", self.__class__.__name__)
+        return ""  # TODO - raise NotImplementedError
 
     def comm_info(self, target_name: str | None = None) -> None:
         """Request information about the current comms.
@@ -437,11 +496,76 @@ class BaseKernel(abc.ABC):
         """
 
 
-class KernelInfo(NamedTuple):
-    """Named tuple representing a launchable kernel."""
+class NoKernel(BaseKernel):
+    """A `None` kernel."""
 
-    name: str
-    display_name: str
-    type: BaseKernel
-    kind: Literal["new", "existing"]
-    factory: Callable[[], BaseKernel]
+    @property
+    def spec(self) -> dict[str, str]:
+        """The kernelspec metadata for the current kernel instance."""
+        raise NotImplementedError()
+
+    async def start_async(self) -> None:
+        """Start the kernel."""
+        raise NotImplementedError()
+
+    async def run_async(
+        self, source: str, **local_callbacks: Unpack[MsgCallbacks]
+    ) -> None:
+        """Execute code in the kernel asynchronously."""
+        raise NotImplementedError()
+
+    async def is_complete_async(
+        self,
+        source: str,
+        timeout: int | float = 0.1,
+    ) -> dict[str, Any]:
+        """Check if code is complete asynchronously."""
+        raise NotImplementedError()
+
+    async def complete_async(self, source: str, cursor_pos: int) -> list[dict]:
+        """Get code completions asynchronously."""
+        raise NotImplementedError()
+
+    async def inspect_async(
+        self,
+        source: str,
+        cursor_pos: int,
+        detail_level: int = 0,
+        timeout: int = 2,
+    ) -> dict[str, Any]:
+        """Get code inspection/documentation asynchronously."""
+        raise NotImplementedError()
+
+    def input(self, text: str) -> None:
+        """Send input to the kernel."""
+        raise NotImplementedError()
+
+    def interrupt(self) -> None:
+        """Interrupt the kernel."""
+        raise NotImplementedError()
+
+    async def restart_async(self) -> None:
+        """Restart the kernel asynchronously."""
+        raise NotImplementedError()
+
+    async def shutdown_async(self) -> None:
+        """Shutdown the kernel asynchronously."""
+        raise NotImplementedError()
+
+    @property
+    def missing(self) -> bool:
+        """Return whether the kernel is missing."""
+        raise NotImplementedError()
+
+    @property
+    def id(self) -> str | None:
+        """Return the kernel ID."""
+        raise NotImplementedError()
+
+    def info(
+        self,
+        set_kernel_info: Callable[[dict[str, Any]], None] | None = None,
+        set_status: Callable[[str], None] | None = None,
+    ) -> None:
+        """Request information about the kernel."""
+        raise NotImplementedError()

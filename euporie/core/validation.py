@@ -21,9 +21,9 @@ class KernelValidator(Validator):
 
     def validate(self, document: Document) -> None:
         """Validate the input synchronously."""
-        completeness_status = self.kernel.is_complete(
-            source=document.text, wait=True
-        ).get("status", "unknown")
+        completeness_status = self.kernel.is_complete(source=document.text).get(
+            "status", "unknown"
+        )
         if completeness_status == "incomplete":
             raise ValidationError
 

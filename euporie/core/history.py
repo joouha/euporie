@@ -49,7 +49,7 @@ class KernelHistory(History):
         Yields:
             Each history string
         """
-        if not self.loading and not self._loaded and self.kernel.kc:
+        if not self.loading and not self._loaded and self.kernel:
             self.loading = True
             items = await self.kernel.history_async(n=self.n, hist_access_type="tail")
             if items:
