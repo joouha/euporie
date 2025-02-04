@@ -658,60 +658,42 @@ class SelectKernelDialog(Dialog):
 
     def load(
         self,
-        kernel_specs: dict[str, Any] | None = None,
-        runtime_dirs: dict[str, Path] | None = None,
+        # kernel_specs: dict[str, Any] | None = None,
+        # runtime_dirs: dict[str, Path] | None = None,
         tab: KernelTab | None = None,
         message: str = "",
     ) -> None:
         """Load dialog body & buttons."""
-        from jupyter_core.paths import jupyter_runtime_dir
 
+        from euporie.core.kernel import list_kernels
         from euporie.core.widgets.layout import TabbedSplit
 
-        kernel_specs = kernel_specs or {}
-        runtime_dirs = runtime_dirs or {}
+        infos = list_kernels()
+        infos_by_kind = {}
+        for info in infos:
+            infos_by_kind.setdefault(info.kind, []).append(info)
 
-        options_specs = Select(
-            options=list(kernel_specs.keys()),
-            labels=[
-                kernel_spec.get("spec", {}).get("display_name", kernel_name)
-                for kernel_name, kernel_spec in kernel_specs.items()
-            ],
-            style="class:input,radio-buttons",
-            prefix=("○", "◉"),
-            multiple=False,
-            border=None,
-            rows=5,
-            dont_extend_width=False,
-        )
-        self.to_focus = options_specs
-
-        connection_files = {
-            path.name: path
-            for path in Path(jupyter_runtime_dir()).glob("kernel-*.json")
-        }
-        options_files = Select(
-            options=list(connection_files.values()),
-            labels=list(connection_files.keys()),
-            style="class:input,radio-buttons",
-            prefix=("○", "◉"),
-            multiple=False,
-            border=None,
-            rows=5,
-            dont_extend_width=False,
-        )
-
-        msg_ft = (f"{message}\n\n" if message else "") + "Please select a kernel:"
+        selects = {}
+        for kind, infos in infos_by_kind.items():
+            selects[kind] = Select(
+                options=infos,
+                labels=[info.display_name for info in infos],
+                style="class:input,radio-buttons",
+                prefix=("○", "◉"),
+                multiple=False,
+                border=None,
+                rows=5,
+                dont_extend_width=False,
+            )
 
         self.body = HSplit(
             [
-                Label(msg_ft),
+                Label(
+                    (f"{message}\n\n" if message else "") + "Please select a kernel:"
+                ),
                 tabs := TabbedSplit(
-                    [
-                        FocusedStyle(options_specs),
-                        FocusedStyle(options_files),
-                    ],
-                    titles=["New", "Existing"],
+                    [FocusedStyle(select) for select in selects.values()],
+                    titles=[kind.title() for kind in selects],
                     width=Dimension(min=30),
                 ),
             ]
@@ -720,15 +702,8 @@ class SelectKernelDialog(Dialog):
         def _change_kernel() -> None:
             self.hide()
             assert tab is not None
-            if tabs.active == 0:
-                name = options_specs.value
-                connection_file = None
-            else:
-                name = None
-                connection_file = options_files.value
-            tab.kernel.change(
-                name=name, connection_file=connection_file, cb=tab.kernel_started
-            )
+            info = list(selects.values())[tabs.active].value
+            tab.switch_kernel(info.factory)
 
         self.buttons = {
             "Select": _change_kernel,

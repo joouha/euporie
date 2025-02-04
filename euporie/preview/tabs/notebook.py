@@ -54,17 +54,6 @@ class PreviewNotebook(BaseNotebook):
         """Filter cells before kernel is loaded."""
         super().pre_init_kernel()
 
-        # Filter the cells to be shown
-        n_cells = len(self.json["cells"]) - 1
-        start: int | None = None
-        stop: int | None = None
-        if self.app.config.cell_start is not None:
-            start = min(max(self.app.config.cell_start, -n_cells), n_cells)
-        if self.app.config.cell_stop is not None:
-            stop = min(max(self.app.config.cell_stop, -n_cells), n_cells)
-        log.debug("Showing cells %s to %s", start, stop)
-        self.json["cells"] = self.json["cells"][start:stop]
-
     def post_init_kernel(self) -> None:
         """Optionally start kernel after it is loaded."""
         super().post_init_kernel()
@@ -162,6 +151,21 @@ class PreviewNotebook(BaseNotebook):
 
     def load_container(self) -> AnyContainer:
         """Load the notebook's main container."""
+        # Load file
+        self.load()
+
+        # Filter the cells to be shown
+        n_cells = len(self.json["cells"]) - 1
+        start: int | None = None
+        stop: int | None = None
+        if self.app.config.cell_start is not None:
+            start = min(max(self.app.config.cell_start, -n_cells), n_cells)
+        if self.app.config.cell_stop is not None:
+            stop = min(max(self.app.config.cell_stop, -n_cells), n_cells)
+        log.debug("Showing cells %s to %s", start, stop)
+        self.json["cells"] = self.json["cells"][start:stop]
+
+        # Generate container
         no_expand = ~self.app.config.filters.expand
         return PrintingContainer(
             [

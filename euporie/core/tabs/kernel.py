@@ -30,7 +30,7 @@ from euporie.core.inspection import (
     KernelInspector,
     LspInspector,
 )
-from euporie.core.kernel.base import BaseKernel, MsgCallbacks
+from euporie.core.kernel import list_kernels
 from euporie.core.suggest import HistoryAutoSuggest
 from euporie.core.tabs.base import Tab
 
@@ -47,6 +47,7 @@ if TYPE_CHECKING:
     from euporie.core.comm.base import Comm
     from euporie.core.format import Formatter
     from euporie.core.inspection import Inspector
+    from euporie.core.kernel.base import BaseKernel, MsgCallbacks
     from euporie.core.lsp import LspClient
     from euporie.core.widgets.inputs import KernelInput
 
@@ -77,6 +78,7 @@ class KernelTab(Tab, metaclass=ABCMeta):
         # Init tab
         super().__init__(app, path)
 
+        self.kernel = None
         self.lsps: list[LspClient] = []
         self.history: History = DummyHistory()
         self.inspectors: list[Inspector] = []
@@ -182,6 +184,8 @@ class KernelTab(Tab, metaclass=ABCMeta):
 
     def post_init_kernel(self) -> None:
         """Run stuff after the kernel is loaded."""
+        if self.kernel is not None:
+            self.metadata["kernelspec"] = self.kernel.spec
 
     def init_kernel(
         self,
@@ -199,21 +203,36 @@ class KernelTab(Tab, metaclass=ABCMeta):
             self.kernel = kernel
             self.kernel.default_callbacks = self.default_callbacks
         else:
-            from euporie.core.kernel import create_kernel
+            from euporie.core.kernel import list_kernels
 
-            self.kernel = create_kernel(
-                "jupyter",
+            kernel_infos = list_kernels()
+            kernel_name = self.kernel_name or self.app.config.kernel_name
+            for info in kernel_infos:
+                if info.name == kernel_name:
+                    factory = info.factory
+                    break
+            else:
+                msg = (
+                    f"Kernel '{self.kernel_display_name}' not found"
+                    if self.kernel_name
+                    else "No kernel selected"
+                )
+                self.change_kernel(msg=msg, startup=True)
+                return
+            self.kernel = factory(
                 kernel_tab=self,
                 allow_stdin=self.allow_stdin,
                 default_callbacks=self.default_callbacks,
-                connection_file=connection_file,
             )
+
         self.comms = comms or {}  # The client-side comm states
-        self.completers.append(KernelCompleter(self.kernel))
-        self.inspectors.append(KernelInspector(self.kernel))
+        self.completers.append(KernelCompleter(lambda: self.kernel))
+        self.inspectors.append(KernelInspector(lambda: self.kernel))
         self.use_kernel_history = use_kernel_history
         self.history = (
-            KernelHistory(self.kernel) if use_kernel_history else InMemoryHistory()
+            KernelHistory(lambda: self.kernel)
+            if use_kernel_history
+            else InMemoryHistory()
         )
         self.suggester = HistoryAutoSuggest(self.history)
 
@@ -223,7 +242,7 @@ class KernelTab(Tab, metaclass=ABCMeta):
 
     def close(self, cb: Callable | None = None) -> None:
         """Shut down kernel when tab is closed."""
-        if hasattr(self, "kernel"):
+        if self.kernel is not None:
             self.kernel.shutdown()
         super().close(cb)
 
@@ -248,18 +267,8 @@ class KernelTab(Tab, metaclass=ABCMeta):
 
     def kernel_started(self, result: dict[str, Any] | None = None) -> None:
         """Task to run when the kernel has started."""
-        # Check kernel has not failed
-        if not self.kernel_name or self.kernel.missing:
-            if not self.kernel_name:
-                msg = "No kernel selected"
-            else:
-                msg = f"Kernel '{self.kernel_display_name}' not installed"
-            self.change_kernel(
-                msg=msg,
-                startup=True,
-            )
-
-        elif self.kernel.status == "error":
+        # Set kernel spec in metadata
+        if self.kernel.status == "error":
             self.report_kernel_error(self.kernel.error)
 
         else:
@@ -303,9 +312,7 @@ class KernelTab(Tab, metaclass=ABCMeta):
     @property
     def kernel_name(self) -> str:
         """Return the name of the kernel defined in the notebook JSON."""
-        return self.metadata.get("kernelspec", {}).get(
-            "name", self.app.config.kernel_name
-        )
+        return self.metadata.get("kernelspec", {}).get("name", "")
 
     @kernel_name.setter
     def kernel_name(self, value: str) -> None:
@@ -340,22 +347,32 @@ class KernelTab(Tab, metaclass=ABCMeta):
 
     def change_kernel(self, msg: str | None = None, startup: bool = False) -> None:
         """Prompt the user to select a new kernel."""
-        kernel_specs = self.kernel.specs
+        kernel_infos = list_kernels()
 
         # Warn the user if no kernels are installed
-        if not kernel_specs:
+        if not kernel_infos:
             if startup and "no-kernels" in self.app.dialogs:
                 self.app.dialogs["no-kernels"].show()
             return
 
         # Automatically select the only kernel if there is only one
-        if startup and len(kernel_specs) == 1:
-            self.kernel.change(next(iter(kernel_specs)))
+        if startup and len(kernel_infos) == 1:
+            self.switch_kernel(next(iter(kernel_infos)).factory)
             return
 
-        self.app.dialogs["change-kernel"].show(
-            tab=self, message=msg, kernel_specs=kernel_specs
+        # Prompt user to select a kernel
+        self.app.dialogs["change-kernel"].show(tab=self, message=msg)
+
+    def switch_kernel(self, factory: Callable[[], BaseKernel]) -> None:
+        """Shut down the current kernel and change to another."""
+        if (old_kernel := self.kernel) is not None:
+            old_kernel.shutdown(wait=True)
+        kernel = factory(
+            kernel_tab=self,
+            allow_stdin=self.allow_stdin,
+            default_callbacks=self.default_callbacks,
         )
+        self.init_kernel(kernel)
 
     def comm_open(self, content: dict, buffers: Sequence[bytes]) -> None:
         """Register a new kernel Comm object in the notebook."""

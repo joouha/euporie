@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from abc import ABCMeta, abstractmethod, abstractproperty
 from base64 import standard_b64decode
@@ -90,6 +91,9 @@ class BaseNotebook(KernelTab, metaclass=ABCMeta):
             app, path, kernel=kernel, comms=comms, use_kernel_history=use_kernel_history
         )
 
+        # Load notebook file
+        self.container = self.load_container()
+
     # Tab stuff
 
     def reset(self) -> None:
@@ -102,23 +106,9 @@ class BaseNotebook(KernelTab, metaclass=ABCMeta):
 
     # KernelTab stuff
 
-    def pre_init_kernel(self) -> None:
-        """Run stuff before the kernel is loaded."""
-        super().pre_init_kernel()
-        # Load notebook file
-        self.load()
-
     def post_init_kernel(self) -> None:
         """Load the notebook container after the kernel has been loaded."""
         super().post_init_kernel()
-
-        # Replace the tab's container
-        prev = self.container
-        self.container = self.load_container()
-        self.loaded = True
-        # Update the focus if the old container had focus
-        if self.app.layout.has_focus(prev):
-            self.focus()
 
         # Load widgets
         self.load_widgets_from_metadata()
@@ -178,7 +168,7 @@ class BaseNotebook(KernelTab, metaclass=ABCMeta):
     @abstractmethod
     def load_container(self) -> AnyContainer:
         """Abcract method for loading the notebook's main container."""
-        ...
+        self.loaded = True
 
     @abstractproperty
     def cell(self) -> Cell:

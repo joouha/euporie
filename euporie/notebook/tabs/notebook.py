@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from collections import deque
 from copy import deepcopy
@@ -97,7 +98,6 @@ class Notebook(BaseNotebook):
         self.multiple_cells_selected = multiple_cells_selected
         self.clipboard: list[Cell] = []
         self.undo_buffer: deque[tuple[int, list[Cell]]] = deque(maxlen=10)
-
         self.default_callbacks["set_next_input"] = self.set_next_input
 
     # Tab stuff
@@ -117,7 +117,11 @@ class Notebook(BaseNotebook):
 
             def _kernel_name() -> StyleAndTextTuples:
                 ft: StyleAndTextTuples = [
-                    ("", self.kernel_display_name, self._statusbar_kernel_handler)
+                    (
+                        "",
+                        self.kernel_display_name or "No Kernel",
+                        self._statusbar_kernel_handler,
+                    )
                 ]
                 return ft
 
@@ -164,13 +168,28 @@ class Notebook(BaseNotebook):
         self.app.dialogs["error"].show(exception=error, when="starting the kernel")
 
     def load_container(self) -> AnyContainer:
-        """Load the main notebook container."""
+        """Trigger loading of the main notebook container."""
+
+        async def _load() -> None:
+            # Load notebook file
+            self.load()
+            # Load an focus container
+            prev = self.container
+            self.container = self._load_container()
+            self.loaded = True
+            # Update the focus if the old container had focus
+            if self.app.layout.has_focus(prev):
+                self.focus()
+
+        self.app.create_background_task(_load())
+
+        return self.container
+
+    def _load_container(self) -> AnyContainer:
+        """Actually load the main notebook container."""
         self.page = ScrollingContainer(
             self.rendered_cells, width=self.app.config.max_notebook_width
         )
-        # Ensure all cells get initialized ASAP to prevent race conditions
-        # creating multiple version of cells across threads
-        self.page.all_children()
 
         expand = Condition(lambda: self.app.config.expand)
 
