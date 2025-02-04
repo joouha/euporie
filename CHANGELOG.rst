@@ -14,6 +14,7 @@ Added
 =====
 
 - Add setting to determine backup-on-save behaviour
+- Add basic local kernel which runs in the local interpretor
 
 Changed
 =======
