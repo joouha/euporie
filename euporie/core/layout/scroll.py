@@ -27,10 +27,7 @@ if TYPE_CHECKING:
     from collections.abc import Sequence
     from typing import Callable, Literal
 
-    from prompt_toolkit.key_binding.key_bindings import (
-        KeyBindingsBase,
-        NotImplementedOrNone,
-    )
+    from prompt_toolkit.key_binding.key_bindings import NotImplementedOrNone
     from prompt_toolkit.layout.containers import AnyContainer
     from prompt_toolkit.layout.dimension import AnyDimension
     from prompt_toolkit.layout.mouse_handlers import MouseHandlers
