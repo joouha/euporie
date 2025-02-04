@@ -764,6 +764,7 @@ class Cell:
     def set_execution_count(self, n: int) -> None:
         """Set the execution count of the cell."""
         self.json["execution_count"] = n
+        self.refresh()
 
     def add_output(self, output_json: dict[str, Any], own: bool) -> None:
         """Add a new output to the cell."""
