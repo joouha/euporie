@@ -512,6 +512,11 @@ _GRID_CHARS = {
     GridChar(LowerLeftQuarterLine, NoLine, NoLine, UpperRightEighthLine): " ",
     GridChar(UpperRightQuarterLine, UpperRightEighthLine, NoLine, NoLine): " ",
 
+    GridChar(NoLine, NoLine, UpperRightQuarterLine, UpperRightEighthLine): "▁",
+    GridChar(UpperRightQuarterLine, NoLine, NoLine, UpperRightEighthLine): "▔",
+    GridChar(LowerLeftQuarterLine, UpperRightEighthLine, NoLine, NoLine): "▔",
+    GridChar(NoLine, LowerLeftEighthLine, LowerLeftQuarterLine, NoLine): "▁",
+
     # LowerLeftQuarterLine
     GridChar(LowerLeftQuarterLine, NoLine, LowerLeftQuarterLine, NoLine): "▎",
     GridChar(NoLine, LowerLeftQuarterLine, NoLine, LowerLeftQuarterLine): "▂",
@@ -875,9 +880,9 @@ InsetGrid = (
 
 OutsetGrid = (
     LowerLeftEighthLine.top_edge
-    + UpperRightEighthLine.right_edge
+    + UpperRightQuarterLine.right_edge
     + UpperRightEighthLine.bottom_edge
-    + LowerLeftEighthLine.left_edge
+    + LowerLeftQuarterLine.left_edge
     + ThinLine.inner
 )
 

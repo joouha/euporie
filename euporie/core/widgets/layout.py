@@ -12,6 +12,7 @@ from prompt_toolkit.cache import SimpleCache
 from prompt_toolkit.filters import Condition, to_filter
 from prompt_toolkit.formatted_text.base import to_formatted_text
 from prompt_toolkit.formatted_text.utils import fragment_list_width
+from prompt_toolkit.key_binding.key_bindings import KeyBindings
 from prompt_toolkit.layout.containers import (
     ConditionalContainer,
     DynamicContainer,
@@ -44,6 +45,7 @@ if TYPE_CHECKING:
         KeyBindingsBase,
         NotImplementedOrNone,
     )
+    from prompt_toolkit.key_binding.key_processor import KeyPressEvent
     from prompt_toolkit.layout.containers import AnyContainer, Container, _Split
     from prompt_toolkit.layout.dimension import AnyDimension
     from prompt_toolkit.mouse_events import MouseEvent
@@ -211,8 +213,8 @@ class TabBarControl(UIControl):
     """A control which shows a tab bar."""
 
     char_bottom = "▁"
-    char_left = "▏"
-    char_right = "▕"
+    char_left = "▎"
+    char_right = "🮇"
     char_top = "▁"
     char_close = "✖"
 
@@ -474,7 +476,7 @@ class StackedSplit(metaclass=ABCMeta):
             value: The index of the tab to make active
         """
         if value is not None:
-            value = max(0, min(value, len(self.children)))
+            value = max(0, min(value, len(self.children) - 1))
         if value != self._active:
             self._active = value
             self.refresh()
@@ -537,6 +539,21 @@ class TabbedSplit(StackedSplit):
         """Initialize a new tabbed container."""
         self.border = border
         self.show_borders = show_borders or DiBool(False, True, True, True)
+
+        kb = KeyBindings()
+
+        @kb.add("left")
+        def _prev(event: KeyPressEvent) -> None:
+            """Previous tab."""
+            self.active -= 1
+
+        @kb.add("right")
+        def _next(event: KeyPressEvent) -> None:
+            """Next tab."""
+            self.active += 1
+
+        self.key_bindings = kb
+
         super().__init__(
             children=children,
             titles=titles,
@@ -579,6 +596,7 @@ class TabbedSplit(StackedSplit):
             style="class:tabbed-split",
             width=self.width,
             height=self.height,
+            key_bindings=self.key_bindings,
         )
 
     def refresh(self) -> None:
