@@ -250,7 +250,10 @@ class KernelInput(TextArea):
             buffer=self.buffer,
             lexer=DynamicLexer(
                 lambda: _get_lexer(
-                    app.config.syntax_highlighting, self.lexer, self.language
+                    # Only lex buffers with text
+                    self.buffer.text and app.config.syntax_highlighting,
+                    self.lexer,
+                    self.language,
                 )
             ),
             input_processors=[
