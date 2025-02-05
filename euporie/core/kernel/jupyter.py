@@ -94,8 +94,10 @@ class JupyterKernel(BaseKernel):
             kernel_tab: The notebook this kernel belongs to
             allow_stdin: Whether the kernel is allowed to request input
             default_callbacks: The default callbacks to use on receipt of a message
+            kernel_name: Name of the Jupyter kernel to launch
             connection_file: Path to a file from which to load or to which to save
                 kernel connection information
+            kwargs: Additional key-word arguments
         """
         super().__init__(
             kernel_tab=kernel_tab,

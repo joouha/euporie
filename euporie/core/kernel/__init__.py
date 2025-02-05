@@ -7,7 +7,7 @@ from pkgutil import resolve_name
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from typing import Any, Callable, Literal
+    from typing import Any, Literal
 
     from euporie.core.kernel.base import BaseKernel, KernelInfo, MsgCallbacks
     from euporie.core.tabs.kernel import KernelTab

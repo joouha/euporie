@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 import logging
 from abc import ABCMeta, abstractmethod, abstractproperty
 from base64 import standard_b64decode

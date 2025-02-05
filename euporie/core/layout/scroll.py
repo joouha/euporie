@@ -14,7 +14,6 @@ from prompt_toolkit.layout.containers import (
     ScrollOffsets,
     Window,
     WindowRenderInfo,
-    to_container,
 )
 from prompt_toolkit.layout.controls import UIContent
 from prompt_toolkit.layout.dimension import Dimension, to_dimension
