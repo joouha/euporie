@@ -338,60 +338,62 @@ class LocalPythonKernel(BaseKernel):
             filename: Source filename for tracebacks
             callbacks: Message callbacks
         """
-        # Store callbacks in thread local storage
-        self._thread_local.callbacks = callbacks
-        add_output = callbacks["add_output"]
+        try:
+            # Store callbacks in thread local storage
+            self._thread_local.callbacks = callbacks
+            add_output = callbacks["add_output"]
 
-        # Add display function to locals
-        self.locals["display"] = self._make_display_func()
-        # Add input functions to locals
-        self.locals["input"] = self._make_input_func()
+            # Add display function to locals
+            self.locals["display"] = self._make_display_func()
+            # Add input functions to locals
+            self.locals["input"] = self._make_input_func()
 
-        stdout = StreamWrapper("stdout", self)
-        stderr = StreamWrapper("stderr", self)
-        hook_stdout = SysHookManager(sys, "stdout", stdout)
-        hook_stderr = SysHookManager(sys, "stderr", stderr)
-        hook_display = SysHookManager(sys, "displayhook", self._displayhook)
-        hook_getpass = SysHookManager(
-            getpass, "getpass", self._make_input_func(is_password=True)
-        )
-
-        with ExitStack() as stack:
-            # Set up stack
-            stack.enter_context(hook_stdout)
-            stack.enter_context(hook_stderr)
-            stack.callback(stdout.flush)
-            stack.callback(stderr.flush)
-            stack.enter_context(hook_display)
-            stack.enter_context(hook_getpass)
-
-            # Execute body
-            try:
-                if body:
-                    exec(  # noqa: S102
-                        compile(
-                            ast.Module(body=body, type_ignores=[]),
-                            filename=filename,
-                            mode="exec",
-                        ),
-                        self.locals,
+            with ExitStack() as stack:
+                # Set up stack
+                stack.enter_context(
+                    SysHookManager(sys, "stdout", StreamWrapper("stdout", self))
+                )
+                stack.enter_context(
+                    SysHookManager(sys, "stderr", StreamWrapper("stderr", self))
+                )
+                stack.enter_context(
+                    SysHookManager(sys, "displayhook", self._displayhook)
+                )
+                stack.enter_context(
+                    SysHookManager(
+                        getpass, "getpass", self._make_input_func(is_password=True)
                     )
-                # Last statement is an expression - eval it
-                if last is not None:
-                    exec(  # noqa: S102
-                        compile(
-                            ast.Interactive([last]),
-                            filename=filename,
-                            mode="single",
-                        ),
-                        self.locals,
-                    )
-            except SystemExit:
-                get_app().exit()
-            except Exception:
-                self.showtraceback(filename, cb=add_output)
-                if callable(done := callbacks.get("done")):
-                    done({"status": "error"})
+                )
+
+                # Execute body
+                try:
+                    if body:
+                        exec(  # noqa: S102
+                            compile(
+                                ast.Module(body=body, type_ignores=[]),
+                                filename=filename,
+                                mode="exec",
+                            ),
+                            self.locals,
+                        )
+                    # Last statement is an expression - eval it
+                    if last is not None:
+                        exec(  # noqa: S102
+                            compile(
+                                ast.Interactive([last]),
+                                filename=filename,
+                                mode="single",
+                            ),
+                            self.locals,
+                        )
+                except SystemExit:
+                    get_app().exit()
+                except Exception:
+                    self.showtraceback(filename, cb=add_output)
+                    if callable(done := callbacks.get("done")):
+                        done({"status": "error"})
+        except:
+            log.exception("")
 
     async def run_async(
         self, source: str, **local_callbacks: Unpack[MsgCallbacks]
@@ -619,15 +621,11 @@ class SysHookManager:
         with self._lock:
             if self._depths[self.parent, self.name] > 0:
                 self._depths[self.parent, self.name] -= 1
-            if self._depths[self.parent, self.name] == 0:
-                setattr(self.parent, self.name, self.original)
+            setattr(self.parent, self.name, self.original)
 
 
 class StreamWrapper(TextIOWrapper):
     """StringIO that calls a callback when written to."""
-
-    # Class-level storage for thread-local state
-    _thread_local = threading.local()
 
     def __init__(
         self,
@@ -640,42 +638,68 @@ class StreamWrapper(TextIOWrapper):
             name: The name of the stream being wrapped
             kernel: The kernel instance
         """
+        from io import BytesIO
+
+        super().__init__(BytesIO(), line_buffering=True)
         self._name = name
         self._kernel = kernel
-        self._buffer = ""
+
+    @property
+    def name(self) -> str:
+        """The name of the stream."""
+        return self._name
+
+    def _send_output(self, content: str) -> None:
+        """Send stream output via callback.
+
+        Args:
+            content: The text content to send
+        """
+        if content and hasattr(self._kernel._thread_local, "callbacks"):
+            callback = self._kernel._thread_local.callbacks.get("add_output")
+            if callable(callback):
+                callback(
+                    {
+                        "output_type": "stream",
+                        "name": self.name,
+                        "text": content,
+                    },
+                    True,
+                )
+                # Clear buffer
+                self.buffer.seek(0)
+                self.buffer.truncate()
 
     def write(self, s: str) -> int:
         """Write the written data as a cell output."""
+        # Write to the underlying buffer
+        result = super().write(s)
         if s:
-            self._buffer += s
-            if "\n" in self._buffer:
-                lines = self._buffer.split("\n")
-                # Keep any remaining text after last newline
-                self._buffer = lines[-1]
-                callback = self._kernel._thread_local.callbacks.get("add_output")
-                if callable(callback):
-                    callback(
-                        {
-                            "output_type": "stream",
-                            "name": self._name,
-                            "text": "\n".join(lines[:-1]) + "\n",
-                        },
-                        True,
-                    )
-        return len(s)
+            # Reset position to start
+            self.seek(0)
+            # Read lines until we find an incomplete one
+            lines = []
+            remainder = ""
+            while (line := self.readline()).endswith("\n"):
+                lines.append(line)
+            else:
+                remainder = line
+            if lines:
+                self._send_output("".join(lines))
+                # Put incomplete line back in buffer
+                if remainder:
+                    super().write(line)
 
-    def flush(self) -> None:
+        return result
+
+    def flush_output(self) -> None:
         """Flush any remaining buffered content."""
-        if self._buffer:
-            if hasattr(self._kernel._thread_local, "callbacks"):
-                callback = self._kernel._thread_local.callbacks.get("add_output")
-                if callable(callback):
-                    callback(
-                        {
-                            "output_type": "stream",
-                            "name": self._name,
-                            "text": self._buffer,
-                        },
-                        True,
-                    )
-            self._buffer = ""
+        super().flush()
+        content = self.buffer.getvalue().decode()
+        if content:
+            self._send_output(content)
+
+    def close(self) -> None:
+        """Flush anything remaining in buffer when stream is closed."""
+        self.flush_output()
+        super().close()
