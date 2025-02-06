@@ -12,7 +12,7 @@ import traceback
 from asyncio import to_thread
 from contextlib import ExitStack
 from functools import wraps
-from io import TextIOWrapper
+from io import BytesIO, TextIOWrapper
 from linecache import cache as line_cache
 from typing import TYPE_CHECKING, ClassVar, cast
 
@@ -338,62 +338,57 @@ class LocalPythonKernel(BaseKernel):
             filename: Source filename for tracebacks
             callbacks: Message callbacks
         """
-        try:
-            # Store callbacks in thread local storage
-            self._thread_local.callbacks = callbacks
-            add_output = callbacks["add_output"]
+        # Store callbacks in thread local storage
+        self._thread_local.callbacks = callbacks
+        add_output = callbacks["add_output"]
 
-            # Add display function to locals
-            self.locals["display"] = self._make_display_func()
-            # Add input functions to locals
-            self.locals["input"] = self._make_input_func()
+        # Add display function to locals
+        self.locals["display"] = self._make_display_func()
+        # Add input functions to locals
+        self.locals["input"] = self._make_input_func()
 
-            with ExitStack() as stack:
-                # Set up stack
-                stack.enter_context(
-                    SysHookManager(sys, "stdout", StreamWrapper("stdout", self))
+        with ExitStack() as stack:
+            # Set up stack
+            stack.enter_context(
+                SysHookManager(sys, "stdout", StreamWrapper("stdout", self))
+            )
+            stack.enter_context(
+                SysHookManager(sys, "stderr", StreamWrapper("stderr", self))
+            )
+            stack.enter_context(SysHookManager(sys, "displayhook", self._displayhook))
+            stack.enter_context(
+                SysHookManager(
+                    getpass, "getpass", self._make_input_func(is_password=True)
                 )
-                stack.enter_context(
-                    SysHookManager(sys, "stderr", StreamWrapper("stderr", self))
-                )
-                stack.enter_context(
-                    SysHookManager(sys, "displayhook", self._displayhook)
-                )
-                stack.enter_context(
-                    SysHookManager(
-                        getpass, "getpass", self._make_input_func(is_password=True)
+            )
+
+            # Execute body
+            try:
+                if body:
+                    exec(  # noqa: S102
+                        compile(
+                            ast.Module(body=body, type_ignores=[]),
+                            filename=filename,
+                            mode="exec",
+                        ),
+                        self.locals,
                     )
-                )
-
-                # Execute body
-                try:
-                    if body:
-                        exec(  # noqa: S102
-                            compile(
-                                ast.Module(body=body, type_ignores=[]),
-                                filename=filename,
-                                mode="exec",
-                            ),
-                            self.locals,
-                        )
-                    # Last statement is an expression - eval it
-                    if last is not None:
-                        exec(  # noqa: S102
-                            compile(
-                                ast.Interactive([last]),
-                                filename=filename,
-                                mode="single",
-                            ),
-                            self.locals,
-                        )
-                except SystemExit:
-                    get_app().exit()
-                except Exception:
-                    self.showtraceback(filename, cb=add_output)
-                    if callable(done := callbacks.get("done")):
-                        done({"status": "error"})
-        except:
-            log.exception("")
+                # Last statement is an expression - eval it
+                if last is not None:
+                    exec(  # noqa: S102
+                        compile(
+                            ast.Interactive([last]),
+                            filename=filename,
+                            mode="single",
+                        ),
+                        self.locals,
+                    )
+            except SystemExit:
+                get_app().exit()
+            except Exception:
+                self.showtraceback(filename, cb=add_output)
+                if callable(done := callbacks.get("done")):
+                    done({"status": "error"})
 
     async def run_async(
         self, source: str, **local_callbacks: Unpack[MsgCallbacks]
@@ -638,8 +633,6 @@ class StreamWrapper(TextIOWrapper):
             name: The name of the stream being wrapped
             kernel: The kernel instance
         """
-        from io import BytesIO
-
         super().__init__(BytesIO(), line_buffering=True)
         self._name = name
         self._kernel = kernel
