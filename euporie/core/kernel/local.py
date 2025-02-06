@@ -9,7 +9,8 @@ import sys
 import threading
 import traceback
 from asyncio import to_thread
-from contextlib import ExitStack, contextmanager
+from contextlib import ExitStack
+from functools import partial
 from io import TextIOWrapper
 from linecache import cache as line_cache
 from typing import TYPE_CHECKING, ClassVar, cast
@@ -22,7 +23,6 @@ from euporie.core.app.current import get_app
 from euporie.core.kernel.base import BaseKernel, KernelInfo, MsgCallbacks
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
     from typing import Any, Callable, Unpack
 
     from euporie.core.tabs.kernel import KernelTab
@@ -182,6 +182,119 @@ class LocalPythonKernel(BaseKernel):
                 True,
             )
 
+    def _displayhook(
+        self, value: Any, add_output: Callable[[dict[str, Any], bool], None] | None
+    ) -> None:
+        """Handle display of expression values.
+
+        Args:
+            value: The value to display
+            add_output: Callback to add output
+        """
+        # Save reference to output
+        self.locals[f"_{self._execution_count}"] = value
+        # Display output
+        if value is not None:
+            data = {}
+            metadata = {}
+            if hasattr(value, "_repr_mimebundle_"):
+                output = value._repr_mimebundle_()
+                if isinstance(output, tuple):
+                    data, metadata = output
+                else:
+                    data = output
+            else:
+                data = {}
+                metadata = {}
+                for method, mime in [
+                    # ("_repr_javascript_", "application/javascript"),
+                    ("_repr_latex_", "text/latex"),
+                    ("_repr_html_", "text/html"),
+                    ("_repr_markdown_", "text/markdown"),
+                    ("_repr_svg_", "image/svg+xml"),
+                    ("_repr_jpeg_", "image/jpeg"),
+                    ("_repr_png_", "image/png"),
+                    # ("_repr_pretty_", "text/plain"),
+                ]:
+                    if (
+                        hasattr(value, method)
+                        and (output := getattr(value, method)()) is not None
+                    ):
+                        data[mime] = output
+                if not data:
+                    data = {"text/plain": repr(value)}
+            if callable(add_output):
+                add_output(
+                    {
+                        "output_type": "execute_result",
+                        "execution_count": self._execution_count,
+                        "data": data,
+                        "metadata": metadata,
+                    },
+                    True,
+                )
+
+    def _execute_code(
+        self,
+        body: list[ast.stmt],
+        last: ast.Expr | None,
+        filename: str,
+        callbacks: MsgCallbacks,
+    ) -> None:
+        """Execute code in the interpreter.
+
+        Args:
+            body: List of statements to execute
+            last: Optional final expression to evaluate
+            filename: Source filename for tracebacks
+            callbacks: Message callbacks
+        """
+        add_output = callbacks["add_output"]
+        hook_stdout = SysHookManager(sys, "stdout", StreamWrapper("stdout", add_output))
+        hook_stderr = SysHookManager(sys, "stderr", StreamWrapper("stderr", add_output))
+        hook_display = SysHookManager(
+            sys, "displayhook", partial(self._displayhook, callback=add_output)
+        )
+        try:
+            with ExitStack() as stack:
+                stack.enter_context(hook_stdout)
+                stack.enter_context(hook_stderr)
+                stack.enter_context(hook_display)
+                stack.enter_context(self._lock)
+                # Execute body
+                try:
+                    if body:
+                        exec(  # noqa: S102
+                            compile(
+                                ast.Module(body=body, type_ignores=[]),
+                                filename=filename,
+                                mode="exec",
+                            ),
+                            self.locals,
+                        )
+                    # Last statement is an expression - eval it
+                    if last is not None:
+                        exec(  # noqa: S102
+                            compile(
+                                ast.Interactive([last]),
+                                filename=filename,
+                                mode="single",
+                            ),
+                            self.locals,
+                        )
+                except SystemExit:
+                    get_app().exit()
+                except Exception:
+                    log.exception("")
+                    try:
+                        self.showtraceback(filename, cb=callbacks["add_output"])
+                        if callable(done := callbacks.get("done")):
+                            done({"status": "error"})
+                    except Exception:
+                        log.exception("")
+        except Exception:
+            log.exception("")
+
     async def run_async(
         self, source: str, **local_callbacks: Unpack[MsgCallbacks]
     ) -> None:
@@ -195,103 +308,6 @@ class LocalPythonKernel(BaseKernel):
                 ),
             }
         )
-
-        add_output = callbacks["add_output"]
-
-        def displayhook(value: Any) -> None:
-            # Save reference to output
-            self.locals[f"_{self._execution_count}"] = value
-            # Display output
-            if value is not None:
-                data = {}
-                metadata = {}
-                if hasattr(value, "_repr_mimebundle_"):
-                    output = value._repr_mimebundle_()
-                    if isinstance(output, tuple):
-                        data, metadata = output
-                    else:
-                        data = output
-                else:
-                    data = {}
-                    metadata = {}
-                    for method, mime in [
-                        # ("_repr_javascript_", "application/javascript"),
-                        ("_repr_latex_", "text/latex"),
-                        ("_repr_html_", "text/html"),
-                        ("_repr_markdown_", "text/markdown"),
-                        ("_repr_svg_", "image/svg+xml"),
-                        ("_repr_jpeg_", "image/jpeg"),
-                        ("_repr_png_", "image/png"),
-                        # ("_repr_pretty_", "text/plain"),
-                    ]:
-                        if (
-                            hasattr(value, method)
-                            and (output := getattr(value, method)()) is not None
-                        ):
-                            data[mime] = output
-                    if not data:
-                        data = {"text/plain": repr(value)}
-                if callable(add_output):
-                    add_output(
-                        {
-                            "output_type": "execute_result",
-                            "execution_count": self._execution_count,
-                            "data": data,
-                            "metadata": metadata,
-                        },
-                        True,
-                    )
-
-        def execute_code() -> None:
-            """Execute the code in a separate thread."""
-            try:
-                with ExitStack() as stack:
-                    stack.enter_context(
-                        SysHookManager(
-                            sys, "stdout", StreamWrapper("stdout", add_output)
-                        )
-                    )
-                    stack.enter_context(
-                        SysHookManager(
-                            sys, "stderr", StreamWrapper("stderr", add_output)
-                        )
-                    )
-                    stack.enter_context(SysHookManager(sys, "displayhook", displayhook))
-                    # stack.enter_context(set_displayhook())
-                    stack.enter_context(self._lock)
-                    # Execute body
-                    try:
-                        if body:
-                            exec(  # noqa: S102
-                                compile(
-                                    ast.Module(body=body, type_ignores=[]),
-                                    filename=filename,
-                                    mode="exec",
-                                ),
-                                self.locals,
-                            )
-                        # Last statement is an expression - eval it
-                        if last is not None:
-                            exec(  # noqa: S102
-                                compile(
-                                    ast.Interactive([last]),
-                                    filename=filename,
-                                    mode="single",
-                                ),
-                                self.locals,
-                            )
-                    except SystemExit:
-                        get_app().exit()
-                    except Exception:
-                        log.exception("")
-                        try:
-                            self.showtraceback(filename, cb=callbacks["add_output"])
-                            if callable(done := callbacks.get("done")):
-                                done({"status": "error"})
-                        except Exception:
-                            log.exception("")
-            except Exception:
-                log.exception("")
 
         self.status = "busy"
 
@@ -326,7 +342,7 @@ class LocalPythonKernel(BaseKernel):
             last = tree.body.pop()
 
         # Execute the code in a thread
-        await to_thread(execute_code)
+        await to_thread(self._execute_code, body, last, filename, callbacks)
 
         self.status = "idle"
 
@@ -431,7 +447,7 @@ class LocalPythonKernel(BaseKernel):
 
 
 class SysHookManager:
-    """Manages stream redirection with depth tracking."""
+    """Manages system hooks with depth tracking."""
 
     _depths: ClassVar[dict[object, int]] = {}
     _lock = threading.Lock()
