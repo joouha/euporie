@@ -10,7 +10,7 @@ import threading
 import traceback
 from asyncio import to_thread
 from contextlib import ExitStack
-from functools import partial
+from functools import wraps
 from io import TextIOWrapper
 from linecache import cache as line_cache
 from typing import TYPE_CHECKING, ClassVar, cast
@@ -30,6 +30,33 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 
+def display(
+    *objs: Any,
+    include: list[str] | None = None,
+    exclude: list[str] | None = None,
+    metadata: dict[str, Any] | None = None,
+    transient: dict[str, Any] | None = None,
+    display_id: str | None = None,
+    raw: bool = False,
+    clear: bool = False,
+    **kwargs: Any,
+) -> None:
+    """Display objects using rich representation.
+
+    Args:
+        *objs: Objects to display
+        include: List of mime types to include
+        exclude: List of mime types to exclude
+        metadata: Additional metadata to include
+        transient: Transient data associated with the display
+        display_id: Identifier for updating display data
+        raw: Skip transformation/formatting
+        clear: Clear output before displaying
+        **kwargs: Additional display arguments
+    """
+    raise RuntimeError("Display function not properly initialized")
+
+
 class LocalPythonKernel(BaseKernel):
     """Run code in a local Python interpreter."""
 
@@ -45,6 +72,9 @@ class LocalPythonKernel(BaseKernel):
                 type=cls,
             )
         ]
+
+    # Thread-local storage for callbacks during execution
+    _thread_local = threading.local()
 
     def __init__(
         self,
@@ -182,48 +212,105 @@ class LocalPythonKernel(BaseKernel):
                 True,
             )
 
-    def _displayhook(
-        self, value: Any, add_output: Callable[[dict[str, Any], bool], None] | None
-    ) -> None:
+    def _get_display_data(self, obj: Any) -> tuple[dict[str, Any], dict[str, Any]]:
+        """Get display data and metadata for an object.
+
+        Args:
+            obj: Object to get display data for
+
+        Returns:
+            Tuple of (data, metadata) dictionaries
+        """
+        data = {}
+        metadata = {}
+
+        if hasattr(obj, "_repr_mimebundle_"):
+            output = obj._repr_mimebundle_()
+            if isinstance(output, tuple):
+                data, metadata = output
+            else:
+                data = output
+        else:
+            for method, mime in [
+                ("_repr_latex_", "text/latex"),
+                ("_repr_html_", "text/html"),
+                ("_repr_markdown_", "text/markdown"),
+                ("_repr_svg_", "image/svg+xml"),
+                ("_repr_jpeg_", "image/jpeg"),
+                ("_repr_png_", "image/png"),
+            ]:
+                if (
+                    hasattr(obj, method)
+                    and (output := getattr(obj, method)()) is not None
+                ):
+                    data[mime] = output
+            if not data:
+                data = {"text/plain": repr(obj)}
+
+        return data, metadata
+
+    def _make_display_func(self) -> Callable:
+        """Create a display function bound to a kernel instance."""
+
+        @wraps(display)
+        def _display(
+            *objs: Any,
+            include: list[str] | None = None,
+            exclude: list[str] | None = None,
+            metadata: dict[str, Any] | None = None,
+            transient: dict[str, Any] | None = None,
+            display_id: str | None = None,
+            raw: bool = False,
+            clear: bool = False,
+            **kwargs: Any,
+        ) -> None:
+            if not hasattr(self._thread_local, "callbacks"):
+                return
+
+            add_output = self._thread_local.callbacks.get("add_output")
+            if not callable(add_output):
+                return
+
+            for obj in objs:
+                data, obj_metadata = self._get_display_data(obj)
+
+                # Filter mime types
+                if include:
+                    data = {k: v for k, v in data.items() if k in include}
+                if exclude:
+                    data = {k: v for k, v in data.items() if k not in exclude}
+
+                # Merge metadata
+                if metadata:
+                    obj_metadata.update(metadata)
+
+                add_output(
+                    {
+                        "output_type": "display_data",
+                        "data": data,
+                        "metadata": obj_metadata,
+                        "transient": transient,
+                        "display_id": display_id,
+                    },
+                    True,
+                )
+
+        return _display
+
+    def _displayhook(self, value: Any) -> None:
         """Handle display of expression values.
 
         Args:
             value: The value to display
-            add_output: Callback to add output
         """
         # Save reference to output
         self.locals[f"_{self._execution_count}"] = value
+
         # Display output
-        if value is not None:
-            data = {}
-            metadata = {}
-            if hasattr(value, "_repr_mimebundle_"):
-                output = value._repr_mimebundle_()
-                if isinstance(output, tuple):
-                    data, metadata = output
-                else:
-                    data = output
-            else:
-                data = {}
-                metadata = {}
-                for method, mime in [
-                    # ("_repr_javascript_", "application/javascript"),
-                    ("_repr_latex_", "text/latex"),
-                    ("_repr_html_", "text/html"),
-                    ("_repr_markdown_", "text/markdown"),
-                    ("_repr_svg_", "image/svg+xml"),
-                    ("_repr_jpeg_", "image/jpeg"),
-                    ("_repr_png_", "image/png"),
-                    # ("_repr_pretty_", "text/plain"),
-                ]:
-                    if (
-                        hasattr(value, method)
-                        and (output := getattr(value, method)()) is not None
-                    ):
-                        data[mime] = output
-                if not data:
-                    data = {"text/plain": repr(value)}
+        if value is not None and hasattr(self._thread_local, "callbacks"):
+            add_output = self._thread_local.callbacks.get("add_output")
             if callable(add_output):
+                data, metadata = self._get_display_data(value)
                 add_output(
                     {
                         "output_type": "execute_result",
@@ -249,51 +336,48 @@ class LocalPythonKernel(BaseKernel):
             filename: Source filename for tracebacks
             callbacks: Message callbacks
         """
+        # Store callbacks in thread local storage
+        self._thread_local.callbacks = callbacks
         add_output = callbacks["add_output"]
-        hook_stdout = SysHookManager(sys, "stdout", StreamWrapper("stdout", add_output))
-        hook_stderr = SysHookManager(sys, "stderr", StreamWrapper("stderr", add_output))
-        hook_display = SysHookManager(
-            sys, "displayhook", partial(self._displayhook, callback=add_output)
-        )
-        try:
-            with ExitStack() as stack:
-                stack.enter_context(hook_stdout)
-                stack.enter_context(hook_stderr)
-                stack.enter_context(hook_display)
-                stack.enter_context(self._lock)
-                # Execute body
-                try:
-                    if body:
-                        exec(  # noqa: S102
-                            compile(
-                                ast.Module(body=body, type_ignores=[]),
-                                filename=filename,
-                                mode="exec",
-                            ),
-                            self.locals,
-                        )
-                    # Last statement is an expression - eval it
-                    if last is not None:
-                        exec(  # noqa: S102
-                            compile(
-                                ast.Interactive([last]),
-                                filename=filename,
-                                mode="single",
-                            ),
-                            self.locals,
-                        )
-                except SystemExit:
-                    get_app().exit()
-                except Exception:
-                    log.exception("")
-                    try:
-                        self.showtraceback(filename, cb=callbacks["add_output"])
-                        if callable(done := callbacks.get("done")):
-                            done({"status": "error"})
-                    except Exception:
-                        log.exception("")
-        except Exception:
-            log.exception("")
+
+        # Add display function to locals
+        self.locals["display"] = self._make_display_func()
+
+        hook_stdout = SysHookManager(sys, "stdout", StreamWrapper("stdout", self))
+        hook_stderr = SysHookManager(sys, "stderr", StreamWrapper("stderr", self))
+        hook_display = SysHookManager(sys, "displayhook", self._displayhook)
+        with ExitStack() as stack:
+            stack.enter_context(hook_stdout)
+            stack.enter_context(hook_stderr)
+            stack.enter_context(hook_display)
+            stack.enter_context(self._lock)
+            # Execute body
+            try:
+                if body:
+                    exec(  # noqa: S102
+                        compile(
+                            ast.Module(body=body, type_ignores=[]),
+                            filename=filename,
+                            mode="exec",
+                        ),
+                        self.locals,
+                    )
+                # Last statement is an expression - eval it
+                if last is not None:
+                    exec(  # noqa: S102
+                        compile(
+                            ast.Interactive([last]),
+                            filename=filename,
+                            mode="single",
+                        ),
+                        self.locals,
+                    )
+            except SystemExit:
+                get_app().exit()
+            except Exception:
+                self.showtraceback(filename, cb=add_output)
+                if callable(done := callbacks.get("done")):
+                    done({"status": "error"})
 
     async def run_async(
         self, source: str, **local_callbacks: Unpack[MsgCallbacks]
@@ -491,17 +575,16 @@ class StreamWrapper(TextIOWrapper):
     def __init__(
         self,
         name: str,
-        callback: Callable[[dict[str, Any], bool], None] | None,
+        kernel: LocalPythonKernel,
     ) -> None:
         """Create a new IO object for the local kernel.
 
         Args:
             name: The name of the stream being wrapped
-            callback: The callback to add output to the kernel tab
+            kernel: The kernel instance
         """
         self._name = name
-        # Store the callback in thread-local storage
-        self._thread_local.callback = callback
+        self._kernel = kernel
         self._buffer = ""
 
     def write(self, s: str) -> int:
@@ -526,15 +609,17 @@ class StreamWrapper(TextIOWrapper):
     def flush(self) -> None:
         """Flush any remaining buffered content."""
         if self._buffer:
-            if callable(callback := self._thread_local.callback):
-                callback(
-                    {
-                        "output_type": "stream",
-                        "name": self._name,
-                        "text": self._buffer,
-                    },
-                    True,
-                )
+            if hasattr(self._kernel._thread_local, "callbacks"):
+                callback = self._kernel._thread_local.callbacks.get("add_output")
+                if callable(callback):
+                    callback(
+                        {
+                            "output_type": "stream",
+                            "name": self._name,
+                            "text": self._buffer,
+                        },
+                        True,
+                    )
             self._buffer = ""
 
     def __del__(self) -> None:
