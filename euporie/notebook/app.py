@@ -136,21 +136,22 @@ class NotebookApp(BaseApp):
 
     def set_tab_container(self, app: BaseApp | None = None) -> None:
         """Set the container to use to display opened tabs."""
+        tab_mode = TabMode(self.config.tab_mode)
         if not self.tabs:
             self._tab_container = Pattern(
                 self.config.background_character,
                 self.config.background_pattern,
             )
-        elif TabMode(self.config.tab_mode) == TabMode.TILE_HORIZONTALLY:
+        elif tab_mode == TabMode.TILE_HORIZONTALLY:
             self._tab_container = HSplit(
-                children=self.tabs,
+                children=[DynamicContainer(lambda tab=tab: tab) for tab in self.tabs],
                 padding=1,
                 padding_style="class:tab-padding",
                 padding_char="─",
             )
-        elif TabMode(self.config.tab_mode) == TabMode.TILE_VERTICALLY:
+        elif tab_mode == TabMode.TILE_VERTICALLY:
             self._tab_container = VSplit(
-                children=self.tabs,
+                children=[DynamicContainer(lambda tab=tab: tab) for tab in self.tabs],
                 padding=1,
                 padding_style="class:tab-padding",
                 padding_char="│",
