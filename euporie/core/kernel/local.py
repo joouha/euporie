@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import ast
 import code
+import getpass
 import logging
 import sys
 import threading
@@ -100,8 +101,9 @@ class LocalPythonKernel(BaseKernel):
         # Create interpreter with callback for error handling
         self.locals: dict[str, object] = {}
         self._execution_count = 0
-        self._lock = threading.Lock()
         self.kc = None
+        self._input_event = threading.Event()
+        self._input_buffer = None
 
     @property
     def missing(self) -> bool:
@@ -342,15 +344,27 @@ class LocalPythonKernel(BaseKernel):
 
         # Add display function to locals
         self.locals["display"] = self._make_display_func()
+        # Add input functions to locals
+        self.locals["input"] = self._make_input_func()
 
-        hook_stdout = SysHookManager(sys, "stdout", StreamWrapper("stdout", self))
-        hook_stderr = SysHookManager(sys, "stderr", StreamWrapper("stderr", self))
+        stdout = StreamWrapper("stdout", self)
+        stderr = StreamWrapper("stderr", self)
+        hook_stdout = SysHookManager(sys, "stdout", stdout)
+        hook_stderr = SysHookManager(sys, "stderr", stderr)
         hook_display = SysHookManager(sys, "displayhook", self._displayhook)
+        hook_getpass = SysHookManager(
+            getpass, "getpass", self._make_input_func(is_password=True)
+        )
+
         with ExitStack() as stack:
+            # Set up stack
             stack.enter_context(hook_stdout)
             stack.enter_context(hook_stderr)
+            stack.callback(stdout.flush)
+            stack.callback(stderr.flush)
             stack.enter_context(hook_display)
-            stack.enter_context(self._lock)
+            stack.enter_context(hook_getpass)
+
             # Execute body
             try:
                 if body:
@@ -508,8 +522,51 @@ class LocalPythonKernel(BaseKernel):
         return result
 
     def input(self, text: str) -> None:
-        """Send input to the kernel."""
-        raise NotImplementedError()
+        """Send input to the kernel.
+
+        Args:
+            text: The input text to provide
+        """
+        self._input_buffer = text
+        self._input_event.set()
+
+    def _make_input_func(self, is_password: bool = False) -> Callable[[str], str]:
+        """Create an input function that uses the kernel's input mechanism.
+
+        Args:
+            is_password: Whether this is for password input (don't echo)
+
+        Returns:
+            An input function that uses kernel callbacks
+        """
+
+        @wraps(input)
+        def _input(prompt: str = "") -> str:
+            """Get input from the user.
+
+            Args:
+                prompt: Text to display when requesting input
+
+            Returns:
+                The input string from the user
+            """
+            # Clear any previous input
+            self._input_event.clear()
+            self._input_buffer = None
+
+            # Request input via callback
+            if hasattr(self._thread_local, "callbacks"):
+                get_input = self._thread_local.callbacks.get("get_input")
+                if callable(get_input):
+                    get_input(prompt, is_password)
+
+            # Wait for input to be provided
+            self._input_event.wait()
+
+            # Return the input, or empty string if none provided
+            return self._input_buffer or ""
+
+        return _input
 
     def interrupt(self) -> None:
         """Interrupt the kernel."""
@@ -555,7 +612,7 @@ class SysHookManager:
         """Set up stream redirection."""
         with self._lock:
             self._depths[self.parent, self.name] += 1
-            setattr(self.parent, self.name, self.replacement)
+        setattr(self.parent, self.name, self.replacement)
 
     def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
         """Tear down stream redirection."""
@@ -595,7 +652,8 @@ class StreamWrapper(TextIOWrapper):
                 lines = self._buffer.split("\n")
                 # Keep any remaining text after last newline
                 self._buffer = lines[-1]
-                if callable(callback := self._thread_local.callback):
+                callback = self._kernel._thread_local.callbacks.get("add_output")
+                if callable(callback):
                     callback(
                         {
                             "output_type": "stream",
@@ -621,7 +679,3 @@ class StreamWrapper(TextIOWrapper):
                         True,
                     )
             self._buffer = ""
-
-    def __del__(self) -> None:
-        """Flush the stream when deleted."""
-        self.flush()
