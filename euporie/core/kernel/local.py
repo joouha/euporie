@@ -242,14 +242,6 @@ class LocalPythonKernel(BaseKernel):
                         True,
                     )
 
-        @contextmanager
-        def set_displayhook() -> Iterator[None]:
-            sys.displayhook = displayhook
-            try:
-                yield
-            finally:
-                sys.displayhook = sys.__displayhook__
-
         def execute_code() -> None:
             """Execute the code in a separate thread."""
             try:
