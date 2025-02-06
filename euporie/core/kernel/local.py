@@ -8,10 +8,11 @@ import logging
 import sys
 import threading
 import traceback
-from contextlib import ExitStack, contextmanager, redirect_stderr, redirect_stdout
+from asyncio import to_thread
+from contextlib import ExitStack, contextmanager
 from io import TextIOWrapper
 from linecache import cache as line_cache
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, ClassVar, cast
 
 from pygments import highlight
 from pygments.formatters import Terminal256Formatter
@@ -249,6 +250,57 @@ class LocalPythonKernel(BaseKernel):
             finally:
                 sys.displayhook = sys.__displayhook__
 
+        def execute_code() -> None:
+            """Execute the code in a separate thread."""
+            try:
+                with ExitStack() as stack:
+                    stack.enter_context(
+                        SysHookManager(
+                            sys, "stdout", StreamWrapper("stdout", add_output)
+                        )
+                    )
+                    stack.enter_context(
+                        SysHookManager(
+                            sys, "stderr", StreamWrapper("stderr", add_output)
+                        )
+                    )
+                    stack.enter_context(SysHookManager(sys, "displayhook", displayhook))
+                    # stack.enter_context(set_displayhook())
+                    stack.enter_context(self._lock)
+                    # Execute body
+                    try:
+                        if body:
+                            exec(  # noqa: S102
+                                compile(
+                                    ast.Module(body=body, type_ignores=[]),
+                                    filename=filename,
+                                    mode="exec",
+                                ),
+                                self.locals,
+                            )
+                        # Last statement is an expression - eval it
+                        if last is not None:
+                            exec(  # noqa: S102
+                                compile(
+                                    ast.Interactive([last]),
+                                    filename=filename,
+                                    mode="single",
+                                ),
+                                self.locals,
+                            )
+                    except SystemExit:
+                        get_app().exit()
+                    except Exception:
+                        log.exception("")
+                        try:
+                            self.showtraceback(filename, cb=callbacks["add_output"])
+                            if callable(done := callbacks.get("done")):
+                                done({"status": "error"})
+                        except Exception:
+                            log.exception("")
+            except Exception:
+                log.exception("")
+
         self.status = "busy"
 
         # Set execution count
@@ -281,50 +333,8 @@ class LocalPythonKernel(BaseKernel):
         if isinstance(tree.body[-1], ast.Expr):
             last = tree.body.pop()
 
-        with ExitStack() as stack:
-            stack.enter_context(
-                redirect_stdout(stdout := StdStream("stdout", add_output))
-            )
-            stack.callback(stdout.flush)
-            stack.enter_context(
-                redirect_stderr(stderr := StdStream("stderr", add_output))
-            )
-            stack.callback(stderr.flush)
-            stack.enter_context(self._lock)
-            stack.enter_context(set_displayhook())
-            # Execute body
-            try:
-                if body:
-                    exec(  # noqa: S102
-                        compile(
-                            ast.Module(body=body, type_ignores=[]),
-                            # ast.Interactive(body),
-                            filename=filename,
-                            # mode="single",
-                            mode="exec",
-                        ),
-                        self.locals,
-                    )
-                # Last statement is an expression - eval it
-                if last is not None:
-                    exec(  # noqa: S102
-                        compile(
-                            ast.Interactive([last]),
-                            filename=filename,
-                            mode="single",
-                        ),
-                        self.locals,
-                    )
-            except SystemExit:
-                get_app().exit()
-            except Exception:
-                log.exception("")
-                try:
-                    self.showtraceback(filename, cb=callbacks["add_output"])
-                    if callable(done := callbacks.get("done")):
-                        done({"status": "error"})
-                except Exception:
-                    log.exception("")
+        # Execute the code in a thread
+        await to_thread(execute_code)
 
         self.status = "idle"
 
@@ -428,22 +438,63 @@ class LocalPythonKernel(BaseKernel):
         self.stop()
 
 
-class StdStream(TextIOWrapper):
+class SysHookManager:
+    """Manages stream redirection with depth tracking."""
+
+    _depths: ClassVar[dict[object, int]] = {}
+    _lock = threading.Lock()
+
+    def __init__(self, parent: object, name: str, replacement: object) -> None:
+        """Initialize the stream manager.
+
+        Args:
+            parent: The owner of the object being replaced
+            name: The name of the attribute being replaced
+            replacement: The replacement
+        """
+        self.parent = parent
+        self.name = name
+        self.original = getattr(parent, name)
+        self.replacement = replacement
+        with self._lock:
+            self._depths.setdefault((parent, name), 0)
+
+    def __enter__(self) -> None:
+        """Set up stream redirection."""
+        with self._lock:
+            self._depths[self.parent, self.name] += 1
+            setattr(self.parent, self.name, self.replacement)
+
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
+        """Tear down stream redirection."""
+        with self._lock:
+            if self._depths[self.parent, self.name] > 0:
+                self._depths[self.parent, self.name] -= 1
+            if self._depths[self.parent, self.name] == 0:
+                setattr(self.parent, self.name, self.original)
+
+
+class StreamWrapper(TextIOWrapper):
     """StringIO that calls a callback when written to."""
 
+    # Class-level storage for thread-local state
+    _thread_local = threading.local()
+
     def __init__(
-        self, name: str, callback: Callable[[dict[str, Any], bool], None] | None
+        self,
+        name: str,
+        callback: Callable[[dict[str, Any], bool], None] | None,
     ) -> None:
         """Create a new IO object for the local kernel.
 
         Args:
-            name: The name of the stream (stdout or stderr)
+            name: The name of the stream being wrapped
             callback: The callback to add output to the kernel tab
         """
         self._name = name
-        self.callback = callback
+        # Store the callback in thread-local storage
+        self._thread_local.callback = callback
         self._buffer = ""
-        self.kc = None
 
     def write(self, s: str) -> int:
         """Write the written data as a cell output."""
@@ -453,8 +504,8 @@ class StdStream(TextIOWrapper):
                 lines = self._buffer.split("\n")
                 # Keep any remaining text after last newline
                 self._buffer = lines[-1]
-                if callable(self.callback):
-                    self.callback(
+                if callable(callback := self._thread_local.callback):
+                    callback(
                         {
                             "output_type": "stream",
                             "name": self._name,
@@ -466,9 +517,18 @@ class StdStream(TextIOWrapper):
 
     def flush(self) -> None:
         """Flush any remaining buffered content."""
-        if self._buffer and callable(self.callback):
-            self.callback(
-                {"output_type": "stream", "name": self._name, "text": self._buffer},
-                True,
-            )
+        if self._buffer:
+            if callable(callback := self._thread_local.callback):
+                callback(
+                    {
+                        "output_type": "stream",
+                        "name": self._name,
+                        "text": self._buffer,
+                    },
+                    True,
+                )
             self._buffer = ""
+
+    def __del__(self) -> None:
+        """Flush the stream when deleted."""
+        self.flush()
