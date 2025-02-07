@@ -10,11 +10,9 @@ import sys
 import threading
 import traceback
 from asyncio import to_thread
-from contextlib import ExitStack
-from functools import wraps
-from io import BytesIO, TextIOWrapper
+from functools import update_wrapper
 from linecache import cache as line_cache
-from typing import TYPE_CHECKING, ClassVar, cast
+from typing import TYPE_CHECKING, cast
 
 from pygments import highlight
 from pygments.formatters import Terminal256Formatter
@@ -29,33 +27,6 @@ if TYPE_CHECKING:
     from euporie.core.tabs.kernel import KernelTab
 
 log = logging.getLogger(__name__)
-
-
-def display(
-    *objs: Any,
-    include: list[str] | None = None,
-    exclude: list[str] | None = None,
-    metadata: dict[str, Any] | None = None,
-    transient: dict[str, Any] | None = None,
-    display_id: str | None = None,
-    raw: bool = False,
-    clear: bool = False,
-    **kwargs: Any,
-) -> None:
-    """Display objects using rich representation.
-
-    Args:
-        *objs: Objects to display
-        include: List of mime types to include
-        exclude: List of mime types to exclude
-        metadata: Additional metadata to include
-        transient: Transient data associated with the display
-        display_id: Identifier for updating display data
-        raw: Skip transformation/formatting
-        clear: Clear output before displaying
-        **kwargs: Additional display arguments
-    """
-    raise RuntimeError("Display function not properly initialized")
 
 
 class LocalPythonKernel(BaseKernel):
@@ -103,7 +74,8 @@ class LocalPythonKernel(BaseKernel):
         self._execution_count = 0
         self.kc = None
         self._input_event = threading.Event()
-        self._input_buffer = None
+        self._input_buffer: str | None = None
+        self.hook_manager = HookManager(self)
 
     @property
     def missing(self) -> bool:
@@ -214,119 +186,10 @@ class LocalPythonKernel(BaseKernel):
                 True,
             )
 
-    def _get_display_data(self, obj: Any) -> tuple[dict[str, Any], dict[str, Any]]:
-        """Get display data and metadata for an object.
-
-        Args:
-            obj: Object to get display data for
-
-        Returns:
-            Tuple of (data, metadata) dictionaries
-        """
-        data = {}
-        metadata = {}
-
-        if hasattr(obj, "_repr_mimebundle_"):
-            output = obj._repr_mimebundle_()
-            if isinstance(output, tuple):
-                data, metadata = output
-            else:
-                data = output
-        else:
-            for method, mime in [
-                ("_repr_latex_", "text/latex"),
-                ("_repr_html_", "text/html"),
-                ("_repr_markdown_", "text/markdown"),
-                ("_repr_svg_", "image/svg+xml"),
-                ("_repr_jpeg_", "image/jpeg"),
-                ("_repr_png_", "image/png"),
-            ]:
-                if (
-                    hasattr(obj, method)
-                    and (output := getattr(obj, method)()) is not None
-                ):
-                    data[mime] = output
-            if not data:
-                data = {"text/plain": repr(obj)}
-
-        return data, metadata
-
-    def _make_display_func(self) -> Callable:
-        """Create a display function bound to a kernel instance."""
-
-        @wraps(display)
-        def _display(
-            *objs: Any,
-            include: list[str] | None = None,
-            exclude: list[str] | None = None,
-            metadata: dict[str, Any] | None = None,
-            transient: dict[str, Any] | None = None,
-            display_id: str | None = None,
-            raw: bool = False,
-            clear: bool = False,
-            **kwargs: Any,
-        ) -> None:
-            if not hasattr(self._thread_local, "callbacks"):
-                return
-
-            add_output = self._thread_local.callbacks.get("add_output")
-            if not callable(add_output):
-                return
-
-            for obj in objs:
-                data, obj_metadata = self._get_display_data(obj)
-
-                # Filter mime types
-                if include:
-                    data = {k: v for k, v in data.items() if k in include}
-                if exclude:
-                    data = {k: v for k, v in data.items() if k not in exclude}
-
-                # Merge metadata
-                if metadata:
-                    obj_metadata.update(metadata)
-
-                add_output(
-                    {
-                        "output_type": "display_data",
-                        "data": data,
-                        "metadata": obj_metadata,
-                        "transient": transient,
-                        "display_id": display_id,
-                    },
-                    True,
-                )
-
-        return _display
-
-    def _displayhook(self, value: Any) -> None:
-        """Handle display of expression values.
-
-        Args:
-            value: The value to display
-        """
-        # Save reference to output
-        self.locals[f"_{self._execution_count}"] = value
-
-        # Display output
-        if value is not None and hasattr(self._thread_local, "callbacks"):
-            add_output = self._thread_local.callbacks.get("add_output")
-            if callable(add_output):
-                data, metadata = self._get_display_data(value)
-                add_output(
-                    {
-                        "output_type": "execute_result",
-                        "execution_count": self._execution_count,
-                        "data": data,
-                        "metadata": metadata,
-                    },
-                    True,
-                )
-
     def _execute_code(
         self,
         body: list[ast.stmt],
-        last: ast.Expr | None,
+        last: ast.stmt | None,
         filename: str,
         callbacks: MsgCallbacks,
     ) -> None:
@@ -342,26 +205,7 @@ class LocalPythonKernel(BaseKernel):
         self._thread_local.callbacks = callbacks
         add_output = callbacks["add_output"]
 
-        # Add display function to locals
-        self.locals["display"] = self._make_display_func()
-        # Add input functions to locals
-        self.locals["input"] = self._make_input_func()
-
-        with ExitStack() as stack:
-            # Set up stack
-            stack.enter_context(
-                SysHookManager(sys, "stdout", StreamWrapper("stdout", self))
-            )
-            stack.enter_context(
-                SysHookManager(sys, "stderr", StreamWrapper("stderr", self))
-            )
-            stack.enter_context(SysHookManager(sys, "displayhook", self._displayhook))
-            stack.enter_context(
-                SysHookManager(
-                    getpass, "getpass", self._make_input_func(is_password=True)
-                )
-            )
-
+        with self.hook_manager:
             # Execute body
             try:
                 if body:
@@ -527,44 +371,6 @@ class LocalPythonKernel(BaseKernel):
         self._input_buffer = text
         self._input_event.set()
 
-    def _make_input_func(self, is_password: bool = False) -> Callable[[str], str]:
-        """Create an input function that uses the kernel's input mechanism.
-
-        Args:
-            is_password: Whether this is for password input (don't echo)
-
-        Returns:
-            An input function that uses kernel callbacks
-        """
-
-        @wraps(input)
-        def _input(prompt: str = "") -> str:
-            """Get input from the user.
-
-            Args:
-                prompt: Text to display when requesting input
-
-            Returns:
-                The input string from the user
-            """
-            # Clear any previous input
-            self._input_event.clear()
-            self._input_buffer = None
-
-            # Request input via callback
-            if hasattr(self._thread_local, "callbacks"):
-                get_input = self._thread_local.callbacks.get("get_input")
-                if callable(get_input):
-                    get_input(prompt, is_password)
-
-            # Wait for input to be provided
-            self._input_event.wait()
-
-            # Return the input, or empty string if none provided
-            return self._input_buffer or ""
-
-        return _input
-
     def interrupt(self) -> None:
         """Interrupt the kernel."""
         log.warning("Cannot interrupt kernel %r", self)
@@ -584,115 +390,298 @@ class LocalPythonKernel(BaseKernel):
         self.stop()
 
 
-class SysHookManager:
-    """Manages system hooks with depth tracking."""
+def get_display_data(obj: Any) -> tuple[dict[str, Any], dict[str, Any]]:
+    """Get display data and metadata for an object.
 
-    _depths: ClassVar[dict[object, int]] = {}
-    _lock = threading.Lock()
+    Args:
+        obj: Object to get display data for
 
-    def __init__(self, parent: object, name: str, replacement: object) -> None:
-        """Initialize the stream manager.
+    Returns:
+        Tuple of (data, metadata) dictionaries
+    """
+    data = {}
+    metadata = {}
 
-        Args:
-            parent: The owner of the object being replaced
-            name: The name of the attribute being replaced
-            replacement: The replacement
-        """
-        self.parent = parent
-        self.name = name
-        self.original = getattr(parent, name)
-        self.replacement = replacement
-        with self._lock:
-            self._depths.setdefault((parent, name), 0)
+    if hasattr(obj, "_repr_mimebundle_"):
+        output = obj._repr_mimebundle_()
+        if isinstance(output, tuple):
+            data, metadata = output
+        else:
+            data = output
+    else:
+        for method, mime in [
+            ("_repr_latex_", "text/latex"),
+            ("_repr_html_", "text/html"),
+            ("_repr_markdown_", "text/markdown"),
+            ("_repr_svg_", "image/svg+xml"),
+            ("_repr_jpeg_", "image/jpeg"),
+            ("_repr_png_", "image/png"),
+        ]:
+            if hasattr(obj, method) and (output := getattr(obj, method)()) is not None:
+                data[mime] = output
+        if not data:
+            data = {"text/plain": repr(obj)}
 
-    def __enter__(self) -> None:
-        """Set up stream redirection."""
-        with self._lock:
-            self._depths[self.parent, self.name] += 1
-        setattr(self.parent, self.name, self.replacement)
-
-    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
-        """Tear down stream redirection."""
-        with self._lock:
-            if self._depths[self.parent, self.name] > 0:
-                self._depths[self.parent, self.name] -= 1
-            setattr(self.parent, self.name, self.original)
+    return data, metadata
 
 
-class StreamWrapper(TextIOWrapper):
-    """StringIO that calls a callback when written to."""
+class BaseHook:
+    """Base class providing access to thread-specific callbacks."""
 
-    def __init__(
-        self,
-        name: str,
-        kernel: LocalPythonKernel,
-    ) -> None:
-        """Create a new IO object for the local kernel.
+    def __init__(self, kernel: LocalPythonKernel) -> None:
+        """Initialize the base hook.
 
         Args:
-            name: The name of the stream being wrapped
-            kernel: The kernel instance
+            kernel: The kernel instance to hook
         """
-        super().__init__(BytesIO(), line_buffering=True)
-        self._name = name
         self._kernel = kernel
 
     @property
-    def name(self) -> str:
-        """The name of the stream."""
-        return self._name
+    def callbacks(self) -> MsgCallbacks:
+        """Get callbacks for current thread."""
+        return getattr(
+            self._kernel._thread_local, "callbacks", self._kernel.default_callbacks
+        )
 
-    def _send_output(self, content: str) -> None:
-        """Send stream output via callback.
 
-        Args:
-            content: The text content to send
-        """
-        if content and hasattr(self._kernel._thread_local, "callbacks"):
-            callback = self._kernel._thread_local.callbacks.get("add_output")
-            if callable(callback):
+class DisplayHook(BaseHook):
+    """Hook for sys.displayhook that dispatches to thread-specific callbacks."""
+
+    def __call__(self, value: Any) -> None:
+        """Handle display of values."""
+        if value is None:
+            return
+
+        if callbacks := self.callbacks:
+            # Store value in kernel locals
+            self._kernel.locals[f"_{self._kernel._execution_count}"] = value
+
+            # Get display data and metadata
+            data, metadata = get_display_data(value)
+
+            if callable(callback := callbacks.get("add_output")):
                 callback(
                     {
-                        "output_type": "stream",
-                        "name": self.name,
-                        "text": content,
+                        "output_type": "execute_result",
+                        "execution_count": self._kernel._execution_count,
+                        "data": data,
+                        "metadata": metadata,
                     },
                     True,
                 )
-                # Clear buffer
-                self.buffer.seek(0)
-                self.buffer.truncate()
 
-    def write(self, s: str) -> int:
-        """Write the written data as a cell output."""
-        # Write to the underlying buffer
-        result = super().write(s)
-        if s:
-            # Reset position to start
-            self.seek(0)
-            # Read lines until we find an incomplete one
-            lines = []
-            remainder = ""
-            while (line := self.readline()).endswith("\n"):
-                lines.append(line)
-            else:
-                remainder = line
-            if lines:
-                self._send_output("".join(lines))
-                # Put incomplete line back in buffer
-                if remainder:
-                    super().write(line)
 
-        return result
+class DisplayGlobal(BaseHook):
+    """A display() function that dispatches to thread-specific callbacks.
 
-    def flush_output(self) -> None:
-        """Flush any remaining buffered content."""
-        super().flush()
-        content = self.buffer.getvalue().decode()
-        if content:
-            self._send_output(content)
+    This class implements the global display() function used to show rich output
+    in notebooks. It routes display calls to the appropriate output callbacks.
+    """
 
-    def close(self) -> None:
-        """Flush anything remaining in buffer when stream is closed."""
-        self.flush_output()
-        super().close()
+    def __call__(
+        self,
+        *objs: Any,
+        include: list[str] | None = None,
+        exclude: list[str] | None = None,
+        metadata: dict[str, Any] | None = None,
+        transient: dict[str, Any] | None = None,
+        display_id: str | None = None,
+        raw: bool = False,
+        clear: bool = False,
+        **kwargs: Any,
+    ) -> None:
+        """Handle display of values in the notebook.
+
+        Args:
+            *objs: Objects to display. Each object will be displayed in sequence.
+            include: List of MIME types to include in the output. If specified,
+                only these MIME types will be included.
+            exclude: List of MIME types to exclude from the output. These MIME
+                types will be filtered out.
+            metadata: Additional metadata to attach to the display data.
+            transient: Transient data that is used for display but not persisted
+                in the notebook document.
+            display_id: Unique identifier for the display. Can be used to update
+                this display output later.
+            raw: If True, skip MIME type transformation/formatting of the objects.
+            clear: If True, clear the output before displaying new content.
+            **kwargs: Additional display arguments passed to the frontend.
+        """
+        add_output = self.callbacks.get("add_output")
+        if not callable(add_output):
+            return
+
+        for obj in objs:
+            data, obj_metadata = get_display_data(obj)
+
+            # Filter mime types
+            if include:
+                data = {k: v for k, v in data.items() if k in include}
+            if exclude:
+                data = {k: v for k, v in data.items() if k not in exclude}
+
+            # Merge metadata
+            if metadata:
+                obj_metadata.update(metadata)
+
+            add_output(
+                {
+                    "output_type": "display_data",
+                    "data": data,
+                    "metadata": obj_metadata,
+                    "transient": transient,
+                    "display_id": display_id,
+                },
+                True,
+            )
+
+
+class InputBuiltin(BaseHook):
+    """Hook for input and getpass that dispatches to thread-specific callbacks."""
+
+    def __init__(self, kernel: LocalPythonKernel, is_password: bool = False) -> None:
+        """Initialize the input hook.
+
+        Args:
+            kernel: The kernel instance to hook
+            is_password: Whether this is for password input
+        """
+        super().__init__(kernel)
+        self._is_password = is_password
+        update_wrapper(self, input)
+
+    def __call__(self, prompt: str = "", stream: Any = None) -> str:
+        """Get input from user via callback."""
+        if (callbacks := self.callbacks) and (get_input := callbacks.get("get_input")):
+            # Clear any previous input
+            self._kernel._input_event.clear()
+            self._kernel._input_buffer = None
+
+            # Request input via callback
+            get_input(prompt, self._is_password)
+
+            # Wait for input to be provided
+            self._kernel._input_event.wait()
+
+            # Return the input, or empty string if none provided
+            return self._kernel._input_buffer or ""
+        return ""
+
+
+class StreamWrapper(BaseHook):
+    """Hook for stdout/stderr that dispatches to thread-specific callbacks."""
+
+    def __init__(self, name: str, kernel: LocalPythonKernel) -> None:
+        """Initialize the stream hook.
+
+        Args:
+            name: Name of the stream (stdout/stderr)
+            kernel: The kernel instance to hook
+        """
+        BaseHook.__init__(self, kernel)
+        self.name = name
+        self._thread_local = threading.local()
+
+    @property
+    def buffer(self) -> str:
+        """Get the thread-local buffer for this stream."""
+        if not hasattr(self._thread_local, "buffer"):
+            self._thread_local.buffer = ""
+        return self._thread_local.buffer
+
+    @buffer.setter
+    def buffer(self, value: str) -> None:
+        self._thread_local.buffer = value
+
+    def _send(self, text: str, callbacks: MsgCallbacks) -> None:
+        """Send text to the frontend via callback."""
+        if callable(callback := callbacks.get("add_output")):
+            callback(
+                {"output_type": "stream", "name": self.name, "text": text},
+                True,
+            )
+
+    def write(self, text: str) -> int:
+        """Write output using callback for current thread."""
+        if not isinstance(text, str):
+            raise TypeError(f"write() argument must be str, not {type(text)}")
+        if not text or not (callbacks := self.callbacks):
+            return 0
+
+        # Handle any buffered content plus new text
+        all_text = self.buffer + text
+        lines = all_text.splitlines(keepends=True)
+        if lines[-1].endswith("\n"):
+            self.buffer = ""
+        else:
+            self.buffer = lines[-1]
+            lines = lines[:-1]
+        if lines:
+            # Send complete lines immediately
+            self._send("".join(lines), callbacks)
+
+        return len(text)
+
+    def flush(self) -> None:
+        """Flush any buffered content."""
+        if self.buffer and (callbacks := self.callbacks):
+            self._send(self.buffer, callbacks)
+            self.buffer = ""
+
+
+class HookManager:
+    """Context manager for hooking stdout/stderr/displayhook."""
+
+    def __init__(self, kernel: LocalPythonKernel) -> None:
+        """Initialize the hook manager.
+
+        Args:
+            kernel: The kernel instance to hook
+        """
+        # Create hook instances
+        self.stdout = StreamWrapper("stdout", kernel)
+        self.stderr = StreamWrapper("stderr", kernel)
+        self.displayhook = DisplayHook(kernel)
+        self.display = DisplayGlobal(kernel)
+        self.input = InputBuiltin(kernel, is_password=False)
+        self.getpass = InputBuiltin(kernel, is_password=True)
+        # Store original objects
+        self.og_stdout = sys.stdout
+        self.og_stderr = sys.stderr
+        self.og_displayhook = sys.displayhook
+        self.og_getpass = getpass.getpass
+        # Track hook depth
+        self._depth = 0
+        self._kernel = kernel
+
+    def __enter__(self) -> None:
+        """Replace objects with hooks."""
+        if self._depth == 0:
+            # Replace system streams
+            sys.stdout = self.stdout
+            sys.stderr = self.stderr
+            sys.displayhook = self.displayhook
+            # Replace getpass
+            getpass.getpass = self.getpass
+            # Add input to kernel locals
+            self._kernel.locals["input"] = self.input
+            # Add display to kernel locals
+            self._kernel.locals["display"] = self.display
+        self._depth += 1
+
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
+        """Restore original objects."""
+        self._depth -= 1
+        if self._depth == 0:
+            # Restore system streams
+            sys.stdout = self.og_stdout
+            sys.stderr = self.og_stderr
+            sys.displayhook = self.og_displayhook
+            # Restore getpass
+            getpass.getpass = self.og_getpass
+            # Remove input from kernel locals
+            self._kernel.locals.pop("input", None)
+            self._kernel.locals.pop("display", None)
+        # Flush any remaining stream outputs
+        self.stdout.flush()
+        self.stderr.flush()
