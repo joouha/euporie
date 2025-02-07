@@ -148,10 +148,23 @@ If your terminal supports `kitty's terminal graphics protocol <https://sw.kovidg
 
 This is supported by `kitty <https://sw.kovidgoyal.net/kitty>`_, `WezTerm <https://wezfurlong.org/wezterm/>`_, and `Konsole <https://konsole.kde.org/>`_.
 
+You can manually this protocol by launching euporie with the ``--graphics kitty`` flag.
+
+iTerm2's Terminal Graphics Protocol
+---------------------------------
+
+If you're using `iTerm2 <https://iterm2.com/>`_, euporie can use its proprietary graphics protocol to render images.
+
+You can select this protocol by launching euporie with the ``--graphics iterm`` flag.
+
 Sixels
 ------
 
-If supported by your terminal, euporie can show graphical images in cell outputs using the Sixel graphics protocol. This requires one of the following dependencies:
+If supported by your terminal, euporie can show graphical images in cell outputs using the Sixel graphics protocol.
+
+You can select this protocol by launching euporie with the ``--graphics sixel`` flag.
+
+This requires one of the following dependencies:
 
 * Python packages
    .. hlist::
@@ -172,12 +185,14 @@ Ansi Art
 
 If all else fails, euporie will fall back to using ansi art to display images.
 
+You can select this protocol by launching euporie with the ``--graphics none`` flag.
+
 * Python packages
    .. hlist::
       :columns: 3
 
-      * :py:mod:`chafa.py`
       * :py:mod:`timg`
+      * :py:mod:`chafa.py`
 
 * External applications
    .. hlist::
@@ -192,6 +207,12 @@ If all else fails, euporie will fall back to using ansi art to display images.
       * `img2unicode <https://github.com/matrach/img2unicode>`_
       * `jp2a <https://csl.name/jp2a/>`_
       * `img2txt <http://caca.zoy.org/wiki/libcaca>`_
+
+
+.. warning::
+   If a graphics protocol is manually selected but the terminal is not known to support it, it will not be used.
+   To force the use of a manually selected graphic protocol, launch euporie with the ``--force-graphics`` flag.
+   This may lead to unexpected behaviours and broken terminal output!
 
 SVG
 ===
