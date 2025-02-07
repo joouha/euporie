@@ -88,6 +88,43 @@ https://mybinder.org/v2/gh/joouha/euporie-binder/HEAD?urlpath=%2Feuporie%2F
 
 ----
 
+**************
+Jupyter Kernels
+**************
+
+Euporie uses Jupyter kernels to execute code in notebooks. If you see a "no kernels found" error when trying to run a notebook, you'll need to ensure you have the appropriate kernel installed and registered.
+
+For Python notebooks, install and register the IPython kernel:
+
+.. tab-set::
+
+   .. tab-item:: uv
+      :sync: uv
+
+      To install ``ipykernel`` in a virtual environment:
+
+      .. code-block:: console
+
+         $ uv pip install ipykernel
+         $ uv run python -m ipykernel install --user
+
+
+   .. tab-item:: pip
+      :sync: pip
+
+      To install ``ipykernel`` for the current user:
+
+      .. code-block:: console
+
+         $ pip install --user ipykernel
+         $ python -m ipykernel install --user
+
+For other programming languages, you'll need to install the appropriate kernel package.
+
+You can view a list of available kernel implementations for various programming languages `here <https://github.com/jupyter/jupyter/wiki/Jupyter-kernels>`_.
+
+----
+
 *********************
 Optional Dependencies
 *********************
