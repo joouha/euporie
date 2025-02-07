@@ -249,13 +249,13 @@ class Datum(Generic[T], metaclass=_MetaDatum):
         self._queue[key_conv] = event = asyncio.Event()
 
         routes = _CONVERTOR_ROUTE_CACHE[(self.format, to)]
-        log.debug(
-            "Converting %s->'%s'@%s using routes: %s",
-            self,
-            to,
-            (cols, rows),
-            routes,
-        )
+        # log.debug(
+        #     "Converting %s->'%s'@%s using routes: %s",
+        #     self,
+        #     to,
+        #     (cols, rows),
+        #     routes,
+        # )
         output: T | None = None
         if routes:
             datum = self
