@@ -143,15 +143,29 @@ class NotebookApp(BaseApp):
                 self.config.background_pattern,
             )
         elif tab_mode == TabMode.TILE_HORIZONTALLY:
+            children = []
+            for tab in self.tabs:
+
+                def _get_tab_container(tab: Tab = tab) -> Tab:
+                    return tab
+
+                children.append(DynamicContainer(_get_tab_container))
             self._tab_container = HSplit(
-                children=[DynamicContainer(lambda tab=tab: tab) for tab in self.tabs],
+                children=children,
                 padding=1,
                 padding_style="class:tab-padding",
                 padding_char="─",
             )
         elif tab_mode == TabMode.TILE_VERTICALLY:
+            children = []
+            for tab in self.tabs:
+
+                def _get_tab_container(tab: Tab = tab) -> Tab:
+                    return tab
+
+                children.append(DynamicContainer(_get_tab_container))
             self._tab_container = VSplit(
-                children=[DynamicContainer(lambda tab=tab: tab) for tab in self.tabs],
+                children=children,
                 padding=1,
                 padding_style="class:tab-padding",
                 padding_char="│",

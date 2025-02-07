@@ -545,12 +545,12 @@ class TabbedSplit(StackedSplit):
         @kb.add("left")
         def _prev(event: KeyPressEvent) -> None:
             """Previous tab."""
-            self.active -= 1
+            self.active = (self.active or 0) - 1
 
         @kb.add("right")
         def _next(event: KeyPressEvent) -> None:
             """Next tab."""
-            self.active += 1
+            self.active = (self.active or 0) + 1
 
         self.key_bindings = kb
 
