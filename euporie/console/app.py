@@ -32,6 +32,7 @@ from euporie.core.filters import has_dialog
 from euporie.core.layout.mouse import DisableMouseOnScroll
 from euporie.core.widgets.dialog import (
     AboutDialog,
+    ConfirmDialog,
     NoKernelsDialog,
     SaveAsDialog,
     SelectKernelDialog,
@@ -112,6 +113,7 @@ class ConsoleApp(BaseApp):
         self.dialogs["no-kernels"] = NoKernelsDialog(self)
         self.dialogs["change-kernel"] = SelectKernelDialog(self)
         self.dialogs["shortcuts"] = ShortcutsDialog(self)
+        self.dialogs["confirm"] = ConfirmDialog(self)
 
         return FloatContainer(
             DisableMouseOnScroll(

@@ -163,8 +163,16 @@ class Console(KernelTab):
             lsp.on_exit += lsp_unload
 
     def kernel_died(self) -> None:
-        """Call when the kernel dies."""
+        """Call if the kernel dies."""
         log.error("The kernel has died")
+        if confirm := self.app.dialogs.get("confirm"):
+            confirm.show(
+                title="Kernel connection lost",
+                message="The kernel appears to have died\n"
+                "as it can no longer be reached.\n\n"
+                "Do you want to restart the kernel?",
+                cb=self.kernel.restart,
+            )
 
     async def load_history(self) -> None:
         """Load kernel history."""
