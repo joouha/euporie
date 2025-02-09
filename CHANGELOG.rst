@@ -24,6 +24,7 @@ Changed
 Fixed
 =====
 
+- Fix tiled tab layouts
 - Set command palette input to vi-insert when opened
 - Fix issue with notebook scrolling
 - Fix issue where deleting the contents of a large cell results in scrolling the notebook out of view
