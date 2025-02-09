@@ -256,7 +256,7 @@ class BaseNotebook(KernelTab, metaclass=ABCMeta):
         if self.dirty and (unsaved := self.app.dialogs.get("unsaved")):
             unsaved.show(
                 tab=self,
-                cb=cb,
+                cb=partial(super().close, cb),
             )
         else:
             super().close(cb)

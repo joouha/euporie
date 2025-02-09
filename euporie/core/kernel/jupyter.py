@@ -920,6 +920,3 @@ class JupyterKernel(BaseKernel):
         # Stop kernel
         if self.km.has_kernel:
             await self.km.shutdown_kernel(now=True)
-        # Stop event loop
-        if self.threaded:
-            self.loop.stop()
