@@ -19,6 +19,7 @@ Added
 Changed
 =======
 
+- Improve automatic bracket pairing
 - Improve performance of JSON view
 
 Fixed

@@ -65,6 +65,14 @@ def cursor_in_leading_ws() -> bool:
 
 
 @Condition
+def cursor_at_end_of_line() -> bool:
+    """Determine if the cursor of the current buffer is in leading whitespace."""
+    from prompt_toolkit.application.current import get_app
+
+    return get_app().current_buffer.document.is_cursor_at_the_end_of_line
+
+
+@Condition
 def has_suggestion() -> bool:
     """Determine if the current buffer can display a suggestion."""
     from prompt_toolkit.application.current import get_app

@@ -13,6 +13,7 @@ from prompt_toolkit.filters import (
 from euporie.core.commands import add_cmd
 from euporie.core.filters import (
     char_after_cursor,
+    cursor_at_end_of_line,
     has_matching_bracket,
     insert_mode,
     replace_mode,
@@ -83,14 +84,16 @@ def _complete_bracket(right: str, event: KeyPressEvent) -> None:
     event.key_processor.feed(event.key_sequence[0], first=True)
 
 
-def _close_bracket(right: str, event: KeyPressEvent) -> None:
+def _skip_close_bracket(right: str, event: KeyPressEvent) -> None:
     event.current_buffer.cursor_position += 1
 
 
 for left, right in [("(", ")"), ("[", "]"), ("{", "}")]:
     add_cmd(
         name=f"complete-bracket-{left}{right}",
-        filter=buffer_has_focus & insert_mode & ~char_after_cursor(right),
+        filter=buffer_has_focus
+        & insert_mode
+        & (char_after_cursor(" ") | cursor_at_end_of_line),
         save_before=if_no_repeat,
         hidden=True,
     )(partial(_complete_bracket, right))
@@ -102,4 +105,4 @@ for left, right in [("(", ")"), ("[", "]"), ("{", "}")]:
         & has_matching_bracket,
         save_before=if_no_repeat,
         hidden=True,
-    )(partial(_close_bracket, right))
+    )(partial(_skip_close_bracket, right))
