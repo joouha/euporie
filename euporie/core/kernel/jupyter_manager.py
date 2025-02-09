@@ -32,9 +32,10 @@ class LoggingLocalProvisioner(LocalProvisioner):  # type:ignore[misc]
 
         def log_kernel_output(pipe: TextIO, log_func: Callable) -> None:
             try:
-                with pipe:
-                    for line in iter(pipe.readline, ""):
-                        log_func(line.rstrip())
+                if pipe:
+                    with pipe:
+                        for line in iter(pipe.readline, ""):
+                            log_func(line.rstrip())
             except StopIteration:
                 pass
 

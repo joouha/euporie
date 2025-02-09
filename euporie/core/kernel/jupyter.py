@@ -898,9 +898,12 @@ class JupyterKernel(BaseKernel):
         log.debug("Restarting kernel `%s`", self.id)
         self.error = None
         self.status = "starting"
-        await self.km.restart_kernel(now=True)
+        try:
+            await self.km.restart_kernel(now=True)
+            await self.post_start()
+        except asyncio.exceptions.InvalidStateError:
+            await self.start_async()
         log.debug("Kernel %s restarted", self.id)
-        await self.post_start()
 
     def stop(self, cb: Callable | None = None, wait: bool = False) -> None:
         """Stop the current kernel.
