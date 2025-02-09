@@ -223,6 +223,11 @@ class KernelTab(Tab, metaclass=ABCMeta):
                 kernel_tab=self,
                 allow_stdin=self.allow_stdin,
                 default_callbacks=self.default_callbacks,
+                **(
+                    {"connection_file": connection_file}
+                    if connection_file is not None
+                    else {}
+                ),
             )
 
         self.comms = comms or {}  # The client-side comm states
