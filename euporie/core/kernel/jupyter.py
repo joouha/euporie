@@ -473,6 +473,14 @@ class JupyterKernel(BaseKernel):
         ):
             completeness_status(rsp.get("content", {}))
 
+    def on_iopub_shutdown_reply(self, rsp: dict[str, Any], own: bool) -> None:
+        """Handle iopub shutdown reply messages."""
+        if not rsp.get("content", {}).get("restart"):
+            # Stop monitoring the kernel
+            if self.monitor_task is not None:
+                self.monitor_task.cancel()
+            self._set_living_status(False)
+
     def on_iopub_status(self, rsp: dict[str, Any], own: bool) -> None:
         """Call callbacks for an iopub status response."""
         msg_id = rsp.get("parent_header", {}).get("msg_id")
