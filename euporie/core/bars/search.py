@@ -27,6 +27,7 @@ from euporie.core.key_binding.registry import (
 if TYPE_CHECKING:
     from prompt_toolkit.filters import FilterOrBool
     from prompt_toolkit.formatted_text.base import AnyFormattedText
+    from prompt_toolkit.layout.controls import UIControl
 
 log = logging.getLogger(__name__)
 
@@ -121,11 +122,12 @@ def find_searchable_controls(
     """Find list of searchable controls and the index of the next control."""
     # If a tab provides a list of buffers to search, use that. Otherwise, trawl the
     # layout for buffer controls with this as its search control
+    long_list: list[UIControl]
     if tab := get_app().tab:
         try:
-            long_list = tab.__pt_searchables__()
+            long_list = list(tab.__pt_searchables__())
         except NotImplementedError:
-            long_list = get_app().layout.find_all_controls()
+            long_list = list(get_app().layout.find_all_controls())
     next_control_index = 0
     searchable_controls: list[BufferControl] = []
     for control in long_list:
