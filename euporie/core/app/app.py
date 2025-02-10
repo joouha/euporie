@@ -520,14 +520,17 @@ class BaseApp(ConfigurableApp, Application, ABC):
     @classmethod
     def launch(cls) -> None:
         """Launch the app."""
+        from prompt_toolkit.utils import Event, in_main_thread
+
         super().launch()
         # Run the application
         with create_app_session(input=cls.load_input(), output=cls.load_output()):
             # Create an instance of the app and run it
             app = cls()
-            # Handle SIGTERM while the app is running
-            original_sigterm = signal.getsignal(signal.SIGTERM)
-            signal.signal(signal.SIGTERM, app.cleanup)
+            if in_main_thread():
+                # Handle SIGTERM while the app is running
+                original_sigterm = signal.getsignal(signal.SIGTERM)
+                signal.signal(signal.SIGTERM, app.cleanup)
             # Set and run the app
             with set_app(app):
                 try:
@@ -535,7 +538,8 @@ class BaseApp(ConfigurableApp, Application, ABC):
                 except (EOFError, KeyboardInterrupt):
                     result = None
                 finally:
-                    signal.signal(signal.SIGTERM, original_sigterm)
+                    if in_main_thread():
+                        signal.signal(signal.SIGTERM, original_sigterm)
                     # Shut down any remaining LSP clients at exit
                     app.shutdown_lsps()
         return result

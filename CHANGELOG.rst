@@ -20,6 +20,7 @@ Added
 Changed
 =======
 
+- Allow apps to run in background threads
 - Improve notebook searching so all cell inputs are searched
 - Improve automatic bracket pairing
 - Improve performance of JSON view
