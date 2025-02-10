@@ -15,7 +15,7 @@ def test_kernel_completer_init() -> None:
     """The kernel completer saves a reference to the passed kernel on init."""
     kernel = Mock(spec=BaseKernel)
     completer = KernelCompleter(lambda: kernel)
-    assert completer._kernel() == kernel
+    assert completer.kernel == kernel
 
 
 def test_kernel_completer_get_completions() -> None:
