@@ -119,9 +119,16 @@ def find_searchable_controls(
     search_buffer_control: SearchBufferControl, current_control: BufferControl | None
 ) -> list[BufferControl]:
     """Find list of searchable controls and the index of the next control."""
-    searchable_controls: list[BufferControl] = []
+    # If a tab provides a list of buffers to search, use that. Otherwise, trawl the
+    # layout for buffer controls with this as its search control
+    if tab := get_app().tab:
+        try:
+            long_list = tab.__pt_searchables__()
+        except NotImplementedError:
+            long_list = get_app().layout.find_all_controls()
     next_control_index = 0
-    for control in get_app().layout.find_all_controls():
+    searchable_controls: list[BufferControl] = []
+    for control in long_list:
         # Find the index of the next searchable control so we can link the search
         # control to it if the currently focused control is not searchable. This is so
         # that the next searchable control can be focused when search is completed.
@@ -134,6 +141,7 @@ def find_searchable_controls(
         ):
             # Add it to our list
             searchable_controls.append(control)
+    # Cut list based on current control index
     searchable_controls = (
         searchable_controls[next_control_index:]
         + searchable_controls[:next_control_index]

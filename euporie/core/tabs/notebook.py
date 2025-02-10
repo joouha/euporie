@@ -25,11 +25,13 @@ except ModuleNotFoundError:
     from nbformat import write as write_nb
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
     from pathlib import Path
     from typing import Any, Callable
 
     from prompt_toolkit.filters import Filter
     from prompt_toolkit.layout.containers import AnyContainer
+    from prompt_toolkit.layout.controls import BufferControl
 
     from euporie.core.app.app import BaseApp
     from euporie.core.comm.base import Comm
@@ -408,3 +410,7 @@ class BaseNotebook(KernelTab, metaclass=ABCMeta):
     def lsp_update_diagnostics(self, lsp: LspClient) -> None:
         """Process a new diagnostic report from the LSP."""
         # Do nothing, these are handled by cells
+
+    def __pt_searchables__(self) -> Sequence[BufferControl]:
+        """Return list of cell input buffer controls for searching."""
+        return [cell.input_box.control for cell in self.rendered_cells()]

@@ -22,11 +22,13 @@ from euporie.core.layout.containers import Window
 from euporie.core.path import UntitledPath, parse_path
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
     from pathlib import Path
     from typing import Any, Callable
 
     from prompt_toolkit.key_binding.key_processor import KeyPressEvent
     from prompt_toolkit.layout.containers import AnyContainer
+    from prompt_toolkit.layout.controls import BufferControl
 
     from euporie.core.app.app import BaseApp
     from euporie.core.bars.status import StatusBarFields
@@ -179,6 +181,17 @@ class Tab(metaclass=ABCMeta):
         raise NotImplementedError(
             f"File saving not implement for `{self.__class__.__name__}` tab"
         )
+
+    def __pt_searchables__(self) -> Sequence[BufferControl]:
+        """Return a list of searchable buffer controls for this tab.
+
+        Returns:
+            A list of searchable buffer controls
+
+        Raises:
+            NotImplementedError: If the tab does not provide searchable buffers
+        """
+        raise NotImplementedError()
 
     def __pt_status__(self) -> StatusBarFields | None:
         """Return a list of statusbar field values shown then this tab is active."""
