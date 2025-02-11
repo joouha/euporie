@@ -28,6 +28,7 @@ Changed
 Fixed
 =====
 
+- Improve performance of history indexing for suggestions
 - Properly shut down Jupyter kernels on tab closure
 - Fix tiled tab layouts
 - Set command palette input to vi-insert when opened
