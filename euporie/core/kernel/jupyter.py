@@ -775,7 +775,7 @@ class JupyterKernel(BaseKernel):
         pattern: str = "",
         n: int = 1,
         hist_access_type: str = "search",
-        timeout: int = 1,
+        timeout: int = 60,
     ) -> list[tuple[int, int, str]] | None:
         """Retrieve history from the kernel asynchronously."""
         await asyncio.sleep(0.1)  # Add a tiny timeout so we don't spam the kernel
