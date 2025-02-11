@@ -1,4 +1,4 @@
-"""Miscellaneou utility classes."""
+"""Miscellaneous utility classes."""
 
 from __future__ import annotations
 
