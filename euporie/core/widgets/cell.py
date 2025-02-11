@@ -6,7 +6,7 @@ import asyncio
 import logging
 import os
 import weakref
-from functools import partial
+from functools import lru_cache, partial
 from pathlib import Path
 from typing import TYPE_CHECKING, cast
 from weakref import WeakKeyDictionary
@@ -79,14 +79,24 @@ def get_cell_id(cell_json: dict) -> str:
     return cell_id
 
 
+@lru_cache(maxsize=32)
+def _get_border_style(
+    selected: bool, focused: bool, show_borders: bool, multi_selected: bool
+) -> dict:
+    """Get the border style grid based on cell state."""
+    if not (show_borders or selected):
+        return NoLine.grid
+    if focused and multi_selected:
+        return ThickLine.outer
+    return ThinLine.outer
+
+
 class Cell:
     """A kernel_tab cell element.
 
     Contains a transparent clickable overlay, which is not displayed when the cell is
     focused.
     """
-
-    input_box: KernelInput
 
     def __init__(
         self, index: int, json: dict, kernel_tab: BaseNotebook, is_new: bool = False
@@ -198,42 +208,23 @@ class Cell:
             # ),
         )
         self.input_box.buffer.name = self.cell_type
-
         self.input_box.buffer.on_text_changed += lambda buf: weak_self.on_change()
 
         def border_char(name: str) -> Callable[..., str]:
             """Return a function which returns the cell border character to display."""
 
             def _inner() -> str:
-                grid = NoLine.grid
-                if weak_self and (
-                    weak_self.kernel_tab.app.config.show_cell_borders
-                    or weak_self.selected
-                ):
-                    if weak_self.focused and multiple_cells_selected():
-                        grid = ThickLine.outer
-                    else:
-                        grid = ThinLine.outer
+                if not weak_self:
+                    return " "
+                grid = _get_border_style(
+                    weak_self.selected,
+                    weak_self.focused,
+                    weak_self.kernel_tab.app.config.show_cell_borders,
+                    multiple_cells_selected(),
+                )
                 return getattr(grid, name.upper())
 
             return _inner
-
-        # @lru_cache(maxsize=None)
-        # def _cell_border_char(
-        #     name: str,
-        #     show_cell_borders: bool,
-        #     focused: bool,
-        #     selected: bool,
-        #     multiple_cells_selected: bool,
-        # ) -> str:
-        #     if show_cell_borders or selected:
-        #         if focused and multiple_cells_selected:
-        #             grid = ThickLine.outer
-        #         else:
-        #             grid = ThinLine.outer
-        #     else:
-        #         grid = NoLine.grid
-        #     return getattr(grid, name.upper())
 
         self.control = Window(
             FormattedTextControl(
