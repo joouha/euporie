@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 from functools import partial
 from typing import TYPE_CHECKING, cast
+from weakref import WeakKeyDictionary
 
 from prompt_toolkit.filters import Condition
 from prompt_toolkit.formatted_text.base import to_formatted_text
@@ -89,6 +90,7 @@ class NotebookApp(BaseApp):
         super().__init__(**kwargs)
         self.bindings_to_load.append("euporie.notebook.app.NotebookApp")
 
+        self._tab_bar_tabs: dict[int, WeakKeyDictionary[Tab, TabBarTab]] = {}
         self.on_tabs_change += self.set_tab_container
 
         # Register config hooks
@@ -176,9 +178,7 @@ class NotebookApp(BaseApp):
                     ConditionalContainer(
                         Window(
                             TabBarControl(
-                                tabs=self.tab_bar_tabs,
-                                active=lambda: self._tab_idx,
-                                closeable=True,
+                                tabs=self.tab_bar_tabs, active=lambda: self._tab_idx
                             ),
                             height=2,
                             style="class:app-tab-bar",
@@ -296,14 +296,18 @@ class NotebookApp(BaseApp):
 
     def tab_bar_tabs(self) -> list[TabBarTab]:
         """Return a list of the current tabs for the tab-bar."""
-        return [
-            TabBarTab(
-                title=partial(lambda x: x.title, tab),
-                on_activate=partial(setattr, self, "tab_idx", i),
-                on_close=partial(self.close_tab, tab),
-            )
-            for i, tab in enumerate(self.tabs)
-        ]
+        result = []
+        for i, tab in enumerate(self.tabs):
+            index_dict = self._tab_bar_tabs.setdefault(i, WeakKeyDictionary())
+            if tab not in index_dict:
+                index_dict[tab] = TabBarTab(
+                    title=lambda tab=tab: tab.title,  # type: ignore [misc]
+                    on_activate=partial(setattr, self, "tab_idx", i),
+                    on_close=partial(self.close_tab, tab),
+                    closeable=True,
+                )
+            result.append(self._tab_bar_tabs[i][tab])
+        return result
 
     def _handle_exception(
         self, loop: AbstractEventLoop, context: dict[str, Any]
