@@ -50,6 +50,7 @@ if TYPE_CHECKING:
     from prompt_toolkit.completion.base import Completer
     from prompt_toolkit.formatted_text.base import StyleAndTextTuples
 
+    from euporie.core.border import GridStyle
     from euporie.core.format import Formatter
     from euporie.core.inspection import Inspector
     from euporie.core.lsp import LspClient
@@ -82,7 +83,7 @@ def get_cell_id(cell_json: dict) -> str:
 @lru_cache(maxsize=32)
 def _get_border_style(
     selected: bool, focused: bool, show_borders: bool, multi_selected: bool
-) -> dict:
+) -> GridStyle:
     """Get the border style grid based on cell state."""
     if not (show_borders or selected):
         return NoLine.grid
