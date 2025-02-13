@@ -29,6 +29,7 @@ Changed
 Fixed
 =====
 
+- Update console execution count on Jupyter kernel restart
 - Queue cell executions in console if kernel is starting 
 - Improve performance of history indexing for suggestions
 - Properly shut down Jupyter kernels on tab closure

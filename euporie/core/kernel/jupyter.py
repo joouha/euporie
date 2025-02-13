@@ -270,7 +270,7 @@ class JupyterKernel(BaseKernel):
             if ks is not None and self.kc is not None:
                 log.debug("Waiting for kernel to become ready")
                 try:
-                    await self.kc._async_wait_for_ready(timeout=10)
+                    await self.kc._async_wait_for_ready(timeout=30)
                 except RuntimeError as e:
                     log.error("Error connecting to kernel")
                     self.error = e
@@ -288,6 +288,9 @@ class JupyterKernel(BaseKernel):
 
                 # Set username so we can identify our own messages
                 self.kc.session.username = self._client_id
+
+                # Send empty execution request to get current execution count
+                self.kc.execute("", store_history=False, silent=True, allow_stdin=False)
 
             # Start monitoring the kernel status
             if self.monitor_task is not None:
@@ -390,7 +393,9 @@ class JupyterKernel(BaseKernel):
                 rsp["header"]["date"].isoformat(),
             )
 
-        if (execution_count := content.get("execution_count")) and callable(
+        if (
+            (execution_count := content.get("execution_count")) is not None
+        ) and callable(
             set_execution_count := self.msg_id_callbacks[msg_id]["set_execution_count"]
         ):
             set_execution_count(execution_count)
@@ -895,6 +900,9 @@ class JupyterKernel(BaseKernel):
     async def restart_async(self) -> None:
         """Restart the kernel asyncchronously."""
         log.debug("Restarting kernel `%s`", self.id)
+        # Cancel polling tasks
+        for task in self.poll_tasks:
+            task.cancel()
         self.error = None
         self.status = "starting"
         try:

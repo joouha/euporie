@@ -71,7 +71,7 @@ class LocalPythonKernel(BaseKernel):
         )
         # Create interpreter with callback for error handling
         self.locals: dict[str, object] = {}
-        self._execution_count = 0
+        self.execution_count = 0
         self.kc = None
         self._input_event = threading.Event()
         self._input_buffer: str | None = None
@@ -128,6 +128,12 @@ class LocalPythonKernel(BaseKernel):
         """Start the local interpreter."""
         self.error = None
         self.status = "idle"
+        self.locals.clear()
+        self.execution_count = 0
+        if callable(
+            set_execution_count := self.default_callbacks.get("set_execution_count")
+        ):
+            set_execution_count(self.execution_count)
 
     @property
     def spec(self) -> dict[str, str]:
@@ -251,12 +257,12 @@ class LocalPythonKernel(BaseKernel):
         self.status = "busy"
 
         # Set execution count
-        self._execution_count += 1
+        self.execution_count += 1
         if callable(set_execution_count := callbacks.get("set_execution_count")):
-            set_execution_count(self._execution_count)
+            set_execution_count(self.execution_count)
 
         # Add source to line cache (for display in tracebacks)
-        filename = f"<input_{self._execution_count}>"
+        filename = f"<input_{self.execution_count}>"
         line_cache[filename] = (
             len(source),
             None,
@@ -323,6 +329,9 @@ class LocalPythonKernel(BaseKernel):
         """Get code inspection/documentation."""
         import inspect
 
+        if not source:
+            return {}
+
         # Find the start of the word (going backwards from cursor)
         start = cursor_pos
         while (start >= 0 and source[start - 1].isalnum()) or source[start - 1] in "._":
@@ -352,7 +361,7 @@ class LocalPythonKernel(BaseKernel):
         """Check if code is complete."""
         try:
             compiled = code.compile_command(
-                source, f"<input_{self._execution_count}>", "exec"
+                source, f"<input_{self.execution_count}>", "exec"
             )
         except Exception:
             status = "invalid"
@@ -379,8 +388,6 @@ class LocalPythonKernel(BaseKernel):
         self, wait: bool = False, cb: Callable | None = None
     ) -> None:
         """Restart the kernel."""
-        self.locals.clear()
-        self._execution_count = 0
         await self.start_async()
         if callable(cb):
             cb({"status": "ok"})
@@ -454,7 +461,7 @@ class DisplayHook(BaseHook):
 
         if callbacks := self.callbacks:
             # Store value in kernel locals
-            self._kernel.locals[f"_{self._kernel._execution_count}"] = value
+            self._kernel.locals[f"_{self._kernel.execution_count}"] = value
 
             # Get display data and metadata
             data, metadata = get_display_data(value)
@@ -463,7 +470,7 @@ class DisplayHook(BaseHook):
                 callback(
                     {
                         "output_type": "execute_result",
-                        "execution_count": self._kernel._execution_count,
+                        "execution_count": self._kernel.execution_count,
                         "data": data,
                         "metadata": metadata,
                     },

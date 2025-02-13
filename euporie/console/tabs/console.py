@@ -137,9 +137,6 @@ class Console(KernelTab):
 
         self.container = self.load_container()
 
-        # Start kernel in background
-        self.kernel.start(cb=self.kernel_started, wait=False)
-
         self.app.before_render += self.render_outputs
         self.on_advance = Event(self)
 
@@ -161,6 +158,15 @@ class Console(KernelTab):
                     self.formatters.remove(formatter)  # noqa: B023
 
             lsp.on_exit += lsp_unload
+
+    def post_init_kernel(self) -> None:
+        """Start the kernel after if has been loaded."""
+        # Load container
+        super().post_init_kernel()
+
+        # Start kernel
+        if self.kernel._status == "stopped":
+            self.kernel.start(cb=self.kernel_started, wait=False)
 
     def kernel_died(self) -> None:
         """Call if the kernel dies."""
@@ -229,7 +235,6 @@ class Console(KernelTab):
         # Render input
         self.new_input({"code": text}, own=True, force=True)
         # Run the previous entry
-        log.debug(self.kernel.status)
         if self.kernel.status == "starting":
             self.kernel_queue.append(partial(self.kernel.run, text, wait=False))
         else:
