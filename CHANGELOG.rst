@@ -29,6 +29,7 @@ Changed
 Fixed
 =====
 
+- Queue cell executions in console if kernel is starting 
 - Improve performance of history indexing for suggestions
 - Properly shut down Jupyter kernels on tab closure
 - Fix tiled tab layouts

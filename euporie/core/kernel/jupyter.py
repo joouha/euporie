@@ -152,7 +152,7 @@ class JupyterKernel(BaseKernel):
             await asyncio.sleep(1)
             # Check kernel is alive - use client rather than manager if we have one
             # as we could be connected to a kernel not started by the manager
-            if self.kc:
+            if self.kc and self.status != "starting":
                 alive = await self.kc._async_is_alive()
                 self._set_living_status(alive)
                 # Stop the timer if the kernel is dead
@@ -894,7 +894,6 @@ class JupyterKernel(BaseKernel):
 
     async def restart_async(self) -> None:
         """Restart the kernel asyncchronously."""
-        self.dead = True
         log.debug("Restarting kernel `%s`", self.id)
         self.error = None
         self.status = "starting"

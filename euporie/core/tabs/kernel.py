@@ -259,6 +259,7 @@ class KernelTab(Tab, metaclass=ABCMeta):
         """Restart the current `Notebook`'s kernel."""
 
         def _cb(result: dict[str, Any]) -> None:
+            self.kernel_started()
             if callable(cb):
                 cb()
 

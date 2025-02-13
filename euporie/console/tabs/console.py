@@ -137,10 +137,10 @@ class Console(KernelTab):
 
         self.container = self.load_container()
 
+        # Start kernel in background
         self.kernel.start(cb=self.kernel_started, wait=False)
 
         self.app.before_render += self.render_outputs
-
         self.on_advance = Event(self)
 
     async def load_lsps(self) -> None:
@@ -229,6 +229,7 @@ class Console(KernelTab):
         # Render input
         self.new_input({"code": text}, own=True, force=True)
         # Run the previous entry
+        log.debug(self.kernel.status)
         if self.kernel.status == "starting":
             self.kernel_queue.append(partial(self.kernel.run, text, wait=False))
         else:
