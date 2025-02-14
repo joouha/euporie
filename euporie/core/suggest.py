@@ -43,7 +43,6 @@ class HistoryAutoSuggest(AutoSuggest):
         self.history = history
 
         self.n_texts = 0
-        self.n_lines = 0
         self._processing_task: asyncio.Task | None = None
         # Index storage
         self.prefix_tree: dict[str, list[int]] = defaultdict(list)
@@ -67,69 +66,40 @@ class HistoryAutoSuggest(AutoSuggest):
     async def _process_history_async(self) -> None:
         """Process the entire history and store in prefix_dict."""
         texts = self.history._loaded_strings
-        if not (texts := texts[: len(texts) - self.n_texts]):
+        # Only process new history items
+        if not (texts := texts[: -self.n_texts or None]):
             return
 
-        n_lines = self.n_lines
         prefix_tree = self.prefix_tree
         suffix_data = self.suffix_data
+        context_lines = self._context_lines
+        max_item_lines = self._max_item_lines
+        max_line_len = self._max_line_len
 
-        for i, text in enumerate(reversed(texts)):
-            pos = 0
-            line_start = 0
-            line_count = 0
-
-            while pos < len(text):
-                # Find next newline
-                next_newline = text.find("\n", pos)
-                if next_newline == -1:
-                    next_newline = len(text)
-
-                # Only process if within max_item_lines from end
-                if line_count >= len(text) - self._max_item_lines:
-                    # Find start of non-whitespace content
-                    stripped_start = line_start
-                    while (
-                        stripped_start < next_newline and text[stripped_start].isspace()
-                    ):
-                        stripped_start += 1
-
-                    # Find end of non-whitespace content
-                    stripped_end = next_newline
-                    while (
-                        stripped_end > stripped_start
-                        and text[stripped_end - 1].isspace()
-                    ):
-                        stripped_end -= 1
-
-                    if stripped_start < stripped_end:
-                        # Calculate context positions, approximating lines as 80 characters long
-                        context_start = max(0, pos - self._context_lines * 80)
-                        context_end = min(
-                            len(text), next_newline + self._context_lines * 80
-                        )
-
-                        hist_pos = HistoryPosition(
-                            idx=i, context_start=context_start, context_end=context_end
-                        )
-
-                        # Create prefix/suffix combinations
-                        line_len = stripped_end - stripped_start
-                        for j in range(min(line_len, self._max_line_len)):
-                            prefix = text[stripped_start : stripped_start + j]
-                            suffix = text[stripped_start + j : stripped_end]
-                            prefix_tree[prefix].append(len(self.suffix_data))
-                            suffix_data.append((suffix, hist_pos))
-
-                pos = next_newline + 1
-                line_start = pos
-                line_count += 1
-                n_lines += 1
-
+        for i, text in enumerate(texts):
             # Add tiny sleep to prevent blocking
-            await asyncio.sleep(0.001)
+            if i > 1:
+                await asyncio.sleep(0.001)
 
-        self.n_lines = n_lines
+            lines = text.splitlines(keepends=True)
+            # Calculate positions of newlines
+            line_pos = [0]
+            for line in lines:
+                line_pos.append(line_pos[-1] + len(line))
+            # Index each line
+            for j, line in enumerate(lines[:max_item_lines]):
+                context_start = line_pos[max(0, j - context_lines)]
+                context_end = line_pos[min(j + context_lines, len(lines))]
+                hist_pos = HistoryPosition(
+                    idx=i, context_start=context_start, context_end=context_end
+                )
+                line = line.strip()
+                # Create prefix/suffix combinations
+                for k in range(min(len(line), max_line_len)):
+                    prefix, suffix = line[:k], line[k:]
+                    prefix_tree[prefix].append(len(suffix_data))
+                    suffix_data.append((suffix, hist_pos))
+
         self.n_texts += len(texts)
 
     def _calculate_similarity(self, text_1: str, text_2: str) -> float:
