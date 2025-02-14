@@ -365,14 +365,16 @@ class MenuBar:
             menu = self._get_menu(len(self.selected_menu) - 2)
             index = self.selected_menu[-1]
 
-            previous_indexes = [
-                i
-                for i, item in enumerate(menu.children)
-                if i < index and not item.disabled and not item.hidden()
-            ]
-
-            if previous_indexes:
-                self.selected_menu[-1] = previous_indexes[-1]
+            previous_index = next(
+                (
+                    i
+                    for i, item in reversed(list(enumerate(menu.children)))
+                    if i < index and not item.disabled and not item.hidden()
+                ),
+                None,
+            )
+            if previous_index is not None:
+                self.selected_menu[-1] = previous_index
             elif len(self.selected_menu) == 2:
                 # Return to main menu.
                 self.selected_menu.pop()
@@ -384,14 +386,17 @@ class MenuBar:
             menu = self._get_menu(len(self.selected_menu) - 2)
             index = self.selected_menu[-1]
 
-            next_indexes = [
-                i
-                for i, item in enumerate(menu.children)
-                if i > index and not item.disabled and not item.hidden()
-            ]
+            next_index = next(
+                (
+                    i
+                    for i, item in enumerate(menu.children)
+                    if i > index and not item.disabled and not item.hidden()
+                ),
+                None,
+            )
 
-            if next_indexes:
-                self.selected_menu[-1] = next_indexes[0]
+            if next_index is not None:
+                self.selected_menu[-1] = next_index
                 self.refocus()
 
         @kb.add("enter")
@@ -621,6 +626,41 @@ class MenuBar:
                                             len(self.selected_menu) - 1
                                         ]
                                     )
+                            elif mouse_event.event_type == MouseEventType.SCROLL_UP:
+                                menu = self._get_menu(len(self.selected_menu) - 2)
+                                index = self.selected_menu[-1]
+
+                                previous_index = next(
+                                    (
+                                        i
+                                        for i, item in reversed(
+                                            list(enumerate(menu.children))
+                                        )
+                                        if i < index
+                                        and not item.disabled
+                                        and not item.hidden()
+                                    ),
+                                    None,
+                                )
+
+                                if previous_index is not None:
+                                    self.selected_menu[-1] = previous_index
+                            elif mouse_event.event_type == MouseEventType.SCROLL_DOWN:
+                                menu = self._get_menu(len(self.selected_menu) - 2)
+                                index = self.selected_menu[-1]
+
+                                next_index = next(
+                                    (
+                                        i
+                                        for i, item in enumerate(menu.children)
+                                        if i > index
+                                        and not item.disabled
+                                        and not item.hidden()
+                                    ),
+                                    None,
+                                )
+                                if next_index is not None:
+                                    self.selected_menu[-1] = next_index
 
                         if item.separator:
                             # Show a connected line with no mouse handler

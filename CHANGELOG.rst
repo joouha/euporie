@@ -13,6 +13,7 @@ Upcoming
 Added
 =====
 
+- Allow mouse scrolling in menus
 - Allow scrolling of overflowing tab bars
 - Add kernel restart prompting to console
 - Add setting to determine backup-on-save behaviour
