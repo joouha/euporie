@@ -6,10 +6,11 @@ import asyncio
 import logging
 from collections import defaultdict
 from difflib import SequenceMatcher
-from functools import lru_cache
+from functools import lru_cache, partial
 from typing import TYPE_CHECKING, NamedTuple
 
 from prompt_toolkit.auto_suggest import AutoSuggest, ConditionalAutoSuggest, Suggestion
+from prompt_toolkit.cache import SimpleCache
 from prompt_toolkit.filters import to_filter
 
 if TYPE_CHECKING:
@@ -40,14 +41,16 @@ class HistoryAutoSuggest(AutoSuggest):
     def __init__(self, history: History) -> None:
         """Set the kernel instance in initialization."""
         self.history = history
-        self.calculate_similarity = lru_cache(maxsize=1024)(self._calculate_similarity)
 
         self.n_texts = 0
         self.n_lines = 0
         self._processing_task: asyncio.Task | None = None
-        self.prefix_dict: dict[str, dict[str, set[HistoryPosition]]] = defaultdict(
-            lambda: defaultdict(set)
-        )
+        # Index storage
+        self.prefix_tree: dict[str, list[int]] = defaultdict(list)
+        self.suffix_data: list[tuple[str, HistoryPosition]] = []
+        # Caches
+        self.calculate_similarity = lru_cache(maxsize=128)(self._calculate_similarity)
+        self.match_cache = SimpleCache(maxsize=128)
 
     def process_history(self) -> None:
         """Schedule history processing if not already running."""
@@ -66,44 +69,68 @@ class HistoryAutoSuggest(AutoSuggest):
         texts = self.history._loaded_strings
         if not (texts := texts[: len(texts) - self.n_texts]):
             return
-        # log.debug("Indexing %d history items", len(texts))
 
         n_lines = self.n_lines
-        prefix_dict = self.prefix_dict
+        prefix_tree = self.prefix_tree
+        suffix_data = self.suffix_data
 
         for i, text in enumerate(reversed(texts)):
-            lines = text.splitlines(keepends=True)
-            max_line = len(lines) - 1
+            pos = 0
+            line_start = 0
+            line_count = 0
 
-            positions = [0]
-            for line in lines:
-                positions.append(positions[-1] + len(line))
+            while pos < len(text):
+                # Find next newline
+                next_newline = text.find("\n", pos)
+                if next_newline == -1:
+                    next_newline = len(text)
+
+                # Only process if within max_item_lines from end
+                if line_count >= len(text) - self._max_item_lines:
+                    # Find start of non-whitespace content
+                    stripped_start = line_start
+                    while (
+                        stripped_start < next_newline and text[stripped_start].isspace()
+                    ):
+                        stripped_start += 1
+
+                    # Find end of non-whitespace content
+                    stripped_end = next_newline
+                    while (
+                        stripped_end > stripped_start
+                        and text[stripped_end - 1].isspace()
+                    ):
+                        stripped_end -= 1
+
+                    if stripped_start < stripped_end:
+                        # Calculate context positions, approximating lines as 80 characters long
+                        context_start = max(0, pos - self._context_lines * 80)
+                        context_end = min(
+                            len(text), next_newline + self._context_lines * 80
+                        )
+
+                        hist_pos = HistoryPosition(
+                            idx=i, context_start=context_start, context_end=context_end
+                        )
+
+                        # Create prefix/suffix combinations
+                        line_len = stripped_end - stripped_start
+                        for j in range(min(line_len, self._max_line_len)):
+                            prefix = text[stripped_start : stripped_start + j]
+                            suffix = text[stripped_start + j : stripped_end]
+                            prefix_tree[prefix].append(len(self.suffix_data))
+                            suffix_data.append((suffix, hist_pos))
+
+                pos = next_newline + 1
+                line_start = pos
+                line_count += 1
                 n_lines += 1
-
-            for line_idx, line in enumerate(
-                iterable=lines[-self._max_item_lines :],
-                start=max(0, len(lines) - self._max_item_lines),
-            ):
-                if not (stripped_line := line.strip()):
-                    continue
-
-                hist_pos = HistoryPosition(
-                    idx=i,
-                    context_start=positions[max(0, line_idx - self._context_lines)],
-                    context_end=positions[min(line_idx + self._context_lines, max_line)]
-                    + 1,
-                )
-
-                for j in range(min(len(stripped_line), self._max_line_len)):
-                    prefix, suffix = stripped_line[:j], stripped_line[j:]
-                    prefix_dict[prefix][suffix].add(hist_pos)
 
             # Add tiny sleep to prevent blocking
             await asyncio.sleep(0.001)
 
         self.n_lines = n_lines
         self.n_texts += len(texts)
-        # log.debug("Added %d history items to index", len(texts))
 
     def _calculate_similarity(self, text_1: str, text_2: str) -> float:
         """Calculate and cache the similarity between two texts."""
@@ -111,33 +138,48 @@ class HistoryAutoSuggest(AutoSuggest):
 
     def get_suggestion(self, buffer: Buffer, document: Document) -> Suggestion | None:
         """Get a line completion suggestion."""
+        # Only return suggestions if cursor is at end of line
+        if not document.is_cursor_at_the_end_of_line:
+            return None
+
         line = document.current_line.lstrip()
-        if len(line) > self._max_line_len:
+
+        # Skip empty and very long lines
+        if not line or len(line) > self._max_line_len:
             return None
 
         # Schedule indexing any new history items
         self.process_history()
 
         # Find matches
-        if not (suffixes := self.prefix_dict[line]):
+        key = line, hash(document.text), len(self.suffix_data)
+        return self.match_cache.get(key, partial(self._find_match, line, document.text))
+
+    def _find_match(self, line: str, document_text: str) -> Suggestion | None:
+        if not (suffix_indices := self.prefix_tree[line]):
             return None
 
         texts = self.history._loaded_strings
         best_score = 0.0
-        best_suffix = ""
+        best_suffix = None
 
         # Rank candidates
-        max_count = max([1, *(len(x) for x in suffixes.values())])
-        for suffix, positions in suffixes.items():
+        max_count = max(1, len(suffix_indices))
+        suffix_groups: dict[str, list[HistoryPosition]] = defaultdict(list)
+
+        # Group suffixes and their positions
+        for idx in suffix_indices:
+            suffix, pos = self.suffix_data[idx]
+            suffix_groups[suffix].append(pos)
+
+        # Evaluate each unique suffix
+        for suffix, positions in suffix_groups.items():
             count = len(positions)
-            for i, pos in enumerate(positions):
-                # Process up to 10 instances of this prefix
-                if i == 10:
-                    break
+            for pos in positions[:10]:
                 # Get the text using the stored positions
                 text = texts[pos.idx]
                 context = text[pos.context_start : pos.context_end]
-                context_similarity = self.calculate_similarity(document.text, context)
+                context_similarity = self.calculate_similarity(document_text, context)
                 score = (
                     # Number of instances in history
                     0.3 * count / max_count
