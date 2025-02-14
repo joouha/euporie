@@ -141,6 +141,7 @@ IPYWIDGET_STYLE = [
     # ("ipywidget danger border right selection", "fg:ansibrightred"),
     # ("ipywidget danger border bottom selection", "fg:ansibrightred"),
     ("ipywidget text text-area", "fg:black bg:white"),
+    ("ipywidget text text-area disabled", "fg:#888888"),
     ("ipywidget text text-area focused", "fg:black bg:white"),
     ("ipywidget text placeholder", "fg:#AAAAAA bg:white"),
     ("ipywidget text border right", "fg:#E9E7E3"),
