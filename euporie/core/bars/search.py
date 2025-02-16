@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import re
 from typing import TYPE_CHECKING
 
 from prompt_toolkit.buffer import Buffer
@@ -342,3 +343,33 @@ def accept_search() -> None:
     search_buffer_control.buffer.append_to_history()
     # Stop the search
     stop_search()
+
+
+@add_cmd()
+def _replace_all(find_str: str, replace_str: str) -> None:
+    """Find and replace text in all searchable buffers.
+
+    Args:
+        find_str: String pattern to find (will be converted to regex)
+        replace_str: Replacement string
+    """
+    # Convert find string to regex pattern
+    pattern = re.compile(find_str)
+
+    # Get searchable controls
+    search_buffer_control, current_control = find_search_control()
+    if search_buffer_control is None:
+        return
+    searchable_controls = find_searchable_controls(
+        search_buffer_control, current_control
+    )
+
+    # Apply replacements to each buffer
+    for control in searchable_controls:
+        if isinstance(control, BufferControl):
+            buffer = control.buffer
+            text = buffer.text
+            new_text = pattern.sub(replace_str, text)
+            if new_text != text:
+                buffer.text = new_text
+                buffer.on_text_changed()

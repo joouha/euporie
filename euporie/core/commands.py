@@ -59,11 +59,15 @@ def parse_args(arg: str) -> list[Any]:
     for item in arg.split():
         try:
             # Safely evaluate string as a Python literal
-            value = ast.literal_eval(item)
-            result.append(value)
+            new_value = ast.literal_eval(item)
         except (ValueError, SyntaxError):
             # Keep as string if evaluation fails
             result.append(item)
+        else:
+            if type(new_value) is str:
+                result.append(item)
+            else:
+                result.append(new_value)
     return result
 
 

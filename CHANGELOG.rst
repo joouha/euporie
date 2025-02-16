@@ -13,6 +13,7 @@ Upcoming
 Added
 =====
 
+- Add "find and replace" command
 - Allow mouse scrolling in menus
 - Allow scrolling of overflowing tab bars
 - Add kernel restart prompting to console

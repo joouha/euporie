@@ -169,6 +169,14 @@ class Cell:
             """Update cell json when the input buffer has been edited."""
             weak_self._set_input(buf.text)
             weak_self.kernel_tab.dirty = True
+            weak_self.on_change()
+            # Re-render markdown cells when edited outside of edit mode
+            if (
+                weak_self.cell_type == "markdown"
+                and not weak_self.kernel_tab.in_edit_mode()
+            ):
+                weak_self.output_area.json = weak_self.output_json
+                weak_self.refresh()
 
         def on_cursor_position_changed(buf: Buffer) -> None:
             """Respond to cursor movements."""
@@ -209,7 +217,6 @@ class Cell:
             # ),
         )
         self.input_box.buffer.name = self.cell_type
-        self.input_box.buffer.on_text_changed += lambda buf: weak_self.on_change()
 
         def border_char(name: str) -> Callable[..., str]:
             """Return a function which returns the cell border character to display."""
