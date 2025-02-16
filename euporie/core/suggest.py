@@ -49,7 +49,9 @@ class HistoryAutoSuggest(AutoSuggest):
         self.suffix_data: list[tuple[str, HistoryPosition]] = []
         # Caches
         self.calculate_similarity = lru_cache(maxsize=128)(self._calculate_similarity)
-        self.match_cache = SimpleCache(maxsize=128)
+        self.match_cache: SimpleCache[tuple[str, int, int], Suggestion | None] = (
+            SimpleCache(maxsize=128)
+        )
 
     def process_history(self) -> None:
         """Schedule history processing if not already running."""

@@ -197,7 +197,7 @@ class CommandBar:
     @staticmethod
     @add_cmd(aliases=["shell"])
     async def _run_shell_command(
-        event: KeyPressEvent, *cmd_arg: Unpack[list[str]]
+        event: KeyPressEvent, *cmd_arg: Unpack[tuple[str]]
     ) -> None:
         """Run system command."""
         command = " ".join(str(x) for x in cmd_arg)

@@ -520,7 +520,7 @@ class BaseApp(ConfigurableApp, Application, ABC):
     @classmethod
     def launch(cls) -> None:
         """Launch the app."""
-        from prompt_toolkit.utils import Event, in_main_thread
+        from prompt_toolkit.utils import in_main_thread
 
         super().launch()
         # Run the application

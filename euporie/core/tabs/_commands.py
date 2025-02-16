@@ -3,17 +3,9 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
-
-from prompt_toolkit.filters import buffer_has_focus
 
 from euporie.core.commands import add_cmd
-from euporie.core.filters import tab_can_save, tab_has_focus, tab_type_has_focus
-
-if TYPE_CHECKING:
-    from typing import Callable
-
-    from prompt_toolkit.key_binding.key_processor import KeyPressEvent
+from euporie.core.filters import tab_can_save, tab_has_focus
 
 log = logging.getLogger(__name__)
 
