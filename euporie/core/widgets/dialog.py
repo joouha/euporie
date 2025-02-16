@@ -41,7 +41,6 @@ from euporie.core.border import (
     UpperRightHalfLine,
 )
 from euporie.core.commands import add_cmd
-from euporie.core.filters import tab_can_save
 from euporie.core.ft.utils import FormattedTextAlign, align, lex
 from euporie.core.key_binding.registry import register_bindings
 from euporie.core.layout.containers import HSplit, VSplit, Window
@@ -598,21 +597,6 @@ class SaveAsDialog(FileDialog):
                 self.hide()
                 if callable(cb):
                     cb()
-
-    # ################################### Commands ####################################
-
-    @staticmethod
-    @add_cmd(
-        menu_title="Save As…",
-        filter=tab_can_save,
-    )
-    def _save_as() -> None:
-        """Save the current file at a new location."""
-        from euporie.core.app.current import get_app
-
-        app = get_app()
-        if dialog := app.dialogs.get("save-as"):
-            dialog.show(tab=app.tab)
 
     # ################################# Key Bindings ##################################
 

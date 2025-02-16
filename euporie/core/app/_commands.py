@@ -28,20 +28,6 @@ def _force_quit() -> None:
     Application.exit(get_app())
 
 
-@add_cmd(aliases=["wq", "x"])
-def _save_and_quit(event: KeyPressEvent) -> None:
-    """Save the current tab then quits euporie."""
-    from upath import UPath
-
-    app = get_app()
-    if (tab := get_app().tab) is not None:
-        try:
-            tab._save(UPath(event._arg) if event._arg else None)
-        except NotImplementedError:
-            pass
-    app.exit()
-
-
 @add_cmd(aliases=["bc"], filter=tab_has_focus, menu_title="Close File")
 def _close_tab() -> None:
     """Close the current tab."""
@@ -79,17 +65,14 @@ def _clear_screen() -> None:
 
 
 @add_cmd(hidden=True, aliases=[""])
-def _go_to(event: KeyPressEvent) -> None:
+def _go_to(event: KeyPressEvent, index: int = 0) -> None:
     """Go to a line or cell by number."""
-    try:
-        idx = int(event._arg or "") - 1
-    except (ValueError, TypeError):
-        return
+    index = max(0, index - 1)
     if buffer_has_focus():
         buffer = get_app().current_buffer
-        buffer.cursor_position = len("".join(buffer.text.splitlines(True)[:idx]))
+        buffer.cursor_position = len("".join(buffer.text.splitlines(True)[:index]))
     elif tab_type_has_focus("euporie.notebook.tabs.notebook:Notebook")():
         from euporie.notebook.tabs.notebook import Notebook
 
         if isinstance(nb := get_app().tab, Notebook):
-            nb.select(idx)
+            nb.select(index)

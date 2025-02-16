@@ -29,6 +29,7 @@ from euporie.core.key_binding.registry import (
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
+    from typing import Unpack
 
     from prompt_toolkit.completion.base import CompleteEvent
     from prompt_toolkit.document import Document
@@ -195,11 +196,13 @@ class CommandBar:
 
     @staticmethod
     @add_cmd(aliases=["shell"])
-    async def _run_shell_command(event: KeyPressEvent) -> None:
+    async def _run_shell_command(
+        event: KeyPressEvent, *cmd_arg: Unpack[list[str]]
+    ) -> None:
         """Run system command."""
-        app = event.app
-        if event._arg:
-            await app.run_system_command(
-                event._arg,
-                display_before_text=[("bold", "$ "), ("", f"{event._arg}\n")],
+        command = " ".join(str(x) for x in cmd_arg)
+        if command:
+            await event.app.run_system_command(
+                command,
+                display_before_text=[("bold", "$ "), ("", f"{command}\n")],
             )

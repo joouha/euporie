@@ -222,11 +222,11 @@ class Tab(metaclass=ABCMeta):
 
     @staticmethod
     @add_cmd(filter=tab_can_save, aliases=["w"])
-    def _save_file(event: KeyPressEvent) -> None:
+    def _save_file(event: KeyPressEvent, path: str = "") -> None:
         """Save the current file."""
         if (tab := get_app().tab) is not None:
             try:
-                tab._save(UPath(event._arg) if event._arg else None)
+                tab._save(UPath(path) if path else None)
             except NotImplementedError:
                 pass
 

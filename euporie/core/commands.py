@@ -41,6 +41,32 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 
+def parse_args(arg: str) -> list[Any]:
+    """Parse a command argument string into a list of values.
+
+    Args:
+        arg: The argument string to parse
+
+    Returns:
+        A list of parsed values, with strings for items that couldn't be evaluated
+    """
+    if not arg:
+        return []
+
+    import ast
+
+    result = []
+    for item in arg.split():
+        try:
+            # Safely evaluate string as a Python literal
+            value = ast.literal_eval(item)
+            result.append(value)
+        except (ValueError, SyntaxError):
+            # Keep as string if evaluation fails
+            result.append(item)
+    return result
+
+
 class Command:
     """Wrap a function so it can be used as a key-binding or a menu item."""
 
@@ -110,18 +136,19 @@ class Command:
 
         self.keys: list[tuple[str | Keys, ...]] = []
 
-    def run(self, arg: str | None = None) -> None:
+    def run(self, arg: str = "") -> None:
         """Run the command's handler."""
         if self.filter():
             app = get_app()
             result = self.key_handler(
                 KeyPressEvent(
                     key_processor_ref=weakref.ref(app.key_processor),
-                    arg=arg,
+                    arg=None,
                     key_sequence=[],
                     previous_key_sequence=[],
                     is_repeat=False,
                 ),
+                *parse_args(arg),
             )
             if isawaitable(result):
 
@@ -141,14 +168,19 @@ class Command:
         handler = self.handler
         sig = signature(handler)
 
-        if sig.parameters:
-            # The handler already accepts a `KeyPressEvent` argument
+        if sig.parameters and next(iter(sig.parameters.keys())) == "event":
+            # The handler already accepts a `KeyPressEvent` argument named "event"
+            # as the first parameter
             return cast("KeyHandlerCallable", handler)
 
+        # Otherwise we need to wrap in a function which accepts a KeyPressEvent as the
+        # first parameter
         if iscoroutinefunction(handler):
 
-            async def _key_handler_async(event: KeyPressEvent) -> NotImplementedOrNone:
-                result = cast("CommandHandlerNoArgs", handler)()
+            async def _key_handler_async(
+                event: KeyPressEvent, *args: Any
+            ) -> NotImplementedOrNone:
+                result = cast("CommandHandlerNoArgs", handler)(*args)
                 assert isawaitable(result)
                 return await result
 
@@ -156,8 +188,8 @@ class Command:
 
         else:
 
-            def _key_handler(event: KeyPressEvent) -> NotImplementedOrNone:
-                return cast("CommandHandlerNoArgs", handler)()
+            def _key_handler(event: KeyPressEvent, *args: Any) -> NotImplementedOrNone:
+                return cast("CommandHandlerNoArgs", handler)(*args)
 
             return _key_handler
 
