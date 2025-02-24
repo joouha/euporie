@@ -295,10 +295,16 @@ class CachedContainer(Container):
             # Modify render info
             info = win.render_info
             if info is not None:
+                xpos = new_wp.xpos + info._x_offset
+                y_start = new_wp.ypos + info._y_offset
+                # Only include visible lines according to the bounding box
                 visible_line_to_row_col = {
-                    line: (y + info._y_offset, new_wp.xpos + info._x_offset)
-                    for line, y in enumerate(
-                        range(new_wp.ypos, new_wp.ypos + new_wp.height)
+                    i: (y, xpos)
+                    for i, y in enumerate(
+                        range(
+                            y_start + new_wp.bbox.top,
+                            y_start + new_wp.height - new_wp.bbox.bottom,
+                        )
                     )
                 }
                 win.render_info = WindowRenderInfo(
@@ -312,8 +318,8 @@ class CachedContainer(Container):
                     visible_line_to_row_col=visible_line_to_row_col,
                     # The following is needed to calculate absolute cursor positions
                     rowcol_to_yx={
-                        (row, col): (y + top, x + left)
-                        for (row, col), (y, x) in info._rowcol_to_yx.items()
+                        k: (y + top, x + left)
+                        for k, (y, x) in info._rowcol_to_yx.items()
                     },
                     x_offset=info._x_offset + left,
                     y_offset=info._y_offset + top,
@@ -359,6 +365,7 @@ class CachedContainer(Container):
 
         rows_range = range(max(0, rows.start), rows.stop)
         cols_range = range(max(0, cols.start), cols.stop)
+
         for y in rows_range:
             input_db_row = input_db[y]
             input_zwes_row = input_zwes[y]
