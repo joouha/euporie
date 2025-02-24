@@ -72,46 +72,72 @@ def distribute_dimensions(
     if not dimensions:
         return []
 
-    # Sum dimensions
-    sum_dimensions = DimensionTuple(
-        min=sum(d.min for d in dimensions),
-        max=sum(d.max for d in dimensions),
-        preferred=sum(d.preferred for d in dimensions),
-    )
-
-    # If there is not enough space for both.
-    # Don't do anything.
-    if sum_dimensions.min > size:
+    # Calculate minimum size
+    min_size = sum(d.min for d in dimensions)
+    if min_size > size:
         return None
 
-    # Find optimal sizes. (Start with minimal size, increase until we cover
-    # the whole size.)
+    # Start with minimum size for each
     sizes = [d.min for d in dimensions]
+    remaining = size - min_size
 
-    child_generator = take_using_weights(
-        items=list(range(len(dimensions))), weights=[d.weight for d in dimensions]
-    )
+    # First distribute until preferred size
+    while remaining > 0:
+        total_weight = sum(
+            d.weight 
+            for i, d in enumerate(dimensions) 
+            if sizes[i] < d.preferred
+        )
+        
+        if total_weight == 0:
+            break
 
-    i = next(child_generator)
+        # Track if we made any changes in this iteration
+        changed = False
+        
+        for i, d in enumerate(dimensions):
+            if sizes[i] < d.preferred:
+                # Calculate share of remaining space based on weight
+                share = (remaining * d.weight + total_weight - 1) // total_weight
+                # Limit to space needed to reach preferred
+                amount = min(share, d.preferred - sizes[i])
+                
+                if amount > 0:
+                    sizes[i] += amount
+                    remaining -= amount
+                    changed = True
 
-    # Increase until we meet at least the 'preferred' size.
-    preferred_stop = min(size, sum_dimensions.preferred)
-    preferred_dimensions = [d.preferred for d in dimensions]
+        if not changed:
+            break
 
-    while sum(sizes) < preferred_stop:
-        if sizes[i] < preferred_dimensions[i]:
-            sizes[i] += 1
-        i = next(child_generator)
+    # Then distribute remaining until maximum size
+    if remaining > 0 and not get_app().is_done:
+        while remaining > 0:
+            total_weight = sum(
+                d.weight 
+                for i, d in enumerate(dimensions) 
+                if sizes[i] < d.max
+            )
+            
+            if total_weight == 0:
+                break
 
-    # Increase until we use all the available space. (or until "max")
-    if not get_app().is_done:
-        max_stop = min(size, sum_dimensions.max)
-        max_dimensions = [d.max for d in dimensions]
+            changed = False
+            
+            for i, d in enumerate(dimensions):
+                if sizes[i] < d.max:
+                    # Calculate share of remaining space based on weight
+                    share = (remaining * d.weight + total_weight - 1) // total_weight
+                    # Limit to space needed to reach maximum
+                    amount = min(share, d.max - sizes[i])
+                    
+                    if amount > 0:
+                        sizes[i] += amount
+                        remaining -= amount
+                        changed = True
 
-        while sum(sizes) < max_stop:
-            if sizes[i] < max_dimensions[i]:
-                sizes[i] += 1
-            i = next(child_generator)
+            if not changed:
+                break
 
     return sizes
 
