@@ -538,19 +538,19 @@ class NoKernel(BaseKernel):
 
     def input(self, text: str) -> None:
         """Send input to the kernel."""
-        raise NotImplementedError()
+        # Do nothing
 
     def interrupt(self) -> None:
         """Interrupt the kernel."""
-        raise NotImplementedError()
+        # Do nothing
 
     async def restart_async(self) -> None:
         """Restart the kernel asynchronously."""
-        raise NotImplementedError()
+        # Do nothing
 
     async def shutdown_async(self) -> None:
         """Shutdown the kernel asynchronously."""
-        raise NotImplementedError()
+        # Do nothing
 
     @property
     def missing(self) -> bool:
