@@ -31,6 +31,7 @@ Changed
 Fixed
 =====
 
+- Improve performance with long cell otuputs
 - Update style of disabled text ipwidgets
 - Update console execution count on Jupyter kernel restart
 - Queue cell executions in console if kernel is starting 
