@@ -116,6 +116,16 @@ class CellOutputDataElement(CellOutputElement):
                     format_ = data_format
                     break
 
+        config = get_app().config
+
+        # Limit size of text outputs
+        if (
+            isinstance(data, str)
+            and (limit := config.text_output_limit) > 0
+            and len(data) > limit
+        ):
+            data = data[:limit] + "\n… (Output truncated)"
+
         self._datum = Datum(
             data,
             format_,
@@ -123,7 +133,6 @@ class CellOutputDataElement(CellOutputElement):
             py=metadata.get("height"),
             bg=bg_color,
         )
-        config = get_app().config
 
         self.container = Display(
             self._datum,

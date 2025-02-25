@@ -22,6 +22,22 @@ add_setting(
     cmd_filter=~buffer_has_focus,
 )
 
+add_setting(
+    name="text_output_limit",
+    group="euporie.core.widgets.cell_outputs",
+    flags=["--text-output-limit"],
+    type_=int,
+    help_="Limit the amount of cell text output",
+    default=1_000_000,
+    schema={
+        "minimum": 0,
+    },
+    description="""
+        Limit the number of text characters in interactive cell text output to this value.
+        Use ``0`` to allow any amount of characters.
+    """,
+)
+
 # euporie,core.widgets.file_browser:FileBrowser
 
 add_setting(
