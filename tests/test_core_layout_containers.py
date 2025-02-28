@@ -77,3 +77,17 @@ def test_distribute_dimensions_uneven_distribution() -> None:
         DimensionTuple(min=1, max=4, preferred=3),
     )
     assert distribute_dimensions(9, dims) == [2, 4, 3]
+
+
+def test_distribute_dimensions_custom_distribution() -> None:
+    """Test distribution with uneven dimension requirements."""
+    dims = (
+        DimensionTuple(min=0, max=9999, preferred=0),
+        DimensionTuple(min=0, max=1, preferred=0),
+        DimensionTuple(min=0, max=1, preferred=0),
+        DimensionTuple(min=1, max=20, preferred=20),
+        DimensionTuple(min=0, max=1, preferred=0),
+        DimensionTuple(min=0, max=1, preferred=0),
+        DimensionTuple(min=0, max=9999, preferred=0),
+    )
+    assert distribute_dimensions(30, dims) == [3, 1, 1, 20, 1, 1, 3]
