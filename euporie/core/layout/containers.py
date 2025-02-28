@@ -66,7 +66,7 @@ class DimensionTuple(NamedTuple):
 
 @lru_cache
 def distribute_dimensions(
-    size: int, dimensions: list[DimensionTuple]
+    size: int, dimensions: tuple[DimensionTuple, ...]
 ) -> list[int] | None:
     """Return the heights for all rows, or None when there is not enough space."""
     if not dimensions:
