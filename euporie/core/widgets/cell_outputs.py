@@ -118,9 +118,9 @@ class CellOutputDataElement(CellOutputElement):
 
         config = get_app().config
 
-        # Limit size of text outputs
+        # Limit size of text only outputs
         if (
-            isinstance(data, str)
+            format_ == "ansi"
             and (limit := config.text_output_limit) > 0
             and len(data) > limit
         ):
