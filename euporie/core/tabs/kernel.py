@@ -6,11 +6,11 @@ import asyncio
 import logging
 from abc import ABCMeta
 from collections import deque
-from functools import partial
+from functools import lru_cache, partial
 from typing import TYPE_CHECKING
 from weakref import WeakKeyDictionary
 
-from prompt_toolkit.auto_suggest import DummyAutoSuggest
+from prompt_toolkit.auto_suggest import DummyAutoSuggest, DynamicAutoSuggest
 from prompt_toolkit.completion.base import (
     DynamicCompleter,
     _MergedCompleter,
@@ -32,7 +32,6 @@ from euporie.core.inspection import (
 )
 from euporie.core.kernel import list_kernels
 from euporie.core.kernel.base import NoKernel
-from euporie.core.suggest import HistoryAutoSuggest
 from euporie.core.tabs.base import Tab
 
 if TYPE_CHECKING:
@@ -53,6 +52,23 @@ if TYPE_CHECKING:
     from euporie.core.widgets.inputs import KernelInput
 
 log = logging.getLogger(__name__)
+
+
+@lru_cache
+def autosuggest_factory(kind: str, history: History) -> AutoSuggest:
+    """Generate autosuggesters."""
+    if kind == "smart":
+        from euporie.core.suggest import SmartHistoryAutoSuggest
+
+        return SmartHistoryAutoSuggest(history)
+    elif kind == "simple":
+        from euporie.core.suggest import SimpleHistoryAutoSuggest
+
+        return SimpleHistoryAutoSuggest(history)
+    else:
+        from prompt_toolkit.auto_suggest import DummyAutoSuggest
+
+        return DummyAutoSuggest()
 
 
 class KernelTab(Tab, metaclass=ABCMeta):
@@ -239,7 +255,11 @@ class KernelTab(Tab, metaclass=ABCMeta):
             if use_kernel_history
             else InMemoryHistory()
         )
-        self.suggester = HistoryAutoSuggest(self.history)
+        self.suggester = DynamicAutoSuggest(
+            lambda history=self.history: autosuggest_factory(
+                self.app.config.autosuggest, history
+            )
+        )
 
         self.app.create_background_task(self.load_lsps())
 

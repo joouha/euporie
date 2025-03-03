@@ -493,9 +493,9 @@ class NotebookApp(BaseApp):
                         children=[
                             get_cmd("toggle-enable-language-servers").menu,
                             separator,
+                            self.config.menus.autosuggest,
                             get_cmd("toggle-autoformat").menu,
                             get_cmd("toggle-autocomplete").menu,
-                            get_cmd("toggle-autosuggest").menu,
                             get_cmd("toggle-autoinspect").menu,
                         ],
                         description="Turn code assistance tools on or off",

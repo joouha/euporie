@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from collections import defaultdict
+from collections import defaultdict, deque
 from difflib import SequenceMatcher
 from functools import lru_cache, partial
 from typing import TYPE_CHECKING, NamedTuple
@@ -31,7 +31,7 @@ class HistoryPosition(NamedTuple):
     context_end: int  # Position where context ends
 
 
-class HistoryAutoSuggest(AutoSuggest):
+class SmartHistoryAutoSuggest(AutoSuggest):
     """Suggest line completions from a :class:`History` object."""
 
     _context_lines = 10
@@ -172,36 +172,49 @@ class HistoryAutoSuggest(AutoSuggest):
         return None
 
 
-# class KernelAutoSuggest(AutoSuggest):
-#     """Suggest line completions from kernel history."""
+class SimpleHistoryAutoSuggest(AutoSuggest):
+    """Suggest line completions from a :class:`History` object."""
 
-#     def __init__(self, kernel: Kernel) -> None:
-#         """Set the kernel instance in initialization."""
-#         self.kernel = kernel
+    def __init__(self, history: History, cache_size: int = 100_000) -> None:
+        """Set the kernel instance in initialization."""
+        self.history = history
 
-#     def get_suggestion(self, buffer: Buffer, document: Document) -> Suggestion | None:
-#         """Doe nothing."""
-#         return None
+        self.cache_size = cache_size
+        self.cache_keys: deque[str] = deque()
+        self.cache: dict[str, Suggestion] = {}
 
-#     async def get_suggestion_async(
-#         self, buff: Buffer, document: Document
-#     ) -> Suggestion | None:
-#         """Return suggestions based on matching kernel history."""
-#         line = document.current_line.strip()
-#         if line:
-#             suggestions = await self.kernel.history_(f"*{line}*")
-#             log.debug("Suggestor got suggestions %s", suggestions)
-#             if suggestions:
-#                 _, _, text = suggestions[0]
-#                 # Find matching line
-#                 for hist_line in text.split("\n"):
-#                     hist_line = hist_line.strip()
-#                     if hist_line.startswith(line):
-#                         # Return from the match to end from the history line
-#                         suggestion = hist_line[len(line) :]
-#                         log.debug("Suggesting %s", suggestion)
-#                         return Suggestion(suggestion)
-#         return None
+    def get_suggestion(self, buffer: Buffer, document: Document) -> Suggestion | None:
+        """Get a line completion suggestion."""
+        result: Suggestion | None = None
+        line = document.current_line.lstrip()
+        if line:
+            if line in self.cache:
+                result = self.cache[line]
+            else:
+                result = self.lookup_suggestion(line)
+                if result:
+                    if len(self.cache) > self.cache_size:
+                        key_to_remove = self.cache_keys.popleft()
+                        if key_to_remove in self.cache:
+                            del self.cache[key_to_remove]
+
+                    self.cache_keys.append(line)
+                    self.cache[line] = result
+        return result
+
+    def lookup_suggestion(self, line: str) -> Suggestion | None:
+        """Find the most recent matching line in the history."""
+        # Loop history, most recent item first
+        for text in self.history._loaded_strings:
+            if line in text:
+                # Loop over lines of item in reverse order
+                for hist_line in text.splitlines()[::-1]:
+                    hist_line = hist_line.strip()
+                    if hist_line.startswith(line):
+                        # Return from the match to end from the history line
+                        suggestion = hist_line[len(line) :]
+                        return Suggestion(suggestion)
+        return None
 
 
 class ConditionalAutoSuggestAsync(ConditionalAutoSuggest):

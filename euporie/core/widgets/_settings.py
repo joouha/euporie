@@ -102,9 +102,10 @@ add_setting(
     name="autosuggest",
     group="euporie.core.widgets.inputs",
     flags=["--autosuggest"],
-    type_=bool,
+    type_=str,
+    choices=["smart", "simple", "none"],
     help_="Provide line completion suggestions",
-    default=True,
+    default="smart",
     description="""
         Whether to automatically suggestion line content while typing in code cells.
     """,
