@@ -255,11 +255,11 @@ class KernelTab(Tab, metaclass=ABCMeta):
             if use_kernel_history
             else InMemoryHistory()
         )
-        self.suggester = DynamicAutoSuggest(
-            lambda history=self.history: autosuggest_factory(
-                self.app.config.autosuggest, history
-            )
-        )
+
+        def _get_suggester() -> AutoSuggest | None:
+            return autosuggest_factory(self.app.config.autosuggest, self.history)
+
+        self.suggester = DynamicAutoSuggest(_get_suggester)
 
         self.app.create_background_task(self.load_lsps())
 
