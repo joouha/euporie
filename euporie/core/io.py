@@ -232,7 +232,7 @@ class Vt100_Output(PtkVt100_Output):
         """Query terminal to check for kitty graphics support."""
         self.write_raw(
             "\x1b[s"
-            + passthrough("\x1b_gi=4294967295,s=1,v=1,a=q,t=d,f=24;aaaa\x1b\\")
+            + passthrough("\x1b_Gi=4294967295,s=1,v=1,a=q,t=d,f=24;aaaa\x1b\\")
             + "\x1b[u\x1b[2k"
         )
 
