@@ -7,6 +7,15 @@ Notable changes to this project will be documented in this file.
 ----
 
 *******************
+v2.8.8 (2025-03-07)
+*******************
+
+Fixed
+=====
+
+- Fix kitty graphics detection query
+
+*******************
 v2.8.7 (2025-03-07)
 *******************
 
@@ -19,7 +28,7 @@ Added
 - Allow scrolling of overflowing tab bars
 - Add kernel restart prompting to console
 - Add setting to determine backup-on-save behaviour
-- Add basic local kernel which runs in the local interpretor
+- Add basic local kernel which runs in the local interpreter
 
 Changed
 =======
@@ -35,7 +44,7 @@ Fixed
 - Improve performance with long cell otuputs
 - Update style of disabled text ipwidgets
 - Update console execution count on Jupyter kernel restart
-- Queue cell executions in console if kernel is starting 
+- Queue cell executions in console if kernel is starting
 - Improve performance of history indexing for suggestions
 - Properly shut down Jupyter kernels on tab closure
 - Fix tiled tab layouts
