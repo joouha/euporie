@@ -1,4 +1,12 @@
-"""Overrides for PTK containers which only render visible lines."""
+"""Overrides for PTK containers with optimized rendering.
+
+This module provides enhanced versions of prompt_toolkit containers that:
+- Only render visible lines rather than the entire content
+- Use cached dimension calculations for better performance
+- Support bounded write positions to clip rendering
+- Share padding window instances for efficiency
+- Apply cursor line styles more efficiently
+"""
 
 from __future__ import annotations
 
@@ -56,7 +64,11 @@ log = logging.getLogger(__name__)
 
 
 class DimensionTuple(NamedTuple):
-    """A hashable representation of a PTK :py:class:`Dimension`."""
+    """A hashable representation of a PTK :py:class:`Dimension`.
+    
+    This allows caching dimension calculations by making them hashable.
+    Used internally by distribute_dimensions() for performance optimization.
+    """
 
     min: int
     max: int
@@ -68,7 +80,18 @@ class DimensionTuple(NamedTuple):
 def distribute_dimensions(
     size: int, dimensions: tuple[DimensionTuple, ...]
 ) -> list[int] | None:
-    """Return the heights for all rows, or None when there is not enough space."""
+    """Return the heights/widths for all rows/columns, or None when there is not enough space.
+    
+    This is a cached version of prompt_toolkit's dimension distribution logic that improves
+    performance by memoizing calculations based on the input dimensions.
+    
+    Args:
+        size: Total size to distribute
+        dimensions: Tuple of DimensionTuple objects specifying min/max/preferred sizes
+        
+    Returns:
+        List of distributed sizes or None if not enough space
+    """
     if not dimensions:
         return []
 
@@ -118,7 +141,13 @@ def distribute_dimensions(
 
 @lru_cache(maxsize=None)
 class DummyContainer(Container):
-    """Base class for user interface layout."""
+    """A minimal container with fixed dimensions.
+    
+    This is a more efficient version of prompt_toolkit's DummyContainer that:
+    - Supports explicit width/height
+    - Uses caching for better performance
+    - Avoids unnecessary style calculations
+    """
 
     def __init__(self, width: int = 0, height: int = 0) -> None:
         """Define width and height if any."""
