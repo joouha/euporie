@@ -171,10 +171,7 @@ class Cell:
             weak_self.kernel_tab.dirty = True
             weak_self.on_change()
             # Re-render markdown cells when edited outside of edit mode
-            if (
-                weak_self.cell_type == "markdown"
-                and not weak_self.kernel_tab.in_edit_mode()
-            ):
+            if weak_self.cell_type == "markdown" and not weak_self.kernel_tab.edit_mode:
                 weak_self.output_area.json = weak_self.output_json
                 weak_self.refresh()
 
