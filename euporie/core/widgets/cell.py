@@ -630,10 +630,9 @@ class Cell:
 
         """
         cp = self.input_box.buffer.cursor_position
-        self._set_input(value)
-        self.input_box.text = self.json["source"]
         cp = max(0, min(cp, len(value)))
-        self.input_box.buffer.cursor_position = cp
+        self._set_input(value)
+        self.input_box.buffer.document = Document(value, cp)
 
     @property
     def output_json(self) -> list[dict[str, Any]]:

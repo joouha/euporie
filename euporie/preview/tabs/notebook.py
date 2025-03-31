@@ -145,7 +145,10 @@ class PreviewNotebook(BaseNotebook):
         cell = self._cell
         cell_json = self.json["cells"][self.cell_index]
         cell.json = cell_json
-        cell.input = cell_json["source"]
+        # Update cell text without trigger any "text-changed" callbacks, which are
+        # unncesessary in the preview app
+        cell._set_input(cell_json["source"])
+        cell.input_box.buffer._set_text(cell_json["source"])
         cell.output_area.json = cell.output_json
         return cell
 
