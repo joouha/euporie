@@ -360,11 +360,13 @@ class KernelInput(TextArea):
 
     def reformat(self) -> None:
         """Reformat the cell's input."""
-        text = self.buffer.text
+        original_text = self.buffer.text
         language = self.language
         for formatter in self.formatters:
-            text = formatter._format(text, language)
-        self.buffer.text = text
+            new_text = formatter._format(original_text, language)
+        # Do not trigger a text-changed event if the reformatting results in no change
+        if new_text != original_text:
+            self.buffer.text = new_text
 
     async def inspect(self, auto: bool = False) -> None:
         """Get contextual help for the current cursor position in the current cell."""
