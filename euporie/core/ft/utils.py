@@ -6,7 +6,6 @@ import re
 from enum import Enum
 from typing import TYPE_CHECKING, cast
 
-from prompt_toolkit.formatted_text.base import OneStyleAndTextTuple, StyleAndTextTuples
 from prompt_toolkit.formatted_text.utils import (
     fragment_list_to_text,
     split_lines,
@@ -22,6 +21,11 @@ from euporie.core.data_structures import DiBool, DiInt, DiStr
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
+
+    from prompt_toolkit.formatted_text.base import (
+        OneStyleAndTextTuple,
+        StyleAndTextTuples,
+    )
 
 _ZERO_WIDTH_FRAGMENTS = ("[ZeroWidthEscape]", "[ReverseOverwrite]")
 
@@ -800,7 +804,7 @@ def apply_reverse_overwrites(ft: StyleAndTextTuples) -> StyleAndTextTuples:
         """Pate `overwrites` over the end of `transformed_line`."""
         # Remove the ``[ReverseOverwrite]`` from the overwrite fragments
         top = cast(
-            StyleAndTextTuples,
+            "StyleAndTextTuples",
             [(x[0].replace("[ReverseOverwrite]", ""), *x[1:]) for x in overwrites],
         )
         top_width = fragment_list_width(top)

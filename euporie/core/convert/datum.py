@@ -143,7 +143,7 @@ class Datum(Generic[T], metaclass=_MetaDatum):
             tuple[str, int | None, int | None, str | None, str | None, bool],
             asyncio.Event,
         ] = {}
-        self._finalizer = finalize(self, self._cleanup_datum_sizes, self.hash)
+        self._finalizer: finalize = finalize(self, self._cleanup_datum_sizes, self.hash)
         self._finalizer.atexit = False
 
     def __repr__(self) -> str:
@@ -350,7 +350,7 @@ class Datum(Generic[T], metaclass=_MetaDatum):
         """Get the dimensions of displayable data in pixels.
 
         Foreground and background color are set at this point if they are available, as
-        data conversion outputs are cached and re-used.
+        data conversion outputs are cached and reused.
 
         Returns:
             A tuple of the data's width in terminal columns and its aspect ratio, when

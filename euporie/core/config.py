@@ -32,8 +32,9 @@ from euporie.core.commands import add_cmd, get_cmd
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping, Sequence
-    from typing import IO, Any, Callable, ClassVar, Optional
+    from typing import Any, Callable, ClassVar, Optional
 
+    from _typeshed import SupportsWrite
     from prompt_toolkit.filters.base import FilterOrBool
 
     from euporie.core.widgets.menu import MenuItem
@@ -58,7 +59,9 @@ class ArgumentParser(argparse.ArgumentParser):
         super().__init__(*args, **kwargs)
         self.config = config
 
-    def _print_message(self, message: str, file: IO[str] | None = None) -> None:
+    def _print_message(
+        self, message: str, file: SupportsWrite[str] | None = None
+    ) -> None:
         from prompt_toolkit.formatted_text.base import FormattedText
         from prompt_toolkit.lexers.pygments import _token_cache
         from prompt_toolkit.shortcuts.utils import print_formatted_text
