@@ -7,6 +7,23 @@ Notable changes to this project will be documented in this file.
 ----
 
 *******************
+v2.8.9 (2025-03-31)
+*******************
+
+Fixed
+=====
+
+- Fix ``preview`` app crash due to incorrect edit mode check
+
+Changed
+=======
+
+- Optimize cell content updating in ``preview`` app
+- Do not update cell on reformat if nothing changes
+
+----
+
+*******************
 v2.8.8 (2025-03-07)
 *******************
 
