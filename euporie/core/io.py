@@ -184,14 +184,6 @@ class Vt100_Output(PtkVt100_Output):
         """Disable SGR-pixel mouse positioning."""
         self.write_raw("\x1b[?1016l")
 
-    def enable_private_sixel_colors(self) -> None:
-        """Enable private color registers for sixel graphics."""
-        self.write_raw("\x1b[1070h")
-
-    def disable_private_sixel_colors(self) -> None:
-        """Disable private color registers for sixel graphics."""
-        self.write_raw("\x1b[1070l")
-
     def enable_extended_keys(self) -> None:
         """Request extended keys."""
         # xterm

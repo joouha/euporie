@@ -13,6 +13,7 @@ v2.8.9 (2025-03-31)
 Fixed
 =====
 
+- Removed unnecessary private sixel color mode
 - Fix ``preview`` app crash due to incorrect edit mode check
 
 Changed

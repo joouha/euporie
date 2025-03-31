@@ -291,7 +291,6 @@ class Renderer(PtkRenderer):
             style, output, full_screen, mouse_support, cpr_not_supported_callback
         )
         self._extended_keys_enabled = False
-        self._private_sixel_colors_enabled = False
         self._sgr_pixel_enabled = False
         self.extend_height = to_filter(extend_height)
         self.extend_width = to_filter(extend_width)
@@ -303,10 +302,6 @@ class Renderer(PtkRenderer):
             # Disable extended keys before resetting the output
             output.disable_extended_keys()
             self._extended_keys_enabled = False
-
-            # Disable private sixel colors before resetting the output
-            output.disable_private_sixel_colors()
-            self._private_sixel_colors_enabled = False
 
             # Disable sgr pixel mode
             output.disable_sgr_pixel()
@@ -369,13 +364,6 @@ class Renderer(PtkRenderer):
         if not self._extended_keys_enabled and isinstance(output, Vt100_Output):
             output.enable_extended_keys()
             self._extended_keys_enabled = True
-
-        # Ensable private sixel graphic color registers
-        if not self._private_sixel_colors_enabled and isinstance(
-            self.output, Vt100_Output
-        ):
-            self.output.enable_private_sixel_colors()
-            self._private_sixel_colors_enabled = True
 
         # Create screen and write layout to it.
         size = output.get_size()
