@@ -101,8 +101,6 @@ class ConsoleApp(BaseApp):
 
     def load_container(self) -> FloatContainer:
         """Return a container with all opened tabs."""
-        self.tabs = [Console(self)]
-
         self.command_bar = CommandBar()
         self.search_bar = SearchBar()
         self.pager = Pager()
@@ -114,6 +112,8 @@ class ConsoleApp(BaseApp):
         self.dialogs["change-kernel"] = SelectKernelDialog(self)
         self.dialogs["shortcuts"] = ShortcutsDialog(self)
         self.dialogs["confirm"] = ConfirmDialog(self)
+
+        self.tabs = [Console(self)]
 
         return FloatContainer(
             DisableMouseOnScroll(

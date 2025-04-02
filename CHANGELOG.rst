@@ -6,6 +6,17 @@ Notable changes to this project will be documented in this file.
 
 ----
 
+********************
+v2.8.10 (2025-04-02)
+********************
+
+Fixed
+=====
+
+- Prevent change dialog error when launching console with unknown kernel
+
+----
+
 *******************
 v2.8.9 (2025-03-31)
 *******************
