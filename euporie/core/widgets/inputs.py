@@ -360,7 +360,7 @@ class KernelInput(TextArea):
 
     def reformat(self) -> None:
         """Reformat the cell's input."""
-        original_text = self.buffer.text
+        original_text = new_text = self.buffer.text
         language = self.language
         for formatter in self.formatters:
             new_text = formatter._format(original_text, language)

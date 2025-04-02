@@ -13,6 +13,7 @@ v2.8.10 (2025-04-02)
 Fixed
 =====
 
+- Fix error with code reformatting
 - Prevent change dialog error when launching console with unknown kernel
 
 ----
