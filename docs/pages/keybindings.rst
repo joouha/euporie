@@ -6,7 +6,7 @@ Key Bindings
 Editing Modes
 *************
 
-The key-bindings used when editing a cell or in the console are determined by the :option:`edit_mode` configuration variable. This can be set to ``micro``, ``emacs`` or ``vim`` to use key-bindings in the style of the respective text editor.
+The key-bindings used when editing a cell or in the console are determined by the :option:`edit_mode` configuration variable. This can be set to ``micro``, ``emacs`` or ``vi`` to use key-bindings in the style of the respective text editor.
 
 *******************
 Custom Key Bindings
