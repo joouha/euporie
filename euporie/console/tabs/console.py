@@ -638,7 +638,10 @@ class Console(KernelTab):
                         Window(
                             FormattedTextControl(
                                 lambda: self.prompt(
-                                    "In ", self.execution_count, offset=1
+                                    "In ",
+                                    self.execution_count,
+                                    offset=1,
+                                    show_busy=True,
                                 )
                             ),
                             dont_extend_width=True,
