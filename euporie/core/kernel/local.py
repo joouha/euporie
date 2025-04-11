@@ -6,12 +6,14 @@ import ast
 import code
 import getpass
 import logging
+import os
 import sys
 import threading
 import traceback
 from asyncio import to_thread
 from functools import update_wrapper
 from linecache import cache as line_cache
+from pathlib import Path
 from typing import TYPE_CHECKING, cast
 
 from pygments import highlight
@@ -124,6 +126,77 @@ class LocalPythonKernel(BaseKernel):
         if callable(set_status):
             set_status(self.status)
 
+    def init_venv(self) -> None:
+        """Add the current venv to sys.path so we can import modules from it.
+
+        This isn't perfect: it doesn't use the Python interpreter with which the
+        virtualenv was built, and it ignores the --no-site-packages option. A warning
+        will appear suggesting the user installs euporie in the virtualenv or to use a
+        Jupyter kernel, but for many cases, it probably works well enough.
+
+        Adapted from :py:mod:`IPython`.
+        """
+        # Check if we are in a virtual environment
+        if "VIRTUAL_ENV" not in os.environ:
+            return
+        elif os.environ["VIRTUAL_ENV"] == "":
+            log.warning(
+                "The virtual environment path is set to '': "
+                "please check if this is intentional."
+            )
+            return
+
+        # Follow sys.executable symlink trail, recoding all paths along the way
+        # We need to check all of these
+        paths = [Path(sys.executable)]
+        while (path := paths[-1]).is_symlink():
+            new_path = path.readlink()
+            if not new_path.is_absolute():
+                new_path = path.parent / new_path
+            paths.append(new_path)
+
+        # Get the venv path
+        p_venv = Path(os.environ["VIRTUAL_ENV"]).resolve()
+        # In Cygwin paths like "c:\..." and '\cygdrive\c\...' are possible
+        if len(p_venv.parts) > 2 and p_venv.parts[1] == "cygdrive":
+            drive_name = p_venv.parts[2]
+            p_venv = (drive_name + ":/") / Path(*p_venv.parts[3:])
+
+        # Check if the executable is already inside or has access to the virtualenv
+        if any(p_venv == p.parents[1].resolve() for p in paths):
+            return
+
+        # Locate the site-packages of the virtual environment
+        if sys.platform == "win32":
+            virtual_env = str(Path(os.environ["VIRTUAL_ENV"], "Lib", "site-packages"))
+        else:
+            import re
+
+            virtual_env_path = Path(
+                os.environ["VIRTUAL_ENV"], "lib", "python{}.{}", "site-packages"
+            )
+            p_ver = sys.version_info[:2]
+
+            # Predict version from py[thon]-x.x in the $VIRTUAL_ENV
+            re_m = re.search(r"\bpy(?:thon)?([23])\.(\d+)\b", os.environ["VIRTUAL_ENV"])
+            if re_m:
+                predicted_path = Path(str(virtual_env_path).format(*re_m.groups()))
+                if predicted_path.exists():
+                    p_ver = re_m.groups()
+
+            virtual_env = str(virtual_env_path).format(*p_ver)
+
+        if self.kernel_tab.app.config.warn_venv:
+            log.warning("Attempting to work in virtualenv %r.", virtual_env)
+            log.warning(
+                "If you encounter problems, please install euporie inside the virtual "
+                "environment, or use a Jupyter kernel."
+            )
+        import site
+
+        sys.path.insert(0, virtual_env)
+        site.addsitedir(virtual_env)
+
     async def start_async(self) -> None:
         """Start the local interpreter."""
         self.error = None
@@ -134,6 +207,7 @@ class LocalPythonKernel(BaseKernel):
             set_execution_count := self.default_callbacks.get("set_execution_count")
         ):
             set_execution_count(self.execution_count)
+        self.init_venv()
 
     @property
     def spec(self) -> dict[str, str]:
@@ -177,7 +251,7 @@ class LocalPythonKernel(BaseKernel):
         colored_traceback = highlight(
             traceback_text,
             Python3TracebackLexer(),
-            Terminal256Formatter(style=get_app().config.syntax_theme),
+            Terminal256Formatter(style=self.kernel_tab.app.config.syntax_theme),
         ).rstrip()
 
         # Send the error through the callback

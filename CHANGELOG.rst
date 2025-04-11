@@ -7,6 +7,16 @@ Notable changes to this project will be documented in this file.
 ----
 
 ********************
+v2.8.11 (2025-04-11)
+********************
+
+Added
+=====
+
+- Add ability for local Python kernels to run inside virtual environments without euporie being installed in that virtual environment
+
+
+********************
 v2.8.10 (2025-04-02)
 ********************
 
