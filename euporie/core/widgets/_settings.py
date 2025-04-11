@@ -4,6 +4,7 @@ from prompt_toolkit.filters import buffer_has_focus
 
 from euporie.core.app.current import get_app
 from euporie.core.config import add_setting
+from euporie.core.filters import tab_type_has_focus
 
 # euporie.core.widgets.cell_outputs:CellOutputArea
 
@@ -14,12 +15,16 @@ add_setting(
     flags=["--wrap-cell-outputs"],
     type_=bool,
     help_="Wrap cell output text.",
-    default=False,
+    default=True,
     schema={"type": "boolean"},
     description="""
         Whether text-based cell outputs should be wrapped.
     """,
-    cmd_filter=~buffer_has_focus,
+    cmd_filter=(
+        ~buffer_has_focus
+        & tab_type_has_focus("euporie.notebook.tabs.notebook.Notebook")
+    )
+    | ~tab_type_has_focus("euporie.notebook.tabs.notebook.Notebook"),
 )
 
 add_setting(

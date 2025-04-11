@@ -15,6 +15,17 @@ Added
 
 - Add ability for local Python kernels to run inside virtual environments without euporie being installed in that virtual environment
 
+Changed
+=======
+
+- Wrap cell outputs be default
+
+Fixed
+=====
+
+- Fix wrapping of cell outputs in euporie-console
+
+----
 
 ********************
 v2.8.10 (2025-04-02)
