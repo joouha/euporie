@@ -67,7 +67,12 @@ async def chafa_convert_cmd(
     extend: bool = True,
 ) -> str | bytes:
     """Convert image data to ANSI text using :command:`chafa`."""
-    cmd: list[Any] = ["chafa", f"--format={output_format}"]
+    cmd: list[Any] = [
+        "chafa",
+        f"--format={output_format}",
+        "--passthrough=none",
+        "--polite=on",
+    ]
     if cols is not None or rows is not None:
         size = "--size="
         if cols is not None:
