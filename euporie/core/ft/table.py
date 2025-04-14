@@ -1503,8 +1503,8 @@ class Table:
 
         # Calculate border visibility
         render_count = self.render_count
-        row_edge_visibilities: dict[int, bool] = defaultdict(lambda: False)
-        col_edge_visibilities: dict[int, bool] = defaultdict(lambda: False)
+        row_edge_visibilities: dict[int, bool] = defaultdict(bool)
+        col_edge_visibilities: dict[int, bool] = defaultdict(bool)
         for y, row in enumerate(self.rows):
             for x, cell in enumerate(row.cells):
                 bv = compute_border_visibility(cell, render_count)

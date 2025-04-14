@@ -3036,14 +3036,14 @@ class Node:
         return contents
 
     @property
-    def descendents(self) -> Generator[Node, None, None]:
+    def descendents(self) -> Generator[Node]:
         """Yield all descendent elements."""
         for child in self.contents:
             yield child
             yield from child.descendents
 
     @property
-    def renderable_descendents(self) -> Generator[Node, None, None]:
+    def renderable_descendents(self) -> Generator[Node]:
         """Yield descendents, including pseudo and skipping inline elements."""
         for child in self.renderable_contents:
             if (
@@ -3084,7 +3084,7 @@ class Node:
         return False
 
     @property
-    def child_elements(self) -> Generator[Node, None, None]:
+    def child_elements(self) -> Generator[Node]:
         """Yield all of the child element nodes."""
         for child in self.contents:
             # Ignore text and comment nodes

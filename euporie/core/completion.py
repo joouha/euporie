@@ -48,7 +48,7 @@ class KernelCompleter(Completer):
 
     async def get_completions_async(
         self, document: Document, complete_event: CompleteEvent
-    ) -> AsyncGenerator[Completion, None]:
+    ) -> AsyncGenerator[Completion]:
         """Retrieve completions from a :class:`Kernel`."""
         for kwargs in await self.kernel.complete_async(
             source=document.text,
@@ -84,7 +84,7 @@ class LspCompleter(Completer):
 
     async def get_completions_async(
         self, document: Document, complete_event: CompleteEvent
-    ) -> AsyncGenerator[Completion, None]:
+    ) -> AsyncGenerator[Completion]:
         """Retrieve completions from an LSP server."""
         # Get completions
         text_preceding = document.current_line_before_cursor.lower()
@@ -138,7 +138,7 @@ class DeduplicateCompleter(Completer):
 
     async def get_completions_async(
         self, document: Document, complete_event: CompleteEvent
-    ) -> AsyncGenerator[Completion, None]:
+    ) -> AsyncGenerator[Completion]:
         """Get completions from wrapped completer."""
         # Keep track of the document strings we'd get after applying any completion.
         found_so_far: set[str] = set()

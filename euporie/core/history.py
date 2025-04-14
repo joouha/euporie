@@ -37,7 +37,7 @@ class KernelHistory(History):
             return self._kernel()
         return self._kernel
 
-    async def load(self) -> AsyncGenerator[str, None]:
+    async def load(self) -> AsyncGenerator[str]:
         """Load the history and yield all entries, most recent history first.
 
         This method can be called multiple times from the `Buffer` to
