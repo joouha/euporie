@@ -80,11 +80,13 @@ def type_key(event: KeyPressEvent) -> None:
 
 
 def _complete_bracket(right: str, event: KeyPressEvent) -> None:
+    """Automatically insert a closing bracket."""
     event.current_buffer.insert_text(right, move_cursor=False)
     event.key_processor.feed(event.key_sequence[0], first=True)
 
 
 def _skip_close_bracket(right: str, event: KeyPressEvent) -> None:
+    """Skip typing a close bracket if it already exists."""
     event.current_buffer.cursor_position += 1
 
 
