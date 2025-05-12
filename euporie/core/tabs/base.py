@@ -234,7 +234,7 @@ class Tab(metaclass=ABCMeta):
 
     register_bindings(
         {
-            "euporie.core.tabs.base.Tab": {
+            "euporie.core.tabs.base:Tab": {
                 "save-file": "c-s",
                 "refresh-tab": "f5",
             }

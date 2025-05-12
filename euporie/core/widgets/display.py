@@ -87,7 +87,7 @@ class DisplayControl(UIControl):
         self.height = 0
 
         self.key_bindings = load_registered_bindings(
-            "euporie.core.widgets.display.DisplayControl",
+            "euporie.core.widgets.display:DisplayControl",
             config=get_app().config,
         )
 
@@ -532,7 +532,7 @@ class DisplayWindow(Window):
 
     register_bindings(
         {
-            "euporie.core.widgets.display.DisplayControl": {
+            "euporie.core.widgets.display:DisplayControl": {
                 "scroll-display-left": "left",
                 "scroll-display-right": "right",
                 "scroll-display-up": ["up", "k"],

@@ -88,7 +88,7 @@ class NotebookApp(BaseApp):
         kwargs.setdefault("full_screen", True)
         kwargs.setdefault("leave_graphics", False)
         super().__init__(**kwargs)
-        self.bindings_to_load.append("euporie.notebook.app.NotebookApp")
+        self.bindings_to_load.append("euporie.notebook.app:NotebookApp")
 
         self._tab_bar_tabs: dict[int, WeakKeyDictionary[Tab, TabBarTab]] = {}
         self.on_tabs_change += self.set_tab_container
@@ -523,7 +523,7 @@ class NotebookApp(BaseApp):
 
     register_bindings(
         {
-            "euporie.notebook.app.NotebookApp": {
+            "euporie.notebook.app:NotebookApp": {
                 "new-notebook": "c-n",
                 "toggle-show-top-bar": ("A-m"),
             }

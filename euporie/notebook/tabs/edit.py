@@ -149,7 +149,7 @@ class EditorTab(KernelTab):
             width=Dimension(weight=1),
             height=Dimension(weight=1),
             key_bindings=load_registered_bindings(
-                "euporie.core.tabs.base.Tab",
+                "euporie.core.tabs.base:Tab",
                 config=self.app.config,
             ),
         )

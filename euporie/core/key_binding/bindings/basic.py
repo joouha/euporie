@@ -38,7 +38,7 @@ class TextEntry:
     # Register default bindings for micro edit mode
     register_bindings(
         {
-            "euporie.core.key_binding.bindings.basic.TextEntry": {
+            "euporie.core.key_binding.bindings.basic:TextEntry": {
                 "type-key": "<any>",
                 "complete-bracket-()": "(",
                 "complete-bracket-[]": "[",
@@ -57,7 +57,7 @@ def load_basic_bindings(config: Config | None = None) -> KeyBindingsBase:
     from euporie.core import keys  # noqa: F401
 
     return load_registered_bindings(
-        "euporie.core.key_binding.bindings.basic.TextEntry", config=config
+        "euporie.core.key_binding.bindings.basic:TextEntry", config=config
     )
 
 

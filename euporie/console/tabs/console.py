@@ -667,7 +667,7 @@ class Console(KernelTab):
                 *input_row,
             ],
             key_bindings=load_registered_bindings(
-                "euporie.console.tabs.console.Console",
+                "euporie.console.tabs.console:Console",
                 config=self.app.config,
             ),
         )
@@ -883,13 +883,13 @@ class Console(KernelTab):
 
     register_bindings(
         {
-            "euporie.console.tabs.console.Console": {
+            "euporie.console.tabs.console:Console": {
                 "clear-input": ["c-c", "<sigint>"],
                 "cc-interrupt-kernel": ["c-c", "<sigint>"],
                 "run-input": ["c-enter", "c-e"],
                 "end-of-file": "c-d",
                 "clear-screen": "c-l",
             },
-            "euporie.console.app.ConsoleApp": {},
+            "euporie.console.app:ConsoleApp": {},
         }
     )

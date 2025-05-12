@@ -173,7 +173,7 @@ class TerminalQueries:
 
 register_bindings(
     {
-        "euporie.core.io.TerminalInfo": {
+        "euporie.core.key_binding.bindings.terminal:TerminalQueries": {
             "set-terminal-color": "<colors-response>",
             "set-terminal-pixel-size": "<pixel-size-response>",
             "set-terminal-graphics-kitty": "<kitty-graphics-status-response>",
@@ -189,5 +189,5 @@ register_bindings(
 def load_terminal_bindings(config: Config | None = None) -> KeyBindingsBase:
     """Load editor key-bindings in the style of the ``micro`` text editor."""
     return load_registered_bindings(
-        "euporie.core.key_binding.bindings.terminal.TerminalQueries", config=config
+        "euporie.core.key_binding.bindings.terminal:TerminalQueries", config=config
     )

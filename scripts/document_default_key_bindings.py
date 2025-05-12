@@ -24,16 +24,21 @@ from euporie.core.key_binding.utils import format_keys, parse_keys
 
 groups = [
     "euporie.core.app.app:BaseApp",
-    "euporie.core.tabs.base:Tab",
-    "euporie.notebook.app:NotebookApp",
-    "euporie.notebook.tabs.notebook:Notebook",
     "euporie.console.app:ConsoleApp",
-    "euporie.console.tabs.console:Console",
+    "euporie.notebook.app:NotebookApp",
     "euporie.preview.app:PreviewApp",
+    "euporie.core.tabs.base:Tab",
+    "euporie.console.tabs.console:Console",
+    "euporie.notebook.tabs.notebook:Notebook",
+    "euporie.core.bars.command:CommandBar",
+    "euporie.core.bars.search:SearchBar",
+    "euporie.core.key_binding.bindings.basic:TextEntry",
     "euporie.core.key_binding.bindings.micro:EditMode",
-    "euporie.core.widgets.pager:Pager",
+    "euporie.core.key_binding.bindings.page_navigation:PageNavigation",
+    "euporie.core.key_binding.bindings.terminal:TerminalQueries",
+    "euporie.core.widgets.display:DisplayControl",
     "euporie.core.widgets.inputs:KernelInput",
-    "euporie.core.widgets.display:Display",
+    "euporie.core.widgets.pager:Pager",
     "euporie.web.widgets.webview:WebViewControl",
 ]
 

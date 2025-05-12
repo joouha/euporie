@@ -183,7 +183,7 @@ class SideBar:
 
     register_bindings(
         {
-            "euporie.notebook.app.NotebookApp": {
+            "euporie.notebook.app:NotebookApp": {
                 "toggle-side-bar-pane": "c-b",
             }
         }

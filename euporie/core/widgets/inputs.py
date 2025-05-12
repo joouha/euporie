@@ -235,7 +235,7 @@ class KernelInput(TextArea):
 
         # Set extra key-bindings
         widgets_key_bindings = load_registered_bindings(
-            "euporie.core.widgets.inputs.KernelInput",
+            "euporie.core.widgets.inputs:KernelInput",
             config=app.config,
         )
         if key_bindings:
@@ -481,7 +481,7 @@ class KernelInput(TextArea):
 
     register_bindings(
         {
-            "euporie.core.widgets.inputs.KernelInput": {
+            "euporie.core.widgets.inputs:KernelInput": {
                 "show-contextual-help": "s-tab",
                 "history-prev": "c-A-up",
                 "history-next": "c-A-down",

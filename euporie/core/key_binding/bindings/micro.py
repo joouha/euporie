@@ -75,7 +75,7 @@ class EditMode:
 # Register default bindings for micro edit mode
 register_bindings(
     {
-        "euporie.core.key_binding.bindings.micro.EditMode": {
+        "euporie.core.key_binding.bindings.micro:EditMode": {
             "move-cursor-right": "right",
             "move-cursor-left": "left",
             "newline": "enter",
@@ -180,7 +180,7 @@ def load_micro_bindings(config: Config | None = None) -> KeyBindingsBase:
     """Load editor key-bindings in the style of the ``micro`` text editor."""
     return ConditionalKeyBindings(
         load_registered_bindings(
-            "euporie.core.key_binding.bindings.micro.EditMode", config=config
+            "euporie.core.key_binding.bindings.micro:EditMode", config=config
         ),
         micro_mode,
     )

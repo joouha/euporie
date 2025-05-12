@@ -22,9 +22,9 @@ add_setting(
     """,
     cmd_filter=(
         ~buffer_has_focus
-        & tab_type_has_focus("euporie.notebook.tabs.notebook.Notebook")
+        & tab_type_has_focus("euporie.notebook.tabs.notebook:Notebook")
     )
-    | ~tab_type_has_focus("euporie.notebook.tabs.notebook.Notebook"),
+    | ~tab_type_has_focus("euporie.notebook.tabs.notebook:Notebook"),
 )
 
 add_setting(

@@ -232,7 +232,7 @@ class BaseApp(ConfigurableApp, Application, ABC):
         # List of key-bindings groups to load
         self.bindings_to_load = [
             "euporie.core.app.app:BaseApp",
-            "euporie.core.io.TerminalInfo",
+            "euporie.core.key_binding.bindings.terminal:TerminalQueries",
         ]
 
         if enable_page_navigation_bindings:

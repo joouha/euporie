@@ -79,7 +79,7 @@ class ConsoleApp(BaseApp):
         # Initialize the application
         super().__init__(**kwargs)
 
-        self.bindings_to_load += ["euporie.console.app.ConsoleApp"]
+        self.bindings_to_load += ["euporie.console.app:ConsoleApp"]
 
         self.tabs = []
 
@@ -171,4 +171,4 @@ class ConsoleApp(BaseApp):
 
     # ################################# Key Bindings ##################################
 
-    # register_bindings({"euporie.console.app.ConsoleApp": {}})
+    # register_bindings({"euporie.console.app:ConsoleApp": {}})

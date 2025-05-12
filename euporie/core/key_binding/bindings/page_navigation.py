@@ -37,7 +37,7 @@ class PageNavigation:
     # Register default bindings for micro edit mode
     register_bindings(
         {
-            "euporie.core.key_binding.bindings.page_navigation.PageNavigation": {
+            "euporie.core.key_binding.bindings.page_navigation:PageNavigation": {
                 "scroll-page-up": "pageup",
                 "scroll-page-down": "pagedown",
             },
@@ -54,7 +54,7 @@ def load_page_navigation_bindings(config: Config | None = None) -> KeyBindingsBa
                 load_vi_page_navigation_bindings(),
                 ConditionalKeyBindings(
                     load_registered_bindings(
-                        "euporie.core.key_binding.bindings.page_navigation.PageNavigation",
+                        "euporie.core.key_binding.bindings.page_navigation:PageNavigation",
                         config=config,
                     ),
                     micro_mode,

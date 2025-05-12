@@ -248,8 +248,8 @@ class Notebook(BaseNotebook):
             width=Dimension(weight=1),
             height=Dimension(min=1, weight=2),
             key_bindings=load_registered_bindings(
-                "euporie.core.tabs.base.Tab",
-                "euporie.notebook.tabs.notebook.Notebook",
+                "euporie.core.tabs.base:Tab",
+                "euporie.notebook.tabs.notebook:Notebook",
                 config=self.app.config,
             ),
         )
@@ -602,7 +602,7 @@ class Notebook(BaseNotebook):
 
     register_bindings(
         {
-            "euporie.notebook.tabs.notebook.Notebook": {
+            "euporie.notebook.tabs.notebook:Notebook": {
                 "enter-cell-edit-mode": "enter",
                 "exit-edit-mode": "escape",
                 "run-selected-cells": ["c-enter", "c-e", "c-s-f8"],
