@@ -46,23 +46,23 @@ Custom key-binding configuration can also be passed on the command line in the f
 
 Valid component names include:
 
-* ``euporie.core.app.app:BaseApp```
-* ``euporie.console.app:ConsoleApp```
-* ``euporie.notebook.app:NotebookApp```
-* ``euporie.preview.app:PreviewApp```
-* ``euporie.core.tabs.base:Tab```
-* ``euporie.console.tabs.console:Console```
-* ``euporie.notebook.tabs.notebook:Notebook```
-* ``euporie.core.bars.command:CommandBar```
-* ``euporie.core.bars.search:SearchBar```
-* ``euporie.core.key_binding.bindings.basic:TextEntry```
-* ``euporie.core.key_binding.bindings.micro:EditMode```
-* ``euporie.core.key_binding.bindings.page_navigation:PageNavigation```
-* ``euporie.core.key_binding.bindings.terminal:TerminalQueries```
-* ``euporie.core.widgets.display:DisplayControl```
-* ``euporie.core.widgets.inputs:KernelInput```
-* ``euporie.core.widgets.pager:Pager```
-* ``euporie.web.widgets.webview:WebViewControl```
+* ``euporie.core.app.app:BaseApp``
+* ``euporie.console.app:ConsoleApp``
+* ``euporie.notebook.app:NotebookApp``
+* ``euporie.preview.app:PreviewApp``
+* ``euporie.core.tabs.base:Tab``
+* ``euporie.console.tabs.console:Console``
+* ``euporie.notebook.tabs.notebook:Notebook``
+* ``euporie.core.bars.command:CommandBar``
+* ``euporie.core.bars.search:SearchBar``
+* ``euporie.core.key_binding.bindings.basic:TextEntry``
+* ``euporie.core.key_binding.bindings.micro:EditMode``
+* ``euporie.core.key_binding.bindings.page_navigation:PageNavigation``
+* ``euporie.core.key_binding.bindings.terminal:TerminalQueries``
+* ``euporie.core.widgets.display:DisplayControl``
+* ``euporie.core.widgets.inputs:KernelInput``
+* ``euporie.core.widgets.pager:Pager``
+* ``euporie.web.widgets.webview:WebViewControl``
 
 Most command names are listed in `Default Key Bindings Reference`_.
 
