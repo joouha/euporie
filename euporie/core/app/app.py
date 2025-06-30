@@ -206,6 +206,7 @@ class BaseApp(ConfigurableApp, Application, ABC):
         self.term_graphics_iterm = False
         self.term_graphics_kitty = False
         self.term_sgr_pixel = False
+        self.term_osc52_clipboard = False
         self._term_size_px: tuple[int, int]
         # Floats at the app level
         self.leave_graphics = to_filter(leave_graphics)
@@ -387,7 +388,7 @@ class BaseApp(ConfigurableApp, Application, ABC):
                 self.output.get_colors()
                 self.output.get_pixel_size()
                 self.output.get_kitty_graphics_status()
-                self.output.get_sixel_graphics_status()
+                self.output.get_device_attributes()
                 self.output.get_iterm_graphics_status()
                 self.output.get_sgr_pixel_status()
                 self.output.get_csiu_status()

@@ -142,8 +142,8 @@ class Vt100Parser(vt100_parser.Vt100Parser):
             MoreKeys.KittyGraphicsStatusResponse: re.compile(
                 r"^\x1b_Gi=(4294967295|0);(?P<status>OK)\x1b\\"
             ),
-            MoreKeys.SixelGraphicsStatusResponse: re.compile(
-                r"^\x1b\[\?(?:\d+;)*(?P<sixel>4)(?:;\d+)*c"
+            MoreKeys.DeviceAttributesResponse: re.compile(
+                r"^\x1b\[\?(?P<attrs>[\d;]*)c"
             ),
             MoreKeys.ItermGraphicsStatusResponse: re.compile(
                 r"^\x1bP>\|(?P<term>[^\x1b]+)\x1b\\"
@@ -228,8 +228,8 @@ class Vt100_Output(PtkVt100_Output):
             + "\x1b[u\x1b[2k"
         )
 
-    def get_sixel_graphics_status(self) -> None:
-        """Query terminal for sixel graphics support."""
+    def get_device_attributes(self) -> None:
+        """Query terminal for device attributes."""
         self.write_raw(passthrough("\x1b[c"))
 
     def get_iterm_graphics_status(self) -> None:

@@ -91,16 +91,20 @@ def _set_terminal_pixel_size(event: KeyPressEvent) -> object:
 
 
 @add_cmd(hidden=True, is_global=True)
-def _set_terminal_graphics_sixel(event: KeyPressEvent) -> object:
-    """Run when the terminal receives a sixel graphics support query response."""
+def _set_terminal_device_attributes(event: KeyPressEvent) -> object:
+    """Run when the terminal receives a device attributes query response."""
     from euporie.core.app.app import BaseApp
 
     if (
         isinstance(app := event.app, BaseApp)
         and (values := get_match(event))
-        and values.get("sixel")
+        and (attrs_str := values.get("attrs"))
     ):
-        app.term_graphics_sixel = True
+        attrs = {attr for attr in attrs_str.split(";") if attr}
+        if "4" in attrs:
+            app.term_graphics_sixel = True
+        if "52" in attrs:
+            app.term_osc52_clipboard = True
     return NotImplemented
 
 
@@ -177,7 +181,7 @@ register_bindings(
             "set-terminal-color": "<colors-response>",
             "set-terminal-pixel-size": "<pixel-size-response>",
             "set-terminal-graphics-kitty": "<kitty-graphics-status-response>",
-            "set-terminal-graphics-sixel": "<sixel-graphics-status-response>",
+            "set-terminal-device-attributes": "<device-attributes-response>",
             "set-terminal-graphics-iterm": "<iterm-graphics-status-response>",
             "set-terminal-sgr-pixel": "<sgr-pixel-status-response>",
             "set-terminal-clipboard-data": "<clipboard-data-response>",
