@@ -101,16 +101,22 @@ for n in range(len(_modifiers)):
         for key, (number, suffix) in _kitty_functional_codes.items():
             mod_str = f"{mod_short}-" if mod_short else ""
             key_name = f"{mod_str}{key}"
-            mod_str = str(mod_no)
-            num_str = str(number)
+            mod_strs = [str(mod_no)]
+            num_strs = [str(number)]
             if mod_no == 1:
-                mod_str = ""
-                if number == 1:
-                    num_str = ""
-            seq = "\x1b[" + (";".join(x for x in [num_str, mod_str] if x)) + suffix
-            key_title = f"{mod_name}{key.title()}"
-            new_keys.setdefault(key_title, key_name)
-            new_ansi[seq] = key_title
+                mod_strs.append("")
+            if number == 1:
+                num_strs.append("")
+            for mod_str in mod_strs:
+                for num_str in num_strs:
+                    seq = (
+                        "\x1b["
+                        + (";".join(x for x in [num_str, mod_str] if x))
+                        + suffix
+                    )
+                    key_title = f"{mod_name}{key.title()}"
+                    new_keys.setdefault(key_title, key_name)
+                    new_ansi[seq] = key_title
 
 
 print('''"""Register additional key escape sequences."""
