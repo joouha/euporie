@@ -131,7 +131,7 @@ class MoreKeys(str, Enum):
     ColorsResponse = "<colors-response>"
     PixelSizeResponse = "<pixel-size-response>"
     KittyGraphicsStatusResponse = "<kitty-graphics-status-response>"
-    SixelGraphicsStatusResponse = "<sixel-graphics-status-response>"
+    DeviceAttributesResponse = "<device-attributes-response>"
     ItermGraphicsStatusResponse = "<iterm-graphics-status-response>"
     SgrPixelStatusResponse = "<sgr-pixel-status-response>"
     ClipboardDataResponse = "<clipboard-data-response>"
