@@ -20,6 +20,7 @@ class MoreKeys(str, Enum):
     ItermGraphicsStatusResponse = "<iterm-graphics-status-response>"
     SgrPixelStatusResponse = "<sgr-pixel-status-response>"
     ClipboardDataResponse = "<clipboard-data-response>"
+    PaletteDsrResponse = "<palette-dsr-response>"
 
     # Regular key-presses
 

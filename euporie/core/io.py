@@ -138,6 +138,7 @@ class Vt100Parser(vt100_parser.Vt100Parser):
                 # Allow BEL or ST as terminator
                 r"(?:\x1b\\|\x9c|\x07)"
             ),
+            MoreKeys.PaletteDsrResponse: re.compile(r"^\x1b\[\?997;(?P<mode>\d)n"),
             MoreKeys.PixelSizeResponse: re.compile(r"^\x1b\[4;(?P<y>\d+);(?P<x>\d+)t"),
             MoreKeys.KittyGraphicsStatusResponse: re.compile(
                 r"^\x1b_Gi=(4294967295|0);(?P<status>OK)\x1b\\"
@@ -183,6 +184,14 @@ class Vt100_Output(PtkVt100_Output):
     def disable_sgr_pixel(self) -> None:
         """Disable SGR-pixel mouse positioning."""
         self.write_raw("\x1b[?1016l")
+
+    def enable_palette_dsr(self) -> None:
+        """Enable device status reports for color palette updates."""
+        self.write_raw("\x1b[?2031h")
+
+    def disable_palette_dsr(self) -> None:
+        """Disable device status reports for color palette updates."""
+        self.write_raw("\x1b[?2031l")
 
     def enable_extended_keys(self) -> None:
         """Request extended keys."""

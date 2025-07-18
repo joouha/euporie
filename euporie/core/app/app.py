@@ -815,11 +815,6 @@ class BaseApp(ConfigurableApp, Application, ABC):
             Return a combined style to use for the application
 
         """
-        styles: list[BaseStyle] = [
-            style_from_pygments_cls(get_style_by_name(self.syntax_theme)),
-            *self.base_styles,
-        ]
-
         # Get foreground and background colors based on the configured colour scheme
         theme_colors: dict[str, dict[str, str]] = {
             "default": {},
@@ -863,7 +858,11 @@ class BaseApp(ConfigurableApp, Application, ABC):
         )
 
         # Build app style
-        styles.append(build_style(cp))
+        styles: list[BaseStyle] = [
+            style_from_pygments_cls(get_style_by_name(self.syntax_theme)),
+            *self.base_styles,
+            build_style(cp),
+        ]
 
         # Apply style transformations based on the configured color scheme
         self.style_transformation = merge_style_transformations(
@@ -890,6 +889,8 @@ class BaseApp(ConfigurableApp, Application, ABC):
     def update_style(self, query: Setting | None = None) -> None:
         """Update the application's style when the syntax theme is changed."""
         self.renderer.style = self.create_merged_style()
+        # self.invalidate()
+        # self.renderer.reset()
 
     def refresh(self) -> None:
         """Reset all tabs."""

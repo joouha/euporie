@@ -287,25 +287,33 @@ class Renderer(PtkRenderer):
     ) -> None:
         """Create a new :py:class:`Renderer` instance."""
         self.app: Application[Any] | None = None
-        super().__init__(
-            style, output, full_screen, mouse_support, cpr_not_supported_callback
-        )
         self._extended_keys_enabled = False
+        self._palette_dsr_enabled = False
         self._sgr_pixel_enabled = False
         self.extend_height = to_filter(extend_height)
         self.extend_width = to_filter(extend_width)
+        super().__init__(
+            style, output, full_screen, mouse_support, cpr_not_supported_callback
+        )
 
     def reset(self, _scroll: bool = False, leave_alternate_screen: bool = True) -> None:
         """Reset the output."""
         output = self.output
         if isinstance(output, Vt100_Output):
             # Disable extended keys before resetting the output
-            output.disable_extended_keys()
-            self._extended_keys_enabled = False
+            if self._extended_keys_enabled:
+                output.disable_extended_keys()
+                self._extended_keys_enabled = False
+
+            # Disable palette change reporting
+            if self._palette_dsr_enabled:
+                output.disable_palette_dsr()
+                self._palette_dsr_enabled = False
 
             # Disable sgr pixel mode
-            output.disable_sgr_pixel()
-            self._sgr_pixel_enabled = False
+            if self._sgr_pixel_enabled:
+                output.disable_sgr_pixel()
+                self._sgr_pixel_enabled = False
 
         super().reset(_scroll, leave_alternate_screen)
 
@@ -360,10 +368,15 @@ class Renderer(PtkRenderer):
                 output.disable_sgr_pixel()
                 self._sgr_pixel_enabled = False
 
-        # Ensable extended keys
+        # Enable extended keys
         if not self._extended_keys_enabled and isinstance(output, Vt100_Output):
             output.enable_extended_keys()
             self._extended_keys_enabled = True
+
+        # Enable theme DSR
+        if not self._palette_dsr_enabled and isinstance(output, Vt100_Output):
+            output.enable_palette_dsr()
+            self._palette_dsr_enabled = True
 
         # Create screen and write layout to it.
         size = output.get_size()

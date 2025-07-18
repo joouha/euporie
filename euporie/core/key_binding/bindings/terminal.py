@@ -54,6 +54,15 @@ def get_match(event: KeyPressEvent) -> dict[str, str] | None:
 
 
 @add_cmd(hidden=True, is_global=True)
+def _set_terminal_palette(event: KeyPressEvent) -> object:
+    from euporie.core.io import Vt100_Output
+
+    if isinstance(output := event.app.output, Vt100_Output):
+        output.get_colors()
+    return NotImplemented
+
+
+@add_cmd(hidden=True, is_global=True)
 def _set_terminal_color(event: KeyPressEvent) -> object:
     """Run when the terminal receives a terminal color query response.
 
@@ -72,6 +81,7 @@ def _set_terminal_color(event: KeyPressEvent) -> object:
         r, g, b = colors.get("r", "00"), colors.get("g", "00"), colors.get("b", "00")
         app.term_colors[_COLOR_NAMES.get(c, c)] = f"#{r[:2]}{g[:2]}{b[:2]}"
         app.update_style()
+        return None
     return NotImplemented
 
 
@@ -178,6 +188,7 @@ class TerminalQueries:
 register_bindings(
     {
         "euporie.core.key_binding.bindings.terminal:TerminalQueries": {
+            "set-terminal-palette": "<palette-dsr-response>",
             "set-terminal-color": "<colors-response>",
             "set-terminal-pixel-size": "<pixel-size-response>",
             "set-terminal-graphics-kitty": "<kitty-graphics-status-response>",

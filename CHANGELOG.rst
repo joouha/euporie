@@ -4,6 +4,15 @@ Changelog
 
 Notable changes to this project will be documented in this file.
 
+********
+Upcoming
+********
+
+Added
+=====
+
+- The default color scheme will now automatically response to color palette changes in terminals which support CSI 2031 mode
+
 ----
 
 ********************
