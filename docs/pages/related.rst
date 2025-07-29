@@ -2,12 +2,11 @@
 Related Projects
 ################
 
+This page contains a list of projects which provide similar functionality to euporie.
+
 ****************
 Notebook Editors
 ****************
-
-`Emacs IPython Notebook <http://millejoh.github.io/emacs-ipython-notebook/>`_
-   A Jupyter Notebook client and integrated REPL in Emacs.
 
 `nbterm <https://github.com/davidbrochart/nbterm>`_
    An alternative effort sponsored by QuantStack
@@ -17,6 +16,25 @@ Notebook Editors
 
 `jpterm <https://github.com/davidbrochart/jpterm>`_
    A Jupyter HTTP client with a TUI using Textual (currently a work in progress)
+
+`erys <https://github.com/natibek/erys>`_
+   Terminal Interface for Jupyter Notebooks.
+
+`netbook <https://github.com/lyovushka/netbook>`_
+   A jupyter client for your terminal
+
+*******************
+Editor Integrations
+*******************
+
+`Emacs IPython Notebook <http://millejoh.github.io/emacs-ipython-notebook/>`_
+   A Jupyter Notebook client and integrated REPL in Emacs.
+
+`magma-nvim <https://github.com/dccsillag/magma-nvim>`_
+   Interact with Jupyter from NeoVim.
+
+`DataNvim <https://github.com/NoOPeEKS/DataNvim>`_
+   A fully-featured batteries-included Neovim distribution for the world of Data Science. Prepared to run code and interact with Jupyter Notebooks without ever leaving your terminal.
 
 ********
 Consoles
@@ -70,3 +88,9 @@ Notebook Viewers
 
 `nbcat <https://gist.github.com/rkern/7bf123b94079821d2764a498de40a580>`_
    A script to page Jupyter Notebooks in the terminal
+
+`nbcat <https://github.com/zhifanzhu/nbcat>`_
+   nbcat (notebook cat) is a command line tool for viewing notebook(*.ipynb) files in terminal.
+
+`nbcat <https://github.com/akopdev/nbcat>`_
+   Preview Jupyter notebooks directly in your terminal. Think of it as cat, but for .ipynb files.
