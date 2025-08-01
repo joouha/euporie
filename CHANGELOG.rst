@@ -13,6 +13,11 @@ Added
 
 - The default color scheme will now automatically response to color palette changes in terminals which support CSI 2031 mode
 
+Fixed
+=====
+
+- Rename ``"config"`` to ``"settings"`` in default LSP configurations
+
 ----
 
 ********************

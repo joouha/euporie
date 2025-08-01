@@ -15,10 +15,10 @@ for lsp in lsps.values():
     del lsp["command"]
     if "args" in lsp:
         del lsp["args"]
-    # Rename settings to config
-    if "settings" in lsp:
-        lsp["config"] = lsp["settings"]
-        del lsp["settings"]
+    # Rename config to settings
+    if "config" in lsp:
+        lsp["settings"] = lsp["config"]
+        del lsp["config"]
 
 # Assign languages to LSPs
 for lang in c.get("language", []):

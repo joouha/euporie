@@ -1104,7 +1104,7 @@ KNOWN_LSP_SERVERS: dict[str, dict[str, Any]] = {
     },
     "earthlyls": {"command": ["earthlyls"], "languages": {"earthfile"}},
     "elixir-ls": {
-        "config": {"elixirLS": {"dialyzerEnabled": False}},
+        "settings": {"elixirLS": {"dialyzerEnabled": False}},
         "command": ["elixir-ls"],
         "languages": {"heex", "elixir"},
     },
@@ -1119,7 +1119,7 @@ KNOWN_LSP_SERVERS: dict[str, dict[str, Any]] = {
         "languages": {"fortran"},
     },
     "fsharp-ls": {
-        "config": {"AutomaticWorkspaceInit": True},
+        "settings": {"AutomaticWorkspaceInit": True},
         "command": ["fsautocomplete"],
         "languages": {"fsharp"},
     },
@@ -1169,7 +1169,7 @@ KNOWN_LSP_SERVERS: dict[str, dict[str, Any]] = {
     "markdown-oxide": {"command": ["markdown-oxide"], "languages": {"markdown"}},
     "marksman": {"command": ["marksman", "server"], "languages": {"markdown"}},
     "metals": {
-        "config": {
+        "settings": {
             "isHttpEnabled": True,
             "metals": {
                 "inlayHints": {
@@ -1213,8 +1213,8 @@ KNOWN_LSP_SERVERS: dict[str, dict[str, Any]] = {
         "languages": {"purescript"},
     },
     "pylsp": {"command": ["pylsp"], "languages": {"snakemake", "python"}},
-    "pyright": {"config": {}, "command": ["pyright-langserver", "--stdio"]},
-    "basedpyright": {"config": {}, "command": ["basedpyright-langserver", "--stdio"]},
+    "pyright": {"settings": {}, "command": ["pyright-langserver", "--stdio"]},
+    "basedpyright": {"settings": {}, "command": ["basedpyright-langserver", "--stdio"]},
     "pylyzer": {"command": ["pylyzer", "--server"]},
     "qmlls": {"command": ["qmlls"], "languages": {"qml"}},
     "quint-language-server": {
@@ -1278,22 +1278,22 @@ KNOWN_LSP_SERVERS: dict[str, dict[str, Any]] = {
     "vhdl_ls": {"command": ["vhdl_ls"], "languages": {"vhdl"}},
     "vlang-language-server": {"command": ["v-analyzer"], "languages": {"v"}},
     "vscode-css-language-server": {
-        "config": {"provideFormatter": True, "css": {"validate": {"enable": True}}},
+        "settings": {"provideFormatter": True, "css": {"validate": {"enable": True}}},
         "command": ["vscode-css-language-server", "--stdio"],
         "languages": {"scss", "css"},
     },
     "vscode-html-language-server": {
-        "config": {"provideFormatter": True},
+        "settings": {"provideFormatter": True},
         "command": ["vscode-html-language-server", "--stdio"],
         "languages": {"html"},
     },
     "vscode-json-language-server": {
-        "config": {"provideFormatter": True, "json": {"validate": {"enable": True}}},
+        "settings": {"provideFormatter": True, "json": {"validate": {"enable": True}}},
         "command": ["vscode-json-language-server", "--stdio"],
         "languages": {"jsonc", "json"},
     },
     "vuels": {
-        "config": {"typescript": {"tsdk": "node_modules/typescript/lib/"}},
+        "settings": {"typescript": {"tsdk": "node_modules/typescript/lib/"}},
         "command": ["vue-language-server", "--stdio"],
         "languages": {"vue"},
     },
@@ -1323,7 +1323,7 @@ KNOWN_LSP_SERVERS: dict[str, dict[str, Any]] = {
         "languages": {"yaml"},
     },
     "lua-language-server": {
-        "config": {
+        "settings": {
             "Lua": {
                 "hint": {
                     "enable": True,
@@ -1339,7 +1339,7 @@ KNOWN_LSP_SERVERS: dict[str, dict[str, Any]] = {
         "languages": {"lua"},
     },
     "gopls": {
-        "config": {
+        "settings": {
             "hints": {
                 "assignVariableTypes": True,
                 "compositeLiteralFields": True,
@@ -1353,7 +1353,7 @@ KNOWN_LSP_SERVERS: dict[str, dict[str, Any]] = {
         "languages": {"go", "gowork", "gotmpl", "gomod"},
     },
     "golangci-lint-lsp": {
-        "config": {
+        "settings": {
             "command": [
                 "golangci-lint",
                 "run",
@@ -1366,7 +1366,7 @@ KNOWN_LSP_SERVERS: dict[str, dict[str, Any]] = {
         "languages": {"go"},
     },
     "rust-analyzer": {
-        "config": {
+        "settings": {
             "inlayHints": {
                 "bindingModeHints": {"enable": False},
                 "closingBraceHints": {"minLines": 10},
@@ -1380,7 +1380,7 @@ KNOWN_LSP_SERVERS: dict[str, dict[str, Any]] = {
         "languages": {"rust"},
     },
     "typescript-language-server": {
-        "config": {
+        "settings": {
             "hostInfo": "helix",
             "typescript": {
                 "inlayHints": {
@@ -1409,7 +1409,7 @@ KNOWN_LSP_SERVERS: dict[str, dict[str, Any]] = {
         "languages": {"jsx", "typescript", "javascript", "tsx"},
     },
     "svelteserver": {
-        "config": {
+        "settings": {
             "configuration": {
                 "typescript": {
                     "inlayHints": {
@@ -1437,7 +1437,7 @@ KNOWN_LSP_SERVERS: dict[str, dict[str, Any]] = {
         "languages": {"svelte"},
     },
     "vscode-eslint-language-server": {
-        "config": {
+        "settings": {
             "validate": "on",
             "experimental": {"useFlatConfig": False},
             "rulesCustomizations": [],
