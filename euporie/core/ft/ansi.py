@@ -38,6 +38,13 @@ class ANSI(PTANSI):
         value = re.sub(r".*\x1b\[2K", "", value, count=0)
         # Remove hide & show cursor commands
         value = re.sub(r"\x1b\[\?25[hl]", "", value, count=0)
+        # Collapse cursor up movements
+        while (match := re.search(r"\x1b\[(?P<count>\d+)A", value)) is not None:
+            lines = int(match["count"])
+            before = value[: match.start()]
+            after = value[match.end() :]
+            before = "".join(before.splitlines(keepends=True)[:-lines])
+            value = before + after
 
         super().__init__(value)
 
@@ -153,3 +160,4 @@ class ANSI(PTANSI):
                     continue
 
             formatted_text.append((style, sequence))
+            # log.debug(repr(sequence))
