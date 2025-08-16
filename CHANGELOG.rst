@@ -17,6 +17,8 @@ Fixed
 =====
 
 - Prevent line jumping at startup due to typo in kitty graphics terminal query
+- Improve parsing of ANSI escape codes in cell outputs
+- Add additional CSI-u key codes (fixes arrow keys in Contour terminal)
 - Rename ``"config"`` to ``"settings"`` in default LSP configurations
 
 ----
