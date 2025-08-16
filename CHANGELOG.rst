@@ -16,6 +16,7 @@ Added
 Fixed
 =====
 
+- Prevent line jumping at startup due to typo in kitty graphics terminal query
 - Rename ``"config"`` to ``"settings"`` in default LSP configurations
 
 ----
