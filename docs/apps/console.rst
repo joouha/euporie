@@ -28,7 +28,7 @@ If two blank lines are entered at the end of the input, the input will be execut
 
 A new-line can be inserted without checking the input for completeness using :kbd:`Shift+Enter`.
 
-The input can be executed immediately using :kbd:`Ctrl+Enter` (providing your terminal :ref:`suports this key-binding <pages/keybindings:running cells>`; you can also use :kbd:`Ctrl+e`).
+The input can be executed immediately using :kbd:`Ctrl+Enter` (providing your terminal :ref:`supports this key-binding <pages/keybindings:running cells>`; you can also use :kbd:`Ctrl+e`).
 
 Save console session as a notebook
 ==================================

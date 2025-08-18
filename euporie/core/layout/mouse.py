@@ -74,7 +74,7 @@ class DisableMouseOnScroll(Container):
     ) -> None:
         """Render the container to a `Screen` instance.
 
-        Wrap mouse handelrs, hooking unhandled scroll up events so the terminal can be
+        Wrap mouse handlers, hooking unhandled scroll up events so the terminal can be
         scrolled if the scroll event is not handled.
 
         Args:

@@ -2,7 +2,7 @@
 Euporie Notebook
 ################
 
-In euporie's notebooks editor, you can interactively edit and run Jupyter noteboks from the comfort of your terminal.
+In euporie's notebooks editor, you can interactively edit and run Jupyter notebooks from the comfort of your terminal.
 
 Euporie supports most of the features of Jupyter Notebooks, so users of Jupyter should find it intuitive to use.
 
@@ -41,7 +41,7 @@ To exit :term:`Edit Mode`, you can press the :kbd:`Esc` key when you are done ed
 Running a Cell
 ==============
 
-To run the currently selected cell, you can press :kbd:`Ctrl+Enter` (providing your terminal :ref:`suports this key-binding <pages/keybindings:running cells>`; you can also use :kbd:`Ctrl+e`).
+To run the currently selected cell, you can press :kbd:`Ctrl+Enter` (providing your terminal :ref:`supports this key-binding <pages/keybindings:running cells>`; you can also use :kbd:`Ctrl+e`).
 
 Alternatively, you can select :menuselection:`Run --> Run selected cells` in the menu.
 
