@@ -3,7 +3,7 @@ name: Create Release
 on:
   push:
     tags:
-      - 'v*'
+      - "v*"
 
 jobs:
   release:
@@ -13,20 +13,19 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.x'
-          
+          python-version: "3.x"
+
       - name: Extract changelog for tag
         id: extract-changelog
         run: ./scripts/extract_changelog_github.py "${GITHUB_REF#refs/tags/}"
-          
+
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
           body: ${{ steps.extract-changelog.outputs.changelog }}
           draft: false
           prerelease: false
-
