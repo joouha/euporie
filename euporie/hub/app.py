@@ -78,12 +78,10 @@ class HubApp(ConfigurableApp):
     name = "hub"
     _config_defaults: ClassVar[dict[str, Any]] = {
         "log_level_stdout": "info",
-        "log_config": """
-{
-    "handlers": { "stdout": {"share_stream": false} },
-    "loggers": { "asyncssh": { "handlers":["stdout"], "level": "DEBUG" } }
-}
-        """,
+        "log_config": {
+            "handlers": {"stdout": {"share_stream": False}},
+            "loggers": {"asyncssh": {"handlers": ["stdout"], "level": "DEBUG"}},
+        },
     }
 
     @classmethod

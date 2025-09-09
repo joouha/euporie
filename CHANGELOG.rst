@@ -5,6 +5,17 @@ Changelog
 Notable changes to this project will be documented in this file.
 
 ********************
+v2.8.13 (2025-09-09)
+********************
+
+Fixed
+=====
+
+- Fix crash caused by incorrect type of default logging configuration in hub app
+
+----
+
+********************
 v2.8.12 (2025-08-18)
 ********************
 
