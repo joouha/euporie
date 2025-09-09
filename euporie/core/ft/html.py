@@ -2778,6 +2778,7 @@ _BROWSER_CSS: CssSelectors = {
             "_pt_class": "markdown,code",
         },
         (
+            (CssSelector(item="::latex"),),
             (
                 CssSelector(item="::root", attr="[_initial_format=markdown]"),
                 CssSelector(item=".math"),
@@ -3605,6 +3606,39 @@ class HTML:
                 fs, url = url_to_fs(str(url))
                 self._url_fs_map[url] = fs
                 self._url_cbs[url] = partial(_process_img, child)
+
+            # Convert non-HTML MathJax tags in texts to <::latex> special tags
+            elif child.name == "::text":
+                text = child._text
+                start = end = -1
+                attrs = []
+                if (start := text.find("\\(")) > -1:
+                    end = text.rfind("\\)")
+                elif (start := text.find("\\[")) > -1:
+                    end = text.rfind("\\]")
+                    attrs.append(("style", "display: block"))
+                if start > -1 and end > -1:
+                    parent = child.parent
+                    index = parent.contents.index(child)
+                    nodes = [
+                        Node(dom=self, name="::text", parent=parent, text=text[:start]),
+                        Node(dom=self, name="::latex", parent=parent, attrs=attrs),
+                        Node(
+                            dom=self,
+                            name="::text",
+                            parent=parent,
+                            text=text[end + 2 :],
+                        ),
+                    ]
+                    nodes[1].contents = [
+                        Node(
+                            dom=self,
+                            name="::text",
+                            parent=nodes[1],
+                            text=text[start + 2 : end],
+                        )
+                    ]
+                    parent.contents[index : index + 1] = nodes
 
         self._dom_processed = True
 
