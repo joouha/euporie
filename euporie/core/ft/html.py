@@ -3732,7 +3732,7 @@ class HTML:
         self.render_count += 1
         self.formatted_text = ft
 
-        # Load assets after initial render and requuest a re-render when loaded
+        # Load assets after initial render and request a re-render when loaded
         if self.defer_assets and not self._assets_loaded:
             loop = asyncio.get_event_loop()
             task = loop.create_task(self.load_assets())
@@ -4414,7 +4414,7 @@ class HTML:
     ) -> StyleAndTextTuples:
         """Display images rendered as ANSI art."""
         theme = element.theme
-        # HTMLParser clobber the case of element attributes
+        # HTMLParser clobbers the case of element attributes
         element.attrs["xmlns"] = "http://www.w3.org/2000/svg"
         element.attrs["xmlns:xlink"] = "http://www.w3.org/1999/xlink"
         # We fix the SVG viewBox here
