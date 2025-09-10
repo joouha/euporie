@@ -1393,7 +1393,7 @@ class Theme(Mapping):
 
     @property
     def height(self) -> int | None:
-        """The perscribed height."""
+        """The prescribed height."""
         # TODO - process min-/max-height
         if value := self.get("height"):
             theme_height = css_dimension(
