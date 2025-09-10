@@ -23,6 +23,9 @@ Notebook Editors
 `netbook <https://github.com/lyovushka/netbook>`_
    A jupyter client for your terminal
 
+`jupyter-tui <https://github.com/mseok/jupyter-tui>`_
+   A terminal user interface for Jupyter notebooks with vim-style keybindings and Textual-based UI
+
 *******************
 Editor Integrations
 *******************
@@ -49,6 +52,9 @@ Notebook Viewers
 
 `nbpreview <https://github.com/paw-lu/nbpreview>`_
    An excellent terminal viewer for Jupyter notebooks, with image and LaTeX support
+
+`jupyterm <https://github.com/sidneymau/jupyterm>`_
+   TUI Jupyter notebook viewer that uses prompt_toolkit for its terminal interface
 
 `ipynbviewer <https://github.com/PaulEcoffet/ipynbviewer>`_
    Outputs Jupyter Notebook in the terminal in a human readable format (supports images)
