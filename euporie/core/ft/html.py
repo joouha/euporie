@@ -21,6 +21,7 @@ from prompt_toolkit.data_structures import Size
 from prompt_toolkit.filters.base import Condition
 from prompt_toolkit.filters.utils import _always as always
 from prompt_toolkit.filters.utils import _never as never
+from prompt_toolkit.filters.utils import to_filter
 from prompt_toolkit.formatted_text.utils import split_lines
 from prompt_toolkit.layout.containers import WindowAlign
 from prompt_toolkit.layout.dimension import Dimension
@@ -108,7 +109,7 @@ if TYPE_CHECKING:
     from typing import Any, Callable
 
     from fsspec.spec import AbstractFileSystem
-    from prompt_toolkit.filters.base import Filter
+    from prompt_toolkit.filters.base import Filter, FilterOrBool
     from prompt_toolkit.formatted_text.base import StyleAndTextTuples
     from prompt_toolkit.key_binding.key_bindings import NotImplementedOrNone
     from prompt_toolkit.mouse_events import MouseEvent
@@ -189,6 +190,23 @@ _GRID_TEMPLATE_RE = re.compile(
 
 _GRID_TEMPLATE_REPEAT_RE = re.compile(
     r"repeat\(\s*(?P<count>\d+)\s*,\s*(?P<value>[^)]+?)\s*\)"
+)
+
+_MATHJAX_TAG_RE = re.compile(
+    r"""
+        ^(?P<beginning>.*?)
+        (?P<middle>
+            \\\[(?P<display_bracket>.*?)\\\]
+            |
+            \\\((?P<inline_bracket>.*?)\\\)
+            |
+            \$\$(?P<display_dollar>.*?)\$\$
+            |
+            \$(?P<inline_dollar>.*?)(?: \$(?=\$\$) | (?<!\$)\$(?!\$) )
+        )
+        (?P<end>.*)$
+    """,
+    re.MULTILINE | re.VERBOSE,
 )
 
 # List of elements which might not have a close tag
@@ -3474,6 +3492,7 @@ class HTML:
         fill: bool = True,
         css: CssSelectors | None = None,
         browser_css: CssSelectors | None = None,
+        mathjax: FilterOrBool = True,
         mouse_handler: Callable[[Node, MouseEvent], NotImplementedOrNone] | None = None,
         paste_fixed: bool = True,
         defer_assets: bool = False,
@@ -3495,6 +3514,7 @@ class HTML:
             fill: Whether remaining space in block elements should be filled
             css: Base CSS to apply when rendering the HTML
             browser_css: The browser CSS to use
+            mathjax: Whether to search for LaTeX in MathJax tags
             mouse_handler: A mouse handler function to use when links are clicked
             paste_fixed: Whether fixed elements should be pasted over the output
             defer_assets: Whether to render the page before remote assets are loaded
@@ -3509,6 +3529,7 @@ class HTML:
 
         self.browser_css = browser_css or _BROWSER_CSS
         self.css: CssSelectors = css or {}
+        self.mathjax = to_filter(mathjax)
         self.defer_assets = defer_assets
 
         self.render_count = 0
@@ -3553,6 +3574,7 @@ class HTML:
 
         Do not touch element's themes!
         """
+        mathjax = self.mathjax()
 
         def _process_css(data: bytes) -> None:
             try:
@@ -3608,36 +3630,51 @@ class HTML:
                 self._url_cbs[url] = partial(_process_img, child)
 
             # Convert non-HTML MathJax tags in texts to <::latex> special tags
-            elif child.name == "::text":
+            elif mathjax and child.name == "::text":
                 text = child._text
-                start = end = -1
-                attrs = []
-                if (start := text.find("\\(")) > -1:
-                    end = text.rfind("\\)")
-                elif (start := text.find("\\[")) > -1:
-                    end = text.rfind("\\]")
-                    attrs.append(("style", "display: block"))
-                if start > -1 and end > -1:
-                    parent = child.parent
-                    index = parent.contents.index(child)
-                    nodes = [
-                        Node(dom=self, name="::text", parent=parent, text=text[:start]),
-                        Node(dom=self, name="::latex", parent=parent, attrs=attrs),
-                        Node(
-                            dom=self,
-                            name="::text",
-                            parent=parent,
-                            text=text[end + 2 :],
-                        ),
-                    ]
-                    nodes[1].contents = [
-                        Node(
-                            dom=self,
-                            name="::text",
-                            parent=nodes[1],
-                            text=text[start + 2 : end],
+                nodes = []
+                while text:
+                    # Split out MathJax parts
+                    if (match := re.match(_MATHJAX_TAG_RE, text)) is not None:
+                        groups = match.groupdict()
+                        before = groups["beginning"]
+                        latex = groups["display_bracket"] or groups["display_dollar"]
+                        if latex:
+                            attrs = [("style", "display: block")]
+                        else:
+                            latex = groups["inline_bracket"] or groups["inline_dollar"]
+                            attrs = []
+                        text = groups["end"]
+                    else:
+                        break
+                    # Add the text before the MathJax tag
+                    if before:
+                        nodes.append(
+                            Node(
+                                dom=self,
+                                name="::text",
+                                parent=child.parent,
+                                text=before,
+                            )
                         )
-                    ]
+                    # Add the LaTeX node
+                    if latex:
+                        latex_node = Node(
+                            dom=self, name="::latex", parent=child.parent, attrs=attrs
+                        )
+                        latex_node.contents = [
+                            Node(dom=self, name="::text", parent=latex_node, text=latex)
+                        ]
+                        nodes.append(latex_node)
+                if nodes:
+                    parent = child.parent
+                    # Add a text node for any remaining text
+                    if text:
+                        nodes.append(
+                            Node(dom=self, name="::text", parent=parent, text=text)
+                        )
+                    # Replace the original text node with the new nodes
+                    index = parent.contents.index(child)
                     parent.contents[index : index + 1] = nodes
 
         self._dom_processed = True

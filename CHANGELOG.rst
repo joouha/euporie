@@ -5,6 +5,18 @@ Changelog
 Notable changes to this project will be documented in this file.
 
 ********************
+v2.8.14 (2025-09-10)
+********************
+
+Added
+=====
+
+- Recognise LaTeX contained within MathJax tags (``\[``, ``\(``) in HTML
+
+----
+
+
+********************
 v2.8.13 (2025-09-09)
 ********************
 
