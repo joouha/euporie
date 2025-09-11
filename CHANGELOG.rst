@@ -13,6 +13,11 @@ Added
 
 - Recognise LaTeX contained within MathJax tags (``\[``, ``\(``) in HTML
 
+Fixed
+=====
+
+- Link horizontal scrolling of cell outputs
+
 ----
 
 

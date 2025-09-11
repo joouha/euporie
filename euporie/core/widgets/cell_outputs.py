@@ -72,7 +72,7 @@ class CellOutputElement(metaclass=ABCMeta):
     def scroll_left(self) -> None:
         """Scroll the output left."""
 
-    def scroll_right(self) -> None:
+    def scroll_right(self, max: int | None = None) -> None:
         """Scroll the output right."""
 
     @abstractmethod
@@ -179,9 +179,9 @@ class CellOutputDataElement(CellOutputElement):
         """Scroll the output left."""
         self.container.window._scroll_left()
 
-    def scroll_right(self) -> None:
+    def scroll_right(self, max: int | None = None) -> None:
         """Scroll the output right."""
-        self.container.window._scroll_right()
+        self.container.window._scroll_right(max)
 
     def __pt_container__(self) -> AnyContainer:
         """Return the display container."""
@@ -413,9 +413,9 @@ class CellOutput:
         """Scroll the currently visible output left."""
         self.element.scroll_left()
 
-    def scroll_right(self) -> None:
+    def scroll_right(self, max: int | None = None) -> None:
         """Scroll the currently visible output right."""
-        self.element.scroll_right()
+        self.element.scroll_right(max)
 
 
 class CellOutputArea:
@@ -509,8 +509,12 @@ class CellOutputArea:
 
     def scroll_right(self) -> None:
         """Scroll the outputs right."""
+        max_width = (
+            max(cell_output.element.width or 0 for cell_output in self.rendered_outputs)
+            or None
+        )
         for cell_output in self.rendered_outputs:
-            cell_output.scroll_right()
+            cell_output.scroll_right(max_width)
 
     def __pt_container__(self) -> AnyContainer:
         """Return the cell output area container (an :class:`HSplit`)."""

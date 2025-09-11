@@ -433,12 +433,12 @@ class DisplayWindow(Window):
 
         return NotImplemented
 
-    def _scroll_right(self) -> NotImplementedOrNone:
+    def _scroll_right(self, max: int | None = None) -> NotImplementedOrNone:
         """Scroll window right."""
         info = self.render_info
         if info is None:
             return NotImplemented
-        content_width = self.content.content_width
+        content_width = max or self.content.content_width
         if self.horizontal_scroll < content_width - info.window_width:
             if info.cursor_position.y <= info.configured_scroll_offsets.right:
                 self.content.move_cursor_right()
