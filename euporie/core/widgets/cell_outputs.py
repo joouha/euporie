@@ -64,6 +64,11 @@ class CellOutputElement(metaclass=ABCMeta):
 
         """
 
+    @property
+    def width(self) -> int | None:
+        """Return the current width of the output's content."""
+        return None
+
     def scroll_left(self) -> None:
         """Scroll the output left."""
 
@@ -164,6 +169,11 @@ class CellOutputDataElement(CellOutputElement):
             self._datum.py,
         )
         self.container.datum = self._datum
+
+    @property
+    def width(self) -> int:
+        """Return the current width of the output's content."""
+        return self.container.window.content.max_line_width
 
     def scroll_left(self) -> None:
         """Scroll the output left."""

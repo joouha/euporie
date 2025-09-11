@@ -172,6 +172,13 @@ class DisplayControl(UIControl):
             lines.extend([[]] * max(0, height - len(lines)))
         return lines
 
+    @property
+    def max_line_width(self) -> int:
+        """Return the current maximum line width."""
+        return self._max_line_width_cache[
+            self.datum, self.width, self.height, self.wrap_lines()
+        ]
+
     def get_max_line_width(
         self,
         datum: Datum,
