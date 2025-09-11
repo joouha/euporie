@@ -137,10 +137,25 @@ class Datum(Generic[T], metaclass=_MetaDatum):
         self.align = align
         self._cell_size: tuple[int, float] | None = None
         self._conversions: dict[
-            tuple[str, int | None, int | None, str | None, str | None, bool], T | None
+            tuple[
+                str,
+                int | None,
+                int | None,
+                str | None,
+                str | None,
+                tuple[tuple[str, Any], ...],
+            ],
+            T | None,
         ] = {}
         self._queue: dict[
-            tuple[str, int | None, int | None, str | None, str | None, bool],
+            tuple[
+                str,
+                int | None,
+                int | None,
+                str | None,
+                str | None,
+                tuple[tuple[str, Any], ...],
+            ],
             asyncio.Event,
         ] = {}
         self._finalizer: finalize = finalize(self, self._cleanup_datum_sizes, self.hash)
@@ -228,8 +243,8 @@ class Datum(Generic[T], metaclass=_MetaDatum):
         rows: int | None = None,
         fg: str | None = None,
         bg: str | None = None,
-        extend: bool = True,
         bbox: DiInt | None = None,
+        **kwargs: Any,
     ) -> Any:
         """Perform conversion asynchronously, caching the result."""
         if to == self.format:
@@ -241,7 +256,7 @@ class Datum(Generic[T], metaclass=_MetaDatum):
         if not bg and hasattr(app := get_app(), "color_palette"):
             bg = self.bg or app.color_palette.bg.base_hex
 
-        if (key_conv := (to, cols, rows, fg, bg, extend)) in self._queue:
+        if (key_conv := (to, cols, rows, fg, bg, tuple(kwargs.items()))) in self._queue:
             await self._queue[key_conv].wait()
         if key_conv in self._conversions:
             return self._conversions[key_conv]
@@ -262,7 +277,7 @@ class Datum(Generic[T], metaclass=_MetaDatum):
             output = None
             for route in routes:
                 for stage_a, stage_b in zip(route, route[1:]):
-                    key_stage = (stage_b, cols, rows, fg, bg, extend)
+                    key_stage = (stage_b, cols, rows, fg, bg, tuple(kwargs.items()))
                     if key_stage in self._conversions:
                         output = self._conversions[key_stage]
                     else:
@@ -277,7 +292,7 @@ class Datum(Generic[T], metaclass=_MetaDatum):
                         ):
                             try:
                                 output = await converter.func(
-                                    datum, cols, rows, fg, bg, extend
+                                    datum, cols, rows, fg, bg, **kwargs
                                 )
                                 self._conversions[key_stage] = output
                             except Exception:
@@ -341,10 +356,11 @@ class Datum(Generic[T], metaclass=_MetaDatum):
         rows: int | None = None,
         fg: str | None = None,
         bg: str | None = None,
-        extend: bool = True,
+        bbox: DiInt | None = None,
+        **kwargs: Any,
     ) -> Any:
         """Convert between formats."""
-        return self._to_sync(self.convert_async(to, cols, rows, fg, bg, extend))
+        return self._to_sync(self.convert_async(to, cols, rows, fg, bg, bbox, **kwargs))
 
     async def pixel_size_async(self) -> tuple[int | None, int | None]:
         """Get the dimensions of displayable data in pixels.

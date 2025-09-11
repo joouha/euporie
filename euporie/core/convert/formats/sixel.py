@@ -46,7 +46,7 @@ async def png_to_sixel_img2sixel(
     rows: int | None = None,
     fg: str | None = None,
     bg: str | None = None,
-    extend: bool = True,
+    **kwargs: Any,
 ) -> str:
     """Convert PNG data to sixels :command:`img2sixel`."""
     cmd: list[Any] = ["img2sixel", "-I"]
@@ -76,7 +76,7 @@ async def pil_to_sixel_py_timg(
     rows: int | None = None,
     fg: str | None = None,
     bg: str | None = None,
-    extend: bool = True,
+    **kwargs: Any,
 ) -> str:
     """Convert a pillow image to sixels :py:mod:`timg`."""
     import timg
@@ -95,7 +95,7 @@ async def pil_to_sixel_py_teimpy(
     rows: int | None = None,
     fg: str | None = None,
     bg: str | None = None,
-    extend: bool = True,
+    **kwargs: Any,
 ) -> str:
     """Convert a pillow image to sixels :py:mod:`teimpy`."""
     import numpy as np

@@ -9,6 +9,8 @@ from euporie.core.convert.registry import register
 from euporie.core.filters import have_modules
 
 if TYPE_CHECKING:
+    from typing import Any
+
     from euporie.core.convert.datum import Datum
 
 log = logging.getLogger(__name__)
@@ -27,7 +29,7 @@ async def html_to_markdown_py_html2text(
     rows: int | None = None,
     fg: str | None = None,
     bg: str | None = None,
-    extend: bool = True,
+    **kwargs: Any,
 ) -> str:
     """Convert HTML to markdown tables using :py:mod:`html2text`."""
     import re
@@ -72,7 +74,7 @@ async def html_to_markdown_py_mtable(
     rows: int | None = None,
     fg: str | None = None,
     bg: str | None = None,
-    extend: bool = True,
+    **kwargs: Any,
 ) -> str:
     """Convert HTML tables to markdown tables using :py:mod:`mtable`."""
     from mtable import MarkupTable

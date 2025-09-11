@@ -8,6 +8,8 @@ from typing import TYPE_CHECKING
 from euporie.core.convert.registry import register
 
 if TYPE_CHECKING:
+    from typing import Any
+
     from euporie.core.convert.datum import Datum
 
 
@@ -21,7 +23,7 @@ async def bytes_to_base64_py(
     rows: int | None = None,
     fg: str | None = None,
     bg: str | None = None,
-    extend: bool = True,
+    **kwargs: Any,
 ) -> str:
     """Convert bytes to base64 encoded data."""
     data = datum.data

@@ -11,6 +11,8 @@ from euporie.core.convert.registry import register
 from euporie.core.lexers import detect_lexer
 
 if TYPE_CHECKING:
+    from typing import Any
+
     from markdown_it import MarkdownIt
 
     from euporie.core.convert.datum import Datum
@@ -72,7 +74,7 @@ async def markdown_to_html_markdown_it(
     rows: int | None = None,
     fg: str | None = None,
     bg: str | None = None,
-    extend: bool = True,
+    **kwargs: Any,
 ) -> str:
     """Convert markdown to HTML using :py:mod:`markdownit_py`."""
     parser = markdown_parser()

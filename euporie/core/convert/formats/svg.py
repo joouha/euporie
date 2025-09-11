@@ -8,6 +8,8 @@ from euporie.core.convert.registry import register
 from euporie.core.filters import have_modules
 
 if TYPE_CHECKING:
+    from typing import Any
+
     from euporie.core.convert.datum import Datum
 
 
@@ -18,7 +20,7 @@ async def latex_to_svg_py_ziamath(
     rows: int | None = None,
     fg: str | None = None,
     bg: str | None = None,
-    extend: bool = True,
+    **kwargs: Any,
 ) -> str:
     """Convert LaTeX to SVG using :py:mod:`ziamath`."""
     import ziamath as zm

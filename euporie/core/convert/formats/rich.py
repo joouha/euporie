@@ -8,6 +8,8 @@ from euporie.core.convert.registry import register
 from euporie.core.filters import have_modules
 
 if TYPE_CHECKING:
+    from typing import Any
+
     from rich.markdown import Markdown
 
     from euporie.core.convert.datum import Datum
@@ -24,7 +26,7 @@ async def markdown_to_rich_py(
     rows: int | None = None,
     fg: str | None = None,
     bg: str | None = None,
-    extend: bool = True,
+    **kwargs: Any,
 ) -> Markdown:
     """Convert base64 encoded data to bytes."""
     from rich.markdown import Markdown

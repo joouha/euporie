@@ -9,6 +9,8 @@ from euporie.core.convert.registry import register
 from euporie.core.filters import have_modules
 
 if TYPE_CHECKING:
+    from typing import Any
+
     from PIL.Image import Image as PilImage
 
     from euporie.core.convert.datum import Datum
@@ -44,7 +46,7 @@ async def png_to_pil_py(
     rows: int | None = None,
     fg: str | None = None,
     bg: str | None = None,
-    extend: bool = True,
+    **kwargs: Any,
 ) -> PilImage:
     """Convert PNG to a pillow image using :py:mod:`PIL`."""
     import io

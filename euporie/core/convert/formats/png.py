@@ -11,6 +11,8 @@ from euporie.core.convert.registry import register
 from euporie.core.filters import command_exists, have_modules
 
 if TYPE_CHECKING:
+    from typing import Any
+
     from euporie.core.convert.datum import Datum
 
 register(
@@ -30,8 +32,8 @@ async def latex_to_png_dvipng(
     rows: int | None = None,
     fg: str | None = None,
     bg: str | None = None,
-    extend: bool = True,
     timeout: int = 2,
+    **kwargs: Any,
 ) -> bytes | None:
     """Render LaTeX as a png image using :command:`dvipng`.
 
@@ -113,7 +115,7 @@ async def latex_to_png_py_mpl(
     rows: int | None = None,
     fg: str | None = None,
     bg: str | None = None,
-    extend: bool = True,
+    **kwargs: Any,
 ) -> bytes:
     """Render LaTeX as a png image using :py:module:`matplotlib`.
 
@@ -156,7 +158,7 @@ async def pil_to_png_py_pil(
     rows: int | None = None,
     fg: str | None = None,
     bg: str | None = None,
-    extend: bool = True,
+    **kwargs: Any,
 ) -> bytes:
     """Convert a pillow image to sixels :py:mod:`teimpy`."""
     import io
@@ -177,7 +179,7 @@ async def svg_to_png_py_cairosvg(
     rows: int | None = None,
     fg: str | None = None,
     bg: str | None = None,
-    extend: bool = True,
+    **kwargs: Any,
 ) -> str:
     """Convert SVG to PNG using :py:mod:`cairosvg`."""
     import cairosvg

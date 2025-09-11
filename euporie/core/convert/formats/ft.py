@@ -15,6 +15,8 @@ from euporie.core.ft.utils import strip_one_trailing_newline
 from euporie.core.lexers import detect_lexer
 
 if TYPE_CHECKING:
+    from typing import Any
+
     from prompt_toolkit.formatted_text.base import StyleAndTextTuples
 
     from euporie.core.convert.datum import Datum
@@ -36,6 +38,7 @@ async def html_to_ft(
     fg: str | None = None,
     bg: str | None = None,
     extend: bool = True,
+    **kwargs: Any,
 ) -> StyleAndTextTuples:
     """Convert HTML to formatted text."""
     from euporie.core.ft.html import HTML
@@ -75,8 +78,8 @@ async def ansi_to_ft(
     rows: int | None = None,
     fg: str | None = None,
     bg: str | None = None,
-    extend: bool = True,
     lex: bool = False,
+    **kwargs: Any,
 ) -> StyleAndTextTuples:
     """Convert ANSI text to formatted text, lexing & formatting automatically."""
     data = datum.data
