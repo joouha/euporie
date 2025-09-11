@@ -4869,14 +4869,6 @@ class HTML:
                     ignore_whitespace=True,
                     style=theme.style,
                 )
-            else:
-                ft = truncate(
-                    ft,
-                    content_width,
-                    placeholder="",
-                    ignore_whitespace=True,
-                    style=theme.style,
-                )
 
         # Truncate or expand the height
         overflow_y = theme.get("overflow_y") in {"hidden", "auto"}
