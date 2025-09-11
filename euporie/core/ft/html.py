@@ -4005,7 +4005,7 @@ class HTML:
         table_x_dim = Dimension(
             min=table_theme.min_width,
             preferred=table_theme.content_width if "width" in table_theme else None,
-            max=table_theme.max_width or table_theme.content_width,
+            max=table_theme.max_width,
         )
 
         table = Table(
