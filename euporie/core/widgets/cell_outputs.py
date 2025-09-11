@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import weakref
 from abc import ABCMeta, abstractmethod
 from functools import cache
 from pathlib import PurePath
@@ -23,10 +24,13 @@ from euporie.core.widgets.tree import JsonView
 
 if TYPE_CHECKING:
     from typing import Any, Protocol, TypeVar
+    from weakref import ReferenceType
 
     from prompt_toolkit.layout.containers import AnyContainer
 
+    from euporie.core.config import Setting
     from euporie.core.tabs.kernel import KernelTab
+    from euporie.core.widgets.display import DisplayWindow
 
     KTParent = TypeVar("KTParent", bound=KernelTab)
 
@@ -151,6 +155,18 @@ class CellOutputDataElement(CellOutputElement):
 
         # Ensure container gets invalidated if `wrap_cell_output` changes
         self.container.control.invalidate_events.append(config.events.wrap_cell_outputs)
+
+        # Reset scroll position on `wrap_cell_outputs` config change
+        def _unregister(win: ReferenceType[DisplayWindow]) -> None:
+            config.events.wrap_cell_outputs -= _reset_scroll
+
+        weak_win = weakref.ref(self.container.window, _unregister)
+
+        def _reset_scroll(caller: Setting | None = None) -> None:
+            if (win := weak_win()) is not None:
+                win.reset()
+
+        config.events.wrap_cell_outputs += _reset_scroll
 
     @property
     def data(self) -> Any:

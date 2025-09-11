@@ -20,7 +20,6 @@ Fixed
 
 ----
 
-
 ********************
 v2.8.13 (2025-09-09)
 ********************
@@ -39,6 +38,7 @@ v2.8.12 (2025-08-18)
 Added
 =====
 
+- Reset cell output scroll position when toggling wrapping of cell output
 - The default color scheme will now automatically response to color palette changes in terminals which support CSI 2031 mode
 
 Fixed
