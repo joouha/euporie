@@ -55,8 +55,6 @@ class DisplayControl(UIControl):
     A control which displays rendered HTML content.
     """
 
-    _window: Window
-
     def __init__(
         self,
         datum: Datum,
