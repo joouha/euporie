@@ -914,7 +914,7 @@ class Theme(Mapping):
             if isinstance(Theme.__dict__.get(attr), cached_property):
                 delattr(self, attr)
 
-    @cached_property
+    @property
     def theme(self) -> dict[str, str]:
         """Return the combined computed theme."""
         rules = [
@@ -1057,6 +1057,7 @@ class Theme(Mapping):
         specificity_rules = []
         element = self.element
         for condition, css_block in css.items():
+            # TODO - cache CSS within condition blocks
             if condition():
                 for selectors, rule in css_block.items():
                     for selector_parts in selectors:
@@ -1138,7 +1139,7 @@ class Theme(Mapping):
             **{k: v for k, v in rules if "!important" in v},
         }
 
-    @cached_property
+    @property
     def browser_css_theme(self) -> dict[str, str]:
         """Calculate the theme defined in the browser CSS."""
         return self._css_theme(css=self.element.dom.browser_css)
@@ -2860,7 +2861,12 @@ _BROWSER_CSS: CssSelectors = {
             "overflow_y": "hidden",
             "vertical_align": "middle",
         },
-    }
+    },
+    get_app().config.filters.wrap_cell_outputs: {
+        ((CssSelector(item="table.dataframe"),),): {
+            "max_width": "100%",
+        },
+    },
 }
 
 

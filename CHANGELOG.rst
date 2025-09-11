@@ -11,6 +11,7 @@ v2.8.14 (2025-09-10)
 Added
 =====
 
+- Expand dataframe tables when cell outputs are unwrapped
 - Recognise LaTeX contained within MathJax tags (``\[``, ``\(``) in HTML
 
 Fixed
