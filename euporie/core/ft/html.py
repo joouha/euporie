@@ -3645,11 +3645,12 @@ class HTML:
                         groups = match.groupdict()
                         before = groups["beginning"]
                         latex = groups["display_bracket"] or groups["display_dollar"]
+                        b_attrs: list[tuple[str, str | None]] | None
                         if latex:
-                            attrs = [("style", "display: block")]
+                            b_attrs = [("style", "display: block")]
                         else:
                             latex = groups["inline_bracket"] or groups["inline_dollar"]
-                            attrs = []
+                            b_attrs = []
                         text = groups["end"]
                     else:
                         break
@@ -3666,7 +3667,7 @@ class HTML:
                     # Add the LaTeX node
                     if latex:
                         latex_node = Node(
-                            dom=self, name="::latex", parent=child.parent, attrs=attrs
+                            dom=self, name="::latex", parent=child.parent, attrs=b_attrs
                         )
                         latex_node.contents = [
                             Node(dom=self, name="::text", parent=latex_node, text=latex)
@@ -3680,8 +3681,9 @@ class HTML:
                             Node(dom=self, name="::text", parent=parent, text=text)
                         )
                     # Replace the original text node with the new nodes
-                    index = parent.contents.index(child)
-                    parent.contents[index : index + 1] = nodes
+                    if parent is not None:
+                        index = parent.contents.index(child)
+                        parent.contents[index : index + 1] = nodes
 
         self._dom_processed = True
 
@@ -3724,7 +3726,7 @@ class HTML:
         self, width: int | None, height: int | None
     ) -> StyleAndTextTuples:
         """Render the current markup at a given size, asynchronously."""
-        # log.debug("Rendering at (%d, %d)", width, height)
+        # log.debug("Rendering at (%r, %r)", width, height)
         no_w = width is None and self.width is None
         no_h = height is None and self.height is None
         if no_w or no_h:
