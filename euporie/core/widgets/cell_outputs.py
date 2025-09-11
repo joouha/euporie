@@ -541,15 +541,16 @@ class CellOutputArea:
         from prompt_toolkit.formatted_text.utils import to_plain_text
 
         outputs = []
+        app = get_app()
+        config = app.config
         for cell_output in self.rendered_outputs:
             if isinstance(cell_output.element, CellOutputDataElement):
-                config = get_app().config
                 control = cell_output.element.container.control
                 for line in control.get_lines(
                     control.datum,
                     width=88,
                     height=None,
-                    fg=(cp := get_app().color_palette).fg.base_hex,
+                    fg=(cp := app.color_palette).fg.base_hex,
                     bg=cp.bg.base_hex,
                     wrap_lines=config.wrap_cell_outputs,
                 ):
