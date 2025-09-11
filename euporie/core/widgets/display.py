@@ -154,6 +154,8 @@ class DisplayControl(UIControl):
             fg=fg,
             bg=bg,
             extend=not self.dont_extend_width(),
+            # Use as extra cache key to force re-rendering when wrap_lines changes
+            wrap_lines=wrap_lines,
         )
         if width and height:
             key = Datum.add_size(datum, Size(height, width))
