@@ -180,7 +180,11 @@ async def latex_to_ansi_utftex(
     **kwargs: Any,
 ) -> str:
     """Render LaTeX maths as unicode."""
-    return (await call_subproc(datum.data.strip().strip("$"), ["utftex"])).decode()
+    return (
+        (await call_subproc(datum.data.strip().strip("$").strip(), ["utftex"]))
+        .decode()
+        .rstrip("\n")
+    )
 
 
 @register(
