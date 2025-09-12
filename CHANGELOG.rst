@@ -17,6 +17,7 @@ Added
 Fixed
 =====
 
+- Properly hide hidden menu items
 - Link horizontal scrolling of cell outputs
 
 ----

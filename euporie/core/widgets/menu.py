@@ -734,11 +734,11 @@ class MenuBar:
                             # Show the right edge
                             yield (f"{style} class:menu,border", grid.MID_RIGHT)
 
-                    for i, item in enumerate(menu.children):
-                        if not item.hidden():
-                            result.extend(one_item(i, item))
-                            if i < len(menu.children) - 1:
-                                result.append(("", "\n"))
+                    visible_children = [x for x in menu.children if not x.hidden()]
+                    for i, item in enumerate(visible_children):
+                        result.extend(one_item(i, item))
+                        if i < len(visible_children) - 1:
+                            result.append(("", "\n"))
 
             return result
 
