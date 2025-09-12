@@ -26,7 +26,6 @@ def markdown_parser() -> MarkdownIt:
     from markdown_it import MarkdownIt
     from mdit_py_plugins.amsmath import amsmath_plugin
     from mdit_py_plugins.dollarmath.index import dollarmath_plugin
-    from mdit_py_plugins.texmath.index import texmath_plugin
     from pygments import highlight
     from pygments.formatters import HtmlFormatter
 
@@ -38,30 +37,27 @@ def markdown_parser() -> MarkdownIt:
             return True
 
     return (
-        (
-            MarkdownParser(
-                options_update={
-                    "highlight": lambda text, language, lang_args: highlight(
-                        text,
-                        detect_lexer(text, language=language),
-                        HtmlFormatter(
-                            nowrap=True,
-                            noclasses=True,
-                            style=(
-                                app.syntax_theme
-                                if hasattr((app := get_app()), "syntax_theme")
-                                else "default"
-                            ),
+        MarkdownParser(
+            options_update={
+                "highlight": lambda text, language, lang_args: highlight(
+                    text,
+                    detect_lexer(text, language=language),
+                    HtmlFormatter(
+                        nowrap=True,
+                        noclasses=True,
+                        style=(
+                            app.syntax_theme
+                            if hasattr((app := get_app()), "syntax_theme")
+                            else "default"
                         ),
-                    )
-                }
-            )
-            .enable("linkify")
-            .enable("table")
-            .enable("strikethrough")
+                    ),
+                )
+            }
         )
-        .use(texmath_plugin)
-        .use(dollarmath_plugin)
+        .enable("linkify")
+        .enable("table")
+        .enable("strikethrough")
+        .use(dollarmath_plugin, allow_space=True, double_inline=True)
         .use(amsmath_plugin)
         # .use(tasklists_plugin)
     )
