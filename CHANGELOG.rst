@@ -17,6 +17,7 @@ Added
 Fixed
 =====
 
+- Fix multi-index padding issue in dataframe CSS
 - Fix issue with trailing ``$`` in markdown LaTeX
 - Properly hide hidden menu items
 - Link horizontal scrolling of cell outputs

@@ -232,7 +232,7 @@ class SpacerCell(Cell):
             width=None,
             align=align,
             style=expands.style,
-            padding=0,
+            padding=expands.padding,
             border_line=expands.border_line,
             border_style=expands.border_style,
             border_visibility=expands.border_visibility,
