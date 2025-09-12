@@ -4,9 +4,12 @@ from __future__ import annotations
 
 import logging
 
+import pyperclip
 from prompt_toolkit.clipboard.base import Clipboard, ClipboardData
 from prompt_toolkit.clipboard.in_memory import InMemoryClipboard
-from prompt_toolkit.clipboard.pyperclip import PyperclipClipboard
+from prompt_toolkit.clipboard.pyperclip import (
+    PyperclipClipboard as PtkPyperclipClipboard,
+)
 from prompt_toolkit.selection import SelectionType
 
 from euporie.core.app.current import get_app
@@ -14,6 +17,18 @@ from euporie.core.io import Vt100_Output
 from euporie.core.key_binding.key_processor import KeyProcessor
 
 log = logging.getLogger(__name__)
+
+
+class PyperclipClipboard(PtkPyperclipClipboard):
+    """Pyperclip clipboard which suppresses pyperclip exceptions."""
+
+    def set_data(self, data: ClipboardData) -> None:
+        """Set the clipboard data, ignoring any clipboard errors."""
+        self._data = data
+        try:
+            pyperclip.copy(data.text)
+        except pyperclip.PyperclipException:
+            log.exception("Failed to set clipboard data")
 
 
 class Osc52Clipboard(Clipboard):
