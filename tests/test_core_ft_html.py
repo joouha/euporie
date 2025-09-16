@@ -16,6 +16,14 @@ def test_inline_whitespace() -> None:
     assert result == expected
 
 
+def test_inline_block_whitespace() -> None:
+    """Whitespace is collapsed between two inline elements."""
+    data = '<span style="display: inline-block">X</span> Y'
+    expected = "X Y"
+    result = to_plain_text(HTML(data, width=3))
+    assert result == expected
+
+
 def test_nested_list_linebreaks() -> None:
     """There are no extra linebreaks in nested lists."""
     data = "<ol><li>a<ul><li>a</li><li>b</li></ul></li><li>b</li></ol>"

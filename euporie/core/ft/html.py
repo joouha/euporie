@@ -2893,10 +2893,38 @@ class Node:
         self.contents: list[Node] = contents or []
         self.closed = False
         self.marker: Node | None = None
-        self.before: Node | None = None
-        self.after: Node | None = None
 
         self.theme = Theme(self, parent_theme=parent.theme if parent else None)
+
+    @cached_property
+    def before(self) -> None | None:
+        """Virtual node before the element."""
+        before_node = Node(dom=self.dom, name="::before", parent=self)
+        if (text := before_node.theme.theme.get("content", "").strip()) and (
+            (text.startswith('"') and text.endswith('"'))
+            or (text.startswith("'") and text.endswith("'"))
+        ):
+            text = text.strip('"').strip("'")
+            before_node.contents.append(
+                Node(dom=self.dom, name="::text", parent=before_node, text=text)
+            )
+            return before_node
+        return None
+
+    @cached_property
+    def after(self) -> None | None:
+        """Virtual node after the element."""
+        after_node = Node(dom=self.dom, name="::after", parent=self)
+        if (text := after_node.theme.theme.get("content", "").strip()) and (
+            (text.startswith('"') and text.endswith('"'))
+            or (text.startswith("'") and text.endswith("'"))
+        ):
+            text = text.strip('"').strip("'")
+            after_node.contents.append(
+                Node(dom=self.dom, name="::text", parent=after_node, text=text)
+            )
+            return after_node
+        return None
 
     def reset(self) -> None:
         """Reset the node and all its children."""
@@ -2935,17 +2963,20 @@ class Node:
 
     @cached_property
     def preceding_text(self) -> str:
-        """Return the text preceding this element."""
-        s = ""
+        """Return the text preceding this element (most optimized)."""
         parent = self.parent
+        # Move up to the current block element
         while parent and not parent.theme.d_blocky:
             parent = parent.parent
-        if parent:
-            for node in parent.renderable_descendents:
-                if node is self:
-                    break
-                s += node.text
-        return s
+        if not parent:
+            return ""
+        last_valid_text = ""
+        for node in parent.renderable_descendents:
+            if node is self:
+                return last_valid_text
+            elif node.theme.in_flow and (text := node.text):
+                last_valid_text = text
+        return ""
 
     @cached_property
     def text(self) -> str:
@@ -3022,45 +3053,20 @@ class Node:
             if element.name == tag:
                 yield element
 
-    @cached_property
-    def renderable_contents(self) -> list[Node]:
+    @property
+    def renderable_contents(self) -> Generator[Node]:
         """List the node's contents including '::before' and '::after' elements."""
         # Do not add '::before' and '::after' elements to themselves
-        if self.name.startswith("::"):
-            return self.contents
+        if self.name in {"::before", "::after"}:
+            yield from self.contents
+            return
+        if (before := self.before) is not None:
+            yield before
+        yield from self.contents
+        if (after := self.after) is not None:
+            yield after
 
-        contents = []
-
-        # Add ::before node
-        before_node = Node(dom=self.dom, name="::before", parent=self)
-        if (text := before_node.theme.theme.get("content", "").strip()) and (
-            (text.startswith('"') and text.endswith('"'))
-            or (text.startswith("'") and text.endswith("'"))
-        ):
-            text = text.strip('"').strip("'")
-            before_node.contents.append(
-                Node(dom=self.dom, name="::text", parent=before_node, text=text)
-            )
-            contents.append(before_node)
-
-        contents.extend(self.contents)
-
-        # Add ::after node
-        after_node = Node(dom=self.dom, name="::after", parent=self)
-
-        if (text := after_node.theme.theme.get("content", "")) and (
-            (text.startswith('"') and text.endswith('"'))
-            or (text.startswith("'") and text.endswith("'"))
-        ):
-            text = text.strip('"').strip("'")
-            after_node.contents.append(
-                Node(dom=self.dom, name="::text", parent=after_node, text=text)
-            )
-            contents.append(after_node)
-
-        return contents
-
-    @property
+    @cached_property
     def descendents(self) -> Generator[Node]:
         """Yield all descendent elements."""
         for child in self.contents:
@@ -3071,16 +3077,11 @@ class Node:
     def renderable_descendents(self) -> Generator[Node]:
         """Yield descendents, including pseudo and skipping inline elements."""
         for child in self.renderable_contents:
+            # Speed things up by only processing inline elements
             if (
-                child.theme.d_inline
-                and child.renderable_contents
-                and child.name != "::text"
-            ):
+                child.theme.d_inline or child.theme.d_inline_block
+            ) and child.name != "::text":
                 yield from child.renderable_descendents
-            # elif (
-            #     child.name == "::text" and self.name != "::block" and self.theme.d_blocky
-            # ):
-            #     yield Node(dom=self.dom, name="::block", parent=self, contents=[child])
             else:
                 yield child
 
@@ -4579,7 +4580,7 @@ class HTML:
         available_height = parent_theme.content_height
 
         coros = {}
-        for child in element.renderable_descendents:
+        for child in element.renderable_contents:
             theme = child.theme
             if theme.skip:
                 continue
