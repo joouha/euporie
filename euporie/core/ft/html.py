@@ -1957,6 +1957,7 @@ class Theme(Mapping):
             and self.theme["position"] not in {"absolute", "fixed"}
             and self.element.name != "html"
             and self.floated is None
+            # and (not self.parent_theme or self.parent_theme.in_flow)
         )
 
     @cached_property
@@ -2971,10 +2972,14 @@ class Node:
         if not parent:
             return ""
         last_valid_text = ""
-        for node in parent.renderable_descendents:
+        for node in parent.descendents:
             if node is self:
                 return last_valid_text
-            elif node.theme.in_flow and (text := node.text):
+            elif (
+                (node.theme.d_inline or node.theme.d_inline_block)
+                and node.theme.in_flow
+                and (text := node.text)
+            ):
                 last_valid_text = text
         return ""
 
@@ -3053,34 +3058,45 @@ class Node:
             if element.name == tag:
                 yield element
 
+    # @cached_property
     @property
-    def renderable_contents(self) -> Generator[Node]:
+    def renderable_contents(self) -> list[Node]:
         """List the node's contents including '::before' and '::after' elements."""
         # Do not add '::before' and '::after' elements to themselves
         if self.name in {"::before", "::after"}:
-            yield from self.contents
-            return
+            return self.contents
+        contents = []
         if (before := self.before) is not None:
-            yield before
-        yield from self.contents
+            contents.append(before)
+        contents.extend(self.contents)
         if (after := self.after) is not None:
-            yield after
+            contents.append(after)
+        return contents
+
+    # @cached_property
+    @property
+    def descendents(self) -> Generator[Node]:
+        """Yield all descendent elements."""
+        for child in self.renderable_contents:
+            yield child
+            yield from child.descendents
 
     @cached_property
-    def descendents(self) -> Generator[Node]:
+    def all_descedents(self) -> Generator[Node]:
         """Yield all descendent elements."""
         for child in self.contents:
             yield child
-            yield from child.descendents
+            yield from child.all_descedents
 
     @property
     def renderable_descendents(self) -> Generator[Node]:
         """Yield descendents, including pseudo and skipping inline elements."""
         for child in self.renderable_contents:
-            # Speed things up by only processing inline elements
             if (
-                child.theme.d_inline or child.theme.d_inline_block
-            ) and child.name != "::text":
+                child.theme.d_inline
+                and child.renderable_contents
+                and child.name != "::text"
+            ):
                 yield from child.renderable_descendents
             else:
                 yield child
@@ -3595,7 +3611,7 @@ class HTML:
             child.attrs["_data"] = data
             del child.attrs["_missing"]
 
-        for child in self.soup.descendents:
+        for child in self.soup.all_descedents:
             # Set base
             if child.name == "base":
                 if href := child.attrs.get("href"):
@@ -4580,7 +4596,7 @@ class HTML:
         available_height = parent_theme.content_height
 
         coros = {}
-        for child in element.renderable_contents:
+        for child in element.renderable_descendents:
             theme = child.theme
             if theme.skip:
                 continue
