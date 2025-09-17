@@ -3073,6 +3073,13 @@ class Node:
             contents.append(after)
         return contents
 
+    @cached_property
+    def all_descedents(self) -> Generator[Node]:
+        """Yield all descendent elements."""
+        for child in self.contents:
+            yield child
+            yield from child.all_descedents
+
     # @cached_property
     @property
     def descendents(self) -> Generator[Node]:
@@ -3080,13 +3087,6 @@ class Node:
         for child in self.renderable_contents:
             yield child
             yield from child.descendents
-
-    @cached_property
-    def all_descedents(self) -> Generator[Node]:
-        """Yield all descendent elements."""
-        for child in self.contents:
-            yield child
-            yield from child.all_descedents
 
     @property
     def renderable_descendents(self) -> Generator[Node]:
