@@ -4140,7 +4140,7 @@ class HTML:
                     fill=True,
                 )
                 if ft_caption:
-                    ft.extend(ft_caption)
+                    ft.extend([*ft_caption, ("", "\n")])
 
         ft.extend(ft_table)
 
