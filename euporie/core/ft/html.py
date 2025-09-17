@@ -2189,13 +2189,13 @@ _BROWSER_CSS: CssSelectors = {
                 CssSelector(item="q"),
                 CssSelector(item="::before"),
             ),
-        ): {"content": "“"},
+        ): {"content": "'“'"},
         (
             (
                 CssSelector(item="q"),
                 CssSelector(item="::after"),
             ),
-        ): {"content": "”"},
+        ): {"content": "'”'"},
         # Images
         (
             (CssSelector(item="img", attr="[_missing]"),),
