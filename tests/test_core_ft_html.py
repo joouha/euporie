@@ -119,3 +119,11 @@ def test_multiple_css_selectors() -> None:
     data = '<style>.a,.b{font_weight: bold}</style><span class="a">a</span><span class="b">b</span>'
     result = to_formatted_text(HTML(data, width=2))
     assert all("bold" in x[0].split() for x in result)
+
+
+def test_inline_block_wrapping() -> None:
+    """Inline block inside inline elements should be wrapped like text."""
+    data = 'A B <span style="display:inline-block">X<br>Y</span> C D'
+    result = to_formatted_text(HTML(data, width=4))
+    result = [x.strip() for x in to_plain_text(result).splitlines()]
+    assert result == ["A B", "X", "Y C", "D"]
