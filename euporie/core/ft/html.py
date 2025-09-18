@@ -1056,6 +1056,15 @@ class Theme(Mapping):
         """Calculate the theme defined in CSS."""
         specificity_rules = []
         element = self.element
+        # Pre-compute element attributes once
+        element_name = element.name
+        element_is_first = element.is_first_child_element
+        element_is_last = element.is_last_child_element
+        element_sibling_idx = element.sibling_element_index
+        element_attrs = element.attrs
+        element_parent = element.parent
+        element_parents_rev = [x for x in element.parents[::-1] if x]
+
         for condition, css_block in css.items():
             # TODO - cache CSS within condition blocks
             if condition():
@@ -1067,42 +1076,41 @@ class Theme(Mapping):
                             selector.item or "",
                             selector.attr or "",
                             selector.pseudo or "",
-                            element.name,
-                            element.is_first_child_element,
-                            element.is_last_child_element,
-                            element.sibling_element_index,
-                            **element.attrs,
+                            element_name,
+                            element_is_first,
+                            element_is_last,
+                            element_sibling_idx,
+                            **element_attrs,
                         ):
                             continue
 
                         # All of the parent selectors should match a separate parent in order
                         # TODO - combinators
                         # https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Selectors#combinators
-                        unmatched_parents: list[Node] = [
-                            x for x in element.parents[::-1] if x
-                        ]
-
-                        _unmatched_parents: list[Node]
-                        parent = element.parent
-                        if parent and (
-                            (selector.comb == ">" and parent)
+                        unmatched_parents: list[Node]
+                        if element_parent and (
+                            (selector.comb == ">" and element_parent)
                             # Pseudo-element selectors only match direct ancestors
                             or ((item := selector.item) and item.startswith("::"))
                         ):
-                            _unmatched_parents = [parent]
+                            unmatched_parents = [element_parent]
                         else:
-                            _unmatched_parents = unmatched_parents
+                            unmatched_parents = element_parents_rev[:]
 
                         # TODO investigate caching element / selector chains so we don't have to
                         # iterate through every parent every time
 
                         # Iterate through selector items in reverse, skipping the last
                         for selector in selector_parts[-2::-1]:
-                            for i, parent in enumerate(_unmatched_parents):
+                            # Pre-compute selector attributes
+                            item = selector.item or ""
+                            attrs = selector.attr or ""
+                            pseudo = selector.pseudo or ""
+                            for i, parent in enumerate(unmatched_parents):
                                 if parent and match_css_selector(
-                                    selector.item or "",
-                                    selector.attr or "",
-                                    selector.pseudo or "",
+                                    item,
+                                    attrs,
+                                    pseudo,
                                     parent.name,
                                     parent.is_first_child_element,
                                     parent.is_last_child_element,
@@ -1112,9 +1120,9 @@ class Theme(Mapping):
                                     if selector.comb == ">" and (
                                         parent := parent.parent
                                     ):
-                                        _unmatched_parents = [parent]
+                                        unmatched_parents = [parent]
                                     else:
-                                        _unmatched_parents = unmatched_parents[i + 1 :]
+                                        unmatched_parents = element_parents_rev[i + 1 :]
                                     break
                             else:
                                 break
@@ -1127,6 +1135,10 @@ class Theme(Mapping):
                             # We have already matched this rule, we don't need to keep checking
                             # the rest of the selectors for this rule
                             break
+
+        # Shortcut in case of no rules
+        if not specificity_rules:
+            return {}
 
         # Move !important rules to the end
         rules = [
