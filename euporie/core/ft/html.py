@@ -1319,10 +1319,7 @@ class Theme(Mapping):
             return max([len(x) for x in self.element.text.split()] or [0])
         else:
             return max(
-                [
-                    child.theme.min_content_width
-                    for child in self.element.renderable_contents
-                ]
+                [child.theme.min_content_width for child in self.element.contents]
                 or [0]
             )
 
@@ -1333,10 +1330,7 @@ class Theme(Mapping):
             return max([len(x) for x in self.element.text.split("\n")] or [0])
         else:
             return sum(
-                [
-                    child.theme.max_content_width
-                    for child in self.element.renderable_contents
-                ]
+                [child.theme.max_content_width for child in self.element.contents]
                 or [0]
             )
 
@@ -1933,12 +1927,12 @@ class Theme(Mapping):
     def skip(self) -> bool:
         """Determine if the element should not be displayed."""
         return (
-            "none" in self.theme["display"]
-            or (
-                (element := self.element).name == "::text"
-                and not self.preformatted
-                and not element.text
+            (
+                (element := self.element).name in ("::before", "::after")
+                and self.theme.get("content") in (None, "normal")
             )
+            or "none" in self.theme["display"]
+            or (element.name == "::text" and not self.preformatted and not element.text)
             or (self.theme["position"] == "absolute" and self.hidden)
         )
 
@@ -1957,7 +1951,6 @@ class Theme(Mapping):
             and self.theme["position"] not in {"absolute", "fixed"}
             and self.element.name != "html"
             and self.floated is None
-            # and (not self.parent_theme or self.parent_theme.in_flow)
         )
 
     @cached_property
@@ -2894,38 +2887,7 @@ class Node:
         self.contents: list[Node] = contents or []
         self.closed = False
         self.marker: Node | None = None
-
         self.theme = Theme(self, parent_theme=parent.theme if parent else None)
-
-    @cached_property
-    def before(self) -> None | None:
-        """Virtual node before the element."""
-        before_node = Node(dom=self.dom, name="::before", parent=self)
-        if (text := before_node.theme.theme.get("content", "").strip()) and (
-            (text.startswith('"') and text.endswith('"'))
-            or (text.startswith("'") and text.endswith("'"))
-        ):
-            text = text.strip('"').strip("'")
-            before_node.contents.append(
-                Node(dom=self.dom, name="::text", parent=before_node, text=text)
-            )
-            return before_node
-        return None
-
-    @cached_property
-    def after(self) -> None | None:
-        """Virtual node after the element."""
-        after_node = Node(dom=self.dom, name="::after", parent=self)
-        if (text := after_node.theme.theme.get("content", "").strip()) and (
-            (text.startswith('"') and text.endswith('"'))
-            or (text.startswith("'") and text.endswith("'"))
-        ):
-            text = text.strip('"').strip("'")
-            after_node.contents.append(
-                Node(dom=self.dom, name="::text", parent=after_node, text=text)
-            )
-            return after_node
-        return None
 
     def reset(self) -> None:
         """Reset the node and all its children."""
@@ -2964,30 +2926,48 @@ class Node:
 
     @cached_property
     def preceding_text(self) -> str:
-        """Return the text preceding this element (most optimized)."""
+        """Return the text preceding this element."""
         parent = self.parent
         # Move up to the current block element
-        while parent and not parent.theme.d_blocky:
+        while parent and not (parent.theme.d_blocky or parent.theme.d_inline_block):
             parent = parent.parent
         if not parent:
             return ""
+
+        def _text_descendents(node: Node) -> Generator[Node]:
+            for child in node.contents:
+                if child.name == "::text":
+                    yield child
+                elif (
+                    child.contents
+                    and (child.theme.d_inline or child.theme.d_inline_block)
+                    and child.theme.in_flow
+                ):
+                    yield from _text_descendents(child)
+
         last_valid_text = ""
-        for node in parent.descendents:
+        for node in _text_descendents(parent):
             if node is self:
                 return last_valid_text
-            elif (
-                (node.theme.d_inline or node.theme.d_inline_block)
-                and node.theme.in_flow
-                and (text := node.text)
-            ):
+            elif text := node.text:
                 last_valid_text = text
         return ""
 
     @cached_property
     def text(self) -> str:
         """Get the element's computed text."""
-        if text := self._text:
-            # if False and not (preformatted := self.theme.preformatted):
+        text = self._text
+
+        # Allow replacing context of pseudo-elements
+        if self.parent.name.startswith("::") and (
+            _text := self.parent.theme.theme.get("content", "").strip()
+        ):
+            if _text.startswith('"') and _text.endswith('"'):
+                text = _text.strip('"')
+            elif _text.startswith("'") and _text.endswith("'"):
+                text = _text.strip("'")
+
+        if text:
             if not (preformatted := self.theme.preformatted):
                 # 1. All spaces and tabs immediately before and after a line break are ignored
                 text = re.sub(r"(\s+(?=\n)|(?<=\n)\s+)", "", text, flags=re.MULTILINE)
@@ -3058,45 +3038,18 @@ class Node:
             if element.name == tag:
                 yield element
 
-    # @cached_property
-    @property
-    def renderable_contents(self) -> list[Node]:
-        """List the node's contents including '::before' and '::after' elements."""
-        # Do not add '::before' and '::after' elements to themselves
-        if self.name in {"::before", "::after"}:
-            return self.contents
-        contents = []
-        if (before := self.before) is not None:
-            contents.append(before)
-        contents.extend(self.contents)
-        if (after := self.after) is not None:
-            contents.append(after)
-        return contents
-
-    @cached_property
-    def all_descedents(self) -> Generator[Node]:
-        """Yield all descendent elements."""
-        for child in self.contents:
-            yield child
-            yield from child.all_descedents
-
-    # @cached_property
     @property
     def descendents(self) -> Generator[Node]:
         """Yield all descendent elements."""
-        for child in self.renderable_contents:
+        for child in self.contents:
             yield child
             yield from child.descendents
 
     @property
     def renderable_descendents(self) -> Generator[Node]:
-        """Yield descendents, including pseudo and skipping inline elements."""
-        for child in self.renderable_contents:
-            if (
-                child.theme.d_inline
-                and child.renderable_contents
-                and child.name != "::text"
-            ):
+        """Yield descendent elements with actual text content."""
+        for child in self.contents:
+            if child.theme.d_inline and child.contents and child.name != "::text":
                 yield from child.renderable_descendents
             else:
                 yield child
@@ -3611,7 +3564,7 @@ class HTML:
             child.attrs["_data"] = data
             del child.attrs["_missing"]
 
-        for child in self.soup.all_descedents:
+        for child in self.soup.descendents:
             # Set base
             if child.name == "base":
                 if href := child.attrs.get("href"):
@@ -3701,6 +3654,18 @@ class HTML:
                     if parent is not None:
                         index = parent.contents.index(child)
                         parent.contents[index : index + 1] = nodes
+
+            # Add pseudo-elements just before rendering
+            if child.name not in _VOID_ELEMENTS and not child.name.startswith("::"):
+                before_node = Node(dom=self, name="::before", parent=child)
+                before_node.contents.append(
+                    Node(dom=self, name="::text", parent=before_node)
+                )
+                after_node = Node(dom=self, name="::after", parent=child)
+                after_node.contents.append(
+                    Node(dom=self, name="::text", parent=after_node)
+                )
+                child.contents = [before_node, *child.contents, after_node]
 
         self._dom_processed = True
 
@@ -4613,7 +4578,7 @@ class HTML:
 
         # Render each child node
         for child, rendering in zip(coros, renderings):
-            # Start a new line if we encounter a <br> element
+            # Start a new line if we just passed a <br> element
             if child.name == "br":
                 flush()
                 continue
@@ -4673,10 +4638,7 @@ class HTML:
             # current output. This might involve re-aligning the last line in the
             # output, which could have been an inline-block
 
-            elif d_inline and (
-                # parent_theme.d_inline or parent_theme.d_inline_block or preformatted
-                parent_theme.d_inline or preformatted
-            ):
+            elif d_inline and (parent_theme.d_inline or preformatted):
                 new_line.extend(rendering)
 
             elif d_inline or d_inline_block:
