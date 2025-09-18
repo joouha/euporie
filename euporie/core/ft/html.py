@@ -5074,6 +5074,7 @@ if __name__ == "__main__":
     import sys
 
     from prompt_toolkit.application.current import create_app_session, set_app
+    from prompt_toolkit.formatted_text.utils import to_formatted_text
     from prompt_toolkit.shortcuts.utils import print_formatted_text
     from prompt_toolkit.styles.style import Style
 
@@ -5088,11 +5089,12 @@ if __name__ == "__main__":
         set_app(DummyApp()),
     ):
         print_formatted_text(
-            HTML(
-                path.read_text(),
-                base=path,
-                collapse_root_margin=False,
-                fill=True,
+            to_formatted_text(
+                asyncio.run(
+                    HTML(
+                        path.read_text(), base=path, collapse_root_margin=False
+                    )._render(None, None)
+                )
             ),
             style=Style(HTML_STYLE),
         )
