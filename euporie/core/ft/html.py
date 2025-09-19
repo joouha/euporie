@@ -914,7 +914,7 @@ class Theme(Mapping):
             if isinstance(Theme.__dict__.get(attr), cached_property):
                 delattr(self, attr)
 
-    @property
+    @cached_property
     def theme(self) -> dict[str, str]:
         """Return the combined computed theme."""
         rules = [
@@ -1151,7 +1151,7 @@ class Theme(Mapping):
             **{k: v for k, v in rules if "!important" in v},
         }
 
-    @property
+    @cached_property
     def browser_css_theme(self) -> dict[str, str]:
         """Calculate the theme defined in the browser CSS."""
         return self._css_theme(css=self.element.dom.browser_css)

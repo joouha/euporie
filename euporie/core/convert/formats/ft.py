@@ -46,7 +46,7 @@ async def html_to_ft(
     data = datum.data
     markup = data.decode() if isinstance(data, bytes) else data
     html = _html_cache.get(
-        datum.hash,
+        (datum.hash, *kwargs.items()),
         partial(
             HTML,
             markup,
