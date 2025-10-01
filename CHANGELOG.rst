@@ -5,7 +5,7 @@ Changelog
 Notable changes to this project will be documented in this file.
 
 ********************
-v2.8.14 (2025-09-10)
+v2.8.14 (2025-10-01)
 ********************
 
 Added
