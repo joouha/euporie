@@ -124,6 +124,6 @@ def test_multiple_css_selectors() -> None:
 def test_inline_block_wrapping() -> None:
     """Inline block inside inline elements should be wrapped like text."""
     data = 'A B <span style="display:inline-block">X<br>Y</span> C D'
-    result = to_formatted_text(HTML(data, width=4))
-    result = [x.strip() for x in to_plain_text(result).splitlines()]
+    ft = to_formatted_text(HTML(data, width=4))
+    result = [x.strip() for x in to_plain_text(ft).splitlines()]
     assert result == ["A B", "X", "Y C", "D"]

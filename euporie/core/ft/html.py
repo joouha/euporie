@@ -1106,6 +1106,7 @@ class Theme(Mapping):
                             item = selector.item or ""
                             attrs = selector.attr or ""
                             pseudo = selector.pseudo or ""
+                            parent: Node | None
                             for i, parent in enumerate(unmatched_parents):
                                 if parent and match_css_selector(
                                     item,
@@ -2971,8 +2972,10 @@ class Node:
         text = self._text
 
         # Allow replacing context of pseudo-elements
-        if self.parent.name.startswith("::") and (
-            _text := self.parent.theme.theme.get("content", "").strip()
+        if (
+            (parent := self.parent)
+            and parent.name.startswith("::")
+            and (_text := parent.theme.theme.get("content", "").strip())
         ):
             if _text.startswith('"') and _text.endswith('"'):
                 text = _text.strip('"')

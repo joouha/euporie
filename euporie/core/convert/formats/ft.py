@@ -24,7 +24,7 @@ if TYPE_CHECKING:
 
 log = logging.getLogger(__name__)
 
-_html_cache: SimpleCache[str, HTML] = SimpleCache(maxsize=20)
+_html_cache: SimpleCache[tuple[str | Any, ...], HTML] = SimpleCache(maxsize=20)
 
 
 @register(
