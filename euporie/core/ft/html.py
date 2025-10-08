@@ -2851,7 +2851,7 @@ _BROWSER_CSS: CssSelectors = {
                 CssSelector(item="*"),
             ),
         ): {
-            "pt_class": "markdown,code,block",
+            "_pt_class": "markdown,code,block",
         },
         (
             (
