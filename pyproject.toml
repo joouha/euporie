@@ -21,6 +21,7 @@ classifiers = [
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
   "Programming Language :: Python :: Implementation :: CPython",
   "Programming Language :: Python :: Implementation :: PyPy",
   "Environment :: Console",
@@ -111,7 +112,7 @@ installer = "uv"
 features = []
 
 [[tool.hatch.envs.multi.matrix]]
-python = ["3.9", "3.10", "3.11", "3.12", "3.13", "3.13t", "pypy3"]
+python = ["3.9", "3.10", "3.11", "3.12", "3.13", "3.13t", "3.14", "3.14t", "pypy3"]
 
 
 # Environment used to run `hatch fmt`
@@ -174,7 +175,7 @@ dependencies = [
 ]
 
 [[tool.hatch.envs.test.matrix]]
-python = ["3.9", "3.10", "3.11", "3.12", "3.13", "pypy3"]
+python = ["3.9", "3.10", "3.11", "3.12", "3.13", "3.14", "pypy3"]
 
 [tool.hatch.envs.test.scripts]
 run = "pytest {args}"
