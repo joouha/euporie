@@ -387,7 +387,12 @@ class KernelTab(Tab, metaclass=ABCMeta):
             return
 
         # Prompt user to select a kernel
-        self.app.dialogs["change-kernel"].show(tab=self, message=msg)
+        if dialog := self.app.dialogs.get("change-kernel"):
+            dialog.show(tab=self, message=msg)
+            return
+
+        if msg:
+            log.warning(msg)
 
     def switch_kernel(self, factory: KernelFactory) -> None:
         """Shut down the current kernel and change to another."""

@@ -39,7 +39,10 @@ class PreviewNotebook(BaseNotebook):
         self,
         app: BaseApp,
         path: Path | None = None,
+        kernel: BaseKernel | None = None,
+        comms: dict[str, Comm] | None = None,
         use_kernel_history: bool = False,
+        connection_file: Path | None = None,
     ) -> None:
         """Create a new instance."""
         self.cell_index = 0
@@ -49,6 +52,8 @@ class PreviewNotebook(BaseNotebook):
         self.app.after_render += self.after_render
 
         self._cell = Cell(0, {}, self)
+        # Start the kernel (if needed) after the tab is fully loaded
+        self._init_kernel(kernel, comms, use_kernel_history, connection_file)
 
     def pre_init_kernel(self) -> None:
         """Filter cells before kernel is loaded."""
@@ -72,13 +77,19 @@ class PreviewNotebook(BaseNotebook):
         use_kernel_history: bool = False,
         connection_file: Path | None = None,
     ) -> None:
-        """Set up the tab's kernel and related components."""
+        """We defer starting the kernel until the whole tab has loaded."""
+
+    def _init_kernel(
+        self,
+        kernel: BaseKernel | None = None,
+        comms: dict[str, Comm] | None = None,
+        use_kernel_history: bool = False,
+        connection_file: Path | None = None,
+    ) -> None:
+        """Start the tab's kernel if needed."""
         # Only load the kernel if running the notebook
         if self.app.config.run:
             super().init_kernel(kernel, comms, use_kernel_history, connection_file)
-        else:
-            self.pre_init_kernel()
-            self.post_init_kernel()
 
     def print_title(self) -> None:
         """Print a notebook's filename."""
