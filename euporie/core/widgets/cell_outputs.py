@@ -525,9 +525,9 @@ class CellOutputArea:
 
     def scroll_right(self) -> None:
         """Scroll the outputs right."""
-        max_width = (
-            max(cell_output.element.width or 0 for cell_output in self.rendered_outputs)
-            or None
+        max_width = max(
+            (cell_output.element.width or 0 for cell_output in self.rendered_outputs),
+            default=None,
         )
         for cell_output in self.rendered_outputs:
             cell_output.scroll_right(max_width)
