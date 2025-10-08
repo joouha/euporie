@@ -11,6 +11,7 @@ Upcoming
 Fixed
 =====
 
+- Fix race condition in margin width calculation caching when pre-rendering cells
 - Fixed error when attempting to scroll outputs of empty cell
 
 ----

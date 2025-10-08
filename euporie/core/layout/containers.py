@@ -37,6 +37,7 @@ from prompt_toolkit.layout.utils import explode_text_fragments
 from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
 from prompt_toolkit.utils import get_cwidth, take_using_weights, to_str
 
+from euporie.core.cache import SimpleCache
 from euporie.core.data_structures import DiInt
 from euporie.core.layout.controls import DummyControl
 from euporie.core.layout.screen import BoundedWritePosition
@@ -557,6 +558,10 @@ class Window(ptk_containers.Window):
         super().__init__(*args, **kwargs)
         if isinstance(self.content, PtkDummyControl):
             self.content = DummyControl()
+        # Use thread-safe cache for margin widths
+        self._margin_width_cache: SimpleCache[tuple[Margin, int], int] = SimpleCache(
+            maxsize=1
+        )
 
     def write_to_screen(
         self,
