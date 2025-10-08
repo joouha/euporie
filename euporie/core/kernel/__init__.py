@@ -12,11 +12,15 @@ if TYPE_CHECKING:
     from euporie.core.kernel.base import BaseKernel, KernelInfo, MsgCallbacks
     from euporie.core.tabs.kernel import KernelTab
 
-KERNEL_REGISTRY = {
-    "local": "euporie.core.kernel.local:LocalPythonKernel",
-}
+KERNEL_REGISTRY = {}
 if find_spec("jupyter_client"):
     KERNEL_REGISTRY["jupyter"] = "euporie.core.kernel.jupyter:JupyterKernel"
+KERNEL_REGISTRY.update(
+    {
+        "local": "euporie.core.kernel.local:LocalPythonKernel",
+        "none": "euporie.core.kernel.base:NoKernel",
+    }
+)
 
 
 def list_kernels() -> list[KernelInfo]:

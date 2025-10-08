@@ -499,6 +499,19 @@ class BaseKernel(ABC):
 class NoKernel(BaseKernel):
     """A `None` kernel."""
 
+    @classmethod
+    def variants(cls) -> list[KernelInfo]:
+        """Return available kernel specifications."""
+        return [
+            KernelInfo(
+                name="none",
+                display_name="No Kernel",
+                factory=cls,
+                kind="new",
+                type=cls,
+            )
+        ]
+
     @property
     def spec(self) -> dict[str, str]:
         """The kernelspec metadata for the current kernel instance."""
