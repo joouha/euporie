@@ -502,7 +502,7 @@ class Config:
     def _load_args(self) -> dict[str, Any]:
         """Attempt to load configuration settings from commandline flags."""
         # Parse known arguments
-        namespace, remainder = self._load_parser().parse_known_intermixed_args()
+        namespace, _remainder = self._load_parser().parse_known_intermixed_args()
         # Validate arguments
         return vars(namespace)
 

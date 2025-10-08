@@ -618,9 +618,10 @@ class MenuBar:
                                     self.refocus()
                                     item.handler()
                                 else:
-                                    self.selected_menu = self.selected_menu[
-                                        : level + 1
-                                    ] + [i]
+                                    self.selected_menu = [
+                                        *self.selected_menu[: level + 1],
+                                        i,
+                                    ]
                                     app.layout.focus(
                                         self.menu_containers[
                                             len(self.selected_menu) - 1
