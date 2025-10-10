@@ -1148,9 +1148,12 @@ class SelectableWidget(metaclass=ABCMeta):
         return next((x for x in self.indices), None)
 
     @index.setter
-    def index(self, value: int) -> None:
+    def index(self, value: int | None) -> None:
         """Set the selected indices to a single value."""
-        self.indices = [value]
+        if value is None:
+            self.indices = []
+        else:
+            self.indices = [value]
 
     @property
     def indices(self) -> list[int]:
@@ -1161,7 +1164,7 @@ class SelectableWidget(metaclass=ABCMeta):
         return output
 
     @indices.setter
-    def indices(self, values: tuple[int]) -> None:
+    def indices(self, values: list[int]) -> None:
         """Set the selected indices."""
         self._selected.clear()
         for i in range(len(self.options)):
@@ -1722,9 +1725,12 @@ class ToggleButtons(SelectableWidget):
         return next((x for x in self.indices), None)
 
     @index.setter
-    def index(self, value: int) -> None:
+    def index(self, value: int | None) -> None:
         """Set the selected indices to a single value."""
-        self.indices = [value]
+        if value is None:
+            self.indices = []
+        else:
+            self.indices = [value]
         self.update_buttons(self)
 
     def update_buttons(self, widget: SelectableWidget | None = None) -> None:

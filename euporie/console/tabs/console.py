@@ -78,6 +78,10 @@ class Console(KernelTab):
 
     """
 
+    live_output: CellOutputArea
+    input_box: KernelInput
+    stdin_box: StdInput
+
     def __init__(
         self,
         app: BaseApp,

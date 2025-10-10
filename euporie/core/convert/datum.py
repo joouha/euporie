@@ -159,7 +159,7 @@ class Datum(Generic[T], metaclass=_MetaDatum):
             asyncio.Event,
         ] = {}
         self._finalizer: finalize = finalize(self, self._cleanup_datum_sizes, self.hash)
-        self._finalizer.atexit = False
+        self._finalizer.atexit = False  # type: ignore [misc]
 
     def __repr__(self) -> str:
         """Return a string representation of object."""

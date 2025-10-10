@@ -54,7 +54,7 @@ def test_blink() -> None:
     """Text with ``text-decoration: blink`` is rendered as spaces."""
     data = '<span style="text-decoration: blink">a</span>'
     result = to_formatted_text(HTML(data, width=1))
-    style, text, *_ = result[0]
+    style, _text, *_ = result[0]
     # Hidden attribute is applied
     assert "blink" in style
 

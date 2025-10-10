@@ -24,7 +24,7 @@ from euporie.core.app.current import get_app
 from euporie.core.kernel.base import BaseKernel, KernelInfo, MsgCallbacks
 
 if TYPE_CHECKING:
-    from typing import Any, Callable, Unpack
+    from typing import Any, Callable, TextIO, Unpack
 
     from euporie.core.tabs.kernel import KernelTab
 
@@ -631,7 +631,12 @@ class InputBuiltin(BaseHook):
         self._is_password = is_password
         update_wrapper(self, input)
 
-    def __call__(self, prompt: str = "", stream: Any = None) -> str:
+    def __call__(
+        self,
+        prompt: str = "",
+        stream: TextIO | None = None,
+        echo_char: str | None = None,
+    ) -> str:
         """Get input from user via callback."""
         if (callbacks := self.callbacks) and (get_input := callbacks.get("get_input")):
             # Clear any previous input
