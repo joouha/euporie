@@ -4,6 +4,17 @@ Changelog
 
 Notable changes to this project will be documented in this file.
 
+********
+Upcoming
+********
+
+Fixed
+=====
+
+- Only update application style once when querying terminal colors
+
+----
+
 ********************
 v2.8.15 (2025-10-10)
 ********************

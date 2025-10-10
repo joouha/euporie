@@ -272,6 +272,9 @@ class BaseApp(ConfigurableApp, Application, ABC):
         # Set up a write position to limit mouse events to a particular region
         self.mouse_limits: WritePosition | None = None
         self.mouse_position = Point(0, 0)
+        # Set up style update triggers
+        self.style_invalid = False
+        self.before_render += self.do_style_update
 
         # Store LSP client instances
         self.lsp_clients: WeakValueDictionary[str, LspClient] = WeakValueDictionary()
@@ -887,10 +890,17 @@ class BaseApp(ConfigurableApp, Application, ABC):
         return merge_styles(styles)
 
     def update_style(self, query: Setting | None = None) -> None:
+        """Tell the application the style is out of date."""
+        self.style_invalid = True
+
+    def do_style_update(self, caller: Application | None = None) -> None:
         """Update the application's style when the syntax theme is changed."""
-        self.renderer.style = self.create_merged_style()
-        # self.invalidate()
-        # self.renderer.reset()
+        if self.style_invalid:
+            log.info("UPDATING STYLE")
+            self.style_invalid = False
+            self.renderer.style = self.create_merged_style()
+            # self.invalidate()
+            # self.renderer.reset()
 
     def refresh(self) -> None:
         """Reset all tabs."""
