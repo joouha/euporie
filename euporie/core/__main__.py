@@ -28,12 +28,6 @@ def available_apps() -> dict[str, EntryPoint]:
 
 def main(name: str = "launch") -> None:
     """Load and launches the application."""
-    # Register extensions to external packages
-    from euporie.core import (
-        path,  # noqa F401
-        pygments,  # noqa F401
-    )
-
     # Monkey-patch prompt_toolkit
     from euporie.core.layout import containers  # noqa: F401
 

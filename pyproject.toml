@@ -86,6 +86,10 @@ logging-local-provisioner = "euporie.core.kernel.jupyter_manager:LoggingLocalPro
 [project.entry-points."universal_pathlib.implementations"]
 untitled = "euporie.core.path:UntitledPath"
 
+[project.entry-points."fsspec.specs"]
+http = "euporie.core.fsspec:HTTPFileSystem"
+https = "euporie.core.fsspec:HTTPFileSystem"
+
 [tool.hatch.build.targets.wheel.shared-data]
 "euporie/data/desktop" = "share/applications/"
 
