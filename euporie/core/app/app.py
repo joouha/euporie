@@ -896,7 +896,6 @@ class BaseApp(ConfigurableApp, Application, ABC):
     def do_style_update(self, caller: Application | None = None) -> None:
         """Update the application's style when the syntax theme is changed."""
         if self.style_invalid:
-            log.info("UPDATING STYLE")
             self.style_invalid = False
             self.renderer.style = self.create_merged_style()
             # self.invalidate()
