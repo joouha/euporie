@@ -646,10 +646,9 @@ class SelectKernelDialog(Dialog):
         from euporie.core.kernel import list_kernels
         from euporie.core.widgets.layout import TabbedSplit
 
-        infos = list_kernels()
         infos_by_kind: dict[str, list[KernelInfo]] = {}
-        for info in infos:
-            infos_by_kind.setdefault(info.kind, []).append(info)
+        for info in list_kernels():
+            infos_by_kind.setdefault(info.kind, []).insert(0, info)
 
         selects = {}
         for kind, infos in infos_by_kind.items():

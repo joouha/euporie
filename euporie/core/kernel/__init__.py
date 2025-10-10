@@ -7,33 +7,28 @@ from pkgutil import resolve_name
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from collections.abc import Generator
     from typing import Any, Literal
 
     from euporie.core.kernel.base import BaseKernel, KernelInfo, MsgCallbacks
     from euporie.core.tabs.kernel import KernelTab
 
-KERNEL_REGISTRY = {}
+KERNEL_REGISTRY = {
+    "none": "euporie.core.kernel.base:NoKernel",
+    "local": "euporie.core.kernel.local:LocalPythonKernel",
+}
 if find_spec("jupyter_client"):
     KERNEL_REGISTRY["jupyter"] = "euporie.core.kernel.jupyter:JupyterKernel"
-KERNEL_REGISTRY.update(
-    {
-        "local": "euporie.core.kernel.local:LocalPythonKernel",
-        "none": "euporie.core.kernel.base:NoKernel",
-    }
-)
 
 
-def list_kernels() -> list[KernelInfo]:
+def list_kernels() -> Generator[KernelInfo]:
     """Get specifications for all available kernel types.
 
     Returns:
         A dictionary mapping kernel type names to their specifications.
     """
-    return [
-        variant
-        for type_path in KERNEL_REGISTRY.values()
-        for variant in resolve_name(type_path).variants()
-    ]
+    for type_path in KERNEL_REGISTRY.values():
+        yield from resolve_name(type_path).variants()
 
 
 def create_kernel(

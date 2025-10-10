@@ -221,9 +221,8 @@ class KernelTab(Tab, metaclass=ABCMeta):
         else:
             from euporie.core.kernel import list_kernels
 
-            kernel_infos = list_kernels()
             kernel_name = self.kernel_name or self.app.config.kernel_name
-            for info in kernel_infos:
+            for info in list_kernels():
                 if info.name == kernel_name:
                     factory = info.factory
                     break
@@ -373,7 +372,7 @@ class KernelTab(Tab, metaclass=ABCMeta):
 
     def change_kernel(self, msg: str | None = None, startup: bool = False) -> None:
         """Prompt the user to select a new kernel."""
-        kernel_infos = list_kernels()
+        kernel_infos = list(list_kernels())
 
         # Warn the user if no kernels are installed
         if not kernel_infos:
