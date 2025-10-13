@@ -63,6 +63,7 @@ class DisplayControl(UIControl):
         wrap_lines: FilterOrBool = False,
         dont_extend_width: FilterOrBool = False,
         threaded: bool = False,
+        mouse_handler: Callable[[MouseEvent], NotImplementedOrNone] | None = None,
     ) -> None:
         """Create a new web-view control instance."""
         self._datum = datum
@@ -88,6 +89,7 @@ class DisplayControl(UIControl):
             "euporie.core.widgets.display:DisplayControl",
             config=get_app().config,
         )
+        self._mouse_handler = mouse_handler
 
         self.rendered = Event(self)
         self.on_cursor_position_changed = Event(self)
@@ -334,6 +336,8 @@ class DisplayControl(UIControl):
         if self.focus_on_click() and mouse_event.event_type == MouseEventType.MOUSE_UP:
             get_app().layout.current_control = self
             return None
+        if callable(_mouse_handler := self._mouse_handler):
+            return _mouse_handler(mouse_event)
         return NotImplemented
 
     @property
@@ -574,6 +578,7 @@ class Display:
         dont_extend_height: FilterOrBool = True,
         dont_extend_width: FilterOrBool = False,
         style: str | Callable[[], str] = "",
+        mouse_handler: Callable[[MouseEvent], NotImplementedOrNone] | None = None,
     ) -> None:
         """Instantiate an Output container object.
 
@@ -590,6 +595,7 @@ class Display:
             dont_extend_height: Whether the window should fill the available height
             dont_extend_width: Whether the content should fill the available width
             style: The style to apply to the output
+            mouse_handler: Optional mouse handler for the display control
 
         """
         self._style = style
@@ -600,6 +606,7 @@ class Display:
             focus_on_click=focus_on_click,
             wrap_lines=wrap_lines,
             dont_extend_width=dont_extend_width,
+            mouse_handler=mouse_handler,
         )
 
         self.window = DisplayWindow(
