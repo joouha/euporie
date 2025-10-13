@@ -8,6 +8,13 @@ Notable changes to this project will be documented in this file.
 Upcoming
 ********
 
+Added
+=====
+
+- Add ``ipympl`` widget
+- Enable custom mouse handlers for ``Display`` widgets
+- Enable saving files from ``Display`` Tabs
+
 Changed
 =======
 
