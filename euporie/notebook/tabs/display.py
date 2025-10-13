@@ -82,3 +82,18 @@ class DisplayTab(Tab):
             width=Dimension(weight=1),
             height=Dimension(weight=1),
         )
+
+    def write_file(self, path: Path) -> None:
+        """Write the file's text data to a path.
+
+        Args:
+            path: An path at which to save the file
+
+        """
+        data = self.display.datum.data
+        if isinstance(data, str):
+            data = data.encode()
+        if isinstance(data, bytes):
+            path.write_bytes(data)
+        else:
+            raise NotImplementedError(f"Cannot save '{self.display.datum.format}' file")
