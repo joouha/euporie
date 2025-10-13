@@ -18,8 +18,8 @@ from prompt_toolkit.mouse_events import MouseButton, MouseEventType
 from prompt_toolkit.mouse_events import MouseEvent as PtkMouseEvent
 
 from euporie.core.app.current import get_app
-from euporie.core.key_binding.bindings.mouse import MouseEvent, RelativePosition
 from euporie.core.layout.containers import Window
+from euporie.core.mouse_events import MouseEvent, RelativePosition
 
 if TYPE_CHECKING:
     from typing import Callable, Protocol
@@ -157,17 +157,13 @@ class MarginContainer(Window):
                     x -= 1
                 else:
                     # Found position, call handler of UIControl.
-                    if isinstance(mouse_event, MouseEvent):
-                        cell_position = mouse_event.cell_position
-                    else:
-                        cell_position = RelativePosition(0.5, 0.5)
                     result = self.content.mouse_handler(
                         MouseEvent(
                             position=Point(x=col, y=row),
                             event_type=mouse_event.event_type,
                             button=mouse_event.button,
                             modifiers=mouse_event.modifiers,
-                            cell_position=cell_position,
+                            cell_position=getattr(mouse_event, "cell_position", None),
                         )
                     )
                     break

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, NamedTuple
+from typing import TYPE_CHECKING
 
 from prompt_toolkit.cache import FastDictCache
 from prompt_toolkit.data_structures import Point
@@ -20,45 +20,16 @@ from prompt_toolkit.key_binding.bindings.mouse import (
     load_mouse_bindings as load_ptk_mouse_bindings,
 )
 from prompt_toolkit.keys import Keys
-from prompt_toolkit.mouse_events import MouseButton, MouseEventType, MouseModifier
-from prompt_toolkit.mouse_events import MouseEvent as PtkMouseEvent
 from prompt_toolkit.renderer import HeightIsUnknownError
 
 from euporie.core.app.app import BaseApp
+from euporie.core.mouse_events import MouseEvent, RelativePosition
 
 if TYPE_CHECKING:
     from prompt_toolkit.key_binding.key_bindings import NotImplementedOrNone
     from prompt_toolkit.key_binding.key_processor import KeyPressEvent
 
 log = logging.getLogger(__name__)
-
-
-class RelativePosition(NamedTuple):
-    """Store the relative position or the mouse within a terminal cell."""
-
-    x: float
-    y: float
-
-
-class MouseEvent(PtkMouseEvent):
-    """Mouse event, which also store relative position of the mouse event in a cell."""
-
-    def __init__(
-        self,
-        position: Point,
-        event_type: MouseEventType,
-        button: MouseButton,
-        modifiers: frozenset[MouseModifier],
-        cell_position: RelativePosition | None,
-    ) -> None:
-        """Create new event instance."""
-        super().__init__(
-            position=position,
-            event_type=event_type,
-            button=button,
-            modifiers=modifiers,
-        )
-        self.cell_position = cell_position or RelativePosition(0.5, 0.5)
 
 
 def _parse_mouse_data(

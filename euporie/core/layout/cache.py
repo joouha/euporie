@@ -16,11 +16,11 @@ from prompt_toolkit.layout.containers import (
 )
 from prompt_toolkit.layout.layout import walk
 from prompt_toolkit.layout.mouse_handlers import MouseHandlers
-from prompt_toolkit.mouse_events import MouseEvent
 
 from euporie.core.app.current import get_app
 from euporie.core.data_structures import DiInt
 from euporie.core.layout.screen import BoundedWritePosition, Screen
+from euporie.core.mouse_events import MouseEvent
 
 if TYPE_CHECKING:
     from typing import Callable
@@ -28,11 +28,12 @@ if TYPE_CHECKING:
     from prompt_toolkit.key_binding.key_bindings import NotImplementedOrNone
     from prompt_toolkit.layout.containers import AnyContainer
     from prompt_toolkit.layout.dimension import Dimension
+    from prompt_toolkit.layout.mouse_handlers import MouseEvent as PtkMouseEvent
     from prompt_toolkit.layout.screen import Screen as PtkScreen
     from prompt_toolkit.layout.screen import WritePosition
     from prompt_toolkit.utils import Event
 
-    MouseHandler = Callable[[MouseEvent], object]
+    MouseHandler = Callable[[PtkMouseEvent], object]
 
 log = logging.getLogger(__name__)
 
@@ -338,7 +339,7 @@ class CachedContainer(Container):
 
         @cache
         def _wrap_mouse_handler(handler: Callable) -> MouseHandler:
-            def _wrapped(mouse_event: MouseEvent) -> NotImplementedOrNone:
+            def _wrapped(mouse_event: PtkMouseEvent) -> NotImplementedOrNone:
                 # Modify mouse events to reflect position of content
                 new_event = MouseEvent(
                     position=Point(
@@ -348,6 +349,7 @@ class CachedContainer(Container):
                     event_type=mouse_event.event_type,
                     button=mouse_event.button,
                     modifiers=mouse_event.modifiers,
+                    cell_position=getattr(mouse_event, "cell_position", None),
                 )
                 if callable(wrapper := self.mouse_handler_wrapper):
                     return wrapper(handler, self)(new_event)

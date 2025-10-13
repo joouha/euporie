@@ -34,13 +34,14 @@ from prompt_toolkit.layout.controls import (
 from prompt_toolkit.layout.dimension import Dimension
 from prompt_toolkit.layout.screen import _CHAR_CACHE
 from prompt_toolkit.layout.utils import explode_text_fragments
-from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
+from prompt_toolkit.mouse_events import MouseEventType
 from prompt_toolkit.utils import get_cwidth, take_using_weights, to_str
 
 from euporie.core.cache import SimpleCache
 from euporie.core.data_structures import DiInt
 from euporie.core.layout.controls import DummyControl
 from euporie.core.layout.screen import BoundedWritePosition
+from euporie.core.mouse_events import MouseEvent
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -59,6 +60,7 @@ if TYPE_CHECKING:
     from prompt_toolkit.layout.margins import Margin
     from prompt_toolkit.layout.mouse_handlers import MouseHandlers
     from prompt_toolkit.layout.screen import Screen, WritePosition
+    from prompt_toolkit.mouse_events import MouseEvent as PtkMouseEvent
 
 
 log = logging.getLogger(__name__)
@@ -699,7 +701,7 @@ class Window(ptk_containers.Window):
         self.render_info = render_info
 
         # Set mouse handlers.
-        def mouse_handler(mouse_event: MouseEvent) -> NotImplementedOrNone:
+        def mouse_handler(mouse_event: PtkMouseEvent) -> NotImplementedOrNone:
             """Turn screen coordinates into line coordinates."""
             # Don't handle mouse events outside of the current modal part of
             # the UI.
@@ -732,6 +734,7 @@ class Window(ptk_containers.Window):
                             event_type=mouse_event.event_type,
                             button=mouse_event.button,
                             modifiers=mouse_event.modifiers,
+                            cell_position=getattr(mouse_event, "cell_position", None),
                         )
                     )
                     break
@@ -746,6 +749,7 @@ class Window(ptk_containers.Window):
                         event_type=mouse_event.event_type,
                         button=mouse_event.button,
                         modifiers=mouse_event.modifiers,
+                        cell_position=getattr(mouse_event, "cell_position", None),
                     )
                 )
 
@@ -1124,7 +1128,7 @@ class Window(ptk_containers.Window):
         else:
             new_screen.fill_area(write_position, "class:last-line", after=True)
 
-    def _mouse_handler(self, mouse_event: MouseEvent) -> NotImplementedOrNone:
+    def _mouse_handler(self, mouse_event: PtkMouseEvent) -> NotImplementedOrNone:
         """Mouse handler. Called when the UI control doesn't handle this particular event.
 
         Return `NotImplemented` if nothing was done as a consequence of this
