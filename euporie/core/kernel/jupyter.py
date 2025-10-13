@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
+import threading
 from collections import defaultdict
 from functools import partial
 from subprocess import PIPE, STDOUT  # S404 - Security implications considered
@@ -133,6 +134,7 @@ class JupyterKernel(BaseKernel):
             # Return a copy of the default callbacks
             lambda: MsgCallbacks(dict(self.default_callbacks))  # type: ignore # mypy #8890
         )
+        self.client_lock = threading.Lock()
 
     def _set_living_status(self, alive: bool) -> None:
         """Set the life status of the kernel."""
@@ -637,7 +639,8 @@ class JupyterKernel(BaseKernel):
         }
         if self.kc is not None:
             msg = self.kc.session.msg("comm_msg", content)
-            self.kc.shell_channel.send(msg)
+            with self.client_lock:
+                self.kc.shell_channel.send(msg)
             return msg["header"]["msg_id"]
         else:
             raise Exception("Cannot send message when kernel has not started")
