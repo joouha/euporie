@@ -7,6 +7,8 @@ import logging
 from functools import partial
 from typing import TYPE_CHECKING
 
+from prompt_toolkit.filters.base import Condition
+from prompt_toolkit.layout.containers import ConditionalContainer
 from prompt_toolkit.mouse_events import MouseButton, MouseEventType, MouseModifier
 
 from euporie.core.comm.base import CommView
@@ -115,7 +117,24 @@ class MPLCanvasModel(IpyWidgetComm):
         toolbar_view = toolbar_model.new_view(parent)
 
         box = Box(
-            HSplit([label, display, message, toolbar_view]),
+            HSplit(
+                [
+                    ConditionalContainer(
+                        label,
+                        filter=Condition(
+                            partial(self.data["state"].get, "header_visible", True)
+                        ),
+                    ),
+                    display,
+                    ConditionalContainer(
+                        message,
+                        filter=Condition(
+                            partial(self.data["state"].get, "footer_visible", True)
+                        ),
+                    ),
+                    toolbar_view,
+                ]
+            ),
             padding_left=0,
             padding_right=0,
         )
