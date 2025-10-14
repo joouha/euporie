@@ -134,7 +134,7 @@ class IpyWidgetComm(Comm, metaclass=ABCMeta):
         comm_container: KernelTab,
         comm_id: str,
         data: dict,
-        buffers: Sequence[bytes],
+        buffers: Sequence[memoryview | bytearray | bytes],
     ) -> None:
         """Create a new instance of the ipywidget."""
         super().__init__(comm_container, comm_id, data, buffers)
@@ -157,7 +157,9 @@ class IpyWidgetComm(Comm, metaclass=ABCMeta):
                 )
             self.update_views({key: value})
 
-    def process_data(self, data: dict, buffers: Sequence[bytes]) -> None:
+    def process_data(
+        self, data: dict, buffers: Sequence[memoryview | bytearray | bytes]
+    ) -> None:
         """Handle incoming Comm update messages, updating the state and views."""
         # Add buffers to data based on buffer paths
         self.buffers = list(buffers)
@@ -227,7 +229,7 @@ class OutputModel(IpyWidgetComm):
         comm_container: KernelTab,
         comm_id: str,
         data: dict,
-        buffers: Sequence[bytes],
+        buffers: Sequence[memoryview | bytearray | bytes],
     ) -> None:
         """Create a new output ipywidget instance."""
         super().__init__(comm_container, comm_id, data, buffers)
@@ -268,7 +270,9 @@ class OutputModel(IpyWidgetComm):
             self.clear_output_wait = False
             self.set_state("outputs", [])
 
-    def process_data(self, data: dict, buffers: Sequence[bytes]) -> None:
+    def process_data(
+        self, data: dict, buffers: Sequence[memoryview | bytearray | bytes]
+    ) -> None:
         """Modify the callbacks of a given message to add outputs to this ipywidget."""
         if (
             data.get("method") == "update"
@@ -1436,7 +1440,7 @@ def open_comm_ipywidgets(
     comm_container: KernelTab,
     comm_id: str,
     data: dict,
-    buffers: Sequence[bytes],
+    buffers: Sequence[memoryview | bytearray | bytes],
 ) -> IpyWidgetComm:
     """Create a new Comm for an :py:mod:`ipywidgets` widget.
 

@@ -220,7 +220,9 @@ class MPLCanvasModel(IpyWidgetComm):
                 f"data:image/png;base64,{datum.convert('base64-png')}"
             )
 
-    def process_data(self, data: dict, buffers: Sequence[bytes]) -> None:
+    def process_data(
+        self, data: dict, buffers: Sequence[memoryview | bytearray | bytes]
+    ) -> None:
         """Process data received from the kernel.
 
         Args:

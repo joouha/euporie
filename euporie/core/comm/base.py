@@ -69,7 +69,7 @@ class Comm(metaclass=ABCMeta):
         comm_container: KernelTab,
         comm_id: str,
         data: dict,
-        buffers: Sequence[bytes],
+        buffers: Sequence[memoryview | bytearray | bytes],
     ) -> None:
         """Create a new instance of the Comm.
 
