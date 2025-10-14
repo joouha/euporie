@@ -217,10 +217,16 @@ class MPLCanvasModel(IpyWidgetComm):
             value: The new image data.
 
         """
-        # image_mode = self.data["state"].get("_image_mode")
-        # Only display full png images
+        # Only display full png images (ipymlp sometimes sends raw RGB data to clear the canvas)
         if value.startswith(b"\x89PNG"):
+            image_mode = self.data["state"].get("_image_mode")
             datum = Datum(data=value, format="png")
+            # If image is sent using diff mode, paste new image onto previous
+            if image_mode == "diff":
+                bg = display.datum.convert("pil")
+                fg = datum.convert("pil")
+                bg.paste(fg, (0, 0), fg)
+                datum = Datum(bg, format="pil")
             display.datum = datum
             self.data["state"]["_data_url"] = (
                 f"data:image/png;base64,{datum.convert('base64-png')}"
