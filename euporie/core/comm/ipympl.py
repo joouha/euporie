@@ -87,13 +87,6 @@ class MPLCanvasModel(IpyWidgetComm):
             data={"method": "custom", "content": {"type": "initialized"}},
         )
 
-        # toolbar
-        toolbar_comm_id = (
-            self.data["state"].get("toolbar", "").removeprefix("IPY_MODEL_")
-        )
-        toolbar_model = self.comm_container.comms[toolbar_comm_id]
-        toolbar_view = toolbar_model.new_view(parent)
-
         # Figure label
         label = Label(self.data["state"]["_figure_label"])
 
@@ -107,10 +100,22 @@ class MPLCanvasModel(IpyWidgetComm):
         display = Display(
             Datum(data=encoded_data, format=format_, px=int(size[0]), py=int(size[1])),
             mouse_handler=self.mouse_handler,
+            focusable=True,
+            focus_on_click=True,
         )
 
+        # Message
+        message = Label(self.data["state"]["_message"])
+
+        # Toolbar
+        toolbar_comm_id = (
+            self.data["state"].get("toolbar", "").removeprefix("IPY_MODEL_")
+        )
+        toolbar_model = self.comm_container.comms[toolbar_comm_id]
+        toolbar_view = toolbar_model.new_view(parent)
+
         box = Box(
-            HSplit([label, display, toolbar_view]),
+            HSplit([label, display, message, toolbar_view]),
             padding_left=0,
             padding_right=0,
         )
@@ -125,6 +130,7 @@ class MPLCanvasModel(IpyWidgetComm):
                 "_data": partial(self.set_data, display),
                 "_size": partial(self.set_size, display),
                 "_figure_label": partial(setattr, label, "value"),
+                "_message": partial(setattr, message, "value"),
                 "__navigate_mode": _set_toolbar_nav_mode,
             },
         )
