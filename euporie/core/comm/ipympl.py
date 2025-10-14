@@ -182,7 +182,7 @@ class MPLCanvasModel(IpyWidgetComm):
                 comm_id=self.comm_id,
                 data={"method": "custom", "content": content},
             )
-        return None
+        return NotImplemented
 
     def set_size(self, display: Display, value: list[float]) -> None:
         """Set the size of the canvas display.
@@ -242,54 +242,54 @@ class MPLCanvasModel(IpyWidgetComm):
             buffers: The binary buffers from the comm message.
 
         """
-        try:
-            super().process_data(data, buffers)
-            method = data.get("method")
-            if method == "custom":
-                msg = json.loads(data.get("content", {}).get("data", "{}"))
-                msg_type = msg.get("type")
+        super().process_data(data, buffers)
+        method = data.get("method")
+        if method == "custom":
+            msg = json.loads(data.get("content", {}).get("data", "{}"))
+            msg_type = msg.get("type")
 
-                if msg_type == "binary":
-                    buffer = buffers[0].tobytes()
-                    self.update_views({"_data": buffer})
-                    self._waiting_for_image = False
+            if msg_type == "binary":
+                buffer = buffers[0]
+                if isinstance(buffer, memoryview):
+                    buffer = buffer.tobytes()
+                elif isinstance(buffer, bytearray):
+                    buffer = bytes(buffer)
+                self.update_views({"_data": buffer})
+                self._waiting_for_image = False
 
-                elif msg_type == "draw":
-                    if not self._waiting_for_image:
-                        self.comm_container.kernel.kc_comm(
-                            comm_id=self.comm_id,
-                            data={"method": "custom", "content": {"type": "draw"}},
-                        )
-                        self._waiting_for_image = True
+            elif msg_type == "draw":
+                if not self._waiting_for_image:
+                    self.comm_container.kernel.kc_comm(
+                        comm_id=self.comm_id,
+                        data={"method": "custom", "content": {"type": "draw"}},
+                    )
+                    self._waiting_for_image = True
 
-                elif msg_type == "navigate_mode":
-                    self.update_views({"__navigate_mode": msg["mode"]})
+            elif msg_type == "navigate_mode":
+                self.update_views({"__navigate_mode": msg["mode"]})
 
-                elif msg_type == "save":
-                    import tempfile
-                    from base64 import b64decode
-                    from pathlib import Path
+            elif msg_type == "save":
+                import tempfile
+                from base64 import b64decode
+                from pathlib import Path
 
-                    with tempfile.NamedTemporaryFile(
-                        "wb", suffix=".png", delete=False
-                    ) as f:
-                        data_uri = self.data["state"].get("_data_url", "")
-                        _proto, _, data_path = data_uri.rpartition(":")
-                        _data_format, _, encoded_data = data_path.rpartition(",")
-                        f.write(b64decode(encoded_data))
-                        self.comm_container.app.open_file(Path(f.name))
+                with tempfile.NamedTemporaryFile(
+                    "wb", suffix=".png", delete=False
+                ) as f:
+                    data_uri = self.data["state"].get("_data_url", "")
+                    _proto, _, data_path = data_uri.rpartition(":")
+                    _data_format, _, encoded_data = data_path.rpartition(",")
+                    f.write(b64decode(encoded_data))
+                    self.comm_container.app.open_file(Path(f.name))
 
-                # elif msg_type == "history_buttons":
-                #     pass
+            # elif msg_type == "history_buttons":
+            #     pass
 
-                # elif msg_type == "resize":
-                #     pass
+            # elif msg_type == "resize":
+            #     pass
 
-                else:
-                    log.debug(data)
-
-        except Exception:
-            log.exception("")
+            # else:
+            #     log.debug(data)
 
 
 class ToolbarModel(IpyWidgetComm):

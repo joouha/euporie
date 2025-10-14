@@ -333,12 +333,16 @@ class DisplayControl(UIControl):
 
     def mouse_handler(self, mouse_event: MouseEvent) -> NotImplementedOrNone:
         """Mouse handler for this control."""
-        if self.focus_on_click() and mouse_event.event_type == MouseEventType.MOUSE_UP:
+        result: NotImplementedOrNone = NotImplemented
+        if (
+            self.focus_on_click()
+            and mouse_event.event_type == MouseEventType.MOUSE_DOWN
+        ):
             get_app().layout.current_control = self
-            return None
+            result = None
         if callable(_mouse_handler := self._mouse_handler):
             return _mouse_handler(mouse_event)
-        return NotImplemented
+        return result
 
     @property
     def content_width(self) -> int:
