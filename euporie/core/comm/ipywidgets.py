@@ -1457,7 +1457,10 @@ def open_comm_ipywidgets(
         The initialized widget Comm object.
     """
     model_name = data.get("state", {}).get("_model_name")
-    # Skip type checking due to https://github.com/python/mypy/issues/3115
     return WIDGET_MODELS.get(model_name, UnimplementedModel)(
         comm_container, comm_id, data, buffers
-    )  # type: ignore
+    )
+
+
+# Load ``ipympl`` widget
+from . import ipympl as ipympl  # noqa: E402

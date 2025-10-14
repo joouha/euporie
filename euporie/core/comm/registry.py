@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
+from pkgutil import resolve_name
 from typing import TYPE_CHECKING
 
 from euporie.core.comm.base import UnimplementedComm
-from euporie.core.comm.ipywidgets import open_comm_ipywidgets
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -13,8 +13,8 @@ if TYPE_CHECKING:
 
     from euporie.core.comm.base import Comm, KernelTab
 
-TARGET_CLASSES: dict[str, Callable[[KernelTab, str, dict, Sequence[bytes]], Comm]] = {
-    "jupyter.widget": open_comm_ipywidgets
+TARGET_CLASSES: dict[str, str] = {
+    "jupyter.widget": "euporie.core.comm.ipywidgets:open_comm_ipywidgets"
 }
 
 
@@ -38,7 +38,13 @@ def open_comm(
 
     """
     target_name = content.get("target_name", "")
-    return TARGET_CLASSES.get(target_name, UnimplementedComm)(
+    if path := TARGET_CLASSES.get(target_name):
+        TargetClass: Callable[[KernelTab, str, dict, Sequence[bytes]], Comm] = (
+            resolve_name(path)
+        )
+    else:
+        TargetClass = UnimplementedComm
+    return TargetClass(
         # comm_container=
         comm_container,
         # comm_id=
