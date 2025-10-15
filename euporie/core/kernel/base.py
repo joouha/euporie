@@ -122,7 +122,6 @@ class BaseKernel(ABC):
         self.status_change_event = asyncio.Event()
         self.coros: dict[str, concurrent.futures.Future] = {}
         self.msg_id_callbacks: dict[str, MsgCallbacks] = {}
-        self.threaded = False
 
         self.default_callbacks = MsgCallbacks(
             {
