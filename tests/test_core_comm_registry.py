@@ -24,12 +24,11 @@ def test_open_comm_ipywidgets() -> None:
 
 
 class TestComm(UnimplementedComm):
-    pass
+    """Comm for testing purposes."""
 
 
 def test_open_comm_with_target_class() -> None:
     """`open_comm` returns an instance of the specified target class."""
-
     TARGET_CLASSES["test.target"] = "tests.test_core_comm_registry:TestComm"
     comm_container = Mock(KernelTab)
     content = {
