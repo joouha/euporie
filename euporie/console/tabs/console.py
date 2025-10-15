@@ -613,7 +613,7 @@ class Console(KernelTab):
             on_text_changed=lambda buf: self.on_change(),
             diagnostics=self.report,
             accept_handler=_handler,
-            validator=KernelValidator(self.kernel),
+            validator=KernelValidator(lambda: self.kernel),
             enable_history_search=True,
             key_bindings=input_kb,
         )

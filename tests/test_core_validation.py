@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
-from unittest.mock import AsyncMock, Mock
+from unittest.mock import AsyncMock, Mock, NonCallableMock
 
 import pytest
 from prompt_toolkit.document import Document
@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 @pytest.fixture
 def kernel() -> BaseKernel:
     """Return a mock kernel object."""
-    return Mock()
+    return NonCallableMock()
 
 
 def test_validate(kernel: Mock) -> None:

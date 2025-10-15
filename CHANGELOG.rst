@@ -4,6 +4,18 @@ Changelog
 
 Notable changes to this project will be documented in this file.
 
+**********
+v2.9.1-dev
+**********
+
+Fixed
+=====
+
+- Fixed validation error after changing kernel at console startup
+
+
+----
+
 *******************
 v2.9.0 (2025-10-14)
 *******************
