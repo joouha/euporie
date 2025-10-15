@@ -11,8 +11,8 @@ v2.9.1-dev
 Fixed
 =====
 
+- Fix bug on MacOS where terminal was set to cooked mode when ipykernel was installed
 - Fixed validation error after changing kernel at console startup
-
 
 ----
 
