@@ -7,9 +7,7 @@ from pathlib import PurePath
 from typing import TYPE_CHECKING, NamedTuple
 
 from prompt_toolkit.filters import Condition
-from prompt_toolkit.layout.containers import (
-    ConditionalContainer,
-)
+from prompt_toolkit.layout.containers import DynamicContainer
 from prompt_toolkit.layout.dimension import Dimension
 
 from euporie.core.app.current import get_app
@@ -20,7 +18,7 @@ from euporie.core.key_binding.registry import (
     load_registered_bindings,
     register_bindings,
 )
-from euporie.core.layout.containers import HSplit
+from euporie.core.layout.containers import DummyContainer, HSplit
 from euporie.core.layout.decor import Line
 from euporie.core.widgets.cell_outputs import CellOutput, CellOutputDataElement
 from euporie.core.widgets.display import Display
@@ -130,26 +128,25 @@ class Pager:
         )
         self.output = PagerOutput({}, None)
 
-        self.container = ConditionalContainer(
-            HSplit(
-                [
-                    Line(
-                        char="▅",
-                        height=1,
-                        collapse=False,
-                        style="class:pager.border",
-                    ),
-                    Box(self.output, padding=0, padding_left=1),
-                ],
-                style="class:pager",
-                key_bindings=load_registered_bindings(
-                    "euporie.core.widgets.pager:Pager",
-                    config=get_app().config,
+        inner = HSplit(
+            [
+                Line(
+                    char="▅",
+                    height=1,
+                    collapse=False,
+                    style="class:pager.border",
                 ),
-                height=height,
+                Box(self.output, padding=0, padding_left=1),
+            ],
+            style="class:pager",
+            key_bindings=load_registered_bindings(
+                "euporie.core.widgets.pager:Pager",
+                config=get_app().config,
             ),
-            filter=self.visible,
+            height=height,
         )
+        dummy = DummyContainer()
+        self.container = DynamicContainer(lambda: inner if self.visible() else dummy)
 
     def focus(self) -> None:
         """Focus the pager."""
