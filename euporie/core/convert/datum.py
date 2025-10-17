@@ -202,6 +202,8 @@ class Datum(Generic[T], metaclass=_MetaDatum):
             hash_data = data
         elif isinstance(data, str):
             hash_data = data.encode()
+        elif isinstance(data, list):
+            hash_data = tuple(data)
         else:
             from PIL.Image import Image as PilImage
 
