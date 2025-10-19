@@ -175,7 +175,7 @@ class Console(KernelTab):
     def kernel_died(self) -> None:
         """Call if the kernel dies."""
         log.error("The kernel has died")
-        if confirm := self.app.dialogs.get("confirm"):
+        if confirm := self.app.get_dialog("confirm"):
             confirm.show(
                 title="Kernel connection lost",
                 message="The kernel appears to have died\n"

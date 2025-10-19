@@ -133,7 +133,7 @@ class BaseNotebook(KernelTab, metaclass=ABCMeta):
 
     def kernel_died(self) -> None:
         """Call if the kernel dies."""
-        if confirm := self.app.dialogs.get("confirm"):
+        if confirm := self.app.get_dialog("confirm"):
             confirm.show(
                 title="Kernel connection lost",
                 message="The kernel appears to have died\n"
@@ -255,7 +255,7 @@ class BaseNotebook(KernelTab, metaclass=ABCMeta):
             cb: A callback to run if after closing the notebook.
 
         """
-        if self.dirty and (unsaved := self.app.dialogs.get("unsaved")):
+        if self.dirty and (unsaved := self.app.get_dialog("unsaved")):
             unsaved.show(
                 tab=self,
                 cb=partial(super().close, cb),

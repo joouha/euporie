@@ -279,21 +279,21 @@ class CommandPalette(Dialog):
     @add_cmd()
     def _toggle_command_palette() -> None:
         """Show the command palette."""
-        if command_palette := get_app().dialogs.get("command-palette"):
+        if command_palette := get_app().get_dialog("command-palette"):
             command_palette.toggle()
 
     @staticmethod
     @add_cmd()
     def _show_command_palette() -> None:
         """Show the command palette."""
-        if command_palette := get_app().dialogs.get("command-palette"):
+        if command_palette := get_app().get_dialog("command-palette"):
             command_palette.show()
 
     @staticmethod
     @add_cmd()
     def _hide_command_palette() -> None:
         """Hide the command palette."""
-        if command_palette := get_app().dialogs.get("command-palette"):
+        if command_palette := get_app().get_dialog("command-palette"):
             command_palette.hide()
 
     # ################################# Key Bindings ##################################

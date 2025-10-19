@@ -117,7 +117,7 @@ class Tab(metaclass=ABCMeta):
             self.path = path
 
         if (self.path is None or isinstance(self.path, UntitledPath)) and (
-            dialog := self.app.dialogs.get("save-as")
+            dialog := self.app.get_dialog("save-as")
         ):
             dialog.show(tab=self, cb=cb)
             return
@@ -166,7 +166,7 @@ class Tab(metaclass=ABCMeta):
 
         except Exception:
             log.exception("An error occurred while saving the file")
-            if dialog := self.app.dialogs.get("save-as"):
+            if dialog := self.app.get_dialog("save-as"):
                 dialog.show(tab=self, cb=cb)
 
     def write_file(self, path: Path) -> None:

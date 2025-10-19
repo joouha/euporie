@@ -211,6 +211,7 @@ class BaseApp(ConfigurableApp, Application, ABC):
         # Floats at the app level
         self.leave_graphics = to_filter(leave_graphics)
         self.graphics: WeakSet[Float] = WeakSet()
+        self.dialog_classes: dict[str, type[Dialog]] = {}
         self.dialogs: dict[str, Dialog] = {}
         self.menus: dict[str, Float] = {}
         self.floats = ChainedList(
@@ -564,6 +565,12 @@ class BaseApp(ConfigurableApp, Application, ABC):
         self.renderer.reset()
         # Exit the main thread
         sys.exit(1)
+
+    def get_dialog(self, name: str) -> Dialog | None:
+        """Return a dialog instance, creating it if it does not exist."""
+        if name not in self.dialogs and (dialog_class := self.dialog_classes.get(name)):
+            self.dialogs[name] = dialog_class(self)
+        return self.dialogs.get(name)
 
     @abstractmethod
     def load_container(self) -> AnyContainer:

@@ -90,7 +90,7 @@ class EditorTab(KernelTab):
             cb: A callback to run if after closing the notebook.
 
         """
-        if self.dirty and (unsaved := self.app.dialogs.get("unsaved")):
+        if self.dirty and (unsaved := self.app.get_dialog("unsaved")):
             unsaved.show(
                 tab=self,
                 cb=partial(super().close, cb),

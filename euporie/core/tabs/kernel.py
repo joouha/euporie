@@ -282,7 +282,7 @@ class KernelTab(Tab, metaclass=ABCMeta):
             if callable(cb):
                 cb()
 
-        if confirm := self.app.dialogs.get("confirm"):
+        if confirm := self.app.get_dialog("confirm"):
             confirm.show(
                 message="Are you sure you want to restart the kernel?",
                 cb=partial(self.kernel.restart, cb=_cb),
@@ -386,7 +386,7 @@ class KernelTab(Tab, metaclass=ABCMeta):
             return
 
         # Prompt user to select a kernel
-        if dialog := self.app.dialogs.get("change-kernel"):
+        if dialog := self.app.get_dialog("change-kernel"):
             dialog.show(tab=self, message=msg)
             return
 

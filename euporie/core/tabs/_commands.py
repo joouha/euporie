@@ -53,7 +53,7 @@ def _save_as(path: str = "") -> None:
         from euporie.core.app.current import get_app
 
         app = get_app()
-        if dialog := app.dialogs.get("save-as"):
+        if dialog := app.get_dialog("save-as"):
             dialog.show(tab=app.tab)
 
 

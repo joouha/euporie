@@ -227,17 +227,19 @@ class NotebookApp(BaseApp):
         self.search_bar = SearchBar()
         self.command_bar = CommandBar()
 
-        self.dialogs["command-palette"] = CommandPalette(self)
-        self.dialogs["about"] = AboutDialog(self)
-        self.dialogs["open-file"] = OpenFileDialog(self)
-        self.dialogs["save-as"] = SaveAsDialog(self)
-        self.dialogs["no-kernels"] = NoKernelsDialog(self)
-        self.dialogs["change-kernel"] = SelectKernelDialog(self)
-        self.dialogs["confirm"] = ConfirmDialog(self)
-        self.dialogs["error"] = ErrorDialog(self)
-        self.dialogs["unsaved"] = UnsavedDialog(self)
-        self.dialogs["shortcuts"] = ShortcutsDialog(self)
-        self.dialogs["msgbox"] = MsgBoxDialog(self)
+        self.dialog_classes = {
+            "command-palette": CommandPalette,
+            "about": AboutDialog,
+            "open-file": OpenFileDialog,
+            "save-as": SaveAsDialog,
+            "no-kernels": NoKernelsDialog,
+            "change-kernel": SelectKernelDialog,
+            "confirm": ConfirmDialog,
+            "error": ErrorDialog,
+            "unsaved": UnsavedDialog,
+            "shortcuts": ShortcutsDialog,
+            "msgbox": MsgBoxDialog,
+        }
 
         top_bar = ConditionalContainer(
             content=VSplit(
@@ -314,7 +316,7 @@ class NotebookApp(BaseApp):
     ) -> None:
         exception = context.get("exception")
         # Also display a dialog to the user
-        self.dialogs["error"].show(exception=exception)
+        self.get_dialog("error").show(exception=exception)
         # Log observed exceptions to the log
         log.exception("An unhandled exception occurred", exc_info=exception)
 

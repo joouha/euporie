@@ -415,7 +415,7 @@ class AboutDialog(Dialog):
         """Show the about dialog."""
         from euporie.core.app.current import get_app
 
-        if dialog := get_app().dialogs.get("about"):
+        if dialog := get_app().get_dialog("about"):
             dialog.toggle()
 
 
@@ -563,7 +563,7 @@ class OpenFileDialog(FileDialog):
         """Open a file."""
         from euporie.core.app.current import get_app
 
-        if dialog := get_app().dialogs.get("open-file"):
+        if dialog := get_app().get_dialog("open-file"):
             dialog.show()
 
     # ################################# Key Bindings ##################################
@@ -956,5 +956,5 @@ class ShortcutsDialog(Dialog):
         """Display details of registered key-bindings in a dialog."""
         from euporie.core.app.current import get_app
 
-        if dialog := get_app().dialogs.get("shortcuts"):
+        if dialog := get_app().get_dialog("shortcuts"):
             dialog.toggle()
