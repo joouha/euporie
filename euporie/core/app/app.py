@@ -58,7 +58,6 @@ from prompt_toolkit.utils import Event
 from euporie.core.app.base import ConfigurableApp
 from euporie.core.app.cursor import CursorConfig
 from euporie.core.clipboard import CONFIGURED_CLIPBOARDS
-from euporie.core.convert.mime import get_mime
 from euporie.core.filters import has_toolbar
 from euporie.core.format import CliFormatter
 from euporie.core.io import COLOR_DEPTHS, Vt100_Output, Vt100Parser
@@ -72,7 +71,6 @@ from euporie.core.key_binding.vi_state import ViState
 from euporie.core.layout.containers import Window
 from euporie.core.log import setup_logs
 from euporie.core.lsp import KNOWN_LSP_SERVERS, LspClient
-from euporie.core.path import parse_path
 from euporie.core.renderer import Renderer
 from euporie.core.style import (
     DEFAULT_COLORS,
@@ -594,6 +592,8 @@ class BaseApp(ConfigurableApp, Application, ABC):
 
     def get_file_tabs(self, path: Path) -> list[TabRegistryEntry]:
         """Return the tab to use for a file path."""
+        from euporie.core.convert.mime import get_mime
+
         path_mime = get_mime(path) or "text/plain"
         log.debug("File %s has mime type: %s", path, path_mime)
 
@@ -659,6 +659,8 @@ class BaseApp(ConfigurableApp, Application, ABC):
             tab_class: The tab type to use to open the file
 
         """
+        from euporie.core.path import parse_path
+
         ppath = parse_path(path)
         log.info("Opening file %s", path)
         for tab in self.tabs:

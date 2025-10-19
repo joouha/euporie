@@ -18,7 +18,6 @@ from prompt_toolkit.layout.controls import UIContent, UIControl
 from prompt_toolkit.layout.screen import WritePosition
 from prompt_toolkit.mouse_events import MouseButton, MouseEvent, MouseEventType
 from prompt_toolkit.utils import Event
-from upath import UPath
 
 from euporie.core.app.current import get_app
 from euporie.core.border import InsetGrid
@@ -354,6 +353,8 @@ FILE_ICONS = {
 
 def is_dir(path: str | Path) -> bool | None:
     """Check if a path is a directory."""
+    from upath import UPath
+
     test_path = UPath(path)
     try:
         return test_path.is_dir()
@@ -373,6 +374,8 @@ class FileBrowserControl(UIControl):
         window: Window | None = None,
     ) -> None:
         """Initialize a new file browser instance."""
+        from upath import UPath
+
         self.dir = path or UPath(".")
         self.hovered: int | None = None
         self.selected: int | None = None
@@ -430,6 +433,8 @@ class FileBrowserControl(UIControl):
     @dir.setter
     def dir(self, value: PT) -> None:
         """Set the current folder path."""
+        from upath import UPath
+
         dir_path = UPath(value)
         try:
             dir_path = dir_path.resolve()

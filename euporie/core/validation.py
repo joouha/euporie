@@ -34,7 +34,6 @@ class KernelValidator(Validator):
 
     def validate(self, document: Document) -> None:
         """Validate the input synchronously."""
-        log.debug(self.kernel)
         completeness_status = self.kernel.is_complete(source=document.text).get(
             "status", "unknown"
         )

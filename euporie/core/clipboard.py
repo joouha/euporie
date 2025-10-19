@@ -13,8 +13,6 @@ from prompt_toolkit.clipboard.pyperclip import (
 from prompt_toolkit.selection import SelectionType
 
 from euporie.core.app.current import get_app
-from euporie.core.io import Vt100_Output
-from euporie.core.key_binding.key_processor import KeyProcessor
 
 log = logging.getLogger(__name__)
 
@@ -40,6 +38,8 @@ class Osc52Clipboard(Clipboard):
 
     def set_data(self, data: ClipboardData) -> None:
         """Set clipboard data."""
+        from euporie.core.io import Vt100_Output
+
         output = get_app().output
         if isinstance(output, Vt100_Output):
             output.set_clipboard(data.text)
@@ -48,6 +48,9 @@ class Osc52Clipboard(Clipboard):
 
     def get_data(self) -> ClipboardData:
         """Retrieve clipboard data."""
+        from euporie.core.io import Vt100_Output
+        from euporie.core.key_binding.key_processor import KeyProcessor
+
         # Send clipboard query
         app = get_app()
         output = app.output

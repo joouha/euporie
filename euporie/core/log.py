@@ -150,14 +150,20 @@ class FormattedTextHandler(logging.StreamHandler):
 
         super().__init__(stream)
         self.share_stream = share_stream
-        self.style = style or merge_styles(
-            [
-                style_from_pygments_cls(get_style_by_name(pygments_theme)),
-                style or Style(LOG_STYLE),
-            ]
-        )
-
+        self.pygments_theme = pygments_theme
+        self._style = style
         self.output = create_output(stdout=self.stream)
+
+    @property
+    def style(self) -> BaseStyle:
+        if self._style is None:
+            self._style = merge_styles(
+                [
+                    style_from_pygments_cls(get_style_by_name(self.pygments_theme)),
+                    Style(LOG_STYLE),
+                ]
+            )
+        return self._style
 
     def ft_format(self, record: logging.LogRecord) -> FormattedText:
         """Format the specified record."""
