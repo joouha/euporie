@@ -156,6 +156,7 @@ class FormattedTextHandler(logging.StreamHandler):
 
     @property
     def style(self) -> BaseStyle:
+        """Calculate the style when accessed."""
         if self._style is None:
             self._style = merge_styles(
                 [
