@@ -20,7 +20,6 @@ from euporie.core.convert.registry import (
     _FILTER_CACHE,
     converters,
 )
-from euporie.core.ft.utils import to_plain_text
 
 if TYPE_CHECKING:
     from collections.abc import Coroutine
@@ -178,39 +177,25 @@ class Datum(Generic[T], metaclass=_MetaDatum):
                     pass
             del datum
 
-    def to_bytes(self) -> bytes:
-        """Cast the data to bytes."""
-        data = self.data
-        if isinstance(data, str):
-            return data.encode()
-        elif isinstance(data, list):
-            return to_plain_text(data).encode()
-        elif isinstance(data, bytes):
-            return data
-        else:
-            from PIL.Image import Image as PilImage
-
-            if isinstance(data, PilImage):
-                return data.tobytes()
-            else:
-                return b"Error"
-
     @staticmethod
-    def get_hash(data: Any) -> str:
+    def get_hash(data: T) -> str:
         """Calculate a hash of data."""
+        hash_data: bytes
         if isinstance(data, bytes):
             hash_data = data
         elif isinstance(data, str):
             hash_data = data.encode()
         elif isinstance(data, list):
-            hash_data = tuple(data)
+            hash_data = hash(tuple(data)).to_bytes(8)
+        elif isinstance(data, bytes):
+            hash_data = data
         else:
             from PIL.Image import Image as PilImage
 
             if isinstance(data, PilImage):
                 hash_data = data.tobytes()
             else:
-                hash_data = data
+                hash_data = b"Error"
         return md5(hash_data, usedforsecurity=False).hexdigest()
 
     @property
@@ -219,7 +204,7 @@ class Datum(Generic[T], metaclass=_MetaDatum):
         try:
             return self._hash
         except AttributeError:
-            value = self.get_hash(self.to_bytes())
+            value = self.get_hash(self.data)
             self._hash = value
             return value
 
