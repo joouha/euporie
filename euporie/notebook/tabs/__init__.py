@@ -1,6 +1,7 @@
 """Tab for use in euporie notebook editor."""
 
 from euporie.core.convert.mime import MIME_FORMATS
+from euporie.core.nbformat import NOTEBOOK_EXTENSIONS
 from euporie.core.tabs import _TAB_REGISTRY, TabRegistryEntry
 
 _TAB_REGISTRY.extend(
@@ -26,7 +27,7 @@ _TAB_REGISTRY.extend(
             path="euporie.notebook.tabs.notebook:Notebook",
             name="Notebook Editor",
             mime_types={"application/x-ipynb+json"},
-            file_extensions={".ipynb": None},
+            file_extensions=dict.fromkeys(NOTEBOOK_EXTENSIONS),
             weight=3,
         ),
         TabRegistryEntry(
@@ -37,13 +38,3 @@ _TAB_REGISTRY.extend(
         ),
     ]
 )
-
-try:
-    from jupytext.formats import NOTEBOOK_EXTENSIONS
-except ModuleNotFoundError:
-    pass
-else:
-    for entry in _TAB_REGISTRY:
-        if entry.path == "euporie.notebook.tabs.notebook:Notebook":
-            entry.file_extensions.update(dict.fromkeys(NOTEBOOK_EXTENSIONS))
-            break

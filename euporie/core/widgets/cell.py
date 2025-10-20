@@ -11,7 +11,6 @@ from pathlib import Path
 from typing import TYPE_CHECKING, cast
 from weakref import WeakKeyDictionary
 
-import nbformat
 from prompt_toolkit.completion.base import (
     DynamicCompleter,
     _MergedCompleter,
@@ -76,7 +75,9 @@ def get_cell_id(cell_json: dict) -> str:
     cell_id = cell_json.get("id", "")
     # Assign a cell id if missing
     if not cell_id:
-        cell_json["id"] = cell_id = nbformat.v4.new_code_cell().get("id")
+        from uuid import uuid4
+
+        cell_json["id"] = cell_id = uuid4().hex[:8]
     return cell_id
 
 

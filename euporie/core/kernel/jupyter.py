@@ -15,6 +15,7 @@ from uuid import uuid4
 from upath import UPath
 
 from euporie.core.kernel.base import BaseKernel, KernelInfo, MsgCallbacks
+from euporie.core.nbformat import new_output, output_from_msg
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -421,13 +422,8 @@ class JupyterKernel(BaseKernel):
                     if callable(
                         add_output := self.msg_id_callbacks[msg_id]["add_output"]
                     ) and (data := payload.get("data", {})):
-                        import nbformat
-
                         add_output(
-                            nbformat.v4.new_output(
-                                "execute_result",
-                                data=data,
-                            ),
+                            new_output("execute_result", data=data),
                             own,
                         )
                 elif source == "set_next_input":
@@ -557,25 +553,19 @@ class JupyterKernel(BaseKernel):
         """Call callbacks for an iopub display data response."""
         msg_id = rsp.get("parent_header", {}).get("msg_id")
         if callable(add_output := self.msg_id_callbacks[msg_id]["add_output"]):
-            import nbformat
-
-            add_output(nbformat.v4.output_from_msg(rsp), own)
+            add_output(output_from_msg(rsp), own)
 
     def on_iopub_update_display_data(self, rsp: dict[str, Any], own: bool) -> None:
         """Call callbacks for an iopub update display data response."""
         msg_id = rsp.get("parent_header", {}).get("msg_id")
         if callable(add_output := self.msg_id_callbacks[msg_id]["add_output"]):
-            import nbformat
-
-            add_output(nbformat.v4.output_from_msg(rsp), own)
+            add_output(output_from_msg(rsp), own)
 
     def on_iopub_execute_result(self, rsp: dict[str, Any], own: bool) -> None:
         """Call callbacks for an iopub execute result response."""
         msg_id = rsp.get("parent_header", {}).get("msg_id")
         if callable(add_output := self.msg_id_callbacks[msg_id]["add_output"]):
-            import nbformat
-
-            add_output(nbformat.v4.output_from_msg(rsp), own)
+            add_output(output_from_msg(rsp), own)
 
         if (execution_count := rsp.get("content", {}).get("execution_count")) and (
             callable(
@@ -590,9 +580,7 @@ class JupyterKernel(BaseKernel):
         """Call callbacks for an iopub error response."""
         msg_id = rsp.get("parent_header", {}).get("msg_id", "")
         if callable(add_output := self.msg_id_callbacks[msg_id].get("add_output")):
-            import nbformat
-
-            add_output(nbformat.v4.output_from_msg(rsp), own)
+            add_output(output_from_msg(rsp), own)
         if callable(done := self.msg_id_callbacks[msg_id].get("done")):
             done(rsp.get("content", {}))
 
@@ -600,9 +588,7 @@ class JupyterKernel(BaseKernel):
         """Call callbacks for an iopub stream response."""
         msg_id = rsp.get("parent_header", {}).get("msg_id")
         if callable(add_output := self.msg_id_callbacks[msg_id]["add_output"]):
-            import nbformat
-
-            add_output(nbformat.v4.output_from_msg(rsp), own)
+            add_output(output_from_msg(rsp), own)
 
     def on_iopub_clear_output(self, rsp: dict[str, Any], own: bool) -> None:
         """Call callbacks for an iopub clear output response."""

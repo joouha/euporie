@@ -8,21 +8,16 @@ from base64 import standard_b64decode
 from functools import partial
 from typing import TYPE_CHECKING
 
-import nbformat
 from prompt_toolkit.filters import Never
 
 from euporie.core.comm.registry import open_comm
 from euporie.core.io import edit_in_editor
 from euporie.core.kernel.base import MsgCallbacks
+from euporie.core.nbformat import from_dict, new_code_cell, new_notebook
+from euporie.core.nbformat import read as read_nb
+from euporie.core.nbformat import write as write_nb
 from euporie.core.tabs.kernel import KernelTab
 from euporie.core.widgets.cell import Cell, get_cell_id
-
-try:
-    from jupytext import read as read_nb
-    from jupytext import write as write_nb
-except ModuleNotFoundError:
-    from nbformat import read as read_nb
-    from nbformat import write as write_nb
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -83,7 +78,7 @@ class BaseNotebook(KernelTab, metaclass=ABCMeta):
                 "edit_magic": edit_in_editor,
             }
         )
-        self.json = json or {}
+        self.json = json or new_notebook()
         self._rendered_cells: dict[str, Cell] = {}
         self.multiple_cells_selected: Filter = Never()
         self.loaded = False
@@ -150,11 +145,9 @@ class BaseNotebook(KernelTab, metaclass=ABCMeta):
         if self.path is not None and self.path.exists():
             with self.path.open() as f:
                 self.json = read_nb(f, as_version=4)
-        else:
-            self.json = self.json or nbformat.v4.new_notebook()
         # Ensure there is always at least one cell
         if not self.json.setdefault("cells", []):
-            self.json["cells"] = [nbformat.v4.new_code_cell()]
+            self.json["cells"] = [new_code_cell()]
 
     def set_status(self, status: str) -> None:
         """Call when kernel status changes."""
@@ -286,16 +279,16 @@ class BaseNotebook(KernelTab, metaclass=ABCMeta):
             }
         with path.open("w") as open_file:
             try:
-                write_nb(nb=nbformat.from_dict(self.json), fp=open_file)
+                write_nb(nb=from_dict(self.json), fp=open_file)
             except AssertionError:
                 try:
                     # Jupytext requires a filename if we don't give it a format
-                    write_nb(nb=nbformat.from_dict(self.json), fp=path)
+                    write_nb(nb=from_dict(self.json), fp=path)
                 except Exception:
                     # Jupytext requires a format if the path has no extension
                     # We just use ipynb as the default format
                     write_nb(
-                        nb=nbformat.from_dict(self.json),
+                        nb=from_dict(self.json),
                         fp=open_file,
                         fmt="ipynb",
                     )

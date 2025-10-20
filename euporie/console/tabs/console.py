@@ -6,7 +6,6 @@ import logging
 from functools import partial
 from typing import TYPE_CHECKING, cast
 
-import nbformat
 from prompt_toolkit.buffer import Buffer, ValidationState
 from prompt_toolkit.filters.app import (
     buffer_has_focus,
@@ -47,6 +46,7 @@ from euporie.core.key_binding.registry import (
 )
 from euporie.core.layout.print import PrintingContainer
 from euporie.core.lsp import LspCell
+from euporie.core.nbformat import new_code_cell, new_notebook, new_output
 from euporie.core.style import KERNEL_STATUS_REPR
 from euporie.core.tabs.kernel import KernelTab
 from euporie.core.validation import KernelValidator
@@ -58,7 +58,6 @@ if TYPE_CHECKING:
     from pathlib import Path
     from typing import Any, Callable
 
-    from nbformat.notebooknode import NotebookNode
     from prompt_toolkit.application.application import Application
     from prompt_toolkit.formatted_text import AnyFormattedText, StyleAndTextTuples
     from prompt_toolkit.key_binding.key_bindings import NotImplementedOrNone
@@ -67,6 +66,7 @@ if TYPE_CHECKING:
 
     from euporie.core.app.app import BaseApp
     from euporie.core.lsp import LspClient
+    from euporie.core.nbformat import NotebookNode
 
 log = logging.getLogger(__name__)
 
@@ -134,7 +134,7 @@ class Console(KernelTab):
         self.execution_count = 0
         self.clear_outputs_on_output = False
 
-        self.json = nbformat.v4.new_notebook()
+        self.json = new_notebook()
         self.json["metadata"] = self._metadata
         self.render_queue: list[dict[str, Any]] = []
         self.last_rendered: NotebookNode | None = None
@@ -263,7 +263,7 @@ class Console(KernelTab):
         self.flush_live_output()
 
         # Record the input as a cell in the json
-        cell_json = nbformat.v4.new_code_cell(
+        cell_json = new_code_cell(
             source=input_json["code"],
             execution_count=input_json.get("execution_count", self.execution_count),
         )
@@ -292,7 +292,7 @@ class Console(KernelTab):
         # If there is no cell in the virtual notebook, add an empty cell
         if not self.json["cells"]:
             self.json["cells"].append(
-                nbformat.v4.new_code_cell(execution_count=self.execution_count)
+                new_code_cell(execution_count=self.execution_count)
             )
         cell = self.json.cells[-1]
 
@@ -301,9 +301,7 @@ class Console(KernelTab):
             # Add to end of previous cell in virtual notebook
             # cell["outputs"].append(output_json)
             # Create virtual cell
-            cell = nbformat.v4.new_code_cell(
-                id=cell.id, execution_count=self.execution_count
-            )
+            cell = new_code_cell(id=cell.id, execution_count=self.execution_count)
             self.render_queue.append(cell)
 
         # Add widgets to the live output
@@ -321,9 +319,7 @@ class Console(KernelTab):
                 output_json["text"] = text
                 cell["outputs"].append(output_json)
             if tail:
-                self.live_output.add_output(
-                    nbformat.v4.new_output(**{**output_json, "text": tail})
-                )
+                self.live_output.add_output(new_output(**{**output_json, "text": tail}))
         else:
             if "application/vnd.jupyter.widget-view+json" in output_json.get(
                 "data", {}
@@ -339,7 +335,7 @@ class Console(KernelTab):
         """Flush any active live outputs to the terminal."""
         if self.live_output.json:
             self.render_queue.append(
-                nbformat.v4.new_code_cell(
+                new_code_cell(
                     execution_count=None,
                     outputs=self.live_output.json[:],
                 ),

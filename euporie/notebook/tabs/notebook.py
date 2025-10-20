@@ -7,8 +7,8 @@ from collections import deque
 from copy import deepcopy
 from functools import partial
 from typing import TYPE_CHECKING, ClassVar
+from uuid import uuid4
 
-import nbformat
 from prompt_toolkit.clipboard.base import ClipboardData
 from prompt_toolkit.filters import (
     Condition,
@@ -31,6 +31,7 @@ from euporie.core.layout.cache import CachedContainer
 from euporie.core.layout.decor import Line, Pattern
 from euporie.core.layout.scroll import ScrollingContainer
 from euporie.core.margins import MarginContainer, ScrollbarMargin
+from euporie.core.nbformat import NOTEBOOK_EXTENSIONS, new_code_cell
 from euporie.core.style import KERNEL_STATUS_REPR
 from euporie.core.tabs.notebook import BaseNotebook
 from euporie.core.widgets.cell import Cell
@@ -62,13 +63,7 @@ class Notebook(BaseNotebook):
     name = "Notebook Editor"
     weight = 3
     mime_types: ClassVar[set[str]] = {"application/x-ipynb+json"}
-    file_extensions: ClassVar[dict[str, None]] = {".ipynb": None}
-    try:
-        from jupytext.formats import NOTEBOOK_EXTENSIONS
-    except ModuleNotFoundError:
-        pass
-    else:
-        file_extensions.update(dict.fromkeys(NOTEBOOK_EXTENSIONS))
+    file_extensions: ClassVar[dict[str, None]] = dict.fromkeys(NOTEBOOK_EXTENSIONS)
 
     allow_stdin = True
     bg_init = True
@@ -420,7 +415,7 @@ class Notebook(BaseNotebook):
         cell_jsons: MutableSequence = deepcopy(self.clipboard)
         # Assign a new cell IDs
         for cell_json in cell_jsons:
-            cell_json["id"] = nbformat.v4.new_code_cell().get("id")
+            cell_json["id"] = uuid4().hex[:8]
         self.json["cells"][index + 1 : index + 1] = cell_jsons
         self.dirty = True
         # Only change the selected cell if we actually pasted something
@@ -438,7 +433,7 @@ class Notebook(BaseNotebook):
         """
         self.json["cells"].insert(
             index,
-            nbformat.v4.new_code_cell(source=source, **kwargs),
+            new_code_cell(source=source, **kwargs),
         )
         self.dirty = True
 
@@ -508,7 +503,7 @@ class Notebook(BaseNotebook):
             indices = sorted(range(*slice_.indices(len(self.json["cells"]))))
             if len(indices) >= 2:
                 # Create a new cell
-                new_cell_json = nbformat.v4.new_code_cell()
+                new_cell_json = new_code_cell()
                 # Set the type for that for the focused cell
                 cell_type = self.json["cells"][slice_.start].get("cell_type", "code")
                 new_cell_json["cell_type"] = cell_type
@@ -542,7 +537,7 @@ class Notebook(BaseNotebook):
         # Get the cell contents
         source = cell.json.get("source", "")
         # Create a new cell
-        new_cell_json = nbformat.v4.new_code_cell()
+        new_cell_json = new_code_cell()
         # Split the cell contents at the cursor position
         cell.input = source[cursor_position:]
         new_cell_json["source"] = source[:cursor_position]
