@@ -316,7 +316,8 @@ class NotebookApp(BaseApp):
     ) -> None:
         exception = context.get("exception")
         # Also display a dialog to the user
-        self.get_dialog("error").show(exception=exception)
+        if dialog := self.get_dialog("error"):
+            dialog.show(exception=exception)
         # Log observed exceptions to the log
         log.exception("An unhandled exception occurred", exc_info=exception)
 
