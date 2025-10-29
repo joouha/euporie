@@ -87,14 +87,36 @@ class LspCell(NamedTuple):
     metadata: dict[str, Any] | None = None
 
 
+_THREAD: list[threading.Thread | None] = [None]
+_LOOP: list[asyncio.AbstractEventLoop | None] = [None]
+
+
+def get_loop() -> asyncio.AbstractEventLoop:
+    """Create or return the conversion IO loop.
+
+    The loop will be running on a separate thread.
+    """
+    if _LOOP[0] is None:
+        loop = asyncio.new_event_loop()
+        _LOOP[0] = loop
+        thread = threading.Thread(
+            target=loop.run_forever, name="EuporieKernelLoop", daemon=True
+        )
+        thread.start()
+        _THREAD[0] = thread
+    assert _LOOP[0] is not None
+    # Check we are not already in the conversion event loop
+    try:
+        running_loop = asyncio.get_running_loop()
+    except RuntimeError:
+        running_loop = None
+    if _LOOP[0] is running_loop:
+        raise NotImplementedError("Cannot nest event loop access")
+    return _LOOP[0]
+
+
 class LspClient:
     """A client for communicating with LSP servers."""
-
-    # An event loop for running the LSP clients
-    loop = asyncio.new_event_loop()
-    # A thread used to run the LSP client event loop
-    thread = threading.Thread(target=_setup_loop, args=(loop,))
-    thread.daemon = True
 
     def __init__(
         self,
@@ -149,6 +171,8 @@ class LspClient:
         # Ensure LSP servers get shutdown at exit
         self.on_exit = Event(self)
 
+        self.loop = get_loop()
+
     def __repr__(self) -> str:
         """Return a string representation of the LSP client."""
         return f"{self.__class__.__name__}(name={self.name})"
@@ -162,10 +186,6 @@ class LspClient:
     def start(self, root: Path | None = None) -> None:
         """Start the LSP server."""
         if not self.started:
-            try:
-                self.thread.start()
-            except RuntimeError:
-                pass
             # Start lsp server process and monitor it on event loop in thread
             asyncio.run_coroutine_threadsafe(self.start_(root), self.loop).result(
                 timeout=30
