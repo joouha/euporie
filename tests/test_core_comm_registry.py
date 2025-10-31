@@ -23,13 +23,13 @@ def test_open_comm_ipywidgets() -> None:
     assert isinstance(result, IpyWidgetComm)
 
 
-class TestComm(UnimplementedComm):
+class DummyComm(UnimplementedComm):
     """Comm for testing purposes."""
 
 
 def test_open_comm_with_target_class() -> None:
     """`open_comm` returns an instance of the specified target class."""
-    TARGET_CLASSES["test.target"] = "tests.test_core_comm_registry:TestComm"
+    TARGET_CLASSES["test.target"] = "tests.test_core_comm_registry:DummyComm"
     comm_container = Mock(KernelTab)
     content = {
         "target_name": "test.target",
@@ -38,7 +38,7 @@ def test_open_comm_with_target_class() -> None:
         "buffers": [],
     }
     result = open_comm(comm_container, content, [])
-    assert isinstance(result, TestComm)
+    assert isinstance(result, DummyComm)
     del TARGET_CLASSES["test.target"]
 
 
