@@ -21,6 +21,7 @@ from prompt_toolkit.utils import Event
 
 from euporie.core.app.current import get_app
 from euporie.core.border import InsetGrid
+from euporie.core.data_structures import DiBool
 from euporie.core.layout.containers import HSplit, VSplit, Window
 from euporie.core.layout.decor import FocusedStyle
 from euporie.core.margins import MarginContainer, ScrollbarMargin
@@ -643,6 +644,7 @@ class FileBrowser:
             validation=_validate_path,
             accept_handler=_accept_path,
             completer=self.completer,
+            show_borders=DiBool(top=True, right=False, bottom=True, left=True),
         )
         self.control = control = FileBrowserControl(
             path=path,
@@ -667,10 +669,19 @@ class FileBrowser:
                             FocusedStyle(text),
                             FocusedStyle(
                                 Button(
-                                    "Go",
+                                    "➜",
+                                    show_borders=DiBool(
+                                        top=True, right=True, bottom=True, left=False
+                                    ),
                                     on_click=lambda x: setattr(
                                         control, "dir", text.text
                                     ),
+                                )
+                            ),
+                            FocusedStyle(
+                                Button(
+                                    "↻",
+                                    on_click=lambda x: control._dir_cache.clear(),
                                 )
                             ),
                         ]
