@@ -359,7 +359,10 @@ class Dialog(Float, metaclass=ABCMeta):
             try:
                 self.app.layout.focus(self.last_focused)
             except ValueError:
-                self.app.layout.focus_next()
+                if tab := self.app.tab:
+                    tab.focus()
+                else:
+                    self.app.layout.focus_next()
         # Stop any drag events
         self.app.mouse_limits = None
 
@@ -538,7 +541,11 @@ class OpenFileDialog(FileDialog):
 
         from euporie.core.path import parse_path
 
-        path = parse_path(self.file_browser.control.dir / buffer.text)
+        try:
+            path = self.file_browser.control.dir / buffer.text
+        except ValueError:
+            path = UPath(buffer.text)
+        path = parse_path(path)
         if path is not None:
             if not path.exists():
                 path = UPath(buffer.text)
@@ -548,7 +555,12 @@ class OpenFileDialog(FileDialog):
                     self.file_browser.control.dir = path
                 elif path.is_file():
                     self.hide()
-                    self.app.open_file(path, tab_class=self.tab_dd.value.tab_class)
+                    tab_class = (
+                        None
+                        if self.tab_dd.value is None
+                        else self.tab_dd.value.tab_class
+                    )
+                    self.app.open_file(path, tab_class=tab_class)
                 return
             else:
                 self.show(
@@ -586,9 +598,15 @@ class SaveAsDialog(FileDialog):
         self, buffer: Buffer, tab: Tab | None, cb: Callable | None = None
     ) -> None:
         """Validate the the file to open exists."""
+        from upath import UPath
+
         from euporie.core.path import parse_path
 
-        path = parse_path(self.file_browser.control.dir / buffer.text)
+        try:
+            path = self.file_browser.control.dir / buffer.text
+        except ValueError:
+            path = UPath(buffer.text)
+        path = parse_path(path)
         if tab and path is not None:
             if path.is_dir():
                 self.file_browser.control.dir = path

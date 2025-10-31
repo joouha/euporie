@@ -4,6 +4,17 @@ Changelog
 
 Notable changes to this project will be documented in this file.
 
+********
+Upcoming
+********
+
+Fixed
+=====
+
+- Allow opening HTTP urls from file open dialog
+
+----
+
 *******************
 v2.9.1 (2025-10-24)
 *******************
