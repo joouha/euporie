@@ -518,13 +518,14 @@ class NoKernel(BaseKernel):
 
     async def start_async(self) -> None:
         """Start the kernel."""
-        raise NotImplementedError()
+        self.status = "idle"
+        return
 
     async def run_async(
         self, source: str, **local_callbacks: Unpack[MsgCallbacks]
     ) -> None:
         """Execute code in the kernel asynchronously."""
-        raise NotImplementedError()
+        return None
 
     async def is_complete_async(
         self,
