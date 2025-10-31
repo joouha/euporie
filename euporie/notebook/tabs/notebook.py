@@ -167,10 +167,9 @@ class Notebook(BaseNotebook):
         async def _load() -> None:
             # Load notebook file
             self.load()
-            # Load an focus container
+            # Load and focus container
             prev = self.container
             self.container = self._load_container()
-            self.loaded = True
             # Update the focus if the old container had focus
             if self.app.layout.has_focus(prev):
                 self.focus()

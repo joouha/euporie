@@ -381,9 +381,11 @@ class KernelTab(Tab, metaclass=ABCMeta):
             return
 
         # Automatically select the only kernel if there is only one
-        if startup and len(kernel_infos) == 1:
-            self.switch_kernel(next(iter(kernel_infos)).factory)
-            return
+        if startup and not self.kernel_name and len(kernel_infos) <= 2:
+            for info in kernel_infos:
+                if info.type != NoKernel:
+                    self.switch_kernel(info.factory)
+                    return
 
         # Prompt user to select a kernel
         if dialog := self.app.get_dialog("change-kernel"):

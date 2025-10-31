@@ -81,7 +81,8 @@ class BaseNotebook(KernelTab, metaclass=ABCMeta):
         self.json = json or new_notebook()
         self._rendered_cells: dict[str, Cell] = {}
         self.multiple_cells_selected: Filter = Never()
-        self.loaded = False
+        self.loaded = path is None
+        self._really_init_kernel = None
 
         super().__init__(
             app, path, kernel=kernel, comms=comms, use_kernel_history=use_kernel_history
@@ -101,6 +102,21 @@ class BaseNotebook(KernelTab, metaclass=ABCMeta):
         self.refresh()
 
     # KernelTab stuff
+
+    def init_kernel(
+        self,
+        kernel: BaseKernel | None = None,
+        comms: dict[str, Comm] | None = None,
+        use_kernel_history: bool = False,
+        connection_file: Path | None = None,
+    ) -> None:
+        """Defer loading kernel until after notebook file is loaded."""
+        if self.loaded:
+            super().init_kernel(kernel, comms, use_kernel_history, connection_file)
+        else:
+            self._really_init_kernel = partial(
+                super().init_kernel, kernel, comms, use_kernel_history, connection_file
+            )
 
     def post_init_kernel(self) -> None:
         """Load the notebook container after the kernel has been loaded."""
@@ -148,6 +164,11 @@ class BaseNotebook(KernelTab, metaclass=ABCMeta):
         # Ensure there is always at least one cell
         if not self.json.setdefault("cells", []):
             self.json["cells"] = [new_code_cell()]
+        self.loaded = True
+        if callable(self._really_init_kernel):
+            # Only call this once
+            self._really_init_kernel()
+            self._really_init_kernel = None
 
     def set_status(self, status: str) -> None:
         """Call when kernel status changes."""

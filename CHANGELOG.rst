@@ -11,6 +11,7 @@ Upcoming
 Fixed
 =====
 
+- Improve kernel selection detection
 - Allow opening HTTP urls from file open dialog
 
 ----
