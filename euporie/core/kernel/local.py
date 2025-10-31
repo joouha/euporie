@@ -11,6 +11,8 @@ import sys
 import threading
 import traceback
 from asyncio import to_thread
+from base64 import b64encode
+from contextlib import ExitStack
 from functools import update_wrapper
 from linecache import cache as line_cache
 from pathlib import Path
@@ -360,7 +362,7 @@ class LocalPythonKernel(BaseKernel):
         if isinstance(tree.body[-1], ast.Expr):
             last = tree.body.pop()
 
-        # Execute the code in a thread
+        # Execute the code
         await to_thread(self._execute_code, body, last, filename, callbacks)
 
         self.status = "idle"
@@ -497,8 +499,11 @@ def get_display_data(obj: Any) -> tuple[dict[str, Any], dict[str, Any]]:
             ("_repr_svg_", "image/svg+xml"),
             ("_repr_jpeg_", "image/jpeg"),
             ("_repr_png_", "image/png"),
+            ("_repr_json_", "application/json"),
         ]:
             if hasattr(obj, method) and (output := getattr(obj, method)()) is not None:
+                if isinstance(output, tuple):
+                    output, metadata = output
                 data[mime] = output
         if not data:
             data = {"text/plain": repr(obj)}
@@ -527,6 +532,16 @@ class BaseHook:
 
 class DisplayHook(BaseHook):
     """Hook for sys.displayhook that dispatches to thread-specific callbacks."""
+
+    def __enter__(self) -> DisplayHook:
+        """Replace sys.displayhook with this hook."""
+        self._prev = sys.displayhook
+        sys.displayhook = self
+        return self
+
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
+        """Restore previous displayhook."""
+        sys.displayhook = self._prev
 
     def __call__(self, value: Any) -> None:
         """Handle display of values."""
@@ -558,6 +573,15 @@ class DisplayGlobal(BaseHook):
     This class implements the global display() function used to show rich output
     in notebooks. It routes display calls to the appropriate output callbacks.
     """
+
+    def __enter__(self) -> DisplayGlobal:
+        """Add display() to kernel locals."""
+        self._kernel.locals["display"] = self
+        return self
+
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
+        """Remove display() from kernel locals."""
+        self._kernel.locals.pop("display", None)
 
     def __call__(
         self,
@@ -593,7 +617,11 @@ class DisplayGlobal(BaseHook):
             return
 
         for obj in objs:
-            data, obj_metadata = get_display_data(obj)
+            if raw:
+                data = obj
+                obj_metadata = {}
+            else:
+                data, obj_metadata = get_display_data(obj)
 
             # Filter mime types
             if include:
@@ -629,7 +657,28 @@ class InputBuiltin(BaseHook):
         """
         super().__init__(kernel)
         self._is_password = is_password
+        self._prev: Callable | None = None
         update_wrapper(self, input)
+
+    def __enter__(self) -> InputBuiltin:
+        """Replace input or getpass with this hook."""
+        if self._is_password:
+            self._prev = getpass.getpass
+            getpass.getpass = self
+        else:
+            self._prev = self._kernel.locals.get("input")
+            self._kernel.locals["input"] = self
+        return self
+
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
+        """Restore previous input or getpass."""
+        if self._is_password:
+            getpass.getpass = self._prev
+        else:
+            if self._prev is not None:
+                self._kernel.locals["input"] = self._prev
+            else:
+                self._kernel.locals.pop("input", None)
 
     def __call__(
         self,
@@ -667,6 +716,7 @@ class StreamWrapper(BaseHook):
         BaseHook.__init__(self, kernel)
         self.name = name
         self._thread_local = threading.local()
+        self._prev: Any = None
 
     @property
     def buffer(self) -> str:
@@ -678,6 +728,17 @@ class StreamWrapper(BaseHook):
     @buffer.setter
     def buffer(self, value: str) -> None:
         self._thread_local.buffer = value
+
+    def __enter__(self) -> StreamWrapper:
+        """Replace sys stream with this hook."""
+        self._prev = getattr(sys, self.name)
+        setattr(sys, self.name, self)
+        return self
+
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
+        """Restore previous stream and flush any buffered content."""
+        self.flush()
+        setattr(sys, self.name, self._prev)
 
     def _send(self, text: str, callbacks: MsgCallbacks) -> None:
         """Send text to the frontend via callback."""
@@ -715,8 +776,102 @@ class StreamWrapper(BaseHook):
             self.buffer = ""
 
 
+class MatplotlibHook(BaseHook):
+    """Hook for matplotlib figure display during code execution."""
+
+    def __init__(self, kernel: LocalPythonKernel) -> None:
+        """Initialize the matplotlib hook.
+
+        Args:
+            kernel: The kernel instance to hook
+        """
+        super().__init__(kernel)
+        self._configured = False
+
+    def __enter__(self) -> MatplotlibHook:
+        """Configure matplotlib for inline display."""
+        self.configure_inline_backend()
+        return self
+
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
+        """Display any active matplotlib figures."""
+        self.display_figures()
+
+    def configure_inline_backend(self) -> None:
+        """Configure matplotlib for inline figure display.
+
+        This monkey-patches the matplotlib Figure class to add a _repr_png_
+        method, enabling figures to be automatically displayed as
+        cell output in Euporie's notebook interface.
+        """
+        if self._configured:
+            return
+
+        try:
+            import matplotlib
+        except ImportError:
+            log.debug("matplotlib not available - skipping inline configuration")
+            return
+        except Exception:
+            log.exception("Failed to configure matplotlib for inline display")
+            return
+
+        try:
+            import io
+
+            matplotlib.use("Agg")  # Use non-interactive backend
+            import matplotlib.figure as mfig
+
+            def _repr_png_(fig: Any) -> str:
+                """Generate base64 PNG representation of figure."""
+                buf = io.BytesIO()
+                fig.savefig(buf, format="png", bbox_inches="tight")
+                data = buf.getvalue()
+                return b64encode(data).decode()
+
+            mfig.Figure._repr_png_ = _repr_png_
+            self._configured = True
+        except Exception:
+            log.exception("Failed to configure matplotlib backend")
+
+    def display_figures(self) -> None:
+        """Display any active matplotlib figures as cell output.
+
+        This is called when exiting the hook manager to automatically render
+        figures that were created during code execution.
+        """
+        try:
+            import matplotlib.pyplot as plt
+        except ImportError:
+            pass
+        except Exception as e:
+            log.debug("Error displaying matplotlib figures: %s", e)
+        else:
+            if (callbacks := self.callbacks) and callable(
+                cb := callbacks.get("add_output")
+            ):
+                for num in plt.get_fignums():
+                    fig = plt.figure(num)
+                    from euporie.core.kernel.local import get_display_data
+
+                    data, metadata = get_display_data(fig)
+                    cb(
+                        {
+                            "output_type": "display_data",
+                            "data": data,
+                            "metadata": metadata,
+                        },
+                        True,
+                    )
+                    plt.close(fig)
+
+
 class HookManager:
-    """Context manager for hooking stdout/stderr/displayhook."""
+    """Context manager for hooking stdout/stderr/displayhook.
+
+    Manages nested entry/exit of multiple hooks with centralized depth tracking.
+    Hooks are only actually patched on first entry and unpatched on final exit.
+    """
 
     def __init__(self, kernel: LocalPythonKernel) -> None:
         """Initialize the hook manager.
@@ -724,50 +879,32 @@ class HookManager:
         Args:
             kernel: The kernel instance to hook
         """
-        # Create hook instances
-        self.stdout = StreamWrapper("stdout", kernel)
-        self.stderr = StreamWrapper("stderr", kernel)
-        self.displayhook = DisplayHook(kernel)
-        self.display = DisplayGlobal(kernel)
-        self.input = InputBuiltin(kernel, is_password=False)
-        self.getpass = InputBuiltin(kernel, is_password=True)
-        # Store original objects
-        self.og_stdout = sys.stdout
-        self.og_stderr = sys.stderr
-        self.og_displayhook = sys.displayhook
-        self.og_getpass = getpass.getpass
-        # Track hook depth
-        self._depth = 0
         self._kernel = kernel
+        self._depth = 0
+        self._stack: ExitStack | None = None
+        # Create hook instances
+        self._hooks = [
+            StreamWrapper("stdout", kernel),
+            StreamWrapper("stderr", kernel),
+            DisplayHook(kernel),
+            DisplayGlobal(kernel),
+            InputBuiltin(kernel, is_password=False),
+            InputBuiltin(kernel, is_password=True),
+            MatplotlibHook(kernel),
+        ]
 
-    def __enter__(self) -> None:
-        """Replace objects with hooks."""
+    def __enter__(self) -> HookManager:
+        """Enter the hook context, patching on first entry."""
         if self._depth == 0:
-            # Replace system streams
-            sys.stdout = self.stdout
-            sys.stderr = self.stderr
-            sys.displayhook = self.displayhook
-            # Replace getpass
-            getpass.getpass = self.getpass
-            # Add input to kernel locals
-            self._kernel.locals["input"] = self.input
-            # Add display to kernel locals
-            self._kernel.locals["display"] = self.display
+            self._stack = ExitStack()
+            for hook in self._hooks:
+                self._stack.enter_context(hook)
         self._depth += 1
+        return self
 
     def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
-        """Restore original objects."""
+        """Exit the hook context, unpatching on final exit."""
         self._depth -= 1
-        if self._depth == 0:
-            # Restore system streams
-            sys.stdout = self.og_stdout
-            sys.stderr = self.og_stderr
-            sys.displayhook = self.og_displayhook
-            # Restore getpass
-            getpass.getpass = self.og_getpass
-            # Remove input from kernel locals
-            self._kernel.locals.pop("input", None)
-            self._kernel.locals.pop("display", None)
-        # Flush any remaining stream outputs
-        self.stdout.flush()
-        self.stderr.flush()
+        if self._depth == 0 and self._stack is not None:
+            self._stack.close()
+            self._stack = None
