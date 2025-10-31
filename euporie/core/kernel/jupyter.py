@@ -18,8 +18,9 @@ from euporie.core.kernel.base import BaseKernel, KernelInfo, MsgCallbacks
 from euporie.core.nbformat import new_output, output_from_msg
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
     from pathlib import Path
-    from typing import Any, Callable, Unpack
+    from typing import Any, Unpack
 
     from jupyter_client import KernelClient
     from jupyter_client.kernelspec import KernelSpecManager

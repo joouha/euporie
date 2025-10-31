@@ -18,8 +18,9 @@ from euporie.core.widgets.cell import Cell
 from euporie.core.widgets.layout import Box
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
     from pathlib import Path
-    from typing import Any, Callable
+    from typing import Any
 
     from prompt_toolkit.application.application import Application
     from prompt_toolkit.formatted_text.base import StyleAndTextTuples

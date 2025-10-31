@@ -16,8 +16,7 @@ from prompt_toolkit.layout.dimension import Dimension, to_dimension
 from euporie.core.layout.screen import BoundedWritePosition
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
-    from typing import Callable
+    from collections.abc import Callable, Sequence
 
     from prompt_toolkit.key_binding.key_bindings import (
         KeyBindingsBase,

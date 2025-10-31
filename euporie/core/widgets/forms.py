@@ -64,8 +64,8 @@ from euporie.core.widgets.decor import Border, Shadow
 from euporie.core.widgets.layout import Box, ConditionalSplit
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
-    from typing import Any, Callable
+    from collections.abc import Callable, Sequence
+    from typing import Any
 
     from prompt_toolkit.auto_suggest import AutoSuggest
     from prompt_toolkit.buffer import BufferAcceptHandler

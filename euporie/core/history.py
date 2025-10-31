@@ -8,8 +8,7 @@ from typing import TYPE_CHECKING
 from prompt_toolkit.history import History
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncGenerator, Iterable
-    from typing import Callable
+    from collections.abc import AsyncGenerator, Callable, Iterable
 
     from euporie.core.kernel.base import BaseKernel
 

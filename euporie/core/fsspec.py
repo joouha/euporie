@@ -11,7 +11,8 @@ from fsspec.implementations.http import get_client
 
 if TYPE_CHECKING:
     import asyncio
-    from typing import Any, Callable
+    from collections.abc import Callable
+    from typing import Any
 
     import aiohttp
 

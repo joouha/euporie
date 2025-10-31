@@ -88,9 +88,10 @@ from euporie.core.widgets.menu import CompletionsMenu
 
 if TYPE_CHECKING:
     from asyncio import AbstractEventLoop
+    from collections.abc import Callable
     from pathlib import Path
     from types import FrameType
-    from typing import Any, Callable, ClassVar, TypeVar
+    from typing import Any, ClassVar, TypeVar
 
     # from prompt_toolkit.application import _AppResult
     from prompt_toolkit.contrib.ssh import PromptToolkitSSHSession

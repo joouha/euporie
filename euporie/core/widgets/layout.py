@@ -37,8 +37,8 @@ from euporie.core.layout.containers import HSplit, VSplit, Window
 from euporie.core.widgets.decor import Border
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
-    from typing import Any, Callable
+    from collections.abc import Callable, Sequence
+    from typing import Any
 
     from prompt_toolkit.filters import FilterOrBool
     from prompt_toolkit.formatted_text.base import (

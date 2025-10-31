@@ -21,8 +21,7 @@ from euporie.core.filters import has_toolbar
 from euporie.core.layout.containers import VSplit, Window
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
-    from typing import Callable
+    from collections.abc import Callable, Sequence
 
     from prompt_toolkit.filters.base import FilterOrBool
     from prompt_toolkit.formatted_text import StyleAndTextTuples

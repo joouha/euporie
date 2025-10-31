@@ -104,9 +104,9 @@ class CssSelector(NamedTuple):
 
 
 if TYPE_CHECKING:
-    from collections.abc import Generator, Iterator
+    from collections.abc import Callable, Generator, Iterator
     from pathlib import Path
-    from typing import Any, Callable
+    from typing import Any
 
     from fsspec.spec import AbstractFileSystem
     from prompt_toolkit.filters.base import Filter, FilterOrBool

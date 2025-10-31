@@ -7,9 +7,9 @@ from abc import ABCMeta, abstractmethod
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Callable, Sequence
     from pathlib import Path
-    from typing import Any, Callable
+    from typing import Any
 
     from prompt_toolkit.document import Document
 

@@ -35,9 +35,9 @@ from euporie.core.kernel.base import NoKernel
 from euporie.core.tabs.base import Tab
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Callable, Sequence
     from pathlib import Path
-    from typing import Any, Callable
+    from typing import Any
 
     from prompt_toolkit.auto_suggest import AutoSuggest
     from prompt_toolkit.completion.base import Completer

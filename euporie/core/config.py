@@ -8,14 +8,13 @@ import logging
 import os
 import sys
 from ast import literal_eval
+from collections.abc import Callable
 from functools import cached_property, partial
 from pathlib import Path
 from types import SimpleNamespace
 from typing import (
     TYPE_CHECKING,
     Any,
-    Callable,
-    Optional,
     TextIO,
     cast,
 )
@@ -31,8 +30,8 @@ from euporie.core import __app_name__, __copyright__
 from euporie.core.commands import add_cmd, get_cmd
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Mapping, Sequence
-    from typing import Any, Callable, ClassVar, Optional
+    from collections.abc import Callable, Iterable, Mapping, Sequence
+    from typing import Any, ClassVar
 
     from _typeshed import SupportsWrite
     from prompt_toolkit.filters.base import FilterOrBool
@@ -71,7 +70,7 @@ class ArgumentParser(argparse.ArgumentParser):
         from euporie.core.style import get_style_by_name
 
         if message:
-            file = cast("Optional[TextIO]", file)
+            file = cast("TextIO | None", file)
             style = style_from_pygments_cls(get_style_by_name(self.config.syntax_theme))
             print_formatted_text(
                 FormattedText(

@@ -14,7 +14,8 @@ from euporie.core.layout.containers import DummyContainer
 from euporie.core.path import parse_path
 
 if TYPE_CHECKING:
-    from typing import Any, Callable
+    from collections.abc import Callable
+    from typing import Any
 
     from prompt_toolkit.eventloop import InputHook
 

@@ -44,8 +44,8 @@ from euporie.core.layout.screen import BoundedWritePosition
 from euporie.core.mouse_events import MouseEvent
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
-    from typing import Any, Callable
+    from collections.abc import Callable, Sequence
+    from typing import Any
 
     from prompt_toolkit.formatted_text import AnyFormattedText, StyleAndTextTuples
     from prompt_toolkit.key_binding.key_bindings import (

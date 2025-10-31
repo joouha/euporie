@@ -30,7 +30,8 @@ from euporie.core.io import passthrough
 from euporie.core.layout.scroll import BoundedWritePosition
 
 if TYPE_CHECKING:
-    from typing import Any, Callable, ClassVar
+    from collections.abc import Callable
+    from typing import Any, ClassVar
 
     from prompt_toolkit.filters import FilterOrBool
     from prompt_toolkit.formatted_text import StyleAndTextTuples

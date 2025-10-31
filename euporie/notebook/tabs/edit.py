@@ -17,8 +17,8 @@ from euporie.core.tabs.kernel import KernelTab
 from euporie.core.widgets.inputs import KernelInput
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
     from pathlib import Path
-    from typing import Callable
 
     from prompt_toolkit.layout.containers import AnyContainer
 

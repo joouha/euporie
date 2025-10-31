@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING, cast
 
 if TYPE_CHECKING:
     import argparse
-    from typing import Callable
+    from collections.abc import Callable
 
 if sys.version_info[0] >= 3 and sys.version_info[1] >= 10:
     from importlib.metadata import entry_points

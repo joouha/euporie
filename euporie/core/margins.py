@@ -22,7 +22,8 @@ from euporie.core.layout.containers import Window
 from euporie.core.mouse_events import MouseEvent, RelativePosition
 
 if TYPE_CHECKING:
-    from typing import Callable, Protocol
+    from collections.abc import Callable
+    from typing import Protocol
 
     from prompt_toolkit.formatted_text import StyleAndTextTuples
     from prompt_toolkit.key_binding.key_bindings import (

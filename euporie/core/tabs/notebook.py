@@ -20,9 +20,9 @@ from euporie.core.tabs.kernel import KernelTab
 from euporie.core.widgets.cell import Cell, get_cell_id
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Callable, Sequence
     from pathlib import Path
-    from typing import Any, Callable
+    from typing import Any
 
     from prompt_toolkit.filters import Filter
     from prompt_toolkit.layout.containers import AnyContainer

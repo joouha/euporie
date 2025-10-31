@@ -72,8 +72,7 @@ from euporie.core.processors import (
 from euporie.core.suggest import ConditionalAutoSuggestAsync
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
-    from typing import Callable
+    from collections.abc import Callable, Sequence
 
     from prompt_toolkit.buffer import BufferAcceptHandler
     from prompt_toolkit.filters import Filter, FilterOrBool

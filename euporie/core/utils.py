@@ -10,9 +10,8 @@ from typing import TYPE_CHECKING, TypeVar, overload
 from prompt_toolkit.mouse_events import MouseButton, MouseEventType
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable
+    from collections.abc import Callable, Iterable
     from types import ModuleType
-    from typing import Callable
 
     from prompt_toolkit.key_binding.key_bindings import NotImplementedOrNone
     from prompt_toolkit.layout.mouse_handlers import MouseHandler

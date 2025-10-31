@@ -26,7 +26,8 @@ from euporie.core.app.current import get_app
 from euporie.core.kernel.base import BaseKernel, KernelInfo, MsgCallbacks
 
 if TYPE_CHECKING:
-    from typing import Any, Callable, TextIO, Unpack
+    from collections.abc import Callable
+    from typing import Any, TextIO, Unpack
 
     from euporie.core.tabs.kernel import KernelTab
 

@@ -8,6 +8,7 @@ import io
 import logging
 import threading
 from hashlib import md5
+from itertools import pairwise
 from typing import TYPE_CHECKING, Generic, TypeVar
 from weakref import ReferenceType, WeakValueDictionary, finalize, ref
 
@@ -263,7 +264,7 @@ class Datum(Generic[T], metaclass=_MetaDatum):
             datum = self
             output = None
             for route in routes:
-                for stage_a, stage_b in zip(route, route[1:]):
+                for stage_a, stage_b in pairwise(route):
                     key_stage = (stage_b, cols, rows, fg, bg, tuple(kwargs.items()))
                     if key_stage in self._conversions:
                         output = self._conversions[key_stage]

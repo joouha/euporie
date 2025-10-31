@@ -20,7 +20,7 @@ from euporie.core.border import ThinLine
 from euporie.core.style import ColorPaletteColor
 
 if TYPE_CHECKING:
-    from typing import Callable
+    from collections.abc import Callable
 
     from prompt_toolkit.key_binding.key_bindings import (
         NotImplementedOrNone,

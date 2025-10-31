@@ -18,8 +18,9 @@ from euporie.core.app.current import get_app
 from euporie.core.filters import in_screen, in_tmux
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
     from contextlib import AbstractContextManager
-    from typing import IO, Any, Callable, TextIO
+    from typing import IO, Any, TextIO
 
     from prompt_toolkit.keys import Keys
 

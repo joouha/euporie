@@ -14,7 +14,7 @@ from prompt_toolkit.layout.utils import explode_text_fragments
 from prompt_toolkit.utils import get_cwidth
 
 if TYPE_CHECKING:
-    from typing import Callable
+    from collections.abc import Callable
 
     from prompt_toolkit.data_structures import Point
     from prompt_toolkit.formatted_text.base import StyleAndTextTuples

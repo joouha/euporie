@@ -18,7 +18,7 @@ from euporie.core.layout.containers import DummyContainer, HSplit, VSplit, Windo
 from euporie.core.layout.decor import DropShadow
 
 if TYPE_CHECKING:
-    from typing import Callable
+    from collections.abc import Callable
 
     from prompt_toolkit.layout.containers import AnyContainer
     from prompt_toolkit.mouse_events import MouseEvent

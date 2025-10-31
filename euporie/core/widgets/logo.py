@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING
 
 from prompt_toolkit.layout.containers import WindowAlign
 from prompt_toolkit.layout.controls import FormattedTextControl
@@ -12,6 +12,7 @@ from euporie.core.filters import has_tabs
 from euporie.core.layout.containers import Window
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
     from typing import Any
 
     from prompt_toolkit.filters import FilterOrBool

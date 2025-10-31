@@ -53,8 +53,8 @@ from euporie.notebook.widgets.side_bar import SideBar
 
 if TYPE_CHECKING:
     from asyncio import AbstractEventLoop
-    from collections.abc import Sequence
-    from typing import Any, Callable
+    from collections.abc import Callable, Sequence
+    from typing import Any
 
     from prompt_toolkit.application.application import Application
     from prompt_toolkit.formatted_text import StyleAndTextTuples

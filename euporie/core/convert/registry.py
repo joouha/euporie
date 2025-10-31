@@ -3,14 +3,14 @@
 from __future__ import annotations
 
 import logging
+from itertools import pairwise
 from typing import TYPE_CHECKING, NamedTuple
 
 from prompt_toolkit.cache import FastDictCache, SimpleCache
 from prompt_toolkit.filters import to_filter
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable
-    from typing import Callable
+    from collections.abc import Callable, Iterable
 
     from prompt_toolkit.filters import Filter, FilterOrBool
 
@@ -89,7 +89,7 @@ def _find_route(from_: str, to: str) -> list | None:
                             if _FILTER_CACHE.get((conv,), conv.filter_)
                         ]
                     )
-                    for step_a, step_b in zip(chain, chain[1:])
+                    for step_a, step_b in pairwise(chain)
                 ]
             ),
         )

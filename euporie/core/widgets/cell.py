@@ -43,7 +43,8 @@ from euporie.core.widgets.cell_outputs import CellOutputArea
 from euporie.core.widgets.inputs import KernelInput, StdInput
 
 if TYPE_CHECKING:
-    from typing import Any, Callable, Literal
+    from collections.abc import Callable
+    from typing import Any, Literal
 
     from prompt_toolkit.buffer import Buffer
     from prompt_toolkit.completion.base import Completer

@@ -9,7 +9,7 @@ from prompt_toolkit.cache import _T, _U
 from prompt_toolkit.cache import SimpleCache as PtkSimpleCache
 
 if TYPE_CHECKING:
-    from typing import Callable
+    from collections.abc import Callable
 
 
 __all__ = [

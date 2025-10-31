@@ -51,8 +51,8 @@ from euporie.core.widgets.forms import Button, LabelledWidget, Select, Text
 from euporie.core.widgets.layout import Box
 
 if TYPE_CHECKING:
-    from collections.abc import Hashable
-    from typing import Any, Callable
+    from collections.abc import Callable, Hashable
+    from typing import Any
 
     from prompt_toolkit.buffer import Buffer
     from prompt_toolkit.data_structures import Point

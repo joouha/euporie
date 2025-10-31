@@ -22,8 +22,9 @@ from euporie.core.widgets.forms import Button, Text
 from euporie.web.widgets.webview import WebViewControl
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
     from pathlib import Path
-    from typing import Any, Callable, ClassVar
+    from typing import Any, ClassVar
 
     from prompt_toolkit.layout.containers import AnyContainer
 

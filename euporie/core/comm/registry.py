@@ -8,8 +8,8 @@ from typing import TYPE_CHECKING
 from euporie.core.comm.base import UnimplementedComm
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
-    from typing import Any, Callable
+    from collections.abc import Callable, Sequence
+    from typing import Any
 
     from euporie.core.comm.base import Comm, KernelTab
 

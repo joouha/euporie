@@ -44,8 +44,8 @@ from euporie.core.layout.containers import HSplit, VSplit, Window
 from euporie.core.widgets.decor import Shadow
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Sequence
-    from typing import Any, Callable
+    from collections.abc import Callable, Iterable, Sequence
+    from typing import Any
 
     from prompt_toolkit.filters import Filter, FilterOrBool
     from prompt_toolkit.formatted_text.base import (

@@ -8,9 +8,8 @@ from typing import TYPE_CHECKING
 from prompt_toolkit.completion.base import CompleteEvent, Completer, Completion
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncGenerator, Iterable
+    from collections.abc import AsyncGenerator, Callable, Iterable
     from pathlib import Path
-    from typing import Callable
 
     from prompt_toolkit.document import Document
 

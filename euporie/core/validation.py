@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 from prompt_toolkit.validation import ValidationError, Validator
 
 if TYPE_CHECKING:
-    from typing import Callable
+    from collections.abc import Callable
 
     from prompt_toolkit.document import Document
 

@@ -17,7 +17,8 @@ from euporie.core.io import Vt100_Output
 from euporie.core.layout.screen import BoundedWritePosition, Screen
 
 if TYPE_CHECKING:
-    from typing import Any, Callable
+    from collections.abc import Callable
+    from typing import Any
 
     from prompt_toolkit.application import Application
     from prompt_toolkit.filters import FilterOrBool

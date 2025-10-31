@@ -27,8 +27,9 @@ from euporie.core.style import LOG_STYLE, get_style_by_name
 from euporie.core.utils import dict_merge
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
     from types import TracebackType
-    from typing import Any, Callable, TextIO
+    from typing import Any, TextIO
 
     from prompt_toolkit.formatted_text.base import StyleAndTextTuples
     from prompt_toolkit.styles.base import BaseStyle

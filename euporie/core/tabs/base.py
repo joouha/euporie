@@ -22,9 +22,9 @@ from euporie.core.layout.containers import Window
 from euporie.core.path import UntitledPath, parse_path
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Callable, Sequence
     from pathlib import Path
-    from typing import Any, Callable
+    from typing import Any
 
     from prompt_toolkit.key_binding.key_processor import KeyPressEvent
     from prompt_toolkit.layout.containers import AnyContainer

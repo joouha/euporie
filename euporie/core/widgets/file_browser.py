@@ -28,7 +28,7 @@ from euporie.core.widgets.decor import Border
 from euporie.core.widgets.forms import Button, Text
 
 if TYPE_CHECKING:
-    from typing import Callable
+    from collections.abc import Callable
 
     from prompt_toolkit.buffer import Buffer
     from prompt_toolkit.filters.base import FilterOrBool

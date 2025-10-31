@@ -23,8 +23,8 @@ from euporie.core.layout.cache import CachedContainer
 from euporie.core.layout.screen import BoundedWritePosition
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
-    from typing import Callable, Literal
+    from collections.abc import Callable, Sequence
+    from typing import Literal
 
     from prompt_toolkit.key_binding.key_bindings import NotImplementedOrNone
     from prompt_toolkit.layout.containers import AnyContainer

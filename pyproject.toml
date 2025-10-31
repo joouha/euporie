@@ -129,8 +129,8 @@ dependencies = [
   # Spell checking
   "codespell~=2.3", "tomli~=2.0.2",
   # Pre-commit hooks run in static analysis environment
-  "pre-commit~=4.0",
-  "pre-commit-hooks~=5.0",
+  "pre-commit~=4.3",
+  "pre-commit-hooks~=6.0",
 ]
 
 [tool.hatch.envs.hatch-static-analysis.scripts]

@@ -31,8 +31,8 @@ from euporie.core.layout.containers import VSplit, Window
 from euporie.core.margins import MarginContainer, ScrollbarMargin
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable
-    from typing import Any, Callable
+    from collections.abc import Callable, Iterable
+    from typing import Any
 
     from prompt_toolkit.filters import FilterOrBool
     from prompt_toolkit.formatted_text import StyleAndTextTuples

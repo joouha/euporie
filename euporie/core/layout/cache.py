@@ -23,7 +23,7 @@ from euporie.core.layout.screen import BoundedWritePosition, Screen
 from euporie.core.mouse_events import MouseEvent
 
 if TYPE_CHECKING:
-    from typing import Callable
+    from collections.abc import Callable
 
     from prompt_toolkit.key_binding.key_bindings import NotImplementedOrNone
     from prompt_toolkit.layout.containers import AnyContainer

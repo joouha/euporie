@@ -13,7 +13,8 @@ from jupyter_client import AsyncKernelManager
 from jupyter_client.provisioning.local_provisioner import LocalProvisioner
 
 if TYPE_CHECKING:
-    from typing import Any, Callable, TextIO
+    from collections.abc import Callable
+    from typing import Any, TextIO
 
     from jupyter_client.connect import KernelConnectionInfo
 
