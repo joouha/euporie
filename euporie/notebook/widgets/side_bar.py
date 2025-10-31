@@ -12,10 +12,13 @@ from prompt_toolkit.layout.containers import (
     HSplit,
     VSplit,
     Window,
-    WindowAlign,
 )
-from prompt_toolkit.layout.controls import FormattedTextControl
+from prompt_toolkit.layout.controls import UIContent, UIControl
+from prompt_toolkit.layout.dimension import Dimension
+from prompt_toolkit.layout.screen import WritePosition
+from prompt_toolkit.mouse_events import MouseButton, MouseEventType
 
+from euporie.core.app.current import get_app
 from euporie.core.key_binding.registry import register_bindings
 from euporie.core.layout.decor import Line
 from euporie.core.widgets.forms import ToggleButton, ToggleButtons
@@ -23,7 +26,86 @@ from euporie.core.widgets.forms import ToggleButton, ToggleButtons
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
+    from prompt_toolkit.key_binding.key_bindings import NotImplementedOrNone
     from prompt_toolkit.layout.containers import AnyContainer
+    from prompt_toolkit.mouse_events import MouseEvent
+
+
+class SidebarResizeHandleControl(UIControl):
+    """A draggable vertical bar to resize the sidebar."""
+
+    def __init__(self, sidebar: SideBar) -> None:
+        """Initialize the resize handle control.
+
+        Args:
+            sidebar: The sidebar instance to resize.
+        """
+        self.sidebar = sidebar
+        self.drag_start_x: int | None = None
+        self.start_width = sidebar.sidebar_width
+        self.sidebar_resize_window: Window | None = None
+
+    def create_content(self, width: int, height: int | None) -> UIContent:
+        """Create the content for the resize handle.
+
+        Args:
+            width: The width of the control.
+            height: The height of the control.
+
+        Returns:
+            The UI content to display.
+        """
+        return UIContent(
+            get_line=lambda i: [("class:side_bar,border", "▏")],
+            line_count=height,
+            show_cursor=False,
+        )
+
+    def mouse_handler(self, mouse_event: MouseEvent) -> NotImplementedOrNone:
+        """Handle mouse events for resizing the sidebar.
+
+        Args:
+            mouse_event: The mouse event to handle.
+
+        Returns:
+            None if the event was handled, NotImplemented otherwise.
+        """
+        if (info := self.sidebar_resize_window.render_info) is not None:
+            app = get_app()
+            gx, _ = app.mouse_position
+
+            if mouse_event.button == MouseButton.LEFT:
+                if mouse_event.event_type == MouseEventType.MOUSE_DOWN:
+                    # Start the drag event
+                    self.drag_start_x = gx
+                    self.start_width = self.sidebar.sidebar_width
+                    # Send all mouse events to this position
+                    y_min, x_min = min(info._rowcol_to_yx.values())
+                    y_max, x_max = max(info._rowcol_to_yx.values())
+                    app.mouse_limits = WritePosition(
+                        xpos=x_min,
+                        ypos=y_min,
+                        width=x_max - x_min,
+                        height=y_max - y_min,
+                    )
+                    return None
+                elif mouse_event.event_type == MouseEventType.MOUSE_MOVE:
+                    if self.drag_start_x is not None:
+                        # Calculate width change based on global mouse position
+                        dx = gx - self.drag_start_x
+                        new_width = max(10, self.start_width + dx)
+                        self.sidebar.sidebar_width = new_width
+                        # change the mouse capture position
+                        if app.mouse_limits is not None:
+                            app.mouse_limits.xpos = self.drag_start_x + dx
+                        return None
+            # End the drag event
+            self.drag_start_x = None
+            # Stop capturing all mouse events
+            app.mouse_limits = None
+            return None
+
+        return NotImplemented
 
 
 class SideBarButtons(ToggleButtons):
@@ -91,9 +173,16 @@ class SideBar:
         icons: Sequence[str],
         panels: Sequence[AnyContainer],
     ) -> None:
-        """Initialize a new side-bar object."""
+        """Initialize a new side-bar object.
+
+        Args:
+            titles: Titles for each panel.
+            icons: Icons for each panel button.
+            panels: The panel containers to display.
+        """
         from euporie.core.app.current import get_app
 
+        self.sidebar_width = 25
         self.side_bar_buttons = SideBarButtons(
             options=list(icons),
             style="class:buttons",
@@ -103,6 +192,16 @@ class SideBar:
             max_count=1,
         )
         pane_hidden = Condition(lambda: bool(self.side_bar_buttons.index is None))
+
+        # Create the resize handle for the sidebar border
+        resize_handle_control = SidebarResizeHandleControl(self)
+        resize_handle = Window(
+            content=resize_handle_control,
+            width=1,
+            style="class:side_bar,border",
+        )
+        # Give the control a reference to its window for render_info
+        resize_handle_control.sidebar_resize_window = resize_handle
 
         self.container = ConditionalContainer(
             VSplit(
@@ -131,33 +230,17 @@ class SideBar:
                                 ),
                                 HSplit(
                                     [
-                                        Window(
-                                            FormattedTextControl(
-                                                [
-                                                    (
-                                                        "class:title,text",
-                                                        " File Browser ",
-                                                    )
-                                                ],
-                                            ),
-                                            char="=",
-                                            height=1,
-                                            align=WindowAlign.CENTER,
-                                            style="class:title",
-                                        ),
                                         DynamicContainer(
                                             lambda: panels[
                                                 self.side_bar_buttons.index or 0
                                             ]
                                         ),
                                     ],
+                                    width=lambda: Dimension(
+                                        preferred=self.sidebar_width
+                                    ).preferred,
                                 ),
-                                Line(
-                                    char="▕",
-                                    width=1,
-                                    collapse=False,
-                                    style="class:side_bar,border",
-                                ),
+                                resize_handle,
                             ],
                         ),
                         filter=~pane_hidden,
