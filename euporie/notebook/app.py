@@ -261,7 +261,12 @@ class NotebookApp(BaseApp):
                     (
                         "File Browser",
                         "",
-                        FileBrowser(width=25, on_open=self.open_file),
+                        FileBrowser(
+                            width=25,
+                            on_open=self.open_file,
+                            show_hidden=self.config.filters.show_hidden_files,
+                            show_icons=self.config.filters.show_file_icons,
+                        ),
                     )
                 ]
             ),

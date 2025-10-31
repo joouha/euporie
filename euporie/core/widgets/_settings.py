@@ -64,6 +64,23 @@ add_setting(
     """,
 )
 
+add_setting(
+    name="show_hidden_files",
+    group="euporie.core.widgets.file_browser",
+    flags=["--show-hidden-files"],
+    type_=bool,
+    title="Hidden files",
+    help_="Show hidden files in the file manager",
+    default=False,
+    schema={
+        "type": "boolean",
+    },
+    description="""
+        Whether files and directories starting with a dot should be shown
+        in the file manager.
+    """,
+)
+
 # euporie.core.widgets.inputs:KernelInput
 
 add_setting(

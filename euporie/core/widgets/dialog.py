@@ -449,6 +449,8 @@ class FileDialog(Dialog, metaclass=ABCMeta):
             height=Dimension(preferred=20),
             show_address_bar=False,
             on_select=lambda path: setattr(self.filepath, "text", path.name),
+            show_icons=app.config.filters.show_file_icons,
+            show_hidden=app.config.filters.show_hidden_files,
         )
         completer.get_paths = lambda: [str(self.file_browser.control.dir)]
         self.error = ""

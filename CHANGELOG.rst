@@ -11,6 +11,7 @@ Upcoming
 Added
 =====
 
+- Add ability to toggle hidden files in the file browser
 - Add matplotlib figure support in local-python kernel
 
 Fixed

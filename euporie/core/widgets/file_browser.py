@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING
 from prompt_toolkit.cache import FastDictCache
 from prompt_toolkit.completion import PathCompleter
 from prompt_toolkit.data_structures import Point
+from prompt_toolkit.filters import FilterOrBool
 from prompt_toolkit.filters.utils import to_filter
 from prompt_toolkit.key_binding.key_bindings import KeyBindings, KeyBindingsBase
 from prompt_toolkit.layout.containers import (
@@ -373,14 +374,18 @@ class FileBrowserControl(UIControl):
         on_select: Callable[[FileBrowserControl], None] | None = None,
         on_open: Callable[[FileBrowserControl], None] | None = None,
         window: Window | None = None,
+        show_icons: FilterOrBool = False,
+        show_hidden: FilterOrBool = False,
     ) -> None:
         """Initialize a new file browser instance."""
         from upath import UPath
 
+        self.show_icons = to_filter(show_icons)
+        self.show_hidden = to_filter(show_hidden)
         self.dir = path or UPath(".")
         self.hovered: int | None = None
         self.selected: int | None = None
-        self._dir_cache: FastDictCache[tuple[Path], list[tuple[bool, Path]]] = (
+        self._dir_cache: FastDictCache[tuple[Path, bool], list[tuple[bool, Path]]] = (
             FastDictCache(get_value=self.load_path, size=1)
         )
         self.on_select = Event(self, on_select)
@@ -424,7 +429,7 @@ class FileBrowserControl(UIControl):
     @property
     def contents(self) -> list[tuple[bool, Path]]:
         """Return the contents of the current folder."""
-        return self._dir_cache[(self.dir,)]
+        return self._dir_cache[(self.dir, bool(self.show_hidden()))]
 
     @property
     def dir(self) -> Path:
@@ -452,11 +457,15 @@ class FileBrowserControl(UIControl):
         return self.contents[self.selected or 0][1]
 
     @staticmethod
-    def load_path(path: Path) -> list[tuple[bool, Path]]:
+    def load_path(path: Path, show_hidden: bool) -> list[tuple[bool, Path]]:
         """Return the contents of a folder."""
         paths = [] if path.parent == path else [path / ".."]
         try:
-            paths += list(path.iterdir())
+            entries = list(path.iterdir())
+            if not show_hidden:
+                # Filter out names starting with dot
+                entries = [e for e in entries if not e.name.startswith(".")]
+            paths += entries
         except PermissionError:
             pass
         is_dirs = []
@@ -478,7 +487,7 @@ class FileBrowserControl(UIControl):
 
             row = child.name
 
-            if get_app().config.show_file_icons:
+            if self.show_icons():
                 icon = (
                     FILE_ICONS["dir"]
                     if is_dir
@@ -630,6 +639,8 @@ class FileBrowser:
         height: AnyDimension = None,
         style: str = "",
         show_address_bar: FilterOrBool = True,
+        show_icons: FilterOrBool = False,
+        show_hidden: FilterOrBool = False,
     ) -> None:
         """Create a new instance."""
 
@@ -649,6 +660,8 @@ class FileBrowser:
         self.control = control = FileBrowserControl(
             path=path,
             on_chdir=lambda x: setattr(text, "text", str(x.dir)),
+            show_icons=show_icons,
+            show_hidden=show_hidden,
         )
         if on_select is not None:
             control.on_select += (
@@ -709,7 +722,7 @@ class FileBrowser:
             width=width,
             height=height,
         )
-        # Set control's window so it can determine it's position for mouse-over
+        # Set control's window so it can determine its position for mouse-over
         control.window = window
 
     def __pt_container__(self) -> AnyContainer:
