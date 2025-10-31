@@ -1,11 +1,34 @@
 repos:
   - repo: https://github.com/prettier/pre-commit
-    rev: v2.1.2
+    rev: 57f39166b5a5a504d6808b87ab98d41ebf095b46
     hooks:
       - id: prettier
 
   - repo: local
     hooks:
+      - id: check-merge-conflict
+        name: check for merge conflicts
+        description: checks for files that contain merge conflict strings.
+        entry: check-merge-conflict
+        language: python
+        types: [text]
+      - id: debug-statements
+        name: debug statements (python)
+        description: checks for debugger imports and py37+ `breakpoint()` calls in python source.
+        entry: debug-statement-hook
+        language: python
+        types: [python]
+      - id: check-ast
+        name: check python ast
+        description: simply checks whether the files parse as valid python.
+        entry: check-ast
+        language: python
+        types: [python]
+      - id: check-case-conflict
+        name: check for case conflicts
+        description: checks for files that would conflict in case-insensitive filesystems.
+        entry: check-case-conflict
+        language: python
       - id: fix-byte-order-marker
         name: Fix Byte Order Marker
         entry: hatch run hatch-static-analysis:fix-byte-order-marker
@@ -43,19 +66,18 @@ repos:
         args: ["--fix"]
         language: system
         types: [python]
-        require_serial: true
       - id: black
         name: ruff format
         entry: hatch run hatch-static-analysis:ruff format
         language: system
         types: [python]
-        require_serial: true
       - id: codespell
         name: codespell
         description: Checks for common misspellings in text files.
         entry: hatch run hatch-static-analysis:codespell
         language: system
         types: [text]
+        files: \.(md|txt|rst|py)$
       - id: tests
         name: tests
         entry: hatch run test:run
