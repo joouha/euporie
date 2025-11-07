@@ -57,7 +57,7 @@ class SidebarResizeHandleControl(UIControl):
         """
         return UIContent(
             get_line=lambda i: [("class:side_bar,border", "▏")],
-            line_count=height,
+            line_count=height if height is not None else 1,
             show_cursor=False,
         )
 
@@ -70,7 +70,10 @@ class SidebarResizeHandleControl(UIControl):
         Returns:
             None if the event was handled, NotImplemented otherwise.
         """
-        if (info := self.sidebar_resize_window.render_info) is not None:
+        if (
+            self.sidebar_resize_window is not None
+            and (info := self.sidebar_resize_window.render_info) is not None
+        ):
             app = get_app()
             gx, _ = app.mouse_position
 

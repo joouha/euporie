@@ -12,7 +12,7 @@ import threading
 import traceback
 from asyncio import to_thread
 from base64 import b64encode
-from contextlib import ExitStack
+from contextlib import AbstractContextManager, ExitStack
 from functools import update_wrapper
 from linecache import cache as line_cache
 from pathlib import Path
@@ -512,7 +512,7 @@ def get_display_data(obj: Any) -> tuple[dict[str, Any], dict[str, Any]]:
     return data, metadata
 
 
-class BaseHook:
+class BaseHook(AbstractContextManager):
     """Base class providing access to thread-specific callbacks."""
 
     def __init__(self, kernel: LocalPythonKernel) -> None:
@@ -533,6 +533,15 @@ class BaseHook:
 
 class DisplayHook(BaseHook):
     """Hook for sys.displayhook that dispatches to thread-specific callbacks."""
+
+    def __init__(self, kernel: LocalPythonKernel) -> None:
+        """Initialize the display hook.
+
+        Args:
+            kernel: The kernel instance to hook
+        """
+        super().__init__(kernel)
+        self._prev: Callable[[object], Any]
 
     def __enter__(self) -> DisplayHook:
         """Replace sys.displayhook with this hook."""
@@ -574,6 +583,14 @@ class DisplayGlobal(BaseHook):
     This class implements the global display() function used to show rich output
     in notebooks. It routes display calls to the appropriate output callbacks.
     """
+
+    def __init__(self, kernel: LocalPythonKernel) -> None:
+        """Initialize the display global.
+
+        Args:
+            kernel: The kernel instance to hook
+        """
+        super().__init__(kernel)
 
     def __enter__(self) -> DisplayGlobal:
         """Add display() to kernel locals."""
@@ -620,7 +637,7 @@ class DisplayGlobal(BaseHook):
         for obj in objs:
             if raw:
                 data = obj
-                obj_metadata = {}
+                obj_metadata: dict[str, Any] = {}
             else:
                 data, obj_metadata = get_display_data(obj)
 
@@ -658,14 +675,14 @@ class InputBuiltin(BaseHook):
         """
         super().__init__(kernel)
         self._is_password = is_password
-        self._prev: Callable | None = None
+        self._prev: object = None
         update_wrapper(self, input)
 
     def __enter__(self) -> InputBuiltin:
         """Replace input or getpass with this hook."""
         if self._is_password:
             self._prev = getpass.getpass
-            getpass.getpass = self
+            getpass.getpass = self  # type: ignore[assignment]
         else:
             self._prev = self._kernel.locals.get("input")
             self._kernel.locals["input"] = self
@@ -674,7 +691,7 @@ class InputBuiltin(BaseHook):
     def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
         """Restore previous input or getpass."""
         if self._is_password:
-            getpass.getpass = self._prev
+            getpass.getpass = self._prev  # type: ignore[assignment]
         else:
             if self._prev is not None:
                 self._kernel.locals["input"] = self._prev
@@ -717,7 +734,7 @@ class StreamWrapper(BaseHook):
         BaseHook.__init__(self, kernel)
         self.name = name
         self._thread_local = threading.local()
-        self._prev: Any = None
+        self._prev: object = None
 
     @property
     def buffer(self) -> str:

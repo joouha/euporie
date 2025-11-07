@@ -82,7 +82,7 @@ class BaseNotebook(KernelTab, metaclass=ABCMeta):
         self._rendered_cells: dict[str, Cell] = {}
         self.multiple_cells_selected: Filter = Never()
         self.loaded = path is None
-        self._really_init_kernel = None
+        self._really_init_kernel: Callable[[], None] | None = None
 
         super().__init__(
             app, path, kernel=kernel, comms=comms, use_kernel_history=use_kernel_history
