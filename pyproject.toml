@@ -178,7 +178,7 @@ dependencies = [
 ]
 
 [[tool.hatch.envs.test.matrix]]
-python = ["3.10", "3.11", "3.12", "3.13", "3.14", "pypy3"]
+python = ["3.10", "3.11", "3.12", "3.13", "3.14", "3.14t", "pypy3"]
 
 [tool.hatch.envs.test.scripts]
 run = "pytest {args}"
