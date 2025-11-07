@@ -98,9 +98,14 @@ def run_coro_sync(
             loop.run_until_complete(asyncio.sleep(0))
         return task.result()
 
-    # In normal Python, use threadsafe scheduling
-    future = asyncio.run_coroutine_threadsafe(coro, loop)
-    return future.result()
+    # Check if the loop is running (in another thread)
+    if loop.is_running():
+        # Loop is running in a background thread, use threadsafe scheduling
+        future = asyncio.run_coroutine_threadsafe(coro, loop)
+        return future.result()
+    else:
+        # Loop is not running, run it directly in this thread
+        return loop.run_until_complete(coro)
 
 
 def run_coro_async(
