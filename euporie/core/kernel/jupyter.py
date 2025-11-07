@@ -628,7 +628,7 @@ class JupyterKernel(BaseKernel):
             content=rsp.get("content", {}), buffers=rsp.get("buffers", [])
         )
 
-    def kc_comm(self, comm_id: str, data: dict[str, Any]) -> str:
+    def kc_comm(self, comm_id: str, data: dict[str, Any]) -> str | None:
         """Send a comm message on the shell channel."""
         content = {
             "comm_id": comm_id,
@@ -640,7 +640,8 @@ class JupyterKernel(BaseKernel):
                 self.kc.shell_channel.send(msg)
             return msg["header"]["msg_id"]
         else:
-            raise Exception("Cannot send message when kernel has not started")
+            log.info("Cannot send message when kernel has not started")
+            return None
 
     def run(
         self,

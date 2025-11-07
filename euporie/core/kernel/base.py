@@ -483,10 +483,10 @@ class BaseKernel(ABC):
     ) -> None:
         """Request information about the kernel."""
 
-    def kc_comm(self, comm_id: str, data: dict[str, Any]) -> str:
+    def kc_comm(self, comm_id: str, data: dict[str, Any]) -> str | None:
         """By default kernels do not implement COMM communication."""
         log.warning("The %s kernel does not implement COMMs", self.__class__.__name__)
-        return ""  # TODO - raise NotImplementedError
+        return None
 
     def comm_info(self, target_name: str | None = None) -> None:
         """Request information about the current comms.
