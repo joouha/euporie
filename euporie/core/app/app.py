@@ -11,7 +11,7 @@ from abc import ABC, abstractmethod
 from enum import Enum
 from functools import partial
 from pathlib import PurePath
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, cast, overload
 from weakref import WeakSet, WeakValueDictionary
 
 from prompt_toolkit.application.application import Application, _CombinedRegistry
@@ -544,9 +544,30 @@ class BaseApp(ConfigurableApp, Application, ABC):
                 finally:
                     if in_main_thread():
                         signal.signal(signal.SIGTERM, original_sigterm)
-                    # Shut down any remaining LSP clients at exit
-                    app.shutdown_lsps()
         return result
+
+    @overload
+    def exit(self) -> None: ...
+    @overload
+    def exit(self, *, result: _AppResult, style: str = "") -> None: ...
+    @overload
+    def exit(
+        self, *, exception: BaseException | type[BaseException], style: str = ""
+    ) -> None: ...
+    def exit(
+        self,
+        result: _AppResult | None = None,
+        exception: BaseException | type[BaseException] | None = None,
+        style: str = "",
+    ) -> None:
+        """Shut down any remaining LSP clients at exit."""
+        self.shutdown_lsps()
+        if exception is not None:
+            super().exit(exception=exception, style=style)
+        elif result is not None:
+            super().exit(result=result, style=style)
+        else:
+            super().exit()
 
     def cleanup(self, signum: int, frame: FrameType | None) -> None:
         """Restore the state of the terminal on unexpected exit."""
