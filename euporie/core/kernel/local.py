@@ -27,7 +27,7 @@ from euporie.core.kernel.base import BaseKernel, KernelInfo, MsgCallbacks
 
 if TYPE_CHECKING:
     from collections.abc import Callable
-    from typing import Any, TextIO, Unpack
+    from typing import Any, ClassVar, TextIO, Unpack
 
     from euporie.core.tabs.kernel import KernelTab
 
@@ -52,6 +52,35 @@ class LocalPythonKernel(BaseKernel):
 
     # Thread-local storage for callbacks during execution
     _thread_local = threading.local()
+
+    # Registry for magic commands
+    magics: ClassVar[
+        dict[str, Callable[[list[str], MsgCallbacks, LocalPythonKernel], Any]]
+    ] = {}
+
+    @classmethod
+    def register_magic(
+        cls, name: str
+    ) -> Callable[
+        [Callable[[list[str], MsgCallbacks, LocalPythonKernel], Any]],
+        Callable[[list[str], MsgCallbacks, LocalPythonKernel], Any],
+    ]:
+        """Register a new magic command.
+
+        Args:
+            name: The magic command name (without the % prefix)
+
+        Returns:
+            Decorator function that registers the magic handler
+        """
+
+        def decorator(
+            func: Callable[[list[str], MsgCallbacks, LocalPythonKernel], Any],
+        ) -> Callable[[list[str], MsgCallbacks, LocalPythonKernel], Any]:
+            cls.magics[name] = func
+            return func
+
+        return decorator
 
     def __init__(
         self,
@@ -317,6 +346,44 @@ class LocalPythonKernel(BaseKernel):
                 if callable(done := callbacks.get("done")):
                     done({"status": "error"})
 
+    async def _handle_magic(self, source: str, callbacks: MsgCallbacks) -> bool:
+        """Detect and handle special %magics.
+
+        Args:
+            source: The source code to check for magic commands
+            callbacks: Message callbacks for output
+
+        Returns:
+            True if a magic command was handled, False otherwise
+        """
+        # Store callbacks in thread local storage
+        self._thread_local.callbacks = callbacks
+
+        with self.hook_manager:
+            stripped_src = source.strip()
+            if not stripped_src.startswith("%"):
+                return False
+            # Warn if there are extra lines
+            lines = stripped_src.splitlines()
+            if len(lines) > 1 and not stripped_src.startswith("%%"):
+                print(  # noqa: T201
+                    "Warning: Magics cannot be mixed with Python code in the same cell",
+                    file=sys.stderr,
+                )
+                return True
+
+            parts = source.strip().split()
+            magic_name = parts[0].removeprefix("%")
+            args = parts[1:]
+
+            if magic_name in self.magics:
+                handler = self.magics[magic_name]
+                maybe_awaitable = handler(args, callbacks, self)
+                if hasattr(maybe_awaitable, "__await__"):
+                    await maybe_awaitable
+                return True
+            return False
+
     async def run_async(
         self, source: str, **local_callbacks: Unpack[MsgCallbacks]
     ) -> None:
@@ -333,38 +400,42 @@ class LocalPythonKernel(BaseKernel):
 
         self.status = "busy"
 
-        # Set execution count
-        self.execution_count += 1
-        if callable(set_execution_count := callbacks.get("set_execution_count")):
-            set_execution_count(self.execution_count)
+        # Handle magics before normal execution
+        handled = await self._handle_magic(source, callbacks)
 
-        # Add source to line cache (for display in tracebacks)
-        filename = f"<input_{self.execution_count}>"
-        line_cache[filename] = (
-            len(source),
-            None,
-            source.splitlines(keepends=True),
-            filename,
-        )
-        try:
-            # Parse the source into an AST
-            tree = ast.parse(source, filename=filename)
-        except Exception:
-            # Check for syntax errors
-            self.showtraceback(filename, cb=callbacks["add_output"])
-            return
-        else:
-            if not tree.body:
+        if not handled:
+            # Set execution count
+            self.execution_count += 1
+            if callable(set_execution_count := callbacks.get("set_execution_count")):
+                set_execution_count(self.execution_count)
+
+            # Add source to line cache (for display in tracebacks)
+            filename = f"<input_{self.execution_count}>"
+            line_cache[filename] = (
+                len(source),
+                None,
+                source.splitlines(keepends=True),
+                filename,
+            )
+            try:
+                # Parse the source into an AST
+                tree = ast.parse(source, filename=filename)
+            except Exception:
+                # Check for syntax errors
+                self.showtraceback(filename, cb=callbacks["add_output"])
                 return
+            else:
+                if not tree.body:
+                    return
 
-        # Split into statements and final expression
-        body = tree.body
-        last = None
-        if isinstance(tree.body[-1], ast.Expr):
-            last = tree.body.pop()
+            # Split into statements and final expression
+            body = tree.body
+            last = None
+            if isinstance(tree.body[-1], ast.Expr):
+                last = tree.body.pop()
 
-        # Execute the code
-        await to_thread(self._execute_code, body, last, filename, callbacks)
+            # Execute the code
+            await to_thread(self._execute_code, body, last, filename, callbacks)
 
         self.status = "idle"
 
@@ -793,6 +864,10 @@ class StreamWrapper(BaseHook):
             self._send(self.buffer, callbacks)
             self.buffer = ""
 
+    def isatty(self) -> bool:
+        """Make users of this stream believe it is as TTY."""
+        return True
+
 
 class MatplotlibHook(BaseHook):
     """Hook for matplotlib figure display during code execution."""
@@ -926,3 +1001,64 @@ class HookManager:
         if self._depth == 0 and self._stack is not None:
             self._stack.close()
             self._stack = None
+
+
+# Magic command implementations
+
+
+@LocalPythonKernel.register_magic("pip")
+async def magic_pip(
+    args: list[str], callbacks: MsgCallbacks, kernel: LocalPythonKernel
+) -> None:
+    """Run pip commands locally, using micropip if available (e.g., in Pyodide).
+
+    Args:
+        args: Command-line arguments to pass to pip
+        callbacks: Message callbacks for output
+        kernel: The kernel instance
+    """
+    # Try using micropip (for Pyodide environments)
+    try:
+        import micropip  # type: ignore[import-not-found]
+    except ImportError:
+        pass
+    else:
+        if not args:
+            return
+        cmd = args[0]
+        func = getattr(micropip, cmd, None)
+        if not callable(func):
+            print(f"Unknown micropip command: {cmd}", file=sys.stderr)  # noqa: T201
+            return
+
+        result = func(*args[1:]) if cmd != "install" else func(args[1:])
+        if hasattr(result, "__await__"):
+            await result
+        else:
+            # Show result if it returns something
+            if result is not None:
+                print(str(result))  # noqa: T201
+        return
+
+    # Try importing pip & bootstrap if missing
+    import runpy
+
+    old_argv = sys.argv
+    try:
+        try:
+            import pip as pip
+        except ImportError:
+            # Install pip using ensurepip if missing
+            sys.argv = []
+            try:
+                runpy.run_module("ensurepip", run_name="__main__")
+            except SystemExit:
+                pass
+        sys.argv = ["pip", *args]
+        try:
+            runpy.run_module("pip", run_name="__main__")
+        except SystemExit:
+            # pip exits with sys.exit(), which is expected
+            pass
+    finally:
+        sys.argv = old_argv
