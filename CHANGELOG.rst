@@ -11,6 +11,7 @@ Upcoming
 Added
 =====
 
+- Make euporie compatible with pyodide
 - Make sidebar resizable
 - Add ability to toggle hidden files in the file browser
 - Add matplotlib figure support in local-python kernel

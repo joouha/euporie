@@ -10,14 +10,7 @@ from prompt_toolkit.application.current import set_app
 from prompt_toolkit.data_structures import Size
 
 from euporie.core.app.dummy import DummyApp
-from euporie.core.convert.datum import Datum, get_loop
-
-
-def test_get_loop() -> None:
-    """Tests the instantiation and state of the asyncio event loop created by get_loop."""
-    loop = get_loop()
-    assert loop.is_running()
-    assert not loop.is_closed()
+from euporie.core.convert.datum import Datum
 
 
 def test_datum_new() -> None:

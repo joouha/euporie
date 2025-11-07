@@ -6,7 +6,6 @@ import asyncio
 import inspect
 import io
 import logging
-import threading
 from hashlib import md5
 from itertools import pairwise
 from typing import TYPE_CHECKING, Generic, TypeVar
@@ -16,6 +15,7 @@ from prompt_toolkit.data_structures import Size
 from prompt_toolkit.layout.containers import WindowAlign
 
 from euporie.core.app.current import get_app
+from euporie.core.async_utils import get_or_create_loop, run_coro_sync
 from euporie.core.convert.registry import (
     _CONVERTOR_ROUTE_CACHE,
     _FILTER_CACHE,
@@ -23,7 +23,6 @@ from euporie.core.convert.registry import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Coroutine
     from pathlib import Path
     from typing import Any, ClassVar
 
@@ -45,38 +44,6 @@ ERROR_OUTPUTS: dict[str, Any] = {
     "ansi": "(Format Conversion Error)",
     "ft": [("fg:white bg:darkred", "(Format Conversion Error)")],
 }
-
-
-_IO_THREAD: list[threading.Thread | None] = [None]  # dedicated conversion IO thread
-_LOOP: list[asyncio.AbstractEventLoop | None] = [
-    None
-]  # global event loop for conversion
-
-
-def get_loop() -> asyncio.AbstractEventLoop:
-    """Create or return the conversion IO loop.
-
-    The loop will be running on a separate thread.
-    """
-    if _LOOP[0] is None:
-        loop = asyncio.new_event_loop()
-        _LOOP[0] = loop
-        thread = threading.Thread(
-            target=loop.run_forever, name="EuporieConvertIO", daemon=True
-        )
-        thread.start()
-        _IO_THREAD[0] = thread
-    assert _LOOP[0] is not None
-    # Check we are not already in the conversion event loop
-    try:
-        running_loop = asyncio.get_running_loop()
-    except RuntimeError:
-        running_loop = None
-    if _LOOP[0] is running_loop:
-        raise NotImplementedError(
-            "Cannot call `convert` from the conversion event loop"
-        )
-    return _LOOP[0]
 
 
 class _MetaDatum(type):
@@ -160,6 +127,7 @@ class Datum(Generic[T], metaclass=_MetaDatum):
         ] = {}
         self._finalizer: finalize = finalize(self, self._cleanup_datum_sizes, self.hash)
         self._finalizer.atexit = False  # type: ignore [misc]
+        self.loop = get_or_create_loop("convert")
 
     def __repr__(self) -> str:
         """Return a string representation of object."""
@@ -332,11 +300,6 @@ class Datum(Generic[T], metaclass=_MetaDatum):
 
         return output
 
-    def _to_sync(self, coro: Coroutine) -> Any:
-        """Call an async method synchronously."""
-        future = asyncio.run_coroutine_threadsafe(coro, get_loop())
-        return future.result()
-
     def convert(
         self,
         to: str,
@@ -348,7 +311,9 @@ class Datum(Generic[T], metaclass=_MetaDatum):
         **kwargs: Any,
     ) -> Any:
         """Convert between formats."""
-        return self._to_sync(self.convert_async(to, cols, rows, fg, bg, bbox, **kwargs))
+        return run_coro_sync(
+            self.convert_async(to, cols, rows, fg, bg, bbox, **kwargs), self.loop
+        )
 
     async def pixel_size_async(self) -> tuple[int | None, int | None]:
         """Get the dimensions of displayable data in pixels.
@@ -429,7 +394,7 @@ class Datum(Generic[T], metaclass=_MetaDatum):
 
     def pixel_size(self) -> Any:
         """Get data dimensions synchronously."""
-        return self._to_sync(self.pixel_size_async())
+        return run_coro_sync(self.pixel_size_async(), self.loop)
 
     async def cell_size_async(self) -> tuple[int, float]:
         """Get the cell width and aspect ratio of the displayable data.
@@ -455,7 +420,7 @@ class Datum(Generic[T], metaclass=_MetaDatum):
     def cell_size(self) -> Any:
         """Get cell width and aspect synchronously."""
         if self._cell_size is None:
-            return self._to_sync(self.cell_size_async())
+            return run_coro_sync(self.cell_size_async(), self.loop)
         return self._cell_size
 
     # def crop(self, bbox: DiInt) -> T:

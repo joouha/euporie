@@ -5,9 +5,10 @@ from __future__ import annotations
 import asyncio
 import concurrent
 import logging
-import threading
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, NamedTuple, TypedDict, overload
+
+from euporie.core.async_utils import get_or_create_loop, run_coro_async, run_coro_sync
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Coroutine
@@ -30,9 +31,6 @@ if TYPE_CHECKING:
     T = TypeVar("T")
 
 log = logging.getLogger(__name__)
-
-_THREAD: list[threading.Thread | None] = [None]
-_LOOP: list[asyncio.AbstractEventLoop | None] = [None]
 
 
 class KernelInfo(NamedTuple):
@@ -66,30 +64,6 @@ class MsgCallbacks(TypedDict, total=False):
     ask_exit: Callable[[bool], None] | None
 
 
-def get_loop() -> asyncio.AbstractEventLoop:
-    """Create or return the conversion IO loop.
-
-    The loop will be running on a separate thread.
-    """
-    if _LOOP[0] is None:
-        loop = asyncio.new_event_loop()
-        _LOOP[0] = loop
-        thread = threading.Thread(
-            target=loop.run_forever, name="EuporieKernelLoop", daemon=True
-        )
-        thread.start()
-        _THREAD[0] = thread
-    assert _LOOP[0] is not None
-    # Check we are not already in the conversion event loop
-    try:
-        running_loop = asyncio.get_running_loop()
-    except RuntimeError:
-        running_loop = None
-    if _LOOP[0] is running_loop:
-        raise NotImplementedError("Cannot nest event loop access")
-    return _LOOP[0]
-
-
 class BaseKernel(ABC):
     """Abstract base class for euporie kernels."""
 
@@ -113,7 +87,8 @@ class BaseKernel(ABC):
             default_callbacks: The default callbacks to use on receipt of a message
             **kwargs: Additional keyword arguments passed to parent classes
         """
-        self.loop = get_loop()
+        self.loop = get_or_create_loop("kernel")
+
         self.kernel_tab = kernel_tab
         self.allow_stdin = allow_stdin
         self._status = "stopped"
@@ -177,7 +152,7 @@ class BaseKernel(ABC):
 
         Args:
             coro: The coroutine to run
-            wait: If :py:const:`True`, block until the kernel has started
+            wait: If :py:const:`True`, block until the coroutine completes
             callback: A function to run when the coroutine completes. The result from
                 the coroutine will be passed as an argument
             timeout: The number of seconds to allow the coroutine to run if waiting
@@ -185,32 +160,30 @@ class BaseKernel(ABC):
                 coroutine will be cancelled
 
         Returns:
-            The result of the coroutine
+            The result of the coroutine if wait=True, otherwise a Future
 
         """
-        future = asyncio.run_coroutine_threadsafe(coro, self.loop)
-
-        # Cancel previous future instances if required
-        if single and self.coros.get(coro.__name__):
-            self.coros[coro.__name__].cancel()
-        self.coros[coro.__name__] = future
-
         if wait:
+            # Synchronous/blocking execution
             result = None
             try:
-                result = future.result(timeout)
+                result = run_coro_sync(coro, loop=self.loop)
             except concurrent.futures.TimeoutError:
                 log.error("Operation '%s' timed out", coro)
-                future.cancel()
                 return result
             finally:
                 if callable(callback):
                     callback(result)
             return result
         else:
-            if callable(callback):
-                future.add_done_callback(lambda f: callback(f.result()))
-            return future
+            # Asynchronous execution with optional callback
+            return run_coro_async(
+                coro,
+                loop=self.loop,
+                cancel_previous=single,
+                previous_tasks=self.coros,
+                callback=callback,
+            )
 
     @property
     def status(self) -> str:

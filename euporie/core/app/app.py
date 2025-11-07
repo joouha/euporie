@@ -643,11 +643,13 @@ class BaseApp(ConfigurableApp, Application, ABC):
 
     def shutdown_lsps(self) -> None:
         """Shut down all the remaining LSP servers."""
-        from concurrent.futures import as_completed
-
         # Wait for all LSP exit calls to complete
         # The exit calls occur in the LSP event loop thread
-        list(as_completed([lsp.exit() for lsp in self.lsp_clients.values()]))
+        for lsp in list(self.lsp_clients.values()):
+            try:
+                lsp.exit().result()  # block until exit completes
+            except Exception:
+                log.exception("Error shutting down LSP client %s", lsp)
 
     def open_file(
         self, path: Path, read_only: bool = False, tab_class: type[Tab] | None = None

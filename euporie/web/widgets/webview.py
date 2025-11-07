@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from threading import Thread
 from typing import TYPE_CHECKING, cast
 
 from prompt_toolkit.cache import FastDictCache
@@ -18,8 +17,9 @@ from prompt_toolkit.utils import Event
 from upath import UPath
 
 from euporie.core.app.current import get_app
+from euporie.core.async_utils import get_or_create_loop, run_coro_async
 from euporie.core.commands import add_cmd
-from euporie.core.convert.datum import Datum, get_loop
+from euporie.core.convert.datum import Datum
 from euporie.core.convert.mime import get_format
 from euporie.core.ft.html import HTML, Node
 from euporie.core.ft.utils import fragment_list_width, paste
@@ -32,7 +32,6 @@ from euporie.core.path import parse_path
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
-    from concurrent.futures._base import Future
     from pathlib import Path
     from typing import Any
 
@@ -81,7 +80,7 @@ class WebViewControl(UIControl):
         self.status: list[AnyFormattedText] = []
         self.link_handler = link_handler or self.load_url
 
-        self.render_task: Future[None] | None = None
+        self.render_task: asyncio.Future | None = None
         self.rendered = Event(self)
         self.on_cursor_position_changed = Event(self)
 
@@ -92,8 +91,7 @@ class WebViewControl(UIControl):
         #     lambda: self.cursor_position, style="fg:red"
         # )
 
-        self.loop = asyncio.new_event_loop()
-        self.render_thread = Thread(target=self.loop.run_forever, daemon=True)
+        self.loop = get_or_create_loop("convert")
 
         self.key_bindings = load_registered_bindings(
             "euporie.web.widgets.webview:WebViewControl",
@@ -219,7 +217,7 @@ class WebViewControl(UIControl):
             if self.render_task:
                 self.render_task.cancel()
 
-            self.render_task = asyncio.run_coroutine_threadsafe(_render(), get_loop())
+            self.render_task = run_coro_async(_render(), self.loop)
 
     def reset(self) -> None:
         """Reset the state of the control."""

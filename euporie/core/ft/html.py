@@ -29,6 +29,7 @@ from prompt_toolkit.utils import Event
 from upath import UPath
 
 from euporie.core.app.current import get_app
+from euporie.core.async_utils import get_or_create_loop, run_coro_sync
 from euporie.core.border import (
     DiLineStyle,
     DoubleLine,
@@ -51,7 +52,7 @@ from euporie.core.border import (
     UpperRightHalfDottedLine,
     UpperRightHalfLine,
 )
-from euporie.core.convert.datum import Datum, get_loop
+from euporie.core.convert.datum import Datum
 from euporie.core.convert.mime import get_format
 from euporie.core.data_structures import DiBool, DiInt, DiStr
 from euporie.core.ft.table import Cell, Table, compute_padding
@@ -3715,9 +3716,8 @@ class HTML:
 
     def render(self, width: int | None, height: int | None) -> StyleAndTextTuples:
         """Render the current markup at a given size."""
-        loop = get_loop()
-        future = asyncio.run_coroutine_threadsafe(self._render(width, height), loop)
-        return future.result()
+        loop = get_or_create_loop("convert")
+        return run_coro_sync(self._render(width, height), loop)
 
     async def _render(
         self, width: int | None, height: int | None

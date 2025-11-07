@@ -6,25 +6,19 @@ import asyncio
 import json
 import logging
 import os
-import threading
 from pathlib import Path
 from typing import TYPE_CHECKING, NamedTuple
 
 from prompt_toolkit.utils import Event
 
+from euporie.core.async_utils import get_or_create_loop, run_coro_async, run_coro_sync
+
 if TYPE_CHECKING:
     from collections.abc import Callable, Coroutine, Sequence
-    from concurrent.futures import Future
     from typing import Any
 
 
 log = logging.getLogger(__name__)
-
-
-def _setup_loop(loop: asyncio.AbstractEventLoop) -> None:
-    """Run a new event loop (intended to start a loop running in a thread."""
-    asyncio.set_event_loop(loop)
-    loop.run_forever()
 
 
 _COMPLETION_TYPES = {
@@ -87,34 +81,6 @@ class LspCell(NamedTuple):
     metadata: dict[str, Any] | None = None
 
 
-_THREAD: list[threading.Thread | None] = [None]
-_LOOP: list[asyncio.AbstractEventLoop | None] = [None]
-
-
-def get_loop() -> asyncio.AbstractEventLoop:
-    """Create or return the conversion IO loop.
-
-    The loop will be running on a separate thread.
-    """
-    if _LOOP[0] is None:
-        loop = asyncio.new_event_loop()
-        _LOOP[0] = loop
-        thread = threading.Thread(
-            target=loop.run_forever, name="EuporieKernelLoop", daemon=True
-        )
-        thread.start()
-        _THREAD[0] = thread
-    assert _LOOP[0] is not None
-    # Check we are not already in the conversion event loop
-    try:
-        running_loop = asyncio.get_running_loop()
-    except RuntimeError:
-        running_loop = None
-    if _LOOP[0] is running_loop:
-        raise NotImplementedError("Cannot nest event loop access")
-    return _LOOP[0]
-
-
 class LspClient:
     """A client for communicating with LSP servers."""
 
@@ -139,7 +105,7 @@ class LspClient:
         # Change version numbers for opened documents
         self._doc_versions: dict[Path, int] = {}
         # Futures for change events, allowing debouncing changes
-        self._change_futures: dict[Path, Future[None]] = {}
+        self._change_futures: dict[Path, asyncio.Future[None]] = {}
         # Holds diagnostic reports (NOTE: uses URI string from response as key)
         self.reports: dict[str, list] = {}
 
@@ -171,7 +137,7 @@ class LspClient:
         # Ensure LSP servers get shutdown at exit
         self.on_exit = Event(self)
 
-        self.loop = get_loop()
+        self.loop = get_or_create_loop("lsp")
 
     def __repr__(self) -> str:
         """Return a string representation of the LSP client."""
@@ -187,9 +153,7 @@ class LspClient:
         """Start the LSP server."""
         if not self.started:
             # Start lsp server process and monitor it on event loop in thread
-            asyncio.run_coroutine_threadsafe(self.start_(root), self.loop).result(
-                timeout=30
-            )
+            run_coro_sync(self.start_(root), self.loop)
 
     async def start_(self, root: Path | None = None) -> None:
         """Launch the LSP server subprocess."""
@@ -425,9 +389,9 @@ class LspClient:
             params={"settings": self.settings},
         )
 
-    def exit(self) -> Future:
+    def exit(self) -> asyncio.Future[None]:
         """Tell the server to exit."""
-        return asyncio.run_coroutine_threadsafe(self.exit_(), self.loop)
+        return run_coro_async(self.exit_(), self.loop)
 
     async def exit_(self, timeout: int = 1) -> None:
         """Tell the server to exit."""
@@ -463,7 +427,7 @@ class LspClient:
         if self.languages and language not in self.languages:
             return
         self._doc_versions[path] = 0
-        asyncio.run_coroutine_threadsafe(
+        run_coro_async(
             self.send_msg(
                 method="textDocument/didOpen",
                 params={
@@ -522,7 +486,7 @@ class LspClient:
                     "text": cell.text,
                 }
             )
-        asyncio.run_coroutine_threadsafe(
+        run_coro_async(
             self.send_msg(
                 method="notebookDocument/didOpen",
                 params=params,
@@ -564,9 +528,7 @@ class LspClient:
                 },
             )
 
-        self._change_futures[path] = asyncio.run_coroutine_threadsafe(
-            _notify_change(), self.loop
-        )
+        self._change_futures[path] = run_coro_async(_notify_change(), self.loop)
         if not debounce:
             self._change_futures[path].result()
 
@@ -576,7 +538,7 @@ class LspClient:
             return
         # Update versions
         self._doc_versions[path] += 1
-        asyncio.run_coroutine_threadsafe(
+        run_coro_async(
             self.send_msg(
                 method="notebookDocument/didChange",
                 params={
@@ -647,7 +609,7 @@ class LspClient:
             )
             change["data"].append(lsp_notebook_cell)
         # Run RPC call
-        asyncio.run_coroutine_threadsafe(
+        run_coro_async(
             self.send_msg(
                 method="notebookDocument/didChange",
                 params=params,
@@ -714,9 +676,7 @@ class LspClient:
                 params=params,
             )
 
-        self._change_futures[path] = asyncio.run_coroutine_threadsafe(
-            _notify_change(), self.loop
-        )
+        self._change_futures[path] = run_coro_async(_notify_change(), self.loop)
         if not debounce:
             self._change_futures[path].result()
 
@@ -733,7 +693,7 @@ class LspClient:
                 continue
             self._cleanup_path(cell.path)
         # Set RPC parameters
-        asyncio.run_coroutine_threadsafe(
+        run_coro_async(
             self.send_msg(
                 method="notebookDocument/didChange",
                 params={
@@ -762,7 +722,7 @@ class LspClient:
     def will_save_doc(self, path: Path) -> None:
         """Tell the server we will save a document file."""
         if self.can_will_save_doc:
-            asyncio.run_coroutine_threadsafe(
+            run_coro_async(
                 self.send_msg(
                     method="textDocument/willSave",
                     params={
@@ -779,7 +739,7 @@ class LspClient:
     def save_doc(self, path: Path, text: str) -> None:
         """Tell the server we saved a text document."""
         if self.can_save_doc:
-            asyncio.run_coroutine_threadsafe(
+            run_coro_async(
                 self.send_msg(
                     method="textDocument/didSave",
                     params={
@@ -792,7 +752,7 @@ class LspClient:
 
     def save_nb(self, path: Path) -> None:
         """Tell the server we saved a notebook."""
-        asyncio.run_coroutine_threadsafe(
+        run_coro_async(
             self.send_msg(
                 method="notebookDocument/didSave",
                 params={
@@ -820,7 +780,7 @@ class LspClient:
         """Tell the server we have closed a document file."""
         # log.debug("%s closing %s", self, path)
         self._cleanup_path(path)
-        asyncio.run_coroutine_threadsafe(
+        run_coro_async(
             self.send_msg(
                 method="textDocument/didClose",
                 params={
@@ -838,7 +798,7 @@ class LspClient:
             self._cleanup_path(cell.path)
             # params["cellTextDocuments"].append({"uri": cell_path.as_uri()})
         self._cleanup_path(path)
-        asyncio.run_coroutine_threadsafe(
+        run_coro_async(
             self.send_msg(method="notebookDocument/didClose", params=params), self.loop
         )
 
@@ -852,9 +812,7 @@ class LspClient:
         """Trigger a LSP completion request."""
         if not self.can_complete:
             return []
-        return asyncio.run_coroutine_threadsafe(
-            self.complete_(path, line, char, timeout), self.loop
-        ).result()
+        return run_coro_sync(self.complete_(path, line, char, timeout), self.loop)
 
     async def complete_(
         self, path: Path, line: int, char: int, timeout: int = 5
@@ -900,9 +858,7 @@ class LspClient:
         """Trigger a LSP hover request."""
         if not self.can_hover:
             return {}
-        return asyncio.run_coroutine_threadsafe(
-            self.hover_(path, line, char, timeout), self.loop
-        ).result()
+        return run_coro_sync(self.hover_(path, line, char, timeout), self.loop)
 
     async def hover_(self, path: Path, line: int, char: int, timeout: int = 5) -> dict:
         """Request hover text from the LSP server."""
@@ -950,9 +906,9 @@ class LspClient:
         """Trigger a LSP signature request."""
         if not self.can_signature:
             return None
-        return asyncio.run_coroutine_threadsafe(
+        return run_coro_sync(
             self.signature_(path, line, char, timeout=timeout), self.loop
-        ).result()
+        )
 
     async def signature_(
         self, path: Path, line: int, char: int, timeout: int = 5
@@ -1003,9 +959,7 @@ class LspClient:
         """Request LSP document formatting."""
         if not self.can_format:
             return []
-        return asyncio.run_coroutine_threadsafe(
-            self.format_(path, timeout=timeout), self.loop
-        ).result()
+        return run_coro_sync(self.format_(path, timeout=timeout), self.loop)
 
     async def format_(
         self, path: Path, tab_size: int = 4, spaces: bool = True, timeout: int = 5
