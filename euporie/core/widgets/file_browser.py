@@ -349,7 +349,7 @@ FILE_ICONS = {
     ".pdf": "",
     ".doc": "",
     ".docx": "",
-    ".ipynb": "ﴬ",
+    ".ipynb": "󰠮",
 }
 
 
