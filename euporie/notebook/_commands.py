@@ -5,12 +5,23 @@ from euporie.core.commands import add_cmd
 
 @add_cmd(aliases=["n"])
 def _new_notebook() -> None:
-    """Create a new file."""
+    """Create a new notebook file."""
     from euporie.notebook.current import get_app
     from euporie.notebook.tabs.notebook import Notebook
 
     app = get_app()
     app.add_tab(tab := Notebook(app, None))
+    tab.focus()
+
+
+@add_cmd()
+def _new_console() -> None:
+    """Create a console tab."""
+    from euporie.notebook.current import get_app
+    from euporie.notebook.tabs.console import Console
+
+    app = get_app()
+    app.add_tab(tab := Console(app, None))
     tab.focus()
 
 

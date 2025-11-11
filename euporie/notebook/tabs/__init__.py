@@ -31,6 +31,10 @@ _TAB_REGISTRY.extend(
             weight=3,
         ),
         TabRegistryEntry(
+            path="euporie.notebook.tabs.console:Console",
+            name="Console",
+        ),
+        TabRegistryEntry(
             path="euporie.web.tabs.web:WebTab",
             name="Web Viewer",
             mime_types={"text/html", "text/markdown"},

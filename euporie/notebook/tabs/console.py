@@ -1,0 +1,228 @@
+"""Contain the main class for a notebook file."""
+
+from __future__ import annotations
+
+import logging
+from functools import partial
+from typing import TYPE_CHECKING, Any
+
+from prompt_toolkit.filters.base import Condition
+from prompt_toolkit.layout.containers import ConditionalContainer
+
+from euporie.core.border import InsetGrid
+from euporie.core.layout.containers import HSplit, VSplit
+from euporie.core.layout.decor import FocusedStyle
+from euporie.core.layout.scroll import ScrollingContainer
+from euporie.core.margins import MarginContainer, ScrollbarMargin
+from euporie.core.nbformat import new_code_cell
+from euporie.core.style import KERNEL_STATUS_REPR
+from euporie.core.tabs.console import BaseConsole
+from euporie.core.widgets.cell import Cell
+from euporie.core.widgets.inputs import StdInput
+from euporie.core.widgets.layout import Border
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    from prompt_toolkit.buffer import Buffer
+    from prompt_toolkit.formatted_text import AnyFormattedText
+
+    from euporie.core.app.app import BaseApp
+
+log = logging.getLogger(__name__)
+
+
+class Console(BaseConsole):
+    """Console tab implementation for the Notebook application."""
+
+    def __init__(
+        self,
+        app: BaseApp,
+        path: Path | None = None,
+        use_kernel_history: bool = True,
+        connection_file: str = "",
+    ) -> None:
+        """Create a new :py:class:`Console` tab instance.
+
+        Args:
+            app: The euporie application the console tab belongs to
+            path: A file path to open (not used currently)
+            use_kernel_history: If :const:`True`, history will be loaded from the kernel
+            connection_file: The connection file of an existing kernel
+        """
+        super().__init__(
+            app=app,
+            path=path,
+            use_kernel_history=use_kernel_history,
+        )
+        self.rendered_cells: list[Cell] = []
+        self.container = self.load_container()
+
+    @property
+    def selected_indices(self) -> list[int]:
+        """Return a list of the currently selected cell indices."""
+        return []
+
+    def load_container(self) -> HSplit:
+        """Build the main application layout."""
+        self.input_box = self._load_input_box()
+        self.stdin_box = StdInput(self)
+        self.page = ScrollingContainer(lambda: self.rendered_cells)
+        return HSplit(
+            [
+                VSplit(
+                    [
+                        self.page,
+                        ConditionalContainer(
+                            MarginContainer(ScrollbarMargin(), target=self.page),
+                            filter=Condition(lambda: self.app.config.show_scroll_bar),
+                        ),
+                    ]
+                ),
+                FocusedStyle(
+                    Border(
+                        self.input_box,
+                        border=InsetGrid,
+                        style="class:input,text,border",
+                    )
+                ),
+            ]
+        )
+
+    def new_input(
+        self, input_json: dict[str, Any], own: bool, force: bool = False
+    ) -> None:
+        """Create new cell inputs in response to kernel ``execute_input`` messages.
+
+        Args:
+            input_json: The input data from the kernel message.
+            own: Whether this input originated from this console.
+            force: Whether to force rendering even if it's our own input.
+        """
+        # Skip our own inputs when relayed from the kernel
+        # We render them immediately when they are run to avoid delays in the UI
+        if own and not force:
+            return
+
+        app = self.app
+        if not own and not app.config.show_remote_inputs:
+            return
+
+        # Record the input as a cell in the json
+        cell_json = new_code_cell(
+            source=input_json["code"],
+            execution_count=input_json.get("execution_count", self.execution_count),
+        )
+        self.json["cells"].append(cell_json)
+        self.rendered_cells.append(
+            Cell(
+                len(self.json["cells"]),
+                cell_json,
+                self,
+                is_new=bool(self.rendered_cells),
+            )
+        )
+        # if (
+        #     app.config.max_stored_outputs
+        #     and len(self.json["cells"]) > app.config.max_stored_outputs
+        # ):
+        #     del self.json["cells"][0]
+        self.page.refresh_children = True
+
+        # Scroll to the cell getting the new output
+        # self.page.scroll_to(len(self.rendered_cells) - 1, anchor="bottom")
+        self.page.scroll(-9999)
+
+    def new_output(self, output_json: dict[str, Any], own: bool) -> None:
+        """Handle new output from the kernel.
+
+        Args:
+            output_json: The output data from the kernel message.
+            own: Whether this output originated from this console.
+        """
+        if not own and not self.app.config.show_remote_outputs:
+            return
+
+        # Clear the output if we were previously asked to
+        if self.clear_outputs_on_output:
+            self.clear_outputs_on_output = False
+            # Clear the screen
+            self.rendered_cells.clear()
+
+        # If there is no cell in the virtual notebook, add an empty cell
+        if not self.json["cells"]:
+            self.json["cells"].append(
+                new_code_cell(execution_count=self.execution_count)
+            )
+        cell = self.rendered_cells[-1]
+        # Add to end of previous cell in virtual notebook
+        cell.add_output(output_json, own)
+
+        # Invalidate the app so the output get printed
+        self.page.reset()
+
+        # Scroll to the cell getting the new output
+        # self.page.scroll_to(len(self.rendered_cells) - 1, anchor="bottom")
+
+    def refresh_cell(self, cell: Cell) -> None:
+        """Trigger the refresh of a notebook cell."""
+
+    def clear_output(self, wait: bool = False) -> None:
+        """Remove all cells from history.
+
+        Args:
+            wait: If True, clear output when new output is generated.
+        """
+        self.json["cells"].clear()
+
+    def run(self, buffer: Buffer | None = None) -> None:
+        """Run the code in the input box."""
+        if buffer is None:
+            buffer = self.input_box.buffer
+        app = self.app
+        # Auto-reformat code
+        if app.config.autoformat:
+            self.input_box.reformat()
+        # # Get the code to run
+        text = buffer.text
+        # # Remove any selections from input
+        buffer.selection_state = None
+        # Reset the diagnostics
+        self.reports.clear()
+        # Increment this for display purposes until we get the response from the kernel
+        self.execution_count += 1
+        # Move cursor to the start of the input
+        buffer.cursor_position = 0
+        # Render input
+        self.new_input({"code": text}, own=True, force=True)
+        # Run the previous entry
+        if self.kernel.status == "starting":
+            self.kernel_queue.append(partial(self.kernel.run, text, wait=False))
+        else:
+            self.kernel.run(text, wait=False)
+        # Reset the input & output
+        buffer.reset(append_to_history=True)
+        self.on_advance()
+
+    def set_next_input(self, text: str, replace: bool = False) -> None:
+        """Set the text for the next prompt."""
+        self.input_box.buffer.text = text
+
+    def __pt_status__(
+        self,
+    ) -> tuple[Sequence[AnyFormattedText], Sequence[AnyFormattedText]]:
+        """Generate the formatted text for the statusbar."""
+        assert self.kernel is not None
+        return (
+            [],
+            [
+                [
+                    (
+                        "",
+                        self.kernel_display_name,
+                        # , self._statusbar_kernel_handler)],
+                    )
+                ],
+                KERNEL_STATUS_REPR.get(self.kernel.status, "."),
+            ],
+        )

@@ -401,6 +401,7 @@ class NotebookApp(BaseApp):
                 "File",
                 children=[
                     get_cmd("new-notebook").menu,
+                    get_cmd("new-console").menu,
                     get_cmd("open-file").menu,
                     separator,
                     get_cmd("save-file").menu,

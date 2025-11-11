@@ -688,7 +688,7 @@ class ScrollingContainer(Container):
         child = self.get_child(index)
 
         new_top: int | None = None
-        if index in self.visible_indices:
+        if index in self.visible_indices and index in self.index_positions:
             new_top = self.index_positions[index]
         else:
             if index < self._selected_slice.start:
