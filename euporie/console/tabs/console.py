@@ -47,7 +47,7 @@ if TYPE_CHECKING:
 
     from prompt_toolkit.application.application import Application
     from prompt_toolkit.buffer import Buffer
-    from prompt_toolkit.formatted_text import AnyFormattedText, StyleAndTextTuples
+    from prompt_toolkit.formatted_text import AnyFormattedText
     from prompt_toolkit.key_binding.key_processor import KeyPressEvent
     from prompt_toolkit.layout.containers import Container, Float
 
@@ -299,33 +299,6 @@ class Console(BaseConsole):
 
         self.live_output.reset()
         stop_search()
-
-    def prompt(
-        self,
-        text: str,
-        count: int | None = None,
-        offset: int = 0,
-        show_busy: bool = False,
-    ) -> StyleAndTextTuples:
-        """Determine what should be displayed in the prompt of the cell."""
-        if count is None:
-            return [("", " " * (len(text) + 4 + len(str(self.execution_count))))]
-        prompt = str(count + offset)
-        if show_busy and self.kernel.status in ("busy", "queued"):
-            prompt = "*".center(len(prompt))
-        ft: StyleAndTextTuples = [
-            ("", f"{text}["),
-            ("class:count", prompt),
-            ("", "]: "),
-        ]
-        return ft
-
-    @property
-    def language(self) -> str:
-        """The language of the current kernel."""
-        return self.lang_info.get(
-            "name", self.lang_info.get("pygments_lexer", "python")
-        )
 
     def lang_file_ext(self) -> str:
         """Return the file extension for scripts in the notebook's language."""

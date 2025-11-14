@@ -34,6 +34,7 @@ if TYPE_CHECKING:
     from pathlib import Path
     from typing import Any
 
+    from prompt_toolkit.formatted_text import StyleAndTextTuples
     from prompt_toolkit.key_binding.key_bindings import NotImplementedOrNone
     from prompt_toolkit.key_binding.key_processor import KeyPressEvent
 
@@ -203,6 +204,33 @@ class BaseConsole(KernelTab):
                 "Do you want to restart the kernel?",
                 cb=self.kernel.restart,
             )
+
+    def prompt(
+        self,
+        text: str,
+        count: int | None = None,
+        offset: int = 0,
+        show_busy: bool = False,
+    ) -> StyleAndTextTuples:
+        """Determine what should be displayed in the prompt of the cell."""
+        if count is None:
+            return [("", " " * (len(text) + 4 + len(str(self.execution_count))))]
+        prompt = str(count + offset)
+        if show_busy and self.kernel.status in ("busy", "queued"):
+            prompt = "*".center(len(prompt))
+        ft: StyleAndTextTuples = [
+            ("", f"{text}["),
+            ("class:count", prompt),
+            ("", "]: "),
+        ]
+        return ft
+
+    @property
+    def language(self) -> str:
+        """The language of the current kernel."""
+        return self.lang_info.get(
+            "name", self.lang_info.get("pygments_lexer", "python")
+        )
 
     @abstractmethod
     def run(self, buffer: Buffer | None = None) -> None:
