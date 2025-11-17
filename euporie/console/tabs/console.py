@@ -510,18 +510,6 @@ class Console(BaseConsole):
         if path is not None:
             BaseNotebook.save(cast("BaseNotebook", self), path)
 
-    @property
-    def path_nb(self) -> Path:
-        """Return the virtual path of the console as a notebook."""
-        return self.path.with_suffix(".ipynb")
-
-    @property
-    def path_cell(self) -> Path:
-        """Return the virtual path of the console as a notebook cell."""
-        return (self.path_nb / f"cell-{self.execution_count}").with_suffix(
-            self.path_nb.suffix
-        )
-
     # ################################# Key Bindings ##################################
 
     register_bindings(

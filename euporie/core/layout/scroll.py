@@ -682,7 +682,7 @@ class ScrollingContainer(Container):
             sum(self.known_sizes[: self._selected_slice.start]) - value
         )
 
-    def all_children(self) -> Sequence[Container]:
+    def all_children(self) -> Sequence[CachedContainer]:
         """Return the list of all children of this container."""
         _children = self._children
         if self.refresh_children or not self._children:

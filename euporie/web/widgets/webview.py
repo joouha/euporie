@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 import logging
 from typing import TYPE_CHECKING, cast
 
@@ -31,6 +30,7 @@ from euporie.core.key_binding.registry import (
 from euporie.core.path import parse_path
 
 if TYPE_CHECKING:
+    import asyncio
     from collections.abc import Callable, Iterable
     from pathlib import Path
     from typing import Any

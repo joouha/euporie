@@ -98,7 +98,9 @@ class Console(BaseConsole):
         Returns:
             True if scrolled to bottom, False otherwise.
         """
-        return self.page.render_info and (
+        if not self.page.render_info:
+            return False
+        return (
             self.page.render_info.vertical_scroll + self.page.render_info.window_height
             == sum(self.page.known_sizes)
             or sum(self.page.known_sizes) < self.page.render_info.window_height
@@ -234,6 +236,10 @@ class Console(BaseConsole):
 
     def refresh_cell(self, cell: Any) -> None:
         """Trigger the refresh of a notebook cell."""
+
+    def refresh(self, now: bool = True) -> None:
+        """Refresh the console display."""
+        self.page.reset()
 
     def clear_output(self, wait: bool = False) -> None:
         """Remove all cells from history.
