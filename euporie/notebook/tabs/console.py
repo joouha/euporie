@@ -50,12 +50,13 @@ class Console(BaseConsole):
             use_kernel_history: If :const:`True`, history will be loaded from the kernel
             connection_file: The connection file of an existing kernel
         """
+        self.rendered_containers: list[Container] = []
+        self.last_output_area: CellOutputArea | None = None
         super().__init__(
             app=app,
             path=path,
             use_kernel_history=use_kernel_history,
         )
-        self.rendered_cells: list[Cell] = []
         self.container = self.load_container()
 
     @property
@@ -67,7 +68,7 @@ class Console(BaseConsole):
         """Build the main application layout."""
         self.input_box = self._load_input_box()
         self.stdin_box = StdInput(self)
-        self.page = ScrollingContainer(lambda: self.rendered_cells)
+        self.page = ScrollingContainer(lambda: self.rendered_containers)
         return HSplit(
             [
                 VSplit(
@@ -87,6 +88,19 @@ class Console(BaseConsole):
                     )
                 ),
             ]
+        )
+
+    @property
+    def _scrolled_to_bottom(self) -> bool:
+        """Check if the console page is currently scrolled to the bottom.
+
+        Returns:
+            True if scrolled to bottom, False otherwise.
+        """
+        return self.page.render_info and (
+            self.page.render_info.vertical_scroll + self.page.render_info.window_height
+            == sum(self.page.known_sizes)
+            or sum(self.page.known_sizes) < self.page.render_info.window_height
         )
 
     def new_input(
@@ -114,24 +128,44 @@ class Console(BaseConsole):
             execution_count=input_json.get("execution_count", self.execution_count),
         )
         self.json["cells"].append(cell_json)
-        self.rendered_cells.append(
-            Cell(
-                len(self.json["cells"]),
-                cell_json,
-                self,
-                is_new=bool(self.rendered_cells),
-            )
-        )
-        # if (
-        #     app.config.max_stored_outputs
-        #     and len(self.json["cells"]) > app.config.max_stored_outputs
-        # ):
-        #     del self.json["cells"][0]
-        self.page.refresh_children = True
 
-        # Scroll to the cell getting the new output
-        # self.page.scroll_to(len(self.rendered_cells) - 1, anchor="bottom")
-        self.page.scroll(-9999)
+        # Create input container with prompt and KernelInput
+        input_container = VSplit(
+            [
+                Window(
+                    FormattedTextControl(
+                        partial(
+                            self.prompt,
+                            "In ",
+                            count=cell_json.execution_count,
+                        )
+                    ),
+                    dont_extend_width=True,
+                    style="class:cell,input,prompt",
+                    height=1,
+                ),
+                KernelInput(
+                    text=cell_json.source,
+                    kernel_tab=self,
+                    language=lambda: self.language,
+                    read_only=True,
+                ),
+            ],
+        )
+
+        # Add spacing above the new input
+        self.rendered_containers.append(Window(height=1, dont_extend_height=True))
+        # Add the new input
+        self.rendered_containers.append(input_container)
+
+        # Reset last output area since we have a new input
+        self.last_output_area = None
+
+        # Update scrolling container to show new child
+        self.page.refresh_children = True
+        # Scroll to the new cell
+        if self._scrolled_to_bottom:
+            self.page.scroll_to(len(self.rendered_containers) - 1, anchor="bottom")
 
     def new_output(self, output_json: dict[str, Any], own: bool) -> None:
         """Handle new output from the kernel.
@@ -147,24 +181,57 @@ class Console(BaseConsole):
         if self.clear_outputs_on_output:
             self.clear_outputs_on_output = False
             # Clear the screen
-            self.rendered_cells.clear()
+            self.rendered_containers.clear()
+            self.last_output_area = None
 
         # If there is no cell in the virtual notebook, add an empty cell
         if not self.json["cells"]:
             self.json["cells"].append(
                 new_code_cell(execution_count=self.execution_count)
             )
-        cell = self.rendered_cells[-1]
-        # Add to end of previous cell in virtual notebook
-        cell.add_output(output_json, own)
+        cell = self.json.cells[-1]
 
-        # Invalidate the app so the output get printed
-        self.page.reset()
+        # If we don't have a last output area, create a new one
+        if self.last_output_area is None:
+            # Add spacing before output
+            if self.rendered_containers:
+                self.rendered_containers.append(
+                    Window(height=1, dont_extend_height=True)
+                )
 
-        # Scroll to the cell getting the new output
-        # self.page.scroll_to(len(self.rendered_cells) - 1, anchor="bottom")
+            # Create new output area
+            self.last_output_area = CellOutputArea([], parent=self)
 
-    def refresh_cell(self, cell: Cell) -> None:
+            output_container = VSplit(
+                [
+                    Window(
+                        FormattedTextControl(
+                            partial(
+                                self.prompt,
+                                "Out",
+                                count=cell.execution_count,
+                            )
+                        ),
+                        dont_extend_width=True,
+                        style="class:cell,output,prompt",
+                        height=1,
+                    ),
+                    self.last_output_area,
+                ]
+            )
+            self.rendered_containers.append(output_container)
+
+        # Add output to the last output area
+        cell["outputs"].append(output_json)
+        self.last_output_area.add_output(output_json, own)
+
+        # Update scrolling container to show new child
+        self.page.refresh_children = True
+        # Scroll to the last container if scrolled to bottom of screen
+        if self._scrolled_to_bottom:
+            self.page.scroll_to(len(self.rendered_containers) - 1, anchor="bottom")
+
+    def refresh_cell(self, cell: Any) -> None:
         """Trigger the refresh of a notebook cell."""
 
     def clear_output(self, wait: bool = False) -> None:
@@ -174,6 +241,8 @@ class Console(BaseConsole):
             wait: If True, clear output when new output is generated.
         """
         self.json["cells"].clear()
+        self.rendered_containers.clear()
+        self.last_output_area = None
 
     def run(self, buffer: Buffer | None = None) -> None:
         """Run the code in the input box."""
