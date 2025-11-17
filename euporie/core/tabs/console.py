@@ -65,7 +65,7 @@ class BaseConsole(KernelTab):
         app: BaseApp,
         path: Path | None = None,
         use_kernel_history: bool = True,
-        connection_file: str = "",
+        connection_file: Path | None = None,
     ) -> None:
         """Initialize the base console."""
         # Kernel setup
