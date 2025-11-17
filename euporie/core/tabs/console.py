@@ -309,19 +309,6 @@ class BaseConsole(KernelTab):
             or (completeness_status == "unknown" and code[-2:] != "\n\n")
         )
 
-    @property
-    def language(self) -> str:
-        """The language of the current kernel.
-
-        Returns:
-            The language name.
-        """
-        if hasattr(self, "lang_info"):
-            return self.lang_info.get(
-                "name", self.lang_info.get("pygments_lexer", "python")
-            )
-        return "python"
-
     def lang_file_ext(self) -> str:
         """Return the file extension for scripts in the notebook's language.
 
