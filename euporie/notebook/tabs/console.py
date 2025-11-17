@@ -80,6 +80,7 @@ class Console(BaseConsole):
                         ),
                     ]
                 ),
+                FocusedStyle(self.stdin_box),
                 FocusedStyle(
                     Border(
                         self.input_box,
