@@ -6,8 +6,8 @@ import logging
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-import upath
 from upath import UPath
+from upath.implementations.memory import MemoryPath
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -21,7 +21,7 @@ log = logging.getLogger(__name__)
 # Define custom universal_pathlib path implementations
 
 
-class UntitledPath(upath.core.UPath):
+class UntitledPath(MemoryPath):
     """A path for untitled files, as needed for LSP servers."""
 
     @classmethod

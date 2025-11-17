@@ -88,6 +88,7 @@ untitled = "euporie.core.path:UntitledPath"
 [project.entry-points."fsspec.specs"]
 http = "euporie.core.fsspec:HTTPFileSystem"
 https = "euporie.core.fsspec:HTTPFileSystem"
+untitled = "fsspec.implementations.memory:MemoryFileSystem"
 
 [tool.hatch.build.targets.wheel.shared-data]
 "euporie/data/desktop" = "share/applications/"
