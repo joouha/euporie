@@ -70,9 +70,11 @@ class ScrollingContainer(Container):
         self.refresh_children = True
         self.pre_rendered: float | None = None
 
-        self._selected_slice = slice(
-            0, 1
-        )  # The index of the currently selected children
+        # The index of the currently selected children
+        self._selected_slice = slice(0, 1)
+        # The selection to switch to at the next render
+        self._next_selected_slice: slice | None = None
+        # The offset of the start of the selection from the top of the container
         self.selected_child_position: int = 0
 
         self.visible_indices: set[int] = {0}
@@ -80,6 +82,8 @@ class ScrollingContainer(Container):
 
         self.last_write_position: WritePosition = BoundedWritePosition(0, 0, 0, 0)
         self.last_total_height = 0
+
+        self._scroll_next: tuple[int, Literal["top", "bottom"] | None] | None = None
 
         self.width = to_dimension(width).preferred
         self.height = to_dimension(height).preferred
@@ -119,12 +123,12 @@ class ScrollingContainer(Container):
             await asyncio.gather(*tasks)
             self.pre_rendered = 1.0
             app.invalidate()
-            # app.exit()
 
         app.create_background_task(_finish())
 
     def reset(self) -> None:
         """Reset the state of this container and all the children."""
+        self.refresh_children = True
         for child in self.all_children():
             child.reset()
 
@@ -145,7 +149,6 @@ class ScrollingContainer(Container):
     ) -> None:
         # Only update the selected child if it was not selected before
         if force or req_slice != self._selected_slice:
-            app = get_app()
             self.refresh_children = True
             children = self.all_children()
             # Ensure new selected slice is valid
@@ -162,18 +165,8 @@ class ScrollingContainer(Container):
                 elif req_slice.start == -1:
                     anchor = "top"
                 self.scroll_to(new_slice.start, anchor)
-            # Request a refresh of the previously selected children
-            for child in self._selected_children:
-                child.invalidate()
-            # Get the first selected child and focus it
-            child = children[new_slice.start]
-            if not app.layout.has_focus(child):
-                try:
-                    app.layout.focus(child)
-                except ValueError:
-                    pass
-            # Track which child was selected
-            self._selected_slice = new_slice
+            # Queue newly selected slice to replace selection at next redraw
+            self._next_selected_slice = new_slice
 
     @property
     def selected_slice(self) -> slice:
@@ -323,11 +316,14 @@ class ScrollingContainer(Container):
                         self.select(index, extend=True)
                     else:
                         self.select(index, extend=False)
-                    get_app().layout.focus(child)
+                    try:
+                        get_app().layout.focus(child)
+                    except ValueError:
+                        ...
                 else:
                     try:
                         get_app().layout.focus(self)
-                    except Exception:
+                    except ValueError:
                         ...
                 response = None
 
@@ -381,6 +377,80 @@ class ScrollingContainer(Container):
         # Record children which are currently visible
         visible_indices = set()
 
+        layout = get_app().layout
+
+        children = self.all_children()
+        heights = self.known_sizes
+        total_height = sum(heights)
+
+        if self._scroll_next is not None:
+            source_idx = self._selected_slice.start
+            target_idx, anchor = self._scroll_next
+
+            # Calculate distance between selected child and target
+            # This is the scroll amount needed to move the target to the position of
+            # the current source
+            new_offset = 0
+            direction = 1 if target_idx > source_idx else -1
+            for i in range(source_idx, target_idx, direction):
+                new_offset -= heights[i] * direction
+
+            # Update the target height
+            target = self.get_child(target_idx)
+            target.render(available_width, available_height)
+            target_height = target.height
+
+            # If achoring to the top, we can use the new offset as the new child position
+            if anchor == "top":
+                pass
+
+            # To achor to bottom, add the screen height less the target child's height
+            elif anchor == "bottom":
+                new_offset += available_height - target_height
+
+            # If unanchored, subtract the offset of the target from the current offset
+            # This maintains the current absolute scroll position
+            # Typically the target will become focused
+            elif anchor is None:
+                new_offset = self.selected_child_position - new_offset
+                # Adjust the new offset so the target is on-screen
+                # Special case: when scrolling up to a target that's larger than the viewport,
+                # anchor to the bottom of the target so the user sees the end of the content
+                # (which is closer to where they were). This provides better context when
+                # navigating backwards through large items.
+                if target_idx < source_idx and target.height > available_height:
+                    new_offset = available_height - target_height
+                # If target would be above the viewport, adjust to show its top
+                elif new_offset < 0:
+                    new_offset = 0
+                # If target would be below the viewport, adjust to show its bottom
+                elif new_offset + target_height > available_height:
+                    new_offset = max(0, available_height - target_height)
+
+            self.selected_child_position = new_offset
+            self._scroll_next = None
+            # Cancel any scrolling
+            self.scrolling = 0
+
+        # Update the selection
+        if self._next_selected_slice is not None:
+            children = self.all_children()
+            # Request a refresh of the previously selected children
+            for child in self._selected_children:
+                child.invalidate()
+            # Track which child was selected
+            self._selected_slice = self._next_selected_slice
+            self._next_selected_slice = None
+            # Get the first selected child and focus it
+            child = children[self._selected_slice.start]
+            app = get_app()
+            if not app.layout.has_focus(child):
+                try:
+                    log.debug("Focusing %s", child)
+                    app.layout.focus(child)
+                except ValueError:
+                    pass
+
         # Force the selected children to refresh
         selected_indices = self.selected_indices
         self._selected_children: list[CachedContainer] = []
@@ -398,21 +468,19 @@ class ScrollingContainer(Container):
                 self.get_child(index).invalidate()
 
         # Scroll to make the cursor visible
-        layout = get_app().layout
         if self.scroll_to_cursor:
             selected_child = self._selected_children[0]
             selected_child.render(
                 available_width=available_width,
                 available_height=available_height,
                 style=f"{parent_style} {self.style}",
-                start=self.selected_child_position,
             )
             if cursor_position := selected_child.screen.cursor_positions.get(
                 layout.current_window
             ):
                 cursor_row = self.selected_child_position + cursor_position.y
                 scroll_offsets = self.scroll_offsets
-                if cursor_row < scroll_offsets.top + scroll_offsets.top:
+                if cursor_row < scroll_offsets.top:
                     self.selected_child_position -= cursor_row - scroll_offsets.top
                 elif cursor_row >= available_height - (scroll_offsets.bottom + 1):
                     self.selected_child_position -= (
@@ -422,9 +490,7 @@ class ScrollingContainer(Container):
             self.scroll_to_cursor = False
 
         # Adjust scrolling offset
-        heights = self.known_sizes
-        total_height = sum(heights)
-        if self.scrolling or total_height != self.last_total_height:
+        if self.scrolling:
             heights_above = sum(heights[: self._selected_slice.start])
             new_child_position = self.selected_child_position + self.scrolling
             # Do not allow scrolling if there is no overflow
@@ -678,60 +744,19 @@ class ScrollingContainer(Container):
     def scroll_to(
         self, index: int, anchor: Literal["top", "bottom"] | None = None
     ) -> None:
-        """Scroll a child into view.
+        """Request that a child be scrolled into view.
+
+        The actual scroll will be applied in the next render cycle so that
+        accurate positions and heights are available.
 
         Args:
             index: The child index to scroll into view
             anchor: Whether to scroll to the top or bottom the given child index
 
         """
-        child = self.get_child(index)
-
-        new_top: int | None = None
-        if index in self.visible_indices and index in self.index_positions:
-            new_top = self.index_positions[index]
-        else:
-            if index < self._selected_slice.start:
-                new_top = max(0, child.height - self.last_write_position.height)
-            elif index == self._selected_slice.start:
-                new_top = self.selected_child_position
-            elif index > self._selected_slice.start:
-                indices = [k for k, v in self.index_positions.items() if v is not None]
-                if indices:
-                    last_index = max(indices)
-                    new_top = max(
-                        min(
-                            self.last_write_position.height,
-                            (self.index_positions[last_index] or 0)
-                            + self.get_child(last_index).height,
-                        ),
-                        0,
-                    )
-
-        # If the child height is not know, we'll need to render it to determine its height
-        if not child.height:
-            child.render(
-                self.last_write_position.width,
-                self.last_write_position.height,
-            )
-
-        if new_top is None or new_top < 0:
-            if anchor == "top":
-                self.selected_child_position = 0
-            else:
-                self.selected_child_position = min(
-                    0, self.last_write_position.height - child.height
-                )
-        elif new_top > self.last_write_position.height - child.height:
-            self.selected_child_position = max(
-                0, self.last_write_position.height - child.height
-            )
-            if anchor == "bottom":
-                self.selected_child_position -= (
-                    child.height - self.last_write_position.height
-                )
-        else:
-            self.selected_child_position = new_top
+        self._scroll_next = (index, anchor)
+        # Request a repaint so that write_to_screen runs
+        get_app().invalidate()
 
     def _scroll_up(self) -> None:
         """Scroll up one line: for compatibility with :py:class:`Window`."""
