@@ -125,6 +125,11 @@ class StatusBar:
                 entries[0][0:0] = result[0]
                 # Add parent entries to end of right side
                 entries[1].extend(result[1])
+
+            # If current window has no parent, update child to parent map, as layout
+            # might have changed since the last render
+            if current not in layout._child_to_parent:
+                layout.update_parents_relations()
             current = layout._child_to_parent.get(current)
 
         # Format the status entries
