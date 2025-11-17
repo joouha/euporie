@@ -26,6 +26,17 @@ def _new_console() -> None:
 
 
 @add_cmd()
+def _new_text_file() -> None:
+    """Create a text file."""
+    from euporie.notebook.current import get_app
+    from euporie.notebook.tabs.edit import EditorTab
+
+    app = get_app()
+    app.add_tab(tab := EditorTab(app, None))
+    tab.focus()
+
+
+@add_cmd()
 def _view_documentation() -> None:
     """Open the documentation in a web-view tab."""
     from upath import UPath

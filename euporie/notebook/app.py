@@ -400,8 +400,14 @@ class NotebookApp(BaseApp):
             MenuItem(
                 "File",
                 children=[
-                    get_cmd("new-notebook").menu,
-                    get_cmd("new-console").menu,
+                    MenuItem(
+                        "New",
+                        children=[
+                            get_cmd("new-notebook").menu,
+                            get_cmd("new-console").menu,
+                            get_cmd("new-text-file").menu,
+                        ],
+                    ),
                     get_cmd("open-file").menu,
                     separator,
                     get_cmd("save-file").menu,
