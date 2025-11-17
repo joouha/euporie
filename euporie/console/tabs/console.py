@@ -7,8 +7,6 @@ from functools import partial
 from typing import TYPE_CHECKING, cast
 
 from prompt_toolkit.filters.app import (
-    buffer_has_focus,
-    has_selection,
     renderer_height_is_known,
 )
 from prompt_toolkit.filters.base import Condition
@@ -22,12 +20,7 @@ from prompt_toolkit.layout.containers import (
 from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.layout.layout import Layout
 
-from euporie.core.commands import add_cmd, get_cmd
-from euporie.core.filters import (
-    buffer_is_code,
-    buffer_is_empty,
-    kernel_tab_has_focus,
-)
+from euporie.core.commands import get_cmd
 from euporie.core.format import LspFormatter
 from euporie.core.key_binding.registry import (
     load_registered_bindings,
@@ -36,7 +29,6 @@ from euporie.core.key_binding.registry import (
 from euporie.core.layout.print import PrintingContainer
 from euporie.core.nbformat import new_code_cell, new_output
 from euporie.core.tabs.console import BaseConsole
-from euporie.core.tabs.kernel import KernelTab
 from euporie.core.widgets.cell_outputs import CellOutputArea
 from euporie.core.widgets.inputs import KernelInput, StdInput
 
@@ -48,7 +40,6 @@ if TYPE_CHECKING:
     from prompt_toolkit.application.application import Application
     from prompt_toolkit.buffer import Buffer
     from prompt_toolkit.formatted_text import AnyFormattedText
-    from prompt_toolkit.key_binding.key_processor import KeyPressEvent
     from prompt_toolkit.layout.containers import Container, Float
 
     from euporie.core.app.app import BaseApp
@@ -530,87 +521,6 @@ class Console(BaseConsole):
         return (self.path_nb / f"cell-{self.execution_count}").with_suffix(
             self.path_nb.suffix
         )
-
-    # ################################### Commands ####################################
-
-    @staticmethod
-    @add_cmd()
-    def _accept_input() -> None:
-        """Accept the current console input."""
-        from euporie.console.app import get_app
-
-        buffer = get_app().current_buffer
-        if buffer:
-            buffer.validate_and_handle()
-
-    @staticmethod
-    @add_cmd(
-        filter=buffer_is_code & buffer_has_focus & ~has_selection & ~buffer_is_empty,
-    )
-    def _clear_input() -> None:
-        """Clear the console input."""
-        from euporie.console.app import get_app
-
-        buffer = get_app().current_buffer
-        buffer.reset()
-
-    @staticmethod
-    @add_cmd(
-        filter=buffer_is_code & buffer_has_focus,
-    )
-    def _run_input() -> None:
-        """Run the console input."""
-        from euporie.console.app import get_app
-
-        console = get_app().tab
-        assert isinstance(console, Console)
-        console.run()
-
-    @staticmethod
-    @add_cmd(
-        name="cc-interrupt-kernel",
-        hidden=True,
-        filter=buffer_is_code & buffer_is_empty,
-    )
-    @add_cmd(filter=kernel_tab_has_focus)
-    def _interrupt_kernel() -> None:
-        """Interrupt the notebook's kernel."""
-        from euporie.console.app import get_app
-
-        if isinstance(kt := get_app().tab, KernelTab):
-            kt.interrupt_kernel()
-
-    @staticmethod
-    @add_cmd(filter=kernel_tab_has_focus)
-    def _restart_kernel() -> None:
-        """Restart the notebook's kernel."""
-        from euporie.console.app import get_app
-
-        if isinstance(kt := get_app().tab, KernelTab):
-            kt.restart_kernel()
-
-    @staticmethod
-    @add_cmd(
-        filter=buffer_is_code & buffer_is_empty,
-        hidden=True,
-        description="Signals the end of the input, causing the console to exit.",
-    )
-    def _end_of_file(event: KeyPressEvent) -> None:
-        """Exit when Control-D has been pressed."""
-        event.app.exit(exception=EOFError)
-
-    @staticmethod
-    @add_cmd()
-    def _clear_screen() -> None:
-        """Clear the screen and the previous output."""
-        from euporie.console.app import get_app
-
-        app = get_app()
-        tab = app.tab
-        app.renderer.clear()
-        if isinstance(tab, Console):
-            tab.reset()
-            app.layout.focus(tab.input_box)
 
     # ################################# Key Bindings ##################################
 
