@@ -8,24 +8,24 @@ from typing import TYPE_CHECKING, Any
 
 from prompt_toolkit.filters.base import Condition
 from prompt_toolkit.layout.containers import ConditionalContainer
+from prompt_toolkit.layout.controls import FormattedTextControl
 
 from euporie.core.border import InsetGrid
-from euporie.core.layout.containers import HSplit, VSplit
+from euporie.core.layout.containers import HSplit, VSplit, Window
 from euporie.core.layout.decor import FocusedStyle
 from euporie.core.layout.scroll import ScrollingContainer
 from euporie.core.margins import MarginContainer, ScrollbarMargin
 from euporie.core.nbformat import new_code_cell
-from euporie.core.style import KERNEL_STATUS_REPR
 from euporie.core.tabs.console import BaseConsole
-from euporie.core.widgets.cell import Cell
-from euporie.core.widgets.inputs import StdInput
+from euporie.core.widgets.cell_outputs import CellOutputArea
+from euporie.core.widgets.inputs import KernelInput, StdInput
 from euporie.core.widgets.layout import Border
 
 if TYPE_CHECKING:
     from pathlib import Path
 
     from prompt_toolkit.buffer import Buffer
-    from prompt_toolkit.formatted_text import AnyFormattedText
+    from prompt_toolkit.layout.containers import Container
 
     from euporie.core.app.app import BaseApp
 
@@ -277,22 +277,3 @@ class Console(BaseConsole):
     def set_next_input(self, text: str, replace: bool = False) -> None:
         """Set the text for the next prompt."""
         self.input_box.buffer.text = text
-
-    def __pt_status__(
-        self,
-    ) -> tuple[Sequence[AnyFormattedText], Sequence[AnyFormattedText]]:
-        """Generate the formatted text for the statusbar."""
-        assert self.kernel is not None
-        return (
-            [],
-            [
-                [
-                    (
-                        "",
-                        self.kernel_display_name,
-                        # , self._statusbar_kernel_handler)],
-                    )
-                ],
-                KERNEL_STATUS_REPR.get(self.kernel.status, "."),
-            ],
-        )

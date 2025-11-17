@@ -1,4 +1,4 @@
-"""Containes the Console tab base class."""
+"""Contains the Console tab base class."""
 
 from __future__ import annotations
 
@@ -15,9 +15,11 @@ from prompt_toolkit.filters.app import (
 )
 from prompt_toolkit.filters.base import Condition
 from prompt_toolkit.key_binding.key_bindings import KeyBindings
+from prompt_toolkit.mouse_events import MouseEventType
 from prompt_toolkit.utils import Event
 from upath import UPath
 
+from euporie.core.commands import get_cmd
 from euporie.core.diagnostics import Report
 from euporie.core.filters import (
     at_end_of_buffer,
@@ -26,17 +28,20 @@ from euporie.core.io import edit_in_editor
 from euporie.core.kernel.base import MsgCallbacks
 from euporie.core.lsp import LspCell
 from euporie.core.nbformat import new_notebook
+from euporie.core.style import KERNEL_STATUS_REPR
 from euporie.core.tabs.kernel import KernelTab
 from euporie.core.validation import KernelValidator
 from euporie.core.widgets.inputs import KernelInput, StdInput
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
     from pathlib import Path
     from typing import Any
 
-    from prompt_toolkit.formatted_text import StyleAndTextTuples
+    from prompt_toolkit.formatted_text import AnyFormattedText, StyleAndTextTuples
     from prompt_toolkit.key_binding.key_bindings import NotImplementedOrNone
     from prompt_toolkit.key_binding.key_processor import KeyPressEvent
+    from prompt_toolkit.mouse_events import MouseEvent
 
     from euporie.core.app.app import BaseApp
     from euporie.core.lsp import LspClient
@@ -186,7 +191,6 @@ class BaseConsole(KernelTab):
 
     def post_init_kernel(self) -> None:
         """Start the kernel after if has been loaded."""
-        # Load container
         super().post_init_kernel()
 
         # Start kernel
@@ -385,3 +389,24 @@ class BaseConsole(KernelTab):
         ]
         self.reports[lsp] = Report.from_lsp(self.input_box.text, diagnostics)
         self.app.invalidate()
+
+    def _statusbar_kernel_handler(self, event: MouseEvent) -> NotImplementedOrNone:
+        """Event handler for kernel name field in statusbar."""
+        if event.event_type == MouseEventType.MOUSE_UP:
+            get_cmd("change-kernel").run()
+            return None
+        else:
+            return NotImplemented
+
+    def __pt_status__(
+        self,
+    ) -> tuple[Sequence[AnyFormattedText], Sequence[AnyFormattedText]]:
+        """Generate the formatted text for the statusbar."""
+        assert self.kernel is not None
+        return (
+            [],
+            [
+                [("", self.kernel_display_name, self._statusbar_kernel_handler)],
+                KERNEL_STATUS_REPR.get(self.kernel.status, "."),
+            ],
+        )
