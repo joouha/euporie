@@ -11,6 +11,7 @@ Upcoming
 Added
 =====
 
+- Add colors to file icons
 - Add console tab to notebook app
 - Make euporie compatible with pyodide
 - Make sidebar resizable
