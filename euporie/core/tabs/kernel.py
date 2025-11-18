@@ -372,7 +372,7 @@ class KernelTab(Tab, metaclass=ABCMeta):
 
     def change_kernel(self, msg: str | None = None, startup: bool = False) -> None:
         """Prompt the user to select a new kernel."""
-        kernel_infos = list(list_kernels())
+        kernel_infos = [x for x in list_kernels() if x.kind == "new"]
 
         # Warn the user if no kernels are installed
         if not kernel_infos:
@@ -381,7 +381,7 @@ class KernelTab(Tab, metaclass=ABCMeta):
             return
 
         # Automatically select the only kernel if there is only one
-        if startup and not self.kernel_name and len(kernel_infos) <= 2:
+        if startup and len(kernel_infos) <= 2:
             for info in kernel_infos:
                 if info.type != NoKernel:
                     self.switch_kernel(info.factory)
