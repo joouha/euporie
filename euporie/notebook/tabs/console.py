@@ -92,8 +92,8 @@ class Console(BaseConsole):
         )
 
     @property
-    def _scrolled_to_bottom(self) -> bool:
-        """Check if the console page is currently scrolled to the bottom.
+    def _scroll_to_bottom(self) -> bool:
+        """Check whether the console page should scroll to the bottom.
 
         Returns:
             True if scrolled to bottom, False otherwise.
@@ -101,8 +101,10 @@ class Console(BaseConsole):
         if not self.page.render_info:
             return False
         return (
+            # Scroll if already at bottom
             self.page.render_info.vertical_scroll + self.page.render_info.window_height
             == sum(self.page.known_sizes)
+            # Scroll on new output
             or sum(self.page.known_sizes) < self.page.render_info.window_height
         )
 
@@ -167,7 +169,7 @@ class Console(BaseConsole):
         # Update scrolling container to show new child
         self.page.refresh_children = True
         # Scroll to the new cell
-        if self._scrolled_to_bottom:
+        if self._scroll_to_bottom:
             self.page.scroll_to(len(self.rendered_containers) - 1, anchor="bottom")
 
     def new_output(self, output_json: dict[str, Any], own: bool) -> None:
@@ -231,7 +233,7 @@ class Console(BaseConsole):
         # Update scrolling container to show new child
         self.page.refresh_children = True
         # Scroll to the last container if scrolled to bottom of screen
-        if self._scrolled_to_bottom:
+        if self._scroll_to_bottom:
             self.page.scroll_to(len(self.rendered_containers) - 1, anchor="bottom")
 
     def refresh_cell(self, cell: Any) -> None:
