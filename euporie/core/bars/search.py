@@ -123,7 +123,7 @@ def find_searchable_controls(
     """Find list of searchable controls and the index of the next control."""
     # If a tab provides a list of buffers to search, use that. Otherwise, trawl the
     # layout for buffer controls with this as its search control
-    long_list: list[UIControl]
+    long_list: list[UIControl] = []
     if tab := get_app().tab:
         try:
             long_list = list(tab.__pt_searchables__())
