@@ -107,6 +107,11 @@ class BaseConsole(KernelTab):
         self.on_advance = Event(self)
         self.execution_count = 0
 
+    @property
+    def title(self) -> str:
+        """Return the tab title."""
+        return self.path.name
+
     def _load_input_box(self) -> KernelInput:
         """Load the input box and it's associated key-bindings and handlers."""
         input_kb = KeyBindings()
