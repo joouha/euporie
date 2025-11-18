@@ -41,7 +41,7 @@ if TYPE_CHECKING:
     from pathlib import Path
     from typing import Any
 
-    from prompt_toolkit.formatted_text.base import StyleAndTextTuples
+    from prompt_toolkit.formatted_text.base import AnyFormattedText, StyleAndTextTuples
     from prompt_toolkit.key_binding.key_bindings import NotImplementedOrNone
     from prompt_toolkit.layout.containers import AnyContainer
     from prompt_toolkit.mouse_events import MouseEvent
@@ -106,33 +106,29 @@ class Notebook(BaseNotebook):
 
     def __pt_status__(self) -> StatusBarFields | None:
         """Generate the formatted text for the statusbar."""
-        if self.loaded:
-            rendered = self.page.pre_rendered
-
-            def _kernel_name() -> StyleAndTextTuples:
-                ft: StyleAndTextTuples = [
+        fields: tuple[list[AnyFormattedText], list[AnyFormattedText]] = (
+            ["Saving…" if self.saving else ""],
+            [
+                [
                     (
                         "",
                         self.kernel_display_name or "No Kernel",
                         self._statusbar_kernel_handler,
                     )
-                ]
-                return ft
+                ],
+                KERNEL_STATUS_REPR[self.kernel.status] if self.kernel else ".",
+            ],
+        )
 
-            return (
-                [
-                    self.mode(),
-                    f"Cell {self.page.selected_slice.start + 1}",
-                    f"Rendering… ({rendered:.0%})" if rendered and rendered < 1 else "",
-                    "Saving…" if self.saving else "",
-                ],
-                [
-                    _kernel_name,
-                    KERNEL_STATUS_REPR[self.kernel.status] if self.kernel else ".",
-                ],
-            )
-        else:
-            return ([], [])
+        if hasattr(self, "page"):
+            rendered = self.page.pre_rendered
+            fields[0][0:0] = [
+                self.mode(),
+                f"Cell {self.page.selected_slice.start + 1}",
+                f"Rendering… ({rendered:.0%})" if rendered and rendered < 1 else "",
+            ]
+
+        return fields
 
     # Notebook stuff
 
