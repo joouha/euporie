@@ -11,6 +11,7 @@ Upcoming
 Added
 =====
 
+- Add console tab to notebook app
 - Make euporie compatible with pyodide
 - Make sidebar resizable
 - Add ability to toggle hidden files in the file browser
