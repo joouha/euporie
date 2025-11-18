@@ -958,7 +958,7 @@ class FileBrowserControl(UIControl):
                 style += " class:hovered"
             if i == self.selected:
                 style += " class:selection"
-            row = [(style, child.name)]
+            row: StyleAndTextTuples = [(style, child.name)]
 
             if self.show_icons():
                 icon = (
