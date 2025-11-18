@@ -404,6 +404,7 @@ class NotebookApp(BaseApp):
                         "New",
                         children=[
                             get_cmd("new-notebook").menu,
+                            separator,
                             get_cmd("new-console").menu,
                             get_cmd("new-text-file").menu,
                         ],

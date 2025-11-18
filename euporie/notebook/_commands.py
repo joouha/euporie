@@ -14,7 +14,7 @@ def _new_notebook() -> None:
     tab.focus()
 
 
-@add_cmd()
+@add_cmd(aliases=["nc"])
 def _new_console() -> None:
     """Create a console tab."""
     from euporie.notebook.current import get_app
@@ -25,7 +25,7 @@ def _new_console() -> None:
     tab.focus()
 
 
-@add_cmd()
+@add_cmd(aliases=["nt"])
 def _new_text_file() -> None:
     """Create a text file."""
     from euporie.notebook.current import get_app
