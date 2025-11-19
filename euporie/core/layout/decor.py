@@ -127,11 +127,13 @@ class Pattern(Container):
         self,
         char: str | Callable[[], str],
         pattern: int | Callable[[], int] = 1,
+        style: str = "class:pattern",
     ) -> None:
         """Initialize the :class:`Pattern`."""
-        self.bg = Char(" ", "class:pattern")
+        self.bg = Char(" ", style)
         self.char = char
         self.pattern = pattern
+        self.style = style
 
     def reset(self) -> None:
         """Reset the pattern. Does nothing."""
@@ -172,9 +174,9 @@ class Pattern(Container):
         bg = self.bg
         pattern = self.pattern() if callable(self.pattern) else self.pattern
         if callable(self.char):
-            char = Char(self.char(), "class:pattern")
+            char = Char(self.char(), self.style)
         else:
-            char = Char(self.char, "class:pattern")
+            char = Char(self.char, self.style)
 
         ypos = write_position.ypos
         xpos = write_position.xpos
