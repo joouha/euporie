@@ -6,6 +6,9 @@ from functools import partial
 from typing import TYPE_CHECKING
 
 from prompt_toolkit.filters import Condition
+from prompt_toolkit.key_binding.key_bindings import (
+    KeyBindings,
+)
 from prompt_toolkit.layout.containers import (
     ConditionalContainer,
     DynamicContainer,
@@ -20,13 +23,17 @@ from prompt_toolkit.mouse_events import MouseButton, MouseEventType
 
 from euporie.core.app.current import get_app
 from euporie.core.key_binding.registry import register_bindings
-from euporie.core.layout.decor import Line
+from euporie.core.layout.decor import FocusedStyle, Line
 from euporie.core.widgets.forms import ToggleButton, ToggleButtons
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
-    from prompt_toolkit.key_binding.key_bindings import NotImplementedOrNone
+    from prompt_toolkit.key_binding.key_bindings import (
+        KeyBindingsBase,
+        NotImplementedOrNone,
+    )
+    from prompt_toolkit.key_binding.key_processor import KeyPressEvent
     from prompt_toolkit.layout.containers import AnyContainer
     from prompt_toolkit.mouse_events import MouseEvent
 
@@ -127,6 +134,32 @@ class SideBarButtons(ToggleButtons):
             return "▄"
         return ""
 
+    def key_bindings(self) -> KeyBindingsBase:
+        """Return key-bindings for the drop-down widget."""
+        kb = KeyBindings()
+
+        @kb.add("up")
+        def _(event: KeyPressEvent) -> None:
+            self.hovered = max(0, min((self.hovered or 0) - 1, len(self.options) - 1))
+            get_app().layout.focus(self.buttons[self.hovered])
+
+        @kb.add("down")
+        def _(event: KeyPressEvent) -> None:
+            self.hovered = max(0, min((self.hovered or 0) + 1, len(self.options) - 1))
+            get_app().layout.focus(self.buttons[self.hovered])
+
+        @kb.add("home")
+        def _(event: KeyPressEvent) -> None:
+            self.hovered = 0
+            get_app().layout.focus(self.buttons[self.hovered])
+
+        @kb.add("end")
+        def _(event: KeyPressEvent) -> None:
+            self.hovered = len(self.options) - 1
+            get_app().layout.focus(self.buttons[self.hovered])
+
+        return kb
+
     def load_container(self) -> AnyContainer:
         """Load the widget's container."""
         self.buttons: list[ToggleButton] = []
@@ -148,7 +181,7 @@ class SideBarButtons(ToggleButtons):
                 disabled=self.disabled,
             )
             self.buttons.append(button)
-            children.append(button)
+            children.append(FocusedStyle(button))
         children.extend(
             [
                 Window(
