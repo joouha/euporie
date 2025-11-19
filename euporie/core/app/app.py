@@ -993,6 +993,8 @@ class BaseApp(ConfigurableApp, Application, ABC):
                 "focus-next": "tab",
                 "focus-previous": "s-tab",
                 "clear-screen": "c-l",
+                "open-file": "c-o",
+                "save-as": "A-s",
             }
         }
     )

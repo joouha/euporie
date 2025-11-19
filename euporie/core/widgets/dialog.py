@@ -42,7 +42,6 @@ from euporie.core.border import (
 )
 from euporie.core.commands import add_cmd
 from euporie.core.ft.utils import FormattedTextAlign, align, lex
-from euporie.core.key_binding.registry import register_bindings
 from euporie.core.layout.containers import HSplit, VSplit, Window
 from euporie.core.layout.decor import FocusedStyle
 from euporie.core.widgets.decor import Border, Shadow
@@ -580,16 +579,6 @@ class OpenFileDialog(FileDialog):
         if dialog := get_app().get_dialog("open-file"):
             dialog.show()
 
-    # ################################# Key Bindings ##################################
-
-    register_bindings(
-        {
-            "euporie.core.app.app:BaseApp": {
-                "open-file": "c-o",
-            }
-        }
-    )
-
 
 class SaveAsDialog(FileDialog):
     """A dialog which prompts the user for a filepath to save the current tab."""
@@ -617,16 +606,6 @@ class SaveAsDialog(FileDialog):
                 self.hide()
                 if callable(cb):
                     cb()
-
-    # ################################# Key Bindings ##################################
-
-    register_bindings(
-        {
-            "euporie.core.app.app:BaseApp": {
-                "save-as": ("A-s"),
-            }
-        }
-    )
 
 
 class NoKernelsDialog(Dialog):
