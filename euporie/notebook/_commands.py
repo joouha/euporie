@@ -3,7 +3,7 @@
 from euporie.core.commands import add_cmd
 
 
-@add_cmd(aliases=["n"])
+@add_cmd(aliases=["n"], icon="", style="class:warning")
 def _new_notebook() -> None:
     """Create a new notebook file."""
     from euporie.notebook.current import get_app
@@ -14,7 +14,7 @@ def _new_notebook() -> None:
     tab.focus()
 
 
-@add_cmd(aliases=["nc"])
+@add_cmd(aliases=["nc"], icon="", style="class:primary")
 def _new_console() -> None:
     """Create a console tab."""
     from euporie.notebook.current import get_app
@@ -25,7 +25,7 @@ def _new_console() -> None:
     tab.focus()
 
 
-@add_cmd(aliases=["nt"])
+@add_cmd(aliases=["nt"], icon="")
 def _new_text_file() -> None:
     """Create a text file."""
     from euporie.notebook.current import get_app
@@ -36,7 +36,7 @@ def _new_text_file() -> None:
     tab.focus()
 
 
-@add_cmd()
+@add_cmd(menu_title="Documentation", icon="", style="class:success")
 def _view_documentation() -> None:
     """Open the documentation in a web-view tab."""
     from upath import UPath

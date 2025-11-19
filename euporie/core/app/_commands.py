@@ -28,6 +28,20 @@ def _force_quit() -> None:
     Application.exit(get_app())
 
 
+@add_cmd(menu_title="Open File…", aliases=["o"], icon="")
+def _open_file(path: str = "") -> None:
+    """Open a file."""
+    from euporie.core.app.current import get_app
+
+    if path:
+        from upath import UPath
+
+        get_app().open_file(UPath(path))
+    else:
+        if dialog := get_app().get_dialog("open-file"):
+            dialog.show()
+
+
 @add_cmd(aliases=["bc"], filter=tab_has_focus, menu_title="Close File")
 def _close_tab() -> None:
     """Close the current tab."""

@@ -85,6 +85,8 @@ class Command:
         title: str | None = None,
         menu_title: str | None = None,
         description: str | None = None,
+        icon: str = " ",
+        style: str = "",
         toggled: Filter | None = None,
         eager: FilterOrBool = False,
         is_global: FilterOrBool = False,
@@ -102,6 +104,8 @@ class Command:
             title: The title of the command for display
             menu_title: The title to display in menus if different
             description: The description of the command to explain it's function
+            icon: A unicode character representing the command
+            style: A style associated with this command
             toggled: The toggle state of this command If this command toggles something
             eager: When True, ignore potential longer matches for this key binding
             is_global: Make this a global (always active) binding
@@ -129,6 +133,8 @@ class Command:
             else:
                 description = title or name.capitalize()
         self.description = description
+        self.icon = icon
+        self.style = style
 
         self.toggled = toggled
         self._menu: MenuItem | None = None

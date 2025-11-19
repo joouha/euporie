@@ -412,7 +412,7 @@ class AboutDialog(Dialog):
     # ################################### Commands ####################################
 
     @staticmethod
-    @add_cmd()
+    @add_cmd(icon="⚈", style="class:danger")
     def _about() -> None:
         """Show the about dialog."""
         from euporie.core.app.current import get_app
@@ -567,17 +567,6 @@ class OpenFileDialog(FileDialog):
                 self.show(
                     error="The file path specified does not exist", text=buffer.text
                 )
-
-    # ################################### Commands ####################################
-
-    @staticmethod
-    @add_cmd(menu_title="Open File…")
-    def _open_file() -> None:
-        """Open a file."""
-        from euporie.core.app.current import get_app
-
-        if dialog := get_app().get_dialog("open-file"):
-            dialog.show()
 
 
 class SaveAsDialog(FileDialog):
