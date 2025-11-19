@@ -288,7 +288,7 @@ FILE_ICONS = {
     ".info": ("fg:ansigray", ""),
     ".ini": ("fg:ansibrightblack", ""),
     ".ino": ("fg:ansicyan", ""),
-    ".ipynb": ("fg:ansiyellow", ""),
+    ".ipynb": ("fg:ansiyellow", ""),
     ".iso": ("fg:ansigray", ""),
     ".ixx": ("fg:ansibrightblack", ""),
     ".jar": ("", ""),
