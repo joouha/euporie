@@ -105,7 +105,7 @@ class Swatch:
         color: str | Callable[[], str] = "#FFFFFF",
         width: int = 2,
         height: int = 1,
-        style: str = "class:swatch",
+        style: str | Callable[[], str] = "class:input,swatch",
         border: GridStyle = InsetGrid,
         show_borders: DiBool | None = None,
     ) -> None:
@@ -120,20 +120,30 @@ class Swatch:
             show_borders: Determines which borders should be displayed
 
         """
-        self.color = color
-        self.style = style
+        self._color = color
+        self._style = style
 
         self.container = Border(
-            Window(char=" ", style=self.get_style, width=width, height=height),
+            Window(
+                char=" ",
+                style=lambda: f"{self.style} bg:{self.color}",
+                width=width,
+                height=height,
+            ),
             border=border,
-            style=f"{self.style} class:border,inset",
+            style=lambda: f"{self.style} class:border,inset",
             show_borders=show_borders,
         )
 
-    def get_style(self) -> str:
-        """Compute the style for the swatch.."""
-        color = self.color() if callable(self.color) else self.color
-        return f"{self.style} bg:{color} "
+    @property
+    def color(self) -> str:
+        """Calculate color."""
+        return self._color() if callable(self._color) else self._color
+
+    @property
+    def style(self) -> str:
+        """Calculate style."""
+        return self._style() if callable(self._style) else self._style
 
     def __pt_container__(self) -> AnyContainer:
         """Return the swatch container."""
