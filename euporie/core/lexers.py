@@ -26,10 +26,10 @@ def detect_lexer(
     if path is not None:
         try:
             lexer = get_lexer_for_filename(path)
-        except ClassNotFound:
+        except (ClassNotFound, TypeError):
             try:
                 lexer = guess_lexer_for_filename(path, text)
-            except ClassNotFound:
+            except (ClassNotFound, TypeError):
                 pass
     if lexer is None and language:
         try:
