@@ -446,7 +446,6 @@ class ScrollingContainer(Container):
             app = get_app()
             if not app.layout.has_focus(child):
                 try:
-                    log.debug("Focusing %s", child)
                     app.layout.focus(child)
                 except ValueError:
                     pass
