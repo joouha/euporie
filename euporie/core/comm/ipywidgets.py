@@ -17,10 +17,12 @@ from prompt_toolkit.filters.base import Condition
 from prompt_toolkit.layout.containers import HSplit, VSplit
 from prompt_toolkit.layout.processors import BeforeInput
 
+from euporie.core.border import InsetGrid
 from euporie.core.comm.base import Comm, CommView
 from euporie.core.data_structures import DiBool
 from euporie.core.kernel.jupyter import MsgCallbacks
 from euporie.core.layout.decor import FocusedStyle
+from euporie.core.widgets.decor import Border
 from euporie.core.widgets.forms import (
     Button,
     Checkbox,
@@ -1382,7 +1384,7 @@ class ColorPickerModel(TextBoxIpyWidgetComm):
             height=self.data["state"].get("rows") or self.default_rows,
             multiline=self.multiline,
             placeholder=self.data.get("state", {}).get("placeholder"),
-            show_borders=DiBool(True, True, True, False),
+            show_borders=DiBool(False, False, False, False),
             input_processors=[BeforeInput(" ")],
             disabled=Condition(lambda: self.data["state"].get("disabled", False)),
             style="class:ipywidget",
@@ -1390,14 +1392,19 @@ class ColorPickerModel(TextBoxIpyWidgetComm):
 
         container = FocusedStyle(
             LabelledWidget(
-                body=VSplit(
-                    [
-                        Swatch(
-                            self.format_color,
-                            show_borders=DiBool(True, False, True, True),
-                        ),
-                        text,
-                    ],
+                body=Border(
+                    VSplit(
+                        [
+                            Swatch(
+                                self.format_color,
+                                show_borders=DiBool(False, False, False, False),
+                                style=text.border_style,
+                            ),
+                            text,
+                        ],
+                    ),
+                    border=InsetGrid,
+                    style=lambda: f"{text.border_style()}",
                 ),
                 label=lambda: self.data.get("state", {}).get("description", ""),
                 style="class:ipywidget",
