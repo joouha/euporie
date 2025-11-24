@@ -10,6 +10,7 @@ from prompt_toolkit.layout.containers import (
     ConditionalContainer,
     DynamicContainer,
 )
+from prompt_toolkit.widgets.base import Label
 
 from euporie.core.app.current import get_app
 from euporie.core.border import ThinLine
@@ -20,6 +21,7 @@ from euporie.core.layout.decor import DropShadow
 if TYPE_CHECKING:
     from collections.abc import Callable
 
+    from prompt_toolkit.formatted_text.base import AnyFormattedText
     from prompt_toolkit.layout.containers import AnyContainer
     from prompt_toolkit.mouse_events import MouseEvent
 
@@ -39,6 +41,7 @@ class Border:
         border: GridStyle | None = ThinLine.grid,
         style: str | Callable[[], str] = "class:border",
         show_borders: DiBool | None = None,
+        title: AnyFormattedText | None = None,
     ) -> None:
         """Create a new border widget which wraps another container.
 
@@ -47,6 +50,7 @@ class Border:
             border: The grid style to use
             style: The style to apply to the border
             show_borders: Which of the four borders should be displayed
+            title: Optional text to make a frame
 
         """
         self.body = body
@@ -63,6 +67,20 @@ class Border:
 
         self.container: AnyContainer
         if border is not None and any(show_borders):
+            top_edge: AnyContainer = Window(
+                char=border.TOP_MID, style=self.add_style("class:top")
+            )
+            if title:
+                top_edge = VSplit(
+                    [
+                        top_edge,
+                        Window(width=1, height=1),
+                        Label(title, dont_extend_width=True),
+                        Window(width=1, height=1),
+                        top_edge,
+                    ]
+                )
+
             self.container = HSplit(
                 [
                     ConditionalContainer(
@@ -78,10 +96,7 @@ class Border:
                                     filter=border_top & border_left,
                                 ),
                                 ConditionalContainer(
-                                    Window(
-                                        char=border.TOP_MID,
-                                        style=self.add_style("class:top"),
-                                    ),
+                                    top_edge,
                                     filter=border_top,
                                 ),
                                 ConditionalContainer(
