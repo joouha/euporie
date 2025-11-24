@@ -30,6 +30,89 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 
+class MouseHandlerWrapper(Container):
+    """A container which wraps mouse events to add a mouse handler."""
+
+    def __init__(self, content: AnyContainer, handler: MouseHandler) -> None:
+        """Wrap a container and invoke `handler` when a mouse click occurs.
+
+        Args:
+            content: The inner container to display.
+            handler: A callback function which will be invoked with the
+                MouseEvent whenever a click occurs.
+        """
+        self.content = to_container(content)
+        self.handler = handler
+
+    def reset(self) -> None:
+        """Reset the state of the container."""
+        self.content.reset()
+
+    def preferred_width(self, max_available_width: int) -> Dimension:
+        """Return the desired width for this container."""
+        return self.content.preferred_width(max_available_width)
+
+    def preferred_height(self, width: int, max_available_height: int) -> Dimension:
+        """Return the desired height for this container."""
+        return self.content.preferred_height(width, max_available_height)
+
+    def write_to_screen(
+        self,
+        screen: Screen,
+        mouse_handlers: MouseHandlers,
+        write_position: WritePosition,
+        parent_style: str,
+        erase_bg: bool,
+        z_index: int | None,
+    ) -> None:
+        """Render the container and wrap mouse handlers to invoke the click callback."""
+        self.content.write_to_screen(
+            screen,
+            mouse_handlers,
+            write_position,
+            parent_style,
+            erase_bg,
+            z_index,
+        )
+
+        @lru_cache
+        def _wrap_mouse_handler(handler: Callable) -> MouseHandler:
+            def wrapped_mouse_handler(mouse_event: MouseEvent) -> NotImplementedOrNone:
+                result = handler(mouse_event)
+                try:
+                    handler_result = self.handler(mouse_event)
+                except Exception:
+                    log.exception("Error in MouseHandlerWarapper click handler")
+                else:
+                    if result is NotImplemented:
+                        result = handler_result
+                return result
+
+            return wrapped_mouse_handler
+
+        def _wrap_mhs() -> None:
+            """Wrap mouse handlers corresponding to write position."""
+            mhs = mouse_handlers.mouse_handlers
+            for y in range(
+                write_position.ypos, write_position.ypos + write_position.height
+            ):
+                row = mhs[y]
+                for x in range(
+                    write_position.xpos, write_position.xpos + write_position.width
+                ):
+                    row[x] = _wrap_mouse_handler(row[x])
+
+        if z_index is None or z_index == 0:
+            _wrap_mhs()
+        else:
+            # Postpone wrapping mouse handlers in floats, otherwise wrap now
+            screen.draw_with_z_index(z_index=(z_index or 0) + 1, draw_func=_wrap_mhs)
+
+    def get_children(self) -> list[Container]:
+        """Return the list of contained children."""
+        return [self.content]
+
+
 class DisableMouseOnScroll(Container):
     """A container which disables mouse support on unhandled scroll up events.
 
