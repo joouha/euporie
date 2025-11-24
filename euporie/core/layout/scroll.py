@@ -380,11 +380,30 @@ class ScrollingContainer(Container):
         layout = get_app().layout
 
         children = self.all_children()
+        last_selected_slice = self._selected_slice
+
+        # Update the selection and ensure selected child is focused for rendering
+        if self._next_selected_slice is not None:
+            # Request a refresh of the previously selected children
+            for child in self._selected_children:
+                child.invalidate()
+            # Track which child was selected
+            self._selected_slice = self._next_selected_slice
+            self._next_selected_slice = None
+            # Get the first selected child and focus it
+            child = children[self._selected_slice.start]
+            app = get_app()
+            if not app.layout.has_focus(child):
+                try:
+                    app.layout.focus(child)
+                except ValueError:
+                    pass
+
         heights = self.known_sizes
         total_height = sum(heights)
 
         if self._scroll_next is not None:
-            source_idx = self._selected_slice.start
+            source_idx = last_selected_slice.start
             target_idx, anchor = self._scroll_next
 
             # Calculate distance between selected child and target
@@ -431,24 +450,6 @@ class ScrollingContainer(Container):
             self._scroll_next = None
             # Cancel any scrolling
             self.scrolling = 0
-
-        # Update the selection
-        if self._next_selected_slice is not None:
-            children = self.all_children()
-            # Request a refresh of the previously selected children
-            for child in self._selected_children:
-                child.invalidate()
-            # Track which child was selected
-            self._selected_slice = self._next_selected_slice
-            self._next_selected_slice = None
-            # Get the first selected child and focus it
-            child = children[self._selected_slice.start]
-            app = get_app()
-            if not app.layout.has_focus(child):
-                try:
-                    app.layout.focus(child)
-                except ValueError:
-                    pass
 
         # Force the selected children to refresh
         selected_indices = self.selected_indices
