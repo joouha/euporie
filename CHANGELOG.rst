@@ -25,6 +25,11 @@ Fixed
 - Improve kernel selection detection
 - Allow opening HTTP urls from file open dialog
 
+Changed
+=======
+
+- Added new logo
+
 ----
 
 *******************

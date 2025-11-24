@@ -38,7 +38,7 @@ from euporie.core.widgets.dialog import (
     SelectKernelDialog,
     ShortcutsDialog,
 )
-from euporie.core.widgets.logo import Logo
+from euporie.core.widgets.logo import logo_micro
 from euporie.core.widgets.pager import Pager
 from euporie.core.widgets.palette import CommandPalette
 
@@ -132,7 +132,7 @@ class ConsoleApp(BaseApp):
                                     ConditionalContainer(
                                         VSplit(
                                             [
-                                                Logo(),
+                                                logo_micro,
                                                 self.command_bar,
                                                 self.search_bar,
                                                 StatusBar(),

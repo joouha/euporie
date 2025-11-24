@@ -384,29 +384,24 @@ class AboutDialog(Dialog):
 
     def load(self) -> None:
         """Load the dialog's body."""
-        from euporie.core import (
-            __app_name__,
-            __copyright__,
-            __logo__,
-            __strapline__,
-            __version__,
-        )
+        from euporie.core import __copyright__, __strapline__
+        from euporie.core.widgets.logo import logo_medium
 
-        self.body = Window(
-            FormattedTextControl(
-                [
-                    ("class:logo", __logo__),
-                    ("", " "),
-                    ("bold", __app_name__),
-                    ("", f"Version {__version__}\n\n".rjust(23, " ")),
-                    ("", __strapline__.center(30)),
-                    ("", "\n"),
-                    ("class:hr", "─" * 30 + "\n\n"),
-                    ("", __copyright__),
-                    # ("", "\n"),
-                ]
-            ),
-            dont_extend_height=True,
+        self.body = HSplit(
+            [
+                Box(logo_medium, padding_top=Dimension.exact(1)),
+                Window(
+                    FormattedTextControl(
+                        [
+                            ("", __strapline__.center(30)),
+                            ("", "\n\n"),
+                            ("dim", __copyright__),
+                        ]
+                    ),
+                    dont_extend_height=True,
+                ),
+            ],
+            padding=1,
         )
 
     # ################################### Commands ####################################

@@ -44,7 +44,7 @@ from euporie.core.widgets.dialog import (
 )
 from euporie.core.widgets.file_browser import FileBrowser
 from euporie.core.widgets.layout import TabBarControl, TabBarTab
-from euporie.core.widgets.logo import Logo
+from euporie.core.widgets.logo import logo_micro
 from euporie.core.widgets.menu import MenuBar, MenuItem
 from euporie.core.widgets.pager import Pager
 from euporie.core.widgets.palette import CommandPalette
@@ -244,7 +244,7 @@ class NotebookApp(BaseApp):
         top_bar = ConditionalContainer(
             content=VSplit(
                 [
-                    self.logo,
+                    logo_micro,
                     MenuBar(app=self, menu_items=self.load_menu_items()),
                     title_bar,
                 ]
