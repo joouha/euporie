@@ -142,7 +142,7 @@ class JSONEncoderPlus(json.JSONEncoder):
             The encoded object
 
         """
-        if isinstance(o, (Path, UPath)):
+        if isinstance(o, Path):
             return str(o)
         return json.JSONEncoder.default(self, o)
 
@@ -453,7 +453,7 @@ class Config:
         if self._valid_user:
             log.debug("Saving setting `%s`", setting)
             with self._config_file_path.open("w") as f:
-                json.dump(json_data, f, indent=2)
+                json.dump(json_data, f, indent=2, cls=JSONEncoderPlus)
 
     @property
     def _schema(self) -> dict[str, Any]:
@@ -530,10 +530,14 @@ class Config:
                     ):
                         pass
                 # Attempt to cast the value to the desired type
-                try:
-                    parsed_value = setting.type(value)
-                except (ValueError, TypeError):
-                    pass
+                if isinstance(value, list):
+                    for i, item in enumerate(value[:]):
+                        value[i] = setting.type(item)
+                else:
+                    try:
+                        value = setting.type(value)
+                    except (ValueError, TypeError):
+                        pass
                 result[name] = parsed_value
         return result
 
@@ -566,10 +570,14 @@ class Config:
         for name, value in json_data.items():
             if (setting := self._settings.get(name)) is not None:
                 # Attempt to cast the value to the desired type
-                try:
-                    value = setting.type(value)
-                except (ValueError, TypeError):
-                    pass
+                if isinstance(value, list):
+                    for i, item in enumerate(value[:]):
+                        value[i] = setting.type(item)
+                else:
+                    try:
+                        value = setting.type(value)
+                    except (ValueError, TypeError):
+                        pass
             results[name] = value
         return results
 
