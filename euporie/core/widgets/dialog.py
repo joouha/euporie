@@ -311,6 +311,7 @@ class Dialog(Float, metaclass=ABCMeta):
                             [("underline", key), ("", rest)],
                             on_click=handler,
                             width=width,
+                            dont_extend_width=False,
                             style="class:input",
                         )
                     )

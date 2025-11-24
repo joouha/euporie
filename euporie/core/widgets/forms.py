@@ -33,7 +33,13 @@ from prompt_toolkit.key_binding.key_bindings import (
     KeyBindings,
     merge_key_bindings,
 )
-from prompt_toolkit.layout.containers import ConditionalContainer, Float, VSplit, Window
+from prompt_toolkit.layout.containers import (
+    ConditionalContainer,
+    Float,
+    VSplit,
+    Window,
+    WindowAlign,
+)
 from prompt_toolkit.layout.controls import (
     BufferControl,
     FormattedTextControl,
@@ -57,8 +63,9 @@ from prompt_toolkit.validation import Validator
 
 from euporie.core.app.current import get_app
 from euporie.core.border import InsetGrid
-from euporie.core.data_structures import DiBool
+from euporie.core.data_structures import DiBool, DiInt
 from euporie.core.ft.utils import FormattedTextAlign, align
+from euporie.core.layout.mouse import MouseHandlerWrapper
 from euporie.core.margins import MarginContainer, ScrollbarMargin
 from euporie.core.widgets.decor import Border, Shadow
 from euporie.core.widgets.layout import Box, ConditionalSplit
@@ -163,9 +170,13 @@ class Button:
         style: str | Callable[[], str] = "class:input",
         border: GridStyle | None = InsetGrid,
         show_borders: DiBool | None = None,
+        padding: DiInt | None = None,
         selected: bool = False,
         key_bindings: KeyBindingsBase | None = None,
         mouse_handler: Callable[[MouseEvent], NotImplementedOrNone] | None = None,
+        align: WindowAlign = WindowAlign.CENTER,
+        dont_extend_height: FilterOrBool = True,
+        dont_extend_width: FilterOrBool = True,
     ) -> None:
         """Create a new button widget instance.
 
@@ -180,17 +191,20 @@ class Button:
             style: A style string or callable style to apply to the button
             border: The grid style to use as the button's border
             show_borders: Determines which borders should be shown
+            padding: Space around button text
             selected: The selection state of the button
             key_bindings: Additional key_binding to apply to the button
             mouse_handler: A mouse handler for the button. If unset, the default will be
                 used, which results in the button behaving like a regular click-button
+            align: How to align the button text
+            dont_extend_height: Should the button expand to fill the vertical space
+            dont_extend_width: Should the button expand to fill the horizontal space
 
         """
         self.text = text
         self.on_mouse_down = Event(self, on_mouse_down)
         self.on_click = Event(self, on_click)
         self.disabled = to_filter(disabled)
-        self._width = width
         self.style = style
         self.selected = selected
         if key_bindings is not None:
@@ -200,21 +214,41 @@ class Button:
         else:
             self.key_bindings = self.get_key_bindings()
         self.mouse_handler = mouse_handler or self.default_mouse_handler
+        self.align = align
+        if padding is None:
+            padding = DiInt(0, 1, 0, 1)
+        self.padding = padding
         self.window = Window(
             FormattedTextControl(
-                self.get_text_fragments,
+                lambda: [("[SetMenuPosition]", ""), *to_formatted_text(self.text)],
                 key_bindings=self.key_bindings,
                 focusable=~self.disabled,
                 show_cursor=False,
-                style="class:face",
             ),
-            style=self.get_style,
-            dont_extend_width=True,
-            dont_extend_height=True,
+            dont_extend_width=dont_extend_width,
+            dont_extend_height=dont_extend_height,
+            align=align,
         )
         self.container = Box(
             Border(
-                self.window,
+                MouseHandlerWrapper(
+                    Box(
+                        self.window,
+                        padding_top=Dimension(preferred=padding.top, max=padding.top),
+                        padding_right=Dimension(
+                            preferred=padding.right, max=padding.right
+                        ),
+                        padding_bottom=Dimension(
+                            preferred=padding.bottom, max=padding.bottom
+                        ),
+                        padding_left=Dimension(
+                            preferred=padding.left, max=padding.left
+                        ),
+                        width=width,
+                        style=lambda: f"class:face {self.get_style()}",
+                    ),
+                    handler=self.mouse_handler,
+                ),
                 border=border,
                 show_borders=show_borders,
                 style=lambda: f"{self.get_style()} class:border",
@@ -232,15 +266,6 @@ class Button:
         if self.disabled():
             style = f"{style} class:disabled"
         return style
-
-    def get_text_fragments(self) -> StyleAndTextTuples:
-        """Return the list of formatted text fragments which define the button."""
-        ft = [
-            *to_formatted_text(self.text),
-        ]
-        ft = align(ft, FormattedTextAlign.CENTER, self.width)
-        ft = [(style, text, self.mouse_handler) for style, text, *_ in ft]
-        return [("[SetMenuPosition]", ""), *ft]
 
     def get_key_bindings(self) -> KeyBindingsBase:
         """Key bindings for the Button."""
