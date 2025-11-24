@@ -74,6 +74,7 @@ from euporie.core.lsp import KNOWN_LSP_SERVERS, LspClient
 from euporie.core.renderer import Renderer
 from euporie.core.style import (
     DEFAULT_COLORS,
+    DIAGNOSTIC_STYLE,
     HTML_STYLE,
     IPYWIDGET_STYLE,
     LOG_STYLE,
@@ -839,6 +840,7 @@ class BaseApp(ConfigurableApp, Application, ABC):
         Style(HTML_STYLE),
         Style(LOG_STYLE),
         Style(IPYWIDGET_STYLE),
+        Style(DIAGNOSTIC_STYLE),
     )
 
     def create_merged_style(self) -> BaseStyle:

@@ -13,6 +13,7 @@ from prompt_toolkit.styles.style import Style
 from pygments.styles import get_style_by_name as pyg_get_style_by_name
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
     from typing import Any
 
     from pygments.style import Style as PygmentsStyle
@@ -95,20 +96,12 @@ HTML_STYLE = [
 ]
 
 
-LOG_STYLE = [
-    ("log.level.nonset", "fg:ansigray"),
-    ("log.level.debug", "fg:ansigreen"),
-    ("log.level.info", "fg:ansiblue"),
-    ("log.level.warning", "fg:ansiyellow"),
-    ("log.level.error", "fg:ansired"),
-    ("log.level.critical", "fg:ansiwhite bg:ansired bold"),
-]
-
 IPYWIDGET_STYLE = [
     ("ipywidget", "bg:default"),
     ("ipywidget focused", ""),
     ("ipywidget button face", "fg:black bg:#d4d0c8"),
     ("ipywidget button face selection", "bg:#e9e7e3"),
+    ("ipywidget button face primary", "bg:ansiblue"),
     ("ipywidget button face success", "bg:ansigreen"),
     ("ipywidget button face info", "bg:ansicyan"),
     ("ipywidget button face warning", "bg:ansiyellow"),
@@ -122,6 +115,8 @@ IPYWIDGET_STYLE = [
     ("ipywidget selection border bottom", "fg:#ffffff"),
     ("ipywidget selection border left", "fg:#606060"),
     ("ipywidget selection border top", "fg:#606060"),
+    # ("ipywidget primary border left", "fg:ansibrightblue"),
+    # ("ipywidget primary border top", "fg:ansibrightblue"),
     # ("ipywidget success border left", "fg:ansibrightgreen"),
     # ("ipywidget success border top", "fg:ansibrightgreen"),
     # ("ipywidget info border left", "fg:ansibrightcyan"),
@@ -132,6 +127,10 @@ IPYWIDGET_STYLE = [
     # ("ipywidget danger border top", "fg:ansibrightred"),
     # ("ipywidget border left selection", "fg:#606060"),
     # ("ipywidget border top selection", "fg:#606060"),
+    # ("ipywidget primary border right selection", "fg:ansibrightblue"),
+    # ("ipywidget primary border bottom selection", "fg:ansibrightblue"),
+    # ("ipywidget primary border right selection", "fg:ansibrightblue"),
+    # ("ipywidget primary border bottom selection", "fg:ansibrightblue"),
     # ("ipywidget success border right selection", "fg:ansibrightgreen"),
     # ("ipywidget success border bottom selection", "fg:ansibrightgreen"),
     # ("ipywidget success border right selection", "fg:ansibrightgreen"),
@@ -157,6 +156,7 @@ IPYWIDGET_STYLE = [
     ("ipywidget slider handle selection", ""),
     ("ipywidget slider handle selection focused", "fg:ansiblue"),
     ("ipywidget progress", "fg:ansidarkblue bg:#d4d0c8"),
+    ("ipywidget progress primary", "fg:ansiblue"),
     ("ipywidget progress success", "fg:ansigreen"),
     ("ipywidget progress info", "fg:ansicyan"),
     ("ipywidget progress warning", "fg:ansiyellow"),
@@ -196,15 +196,45 @@ IPYWIDGET_STYLE = [
     ("ipywidget swatch border bottom", "fg:#E9E7E3"),
     ("ipywidget swatch border left", "fg:#606060"),
     ("ipywidget tabbed-split tab-bar tab active border top default", "fg:ansiblue"),
+    ("ipywidget tabbed-split tab-bar tab active border top primary", "fg:ansiblue"),
     ("ipywidget tabbed-split tab-bar tab active border top success", "fg:ansigreen"),
     ("ipywidget tabbed-split tab-bar tab active border top info", "fg:ansicyan"),
     ("ipywidget tabbed-split tab-bar tab active border top warning", "fg:ansiyellow"),
     ("ipywidget tabbed-split tab-bar tab active border top danger", "fg:ansired"),
+    ("ipywidget accordion border primary", "fg:ansiblue"),
     ("ipywidget accordion border success", "fg:ansigreen"),
     ("ipywidget accordion border info", "fg:ansicyan"),
     ("ipywidget accordion border warning", "fg:ansiyellow"),
     ("ipywidget accordion border danger", "fg:ansired"),
     ("ipywidget accordion selection", "fg:ansiblue"),
+]
+
+
+LOG_STYLE = [
+    ("log.level.nonset", "fg:ansigray"),
+    ("log.level.debug", "fg:ansigreen"),
+    ("log.level.info", "fg:ansiblue"),
+    ("log.level.warning", "fg:ansiyellow"),
+    ("log.level.error", "fg:ansired"),
+    ("log.level.critical", "fg:ansiwhite bg:ansired bold"),
+    # ("log.level.nonset", "fg:grey"),
+    # ("log.level.debug", "fg:green"),
+    # ("log.level.info", "fg:blue"),
+    # ("log.level.warning", "fg:yellow"),
+    # ("log.level.error", "fg:red"),
+    # ("log.level.critical", "fg:red bold"),
+    ("log.ref", "fg:grey"),
+    ("log.date", "fg:#00875f"),
+]
+
+
+DIAGNOSTIC_STYLE = [
+    ("diagnostic-0", "fg:ansigray"),
+    ("diagnostic-1", "fg:ansigreen"),
+    ("diagnostic-2", "fg:ansiblue"),
+    ("diagnostic-3", "fg:ansiyellow"),
+    ("diagnostic-4", "fg:ansired"),
+    ("diagnostic-5", "fg:ansiwhite bg:ansired bold"),
 ]
 
 
@@ -296,7 +326,7 @@ class ColorPaletteColor:
             rel: If True, perform a relative adjustment.
 
         Returns:
-            ColorPaletteColor: The adjusted color.
+            The adjusted color.
         """
         if rel:
             return self._adjust_rel(hue, brightness, saturation)
@@ -319,7 +349,7 @@ class ColorPaletteColor:
             rel: If True, perform a relative adjustment.
 
         Returns:
-            ColorPaletteColor: The adjusted color.
+            The adjusted color.
         """
         key = (self.base_hex, hue, brightness, saturation, rel)
         return self._cache.get(
@@ -334,7 +364,7 @@ class ColorPaletteColor:
             rel: If True, perform a relative adjustment.
 
         Returns:
-            ColorPaletteColor: The lighter color.
+            The lighter color.
         """
         return self.adjust(brightness=amount, rel=rel)
 
@@ -346,7 +376,7 @@ class ColorPaletteColor:
             rel: If True, perform a relative adjustment.
 
         Returns:
-            ColorPaletteColor: The darker color.
+            The darker color.
         """
         return self.adjust(brightness=-amount, rel=rel)
 
@@ -358,7 +388,7 @@ class ColorPaletteColor:
             rel: If True, perform a relative adjustment.
 
         Returns:
-            ColorPaletteColor: The adjusted color.
+            The adjusted color.
         """
         if self.is_light:
             amount *= -1
@@ -372,7 +402,7 @@ class ColorPaletteColor:
             rel: If True, perform a relative adjustment.
 
         Returns:
-            ColorPaletteColor: The adjusted color.
+            The adjusted color.
         """
         if self.is_light:
             amount *= -1
@@ -421,32 +451,37 @@ class ColorPalette:
         return self.colors[name]
 
 
-def build_style(
-    cp: ColorPalette,
-    have_term_colors: bool = True,
-) -> Style:
-    """Create an application style based on the given color palette."""
-    style_dict = {
-        # The default style is merged at this point so full styles can be
-        # overridden. For example, this allows us to switch off the underline
-        # status of cursor-line.
-        **dict(default_ui_style().style_rules),
+def base_styles(cp: ColorPalette) -> dict[str, str]:
+    """Generate base application styles."""
+    return {
         "default": f"fg:{cp.bg.base} bg:{cp.bg.base}",
-        # Remove non-breaking space style from PTK
         "nbsp": "nounderline fg:default",
-        # Logo
         "logo": "fg:#dd0000",
-        # Pattern
         "pattern": f"fg:{cp.bg.more(0.05)}",
-        # Chrome
+        "loading": "fg:#888888",
+    }
+
+
+def chrome_styles(cp: ColorPalette) -> dict[str, str]:
+    """Generate chrome and UI element styles."""
+    return {
         "chrome": f"fg:{cp.fg.more(0.05)} bg:{cp.bg.more(0.05)}",
         "tab-padding": f"fg:{cp.bg.more(0.2)} bg:{cp.bg.base}",
-        # Statusbar
-        # "status": f"fg:{cp.fg.more(0.05)} bg:{cp.bg.less(0.15)}",
+    }
+
+
+def statusbar_styles(cp: ColorPalette) -> dict[str, str]:
+    """Generate statusbar styles."""
+    return {
         "status": f"fg:{cp.fg.more(0.05)} bg:{cp.bg.more(0.05)}",
         "status-field": f"bg:{cp.fg.more(0.1)} fg:{cp.bg.more(0.1)} reverse",
         "status-sep": f"bg:{cp.bg.more(0.05)} fg:{cp.bg.more(0.1)} reverse",
-        # Menus & Menu bar
+    }
+
+
+def menu_styles(cp: ColorPalette) -> dict[str, str]:
+    """Generate menu and menu bar styles."""
+    return {
         "menu": f"fg:{cp.fg.more(0.05)} bg:{cp.bg.more(0.05)}",
         "menu bar": f"bg:{cp.bg.less(0.15)}",
         "menu disabled": f"fg:{cp.fg.more(0.05).towards(cp.bg, 0.75)}",
@@ -459,7 +494,12 @@ def build_style(
         "menu selection prefix": f"bg:{cp.hl.more(1).more(0.05)} fg:{cp.hl} reverse",
         "menu border": f"fg:{cp.bg.more(0.15)} bg:{cp.bg.more(0.05)}",
         "menu border selection": f"fg:{cp.bg.more(0.15)} bg:{cp.hl} noreverse",
-        # Tab bar
+    }
+
+
+def tab_bar_styles(cp: ColorPalette) -> dict[str, str]:
+    """Generate tab bar styles."""
+    return {
         "app-tab-bar": f"bg:{cp.bg.less(0.15)}",
         "app-tab-bar border": f"fg:{cp.bg.more(0.1)}",
         "app-tab-bar tab inactive": f"fg:{cp.fg.more(0.5)}",
@@ -467,9 +507,12 @@ def build_style(
         "app-tab-bar tab active": "bold fg:default bg:default",
         "app-tab-bar tab active close": "fg:darkred",
         "app-tab-bar tab active border top": f"fg:{cp.hl} bg:{cp.bg.less(0.15)}",
-        # Tabs
-        "loading": "fg:#888888",
-        # Buffer
+    }
+
+
+def buffer_styles(cp: ColorPalette) -> dict[str, str]:
+    """Generate buffer and editor styles."""
+    return {
         "line-number": f"bg:{cp.fg.more(0.5)} fg:{cp.bg.more(0.05)} reverse",
         "line-number.current": f"bg:orange fg:{cp.bg.more(0.1)} bold",
         "line-number edge": f"bg:{cp.bg.darker(0.1)}",
@@ -483,16 +526,17 @@ def build_style(
         "matching-bracket.other": "fg:yellow bold",
         "trailing-whitespace": f"fg:{cp.fg.more(0.66)}",
         "tab": f"fg:{cp.fg.more(0.66)}",
-        # Search results
         "search": f"bg:{cp.bg.more(0.05)}",
         "search.current": f"bg:{cp.bg.more(0.05)}",
         "incsearch": "bg:ansibrightyellow",
         "incsearch.current": "bg:ansibrightgreen",
-        # Inputs
+    }
+
+
+def cell_styles(cp: ColorPalette) -> dict[str, str]:
+    """Generate notebook cell styles."""
+    return {
         "kernel-input": f"fg:default bg:{cp.bg.more(0.02)}",
-        # Cells
-        # "cell cell.selection": f"bg:{cp.bg.towards(cp.hl, 0.05)}",
-        # "cell edit": f"bg:{cp.bg.towards(cp.hl.adjust(hue=-0.3333, rel=False), 0.025)}",
         "cell border": f"fg:{cp.bg.more(0.25)}",
         "cell border cell.selection": f"fg:{cp.hl.more(0.2)}",
         "cell border edit": f"fg:{cp.hl.adjust(hue=-0.3333, rel=False)}",
@@ -502,113 +546,141 @@ def build_style(
         "cell show inputs": f"bg:{cp.fg.more(0.5)} fg:{cp.bg.more(0.05)} reverse",
         "cell show inputs border": f"bg:{cp.bg.darker(0.1)} fg:{cp.bg.more(0.05)} reverse",
         "cell show outputs border": f"bg:{cp.bg.darker(0.1)} fg:{cp.bg.more(0.05)} reverse",
-        # Scrollbars
+    }
+
+
+def scrollbar_styles(cp: ColorPalette) -> dict[str, str]:
+    """Generate scrollbar styles."""
+    return {
         "scrollbar": f"fg:{cp.bg.more(0.75)} bg:{cp.bg.more(0.15)}",
         "scrollbar.background": f"fg:{cp.bg.more(0.75)} bg:{cp.bg.more(0.15)}",
         "scrollbar.arrow": f"bg:{cp.bg.more(0.75)} fg:{cp.bg.more(0.20)} reverse",
         "scrollbar.start": "",
-        # "scrollbar.start": f"fg:{cp.bg.more(0.75)} bg:{cp.bg.more(0.25)}",
         "scrollbar.button": f"bg:{cp.bg.more(0.75)} fg:{cp.bg.more(0.75)} reverse",
         "scrollbar.end": f"bg:{cp.bg.more(0.15)} fg:{cp.bg.more(0.75)} reverse",
-        # Overflow margin
         "overflow": f"fg:{cp.fg.more(0.5)}",
-        # Dialogs
+    }
+
+
+def dialog_styles(cp: ColorPalette) -> dict[str, str]:
+    """Generate dialog styles."""
+    return {
         "dialog dialog-title": f"bg:white fg:{cp.hl.darker(0.25)} bold reverse",
         "dialog": f"fg:{cp.fg.base} bg:{cp.bg.darker(0.1)}",
         "dialog text-area": f"bg:{cp.bg.lighter(0.05)}",
         "dialog input text text-area": f"fg:default bg:{cp.bg.less(0.1)}",
         "dialog text-area last-line": "nounderline",
         "dialog border": f"fg:{cp.bg.darker(0.1).more(0.1)}",
-        # Horizontals rule
-        "hr": "fg:ansired",
-        # Toolbars
+        "dialog tabbed-split border bottom right": f"bg:{cp.bg.darker(0.1)}",
+        "dialog tabbed-split border bottom left": f"bg:{cp.bg.darker(0.1)}",
+        "hr": "fg:red",
+    }
+
+
+def toolbar_styles(cp: ColorPalette) -> dict[str, str]:
+    """Generate toolbar styles."""
+    return {
         "toolbar": f"fg:{cp.fg.more(0.05)} bg:{cp.bg.more(0.05)}",
         "toolbar.title": f"fg:{cp.fg.more(0.1)} bg:{cp.bg.more(0.1)}",
-        # Search bar
         "search-toolbar": f"fg:{cp.fg.more(0.05)} bg:{cp.bg.more(0.05)}",
-        # Command bar
         "toolbar menu": f"fg:{cp.fg.more(0.05)} bg:{cp.bg.more(0.05)}",
         "toolbar menu completion": f"fg:{cp.fg.more(0.1)} bg:{cp.bg.more(0.1)}",
         "toolbar menu completion current": f"fg:{cp.hl} bg:{cp.fg} reverse",
         "toolbar menu overflow": f"fg:{cp.fg.more(0.5)}",
         "toolbar menu meta": f"bg:{cp.bg.more(0.25)} bold",
-        # Completions menu
-        "menu completion-keyword": "fg:#d700af",
-        "menu completion-function": "fg:#005faf",
-        "menu completion-class": "fg:#008700",
-        "menu completion-statement": "fg:#5f0000",
-        "menu completion-instance": "fg:#d75f00",
-        "menu completion-module": "fg:#d70000",
-        "menu completion-magic": "fg:#9841bb",
-        "menu completion-path": "fg:#aa8800",
-        "menu completion-dict-key": "fg:#ddbb00",
-        "menu selection completion-keyword": (
-            f"bg:{ColorPaletteColor('#d700af').lighter(0.75)} fg:{cp.hl} reverse"
-        ),
-        "menu selection completion-function": (
-            f"bg:{ColorPaletteColor('#005faf').lighter(0.75)} fg:{cp.hl} reverse"
-        ),
-        "menu selection completion-class": (
-            f"bg:{ColorPaletteColor('#008700').lighter(0.75)} fg:{cp.hl} reverse"
-        ),
-        "menu selection completion-statement": (
-            f"bg:{ColorPaletteColor('#5f0000').lighter(0.75)} fg:{cp.hl} reverse"
-        ),
-        "menu selection completion-instance": (
-            f"bg:{ColorPaletteColor('#d75f00').lighter(0.75)} fg:{cp.hl} reverse"
-        ),
-        "menu selection completion-module": (
-            f"bg:{ColorPaletteColor('#d70000').lighter(0.75)} fg:{cp.hl} reverse"
-        ),
-        "menu selection completion-magic": (
-            f"bg:{ColorPaletteColor('#888888').lighter(0.75)} fg:{cp.hl} reverse"
-        ),
-        "menu selection completion-path": (
-            f"bg:{ColorPaletteColor('#aa8800').lighter(0.75)} fg:{cp.hl} reverse"
-        ),
-        # Log
-        "log.level.nonset": "fg:grey",
-        "log.level.debug": "fg:green",
-        "log.level.info": "fg:blue",
-        "log.level.warning": "fg:yellow",
-        "log.level.error": "fg:red",
-        "log.level.critical": "fg:red bold",
-        "log.ref": "fg:grey",
-        "log.date": "fg:#00875f",
-        # File browser
+    }
+
+
+def completion_styles(cp: ColorPalette) -> dict[str, str]:
+    """Generate completion menu styles."""
+    completion_colors = {
+        "keyword": "#d700af",
+        "function": "#005faf",
+        "class": "#008700",
+        "statement": "#5f0000",
+        "instance": "#d75f00",
+        "module": "#d70000",
+        "magic": "#9841bb",
+        "path": "#aa8800",
+        "dict-key": "#ddbb00",
+    }
+
+    styles = {}
+    for name, color_hex in completion_colors.items():
+        styles[f"menu completion-{name}"] = f"fg:{color_hex}"
+        color = ColorPaletteColor(color_hex)
+        styles[f"menu completion-{name} selection"] = (
+            f"bg:{color.lighter(0.75)} fg:{cp.hl} reverse"
+        )
+    return styles
+
+
+def file_browser_styles(cp: ColorPalette) -> dict[str, str]:
+    """Generate file browser styles."""
+    return {
         "file-browser border": f"fg:{cp.bg.more(0.5)}",
         "file-browser face": f"bg:{cp.bg.lighter(0.1)}",
         "file-browser face row alt-row": f"bg:{cp.bg.lighter(0.1).more(0.01)}",
         "file-browser face row hovered": f"bg:{cp.bg.more(0.2)}",
-        "file-browser face row selection": f"bg:{cp.fg} fg:{cp.hl} reverse",
-        # Shortcuts
+        "file-browser face row selection": f"bg:{cp.bg.more(0.3)}",
+        "file-browser face row selection focused": f"bg:{cp.fg} fg:{cp.hl} reverse",
+    }
+
+
+def shortcuts_styles(cp: ColorPalette) -> dict[str, str]:
+    """Generate shortcuts display styles."""
+    return {
         "shortcuts.group": f"bg:{cp.bg.more(0.4)} bold underline",
-        # "shortcuts.row": f"bg:{cp.bg.base} nobold",
         "shortcuts.row alt": f"bg:{cp.bg.more(0.1)}",
         "shortcuts.row key": "bold",
-        # Palette
+    }
+
+
+def palette_styles(cp: ColorPalette) -> dict[str, str]:
+    """Generate command palette styles."""
+    return {
         "palette.item": f"fg:{cp.fg.more(0.05)} bg:{cp.bg.more(0.05)}",
         "palette.item.alt": f"bg:{cp.bg.more(0.15)}",
         "palette.item.selected": f"bg:{cp.hl.more(1)} fg:{cp.hl} reverse",
-        # Pager
+    }
+
+
+def pager_styles(cp: ColorPalette) -> dict[str, str]:
+    """Generate pager styles."""
+    return {
         "pager": f"bg:{cp.bg.more(0.05)}",
         "pager.border": f"fg:{cp.bg.towards(cp.ansiblack, 0.15)} reverse",
-        # Markdown
+    }
+
+
+def markdown_styles(cp: ColorPalette) -> dict[str, str]:
+    """Generate markdown rendering styles."""
+    return {
         "markdown code": f"bg:{cp.bg.more(0.15)}",
         "markdown code block": f"bg:{cp.bg.less(0.2)}",
         "markdown code block border": f"fg:{cp.bg.more(0.25)}",
         "markdown table border": f"fg:{cp.bg.more(0.75)}",
-        # Drop-shadow
+    }
+
+
+def shadow_styles(cp: ColorPalette) -> dict[str, str]:
+    """Generate drop shadow styles."""
+    return {
         "drop-shadow inner": f"fg:{cp.bg.towards(cp.ansiblack, 0.3)}",
         "drop-shadow outer": f"fg:{cp.bg.towards(cp.ansiblack, 0.2)} bg:{cp.bg.towards(cp.ansiblack, 0.05)}",
-        # Side-bar
+    }
+
+
+def sidebar_styles(cp: ColorPalette) -> dict[str, str]:
+    """Generate sidebar styles."""
+    return {
         "side_bar": f"bg:{cp.bg.less(0.15)}",
         "side_bar title": f"fg:{cp.hl}",
         "side_bar title text": f"fg:default bg:{cp.bg.less(0.15).more(0.01)}",
         "side_bar border": f"fg:{cp.bg.towards(cp.ansiblack, 0.3)}",
         "side_bar border outer": f"bg:{cp.bg}",
         "side_bar buttons": f"bg:{cp.bg.less(0.15)}",
-        "side_bar buttons hovered": f"fg:{cp.hl}",
+        "side_bar buttons focused": f"fg:{cp.hl}",
         "side_bar buttons separator": f"bg:{cp.bg.less(0.15)} fg:{cp.bg.less(0.15)}",
         "side_bar buttons selection": f"bg:{cp.fg} fg:{cp.hl} reverse",
         "side_bar buttons separator selection before": (
@@ -617,15 +689,18 @@ def build_style(
         "side_bar buttons separator selection after": (
             f"fg:{cp.hl} bg:{cp.bg.less(0.15)} noreverse"
         ),
-        # Tabbed split
+    }
+
+
+def tabbed_split_styles(cp: ColorPalette) -> dict[str, str]:
+    """Generate tabbed split container styles."""
+    return {
         "tabbed-split border": f"fg:{cp.bg.more(0.2)}",
         "tabbed-split border left": f"bg:{cp.bg.more(0.025)}",
         "tabbed-split border right": f"bg:{cp.bg.more(0.025)}",
         "tabbed-split border bottom left": f"bg:{cp.bg}",
         "tabbed-split border bottom right": f"bg:{cp.bg}",
         "tabbed-split page": f"bg:{cp.bg.more(0.025)}",
-        "dialog tabbed-split border bottom right": f"bg:{cp.bg.darker(0.1)}",
-        "dialog tabbed-split border bottom left": f"bg:{cp.bg.darker(0.1)}",
         "tabbed-split tab-bar tab inactive": f"fg:{cp.bg.more(0.3)}",
         "tabbed-split tab-bar tab inactive title": f"bg:{cp.bg.darker(0.05)}",
         "tabbed-split tab-bar tab inactive border left": f"bg:{cp.bg.darker(0.05)}",
@@ -633,57 +708,122 @@ def build_style(
         "tabbed-split tab-bar tab active": f"bold fg:{cp.fg}",
         "tabbed-split tab-bar tab active title": f"bg:{cp.bg.more(0.025)}",
         "tabbed-split tab-bar tab active close": "fg:darkred",
-        # Ipywidgets
+    }
+
+
+def ipywidget_styles(
+    cp: ColorPalette, style_variants: dict[str, ColorPaletteColor]
+) -> dict[str, str]:
+    """Generate ipywidget styles."""
+
+    def borders(
+        template: str,
+        color: ColorPaletteColor | Callable[[ColorPaletteColor], ColorPaletteColor],
+        inset: bool = False,
+    ) -> dict[str, str]:
+        """Generate border style definitions for all four directions."""
+        styles = {}
+
+        if callable(color):
+            # Variant mode
+            for variant, variant_color in style_variants.items():
+                c = color(variant_color)
+                if inset:
+                    styles[template.format("top", variant)] = f"fg:{c.darker(0.5)}"
+                    styles[template.format("left", variant)] = f"fg:{c.darker(0.5)}"
+                    styles[template.format("bottom", variant)] = f"fg:{c.lighter(0.1)}"
+                    styles[template.format("right", variant)] = f"fg:{c.lighter(0.1)}"
+                else:  # outset
+                    styles[template.format("top", variant)] = f"fg:{c.lighter(0.1)}"
+                    styles[template.format("left", variant)] = f"fg:{c.lighter(0.1)}"
+                    styles[template.format("bottom", variant)] = f"fg:{c.darker(0.5)}"
+                    styles[template.format("right", variant)] = f"fg:{c.darker(0.5)}"
+        else:
+            # Static mode
+            if inset:
+                styles[template.format("top")] = f"fg:{color.darker(0.25)}"
+                styles[template.format("left")] = f"fg:{color.darker(0.25)}"
+                styles[template.format("bottom")] = f"fg:{color.lighter(0.25)}"
+                styles[template.format("right")] = f"fg:{color.lighter(0.25)}"
+            else:  # outset
+                styles[template.format("top")] = f"fg:{color.lighter(0.25)}"
+                styles[template.format("left")] = f"fg:{color.lighter(0.25)}"
+                styles[template.format("bottom")] = f"fg:{color.darker(0.25)}"
+                styles[template.format("right")] = f"fg:{color.darker(0.25)}"
+
+        return styles
+
+    return {
         "ipywidget focused": f"bg:{cp.bg.more(0.05)}",
         "ipywidget slider track": f"fg:{cp.fg.darker(0.5)}",
         "ipywidget slider arrow": f"fg:{cp.fg.darker(0.25)}",
         "ipywidget slider handle": f"fg:{cp.fg.darker(0.25)}",
         "ipywidget accordion border default": f"fg:{cp.bg.more(0.2)}",
-        ## Styled borders
-        "success border top": "fg:ansibrightgreen",
-        "success border left": "fg:ansibrightgreen",
-        "success border bottom": f"fg:{cp.ansigreen.darker(0.5)}",
-        "success border right": f"fg:{cp.ansigreen.darker(0.5)}",
-        "info border top": "fg:ansibrightcyan",
-        "info border left": "fg:ansibrightcyan",
-        "info border bottom": f"fg:{cp.ansicyan.darker(0.5)}",
-        "info border right": f"fg:{cp.ansicyan.darker(0.5)}",
-        "warning border top": "fg:ansibrightyellow",
-        "warning border left": "fg:ansibrightyellow",
-        "warning border bottom": f"fg:{cp.ansiyellow.darker(0.5)}",
-        "warning border right": f"fg:{cp.ansiyellow.darker(0.5)}",
-        "danger border top": "fg:ansibrightred",
-        "danger border left": "fg:ansibrightred",
-        "danger border bottom": f"fg:{cp.ansired.darker(0.5)}",
-        "danger border right": f"fg:{cp.ansired.darker(0.5)}",
-        ## Selected styled borders
-        "selection success border top": f"fg:{cp.ansigreen.darker(0.5)}",
-        "selection success border left": f"fg:{cp.ansigreen.darker(0.5)}",
-        "selection success border bottom": "fg:ansibrightgreen",
-        "selection success border right": "fg:ansibrightgreen",
-        "selection info border left": f"fg:{cp.ansicyan.darker(0.5)}",
-        "selection info border top": f"fg:{cp.ansicyan.darker(0.5)}",
-        "selection info border right": "fg:ansibrightcyan",
-        "selection info border bottom": "fg:ansibrightcyan",
-        "selection warning border top": f"fg:{cp.ansiyellow.darker(0.5)}",
-        "selection warning border left": f"fg:{cp.ansiyellow.darker(0.5)}",
-        "selection warning border bottom": "fg:ansibrightyellow",
-        "selection warning border right": "fg:ansibrightyellow",
-        "selection danger border top": f"fg:{cp.ansired.darker(0.5)}",
-        "selection danger border left": f"fg:{cp.ansired.darker(0.5)}",
-        "selection danger border bottom": "fg:ansibrightred",
-        "selection danger border right": "fg:ansibrightred",
+        **borders("ipywidget border {} {}", lambda c: c),
+        **borders("ipywidget selection border {} {}", lambda c: c, inset=True),
+    }
+
+
+def input_widget_styles(
+    cp: ColorPalette, style_variants: dict[str, ColorPaletteColor]
+) -> dict[str, str]:
+    """Generate input widget styles."""
+
+    def variants(
+        template: str, definition: Callable[[ColorPaletteColor], str]
+    ) -> dict[str, str]:
+        """Generate style definitions for all variants."""
+        styles = {}
+        for variant, color in style_variants.items():
+            styles[template.format(variant)] = definition(color)
+        return styles
+
+    def borders(
+        template: str,
+        color: ColorPaletteColor | Callable[[ColorPaletteColor], ColorPaletteColor],
+        inset: bool = False,
+    ) -> dict[str, str]:
+        """Generate border style definitions for all four directions."""
+        styles = {}
+
+        if callable(color):
+            # Variant mode
+            for variant, variant_color in style_variants.items():
+                c = color(variant_color)
+                if inset:
+                    styles[template.format("top", variant)] = f"fg:{c.darker(0.5)}"
+                    styles[template.format("left", variant)] = f"fg:{c.darker(0.5)}"
+                    styles[template.format("bottom", variant)] = f"fg:{c.lighter(0.1)}"
+                    styles[template.format("right", variant)] = f"fg:{c.lighter(0.1)}"
+                else:  # outset
+                    styles[template.format("top", variant)] = f"fg:{c.lighter(0.1)}"
+                    styles[template.format("left", variant)] = f"fg:{c.lighter(0.1)}"
+                    styles[template.format("bottom", variant)] = f"fg:{c.darker(0.5)}"
+                    styles[template.format("right", variant)] = f"fg:{c.darker(0.5)}"
+        else:
+            # Static mode
+            if inset:
+                styles[template.format("top")] = f"fg:{color.darker(0.25)}"
+                styles[template.format("left")] = f"fg:{color.darker(0.25)}"
+                styles[template.format("bottom")] = f"fg:{color.lighter(0.25)}"
+                styles[template.format("right")] = f"fg:{color.lighter(0.25)}"
+            else:  # outset
+                styles[template.format("top")] = f"fg:{color.lighter(0.25)}"
+                styles[template.format("left")] = f"fg:{color.lighter(0.25)}"
+                styles[template.format("bottom")] = f"fg:{color.darker(0.25)}"
+                styles[template.format("right")] = f"fg:{color.darker(0.25)}"
+
+        return styles
+
+    return {
+        # Colored icons on faces
+        **variants("face icon {}", lambda c: f"fg:{c}"),
+        # Focused faces
+        **variants("focused face {}", lambda c: f"bg:{c}"),
         # Selected faces
-        "selection success face": f"bg:{cp.ansigreen.darker(0.05)}",
-        "selection info face": f"bg:{cp.ansicyan.darker(0.05)}",
-        "selection warning face": f"bg:{cp.ansiyellow.darker(0.05)}",
-        "selection danger face": f"bg:{cp.ansired.darker(0.05)}",
+        **variants("selection face {}", lambda c: f"bg:{c.darker(0.05)}"),
         # Hovered faces
-        "input hovered face": f"fg:default bg:{cp.bg.more(0.2)}",
-        "focused hovered success face": f"bg:{cp.ansigreen.lighter(0.05)}",
-        "focused hovered info face": f"bg:{cp.ansicyan.lighter(0.05)}",
-        "focused hovered warning face": f"bg:{cp.ansiyellow.lighter(0.05)}",
-        "focused hovered danger face": f"bg:{cp.ansired.lighter(0.05)}",
+        **variants("focused hovered face {}", lambda c: f"bg:{c.lighter(0.05)}"),
         # Text areas
         "text-area focused": "noreverse",
         "text-area selected": "noreverse",
@@ -693,53 +833,31 @@ def build_style(
         "input button face hovered": f"fg:{cp.fg} bg:{cp.bg.more(0.2)}",
         "input button face selection": f"bg:{cp.fg} fg:{cp.bg.more(0.05)} reverse",
         "input button face focused": f"bg:{cp.fg} fg:{cp.bg.towards(cp.hl, 0.1)} reverse",
+        **variants("input button face hovered {}", lambda c: f"bg:{cp.bg.more(0.2)}"),
+        **variants(
+            "input button face selection {}", lambda c: f"fg:{cp.bg.more(0.05)} reverse"
+        ),
+        **variants(
+            "input button face focused {}",
+            lambda c: f"fg:{cp.bg.towards(cp.hl, 0.1)} reverse",
+        ),
         # Input widgets
-        "input border top": f"fg:{cp.bg.lighter(0.5)}",
-        "input border left": f"fg:{cp.bg.lighter(0.5)}",
-        "input border bottom": f"fg:{cp.bg.darker(0.25)}",
-        "input border right": f"fg:{cp.bg.darker(0.25)}",
-        "input border top focused": f"fg:{cp.hl.lighter(0.5)}",
-        "input border left focused": f"fg:{cp.hl.lighter(0.5)}",
-        "input border bottom focused": f"fg:{cp.hl.darker(0.5)}",
-        "input border right focused": f"fg:{cp.hl.darker(0.5)}",
-        "input border top selection": f"fg:{cp.bg.darker(0.5)}",
-        "input border left selection": f"fg:{cp.bg.darker(0.5)}",
-        "input border bottom selection": f"fg:{cp.bg.lighter(0.5)}",
-        "input border right selection": f"fg:{cp.bg.lighter(0.5)}",
-        "input border top selection focused": f"fg:{cp.hl.darker(0.5)}",
-        "input border left selection focused": f"fg:{cp.hl.darker(0.5)}",
-        "input border bottom selection focused": f"fg:{cp.hl.lighter(0.5)}",
-        "input border right selection focused": f"fg:{cp.hl.lighter(0.5)}",
-        "input inset border bottom": f"fg:{cp.bg.lighter(0.5)}",
-        "input inset border right": f"fg:{cp.bg.lighter(0.5)}",
-        "input inset border top": f"fg:{cp.bg.darker(0.25)}",
-        "input inset border left": f"fg:{cp.bg.darker(0.25)}",
-        "input inset border bottom focused": f"fg:{cp.hl.lighter(0.5)}",
-        "input inset border right focused": f"fg:{cp.hl.lighter(0.5)}",
-        "input inset border top focused": f"fg:{cp.hl.darker(0.5)}",
-        "input inset border left focused": f"fg:{cp.hl.darker(0.5)}",
-        "input inset border bottom selection": f"fg:{cp.bg.darker(0.5)}",
-        "input inset border right selection": f"fg:{cp.bg.darker(0.5)}",
-        "input inset border top selection": f"fg:{cp.bg.lighter(0.5)}",
-        "input inset border left selection": f"fg:{cp.bg.lighter(0.5)}",
-        "input inset border bottom selection focused": f"fg:{cp.hl.darker(0.5)}",
-        "input inset border right selection focused": f"fg:{cp.hl.darker(0.5)}",
-        "input inset border top selection focused": f"fg:{cp.hl.lighter(0.5)}",
-        "input inset border left selection focused": f"fg:{cp.hl.lighter(0.5)}",
+        **borders("input border {}", cp.bg),
+        **borders("input border {} focused", cp.hl),
+        **borders("input border {} selection", cp.bg, inset=True),
+        **borders("input border {} selection focused", cp.hl, inset=True),
+        **borders("input inset border {}", cp.bg, inset=True),
+        **borders("input inset border {} focused", cp.hl, inset=True),
+        **borders("input inset border {} selection", cp.bg),
+        **borders("input inset border {} selection focused", cp.hl),
         "input text placeholder": f"fg:{cp.fg.more(0.6)}",
         "input text text-area": f"fg:default bg:{cp.bg.lighter(0.1)}",
-        "input text border top": f"fg:{cp.bg.darker(0.5)}",
-        "input text border right": f"fg:{cp.bg.lighter(0.25)}",
-        "input text border bottom": f"fg:{cp.bg.lighter(0.25)}",
-        "input text border left": f"fg:{cp.bg.darker(0.5)}",
-        "input text border top focused": f"fg:{cp.hl.darker(0.5)}",
-        "input text border right focused": f"fg:{cp.hl.lighter(0.5)}",
-        "input text border bottom focused": f"fg:{cp.hl.lighter(0.5)}",
-        "input text border left focused": f"fg:{cp.hl.darker(0.5)}",
-        "input text border top invalid": "fg:ansidarkred",
-        "input text border right invalid": "fg:ansired",
-        "input text border bottom invalid": "fg:ansired",
-        "input text border left invalid": "fg:ansidarkred",
+        **borders("input text border {}", cp.bg, inset=True),
+        **borders("input text border {} focused", cp.hl, inset=True),
+        "input border top invalid": "fg:ansidarkred",
+        "input border right invalid": "fg:ansired",
+        "input border bottom invalid": "fg:ansired",
+        "input border left invalid": "fg:ansidarkred",
         "input radio-buttons prefix selection focused": f"fg:{cp.hl}",
         "input slider arrow": f"fg:{cp.fg.darker(0.25)}",
         "input slider track": f"fg:{cp.fg.darker(0.5)}",
@@ -753,16 +871,60 @@ def build_style(
         "input select face selection": f"fg:white bg:{cp.hl}",
         "input select face hovered": f"bg:{cp.bg.more(0.2)}",
         "input select face hovered selection": f"fg:white bg:{cp.hl}",
-        # Dataframes
+    }
+
+
+def dataframe_styles(cp: ColorPalette) -> dict[str, str]:
+    """Generate dataframe display styles."""
+    return {
         "dataframe th": f"bg:{cp.bg.more(0.1)}",
         "dataframe row-odd td": f"bg:{cp.bg.more(0.05)}",
-        # Diagnostic flags
-        "diagnostic-0": "fg:ansigray",
-        "diagnostic-1": "fg:ansigreen",
-        "diagnostic-2": "fg:ansiblue",
-        "diagnostic-3": "fg:ansiyellow",
-        "diagnostic-4": "fg:ansired",
-        "diagnostic-5": "fg:ansiwhite bg:ansired bold",
+    }
+
+
+def build_style(
+    cp: ColorPalette,
+    have_term_colors: bool = True,
+) -> Style:
+    """Create an application style based on the given color palette."""
+    style_variants = {
+        "primary": cp.ansiblue,
+        "success": cp.ansigreen,
+        "info": cp.ansicyan,
+        "warning": cp.ansiyellow,
+        "danger": cp.ansired,
+        "orange": ColorPaletteColor("#ffa500"),
+        "teal": ColorPaletteColor("#008080"),
+        "purple": ColorPaletteColor("#800080"),
+    }
+
+    style_dict = {
+        # The default style is merged at this point so full styles can be
+        # overridden. For example, this allows us to switch off the underline
+        # status of cursor-line.
+        **dict(default_ui_style().style_rules),
+        **base_styles(cp),
+        **chrome_styles(cp),
+        **statusbar_styles(cp),
+        **menu_styles(cp),
+        **tab_bar_styles(cp),
+        **buffer_styles(cp),
+        **cell_styles(cp),
+        **scrollbar_styles(cp),
+        **dialog_styles(cp),
+        **toolbar_styles(cp),
+        **completion_styles(cp),
+        **file_browser_styles(cp),
+        **shortcuts_styles(cp),
+        **palette_styles(cp),
+        **pager_styles(cp),
+        **markdown_styles(cp),
+        **shadow_styles(cp),
+        **sidebar_styles(cp),
+        **tabbed_split_styles(cp),
+        **ipywidget_styles(cp, style_variants),
+        **input_widget_styles(cp, style_variants),
+        **dataframe_styles(cp),
     }
 
     return Style.from_dict(style_dict)
