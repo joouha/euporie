@@ -255,11 +255,20 @@ class NotebookApp(BaseApp):
                             show_hidden=self.config.filters.show_hidden_files,
                             show_icons=self.config.filters.show_file_icons,
                         ),
-                    )
+                    ),
                 ]
             ),
         )
-        self.side_bar = SideBar(titles, icons, panels)
+
+        self.side_bar = SideBar(
+            titles,
+            icons,
+            panels,
+            width=self.config.side_bar_width,
+            index=self.config.side_bar_panel_index,
+            on_resize=lambda s: setattr(self.config, "side_bar_width", s.width),
+            on_change=lambda s: setattr(self.config, "side_bar_panel_index", s.index),
+        )
 
         self.container = FloatContainer(
             content=HSplit(
@@ -530,6 +539,7 @@ class NotebookApp(BaseApp):
             "euporie.notebook.app:NotebookApp": {
                 "new-notebook": "c-n",
                 "toggle-show-top-bar": ("A-m"),
+                "toggle-side-bar-pane": "c-b",
             }
         }
     )

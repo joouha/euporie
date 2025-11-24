@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from functools import partial
 from typing import TYPE_CHECKING
 
@@ -21,14 +22,14 @@ from prompt_toolkit.layout.controls import UIContent, UIControl
 from prompt_toolkit.layout.dimension import Dimension
 from prompt_toolkit.layout.screen import WritePosition
 from prompt_toolkit.mouse_events import MouseButton, MouseEventType
+from prompt_toolkit.utils import Event
 
 from euporie.core.app.current import get_app
-from euporie.core.key_binding.registry import register_bindings
 from euporie.core.layout.decor import FocusedStyle, Line
 from euporie.core.widgets.forms import ToggleButton, ToggleButtons
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Callable, Sequence
 
     from prompt_toolkit.key_binding.key_bindings import (
         KeyBindingsBase,
@@ -37,6 +38,8 @@ if TYPE_CHECKING:
     from prompt_toolkit.key_binding.key_processor import KeyPressEvent
     from prompt_toolkit.layout.containers import AnyContainer
     from prompt_toolkit.mouse_events import MouseEvent
+
+log = logging.getLogger(__name__)
 
 
 class SidebarResizeHandleControl(UIControl):
@@ -50,7 +53,7 @@ class SidebarResizeHandleControl(UIControl):
         """
         self.sidebar = sidebar
         self.drag_start_x: int | None = None
-        self.start_width = sidebar.sidebar_width
+        self.start_width = 0
         self.sidebar_resize_window: Window | None = None
 
     def create_content(self, width: int, height: int | None) -> UIContent:
@@ -89,7 +92,7 @@ class SidebarResizeHandleControl(UIControl):
                 if mouse_event.event_type == MouseEventType.MOUSE_DOWN:
                     # Start the drag event
                     self.drag_start_x = gx
-                    self.start_width = self.sidebar.sidebar_width
+                    self.start_width = self.sidebar.width
                     # Send all mouse events to this position
                     y_min, x_min = min(info._rowcol_to_yx.values())
                     y_max, x_max = max(info._rowcol_to_yx.values())
@@ -104,8 +107,8 @@ class SidebarResizeHandleControl(UIControl):
                     if self.drag_start_x is not None:
                         # Calculate width change based on global mouse position
                         dx = gx - self.drag_start_x
-                        new_width = max(10, self.start_width + dx)
-                        self.sidebar.sidebar_width = new_width
+                        new_width = max(10, min(200, self.start_width + dx))
+                        self.sidebar.width = new_width
                         # change the mouse capture position
                         if app.mouse_limits is not None:
                             app.mouse_limits.xpos = self.drag_start_x + dx
@@ -209,6 +212,10 @@ class SideBar:
         titles: Sequence[str],
         icons: Sequence[str],
         panels: Sequence[AnyContainer],
+        width: int = 25,
+        index: int = -1,
+        on_resize: Callable[[SideBar], None] | None = None,
+        on_change: Callable[[SideBar], None] | None = None,
     ) -> None:
         """Initialize a new side-bar object.
 
@@ -216,10 +223,21 @@ class SideBar:
             titles: Titles for each panel.
             icons: Icons for each panel button.
             panels: The panel containers to display.
+            width: Initial width of the sidebar.
+            panel_index: Initial panel index (None means no panel is active).
+            on_resize: Optional callback called when the sidebar is resized.
+            on_change: Optional callback called when the active panel changes.
         """
         from euporie.core.app.current import get_app
 
-        self.sidebar_width = 25
+        self._width = width
+        self.on_resize: Event[SideBar] = Event(self, on_resize)
+        self.on_change: Event[SideBar] = Event(self, on_change)
+
+        # Validate initial panel index
+        if index is not None and index >= len(panels):
+            index = None
+
         self.side_bar_buttons = SideBarButtons(
             options=list(icons),
             style="class:buttons",
@@ -227,7 +245,10 @@ class SideBar:
             border=None,
             multiple=True,
             max_count=1,
+            on_change=lambda b: self.on_change.fire(),
+            index=index,
         )
+
         pane_hidden = Condition(lambda: bool(self.side_bar_buttons.index is None))
 
         # Create the resize handle for the sidebar border
@@ -266,7 +287,7 @@ class SideBar:
                                         ),
                                     ],
                                     width=lambda: Dimension(
-                                        preferred=self.sidebar_width
+                                        preferred=self._width
                                     ).preferred,
                                 ),
                                 resize_handle,
@@ -280,6 +301,44 @@ class SideBar:
             filter=get_app().config.filters.show_side_bar,
         )
 
+    @property
+    def width(self) -> int:
+        """Get the current width of the sidebar.
+
+        Returns:
+            The current width in characters.
+        """
+        return self._width
+
+    @width.setter
+    def width(self, value: int) -> None:
+        """Set the width of the sidebar.
+
+        Args:
+            value: The new width in characters.
+        """
+        if self._width != value:
+            self._width = value
+            self.on_resize.fire()
+
+    @property
+    def index(self) -> int | None:
+        """Get the current panel index.
+
+        Returns:
+            The current panel index, or None if no panel is active.
+        """
+        return self.side_bar_buttons.index
+
+    @index.setter
+    def index(self, value: int | None) -> None:
+        """Set the current panel index.
+
+        Args:
+            value: The panel index to activate, or None to hide all panels.
+        """
+        self.side_bar_buttons.index = value
+
     def toggle_pane(self) -> None:
         """Toggle the visibility of the side-bar."""
         if self.side_bar_buttons.index is None:
@@ -290,13 +349,3 @@ class SideBar:
     def __pt_container__(self) -> AnyContainer:
         """Return the side_bar's main container."""
         return self.container
-
-    # ################################# Key Bindings ##################################
-
-    register_bindings(
-        {
-            "euporie.notebook.app:NotebookApp": {
-                "toggle-side-bar-pane": "c-b",
-            }
-        }
-    )

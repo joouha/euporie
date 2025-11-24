@@ -105,3 +105,49 @@ add_setting(
         Whether the top bar should be shown at the top of the screen.
     """,
 )
+
+add_setting(
+    name="show_side_bar",
+    group="euporie.notebook.widgets.side_bar",
+    flags=["--show-side-bar"],
+    type_=bool,
+    title="side-bar",
+    help_="Show the side-bar",
+    default=True,
+    schema={
+        "type": "boolean",
+    },
+    description="""
+        Whether the side-bar should be shown at the side of the screen.
+    """,
+)
+
+add_setting(
+    name="side_bar_width",
+    group="euporie.notebook.widgets.side_bar",
+    flags=["--side-bar-width"],
+    type_=int,
+    help_="Width of the side-bar",
+    default=25,
+    schema={
+        "type": "integer",
+        "minimum": 10,
+        "maximum": 200,
+    },
+    description="""
+        The width of the side-bar in characters.
+    """,
+)
+
+add_setting(
+    name="side_bar_panel_index",
+    group="euporie.notebook.widgets.side_bar",
+    flags=[],
+    type_=lambda x: int(x) if str(x).isdigit() else None,
+    help_="Active side-bar panel index",
+    default=0,
+    schema={"type": ["integer", "null"], "minimum": 0},
+    description="""
+        The index of the currently active side-bar panel, or None if no panel is active.
+    """,
+)

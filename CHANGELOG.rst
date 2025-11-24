@@ -11,6 +11,7 @@ Upcoming
 Added
 =====
 
+- Save sidebar selection and width
 - Add new tab page
 - Add colors to file icons
 - Add console tab to notebook app
