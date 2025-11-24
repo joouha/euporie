@@ -65,7 +65,7 @@ class ScrollingContainer(Container):
         self._child_cache: dict[int, CachedContainer] = {}
         self._children: list[CachedContainer] = []
         self._known_sizes_cache: FastDictCache[tuple[int], list[int]] = FastDictCache(
-            self._known_sizes
+            self._known_sizes, size=2
         )
         self.refresh_children = True
         self.pre_rendered: float | None = None
@@ -400,11 +400,11 @@ class ScrollingContainer(Container):
             target.render(available_width, available_height)
             target_height = target.height
 
-            # If achoring to the top, we can use the new offset as the new child position
+            # If anchoring to the top, we can use the new offset as the new child position
             if anchor == "top":
                 pass
 
-            # To achor to bottom, add the screen height less the target child's height
+            # To anchor to bottom, add the screen height less the target child's height
             elif anchor == "bottom":
                 new_offset += available_height - target_height
 
@@ -646,8 +646,15 @@ class ScrollingContainer(Container):
 
     @property
     def known_sizes(self) -> list[int]:
-        """Map of child indices to height values."""
-        return self._known_sizes_cache[get_app().render_counter,]
+        """Map of child indices to height values.
+
+        Includes and children deleted on the previous render cycle.
+        """
+        render_counter = get_app().render_counter
+        now = self._known_sizes_cache[render_counter,]
+        prev = self._known_sizes_cache[render_counter - 1,]
+        return [*now, *prev[len(now) :]]
+        return now
 
     def _known_sizes(self, render_counter: int) -> list[int]:
         """Calculate sizes of children once per render cycle."""
