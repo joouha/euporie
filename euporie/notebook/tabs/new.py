@@ -77,7 +77,7 @@ class NewTab(Tab):
                             ("", f"\n{cmd.menu_title}"),
                         ],
                         on_click=_on_click,
-                        width=17,
+                        width=Dimension(preferred=17, max=17),
                         dont_extend_width=False,
                         show_borders=DiBool(False, False, False, False),
                     )
