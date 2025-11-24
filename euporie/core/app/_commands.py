@@ -28,7 +28,7 @@ def _force_quit() -> None:
     Application.exit(get_app())
 
 
-@add_cmd(menu_title="Open File…", aliases=["o"], icon="")
+@add_cmd(menu_title="Open File…", aliases=["o"], icon="", style="class:purple")
 def _open_file(path: str = "") -> None:
     """Open a file."""
     from euporie.core.app.current import get_app

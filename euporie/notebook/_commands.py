@@ -3,7 +3,7 @@
 from euporie.core.commands import add_cmd
 
 
-@add_cmd(aliases=["n"], icon="", style="class:warning")
+@add_cmd(aliases=["n"], icon="", style="class:orange")
 def _new_notebook() -> None:
     """Create a new notebook file."""
     from euporie.notebook.current import get_app
@@ -25,7 +25,7 @@ def _new_console() -> None:
     tab.focus()
 
 
-@add_cmd(aliases=["nt"], icon="")
+@add_cmd(aliases=["nt"], icon="", style="class:success")
 def _new_text_file() -> None:
     """Create a text file."""
     from euporie.notebook.current import get_app
