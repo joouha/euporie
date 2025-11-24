@@ -23,13 +23,12 @@ from euporie.core.app.app import BaseApp
 from euporie.core.bars.command import CommandBar
 from euporie.core.bars.menu import ToolbarCompletionsMenu
 from euporie.core.bars.search import SearchBar
-from euporie.core.bars.status import StatusBar, StatusContainer
+from euporie.core.bars.status import StatusBar
 from euporie.core.commands import get_cmd
 from euporie.core.filters import has_tabs
 from euporie.core.ft.utils import truncate
 from euporie.core.key_binding.registry import register_bindings
 from euporie.core.layout.containers import HSplit, VSplit, Window
-from euporie.core.layout.decor import Pattern
 from euporie.core.widgets.dialog import (
     AboutDialog,
     ConfirmDialog,
@@ -60,10 +59,10 @@ if TYPE_CHECKING:
     from prompt_toolkit.formatted_text import StyleAndTextTuples
     from prompt_toolkit.layout.containers import AnyContainer
 
-    from euporie.core.bars.status import StatusBarFields
     from euporie.core.tabs import TabRegistryEntry
     from euporie.core.tabs.base import Tab
     from euporie.core.widgets.cell import Cell
+    from euporie.notebook.tabs.new import NewTab
     from euporie.notebook.tabs.notebook import Notebook
 
 log = logging.getLogger(__name__)
@@ -79,6 +78,7 @@ class NotebookApp(BaseApp):
     """
 
     _tab_container: AnyContainer
+    new_tab: NewTab
 
     name = "notebook"
 
@@ -140,10 +140,14 @@ class NotebookApp(BaseApp):
         """Set the container to use to display opened tabs."""
         tab_mode = TabMode(self.config.tab_mode)
         if not self.tabs:
-            self._tab_container = Pattern(
-                self.config.background_character,
-                self.config.background_pattern,
-            )
+            try:
+                new_tab = self.new_tab
+            except AttributeError:
+                from euporie.notebook.tabs.new import NewTab
+
+                new_tab = self.new_tab = NewTab(self)
+            self._tab_container = new_tab
+            self.layout.focus(new_tab)
         elif tab_mode == TabMode.TILE_HORIZONTALLY:
             children = []
             for tab in self.tabs:
@@ -195,23 +199,8 @@ class NotebookApp(BaseApp):
                 ]
             )
 
-    def _statusbar_defaults(self) -> StatusBarFields | None:
-        """Load the default statusbar fields (run after keybindings are loaded)."""
-        return (
-            [
-                [
-                    ("", "Press "),
-                    ("bold", get_cmd("new-notebook").key_str()),
-                    ("", " to start a new notebook"),
-                ],
-            ],
-            [[("", "Press "), ("bold", get_cmd("quit").key_str()), ("", " to quit")]],
-        )
-
     def load_container(self) -> FloatContainer:
         """Build the main application layout."""
-        self.logo = StatusContainer(body=Logo(), status=self._statusbar_defaults)
-
         title_bar = ConditionalContainer(
             Window(
                 content=FormattedTextControl(self.format_title, show_cursor=False),
