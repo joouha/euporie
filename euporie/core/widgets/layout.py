@@ -89,7 +89,7 @@ class Box:
         padding_bottom: AnyDimension = None,
         width: AnyDimension = None,
         height: AnyDimension = None,
-        style: str = "",
+        style: str | Callable[[], str] = "",
         char: None | str | Callable[[], str] = None,
         modal: bool = False,
         key_bindings: KeyBindingsBase | None = None,
