@@ -1043,20 +1043,21 @@ class SizedMask(dict[int, bool]):
     def __setitem__(self, key: int, value: bool) -> None:
         """Remove the oldest key when the size is exceeded."""
         if value:
+            # Only add to _keys if it's not already there
+            if key not in self._keys:
+                # Check size limit before adding
+                if self.size and len(self._keys) >= self.size:
+                    key_to_remove = self._keys.popleft()
+                    if key_to_remove in self:
+                        del self[key_to_remove]
+                self._keys.append(key)
             super().__setitem__(key, value)
         else:
+            # Remove the key if it exists
             if key in self:
                 del self[key]
             if key in self._keys:
                 self._keys.remove(key)
-
-        if self.size:
-            if len(self._keys) >= self.size:
-                key_to_remove = self._keys.popleft()
-                if key_to_remove in self:
-                    del self[key_to_remove]
-            if value:
-                self._keys.append(key)
 
     def __missing__(self, key: int) -> bool:
         """Return ``False`` for unknown items."""
