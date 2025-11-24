@@ -6,6 +6,7 @@ from functools import partial
 from typing import TYPE_CHECKING
 
 from prompt_toolkit.filters import Condition
+from prompt_toolkit.formatted_text.base import to_formatted_text
 from prompt_toolkit.key_binding.key_bindings import (
     KeyBindings,
 )
@@ -63,7 +64,7 @@ class SidebarResizeHandleControl(UIControl):
             The UI content to display.
         """
         return UIContent(
-            get_line=lambda i: [("class:side_bar,border", "▏")],
+            get_line=lambda i: [("class:side_bar,border", "▕")],
             line_count=height if height is not None else 1,
             show_cursor=False,
         )
@@ -173,7 +174,7 @@ class SideBarButtons(ToggleButtons):
                 )
             )
             button = ToggleButton(
-                text=label,
+                text=to_formatted_text(label),
                 selected=selected,
                 on_click=partial(lambda index, button: self.toggle_item(index), i),
                 border=None,
@@ -186,7 +187,7 @@ class SideBarButtons(ToggleButtons):
             [
                 Window(
                     char=partial(self._get_sep_char, i),
-                    height=1,
+                    height=Dimension(max=1),
                     style=partial(self._get_sep_style, len(self.options)),
                 ),
                 Window(),
@@ -233,7 +234,7 @@ class SideBar:
         resize_handle_control = SidebarResizeHandleControl(self)
         resize_handle = Window(
             content=resize_handle_control,
-            width=1,
+            width=Dimension(max=1),
             style="class:side_bar,border",
         )
         # Give the control a reference to its window for render_info
@@ -245,15 +246,6 @@ class SideBar:
                     VSplit(
                         [
                             self.side_bar_buttons,
-                            ConditionalContainer(
-                                Line(
-                                    char="▏",
-                                    width=1,
-                                    collapse=False,
-                                    style="class:side_bar,border,outer",
-                                ),
-                                filter=pane_hidden,
-                            ),
                         ],
                     ),
                     ConditionalContainer(
@@ -263,6 +255,7 @@ class SideBar:
                                     char="▏",
                                     width=1,
                                     style="class:side_bar,border",
+                                    collapse=True,
                                 ),
                                 HSplit(
                                     [
