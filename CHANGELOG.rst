@@ -30,6 +30,7 @@ Fixed
 Changed
 =======
 
+- Add slight fuzzy-search to command bar
 - Added new logo
 
 ----
