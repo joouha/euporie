@@ -707,6 +707,11 @@ class BaseApp(ConfigurableApp, Application, ABC):
                 self.focused_element = tab
                 # Ensure the newly opened tab is selected
                 self.tab_idx = len(self.tabs) - 1
+                # Save 20 most recent files, deduplicating while keeping order
+                if ppath.exists():
+                    self.config.recent_files = list(
+                        dict.fromkeys([ppath, *self.config.recent_files]).keys()
+                    )[:20]
 
     def open_files(self) -> None:
         """Open the files defined in the configuration."""

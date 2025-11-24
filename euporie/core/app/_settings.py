@@ -455,3 +455,24 @@ add_setting(
         When set to True, the cursor will blink.
 """,
 )
+
+
+add_setting(
+    name="recent_files",
+    group="euporie.core.app.app",
+    default=[],
+    flags=[],
+    nargs="*",
+    type_=UPath,
+    help_="List of recently opened files",
+    schema={
+        "type": "array",
+        "items": {
+            "description": "File path",
+            "type": "string",
+        },
+    },
+    description="""
+        A list of recently opened file paths.
+    """,
+)
