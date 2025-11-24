@@ -29,6 +29,7 @@ from euporie.core.key_binding.registry import (
 )
 from euporie.core.layout.cache import CachedContainer
 from euporie.core.layout.decor import Line, Pattern
+from euporie.core.layout.mouse import MouseHandlerWrapper
 from euporie.core.layout.scroll import ScrollingContainer
 from euporie.core.margins import MarginContainer, ScrollbarMargin
 from euporie.core.nbformat import NOTEBOOK_EXTENSIONS, new_code_cell
@@ -190,43 +191,49 @@ class Notebook(BaseNotebook):
         return VSplit(
             [
                 ConditionalContainer(
-                    VSplit(
-                        [
-                            pattern,
-                            Line(
-                                char="▋",  # 5/8
-                                width=1,
-                                collapse=True,
-                                style="class:drop-shadow,outer reverse",
-                            ),
-                            Line(
-                                char="▎",  # 2/8
-                                width=1,
-                                collapse=True,
-                                style="class:drop-shadow,inner",
-                            ),
-                        ]
+                    MouseHandlerWrapper(
+                        VSplit(
+                            [
+                                pattern,
+                                Line(
+                                    char="▋",  # 5/8
+                                    width=1,
+                                    collapse=True,
+                                    style="class:drop-shadow,outer reverse",
+                                ),
+                                Line(
+                                    char="▎",  # 2/8
+                                    width=1,
+                                    collapse=True,
+                                    style="class:drop-shadow,inner",
+                                ),
+                            ]
+                        ),
+                        self.page.mouse_scroll_handler,
                     ),
                     filter=~expand,
                 ),
                 self.page,
                 ConditionalContainer(
-                    VSplit(
-                        [
-                            Line(
-                                char="▊",  # 6/8
-                                width=1,
-                                collapse=True,
-                                style="class:drop-shadow,inner reverse",
-                            ),
-                            Line(
-                                char="▍",  # 3/8
-                                width=1,
-                                collapse=True,
-                                style="class:drop-shadow,outer",
-                            ),
-                            pattern,
-                        ]
+                    MouseHandlerWrapper(
+                        VSplit(
+                            [
+                                Line(
+                                    char="▊",  # 6/8
+                                    width=1,
+                                    collapse=True,
+                                    style="class:drop-shadow,inner reverse",
+                                ),
+                                Line(
+                                    char="▍",  # 3/8
+                                    width=1,
+                                    collapse=True,
+                                    style="class:drop-shadow,outer",
+                                ),
+                                pattern,
+                            ]
+                        ),
+                        self.page.mouse_scroll_handler,
                     ),
                     filter=~expand,
                 ),

@@ -21,6 +21,7 @@ Added
 Fixed
 =====
 
+- Allow scrolling on notebook background pattern
 - Fix exception if searching with no open tabs
 - Improve kernel selection detection
 - Allow opening HTTP urls from file open dialog
