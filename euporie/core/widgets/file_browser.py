@@ -835,7 +835,11 @@ class FileBrowserControl(UIControl):
 
     def __init__(
         self,
-        path: Path | None = None,
+        path: Path
+        | Callable[[], Path]
+        | list[Path]
+        | Callable[[], list[Path]]
+        | None = None,
         on_chdir: Callable[[FileBrowserControl], None] | None = None,
         on_select: Callable[[FileBrowserControl], None] | None = None,
         on_open: Callable[[FileBrowserControl], None] | None = None,
@@ -848,7 +852,9 @@ class FileBrowserControl(UIControl):
 
         self.show_icons = to_filter(show_icons)
         self.show_hidden = to_filter(show_hidden)
-        self.dir = path or UPath(".")
+        if path is None:
+            path = UPath(".")
+        self.dir = path
         self.hovered: int | None = None
         self.selected: int | None = None
         self._dir_cache: FastDictCache[tuple[Path, bool], list[tuple[bool, Path]]] = (
@@ -895,16 +901,25 @@ class FileBrowserControl(UIControl):
     @property
     def contents(self) -> list[tuple[bool, Path]]:
         """Return the contents of the current folder."""
-        return self._dir_cache[(self.dir, bool(self.show_hidden()))]
+        if isinstance(self.dir, Path):
+            return self._dir_cache[(self.dir, bool(self.show_hidden()))]
+        elif isinstance(self.dir, list):
+            return [(x.is_dir(), x) for x in self.dir]
 
     @property
     def dir(self) -> Path:
         """Return the current folder path."""
+        if callable(self._dir):
+            return self._dir()
         return self._dir
 
     @dir.setter
     def dir(self, value: PT) -> None:
         """Set the current folder path."""
+        if isinstance(value, list) or callable(value):
+            self._dir = value
+            return
+
         from upath import UPath
 
         dir_path = UPath(value)
@@ -1044,7 +1059,7 @@ class FileBrowserControl(UIControl):
 
     def open_path(self) -> None:
         """Open the selected file."""
-        if self.selected is not None:
+        if self.contents and self.selected is not None:
             is_dir, path = self.contents[self.selected]
             if is_dir:
                 self.dir = path.resolve()
@@ -1082,10 +1097,11 @@ class FileBrowserControl(UIControl):
 
     def __pt_status__(self) -> StatusBarFields:
         """Show the selected or hovered path in the statusbar."""
-        if self.hovered is not None:
-            return [[("", str(self.contents[self.hovered][1]))]], []
-        elif self.selected is not None:
-            return [[("", str(self.contents[self.selected][1]))]], []
+        if self.contents:
+            if self.hovered is not None:
+                return [[("", str(self.contents[self.hovered][1]))]], []
+            elif self.selected is not None:
+                return [[("", str(self.contents[self.selected][1]))]], []
         return [], []
 
 
@@ -1096,7 +1112,11 @@ class FileBrowser:
 
     def __init__(
         self,
-        path: Path | None = None,
+        path: Path
+        | Callable[[], Path]
+        | list[Path]
+        | Callable[[], list[Path]]
+        | None = None,
         on_select: Callable[[Path], None] | None = None,
         on_open: Callable[[Path], None] | None = None,
         on_chdir: Callable[[Path], None] | None = None,
