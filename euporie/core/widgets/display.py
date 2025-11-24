@@ -235,7 +235,7 @@ class DisplayControl(UIControl):
 
     def preferred_width(self, max_available_width: int) -> int | None:
         """Calculate and return the preferred width of the control."""
-        return max_available_width
+        return self.max_line_width if self.dont_extend_width() else max_available_width
 
     def preferred_height(
         self,
@@ -620,6 +620,7 @@ class Display:
             wrap_lines=False,
             always_hide_cursor=always_hide_cursor,
             dont_extend_height=dont_extend_height,
+            dont_extend_width=dont_extend_width,
             style=self.style,
             char=" ",
         )
