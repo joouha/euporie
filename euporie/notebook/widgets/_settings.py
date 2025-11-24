@@ -9,7 +9,7 @@ add_setting(
     type_=bool,
     title="side-bar",
     help_="Show the side-bar",
-    default=False,
+    default=True,
     schema={
         "type": "boolean",
     },
