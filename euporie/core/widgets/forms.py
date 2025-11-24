@@ -366,7 +366,7 @@ class ToggleableWidget(metaclass=ABCMeta):
         self.selected = not self.selected
         self.on_click.fire()
 
-    def mouse_handler(self, mouse_event: MouseEvent) -> NotImplementedOrNone:
+    def default_mouse_handler(self, mouse_event: MouseEvent) -> NotImplementedOrNone:
         """Focus on mouse down and toggle state on mouse up."""
         if self.disabled():
             return NotImplemented
@@ -418,6 +418,10 @@ class ToggleButton(ToggleableWidget):
         selected: bool = False,
         disabled: FilterOrBool = False,
         key_bindings: KeyBindingsBase | None = None,
+        mouse_handler: Callable[[MouseEvent], NotImplementedOrNone] | None = None,
+        dont_extend_height: FilterOrBool = True,
+        dont_extend_width: FilterOrBool = True,
+        padding: DiInt | None = None,
     ) -> None:
         """Create a new toggle-button instance.
 
@@ -432,12 +436,15 @@ class ToggleButton(ToggleableWidget):
             disabled: A filter which when evaluated to :py:const:`True` causes the
                 widget to be disabled
             key_bindings: Additional key_binding to apply to the button
+            mouse_handler: A mouse handler for the button. If unset, the default will be
+                used, which results in the button behaving like a regular click-button
+            dont_extend_height: Should the button expand to fill the vertical space
+            dont_extend_width: Should the button expand to fill the horizontal space
+            padding: Space around button text
         """
-        self.on_click = Event(self, on_click)
         self.style = style
         self.disabled = to_filter(disabled)
         self.key_bindings = key_bindings
-
         self.button = Button(
             text=text,
             width=width,
@@ -446,10 +453,14 @@ class ToggleButton(ToggleableWidget):
             show_borders=show_borders,
             selected=selected,
             key_bindings=self._get_key_bindings(),
-            mouse_handler=self.mouse_handler,
-            on_click=lambda button: self.on_click.fire(),
+            mouse_handler=mouse_handler or self.default_mouse_handler,
+            on_click=(lambda b: on_click(self)) if callable(on_click) else None,
             disabled=self.disabled,
+            dont_extend_width=dont_extend_width,
+            dont_extend_height=dont_extend_height,
+            padding=padding,
         )
+        self.on_click = self.button.on_click
         self.container = self.button
 
     # See mypy issue #4125
@@ -479,7 +490,7 @@ class Checkbox(ToggleableWidget):
             ("", " " if fragment_list_len(self.text) else ""),
             *self.text,
         ]
-        return [(style, text, self.mouse_handler) for style, text, *_ in ft]
+        return [(style, text, self.default_mouse_handler) for style, text, *_ in ft]
 
     def __init__(
         self,
@@ -753,6 +764,10 @@ class Label:
         value: AnyFormattedText,
         style: str | Callable[[], str] = "class:input",
         html: FilterOrBool = False,
+        dont_extend_height: FilterOrBool = True,
+        dont_extend_width: FilterOrBool = True,
+        align: WindowAlign | Callable[[], WindowAlign] = WindowAlign.LEFT,
+        wrap_lines: FilterOrBool = True,
     ) -> None:
         """Create a new label widget instance.
 
@@ -760,6 +775,10 @@ class Label:
             value: The value to display
             style: Additional style to apply to the widget
             html: Whether to render the label as HTML
+            dont_extend_height: Should the label expand to fill the vertical space
+            dont_extend_width: Should the label expand to fill the horizontal space
+            align: How the text should be aligned
+            wrap_lines: Should lines be wrapped
         """
         self.value = value
         self.control = FormattedTextControl(self.get_value, focusable=False)
@@ -767,8 +786,10 @@ class Label:
         self.container = Window(
             self.control,
             style=style,
-            dont_extend_width=True,
-            dont_extend_height=True,
+            dont_extend_width=dont_extend_width,
+            dont_extend_height=dont_extend_height,
+            align=align,
+            wrap_lines=wrap_lines,
         )
 
     def get_value(self) -> AnyFormattedText:
@@ -1494,6 +1515,7 @@ class Dropdown(SelectableWidget):
                 widget to be disabled
         """
         self.menu_visible: bool = False
+        self.menu_hovered: bool = False
         self.arrow: str = arrow
         super().__init__(
             options=options,
@@ -1507,10 +1529,22 @@ class Dropdown(SelectableWidget):
             disabled=disabled,
         )
 
+        _original_has_focus = self.has_focus
+
+        @Condition
+        def _has_focus() -> bool:
+            """Automatically close menu if we loose focus."""
+            result = _original_has_focus()
+            if not result and self.menu_visible:
+                self.close_menu()
+                get_app().invalidate()
+            return result
+
+        self.has_focus = _has_focus
         self.menu = Float(
             ConditionalContainer(
                 Shadow(
-                    Window(
+                    menu_window := Window(
                         FormattedTextControl(
                             self.menu_fragments, focusable=self.disabled
                         ),
@@ -1522,6 +1556,7 @@ class Dropdown(SelectableWidget):
             xcursor=True,
             ycursor=True,
         )
+        self.menu_window = menu_window
         menu_name = f"dropdown-menu-{hash(self)}"
         app = get_app()
         app.menus[menu_name] = self.menu
@@ -1533,14 +1568,47 @@ class Dropdown(SelectableWidget):
 
     def load_container(self) -> AnyContainer:
         """Load the widget's container."""
-        self.button = ToggleButton(
+        self.toggle_button = ToggleButton(
             self.button_text,
-            on_click=self.toggle_menu,
+            mouse_handler=self.mouse_handler_button,
             style=f"class:dropdown {self.style}",
             key_bindings=self.key_bindings(),
             disabled=self.disabled,
+            # We draw padding using ft so we can set menu position before padding
+            padding=DiInt(0, 0, 0, 0),
         )
-        return self.button
+        # self.toggle_button.button.on_mouse_down += lambda x: self.toggle_button.toggle()
+        return self.toggle_button
+
+    def mouse_handler_button(self, mouse_event: MouseEvent) -> NotImplementedOrNone:
+        """Focus on mouse down and toggle state on mouse up."""
+        if self.disabled():
+            return NotImplemented
+        elif mouse_event.event_type == MouseEventType.MOUSE_DOWN:
+            layout = get_app().layout
+            if not layout.has_focus(self):
+                app = get_app()
+                app.layout.focus(self)
+            if not self.menu_hovered:
+                self.show_menu()
+            else:
+                self.close_menu()
+            return None
+        elif mouse_event.event_type == MouseEventType.MOUSE_UP:
+            if self.menu_hovered:
+                self.close_menu()
+            return None
+        elif mouse_event.event_type == MouseEventType.SCROLL_UP:
+            new_index = max(0, min((self.index or 0) - 1, len(self.options) - 1))
+            if self.index != new_index or self.hovered != new_index:
+                self.index = self.hovered = new_index
+                return None
+        elif mouse_event.event_type == MouseEventType.SCROLL_DOWN:
+            new_index = max(0, min((self.index or 0) + 1, len(self.options) - 1))
+            if self.index != new_index or self.hovered != new_index:
+                self.index = self.hovered = new_index
+                return None
+        return NotImplemented
 
     def button_text(self) -> StyleAndTextTuples:
         """Return the text to display on the button."""
@@ -1554,13 +1622,21 @@ class Dropdown(SelectableWidget):
             max_width,
         )
         ft += [("", " " if self.arrow else ""), ("class:arrow", self.arrow)]
+        # Add padding
+        ft = [("[SetMenuPosition]", " "), *ft, ("", " ")]
         return ft
 
-    def toggle_menu(self, button: ToggleButton) -> None:
-        """Show or hide the menu."""
-        self.menu_visible = not self.menu_visible
+    def show_menu(self) -> None:
+        """Close the menu and untoggle the button."""
+        self.menu_visible = True
+        self.toggle_button.selected = True
         self.hovered = self.index
-        get_app().invalidate()
+
+    def close_menu(self) -> None:
+        """Close the menu and untoggle the button."""
+        self.menu_visible = False
+        self.toggle_button.selected = False
+        self.menu_hovered = False
 
     def menu_fragments(self) -> StyleAndTextTuples:
         """Return formatted text fragment to display in the menu."""
@@ -1571,7 +1647,7 @@ class Dropdown(SelectableWidget):
             # Pad each option
             formatted_label = align(label, FormattedTextAlign.LEFT, width=max_width + 2)
             item_style = "class:hovered" if i == self.hovered else ""
-            handler = partial(self.mouse_handler, i)
+            handler = partial(self.mouse_handler_menu, i)
             ft.extend(
                 [
                     (item_style, " ", handler),
@@ -1587,32 +1663,35 @@ class Dropdown(SelectableWidget):
         ft.pop()
         return ft
 
-    def mouse_handler(self, i: int, mouse_event: MouseEvent) -> None:
+    def mouse_handler_menu(self, i: int, mouse_event: MouseEvent) -> None:
         """Handle mouse events."""
         if self.disabled():
             return
         super().mouse_handler(i, mouse_event)
+        if mouse_event.event_type == MouseEventType.MOUSE_MOVE:
+            self.menu_hovered = True
         if mouse_event.event_type == MouseEventType.MOUSE_UP:
-            self.menu_visible = False
-            self.button.selected = False
+            self.close_menu()
 
     def key_bindings(self) -> KeyBindingsBase:
         """Return key-bindings for the drop-down widget."""
         menu_visible = Condition(lambda: self.menu_visible)
         kb = KeyBindings()
 
+        @kb.add("enter", filter=~menu_visible)
+        @kb.add(" ", filter=~menu_visible)
+        def _(event: KeyPressEvent) -> None:
+            self.show_menu()
+
         @kb.add("enter", filter=menu_visible)
         @kb.add(" ", filter=menu_visible)
         def _(event: KeyPressEvent) -> None:
             self.index = self.hovered
-            self.menu_visible = False
-            self.button.selected = False
-            self.on_change.fire()
+            self.close_menu()
 
         @kb.add("escape", filter=menu_visible)
         def _(event: KeyPressEvent) -> None:
-            self.menu_visible = False
-            self.button.selected = False
+            self.close_menu()
 
         @kb.add("home", filter=menu_visible)
         def _(event: KeyPressEvent) -> None:
