@@ -23,6 +23,7 @@ Added
 Fixed
 =====
 
+- Do not show "kernel died" message if tab closed before kernel finishes starting
 - Allow scrolling on notebook background pattern
 - Fix exception if searching with no open tabs
 - Improve kernel selection detection

@@ -309,7 +309,9 @@ class JupyterKernel(BaseKernel):
             # Start monitoring the kernel status
             if self.monitor_task is not None:
                 self.monitor_task.cancel()
-            self.monitor_task = asyncio.create_task(self.monitor_status())
+            # If kernel already stopped (or failed to start), don't start monitoring
+            if self.status == "idle":
+                self.monitor_task = asyncio.create_task(self.monitor_status())
 
     def start(
         self, cb: Callable | None = None, wait: bool = False, timeout: int = 10

@@ -304,6 +304,28 @@ class MenuBar:
 
         # Navigation through the main menu.
 
+        # Menu closed
+
+        @kb.add("enter", filter=~in_main_menu & ~in_sub_menu)
+        @kb.add("down", filter=~in_main_menu & ~in_sub_menu)
+        def _right(event: KeyPressEvent) -> None:
+            self.selected_menu = [0]
+            self.refocus()
+
+        @kb.add("left", filter=~in_main_menu & ~in_sub_menu)
+        def _right(event: KeyPressEvent) -> None:
+            self.selected_menu = [0]
+            self.selected_menu[0] = (self.selected_menu[0] - 1) % len(self.menu_items)
+            self.refocus()
+
+        @kb.add("right", filter=~in_main_menu & ~in_sub_menu)
+        def _right(event: KeyPressEvent) -> None:
+            self.selected_menu = [0]
+            self.selected_menu[0] = (self.selected_menu[0] + 1) % len(self.menu_items)
+            self.refocus()
+
+        # Menu open
+
         @kb.add("left", filter=in_main_menu)
         def _left(event: KeyPressEvent) -> None:
             self.selected_menu[0] = (self.selected_menu[0] - 1) % len(self.menu_items)

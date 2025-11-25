@@ -202,18 +202,6 @@ class BaseConsole(KernelTab):
         if self.kernel._status == "stopped":
             self.kernel.start(cb=self.kernel_started, wait=False)
 
-    def kernel_died(self) -> None:
-        """Call if the kernel dies."""
-        log.error("The kernel has died")
-        if confirm := self.app.get_dialog("confirm"):
-            confirm.show(
-                title="Kernel connection lost",
-                message="The kernel appears to have died\n"
-                "as it can no longer be reached.\n\n"
-                "Do you want to restart the kernel?",
-                cb=self.kernel.restart,
-            )
-
     def prompt(
         self,
         text: str,

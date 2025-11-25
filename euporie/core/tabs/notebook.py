@@ -142,17 +142,6 @@ class BaseNotebook(KernelTab, metaclass=ABCMeta):
         """Task to run when the kernel has started."""
         super().kernel_started(result)
 
-    def kernel_died(self) -> None:
-        """Call if the kernel dies."""
-        if confirm := self.app.get_dialog("confirm"):
-            confirm.show(
-                title="Kernel connection lost",
-                message="The kernel appears to have died\n"
-                "as it can no longer be reached.\n\n"
-                "Do you want to restart the kernel?",
-                cb=self.kernel.restart,
-            )
-
     # Notebook stuff
 
     def load(self) -> None:

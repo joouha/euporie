@@ -406,6 +406,20 @@ class KernelTab(Tab, metaclass=ABCMeta):
         )
         self.init_kernel(kernel)
 
+    def kernel_died(self) -> None:
+        """Call if the kernel dies."""
+        import traceback
+
+        log.info("".join(traceback.format_stack()))
+        if confirm := self.app.get_dialog("confirm"):
+            confirm.show(
+                title="Kernel connection lost",
+                message="The kernel appears to have died\n"
+                "as it can no longer be reached.\n\n"
+                "Do you want to restart the kernel?",
+                cb=self.kernel.restart,
+            )
+
     def comm_open(self, content: dict, buffers: Sequence[bytes]) -> None:
         """Register a new kernel Comm object in the notebook."""
         comm_id = str(content.get("comm_id"))
