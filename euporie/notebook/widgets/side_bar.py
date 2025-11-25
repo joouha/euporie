@@ -213,7 +213,7 @@ class SideBar:
         icons: Sequence[str],
         panels: Sequence[AnyContainer],
         width: int = 25,
-        index: int = -1,
+        index: int | None = -1,
         on_resize: Callable[[SideBar], None] | None = None,
         on_change: Callable[[SideBar], None] | None = None,
     ) -> None:

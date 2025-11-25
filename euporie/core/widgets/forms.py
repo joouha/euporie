@@ -92,6 +92,7 @@ if TYPE_CHECKING:
         GetLinePrefixCallable,
         SearchBufferControl,
     )
+    from prompt_toolkit.layout.dimension import AnyDimension
     from prompt_toolkit.layout.processors import Processor
     from prompt_toolkit.lexers import Lexer
 
@@ -166,7 +167,7 @@ class Button:
         on_click: Callable[[Button], None] | None = None,
         on_mouse_down: Callable[[Button], None] | None = None,
         disabled: FilterOrBool = False,
-        width: int | None = None,
+        width: AnyDimension | None = None,
         style: str | Callable[[], str] = "class:input",
         border: GridStyle | None = InsetGrid,
         show_borders: DiBool | None = None,

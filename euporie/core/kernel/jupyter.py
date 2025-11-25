@@ -142,7 +142,7 @@ class JupyterKernel(BaseKernel):
         # terminal to be set to cooked mode on MacOS when run not on the main thread.
         # The import  process leading to this is:
         #   jupyter_client -> ipykernel -> ipython.core.debugger -> pdb -> readline
-        # We deliverately access the kernelspec here in cooked mode, causing ptk to
+        # We deliberately access the kernelspec here in cooked mode, causing ptk to
         # return the terminal to raw mode when done
         if threading.current_thread() != threading.main_thread():
             with self.kernel_tab.app.input.cooked_mode():
