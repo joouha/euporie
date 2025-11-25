@@ -345,6 +345,7 @@ class SideBar:
             self.side_bar_buttons.index = 0
         else:
             self.side_bar_buttons.index = None
+        self.on_change()
 
     def __pt_container__(self) -> AnyContainer:
         """Return the side_bar's main container."""
