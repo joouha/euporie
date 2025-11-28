@@ -337,7 +337,7 @@ class KernelInput(TextArea):
     def language(self) -> str:
         """The current language of the text in the input box."""
         return str(
-            self._language() if callable(self._language) else self.language
+            self._language() if callable(self._language) else self._language
         ).casefold()
 
     @language.setter
