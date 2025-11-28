@@ -10,7 +10,7 @@ from prompt_toolkit.layout.containers import HSplit
 from prompt_toolkit.layout.dimension import Dimension
 
 from euporie.core.filters import insert_mode, replace_mode
-from euporie.core.kernel.jupyter import JupyterKernel, MsgCallbacks
+from euporie.core.kernel.base import BaseKernel, MsgCallbacks
 from euporie.core.key_binding.registry import load_registered_bindings
 from euporie.core.lexers import detect_lexer
 from euporie.core.tabs.kernel import KernelTab
@@ -21,6 +21,7 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     from prompt_toolkit.layout.containers import AnyContainer
+    from prompt_toolkit.layout.controls import BufferControl
 
     from euporie.core.app.app import BaseApp
     from euporie.core.bars.status import StatusBarFields
@@ -41,13 +42,13 @@ class EditorTab(KernelTab):
         self,
         app: BaseApp,
         path: Path | None = None,
-        kernel: JupyterKernel | None = None,
+        kernel: BaseKernel | None = None,
         comms: dict[str, Comm] | None = None,
         use_kernel_history: bool = False,
     ) -> None:
         """Call when the tab is created."""
         self.default_callbacks = MsgCallbacks({})
-        self._metadata = {}
+        self._metadata = {"kernelspec": {"name": "none"}}
         self.loaded = False
 
         super().__init__(app, path, kernel, comms, use_kernel_history)
@@ -57,10 +58,10 @@ class EditorTab(KernelTab):
         # Load the UI
         self.container = self.load_container()
         self.app.layout.focus(self.container)
-        # Read file
-        self.load()
         # Continue loading tab
         super().post_init_kernel()
+        # Read file
+        self.load()
 
     def load(self) -> None:
         """Load the text file."""
@@ -162,3 +163,7 @@ class EditorTab(KernelTab):
 
         """
         path.write_text(self.input_box.buffer.text)
+
+    def __pt_searchables__(self) -> list[BufferControl]:
+        """Searchable buffers in the tab."""
+        return [self.input_box.control]
