@@ -171,7 +171,11 @@ class ScrollingContainer(Container):
     @property
     def selected_slice(self) -> slice:
         """Return the currently selected slice."""
-        return self._selected_slice
+        return (
+            self._next_selected_slice
+            if self._next_selected_slice
+            else self._selected_slice
+        )
 
     @selected_slice.setter
     def selected_slice(self, new_slice: slice) -> None:
@@ -411,7 +415,7 @@ class ScrollingContainer(Container):
             # the current source
             new_offset = 0
             direction = 1 if target_idx > source_idx else -1
-            for i in range(source_idx, target_idx, direction):
+            for i in range(min(source_idx, target_idx), max(source_idx, target_idx)):
                 new_offset -= heights[i] * direction
 
             # Update the target height
