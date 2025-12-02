@@ -24,6 +24,7 @@ from euporie.core.kernel.jupyter import MsgCallbacks
 from euporie.core.layout.decor import FocusedStyle
 from euporie.core.widgets.decor import Border
 from euporie.core.widgets.forms import (
+    BaseButton,
     Button,
     Checkbox,
     Dropdown,
@@ -473,7 +474,7 @@ class ButtonModel(IpyWidgetComm):
             return f"class:ipywidget,{style}"
         return "class:ipywidget"
 
-    def click(self, button: Button) -> None:
+    def click(self, button: BaseButton) -> None:
         """Send a ``comm_msg`` describing a click event."""
         if self.comm_container.kernel:
             self.comm_container.kernel.kc_comm(
@@ -829,14 +830,14 @@ class NumberTextBoxIpyWidgetComm(TextBoxIpyWidgetComm, metaclass=ABCMeta):
             setters={"value": partial(lambda x: setattr(text.buffer, "text", str(x)))},
         )
 
-    def incr(self, button: Button) -> None:
+    def incr(self, button: BaseButton) -> None:
         """Increment the widget's value by one step."""
         value = Decimal(str(self.data["state"]["value"]))
         step = Decimal(str(self.data["state"].get("step", 1) or 1))
         if (new := self.normalize(value + step)) is not None:
             self.set_state("value", new)
 
-    def decr(self, button: Button) -> None:
+    def decr(self, button: BaseButton) -> None:
         """Decrement the widget's value by one step."""
         value = Decimal(str(self.data["state"]["value"]))
         step = Decimal(str(self.data["state"].get("step", 1) or 1))

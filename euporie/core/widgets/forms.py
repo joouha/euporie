@@ -35,6 +35,7 @@ from prompt_toolkit.key_binding.key_bindings import (
 )
 from prompt_toolkit.layout.containers import (
     ConditionalContainer,
+    DynamicContainer,
     Float,
     VSplit,
     Window,
@@ -158,16 +159,15 @@ class Swatch:
         return self.container
 
 
-class Button:
-    """A clickable button widget."""
+class BaseButton:
+    """A clickable button widget which contains another container."""
 
     def __init__(
         self,
-        text: AnyFormattedText,
-        on_click: Callable[[Button], None] | None = None,
-        on_mouse_down: Callable[[Button], None] | None = None,
+        body: AnyContainer,
+        on_click: Callable[[BaseButton], None] | None = None,
+        on_mouse_down: Callable[[BaseButton], None] | None = None,
         disabled: FilterOrBool = False,
-        width: AnyDimension | None = None,
         style: str | Callable[[], str] = "class:input",
         border: GridStyle | None = InsetGrid,
         show_borders: DiBool | None = None,
@@ -175,20 +175,15 @@ class Button:
         selected: bool = False,
         key_bindings: KeyBindingsBase | None = None,
         mouse_handler: Callable[[MouseEvent], NotImplementedOrNone] | None = None,
-        align: WindowAlign = WindowAlign.CENTER,
-        dont_extend_height: FilterOrBool = True,
-        dont_extend_width: FilterOrBool = True,
     ) -> None:
         """Create a new button widget instance.
 
         Args:
-            text: The caption for the button.
+            body: The button's main container
             on_click: A callback to run when the mouse is released over the button
             on_mouse_down: A callback to run when the mouse is pressed on the button
             disabled: A filter which when evaluated to :py:const:`True` causes the
                 widget to be disabled
-            width: The width of the button. If :py:const:`None`, the button width is
-                determined by the text
             style: A style string or callable style to apply to the button
             border: The grid style to use as the button's border
             show_borders: Determines which borders should be shown
@@ -197,12 +192,8 @@ class Button:
             key_bindings: Additional key_binding to apply to the button
             mouse_handler: A mouse handler for the button. If unset, the default will be
                 used, which results in the button behaving like a regular click-button
-            align: How to align the button text
-            dont_extend_height: Should the button expand to fill the vertical space
-            dont_extend_width: Should the button expand to fill the horizontal space
 
         """
-        self.text = text
         self.on_mouse_down = Event(self, on_mouse_down)
         self.on_click = Event(self, on_click)
         self.disabled = to_filter(disabled)
@@ -215,41 +206,25 @@ class Button:
         else:
             self.key_bindings = self.get_key_bindings()
         self.mouse_handler = mouse_handler or self.default_mouse_handler
-        self.align = align
         if padding is None:
             padding = DiInt(0, 1, 0, 1)
         self.padding = padding
-        self.window = Window(
-            FormattedTextControl(
-                lambda: [("[SetMenuPosition]", ""), *to_formatted_text(self.text)],
+        self.body = body
+        self.mouse_handler_wrapper = MouseHandlerWrapper(
+            Box(
+                DynamicContainer(lambda: self.body),
+                padding_top=Dimension(preferred=padding.top, max=padding.top),
+                padding_right=Dimension(preferred=padding.right, max=padding.right),
+                padding_bottom=Dimension(preferred=padding.bottom, max=padding.bottom),
+                padding_left=Dimension(preferred=padding.left, max=padding.left),
+                style=lambda: f"class:face {self.get_style()}",
                 key_bindings=self.key_bindings,
-                focusable=~self.disabled,
-                show_cursor=False,
             ),
-            dont_extend_width=dont_extend_width,
-            dont_extend_height=dont_extend_height,
-            align=align,
+            handler=self.mouse_handler,
         )
         self.container = Box(
             Border(
-                MouseHandlerWrapper(
-                    Box(
-                        self.window,
-                        padding_top=Dimension(preferred=padding.top, max=padding.top),
-                        padding_right=Dimension(
-                            preferred=padding.right, max=padding.right
-                        ),
-                        padding_bottom=Dimension(
-                            preferred=padding.bottom, max=padding.bottom
-                        ),
-                        padding_left=Dimension(
-                            preferred=padding.left, max=padding.left
-                        ),
-                        width=width,
-                        style=lambda: f"class:face {self.get_style()}",
-                    ),
-                    handler=self.mouse_handler,
-                ),
+                self.mouse_handler_wrapper,
                 border=border,
                 show_borders=show_borders,
                 style=lambda: f"{self.get_style()} class:border",
@@ -290,19 +265,12 @@ class Button:
                 self.selected = True
                 # Set global mouse capture
                 if (
-                    self.window is not None
-                    and (render_info := self.window.render_info) is not None
-                    and render_info._rowcol_to_yx
+                    self.mouse_handler_wrapper is not None
+                    and (wp := self.mouse_handler_wrapper.last_write_position)
+                    is not None
                 ):
-                    y_min, x_min = min(render_info._rowcol_to_yx.values())
-                    y_max, x_max = max(render_info._rowcol_to_yx.values())
-                    app.mouse_limits = WritePosition(
-                        xpos=x_min,
-                        ypos=y_min,
-                        width=x_max - x_min + 1,
-                        height=y_max - y_min + 1,
-                    )
-                self.on_mouse_down.fire()
+                    app.mouse_limits = wp
+                    self.on_mouse_down.fire()
 
                 if not self.has_focus():
                     app.layout.focus(self)
@@ -323,9 +291,11 @@ class Button:
 
             elif mouse_event.event_type == MouseEventType.MOUSE_MOVE:
                 # Unselect the button if the mouse is moved outside of the button
-                if (info := self.window.render_info) is not None and (
-                    info._x_offset + mouse_event.position.x,
-                    info._y_offset + mouse_event.position.y,
+                if (
+                    wp := self.mouse_handler_wrapper.last_write_position
+                ) is not None and (
+                    wp.xpos + mouse_event.position.x,
+                    wp.ypos + mouse_event.position.y,
                 ) != app.mouse_position:
                     app.mouse_limits = None
                     self.selected = False
@@ -335,22 +305,80 @@ class Button:
         self.selected = False
         return NotImplemented
 
-    @property
-    def width(self) -> int:
-        """The width of the button."""
-        if self._width is not None:
-            return self._width
-        else:
-            return fragment_list_width(to_formatted_text(self.text)) + 2
-
-    @width.setter
-    def width(self, value: int | None) -> None:
-        """Set the width of the button."""
-        self._width = value
-
     def __pt_container__(self) -> AnyContainer:
         """Return the button's container."""
         return self.container
+
+
+class Button(BaseButton):
+    """A clickable button widget which holds text."""
+
+    def __init__(
+        self,
+        text: AnyFormattedText,
+        width: AnyDimension | None = None,
+        align: WindowAlign = WindowAlign.CENTER,
+        dont_extend_height: FilterOrBool = True,
+        dont_extend_width: FilterOrBool = True,
+        on_click: Callable[[BaseButton], None] | None = None,
+        on_mouse_down: Callable[[BaseButton], None] | None = None,
+        disabled: FilterOrBool = False,
+        style: str | Callable[[], str] = "class:input",
+        border: GridStyle | None = InsetGrid,
+        show_borders: DiBool | None = None,
+        padding: DiInt | None = None,
+        selected: bool = False,
+        key_bindings: KeyBindingsBase | None = None,
+        mouse_handler: Callable[[MouseEvent], NotImplementedOrNone] | None = None,
+    ) -> None:
+        """Button with text.
+
+        Args:
+            text: The text to display on the button
+            width: The width of the button. If :py:const:`None`, the button width is
+                determined by the text
+            align: How to align the button text
+            dont_extend_height: Should the button expand to fill the vertical space
+            dont_extend_width: Should the button expand to fill the horizontal space
+            on_click: A callback to run when the mouse is released over the button
+            on_mouse_down: A callback to run when the mouse is pressed on the button
+            disabled: A filter which when evaluated to :py:const:`True` causes the
+                widget to be disabled
+            style: A style string or callable style to apply to the button
+            border: The grid style to use as the button's border
+            show_borders: Determines which borders should be shown
+            padding: Space around button text
+            selected: The selection state of the button
+            key_bindings: Additional key_binding to apply to the button
+            mouse_handler: A mouse handler for the button. If unset, the default will be
+                used, which results in the button behaving like a regular click-button
+        """
+        self.text = text
+        control = FormattedTextControl(
+            lambda: [("[SetMenuPosition]", ""), *to_formatted_text(self.text)],
+            show_cursor=False,
+        )
+        window = Window(
+            control,
+            dont_extend_width=dont_extend_width,
+            dont_extend_height=dont_extend_height,
+            align=align,
+            width=width,
+        )
+        super().__init__(
+            body=window,
+            on_click=on_click,
+            on_mouse_down=on_mouse_down,
+            disabled=disabled,
+            style=style,
+            border=border,
+            show_borders=show_borders,
+            padding=padding,
+            selected=selected,
+            key_bindings=key_bindings,
+            mouse_handler=mouse_handler,
+        )
+        control.focusable = ~self.disabled
 
 
 class ToggleableWidget(metaclass=ABCMeta):
@@ -1499,6 +1527,8 @@ class Dropdown(SelectableWidget):
         style: str | Callable[[], str] = "class:input",
         arrow: str = "⯆",
         disabled: FilterOrBool = False,
+        width: int | None = None,
+        expand: FilterOrBool = True,
     ) -> None:
         """Create a new drop-down widget instance.
 
@@ -1515,10 +1545,14 @@ class Dropdown(SelectableWidget):
             arrow: The character to use for the dropdown arrow
             disabled: A filter which when evaluated to :py:const:`True` causes the
                 widget to be disabled
+            width: The width of the button
+            expand: Whether to expand to fill the available width
         """
         self.menu_visible: bool = False
         self.menu_hovered: bool = False
         self.arrow: str = arrow
+        self.expand = to_filter(expand)
+        self.width = width
         super().__init__(
             options=options,
             labels=labels,
@@ -1571,7 +1605,7 @@ class Dropdown(SelectableWidget):
     def load_container(self) -> AnyContainer:
         """Load the widget's container."""
         self.toggle_button = ToggleButton(
-            self.button_text,
+            "",
             mouse_handler=self.mouse_handler_button,
             style=f"class:dropdown {self.style}",
             key_bindings=self.key_bindings(),
@@ -1579,7 +1613,25 @@ class Dropdown(SelectableWidget):
             # We draw padding using ft so we can set menu position before padding
             padding=DiInt(0, 0, 0, 0),
         )
-        # self.toggle_button.button.on_mouse_down += lambda x: self.toggle_button.toggle()
+        # Replace toggle button body label with custom container
+        self.text_window = Window(
+            FormattedTextControl(self.button_text, focusable=True, show_cursor=False),
+            width=self.width,
+            dont_extend_width=~self.expand,
+        )
+        self.toggle_button.button.body = VSplit(
+            [
+                self.text_window,
+                Window(
+                    char=f" {self.arrow} ",
+                    width=3 if self.arrow else 0,
+                    height=1,
+                    dont_extend_width=True,
+                    dont_extend_height=True,
+                ),
+            ]
+        )
+
         return self.toggle_button
 
     def mouse_handler_button(self, mouse_event: MouseEvent) -> NotImplementedOrNone:
@@ -1614,16 +1666,10 @@ class Dropdown(SelectableWidget):
 
     def button_text(self) -> StyleAndTextTuples:
         """Return the text to display on the button."""
-        labels = [to_formatted_text(x) for x in self.labels] or [
-            to_formatted_text([("", "")])
-        ]
-        max_width = max(fragment_list_width(x) for x in labels)
-        ft = align(
-            to_formatted_text(labels[self.index or 0]),
-            FormattedTextAlign.LEFT,
-            max_width,
-        )
-        ft += [("", " " if self.arrow else ""), ("class:arrow", self.arrow)]
+        labels: list[StyleAndTextTuples] = [
+            to_formatted_text(x) for x in self.labels
+        ] or [[]]
+        ft = labels[self.index or 0]
         # Add padding
         ft = [("[SetMenuPosition]", " "), *ft, ("", " ")]
         return ft
@@ -1643,11 +1689,16 @@ class Dropdown(SelectableWidget):
     def menu_fragments(self) -> StyleAndTextTuples:
         """Return formatted text fragment to display in the menu."""
         ft: StyleAndTextTuples = []
-        labels = [to_formatted_text(x) for x in self.labels]
-        max_width = max(fragment_list_width(x) for x in labels)
-        for i, label in enumerate(labels):
+        if (render_info := self.text_window.render_info) is not None:
+            max_width = render_info.window_width
+        else:
+            max_width = 10
+        max_width += len(self.arrow) + 2 if self.arrow else 0
+        for i, label in enumerate(self.labels):
             # Pad each option
-            formatted_label = align(label, FormattedTextAlign.LEFT, width=max_width + 2)
+            formatted_label = align(
+                to_formatted_text(label), FormattedTextAlign.LEFT, width=max_width - 2
+            )
             item_style = "class:hovered" if i == self.hovered else ""
             handler = partial(self.mouse_handler_menu, i)
             ft.extend(

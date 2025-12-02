@@ -43,6 +43,7 @@ class MouseHandlerWrapper(Container):
         """
         self.content = to_container(content)
         self.handler = handler
+        self.last_write_position: WritePosition | None = None
 
     def reset(self) -> None:
         """Reset the state of the container."""
@@ -74,6 +75,7 @@ class MouseHandlerWrapper(Container):
             erase_bg,
             z_index,
         )
+        self.last_write_position = write_position
 
         @lru_cache
         def _wrap_mouse_handler(handler: Callable) -> MouseHandler:

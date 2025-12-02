@@ -19,7 +19,7 @@ from euporie.core.layout.decor import FocusedStyle, Pattern
 from euporie.core.tabs.base import Tab
 from euporie.core.widgets.display import Display
 from euporie.core.widgets.file_browser import FileBrowser
-from euporie.core.widgets.forms import Button
+from euporie.core.widgets.forms import BaseButton, Button
 from euporie.core.widgets.layout import Border, Box
 from euporie.core.widgets.logo import logo_medium
 from euporie.notebook.tips import TIPS
@@ -66,7 +66,7 @@ class NewTab(Tab):
         for name in cmds:
             cmd = get_cmd(name)
 
-            def _on_click(button: Button, cmd: Command = cmd) -> None:
+            def _on_click(button: BaseButton, cmd: Command = cmd) -> None:
                 cmd.run()
 
             buttons.append(

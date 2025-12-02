@@ -292,7 +292,7 @@ class Dialog(Float, metaclass=ABCMeta):
         # Create button widgets & callbacks
         new_button_widgets: list[AnyContainer] = []
         if self.buttons:
-            width = max(map(len, self.buttons)) + 2
+            width = max(map(len, self.buttons))
             used_keys = set()
             # Add each button
             for text in self.buttons:
@@ -311,7 +311,6 @@ class Dialog(Float, metaclass=ABCMeta):
                             [("underline", key), ("", rest)],
                             on_click=handler,
                             width=width,
-                            dont_extend_width=False,
                             style="class:input",
                         )
                     )
