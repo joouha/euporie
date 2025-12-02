@@ -20,8 +20,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable
     from pathlib import Path
 
-    from prompt_toolkit.layout.containers import AnyContainer
-    from prompt_toolkit.layout.controls import BufferControl
+    from prompt_toolkit.layout.containers import AnyContainer, Window
 
     from euporie.core.app.app import BaseApp
     from euporie.core.bars.status import StatusBarFields
@@ -164,6 +163,6 @@ class EditorTab(KernelTab):
         """
         path.write_text(self.input_box.buffer.text)
 
-    def __pt_searchables__(self) -> list[BufferControl]:
+    def __pt_searchables__(self) -> list[Window]:
         """Searchable buffers in the tab."""
-        return [self.input_box.control]
+        return [self.input_box.window]

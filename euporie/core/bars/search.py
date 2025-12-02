@@ -126,7 +126,7 @@ def find_searchable_controls(
     long_list: list[UIControl] = []
     if tab := get_app().tab:
         try:
-            long_list = list(tab.__pt_searchables__())
+            long_list = [window.content for window in tab.__pt_searchables__()]
         except NotImplementedError:
             long_list = list(get_app().layout.find_all_controls())
     next_control_index = 0

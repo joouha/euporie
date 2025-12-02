@@ -25,8 +25,7 @@ if TYPE_CHECKING:
     from typing import Any
 
     from prompt_toolkit.filters import Filter
-    from prompt_toolkit.layout.containers import AnyContainer
-    from prompt_toolkit.layout.controls import BufferControl
+    from prompt_toolkit.layout.containers import AnyContainer, Window
 
     from euporie.core.app.app import BaseApp
     from euporie.core.comm.base import Comm
@@ -414,6 +413,6 @@ class BaseNotebook(KernelTab, metaclass=ABCMeta):
         """Process a new diagnostic report from the LSP."""
         # Do nothing, these are handled by cells
 
-    def __pt_searchables__(self) -> Sequence[BufferControl]:
+    def __pt_searchables__(self) -> Sequence[Window]:
         """Return list of cell input buffer controls for searching."""
-        return [cell.input_box.control for cell in self.rendered_cells()]
+        return [cell.input_box.window for cell in self.rendered_cells()]

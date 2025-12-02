@@ -7,7 +7,7 @@ import logging
 from abc import ABCMeta
 from typing import TYPE_CHECKING, ClassVar
 
-from prompt_toolkit.layout.containers import WindowAlign
+from prompt_toolkit.layout.containers import Window, WindowAlign
 from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.utils import Event
 from upath import UPath
@@ -18,7 +18,6 @@ from euporie.core.filters import tab_can_save, tab_has_focus
 from euporie.core.key_binding.registry import (
     register_bindings,
 )
-from euporie.core.layout.containers import Window
 from euporie.core.path import UntitledPath, parse_path
 
 if TYPE_CHECKING:
@@ -28,7 +27,6 @@ if TYPE_CHECKING:
 
     from prompt_toolkit.key_binding.key_processor import KeyPressEvent
     from prompt_toolkit.layout.containers import AnyContainer
-    from prompt_toolkit.layout.controls import BufferControl
 
     from euporie.core.app.app import BaseApp
     from euporie.core.bars.status import StatusBarFields
@@ -182,7 +180,7 @@ class Tab(metaclass=ABCMeta):
             f"File saving not implement for `{self.__class__.__name__}` tab"
         )
 
-    def __pt_searchables__(self) -> Sequence[BufferControl]:
+    def __pt_searchables__(self) -> Sequence[Window]:
         """Return a list of searchable buffer controls for this tab.
 
         Returns:
