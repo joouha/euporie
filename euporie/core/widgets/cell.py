@@ -141,27 +141,27 @@ class Cell:
         self.formatters: list[Formatter] = [*self.kernel_tab.formatters]
         self.reports: WeakKeyDictionary[LspClient, Report] = WeakKeyDictionary()
 
-        show_input = Condition(
-            lambda: bool(
-                (weak_self.json.get("cell_type") != "markdown")
-                | (
-                    (weak_self.json.get("cell_type") == "markdown")
-                    & ~weak_self.rendered
-                )
-            )
+        # Conditions
+        # Determine if the cell currently has focus
+        focused = Condition(
+            lambda: weak_self.kernel_tab.app.layout.has_focus(weak_self)
+            if self.container is not None
+            else False
         )
-        show_output = Condition(
-            lambda: (
-                (weak_self.json.get("cell_type") != "markdown")
-                & bool(weak_self.output_json)
-                | ((weak_self.json.get("cell_type") == "markdown") & weak_self.rendered)
-            )
+        # Determine if the cell currently is selected.
+        in_edit_mode = Condition(lambda: self.kernel_tab.edit_mode)
+        selected = Condition(
+            lambda: self.index in self.kernel_tab.selected_indices
+            if self.container is not None
+            else False
         )
-        # scroll_input = Condition(
-        # lambda: bool(
-        # (weak_self.json.get("cell_type") == "markdown") & ~weak_self.rendered
-        # )
-        # )
+        is_markdown = Condition(lambda: weak_self.json.get("cell_type") == "markdown")
+        is_rendered = Condition(lambda: weak_self.rendered)
+        has_outputs = Condition(lambda: bool(weak_self.output_json))
+        show_input = ~is_markdown | (
+            is_markdown & (~is_rendered | (focused & in_edit_mode))
+        )
+        show_output = (~is_markdown & has_outputs) | (is_markdown & ~show_input)
         show_prompt = Condition(lambda: weak_self.cell_type == "code")
         self.is_code = Condition(lambda: weak_self.json.get("cell_type") == "code")
 
@@ -182,7 +182,7 @@ class Cell:
             # Tell the scrolling container to scroll the cursor into view on the next render
             weak_self.kernel_tab.page.scroll_to_cursor = True
             if not is_searching():
-                if not self.selected:
+                if not selected():
                     weak_self.kernel_tab.select(self.index, scroll=True)
                 if not weak_self.kernel_tab.in_edit_mode():
                     weak_self.kernel_tab.enter_edit_mode()
@@ -206,7 +206,8 @@ class Cell:
             on_cursor_position_changed=on_cursor_position_changed,
             language=partial(lambda cell: cell.language, weakref.proxy(self)),
             accept_handler=lambda buffer: weak_self.run_or_render() or True,
-            focusable=show_input & ~source_hidden,
+            # focusable=show_input & ~source_hidden,
+            focusable=True,
             tempfile_suffix=self.suffix,
             inspector=self.inspector,
             diagnostics=self.report,
@@ -224,8 +225,8 @@ class Cell:
                 if not weak_self:
                     return " "
                 grid = _get_border_style(
-                    weak_self.selected,
-                    weak_self.focused,
+                    selected(),
+                    focused(),
                     weak_self.kernel_tab.app.config.show_cell_borders,
                     multiple_cells_selected(),
                 )
@@ -335,8 +336,7 @@ class Cell:
                     HSplit(
                         [
                             ConditionalContainer(
-                                self.output_area,
-                                filter=~outputs_hidden,
+                                self.output_area, filter=~outputs_hidden
                             ),
                             ConditionalContainer(
                                 Window(
@@ -377,7 +377,7 @@ class Cell:
         def _style() -> str:
             """Calculate the cell's style given its state."""
             style = "class:cell"
-            if weak_self.selected:
+            if selected():
                 if weak_self.kernel_tab.in_edit_mode():
                     style += ",edit"
                 else:
@@ -557,22 +557,6 @@ class Cell:
         # Scroll the currently selected slice into view
         if scroll:
             self.kernel_tab.scroll_to(self.index)
-
-    @property
-    def focused(self) -> bool:
-        """Determine if the cell currently has focus."""
-        if self.container is not None:
-            return get_app().layout.has_focus(self)
-        else:
-            return False
-
-    @property
-    def selected(self) -> bool:
-        """Determine if the cell currently is selected."""
-        if self.container is not None:
-            return self.index in self.kernel_tab.selected_indices
-        else:
-            return False
 
     @property
     def cell_type(self) -> str:
