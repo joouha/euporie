@@ -114,7 +114,8 @@ class NewTab(Tab):
                 and mouse_event.event_type == MouseEventType.MOUSE_UP
             ):
                 tip_display.datum = Datum(random.choice(TIPS), format="markdown")  # noqa: S311
-            return None
+                return None
+            return NotImplemented
 
         tip_section = Border(
             Box(
