@@ -552,7 +552,7 @@ class Cell:
 
         # We force focus here, bypassing the layout's checks, as the control we want to
         # focus might be not be in the current layout yet.
-        get_app().layout._stack.append(to_focus)
+        self.kernel_tab.app.layout.current_window = to_focus
 
         # Scroll the currently selected slice into view
         if scroll:

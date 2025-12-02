@@ -957,11 +957,11 @@ class BaseApp(ConfigurableApp, Application, ABC):
         # Hide ephemeral containers
         self._redrawing = True
         # Ensure nothing in the layout has focus
-        self.layout._stack.append(Window())
+        self.layout.current_window = Window()
         # Re-draw the app
         self._redraw(render_as_done=render_as_done)
         # Remove the focus block
-        self.layout._stack.pop()
+        self.layout.focus_last()
         # Show ephemeral containers
         self._redrawing = False
         # Ensure the renderer knows where the cursor is
