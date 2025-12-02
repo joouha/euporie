@@ -86,9 +86,9 @@ class SidebarResizeHandleControl(UIControl):
             and (info := self.sidebar_resize_window.render_info) is not None
         ):
             app = get_app()
-            gx, _ = app.mouse_position
-
             if mouse_event.button == MouseButton.LEFT:
+                gx, _ = app.mouse_position
+
                 if mouse_event.event_type == MouseEventType.MOUSE_DOWN:
                     # Start the drag event
                     self.drag_start_x = gx
@@ -103,21 +103,24 @@ class SidebarResizeHandleControl(UIControl):
                         height=y_max - y_min,
                     )
                     return None
+
                 elif mouse_event.event_type == MouseEventType.MOUSE_MOVE:
                     if self.drag_start_x is not None:
                         # Calculate width change based on global mouse position
                         dx = gx - self.drag_start_x
                         new_width = max(10, min(200, self.start_width + dx))
                         self.sidebar.width = new_width
-                        # change the mouse capture position
+                        # Update mouse capture position to match constrained width
                         if app.mouse_limits is not None:
+                            # Calculate the constrained dx based on actual width change
+                            dx = new_width - self.start_width
                             app.mouse_limits.xpos = self.drag_start_x + dx
                         return None
+
             # End the drag event
             self.drag_start_x = None
             # Stop capturing all mouse events
             app.mouse_limits = None
-            return None
 
         return NotImplemented
 
