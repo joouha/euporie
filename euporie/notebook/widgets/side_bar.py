@@ -227,7 +227,7 @@ class SideBar:
             icons: Icons for each panel button.
             panels: The panel containers to display.
             width: Initial width of the sidebar.
-            panel_index: Initial panel index (None means no panel is active).
+            index: Initial panel index (None means no panel is active).
             on_resize: Optional callback called when the sidebar is resized.
             on_change: Optional callback called when the active panel changes.
         """
