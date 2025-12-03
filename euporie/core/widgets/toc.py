@@ -18,6 +18,7 @@ from prompt_toolkit.selection import SelectionState
 
 from euporie.core.app.current import get_app
 from euporie.core.border import InsetGrid
+from euporie.core.cache import SimpleCache
 from euporie.core.margins import MarginContainer, ScrollbarMargin
 from euporie.core.widgets.decor import Border
 from euporie.core.widgets.forms import Dropdown
@@ -87,6 +88,7 @@ class TocControl(UIControl):
         self._fragment_cache: FastDictCache[
             tuple[tuple[TocEntry, ...], str, int], list[StyleAndTextTuples]
         ] = FastDictCache(self._get_fragments, size=10)
+        self._content_cache: SimpleCache[Hashable, UIContent] = SimpleCache(maxsize=8)
 
     def reset(self) -> None:
         """Reset the control."""
@@ -214,22 +216,29 @@ class TocControl(UIControl):
         """Generate the content for this user control."""
         tab = get_app().tab
         if tab is None:
-            lines = []
+            entries: tuple[TocEntry, ...] = ()
         else:
             entries = self._build_toc(tab)
+        self.entries = entries
+
+        # Create cache key based on all factors that affect content
+        cache_key = (entries, self.kind, width, self.cursor_position)
+
+        def get_content() -> UIContent:
             lines = self._fragment_cache[entries, self.kind, width]
-            self.entries = entries
-        self.lines = lines
+            self.lines = lines
 
-        def get_line(i: int) -> StyleAndTextTuples:
-            return lines[i] if i < len(lines) else [("", " " * width)]
+            def get_line(i: int) -> StyleAndTextTuples:
+                return lines[i] if i < len(lines) else [("", " " * width)]
 
-        return UIContent(
-            get_line=get_line,
-            line_count=len(lines),
-            cursor_position=self.cursor_position,
-            show_cursor=False,
-        )
+            return UIContent(
+                get_line=get_line,
+                line_count=len(lines),
+                cursor_position=self.cursor_position,
+                show_cursor=False,
+            )
+
+        return self._content_cache.get(cache_key, get_content)
 
     def mouse_handler(self, mouse_event: MouseEvent) -> NotImplementedOrNone:
         """Handle mouse events."""
@@ -281,7 +290,7 @@ class TableOfContents:
     def __init__(self) -> None:
         """Construct the widget."""
         control = TocControl()
-        window = Window(control, style="class:file-browser,face,row")
+        window = Window(control, style="class:input,list,face,row")
         self.container = HSplit(
             [
                 Dropdown(
@@ -292,7 +301,6 @@ class TableOfContents:
                 Border(
                     VSplit(
                         [window, MarginContainer(ScrollbarMargin(), target=window)],
-                        style="class:input,list",
                     ),
                     border=InsetGrid,
                     style="class:input,inset,border",
