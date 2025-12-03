@@ -1713,7 +1713,8 @@ class Dropdown(SelectableWidget):
                 ]
             )
         # Remove the last newline
-        ft.pop()
+        if ft:
+            ft.pop()
         return ft
 
     def mouse_handler_menu(self, i: int, mouse_event: MouseEvent) -> None:
