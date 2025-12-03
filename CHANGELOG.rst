@@ -11,6 +11,7 @@ Upcoming
 Added
 =====
 
+- Added code minimap to sidebar
 - Added table-of-contents sidebar panel
 - Save sidebar selection and width
 - Add new tab page

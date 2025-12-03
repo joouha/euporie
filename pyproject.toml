@@ -48,6 +48,7 @@ dependencies = [
   "universal-pathlib~=0.2.1",
   "fsspec[http]>=2022.12.0",
   "jupytext>=1.14.0",
+  "python-code-minimap>=0.1.1",
 ]
 
 [project.optional-dependencies]
@@ -157,9 +158,7 @@ description = "Type check the codebase."
 dependencies = [
   "mypy",
   # Dependencies
-  "types-appdirs", "importlib_metadata", "types-Pillow", "sixelcrop",
-  # Optional dependencies
-  "rich", "black", "isort", "ssort", "pip",
+  "types-appdirs", "importlib_metadata", "types-Pillow", "sixelcrop", "python-code-minimap",
   # Non-dependencies
   "html2text", "sympy"
 ]
