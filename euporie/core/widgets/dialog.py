@@ -499,7 +499,13 @@ class OpenFileDialog(FileDialog):
 
         super().__init__(app)
 
-        self.tab_dd = tab_dd = Dropdown(options=[])
+        self.tab_dd = tab_dd = Dropdown(
+            options=[],
+            # Magic condition referencing dropdown's options once dropdown has initiated
+            disabled=Condition(
+                lambda: getattr(self, "tab_dd", False) and not self.tab_dd.options
+            ),
+        )
 
         def _update_options(path: Path) -> None:
             tabs = get_app().get_file_tabs(path) if path.is_file() else []
@@ -511,10 +517,7 @@ class OpenFileDialog(FileDialog):
 
         if isinstance(self.body, HSplit):
             self.body.children.append(
-                ConditionalContainer(
-                    FocusedStyle(LabelledWidget(tab_dd, "Open with:")),
-                    filter=Condition(lambda: len(tab_dd.options) > 1),
-                )
+                FocusedStyle(LabelledWidget(tab_dd, "Open with:"))
             )
 
     def load(

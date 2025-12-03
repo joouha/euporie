@@ -1581,9 +1581,7 @@ class Dropdown(SelectableWidget):
             ConditionalContainer(
                 Shadow(
                     menu_window := Window(
-                        FormattedTextControl(
-                            self.menu_fragments, focusable=self.disabled
-                        ),
+                        FormattedTextControl(self.menu_fragments),
                         style=f"class:dropdown,dropdown.menu {self.style}",
                     )
                 ),
@@ -1615,7 +1613,9 @@ class Dropdown(SelectableWidget):
         )
         # Replace toggle button body label with custom container
         self.text_window = Window(
-            FormattedTextControl(self.button_text, focusable=True, show_cursor=False),
+            FormattedTextControl(
+                self.button_text, focusable=~self.disabled, show_cursor=False
+            ),
             width=self.width,
             dont_extend_width=~self.expand,
         )
