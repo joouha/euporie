@@ -410,4 +410,4 @@ class CachedContainer(Container):
 
     def get_children(self) -> list[Container]:
         """Return a list of all child containers."""
-        return [self.container]
+        return self.container.get_children()
