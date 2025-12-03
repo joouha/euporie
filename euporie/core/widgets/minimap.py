@@ -11,12 +11,18 @@ from prompt_toolkit.data_structures import Point
 from prompt_toolkit.formatted_text import (
     StyleAndTextTuples,
 )
-from prompt_toolkit.layout.containers import HSplit, VSplit, Window
+from prompt_toolkit.layout.containers import HSplit, VSplit, Window, WindowAlign
 from prompt_toolkit.layout.controls import BufferControl, UIContent, UIControl
 from prompt_toolkit.mouse_events import MouseButton, MouseEventType
+from prompt_toolkit.utils import Event
+from prompt_toolkit.widgets.base import Label
 
 from euporie.core.app.current import get_app
+from euporie.core.data_structures import DiBool
+from euporie.core.layout.decor import FocusedStyle
 from euporie.core.margins import MarginContainer, ScrollbarMargin
+from euporie.core.widgets.forms import Button
+from euporie.core.widgets.layout import Box
 
 if TYPE_CHECKING:
     from collections.abc import Hashable, Iterable
@@ -30,7 +36,6 @@ if TYPE_CHECKING:
     from prompt_toolkit.layout.containers import AnyContainer
     from prompt_toolkit.layout.controls import GetLinePrefixCallable
     from prompt_toolkit.mouse_events import MouseEvent
-    from prompt_toolkit.utils import Event
 
     from euporie.core.tabs.base import Tab
 
@@ -48,8 +53,9 @@ class MiniMapControl(UIControl):
             hscale: Horizontal scale factor for the minimap.
             vscale: Vertical scale factor for the minimap.
         """
-        self.hscale = hscale
-        self.vscale = vscale
+        self._hscale = hscale
+        self._vscale = vscale
+        self.on_zoom = Event(self)
         self.cursor_position = Point(0, 0)
         self._window_lines: list[tuple[Window, int]] = []
 
@@ -59,6 +65,28 @@ class MiniMapControl(UIControl):
         self._content_cache: SimpleCache[
             Hashable, tuple[UIContent, list[tuple[Window, int]]]
         ] = SimpleCache(maxsize=8)
+
+    @property
+    def hscale(self) -> float:
+        """The horizontal scaling factor."""
+        return self._hscale
+
+    @hscale.setter
+    def hscale(self, value: float) -> None:
+        """Update the horizontal scaling factor."""
+        self._hscale = value
+        self.on_zoom()
+
+    @property
+    def vscale(self) -> float:
+        """The vertical scaling factor."""
+        return self._vscale
+
+    @vscale.setter
+    def vscale(self, value: float) -> None:
+        """Update the vertical scaling factor."""
+        self._vscale = value
+        self.on_zoom()
 
     def _render_minimap(self, text: str, hscale: float, vscale: float) -> list[str]:
         """Render the minimap for the given text.
@@ -245,26 +273,81 @@ class MiniMapControl(UIControl):
 
     def get_invalidate_events(self) -> Iterable[Event[object]]:
         """Return a list of `Event` objects."""
-        return []
+        return [self.on_zoom]
 
 
 class MiniMap:
     """A minimap widget displaying minimaps of all buffers in the current tab."""
 
-    def __init__(self, hscale: float = 0.5, vscale: float = 1) -> None:
+    MIN_SCALE = 0.125
+    MAX_SCALE = 2.0
+    SCALE_STEP = 0.125
+
+    def __init__(self, hscale: float = 0.25, vscale: float = 0.5) -> None:
         """Construct the widget.
 
         Args:
             hscale: Horizontal scale factor for the minimap.
             vscale: Vertical scale factor for the minimap.
         """
-        window = Window(
-            MiniMapControl(hscale=hscale, vscale=vscale),  # style="class:face"
+        self.control = MiniMapControl(hscale=hscale, vscale=vscale)
+        self._scale_ratio = hscale / vscale if vscale != 0 else 0.5
+
+        window = Window(self.control)
+
+        zoom_out_button = Button(
+            text="-",
+            on_click=lambda b: self.zoom(-1),
+            show_borders=DiBool(True, False, True, True),
         )
+        zoom_in_button = Button(
+            text="+",
+            on_click=lambda b: self.zoom(1),
+            show_borders=DiBool(True, True, True, False),
+        )
+        zoom_text = Label(
+            text=f"{self.control.vscale * 2}×",
+            width=5,
+            dont_extend_height=True,
+            dont_extend_width=True,
+            align=WindowAlign.RIGHT,
+        )
+
         self.container = HSplit(
-            [VSplit([window, MarginContainer(ScrollbarMargin(), target=window)])],
+            [
+                Box(
+                    VSplit(
+                        [
+                            Box(zoom_text, padding=0, padding_top=1, padding_bottom=1),
+                            FocusedStyle(zoom_out_button),
+                            FocusedStyle(zoom_in_button),
+                        ]
+                    ),
+                    padding_right=0,
+                ),
+                VSplit([window, MarginContainer(ScrollbarMargin(), target=window)]),
+            ],
             style="class:minimap",
         )
+        self.control.on_zoom += lambda c: setattr(
+            zoom_text, "text", f"{self.control.vscale * 2}×"
+        )
+
+    def zoom(self, direction: int) -> None:
+        """Zoom the minimap in or out.
+
+        Args:
+            direction: Positive to zoom in, negative to zoom out.
+        """
+        # Calculate new vscale
+        new_vscale = self.control.vscale + (direction * self.SCALE_STEP)
+        new_vscale = max(self.MIN_SCALE, min(self.MAX_SCALE, new_vscale))
+        # Calculate new hscale maintaining the ratio
+        new_hscale = new_vscale * self._scale_ratio
+        new_hscale = max(self.MIN_SCALE, min(self.MAX_SCALE, new_hscale))
+        # Update scales
+        self.control.vscale = new_vscale
+        self.control.hscale = new_hscale
 
     def __pt_container__(self) -> AnyContainer:
         """Return the widget's container."""
