@@ -968,7 +968,7 @@ class FileBrowserControl(UIControl):
 
             style = "class:row"
             if i % 2:
-                style += " class:alt-row"
+                style += " class:alt"
             if i == self.hovered:
                 style += " class:hovered"
             if i == self.selected:
@@ -1195,7 +1195,8 @@ class FileBrowser:
                                     style="class:face",
                                 ),
                                 MarginContainer(ScrollbarMargin(), target=window),
-                            ]
+                            ],
+                            style="class:input,list",
                         ),
                         border=InsetGrid,
                         style="class:input,inset,border",
@@ -1203,7 +1204,7 @@ class FileBrowser:
                     style_hover="",
                 ),
             ],
-            style="class:file-browser " + style,
+            style=style,
             width=width,
             height=height,
         )

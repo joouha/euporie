@@ -615,18 +615,6 @@ def completion_styles(cp: ColorPalette) -> dict[str, str]:
     return styles
 
 
-def file_browser_styles(cp: ColorPalette) -> dict[str, str]:
-    """Generate file browser styles."""
-    return {
-        "file-browser border": f"fg:{cp.bg.more(0.5)}",
-        "file-browser face": f"bg:{cp.bg.lighter(0.1)}",
-        "file-browser face row alt-row": f"bg:{cp.bg.lighter(0.1).more(0.01)}",
-        "file-browser face row hovered": f"bg:{cp.bg.more(0.2)}",
-        "file-browser face row selection": f"bg:{cp.bg.more(0.3)}",
-        "file-browser face row selection focused": f"bg:{cp.fg} fg:{cp.hl} reverse",
-    }
-
-
 def shortcuts_styles(cp: ColorPalette) -> dict[str, str]:
     """Generate shortcuts display styles."""
     return {
@@ -871,6 +859,12 @@ def input_widget_styles(
         "input select face selection": f"fg:white bg:{cp.hl}",
         "input select face hovered": f"bg:{cp.bg.more(0.2)}",
         "input select face hovered selection": f"fg:white bg:{cp.hl}",
+        "input list border": f"fg:{cp.bg.more(0.5)}",
+        "input list face": f"bg:{cp.bg.lighter(0.1)}",
+        "input list face row alt": f"bg:{cp.bg.lighter(0.1).more(0.01)}",
+        "input list face row hovered": f"bg:{cp.bg.more(0.2)}",
+        "input list face row selection": f"bg:{cp.bg.more(0.3)}",
+        "input list face row selection focused": f"bg:{cp.fg} fg:{cp.hl} reverse",
     }
 
 
@@ -914,7 +908,6 @@ def build_style(
         **dialog_styles(cp),
         **toolbar_styles(cp),
         **completion_styles(cp),
-        **file_browser_styles(cp),
         **shortcuts_styles(cp),
         **palette_styles(cp),
         **pager_styles(cp),
