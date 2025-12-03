@@ -17,6 +17,7 @@ from prompt_toolkit.layout.containers import (
 )
 from prompt_toolkit.layout.controls import UIContent
 from prompt_toolkit.layout.dimension import Dimension, to_dimension
+from prompt_toolkit.layout.layout import walk
 from prompt_toolkit.mouse_events import MouseEvent, MouseEventType, MouseModifier
 
 from euporie.core.layout.cache import CachedContainer
@@ -67,6 +68,7 @@ class ScrollingContainer(Container):
         self._known_sizes_cache: FastDictCache[tuple[int], list[int]] = FastDictCache(
             self._known_sizes, size=2
         )
+        self._selected_children: list[CachedContainer] = []
         self.refresh_children = True
         self.pre_rendered: float | None = None
 
@@ -381,31 +383,48 @@ class ScrollingContainer(Container):
         # Record children which are currently visible
         visible_indices = set()
 
-        layout = get_app().layout
+        app = get_app()
+        layout = app.layout
 
         children = self.all_children()
         last_selected_slice = self._selected_slice
+        selected_children = self._selected_children
+        heights = self.known_sizes
+        total_height = sum(heights)
 
-        # Update the selection and ensure selected child is focused for rendering
+        # Check if a non-selected child now contains the focused window
+        # Only do this is a new selection has not already been selected
+        if self._next_selected_slice is None:
+            current_window = layout.current_window
+            if current_window not in walk(children[self._selected_slice.start]):
+                # If so, ensure the child containing it is selected
+                for i, child in enumerate(children):
+                    for subchild in walk(child):
+                        if subchild is current_window:
+                            self._next_selected_slice = slice(i, i + 1)
+                            self._scroll_next = i, None
+                            break
+                    else:
+                        continue
+                    break
+
+        # Update the selection and ensure the newly selected child is focused for rendering
         if self._next_selected_slice is not None:
             # Request a refresh of the previously selected children
-            for child in self._selected_children:
+            for child in selected_children:
                 child.invalidate()
             # Track which child was selected
             self._selected_slice = self._next_selected_slice
             self._next_selected_slice = None
             # Get the first selected child and focus it
             child = children[self._selected_slice.start]
-            app = get_app()
-            if not app.layout.has_focus(child):
+            if not layout.has_focus(child):
                 try:
-                    app.layout.focus(child)
+                    layout.focus(child)
                 except ValueError:
-                    pass
+                    log.exception("")
 
-        heights = self.known_sizes
-        total_height = sum(heights)
-
+        # Scroll to a specific child
         if self._scroll_next is not None:
             source_idx = last_selected_slice.start
             target_idx, anchor = self._scroll_next
@@ -456,14 +475,14 @@ class ScrollingContainer(Container):
             self.scrolling = 0
 
         # Force the selected children to refresh
+        selected_children.clear()
         selected_indices = self.selected_indices
-        self._selected_children: list[CachedContainer] = []
         for index in selected_indices:
             child = self.get_child(index)
             # Do not bother to re-render selected children if we are scrolling
             if not self.scrolling:
                 child.invalidate()
-            self._selected_children.append(child)
+            selected_children.append(child)
             self.index_positions[index] = None
 
         # Refresh **visible** children if searching
@@ -615,7 +634,6 @@ class ScrollingContainer(Container):
 
         # Ensure the focused child is always in the layout
         visible_indices.add(self._selected_slice.start)
-
         # Update which children will appear in the layout
         self.visible_indices = visible_indices
 
@@ -659,7 +677,6 @@ class ScrollingContainer(Container):
         now = self._known_sizes_cache[render_counter,]
         prev = self._known_sizes_cache[render_counter - 1,]
         return [*now, *prev[len(now) :]]
-        return now
 
     def _known_sizes(self, render_counter: int) -> list[int]:
         """Calculate sizes of children once per render cycle."""
