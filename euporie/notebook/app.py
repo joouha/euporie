@@ -47,6 +47,7 @@ from euporie.core.widgets.logo import logo_micro
 from euporie.core.widgets.menu import MenuBar, MenuItem
 from euporie.core.widgets.pager import Pager
 from euporie.core.widgets.palette import CommandPalette
+from euporie.core.widgets.toc import TableOfContents
 from euporie.notebook.enums import TabMode
 from euporie.notebook.widgets.side_bar import SideBar
 
@@ -255,6 +256,11 @@ class NotebookApp(BaseApp):
                             show_hidden=self.config.filters.show_hidden_files,
                             show_icons=self.config.filters.show_file_icons,
                         ),
+                    ),
+                    (
+                        "Table of Contents",
+                        "",
+                        TableOfContents(),
                     ),
                 ]
             ),

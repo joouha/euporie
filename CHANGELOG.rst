@@ -11,6 +11,7 @@ Upcoming
 Added
 =====
 
+- Added table-of-contents sidebar panel
 - Save sidebar selection and width
 - Add new tab page
 - Add colors to file icons
