@@ -178,7 +178,7 @@ class MiniMapControl(UIControl):
                 minimap_lines = self._minimap_cache[text, self.hscale, self.vscale]
 
                 # Add a separator between buffers, or top border of first buffer minimap
-                sep = "🮀" if lines else "🭻"
+                sep = "🮀" if lines else "▁"
                 lines.append([("class:border", " " + sep * (width - 2))])
                 window_lines.append((window, -1))
 
