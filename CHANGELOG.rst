@@ -11,6 +11,7 @@ Upcoming
 Added
 =====
 
+- Added support for relative line numbers
 - Added code minimap to sidebar
 - Added table-of-contents sidebar panel
 - Save sidebar selection and width

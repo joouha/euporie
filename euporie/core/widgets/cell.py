@@ -215,6 +215,7 @@ class Cell:
             # show_diagnostics=Condition(
             #     lambda: kernel_tab.app.layout.has_focus(self.input_box.buffer)
             # ),
+            relative_line_numbers=self.kernel_tab.app.config.filters.relative_line_numbers,
         )
         self.input_box.buffer.name = self.cell_type
 

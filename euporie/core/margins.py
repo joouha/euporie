@@ -533,10 +533,18 @@ class NumberedMargin(Margin):
         self,
         diagnostics: Report | Callable[[], Report] | None = None,
         show_diagnostics: FilterOrBool = False,
+        relative: FilterOrBool = False,
     ) -> None:
-        """Create a new numbered margin with optional diagnostics."""
+        """Create a new numbered margin with optional diagnostics.
+
+        Args:
+            diagnostics: Diagnostic reports to display in the margin.
+            show_diagnostics: Whether to show diagnostic indicators.
+            relative: Whether to show relative line numbers (distance from cursor).
+        """
         self.diagnostics = diagnostics
         self.show_diagnostics = to_filter(show_diagnostics)
+        self.relative = to_filter(relative)
 
     def get_width(self, get_ui_content: Callable[[], UIContent]) -> int:
         """Return the width of the margin."""
@@ -568,6 +576,9 @@ class NumberedMargin(Margin):
         # Get current line number.
         current_lineno = window_render_info.ui_content.cursor_position.y
 
+        # Check if relative line numbers are enabled
+        relative = self.relative()
+
         # Construct margin.
         result: StyleAndTextTuples = []
         last_lineno: int | None = None
@@ -589,10 +600,14 @@ class NumberedMargin(Margin):
                 linestr = ">"
             # Only display line number if this line is not a continuation of the previous line.
             elif lineno != last_lineno:
-                linestr = str(lineno + 1).rjust(width - 2)
+                if relative and lineno != current_lineno:
+                    # Show distance from current line
+                    linestr = str(abs(lineno - current_lineno)).rjust(width - 2)
+                else:
+                    # Show absolute line number
+                    linestr = str(lineno + 1).rjust(width - 2)
             else:
                 linestr = " " * (width - 2)
-
             if (level_ := diagnostic_lines.get(lineno)) is not None:
                 left = (f"{style},edge,diagnostic-{level_}", "▎")
             else:

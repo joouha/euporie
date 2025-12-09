@@ -142,6 +142,7 @@ class EditorTab(KernelTab):
             inspector=self.inspector,
             on_text_changed=lambda buf: self.on_change(),
             diagnostics=self.report,
+            relative_line_numbers=self.app.config.filters.relative_line_numbers,
         )
 
         return HSplit(

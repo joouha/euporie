@@ -154,6 +154,7 @@ class Console(BaseConsole):
                     kernel_tab=self,
                     language=lambda: self.language,
                     read_only=True,
+                    relative_line_numbers=self.app.config.filters.relative_line_numbers,
                 ),
             ],
         )

@@ -186,6 +186,7 @@ class BaseConsole(KernelTab):
             enable_history_search=True,
             key_bindings=input_kb,
             dont_extend_height=True,
+            relative_line_numbers=self.app.config.filters.relative_line_numbers,
         )
         input_box.buffer.name = "code"
         return input_box

@@ -97,6 +97,19 @@ add_setting(
 )
 
 add_setting(
+    name="relative_line_numbers",
+    group="euporie.core.widgets.inputs",
+    type_=bool,
+    help_="Use relative line numbers",
+    default=False,
+    description="""
+        When set to ``True``, line numbers will be displayed relative to the current
+        cursor line.
+    """,
+    hooks=[lambda x: get_app().refresh()],
+)
+
+add_setting(
     name="autoformat",
     group="euporie.core.widgets.inputs",
     flags=["--autoformat"],

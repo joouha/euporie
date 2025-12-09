@@ -162,6 +162,7 @@ class KernelInput(TextArea):
         diagnostics: Report | Callable[[], Report] | None = None,
         inspector: Inspector | None = None,
         show_diagnostics: FilterOrBool = True,
+        relative_line_numbers: FilterOrBool = False,
     ) -> None:
         """Initiate the cell input box."""
         self.kernel_tab = kernel_tab
@@ -296,6 +297,7 @@ class KernelInput(TextArea):
                 NumberedMargin(
                     diagnostics=_get_diagnostics,
                     show_diagnostics=to_filter(show_diagnostics),
+                    relative=to_filter(relative_line_numbers),
                 ),
                 app.config.filters.line_numbers & self.buffer.multiline,
             ),
