@@ -459,6 +459,7 @@ def base_styles(cp: ColorPalette) -> dict[str, str]:
         "logo": "fg:#dd0000",
         "pattern": f"fg:{cp.bg.more(0.05)}",
         "loading": "fg:#888888",
+        "placeholder": f"fg:{cp.fg.more(0.6)}",
     }
 
 
@@ -838,7 +839,6 @@ def input_widget_styles(
         **borders("input inset border {} focused", cp.hl, inset=True),
         **borders("input inset border {} selection", cp.bg),
         **borders("input inset border {} selection focused", cp.hl),
-        "input text placeholder": f"fg:{cp.fg.more(0.6)}",
         "input text text-area": f"fg:default bg:{cp.bg.lighter(0.1)}",
         **borders("input text border {}", cp.bg, inset=True),
         **borders("input text border {} focused", cp.hl, inset=True),
@@ -861,6 +861,7 @@ def input_widget_styles(
         "input select face hovered selection": f"fg:white bg:{cp.hl}",
         "input list border": f"fg:{cp.bg.more(0.5)}",
         "input list face": f"bg:{cp.bg.lighter(0.1)}",
+        "input list face placeholder": f"fg:{cp.fg.more(0.5)}",
         "input list face row alt": f"bg:{cp.bg.lighter(0.1).more(0.01)}",
         "input list face row hovered": f"bg:{cp.bg.more(0.2)}",
         "input list face row selection": f"bg:{cp.bg.more(0.3)}",

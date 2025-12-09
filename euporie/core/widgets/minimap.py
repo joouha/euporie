@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from textwrap import wrap
 from typing import TYPE_CHECKING
 
 from code_minimap import render as render_minimap
@@ -198,6 +199,23 @@ class MiniMapControl(UIControl):
             if lines:
                 lines.append([("class:border", " " + "🭶" * (width - 2))])
                 window_lines.append((window, -1))
+            else:
+                blank: list[StyleAndTextTuples] = [[]]
+                lines = (
+                    blank
+                    + [
+                        [("bold class:placeholder", x.center(width))]
+                        for x in wrap("No Content", width)
+                    ]
+                    + blank
+                    + [
+                        [("class:placeholder", x.center(width))]
+                        for x in wrap(
+                            "The minimap shows the layout of supported files.",
+                            width,
+                        )
+                    ]
+                )
 
             def get_line(i: int) -> StyleAndTextTuples:
                 return lines[i] if i < len(lines) else [("", " " * width)]
@@ -293,7 +311,10 @@ class MiniMap:
         self.control = MiniMapControl(hscale=hscale, vscale=vscale)
         self._scale_ratio = hscale / vscale if vscale != 0 else 0.5
 
-        window = Window(self.control)
+        window = Window(
+            self.control,
+            # style="class:input,list,face,row"
+        )
 
         zoom_out_button = Button(
             text="-",
@@ -325,7 +346,11 @@ class MiniMap:
                     ),
                     padding_right=0,
                 ),
-                VSplit([window, MarginContainer(ScrollbarMargin(), target=window)]),
+                Box(
+                    VSplit([window, MarginContainer(ScrollbarMargin(), target=window)]),
+                    padding=0,
+                    padding_bottom=1,
+                ),
             ],
             style="class:minimap",
         )

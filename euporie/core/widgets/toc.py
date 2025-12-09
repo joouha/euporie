@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from textwrap import wrap
 from typing import TYPE_CHECKING, NamedTuple
 from weakref import WeakKeyDictionary
 
@@ -79,7 +80,6 @@ class TocControl(UIControl):
 
         self.cursor_position = Point(0, 0)
         self.entries: tuple[TocEntry, ...] = ()
-        self.lines: list[StyleAndTextTuples] = []
 
         self.buffer_window_map: WeakKeyDictionary[Buffer, Window] = WeakKeyDictionary()
         self._buffer_entry_cache: FastDictCache[
@@ -93,7 +93,6 @@ class TocControl(UIControl):
     def reset(self) -> None:
         """Reset the control."""
         # self.entries = ()
-        # self.lines.clear()
         # self._buffer_entry_cache.clear()
 
     def preferred_width(self, max_available_width: int) -> int | None:
@@ -210,6 +209,24 @@ class TocControl(UIControl):
                     ]
                 )
                 alt = not alt
+        if not entries:
+            lines = [
+                [],
+                *(
+                    [("bold class:placeholder", x.center(width))]
+                    for x in wrap("No Headings", width)
+                ),
+                [],
+                *(
+                    [("class:placeholder", x.center(width))]
+                    for x in wrap(
+                        "The table of contents shows headings in "
+                        "notebooks and supported files.",
+                        width,
+                    )
+                ),
+            ]
+
         return lines
 
     def create_content(self, width: int, height: int) -> UIContent:
@@ -226,7 +243,6 @@ class TocControl(UIControl):
 
         def get_content() -> UIContent:
             lines = self._fragment_cache[entries, self.kind, width]
-            self.lines = lines
 
             def get_line(i: int) -> StyleAndTextTuples:
                 return lines[i] if i < len(lines) else [("", " " * width)]
@@ -245,8 +261,9 @@ class TocControl(UIControl):
         if (
             mouse_event.event_type == MouseEventType.MOUSE_DOWN
             and mouse_event.button == MouseButton.LEFT
+            and (y := mouse_event.position.y) < len(self.entries)
         ):
-            entry: TocEntry = self.entries[mouse_event.position.y]
+            entry: TocEntry = self.entries[y]
             if isinstance(control := entry.window.content, BufferControl):
                 buffer: Buffer = control.buffer
                 buffer.selection_state = SelectionState(
