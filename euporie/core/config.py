@@ -190,7 +190,7 @@ class Setting:
         }
         self.nargs = nargs
         self.hidden = to_filter(hidden)
-        self.hooks = hooks
+        self.hooks = hooks or []
         self.cmd_filter = cmd_filter
         self.kwargs = kwargs
 
@@ -382,6 +382,9 @@ class Config:
         # Register commands for each setting
         for setting in self._settings.values():
             self._register_commands(setting)
+            for hook in setting.hooks:
+                event = getattr(self.events, setting.name)
+                event += hook
 
         self._values = {
             # Setting defaults
