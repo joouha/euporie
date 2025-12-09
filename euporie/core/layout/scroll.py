@@ -396,7 +396,9 @@ class ScrollingContainer(Container):
         # Only do this is a new selection has not already been selected
         if self._next_selected_slice is None:
             current_window = layout.current_window
-            if current_window not in walk(children[self._selected_slice.start]):
+            if len(children) < last_selected_slice.start and current_window not in walk(
+                children[last_selected_slice.start]
+            ):
                 # If so, ensure the child containing it is selected
                 for i, child in enumerate(children):
                     for subchild in walk(child):
