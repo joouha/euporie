@@ -60,13 +60,13 @@ repos:
         language: system
         types: [text]
         stages: [pre-commit, pre-push, manual]
-      - id: ruff
+      - id: ruff-check
         name: ruff check
         entry: hatch run hatch-static-analysis:ruff check
         args: ["--fix"]
         language: system
         types: [python]
-      - id: black
+      - id: ruff-format
         name: ruff format
         entry: hatch run hatch-static-analysis:ruff format
         language: system
