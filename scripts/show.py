@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from prompt_toolkit.application.current import set_app
+from euporie.apptk.application.current import set_app
 
 from euporie.core.app.app import BaseApp
 from euporie.core.convert.datum import Datum
@@ -17,7 +17,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable
     from typing import Any
 
-    from prompt_toolkit.eventloop import InputHook
+    from euporie.apptk.eventloop import InputHook
 
 
 class ShowApp(BaseApp):

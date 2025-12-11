@@ -7,9 +7,9 @@ import json
 from pkgutil import resolve_name
 from textwrap import dedent
 
-from prompt_toolkit.formatted_text.base import to_formatted_text
-from prompt_toolkit.layout.dimension import Dimension
-from prompt_toolkit.shortcuts.utils import print_formatted_text
+from euporie.apptk.formatted_text.base import to_formatted_text
+from euporie.apptk.layout.dimension import Dimension
+from euporie.apptk.shortcuts.utils import print_formatted_text
 
 from euporie.core.border import (
     AsciiLine,

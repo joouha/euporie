@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from unittest.mock import Mock
 
-from prompt_toolkit.application.current import get_app_session, set_app
+from euporie.apptk.application.current import get_app_session, set_app
 
 from euporie.core.app.app import BaseApp
 from euporie.core.app.current import get_app
