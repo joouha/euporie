@@ -5,12 +5,12 @@ from __future__ import annotations
 import logging
 
 import pyperclip
-from prompt_toolkit.clipboard.base import Clipboard, ClipboardData
-from prompt_toolkit.clipboard.in_memory import InMemoryClipboard
-from prompt_toolkit.clipboard.pyperclip import (
+from euporie.apptk.clipboard.base import Clipboard, ClipboardData
+from euporie.apptk.clipboard.in_memory import InMemoryClipboard
+from euporie.apptk.clipboard.pyperclip import (
     PyperclipClipboard as PtkPyperclipClipboard,
 )
-from prompt_toolkit.selection import SelectionType
+from euporie.apptk.selection import SelectionType
 
 from euporie.core.app.current import get_app
 

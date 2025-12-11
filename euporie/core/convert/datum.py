@@ -11,8 +11,8 @@ from itertools import pairwise
 from typing import TYPE_CHECKING, Generic, TypeVar
 from weakref import ReferenceType, WeakValueDictionary, finalize, ref
 
-from prompt_toolkit.data_structures import Size
-from prompt_toolkit.layout.containers import WindowAlign
+from euporie.apptk.data_structures import Size
+from euporie.apptk.layout.containers import WindowAlign
 
 from euporie.core.app.current import get_app
 from euporie.core.async_utils import get_or_create_loop, run_coro_sync
@@ -26,8 +26,8 @@ if TYPE_CHECKING:
     from pathlib import Path
     from typing import Any, ClassVar
 
+    from euporie.apptk.formatted_text.base import StyleAndTextTuples
     from PIL.Image import Image as PilImage
-    from prompt_toolkit.formatted_text.base import StyleAndTextTuples
     from rich.console import ConsoleRenderable
 
     from euporie.core.data_structures import DiInt

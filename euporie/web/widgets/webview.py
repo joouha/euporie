@@ -5,14 +5,14 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, cast
 
-from prompt_toolkit.cache import FastDictCache
-from prompt_toolkit.data_structures import Point
-from prompt_toolkit.filters import Condition
-from prompt_toolkit.formatted_text.utils import split_lines
-from prompt_toolkit.layout.containers import Window
-from prompt_toolkit.layout.controls import UIContent, UIControl
-from prompt_toolkit.mouse_events import MouseButton, MouseEvent, MouseEventType
-from prompt_toolkit.utils import Event
+from euporie.apptk.cache import FastDictCache
+from euporie.apptk.data_structures import Point
+from euporie.apptk.filters import Condition
+from euporie.apptk.formatted_text.utils import split_lines
+from euporie.apptk.layout.containers import Window
+from euporie.apptk.layout.controls import UIContent, UIControl
+from euporie.apptk.mouse_events import MouseButton, MouseEvent, MouseEventType
+from euporie.apptk.utils import Event
 from upath import UPath
 
 from euporie.core.app.current import get_app
@@ -35,13 +35,13 @@ if TYPE_CHECKING:
     from pathlib import Path
     from typing import Any
 
-    from prompt_toolkit.formatted_text.base import AnyFormattedText, StyleAndTextTuples
-    from prompt_toolkit.key_binding.key_bindings import (
+    from euporie.apptk.formatted_text.base import AnyFormattedText, StyleAndTextTuples
+    from euporie.apptk.key_binding.key_bindings import (
         KeyBindingsBase,
         NotImplementedOrNone,
     )
-    from prompt_toolkit.layout.controls import GetLinePrefixCallable
-    from prompt_toolkit.layout.mouse_handlers import MouseHandler
+    from euporie.apptk.layout.controls import GetLinePrefixCallable
+    from euporie.apptk.layout.mouse_handlers import MouseHandler
 
 
 log = logging.getLogger(__name__)
@@ -577,11 +577,11 @@ class WebViewControl(UIControl):
 if __name__ == "__main__":
     import sys
 
-    from prompt_toolkit.application.application import Application
-    from prompt_toolkit.key_binding.key_bindings import KeyBindings
-    from prompt_toolkit.layout.layout import Layout
-    from prompt_toolkit.output.color_depth import ColorDepth
-    from prompt_toolkit.styles.style import Style
+    from euporie.apptk.application.application import Application
+    from euporie.apptk.key_binding.key_bindings import KeyBindings
+    from euporie.apptk.layout.layout import Layout
+    from euporie.apptk.output.color_depth import ColorDepth
+    from euporie.apptk.styles.style import Style
 
     from euporie.core.style import HTML_STYLE
     from euporie.core.widgets.display import DisplayWindow

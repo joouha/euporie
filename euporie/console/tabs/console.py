@@ -6,19 +6,19 @@ import logging
 from functools import partial
 from typing import TYPE_CHECKING, cast
 
-from prompt_toolkit.filters.app import (
+from euporie.apptk.filters.app import (
     renderer_height_is_known,
 )
-from prompt_toolkit.filters.base import Condition
-from prompt_toolkit.layout.containers import (
+from euporie.apptk.filters.base import Condition
+from euporie.apptk.layout.containers import (
     ConditionalContainer,
     FloatContainer,
     HSplit,
     VSplit,
     Window,
 )
-from prompt_toolkit.layout.controls import FormattedTextControl
-from prompt_toolkit.layout.layout import Layout
+from euporie.apptk.layout.controls import FormattedTextControl
+from euporie.apptk.layout.layout import Layout
 
 from euporie.core.commands import get_cmd
 from euporie.core.format import LspFormatter
@@ -37,10 +37,10 @@ if TYPE_CHECKING:
     from pathlib import Path
     from typing import Any
 
-    from prompt_toolkit.application.application import Application
-    from prompt_toolkit.buffer import Buffer
-    from prompt_toolkit.formatted_text import AnyFormattedText
-    from prompt_toolkit.layout.containers import Container, Float
+    from euporie.apptk.application.application import Application
+    from euporie.apptk.buffer import Buffer
+    from euporie.apptk.formatted_text import AnyFormattedText
+    from euporie.apptk.layout.containers import Container, Float
 
     from euporie.core.app.app import BaseApp
     from euporie.core.lsp import LspClient

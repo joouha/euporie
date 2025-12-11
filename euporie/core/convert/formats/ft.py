@@ -6,8 +6,8 @@ import logging
 from functools import partial
 from typing import TYPE_CHECKING
 
-from prompt_toolkit.cache import SimpleCache
-from prompt_toolkit.formatted_text import to_formatted_text
+from euporie.apptk.cache import SimpleCache
+from euporie.apptk.formatted_text import to_formatted_text
 
 from euporie.core.convert.registry import register
 from euporie.core.ft.ansi import ANSI
@@ -17,7 +17,7 @@ from euporie.core.lexers import detect_lexer
 if TYPE_CHECKING:
     from typing import Any
 
-    from prompt_toolkit.formatted_text.base import StyleAndTextTuples
+    from euporie.apptk.formatted_text.base import StyleAndTextTuples
 
     from euporie.core.convert.datum import Datum
     from euporie.core.ft.html import HTML
@@ -96,7 +96,7 @@ async def ansi_to_ft(
             and (lexer := detect_lexer(markup, path=datum.path)) is not None
             and lexer.name in _WHITELISTED_LEXERS
         ):
-            from prompt_toolkit.lexers.pygments import _token_cache
+            from euporie.apptk.lexers.pygments import _token_cache
 
             log.debug('Lexing output using "%s" lexer', lexer.name)
             ft = [

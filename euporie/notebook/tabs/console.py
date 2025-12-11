@@ -6,10 +6,10 @@ import logging
 from functools import partial
 from typing import TYPE_CHECKING, Any
 
-from prompt_toolkit.filters.base import Condition
-from prompt_toolkit.layout.containers import ConditionalContainer
-from prompt_toolkit.layout.controls import FormattedTextControl
-from prompt_toolkit.layout.dimension import Dimension
+from euporie.apptk.filters.base import Condition
+from euporie.apptk.layout.containers import ConditionalContainer
+from euporie.apptk.layout.controls import FormattedTextControl
+from euporie.apptk.layout.dimension import Dimension
 
 from euporie.core.border import InsetGrid
 from euporie.core.layout.containers import HSplit, VSplit, Window
@@ -25,8 +25,8 @@ from euporie.core.widgets.layout import Border
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from prompt_toolkit.buffer import Buffer
-    from prompt_toolkit.layout.containers import Container
+    from euporie.apptk.buffer import Buffer
+    from euporie.apptk.layout.containers import Container
 
     from euporie.core.app.app import BaseApp
 

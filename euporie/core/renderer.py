@@ -1,4 +1,4 @@
-"""Extended version of prompt_toolkit's renderer."""
+"""Extended version of euporie.apptk's renderer."""
 
 from __future__ import annotations
 
@@ -6,12 +6,12 @@ import logging
 from hashlib import md5
 from typing import TYPE_CHECKING
 
-from prompt_toolkit.data_structures import Point, Size
-from prompt_toolkit.filters import to_filter
-from prompt_toolkit.layout.mouse_handlers import MouseHandlers
-from prompt_toolkit.layout.screen import Char
-from prompt_toolkit.renderer import Renderer as PtkRenderer
-from prompt_toolkit.renderer import _StyleStringHasStyleCache, _StyleStringToAttrsCache
+from euporie.apptk.data_structures import Point, Size
+from euporie.apptk.filters import to_filter
+from euporie.apptk.layout.mouse_handlers import MouseHandlers
+from euporie.apptk.layout.screen import Char
+from euporie.apptk.renderer import Renderer as PtkRenderer
+from euporie.apptk.renderer import _StyleStringHasStyleCache, _StyleStringToAttrsCache
 
 from euporie.core.io import Vt100_Output
 from euporie.core.layout.screen import BoundedWritePosition, Screen
@@ -20,13 +20,13 @@ if TYPE_CHECKING:
     from collections.abc import Callable
     from typing import Any
 
-    from prompt_toolkit.application import Application
-    from prompt_toolkit.filters import FilterOrBool
-    from prompt_toolkit.layout.layout import Layout
-    from prompt_toolkit.layout.screen import Char
-    from prompt_toolkit.layout.screen import Screen as PtkScreen
-    from prompt_toolkit.output import ColorDepth, Output
-    from prompt_toolkit.styles import BaseStyle
+    from euporie.apptk.application import Application
+    from euporie.apptk.filters import FilterOrBool
+    from euporie.apptk.layout.layout import Layout
+    from euporie.apptk.layout.screen import Char
+    from euporie.apptk.layout.screen import Screen as PtkScreen
+    from euporie.apptk.output import ColorDepth, Output
+    from euporie.apptk.styles import BaseStyle
 
 __all__ = ["Renderer"]
 

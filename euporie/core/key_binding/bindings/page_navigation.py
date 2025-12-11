@@ -5,13 +5,13 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-from prompt_toolkit.application.current import get_app
-from prompt_toolkit.filters import buffer_has_focus
-from prompt_toolkit.key_binding.bindings.page_navigation import (
+from euporie.apptk.application.current import get_app
+from euporie.apptk.filters import buffer_has_focus
+from euporie.apptk.key_binding.bindings.page_navigation import (
     load_emacs_page_navigation_bindings,
     load_vi_page_navigation_bindings,
 )
-from prompt_toolkit.key_binding.key_bindings import (
+from euporie.apptk.key_binding.key_bindings import (
     ConditionalKeyBindings,
     merge_key_bindings,
 )
@@ -24,7 +24,7 @@ from euporie.core.key_binding.registry import (
 )
 
 if TYPE_CHECKING:
-    from prompt_toolkit.key_binding import KeyBindingsBase, KeyPressEvent
+    from euporie.apptk.key_binding import KeyBindingsBase, KeyPressEvent
 
     from euporie.core.config import Config
 

@@ -8,7 +8,7 @@ from base64 import standard_b64decode
 from functools import partial
 from typing import TYPE_CHECKING
 
-from prompt_toolkit.filters import Never
+from euporie.apptk.filters import Never
 
 from euporie.core.comm.registry import open_comm
 from euporie.core.io import edit_in_editor
@@ -24,8 +24,8 @@ if TYPE_CHECKING:
     from pathlib import Path
     from typing import Any
 
-    from prompt_toolkit.filters import Filter
-    from prompt_toolkit.layout.containers import AnyContainer, Window
+    from euporie.apptk.filters import Filter
+    from euporie.apptk.layout.containers import AnyContainer, Window
 
     from euporie.core.app.app import BaseApp
     from euporie.core.comm.base import Comm

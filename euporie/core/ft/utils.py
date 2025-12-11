@@ -6,13 +6,13 @@ import re
 from enum import Enum
 from typing import TYPE_CHECKING, cast
 
-from prompt_toolkit.formatted_text.utils import (
+from euporie.apptk.formatted_text.utils import (
     fragment_list_to_text,
     split_lines,
     to_plain_text,
 )
-from prompt_toolkit.layout.utils import explode_text_fragments
-from prompt_toolkit.utils import get_cwidth
+from euporie.apptk.layout.utils import explode_text_fragments
+from euporie.apptk.utils import get_cwidth
 from pygments.lexers import get_lexer_by_name
 from pygments.util import ClassNotFound
 
@@ -22,7 +22,7 @@ from euporie.core.data_structures import DiBool, DiInt, DiStr
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
-    from prompt_toolkit.formatted_text.base import (
+    from euporie.apptk.formatted_text.base import (
         OneStyleAndTextTuple,
         StyleAndTextTuples,
     )
@@ -781,7 +781,7 @@ def add_border(
 
 def lex(ft: StyleAndTextTuples, lexer_name: str) -> StyleAndTextTuples:
     """Format formatted text using a named :py:mod:`pygments` lexer."""
-    from prompt_toolkit.lexers.pygments import _token_cache
+    from euporie.apptk.lexers.pygments import _token_cache
 
     try:
         lexer = get_lexer_by_name(lexer_name)

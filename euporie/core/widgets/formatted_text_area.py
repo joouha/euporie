@@ -5,24 +5,24 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-from prompt_toolkit.filters import to_filter
-from prompt_toolkit.formatted_text import (
+from euporie.apptk.filters import to_filter
+from euporie.apptk.formatted_text import (
     fragment_list_to_text,
     split_lines,
     to_formatted_text,
 )
-from prompt_toolkit.layout.margins import ConditionalMargin
-from prompt_toolkit.layout.processors import DynamicProcessor, Processor, Transformation
-from prompt_toolkit.widgets import TextArea
+from euporie.apptk.layout.margins import ConditionalMargin
+from euporie.apptk.layout.processors import DynamicProcessor, Processor, Transformation
+from euporie.apptk.widgets import TextArea
 
 from euporie.core.margins import NumberedMargin
 
 if TYPE_CHECKING:
     from typing import Any
 
-    from prompt_toolkit.filters import FilterOrBool
-    from prompt_toolkit.formatted_text import AnyFormattedText, StyleAndTextTuples
-    from prompt_toolkit.layout.processors import TransformationInput
+    from euporie.apptk.filters import FilterOrBool
+    from euporie.apptk.formatted_text import AnyFormattedText, StyleAndTextTuples
+    from euporie.apptk.layout.processors import TransformationInput
 
 log = logging.getLogger(__name__)
 
@@ -76,8 +76,8 @@ class FormattedTextArea(TextArea):
         Args:
             formatted_text: A list of `(style, text)` tuples to display.
             line_numbers: Determines if line numbers are shown,
-            args: Arguments to pass to `prompt_toolkit.widgets.TextArea`.
-            kwargs: Key-word arguments to pass to `prompt_toolkit.widgets.TextArea`.
+            args: Arguments to pass to `euporie.apptk.widgets.TextArea`.
+            kwargs: Key-word arguments to pass to `euporie.apptk.widgets.TextArea`.
 
         """
         self._formatted_text = formatted_text

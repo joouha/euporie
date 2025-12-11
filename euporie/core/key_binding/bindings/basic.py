@@ -6,7 +6,7 @@ import logging
 from functools import partial
 from typing import TYPE_CHECKING
 
-from prompt_toolkit.filters import (
+from euporie.apptk.filters import (
     buffer_has_focus,
 )
 
@@ -25,7 +25,7 @@ from euporie.core.key_binding.registry import (
 from euporie.core.key_binding.utils import if_no_repeat
 
 if TYPE_CHECKING:
-    from prompt_toolkit.key_binding import KeyBindingsBase, KeyPressEvent
+    from euporie.apptk.key_binding import KeyBindingsBase, KeyPressEvent
 
     from euporie.core.config import Config
 

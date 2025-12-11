@@ -6,9 +6,9 @@ import asyncio
 import logging
 from typing import TYPE_CHECKING
 
-from prompt_toolkit.filters import Condition
-from prompt_toolkit.layout.containers import HSplit, VSplit
-from prompt_toolkit.layout.dimension import Dimension
+from euporie.apptk.filters import Condition
+from euporie.apptk.layout.containers import HSplit, VSplit
+from euporie.apptk.layout.dimension import Dimension
 from upath import UPath
 
 from euporie.core.app.current import get_app
@@ -26,7 +26,7 @@ if TYPE_CHECKING:
     from pathlib import Path
     from typing import Any, ClassVar
 
-    from prompt_toolkit.layout.containers import AnyContainer
+    from euporie.apptk.layout.containers import AnyContainer
 
     from euporie.core.app.app import BaseApp
     from euporie.core.bars.status import StatusBarFields
@@ -125,7 +125,7 @@ class WebTab(Tab):
 
         def _select_url() -> None:
             """Select all in url bar when it gains focus."""
-            from prompt_toolkit.selection import SelectionState
+            from euporie.apptk.selection import SelectionState
 
             buffer = self.url_bar.buffer
             buffer.selection_state = SelectionState(0)

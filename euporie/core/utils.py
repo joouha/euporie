@@ -7,15 +7,15 @@ from functools import cache
 from itertools import chain
 from typing import TYPE_CHECKING, TypeVar, overload
 
-from prompt_toolkit.mouse_events import MouseButton, MouseEventType
+from euporie.apptk.mouse_events import MouseButton, MouseEventType
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
     from types import ModuleType
 
-    from prompt_toolkit.key_binding.key_bindings import NotImplementedOrNone
-    from prompt_toolkit.layout.mouse_handlers import MouseHandler
-    from prompt_toolkit.mouse_events import MouseEvent
+    from euporie.apptk.key_binding.key_bindings import NotImplementedOrNone
+    from euporie.apptk.layout.mouse_handlers import MouseHandler
+    from euporie.apptk.mouse_events import MouseEvent
 
 T = TypeVar("T")
 

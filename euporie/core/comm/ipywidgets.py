@@ -13,9 +13,9 @@ from decimal import Decimal
 from functools import partial
 from typing import TYPE_CHECKING
 
-from prompt_toolkit.filters.base import Condition
-from prompt_toolkit.layout.containers import HSplit, VSplit
-from prompt_toolkit.layout.processors import BeforeInput
+from euporie.apptk.filters.base import Condition
+from euporie.apptk.layout.containers import HSplit, VSplit
+from euporie.apptk.layout.processors import BeforeInput
 
 from euporie.core.border import InsetGrid
 from euporie.core.comm.base import Comm, CommView
@@ -49,9 +49,9 @@ if TYPE_CHECKING:
     from collections.abc import Iterable, MutableSequence, Sequence
     from typing import Any
 
-    from prompt_toolkit.buffer import Buffer
-    from prompt_toolkit.formatted_text.base import AnyFormattedText
-    from prompt_toolkit.layout.containers import AnyContainer, _Split
+    from euporie.apptk.buffer import Buffer
+    from euporie.apptk.formatted_text.base import AnyFormattedText
+    from euporie.apptk.layout.containers import AnyContainer, _Split
 
     from euporie.core.tabs.kernel import KernelTab
     from euporie.core.widgets.cell_outputs import OutputParent
@@ -321,7 +321,7 @@ class LayoutIpyWidgetComm(IpyWidgetComm, metaclass=ABCMeta):
         ]
 
     def box_style(self) -> str:
-        """Convert the ipywidget box_style to a prompt_toolkit style string."""
+        """Convert the ipywidget box_style to a euporie.apptk style string."""
         if style := self.data["state"].get("box_style", ""):
             return f"class:{style}"
         return "class:default"
@@ -469,7 +469,7 @@ class ButtonModel(IpyWidgetComm):
         return text
 
     def button_style(self) -> str:
-        """Convert the ipywidget button_style to a prompt_toolkit style string."""
+        """Convert the ipywidget button_style to a euporie.apptk style string."""
         if style := self.data["state"].get("button_style", ""):
             return f"class:ipywidget,{style}"
         return "class:ipywidget"
@@ -895,7 +895,7 @@ class ProgressIpyWidgetComm(IpyWidgetComm, metaclass=ABCMeta):
         )
 
     def bar_style(self) -> str:
-        """Convert the ipywidget ``bar_style`` to a prompt_toolkit style string."""
+        """Convert the ipywidget ``bar_style`` to a euporie.apptk style string."""
         if style := self.data["state"].get("bar_style", ""):
             return f"class:{style}"
         return ""
@@ -956,7 +956,7 @@ class ToggleButtonModel(ToggleableIpyWidgetComm):
         return text
 
     def button_style(self) -> str:
-        """Convert the ipywidget button_style to a prompt_toolkit style string."""
+        """Convert the ipywidget button_style to a euporie.apptk style string."""
         if style := self.data["state"].get("button_style", ""):
             return f"class:ipywidget,{style}"
         return "class:ipywidget"
@@ -1231,7 +1231,7 @@ class ToggleButtonsModel(IpyWidgetComm):
         buttons.labels = [partial(self.get_label, i) for i in range(len(options))]
 
     def button_style(self) -> str:
-        """Convert the ipywidget button_style to a prompt_toolkit style string."""
+        """Convert the ipywidget button_style to a euporie.apptk style string."""
         if style := self.data["state"].get("button_style", ""):
             return f"class:ipywidget,{style}"
         return "class:ipywidget"

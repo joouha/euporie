@@ -7,17 +7,17 @@ import re
 from functools import partial
 from typing import TYPE_CHECKING
 
-from prompt_toolkit.buffer import indent, unindent
-from prompt_toolkit.document import Document
-from prompt_toolkit.filters import (
+from euporie.apptk.buffer import indent, unindent
+from euporie.apptk.document import Document
+from euporie.apptk.filters import (
     buffer_has_focus,
     has_selection,
     in_paste_mode,
     is_multiline,
     shift_selection_mode,
 )
-from prompt_toolkit.key_binding import ConditionalKeyBindings
-from prompt_toolkit.key_binding.bindings.named_commands import (
+from euporie.apptk.key_binding import ConditionalKeyBindings
+from euporie.apptk.key_binding.bindings.named_commands import (
     accept_line,
     backward_delete_char,
     backward_word,
@@ -27,7 +27,7 @@ from prompt_toolkit.key_binding.bindings.named_commands import (
     forward_word,
     get_by_name,
 )
-from prompt_toolkit.key_binding.bindings.scroll import (
+from euporie.apptk.key_binding.bindings.scroll import (
     scroll_backward,
     scroll_forward,
     scroll_half_page_down,
@@ -35,8 +35,8 @@ from prompt_toolkit.key_binding.bindings.scroll import (
     scroll_one_line_down,
     scroll_one_line_up,
 )
-from prompt_toolkit.keys import Keys
-from prompt_toolkit.selection import SelectionState, SelectionType
+from euporie.apptk.keys import Keys
+from euporie.apptk.selection import SelectionState, SelectionType
 
 from euporie.core.app.current import get_app
 from euporie.core.commands import add_cmd, get_cmd
@@ -61,7 +61,7 @@ from euporie.core.key_binding.registry import (
 from euporie.core.key_binding.utils import if_no_repeat
 
 if TYPE_CHECKING:
-    from prompt_toolkit.key_binding import KeyBindingsBase, KeyPressEvent
+    from euporie.apptk.key_binding import KeyBindingsBase, KeyPressEvent
 
     from euporie.core.config import Config
 

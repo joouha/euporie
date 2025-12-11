@@ -5,15 +5,15 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-from prompt_toolkit.cache import FastDictCache
-from prompt_toolkit.filters import has_focus
-from prompt_toolkit.layout.containers import (
+from euporie.apptk.cache import FastDictCache
+from euporie.apptk.filters import has_focus
+from euporie.apptk.layout.containers import (
     Container,
     to_container,
 )
-from prompt_toolkit.layout.dimension import Dimension
-from prompt_toolkit.layout.screen import Char, Screen, WritePosition
-from prompt_toolkit.mouse_events import MouseEventType
+from euporie.apptk.layout.dimension import Dimension
+from euporie.apptk.layout.screen import Char, Screen, WritePosition
+from euporie.apptk.mouse_events import MouseEventType
 
 from euporie.core.app.current import get_app
 from euporie.core.border import ThinLine
@@ -22,12 +22,12 @@ from euporie.core.style import ColorPaletteColor
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-    from prompt_toolkit.key_binding.key_bindings import (
+    from euporie.apptk.key_binding.key_bindings import (
         NotImplementedOrNone,
     )
-    from prompt_toolkit.layout.containers import AnyContainer
-    from prompt_toolkit.layout.mouse_handlers import MouseHandlers
-    from prompt_toolkit.mouse_events import MouseEvent
+    from euporie.apptk.layout.containers import AnyContainer
+    from euporie.apptk.layout.mouse_handlers import MouseHandlers
+    from euporie.apptk.mouse_events import MouseEvent
 
     from euporie.core.style import ColorPalette
 
@@ -94,15 +94,15 @@ class Line(Container):
         """Draw a continuous line in the ``write_position`` area.
 
         Args:
-            screen: The :class:`~prompt_toolkit.layout.screen.Screen` class to which
+            screen: The :class:`~euporie.apptk.layout.screen.Screen` class to which
                 the output has to be written.
-            mouse_handlers: :class:`prompt_toolkit.layout.mouse_handlers.MouseHandlers`.
-            write_position: A :class:`prompt_toolkit.layout.screen.WritePosition` object
+            mouse_handlers: :class:`euporie.apptk.layout.mouse_handlers.MouseHandlers`.
+            write_position: A :class:`euporie.apptk.layout.screen.WritePosition` object
                 defining where this container should be drawn.
             erase_bg: If true, the background will be erased prior to drawing.
             parent_style: Style string to pass to the :class:`.Window` object. This will
                 be applied to all content of the windows. :class:`.VSplit` and
-                :class:`prompt_toolkit.layout.containers.HSplit` can use it to pass
+                :class:`euporie.apptk.layout.containers.HSplit` can use it to pass
                 their style down to the windows that they contain.
             z_index: Used for propagating z_index from parent to child.
 
@@ -158,15 +158,15 @@ class Pattern(Container):
         """Fill the whole area of write_position with a pattern.
 
         Args:
-            screen: The :class:`~prompt_toolkit.layout.screen.Screen` class to which
+            screen: The :class:`~euporie.apptk.layout.screen.Screen` class to which
                 the output has to be written.
-            mouse_handlers: :class:`prompt_toolkit.layout.mouse_handlers.MouseHandlers`.
-            write_position: A :class:`prompt_toolkit.layout.screen.WritePosition` object
+            mouse_handlers: :class:`euporie.apptk.layout.mouse_handlers.MouseHandlers`.
+            write_position: A :class:`euporie.apptk.layout.screen.WritePosition` object
                 defining where this container should be drawn.
             erase_bg: If true, the background will be erased prior to drawing.
             parent_style: Style string to pass to the :class:`.Window` object. This will
                 be applied to all content of the windows. :class:`.VSplit` and
-                :class:`prompt_toolkit.layout.containers.HSplit` can use it to pass
+                :class:`euporie.apptk.layout.containers.HSplit` can use it to pass
                 their style down to the windows that they contain.
             z_index: Used for propagating z_index from parent to child.
 

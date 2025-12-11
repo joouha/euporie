@@ -6,7 +6,7 @@ from enum import Enum
 from functools import lru_cache, total_ordering
 from typing import NamedTuple
 
-from prompt_toolkit.cache import FastDictCache
+from euporie.apptk.cache import FastDictCache
 
 
 class GridPart(Enum):
@@ -837,12 +837,12 @@ class GridStyle:
 
     @property
     def HORIZONTAL(self) -> str:
-        """For compatibility with :class:`prompt_toolkit.widgets.base.Border`."""
+        """For compatibility with :class:`euporie.apptk.widgets.base.Border`."""
         return self.SPLIT_MID
 
     @property
     def VERTICAL(self) -> str:
-        """For compatibility with :class:`prompt_toolkit.widgets.base.Border`."""
+        """For compatibility with :class:`euporie.apptk.widgets.base.Border`."""
         return self.MID_SPLIT
 
     def __getattr__(self, value: str) -> str:

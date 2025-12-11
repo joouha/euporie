@@ -7,9 +7,9 @@ from colorsys import hls_to_rgb, rgb_to_hls
 from functools import cache, partial
 from typing import TYPE_CHECKING
 
-from prompt_toolkit.cache import SimpleCache
-from prompt_toolkit.styles.defaults import default_ui_style
-from prompt_toolkit.styles.style import Style
+from euporie.apptk.cache import SimpleCache
+from euporie.apptk.styles.defaults import default_ui_style
+from euporie.apptk.styles.style import Style
 from pygments.styles import get_style_by_name as pyg_get_style_by_name
 
 if TYPE_CHECKING:

@@ -7,15 +7,15 @@ import logging
 from abc import ABCMeta
 from typing import TYPE_CHECKING, cast
 
-from prompt_toolkit.data_structures import Point
-from prompt_toolkit.filters import FilterOrBool, to_filter
-from prompt_toolkit.layout.containers import ScrollOffsets, WindowRenderInfo
-from prompt_toolkit.layout.controls import FormattedTextControl
-from prompt_toolkit.layout.dimension import Dimension
-from prompt_toolkit.layout.margins import Margin
-from prompt_toolkit.layout.screen import WritePosition
-from prompt_toolkit.mouse_events import MouseButton, MouseEventType
-from prompt_toolkit.mouse_events import MouseEvent as PtkMouseEvent
+from euporie.apptk.data_structures import Point
+from euporie.apptk.filters import FilterOrBool, to_filter
+from euporie.apptk.layout.containers import ScrollOffsets, WindowRenderInfo
+from euporie.apptk.layout.controls import FormattedTextControl
+from euporie.apptk.layout.dimension import Dimension
+from euporie.apptk.layout.margins import Margin
+from euporie.apptk.layout.screen import WritePosition
+from euporie.apptk.mouse_events import MouseButton, MouseEventType
+from euporie.apptk.mouse_events import MouseEvent as PtkMouseEvent
 
 from euporie.core.app.current import get_app
 from euporie.core.layout.containers import Window
@@ -25,15 +25,15 @@ if TYPE_CHECKING:
     from collections.abc import Callable
     from typing import Protocol
 
-    from prompt_toolkit.formatted_text import StyleAndTextTuples
-    from prompt_toolkit.key_binding.key_bindings import (
+    from euporie.apptk.formatted_text import StyleAndTextTuples
+    from euporie.apptk.key_binding.key_bindings import (
         KeyBindingsBase,
         NotImplementedOrNone,
     )
-    from prompt_toolkit.layout.containers import Container
-    from prompt_toolkit.layout.controls import UIContent
-    from prompt_toolkit.layout.mouse_handlers import MouseHandlers
-    from prompt_toolkit.layout.screen import Screen
+    from euporie.apptk.layout.containers import Container
+    from euporie.apptk.layout.controls import UIContent
+    from euporie.apptk.layout.mouse_handlers import MouseHandlers
+    from euporie.apptk.layout.screen import Screen
 
     from euporie.core.diagnostics import Report
 
@@ -657,7 +657,7 @@ class OverflowMargin(Margin):
         self, window_render_info: WindowRenderInfo, width: int, height: int
     ) -> StyleAndTextTuples:
         """Generate the margin's content."""
-        from prompt_toolkit.formatted_text.utils import fragment_list_width
+        from euporie.apptk.formatted_text.utils import fragment_list_width
 
         result: StyleAndTextTuples = []
         if not window_render_info.wrap_lines:

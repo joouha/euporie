@@ -10,12 +10,12 @@ from functools import lru_cache, partial
 from typing import TYPE_CHECKING
 from weakref import WeakKeyDictionary
 
-from prompt_toolkit.auto_suggest import DummyAutoSuggest, DynamicAutoSuggest
-from prompt_toolkit.completion.base import (
+from euporie.apptk.auto_suggest import DummyAutoSuggest, DynamicAutoSuggest
+from euporie.apptk.completion.base import (
     DynamicCompleter,
     _MergedCompleter,
 )
-from prompt_toolkit.history import DummyHistory, InMemoryHistory
+from euporie.apptk.history import DummyHistory, InMemoryHistory
 
 from euporie.core.app.current import get_app
 from euporie.core.comm.registry import open_comm
@@ -39,9 +39,9 @@ if TYPE_CHECKING:
     from pathlib import Path
     from typing import Any
 
-    from prompt_toolkit.auto_suggest import AutoSuggest
-    from prompt_toolkit.completion.base import Completer
-    from prompt_toolkit.history import History
+    from euporie.apptk.auto_suggest import AutoSuggest
+    from euporie.apptk.completion.base import Completer
+    from euporie.apptk.history import History
 
     from euporie.core.app.app import BaseApp
     from euporie.core.comm.base import Comm
@@ -66,7 +66,7 @@ def autosuggest_factory(kind: str, history: History) -> AutoSuggest:
 
         return SimpleHistoryAutoSuggest(history)
     else:
-        from prompt_toolkit.auto_suggest import DummyAutoSuggest
+        from euporie.apptk.auto_suggest import DummyAutoSuggest
 
         return DummyAutoSuggest()
 

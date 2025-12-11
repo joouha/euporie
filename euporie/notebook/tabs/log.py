@@ -4,10 +4,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from prompt_toolkit.filters import Condition, has_focus
-from prompt_toolkit.layout.containers import HSplit, VSplit
-from prompt_toolkit.layout.dimension import Dimension
-from prompt_toolkit.widgets import SearchToolbar
+from euporie.apptk.filters import Condition, has_focus
+from euporie.apptk.layout.containers import HSplit, VSplit
+from euporie.apptk.layout.dimension import Dimension
+from euporie.apptk.widgets import SearchToolbar
 
 from euporie.core.log import LOG_QUEUE, QueueHandler
 from euporie.core.margins import MarginContainer, ScrollbarMargin
@@ -19,7 +19,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable
     from pathlib import Path
 
-    from prompt_toolkit.formatted_text.base import FormattedText
+    from euporie.apptk.formatted_text.base import FormattedText
 
     from euporie.core.app.app import BaseApp
 

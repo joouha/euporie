@@ -5,9 +5,9 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-from prompt_toolkit.cache import FastDictCache
-from prompt_toolkit.data_structures import Point
-from prompt_toolkit.key_binding.bindings.mouse import (
+from euporie.apptk.cache import FastDictCache
+from euporie.apptk.data_structures import Point
+from euporie.apptk.key_binding.bindings.mouse import (
     MOUSE_MOVE,
     UNKNOWN_BUTTON,
     UNKNOWN_MODIFIER,
@@ -16,18 +16,18 @@ from prompt_toolkit.key_binding.bindings.mouse import (
     urxvt_mouse_events,
     xterm_sgr_mouse_events,
 )
-from prompt_toolkit.key_binding.bindings.mouse import (
+from euporie.apptk.key_binding.bindings.mouse import (
     load_mouse_bindings as load_ptk_mouse_bindings,
 )
-from prompt_toolkit.keys import Keys
-from prompt_toolkit.renderer import HeightIsUnknownError
+from euporie.apptk.keys import Keys
+from euporie.apptk.renderer import HeightIsUnknownError
 
 from euporie.core.app.app import BaseApp
 from euporie.core.mouse_events import MouseEvent, RelativePosition
 
 if TYPE_CHECKING:
-    from prompt_toolkit.key_binding.key_bindings import NotImplementedOrNone
-    from prompt_toolkit.key_binding.key_processor import KeyPressEvent
+    from euporie.apptk.key_binding.key_bindings import NotImplementedOrNone
+    from euporie.apptk.key_binding.key_processor import KeyPressEvent
 
 log = logging.getLogger(__name__)
 

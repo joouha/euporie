@@ -9,7 +9,7 @@ import os
 from pathlib import Path
 from typing import TYPE_CHECKING, NamedTuple
 
-from prompt_toolkit.utils import Event
+from euporie.apptk.utils import Event
 
 from euporie.core.async_utils import get_or_create_loop, run_coro_async, run_coro_sync
 

@@ -5,20 +5,20 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, cast
 
-from prompt_toolkit.layout.processors import (
+from euporie.apptk.layout.processors import (
     AppendAutoSuggestion,
     Processor,
     Transformation,
 )
-from prompt_toolkit.layout.utils import explode_text_fragments
-from prompt_toolkit.utils import get_cwidth
+from euporie.apptk.layout.utils import explode_text_fragments
+from euporie.apptk.utils import get_cwidth
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-    from prompt_toolkit.data_structures import Point
-    from prompt_toolkit.formatted_text.base import StyleAndTextTuples
-    from prompt_toolkit.layout.processors import TransformationInput
+    from euporie.apptk.data_structures import Point
+    from euporie.apptk.formatted_text.base import StyleAndTextTuples
+    from euporie.apptk.layout.processors import TransformationInput
 
     from euporie.core.diagnostics import Report
 

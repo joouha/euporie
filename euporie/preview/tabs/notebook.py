@@ -5,11 +5,11 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-from prompt_toolkit.layout.containers import (
+from euporie.apptk.layout.containers import (
     ConditionalContainer,
     DynamicContainer,
 )
-from prompt_toolkit.layout.dimension import Dimension
+from euporie.apptk.layout.dimension import Dimension
 
 from euporie.core.layout.containers import VSplit, Window
 from euporie.core.layout.print import PrintingContainer
@@ -22,9 +22,9 @@ if TYPE_CHECKING:
     from pathlib import Path
     from typing import Any
 
-    from prompt_toolkit.application.application import Application
-    from prompt_toolkit.formatted_text.base import StyleAndTextTuples
-    from prompt_toolkit.layout.containers import AnyContainer
+    from euporie.apptk.application.application import Application
+    from euporie.apptk.formatted_text.base import StyleAndTextTuples
+    from euporie.apptk.layout.containers import AnyContainer
 
     from euporie.core.app.app import BaseApp
     from euporie.core.comm.base import Comm

@@ -8,11 +8,11 @@ from base64 import b64encode
 from functools import lru_cache
 from typing import TYPE_CHECKING, cast
 
-from prompt_toolkit.input import vt100_parser
-from prompt_toolkit.input.ansi_escape_sequences import ANSI_SEQUENCES
-from prompt_toolkit.input.base import DummyInput, _dummy_context_manager
-from prompt_toolkit.output.color_depth import ColorDepth
-from prompt_toolkit.output.vt100 import Vt100_Output as PtkVt100_Output
+from euporie.apptk.input import vt100_parser
+from euporie.apptk.input.ansi_escape_sequences import ANSI_SEQUENCES
+from euporie.apptk.input.base import DummyInput, _dummy_context_manager
+from euporie.apptk.output.color_depth import ColorDepth
+from euporie.apptk.output.vt100 import Vt100_Output as PtkVt100_Output
 
 from euporie.core.app.current import get_app
 from euporie.core.filters import in_screen, in_tmux
@@ -22,7 +22,7 @@ if TYPE_CHECKING:
     from contextlib import AbstractContextManager
     from typing import IO, Any, TextIO
 
-    from prompt_toolkit.keys import Keys
+    from euporie.apptk.keys import Keys
 
     from euporie.core.config import Config
 
@@ -287,7 +287,7 @@ def edit_in_editor(filename: str, line_number: int = 0) -> None:
     import shlex
     import subprocess
 
-    from prompt_toolkit.application.run_in_terminal import run_in_terminal
+    from euporie.apptk.application.run_in_terminal import run_in_terminal
 
     def _open_file_in_editor(filename: str) -> None:
         """Call editor executable."""

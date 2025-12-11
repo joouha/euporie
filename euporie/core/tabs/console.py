@@ -7,16 +7,16 @@ from abc import abstractmethod
 from functools import partial
 from typing import TYPE_CHECKING
 
-from prompt_toolkit.buffer import Buffer, ValidationState
-from prompt_toolkit.filters.app import (
+from euporie.apptk.buffer import Buffer, ValidationState
+from euporie.apptk.filters.app import (
     has_completions,
     has_focus,
     in_paste_mode,
 )
-from prompt_toolkit.filters.base import Condition
-from prompt_toolkit.key_binding.key_bindings import KeyBindings
-from prompt_toolkit.mouse_events import MouseEventType
-from prompt_toolkit.utils import Event
+from euporie.apptk.filters.base import Condition
+from euporie.apptk.key_binding.key_bindings import KeyBindings
+from euporie.apptk.mouse_events import MouseEventType
+from euporie.apptk.utils import Event
 from upath import UPath
 
 from euporie.core.commands import get_cmd
@@ -38,10 +38,10 @@ if TYPE_CHECKING:
     from pathlib import Path
     from typing import Any
 
-    from prompt_toolkit.formatted_text import AnyFormattedText, StyleAndTextTuples
-    from prompt_toolkit.key_binding.key_bindings import NotImplementedOrNone
-    from prompt_toolkit.key_binding.key_processor import KeyPressEvent
-    from prompt_toolkit.mouse_events import MouseEvent
+    from euporie.apptk.formatted_text import AnyFormattedText, StyleAndTextTuples
+    from euporie.apptk.key_binding.key_bindings import NotImplementedOrNone
+    from euporie.apptk.key_binding.key_processor import KeyPressEvent
+    from euporie.apptk.mouse_events import MouseEvent
 
     from euporie.core.app.app import BaseApp
     from euporie.core.lsp import LspClient

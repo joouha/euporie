@@ -6,9 +6,9 @@ import logging
 from pathlib import PurePath
 from typing import TYPE_CHECKING, NamedTuple
 
-from prompt_toolkit.filters import Condition
-from prompt_toolkit.layout.containers import DynamicContainer
-from prompt_toolkit.layout.dimension import Dimension
+from euporie.apptk.filters import Condition
+from euporie.apptk.layout.containers import DynamicContainer
+from euporie.apptk.layout.dimension import Dimension
 
 from euporie.core.app.current import get_app
 from euporie.core.commands import add_cmd
@@ -27,8 +27,8 @@ from euporie.core.widgets.layout import Box
 if TYPE_CHECKING:
     from typing import Any
 
-    from prompt_toolkit.layout.containers import AnyContainer
-    from prompt_toolkit.layout.dimension import AnyDimension
+    from euporie.apptk.layout.containers import AnyContainer
+    from euporie.apptk.layout.dimension import AnyDimension
 
     from euporie.core.widgets.cell_outputs import CellOutputElement, OutputParent
 

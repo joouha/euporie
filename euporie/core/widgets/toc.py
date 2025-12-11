@@ -7,15 +7,15 @@ from textwrap import wrap
 from typing import TYPE_CHECKING, NamedTuple
 from weakref import WeakKeyDictionary
 
-from prompt_toolkit.cache import FastDictCache
-from prompt_toolkit.data_structures import Point
-from prompt_toolkit.formatted_text import (
+from euporie.apptk.cache import FastDictCache
+from euporie.apptk.data_structures import Point
+from euporie.apptk.formatted_text import (
     StyleAndTextTuples,
 )
-from prompt_toolkit.layout.containers import HSplit, VSplit, Window
-from prompt_toolkit.layout.controls import BufferControl, UIContent, UIControl
-from prompt_toolkit.mouse_events import MouseButton, MouseEventType
-from prompt_toolkit.selection import SelectionState
+from euporie.apptk.layout.containers import HSplit, VSplit, Window
+from euporie.apptk.layout.controls import BufferControl, UIContent, UIControl
+from euporie.apptk.mouse_events import MouseButton, MouseEventType
+from euporie.apptk.selection import SelectionState
 
 from euporie.core.app.current import get_app
 from euporie.core.border import InsetGrid
@@ -27,16 +27,16 @@ from euporie.core.widgets.forms import Dropdown
 if TYPE_CHECKING:
     from collections.abc import Hashable, Iterable
 
-    from prompt_toolkit.buffer import Buffer
-    from prompt_toolkit.formatted_text import StyleAndTextTuples
-    from prompt_toolkit.key_binding.key_bindings import (
+    from euporie.apptk.buffer import Buffer
+    from euporie.apptk.formatted_text import StyleAndTextTuples
+    from euporie.apptk.key_binding.key_bindings import (
         KeyBindingsBase,
         NotImplementedOrNone,
     )
-    from prompt_toolkit.layout.containers import AnyContainer
-    from prompt_toolkit.layout.controls import GetLinePrefixCallable
-    from prompt_toolkit.mouse_events import MouseEvent
-    from prompt_toolkit.utils import Event
+    from euporie.apptk.layout.containers import AnyContainer
+    from euporie.apptk.layout.controls import GetLinePrefixCallable
+    from euporie.apptk.mouse_events import MouseEvent
+    from euporie.apptk.utils import Event
 
     from euporie.core.tabs.base import Tab
 

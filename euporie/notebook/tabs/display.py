@@ -6,8 +6,8 @@ import asyncio
 import logging
 from typing import TYPE_CHECKING, ClassVar
 
-from prompt_toolkit.layout.containers import VSplit
-from prompt_toolkit.layout.dimension import Dimension
+from euporie.apptk.layout.containers import VSplit
+from euporie.apptk.layout.dimension import Dimension
 
 from euporie.core.convert.datum import Datum
 from euporie.core.convert.mime import MIME_FORMATS, get_format
@@ -18,7 +18,7 @@ from euporie.core.widgets.display import Display
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from prompt_toolkit.layout.containers import AnyContainer
+    from euporie.apptk.layout.containers import AnyContainer
 
     from euporie.core.app.app import BaseApp
     from euporie.core.bars.status import StatusBarFields

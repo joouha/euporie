@@ -7,9 +7,9 @@ import logging
 from abc import ABCMeta
 from typing import TYPE_CHECKING, ClassVar
 
-from prompt_toolkit.layout.containers import Window, WindowAlign
-from prompt_toolkit.layout.controls import FormattedTextControl
-from prompt_toolkit.utils import Event
+from euporie.apptk.layout.containers import Window, WindowAlign
+from euporie.apptk.layout.controls import FormattedTextControl
+from euporie.apptk.utils import Event
 from upath import UPath
 
 from euporie.core.app.current import get_app
@@ -25,8 +25,8 @@ if TYPE_CHECKING:
     from pathlib import Path
     from typing import Any
 
-    from prompt_toolkit.key_binding.key_processor import KeyPressEvent
-    from prompt_toolkit.layout.containers import AnyContainer
+    from euporie.apptk.key_binding.key_processor import KeyPressEvent
+    from euporie.apptk.layout.containers import AnyContainer
 
     from euporie.core.app.app import BaseApp
     from euporie.core.bars.status import StatusBarFields

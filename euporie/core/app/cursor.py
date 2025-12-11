@@ -4,14 +4,14 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from prompt_toolkit.cursor_shapes import CursorShape, CursorShapeConfig
+from euporie.apptk.cursor_shapes import CursorShape, CursorShapeConfig
 
 from euporie.core.filters import insert_mode, replace_mode
 
 if TYPE_CHECKING:
     from typing import Any
 
-    from prompt_toolkit.application.application import Application
+    from euporie.apptk.application.application import Application
 
 
 class CursorConfig(CursorShapeConfig):

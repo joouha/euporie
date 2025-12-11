@@ -8,31 +8,31 @@ from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from prompt_toolkit.cache import SimpleCache
-from prompt_toolkit.clipboard import ClipboardData
-from prompt_toolkit.completion import PathCompleter
-from prompt_toolkit.filters import (
+from euporie.apptk.cache import SimpleCache
+from euporie.apptk.clipboard import ClipboardData
+from euporie.apptk.completion import PathCompleter
+from euporie.apptk.filters import (
     Condition,
     buffer_has_focus,
     has_completions,
     has_focus,
     vi_insert_mode,
 )
-from prompt_toolkit.formatted_text import AnyFormattedText, to_formatted_text
-from prompt_toolkit.formatted_text.utils import split_lines
-from prompt_toolkit.key_binding.bindings.focus import focus_next, focus_previous
-from prompt_toolkit.key_binding.key_bindings import DynamicKeyBindings, KeyBindings
-from prompt_toolkit.layout.containers import (
+from euporie.apptk.formatted_text import AnyFormattedText, to_formatted_text
+from euporie.apptk.formatted_text.utils import split_lines
+from euporie.apptk.key_binding.bindings.focus import focus_next, focus_previous
+from euporie.apptk.key_binding.key_bindings import DynamicKeyBindings, KeyBindings
+from euporie.apptk.layout.containers import (
     ConditionalContainer,
     DynamicContainer,
     Float,
     to_container,
 )
-from prompt_toolkit.layout.controls import FormattedTextControl, UIContent, UIControl
-from prompt_toolkit.layout.dimension import Dimension
-from prompt_toolkit.layout.screen import WritePosition
-from prompt_toolkit.mouse_events import MouseButton, MouseEventType
-from prompt_toolkit.widgets.base import Label
+from euporie.apptk.layout.controls import FormattedTextControl, UIContent, UIControl
+from euporie.apptk.layout.dimension import Dimension
+from euporie.apptk.layout.screen import WritePosition
+from euporie.apptk.mouse_events import MouseButton, MouseEventType
+from euporie.apptk.widgets.base import Label
 
 from euporie.core.app.current import get_app
 from euporie.core.border import (
@@ -53,14 +53,14 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Hashable
     from typing import Any
 
-    from prompt_toolkit.buffer import Buffer
-    from prompt_toolkit.data_structures import Point
-    from prompt_toolkit.formatted_text.base import StyleAndTextTuples
-    from prompt_toolkit.key_binding.key_bindings import NotImplementedOrNone
-    from prompt_toolkit.key_binding.key_processor import KeyPressEvent
-    from prompt_toolkit.layout.containers import AnyContainer
-    from prompt_toolkit.layout.layout import FocusableElement
-    from prompt_toolkit.mouse_events import MouseEvent
+    from euporie.apptk.buffer import Buffer
+    from euporie.apptk.data_structures import Point
+    from euporie.apptk.formatted_text.base import StyleAndTextTuples
+    from euporie.apptk.key_binding.key_bindings import NotImplementedOrNone
+    from euporie.apptk.key_binding.key_processor import KeyPressEvent
+    from euporie.apptk.layout.containers import AnyContainer
+    from euporie.apptk.layout.layout import FocusableElement
+    from euporie.apptk.mouse_events import MouseEvent
 
     from euporie.core.app.app import BaseApp
     from euporie.core.kernel.base import KernelInfo
@@ -883,7 +883,7 @@ class ShortcutsDialog(Dialog):
         import pkgutil
         from textwrap import dedent
 
-        from prompt_toolkit.formatted_text.base import to_formatted_text
+        from euporie.apptk.formatted_text.base import to_formatted_text
 
         from euporie.core.border import InvisibleLine
         from euporie.core.commands import get_cmd

@@ -5,12 +5,12 @@ from __future__ import annotations
 from functools import lru_cache
 from typing import TYPE_CHECKING
 
-from prompt_toolkit.key_binding import KeyBindings
+from euporie.apptk.key_binding import KeyBindings
 
 from euporie.core.commands import get_cmd
 
 if TYPE_CHECKING:
-    from prompt_toolkit.key_binding import KeyBindingsBase
+    from euporie.apptk.key_binding import KeyBindingsBase
 
     from euporie.core.config import Config
     from euporie.core.keys import Keys

@@ -5,13 +5,13 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-from prompt_toolkit.completion.base import CompleteEvent, Completer, Completion
+from euporie.apptk.completion.base import CompleteEvent, Completer, Completion
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, Callable, Iterable
     from pathlib import Path
 
-    from prompt_toolkit.document import Document
+    from euporie.apptk.document import Document
 
     from euporie.core.kernel.base import BaseKernel
     from euporie.core.lsp import LspClient
@@ -20,7 +20,7 @@ log = logging.getLogger(__name__)
 
 
 class KernelCompleter(Completer):
-    """A prompt_toolkit completer which provides completions from a kernel."""
+    """A euporie.apptk completer which provides completions from a kernel."""
 
     def __init__(self, kernel: BaseKernel | Callable[[], BaseKernel]) -> None:
         """Instantiate the completer for a given notebook.

@@ -11,20 +11,20 @@ from pathlib import Path
 from typing import TYPE_CHECKING, cast
 from weakref import WeakKeyDictionary
 
-from prompt_toolkit.completion.base import (
+from euporie.apptk.completion.base import (
     DynamicCompleter,
     _MergedCompleter,
 )
-from prompt_toolkit.document import Document
-from prompt_toolkit.filters.app import is_searching
-from prompt_toolkit.filters.base import Condition
-from prompt_toolkit.layout.containers import (
+from euporie.apptk.document import Document
+from euporie.apptk.filters.app import is_searching
+from euporie.apptk.filters.base import Condition
+from euporie.apptk.layout.containers import (
     ConditionalContainer,
     Container,
 )
-from prompt_toolkit.layout.controls import FormattedTextControl
-from prompt_toolkit.layout.dimension import Dimension
-from prompt_toolkit.utils import Event
+from euporie.apptk.layout.controls import FormattedTextControl
+from euporie.apptk.layout.dimension import Dimension
+from euporie.apptk.utils import Event
 
 from euporie.core.app.current import get_app
 from euporie.core.border import NoLine, ThickLine, ThinLine
@@ -46,9 +46,9 @@ if TYPE_CHECKING:
     from collections.abc import Callable
     from typing import Any, Literal
 
-    from prompt_toolkit.buffer import Buffer
-    from prompt_toolkit.completion.base import Completer
-    from prompt_toolkit.formatted_text.base import StyleAndTextTuples
+    from euporie.apptk.buffer import Buffer
+    from euporie.apptk.completion.base import Completer
+    from euporie.apptk.formatted_text.base import StyleAndTextTuples
 
     from euporie.core.border import GridStyle
     from euporie.core.format import Formatter

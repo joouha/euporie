@@ -1,24 +1,24 @@
-"""Add additional keys to the prompt_toolkit vi key-bindings."""
+"""Add additional keys to the euporie.apptk vi key-bindings."""
 
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, cast
 
-from prompt_toolkit.buffer import indent, unindent
-from prompt_toolkit.filters.app import vi_insert_mode
-from prompt_toolkit.key_binding.bindings.vi import (
+from euporie.apptk.buffer import indent, unindent
+from euporie.apptk.filters.app import vi_insert_mode
+from euporie.apptk.key_binding.bindings.vi import (
     load_vi_bindings as load_ptk_vi_bindings,
 )
 
 from euporie.core.filters import cursor_in_leading_ws
 
 if TYPE_CHECKING:
-    from prompt_toolkit.key_binding.key_bindings import (
+    from euporie.apptk.key_binding.key_bindings import (
         ConditionalKeyBindings,
         KeyBindings,
         KeyBindingsBase,
     )
-    from prompt_toolkit.key_binding.key_processor import KeyPressEvent
+    from euporie.apptk.key_binding.key_processor import KeyPressEvent
 
 
 def load_vi_bindings() -> KeyBindingsBase:

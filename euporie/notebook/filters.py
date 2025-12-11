@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from prompt_toolkit.filters import Condition
+from euporie.apptk.filters import Condition
 
 from euporie.core.app.current import get_app
 

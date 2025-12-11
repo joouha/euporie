@@ -7,17 +7,17 @@ import re
 from functools import lru_cache
 from typing import TYPE_CHECKING
 
-from prompt_toolkit.buffer import Buffer
-from prompt_toolkit.completion.base import Completer, Completion
-from prompt_toolkit.filters import buffer_has_focus, has_focus, vi_navigation_mode
-from prompt_toolkit.key_binding.vi_state import InputMode
-from prompt_toolkit.layout.containers import ConditionalContainer, Container, Window
-from prompt_toolkit.layout.controls import (
+from euporie.apptk.buffer import Buffer
+from euporie.apptk.completion.base import Completer, Completion
+from euporie.apptk.filters import buffer_has_focus, has_focus, vi_navigation_mode
+from euporie.apptk.key_binding.vi_state import InputMode
+from euporie.apptk.layout.containers import ConditionalContainer, Container, Window
+from euporie.apptk.layout.controls import (
     BufferControl,
 )
-from prompt_toolkit.layout.processors import BeforeInput, HighlightSelectionProcessor
-from prompt_toolkit.lexers import SimpleLexer
-from prompt_toolkit.validation import Validator
+from euporie.apptk.layout.processors import BeforeInput, HighlightSelectionProcessor
+from euporie.apptk.lexers import SimpleLexer
+from euporie.apptk.validation import Validator
 
 from euporie.core.app.current import get_app
 from euporie.core.bars import COMMAND_BAR_BUFFER
@@ -31,9 +31,9 @@ if TYPE_CHECKING:
     from collections.abc import Iterable
     from typing import Unpack
 
-    from prompt_toolkit.completion.base import CompleteEvent
-    from prompt_toolkit.document import Document
-    from prompt_toolkit.key_binding.key_processor import KeyPressEvent
+    from euporie.apptk.completion.base import CompleteEvent
+    from euporie.apptk.document import Document
+    from euporie.apptk.key_binding.key_processor import KeyPressEvent
 
     from euporie.core.commands import Command
 

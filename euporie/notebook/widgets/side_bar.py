@@ -6,23 +6,23 @@ import logging
 from functools import partial
 from typing import TYPE_CHECKING
 
-from prompt_toolkit.filters import Condition
-from prompt_toolkit.formatted_text.base import to_formatted_text
-from prompt_toolkit.key_binding.key_bindings import (
+from euporie.apptk.filters import Condition
+from euporie.apptk.formatted_text.base import to_formatted_text
+from euporie.apptk.key_binding.key_bindings import (
     KeyBindings,
 )
-from prompt_toolkit.layout.containers import (
+from euporie.apptk.layout.containers import (
     ConditionalContainer,
     DynamicContainer,
     HSplit,
     VSplit,
     Window,
 )
-from prompt_toolkit.layout.controls import UIContent, UIControl
-from prompt_toolkit.layout.dimension import Dimension
-from prompt_toolkit.layout.screen import WritePosition
-from prompt_toolkit.mouse_events import MouseButton, MouseEventType
-from prompt_toolkit.utils import Event
+from euporie.apptk.layout.controls import UIContent, UIControl
+from euporie.apptk.layout.dimension import Dimension
+from euporie.apptk.layout.screen import WritePosition
+from euporie.apptk.mouse_events import MouseButton, MouseEventType
+from euporie.apptk.utils import Event
 
 from euporie.core.app.current import get_app
 from euporie.core.layout.decor import FocusedStyle, Line
@@ -31,13 +31,13 @@ from euporie.core.widgets.forms import ToggleButton, ToggleButtons
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
 
-    from prompt_toolkit.key_binding.key_bindings import (
+    from euporie.apptk.key_binding.key_bindings import (
         KeyBindingsBase,
         NotImplementedOrNone,
     )
-    from prompt_toolkit.key_binding.key_processor import KeyPressEvent
-    from prompt_toolkit.layout.containers import AnyContainer
-    from prompt_toolkit.mouse_events import MouseEvent
+    from euporie.apptk.key_binding.key_processor import KeyPressEvent
+    from euporie.apptk.layout.containers import AnyContainer
+    from euporie.apptk.mouse_events import MouseEvent
 
 log = logging.getLogger(__name__)
 

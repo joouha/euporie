@@ -1,7 +1,7 @@
 """Contain data reference dictionaries for value lookups."""
 
-from prompt_toolkit.styles.base import ANSI_COLOR_NAMES, ANSI_COLOR_NAMES_ALIASES
-from prompt_toolkit.styles.named_colors import NAMED_COLORS as PTK_NAMED_COLORS
+from euporie.apptk.styles.base import ANSI_COLOR_NAMES, ANSI_COLOR_NAMES_ALIASES
+from euporie.apptk.styles.named_colors import NAMED_COLORS as PTK_NAMED_COLORS
 
 NAMED_COLORS = {k.lower(): v for k, v in PTK_NAMED_COLORS.items()}
 KNOWN_COLORS = [*ANSI_COLOR_NAMES, *ANSI_COLOR_NAMES_ALIASES.keys()]

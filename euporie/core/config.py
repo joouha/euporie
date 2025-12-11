@@ -20,10 +20,10 @@ from typing import (
 )
 
 import fastjsonschema
+from euporie.apptk.filters.base import Condition
+from euporie.apptk.filters.utils import to_filter
+from euporie.apptk.utils import Event
 from platformdirs import user_config_dir
-from prompt_toolkit.filters.base import Condition
-from prompt_toolkit.filters.utils import to_filter
-from prompt_toolkit.utils import Event
 from upath import UPath
 
 from euporie.core import __app_name__, __copyright__
@@ -34,7 +34,7 @@ if TYPE_CHECKING:
     from typing import Any, ClassVar
 
     from _typeshed import SupportsWrite
-    from prompt_toolkit.filters.base import FilterOrBool
+    from euporie.apptk.filters.base import FilterOrBool
 
     from euporie.core.widgets.menu import MenuItem
 
@@ -63,10 +63,10 @@ class ArgumentParser(argparse.ArgumentParser):
     def _print_message(
         self, message: str, file: SupportsWrite[str] | None = None
     ) -> None:
-        from prompt_toolkit.formatted_text.base import FormattedText
-        from prompt_toolkit.lexers.pygments import _token_cache
-        from prompt_toolkit.shortcuts.utils import print_formatted_text
-        from prompt_toolkit.styles.pygments import style_from_pygments_cls
+        from euporie.apptk.formatted_text.base import FormattedText
+        from euporie.apptk.lexers.pygments import _token_cache
+        from euporie.apptk.shortcuts.utils import print_formatted_text
+        from euporie.apptk.styles.pygments import style_from_pygments_cls
 
         from euporie.core.pygments import ArgparseLexer
         from euporie.core.style import get_style_by_name

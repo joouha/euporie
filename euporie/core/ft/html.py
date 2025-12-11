@@ -15,17 +15,17 @@ from math import ceil
 from operator import eq, ge, gt, le, lt
 from typing import TYPE_CHECKING, NamedTuple, cast, overload
 
+from euporie.apptk.application.current import get_app_session
+from euporie.apptk.data_structures import Size
+from euporie.apptk.filters.base import Condition
+from euporie.apptk.filters.utils import _always as always
+from euporie.apptk.filters.utils import _never as never
+from euporie.apptk.filters.utils import to_filter
+from euporie.apptk.formatted_text.utils import split_lines
+from euporie.apptk.layout.containers import WindowAlign
+from euporie.apptk.layout.dimension import Dimension
+from euporie.apptk.utils import Event
 from fsspec.core import url_to_fs
-from prompt_toolkit.application.current import get_app_session
-from prompt_toolkit.data_structures import Size
-from prompt_toolkit.filters.base import Condition
-from prompt_toolkit.filters.utils import _always as always
-from prompt_toolkit.filters.utils import _never as never
-from prompt_toolkit.filters.utils import to_filter
-from prompt_toolkit.formatted_text.utils import split_lines
-from prompt_toolkit.layout.containers import WindowAlign
-from prompt_toolkit.layout.dimension import Dimension
-from prompt_toolkit.utils import Event
 from upath import UPath
 
 from euporie.core.app.current import get_app
@@ -109,11 +109,11 @@ if TYPE_CHECKING:
     from pathlib import Path
     from typing import Any
 
+    from euporie.apptk.filters.base import Filter, FilterOrBool
+    from euporie.apptk.formatted_text.base import StyleAndTextTuples
+    from euporie.apptk.key_binding.key_bindings import NotImplementedOrNone
+    from euporie.apptk.mouse_events import MouseEvent
     from fsspec.spec import AbstractFileSystem
-    from prompt_toolkit.filters.base import Filter, FilterOrBool
-    from prompt_toolkit.formatted_text.base import StyleAndTextTuples
-    from prompt_toolkit.key_binding.key_bindings import NotImplementedOrNone
-    from prompt_toolkit.mouse_events import MouseEvent
 
     CssSelectors = dict[
         Filter, dict[tuple[tuple[CssSelector, ...], ...], dict[str, str]]
@@ -5066,10 +5066,10 @@ class HTML:
 if __name__ == "__main__":
     import sys
 
-    from prompt_toolkit.application.current import create_app_session, set_app
-    from prompt_toolkit.formatted_text.utils import to_formatted_text
-    from prompt_toolkit.shortcuts.utils import print_formatted_text
-    from prompt_toolkit.styles.style import Style
+    from euporie.apptk.application.current import create_app_session, set_app
+    from euporie.apptk.formatted_text.utils import to_formatted_text
+    from euporie.apptk.shortcuts.utils import print_formatted_text
+    from euporie.apptk.styles.style import Style
 
     from euporie.core.app.dummy import DummyApp
     from euporie.core.path import parse_path

@@ -6,13 +6,13 @@ import logging
 from itertools import pairwise
 from typing import TYPE_CHECKING, NamedTuple
 
-from prompt_toolkit.cache import FastDictCache, SimpleCache
-from prompt_toolkit.filters import to_filter
+from euporie.apptk.cache import FastDictCache, SimpleCache
+from euporie.apptk.filters import to_filter
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
 
-    from prompt_toolkit.filters import Filter, FilterOrBool
+    from euporie.apptk.filters import Filter, FilterOrBool
 
 log = logging.getLogger(__name__)
 

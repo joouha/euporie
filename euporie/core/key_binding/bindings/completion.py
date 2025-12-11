@@ -4,15 +4,15 @@ from __future__ import annotations
 
 import logging
 
-from prompt_toolkit.application import get_app
-from prompt_toolkit.completion import Completion
-from prompt_toolkit.filters import (
+from euporie.apptk.application import get_app
+from euporie.apptk.completion import Completion
+from euporie.apptk.filters import (
     buffer_has_focus,
     completion_is_selected,
     has_completions,
     has_selection,
 )
-from prompt_toolkit.key_binding.bindings.named_commands import (
+from euporie.apptk.key_binding.bindings.named_commands import (
     menu_complete,
     menu_complete_backward,
 )

@@ -1,6 +1,6 @@
 """Overrides for PTK containers with optimized rendering.
 
-This module provides enhanced versions of prompt_toolkit containers that:
+This module provides enhanced versions of euporie.apptk containers that:
 - Only render visible lines rather than the entire content
 - Use cached dimension calculations for better performance
 - Support bounded write positions to clip rendering
@@ -14,28 +14,28 @@ import logging
 from functools import lru_cache, partial
 from typing import TYPE_CHECKING, NamedTuple
 
-from prompt_toolkit.application.current import get_app
-from prompt_toolkit.data_structures import Point
-from prompt_toolkit.layout import containers as ptk_containers
-from prompt_toolkit.layout.containers import (
+from euporie.apptk.application.current import get_app
+from euporie.apptk.data_structures import Point
+from euporie.apptk.layout import containers as ptk_containers
+from euporie.apptk.layout.containers import (
     Container,
     HorizontalAlign,
     VerticalAlign,
     WindowAlign,
     WindowRenderInfo,
 )
-from prompt_toolkit.layout.controls import DummyControl as PtkDummyControl
-from prompt_toolkit.layout.controls import (
+from euporie.apptk.layout.controls import DummyControl as PtkDummyControl
+from euporie.apptk.layout.controls import (
     FormattedTextControl,
     UIContent,
     fragment_list_width,
     to_formatted_text,
 )
-from prompt_toolkit.layout.dimension import Dimension
-from prompt_toolkit.layout.screen import _CHAR_CACHE
-from prompt_toolkit.layout.utils import explode_text_fragments
-from prompt_toolkit.mouse_events import MouseEventType
-from prompt_toolkit.utils import get_cwidth, take_using_weights, to_str
+from euporie.apptk.layout.dimension import Dimension
+from euporie.apptk.layout.screen import _CHAR_CACHE
+from euporie.apptk.layout.utils import explode_text_fragments
+from euporie.apptk.mouse_events import MouseEventType
+from euporie.apptk.utils import get_cwidth, take_using_weights, to_str
 
 from euporie.core.cache import SimpleCache
 from euporie.core.data_structures import DiInt
@@ -47,20 +47,20 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
     from typing import Any
 
-    from prompt_toolkit.formatted_text import AnyFormattedText, StyleAndTextTuples
-    from prompt_toolkit.key_binding.key_bindings import (
+    from euporie.apptk.formatted_text import AnyFormattedText, StyleAndTextTuples
+    from euporie.apptk.key_binding.key_bindings import (
         KeyBindingsBase,
         NotImplementedOrNone,
     )
-    from prompt_toolkit.layout.containers import (
+    from euporie.apptk.layout.containers import (
         AnyContainer,
         AnyDimension,
         Float,
     )
-    from prompt_toolkit.layout.margins import Margin
-    from prompt_toolkit.layout.mouse_handlers import MouseHandlers
-    from prompt_toolkit.layout.screen import Screen, WritePosition
-    from prompt_toolkit.mouse_events import MouseEvent as PtkMouseEvent
+    from euporie.apptk.layout.margins import Margin
+    from euporie.apptk.layout.mouse_handlers import MouseHandlers
+    from euporie.apptk.layout.screen import Screen, WritePosition
+    from euporie.apptk.mouse_events import MouseEvent as PtkMouseEvent
 
 
 log = logging.getLogger(__name__)
@@ -85,7 +85,7 @@ def distribute_dimensions(
 ) -> list[int] | None:
     """Return the heights/widths for all rows/columns, or None when there is not enough space.
 
-    This is a cached version of prompt_toolkit's dimension distribution logic that improves
+    This is a cached version of euporie.apptk's dimension distribution logic that improves
     performance by memoizing calculations based on the input dimensions.
 
     Args:
@@ -146,7 +146,7 @@ def distribute_dimensions(
 class DummyContainer(Container):
     """A minimal container with fixed dimensions.
 
-    This is a more efficient version of prompt_toolkit's DummyContainer that:
+    This is a more efficient version of euporie.apptk's DummyContainer that:
     - Supports explicit width/height
     - Uses caching for better performance
     - Avoids unnecessary style calculations
@@ -249,7 +249,7 @@ class HSplit(ptk_containers.HSplit):
     ) -> None:
         """Render the prompt to a `Screen` instance.
 
-        :param screen: The :class:`~prompt_toolkit.layout.screen.Screen` class
+        :param screen: The :class:`~euporie.apptk.layout.screen.Screen` class
             to which the output has to be written.
         """
         assert isinstance(write_position, BoundedWritePosition)
@@ -426,7 +426,7 @@ class VSplit(ptk_containers.VSplit):
     ) -> None:
         """Render the prompt to a `Screen` instance.
 
-        :param screen: The :class:`~prompt_toolkit.layout.screen.Screen` class
+        :param screen: The :class:`~euporie.apptk.layout.screen.Screen` class
             to which the output has to be written.
         """
         assert isinstance(write_position, BoundedWritePosition)
