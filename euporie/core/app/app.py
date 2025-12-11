@@ -24,26 +24,26 @@ from prompt_toolkit.key_binding.bindings.auto_suggest import load_auto_suggest_b
 from prompt_toolkit.key_binding.bindings.basic import (
     load_basic_bindings as load_ptk_basic_bindings,
 )
-from prompt_toolkit.key_binding.bindings.cpr import load_cpr_bindings
-from prompt_toolkit.key_binding.bindings.emacs import (
+from euporie.apptk.key_binding.bindings.cpr import load_cpr_bindings
+from euporie.apptk.key_binding.bindings.emacs import (
     load_emacs_bindings,
     load_emacs_search_bindings,
     load_emacs_shift_selection_bindings,
 )
-from prompt_toolkit.key_binding.bindings.mouse import (
+from euporie.apptk.key_binding.bindings.mouse import (
     load_mouse_bindings as load_ptk_mouse_bindings,
 )
-from prompt_toolkit.key_binding.bindings.vi import load_vi_search_bindings
-from prompt_toolkit.key_binding.key_bindings import (
+from euporie.apptk.key_binding.bindings.vi import load_vi_search_bindings
+from euporie.apptk.key_binding.key_bindings import (
     ConditionalKeyBindings,
     merge_key_bindings,
 )
-from prompt_toolkit.layout.containers import Float, FloatContainer, to_container
-from prompt_toolkit.layout.layout import Layout
-from prompt_toolkit.output import ColorDepth
-from prompt_toolkit.output.defaults import create_output
-from prompt_toolkit.output.vt100 import Vt100_Output as PtkVt100_Output
-from prompt_toolkit.styles import (
+from euporie.apptk.layout.containers import Float, FloatContainer, to_container
+from euporie.apptk.layout.layout import Layout
+from euporie.apptk.output import ColorDepth
+from euporie.apptk.output.defaults import create_output
+from euporie.apptk.output.vt100 import Vt100_Output as PtkVt100_Output
+from euporie.apptk.styles import (
     BaseStyle,
     ConditionalStyleTransformation,
     DummyStyle,
@@ -54,7 +54,7 @@ from prompt_toolkit.styles import (
     merge_styles,
     style_from_pygments_cls,
 )
-from prompt_toolkit.utils import Event
+from euporie.apptk.utils import Event
 
 from euporie.core.app.base import ConfigurableApp
 from euporie.core.app.cursor import CursorConfig
@@ -95,14 +95,14 @@ if TYPE_CHECKING:
     from types import FrameType
     from typing import Any, ClassVar, TypeVar
 
-    # from prompt_toolkit.application import _AppResult
-    from prompt_toolkit.contrib.ssh import PromptToolkitSSHSession
-    from prompt_toolkit.filters import Filter, FilterOrBool
-    from prompt_toolkit.input import Input
-    from prompt_toolkit.layout.containers import AnyContainer
-    from prompt_toolkit.layout.layout import FocusableElement
-    from prompt_toolkit.layout.screen import WritePosition
-    from prompt_toolkit.output import Output
+    # from euporie.apptk.application import _AppResult
+    from euporie.apptk.contrib.ssh import PromptToolkitSSHSession
+    from euporie.apptk.filters import Filter, FilterOrBool
+    from euporie.apptk.input import Input
+    from euporie.apptk.layout.containers import AnyContainer
+    from euporie.apptk.layout.layout import FocusableElement
+    from euporie.apptk.layout.screen import WritePosition
+    from euporie.apptk.output import Output
 
     from euporie.core.bars.command import CommandBar
     from euporie.core.bars.search import SearchBar
@@ -129,7 +129,7 @@ class BaseApp(ConfigurableApp, Application, ABC):
 
     The base euporie application class.
 
-    This subclasses the `prompt_toolkit.application.Application` class, so application
+    This subclasses the `euporie.apptk.application.Application` class, so application
     wide methods can be easily added.
     """
 
@@ -529,7 +529,7 @@ class BaseApp(ConfigurableApp, Application, ABC):
     @classmethod
     def launch(cls) -> None:
         """Launch the app."""
-        from prompt_toolkit.utils import in_main_thread
+        from euporie.apptk.utils import in_main_thread
 
         super().launch()
         # Run the application

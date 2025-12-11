@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 
-from prompt_toolkit.layout import screen
+from euporie.apptk.layout import screen
 
 from euporie.core.data_structures import DiInt
 

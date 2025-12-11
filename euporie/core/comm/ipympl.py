@@ -7,9 +7,9 @@ import logging
 from functools import partial
 from typing import TYPE_CHECKING
 
-from prompt_toolkit.filters.base import Condition
-from prompt_toolkit.layout.containers import ConditionalContainer
-from prompt_toolkit.mouse_events import MouseButton, MouseEventType, MouseModifier
+from euporie.apptk.filters.base import Condition
+from euporie.apptk.layout.containers import ConditionalContainer
+from euporie.apptk.mouse_events import MouseButton, MouseEventType, MouseModifier
 
 from euporie.core.comm.base import CommView
 from euporie.core.comm.ipywidgets import IpyWidgetComm
@@ -26,8 +26,8 @@ if TYPE_CHECKING:
     from collections.abc import Sequence
     from typing import Any
 
-    from prompt_toolkit.key_binding.key_bindings import NotImplementedOrNone
-    from prompt_toolkit.mouse_events import MouseEvent as PtkMouseEvent
+    from euporie.apptk.key_binding.key_bindings import NotImplementedOrNone
+    from euporie.apptk.mouse_events import MouseEvent as PtkMouseEvent
 
     from euporie.core.tabs.kernel import KernelTab
     from euporie.core.widgets.cell_outputs import OutputParent

@@ -9,8 +9,8 @@ from functools import cache
 from pathlib import PurePath
 from typing import TYPE_CHECKING
 
-from prompt_toolkit.cache import SimpleCache
-from prompt_toolkit.layout.containers import (
+from euporie.apptk.cache import SimpleCache
+from euporie.apptk.layout.containers import (
     DynamicContainer,
     to_container,
 )
@@ -26,7 +26,7 @@ if TYPE_CHECKING:
     from typing import Any, Protocol, TypeVar
     from weakref import ReferenceType
 
-    from prompt_toolkit.layout.containers import AnyContainer
+    from euporie.apptk.layout.containers import AnyContainer
 
     from euporie.core.config import Setting
     from euporie.core.tabs.kernel import KernelTab
@@ -538,7 +538,7 @@ class CellOutputArea:
 
     def to_plain_text(self) -> str:
         """Convert the contents of the output to plain text."""
-        from prompt_toolkit.formatted_text.utils import to_plain_text
+        from euporie.apptk.formatted_text.utils import to_plain_text
 
         outputs = []
         app = get_app()

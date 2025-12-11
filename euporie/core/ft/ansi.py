@@ -6,7 +6,7 @@ import logging
 import re
 from typing import TYPE_CHECKING
 
-from prompt_toolkit.formatted_text import ANSI as PTANSI
+from euporie.apptk.formatted_text import ANSI as PTANSI
 
 if TYPE_CHECKING:
     from collections.abc import Generator
@@ -51,7 +51,7 @@ class ANSI(PTANSI):
     def _parse_corot(self) -> Generator[None, str, None]:
         """Coroutine that parses the ANSI escape sequences.
 
-        This is modified version of the ANSI parser from prompt_toolkit retains
+        This is modified version of the ANSI parser from euporie.apptk retains
         all CSI escape sequences.
 
         Yields:

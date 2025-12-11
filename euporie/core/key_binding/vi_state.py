@@ -1,7 +1,7 @@
 """Create a Vi state which defaults to navigation mode."""
 
-from prompt_toolkit.key_binding.vi_state import InputMode
-from prompt_toolkit.key_binding.vi_state import ViState as PtkViState
+from euporie.apptk.key_binding.vi_state import InputMode
+from euporie.apptk.key_binding.vi_state import ViState as PtkViState
 
 
 class ViState(PtkViState):

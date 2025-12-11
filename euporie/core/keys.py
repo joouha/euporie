@@ -3,10 +3,10 @@
 from enum import Enum
 from typing import TYPE_CHECKING, cast
 
-from prompt_toolkit.input.ansi_escape_sequences import ANSI_SEQUENCES
+from euporie.apptk.input.ansi_escape_sequences import ANSI_SEQUENCES
 
 if TYPE_CHECKING:
-    from prompt_toolkit.keys import Keys
+    from euporie.apptk.keys import Keys
 
 
 class MoreKeys(str, Enum):

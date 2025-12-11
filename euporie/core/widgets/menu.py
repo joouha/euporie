@@ -6,36 +6,36 @@ import logging
 from functools import partial
 from typing import TYPE_CHECKING
 
-from prompt_toolkit.data_structures import Point
-from prompt_toolkit.filters import (
+from euporie.apptk.data_structures import Point
+from euporie.apptk.filters import (
     Condition,
     has_completions,
     has_focus,
     is_done,
     to_filter,
 )
-from prompt_toolkit.formatted_text.base import to_formatted_text
-from prompt_toolkit.formatted_text.utils import (
+from euporie.apptk.formatted_text.base import to_formatted_text
+from euporie.apptk.formatted_text.utils import (
     fragment_list_to_text,
     fragment_list_width,
     to_plain_text,
 )
-from prompt_toolkit.key_binding.key_bindings import KeyBindings
-from prompt_toolkit.layout.containers import (
+from euporie.apptk.key_binding.key_bindings import KeyBindings
+from euporie.apptk.layout.containers import (
     ConditionalContainer,
     Container,
     Float,
     ScrollOffsets,
     to_container,
 )
-from prompt_toolkit.layout.controls import FormattedTextControl, UIContent
-from prompt_toolkit.layout.dimension import Dimension
-from prompt_toolkit.layout.menus import (
+from euporie.apptk.layout.controls import FormattedTextControl, UIContent
+from euporie.apptk.layout.dimension import Dimension
+from euporie.apptk.layout.menus import (
     CompletionsMenuControl as PtkCompletionsMenuControl,
 )
-from prompt_toolkit.layout.utils import explode_text_fragments
-from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
-from prompt_toolkit.utils import get_cwidth
+from euporie.apptk.layout.utils import explode_text_fragments
+from euporie.apptk.mouse_events import MouseEvent, MouseEventType
+from euporie.apptk.utils import get_cwidth
 
 from euporie.core.app.current import get_app
 from euporie.core.bars.status import StatusContainer
@@ -47,16 +47,16 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Sequence
     from typing import Any
 
-    from prompt_toolkit.filters import Filter, FilterOrBool
-    from prompt_toolkit.formatted_text.base import (
+    from euporie.apptk.filters import Filter, FilterOrBool
+    from euporie.apptk.formatted_text.base import (
         AnyFormattedText,
         OneStyleAndTextTuple,
         StyleAndTextTuples,
     )
-    from prompt_toolkit.key_binding.key_bindings import NotImplementedOrNone
-    from prompt_toolkit.key_binding.key_processor import KeyPressEvent
-    from prompt_toolkit.layout.containers import AnyContainer
-    from prompt_toolkit.layout.controls import UIControl
+    from euporie.apptk.key_binding.key_bindings import NotImplementedOrNone
+    from euporie.apptk.key_binding.key_processor import KeyPressEvent
+    from euporie.apptk.layout.containers import AnyContainer
+    from euporie.apptk.layout.controls import UIControl
 
     from euporie.core.app.app import BaseApp
     from euporie.core.bars.status import StatusBarFields
@@ -95,9 +95,9 @@ class MenuItem:
                 display
             description: More information about what the menu item does
             separator: If True, this menu item is treated as a separator
-            handler: As per `prompt_toolkit.widgets.menus.MenuItem`
-            children: As per `prompt_toolkit.widgets.menus.MenuItem`
-            shortcut: As per `prompt_toolkit.widgets.menus.MenuItem`
+            handler: As per `euporie.apptk.widgets.menus.MenuItem`
+            children: As per `euporie.apptk.widgets.menus.MenuItem`
+            shortcut: As per `euporie.apptk.widgets.menus.MenuItem`
             hidden: The handler will be hidden when this filter is True
             disabled: The handler will be disabled when this filter is True
             toggled: A checkmark will be displayed next to the menu text when this

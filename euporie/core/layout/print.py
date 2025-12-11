@@ -5,27 +5,27 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-from prompt_toolkit.application.current import get_app
-from prompt_toolkit.layout.containers import (
+from euporie.apptk.application.current import get_app
+from euporie.apptk.layout.containers import (
     Container,
     Window,
     to_container,
 )
-from prompt_toolkit.layout.dimension import Dimension, to_dimension
+from euporie.apptk.layout.dimension import Dimension, to_dimension
 
 from euporie.core.layout.screen import BoundedWritePosition
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
 
-    from prompt_toolkit.key_binding.key_bindings import (
+    from euporie.apptk.key_binding.key_bindings import (
         KeyBindingsBase,
     )
-    from prompt_toolkit.layout.containers import AnyContainer
-    from prompt_toolkit.layout.dimension import AnyDimension
-    from prompt_toolkit.layout.mouse_handlers import MouseHandlers
-    from prompt_toolkit.layout.screen import Screen, WritePosition
-    from prompt_toolkit.mouse_events import MouseEvent
+    from euporie.apptk.layout.containers import AnyContainer
+    from euporie.apptk.layout.dimension import AnyDimension
+    from euporie.apptk.layout.mouse_handlers import MouseHandlers
+    from euporie.apptk.layout.screen import Screen, WritePosition
+    from euporie.apptk.mouse_events import MouseEvent
 
     MouseHandler = Callable[[MouseEvent], object]
 
@@ -86,15 +86,15 @@ class PrintingContainer(Container):
         All children are rendered vertically in sequence.
 
         Args:
-            screen: The :class:`~prompt_toolkit.layout.screen.Screen` class to which
+            screen: The :class:`~euporie.apptk.layout.screen.Screen` class to which
                 the output has to be written.
-            mouse_handlers: :class:`prompt_toolkit.layout.mouse_handlers.MouseHandlers`.
-            write_position: A :class:`prompt_toolkit.layout.screen.WritePosition` object
+            mouse_handlers: :class:`euporie.apptk.layout.mouse_handlers.MouseHandlers`.
+            write_position: A :class:`euporie.apptk.layout.screen.WritePosition` object
                 defining where this container should be drawn.
             erase_bg: If true, the background will be erased prior to drawing.
             parent_style: Style string to pass to the :class:`.Window` object. This will
                 be applied to all content of the windows. :class:`.VSplit` and
-                :class:`prompt_toolkit.layout.containers.HSplit` can use it to pass
+                :class:`euporie.apptk.layout.containers.HSplit` can use it to pass
                 their style down to the windows that they contain.
             z_index: Used for propagating z_index from parent to child.
 

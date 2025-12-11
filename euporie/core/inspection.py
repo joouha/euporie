@@ -11,7 +11,7 @@ if TYPE_CHECKING:
     from pathlib import Path
     from typing import Any
 
-    from prompt_toolkit.document import Document
+    from euporie.apptk.document import Document
 
     from euporie.core.kernel.base import BaseKernel
     from euporie.core.lsp import LspClient

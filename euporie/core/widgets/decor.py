@@ -5,12 +5,12 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-from prompt_toolkit.filters import to_filter
-from prompt_toolkit.layout.containers import (
+from euporie.apptk.filters import to_filter
+from euporie.apptk.layout.containers import (
     ConditionalContainer,
     DynamicContainer,
 )
-from prompt_toolkit.widgets.base import Label
+from euporie.apptk.widgets.base import Label
 
 from euporie.core.app.current import get_app
 from euporie.core.border import ThinLine
@@ -21,9 +21,9 @@ from euporie.core.layout.decor import DropShadow
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-    from prompt_toolkit.formatted_text.base import AnyFormattedText
-    from prompt_toolkit.layout.containers import AnyContainer
-    from prompt_toolkit.mouse_events import MouseEvent
+    from euporie.apptk.formatted_text.base import AnyFormattedText
+    from euporie.apptk.layout.containers import AnyContainer
+    from euporie.apptk.mouse_events import MouseEvent
 
     from euporie.core.border import GridStyle
 

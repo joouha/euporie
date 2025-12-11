@@ -4,14 +4,14 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from prompt_toolkit.key_binding import key_bindings
-from prompt_toolkit.key_binding.key_bindings import _parse_key as _ptk_parse_key
-from prompt_toolkit.keys import Keys
+from euporie.apptk.key_binding import key_bindings
+from euporie.apptk.key_binding.key_bindings import _parse_key as _ptk_parse_key
+from euporie.apptk.keys import Keys
 
 from euporie.core.keys import MoreKeys
 
 if TYPE_CHECKING:
-    from prompt_toolkit.key_binding import KeyPressEvent
+    from euporie.apptk.key_binding import KeyPressEvent
 
     from euporie.core.key_binding.registry import AnyKeys
 

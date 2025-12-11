@@ -7,10 +7,10 @@ import logging
 import time
 from typing import TYPE_CHECKING
 
-from prompt_toolkit.application.current import get_app
-from prompt_toolkit.key_binding.key_processor import KeyPress, _Flush
-from prompt_toolkit.key_binding.key_processor import KeyProcessor as PtKeyProcessor
-from prompt_toolkit.keys import Keys
+from euporie.apptk.application.current import get_app
+from euporie.apptk.key_binding.key_processor import KeyPress, _Flush
+from euporie.apptk.key_binding.key_processor import KeyProcessor as PtKeyProcessor
+from euporie.apptk.keys import Keys
 
 from euporie.core.keys import MoreKeys
 
@@ -38,7 +38,7 @@ setattr(KeyPress, "__init__", _kp_init)  # noqa: B010
 
 
 class KeyProcessor(PtKeyProcessor):
-    """A subclass of prompt_toolkit's keyprocessor.
+    """A subclass of euporie.apptk's keyprocessor.
 
     This adds an exception to the auto-flush timeout so that the input is flushed
     immediately if the key pressed is the escape key.

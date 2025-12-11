@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from prompt_toolkit.application.current import _current_app_session
+from euporie.apptk.application.current import _current_app_session
 
 if TYPE_CHECKING:
     from euporie.core.app.app import BaseApp

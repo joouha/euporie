@@ -6,19 +6,19 @@ import logging
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from prompt_toolkit.cache import FastDictCache
-from prompt_toolkit.completion import PathCompleter
-from prompt_toolkit.data_structures import Point
-from prompt_toolkit.filters import FilterOrBool
-from prompt_toolkit.filters.utils import to_filter
-from prompt_toolkit.key_binding.key_bindings import KeyBindings, KeyBindingsBase
-from prompt_toolkit.layout.containers import (
+from euporie.apptk.cache import FastDictCache
+from euporie.apptk.completion import PathCompleter
+from euporie.apptk.data_structures import Point
+from euporie.apptk.filters import FilterOrBool
+from euporie.apptk.filters.utils import to_filter
+from euporie.apptk.key_binding.key_bindings import KeyBindings, KeyBindingsBase
+from euporie.apptk.layout.containers import (
     ConditionalContainer,
 )
-from prompt_toolkit.layout.controls import UIContent, UIControl
-from prompt_toolkit.layout.screen import WritePosition
-from prompt_toolkit.mouse_events import MouseButton, MouseEvent, MouseEventType
-from prompt_toolkit.utils import Event
+from euporie.apptk.layout.controls import UIContent, UIControl
+from euporie.apptk.layout.screen import WritePosition
+from euporie.apptk.mouse_events import MouseButton, MouseEvent, MouseEventType
+from euporie.apptk.utils import Event
 
 from euporie.core.app.current import get_app
 from euporie.core.border import InsetGrid
@@ -33,13 +33,13 @@ from euporie.core.widgets.forms import Button, Text
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-    from prompt_toolkit.buffer import Buffer
-    from prompt_toolkit.filters.base import FilterOrBool
-    from prompt_toolkit.formatted_text import StyleAndTextTuples
-    from prompt_toolkit.key_binding.key_bindings import NotImplementedOrNone
-    from prompt_toolkit.key_binding.key_processor import KeyPressEvent
-    from prompt_toolkit.layout.containers import AnyContainer
-    from prompt_toolkit.layout.dimension import AnyDimension
+    from euporie.apptk.buffer import Buffer
+    from euporie.apptk.filters.base import FilterOrBool
+    from euporie.apptk.formatted_text import StyleAndTextTuples
+    from euporie.apptk.key_binding.key_bindings import NotImplementedOrNone
+    from euporie.apptk.key_binding.key_processor import KeyPressEvent
+    from euporie.apptk.layout.containers import AnyContainer
+    from euporie.apptk.layout.dimension import AnyDimension
     from upath.core import PT
 
     from euporie.core.bars.status import StatusBarFields

@@ -5,14 +5,14 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, cast
 
-from prompt_toolkit.application.current import get_app as ptk_get_app
-from prompt_toolkit.filters.app import (
+from euporie.apptk.application.current import get_app as ptk_get_app
+from euporie.apptk.filters.app import (
     has_completions,
     is_done,
     is_searching,
     renderer_height_is_known,
 )
-from prompt_toolkit.layout.containers import (
+from euporie.apptk.layout.containers import (
     ConditionalContainer,
     Float,
     FloatContainer,
@@ -20,7 +20,7 @@ from prompt_toolkit.layout.containers import (
     VSplit,
     Window,
 )
-from prompt_toolkit.layout.dimension import Dimension
+from euporie.apptk.layout.dimension import Dimension
 
 from euporie.console.tabs.console import Console
 from euporie.core.app.app import BaseApp
@@ -45,7 +45,7 @@ from euporie.core.widgets.palette import CommandPalette
 if TYPE_CHECKING:
     from typing import Any, TypeVar
 
-    from prompt_toolkit.application.application import Application
+    from euporie.apptk.application.application import Application
 
     _AppResult = TypeVar("_AppResult")
 

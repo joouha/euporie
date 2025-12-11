@@ -5,11 +5,11 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, NamedTuple
 
-from prompt_toolkit.mouse_events import MouseButton, MouseEventType, MouseModifier
-from prompt_toolkit.mouse_events import MouseEvent as PtkMouseEvent
+from euporie.apptk.mouse_events import MouseButton, MouseEventType, MouseModifier
+from euporie.apptk.mouse_events import MouseEvent as PtkMouseEvent
 
 if TYPE_CHECKING:
-    from prompt_toolkit.data_structures import Point
+    from euporie.apptk.data_structures import Point
 
 log = logging.getLogger(__name__)
 

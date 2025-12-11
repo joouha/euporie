@@ -7,10 +7,10 @@ import weakref
 from inspect import isawaitable, iscoroutinefunction, signature
 from typing import TYPE_CHECKING, cast
 
-from prompt_toolkit.application import get_app
-from prompt_toolkit.filters import to_filter
-from prompt_toolkit.key_binding.key_bindings import Binding
-from prompt_toolkit.key_binding.key_processor import KeyPressEvent
+from euporie.apptk.application import get_app
+from euporie.apptk.filters import to_filter
+from euporie.apptk.key_binding.key_bindings import Binding
+from euporie.apptk.key_binding.key_processor import KeyPressEvent
 
 from euporie.core.key_binding.utils import parse_keys
 
@@ -18,8 +18,8 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Coroutine
     from typing import Any
 
-    from prompt_toolkit.filters import Filter, FilterOrBool
-    from prompt_toolkit.key_binding.key_bindings import (
+    from euporie.apptk.filters import Filter, FilterOrBool
+    from euporie.apptk.key_binding.key_bindings import (
         KeyBindingsBase,
         KeyHandlerCallable,
         NotImplementedOrNone,

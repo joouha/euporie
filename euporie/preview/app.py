@@ -9,9 +9,9 @@ import sys
 from functools import partial
 from typing import TYPE_CHECKING, cast
 
-from prompt_toolkit.layout.containers import DynamicContainer, FloatContainer, Window
-from prompt_toolkit.output.defaults import create_output
-from prompt_toolkit.output.vt100 import Vt100_Output
+from euporie.apptk.layout.containers import DynamicContainer, FloatContainer, Window
+from euporie.apptk.output.defaults import create_output
+from euporie.apptk.output.vt100 import Vt100_Output
 
 from euporie.core.app.app import BaseApp
 from euporie.core.app.current import get_app
@@ -23,9 +23,9 @@ if TYPE_CHECKING:
     from pathlib import Path
     from typing import Any, TextIO
 
-    from prompt_toolkit.application.application import _AppResult
-    from prompt_toolkit.layout.containers import Float
-    from prompt_toolkit.output import Output
+    from euporie.apptk.application.application import _AppResult
+    from euporie.apptk.layout.containers import Float
+    from euporie.apptk.output import Output
 
     from euporie.core.tabs.base import Tab
 

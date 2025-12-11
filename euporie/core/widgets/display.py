@@ -8,14 +8,14 @@ from functools import partial
 from math import ceil
 from typing import TYPE_CHECKING, cast
 
-from prompt_toolkit.cache import FastDictCache, SimpleCache
-from prompt_toolkit.data_structures import Point, Size
-from prompt_toolkit.filters.utils import to_filter
-from prompt_toolkit.formatted_text.utils import fragment_list_width, split_lines
-from prompt_toolkit.layout.containers import ConditionalContainer
-from prompt_toolkit.layout.controls import GetLinePrefixCallable, UIContent, UIControl
-from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
-from prompt_toolkit.utils import Event, to_str
+from euporie.apptk.cache import FastDictCache, SimpleCache
+from euporie.apptk.data_structures import Point, Size
+from euporie.apptk.filters.utils import to_filter
+from euporie.apptk.formatted_text.utils import fragment_list_width, split_lines
+from euporie.apptk.layout.containers import ConditionalContainer
+from euporie.apptk.layout.controls import GetLinePrefixCallable, UIContent, UIControl
+from euporie.apptk.mouse_events import MouseEvent, MouseEventType
+from euporie.apptk.utils import Event, to_str
 
 from euporie.core.app.current import get_app
 from euporie.core.commands import add_cmd
@@ -34,14 +34,14 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
     from typing import Any
 
-    from prompt_toolkit.filters import FilterOrBool
-    from prompt_toolkit.formatted_text import StyleAndTextTuples
-    from prompt_toolkit.key_binding import KeyBindingsBase
-    from prompt_toolkit.key_binding.key_bindings import NotImplementedOrNone
-    from prompt_toolkit.layout.containers import AnyContainer
-    from prompt_toolkit.layout.dimension import AnyDimension
-    from prompt_toolkit.layout.mouse_handlers import MouseHandlers
-    from prompt_toolkit.layout.screen import Screen, WritePosition
+    from euporie.apptk.filters import FilterOrBool
+    from euporie.apptk.formatted_text import StyleAndTextTuples
+    from euporie.apptk.key_binding import KeyBindingsBase
+    from euporie.apptk.key_binding.key_bindings import NotImplementedOrNone
+    from euporie.apptk.layout.containers import AnyContainer
+    from euporie.apptk.layout.dimension import AnyDimension
+    from euporie.apptk.layout.mouse_handlers import MouseHandlers
+    from euporie.apptk.layout.screen import Screen, WritePosition
 
     from euporie.core.style import ColorPalette
 

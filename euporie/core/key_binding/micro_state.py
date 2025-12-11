@@ -6,7 +6,7 @@ from enum import Enum
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from prompt_toolkit.key_binding.key_processor import KeyPress
+    from euporie.apptk.key_binding.key_processor import KeyPress
 
 
 class MicroInputMode(str, Enum):

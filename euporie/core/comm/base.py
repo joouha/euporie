@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Mapping, Sequence
     from typing import Any
 
-    from prompt_toolkit.layout.containers import AnyContainer
+    from euporie.apptk.layout.containers import AnyContainer
 
     from euporie.core.kernel.jupyter import JupyterKernel
     from euporie.core.tabs.kernel import KernelTab

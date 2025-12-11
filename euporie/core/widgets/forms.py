@@ -11,13 +11,13 @@ from math import ceil, floor
 from typing import TYPE_CHECKING, cast
 from weakref import finalize
 
-from prompt_toolkit.auto_suggest import DynamicAutoSuggest
-from prompt_toolkit.buffer import Buffer, ValidationState
-from prompt_toolkit.cache import SimpleCache
-from prompt_toolkit.completion import Completer, ConditionalCompleter, WordCompleter
-from prompt_toolkit.data_structures import Point
-from prompt_toolkit.document import Document
-from prompt_toolkit.filters import (
+from euporie.apptk.auto_suggest import DynamicAutoSuggest
+from euporie.apptk.buffer import Buffer, ValidationState
+from euporie.apptk.cache import SimpleCache
+from euporie.apptk.completion import Completer, ConditionalCompleter, WordCompleter
+from euporie.apptk.data_structures import Point
+from euporie.apptk.document import Document
+from euporie.apptk.filters import (
     Always,
     Condition,
     Filter,
@@ -26,14 +26,14 @@ from prompt_toolkit.filters import (
     is_true,
     to_filter,
 )
-from prompt_toolkit.formatted_text.base import to_formatted_text
-from prompt_toolkit.formatted_text.utils import fragment_list_len, fragment_list_width
-from prompt_toolkit.key_binding.key_bindings import (
+from euporie.apptk.formatted_text.base import to_formatted_text
+from euporie.apptk.formatted_text.utils import fragment_list_len, fragment_list_width
+from euporie.apptk.key_binding.key_bindings import (
     ConditionalKeyBindings,
     KeyBindings,
     merge_key_bindings,
 )
-from prompt_toolkit.layout.containers import (
+from euporie.apptk.layout.containers import (
     ConditionalContainer,
     DynamicContainer,
     Float,
@@ -41,26 +41,26 @@ from prompt_toolkit.layout.containers import (
     Window,
     WindowAlign,
 )
-from prompt_toolkit.layout.controls import (
+from euporie.apptk.layout.controls import (
     BufferControl,
     FormattedTextControl,
     UIContent,
     UIControl,
 )
-from prompt_toolkit.layout.dimension import Dimension
-from prompt_toolkit.layout.processors import (
+from euporie.apptk.layout.dimension import Dimension
+from euporie.apptk.layout.processors import (
     AfterInput,
     BeforeInput,
     ConditionalProcessor,
     PasswordProcessor,
     Processor,
 )
-from prompt_toolkit.layout.screen import WritePosition
-from prompt_toolkit.layout.utils import explode_text_fragments
-from prompt_toolkit.lexers import DynamicLexer, Lexer
-from prompt_toolkit.mouse_events import MouseButton, MouseEvent, MouseEventType
-from prompt_toolkit.utils import Event
-from prompt_toolkit.validation import Validator
+from euporie.apptk.layout.screen import WritePosition
+from euporie.apptk.layout.utils import explode_text_fragments
+from euporie.apptk.lexers import DynamicLexer, Lexer
+from euporie.apptk.mouse_events import MouseButton, MouseEvent, MouseEventType
+from euporie.apptk.utils import Event
+from euporie.apptk.validation import Validator
 
 from euporie.core.app.current import get_app
 from euporie.core.border import InsetGrid
@@ -75,27 +75,27 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
     from typing import Any
 
-    from prompt_toolkit.auto_suggest import AutoSuggest
-    from prompt_toolkit.buffer import BufferAcceptHandler
-    from prompt_toolkit.completion.base import Completer
-    from prompt_toolkit.formatted_text.base import (
+    from euporie.apptk.auto_suggest import AutoSuggest
+    from euporie.apptk.buffer import BufferAcceptHandler
+    from euporie.apptk.completion.base import Completer
+    from euporie.apptk.formatted_text.base import (
         AnyFormattedText,
         OneStyleAndTextTuple,
         StyleAndTextTuples,
     )
-    from prompt_toolkit.key_binding.key_bindings import (
+    from euporie.apptk.key_binding.key_bindings import (
         KeyBindingsBase,
         NotImplementedOrNone,
     )
-    from prompt_toolkit.key_binding.key_processor import KeyPressEvent
-    from prompt_toolkit.layout.containers import AnyContainer
-    from prompt_toolkit.layout.controls import (
+    from euporie.apptk.key_binding.key_processor import KeyPressEvent
+    from euporie.apptk.layout.containers import AnyContainer
+    from euporie.apptk.layout.controls import (
         GetLinePrefixCallable,
         SearchBufferControl,
     )
-    from prompt_toolkit.layout.dimension import AnyDimension
-    from prompt_toolkit.layout.processors import Processor
-    from prompt_toolkit.lexers import Lexer
+    from euporie.apptk.layout.dimension import AnyDimension
+    from euporie.apptk.layout.processors import Processor
+    from euporie.apptk.lexers import Lexer
 
     from euporie.core.border import GridStyle
 
@@ -673,7 +673,7 @@ class Text:
             accept_handler: A callable which run when the input is accepted (when the
                 :kbd:`Enter` key is pressed on a non-multiline input)
             placeholder: Text to display when nothing has been entered
-            lexer: :class:`~prompt_toolkit.lexers.Lexer` instance for syntax
+            lexer: :class:`~euporie.apptk.lexers.Lexer` instance for syntax
                 highlighting
             input_processors: Additional input processors to apply to the text-area
             disabled: A filter which when evaluated to :py:const:`True` causes the
@@ -826,7 +826,7 @@ class Label:
         value = self.value
         data = value() if callable(value) else value
         if self.html():
-            from prompt_toolkit.formatted_text.utils import to_plain_text
+            from euporie.apptk.formatted_text.utils import to_plain_text
 
             from euporie.core.ft.html import HTML
 

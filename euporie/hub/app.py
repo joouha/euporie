@@ -15,7 +15,7 @@ except ModuleNotFoundError as err:
         'Install euporie hub with: "pip install euporie[hub]"'
     ) from err
 
-from prompt_toolkit.contrib.ssh import PromptToolkitSSHSession
+from euporie.apptk.contrib.ssh import PromptToolkitSSHSession
 from upath import UPath
 
 from euporie.core.__main__ import available_apps

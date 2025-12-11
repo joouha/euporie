@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from prompt_toolkit.filters import (
+from euporie.apptk.filters import (
     buffer_has_focus,
     has_completions,
     vi_mode,
@@ -29,7 +29,7 @@ from euporie.notebook.filters import (
 )
 
 if TYPE_CHECKING:
-    from prompt_toolkit.key_binding.key_bindings import NotImplementedOrNone
+    from euporie.apptk.key_binding.key_bindings import NotImplementedOrNone
 
 # euporie.notebook.tabs.log
 

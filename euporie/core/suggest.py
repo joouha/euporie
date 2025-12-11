@@ -9,15 +9,15 @@ from difflib import SequenceMatcher
 from functools import lru_cache, partial
 from typing import TYPE_CHECKING, NamedTuple
 
-from prompt_toolkit.auto_suggest import AutoSuggest, ConditionalAutoSuggest, Suggestion
-from prompt_toolkit.cache import SimpleCache
-from prompt_toolkit.filters import to_filter
+from euporie.apptk.auto_suggest import AutoSuggest, ConditionalAutoSuggest, Suggestion
+from euporie.apptk.cache import SimpleCache
+from euporie.apptk.filters import to_filter
 
 if TYPE_CHECKING:
-    from prompt_toolkit.buffer import Buffer
-    from prompt_toolkit.document import Document
-    from prompt_toolkit.filters import Filter
-    from prompt_toolkit.history import History
+    from euporie.apptk.buffer import Buffer
+    from euporie.apptk.document import Document
+    from euporie.apptk.filters import Filter
+    from euporie.apptk.history import History
 
 
 log = logging.getLogger(__name__)

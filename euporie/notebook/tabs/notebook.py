@@ -9,13 +9,13 @@ from functools import partial
 from typing import TYPE_CHECKING, ClassVar
 from uuid import uuid4
 
-from prompt_toolkit.clipboard.base import ClipboardData
-from prompt_toolkit.filters import (
+from euporie.apptk.clipboard.base import ClipboardData
+from euporie.apptk.filters import (
     Condition,
 )
-from prompt_toolkit.layout.containers import ConditionalContainer, VSplit
-from prompt_toolkit.layout.dimension import Dimension
-from prompt_toolkit.mouse_events import MouseEventType
+from euporie.apptk.layout.containers import ConditionalContainer, VSplit
+from euporie.apptk.layout.dimension import Dimension
+from euporie.apptk.mouse_events import MouseEventType
 
 from euporie.core.commands import get_cmd
 from euporie.core.filters import (
@@ -42,10 +42,10 @@ if TYPE_CHECKING:
     from pathlib import Path
     from typing import Any
 
-    from prompt_toolkit.formatted_text.base import AnyFormattedText
-    from prompt_toolkit.key_binding.key_bindings import NotImplementedOrNone
-    from prompt_toolkit.layout.containers import AnyContainer
-    from prompt_toolkit.mouse_events import MouseEvent
+    from euporie.apptk.formatted_text.base import AnyFormattedText
+    from euporie.apptk.key_binding.key_bindings import NotImplementedOrNone
+    from euporie.apptk.layout.containers import AnyContainer
+    from euporie.apptk.mouse_events import MouseEvent
 
     from euporie.core.app.app import BaseApp
     from euporie.core.bars.status import StatusBarFields

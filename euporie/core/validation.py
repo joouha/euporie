@@ -5,12 +5,12 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-from prompt_toolkit.validation import ValidationError, Validator
+from euporie.apptk.validation import ValidationError, Validator
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-    from prompt_toolkit.document import Document
+    from euporie.apptk.document import Document
 
     from euporie.core.kernel.base import BaseKernel
 

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from prompt_toolkit.filters.app import (
+from euporie.apptk.filters.app import (
     buffer_has_focus,
     has_selection,
 )
@@ -18,13 +18,13 @@ from euporie.core.filters import (
 from euporie.core.tabs.kernel import KernelTab
 
 if TYPE_CHECKING:
-    from prompt_toolkit.key_binding.key_processor import KeyPressEvent
+    from euporie.apptk.key_binding.key_processor import KeyPressEvent
 
 
 @add_cmd()
 async def _convert_to_notebook() -> None:
     """Convert the current console session to a notebook."""
-    from prompt_toolkit.application.run_in_terminal import in_terminal
+    from euporie.apptk.application.run_in_terminal import in_terminal
 
     from euporie.console.app import get_app
     from euporie.console.tabs.console import Console

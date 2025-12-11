@@ -7,28 +7,28 @@ from abc import ABCMeta, abstractmethod
 from functools import lru_cache, partial
 from typing import TYPE_CHECKING, ClassVar, NamedTuple, cast
 
-from prompt_toolkit.application.current import get_app
-from prompt_toolkit.cache import SimpleCache
-from prompt_toolkit.filters import Condition, to_filter
-from prompt_toolkit.formatted_text.base import to_formatted_text
-from prompt_toolkit.formatted_text.utils import fragment_list_width
-from prompt_toolkit.key_binding.key_bindings import KeyBindings
-from prompt_toolkit.layout.containers import (
+from euporie.apptk.application.current import get_app
+from euporie.apptk.cache import SimpleCache
+from euporie.apptk.filters import Condition, to_filter
+from euporie.apptk.formatted_text.base import to_formatted_text
+from euporie.apptk.formatted_text.utils import fragment_list_width
+from euporie.apptk.key_binding.key_bindings import KeyBindings
+from euporie.apptk.layout.containers import (
     ConditionalContainer,
     DynamicContainer,
     to_container,
 )
-from prompt_toolkit.layout.controls import (
+from euporie.apptk.layout.controls import (
     FormattedTextControl,
     GetLinePrefixCallable,
     UIContent,
     UIControl,
 )
-from prompt_toolkit.layout.dimension import Dimension as D
-from prompt_toolkit.layout.dimension import to_dimension
-from prompt_toolkit.layout.utils import explode_text_fragments
-from prompt_toolkit.mouse_events import MouseButton, MouseEventType
-from prompt_toolkit.utils import Event
+from euporie.apptk.layout.dimension import Dimension as D
+from euporie.apptk.layout.dimension import to_dimension
+from euporie.apptk.layout.utils import explode_text_fragments
+from euporie.apptk.mouse_events import MouseButton, MouseEventType
+from euporie.apptk.utils import Event
 
 from euporie.core.border import OutsetGrid
 from euporie.core.data_structures import DiBool
@@ -40,20 +40,20 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
     from typing import Any
 
-    from prompt_toolkit.filters import FilterOrBool
-    from prompt_toolkit.formatted_text.base import (
+    from euporie.apptk.filters import FilterOrBool
+    from euporie.apptk.formatted_text.base import (
         AnyFormattedText,
         OneStyleAndTextTuple,
         StyleAndTextTuples,
     )
-    from prompt_toolkit.key_binding.key_bindings import (
+    from euporie.apptk.key_binding.key_bindings import (
         KeyBindingsBase,
         NotImplementedOrNone,
     )
-    from prompt_toolkit.key_binding.key_processor import KeyPressEvent
-    from prompt_toolkit.layout.containers import AnyContainer, Container, _Split
-    from prompt_toolkit.layout.dimension import AnyDimension
-    from prompt_toolkit.mouse_events import MouseEvent
+    from euporie.apptk.key_binding.key_processor import KeyPressEvent
+    from euporie.apptk.layout.containers import AnyContainer, Container, _Split
+    from euporie.apptk.layout.dimension import AnyDimension
+    from euporie.apptk.mouse_events import MouseEvent
 
     from euporie.core.border import GridStyle
 

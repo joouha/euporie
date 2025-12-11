@@ -1,12 +1,12 @@
-"""Updated version of the prompt_toolkit caches."""
+"""Updated version of the euporie.apptk caches."""
 
 from __future__ import annotations
 
 import threading
 from typing import TYPE_CHECKING
 
-from prompt_toolkit.cache import _T, _U
-from prompt_toolkit.cache import SimpleCache as PtkSimpleCache
+from euporie.apptk.cache import _T, _U
+from euporie.apptk.cache import SimpleCache as PtkSimpleCache
 
 if TYPE_CHECKING:
     from collections.abc import Callable

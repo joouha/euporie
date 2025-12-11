@@ -12,7 +12,7 @@ from euporie.core.key_binding.registry import (
 )
 
 if TYPE_CHECKING:
-    from prompt_toolkit.key_binding import KeyBindingsBase, KeyPressEvent
+    from euporie.apptk.key_binding import KeyBindingsBase, KeyPressEvent
 
     from euporie.core.config import Config
 

@@ -7,17 +7,17 @@ from functools import partial
 from typing import TYPE_CHECKING, cast
 from weakref import WeakKeyDictionary
 
-from prompt_toolkit.filters import Condition
-from prompt_toolkit.formatted_text.base import to_formatted_text
-from prompt_toolkit.layout.containers import (
+from euporie.apptk.filters import Condition
+from euporie.apptk.formatted_text.base import to_formatted_text
+from euporie.apptk.layout.containers import (
     ConditionalContainer,
     DynamicContainer,
     Float,
     FloatContainer,
     WindowAlign,
 )
-from prompt_toolkit.layout.controls import FormattedTextControl
-from prompt_toolkit.layout.dimension import Dimension
+from euporie.apptk.layout.controls import FormattedTextControl
+from euporie.apptk.layout.dimension import Dimension
 
 from euporie.core.app.app import BaseApp
 from euporie.core.bars.command import CommandBar
@@ -57,9 +57,9 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
     from typing import Any
 
-    from prompt_toolkit.application.application import Application
-    from prompt_toolkit.formatted_text import StyleAndTextTuples
-    from prompt_toolkit.layout.containers import AnyContainer
+    from euporie.apptk.application.application import Application
+    from euporie.apptk.formatted_text import StyleAndTextTuples
+    from euporie.apptk.layout.containers import AnyContainer
 
     from euporie.core.tabs import TabRegistryEntry
     from euporie.core.tabs.base import Tab

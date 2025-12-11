@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, cast
 
-from prompt_toolkit.application.current import get_app as ptk_get_app
+from euporie.apptk.application.current import get_app as ptk_get_app
 
 if TYPE_CHECKING:
     from euporie.notebook.app import NotebookApp

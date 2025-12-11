@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from prompt_toolkit.layout.containers import Window, WindowAlign
-from prompt_toolkit.layout.controls import FormattedTextControl
-from prompt_toolkit.widgets.base import Label
+from euporie.apptk.layout.containers import Window, WindowAlign
+from euporie.apptk.layout.controls import FormattedTextControl
+from euporie.apptk.widgets.base import Label
 
 from euporie.core import __version__
 

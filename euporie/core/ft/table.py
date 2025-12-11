@@ -7,10 +7,10 @@ from functools import lru_cache, partial
 from itertools import tee, zip_longest
 from typing import TYPE_CHECKING, cast
 
-from prompt_toolkit.application.current import get_app_session
-from prompt_toolkit.formatted_text.base import to_formatted_text
-from prompt_toolkit.formatted_text.utils import split_lines, to_plain_text
-from prompt_toolkit.layout.dimension import Dimension, to_dimension
+from euporie.apptk.application.current import get_app_session
+from euporie.apptk.formatted_text.base import to_formatted_text
+from euporie.apptk.formatted_text.utils import split_lines, to_plain_text
+from euporie.apptk.layout.dimension import Dimension, to_dimension
 
 from euporie.core.border import (
     DiLineStyle,
@@ -42,11 +42,11 @@ if TYPE_CHECKING:
         TypeVar,
     )
 
-    from prompt_toolkit.formatted_text.base import (
+    from euporie.apptk.formatted_text.base import (
         AnyFormattedText,
         StyleAndTextTuples,
     )
-    from prompt_toolkit.layout.dimension import AnyDimension
+    from euporie.apptk.layout.dimension import AnyDimension
 
     PairT = TypeVar("PairT")
 

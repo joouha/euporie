@@ -6,8 +6,8 @@ import logging
 from functools import partial
 from typing import TYPE_CHECKING, ClassVar
 
-from prompt_toolkit.layout.containers import HSplit
-from prompt_toolkit.layout.dimension import Dimension
+from euporie.apptk.layout.containers import HSplit
+from euporie.apptk.layout.dimension import Dimension
 
 from euporie.core.filters import insert_mode, replace_mode
 from euporie.core.kernel.base import BaseKernel, MsgCallbacks
@@ -20,7 +20,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable
     from pathlib import Path
 
-    from prompt_toolkit.layout.containers import AnyContainer, Window
+    from euporie.apptk.layout.containers import AnyContainer, Window
 
     from euporie.core.app.app import BaseApp
     from euporie.core.bars.status import StatusBarFields

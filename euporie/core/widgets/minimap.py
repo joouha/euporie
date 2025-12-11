@@ -7,16 +7,16 @@ from textwrap import wrap
 from typing import TYPE_CHECKING
 
 from code_minimap import render as render_minimap
-from prompt_toolkit.cache import FastDictCache, SimpleCache
-from prompt_toolkit.data_structures import Point
-from prompt_toolkit.formatted_text import (
+from euporie.apptk.cache import FastDictCache, SimpleCache
+from euporie.apptk.data_structures import Point
+from euporie.apptk.formatted_text import (
     StyleAndTextTuples,
 )
-from prompt_toolkit.layout.containers import HSplit, VSplit, Window, WindowAlign
-from prompt_toolkit.layout.controls import BufferControl, UIContent, UIControl
-from prompt_toolkit.mouse_events import MouseButton, MouseEventType
-from prompt_toolkit.utils import Event
-from prompt_toolkit.widgets.base import Label
+from euporie.apptk.layout.containers import HSplit, VSplit, Window, WindowAlign
+from euporie.apptk.layout.controls import BufferControl, UIContent, UIControl
+from euporie.apptk.mouse_events import MouseButton, MouseEventType
+from euporie.apptk.utils import Event
+from euporie.apptk.widgets.base import Label
 
 from euporie.core.app.current import get_app
 from euporie.core.data_structures import DiBool
@@ -28,15 +28,15 @@ from euporie.core.widgets.layout import Box
 if TYPE_CHECKING:
     from collections.abc import Hashable, Iterable
 
-    from prompt_toolkit.buffer import Buffer
-    from prompt_toolkit.formatted_text import StyleAndTextTuples
-    from prompt_toolkit.key_binding.key_bindings import (
+    from euporie.apptk.buffer import Buffer
+    from euporie.apptk.formatted_text import StyleAndTextTuples
+    from euporie.apptk.key_binding.key_bindings import (
         KeyBindingsBase,
         NotImplementedOrNone,
     )
-    from prompt_toolkit.layout.containers import AnyContainer
-    from prompt_toolkit.layout.controls import GetLinePrefixCallable
-    from prompt_toolkit.mouse_events import MouseEvent
+    from euporie.apptk.layout.containers import AnyContainer
+    from euporie.apptk.layout.controls import GetLinePrefixCallable
+    from euporie.apptk.mouse_events import MouseEvent
 
     from euporie.core.tabs.base import Tab
 

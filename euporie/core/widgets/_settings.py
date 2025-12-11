@@ -1,6 +1,6 @@
 """Defines widget settings."""
 
-from prompt_toolkit.filters import buffer_has_focus
+from euporie.apptk.filters import buffer_has_focus
 
 from euporie.core.app.current import get_app
 from euporie.core.config import add_setting

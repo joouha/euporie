@@ -8,8 +8,8 @@ from importlib.util import find_spec
 from shutil import which
 from typing import TYPE_CHECKING
 
-# from prompt_toolkit.enums import EditingMode
-from prompt_toolkit.filters import (
+# from euporie.apptk.enums import EditingMode
+from euporie.apptk.filters import (
     Condition,
     emacs_insert_mode,
     emacs_mode,
@@ -23,8 +23,8 @@ from prompt_toolkit.filters import (
 from euporie.core.key_binding.micro_state import MicroInputMode
 
 if TYPE_CHECKING:
-    from prompt_toolkit.filters import Filter
-    from prompt_toolkit.layout.containers import Window
+    from euporie.apptk.filters import Filter
+    from euporie.apptk.layout.containers import Window
 
 
 @cache
@@ -58,7 +58,7 @@ in_mplex = in_tmux | in_screen
 @Condition
 def cursor_in_leading_ws() -> bool:
     """Determine if the cursor of the current buffer is in leading whitespace."""
-    from prompt_toolkit.application.current import get_app
+    from euporie.apptk.application.current import get_app
 
     before = get_app().current_buffer.document.current_line_before_cursor
     return (not before) or before.isspace()
@@ -67,7 +67,7 @@ def cursor_in_leading_ws() -> bool:
 @Condition
 def cursor_at_end_of_line() -> bool:
     """Determine if the cursor of the current buffer is in leading whitespace."""
-    from prompt_toolkit.application.current import get_app
+    from euporie.apptk.application.current import get_app
 
     return get_app().current_buffer.document.is_cursor_at_the_end_of_line
 
@@ -75,7 +75,7 @@ def cursor_at_end_of_line() -> bool:
 @Condition
 def has_suggestion() -> bool:
     """Determine if the current buffer can display a suggestion."""
-    from prompt_toolkit.application.current import get_app
+    from euporie.apptk.application.current import get_app
 
     app = get_app()
     return (
@@ -96,7 +96,7 @@ def has_tabs() -> bool:
 @Condition
 def has_dialog() -> bool:
     """Determine if a dialog is being displayed."""
-    from prompt_toolkit.layout.containers import ConditionalContainer
+    from euporie.apptk.layout.containers import ConditionalContainer
 
     from euporie.core.app.current import get_app
 
@@ -110,7 +110,7 @@ def has_dialog() -> bool:
 @Condition
 def has_menus() -> bool:
     """Determine if a menu is being displayed."""
-    from prompt_toolkit.layout.containers import ConditionalContainer
+    from euporie.apptk.layout.containers import ConditionalContainer
 
     from euporie.notebook.current import get_app
 
@@ -331,7 +331,7 @@ def is_searching() -> bool:
 @Condition
 def at_end_of_buffer() -> bool:
     """Determine if the cursor is at the end of the current buffer."""
-    from prompt_toolkit.application.current import get_app
+    from euporie.apptk.application.current import get_app
 
     buffer = get_app().current_buffer
     return buffer.cursor_position == len(buffer.text)

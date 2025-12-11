@@ -6,8 +6,8 @@ import logging
 import random
 from typing import TYPE_CHECKING
 
-from prompt_toolkit.layout.dimension import Dimension
-from prompt_toolkit.mouse_events import MouseButton, MouseEventType
+from euporie.apptk.layout.dimension import Dimension
+from euporie.apptk.mouse_events import MouseButton, MouseEventType
 
 from euporie.core.bars.status import StatusContainer
 from euporie.core.border import RoundedLine
@@ -27,9 +27,9 @@ from euporie.notebook.tips import TIPS
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from prompt_toolkit.key_binding.key_bindings import NotImplementedOrNone
-    from prompt_toolkit.layout.containers import AnyContainer
-    from prompt_toolkit.mouse_events import MouseEvent
+    from euporie.apptk.key_binding.key_bindings import NotImplementedOrNone
+    from euporie.apptk.layout.containers import AnyContainer
+    from euporie.apptk.mouse_events import MouseEvent
 
     from euporie.core.app.app import BaseApp
     from euporie.core.bars.status import StatusBarFields
