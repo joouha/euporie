@@ -6,8 +6,8 @@ from typing import cast
 from unittest.mock import Mock, call, patch
 
 import pytest
-from prompt_toolkit.layout.containers import Window
 
+from euporie.apptk.layout.containers import Window
 from euporie.core.comm.base import Comm, CommView, UnimplementedComm
 from euporie.core.tabs.kernel import KernelTab
 from euporie.core.widgets.display import Display

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from prompt_toolkit.formatted_text import to_formatted_text
+from euporie.apptk.formatted_text import to_formatted_text
 
 from euporie.core.ft.ansi import ANSI
 

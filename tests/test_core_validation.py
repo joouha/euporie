@@ -6,8 +6,8 @@ from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, Mock, NonCallableMock
 
 import pytest
-from prompt_toolkit.document import Document
-from prompt_toolkit.validation import ValidationError
+from euporie.apptk.document import Document
+from euporie.apptk.validation import ValidationError
 
 from euporie.core.validation import KernelValidator
 

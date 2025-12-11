@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from prompt_toolkit.formatted_text.base import to_formatted_text
-from prompt_toolkit.formatted_text.utils import to_plain_text
+from euporie.apptk.formatted_text.base import to_formatted_text
+from euporie.apptk.formatted_text.utils import to_plain_text
 
 from euporie.core.ft.html import HTML
 

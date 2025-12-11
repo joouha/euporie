@@ -5,10 +5,10 @@ from __future__ import annotations
 import gc
 from unittest.mock import PropertyMock, patch
 
+from euporie.apptk.application.current import set_app
 from PIL import Image
-from prompt_toolkit.application.current import set_app
-from prompt_toolkit.data_structures import Size
 
+from euporie.apptk.data_structures import Size
 from euporie.core.app.dummy import DummyApp
 from euporie.core.convert.datum import Datum
 
