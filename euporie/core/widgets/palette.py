@@ -7,19 +7,18 @@ import re
 from functools import partial
 from typing import TYPE_CHECKING, NamedTuple
 
-from euporie.apptk.data_structures import Point
 from euporie.apptk.filters import Condition
 from euporie.apptk.key_binding.bindings.focus import focus_next, focus_previous
 from euporie.apptk.key_binding.vi_state import InputMode
-from euporie.apptk.layout.containers import ScrollOffsets
+
+from euporie.apptk.data_structures import Point
+from euporie.apptk.layout.containers import HSplit, ScrollOffsets, VSplit, Window
 from euporie.apptk.layout.controls import UIContent, UIControl
 from euporie.apptk.mouse_events import MouseEvent, MouseEventType
-
 from euporie.core.app.current import get_app
 from euporie.core.bars.status import StatusContainer
 from euporie.core.commands import Command, add_cmd, commands
 from euporie.core.key_binding.registry import register_bindings
-from euporie.core.layout.containers import HSplit, VSplit, Window
 from euporie.core.layout.decor import FocusedStyle
 from euporie.core.margins import MarginContainer, ScrollbarMargin
 from euporie.core.widgets.dialog import Dialog
@@ -30,8 +29,8 @@ if TYPE_CHECKING:
     from euporie.apptk.formatted_text import StyleAndTextTuples
     from euporie.apptk.key_binding.key_bindings import NotImplementedOrNone
     from euporie.apptk.key_binding.key_processor import KeyPressEvent
-    from euporie.apptk.layout.controls import GetLinePrefixCallable
 
+    from euporie.apptk.layout.controls import GetLinePrefixCallable
     from euporie.core.app.app import BaseApp
     from euporie.core.bars.status import StatusBarFields
 

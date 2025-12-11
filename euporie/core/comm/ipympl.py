@@ -8,16 +8,19 @@ from functools import partial
 from typing import TYPE_CHECKING
 
 from euporie.apptk.filters.base import Condition
-from euporie.apptk.layout.containers import ConditionalContainer
-from euporie.apptk.mouse_events import MouseButton, MouseEventType, MouseModifier
 
+from euporie.apptk.layout.containers import ConditionalContainer, HSplit, VSplit
+from euporie.apptk.mouse_events import (
+    MouseButton,
+    MouseEventType,
+    MouseModifier,
+    RelativePosition,
+)
 from euporie.core.comm.base import CommView
 from euporie.core.comm.ipywidgets import IpyWidgetComm
 from euporie.core.convert.datum import Datum
 from euporie.core.convert.mime import MIME_FORMATS
-from euporie.core.layout.containers import HSplit, VSplit
 from euporie.core.layout.decor import FocusedStyle
-from euporie.core.mouse_events import RelativePosition
 from euporie.core.widgets.display import Display
 from euporie.core.widgets.forms import Button, Label, ToggleButton
 from euporie.core.widgets.layout import Box
@@ -27,8 +30,8 @@ if TYPE_CHECKING:
     from typing import Any
 
     from euporie.apptk.key_binding.key_bindings import NotImplementedOrNone
-    from euporie.apptk.mouse_events import MouseEvent as PtkMouseEvent
 
+    from euporie.apptk.mouse_events import MouseEvent as PtkMouseEvent
     from euporie.core.tabs.kernel import KernelTab
     from euporie.core.widgets.cell_outputs import OutputParent
 log = logging.getLogger(__name__)

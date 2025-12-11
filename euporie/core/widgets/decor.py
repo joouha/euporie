@@ -6,25 +6,28 @@ import logging
 from typing import TYPE_CHECKING
 
 from euporie.apptk.filters import to_filter
-from euporie.apptk.layout.containers import (
-    ConditionalContainer,
-    DynamicContainer,
-)
 from euporie.apptk.widgets.base import Label
 
+from euporie.apptk.data_structures import DiBool
+from euporie.apptk.layout.containers import (
+    ConditionalContainer,
+    DummyContainer,
+    DynamicContainer,
+    HSplit,
+    VSplit,
+    Window,
+)
 from euporie.core.app.current import get_app
 from euporie.core.border import ThinLine
-from euporie.core.data_structures import DiBool
-from euporie.core.layout.containers import DummyContainer, HSplit, VSplit, Window
 from euporie.core.layout.decor import DropShadow
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
     from euporie.apptk.formatted_text.base import AnyFormattedText
+
     from euporie.apptk.layout.containers import AnyContainer
     from euporie.apptk.mouse_events import MouseEvent
-
     from euporie.core.border import GridStyle
 
     MouseHandler = Callable[[MouseEvent], object]

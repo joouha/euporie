@@ -13,7 +13,6 @@ from weakref import ReferenceType, WeakValueDictionary, finalize, ref
 
 from euporie.apptk.data_structures import Size
 from euporie.apptk.layout.containers import WindowAlign
-
 from euporie.core.app.current import get_app
 from euporie.core.async_utils import get_or_create_loop, run_coro_sync
 from euporie.core.convert.registry import (
@@ -30,7 +29,7 @@ if TYPE_CHECKING:
     from PIL.Image import Image as PilImage
     from rich.console import ConsoleRenderable
 
-    from euporie.core.data_structures import DiInt
+    from euporie.apptk.data_structures import DiInt
     from euporie.core.style import ColorPaletteColor
 
 

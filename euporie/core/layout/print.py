@@ -6,14 +6,14 @@ import logging
 from typing import TYPE_CHECKING
 
 from euporie.apptk.application.current import get_app
+from euporie.apptk.layout.dimension import Dimension, to_dimension
+
 from euporie.apptk.layout.containers import (
     Container,
     Window,
     to_container,
 )
-from euporie.apptk.layout.dimension import Dimension, to_dimension
-
-from euporie.core.layout.screen import BoundedWritePosition
+from euporie.apptk.layout.screen import BoundedWritePosition
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
@@ -21,9 +21,10 @@ if TYPE_CHECKING:
     from euporie.apptk.key_binding.key_bindings import (
         KeyBindingsBase,
     )
-    from euporie.apptk.layout.containers import AnyContainer
     from euporie.apptk.layout.dimension import AnyDimension
     from euporie.apptk.layout.mouse_handlers import MouseHandlers
+
+    from euporie.apptk.layout.containers import AnyContainer
     from euporie.apptk.layout.screen import Screen, WritePosition
     from euporie.apptk.mouse_events import MouseEvent
 

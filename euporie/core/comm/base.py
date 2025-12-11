@@ -14,7 +14,6 @@ if TYPE_CHECKING:
     from typing import Any
 
     from euporie.apptk.layout.containers import AnyContainer
-
     from euporie.core.kernel.jupyter import JupyterKernel
     from euporie.core.tabs.kernel import KernelTab
     from euporie.core.widgets.cell_outputs import OutputParent

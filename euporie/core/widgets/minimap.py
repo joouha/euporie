@@ -7,19 +7,18 @@ from textwrap import wrap
 from typing import TYPE_CHECKING
 
 from code_minimap import render as render_minimap
-from euporie.apptk.cache import FastDictCache, SimpleCache
-from euporie.apptk.data_structures import Point
 from euporie.apptk.formatted_text import (
     StyleAndTextTuples,
 )
-from euporie.apptk.layout.containers import HSplit, VSplit, Window, WindowAlign
-from euporie.apptk.layout.controls import BufferControl, UIContent, UIControl
-from euporie.apptk.mouse_events import MouseButton, MouseEventType
 from euporie.apptk.utils import Event
 from euporie.apptk.widgets.base import Label
 
+from euporie.apptk.cache import FastDictCache, SimpleCache
+from euporie.apptk.data_structures import DiBool, Point
+from euporie.apptk.layout.containers import HSplit, VSplit, Window, WindowAlign
+from euporie.apptk.layout.controls import BufferControl, UIContent, UIControl
+from euporie.apptk.mouse_events import MouseButton, MouseEventType
 from euporie.core.app.current import get_app
-from euporie.core.data_structures import DiBool
 from euporie.core.layout.decor import FocusedStyle
 from euporie.core.margins import MarginContainer, ScrollbarMargin
 from euporie.core.widgets.forms import Button
@@ -34,10 +33,10 @@ if TYPE_CHECKING:
         KeyBindingsBase,
         NotImplementedOrNone,
     )
+
     from euporie.apptk.layout.containers import AnyContainer
     from euporie.apptk.layout.controls import GetLinePrefixCallable
     from euporie.apptk.mouse_events import MouseEvent
-
     from euporie.core.tabs.base import Tab
 
 

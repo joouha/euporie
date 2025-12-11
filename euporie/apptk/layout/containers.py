@@ -15,33 +15,30 @@ from functools import lru_cache, partial
 from typing import TYPE_CHECKING, NamedTuple
 
 from euporie.apptk.application.current import get_app
-from euporie.apptk.data_structures import Point
-from euporie.apptk.layout import containers as ptk_containers
-from euporie.apptk.layout.containers import (
+from euporie.apptk.layout.dimension import Dimension
+from euporie.apptk.layout.utils import explode_text_fragments
+from euporie.apptk.utils import get_cwidth, take_using_weights, to_str
+from prompt_toolkit.layout import containers as ptk_containers
+from prompt_toolkit.layout.containers import (
     Container,
     HorizontalAlign,
     VerticalAlign,
     WindowAlign,
     WindowRenderInfo,
 )
-from euporie.apptk.layout.controls import DummyControl as PtkDummyControl
+
+from euporie.apptk.cache import SimpleCache
+from euporie.apptk.data_structures import DiInt, Point
 from euporie.apptk.layout.controls import (
+    DummyControl,
     FormattedTextControl,
     UIContent,
     fragment_list_width,
     to_formatted_text,
 )
-from euporie.apptk.layout.dimension import Dimension
-from euporie.apptk.layout.screen import _CHAR_CACHE
-from euporie.apptk.layout.utils import explode_text_fragments
-from euporie.apptk.mouse_events import MouseEventType
-from euporie.apptk.utils import get_cwidth, take_using_weights, to_str
-
-from euporie.core.cache import SimpleCache
-from euporie.core.data_structures import DiInt
-from euporie.core.layout.controls import DummyControl
-from euporie.core.layout.screen import BoundedWritePosition
-from euporie.core.mouse_events import MouseEvent
+from euporie.apptk.layout.controls import DummyControl as PtkDummyControl
+from euporie.apptk.layout.screen import _CHAR_CACHE, BoundedWritePosition
+from euporie.apptk.mouse_events import MouseEvent, MouseEventType
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
@@ -52,13 +49,14 @@ if TYPE_CHECKING:
         KeyBindingsBase,
         NotImplementedOrNone,
     )
+    from euporie.apptk.layout.margins import Margin
+    from euporie.apptk.layout.mouse_handlers import MouseHandlers
+
     from euporie.apptk.layout.containers import (
         AnyContainer,
         AnyDimension,
         Float,
     )
-    from euporie.apptk.layout.margins import Margin
-    from euporie.apptk.layout.mouse_handlers import MouseHandlers
     from euporie.apptk.layout.screen import Screen, WritePosition
     from euporie.apptk.mouse_events import MouseEvent as PtkMouseEvent
 
@@ -1322,9 +1320,3 @@ class FloatContainer(ptk_containers.FloatContainer):
                     erase_bg=not fl.transparent(),
                     z_index=z_index,
                 )
-
-
-ptk_containers.HSplit = HSplit  # type: ignore[misc]
-ptk_containers.VSplit = VSplit  # type: ignore[misc]
-ptk_containers.Window = Window  # type: ignore[misc]
-ptk_containers.FloatContainer = FloatContainer  # type: ignore[misc]

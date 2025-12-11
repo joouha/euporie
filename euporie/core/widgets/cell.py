@@ -18,14 +18,17 @@ from euporie.apptk.completion.base import (
 from euporie.apptk.document import Document
 from euporie.apptk.filters.app import is_searching
 from euporie.apptk.filters.base import Condition
-from euporie.apptk.layout.containers import (
-    ConditionalContainer,
-    Container,
-)
-from euporie.apptk.layout.controls import FormattedTextControl
 from euporie.apptk.layout.dimension import Dimension
 from euporie.apptk.utils import Event
 
+from euporie.apptk.layout.containers import (
+    ConditionalContainer,
+    Container,
+    HSplit,
+    VSplit,
+    Window,
+)
+from euporie.apptk.layout.controls import FormattedTextControl
 from euporie.core.app.current import get_app
 from euporie.core.border import NoLine, ThickLine, ThinLine
 from euporie.core.completion import DeduplicateCompleter, LspCompleter
@@ -36,7 +39,6 @@ from euporie.core.inspection import (
     FirstInspector,
     LspInspector,
 )
-from euporie.core.layout.containers import HSplit, VSplit, Window
 from euporie.core.lsp import LspCell
 from euporie.core.utils import on_click
 from euporie.core.widgets.cell_outputs import CellOutputArea

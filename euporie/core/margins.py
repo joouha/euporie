@@ -7,19 +7,22 @@ import logging
 from abc import ABCMeta
 from typing import TYPE_CHECKING, cast
 
-from euporie.apptk.data_structures import Point
 from euporie.apptk.filters import FilterOrBool, to_filter
-from euporie.apptk.layout.containers import ScrollOffsets, WindowRenderInfo
-from euporie.apptk.layout.controls import FormattedTextControl
 from euporie.apptk.layout.dimension import Dimension
 from euporie.apptk.layout.margins import Margin
-from euporie.apptk.layout.screen import WritePosition
-from euporie.apptk.mouse_events import MouseButton, MouseEventType
-from euporie.apptk.mouse_events import MouseEvent as PtkMouseEvent
 
+from euporie.apptk.data_structures import Point
+from euporie.apptk.layout.containers import ScrollOffsets, Window, WindowRenderInfo
+from euporie.apptk.layout.controls import FormattedTextControl
+from euporie.apptk.layout.screen import WritePosition
+from euporie.apptk.mouse_events import (
+    MouseButton,
+    MouseEvent,
+    MouseEventType,
+    RelativePosition,
+)
+from euporie.apptk.mouse_events import MouseEvent as PtkMouseEvent
 from euporie.core.app.current import get_app
-from euporie.core.layout.containers import Window
-from euporie.core.mouse_events import MouseEvent, RelativePosition
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -30,11 +33,11 @@ if TYPE_CHECKING:
         KeyBindingsBase,
         NotImplementedOrNone,
     )
+    from euporie.apptk.layout.mouse_handlers import MouseHandlers
+
     from euporie.apptk.layout.containers import Container
     from euporie.apptk.layout.controls import UIContent
-    from euporie.apptk.layout.mouse_handlers import MouseHandlers
     from euporie.apptk.layout.screen import Screen
-
     from euporie.core.diagnostics import Report
 
     class ScrollableContainer(Protocol):

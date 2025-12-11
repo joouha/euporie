@@ -16,7 +16,6 @@ from weakref import WeakSet, WeakValueDictionary
 
 from prompt_toolkit.application.application import Application, _CombinedRegistry
 from prompt_toolkit.application.current import create_app_session, set_app
-from prompt_toolkit.data_structures import Point
 from prompt_toolkit.enums import EditingMode
 from prompt_toolkit.filters import Condition, buffer_has_focus, to_filter
 from prompt_toolkit.input.defaults import create_input
@@ -38,7 +37,6 @@ from euporie.apptk.key_binding.key_bindings import (
     ConditionalKeyBindings,
     merge_key_bindings,
 )
-from euporie.apptk.layout.containers import Float, FloatContainer, to_container
 from euporie.apptk.layout.layout import Layout
 from euporie.apptk.output import ColorDepth
 from euporie.apptk.output.defaults import create_output
@@ -56,6 +54,8 @@ from euporie.apptk.styles import (
 )
 from euporie.apptk.utils import Event
 
+from euporie.apptk.data_structures import Point
+from euporie.apptk.layout.containers import Float, FloatContainer, Window, to_container
 from euporie.core.app.base import ConfigurableApp
 from euporie.core.app.cursor import CursorConfig
 from euporie.core.clipboard import CONFIGURED_CLIPBOARDS
@@ -69,7 +69,6 @@ from euporie.core.key_binding.registry import (
     register_bindings,
 )
 from euporie.core.key_binding.vi_state import ViState
-from euporie.core.layout.containers import Window
 from euporie.core.log import setup_logs
 from euporie.core.lsp import KNOWN_LSP_SERVERS, LspClient
 from euporie.core.renderer import Renderer
@@ -99,11 +98,11 @@ if TYPE_CHECKING:
     from euporie.apptk.contrib.ssh import PromptToolkitSSHSession
     from euporie.apptk.filters import Filter, FilterOrBool
     from euporie.apptk.input import Input
-    from euporie.apptk.layout.containers import AnyContainer
     from euporie.apptk.layout.layout import FocusableElement
-    from euporie.apptk.layout.screen import WritePosition
     from euporie.apptk.output import Output
 
+    from euporie.apptk.layout.containers import AnyContainer
+    from euporie.apptk.layout.screen import WritePosition
     from euporie.core.bars.command import CommandBar
     from euporie.core.bars.search import SearchBar
     from euporie.core.config import Setting

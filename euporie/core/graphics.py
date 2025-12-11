@@ -8,22 +8,21 @@ from abc import ABCMeta, abstractmethod
 from math import ceil, floor
 from typing import TYPE_CHECKING
 
-from euporie.apptk.cache import FastDictCache, SimpleCache
-from euporie.apptk.data_structures import Point
 from euporie.apptk.filters.base import Condition
 from euporie.apptk.filters.utils import to_filter
 from euporie.apptk.formatted_text.base import to_formatted_text
 from euporie.apptk.formatted_text.utils import split_lines
-from euporie.apptk.layout.containers import Float, Window
-from euporie.apptk.layout.controls import GetLinePrefixCallable, UIContent, UIControl
 from euporie.apptk.layout.mouse_handlers import MouseHandlers
-from euporie.apptk.layout.screen import Char, WritePosition
 from euporie.apptk.utils import get_cwidth
 
+from euporie.apptk.cache import FastDictCache, SimpleCache
+from euporie.apptk.data_structures import DiInt, Point
+from euporie.apptk.layout.containers import Float, Window
+from euporie.apptk.layout.controls import GetLinePrefixCallable, UIContent, UIControl
+from euporie.apptk.layout.screen import Char, WritePosition
 from euporie.core.app.current import get_app
 from euporie.core.convert.datum import Datum
 from euporie.core.convert.registry import find_route
-from euporie.core.data_structures import DiInt
 from euporie.core.filters import has_float, in_mplex
 from euporie.core.ft.utils import _ZERO_WIDTH_FRAGMENTS
 from euporie.core.io import passthrough
@@ -35,6 +34,7 @@ if TYPE_CHECKING:
 
     from euporie.apptk.filters import FilterOrBool
     from euporie.apptk.formatted_text import StyleAndTextTuples
+
     from euporie.apptk.layout.screen import Screen
 
 

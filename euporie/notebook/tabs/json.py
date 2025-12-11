@@ -7,9 +7,9 @@ import json
 import logging
 from typing import TYPE_CHECKING, ClassVar
 
-from euporie.apptk.layout.containers import VSplit
 from euporie.apptk.layout.dimension import Dimension
 
+from euporie.apptk.layout.containers import VSplit
 from euporie.core.layout.scroll import ScrollingContainer
 from euporie.core.margins import MarginContainer, ScrollbarMargin
 from euporie.core.tabs.base import Tab
@@ -19,7 +19,6 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     from euporie.apptk.layout.containers import AnyContainer
-
     from euporie.core.app.app import BaseApp
     from euporie.core.bars.status import StatusBarFields
 

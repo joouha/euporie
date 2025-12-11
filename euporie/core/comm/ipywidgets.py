@@ -14,12 +14,12 @@ from functools import partial
 from typing import TYPE_CHECKING
 
 from euporie.apptk.filters.base import Condition
-from euporie.apptk.layout.containers import HSplit, VSplit
 from euporie.apptk.layout.processors import BeforeInput
 
+from euporie.apptk.data_structures import DiBool
+from euporie.apptk.layout.containers import HSplit, VSplit
 from euporie.core.border import InsetGrid
 from euporie.core.comm.base import Comm, CommView
-from euporie.core.data_structures import DiBool
 from euporie.core.kernel.jupyter import MsgCallbacks
 from euporie.core.layout.decor import FocusedStyle
 from euporie.core.widgets.decor import Border
@@ -51,8 +51,8 @@ if TYPE_CHECKING:
 
     from euporie.apptk.buffer import Buffer
     from euporie.apptk.formatted_text.base import AnyFormattedText
-    from euporie.apptk.layout.containers import AnyContainer, _Split
 
+    from euporie.apptk.layout.containers import AnyContainer, _Split
     from euporie.core.tabs.kernel import KernelTab
     from euporie.core.widgets.cell_outputs import OutputParent
     from euporie.core.widgets.forms import SelectableWidget, ToggleableWidget

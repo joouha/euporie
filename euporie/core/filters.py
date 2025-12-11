@@ -24,6 +24,7 @@ from euporie.core.key_binding.micro_state import MicroInputMode
 
 if TYPE_CHECKING:
     from euporie.apptk.filters import Filter
+
     from euporie.apptk.layout.containers import Window
 
 
@@ -97,7 +98,6 @@ def has_tabs() -> bool:
 def has_dialog() -> bool:
     """Determine if a dialog is being displayed."""
     from euporie.apptk.layout.containers import ConditionalContainer
-
     from euporie.core.app.current import get_app
 
     app = get_app()
@@ -111,7 +111,6 @@ def has_dialog() -> bool:
 def has_menus() -> bool:
     """Determine if a menu is being displayed."""
     from euporie.apptk.layout.containers import ConditionalContainer
-
     from euporie.notebook.current import get_app
 
     app = get_app()

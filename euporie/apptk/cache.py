@@ -5,8 +5,8 @@ from __future__ import annotations
 import threading
 from typing import TYPE_CHECKING
 
-from euporie.apptk.cache import _T, _U
-from euporie.apptk.cache import SimpleCache as PtkSimpleCache
+from prompt_toolkit.cache import _T, _U
+from prompt_toolkit.cache import SimpleCache as PtkSimpleCache
 
 if TYPE_CHECKING:
     from collections.abc import Callable

@@ -12,11 +12,11 @@ from euporie.apptk.filters.app import is_searching
 from euporie.apptk.filters.base import Condition
 from euporie.apptk.formatted_text.base import to_formatted_text
 from euporie.apptk.key_binding.vi_state import InputMode
-from euporie.apptk.layout.controls import BufferControl, SearchBufferControl
 from euporie.apptk.search import SearchDirection
 from euporie.apptk.selection import SelectionState
 from euporie.apptk.widgets import SearchToolbar as PtkSearchToolbar
 
+from euporie.apptk.layout.controls import BufferControl, SearchBufferControl
 from euporie.core.app.current import get_app
 from euporie.core.bars import SEARCH_BAR_BUFFER
 from euporie.core.commands import add_cmd
@@ -28,6 +28,7 @@ from euporie.core.key_binding.registry import (
 if TYPE_CHECKING:
     from euporie.apptk.filters import FilterOrBool
     from euporie.apptk.formatted_text.base import AnyFormattedText
+
     from euporie.apptk.layout.controls import UIControl
 
 log = logging.getLogger(__name__)

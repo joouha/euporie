@@ -10,6 +10,8 @@ from euporie.apptk.filters.app import (
     renderer_height_is_known,
 )
 from euporie.apptk.filters.base import Condition
+from euporie.apptk.layout.layout import Layout
+
 from euporie.apptk.layout.containers import (
     ConditionalContainer,
     FloatContainer,
@@ -18,8 +20,6 @@ from euporie.apptk.layout.containers import (
     Window,
 )
 from euporie.apptk.layout.controls import FormattedTextControl
-from euporie.apptk.layout.layout import Layout
-
 from euporie.core.commands import get_cmd
 from euporie.core.format import LspFormatter
 from euporie.core.key_binding.registry import (
@@ -40,8 +40,8 @@ if TYPE_CHECKING:
     from euporie.apptk.application.application import Application
     from euporie.apptk.buffer import Buffer
     from euporie.apptk.formatted_text import AnyFormattedText
-    from euporie.apptk.layout.containers import Container, Float
 
+    from euporie.apptk.layout.containers import Container, Float
     from euporie.core.app.app import BaseApp
     from euporie.core.lsp import LspClient
     from euporie.core.nbformat import NotebookNode

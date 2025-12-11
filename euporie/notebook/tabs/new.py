@@ -7,14 +7,14 @@ import random
 from typing import TYPE_CHECKING
 
 from euporie.apptk.layout.dimension import Dimension
-from euporie.apptk.mouse_events import MouseButton, MouseEventType
 
+from euporie.apptk.data_structures import DiBool
+from euporie.apptk.layout.containers import HSplit, VSplit, Window
+from euporie.apptk.mouse_events import MouseButton, MouseEventType
 from euporie.core.bars.status import StatusContainer
 from euporie.core.border import RoundedLine
 from euporie.core.commands import get_cmd
 from euporie.core.convert.datum import Datum
-from euporie.core.data_structures import DiBool
-from euporie.core.layout.containers import HSplit, VSplit, Window
 from euporie.core.layout.decor import FocusedStyle, Pattern
 from euporie.core.tabs.base import Tab
 from euporie.core.widgets.display import Display
@@ -28,9 +28,9 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     from euporie.apptk.key_binding.key_bindings import NotImplementedOrNone
+
     from euporie.apptk.layout.containers import AnyContainer
     from euporie.apptk.mouse_events import MouseEvent
-
     from euporie.core.app.app import BaseApp
     from euporie.core.bars.status import StatusBarFields
     from euporie.core.commands import Command

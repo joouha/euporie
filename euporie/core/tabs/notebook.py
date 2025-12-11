@@ -25,8 +25,8 @@ if TYPE_CHECKING:
     from typing import Any
 
     from euporie.apptk.filters import Filter
-    from euporie.apptk.layout.containers import AnyContainer, Window
 
+    from euporie.apptk.layout.containers import AnyContainer, Window
     from euporie.core.app.app import BaseApp
     from euporie.core.comm.base import Comm
     from euporie.core.kernel.base import BaseKernel

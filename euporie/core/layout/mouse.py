@@ -7,21 +7,22 @@ from functools import lru_cache
 from typing import TYPE_CHECKING
 
 from euporie.apptk.filters import Condition
+
 from euporie.apptk.layout.containers import (
     Container,
     to_container,
 )
 from euporie.apptk.mouse_events import MouseEventType
-
 from euporie.core.app.current import get_app
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
     from euporie.apptk.key_binding.key_bindings import NotImplementedOrNone
-    from euporie.apptk.layout.containers import AnyContainer
     from euporie.apptk.layout.dimension import Dimension
     from euporie.apptk.layout.mouse_handlers import MouseHandlers
+
+    from euporie.apptk.layout.containers import AnyContainer
     from euporie.apptk.layout.screen import Screen, WritePosition
     from euporie.apptk.mouse_events import MouseEvent
 

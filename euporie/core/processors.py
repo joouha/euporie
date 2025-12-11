@@ -16,10 +16,10 @@ from euporie.apptk.utils import get_cwidth
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-    from euporie.apptk.data_structures import Point
     from euporie.apptk.formatted_text.base import StyleAndTextTuples
     from euporie.apptk.layout.processors import TransformationInput
 
+    from euporie.apptk.data_structures import Point
     from euporie.core.diagnostics import Report
 
 

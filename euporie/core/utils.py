@@ -15,6 +15,7 @@ if TYPE_CHECKING:
 
     from euporie.apptk.key_binding.key_bindings import NotImplementedOrNone
     from euporie.apptk.layout.mouse_handlers import MouseHandler
+
     from euporie.apptk.mouse_events import MouseEvent
 
 T = TypeVar("T")

@@ -9,10 +9,10 @@ import sys
 from functools import partial
 from typing import TYPE_CHECKING, cast
 
-from euporie.apptk.layout.containers import DynamicContainer, FloatContainer, Window
 from euporie.apptk.output.defaults import create_output
 from euporie.apptk.output.vt100 import Vt100_Output
 
+from euporie.apptk.layout.containers import DynamicContainer, FloatContainer, Window
 from euporie.core.app.app import BaseApp
 from euporie.core.app.current import get_app
 from euporie.core.io import PseudoTTY
@@ -24,9 +24,9 @@ if TYPE_CHECKING:
     from typing import Any, TextIO
 
     from euporie.apptk.application.application import _AppResult
-    from euporie.apptk.layout.containers import Float
     from euporie.apptk.output import Output
 
+    from euporie.apptk.layout.containers import Float
     from euporie.core.tabs.base import Tab
 
 log = logging.getLogger(__name__)

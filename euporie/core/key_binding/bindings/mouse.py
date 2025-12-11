@@ -5,8 +5,6 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-from euporie.apptk.cache import FastDictCache
-from euporie.apptk.data_structures import Point
 from euporie.apptk.key_binding.bindings.mouse import (
     MOUSE_MOVE,
     UNKNOWN_BUTTON,
@@ -22,8 +20,10 @@ from euporie.apptk.key_binding.bindings.mouse import (
 from euporie.apptk.keys import Keys
 from euporie.apptk.renderer import HeightIsUnknownError
 
+from euporie.apptk.cache import FastDictCache
+from euporie.apptk.data_structures import Point
+from euporie.apptk.mouse_events import MouseEvent, RelativePosition
 from euporie.core.app.app import BaseApp
-from euporie.core.mouse_events import MouseEvent, RelativePosition
 
 if TYPE_CHECKING:
     from euporie.apptk.key_binding.key_bindings import NotImplementedOrNone

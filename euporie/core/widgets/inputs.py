@@ -21,14 +21,6 @@ from euporie.apptk.filters import (
     to_filter,
 )
 from euporie.apptk.key_binding.key_bindings import merge_key_bindings
-from euporie.apptk.layout.containers import (
-    ConditionalContainer,
-    ScrollOffsets,
-)
-from euporie.apptk.layout.controls import (
-    BufferControl,
-    GetLinePrefixCallable,
-)
 from euporie.apptk.layout.dimension import AnyDimension
 from euporie.apptk.layout.dimension import Dimension as D
 from euporie.apptk.layout.margins import ConditionalMargin
@@ -49,6 +41,16 @@ from euporie.apptk.widgets import TextArea
 from euporie.apptk.widgets.toolbars import SearchToolbar
 from pygments.lexers import ClassNotFound, get_lexer_by_name
 
+from euporie.apptk.layout.containers import (
+    ConditionalContainer,
+    ScrollOffsets,
+    VSplit,
+    Window,
+)
+from euporie.apptk.layout.controls import (
+    BufferControl,
+    GetLinePrefixCallable,
+)
 from euporie.core.app.current import get_app
 from euporie.core.commands import add_cmd
 from euporie.core.diagnostics import Report
@@ -57,7 +59,6 @@ from euporie.core.key_binding.registry import (
     load_registered_bindings,
     register_bindings,
 )
-from euporie.core.layout.containers import VSplit, Window
 from euporie.core.margins import (
     MarginContainer,
     NumberedMargin,
@@ -82,11 +83,11 @@ if TYPE_CHECKING:
     from euporie.apptk.formatted_text.base import StyleAndTextTuples
     from euporie.apptk.history import History
     from euporie.apptk.key_binding.key_bindings import KeyBindingsBase
-    from euporie.apptk.layout.containers import AnyContainer, Container
     from euporie.apptk.layout.layout import FocusableElement
     from euporie.apptk.layout.margins import Margin
     from euporie.apptk.lexers.base import Lexer
 
+    from euporie.apptk.layout.containers import AnyContainer, Container
     from euporie.core.bars.status import StatusBarFields
     from euporie.core.format import Formatter
     from euporie.core.inspection import Inspector

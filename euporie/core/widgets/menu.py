@@ -6,7 +6,6 @@ import logging
 from functools import partial
 from typing import TYPE_CHECKING
 
-from euporie.apptk.data_structures import Point
 from euporie.apptk.filters import (
     Condition,
     has_completions,
@@ -21,26 +20,29 @@ from euporie.apptk.formatted_text.utils import (
     to_plain_text,
 )
 from euporie.apptk.key_binding.key_bindings import KeyBindings
-from euporie.apptk.layout.containers import (
-    ConditionalContainer,
-    Container,
-    Float,
-    ScrollOffsets,
-    to_container,
-)
-from euporie.apptk.layout.controls import FormattedTextControl, UIContent
 from euporie.apptk.layout.dimension import Dimension
 from euporie.apptk.layout.menus import (
     CompletionsMenuControl as PtkCompletionsMenuControl,
 )
 from euporie.apptk.layout.utils import explode_text_fragments
-from euporie.apptk.mouse_events import MouseEvent, MouseEventType
 from euporie.apptk.utils import get_cwidth
 
+from euporie.apptk.data_structures import Point
+from euporie.apptk.layout.containers import (
+    ConditionalContainer,
+    Container,
+    Float,
+    HSplit,
+    ScrollOffsets,
+    VSplit,
+    Window,
+    to_container,
+)
+from euporie.apptk.layout.controls import FormattedTextControl, UIContent
+from euporie.apptk.mouse_events import MouseEvent, MouseEventType
 from euporie.core.app.current import get_app
 from euporie.core.bars.status import StatusContainer
 from euporie.core.border import OuterHalfGrid
-from euporie.core.layout.containers import HSplit, VSplit, Window
 from euporie.core.widgets.decor import Shadow
 
 if TYPE_CHECKING:
@@ -55,9 +57,9 @@ if TYPE_CHECKING:
     )
     from euporie.apptk.key_binding.key_bindings import NotImplementedOrNone
     from euporie.apptk.key_binding.key_processor import KeyPressEvent
+
     from euporie.apptk.layout.containers import AnyContainer
     from euporie.apptk.layout.controls import UIControl
-
     from euporie.core.app.app import BaseApp
     from euporie.core.bars.status import StatusBarFields
     from euporie.core.border import GridStyle
