@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import logging
 
-from euporie.apptk.layout import screen
+from prompt_toolkit.layout import screen
 
-from euporie.core.data_structures import DiInt
+from euporie.apptk.data_structures import DiInt
 
 log = logging.getLogger(__name__)
 

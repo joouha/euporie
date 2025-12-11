@@ -16,18 +16,18 @@ from operator import eq, ge, gt, le, lt
 from typing import TYPE_CHECKING, NamedTuple, cast, overload
 
 from euporie.apptk.application.current import get_app_session
-from euporie.apptk.data_structures import Size
 from euporie.apptk.filters.base import Condition
 from euporie.apptk.filters.utils import _always as always
 from euporie.apptk.filters.utils import _never as never
 from euporie.apptk.filters.utils import to_filter
 from euporie.apptk.formatted_text.utils import split_lines
-from euporie.apptk.layout.containers import WindowAlign
 from euporie.apptk.layout.dimension import Dimension
 from euporie.apptk.utils import Event
 from fsspec.core import url_to_fs
 from upath import UPath
 
+from euporie.apptk.data_structures import DiBool, DiInt, DiStr, Size
+from euporie.apptk.layout.containers import WindowAlign
 from euporie.core.app.current import get_app
 from euporie.core.async_utils import get_or_create_loop, run_coro_sync
 from euporie.core.border import (
@@ -54,7 +54,6 @@ from euporie.core.border import (
 )
 from euporie.core.convert.datum import Datum
 from euporie.core.convert.mime import get_format
-from euporie.core.data_structures import DiBool, DiInt, DiStr
 from euporie.core.ft.table import Cell, Table, compute_padding
 from euporie.core.ft.utils import (
     FormattedTextAlign,
@@ -112,8 +111,9 @@ if TYPE_CHECKING:
     from euporie.apptk.filters.base import Filter, FilterOrBool
     from euporie.apptk.formatted_text.base import StyleAndTextTuples
     from euporie.apptk.key_binding.key_bindings import NotImplementedOrNone
-    from euporie.apptk.mouse_events import MouseEvent
     from fsspec.spec import AbstractFileSystem
+
+    from euporie.apptk.mouse_events import MouseEvent
 
     CssSelectors = dict[
         Filter, dict[tuple[tuple[CssSelector, ...], ...], dict[str, str]]

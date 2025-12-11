@@ -6,8 +6,9 @@ import logging
 from itertools import pairwise
 from typing import TYPE_CHECKING, NamedTuple
 
-from euporie.apptk.cache import FastDictCache, SimpleCache
 from euporie.apptk.filters import to_filter
+
+from euporie.apptk.cache import FastDictCache, SimpleCache
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable

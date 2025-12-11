@@ -8,14 +8,23 @@ from functools import lru_cache, partial
 from typing import TYPE_CHECKING, ClassVar, NamedTuple, cast
 
 from euporie.apptk.application.current import get_app
-from euporie.apptk.cache import SimpleCache
 from euporie.apptk.filters import Condition, to_filter
 from euporie.apptk.formatted_text.base import to_formatted_text
 from euporie.apptk.formatted_text.utils import fragment_list_width
 from euporie.apptk.key_binding.key_bindings import KeyBindings
+from euporie.apptk.layout.dimension import Dimension as D
+from euporie.apptk.layout.dimension import to_dimension
+from euporie.apptk.layout.utils import explode_text_fragments
+from euporie.apptk.utils import Event
+
+from euporie.apptk.cache import SimpleCache
+from euporie.apptk.data_structures import DiBool
 from euporie.apptk.layout.containers import (
     ConditionalContainer,
     DynamicContainer,
+    HSplit,
+    VSplit,
+    Window,
     to_container,
 )
 from euporie.apptk.layout.controls import (
@@ -24,16 +33,9 @@ from euporie.apptk.layout.controls import (
     UIContent,
     UIControl,
 )
-from euporie.apptk.layout.dimension import Dimension as D
-from euporie.apptk.layout.dimension import to_dimension
-from euporie.apptk.layout.utils import explode_text_fragments
 from euporie.apptk.mouse_events import MouseButton, MouseEventType
-from euporie.apptk.utils import Event
-
 from euporie.core.border import OutsetGrid
-from euporie.core.data_structures import DiBool
 from euporie.core.ft.utils import truncate
-from euporie.core.layout.containers import HSplit, VSplit, Window
 from euporie.core.widgets.decor import Border
 
 if TYPE_CHECKING:
@@ -51,10 +53,10 @@ if TYPE_CHECKING:
         NotImplementedOrNone,
     )
     from euporie.apptk.key_binding.key_processor import KeyPressEvent
-    from euporie.apptk.layout.containers import AnyContainer, Container, _Split
     from euporie.apptk.layout.dimension import AnyDimension
-    from euporie.apptk.mouse_events import MouseEvent
 
+    from euporie.apptk.layout.containers import AnyContainer, Container, _Split
+    from euporie.apptk.mouse_events import MouseEvent
     from euporie.core.border import GridStyle
 
 log = logging.getLogger(__name__)

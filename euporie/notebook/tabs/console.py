@@ -7,12 +7,11 @@ from functools import partial
 from typing import TYPE_CHECKING, Any
 
 from euporie.apptk.filters.base import Condition
-from euporie.apptk.layout.containers import ConditionalContainer
-from euporie.apptk.layout.controls import FormattedTextControl
 from euporie.apptk.layout.dimension import Dimension
 
+from euporie.apptk.layout.containers import ConditionalContainer, HSplit, VSplit, Window
+from euporie.apptk.layout.controls import FormattedTextControl
 from euporie.core.border import InsetGrid
-from euporie.core.layout.containers import HSplit, VSplit, Window
 from euporie.core.layout.decor import FocusedStyle
 from euporie.core.layout.scroll import ScrollingContainer
 from euporie.core.margins import MarginContainer, ScrollbarMargin
@@ -26,8 +25,8 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     from euporie.apptk.buffer import Buffer
-    from euporie.apptk.layout.containers import Container
 
+    from euporie.apptk.layout.containers import Container
     from euporie.core.app.app import BaseApp
 
 log = logging.getLogger(__name__)

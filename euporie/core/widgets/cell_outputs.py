@@ -12,12 +12,11 @@ from typing import TYPE_CHECKING
 from euporie.apptk.cache import SimpleCache
 from euporie.apptk.layout.containers import (
     DynamicContainer,
+    HSplit,
     to_container,
 )
-
 from euporie.core.app.current import get_app
 from euporie.core.convert.registry import find_route
-from euporie.core.layout.containers import HSplit
 from euporie.core.widgets.display import Display
 from euporie.core.widgets.layout import Box
 from euporie.core.widgets.tree import JsonView
@@ -27,7 +26,6 @@ if TYPE_CHECKING:
     from weakref import ReferenceType
 
     from euporie.apptk.layout.containers import AnyContainer
-
     from euporie.core.config import Setting
     from euporie.core.tabs.kernel import KernelTab
     from euporie.core.widgets.display import DisplayWindow

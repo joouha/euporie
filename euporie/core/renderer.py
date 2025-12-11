@@ -6,15 +6,14 @@ import logging
 from hashlib import md5
 from typing import TYPE_CHECKING
 
-from euporie.apptk.data_structures import Point, Size
 from euporie.apptk.filters import to_filter
 from euporie.apptk.layout.mouse_handlers import MouseHandlers
-from euporie.apptk.layout.screen import Char
 from euporie.apptk.renderer import Renderer as PtkRenderer
 from euporie.apptk.renderer import _StyleStringHasStyleCache, _StyleStringToAttrsCache
 
+from euporie.apptk.data_structures import Point, Size
+from euporie.apptk.layout.screen import BoundedWritePosition, Char, Screen
 from euporie.core.io import Vt100_Output
-from euporie.core.layout.screen import BoundedWritePosition, Screen
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -23,10 +22,11 @@ if TYPE_CHECKING:
     from euporie.apptk.application import Application
     from euporie.apptk.filters import FilterOrBool
     from euporie.apptk.layout.layout import Layout
-    from euporie.apptk.layout.screen import Char
-    from euporie.apptk.layout.screen import Screen as PtkScreen
     from euporie.apptk.output import ColorDepth, Output
     from euporie.apptk.styles import BaseStyle
+
+    from euporie.apptk.layout.screen import Char
+    from euporie.apptk.layout.screen import Screen as PtkScreen
 
 __all__ = ["Renderer"]
 

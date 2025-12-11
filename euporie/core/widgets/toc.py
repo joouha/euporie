@@ -7,19 +7,18 @@ from textwrap import wrap
 from typing import TYPE_CHECKING, NamedTuple
 from weakref import WeakKeyDictionary
 
-from euporie.apptk.cache import FastDictCache
-from euporie.apptk.data_structures import Point
 from euporie.apptk.formatted_text import (
     StyleAndTextTuples,
 )
+from euporie.apptk.selection import SelectionState
+
+from euporie.apptk.cache import FastDictCache, SimpleCache
+from euporie.apptk.data_structures import Point
 from euporie.apptk.layout.containers import HSplit, VSplit, Window
 from euporie.apptk.layout.controls import BufferControl, UIContent, UIControl
 from euporie.apptk.mouse_events import MouseButton, MouseEventType
-from euporie.apptk.selection import SelectionState
-
 from euporie.core.app.current import get_app
 from euporie.core.border import InsetGrid
-from euporie.core.cache import SimpleCache
 from euporie.core.margins import MarginContainer, ScrollbarMargin
 from euporie.core.widgets.decor import Border
 from euporie.core.widgets.forms import Dropdown
@@ -33,11 +32,11 @@ if TYPE_CHECKING:
         KeyBindingsBase,
         NotImplementedOrNone,
     )
+    from euporie.apptk.utils import Event
+
     from euporie.apptk.layout.containers import AnyContainer
     from euporie.apptk.layout.controls import GetLinePrefixCallable
     from euporie.apptk.mouse_events import MouseEvent
-    from euporie.apptk.utils import Event
-
     from euporie.core.tabs.base import Tab
 
 

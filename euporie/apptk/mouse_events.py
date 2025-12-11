@@ -5,8 +5,8 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, NamedTuple
 
-from euporie.apptk.mouse_events import MouseButton, MouseEventType, MouseModifier
-from euporie.apptk.mouse_events import MouseEvent as PtkMouseEvent
+from prompt_toolkit.mouse_events import MouseButton, MouseEventType, MouseModifier
+from prompt_toolkit.mouse_events import MouseEvent as PtkMouseEvent
 
 if TYPE_CHECKING:
     from euporie.apptk.data_structures import Point
@@ -30,7 +30,7 @@ class MouseEvent(PtkMouseEvent):
         event_type: MouseEventType,
         button: MouseButton,
         modifiers: frozenset[MouseModifier],
-        cell_position: RelativePosition | None,
+        cell_position: RelativePosition | None = None,
     ) -> None:
         """Create new event instance."""
         super().__init__(
@@ -39,4 +39,6 @@ class MouseEvent(PtkMouseEvent):
             button=button,
             modifiers=modifiers,
         )
-        self.cell_position = cell_position or RelativePosition(0.5, 0.5)
+        if cell_position is None:
+            cell_position = RelativePosition(0.5, 0.5)
+        self.cell_position = cell_position

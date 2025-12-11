@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-from euporie.apptk.layout.containers import Window, WindowAlign
-from euporie.apptk.layout.controls import FormattedTextControl
 from euporie.apptk.widgets.base import Label
 
+from euporie.apptk.layout.containers import Window, WindowAlign
+from euporie.apptk.layout.controls import FormattedTextControl
 from euporie.core import __version__
 
 logo_micro = Label(" ⚈ ", style="class:menu,logo", width=3, dont_extend_width=True)

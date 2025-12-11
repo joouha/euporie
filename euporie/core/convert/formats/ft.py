@@ -6,9 +6,9 @@ import logging
 from functools import partial
 from typing import TYPE_CHECKING
 
-from euporie.apptk.cache import SimpleCache
 from euporie.apptk.formatted_text import to_formatted_text
 
+from euporie.apptk.cache import SimpleCache
 from euporie.core.convert.registry import register
 from euporie.core.ft.ansi import ANSI
 from euporie.core.ft.utils import strip_one_trailing_newline

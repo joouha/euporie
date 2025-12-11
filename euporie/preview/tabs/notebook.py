@@ -5,13 +5,14 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
+from euporie.apptk.layout.dimension import Dimension
+
 from euporie.apptk.layout.containers import (
     ConditionalContainer,
     DynamicContainer,
+    VSplit,
+    Window,
 )
-from euporie.apptk.layout.dimension import Dimension
-
-from euporie.core.layout.containers import VSplit, Window
 from euporie.core.layout.print import PrintingContainer
 from euporie.core.tabs.notebook import BaseNotebook
 from euporie.core.widgets.cell import Cell
@@ -24,8 +25,8 @@ if TYPE_CHECKING:
 
     from euporie.apptk.application.application import Application
     from euporie.apptk.formatted_text.base import StyleAndTextTuples
-    from euporie.apptk.layout.containers import AnyContainer
 
+    from euporie.apptk.layout.containers import AnyContainer
     from euporie.core.app.app import BaseApp
     from euporie.core.comm.base import Comm
     from euporie.core.kernel.base import BaseKernel

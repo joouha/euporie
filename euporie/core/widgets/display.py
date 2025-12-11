@@ -8,15 +8,15 @@ from functools import partial
 from math import ceil
 from typing import TYPE_CHECKING, cast
 
-from euporie.apptk.cache import FastDictCache, SimpleCache
-from euporie.apptk.data_structures import Point, Size
 from euporie.apptk.filters.utils import to_filter
 from euporie.apptk.formatted_text.utils import fragment_list_width, split_lines
-from euporie.apptk.layout.containers import ConditionalContainer
-from euporie.apptk.layout.controls import GetLinePrefixCallable, UIContent, UIControl
-from euporie.apptk.mouse_events import MouseEvent, MouseEventType
 from euporie.apptk.utils import Event, to_str
 
+from euporie.apptk.cache import FastDictCache, SimpleCache
+from euporie.apptk.data_structures import Point, Size
+from euporie.apptk.layout.containers import ConditionalContainer, VSplit, Window
+from euporie.apptk.layout.controls import GetLinePrefixCallable, UIContent, UIControl
+from euporie.apptk.mouse_events import MouseEvent, MouseEventType
 from euporie.core.app.current import get_app
 from euporie.core.commands import add_cmd
 from euporie.core.convert.datum import Datum
@@ -27,7 +27,6 @@ from euporie.core.key_binding.registry import (
     load_registered_bindings,
     register_bindings,
 )
-from euporie.core.layout.containers import VSplit, Window
 from euporie.core.margins import MarginContainer, ScrollbarMargin
 
 if TYPE_CHECKING:
@@ -38,11 +37,11 @@ if TYPE_CHECKING:
     from euporie.apptk.formatted_text import StyleAndTextTuples
     from euporie.apptk.key_binding import KeyBindingsBase
     from euporie.apptk.key_binding.key_bindings import NotImplementedOrNone
-    from euporie.apptk.layout.containers import AnyContainer
     from euporie.apptk.layout.dimension import AnyDimension
     from euporie.apptk.layout.mouse_handlers import MouseHandlers
-    from euporie.apptk.layout.screen import Screen, WritePosition
 
+    from euporie.apptk.layout.containers import AnyContainer
+    from euporie.apptk.layout.screen import Screen, WritePosition
     from euporie.core.style import ColorPalette
 
 

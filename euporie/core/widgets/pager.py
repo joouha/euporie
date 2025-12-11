@@ -7,9 +7,9 @@ from pathlib import PurePath
 from typing import TYPE_CHECKING, NamedTuple
 
 from euporie.apptk.filters import Condition
-from euporie.apptk.layout.containers import DynamicContainer
 from euporie.apptk.layout.dimension import Dimension
 
+from euporie.apptk.layout.containers import DummyContainer, DynamicContainer, HSplit
 from euporie.core.app.current import get_app
 from euporie.core.commands import add_cmd
 from euporie.core.convert.registry import find_route
@@ -18,7 +18,6 @@ from euporie.core.key_binding.registry import (
     load_registered_bindings,
     register_bindings,
 )
-from euporie.core.layout.containers import DummyContainer, HSplit
 from euporie.core.layout.decor import Line
 from euporie.core.widgets.cell_outputs import CellOutput, CellOutputDataElement
 from euporie.core.widgets.display import Display
@@ -27,9 +26,9 @@ from euporie.core.widgets.layout import Box
 if TYPE_CHECKING:
     from typing import Any
 
-    from euporie.apptk.layout.containers import AnyContainer
     from euporie.apptk.layout.dimension import AnyDimension
 
+    from euporie.apptk.layout.containers import AnyContainer
     from euporie.core.widgets.cell_outputs import CellOutputElement, OutputParent
 
 log = logging.getLogger(__name__)

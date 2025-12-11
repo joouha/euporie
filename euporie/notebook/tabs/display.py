@@ -6,9 +6,9 @@ import asyncio
 import logging
 from typing import TYPE_CHECKING, ClassVar
 
-from euporie.apptk.layout.containers import VSplit
 from euporie.apptk.layout.dimension import Dimension
 
+from euporie.apptk.layout.containers import VSplit
 from euporie.core.convert.datum import Datum
 from euporie.core.convert.mime import MIME_FORMATS, get_format
 from euporie.core.margins import MarginContainer, ScrollbarMargin
@@ -19,7 +19,6 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     from euporie.apptk.layout.containers import AnyContainer
-
     from euporie.core.app.app import BaseApp
     from euporie.core.bars.status import StatusBarFields
 

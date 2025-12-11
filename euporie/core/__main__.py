@@ -28,9 +28,6 @@ def available_apps() -> dict[str, EntryPoint]:
 
 def main(name: str = "launch") -> None:
     """Load and launches the application."""
-    # Monkey-patch euporie.apptk
-    from euporie.core.layout import containers  # noqa: F401
-
     apps = available_apps()
     if entry := apps.get(name):
         return entry.load().launch()

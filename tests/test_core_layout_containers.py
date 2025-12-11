@@ -1,6 +1,6 @@
 """Test layout container functionality."""
 
-from euporie.core.layout.containers import DimensionTuple, distribute_dimensions
+from euporie.apptk.layout.containers import DimensionTuple, distribute_dimensions
 
 
 def test_distribute_dimensions_empty() -> None:

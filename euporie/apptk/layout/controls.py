@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from euporie.apptk.layout.controls import UIContent, UIControl
+from prompt_toolkit.layout.controls import UIContent, UIControl
 
 if TYPE_CHECKING:
     from euporie.apptk.formatted_text import (

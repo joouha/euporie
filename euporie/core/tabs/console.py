@@ -15,10 +15,10 @@ from euporie.apptk.filters.app import (
 )
 from euporie.apptk.filters.base import Condition
 from euporie.apptk.key_binding.key_bindings import KeyBindings
-from euporie.apptk.mouse_events import MouseEventType
 from euporie.apptk.utils import Event
 from upath import UPath
 
+from euporie.apptk.mouse_events import MouseEventType
 from euporie.core.commands import get_cmd
 from euporie.core.diagnostics import Report
 from euporie.core.filters import (
@@ -41,8 +41,8 @@ if TYPE_CHECKING:
     from euporie.apptk.formatted_text import AnyFormattedText, StyleAndTextTuples
     from euporie.apptk.key_binding.key_bindings import NotImplementedOrNone
     from euporie.apptk.key_binding.key_processor import KeyPressEvent
-    from euporie.apptk.mouse_events import MouseEvent
 
+    from euporie.apptk.mouse_events import MouseEvent
     from euporie.core.app.app import BaseApp
     from euporie.core.lsp import LspClient
 

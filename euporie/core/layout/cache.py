@@ -6,32 +6,32 @@ import logging
 from functools import cache
 from typing import TYPE_CHECKING
 
+from euporie.apptk.layout.layout import walk
+from euporie.apptk.layout.mouse_handlers import MouseHandlers
+
 from euporie.apptk.cache import FastDictCache
-from euporie.apptk.data_structures import Point
+from euporie.apptk.data_structures import DiInt, Point
 from euporie.apptk.layout.containers import (
     Container,
     Window,
     WindowRenderInfo,
     to_container,
 )
-from euporie.apptk.layout.layout import walk
-from euporie.apptk.layout.mouse_handlers import MouseHandlers
-
+from euporie.apptk.layout.screen import BoundedWritePosition, Screen
+from euporie.apptk.mouse_events import MouseEvent
 from euporie.core.app.current import get_app
-from euporie.core.data_structures import DiInt
-from euporie.core.layout.screen import BoundedWritePosition, Screen
-from euporie.core.mouse_events import MouseEvent
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
     from euporie.apptk.key_binding.key_bindings import NotImplementedOrNone
-    from euporie.apptk.layout.containers import AnyContainer
     from euporie.apptk.layout.dimension import Dimension
     from euporie.apptk.layout.mouse_handlers import MouseEvent as PtkMouseEvent
+    from euporie.apptk.utils import Event
+
+    from euporie.apptk.layout.containers import AnyContainer
     from euporie.apptk.layout.screen import Screen as PtkScreen
     from euporie.apptk.layout.screen import WritePosition
-    from euporie.apptk.utils import Event
 
     MouseHandler = Callable[[PtkMouseEvent], object]
 

@@ -13,10 +13,10 @@ from euporie.apptk.clipboard.base import ClipboardData
 from euporie.apptk.filters import (
     Condition,
 )
-from euporie.apptk.layout.containers import ConditionalContainer, VSplit
 from euporie.apptk.layout.dimension import Dimension
-from euporie.apptk.mouse_events import MouseEventType
 
+from euporie.apptk.layout.containers import ConditionalContainer, VSplit
+from euporie.apptk.mouse_events import MouseEventType
 from euporie.core.commands import get_cmd
 from euporie.core.filters import (
     insert_mode,
@@ -44,9 +44,9 @@ if TYPE_CHECKING:
 
     from euporie.apptk.formatted_text.base import AnyFormattedText
     from euporie.apptk.key_binding.key_bindings import NotImplementedOrNone
+
     from euporie.apptk.layout.containers import AnyContainer
     from euporie.apptk.mouse_events import MouseEvent
-
     from euporie.core.app.app import BaseApp
     from euporie.core.bars.status import StatusBarFields
     from euporie.core.comm.base import Comm

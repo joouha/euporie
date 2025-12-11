@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import cast
 
-from euporie.core.data_structures import (
+from euporie.apptk.data_structures import (
     DiBool,
     DiInt,
     DiStr,

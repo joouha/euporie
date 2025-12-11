@@ -8,7 +8,6 @@ from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from euporie.apptk.cache import SimpleCache
 from euporie.apptk.clipboard import ClipboardData
 from euporie.apptk.completion import PathCompleter
 from euporie.apptk.filters import (
@@ -22,18 +21,22 @@ from euporie.apptk.formatted_text import AnyFormattedText, to_formatted_text
 from euporie.apptk.formatted_text.utils import split_lines
 from euporie.apptk.key_binding.bindings.focus import focus_next, focus_previous
 from euporie.apptk.key_binding.key_bindings import DynamicKeyBindings, KeyBindings
+from euporie.apptk.layout.dimension import Dimension
+from euporie.apptk.widgets.base import Label
+
+from euporie.apptk.cache import SimpleCache
 from euporie.apptk.layout.containers import (
     ConditionalContainer,
     DynamicContainer,
     Float,
+    HSplit,
+    VSplit,
+    Window,
     to_container,
 )
 from euporie.apptk.layout.controls import FormattedTextControl, UIContent, UIControl
-from euporie.apptk.layout.dimension import Dimension
 from euporie.apptk.layout.screen import WritePosition
 from euporie.apptk.mouse_events import MouseButton, MouseEventType
-from euporie.apptk.widgets.base import Label
-
 from euporie.core.app.current import get_app
 from euporie.core.border import (
     FullLine,
@@ -42,7 +45,6 @@ from euporie.core.border import (
 )
 from euporie.core.commands import add_cmd
 from euporie.core.ft.utils import FormattedTextAlign, align, lex
-from euporie.core.layout.containers import HSplit, VSplit, Window
 from euporie.core.layout.decor import FocusedStyle
 from euporie.core.widgets.decor import Border, Shadow
 from euporie.core.widgets.file_browser import FileBrowser
@@ -54,14 +56,14 @@ if TYPE_CHECKING:
     from typing import Any
 
     from euporie.apptk.buffer import Buffer
-    from euporie.apptk.data_structures import Point
     from euporie.apptk.formatted_text.base import StyleAndTextTuples
     from euporie.apptk.key_binding.key_bindings import NotImplementedOrNone
     from euporie.apptk.key_binding.key_processor import KeyPressEvent
-    from euporie.apptk.layout.containers import AnyContainer
     from euporie.apptk.layout.layout import FocusableElement
-    from euporie.apptk.mouse_events import MouseEvent
 
+    from euporie.apptk.data_structures import Point
+    from euporie.apptk.layout.containers import AnyContainer
+    from euporie.apptk.mouse_events import MouseEvent
     from euporie.core.app.app import BaseApp
     from euporie.core.kernel.base import KernelInfo
     from euporie.core.tabs.base import Tab
@@ -885,9 +887,9 @@ class ShortcutsDialog(Dialog):
 
         from euporie.apptk.formatted_text.base import to_formatted_text
 
+        from euporie.apptk.data_structures import DiInt
         from euporie.core.border import InvisibleLine
         from euporie.core.commands import get_cmd
-        from euporie.core.data_structures import DiInt
         from euporie.core.ft.table import Table
         from euporie.core.ft.utils import FormattedTextAlign
         from euporie.core.key_binding.registry import BINDINGS

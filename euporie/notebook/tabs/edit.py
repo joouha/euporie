@@ -6,9 +6,9 @@ import logging
 from functools import partial
 from typing import TYPE_CHECKING, ClassVar
 
-from euporie.apptk.layout.containers import HSplit
 from euporie.apptk.layout.dimension import Dimension
 
+from euporie.apptk.layout.containers import HSplit
 from euporie.core.filters import insert_mode, replace_mode
 from euporie.core.kernel.base import BaseKernel, MsgCallbacks
 from euporie.core.key_binding.registry import load_registered_bindings
@@ -21,7 +21,6 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     from euporie.apptk.layout.containers import AnyContainer, Window
-
     from euporie.core.app.app import BaseApp
     from euporie.core.bars.status import StatusBarFields
     from euporie.core.comm.base import Comm

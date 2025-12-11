@@ -12,6 +12,8 @@ from euporie.apptk.filters.app import (
     is_searching,
     renderer_height_is_known,
 )
+from euporie.apptk.layout.dimension import Dimension
+
 from euporie.apptk.layout.containers import (
     ConditionalContainer,
     Float,
@@ -20,8 +22,6 @@ from euporie.apptk.layout.containers import (
     VSplit,
     Window,
 )
-from euporie.apptk.layout.dimension import Dimension
-
 from euporie.console.tabs.console import Console
 from euporie.core.app.app import BaseApp
 from euporie.core.bars.command import CommandBar

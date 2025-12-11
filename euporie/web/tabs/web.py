@@ -7,13 +7,13 @@ import logging
 from typing import TYPE_CHECKING
 
 from euporie.apptk.filters import Condition
-from euporie.apptk.layout.containers import HSplit, VSplit
 from euporie.apptk.layout.dimension import Dimension
 from upath import UPath
 
+from euporie.apptk.data_structures import DiBool
+from euporie.apptk.layout.containers import HSplit, VSplit
 from euporie.core.app.current import get_app
 from euporie.core.convert.mime import get_mime
-from euporie.core.data_structures import DiBool
 from euporie.core.layout.decor import FocusedStyle
 from euporie.core.margins import MarginContainer, ScrollbarMargin
 from euporie.core.tabs.base import Tab
@@ -27,7 +27,6 @@ if TYPE_CHECKING:
     from typing import Any, ClassVar
 
     from euporie.apptk.layout.containers import AnyContainer
-
     from euporie.core.app.app import BaseApp
     from euporie.core.bars.status import StatusBarFields
 

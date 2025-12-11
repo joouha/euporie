@@ -11,6 +11,9 @@ from euporie.apptk.formatted_text.base import to_formatted_text
 from euporie.apptk.key_binding.key_bindings import (
     KeyBindings,
 )
+from euporie.apptk.layout.dimension import Dimension
+from euporie.apptk.utils import Event
+
 from euporie.apptk.layout.containers import (
     ConditionalContainer,
     DynamicContainer,
@@ -19,11 +22,8 @@ from euporie.apptk.layout.containers import (
     Window,
 )
 from euporie.apptk.layout.controls import UIContent, UIControl
-from euporie.apptk.layout.dimension import Dimension
 from euporie.apptk.layout.screen import WritePosition
 from euporie.apptk.mouse_events import MouseButton, MouseEventType
-from euporie.apptk.utils import Event
-
 from euporie.core.app.current import get_app
 from euporie.core.layout.decor import FocusedStyle, Line
 from euporie.core.widgets.forms import ToggleButton, ToggleButtons
@@ -36,6 +36,7 @@ if TYPE_CHECKING:
         NotImplementedOrNone,
     )
     from euporie.apptk.key_binding.key_processor import KeyPressEvent
+
     from euporie.apptk.layout.containers import AnyContainer
     from euporie.apptk.mouse_events import MouseEvent
 

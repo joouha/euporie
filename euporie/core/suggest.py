@@ -10,8 +10,9 @@ from functools import lru_cache, partial
 from typing import TYPE_CHECKING, NamedTuple
 
 from euporie.apptk.auto_suggest import AutoSuggest, ConditionalAutoSuggest, Suggestion
-from euporie.apptk.cache import SimpleCache
 from euporie.apptk.filters import to_filter
+
+from euporie.apptk.cache import SimpleCache
 
 if TYPE_CHECKING:
     from euporie.apptk.buffer import Buffer

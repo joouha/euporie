@@ -9,16 +9,19 @@ from weakref import WeakKeyDictionary
 
 from euporie.apptk.filters import Condition
 from euporie.apptk.formatted_text.base import to_formatted_text
+from euporie.apptk.layout.dimension import Dimension
+
 from euporie.apptk.layout.containers import (
     ConditionalContainer,
     DynamicContainer,
     Float,
     FloatContainer,
+    HSplit,
+    VSplit,
+    Window,
     WindowAlign,
 )
 from euporie.apptk.layout.controls import FormattedTextControl
-from euporie.apptk.layout.dimension import Dimension
-
 from euporie.core.app.app import BaseApp
 from euporie.core.bars.command import CommandBar
 from euporie.core.bars.menu import ToolbarCompletionsMenu
@@ -28,7 +31,6 @@ from euporie.core.commands import get_cmd
 from euporie.core.filters import has_tabs
 from euporie.core.ft.utils import truncate
 from euporie.core.key_binding.registry import register_bindings
-from euporie.core.layout.containers import HSplit, VSplit, Window
 from euporie.core.widgets.dialog import (
     AboutDialog,
     ConfirmDialog,
@@ -59,8 +61,8 @@ if TYPE_CHECKING:
 
     from euporie.apptk.application.application import Application
     from euporie.apptk.formatted_text import StyleAndTextTuples
-    from euporie.apptk.layout.containers import AnyContainer
 
+    from euporie.apptk.layout.containers import AnyContainer
     from euporie.core.tabs import TabRegistryEntry
     from euporie.core.tabs.base import Tab
     from euporie.core.widgets.cell import Cell

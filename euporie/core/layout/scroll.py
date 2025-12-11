@@ -7,8 +7,11 @@ import logging
 from typing import TYPE_CHECKING, cast
 
 from euporie.apptk.application.current import get_app
-from euporie.apptk.cache import FastDictCache
 from euporie.apptk.filters import is_searching
+from euporie.apptk.layout.dimension import Dimension, to_dimension
+from euporie.apptk.layout.layout import walk
+
+from euporie.apptk.cache import FastDictCache
 from euporie.apptk.layout.containers import (
     Container,
     ScrollOffsets,
@@ -16,21 +19,19 @@ from euporie.apptk.layout.containers import (
     WindowRenderInfo,
 )
 from euporie.apptk.layout.controls import UIContent
-from euporie.apptk.layout.dimension import Dimension, to_dimension
-from euporie.apptk.layout.layout import walk
+from euporie.apptk.layout.screen import BoundedWritePosition
 from euporie.apptk.mouse_events import MouseEvent, MouseEventType, MouseModifier
-
 from euporie.core.layout.cache import CachedContainer
-from euporie.core.layout.screen import BoundedWritePosition
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
     from typing import Literal
 
     from euporie.apptk.key_binding.key_bindings import NotImplementedOrNone
-    from euporie.apptk.layout.containers import AnyContainer
     from euporie.apptk.layout.dimension import AnyDimension
     from euporie.apptk.layout.mouse_handlers import MouseHandlers
+
+    from euporie.apptk.layout.containers import AnyContainer
     from euporie.apptk.layout.screen import Screen as PtkScreen
     from euporie.apptk.layout.screen import WritePosition
 
