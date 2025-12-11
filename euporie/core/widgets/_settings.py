@@ -85,7 +85,7 @@ add_setting(
 
 add_setting(
     name="line_numbers",
-    group="euporie.core.widgets.inputs",
+    group="euporie.core.widgets",
     flags=["--line-numbers"],
     type_=bool,
     help_="Show or hide line numbers",
@@ -98,7 +98,7 @@ add_setting(
 
 add_setting(
     name="relative_line_numbers",
-    group="euporie.core.widgets.inputs",
+    group="euporie.core.widgets",
     type_=bool,
     help_="Use relative line numbers",
     default=False,
@@ -111,7 +111,7 @@ add_setting(
 
 add_setting(
     name="autoformat",
-    group="euporie.core.widgets.inputs",
+    group="euporie.core.widgets",
     flags=["--autoformat"],
     type_=bool,
     help_="Automatically re-format code cells when run",
@@ -123,7 +123,7 @@ add_setting(
 
 add_setting(
     name="autocomplete",
-    group="euporie.core.widgets.inputs",
+    group="euporie.core.widgets",
     flags=["--autocomplete"],
     type_=bool,
     help_="Provide completions suggestions automatically",
@@ -135,7 +135,7 @@ add_setting(
 
 add_setting(
     name="autosuggest",
-    group="euporie.core.widgets.inputs",
+    group="euporie.core.widgets",
     flags=["--autosuggest"],
     type_=str,
     choices=["smart", "simple", "none"],
