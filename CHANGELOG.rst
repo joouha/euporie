@@ -5,6 +5,17 @@ Changelog
 Notable changes to this project will be documented in this file.
 
 ********************
+v2.10.1 (2025-12-11)
+********************
+
+Fixed
+=====
+
+- Reactivate input options
+
+----
+
+********************
 v2.10.0 (2025-12-11)
 ********************
 
