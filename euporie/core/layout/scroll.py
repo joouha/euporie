@@ -436,7 +436,9 @@ class ScrollingContainer(Container):
             # the current source
             new_offset = 0
             direction = 1 if target_idx > source_idx else -1
-            for i in range(min(source_idx, target_idx), max(source_idx, target_idx)):
+            start, stop = min(source_idx, target_idx), max(source_idx, target_idx)
+            stop = min(len(heights), stop)
+            for i in range(start, stop):
                 new_offset -= heights[i] * direction
 
             # Update the target height
