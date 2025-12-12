@@ -552,8 +552,11 @@ class MenuBar:
                 hover and focused
             ):
                 # Toggle focus.
-                if not hover and focused and self.selected_menu == [index]:
-                    self.selected_menu = []
+                if self.selected_menu == [index]:
+                    if not hover and focused:
+                        self.selected_menu = []
+                    else:
+                        return NotImplemented
                 else:
                     self.selected_menu = [index]
                 self.refocus()
@@ -624,11 +627,13 @@ class MenuBar:
                         assert isinstance(item, MenuItem)
                         assert isinstance(menu, MenuItem)
 
-                        def mouse_handler(mouse_event: MouseEvent) -> None:
+                        def mouse_handler(
+                            mouse_event: MouseEvent,
+                        ) -> NotImplementedOrNone:
                             if item.disabled:
                                 # The arrow keys can't interact with menu items that
                                 # are disabled. The mouse shouldn't be able to either.
-                                return
+                                return None
                             hover = mouse_event.event_type == MouseEventType.MOUSE_MOVE
                             if (
                                 mouse_event.event_type == MouseEventType.MOUSE_UP
@@ -640,15 +645,18 @@ class MenuBar:
                                     self.refocus()
                                     item.handler()
                                 else:
-                                    self.selected_menu = [
+                                    new_selection = [
                                         *self.selected_menu[: level + 1],
                                         i,
                                     ]
-                                    app.layout.focus(
-                                        self.menu_containers[
-                                            len(self.selected_menu) - 1
-                                        ]
-                                    )
+                                    if self.selected_menu != new_selection:
+                                        self.selected_menu = new_selection
+                                        app.layout.focus(
+                                            self.menu_containers[
+                                                len(self.selected_menu) - 1
+                                            ]
+                                        )
+                                        return None
                             elif mouse_event.event_type == MouseEventType.SCROLL_UP:
                                 menu = self._get_menu(len(self.selected_menu) - 2)
                                 index = self.selected_menu[-1]
@@ -665,9 +673,10 @@ class MenuBar:
                                     ),
                                     None,
                                 )
-
                                 if previous_index is not None:
                                     self.selected_menu[-1] = previous_index
+                                    return None
+
                             elif mouse_event.event_type == MouseEventType.SCROLL_DOWN:
                                 menu = self._get_menu(len(self.selected_menu) - 2)
                                 index = self.selected_menu[-1]
@@ -684,6 +693,9 @@ class MenuBar:
                                 )
                                 if next_index is not None:
                                     self.selected_menu[-1] = next_index
+                                    return None
+
+                            return NotImplemented
 
                         if item.separator:
                             # Show a connected line with no mouse handler
