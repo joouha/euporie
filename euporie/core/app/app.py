@@ -56,6 +56,7 @@ from euporie.apptk.utils import Event
 
 from euporie.apptk.data_structures import Point
 from euporie.apptk.layout.containers import Float, FloatContainer, Window, to_container
+from euporie.apptk.renderer import Renderer
 from euporie.core.app.base import ConfigurableApp
 from euporie.core.app.cursor import CursorConfig
 from euporie.core.clipboard import CONFIGURED_CLIPBOARDS
@@ -71,7 +72,6 @@ from euporie.core.key_binding.registry import (
 from euporie.core.key_binding.vi_state import ViState
 from euporie.core.log import setup_logs
 from euporie.core.lsp import KNOWN_LSP_SERVERS, LspClient
-from euporie.core.renderer import Renderer
 from euporie.core.style import (
     DEFAULT_COLORS,
     DIAGNOSTIC_STYLE,

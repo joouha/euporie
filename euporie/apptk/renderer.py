@@ -1,4 +1,4 @@
-"""Extended version of euporie.apptk's renderer."""
+"""Extended version of prompt_toolkit's renderer."""
 
 from __future__ import annotations
 
@@ -8,8 +8,8 @@ from typing import TYPE_CHECKING
 
 from euporie.apptk.filters import to_filter
 from euporie.apptk.layout.mouse_handlers import MouseHandlers
-from euporie.apptk.renderer import Renderer as PtkRenderer
-from euporie.apptk.renderer import _StyleStringHasStyleCache, _StyleStringToAttrsCache
+from prompt_toolkit.renderer import Renderer as PtkRenderer
+from prompt_toolkit.renderer import _StyleStringHasStyleCache, _StyleStringToAttrsCache
 
 from euporie.apptk.data_structures import Point, Size
 from euporie.apptk.layout.screen import BoundedWritePosition, Char, Screen
