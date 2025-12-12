@@ -24,17 +24,6 @@ from euporie.apptk.key_binding.key_bindings import merge_key_bindings
 from euporie.apptk.layout.dimension import AnyDimension
 from euporie.apptk.layout.dimension import Dimension as D
 from euporie.apptk.layout.margins import ConditionalMargin
-from euporie.apptk.layout.processors import (  # HighlightSearchProcessor,
-    BeforeInput,
-    ConditionalProcessor,
-    DisplayMultipleCursors,
-    HighlightIncrementalSearchProcessor,
-    HighlightMatchingBracketProcessor,
-    HighlightSelectionProcessor,
-    PasswordProcessor,
-    Processor,
-    TabsProcessor,
-)
 from euporie.apptk.lexers import DynamicLexer, PygmentsLexer, SimpleLexer
 from euporie.apptk.validation import DynamicValidator, Validator
 from euporie.apptk.widgets import TextArea
@@ -51,6 +40,20 @@ from euporie.apptk.layout.controls import (
     BufferControl,
     GetLinePrefixCallable,
 )
+from euporie.apptk.layout.processors import (  # HighlightSearchProcessor,
+    AppendLineAutoSuggestion,
+    BeforeInput,
+    ConditionalProcessor,
+    DiagnosticProcessor,
+    DisplayMultipleCursors,
+    HighlightIncrementalSearchProcessor,
+    HighlightMatchingBracketProcessor,
+    HighlightSelectionProcessor,
+    PasswordProcessor,
+    Processor,
+    ShowTrailingWhiteSpaceProcessor,
+    TabsProcessor,
+)
 from euporie.core.app.current import get_app
 from euporie.core.commands import add_cmd
 from euporie.core.diagnostics import Report
@@ -64,11 +67,6 @@ from euporie.core.margins import (
     NumberedMargin,
     OverflowMargin,
     ScrollbarMargin,
-)
-from euporie.core.processors import (
-    AppendLineAutoSuggestion,
-    DiagnosticProcessor,
-    ShowTrailingWhiteSpaceProcessor,
 )
 from euporie.core.suggest import ConditionalAutoSuggestAsync
 

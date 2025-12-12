@@ -32,13 +32,6 @@ from euporie.apptk.key_binding.key_bindings import (
     merge_key_bindings,
 )
 from euporie.apptk.layout.dimension import Dimension
-from euporie.apptk.layout.processors import (
-    AfterInput,
-    BeforeInput,
-    ConditionalProcessor,
-    PasswordProcessor,
-    Processor,
-)
 from euporie.apptk.layout.utils import explode_text_fragments
 from euporie.apptk.lexers import DynamicLexer, Lexer
 from euporie.apptk.utils import Event
@@ -59,6 +52,13 @@ from euporie.apptk.layout.controls import (
     FormattedTextControl,
     UIContent,
     UIControl,
+)
+from euporie.apptk.layout.processors import (
+    AfterInput,
+    BeforeInput,
+    ConditionalProcessor,
+    PasswordProcessor,
+    Processor,
 )
 from euporie.apptk.layout.screen import WritePosition
 from euporie.apptk.mouse_events import MouseButton, MouseEvent, MouseEventType
@@ -88,7 +88,6 @@ if TYPE_CHECKING:
     )
     from euporie.apptk.key_binding.key_processor import KeyPressEvent
     from euporie.apptk.layout.dimension import AnyDimension
-    from euporie.apptk.layout.processors import Processor
     from euporie.apptk.lexers import Lexer
 
     from euporie.apptk.layout.containers import AnyContainer
@@ -96,6 +95,7 @@ if TYPE_CHECKING:
         GetLinePrefixCallable,
         SearchBufferControl,
     )
+    from euporie.apptk.layout.processors import Processor
     from euporie.core.border import GridStyle
 
     OptionalSearchBuffer = (

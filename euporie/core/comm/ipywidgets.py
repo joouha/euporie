@@ -14,10 +14,10 @@ from functools import partial
 from typing import TYPE_CHECKING
 
 from euporie.apptk.filters.base import Condition
-from euporie.apptk.layout.processors import BeforeInput
 
 from euporie.apptk.data_structures import DiBool
 from euporie.apptk.layout.containers import HSplit, VSplit
+from euporie.apptk.layout.processors import BeforeInput
 from euporie.core.border import InsetGrid
 from euporie.core.comm.base import Comm, CommView
 from euporie.core.kernel.jupyter import MsgCallbacks

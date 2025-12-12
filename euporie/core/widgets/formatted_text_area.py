@@ -12,9 +12,9 @@ from euporie.apptk.formatted_text import (
     to_formatted_text,
 )
 from euporie.apptk.layout.margins import ConditionalMargin
-from euporie.apptk.layout.processors import DynamicProcessor, Processor, Transformation
 from euporie.apptk.widgets import TextArea
 
+from euporie.apptk.layout.processors import DynamicProcessor, Processor, Transformation
 from euporie.core.margins import NumberedMargin
 
 if TYPE_CHECKING:
@@ -22,6 +22,7 @@ if TYPE_CHECKING:
 
     from euporie.apptk.filters import FilterOrBool
     from euporie.apptk.formatted_text import AnyFormattedText, StyleAndTextTuples
+
     from euporie.apptk.layout.processors import TransformationInput
 
 log = logging.getLogger(__name__)
