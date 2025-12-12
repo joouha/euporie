@@ -95,6 +95,7 @@ class NewTab(Tab):
                     padding=Dimension(max=1),
                 ),
                 title="Quick Actions",
+                border=RoundedLine.grid,
                 style="class:tab-padding",
             ),
             self._status,

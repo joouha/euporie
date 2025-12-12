@@ -11,6 +11,7 @@ Upcoming
 Fixed
 =====
 
+- Make quick-action frame border rounded in new-tab
 - Fix garbling of colored CLI help text on Python 3.14+
 
 ----
