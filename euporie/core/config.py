@@ -57,6 +57,8 @@ class ArgumentParser(argparse.ArgumentParser):
         """Initialize while saving a reference to the current config."""
         super().__init__(*args, **kwargs)
         self.config = config
+        # Prevent coloring in the help message on 3.14+ (we do it ourselves)
+        self.color = False
 
     def _print_message(
         self, message: str, file: SupportsWrite[str] | None = None

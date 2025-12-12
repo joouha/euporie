@@ -4,6 +4,17 @@ Changelog
 
 Notable changes to this project will be documented in this file.
 
+********
+Upcoming
+********
+
+Fixed
+=====
+
+- Fix garbling of colored CLI help text on Python 3.14+
+
+----
+
 ********************
 v2.10.1 (2025-12-11)
 ********************
