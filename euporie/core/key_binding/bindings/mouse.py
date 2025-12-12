@@ -18,11 +18,11 @@ from euporie.apptk.key_binding.bindings.mouse import (
     load_mouse_bindings as load_ptk_mouse_bindings,
 )
 from euporie.apptk.keys import Keys
-from euporie.apptk.renderer import HeightIsUnknownError
 
 from euporie.apptk.cache import FastDictCache
 from euporie.apptk.data_structures import Point
 from euporie.apptk.mouse_events import MouseEvent, RelativePosition
+from euporie.apptk.renderer import HeightIsUnknownError
 from euporie.core.app.app import BaseApp
 
 if TYPE_CHECKING:

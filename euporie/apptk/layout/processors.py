@@ -5,21 +5,22 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, cast
 
+from euporie.apptk.layout.utils import explode_text_fragments
+from euporie.apptk.utils import get_cwidth
+
 from euporie.apptk.layout.processors import (
     AppendAutoSuggestion,
     Processor,
     Transformation,
 )
-from euporie.apptk.layout.utils import explode_text_fragments
-from euporie.apptk.utils import get_cwidth
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
     from euporie.apptk.formatted_text.base import StyleAndTextTuples
-    from euporie.apptk.layout.processors import TransformationInput
 
     from euporie.apptk.data_structures import Point
+    from euporie.apptk.layout.processors import TransformationInput
     from euporie.core.diagnostics import Report
 
 
