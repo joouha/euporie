@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Euporie in Browser</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔴⃘</text></svg>"
+    />
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" />
+    <link
+      rel="preload"
+      href="https://cdn.jsdelivr.net/npm/xterm/css/xterm.css"
+      as="style"
+    />
+    <link
+      rel="preload"
+      href="https://cdn.jsdelivr.net/gh/mshaugh/nerdfont-webfonts@v3.3.0/build/firacode-nerd-font.css"
+      as="style"
+    />
+    <link
+      rel="preload"
+      href="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/lib/xterm.min.js"
+      as="script"
+    />
+    <link
+      rel="preload"
+      href="https://cdn.jsdelivr.net/npm/@xterm/addon-image@0.9.0-beta.136/lib/addon-image.min.js"
+      as="script"
+    />
+    <link
+      rel="preload"
+      href="https://cdn.jsdelivr.net/npm/@xterm/addon-fit@0.10.0/lib/addon-fit.min.js"
+      as="script"
+    />
+    <link
+      rel="preload"
+      href="https://cdn.jsdelivr.net/npm/@xterm/addon-canvas@0.7.0/lib/addon-canvas.min.js"
+      as="script"
+    />
+    <link
+      rel="preload"
+      href="https://cdn.jsdelivr.net/npm/@xterm/addon-webgl@0.18.0/lib/addon-webgl.min.js"
+      as="script"
+    />
+    <link
+      rel="preload"
+      href="https://cdn.jsdelivr.net/npm/@xterm/addon-unicode11@0.8.0/lib/addon-unicode11.min.js"
+      as="script"
+    />
+    <link
+      rel="preload"
+      href="https://cdn.jsdelivr.net/npm/@xterm/addon-clipboard@0.1.0/lib/addon-clipboard.min.js"
+      as="script"
+    />
+    <link
+      rel="preload"
+      href="https://cdn.jsdelivr.net/pyodide/v0.29.0/full/pyodide.js"
+      as="script"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/xterm/css/xterm.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/gh/mshaugh/nerdfont-webfonts@v3.3.0/build/firacode-nerd-font.css"
+    />
+    <style>
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        background-color: #232627;
+      }
+
+      #frame {
+        border: 5px solid #232627;
+        box-sizing: border-box;
+      }
+
+      html,
+      body,
+      #frame,
+      #terminal {
+        overflow: hidden;
+        height: 100%;
+        width: 100%;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="frame">
+      <div id="terminal"></div>
+    </div>
+    <script
+      src="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/lib/xterm.min.js"
+      defer
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/@xterm/addon-image@0.9.0-beta.136/lib/addon-image.min.js"
+      defer
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/@xterm/addon-fit@0.10.0/lib/addon-fit.min.js"
+      defer
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/@xterm/addon-canvas@0.7.0/lib/addon-canvas.min.js"
+      defer
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/@xterm/addon-webgl@0.18.0/lib/addon-webgl.min.js"
+      defer
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/@xterm/addon-unicode11@0.8.0/lib/addon-unicode11.min.js"
+      defer
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/@xterm/addon-clipboard@0.1.0/lib/addon-clipboard.min.js"
+      defer
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/pyodide/v0.29.0/full/pyodide.js"
+      defer
+    ></script>
+    <script type="module">
+      // ============================================================================
+      // Constants
+      // ============================================================================
+      const IS_MAC = navigator.platform.toUpperCase().indexOf("MAC") >= 0;
+      const AUTO_SYNC_INTERVAL_MS = 10000;
+      const RESIZE_DEBOUNCE_MS = 100;
+
+      const PYODIDE_PACKAGES = [
+        // "./euporie-2.10.1-py3-none-any.whl",
+        "https://files.pythonhosted.org/packages/fe/b3/63f114dff36a1ccde4b6afcf983af624d930f53f54025c35b962a0749bae/euporie-2.10.1-py3-none-any.whl",
+        "https://files.pythonhosted.org/packages/ef/f8/451b79ab4b273383f02c364079e66375271a4cf349ab6baec922665007d5/timg-1.1.6-py3-none-any.whl",
+        "https://files.pythonhosted.org/packages/ff/62/85c4c919272577931d407be5ba5d71c20f0b616d31a0befe0ae45bb79abd/imagesize-1.4.1-py2.py3-none-any.whl",
+        "https://files.pythonhosted.org/packages/a9/82/0340caa499416c78e5d8f5f05947ae4bc3cba53c9f038ab6e9ed964e22f1/nbformat-5.10.4-py3-none-any.whl",
+        "https://files.pythonhosted.org/packages/cb/a8/20d0723294217e47de6d9e2e40fd4a9d2f7c4b6ef974babd482a59743694/fastjsonschema-2.21.2-py3-none-any.whl",
+        "https://files.pythonhosted.org/packages/6c/72/25f517ff2536ad23349aad429126badc07324333de7b287bfe97dba2988f/flatlatex-0.15-py3-none-any.whl",
+        "https://files.pythonhosted.org/packages/04/1e/b832de447dee8b582cac175871d2f6c3d5077cc56d5575cadba1fd1cccfa/linkify_it_py-2.0.3-py3-none-any.whl",
+        "https://files.pythonhosted.org/packages/94/54/e7d793b573f298e1c9013b8c4dade17d481164aa517d1d7148619c2cedbf/markdown_it_py-4.0.0-py3-none-any.whl",
+        "https://files.pythonhosted.org/packages/fb/86/dd6e5db36df29e76c7a7699123569a4a18c1623ce68d826ed96c62643cae/mdit_py_plugins-0.5.0-py3-none-any.whl",
+        "https://files.pythonhosted.org/packages/b3/38/89ba8ad64ae25be8de66a6d463314cf1eb366222074cfda9ee839c56a4b4/mdurl-0.1.2-py3-none-any.whl",
+        "https://files.pythonhosted.org/packages/b1/29/c028a0731e202035f0e2e0bfbf1a3e46ad6c628cbb17f6f1cc9eea5d9ff1/pathlib_abc-0.5.2-py3-none-any.whl",
+        "https://files.pythonhosted.org/packages/df/80/fc9d01d5ed37ba4c42ca2b55b4339ae6e200b456be3a1aaddf4a9fa99b8c/pyperclip-1.11.0-py3-none-any.whl",
+        "https://files.pythonhosted.org/packages/37/87/1f677586e8ac487e29672e4b17455758fce261de06a0d086167bb760361a/uc_micro_py-1.0.3-py3-none-any.whl",
+        "https://files.pythonhosted.org/packages/2d/32/2569fc0a8c7215fdb55bfe1aa8fe5dada6042c4918625ce13be72eb434ed/universal_pathlib-0.3.5-py3-none-any.whl",
+        "https://files.pythonhosted.org/packages/84/03/0d3ce49e2505ae70cf43bc5bb3033955d2fc9f932163e84dc0779cc47f48/prompt_toolkit-3.0.52-py3-none-any.whl",
+        "https://files.pythonhosted.org/packages/98/19/6ae43df1404866b81e600496caf7ee287fc7db4534de0ce6770ac7d025ee/python_code_minimap-0.1.1-py3-none-any.whl",
+        // "https://files.pythonhosted.org/packages/a3/6f/09ce2990dda17e3149cc8ca48a02dafdbff362811449f86355afdc5f7dc2/modshim-0.3.8-py3-none-any.whl",
+        "aiohttp",
+        "frozenlist",
+        "fsspec",
+        "multidict",
+        "platformdirs",
+        "propcache",
+        "pygments",
+        "regex",
+        "wcwidth",
+        "yarl",
+        "pillow",
+        "jsonschema",
+        "jsonschema_specifications",
+        "pyrsistent",
+        "referencing",
+        "rpds-py",
+        "traitlets",
+        "typing-extensions",
+        "micropip",
+      ];
+
+      const TERMINAL_THEME = {
+        foreground: "#fcfcfc",
+        background: "#232627",
+        cursor: "#616161",
+        cursorAccent: "#F5F5F5",
+        selectionBackground: "rgba(97, 97, 97, 0.3)",
+        black: "#000000",
+        red: "#cc0403",
+        green: "#19cb00",
+        yellow: "#cecb00",
+        blue: "#0d73cc",
+        magenta: "#cb1ed1",
+        cyan: "#0dcdcd",
+        white: "#dddddd",
+        brightBlack: "#767676",
+        brightRed: "#f2201f",
+        brightGreen: "#23fd00",
+        brightYellow: "#fffd00",
+        brightBlue: "#1a8fff",
+        brightMagenta: "#fd28ff",
+        brightCyan: "#14ffff",
+        brightWhite: "#ffffff",
+      };
+
+      // ============================================================================
+      // Terminal Setup
+      // ============================================================================
+      function createTerminal() {
+        return new Terminal({
+          fontFamily:
+            "FiraCode Nerd Font, Fira Code, JetBrains Mono, JuliaMono, Monaco, Meslo, Menlo, Consolas, DejaVu Sans Mono, monospace",
+          fontSize: 16,
+          rendererType: "webgl",
+          scrollback: 1000,
+          theme: TERMINAL_THEME,
+          allowProposedApi: true,
+        });
+      }
+
+      function loadTerminalAddons(term) {
+        const fitAddon = new FitAddon.FitAddon();
+        term.loadAddon(fitAddon);
+        term.loadAddon(new Unicode11Addon.Unicode11Addon());
+        term.unicode.activeVersion = "11";
+        term.loadAddon(new ClipboardAddon.ClipboardAddon());
+        term.open(document.getElementById("terminal"));
+        term.loadAddon(new ImageAddon.ImageAddon());
+        term.loadAddon(new CanvasAddon.CanvasAddon());
+        term.loadAddon(new WebglAddon.WebglAddon());
+
+        return fitAddon;
+      }
+
+      function setupTerminalFitting(fitAddon) {
+        // Initial fit
+        fitAddon.fit();
+
+        // Refit after fonts load
+        const fontsReadyPromise = document.fonts
+          ? document.fonts.ready
+          : Promise.resolve();
+        fontsReadyPromise
+          .catch(() => {})
+          .then(() => {
+            fitAddon.fit();
+            requestAnimationFrame(() => fitAddon.fit());
+          });
+
+        // Handle window resize with debouncing
+        let fitTimer = null;
+        window.addEventListener("resize", () => {
+          fitAddon.fit();
+          clearTimeout(fitTimer);
+          fitTimer = setTimeout(() => fitAddon.fit(), RESIZE_DEBOUNCE_MS);
+        });
+      }
+
+      function setupKeyboardHandler(term, pyodide) {
+        term.attachCustomKeyEventHandler((ev) => {
+          // macOS native copy/paste with ⌘C / ⌘V
+          if (IS_MAC) {
+            if (
+              ev.metaKey &&
+              ev.key.toLowerCase() === "c" &&
+              term.hasSelection()
+            ) {
+              return false;
+            }
+            if (ev.metaKey && ev.key.toLowerCase() === "v") {
+              return false;
+            }
+          }
+
+          // CSI-u for Ctrl+Enter / Shift+Enter
+          if (ev.code === "Enter" && ev.type === "keydown") {
+            if (ev.ctrlKey && !ev.shiftKey && !ev.altKey && !ev.metaKey) {
+              pyodide.runPythonAsync(`handle_input("\\x1b[13;5u")`);
+              ev.preventDefault();
+              return false;
+            } else if (
+              ev.shiftKey &&
+              !ev.ctrlKey &&
+              !ev.altKey &&
+              !ev.metaKey
+            ) {
+              pyodide.runPythonAsync(`handle_input("\\x1b[13;2u")`);
+              ev.preventDefault();
+              return false;
+            }
+          }
+
+          // Allow Ctrl+Shift+C / Ctrl+Shift+V for copy/paste
+          if (
+            ev.ctrlKey &&
+            ev.shiftKey &&
+            (ev.key.toLowerCase() === "c" || ev.key.toLowerCase() === "v")
+          ) {
+            return true;
+          }
+
+          // Prevent default for browser shortcuts
+          if (ev.ctrlKey || ev.altKey || ev.metaKey) {
+            ev.preventDefault();
+          }
+
+          return true;
+        });
+      }
+
+      // ============================================================================
+      // Persistent Storage (IndexedDB via IDBFS)
+      // ============================================================================
+      let syncInProgress = null;
+
+      async function mountPersistentHome(pyodide) {
+        // Create /home/pyodide directory structure
+        try {
+          pyodide.FS.mkdir("/home");
+        } catch (e) {}
+        try {
+          pyodide.FS.mkdir("/home/pyodide");
+        } catch (e) {}
+
+        // Mount IDBFS
+        pyodide.FS.mount(pyodide.FS.filesystems.IDBFS, {}, "/home/pyodide");
+
+        // Initial sync from IndexedDB to memory
+        if (syncInProgress) {
+          await syncInProgress;
+        }
+        syncInProgress = new Promise((resolve, reject) => {
+          pyodide.FS.syncfs(true, (err) => {
+            syncInProgress = null;
+            if (err) reject(err);
+            else resolve();
+          });
+        });
+        await syncInProgress;
+      }
+
+      async function syncPersistentHome(pyodide) {
+        if (syncInProgress) {
+          return syncInProgress;
+        }
+
+        syncInProgress = new Promise((resolve, reject) => {
+          pyodide.FS.syncfs(false, (err) => {
+            syncInProgress = null;
+            if (err) reject(err);
+            else resolve();
+          });
+        });
+
+        return syncInProgress;
+      }
+
+      function startAutoSync(pyodide, intervalMs) {
+        setInterval(() => {
+          syncPersistentHome(pyodide).catch((e) => {
+            console.error("Auto-sync failed:", e);
+          });
+        }, intervalMs);
+      }
+
+      function setupBeforeUnloadSync(pyodide) {
+        window.addEventListener("beforeunload", () => {
+          try {
+            pyodide.FS.syncfs(false, (err) => {
+              if (err) console.error("Final sync before unload failed:", err);
+            });
+          } catch (e) {
+            console.error("Error during beforeunload sync:", e);
+          }
+        });
+      }
+
+      // ============================================================================
+      // Pyodide Integration
+      // ============================================================================
+      async function setupPyodideIO(pyodide, term) {
+        // Connect xterm.js input to Python
+        term.onData((data) => {
+          pyodide.runPythonAsync(`handle_input(${JSON.stringify(data)})`);
+        });
+
+        // Listen for terminal resize events
+        term.onResize(({ cols, rows }) => {
+          pyodide.runPythonAsync(`handle_resize(${cols}, ${rows})`);
+        });
+      }
+
+      async function loadAndRunEuporie(pyodide, term) {
+        // Now load and run main.py
+        // const launch_code = await (await fetch("main.py")).text();
+        await pyodide.runPythonAsync(`
+"""
+Python bridge for Euporie in Pyodide.
+Minimal input/output bridge to xterm.js for prompt_toolkit.
+"""
+
+import asyncio
+
+from euporie.core.io import Vt100_Output, Vt100Parser
+from js import term
+from prompt_toolkit.data_structures import Size
+from prompt_toolkit.input.base import _dummy_context_manager, Input
+from prompt_toolkit.output.color_depth import ColorDepth
+
+
+# Global state
+app_state = {
+    "input_callback": None,
+    "cols": int(term.cols),
+    "rows": int(term.rows),
+    "input": None,
+    "output": None,
+}
+
+
+class XtermJsInput(Input):
+    """Input adapter that bridges xterm.js keyboard events to prompt_toolkit."""
+
+    def __init__(self):
+        """Initialize with a VT100 parser for escape sequence decoding."""
+        self._keys = []
+        self._vt100_parser = Vt100Parser(self._on_key_press)
+
+    def _on_key_press(self, key_press):
+        """Callback from VT100Parser when a key is decoded."""
+        self._keys.append(key_press)
+
+    def feed(self, data: str) -> None:
+        """Feed raw input data (escape sequences) into the VT100 parser."""
+        self._vt100_parser.feed(data)
+
+    def read_keys(self):
+        """Return accumulated KeyPress objects since last read."""
+        result = self._keys
+        self._keys = []
+        return result
+
+    def flush(self):
+        """Flush input (no-op for this implementation)."""
+        pass
+
+    def flush_keys(self):
+        """Drain and return any remaining keys from the queue."""
+        return self.read_keys()
+
+    @property
+    def closed(self):
+        """Return True if input is closed."""
+        return False
+
+    def fileno(self):
+        """Return file descriptor (not applicable in browser)."""
+        return -1
+
+    def attach(self, input_ready_callback):
+        """Store callback to wake prompt_toolkit event loop when input arrives."""
+        app_state["input_callback"] = input_ready_callback
+        return _dummy_context_manager()
+
+    def detach(self):
+        """Detach input (no-op for this implementation)."""
+        return _dummy_context_manager()
+
+    def cooked_mode(self):
+        """Enter cooked mode (no-op for this implementation)."""
+        return _dummy_context_manager()
+
+    def raw_mode(self):
+        """Enter raw mode (no-op for this implementation)."""
+        return _dummy_context_manager()
+
+    def typeahead_hash(self):
+        """Return hash for typeahead detection."""
+        return 0
+
+
+class XtermJsStdout:
+    """File-like object that forwards writes to xterm.js."""
+
+    encoding = "utf-8"
+
+    def write(self, data: str) -> int:
+        """Write data to xterm.js terminal."""
+        term.write(data)
+        return len(data)
+
+    def flush(self) -> None:
+        """Flush output (no-op, xterm.js handles this)."""
+        pass
+
+    def fileno(self) -> int:
+        """Return file descriptor (not applicable in browser)."""
+        return -1
+
+    def isatty(self) -> bool:
+        """Return True since this is a terminal-like interface."""
+        return True
+
+
+def handle_input(data: str) -> None:
+    """
+    Called from JavaScript when xterm.js receives keyboard input.
+
+    Args:
+        data: Raw input string (may contain escape sequences)
+    """
+    input_obj = app_state.get("input")
+    if input_obj and isinstance(input_obj, XtermJsInput):
+        input_obj.feed(data)
+
+    # Notify prompt_toolkit that input is ready
+    cb = app_state.get("input_callback")
+    if cb:
+        cb()
+
+
+def handle_resize(cols: int, rows: int) -> None:
+    """
+    Called from JavaScript when xterm.js terminal is resized.
+
+    Args:
+        cols: New number of columns
+        rows: New number of rows
+    """
+    app_state["cols"] = cols
+    app_state["rows"] = rows
+
+
+def patch_fsspec():
+    """
+    Monkey-patch fsspec to work with Pyodide's single event loop.
+
+    In Pyodide, we can't create background threads, so we patch fsspec
+    to use the main event loop instead of trying to create new ones.
+    """
+    import fsspec.asyn
+
+    def get_loop_patched() -> asyncio.AbstractEventLoop:
+        """Return the current Pyodide main loop for fsspec."""
+        return asyncio.get_event_loop()
+
+    def sync_patched(loop_arg, func, *args, **kwargs):
+        """
+        Run async function synchronously in the current event loop.
+
+        If the loop is already running (which it is in Pyodide), we need
+        to yield control back to the event loop periodically.
+        """
+        if loop_arg.is_running():
+            # Schedule the async function and yield to event loop until complete
+            fut = asyncio.ensure_future(func(*args, **kwargs))
+            while not fut.done():
+                # Yield to JS event loop without blocking
+                loop_arg.run_until_complete(asyncio.sleep(0))
+            return fut.result()
+        else:
+            # Normal behavior when loop isn't running
+            return loop_arg.run_until_complete(func(*args, **kwargs))
+
+    # Apply patches
+    fsspec.asyn.loop[0] = get_loop_patched()
+    fsspec.asyn.get_loop = get_loop_patched
+    fsspec.asyn.sync = sync_patched
+
+
+# Apply fsspec patches on module load
+patch_fsspec()
+
+
+async def run():
+    """Initialize and run the Euporie notebook application."""
+    from euporie.core.layout import containers as containers
+    from euporie.notebook.app import NotebookApp as App
+    from prompt_toolkit.application.current import create_app_session, set_app
+
+    # Configure event loop for Pyodide environment
+    _loop = asyncio.get_event_loop()
+    if not hasattr(_loop, "slow_callback_duration"):
+        _loop.slow_callback_duration = 0.5
+
+    # Signal handlers don't work in browser, so stub them out
+    _loop.add_signal_handler = lambda *a, **k: None
+    _loop.remove_signal_handler = lambda *a, **k: None
+
+    # Create output adapter
+    output = Vt100_Output(
+        stdout=XtermJsStdout(),
+        get_size=lambda: Size(rows=app_state["rows"], columns=app_state["cols"]),
+        term="xterm-256color",
+        default_color_depth=ColorDepth.DEPTH_24_BIT,
+        enable_bell=True,
+        enable_cpr=False,
+    )
+    app_state["output"] = output
+
+    # Create input adapter
+    input_obj = XtermJsInput()
+    app_state["input"] = input_obj
+
+    # Clear the terminal before launching the app
+    output.erase_screen()
+    output.flush()
+
+    # Load application configuration
+    App.config.load()
+
+    # Set default configuration values for browser environment
+    App.config._values.update({
+        "show_file_icons": True,
+        "show_side_bar": True,
+        "clipboard": "terminal",
+    })
+
+    # Run the application
+    with create_app_session(input=input_obj, output=output):
+        app = App(input=input_obj, output=output)
+        with set_app(app):
+            await app.run_async(handle_sigint=False)
+      `);
+
+        // Sync initial terminal size after main.py is loaded
+        await pyodide.runPythonAsync(
+          `handle_resize(${term.cols}, ${term.rows})`
+        );
+
+        term.write("Starting euporie...\r\n");
+        await pyodide.runPythonAsync("await run()");
+      }
+
+      // ============================================================================
+      // Main Application
+      // ============================================================================
+      async function main() {
+        try {
+          // Initialize terminal
+          window.term = createTerminal();
+          const fitAddon = loadTerminalAddons(window.term);
+          setupTerminalFitting(fitAddon);
+          window.term.focus();
+          window.term.write("Loading Euporie...\r\n");
+
+          // Load Pyodide
+          const pyodide = await loadPyodide({ packages: PYODIDE_PACKAGES });
+          window.term.write("Pyodide loaded\r\n");
+
+          // Setup keyboard handling
+          setupKeyboardHandler(window.term, pyodide);
+
+          // Setup persistent storage
+          setupBeforeUnloadSync(pyodide);
+          await mountPersistentHome(pyodide);
+          startAutoSync(pyodide, AUTO_SYNC_INTERVAL_MS);
+
+          // Connect terminal I/O to Python
+          await setupPyodideIO(pyodide, window.term);
+
+          // Load and run Euporie
+          await loadAndRunEuporie(pyodide, window.term);
+
+          // Final sync after completion
+          await syncPersistentHome(pyodide);
+
+          window.term.write("\r\n[Euporie has exited]\r\n");
+        } catch (err) {
+          window.term.write(`\r\nError: ${err.message}\r\n`);
+          console.error(err);
+        }
+      }
+
+      // Start the application
+      main();
+    </script>
+  </body>
+</html>
