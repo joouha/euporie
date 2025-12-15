@@ -4,15 +4,12 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from euporie.apptk.key_binding import key_bindings
-from euporie.apptk.key_binding.key_bindings import _parse_key as _ptk_parse_key
-from euporie.apptk.keys import Keys
+from euporie.apptk.key_binding.key_bindings import _parse_key
 
-from euporie.core.keys import MoreKeys
+from euporie.apptk.keys import Keys
 
 if TYPE_CHECKING:
     from euporie.apptk.key_binding import KeyPressEvent
-
     from euporie.core.key_binding.registry import AnyKeys
 
 
@@ -30,26 +27,8 @@ def if_no_repeat(event: KeyPressEvent) -> bool:
     return not event.is_repeat
 
 
-def _parse_key(key: AnyKeys | MoreKeys | str) -> Keys | MoreKeys | str:
-    """Parse a key or string, including additional keys."""
-    if isinstance(key, (Keys, str)):
-        try:
-            return _ptk_parse_key(key)
-        except ValueError:
-            pass
-    if isinstance(key, MoreKeys):
-        return key
-    try:
-        return MoreKeys(key)
-    except ValueError as err:
-        raise ValueError("Key binding not recognised") from err
-
-
-key_bindings._parse_key = _parse_key
-
-
 def parse_keys(keys: AnyKeys) -> list[tuple[str | Keys, ...]]:
-    """Pare a list of keys."""
+    """Parse a list of keys."""
     output: list[tuple[str | Keys, ...]] = []
     if not isinstance(keys, list):
         keys = [keys]

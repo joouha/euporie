@@ -8,24 +8,24 @@ from inspect import isawaitable, iscoroutinefunction, signature
 from typing import TYPE_CHECKING, cast
 
 from euporie.apptk.application import get_app
-from euporie.apptk.filters import to_filter
 from euporie.apptk.key_binding.key_bindings import Binding
-from euporie.apptk.key_binding.key_processor import KeyPressEvent
 
+from euporie.apptk.filters import to_filter
+from euporie.apptk.key_binding.key_processor import KeyPressEvent
 from euporie.core.key_binding.utils import parse_keys
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Coroutine
     from typing import Any
 
-    from euporie.apptk.filters import Filter, FilterOrBool
     from euporie.apptk.key_binding.key_bindings import (
         KeyBindingsBase,
         KeyHandlerCallable,
         NotImplementedOrNone,
     )
 
-    from euporie.core.keys import Keys
+    from euporie.apptk.filters import Filter, FilterOrBool
+    from euporie.apptk.keys import Keys
     from euporie.core.widgets.menu import MenuItem
 
     AnyKey = tuple[Keys | str, ...] | Keys | str

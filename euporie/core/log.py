@@ -18,11 +18,11 @@ from euporie.apptk.shortcuts.utils import print_formatted_text
 from euporie.apptk.styles.pygments import style_from_pygments_cls
 from euporie.apptk.styles.style import Style, merge_styles
 
+from euporie.apptk.io import PseudoTTY
 from euporie.apptk.renderer import (
     print_formatted_text as renderer_print_formatted_text,
 )
 from euporie.core.ft.utils import indent, lex, wrap
-from euporie.core.io import PseudoTTY
 from euporie.core.style import LOG_STYLE, get_style_by_name
 from euporie.core.utils import dict_merge
 

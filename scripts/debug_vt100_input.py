@@ -11,7 +11,7 @@ from euporie.core.key_binding import key_processor  # noqa: F401
 from euporie.apptk.input.vt100 import raw_mode
 from euporie.apptk.keys import Keys
 
-from euporie.core.io import Vt100Parser
+from euporie.apptk.io import Vt100Parser
 
 if TYPE_CHECKING:
     from euporie.apptk.key_binding import KeyPress

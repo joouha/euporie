@@ -13,7 +13,6 @@ from euporie.core.key_binding.registry import (
 
 if TYPE_CHECKING:
     from euporie.apptk.key_binding import KeyBindingsBase, KeyPressEvent
-
     from euporie.core.config import Config
 
 log = logging.getLogger(__name__)
@@ -55,7 +54,7 @@ def get_match(event: KeyPressEvent) -> dict[str, str] | None:
 
 @add_cmd(hidden=True, is_global=True)
 def _set_terminal_palette(event: KeyPressEvent) -> object:
-    from euporie.core.io import Vt100_Output
+    from euporie.apptk.io import Vt100_Output
 
     if isinstance(output := event.app.output, Vt100_Output):
         output.get_colors()
@@ -166,8 +165,9 @@ def _set_terminal_clipboard_data(event: KeyPressEvent) -> object:
     """Run when the terminal receives a clipboard data query response."""
     from base64 import b64decode
 
-    from euporie.core.app.app import BaseApp
     from euporie.core.clipboard import Osc52Clipboard
+
+    from euporie.core.app.app import BaseApp
 
     if (
         isinstance(app := event.app, BaseApp)

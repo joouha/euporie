@@ -6,27 +6,27 @@ import logging
 from hashlib import md5
 from typing import TYPE_CHECKING
 
-from euporie.apptk.filters import to_filter
 from euporie.apptk.layout.mouse_handlers import MouseHandlers
 from prompt_toolkit.renderer import Renderer as PtkRenderer
 from prompt_toolkit.renderer import _StyleStringHasStyleCache, _StyleStringToAttrsCache
 
 from euporie.apptk.data_structures import Point, Size
+from euporie.apptk.filters import to_filter
 from euporie.apptk.layout.screen import BoundedWritePosition, Char, Screen
-from euporie.core.io import Vt100_Output
+from euporie.apptk.output.vt100 import Vt100_Output
 
 if TYPE_CHECKING:
     from collections.abc import Callable
     from typing import Any
 
     from euporie.apptk.application import Application
-    from euporie.apptk.filters import FilterOrBool
     from euporie.apptk.layout.layout import Layout
-    from euporie.apptk.output import ColorDepth, Output
     from euporie.apptk.styles import BaseStyle
 
+    from euporie.apptk.filters import FilterOrBool
     from euporie.apptk.layout.screen import Char
     from euporie.apptk.layout.screen import Screen as PtkScreen
+    from euporie.apptk.output import ColorDepth, Output
 
 __all__ = ["Renderer"]
 
@@ -322,8 +322,6 @@ class Renderer(PtkRenderer):
         self, app: Application[Any], layout: Layout, is_done: bool = False
     ) -> None:
         """Render the current interface to the output."""
-        from euporie.core.app.app import BaseApp
-
         output = self.output
         self.app = app
 
@@ -349,11 +347,7 @@ class Renderer(PtkRenderer):
             output.enable_mouse_support()
             self._mouse_support_enabled = True
 
-            if (
-                isinstance(output, Vt100_Output)
-                and isinstance(app, BaseApp)
-                and app.term_sgr_pixel
-            ):
+            if isinstance(output, Vt100_Output):
                 output.enable_sgr_pixel()
                 self._sgr_pixel_enabled = True
 
@@ -361,11 +355,7 @@ class Renderer(PtkRenderer):
             output.disable_mouse_support()
             self._mouse_support_enabled = False
 
-            if (
-                isinstance(output, Vt100_Output)
-                and isinstance(app, BaseApp)
-                and (app.term_sgr_pixel or self._sgr_pixel_enabled)
-            ):
+            if isinstance(output, Vt100_Output) and self._sgr_pixel_enabled:
                 output.disable_sgr_pixel()
                 self._sgr_pixel_enabled = False
 

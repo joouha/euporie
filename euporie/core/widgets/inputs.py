@@ -10,16 +10,6 @@ from euporie.apptk.auto_suggest import AutoSuggest, DynamicAutoSuggest
 from euporie.apptk.buffer import Buffer
 from euporie.apptk.completion.base import Completer, DynamicCompleter
 from euporie.apptk.document import Document
-from euporie.apptk.filters import (
-    Condition,
-    buffer_has_focus,
-    has_focus,
-    has_selection,
-    is_done,
-    is_searching,
-    is_true,
-    to_filter,
-)
 from euporie.apptk.key_binding.key_bindings import merge_key_bindings
 from euporie.apptk.layout.dimension import AnyDimension
 from euporie.apptk.layout.dimension import Dimension as D
@@ -30,6 +20,16 @@ from euporie.apptk.widgets import TextArea
 from euporie.apptk.widgets.toolbars import SearchToolbar
 from pygments.lexers import ClassNotFound, get_lexer_by_name
 
+from euporie.apptk.filters import (
+    Condition,
+    buffer_has_focus,
+    has_focus,
+    has_selection,
+    is_done,
+    is_searching,
+    is_true,
+    to_filter,
+)
 from euporie.apptk.layout.containers import (
     ConditionalContainer,
     ScrollOffsets,
@@ -44,7 +44,6 @@ from euporie.apptk.layout.processors import (  # HighlightSearchProcessor,
     AppendLineAutoSuggestion,
     BeforeInput,
     ConditionalProcessor,
-    DiagnosticProcessor,
     DisplayMultipleCursors,
     HighlightIncrementalSearchProcessor,
     HighlightMatchingBracketProcessor,
@@ -62,6 +61,7 @@ from euporie.core.key_binding.registry import (
     load_registered_bindings,
     register_bindings,
 )
+from euporie.core.layout.processors import DiagnosticProcessor
 from euporie.core.margins import (
     MarginContainer,
     NumberedMargin,
@@ -74,7 +74,6 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
 
     from euporie.apptk.buffer import BufferAcceptHandler
-    from euporie.apptk.filters import Filter, FilterOrBool
     from euporie.apptk.formatted_text import (
         AnyFormattedText,
     )
@@ -85,6 +84,7 @@ if TYPE_CHECKING:
     from euporie.apptk.layout.margins import Margin
     from euporie.apptk.lexers.base import Lexer
 
+    from euporie.apptk.filters import Filter, FilterOrBool
     from euporie.apptk.layout.containers import AnyContainer, Container
     from euporie.core.bars.status import StatusBarFields
     from euporie.core.format import Formatter

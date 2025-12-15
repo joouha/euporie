@@ -9,7 +9,6 @@ from typing import TYPE_CHECKING
 from euporie.apptk.filters import (
     buffer_has_focus,
 )
-
 from euporie.core.commands import add_cmd
 from euporie.core.filters import (
     char_after_cursor,
@@ -26,7 +25,6 @@ from euporie.core.key_binding.utils import if_no_repeat
 
 if TYPE_CHECKING:
     from euporie.apptk.key_binding import KeyBindingsBase, KeyPressEvent
-
     from euporie.core.config import Config
 
 log = logging.getLogger(__name__)
@@ -54,7 +52,7 @@ class TextEntry:
 def load_basic_bindings(config: Config | None = None) -> KeyBindingsBase:
     """Load basic key-bindings for text entry."""
     # Load additional key definitions
-    from euporie.core import keys  # noqa: F401
+    from euporie.apptk import keys  # noqa: F401
 
     return load_registered_bindings(
         "euporie.core.key_binding.bindings.basic:TextEntry", config=config

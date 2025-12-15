@@ -18,13 +18,13 @@ from euporie.apptk.key_binding.key_bindings import KeyBindings
 from euporie.apptk.utils import Event
 from upath import UPath
 
+from euporie.apptk.io import edit_in_editor
 from euporie.apptk.mouse_events import MouseEventType
 from euporie.core.commands import get_cmd
 from euporie.core.diagnostics import Report
 from euporie.core.filters import (
     at_end_of_buffer,
 )
-from euporie.core.io import edit_in_editor
 from euporie.core.kernel.base import MsgCallbacks
 from euporie.core.lsp import LspCell
 from euporie.core.nbformat import new_notebook
@@ -40,8 +40,8 @@ if TYPE_CHECKING:
 
     from euporie.apptk.formatted_text import AnyFormattedText, StyleAndTextTuples
     from euporie.apptk.key_binding.key_bindings import NotImplementedOrNone
-    from euporie.apptk.key_binding.key_processor import KeyPressEvent
 
+    from euporie.apptk.key_binding.key_processor import KeyPressEvent
     from euporie.apptk.mouse_events import MouseEvent
     from euporie.core.app.app import BaseApp
     from euporie.core.lsp import LspClient

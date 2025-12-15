@@ -25,16 +25,15 @@ from euporie.core.convert.datum import Datum
 from euporie.core.convert.registry import find_route
 from euporie.core.filters import has_float, in_mplex
 from euporie.core.ft.utils import _ZERO_WIDTH_FRAGMENTS
-from euporie.core.io import passthrough
 from euporie.core.layout.scroll import BoundedWritePosition
 
 if TYPE_CHECKING:
     from collections.abc import Callable
     from typing import Any, ClassVar
 
-    from euporie.apptk.filters import FilterOrBool
     from euporie.apptk.formatted_text import StyleAndTextTuples
 
+    from euporie.apptk.filters import FilterOrBool
     from euporie.apptk.layout.screen import Screen
 
 
@@ -236,7 +235,7 @@ class SixelGraphicControl(GraphicControl):
                                 # Place the image without moving cursor
                                 (
                                     "[ZeroWidthEscape]",
-                                    passthrough(cmd, self.app.config),
+                                    get_app().output._passthrough(cmd),
                                 ),
                                 # ("[ZeroWidthEscape]", "XXXXX"),
                                 # Restore the last known cursor position (at the bottom)
@@ -358,7 +357,7 @@ class ItermGraphicControl(GraphicControl):
                                 # Place the image without moving cursor
                                 (
                                     "[ZeroWidthEscape]",
-                                    passthrough(cmd, self.app.config),
+                                    get_app().output._passthrough(cmd),
                                 ),
                                 # Restore the last known cursor position (at the bottom)
                                 ("[ZeroWidthEscape]", "\x1b[u"),
@@ -468,7 +467,7 @@ class BaseKittyGraphicControl(GraphicControl):
                 C=1,  # Do not move the cursor
                 m=1 if data else 0,  # Data will be chunked
             )
-            self.app.output.write_raw(passthrough(cmd, self.app.config))
+            self.app.output.write_raw(cmd, mplex_passthrough=True)
         self.app.output.flush()
         self.loaded = True
 
@@ -476,15 +475,13 @@ class BaseKittyGraphicControl(GraphicControl):
         """Delete the graphic from the terminal."""
         if self.kitty_image_id > 0:
             self.app.output.write_raw(
-                passthrough(
-                    self._kitty_cmd(
-                        a="D",
-                        d="I",
-                        i=self.kitty_image_id,
-                        q=2,
-                    ),
-                    self.app.config,
-                )
+                self._kitty_cmd(
+                    a="D",
+                    d="I",
+                    i=self.kitty_image_id,
+                    q=2,
+                ),
+                mplex_passthrough=True,
             )
             self.app.output.flush()
             self.loaded = False
@@ -595,7 +592,7 @@ class KittyGraphicControl(BaseKittyGraphicControl):
                                 # Place the image without moving cursor
                                 (
                                     "[ZeroWidthEscape]",
-                                    passthrough(cmd, self.app.config),
+                                    get_app().output._passthrough(cmd),
                                 ),
                                 # Restore the last known cursor position (at the bottom)
                                 ("[ZeroWidthEscape]", "\x1b[u"),
@@ -617,14 +614,13 @@ class KittyGraphicControl(BaseKittyGraphicControl):
 
     def hide_cmd(self) -> str:
         """Generate a command to hide the graphic."""
-        return passthrough(
+        return get_app().output._passthrough(
             self._kitty_cmd(
                 a="d",
                 d="i",
                 i=self.kitty_image_id,
                 q=1,
-            ),
-            self.app.config,
+            )
         )
 
     def hide(self) -> None:
@@ -743,7 +739,7 @@ class KittyUnicodeGraphicControl(BaseKittyGraphicControl):
                 r=rows,
                 q=2,
             )
-            self.app.output.write_raw(passthrough(cmd, self.app.config))
+            self.app.output.write_raw(cmd, mplex_passthrough=True)
             self.app.output.flush()
             self.placements.add((cols, rows))
 
