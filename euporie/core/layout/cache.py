@@ -170,7 +170,7 @@ class CachedContainer(Container):
                     xpos=0,
                     ypos=0,
                     width=self.width,
-                    height=self.height,
+                    height=height,
                     # Only render lines not already on the current screen
                     bbox=DiInt(
                         top=min(required_lines),

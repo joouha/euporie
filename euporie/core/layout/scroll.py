@@ -689,7 +689,7 @@ class ScrollingContainer(Container):
         available_width = self.last_write_position.width
         available_height = self.last_write_position.height
         for i, child in enumerate(self._children):
-            if isinstance(child, CachedContainer) and child.height:
+            if isinstance(child, CachedContainer):
                 sizes[i] = child.preferred_height(
                     available_width, available_height
                 ).preferred

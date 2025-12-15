@@ -4,6 +4,17 @@ Changelog
 
 Notable changes to this project will be documented in this file.
 
+********
+Upcoming
+********
+
+Fixed
+=====
+
+- First input not visible in notebook console if it has no output
+
+----
+
 ********************
 v2.10.2 (2025-12-15)
 ********************

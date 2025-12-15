@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, Any
 from prompt_toolkit.filters.base import Condition
 from prompt_toolkit.layout.containers import ConditionalContainer
 from prompt_toolkit.layout.controls import FormattedTextControl
+from prompt_toolkit.layout.dimension import Dimension
 
 from euporie.core.border import InsetGrid
 from euporie.core.layout.containers import HSplit, VSplit, Window
@@ -73,6 +74,7 @@ class Console(BaseConsole):
             [
                 VSplit(
                     [
+                        Window(width=Dimension(max=1)),
                         self.page,
                         ConditionalContainer(
                             MarginContainer(ScrollbarMargin(), target=self.page),
@@ -160,7 +162,8 @@ class Console(BaseConsole):
         )
 
         # Add spacing above the new input
-        self.rendered_containers.append(Window(height=1, dont_extend_height=True))
+        if self.rendered_containers:
+            self.rendered_containers.append(Window(height=1, dont_extend_height=True))
         # Add the new input
         self.rendered_containers.append(input_container)
 
