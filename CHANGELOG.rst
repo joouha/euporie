@@ -4,13 +4,14 @@ Changelog
 
 Notable changes to this project will be documented in this file.
 
-********
-Upcoming
-********
+********************
+v2.10.2 (2025-12-15)
+********************
 
 Fixed
 =====
 
+- Update required ``prompt_toolkit`` version
 - Make quick-action frame border rounded in new-tab
 - Fix garbling of colored CLI help text on Python 3.14+
 
