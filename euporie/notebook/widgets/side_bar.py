@@ -67,7 +67,11 @@ class SidebarResizeHandleControl(UIControl):
             The UI content to display.
         """
         return UIContent(
-            get_line=lambda i: [("class:side_bar,border", "▕")],
+            get_line=lambda i: [
+                ("class:side_bar,border,handle", "⢸")
+                if (height // 2 - 2) < i < (height // 2 + 2)
+                else ("class:side_bar,border", "▐")
+            ],
             line_count=height if height is not None else 1,
             show_cursor=False,
         )

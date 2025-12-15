@@ -258,16 +258,8 @@ class NotebookApp(BaseApp):
                             show_icons=self.config.filters.show_file_icons,
                         ),
                     ),
-                    (
-                        "Table of Contents",
-                        "",
-                        TableOfContents(),
-                    ),
-                    (
-                        "Mini Map",
-                        "",
-                        MiniMap(),
-                    ),
+                    ("Table of Contents", "", TableOfContents()),
+                    ("Mini Map", "", MiniMap()),
                 ]
             ),
         )
