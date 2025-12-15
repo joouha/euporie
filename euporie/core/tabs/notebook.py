@@ -9,9 +9,8 @@ from functools import partial
 from typing import TYPE_CHECKING
 
 from euporie.apptk.filters import Never
-
+from euporie.apptk.io import edit_in_editor
 from euporie.core.comm.registry import open_comm
-from euporie.core.io import edit_in_editor
 from euporie.core.kernel.base import MsgCallbacks
 from euporie.core.nbformat import from_dict, new_code_cell, new_notebook
 from euporie.core.nbformat import read as read_nb
@@ -25,7 +24,6 @@ if TYPE_CHECKING:
     from typing import Any
 
     from euporie.apptk.filters import Filter
-
     from euporie.apptk.layout.containers import AnyContainer, Window
     from euporie.core.app.app import BaseApp
     from euporie.core.comm.base import Comm

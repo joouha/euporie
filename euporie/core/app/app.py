@@ -38,9 +38,7 @@ from euporie.apptk.key_binding.key_bindings import (
     merge_key_bindings,
 )
 from euporie.apptk.layout.layout import Layout
-from euporie.apptk.output import ColorDepth
 from euporie.apptk.output.defaults import create_output
-from euporie.apptk.output.vt100 import Vt100_Output as PtkVt100_Output
 from euporie.apptk.styles import (
     BaseStyle,
     ConditionalStyleTransformation,
@@ -55,14 +53,17 @@ from euporie.apptk.styles import (
 from euporie.apptk.utils import Event
 
 from euporie.apptk.data_structures import Point
+from euporie.apptk.filters import Condition, buffer_has_focus, to_filter
+from euporie.apptk.input.vt100_parser import Vt100Parser
+from euporie.apptk.key_binding.key_processor import KeyProcessor
 from euporie.apptk.layout.containers import Float, FloatContainer, Window, to_container
+from euporie.apptk.output import ColorDepth
+from euporie.apptk.output.vt100 import Vt100_Output
 from euporie.apptk.renderer import Renderer
 from euporie.core.app.base import ConfigurableApp
 from euporie.core.app.cursor import CursorConfig
 from euporie.core.filters import has_toolbar
 from euporie.core.format import CliFormatter
-from euporie.core.io import Vt100_Output, Vt100Parser
-from euporie.core.key_binding.key_processor import KeyProcessor
 from euporie.core.key_binding.micro_state import MicroState
 from euporie.core.key_binding.registry import (
     load_registered_bindings,
@@ -95,13 +96,13 @@ if TYPE_CHECKING:
 
     # from euporie.apptk.application import _AppResult
     from euporie.apptk.contrib.ssh import PromptToolkitSSHSession
+    from euporie.apptk.layout.layout import FocusableElement
+
     from euporie.apptk.filters import Filter, FilterOrBool
     from euporie.apptk.input import Input
-    from euporie.apptk.layout.layout import FocusableElement
-    from euporie.apptk.output import Output
-
     from euporie.apptk.layout.containers import AnyContainer
     from euporie.apptk.layout.screen import WritePosition
+    from euporie.apptk.output import Output
     from euporie.core.bars.command import CommandBar
     from euporie.core.bars.search import SearchBar
     from euporie.core.config import Setting
@@ -282,13 +283,14 @@ class BaseApp(ConfigurableApp, Application, ABC):
             CliFormatter(**info) for info in self.config.formatters
         ]
 
+    # TODO - move to output
     @property
     def term_size_px(self) -> tuple[int, int]:
         """The dimensions of the terminal in pixels."""
         try:
             return self._term_size_px
         except AttributeError:
-            from euporie.core.io import _tiocgwinsz
+            from euporie.apptk.io import _tiocgwinsz
 
             _rows, _cols, px, py = _tiocgwinsz()
             self._term_size_px = (px, py)
@@ -298,6 +300,7 @@ class BaseApp(ConfigurableApp, Application, ABC):
     def term_size_px(self, value: tuple[int, int]) -> None:
         self._term_size_px = value
 
+    # TODO - move to output
     @property
     def cell_size_px(self) -> tuple[int, int]:
         """Get the pixel size of a single terminal cell."""
@@ -432,7 +435,7 @@ class BaseApp(ConfigurableApp, Application, ABC):
         input_ = create_input(always_prefer_tty=True)
 
         if (stdin := getattr(input_, "stdin", None)) and not stdin.isatty():
-            from euporie.core.io import IgnoredInput
+            from euporie.apptk.io import IgnoredInput
 
             input_ = IgnoredInput()
 
@@ -450,13 +453,14 @@ class BaseApp(ConfigurableApp, Application, ABC):
         """
         output = create_output(always_prefer_tty=True)
 
-        if isinstance(output, PtkVt100_Output):
+        if isinstance(output, Vt100_Output):
             output = Vt100_Output(
                 stdout=output.stdout,
                 get_size=output._get_size,
                 term=output.term,
                 default_color_depth=output.default_color_depth,
                 enable_bell=output.enable_bell,
+                mplex_passthrough=cls.config.filters.multiplexer_passthrough,
             )
 
         return output

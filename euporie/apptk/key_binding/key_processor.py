@@ -8,33 +8,16 @@ import time
 from typing import TYPE_CHECKING
 
 from euporie.apptk.application.current import get_app
-from euporie.apptk.key_binding.key_processor import KeyPress, _Flush
-from euporie.apptk.key_binding.key_processor import KeyProcessor as PtKeyProcessor
-from euporie.apptk.keys import Keys
+from prompt_toolkit.key_binding.key_processor import KeyPress, _Flush
+from prompt_toolkit.key_binding.key_processor import KeyProcessor as PtKeyProcessor
 
-from euporie.core.keys import MoreKeys
+from euporie.apptk.keys import Keys
 
 if TYPE_CHECKING:
     from typing import Any
 
 
 log = logging.getLogger(__name__)
-
-
-def _kp_init(
-    self: KeyPress, key: Keys | MoreKeys | str, data: str | None = None
-) -> None:
-    """Include more keys when creating a KeyPress."""
-    assert isinstance(key, (Keys | MoreKeys)) or len(key) == 1, (
-        f"key {key!r} ({type(key)}) not recognised {MoreKeys(key)}"
-    )
-    if data is None:
-        data = key.value if isinstance(key, (Keys, MoreKeys)) else key
-    self.key = key
-    self.data = data
-
-
-setattr(KeyPress, "__init__", _kp_init)  # noqa: B010
 
 
 class KeyProcessor(PtKeyProcessor):
