@@ -192,7 +192,7 @@ class SideBarButtons(ToggleButtons):
         children.extend(
             [
                 Window(
-                    char=partial(self._get_sep_char, i),
+                    char=partial(self._get_sep_char, i + 1),
                     height=Dimension(max=1),
                     style=partial(self._get_sep_style, len(self.options)),
                 ),

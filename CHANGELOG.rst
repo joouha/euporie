@@ -11,6 +11,7 @@ Upcoming
 Fixed
 =====
 
+- Final side bar button border color in 1-bit color mode
 - First input not visible in notebook console if it has no output
 
 ----
