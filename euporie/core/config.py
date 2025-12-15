@@ -8,7 +8,7 @@ import logging
 import os
 import sys
 from ast import literal_eval
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from functools import cached_property, partial
 from pathlib import Path
 from types import SimpleNamespace
@@ -30,7 +30,7 @@ from euporie.core import __app_name__, __copyright__
 from euporie.core.commands import add_cmd, get_cmd
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable, Mapping, Sequence
+    from collections.abc import Callable, Iterable, Sequence
     from typing import Any, ClassVar
 
     from _typeshed import SupportsWrite
@@ -164,7 +164,7 @@ class Setting:
         description: str = "",
         type_: Callable[[Any], Any] | None = None,
         title: str | None = None,
-        choices: list[Any] | Callable[[], list[Any]] | None = None,
+        choices: list[Any] | dict | Callable[[], list[Any] | dict] | None = None,
         action: argparse.Action | str | None = None,
         flags: list[str] | None = None,
         schema: dict[str, Any] | None = None,
@@ -214,9 +214,9 @@ class Setting:
         }
         if self.choices:
             if self.nargs == "*" or "items" in schema:
-                schema["items"]["enum"] = self.choices
+                schema["items"]["enum"] = list(self.choices)
             else:
-                schema["enum"] = self.choices
+                schema["enum"] = list(self.choices)
         return schema
 
     @property
@@ -454,7 +454,7 @@ class Config:
     def _save(self, setting: Setting) -> None:
         """Save settings to user's configuration file."""
         json_data = self._load_config_file()
-        json_data.setdefault(self.app, {})[setting.name] = getattr(self, setting.name)
+        json_data.setdefault(self.app, {})[setting.name] = self._values[setting.name]
         if self._valid_user:
             log.debug("Saving setting `%s`", setting)
             with self._config_file_path.open("w") as f:
@@ -534,15 +534,6 @@ class Config:
                         RecursionError,
                     ):
                         pass
-                # Attempt to cast the value to the desired type
-                if isinstance(value, list):
-                    for i, item in enumerate(value[:]):
-                        value[i] = setting.type(item)
-                else:
-                    try:
-                        value = setting.type(value)
-                    except (ValueError, TypeError):
-                        pass
                 result[name] = parsed_value
         return result
 
@@ -566,27 +557,11 @@ class Config:
 
     def _load_user(self, prefix: str | None = None) -> dict[str, Any]:
         """Attempt to load JSON configuration file."""
-        results = {}
         # Load config file
-        json_data = self._load_config_file()
+        results = self._load_config_file()
         # Load section for the current app
         if prefix is not None:
-            json_data = json_data.get(prefix, {})
-        for name, value in json_data.items():
-            if (setting := self._settings.get(name)) is not None:
-                # Attempt to cast the value to the desired type
-                if isinstance(value, list):
-                    for i, item in enumerate(value[:]):
-                        try:
-                            value[i] = setting.type(item)
-                        except (ValueError, TypeError):
-                            pass
-                else:
-                    try:
-                        value = setting.type(value)
-                    except (ValueError, TypeError):
-                        pass
-            results[name] = value
+            results = results.get(prefix, {})
         return results
 
     def _register_commands(self, setting: Setting) -> None:
@@ -680,13 +655,36 @@ class Config:
         try:
             return super().__getattribute__(name)
         except AttributeError as exc:
-            if name in self._values:
-                return self._values[name]
+            if name in self._settings:
+                setting = self._settings[name]
+                value = self._values[name]
+                # Convert choice aliases
+                if isinstance(choices := setting.choices, Mapping):
+                    value = choices.get(value, value)
+                # Cast value to setting type
+                if isinstance(value, list):
+                    for i, item in enumerate(value[:]):
+                        try:
+                            value[i] = setting.type(item)
+                        except (ValueError, TypeError):
+                            pass
+                else:
+                    try:
+                        return setting.type(value)
+                    except (ValueError, TypeError):
+                        pass
+                return value
             raise exc
 
     def __setattr__(self, name: str, value: Any) -> None:
         """Set a configuration attribute."""
         if name in self._settings:
+            setting = self._settings[name]
+            if isinstance(choices := setting.choices, Mapping):
+                for k, v in choices.items():
+                    if v == value:
+                        value = k
+                        break
             self._values[name] = value
             getattr(self.events, name)()
         else:
