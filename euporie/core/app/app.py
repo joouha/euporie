@@ -59,7 +59,6 @@ from euporie.apptk.layout.containers import Float, FloatContainer, Window, to_co
 from euporie.apptk.renderer import Renderer
 from euporie.core.app.base import ConfigurableApp
 from euporie.core.app.cursor import CursorConfig
-from euporie.core.clipboard import CONFIGURED_CLIPBOARDS
 from euporie.core.filters import has_toolbar
 from euporie.core.format import CliFormatter
 from euporie.core.io import COLOR_DEPTHS, Vt100_Output, Vt100Parser
@@ -169,10 +168,8 @@ class BaseApp(ConfigurableApp, Application, ABC):
         # Initialise the application
         super().__init__(
             **{
-                "clipboard": CONFIGURED_CLIPBOARDS.get(
-                    self.config.clipboard, lambda: None
-                )(),
                 "color_depth": COLOR_DEPTHS.get(self.config.color_depth),
+                "clipboard": self.config.clipboard(),
                 "editing_mode": self.get_edit_mode(),
                 "mouse_support": True,
                 "cursor": CursorConfig(),
@@ -264,7 +261,7 @@ class BaseApp(ConfigurableApp, Application, ABC):
             self, "_color_depth", COLOR_DEPTHS[self.config.color_depth]
         )
         self.config.events.clipboard += lambda x: setattr(
-            self, "clipboard", CONFIGURED_CLIPBOARDS[self.config.clipboard]
+            self, "clipboard", self.config.clipboard
         )
         # Set up the color palette
         self.color_palette = ColorPalette()

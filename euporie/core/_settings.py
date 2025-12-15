@@ -1,6 +1,9 @@
 """Defines core settings."""
 
+from __future__ import annotations
+
 import json
+from pkgutil import resolve_name
 
 from euporie.core import __version__
 from euporie.core.config import add_setting
@@ -89,12 +92,18 @@ add_setting(
 
 # euporie.core.clipboard
 
+
 add_setting(
     name="clipboard",
     group="euporie.core.clipboard",
     flags=["--clipboard"],
-    choices=["external", "internal", "terminal"],
-    type_=str,
+    choices={
+        "external": "euporie.apptk.clipboard.pyperclip:PyperclipClipboard",
+        "internal": "euporie.apptk.clipboard.in_memory:InMemoryClipboard",
+        "terminal": "euporie.apptk.clipboard.osc52:Osc52Clipboard",
+    },
+    type_=resolve_name,
+    schema={"type": "string"},
     default="external",
     help_="The preferred clipboard access method",
     description="""

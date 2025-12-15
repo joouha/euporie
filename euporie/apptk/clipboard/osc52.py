@@ -4,29 +4,11 @@ from __future__ import annotations
 
 import logging
 
-import pyperclip
+from euporie.apptk.application.current import get_app
 from euporie.apptk.clipboard.base import Clipboard, ClipboardData
-from euporie.apptk.clipboard.in_memory import InMemoryClipboard
-from euporie.apptk.clipboard.pyperclip import (
-    PyperclipClipboard as PtkPyperclipClipboard,
-)
 from euporie.apptk.selection import SelectionType
 
-from euporie.core.app.current import get_app
-
 log = logging.getLogger(__name__)
-
-
-class PyperclipClipboard(PtkPyperclipClipboard):
-    """Pyperclip clipboard which suppresses pyperclip exceptions."""
-
-    def set_data(self, data: ClipboardData) -> None:
-        """Set the clipboard data, ignoring any clipboard errors."""
-        self._data = data
-        try:
-            pyperclip.copy(data.text)
-        except pyperclip.PyperclipException:
-            log.exception("Failed to set clipboard data")
 
 
 class Osc52Clipboard(Clipboard):
@@ -72,10 +54,3 @@ class Osc52Clipboard(Clipboard):
                 text=text,
                 type=SelectionType.LINES if "\n" in text else SelectionType.CHARACTERS,
             )
-
-
-CONFIGURED_CLIPBOARDS = {
-    "internal": InMemoryClipboard,
-    "external": PyperclipClipboard,
-    "terminal": Osc52Clipboard,
-}
