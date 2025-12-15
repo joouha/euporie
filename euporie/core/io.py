@@ -11,7 +11,6 @@ from typing import TYPE_CHECKING, cast
 from euporie.apptk.input import vt100_parser
 from euporie.apptk.input.ansi_escape_sequences import ANSI_SEQUENCES
 from euporie.apptk.input.base import DummyInput, _dummy_context_manager
-from euporie.apptk.output.color_depth import ColorDepth
 from euporie.apptk.output.vt100 import Vt100_Output as PtkVt100_Output
 
 from euporie.core.app.current import get_app
@@ -27,13 +26,6 @@ if TYPE_CHECKING:
     from euporie.core.config import Config
 
 log = logging.getLogger(__name__)
-
-COLOR_DEPTHS = {
-    1: ColorDepth.DEPTH_1_BIT,
-    4: ColorDepth.DEPTH_4_BIT,
-    8: ColorDepth.DEPTH_8_BIT,
-    24: ColorDepth.DEPTH_24_BIT,
-}
 
 
 @lru_cache

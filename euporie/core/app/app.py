@@ -61,7 +61,7 @@ from euporie.core.app.base import ConfigurableApp
 from euporie.core.app.cursor import CursorConfig
 from euporie.core.filters import has_toolbar
 from euporie.core.format import CliFormatter
-from euporie.core.io import COLOR_DEPTHS, Vt100_Output, Vt100Parser
+from euporie.core.io import Vt100_Output, Vt100Parser
 from euporie.core.key_binding.key_processor import KeyProcessor
 from euporie.core.key_binding.micro_state import MicroState
 from euporie.core.key_binding.registry import (
@@ -168,8 +168,8 @@ class BaseApp(ConfigurableApp, Application, ABC):
         # Initialise the application
         super().__init__(
             **{
-                "color_depth": COLOR_DEPTHS.get(self.config.color_depth),
                 "clipboard": self.config.clipboard(),
+                "color_depth": self.config.color_depth,
                 "editing_mode": self.get_edit_mode(),
                 "mouse_support": True,
                 "cursor": CursorConfig(),
@@ -258,7 +258,7 @@ class BaseApp(ConfigurableApp, Application, ABC):
         self.config.events.log_file += lambda x: setup_logs(self.config)
         self.config.events.log_config += lambda x: setup_logs(self.config)
         self.config.events.color_depth += lambda x: setattr(
-            self, "_color_depth", COLOR_DEPTHS[self.config.color_depth]
+            self, "_color_depth", self.config.color_depth
         )
         self.config.events.clipboard += lambda x: setattr(
             self, "clipboard", self.config.clipboard
