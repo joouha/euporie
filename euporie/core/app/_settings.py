@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 
+from euporie.apptk.output.color_depth import ColorDepth
 from pygments.styles import STYLE_MAP as pygments_styles
 from upath import UPath
 
@@ -184,7 +185,12 @@ add_setting(
     group="euporie.core.app.app",
     flags=["--color-depth"],
     type_=int,
-    choices=[1, 4, 8, 24],
+    choices={
+        1: ColorDepth.DEPTH_1_BIT,
+        4: ColorDepth.DEPTH_4_BIT,
+        8: ColorDepth.DEPTH_8_BIT,
+        24: ColorDepth.DEPTH_24_BIT,
+    },
     default=None,
     help_="The color depth to use",
     description="""
