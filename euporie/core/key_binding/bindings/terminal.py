@@ -54,7 +54,7 @@ def get_match(event: KeyPressEvent) -> dict[str, str] | None:
 
 @add_cmd(hidden=True, is_global=True)
 def _set_terminal_palette(event: KeyPressEvent) -> object:
-    from euporie.apptk.io import Vt100_Output
+    from euporie.apptk.output.vt100 import Vt100_Output
 
     if isinstance(output := event.app.output, Vt100_Output):
         output.get_colors()
