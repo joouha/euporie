@@ -2878,6 +2878,16 @@ _BROWSER_CSS: CssSelectors = {
         ((CssSelector(item="table.dataframe"),),): {
             "max_width": "100%",
         },
+        (
+            (
+                CssSelector(item="::root", attr="[_initial_format=markdown]"),
+                CssSelector(item="pre"),
+                CssSelector(comb=">", item="code"),
+            ),
+        ): {
+            "max_width": "100%",
+            "overflow_x": "auto",
+        },
     },
 }
 
@@ -4858,15 +4868,17 @@ class HTML:
         preformatted = theme.preformatted
         content_width = theme.content_width
         content_height = theme.content_height
-
-        # Apply style to inline elements
-        # if d_inline:
-        #     ft = apply_style(ft, theme.style)
+        max_width = theme.max_width
 
         # If an element should not overflow it's width / height, truncate it
-        if not d_inline and not preformatted:
+        if not d_inline and (not preformatted or max_width is not None):
             if theme.get("overflow_x") == "hidden":
-                ft = truncate(ft, content_width, placeholder="", ignore_whitespace=True)
+                ft = truncate(
+                    ft,
+                    content_width,
+                    placeholder="",
+                    ignore_whitespace=True,
+                )
             elif theme.get("overflow_x") == "auto":
                 ft = truncate(
                     ft,
