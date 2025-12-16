@@ -2216,6 +2216,10 @@ _BROWSER_CSS: CssSelectors = {
             "border_right_width": "1px",
             "border_bottom_width": "1px",
             "border_left_width": "1px",
+            "border_top_color": "#888888",
+            "border_right_color": "#888888",
+            "border_bottom_color": "#888888",
+            "border_left_color": "#888888",
         },
         # Alignment
         ((CssSelector(item="center"),), (CssSelector(item="caption"),)): {
