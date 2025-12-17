@@ -127,7 +127,7 @@ class KeyProcessor(PtKeyProcessor):
         if not is_flush:
             self._start_timeout()
 
-    def await_key(self, key: Keys | MoreKeys, timeout: float = 1.0) -> None:
+    def await_key(self, key: Keys, timeout: float = 1.0) -> None:
         """Wait for a particular key, processing it before all other keys.
 
         Args:
