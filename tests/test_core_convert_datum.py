@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import gc
+import sys
 from unittest.mock import PropertyMock, patch
 
 from euporie.apptk.application.current import set_app
@@ -76,15 +77,17 @@ async def test_pixel_size_async() -> None:
 async def test_cell_size_async() -> None:
     """Tests the asynchronous retrieval of a Datum object's cell size."""
     datum = Datum(Image.new("RGB", (256, 128), color="red"), format="pil")
-    app = DummyApp()
-    with (
-        set_app(app),
-        patch(
-            "euporie.core.app.dummy.DummyApp.cell_size_px", new_callable=PropertyMock
-        ) as mock_cell_size_px,
-    ):
+    with patch(
+        "euporie.apptk.output.plain_text.PlainTextOutput.cell_pixel_size",
+        new_callable=PropertyMock,
+    ) as mock_cell_size_px:
         mock_cell_size_px.return_value = (8, 16)
-        cols, aspect = await datum.cell_size_async()
+        from euporie.apptk.output.plain_text import PlainTextOutput
+
+        output = PlainTextOutput(sys.stdout)
+        app = DummyApp(output=output)
+        with set_app(app):
+            cols, aspect = await datum.cell_size_async()
     assert cols == 32
     assert aspect == 0.25
 

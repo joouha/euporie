@@ -167,7 +167,7 @@ class MPLCanvasModel(IpyWidgetComm):
         if self.comm_container.kernel and (
             msg_type := MOUSE_EVENT_TYPE_MAP.get(mouse_event.event_type)
         ):
-            px, py = self.comm_container.app.cell_size_px
+            px, py = self.comm_container.app.output.cell_pixel_size
             cell_position = getattr(
                 mouse_event, "cell_position", RelativePosition(0.5, 0.5)
             )

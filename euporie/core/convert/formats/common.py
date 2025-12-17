@@ -47,7 +47,7 @@ async def imagemagick_convert(
     cmd.extend(["-[0]", "-density", "300"])
     app = get_app()
     if cols is not None and hasattr(app, "cell_size_px"):
-        px, _ = app.cell_size_px
+        px, _ = app.output.cell_pixel_size
         cmd += ["-geometry", f"{int(cols * px)}"]
     cmd += [f"{output_format}:-"]
     result: bytes | str = await call_subproc(datum.data, cmd)

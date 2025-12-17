@@ -25,7 +25,7 @@ async def scale_to_fit(
 ) -> tuple[int, int]:
     """Calculate image size based on aspect ratio, and scale to fit."""
     data = datum.data
-    px, py = get_app().cell_size_px
+    px, py = get_app().output.cell_pixel_size
 
     # Calculate rows based on image aspect ratio
     w, h = data.size

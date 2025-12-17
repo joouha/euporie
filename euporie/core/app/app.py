@@ -194,14 +194,6 @@ class BaseApp(ConfigurableApp, Application, ABC):
         self._tab_idx = 0
         # Add state for micro key-bindings
         self.micro_state = MicroState()
-        # Default terminal info values
-        self.term_colors = dict(DEFAULT_COLORS)
-        self.term_graphics_sixel = False
-        self.term_graphics_iterm = False
-        self.term_graphics_kitty = False
-        self.term_sgr_pixel = False
-        self.term_osc52_clipboard = False
-        self._term_size_px: tuple[int, int]
         # Floats at the app level
         self.leave_graphics = to_filter(leave_graphics)
         self.graphics: WeakSet[Float] = WeakSet()
@@ -277,32 +269,6 @@ class BaseApp(ConfigurableApp, Application, ABC):
             CliFormatter(**info) for info in self.config.formatters
         ]
 
-    # TODO - move to output
-    @property
-    def term_size_px(self) -> tuple[int, int]:
-        """The dimensions of the terminal in pixels."""
-        try:
-            return self._term_size_px
-        except AttributeError:
-            from euporie.apptk.io import _tiocgwinsz
-
-            _rows, _cols, px, py = _tiocgwinsz()
-            self._term_size_px = (px, py)
-        return self._term_size_px
-
-    @term_size_px.setter
-    def term_size_px(self, value: tuple[int, int]) -> None:
-        self._term_size_px = value
-
-    # TODO - move to output
-    @property
-    def cell_size_px(self) -> tuple[int, int]:
-        """Get the pixel size of a single terminal cell."""
-        px, py = self.term_size_px
-        rows, cols = self.output.get_size()
-        # If we can't get the pixel size, just guess wildly
-        return px // cols or 10, py // rows or 20
-
     @property
     def title(self) -> str:
         """The application's title."""
@@ -361,7 +327,7 @@ class BaseApp(ConfigurableApp, Application, ABC):
         if isinstance(output := self.output, Vt100_Output):
             while self.config.terminal_polling_interval:
                 await asyncio.sleep(self.config.terminal_polling_interval)
-                output.get_colors()
+                output.ask_for_colors()
 
     async def run_async(
         self,
@@ -383,13 +349,13 @@ class BaseApp(ConfigurableApp, Application, ABC):
 
             if isinstance(self.output, Vt100_Output):
                 # Send terminal queries
-                self.output.get_colors()
-                self.output.get_pixel_size()
-                self.output.get_kitty_graphics_status()
-                self.output.get_device_attributes()
-                self.output.get_iterm_graphics_status()
-                self.output.get_sgr_pixel_status()
-                self.output.get_csiu_status()
+                self.output.ask_for_colors()
+                self.output.ask_for_pixel_size()
+                self.output.ask_for_kitty_graphics_status()
+                self.output.ask_for_device_attributes()
+                self.output.ask_for_iterm_graphics_status()
+                self.output.ask_for_sgr_pixel_status()
+                self.output.ask_for_csiu_status()
                 self.output.flush()
 
                 # Read responses
@@ -454,7 +420,7 @@ class BaseApp(ConfigurableApp, Application, ABC):
                 term=output.term,
                 default_color_depth=output.default_color_depth,
                 enable_bell=output.enable_bell,
-                mplex_passthrough=cls.config.filters.multiplexer_passthrough,
+                enable_passthrough=cls.config.filters.multiplexer_passthrough,
             )
 
         return output
@@ -467,10 +433,10 @@ class BaseApp(ConfigurableApp, Application, ABC):
 
     def load_key_bindings(self) -> None:
         """Load the application's key bindings."""
+        from euporie.apptk.key_binding.bindings.mouse import load_mouse_bindings
+        from euporie.apptk.key_binding.bindings.terminal import load_terminal_bindings
         from euporie.core.key_binding.bindings.basic import load_basic_bindings
         from euporie.core.key_binding.bindings.micro import load_micro_bindings
-        from euporie.core.key_binding.bindings.terminal import load_terminal_bindings
-        from euporie.apptk.key_binding.bindings.mouse import load_mouse_bindings
         from euporie.core.key_binding.bindings.vi import load_vi_bindings
 
         self._default_bindings = merge_key_bindings(
@@ -503,6 +469,7 @@ class BaseApp(ConfigurableApp, Application, ABC):
                 ),
                 # Active, even when no buffer has been focused.
                 load_mouse_bindings(),
+                load_cpr_bindings(),
                 # Load terminal query response key bindings
                 load_terminal_bindings(),
             ]
@@ -868,7 +835,7 @@ class BaseApp(ConfigurableApp, Application, ABC):
         }
         base_colors: dict[str, str] = {
             **DEFAULT_COLORS,
-            **self.term_colors,
+            **self.renderer.colors,
             **theme_colors.get(self.config.color_scheme, theme_colors["default"]),
         }
 

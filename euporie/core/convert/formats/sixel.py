@@ -53,7 +53,7 @@ async def png_to_sixel_img2sixel(
     if bg:
         cmd += [f"--bgcolor={bg}"]
     if cols is not None:
-        px, _ = get_app().cell_size_px
+        px, _ = get_app().output.cell_pixel_size
         cmd += [f"--width={int(cols * px)}"]
     return (await call_subproc(datum.data, cmd)).decode()
 

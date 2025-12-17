@@ -407,10 +407,7 @@ class Datum(Generic[T], metaclass=_MetaDatum):
             px, py = await self.pixel_size_async()
             if px is not None and py is not None:
                 app = get_app()
-                if hasattr(app, "cell_size_px"):
-                    cell_px, cell_py = app.cell_size_px
-                else:
-                    cell_px, cell_py = 10, 20
+                cell_px, cell_py = app.output.cell_pixel_size
                 cols = max(1, int(px // cell_px))
                 aspect = (py / cell_py) / (px / cell_px)
             self._cell_size = cols, aspect

@@ -280,7 +280,7 @@ async def pil_to_ansi_py_timg(
     # Scale image to fit available space
     cols, rows = await scale_to_fit(datum, cols, rows)
     # `timg` assumes a 2x1 terminal cell aspect ratio, so we correct for this while
-    px, py = get_app().cell_size_px
+    px, py = get_app().output.cell_pixel_size
     rows = int(rows * 2 * (px / py) / 0.5)
     # Resize the image
     data = datum.data.resize((cols, rows))

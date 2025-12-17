@@ -51,6 +51,7 @@ class GraphicControl(UIControl, metaclass=ABCMeta):
     ) -> None:
         """Initialize the graphic control."""
         self.app = get_app()
+        self.output = self.app.output
         self.datum = datum
         self.scale = scale
         self.bbox = bbox or DiInt(0, 0, 0, 0)
@@ -129,7 +130,7 @@ class GraphicControl(UIControl, metaclass=ABCMeta):
             width,
             height,
             self.app.color_palette,
-            self.app.cell_size_px,
+            self.app.output.cell_pixel_size,
             self.bbox,
         )
         return UIContent(
@@ -155,7 +156,7 @@ class SixelGraphicControl(GraphicControl):
         if any(bbox):
             from sixelcrop import sixelcrop
 
-            cell_size_x, cell_size_y = self.app.cell_size_px
+            cell_size_x, cell_size_y = self.app.output.cell_pixel_size
 
             cmd = sixelcrop(
                 data=cmd,
@@ -175,6 +176,7 @@ class SixelGraphicControl(GraphicControl):
         self, visible_width: int, visible_height: int, wrap_lines: bool = False
     ) -> list[StyleAndTextTuples]:
         """Get rendered lines from the cache, or generate them."""
+        output = self.output
         bbox = self.bbox
 
         d_cols, d_aspect = self.datum.cell_size()
@@ -233,11 +235,7 @@ class SixelGraphicControl(GraphicControl):
                                 ),
                                 ("[ZeroWidthEscape]", f"\x1b[{visible_width}D"),
                                 # Place the image without moving cursor
-                                (
-                                    "[ZeroWidthEscape]",
-                                    get_app().output._passthrough(cmd),
-                                ),
-                                # ("[ZeroWidthEscape]", "XXXXX"),
+                                ("[ZeroWidthEscape]", output.mplex_passthrough(cmd)),
                                 # Restore the last known cursor position (at the bottom)
                                 ("[ZeroWidthEscape]", "\x1b[u"),
                             ]
@@ -249,7 +247,7 @@ class SixelGraphicControl(GraphicControl):
         key = (
             visible_width,
             self.app.color_palette,
-            self.app.cell_size_px,
+            self.app.output.cell_pixel_size,
             self.bbox,
         )
         return self._format_cache.get(key, render_lines)
@@ -268,7 +266,7 @@ class ItermGraphicControl(GraphicControl):
 
             image = datum.convert(to="pil", cols=wp.width, rows=wp.height)
             if image is not None:
-                cell_size_x, cell_size_y = self.app.cell_size_px
+                cell_size_x, cell_size_y = self.app.output.cell_pixel_size
                 # Downscale image to fit target region for precise cropping
                 image.thumbnail((wp.width * cell_size_x, wp.height * cell_size_y))
                 left = bbox.left * cell_size_x
@@ -291,6 +289,7 @@ class ItermGraphicControl(GraphicControl):
         self, visible_width: int, visible_height: int, wrap_lines: bool = False
     ) -> list[StyleAndTextTuples]:
         """Get rendered lines from the cache, or generate them."""
+        output = self.output
         bbox = self.bbox
 
         d_cols, d_aspect = self.datum.cell_size()
@@ -355,10 +354,7 @@ class ItermGraphicControl(GraphicControl):
                                 ),
                                 ("[ZeroWidthEscape]", f"\x1b[{visible_width}D"),
                                 # Place the image without moving cursor
-                                (
-                                    "[ZeroWidthEscape]",
-                                    get_app().output._passthrough(cmd),
-                                ),
+                                ("[ZeroWidthEscape]", output.mplex_passthrough(cmd)),
                                 # Restore the last known cursor position (at the bottom)
                                 ("[ZeroWidthEscape]", "\x1b[u"),
                             ]
@@ -370,7 +366,7 @@ class ItermGraphicControl(GraphicControl):
         key = (
             visible_width,
             self.app.color_palette,
-            self.app.cell_size_px,
+            self.app.output.cell_pixel_size,
             self.bbox,
         )
         return self._format_cache.get(key, render_lines)
@@ -425,7 +421,7 @@ class BaseKittyGraphicControl(GraphicControl):
         full_width = wp.width + bbox.left + bbox.right
         full_height = wp.height + bbox.top + bbox.bottom
 
-        datum = self._datum_pad_cache[(self.datum, *self.app.cell_size_px)]
+        datum = self._datum_pad_cache[(self.datum, *self.app.output.cell_pixel_size)]
         return str(
             datum.convert(
                 to="base64-png",
@@ -447,6 +443,7 @@ class BaseKittyGraphicControl(GraphicControl):
 
     def load(self, rows: int, cols: int, bbox: DiInt) -> None:
         """Send the graphic to the terminal without displaying it."""
+        output = self.output
         data = self.convert_data(
             BoundedWritePosition(0, 0, width=cols, height=rows, bbox=bbox)
         )
@@ -467,23 +464,25 @@ class BaseKittyGraphicControl(GraphicControl):
                 C=1,  # Do not move the cursor
                 m=1 if data else 0,  # Data will be chunked
             )
-            self.app.output.write_raw(cmd, mplex_passthrough=True)
-        self.app.output.flush()
+            output.write_raw(output.mplex_passthrough(cmd))
+        output.flush()
         self.loaded = True
 
     def delete(self) -> None:
         """Delete the graphic from the terminal."""
         if self.kitty_image_id > 0:
-            self.app.output.write_raw(
-                self._kitty_cmd(
-                    a="D",
-                    d="I",
-                    i=self.kitty_image_id,
-                    q=2,
-                ),
-                mplex_passthrough=True,
+            output = self.output
+            output.write_raw(
+                output.mplex_passthrough(
+                    self._kitty_cmd(
+                        a="D",
+                        d="I",
+                        i=self.kitty_image_id,
+                        q=2,
+                    )
+                )
             )
-            self.app.output.flush()
+            output.flush()
             self.loaded = False
 
     def reset(self) -> None:
@@ -506,9 +505,10 @@ class KittyGraphicControl(BaseKittyGraphicControl):
         self, visible_width: int, visible_height: int, wrap_lines: bool = False
     ) -> list[StyleAndTextTuples]:
         """Get rendered lines from the cache, or generate them."""
+        output = self.otuput
         bbox = self.bbox
 
-        cell_size_px = self.app.cell_size_px
+        cell_size_px = self.app.output.cell_pixel_size
         datum = self._datum_pad_cache[(self.datum, *cell_size_px)]
         px, py = datum.pixel_size()
         # Fall back to a default pixel size
@@ -590,10 +590,7 @@ class KittyGraphicControl(BaseKittyGraphicControl):
                                 ),
                                 ("[ZeroWidthEscape]", f"\x1b[{visible_width}D"),
                                 # Place the image without moving cursor
-                                (
-                                    "[ZeroWidthEscape]",
-                                    get_app().output._passthrough(cmd),
-                                ),
+                                ("[ZeroWidthEscape]", output.mplex_passthrough(cmd)),
                                 # Restore the last known cursor position (at the bottom)
                                 ("[ZeroWidthEscape]", "\x1b[u"),
                             ]
@@ -607,14 +604,14 @@ class KittyGraphicControl(BaseKittyGraphicControl):
         key = (
             visible_width,
             self.app.color_palette,
-            self.app.cell_size_px,
+            self.app.output.cell_pixel_size,
             self.bbox,
         )
         return self._format_cache.get(key, render_lines)
 
     def hide_cmd(self) -> str:
         """Generate a command to hide the graphic."""
-        return get_app().output._passthrough(
+        return self.output.mplex_passthrough(
             self._kitty_cmd(
                 a="d",
                 d="i",
@@ -692,9 +689,10 @@ class KittyUnicodeGraphicControl(BaseKittyGraphicControl):
         self, visible_width: int, visible_height: int, wrap_lines: bool = False
     ) -> list[StyleAndTextTuples]:
         """Get rendered lines from the cache, or generate them."""
+        output = self.output
         bbox = self.bbox
 
-        cell_size_px = self.app.cell_size_px
+        cell_size_px = self.app.output.cell_pixel_size
         datum = self._datum_pad_cache[(self.datum, *cell_size_px)]
         px, py = datum.pixel_size()
         # Fall back to a default pixel size
@@ -739,8 +737,8 @@ class KittyUnicodeGraphicControl(BaseKittyGraphicControl):
                 r=rows,
                 q=2,
             )
-            self.app.output.write_raw(cmd, mplex_passthrough=True)
-            self.app.output.flush()
+            output.write_raw(output.mplex_passthrough(cmd))
+            output.flush()
             self.placements.add((cols, rows))
 
         def render_lines() -> list[StyleAndTextTuples]:
@@ -782,7 +780,7 @@ class KittyUnicodeGraphicControl(BaseKittyGraphicControl):
         key = (
             visible_width,
             self.app.color_palette,
-            self.app.cell_size_px,
+            self.app.output.cell_pixel_size,
             bbox,
         )
         return self._format_cache.get(key, render_lines)
@@ -908,7 +906,7 @@ def select_graphic_control(format_: str) -> type[GraphicControl] | None:
     force_graphics = app.config.force_graphics
 
     if preferred_graphics_protocol != "none":
-        if (app.term_graphics_iterm or force_graphics) and find_route(
+        if (app.renderer.graphics_iterm or force_graphics) and find_route(
             format_, "base64-png"
         ):
             useable_graphics_controls.append(ItermGraphicControl)
@@ -920,7 +918,7 @@ def select_graphic_control(format_: str) -> type[GraphicControl] | None:
         ):
             SelectedGraphicControl = ItermGraphicControl
         elif (
-            (app.term_graphics_kitty or force_graphics)
+            (app.renderer.graphics_kitty or force_graphics)
             and find_route(format_, "base64-png")
             # Kitty does not work in mplex without pass-through
             and (not _in_mplex or (_in_mplex and force_graphics))
@@ -938,7 +936,7 @@ def select_graphic_control(format_: str) -> type[GraphicControl] | None:
         ):
             SelectedGraphicControl = KittyUnicodeGraphicControl
         # Tmux now supports sixels (>=3.4)
-        elif (app.term_graphics_sixel or force_graphics) and find_route(
+        elif (app.renderer.graphics_sixel or force_graphics) and find_route(
             format_, "sixel"
         ):
             useable_graphics_controls.append(SixelGraphicControl)

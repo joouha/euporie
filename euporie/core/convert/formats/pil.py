@@ -74,7 +74,7 @@ def crop(data: PilImage, bbox: DiInt) -> PilImage:
         rows=full_height,
     )
     if image is not None:
-        cell_size_x, cell_size_y = self.app.cell_size_px
+        cell_size_x, cell_size_y = self.app.output.cell_pixel_size
         # Downscale image to fit target region for precise cropping
         image.thumbnail((full_width * cell_size_x, full_height * cell_size_y))
         image = image.crop(
