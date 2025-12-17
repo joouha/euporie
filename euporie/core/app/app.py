@@ -66,7 +66,6 @@ from euporie.core.key_binding.registry import (
     load_registered_bindings,
     register_bindings,
 )
-from euporie.core.key_binding.vi_state import ViState
 from euporie.core.log import setup_logs
 from euporie.core.lsp import KNOWN_LSP_SERVERS, LspClient
 from euporie.core.style import (
@@ -218,8 +217,6 @@ class BaseApp(ConfigurableApp, Application, ABC):
         # and an event loop has been created
         self.pre_run_callables = [self.pre_run]
         self.post_load_callables: list[Callable[[], None]] = []
-        # Set default vi input mode to navigate
-        self.vi_state = ViState()
         # Set a long timeout for mappings (e.g. dd)
         self.timeoutlen = 1.0
         # Set a short timeout for flushing input
