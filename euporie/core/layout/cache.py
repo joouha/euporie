@@ -7,7 +7,7 @@ from functools import cache
 from typing import TYPE_CHECKING
 
 from euporie.apptk.layout.layout import walk
-from euporie.apptk.layout.mouse_handlers import MouseHandlers
+from euporie.apptk.layout.mouse_handlers import MouseEvent, MouseHandlers
 
 from euporie.apptk.cache import FastDictCache
 from euporie.apptk.data_structures import DiInt, Point
@@ -17,8 +17,7 @@ from euporie.apptk.layout.containers import (
     WindowRenderInfo,
     to_container,
 )
-from euporie.apptk.layout.screen import BoundedWritePosition, Screen
-from euporie.apptk.mouse_events import MouseEvent
+from euporie.apptk.layout.screen import Screen, WritePosition
 from euporie.core.app.current import get_app
 
 if TYPE_CHECKING:
@@ -26,14 +25,11 @@ if TYPE_CHECKING:
 
     from euporie.apptk.key_binding.key_bindings import NotImplementedOrNone
     from euporie.apptk.layout.dimension import Dimension
-    from euporie.apptk.layout.mouse_handlers import MouseEvent as PtkMouseEvent
     from euporie.apptk.utils import Event
 
     from euporie.apptk.layout.containers import AnyContainer
-    from euporie.apptk.layout.screen import Screen as PtkScreen
-    from euporie.apptk.layout.screen import WritePosition
 
-    MouseHandler = Callable[[PtkMouseEvent], object]
+    MouseHandler = Callable[[MouseEvent], object]
 
 log = logging.getLogger(__name__)
 
@@ -166,7 +162,7 @@ class CachedContainer(Container):
             self.container.write_to_screen(
                 screen,
                 self.mouse_handlers,
-                BoundedWritePosition(
+                WritePosition(
                     xpos=0,
                     ypos=0,
                     width=self.width,
@@ -214,7 +210,7 @@ class CachedContainer(Container):
 
     def write_to_screen(
         self,
-        screen: PtkScreen,
+        screen: Screen,
         mouse_handlers: MouseHandlers,
         write_position: WritePosition,
         parent_style: str,
@@ -253,7 +249,7 @@ class CachedContainer(Container):
 
     def blit(
         self,
-        screen: PtkScreen,
+        screen: Screen,
         mouse_handlers: MouseHandlers,
         left: int,
         top: int,
@@ -279,7 +275,7 @@ class CachedContainer(Container):
         new_wps = {}
 
         for win, wp in self.screen.visible_windows_to_write_positions.items():
-            new_wp = BoundedWritePosition(
+            new_wp = WritePosition(
                 xpos=wp.xpos + left,
                 ypos=wp.ypos + top,
                 width=wp.width,
@@ -339,7 +335,7 @@ class CachedContainer(Container):
 
         @cache
         def _wrap_mouse_handler(handler: Callable) -> MouseHandler:
-            def _wrapped(mouse_event: PtkMouseEvent) -> NotImplementedOrNone:
+            def _wrapped(mouse_event: MouseEvent) -> NotImplementedOrNone:
                 # Modify mouse events to reflect position of content
                 new_event = MouseEvent(
                     position=Point(

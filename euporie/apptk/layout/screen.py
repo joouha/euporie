@@ -11,7 +11,7 @@ from euporie.apptk.data_structures import DiInt
 log = logging.getLogger(__name__)
 
 
-class BoundedWritePosition(screen.WritePosition):
+class WritePosition(screen.WritePosition):
     """A write position which also hold bounding box information."""
 
     def __init__(
@@ -40,16 +40,13 @@ class Screen(screen.Screen):
     """Screen class which uses :py:`BoundedWritePosition`s."""
 
     def fill_area(
-        self, write_position: screen.WritePosition, style: str = "", after: bool = False
+        self, write_position: WritePosition, style: str = "", after: bool = False
     ) -> None:
         """Fill the content of this area, using the given `style`."""
         if not style.strip():
             return
 
-        if isinstance(write_position, BoundedWritePosition):
-            bbox = write_position.bbox
-        else:
-            bbox = DiInt(0, 0, 0, 0)
+        bbox = write_position.bbox
 
         xmin = write_position.xpos + bbox.left
         xmax = write_position.xpos + write_position.width - bbox.right

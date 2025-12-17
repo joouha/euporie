@@ -37,7 +37,7 @@ from euporie.apptk.layout.controls import (
     to_formatted_text,
 )
 from euporie.apptk.layout.controls import DummyControl as PtkDummyControl
-from euporie.apptk.layout.screen import _CHAR_CACHE, BoundedWritePosition
+from euporie.apptk.layout.screen import _CHAR_CACHE, WritePosition
 from euporie.apptk.mouse_events import MouseEvent, MouseEventType
 
 if TYPE_CHECKING:
@@ -57,7 +57,7 @@ if TYPE_CHECKING:
         AnyDimension,
         Float,
     )
-    from euporie.apptk.layout.screen import Screen, WritePosition
+    from euporie.apptk.layout.screen import Screen
     from euporie.apptk.mouse_events import MouseEvent as PtkMouseEvent
 
 
@@ -250,7 +250,6 @@ class HSplit(ptk_containers.HSplit):
         :param screen: The :class:`~euporie.apptk.layout.screen.Screen` class
             to which the output has to be written.
         """
-        assert isinstance(write_position, BoundedWritePosition)
         sizes = self._divide_heights(write_position)
         style = parent_style + " " + to_str(self.style)
         z_index = z_index if self.z_index is None else self.z_index
@@ -271,7 +270,7 @@ class HSplit(ptk_containers.HSplit):
                 c.write_to_screen(
                     screen,
                     mouse_handlers,
-                    BoundedWritePosition(
+                    WritePosition(
                         xpos,
                         ypos,
                         width,
@@ -308,7 +307,7 @@ class HSplit(ptk_containers.HSplit):
                 self._remaining_space_window.write_to_screen(
                     screen,
                     mouse_handlers,
-                    BoundedWritePosition(
+                    WritePosition(
                         xpos,
                         ypos,
                         width,
@@ -427,7 +426,6 @@ class VSplit(ptk_containers.VSplit):
         :param screen: The :class:`~euporie.apptk.layout.screen.Screen` class
             to which the output has to be written.
         """
-        assert isinstance(write_position, BoundedWritePosition)
         if not self.children:
             return
 
@@ -461,7 +459,7 @@ class VSplit(ptk_containers.VSplit):
             c.write_to_screen(
                 screen,
                 mouse_handlers,
-                BoundedWritePosition(
+                WritePosition(
                     xpos,
                     ypos,
                     s,
@@ -492,7 +490,7 @@ class VSplit(ptk_containers.VSplit):
             self._remaining_space_window.write_to_screen(
                 screen,
                 mouse_handlers,
-                BoundedWritePosition(
+                WritePosition(
                     xpos,
                     ypos,
                     remaining_width,
@@ -577,11 +575,8 @@ class Window(ptk_containers.Window):
         # WritePosition, if the parent wanted us to paint in a bigger area.
         # (This happens if this window is bundled with another window in a
         # HSplit/VSplit, but with different size requirements.)
-        if isinstance(write_position, BoundedWritePosition):
-            bbox = write_position.bbox
-        else:
-            bbox = DiInt(0, 0, 0, 0)
-        write_position = BoundedWritePosition(
+        bbox = write_position.bbox
+        write_position = WritePosition(
             xpos=write_position.xpos,
             ypos=write_position.ypos,
             width=write_position.width,
@@ -630,7 +625,6 @@ class Window(ptk_containers.Window):
         parent_style: str,
         erase_bg: bool,
     ) -> None:
-        assert isinstance(write_position, BoundedWritePosition)
         # Don't bother writing invisible windows.
         # (We save some time, but also avoid applying last-line styling.)
         if write_position.height <= 0 or write_position.width <= 0:
@@ -809,7 +803,7 @@ class Window(ptk_containers.Window):
             if cp_yx := rowcol_to_yx.get((_row, _col)):
                 self._apply_style(
                     screen,
-                    BoundedWritePosition(
+                    WritePosition(
                         xpos=write_position.xpos,
                         ypos=cp_yx[0],
                         width=write_position.width,
@@ -840,7 +834,6 @@ class Window(ptk_containers.Window):
         get_line_prefix: Callable[[int, int], AnyFormattedText] | None = None,
     ) -> tuple[dict[int, tuple[int, int]], dict[tuple[int, int], tuple[int, int]]]:
         """Copy the UIContent into the output screen."""
-        assert isinstance(write_position, BoundedWritePosition)
         xpos = write_position.xpos + move_x
         ypos = write_position.ypos
         line_count = ui_content.line_count
@@ -1073,12 +1066,11 @@ class Window(ptk_containers.Window):
         width: int,
     ) -> None:
         """Copy characters from the margin screen to the real screen."""
-        assert isinstance(write_position, BoundedWritePosition)
         xpos = write_position.xpos + move_x
         ypos = write_position.ypos
         wp_bbox = write_position.bbox
 
-        margin_write_position = BoundedWritePosition(
+        margin_write_position = WritePosition(
             xpos, ypos, width, write_position.height, wp_bbox
         )
         self._copy_body(margin_content, new_screen, margin_write_position, 0, width)
@@ -1087,7 +1079,6 @@ class Window(ptk_containers.Window):
         self, screen: Screen, write_position: WritePosition, erase_bg: bool
     ) -> None:
         """Erase/fill the background."""
-        assert isinstance(write_position, BoundedWritePosition)
         char: str | None
         char = self.char() if callable(self.char) else self.char
 
@@ -1114,17 +1105,14 @@ class Window(ptk_containers.Window):
 
         # Apply the 'last-line' class to the last line of each Window. This can
         # be used to apply an 'underline' to the user control.
-        if isinstance(write_position, BoundedWritePosition):
-            if write_position.bbox.bottom == 0:
-                wp = BoundedWritePosition(
-                    write_position.xpos,
-                    write_position.ypos + write_position.height - 1,
-                    write_position.width,
-                    1,
-                )
-                new_screen.fill_area(wp, "class:last-line", after=True)
-        else:
-            new_screen.fill_area(write_position, "class:last-line", after=True)
+        if write_position.bbox.bottom == 0:
+            wp = WritePosition(
+                write_position.xpos,
+                write_position.ypos + write_position.height - 1,
+                write_position.width,
+                1,
+            )
+            new_screen.fill_area(wp, "class:last-line", after=True)
 
     def _mouse_handler(self, mouse_event: PtkMouseEvent) -> NotImplementedOrNone:
         """Mouse handler. Called when the UI control doesn't handle this particular event.
@@ -1304,7 +1292,7 @@ class FloatContainer(ptk_containers.FloatContainer):
         # Write float.
         # (xpos and ypos can be negative: a float can be partially visible.)
         if height > 0 and width > 0:
-            wp = BoundedWritePosition(
+            wp = WritePosition(
                 xpos=xpos + write_position.xpos,
                 ypos=ypos + write_position.ypos,
                 width=width,
