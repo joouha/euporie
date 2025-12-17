@@ -5,6 +5,8 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
+from euporie.apptk.cache import FastDictCache
+from euporie.apptk.data_structures import Point
 from euporie.apptk.key_binding.bindings.mouse import (
     MOUSE_MOVE,
     UNKNOWN_BUTTON,
@@ -18,15 +20,12 @@ from euporie.apptk.key_binding.bindings.mouse import (
     load_mouse_bindings as load_ptk_mouse_bindings,
 )
 from euporie.apptk.keys import Keys
-
-from euporie.apptk.cache import FastDictCache
-from euporie.apptk.data_structures import Point
 from euporie.apptk.mouse_events import MouseEvent, RelativePosition
 from euporie.apptk.renderer import HeightIsUnknownError
-from euporie.core.app.app import BaseApp
 
 if TYPE_CHECKING:
     from euporie.apptk.key_binding.key_bindings import NotImplementedOrNone
+
     from euporie.apptk.key_binding.key_processor import KeyPressEvent
 
 log = logging.getLogger(__name__)
@@ -120,13 +119,12 @@ def load_mouse_bindings() -> KeyBindings:
         """Handle incoming mouse event, include SGR-pixel mode."""
         # Ensure mypy knows this would only run in a euporie appo
         app = event.app
-        assert isinstance(app, BaseApp)
 
         if not app.renderer.height_is_known:
             return NotImplemented
 
         mouse_event = _MOUSE_EVENT_CACHE[
-            event.data, app.term_sgr_pixel, app.cell_size_px
+            event.data, app.renderer.sgr_pixel, app.output.cell_pixel_size
         ]
 
         if mouse_event is None:

@@ -29,9 +29,6 @@ from euporie.apptk.key_binding.bindings.emacs import (
     load_emacs_search_bindings,
     load_emacs_shift_selection_bindings,
 )
-from euporie.apptk.key_binding.bindings.mouse import (
-    load_mouse_bindings as load_ptk_mouse_bindings,
-)
 from euporie.apptk.key_binding.bindings.vi import load_vi_search_bindings
 from euporie.apptk.key_binding.key_bindings import (
     ConditionalKeyBindings,
@@ -475,8 +472,8 @@ class BaseApp(ConfigurableApp, Application, ABC):
         """Load the application's key bindings."""
         from euporie.core.key_binding.bindings.basic import load_basic_bindings
         from euporie.core.key_binding.bindings.micro import load_micro_bindings
-        from euporie.core.key_binding.bindings.mouse import load_mouse_bindings
         from euporie.core.key_binding.bindings.terminal import load_terminal_bindings
+        from euporie.apptk.key_binding.bindings.mouse import load_mouse_bindings
         from euporie.core.key_binding.bindings.vi import load_vi_bindings
 
         self._default_bindings = merge_key_bindings(
@@ -508,9 +505,6 @@ class BaseApp(ConfigurableApp, Application, ABC):
                     buffer_has_focus,
                 ),
                 # Active, even when no buffer has been focused.
-                load_ptk_mouse_bindings(),
-                load_cpr_bindings(),
-                # Load extra mouse bindings
                 load_mouse_bindings(),
                 # Load terminal query response key bindings
                 load_terminal_bindings(),
