@@ -13,7 +13,7 @@ from euporie.apptk.layout.containers import (
     Window,
     to_container,
 )
-from euporie.apptk.layout.screen import BoundedWritePosition
+from euporie.apptk.layout.screen import WritePosition
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
@@ -25,7 +25,7 @@ if TYPE_CHECKING:
     from euporie.apptk.layout.mouse_handlers import MouseHandlers
 
     from euporie.apptk.layout.containers import AnyContainer
-    from euporie.apptk.layout.screen import Screen, WritePosition
+    from euporie.apptk.layout.screen import Screen
     from euporie.apptk.mouse_events import MouseEvent
 
     MouseHandler = Callable[[MouseEvent], object]
@@ -109,7 +109,7 @@ class PrintingContainer(Container):
             child.write_to_screen(
                 screen,
                 mouse_handlers,
-                BoundedWritePosition(xpos, ypos, write_position.width, height),
+                WritePosition(xpos, ypos, write_position.width, height),
                 parent_style,
                 erase_bg,
                 z_index,

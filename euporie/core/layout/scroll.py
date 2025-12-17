@@ -7,11 +7,11 @@ import logging
 from typing import TYPE_CHECKING, cast
 
 from euporie.apptk.application.current import get_app
-from euporie.apptk.filters import is_searching
 from euporie.apptk.layout.dimension import Dimension, to_dimension
 from euporie.apptk.layout.layout import walk
 
 from euporie.apptk.cache import FastDictCache
+from euporie.apptk.filters import is_searching
 from euporie.apptk.layout.containers import (
     Container,
     ScrollOffsets,
@@ -19,7 +19,7 @@ from euporie.apptk.layout.containers import (
     WindowRenderInfo,
 )
 from euporie.apptk.layout.controls import UIContent
-from euporie.apptk.layout.screen import BoundedWritePosition
+from euporie.apptk.layout.screen import WritePosition
 from euporie.apptk.mouse_events import MouseEvent, MouseEventType, MouseModifier
 from euporie.core.layout.cache import CachedContainer
 
@@ -33,7 +33,6 @@ if TYPE_CHECKING:
 
     from euporie.apptk.layout.containers import AnyContainer
     from euporie.apptk.layout.screen import Screen as PtkScreen
-    from euporie.apptk.layout.screen import WritePosition
 
     MouseHandler = Callable[[MouseEvent], object]
 
@@ -83,7 +82,7 @@ class ScrollingContainer(Container):
         self.visible_indices: set[int] = {0}
         self.index_positions: dict[int, int | None] = {}
 
-        self.last_write_position: WritePosition = BoundedWritePosition(0, 0, 0, 0)
+        self.last_write_position: WritePosition = WritePosition(0, 0, 0, 0)
         self.last_total_height = 0
 
         self._scroll_next: tuple[int, Literal["top", "bottom"] | None] | None = None
@@ -574,7 +573,7 @@ class ScrollingContainer(Container):
                 Window(char=" ").write_to_screen(
                     screen,
                     mouse_handlers,
-                    BoundedWritePosition(
+                    WritePosition(
                         xpos, ypos + line, available_width, available_height - line
                     ),
                     parent_style,
@@ -621,7 +620,7 @@ class ScrollingContainer(Container):
                 Window(char=" ").write_to_screen(
                     screen,
                     mouse_handlers,
-                    BoundedWritePosition(xpos, ypos, available_width, line),
+                    WritePosition(xpos, ypos, available_width, line),
                     parent_style,
                     erase_bg,
                     z_index,

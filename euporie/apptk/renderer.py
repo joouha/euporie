@@ -12,7 +12,7 @@ from prompt_toolkit.renderer import _StyleStringHasStyleCache, _StyleStringToAtt
 
 from euporie.apptk.data_structures import Point, Size
 from euporie.apptk.filters import to_filter
-from euporie.apptk.layout.screen import BoundedWritePosition, Char, Screen
+from euporie.apptk.layout.screen import Char, Screen, WritePosition
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -432,7 +432,7 @@ class Renderer(PtkRenderer):
         layout.container.write_to_screen(
             screen,
             mouse_handlers,
-            BoundedWritePosition(
+            WritePosition(
                 xpos=0,
                 ypos=0,
                 width=size.columns,

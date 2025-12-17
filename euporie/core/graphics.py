@@ -25,7 +25,6 @@ from euporie.core.convert.datum import Datum
 from euporie.core.convert.registry import find_route
 from euporie.core.filters import has_float, in_mplex
 from euporie.core.ft.utils import _ZERO_WIDTH_FRAGMENTS
-from euporie.core.layout.scroll import BoundedWritePosition
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -151,7 +150,7 @@ class SixelGraphicControl(GraphicControl):
 
     def convert_data(self, wp: WritePosition) -> str:
         """Convert datum to required format."""
-        bbox = wp.bbox if isinstance(wp, BoundedWritePosition) else DiInt(0, 0, 0, 0)
+        bbox = wp.bbox
         cmd = str(self.datum.convert(to="sixel", cols=wp.width, rows=wp.height)).strip()
         if any(bbox):
             from sixelcrop import sixelcrop
@@ -208,7 +207,7 @@ class SixelGraphicControl(GraphicControl):
             """Render the lines to display in the control."""
             ft: list[StyleAndTextTuples] = []
             if visible_height >= 0:
-                cmd = self.convert_data(BoundedWritePosition(0, 0, cols, rows, d_bbox))
+                cmd = self.convert_data(WritePosition(0, 0, cols, rows, d_bbox))
                 ft.extend(
                     split_lines(
                         to_formatted_text(
@@ -259,7 +258,7 @@ class ItermGraphicControl(GraphicControl):
     def convert_data(self, wp: WritePosition) -> str:
         """Convert the graphic's data to base64 data."""
         datum = self.datum
-        bbox = wp.bbox if isinstance(wp, BoundedWritePosition) else DiInt(0, 0, 0, 0)
+        bbox = wp.bbox
         # Crop image if necessary
         if any(bbox):
             import io
@@ -324,9 +323,7 @@ class ItermGraphicControl(GraphicControl):
                 rows - d_bbox.top - d_bbox.bottom > 0
                 and cols - d_bbox.left - d_bbox.right > 0
             ):
-                b64data = self.convert_data(
-                    BoundedWritePosition(0, 0, cols, rows, d_bbox)
-                )
+                b64data = self.convert_data(WritePosition(0, 0, cols, rows, d_bbox))
                 cmd = f"\x1b]1337;File=inline=1;width={cols}:{b64data}\a"
                 ft.extend(
                     split_lines(
@@ -417,7 +414,7 @@ class BaseKittyGraphicControl(GraphicControl):
 
     def convert_data(self, wp: WritePosition) -> str:
         """Convert the graphic's data to base64 data for kitty graphics protocol."""
-        bbox = wp.bbox if isinstance(wp, BoundedWritePosition) else DiInt(0, 0, 0, 0)
+        bbox = wp.bbox
         full_width = wp.width + bbox.left + bbox.right
         full_height = wp.height + bbox.top + bbox.bottom
 
@@ -445,7 +442,7 @@ class BaseKittyGraphicControl(GraphicControl):
         """Send the graphic to the terminal without displaying it."""
         output = self.output
         data = self.convert_data(
-            BoundedWritePosition(0, 0, width=cols, height=rows, bbox=bbox)
+            WritePosition(0, 0, width=cols, height=rows, bbox=bbox)
         )
         self.kitty_image_id = self._kitty_image_count
         self.__class__._kitty_image_count += 1
@@ -807,7 +804,7 @@ class GraphicWindow(Window):
     def __init__(
         self,
         content: GraphicControl,
-        get_position: Callable[[Screen], BoundedWritePosition],
+        get_position: Callable[[Screen], WritePosition],
         filter: FilterOrBool = True,
         *args: Any,
         **kwargs: Any,
@@ -996,10 +993,10 @@ class GraphicProcessor:
 
     def _get_position(
         self, key: str, rows: int, cols: int
-    ) -> Callable[[Screen], BoundedWritePosition]:
+    ) -> Callable[[Screen], WritePosition]:
         """Return a function that returns the current bounded graphic position."""
 
-        def get_graphic_position(screen: Screen) -> BoundedWritePosition:
+        def get_graphic_position(screen: Screen) -> WritePosition:
             """Get the position and bbox of a graphic."""
             if key not in self.positions:
                 raise NotVisible
@@ -1023,10 +1020,7 @@ class GraphicProcessor:
             if win_wp is None:
                 raise NotVisible
 
-            if isinstance(win_wp, BoundedWritePosition):
-                win_bbox = win_wp.bbox
-            else:
-                win_bbox = DiInt(0, 0, 0, 0)
+            win_bbox = win_wp.bbox
 
             render_info = window.render_info
             if render_info is None:
@@ -1061,7 +1055,7 @@ class GraphicProcessor:
             width = max(0, cols - bbox.left - bbox.right)
             height = max(0, rows - bbox.top - bbox.bottom)
 
-            return BoundedWritePosition(
+            return WritePosition(
                 xpos=xpos, ypos=ypos, width=width, height=height, bbox=bbox
             )
 
