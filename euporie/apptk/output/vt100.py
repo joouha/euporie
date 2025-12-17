@@ -59,6 +59,8 @@ def _tiocgwinsz() -> tuple[int, int, int, int]:
 class Vt100_Output(PtkVt100_Output):
     """A Vt100 output which enables SGR pixel mouse positioning."""
 
+    pixel_size: Size
+
     def __init__(
         self,
         stdout: TextIO,
@@ -67,17 +69,16 @@ class Vt100_Output(PtkVt100_Output):
         default_color_depth: ColorDepth | None = None,
         enable_bell: bool = True,
         enable_cpr: bool = True,
-        mplex_passthrough: FilterOrBool = False,
+        enable_passthrough: FilterOrBool = False,
     ) -> None:
         super().__init__(
             stdout, get_size, term, default_color_depth, enable_bell, enable_cpr
         )
-        self.mplex_passthrough = to_filter(mplex_passthrough)
+        self.enable_passthrough = to_filter(enable_passthrough)
 
-    # TODO - move to base output
-    def _passthrough(self, cmd: str) -> str:
+    def mplex_passthrough(self, cmd: str) -> str:
         """Wrap an escape sequence for terminal passthrough."""
-        if self.mplex_passthrough():
+        if self.enable_passthrough():
             if in_tmux():
                 cmd = cmd.replace("\x1b", "\x1b\x1b")
                 cmd = f"\x1bPtmux;{cmd}\x1b\\"
@@ -88,10 +89,23 @@ class Vt100_Output(PtkVt100_Output):
                 )
         return cmd
 
-    def write_raw(self, data: str, mplex_passthrough: bool = False) -> None:
+    def get_pixel_size(self) -> Size:
+        """Dimensions of the terminal in pixels."""
+        try:
+            return self._pixel_size
+        except AttributeError:
+            from euporie.apptk.io import _tiocgwinsz
+
+            _rows, _cols, px, py = _tiocgwinsz()
+            self._pixel_size = (px, py)
+        return self._pixel_size
+
+    def set_pixel_size(self, px: int, py: int) -> None:
+        """Set terminal pixel dimensions."""
+        self._pixel_size = (px, py)
+
+    def write_raw(self, data: str) -> None:
         """Write raw data to output."""
-        if mplex_passthrough:
-            data = self._passthrough(data)
         self._buffer.append(data)
 
     def enable_sgr_pixel(self) -> None:
@@ -129,44 +143,46 @@ class Vt100_Output(PtkVt100_Output):
         b64data = b64encode(text.encode()).decode()
         self.write_raw(f"\x1b]52;c;{b64data}\x1b\\")
 
-    def get_clipboard(self) -> None:
+    def ask_for_clipboard(self) -> None:
         """Get clipboard contents using OSC-52."""
         self.write_raw("\x1b]52;c;?\x1b\\")
 
-    def get_colors(self) -> None:
+    def ask_for_colors(self) -> None:
         """Query terminal colors."""
         self.write_raw(
-            self._passthrough(
+            self.mplex_passthrough(
                 ("\x1b]10;?\x1b\\\x1b]11;?\x1b\\")
                 + "".join(f"\x1b]4;{i};?\x1b\\" for i in range(16))
             )
         )
 
-    def get_pixel_size(self) -> None:
+    def request_pixel_size(self) -> None:
         """Check the terminal's dimensions in pixels."""
         self.write_raw("\x1b[14t")
 
-    def get_kitty_graphics_status(self) -> None:
+    def ask_for_kitty_graphics_status(self) -> None:
         """Query terminal to check for kitty graphics support."""
         self.write_raw(
             "\x1b[s"
-            + self._passthrough("\x1b_Gi=4294967295,s=1,v=1,a=q,t=d,f=24;aaaa\x1b\\")
+            + self.mplex_passthrough(
+                "\x1b_Gi=4294967295,s=1,v=1,a=q,t=d,f=24;aaaa\x1b\\"
+            )
             + "\x1b[u\x1b[2K"
         )
 
-    def get_device_attributes(self) -> None:
+    def ask_for_device_attributes(self) -> None:
         """Query terminal for device attributes."""
-        self.write_raw(self._passthrough("\x1b[c"))
+        self.write_raw(self.mplex_passthrough("\x1b[c"))
 
-    def get_iterm_graphics_status(self) -> None:
+    def ask_for_iterm_graphics_status(self) -> None:
         """Query terminal for iTerm graphics support."""
-        self.write_raw(self._passthrough("\x1b[>q"))
+        self.write_raw(self.mplex_passthrough("\x1b[>q"))
 
-    def get_sgr_pixel_status(self) -> None:
+    def ask_for_sgr_pixel_status(self) -> None:
         """Query terminal to check for Pixel SGR support."""
         # Enable, check, disable
         self.write_raw("\x1b[?1016h\x1b[?1016$p\x1b[?1016l")
 
-    def get_csiu_status(self) -> None:
+    def ask_for_csiu_status(self) -> None:
         """Query terminal to check for CSI-u support."""
         self.write_raw("\x1b[?u")

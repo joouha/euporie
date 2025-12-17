@@ -13,7 +13,6 @@ from prompt_toolkit.renderer import _StyleStringHasStyleCache, _StyleStringToAtt
 from euporie.apptk.data_structures import Point, Size
 from euporie.apptk.filters import to_filter
 from euporie.apptk.layout.screen import BoundedWritePosition, Char, Screen
-from euporie.apptk.output.vt100 import Vt100_Output
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -287,12 +286,21 @@ class Renderer(PtkRenderer):
         extend_width: FilterOrBool = False,
     ) -> None:
         """Create a new :py:class:`Renderer` instance."""
-        self.app: Application[Any] | None = None
+        self.extend_height = to_filter(extend_height)
+        self.extend_width = to_filter(extend_width)
+
         self._extended_keys_enabled = False
         self._palette_dsr_enabled = False
         self._sgr_pixel_enabled = False
-        self.extend_height = to_filter(extend_height)
-        self.extend_width = to_filter(extend_width)
+
+        self.colors = {}
+        self.graphics_sixel = False
+        self.graphics_iterm = False
+        self.graphics_kitty = False
+        self.sgr_pixel = False
+        self.osc52_clipboard = False
+        self.size_px: tuple[int, int] = (10, 20)
+
         super().__init__(
             style, output, full_screen, mouse_support, cpr_not_supported_callback
         )
@@ -300,21 +308,21 @@ class Renderer(PtkRenderer):
     def reset(self, _scroll: bool = False, leave_alternate_screen: bool = True) -> None:
         """Reset the output."""
         output = self.output
-        if isinstance(output, Vt100_Output):
-            # Disable extended keys before resetting the output
-            if self._extended_keys_enabled:
-                output.disable_extended_keys()
-                self._extended_keys_enabled = False
 
-            # Disable palette change reporting
-            if self._palette_dsr_enabled:
-                output.disable_palette_dsr()
-                self._palette_dsr_enabled = False
+        # Disable extended keys before resetting the output
+        if self._extended_keys_enabled:
+            output.disable_extended_keys()
+            self._extended_keys_enabled = False
 
-            # Disable sgr pixel mode
-            if self._sgr_pixel_enabled:
-                output.disable_sgr_pixel()
-                self._sgr_pixel_enabled = False
+        # Disable palette change reporting
+        if self._palette_dsr_enabled:
+            output.disable_palette_dsr()
+            self._palette_dsr_enabled = False
+
+        # Disable sgr pixel mode
+        if self._sgr_pixel_enabled:
+            output.disable_sgr_pixel()
+            self._sgr_pixel_enabled = False
 
         super().reset(_scroll, leave_alternate_screen)
 
@@ -323,7 +331,6 @@ class Renderer(PtkRenderer):
     ) -> None:
         """Render the current interface to the output."""
         output = self.output
-        self.app = app
 
         # Enter alternate screen.
         if self.full_screen and not self._in_alternate_screen:
@@ -347,25 +354,23 @@ class Renderer(PtkRenderer):
             output.enable_mouse_support()
             self._mouse_support_enabled = True
 
-            if isinstance(output, Vt100_Output):
-                output.enable_sgr_pixel()
-                self._sgr_pixel_enabled = True
+            output.enable_sgr_pixel()
+            self._sgr_pixel_enabled = True
 
         elif not needs_mouse_support and self._mouse_support_enabled:
             output.disable_mouse_support()
             self._mouse_support_enabled = False
 
-            if isinstance(output, Vt100_Output) and self._sgr_pixel_enabled:
-                output.disable_sgr_pixel()
-                self._sgr_pixel_enabled = False
+            output.disable_sgr_pixel()
+            self._sgr_pixel_enabled = False
 
         # Enable extended keys
-        if not self._extended_keys_enabled and isinstance(output, Vt100_Output):
+        if not self._extended_keys_enabled:
             output.enable_extended_keys()
             self._extended_keys_enabled = True
 
         # Enable theme DSR
-        if not self._palette_dsr_enabled and isinstance(output, Vt100_Output):
+        if not self._palette_dsr_enabled:
             output.enable_palette_dsr()
             self._palette_dsr_enabled = True
 
