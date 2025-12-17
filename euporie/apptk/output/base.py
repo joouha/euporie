@@ -23,7 +23,7 @@ class Output(PtkOutput, metaclass=ABCMeta):
         """Wrap an escape sequence for terminal passthrough."""
         return cmd
 
-    def get_pixel_size(self) -> Size:
+    def get_pixel_size(self) -> tuple[int, int]:
         """Return terminal size in pixels."""
         size = self.get_size()
         return Size(size.x * 10, size.y * 20)

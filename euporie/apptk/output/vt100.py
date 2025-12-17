@@ -10,18 +10,18 @@ from typing import (
     TextIO,
 )
 
-from euporie.apptk.filters.utils import to_filter
 from prompt_toolkit.output.vt100 import Vt100_Output as PtkVt100_Output
 
 from euporie.apptk.filters.env import in_screen, in_tmux
+from euporie.apptk.filters.utils import to_filter
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-    from euporie.apptk.filters.base import FilterOrBool
-    from prompt_toolkit.output.color_depth import ColorDepth
+    from euporie.apptk.output.color_depth import ColorDepth
 
     from euporie.apptk.data_structures import Size
+    from euporie.apptk.filters.base import FilterOrBool
 
 log = logging.getLogger(__name__)
 
@@ -59,7 +59,7 @@ def _tiocgwinsz() -> tuple[int, int, int, int]:
 class Vt100_Output(PtkVt100_Output):
     """A Vt100 output which enables SGR pixel mouse positioning."""
 
-    pixel_size: Size
+    pixel_size: tuple[int, int]
 
     def __init__(
         self,
@@ -89,7 +89,7 @@ class Vt100_Output(PtkVt100_Output):
                 )
         return cmd
 
-    def get_pixel_size(self) -> Size:
+    def get_pixel_size(self) -> tuple[int, int]:
         """Dimensions of the terminal in pixels."""
         try:
             return self._pixel_size

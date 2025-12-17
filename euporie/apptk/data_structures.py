@@ -7,6 +7,8 @@ from typing import NamedTuple, TypeVar, overload
 
 _T = TypeVar("_T")
 
+__all__ = ["DiBool", "DiInt", "DiStr", "WeightedDiInt", "WeightedInt"]
+
 
 class DiBool(NamedTuple):
     """A tuple of four bools with directions."""
