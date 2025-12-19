@@ -4,9 +4,9 @@ Changelog
 
 Notable changes to this project will be documented in this file.
 
-********
-Upcoming
-********
+********************
+v2.10.3 (2025-12-19)
+********************
 
 Added
 =====
