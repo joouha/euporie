@@ -16,6 +16,7 @@ Added
 Fixed
 =====
 
+- Fix ``euporie-hub`` launch
 - Fix loading of lists in config
 - Final side bar button border color in 1-bit color mode
 - First input not visible in notebook console if it has no output

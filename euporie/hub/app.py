@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from asyncio import get_event_loop
 from typing import TYPE_CHECKING
@@ -108,7 +109,7 @@ class HubApp(ConfigurableApp):
             raise ModuleNotFoundError("Application `%s` not found", cls.config.app)
 
         # Run the HubApp in an SSH server
-        loop = get_event_loop()
+        loop = asyncio.new_event_loop()
         loop.run_until_complete(
             asyncssh.create_server(
                 lambda: EuporieSSHServer(app_cls=app_cls),
