@@ -577,7 +577,10 @@ class Config:
                 # Attempt to cast the value to the desired type
                 if isinstance(value, list):
                     for i, item in enumerate(value[:]):
-                        value[i] = setting.type(item)
+                        try:
+                            value[i] = setting.type(item)
+                        except (ValueError, TypeError):
+                            pass
                 else:
                     try:
                         value = setting.type(value)
