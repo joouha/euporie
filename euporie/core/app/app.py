@@ -61,7 +61,7 @@ from euporie.core.app.base import ConfigurableApp
 from euporie.core.app.cursor import CursorConfig
 from euporie.core.filters import has_toolbar
 from euporie.core.format import CliFormatter
-from euporie.core.key_binding.micro_state import MicroState
+from euporie.apptk.key_binding.micro_state import MicroState
 from euporie.core.key_binding.registry import (
     load_registered_bindings,
     register_bindings,
@@ -192,8 +192,6 @@ class BaseApp(ConfigurableApp, Application, ABC):
         self.command_bar: CommandBar | None = None
         # Holds the index of the current tab
         self._tab_idx = 0
-        # Add state for micro key-bindings
-        self.micro_state = MicroState()
         # Floats at the app level
         self.leave_graphics = to_filter(leave_graphics)
         self.graphics: WeakSet[Float] = WeakSet()
