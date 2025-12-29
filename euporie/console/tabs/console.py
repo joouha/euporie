@@ -12,6 +12,7 @@ from euporie.apptk.filters.app import (
 from euporie.apptk.filters.base import Condition
 from euporie.apptk.layout.layout import Layout
 
+from euporie.apptk.commands import get_cmd
 from euporie.apptk.layout.containers import (
     ConditionalContainer,
     FloatContainer,
@@ -20,7 +21,6 @@ from euporie.apptk.layout.containers import (
     Window,
 )
 from euporie.apptk.layout.controls import FormattedTextControl
-from euporie.apptk.commands import get_cmd
 from euporie.core.format import LspFormatter
 from euporie.core.key_binding.registry import (
     load_registered_bindings,
@@ -37,10 +37,10 @@ if TYPE_CHECKING:
     from pathlib import Path
     from typing import Any
 
-    from euporie.apptk.application.application import Application
     from euporie.apptk.buffer import Buffer
-    from euporie.apptk.formatted_text import AnyFormattedText
 
+    from euporie.apptk.application.application import Application
+    from euporie.apptk.formatted_text import AnyFormattedText
     from euporie.apptk.layout.containers import Container, Float
     from euporie.core.app.app import BaseApp
     from euporie.core.lsp import LspClient

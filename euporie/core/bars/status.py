@@ -7,9 +7,9 @@ from typing import TYPE_CHECKING
 from weakref import WeakKeyDictionary
 
 from euporie.apptk.filters.utils import to_filter
-from euporie.apptk.formatted_text import to_formatted_text
 
 from euporie.apptk.cache import FastDictCache
+from euporie.apptk.formatted_text import to_formatted_text
 from euporie.apptk.layout import containers
 from euporie.apptk.layout.containers import (
     ConditionalContainer,
@@ -28,9 +28,9 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
 
     from euporie.apptk.filters.base import FilterOrBool
-    from euporie.apptk.formatted_text import StyleAndTextTuples
     from euporie.apptk.formatted_text.base import AnyFormattedText
 
+    from euporie.apptk.formatted_text import StyleAndTextTuples
     from euporie.apptk.layout.containers import AnyContainer, Container
 
     StatusBarFields = tuple[Sequence[AnyFormattedText], Sequence[AnyFormattedText]]

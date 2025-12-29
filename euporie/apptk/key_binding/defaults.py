@@ -10,10 +10,6 @@ from euporie.apptk.key_binding.bindings.emacs import (
     load_emacs_search_bindings,
     load_emacs_shift_selection_bindings,
 )
-from euporie.apptk.key_binding.bindings.vi import (
-    load_vi_bindings,
-    load_vi_search_bindings,
-)
 from euporie.apptk.key_binding.key_bindings import (
     ConditionalKeyBindings,
     KeyBindingsBase,
@@ -25,6 +21,10 @@ from euporie.apptk.key_binding.bindings.basic import load_basic_bindings
 from euporie.apptk.key_binding.bindings.micro import load_micro_bindings
 from euporie.apptk.key_binding.bindings.mouse import load_mouse_bindings
 from euporie.apptk.key_binding.bindings.terminal import load_terminal_bindings
+from euporie.apptk.key_binding.bindings.vi import (
+    load_vi_bindings,
+    load_vi_search_bindings,
+)
 
 __all__ = [
     "load_key_bindings",

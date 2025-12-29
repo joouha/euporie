@@ -11,16 +11,16 @@ from euporie.apptk.formatted_text.base import to_formatted_text
 from euporie.apptk.layout.dimension import Dimension
 from euporie.apptk.shortcuts.utils import print_formatted_text
 
+from euporie.apptk.commands import get_cmd
+from euporie.apptk.key_binding.utils import format_keys, parse_keys
 from euporie.core.border import (
     AsciiLine,
     AsciiThickLine,
     DiLineStyle,
 )
-from euporie.apptk.commands import get_cmd
 from euporie.core.ft.table import Table
 from euporie.core.ft.utils import indent
 from euporie.core.key_binding.registry import BINDINGS
-from euporie.apptk.key_binding.utils import format_keys, parse_keys
 
 groups = [
     "euporie.core.app.app:BaseApp",

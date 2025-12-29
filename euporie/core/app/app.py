@@ -8,32 +8,13 @@ import os
 import signal
 import sys
 from abc import ABC, abstractmethod
-from enum import Enum
 from functools import partial
 from pathlib import PurePath
 from typing import TYPE_CHECKING, cast, overload
 from weakref import WeakSet, WeakValueDictionary
 
-from prompt_toolkit.application.application import Application, _CombinedRegistry
-from prompt_toolkit.application.current import create_app_session, set_app
-from prompt_toolkit.enums import EditingMode
-from prompt_toolkit.filters import Condition, buffer_has_focus, to_filter
-from prompt_toolkit.input.defaults import create_input
-from prompt_toolkit.key_binding.bindings.auto_suggest import load_auto_suggest_bindings
-from prompt_toolkit.key_binding.bindings.basic import (
-    load_basic_bindings as load_ptk_basic_bindings,
-)
-from euporie.apptk.key_binding.bindings.cpr import load_cpr_bindings
-from euporie.apptk.key_binding.bindings.emacs import (
-    load_emacs_bindings,
-    load_emacs_search_bindings,
-    load_emacs_shift_selection_bindings,
-)
-from euporie.apptk.key_binding.bindings.vi import load_vi_search_bindings
-from euporie.apptk.key_binding.key_bindings import (
-    ConditionalKeyBindings,
-    merge_key_bindings,
-)
+from euporie.apptk.application.current import create_app_session, set_app
+from euporie.apptk.input.defaults import create_input
 from euporie.apptk.layout.layout import Layout
 from euporie.apptk.output.defaults import create_output
 from euporie.apptk.styles import (
@@ -49,8 +30,9 @@ from euporie.apptk.styles import (
 )
 from euporie.apptk.utils import Event
 
+from euporie.apptk.application.application import Application, _CombinedRegistry
 from euporie.apptk.data_structures import Point
-from euporie.apptk.filters import Condition, buffer_has_focus, to_filter
+from euporie.apptk.filters import Condition, to_filter
 from euporie.apptk.input.vt100_parser import Vt100Parser
 from euporie.apptk.key_binding.key_processor import KeyProcessor
 from euporie.apptk.layout.containers import Float, FloatContainer, Window, to_container
@@ -61,7 +43,6 @@ from euporie.core.app.base import ConfigurableApp
 from euporie.core.app.cursor import CursorConfig
 from euporie.core.filters import has_toolbar
 from euporie.core.format import CliFormatter
-from euporie.apptk.key_binding.micro_state import MicroState
 from euporie.core.key_binding.registry import (
     load_registered_bindings,
     register_bindings,

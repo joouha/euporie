@@ -7,7 +7,6 @@ from functools import lru_cache
 from typing import TYPE_CHECKING
 
 from euporie.apptk.filters import Condition
-
 from euporie.apptk.layout.containers import (
     Container,
     to_container,

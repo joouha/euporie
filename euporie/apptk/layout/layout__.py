@@ -5,11 +5,11 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-# from euporie.apptk.application.current import get_app
+from prompt_toolkit.layout.layout import Layout as PtkLayout
 
+# from euporie.apptk.application.current import get_app
 from euporie.apptk.cache import SimpleCache
 from euporie.apptk.layout.containers import ConditionalContainer, Container
-from prompt_toolkit.layout.layout import Layout as PtkLayout
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -62,8 +62,7 @@ def walk(container: Container, skip_hidden: bool = False) -> Iterable[Container]
 
 
 def walk__(container: Container, skip_hidden: bool = False) -> Iterable[Container]:
-    """
-    Walk through layout, starting at this container.
+    """Walk through layout, starting at this container.
     """
     if (
         skip_hidden

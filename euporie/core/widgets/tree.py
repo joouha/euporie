@@ -12,8 +12,9 @@ from euporie.apptk.mouse_events import MouseButton, MouseEvent, MouseEventType
 if TYPE_CHECKING:
     from typing import Any
 
-    from euporie.apptk.formatted_text import StyleAndTextTuples
     from euporie.apptk.key_binding.key_bindings import NotImplementedOrNone
+
+    from euporie.apptk.formatted_text import StyleAndTextTuples
 
 
 class JsonView:

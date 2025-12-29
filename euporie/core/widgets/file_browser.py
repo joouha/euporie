@@ -6,14 +6,14 @@ import logging
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from euporie.apptk.completion import PathCompleter
-from euporie.apptk.filters import FilterOrBool
 from euporie.apptk.filters.utils import to_filter
 from euporie.apptk.key_binding.key_bindings import KeyBindings, KeyBindingsBase
 from euporie.apptk.utils import Event
 
 from euporie.apptk.cache import FastDictCache
+from euporie.apptk.completion import PathCompleter
 from euporie.apptk.data_structures import DiBool, Point
+from euporie.apptk.filters import FilterOrBool
 from euporie.apptk.layout.containers import (
     ConditionalContainer,
     HSplit,
@@ -36,12 +36,12 @@ if TYPE_CHECKING:
 
     from euporie.apptk.buffer import Buffer
     from euporie.apptk.filters.base import FilterOrBool
-    from euporie.apptk.formatted_text import StyleAndTextTuples
     from euporie.apptk.key_binding.key_bindings import NotImplementedOrNone
-    from euporie.apptk.key_binding.key_processor import KeyPressEvent
     from euporie.apptk.layout.dimension import AnyDimension
     from upath.core import PT
 
+    from euporie.apptk.formatted_text import StyleAndTextTuples
+    from euporie.apptk.key_binding.key_processor import KeyPressEvent
     from euporie.apptk.layout.containers import AnyContainer
     from euporie.core.bars.status import StatusBarFields
 

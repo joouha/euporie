@@ -7,14 +7,14 @@ from typing import TYPE_CHECKING, cast
 from unittest.mock import Mock
 
 import pytest
-from euporie.apptk.application.application import Application
 from euporie.apptk.application.current import set_app
 from euporie.apptk.formatted_text.base import to_formatted_text
 from euporie.apptk.key_binding.key_bindings import Binding
+
+from euporie.apptk.application.application import Application
+from euporie.apptk.commands import Command, add_cmd, commands, get_cmd
 from euporie.apptk.key_binding.key_processor import KeyPressEvent, KeyProcessor
 from euporie.apptk.keys import Keys
-
-from euporie.apptk.commands import Command, add_cmd, commands, get_cmd
 
 if TYPE_CHECKING:
     from euporie.apptk.key_binding.key_bindings import NotImplementedOrNone

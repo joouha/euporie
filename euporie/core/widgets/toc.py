@@ -7,13 +7,13 @@ from textwrap import wrap
 from typing import TYPE_CHECKING, NamedTuple
 from weakref import WeakKeyDictionary
 
-from euporie.apptk.formatted_text import (
-    StyleAndTextTuples,
-)
 from euporie.apptk.selection import SelectionState
 
 from euporie.apptk.cache import FastDictCache, SimpleCache
 from euporie.apptk.data_structures import Point
+from euporie.apptk.formatted_text import (
+    StyleAndTextTuples,
+)
 from euporie.apptk.layout.containers import HSplit, VSplit, Window
 from euporie.apptk.layout.controls import BufferControl, UIContent, UIControl
 from euporie.apptk.mouse_events import MouseButton, MouseEventType
@@ -27,13 +27,13 @@ if TYPE_CHECKING:
     from collections.abc import Hashable, Iterable
 
     from euporie.apptk.buffer import Buffer
-    from euporie.apptk.formatted_text import StyleAndTextTuples
     from euporie.apptk.key_binding.key_bindings import (
         KeyBindingsBase,
         NotImplementedOrNone,
     )
     from euporie.apptk.utils import Event
 
+    from euporie.apptk.formatted_text import StyleAndTextTuples
     from euporie.apptk.layout.containers import AnyContainer
     from euporie.apptk.layout.controls import GetLinePrefixCallable
     from euporie.apptk.mouse_events import MouseEvent

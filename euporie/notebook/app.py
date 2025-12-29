@@ -10,7 +10,6 @@ from weakref import WeakKeyDictionary
 from euporie.apptk.formatted_text.base import to_formatted_text
 from euporie.apptk.layout.dimension import Dimension
 
-from euporie.apptk.commands import get_cmd
 from euporie.apptk.filters import Condition
 from euporie.apptk.layout.containers import (
     ConditionalContainer,
@@ -59,9 +58,8 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
     from typing import Any
 
-    from euporie.apptk.formatted_text import StyleAndTextTuples
-
     from euporie.apptk.application.application import Application
+    from euporie.apptk.formatted_text import StyleAndTextTuples
     from euporie.apptk.layout.containers import AnyContainer
     from euporie.core.tabs import TabRegistryEntry
     from euporie.core.tabs.base import Tab

@@ -6,11 +6,11 @@ import asyncio
 import logging
 from typing import TYPE_CHECKING
 
-from euporie.apptk.filters import Condition
 from euporie.apptk.layout.dimension import Dimension
 from upath import UPath
 
 from euporie.apptk.data_structures import DiBool
+from euporie.apptk.filters import Condition
 from euporie.apptk.layout.containers import HSplit, VSplit
 from euporie.core.app.current import get_app
 from euporie.core.convert.mime import get_mime

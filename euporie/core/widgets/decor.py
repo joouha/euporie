@@ -5,10 +5,10 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-from euporie.apptk.filters import to_filter
 from euporie.apptk.widgets.base import Label
 
 from euporie.apptk.data_structures import DiBool
+from euporie.apptk.filters import to_filter
 from euporie.apptk.layout.containers import (
     ConditionalContainer,
     DummyContainer,

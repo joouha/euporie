@@ -5,19 +5,19 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, cast
 
-from euporie.apptk.filters import Condition
 from euporie.apptk.formatted_text.utils import split_lines
 from euporie.apptk.utils import Event
 from upath import UPath
 
 from euporie.apptk.cache import FastDictCache
+from euporie.apptk.commands import add_cmd
 from euporie.apptk.data_structures import Point
+from euporie.apptk.filters import Condition
 from euporie.apptk.layout.containers import Window
 from euporie.apptk.layout.controls import UIContent, UIControl
 from euporie.apptk.mouse_events import MouseButton, MouseEvent, MouseEventType
 from euporie.core.app.current import get_app
 from euporie.core.async_utils import get_or_create_loop, run_coro_async
-from euporie.apptk.commands import add_cmd
 from euporie.core.convert.datum import Datum
 from euporie.core.convert.mime import get_format
 from euporie.core.ft.html import HTML, Node
@@ -578,12 +578,12 @@ class WebViewControl(UIControl):
 if __name__ == "__main__":
     import sys
 
-    from euporie.apptk.application.application import Application
     from euporie.apptk.key_binding.key_bindings import KeyBindings
     from euporie.apptk.layout.layout import Layout
     from euporie.apptk.output.color_depth import ColorDepth
     from euporie.apptk.styles.style import Style
 
+    from euporie.apptk.application.application import Application
     from euporie.core.style import HTML_STYLE
     from euporie.core.widgets.display import DisplayWindow
     from euporie.web.widgets.webview import WebViewControl

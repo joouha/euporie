@@ -6,7 +6,6 @@ import logging
 from functools import lru_cache
 from typing import TYPE_CHECKING
 
-from euporie.apptk.auto_suggest import AutoSuggest, DynamicAutoSuggest
 from euporie.apptk.buffer import Buffer
 from euporie.apptk.completion.base import Completer, DynamicCompleter
 from euporie.apptk.document import Document
@@ -14,12 +13,16 @@ from euporie.apptk.key_binding.key_bindings import merge_key_bindings
 from euporie.apptk.layout.dimension import AnyDimension
 from euporie.apptk.layout.dimension import Dimension as D
 from euporie.apptk.layout.margins import ConditionalMargin
-from euporie.apptk.lexers import DynamicLexer, PygmentsLexer, SimpleLexer
 from euporie.apptk.validation import DynamicValidator, Validator
 from euporie.apptk.widgets import TextArea
 from euporie.apptk.widgets.toolbars import SearchToolbar
 from pygments.lexers import ClassNotFound, get_lexer_by_name
 
+from euporie.apptk.auto_suggest import (
+    AutoSuggest,
+    ConditionalAutoSuggestAsync,
+    DynamicAutoSuggest,
+)
 from euporie.apptk.commands import add_cmd
 from euporie.apptk.filters import (
     Condition,
@@ -55,6 +58,7 @@ from euporie.apptk.layout.processors import (  # HighlightSearchProcessor,
     ShowTrailingWhiteSpaceProcessor,
     TabsProcessor,
 )
+from euporie.apptk.lexers import DynamicLexer, PygmentsLexer, SimpleLexer
 from euporie.core.app.current import get_app
 from euporie.core.diagnostics import Report
 from euporie.core.filters import scrollable
@@ -69,15 +73,11 @@ from euporie.core.margins import (
     OverflowMargin,
     ScrollbarMargin,
 )
-from euporie.apptk.auto_suggest import ConditionalAutoSuggestAsync
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
 
     from euporie.apptk.buffer import BufferAcceptHandler
-    from euporie.apptk.formatted_text import (
-        AnyFormattedText,
-    )
     from euporie.apptk.formatted_text.base import StyleAndTextTuples
     from euporie.apptk.history import History
     from euporie.apptk.key_binding.key_bindings import KeyBindingsBase
@@ -86,6 +86,9 @@ if TYPE_CHECKING:
     from euporie.apptk.lexers.base import Lexer
 
     from euporie.apptk.filters import Filter, FilterOrBool
+    from euporie.apptk.formatted_text import (
+        AnyFormattedText,
+    )
     from euporie.apptk.layout.containers import AnyContainer, Container
     from euporie.core.bars.status import StatusBarFields
     from euporie.core.format import Formatter

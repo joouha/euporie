@@ -6,7 +6,6 @@ import logging
 from functools import partial
 from typing import TYPE_CHECKING
 
-from euporie.apptk.filters import Condition
 from euporie.apptk.formatted_text.base import to_formatted_text
 from euporie.apptk.key_binding.key_bindings import (
     KeyBindings,
@@ -14,6 +13,7 @@ from euporie.apptk.key_binding.key_bindings import (
 from euporie.apptk.layout.dimension import Dimension
 from euporie.apptk.utils import Event
 
+from euporie.apptk.filters import Condition
 from euporie.apptk.layout.containers import (
     ConditionalContainer,
     DynamicContainer,
@@ -35,8 +35,8 @@ if TYPE_CHECKING:
         KeyBindingsBase,
         NotImplementedOrNone,
     )
-    from euporie.apptk.key_binding.key_processor import KeyPressEvent
 
+    from euporie.apptk.key_binding.key_processor import KeyPressEvent
     from euporie.apptk.layout.containers import AnyContainer
     from euporie.apptk.mouse_events import MouseEvent
 

@@ -10,10 +10,10 @@ from typing import TYPE_CHECKING, ClassVar
 from euporie.apptk.utils import Event
 from upath import UPath
 
+from euporie.apptk.commands import add_cmd
 from euporie.apptk.layout.containers import Window, WindowAlign
 from euporie.apptk.layout.controls import FormattedTextControl
 from euporie.core.app.current import get_app
-from euporie.apptk.commands import add_cmd
 from euporie.core.filters import tab_can_save, tab_has_focus
 from euporie.core.key_binding.registry import (
     register_bindings,
@@ -26,7 +26,6 @@ if TYPE_CHECKING:
     from typing import Any
 
     from euporie.apptk.key_binding.key_processor import KeyPressEvent
-
     from euporie.apptk.layout.containers import AnyContainer
     from euporie.core.app.app import BaseApp
     from euporie.core.bars.status import StatusBarFields
