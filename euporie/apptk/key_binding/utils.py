@@ -10,7 +10,7 @@ from euporie.apptk.keys import Keys
 
 if TYPE_CHECKING:
     from euporie.apptk.key_binding import KeyPressEvent
-    from euporie.core.key_binding.registry import AnyKeys
+    from euporie.apptk.keys import AnyKeys
 
 
 KEY_ALIASES: dict[str | Keys, str] = {

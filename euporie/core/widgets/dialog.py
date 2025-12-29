@@ -893,7 +893,7 @@ class ShortcutsDialog(Dialog):
         from euporie.core.ft.table import Table
         from euporie.core.ft.utils import FormattedTextAlign
         from euporie.core.key_binding.registry import BINDINGS
-        from euporie.core.key_binding.utils import format_keys, parse_keys
+        from euporie.apptk.key_binding.utils import format_keys, parse_keys
 
         table = Table(padding=0)
 
