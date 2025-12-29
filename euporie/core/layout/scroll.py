@@ -21,7 +21,7 @@ from euporie.apptk.layout.containers import (
 from euporie.apptk.layout.controls import UIContent
 from euporie.apptk.layout.screen import WritePosition
 from euporie.apptk.mouse_events import MouseEvent, MouseEventType, MouseModifier
-from euporie.core.layout.cache import CachedContainer
+from euporie.apptk.layout.cache import CachedContainer
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
