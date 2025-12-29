@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, cast
 
 from euporie.apptk.buffer import indent, unindent
 from euporie.apptk.filters.app import vi_insert_mode
-from euporie.apptk.key_binding.bindings.vi import (
+from prompt_toolkit.key_binding.bindings.vi import (
     load_vi_bindings as load_ptk_vi_bindings,
 )
 
