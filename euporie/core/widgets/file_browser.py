@@ -6,6 +6,7 @@ import logging
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from euporie.apptk.application.current import get_app
 from euporie.apptk.filters.utils import to_filter
 from euporie.apptk.key_binding.key_bindings import KeyBindings, KeyBindingsBase
 from euporie.apptk.utils import Event
@@ -17,18 +18,17 @@ from euporie.apptk.filters import FilterOrBool
 from euporie.apptk.layout.containers import (
     ConditionalContainer,
     HSplit,
+    MarginContainer,
     VSplit,
     Window,
 )
 from euporie.apptk.layout.controls import UIContent, UIControl
+from euporie.apptk.layout.margins import ScrollbarMargin
 from euporie.apptk.layout.screen import WritePosition
 from euporie.apptk.mouse_events import MouseButton, MouseEvent, MouseEventType
-from euporie.core.app.current import get_app
 from euporie.core.border import InsetGrid
 from euporie.core.ft.utils import pad
 from euporie.core.layout.decor import FocusedStyle
-from euporie.apptk.layout.containers import MarginContainer
-from euporie.apptk.layout.margins import ScrollbarMargin
 from euporie.core.widgets.decor import Border
 from euporie.core.widgets.forms import Button, Text
 

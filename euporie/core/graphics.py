@@ -8,6 +8,7 @@ from abc import ABCMeta, abstractmethod
 from math import ceil, floor
 from typing import TYPE_CHECKING
 
+from euporie.apptk.application.current import get_app
 from euporie.apptk.filters.base import Condition
 from euporie.apptk.filters.utils import to_filter
 from euporie.apptk.formatted_text.base import to_formatted_text
@@ -21,7 +22,6 @@ from euporie.apptk.filters.environment import in_mplex
 from euporie.apptk.layout.containers import Float, Window
 from euporie.apptk.layout.controls import GetLinePrefixCallable, UIContent, UIControl
 from euporie.apptk.layout.screen import Char, WritePosition
-from euporie.core.app.current import get_app
 from euporie.core.convert.datum import Datum
 from euporie.core.convert.registry import find_route
 from euporie.core.filters import has_float

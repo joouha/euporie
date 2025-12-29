@@ -8,10 +8,9 @@ from euporie.apptk.layout.dimension import Dimension
 from euporie.apptk.widgets import SearchToolbar
 
 from euporie.apptk.filters import Condition, has_focus
-from euporie.apptk.layout.containers import HSplit, VSplit
-from euporie.core.log import LOG_QUEUE, QueueHandler
-from euporie.apptk.layout.containers import MarginContainer
+from euporie.apptk.layout.containers import HSplit, MarginContainer, VSplit
 from euporie.apptk.layout.margins import ScrollbarMargin
+from euporie.core.log import LOG_QUEUE, QueueHandler
 from euporie.core.path import parse_path
 from euporie.core.tabs.base import Tab
 from euporie.core.widgets.formatted_text_area import FormattedTextArea

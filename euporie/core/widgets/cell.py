@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, cast
 from weakref import WeakKeyDictionary
 
+from euporie.apptk.application.current import get_app
 from euporie.apptk.completion.base import (
     DynamicCompleter,
     _MergedCompleter,
@@ -22,6 +23,7 @@ from euporie.apptk.layout.dimension import Dimension
 from euporie.apptk.utils import Event
 
 from euporie.apptk.completion.deduplicate import DeduplicateCompleter
+from euporie.apptk.diagnostics import Report
 from euporie.apptk.layout.containers import (
     ConditionalContainer,
     Container,
@@ -30,10 +32,8 @@ from euporie.apptk.layout.containers import (
     Window,
 )
 from euporie.apptk.layout.controls import FormattedTextControl
-from euporie.core.app.current import get_app
 from euporie.core.border import NoLine, ThickLine, ThinLine
 from euporie.core.completion import LspCompleter
-from euporie.apptk.diagnostics import Report
 from euporie.core.filters import multiple_cells_selected
 from euporie.core.format import LspFormatter
 from euporie.core.inspection import (

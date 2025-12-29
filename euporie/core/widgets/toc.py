@@ -7,6 +7,7 @@ from textwrap import wrap
 from typing import TYPE_CHECKING, NamedTuple
 from weakref import WeakKeyDictionary
 
+from euporie.apptk.application.current import get_app
 from euporie.apptk.selection import SelectionState
 
 from euporie.apptk.cache import FastDictCache, SimpleCache
@@ -14,13 +15,11 @@ from euporie.apptk.data_structures import Point
 from euporie.apptk.formatted_text import (
     StyleAndTextTuples,
 )
-from euporie.apptk.layout.containers import HSplit, VSplit, Window
+from euporie.apptk.layout.containers import HSplit, MarginContainer, VSplit, Window
 from euporie.apptk.layout.controls import BufferControl, UIContent, UIControl
-from euporie.apptk.mouse_events import MouseButton, MouseEventType
-from euporie.core.app.current import get_app
-from euporie.core.border import InsetGrid
-from euporie.apptk.layout.containers import MarginContainer
 from euporie.apptk.layout.margins import ScrollbarMargin
+from euporie.apptk.mouse_events import MouseButton, MouseEventType
+from euporie.core.border import InsetGrid
 from euporie.core.widgets.decor import Border
 from euporie.core.widgets.forms import Dropdown
 

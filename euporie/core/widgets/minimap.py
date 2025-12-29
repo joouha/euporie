@@ -7,6 +7,7 @@ from textwrap import wrap
 from typing import TYPE_CHECKING
 
 from code_minimap import render as render_minimap
+from euporie.apptk.application.current import get_app
 from euporie.apptk.utils import Event
 from euporie.apptk.widgets.base import Label
 
@@ -15,13 +16,17 @@ from euporie.apptk.data_structures import DiBool, Point
 from euporie.apptk.formatted_text import (
     StyleAndTextTuples,
 )
-from euporie.apptk.layout.containers import HSplit, VSplit, Window, WindowAlign
+from euporie.apptk.layout.containers import (
+    HSplit,
+    MarginContainer,
+    VSplit,
+    Window,
+    WindowAlign,
+)
 from euporie.apptk.layout.controls import BufferControl, UIContent, UIControl
-from euporie.apptk.mouse_events import MouseButton, MouseEventType
-from euporie.core.app.current import get_app
-from euporie.core.layout.decor import FocusedStyle
-from euporie.apptk.layout.containers import MarginContainer
 from euporie.apptk.layout.margins import ScrollbarMargin
+from euporie.apptk.mouse_events import MouseButton, MouseEventType
+from euporie.core.layout.decor import FocusedStyle
 from euporie.core.widgets.forms import Button
 from euporie.core.widgets.layout import Box
 

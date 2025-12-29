@@ -6,7 +6,8 @@ import base64
 import logging
 from typing import TYPE_CHECKING
 
-from euporie.core.app.current import get_app
+from euporie.apptk.application.current import get_app
+
 from euporie.core.convert.utils import call_subproc, scale_to_fit
 
 if TYPE_CHECKING:

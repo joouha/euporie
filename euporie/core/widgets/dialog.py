@@ -8,6 +8,7 @@ from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from euporie.apptk.application.current import get_app
 from euporie.apptk.formatted_text.utils import split_lines
 from euporie.apptk.key_binding.bindings.focus import focus_next, focus_previous
 from euporie.apptk.key_binding.key_bindings import DynamicKeyBindings, KeyBindings
@@ -38,7 +39,6 @@ from euporie.apptk.layout.containers import (
 from euporie.apptk.layout.controls import FormattedTextControl, UIContent, UIControl
 from euporie.apptk.layout.screen import WritePosition
 from euporie.apptk.mouse_events import MouseButton, MouseEventType
-from euporie.core.app.current import get_app
 from euporie.core.border import (
     FullLine,
     LowerLeftHalfLine,
@@ -412,8 +412,6 @@ class AboutDialog(Dialog):
     @add_cmd(icon="⚈", style="class:danger")
     def _about() -> None:
         """Show the about dialog."""
-        from euporie.core.app.current import get_app
-
         if dialog := get_app().get_dialog("about"):
             dialog.toggle()
 
@@ -944,7 +942,5 @@ class ShortcutsDialog(Dialog):
     @add_cmd()
     def _keyboard_shortcuts() -> None:
         """Display details of registered key-bindings in a dialog."""
-        from euporie.core.app.current import get_app
-
         if dialog := get_app().get_dialog("shortcuts"):
             dialog.toggle()

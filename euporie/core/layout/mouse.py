@@ -6,13 +6,14 @@ import logging
 from functools import lru_cache
 from typing import TYPE_CHECKING
 
+from euporie.apptk.application.current import get_app
+
 from euporie.apptk.filters import Condition
 from euporie.apptk.layout.containers import (
     Container,
     to_container,
 )
 from euporie.apptk.mouse_events import MouseEventType
-from euporie.core.app.current import get_app
 
 if TYPE_CHECKING:
     from collections.abc import Callable

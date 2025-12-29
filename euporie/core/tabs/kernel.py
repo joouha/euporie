@@ -10,16 +10,16 @@ from functools import lru_cache, partial
 from typing import TYPE_CHECKING
 from weakref import WeakKeyDictionary
 
+from euporie.apptk.application.current import get_app
 from euporie.apptk.completion.base import DynamicCompleter, _MergedCompleter
 from euporie.apptk.history import DummyHistory, InMemoryHistory
 
 from euporie.apptk.auto_suggest import DummyAutoSuggest, DynamicAutoSuggest
 from euporie.apptk.commands import add_cmd
 from euporie.apptk.completion.deduplicate import DeduplicateCompleter
-from euporie.core.app.current import get_app
+from euporie.apptk.diagnostics import Report
 from euporie.core.comm.registry import open_comm
 from euporie.core.completion import KernelCompleter, LspCompleter
-from euporie.apptk.diagnostics import Report
 from euporie.core.filters import kernel_tab_has_focus
 from euporie.core.format import LspFormatter
 from euporie.core.history import KernelHistory

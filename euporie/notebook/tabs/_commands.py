@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from euporie.apptk.application.current import get_app
+
 from euporie.apptk.commands import add_cmd, get_cmd
 from euporie.apptk.filters import (
     buffer_has_focus,
@@ -15,7 +17,6 @@ from euporie.apptk.filters.buffer import (
     cursor_on_first_line,
     cursor_on_last_line,
 )
-from euporie.core.app.current import get_app
 from euporie.core.filters import (
     display_has_focus,
     kernel_tab_has_focus,

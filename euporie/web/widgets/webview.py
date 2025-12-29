@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, cast
 
+from euporie.apptk.application.current import get_app
 from euporie.apptk.formatted_text.utils import split_lines
 from euporie.apptk.utils import Event
 from upath import UPath
@@ -16,7 +17,6 @@ from euporie.apptk.filters import Condition
 from euporie.apptk.layout.containers import Window
 from euporie.apptk.layout.controls import UIContent, UIControl
 from euporie.apptk.mouse_events import MouseButton, MouseEvent, MouseEventType
-from euporie.core.app.current import get_app
 from euporie.core.async_utils import get_or_create_loop, run_coro_async
 from euporie.core.convert.datum import Datum
 from euporie.core.convert.mime import get_format

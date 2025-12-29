@@ -7,21 +7,26 @@ import re
 from functools import partial
 from typing import TYPE_CHECKING, NamedTuple
 
+from euporie.apptk.application.current import get_app
 from euporie.apptk.key_binding.bindings.focus import focus_next, focus_previous
 
 from euporie.apptk.commands import Command, add_cmd, commands
 from euporie.apptk.data_structures import Point
 from euporie.apptk.filters import Condition
 from euporie.apptk.key_binding.vi_state import InputMode
-from euporie.apptk.layout.containers import HSplit, ScrollOffsets, VSplit, Window
+from euporie.apptk.layout.containers import (
+    HSplit,
+    MarginContainer,
+    ScrollOffsets,
+    VSplit,
+    Window,
+)
 from euporie.apptk.layout.controls import UIContent, UIControl
+from euporie.apptk.layout.margins import ScrollbarMargin
 from euporie.apptk.mouse_events import MouseEvent, MouseEventType
-from euporie.core.app.current import get_app
 from euporie.core.bars.status import StatusContainer
 from euporie.core.key_binding.registry import register_bindings
 from euporie.core.layout.decor import FocusedStyle
-from euporie.apptk.layout.containers import MarginContainer
-from euporie.apptk.layout.margins import ScrollbarMargin
 from euporie.core.widgets.dialog import Dialog
 from euporie.core.widgets.forms import Text
 

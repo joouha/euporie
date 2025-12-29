@@ -9,13 +9,18 @@ from typing import TYPE_CHECKING, Any
 from euporie.apptk.filters.base import Condition
 from euporie.apptk.layout.dimension import Dimension
 
-from euporie.apptk.layout.containers import ConditionalContainer, HSplit, VSplit, Window
+from euporie.apptk.layout.containers import (
+    ConditionalContainer,
+    HSplit,
+    MarginContainer,
+    VSplit,
+    Window,
+)
 from euporie.apptk.layout.controls import FormattedTextControl
+from euporie.apptk.layout.margins import ScrollbarMargin
 from euporie.core.border import InsetGrid
 from euporie.core.layout.decor import FocusedStyle
 from euporie.core.layout.scroll import ScrollingContainer
-from euporie.apptk.layout.containers import MarginContainer
-from euporie.apptk.layout.margins import ScrollbarMargin
 from euporie.core.nbformat import new_code_cell
 from euporie.core.tabs.console import BaseConsole
 from euporie.core.widgets.cell_outputs import CellOutputArea

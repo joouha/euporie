@@ -6,6 +6,7 @@ import logging
 import re
 from typing import TYPE_CHECKING
 
+from euporie.apptk.application.current import get_app
 from euporie.apptk.buffer import Buffer
 from euporie.apptk.document import Document
 from euporie.apptk.filters.app import is_searching
@@ -18,7 +19,6 @@ from euporie.apptk.widgets import SearchToolbar as PtkSearchToolbar
 from euporie.apptk.commands import add_cmd
 from euporie.apptk.key_binding.vi_state import InputMode
 from euporie.apptk.layout.controls import BufferControl, SearchBufferControl
-from euporie.core.app.current import get_app
 from euporie.core.bars import SEARCH_BAR_BUFFER
 from euporie.core.key_binding.registry import (
     load_registered_bindings,

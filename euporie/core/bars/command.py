@@ -7,6 +7,7 @@ import re
 from functools import lru_cache
 from typing import TYPE_CHECKING
 
+from euporie.apptk.application.current import get_app
 from euporie.apptk.buffer import Buffer
 from euporie.apptk.completion.base import Completer, Completion
 from euporie.apptk.validation import Validator
@@ -20,7 +21,6 @@ from euporie.apptk.layout.controls import (
 )
 from euporie.apptk.layout.processors import BeforeInput, HighlightSelectionProcessor
 from euporie.apptk.lexers import SimpleLexer
-from euporie.core.app.current import get_app
 from euporie.core.bars import COMMAND_BAR_BUFFER
 from euporie.core.key_binding.registry import (
     load_registered_bindings,

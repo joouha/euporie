@@ -7,7 +7,7 @@ from abc import ABCMeta, abstractmethod
 from typing import TYPE_CHECKING
 from weakref import WeakKeyDictionary
 
-from euporie.core.app.current import get_app
+from euporie.apptk.application.current import get_app
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Mapping, Sequence

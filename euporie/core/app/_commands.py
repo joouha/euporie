@@ -4,9 +4,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from euporie.apptk.application.current import get_app
+
 from euporie.apptk.commands import add_cmd
 from euporie.apptk.filters import buffer_has_focus
-from euporie.core.app.current import get_app
 from euporie.core.filters import tab_has_focus, tab_type_has_focus
 
 if TYPE_CHECKING:
@@ -30,8 +31,6 @@ def _force_quit() -> None:
 @add_cmd(menu_title="Open File…", aliases=["o"], icon="", style="class:purple")
 def _open_file(path: str = "") -> None:
     """Open a file."""
-    from euporie.core.app.current import get_app
-
     if path:
         from upath import UPath
 
