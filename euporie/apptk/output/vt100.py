@@ -10,18 +10,18 @@ from typing import (
     TextIO,
 )
 
+from euporie.apptk.filters.utils import to_filter
 from prompt_toolkit.output.vt100 import Vt100_Output as PtkVt100_Output
 
-from euporie.apptk.filters.env import in_screen, in_tmux
-from euporie.apptk.filters.utils import to_filter
+from euporie.apptk.filters.environment import in_screen, in_tmux
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
+    from euporie.apptk.filters.base import FilterOrBool
     from euporie.apptk.output.color_depth import ColorDepth
 
     from euporie.apptk.data_structures import Size
-    from euporie.apptk.filters.base import FilterOrBool
 
 log = logging.getLogger(__name__)
 

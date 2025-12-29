@@ -31,6 +31,7 @@ from euporie.apptk.filters import (
     is_true,
     to_filter,
 )
+from euporie.apptk.filters.buffer import buffer_is_code
 from euporie.apptk.layout.containers import (
     ConditionalContainer,
     ScrollOffsets,
@@ -56,7 +57,7 @@ from euporie.apptk.layout.processors import (  # HighlightSearchProcessor,
 )
 from euporie.core.app.current import get_app
 from euporie.core.diagnostics import Report
-from euporie.core.filters import buffer_is_code, scrollable
+from euporie.core.filters import scrollable
 from euporie.core.key_binding.registry import (
     load_registered_bindings,
     register_bindings,

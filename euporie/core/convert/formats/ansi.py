@@ -6,12 +6,12 @@ import logging
 from functools import partial
 from typing import TYPE_CHECKING
 
+from euporie.apptk.filters.environment import command_exists, have_modules
 from euporie.core.app.current import get_app
 from euporie.core.convert.formats.common import chafa_convert_cmd, chafa_convert_py
 from euporie.core.convert.formats.pil import set_background
 from euporie.core.convert.registry import register
 from euporie.core.convert.utils import call_subproc, scale_to_fit
-from euporie.core.filters import command_exists, have_modules
 
 if TYPE_CHECKING:
     from typing import Any

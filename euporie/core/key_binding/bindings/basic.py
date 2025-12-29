@@ -6,22 +6,22 @@ import logging
 from functools import partial
 from typing import TYPE_CHECKING
 
-from euporie.apptk.filters import (
-    buffer_has_focus,
-)
-from euporie.core.filters import (
 from euporie.apptk.commands import add_cmd
+from euporie.apptk.filters.app import buffer_has_focus
+from euporie.apptk.filters.buffer import (
     char_after_cursor,
     cursor_at_end_of_line,
     has_matching_bracket,
+)
+from euporie.apptk.filters.modes import (
     insert_mode,
     replace_mode,
 )
+from euporie.apptk.key_binding.utils import if_no_repeat
 from euporie.core.key_binding.registry import (
     load_registered_bindings,
     register_bindings,
 )
-from euporie.core.key_binding.utils import if_no_repeat
 
 if TYPE_CHECKING:
     from euporie.apptk.key_binding import KeyBindingsBase, KeyPressEvent

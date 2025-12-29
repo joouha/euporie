@@ -6,7 +6,6 @@ import logging
 from typing import TYPE_CHECKING
 
 from euporie.apptk.application.current import get_app
-from euporie.apptk.filters import buffer_has_focus
 from euporie.apptk.key_binding.bindings.page_navigation import (
     load_emacs_page_navigation_bindings,
     load_vi_page_navigation_bindings,
@@ -16,8 +15,9 @@ from euporie.apptk.key_binding.key_bindings import (
     merge_key_bindings,
 )
 
-from euporie.core.filters import micro_mode
 from euporie.apptk.commands import add_cmd
+from euporie.apptk.filters import buffer_has_focus
+from euporie.apptk.filters.modes import micro_mode
 from euporie.core.key_binding.registry import (
     load_registered_bindings,
     register_bindings,
@@ -25,7 +25,6 @@ from euporie.core.key_binding.registry import (
 
 if TYPE_CHECKING:
     from euporie.apptk.key_binding import KeyBindingsBase, KeyPressEvent
-
     from euporie.core.config import Config
 
 log = logging.getLogger(__name__)

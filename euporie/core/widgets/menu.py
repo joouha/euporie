@@ -6,13 +6,6 @@ import logging
 from functools import partial
 from typing import TYPE_CHECKING
 
-from euporie.apptk.filters import (
-    Condition,
-    has_completions,
-    has_focus,
-    is_done,
-    to_filter,
-)
 from euporie.apptk.formatted_text.base import to_formatted_text
 from euporie.apptk.formatted_text.utils import (
     fragment_list_to_text,
@@ -27,7 +20,15 @@ from euporie.apptk.layout.menus import (
 from euporie.apptk.layout.utils import explode_text_fragments
 from euporie.apptk.utils import get_cwidth
 
+from euporie.apptk.commands import get_cmd
 from euporie.apptk.data_structures import Point
+from euporie.apptk.filters import (
+    Condition,
+    has_completions,
+    has_focus,
+    is_done,
+    to_filter,
+)
 from euporie.apptk.layout.containers import (
     ConditionalContainer,
     Container,

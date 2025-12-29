@@ -8,8 +8,8 @@ from euporie.apptk.output.color_depth import ColorDepth
 from pygments.styles import STYLE_MAP as pygments_styles
 from upath import UPath
 
+from euporie.apptk.filters.environment import in_mplex
 from euporie.core.config import add_setting
-from euporie.core.filters import in_mplex
 
 # euporie.core.app.launch
 

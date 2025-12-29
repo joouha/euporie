@@ -9,12 +9,9 @@ from euporie.apptk.filters.app import (
     has_selection,
 )
 
-from euporie.core.filters import (
-    buffer_is_code,
-    buffer_is_empty,
-    kernel_tab_has_focus,
-)
 from euporie.apptk.commands import add_cmd
+from euporie.apptk.filters.buffer import buffer_is_code, buffer_is_empty
+from euporie.core.filters import kernel_tab_has_focus
 from euporie.core.tabs.kernel import KernelTab
 
 if TYPE_CHECKING:

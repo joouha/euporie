@@ -7,11 +7,11 @@ from functools import partial
 from typing import TYPE_CHECKING, cast
 from weakref import WeakKeyDictionary
 
-from euporie.apptk.filters import Condition
 from euporie.apptk.formatted_text.base import to_formatted_text
 from euporie.apptk.layout.dimension import Dimension
 
 from euporie.apptk.commands import get_cmd
+from euporie.apptk.filters import Condition
 from euporie.apptk.layout.containers import (
     ConditionalContainer,
     DynamicContainer,
