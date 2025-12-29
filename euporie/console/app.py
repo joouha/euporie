@@ -22,6 +22,7 @@ from euporie.apptk.layout.containers import (
     VSplit,
     Window,
 )
+from euporie.apptk.layout.mouse import DisableMouseOnScroll
 from euporie.console.tabs.console import Console
 from euporie.core.app.app import BaseApp
 from euporie.core.bars.command import CommandBar
@@ -29,7 +30,6 @@ from euporie.core.bars.menu import ToolbarCompletionsMenu
 from euporie.core.bars.search import SearchBar
 from euporie.core.bars.status import StatusBar
 from euporie.core.filters import has_dialog
-from euporie.core.layout.mouse import DisableMouseOnScroll
 from euporie.core.widgets.dialog import (
     AboutDialog,
     ConfirmDialog,

@@ -1,4 +1,4 @@
-"""Defines a container which displays all children at full height vertially stacked."""
+"""Containers relating to the use of the mouse."""
 
 from __future__ import annotations
 

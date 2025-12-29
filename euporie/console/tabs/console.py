@@ -21,12 +21,12 @@ from euporie.apptk.layout.containers import (
     Window,
 )
 from euporie.apptk.layout.controls import FormattedTextControl
+from euporie.apptk.layout.print import PrintingContainer
 from euporie.core.format import LspFormatter
 from euporie.core.key_binding.registry import (
     load_registered_bindings,
     register_bindings,
 )
-from euporie.core.layout.print import PrintingContainer
 from euporie.core.nbformat import new_code_cell, new_output
 from euporie.core.tabs.console import BaseConsole
 from euporie.core.widgets.cell_outputs import CellOutputArea

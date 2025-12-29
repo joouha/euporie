@@ -13,7 +13,7 @@ from euporie.apptk.layout.containers import (
     VSplit,
     Window,
 )
-from euporie.core.layout.print import PrintingContainer
+from euporie.apptk.layout.print import PrintingContainer
 from euporie.core.tabs.notebook import BaseNotebook
 from euporie.core.widgets.cell import Cell
 from euporie.core.widgets.layout import Box
