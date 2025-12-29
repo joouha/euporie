@@ -9,6 +9,7 @@ from pygments.styles import STYLE_MAP as pygments_styles
 from upath import UPath
 
 from euporie.apptk.filters.environment import in_mplex
+from euporie.apptk.enums import EditingMode
 from euporie.core.config import add_setting
 
 # euporie.core.app.launch
@@ -63,8 +64,13 @@ add_setting(
     name="edit_mode",
     group="euporie.core.app.app",
     flags=["--edit-mode"],
-    type_=str,
-    choices=["micro", "emacs", "vi"],
+    type_=EditingMode,
+    choices={
+        "micro": EditingMode.MICRO,
+        "emacs": EditingMode.EMACS,
+        "vi": EditingMode.VI,
+    },
+    schema={"type": "string"},
     title="Editor key bindings",
     help_="Key-binding mode for text editing",
     default="micro",

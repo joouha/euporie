@@ -7,8 +7,20 @@ import re
 from functools import partial
 from typing import TYPE_CHECKING
 
+from euporie.apptk.application.current import get_app
 from euporie.apptk.buffer import indent, unindent
 from euporie.apptk.document import Document
+from euporie.apptk.key_binding.bindings.scroll import (
+    scroll_backward,
+    scroll_forward,
+    scroll_half_page_down,
+    scroll_half_page_up,
+    scroll_one_line_down,
+    scroll_one_line_up,
+)
+from euporie.apptk.selection import SelectionState, SelectionType
+
+from euporie.apptk.commands import add_cmd, get_cmd
 from euporie.apptk.filters import (
     buffer_has_focus,
     has_selection,
@@ -16,7 +28,22 @@ from euporie.apptk.filters import (
     is_multiline,
     shift_selection_mode,
 )
-from euporie.apptk.key_binding import ConditionalKeyBindings
+from euporie.apptk.filters.buffer import (
+    buffer_is_code,
+    buffer_is_markdown,
+    cursor_at_start_of_line,
+    cursor_in_leading_ws,
+    has_suggestion,
+    is_returnable,
+)
+from euporie.apptk.filters.modes import (
+    insert_mode,
+    micro_insert_mode,
+    micro_mode,
+    micro_recording_macro,
+    micro_replace_mode,
+)
+from euporie.apptk.key_binding import ConditionalKeyBindings, KeyBindings
 from euporie.apptk.key_binding.bindings.named_commands import (
     accept_line,
     backward_delete_char,
@@ -27,163 +54,118 @@ from euporie.apptk.key_binding.bindings.named_commands import (
     forward_word,
     get_by_name,
 )
-from euporie.apptk.key_binding.bindings.scroll import (
-    scroll_backward,
-    scroll_forward,
-    scroll_half_page_down,
-    scroll_half_page_up,
-    scroll_one_line_down,
-    scroll_one_line_up,
-)
+from euporie.apptk.key_binding.micro_state import MicroInputMode
+from euporie.apptk.key_binding.utils import if_no_repeat
 from euporie.apptk.keys import Keys
-from euporie.apptk.selection import SelectionState, SelectionType
-
-from euporie.core.app.current import get_app
-from euporie.core.commands import add_cmd, get_cmd
-from euporie.core.filters import (
-    buffer_is_code,
-    buffer_is_markdown,
-    cursor_at_start_of_line,
-    cursor_in_leading_ws,
-    has_suggestion,
-    insert_mode,
-    is_returnable,
-    micro_insert_mode,
-    micro_mode,
-    micro_recording_macro,
-    micro_replace_mode,
-)
-from euporie.core.key_binding.micro_state import MicroInputMode
-from euporie.core.key_binding.registry import (
-    load_registered_bindings,
-    register_bindings,
-)
-from euporie.core.key_binding.utils import if_no_repeat
 
 if TYPE_CHECKING:
-    from euporie.apptk.key_binding import KeyBindingsBase, KeyPressEvent
-
-    from euporie.core.config import Config
+    from euporie.apptk.key_binding import KeyPressEvent
 
 log = logging.getLogger(__name__)
 
 
-class EditMode:
-    """Micro style editor key-bindings."""
-
-
-# Register default bindings for micro edit mode
-register_bindings(
-    {
-        "euporie.core.key_binding.bindings.micro:EditMode": {
-            "move-cursor-right": "right",
-            "move-cursor-left": "left",
-            "newline": "enter",
-            "accept-line": "enter",
-            "backspace": ["backspace", "c-h"],
-            "backward-kill-word": [
-                "c-backspace",
-                "A-backspace",
-                ("c-A-h"),
-                ("escape", "c-h"),
-            ],
-            "start-selection": [
-                "s-up",
-                "s-down",
-                "s-right",
-                "s-left",
-                ("A-s-left"),
-                ("A-s-right"),
-                "c-s-left",
-                "c-s-right",
-                "s-home",
-                "s-end",
-                "c-s-home",
-                "c-s-end",
-            ],
-            "extend-selection": [
-                "s-up",
-                "s-down",
-                "s-right",
-                "s-left",
-                ("A-s-left"),
-                ("A-s-right"),
-                "c-s-left",
-                "c-s-right",
-                "s-home",
-                "s-end",
-                "c-s-home",
-                "c-s-end",
-            ],
-            "cancel-selection": [
-                "up",
-                "down",
-                "right",
-                "left",
-                ("A-left"),
-                ("A-right"),
-                "c-left",
-                "c-right",
-                "home",
-                "end",
-                "c-home",
-                "c-end",
-            ],
-            "replace-selection": "<any>",
-            "delete-selection": ["delete", "backspace", "c-h"],
-            "backward-word": ["c-left", ("A-b")],
-            "forward-word": ["c-right", ("A-f")],
-            "move-lines-up": ("A-up"),
-            "move-lines-down": ("A-down"),
-            "go-to-start-of-line": ["home", ("A-left"), ("A-a")],
-            "go-to-end-of-line": ["end", ("A-right"), ("A-e")],
-            "beginning-of-buffer": ["c-up", "c-home"],
-            "end-of-buffer": ["c-down", "c-end"],
-            "go-to-start-of-paragraph": ("A-{"),
-            "go-to-end-of-paragraph": ("A-}"),
-            "indent-lines": "tab",
-            "unindent-line": "backspace",
-            "unindent-lines": "s-tab",
-            "undo": "c-z",
-            "redo": "c-y",
-            "copy-selection": "c-c",
-            "cut-selection": ["c-x", "s-delete"],
-            "cut-line": "c-k",
-            "duplicate-line": "c-d",
-            "duplicate-selection": "c-d",
-            "paste-clipboard": "c-v",
-            "select-all": "c-a",
-            "delete": "delete",
-            "toggle-case": "f4",
-            "toggle-overwrite-mode": "insert",
-            "start-macro": "c-u",
-            "end-macro": "c-u",
-            "run-macro": "c-j",
-            "accept-suggestion": ["right", "c-f"],
-            "fill-suggestion": ("A-f"),
-            "toggle-comment": "c-_",
-            "go-to-matching-bracket": [("A-("), ("A-)")],
-            'wrap-selection-""': '"',
-            "wrap-selection-''": "'",
-            "wrap-selection-()": ["(", ")"],
-            "wrap-selection-{}": ["{", "}"],
-            "wrap-selection-[]": ["[", "]"],
-            "wrap-selection-``": "`",
-            "wrap-selection-**": "*",
-            "wrap-selection-__": "_",
-        },
-    }
-)
-
-
-def load_micro_bindings(config: Config | None = None) -> KeyBindingsBase:
+def load_micro_bindings() -> KeyBindings:
     """Load editor key-bindings in the style of the ``micro`` text editor."""
-    return ConditionalKeyBindings(
-        load_registered_bindings(
-            "euporie.core.key_binding.bindings.micro:EditMode", config=config
-        ),
-        micro_mode,
-    )
+    kb = KeyBindings()
+    for cmd_name, keys in {
+        "move-cursor-right": "right",
+        "move-cursor-left": "left",
+        "newline": "enter",
+        "accept-line": "enter",
+        "backspace": ["backspace", "c-h"],
+        "backward-kill-word": [
+            "c-backspace",
+            "A-backspace",
+            ("c-A-h"),
+            ("escape", "c-h"),
+        ],
+        "start-selection": [
+            "s-up",
+            "s-down",
+            "s-right",
+            "s-left",
+            ("A-s-left"),
+            ("A-s-right"),
+            "c-s-left",
+            "c-s-right",
+            "s-home",
+            "s-end",
+            "c-s-home",
+            "c-s-end",
+        ],
+        "extend-selection": [
+            "s-up",
+            "s-down",
+            "s-right",
+            "s-left",
+            ("A-s-left"),
+            ("A-s-right"),
+            "c-s-left",
+            "c-s-right",
+            "s-home",
+            "s-end",
+            "c-s-home",
+            "c-s-end",
+        ],
+        "cancel-selection": [
+            "up",
+            "down",
+            "right",
+            "left",
+            ("A-left"),
+            ("A-right"),
+            "c-left",
+            "c-right",
+            "home",
+            "end",
+            "c-home",
+            "c-end",
+        ],
+        "replace-selection": "<any>",
+        "delete-selection": ["delete", "backspace", "c-h"],
+        "backward-word": ["c-left", ("A-b")],
+        "forward-word": ["c-right", ("A-f")],
+        "move-lines-up": ("A-up"),
+        "move-lines-down": ("A-down"),
+        "go-to-start-of-line": ["home", ("A-left"), ("A-a")],
+        "go-to-end-of-line": ["end", ("A-right"), ("A-e")],
+        "beginning-of-buffer": ["c-up", "c-home"],
+        "end-of-buffer": ["c-down", "c-end"],
+        "go-to-start-of-paragraph": ("A-{"),
+        "go-to-end-of-paragraph": ("A-}"),
+        "indent-lines": "tab",
+        "unindent-line": "backspace",
+        "unindent-lines": "s-tab",
+        "undo": "c-z",
+        "redo": "c-y",
+        "copy-selection": "c-c",
+        "cut-selection": ["c-x", "s-delete"],
+        "cut-line": "c-k",
+        "duplicate-line": "c-d",
+        "duplicate-selection": "c-d",
+        "paste-clipboard": "c-v",
+        "select-all": "c-a",
+        "delete": "delete",
+        "toggle-case": "f4",
+        "toggle-overwrite-mode": "insert",
+        "start-macro": "c-u",
+        "end-macro": "c-u",
+        "run-macro": "c-j",
+        "accept-suggestion": ["right", "c-f"],
+        "fill-suggestion": ("A-f"),
+        "toggle-comment": "c-_",
+        "go-to-matching-bracket": [("A-("), ("A-)")],
+        'wrap-selection-""': '"',
+        "wrap-selection-''": "'",
+        "wrap-selection-()": ["(", ")"],
+        "wrap-selection-{}": ["{", "}"],
+        "wrap-selection-[]": ["[", "]"],
+        "wrap-selection-``": "`",
+        "wrap-selection-**": "*",
+        "wrap-selection-__": "_",
+    }.items():
+        get_cmd(cmd_name).bind(kb, keys)
+    return ConditionalKeyBindings(kb, micro_mode)
 
 
 # Commands

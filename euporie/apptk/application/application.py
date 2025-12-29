@@ -103,3 +103,18 @@ class Application(PtkApplication, Generic[_AppResult]):
         )
         self.micro_state = MicroState()
 
+
+class _CombinedRegistry(_PtkCombinedRegistry):
+    """The `KeyBindings` of key bindings for a `Application`."""
+
+    def __init__(self, app: Application[_AppResult]) -> None:
+        super().__init__(app)
+        self.handler_keys = {}
+
+    def _create_key_bindings(
+        self, current_window: Window, other_controls: list[UIControl]
+    ) -> KeyBindingsBase:
+        key_bindings = super()._create_key_bindings(current_window, other_controls)
+        for binding in key_bindings.bindings:
+            self.handler_keys.setdefault(binding.handler, []).append(binding.keys)
+        return key_bindings

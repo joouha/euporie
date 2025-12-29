@@ -1111,3 +1111,7 @@ class Keys(str, Enum):
     ControlAltShiftF10 = "c-A-s-f10"
     ControlAltShiftF11 = "c-A-s-f11"
     ControlAltShiftF12 = "c-A-s-f12"
+
+
+AnyKey = tuple[Keys | str, ...] | Keys | str
+AnyKeys = list[AnyKey] | AnyKey
