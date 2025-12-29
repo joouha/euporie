@@ -1622,13 +1622,7 @@ class Dropdown(SelectableWidget):
         self.toggle_button.button.body = VSplit(
             [
                 self.text_window,
-                Window(
-                    char=f" {self.arrow} ",
-                    width=3 if self.arrow else 0,
-                    height=1,
-                    dont_extend_width=True,
-                    dont_extend_height=True,
-                ),
+                Label(lambda: f" {self.arrow} " if self.arrow else ""),
             ]
         )
 
