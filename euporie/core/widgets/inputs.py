@@ -53,10 +53,11 @@ from euporie.apptk.layout.margins import (
     OverflowMargin,
     ScrollbarMargin,
 )
-from euporie.apptk.layout.processors import (  # HighlightSearchProcessor,
+from euporie.apptk.layout.processors import (
     AppendLineAutoSuggestion,
     BeforeInput,
     ConditionalProcessor,
+    DiagnosticProcessor,
     DisplayMultipleCursors,
     HighlightIncrementalSearchProcessor,
     HighlightMatchingBracketProcessor,
@@ -72,7 +73,6 @@ from euporie.core.key_binding.registry import (
     load_registered_bindings,
     register_bindings,
 )
-from euporie.core.layout.processors import DiagnosticProcessor
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
