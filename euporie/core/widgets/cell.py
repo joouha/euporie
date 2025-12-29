@@ -33,7 +33,7 @@ from euporie.apptk.layout.controls import FormattedTextControl
 from euporie.core.app.current import get_app
 from euporie.core.border import NoLine, ThickLine, ThinLine
 from euporie.core.completion import LspCompleter
-from euporie.core.diagnostics import Report
+from euporie.apptk.diagnostics import Report
 from euporie.core.filters import multiple_cells_selected
 from euporie.core.format import LspFormatter
 from euporie.core.inspection import (
