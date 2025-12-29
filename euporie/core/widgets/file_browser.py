@@ -33,13 +33,12 @@ from euporie.core.widgets.decor import Border
 from euporie.core.widgets.forms import Button, Text
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Callable, Sequence
 
     from euporie.apptk.buffer import Buffer
     from euporie.apptk.filters.base import FilterOrBool
     from euporie.apptk.key_binding.key_bindings import NotImplementedOrNone
     from euporie.apptk.layout.dimension import AnyDimension
-    from upath.core import PT
 
     from euporie.apptk.formatted_text import StyleAndTextTuples
     from euporie.apptk.key_binding.key_processor import KeyPressEvent
@@ -839,8 +838,8 @@ class FileBrowserControl(UIControl):
         self,
         path: Path
         | Callable[[], Path]
-        | list[Path]
-        | Callable[[], list[Path]]
+        | Sequence[Path]
+        | Callable[[], Sequence[Path]]
         | None = None,
         on_chdir: Callable[[FileBrowserControl], None] | None = None,
         on_select: Callable[[FileBrowserControl], None] | None = None,
@@ -903,22 +902,31 @@ class FileBrowserControl(UIControl):
     @property
     def contents(self) -> list[tuple[bool, Path]]:
         """Return the contents of the current folder."""
-        if isinstance(self.dir, Path):
-            return self._dir_cache[(self.dir, bool(self.show_hidden()))]
-        elif isinstance(self.dir, list):
-            return [(x.is_dir(), x) for x in self.dir]
+        return self._dir_cache[(self.dir, bool(self.show_hidden()))]
 
     @property
-    def dir(self) -> Path:
+    def dir(self) -> Path | tuple[Path, ...]:
         """Return the current folder path."""
         if callable(self._dir):
-            return self._dir()
-        return self._dir
+            path = self._dir()
+        else:
+            path = self._dir
+        try:
+            return tuple(path)
+        except TypeError:
+            pass
+        return path
 
     @dir.setter
-    def dir(self, value: PT) -> None:
+    def dir(
+        self,
+        value: Path
+        | Callable[[], Path]
+        | Sequence[Path]
+        | Callable[[], Sequence[Path]],
+    ) -> None:
         """Set the current folder path."""
-        if isinstance(value, list) or callable(value):
+        if callable(value):
             self._dir = value
             return
 
@@ -940,17 +948,22 @@ class FileBrowserControl(UIControl):
         return self.contents[self.selected or 0][1]
 
     @staticmethod
-    def load_path(path: Path, show_hidden: bool) -> list[tuple[bool, Path]]:
+    def load_path(
+        path: Path | tuple[Path, ...], show_hidden: bool
+    ) -> list[tuple[bool, Path]]:
         """Return the contents of a folder."""
-        paths = [] if path.parent == path else [path / ".."]
-        try:
-            entries = list(path.iterdir())
-            if not show_hidden:
-                # Filter out names starting with dot
-                entries = [e for e in entries if not e.name.startswith(".")]
-            paths += entries
-        except PermissionError:
-            pass
+        if isinstance(path, tuple):
+            paths = path
+        else:
+            paths = [] if path.parent == path else [path / ".."]
+            try:
+                entries = list(path.iterdir())
+                if not show_hidden:
+                    # Filter out names starting with dot
+                    entries = [e for e in entries if not e.name.startswith(".")]
+                paths += entries
+            except PermissionError:
+                pass
         is_dirs = []
         for child in paths:
             child_is_dir = is_dir(child)
