@@ -4,10 +4,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from euporie.apptk.filters import Condition, has_focus
 from euporie.apptk.layout.dimension import Dimension
 from euporie.apptk.widgets import SearchToolbar
 
+from euporie.apptk.filters import Condition, has_focus
 from euporie.apptk.layout.containers import HSplit, VSplit
 from euporie.core.log import LOG_QUEUE, QueueHandler
 from euporie.core.margins import MarginContainer, ScrollbarMargin

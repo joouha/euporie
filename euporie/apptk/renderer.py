@@ -18,10 +18,10 @@ if TYPE_CHECKING:
     from collections.abc import Callable
     from typing import Any
 
-    from euporie.apptk.application import Application
     from euporie.apptk.layout.layout import Layout
     from euporie.apptk.styles import BaseStyle
 
+    from euporie.apptk.application import Application
     from euporie.apptk.filters import FilterOrBool
     from euporie.apptk.layout.screen import Char
     from euporie.apptk.layout.screen import Screen as PtkScreen

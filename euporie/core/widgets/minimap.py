@@ -7,14 +7,14 @@ from textwrap import wrap
 from typing import TYPE_CHECKING
 
 from code_minimap import render as render_minimap
-from euporie.apptk.formatted_text import (
-    StyleAndTextTuples,
-)
 from euporie.apptk.utils import Event
 from euporie.apptk.widgets.base import Label
 
 from euporie.apptk.cache import FastDictCache, SimpleCache
 from euporie.apptk.data_structures import DiBool, Point
+from euporie.apptk.formatted_text import (
+    StyleAndTextTuples,
+)
 from euporie.apptk.layout.containers import HSplit, VSplit, Window, WindowAlign
 from euporie.apptk.layout.controls import BufferControl, UIContent, UIControl
 from euporie.apptk.mouse_events import MouseButton, MouseEventType
@@ -28,12 +28,12 @@ if TYPE_CHECKING:
     from collections.abc import Hashable, Iterable
 
     from euporie.apptk.buffer import Buffer
-    from euporie.apptk.formatted_text import StyleAndTextTuples
     from euporie.apptk.key_binding.key_bindings import (
         KeyBindingsBase,
         NotImplementedOrNone,
     )
 
+    from euporie.apptk.formatted_text import StyleAndTextTuples
     from euporie.apptk.layout.containers import AnyContainer
     from euporie.apptk.layout.controls import GetLinePrefixCallable
     from euporie.apptk.mouse_events import MouseEvent

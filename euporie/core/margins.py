@@ -7,11 +7,11 @@ import logging
 from abc import ABCMeta
 from typing import TYPE_CHECKING, cast
 
-from euporie.apptk.filters import FilterOrBool, to_filter
 from euporie.apptk.layout.dimension import Dimension
 from euporie.apptk.layout.margins import Margin
 
 from euporie.apptk.data_structures import Point
+from euporie.apptk.filters import FilterOrBool, to_filter
 from euporie.apptk.layout.containers import ScrollOffsets, Window, WindowRenderInfo
 from euporie.apptk.layout.controls import FormattedTextControl
 from euporie.apptk.layout.screen import WritePosition
@@ -28,13 +28,13 @@ if TYPE_CHECKING:
     from collections.abc import Callable
     from typing import Protocol
 
-    from euporie.apptk.formatted_text import StyleAndTextTuples
     from euporie.apptk.key_binding.key_bindings import (
         KeyBindingsBase,
         NotImplementedOrNone,
     )
     from euporie.apptk.layout.mouse_handlers import MouseHandlers
 
+    from euporie.apptk.formatted_text import StyleAndTextTuples
     from euporie.apptk.layout.containers import Container
     from euporie.apptk.layout.controls import UIContent
     from euporie.apptk.layout.screen import Screen

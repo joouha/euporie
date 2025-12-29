@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from asyncio import get_event_loop
 from typing import TYPE_CHECKING
 
 try:

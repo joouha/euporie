@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from euporie.apptk.filters import Condition
-
 from euporie.core.app.current import get_app
 
 

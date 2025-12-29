@@ -4,10 +4,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from euporie.apptk.filters import buffer_has_focus
-
-from euporie.core.app.current import get_app
 from euporie.apptk.commands import add_cmd
+from euporie.apptk.filters import buffer_has_focus
+from euporie.core.app.current import get_app
 from euporie.core.filters import tab_has_focus, tab_type_has_focus
 
 if TYPE_CHECKING:

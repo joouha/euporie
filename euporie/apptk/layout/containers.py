@@ -44,7 +44,6 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
     from typing import Any
 
-    from euporie.apptk.formatted_text import AnyFormattedText, StyleAndTextTuples
     from euporie.apptk.key_binding.key_bindings import (
         KeyBindingsBase,
         NotImplementedOrNone,
@@ -52,6 +51,7 @@ if TYPE_CHECKING:
     from euporie.apptk.layout.margins import Margin
     from euporie.apptk.layout.mouse_handlers import MouseHandlers
 
+    from euporie.apptk.formatted_text import AnyFormattedText, StyleAndTextTuples
     from euporie.apptk.layout.containers import (
         AnyContainer,
         AnyDimension,

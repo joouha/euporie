@@ -23,9 +23,9 @@ if TYPE_CHECKING:
     from pathlib import Path
     from typing import Any
 
-    from euporie.apptk.application.application import Application
     from euporie.apptk.formatted_text.base import StyleAndTextTuples
 
+    from euporie.apptk.application.application import Application
     from euporie.apptk.layout.containers import AnyContainer
     from euporie.core.app.app import BaseApp
     from euporie.core.comm.base import Comm

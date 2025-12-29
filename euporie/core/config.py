@@ -26,8 +26,8 @@ from euporie.apptk.utils import Event
 from platformdirs import user_config_dir
 from upath import UPath
 
-from euporie.core import __app_name__, __copyright__
 from euporie.apptk.commands import add_cmd, get_cmd
+from euporie.core import __app_name__, __copyright__
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Sequence

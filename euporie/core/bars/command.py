@@ -9,19 +9,19 @@ from typing import TYPE_CHECKING
 
 from euporie.apptk.buffer import Buffer
 from euporie.apptk.completion.base import Completer, Completion
-from euporie.apptk.filters import buffer_has_focus, has_focus, vi_navigation_mode
-from euporie.apptk.key_binding.vi_state import InputMode
-from euporie.apptk.lexers import SimpleLexer
 from euporie.apptk.validation import Validator
 
+from euporie.apptk.commands import add_cmd, commands, get_cmd
+from euporie.apptk.filters import buffer_has_focus, has_focus, vi_navigation_mode
+from euporie.apptk.key_binding.vi_state import InputMode
 from euporie.apptk.layout.containers import ConditionalContainer, Container, Window
 from euporie.apptk.layout.controls import (
     BufferControl,
 )
 from euporie.apptk.layout.processors import BeforeInput, HighlightSelectionProcessor
+from euporie.apptk.lexers import SimpleLexer
 from euporie.core.app.current import get_app
 from euporie.core.bars import COMMAND_BAR_BUFFER
-from euporie.apptk.commands import add_cmd, commands, get_cmd
 from euporie.core.key_binding.registry import (
     load_registered_bindings,
     register_bindings,
@@ -33,9 +33,9 @@ if TYPE_CHECKING:
 
     from euporie.apptk.completion.base import CompleteEvent
     from euporie.apptk.document import Document
-    from euporie.apptk.key_binding.key_processor import KeyPressEvent
 
     from euporie.apptk.commands import Command
+    from euporie.apptk.key_binding.key_processor import KeyPressEvent
 
 log = logging.getLogger(__name__)
 

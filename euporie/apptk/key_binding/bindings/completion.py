@@ -5,9 +5,9 @@ from __future__ import annotations
 import logging
 
 from euporie.apptk.application.current import get_app
-from euporie.apptk.completion import Completion
 
 from euporie.apptk.commands import add_cmd
+from euporie.apptk.completion import Completion
 from euporie.apptk.filters import (
     completion_is_selected,
     has_completions,

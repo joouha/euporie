@@ -24,7 +24,6 @@ if TYPE_CHECKING:
     from typing import Any, TextIO
 
     from euporie.apptk.application.application import _AppResult
-
     from euporie.apptk.layout.containers import Float
     from euporie.apptk.output import Output
     from euporie.core.tabs.base import Tab

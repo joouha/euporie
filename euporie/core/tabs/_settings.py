@@ -1,7 +1,6 @@
 """Defines tab settings."""
 
 from euporie.apptk.filters import buffer_has_focus
-
 from euporie.core.config import add_setting
 
 add_setting(

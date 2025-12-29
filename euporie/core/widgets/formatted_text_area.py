@@ -5,15 +5,15 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
+from euporie.apptk.layout.margins import ConditionalMargin
+from euporie.apptk.widgets import TextArea
+
 from euporie.apptk.filters import to_filter
 from euporie.apptk.formatted_text import (
     fragment_list_to_text,
     split_lines,
     to_formatted_text,
 )
-from euporie.apptk.layout.margins import ConditionalMargin
-from euporie.apptk.widgets import TextArea
-
 from euporie.apptk.layout.processors import DynamicProcessor, Processor, Transformation
 from euporie.core.margins import NumberedMargin
 
@@ -22,7 +22,6 @@ if TYPE_CHECKING:
 
     from euporie.apptk.filters import FilterOrBool
     from euporie.apptk.formatted_text import AnyFormattedText, StyleAndTextTuples
-
     from euporie.apptk.layout.processors import TransformationInput
 
 log = logging.getLogger(__name__)

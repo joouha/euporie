@@ -11,19 +11,8 @@ from math import ceil, floor
 from typing import TYPE_CHECKING, cast
 from weakref import finalize
 
-from euporie.apptk.auto_suggest import DynamicAutoSuggest
 from euporie.apptk.buffer import Buffer, ValidationState
-from euporie.apptk.completion import Completer, ConditionalCompleter, WordCompleter
 from euporie.apptk.document import Document
-from euporie.apptk.filters import (
-    Always,
-    Condition,
-    Filter,
-    FilterOrBool,
-    has_focus,
-    is_true,
-    to_filter,
-)
 from euporie.apptk.formatted_text.base import to_formatted_text
 from euporie.apptk.formatted_text.utils import fragment_list_len, fragment_list_width
 from euporie.apptk.key_binding.key_bindings import (
@@ -33,12 +22,22 @@ from euporie.apptk.key_binding.key_bindings import (
 )
 from euporie.apptk.layout.dimension import Dimension
 from euporie.apptk.layout.utils import explode_text_fragments
-from euporie.apptk.lexers import DynamicLexer, Lexer
 from euporie.apptk.utils import Event
 from euporie.apptk.validation import Validator
 
+from euporie.apptk.auto_suggest import DynamicAutoSuggest
 from euporie.apptk.cache import SimpleCache
+from euporie.apptk.completion import Completer, ConditionalCompleter, WordCompleter
 from euporie.apptk.data_structures import DiBool, DiInt, Point
+from euporie.apptk.filters import (
+    Always,
+    Condition,
+    Filter,
+    FilterOrBool,
+    has_focus,
+    is_true,
+    to_filter,
+)
 from euporie.apptk.layout.containers import (
     ConditionalContainer,
     DynamicContainer,
@@ -61,6 +60,7 @@ from euporie.apptk.layout.processors import (
     Processor,
 )
 from euporie.apptk.layout.screen import WritePosition
+from euporie.apptk.lexers import DynamicLexer, Lexer
 from euporie.apptk.mouse_events import MouseButton, MouseEvent, MouseEventType
 from euporie.core.app.current import get_app
 from euporie.core.border import InsetGrid
@@ -74,7 +74,6 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
     from typing import Any
 
-    from euporie.apptk.auto_suggest import AutoSuggest
     from euporie.apptk.buffer import BufferAcceptHandler
     from euporie.apptk.completion.base import Completer
     from euporie.apptk.formatted_text.base import (
@@ -86,16 +85,17 @@ if TYPE_CHECKING:
         KeyBindingsBase,
         NotImplementedOrNone,
     )
-    from euporie.apptk.key_binding.key_processor import KeyPressEvent
     from euporie.apptk.layout.dimension import AnyDimension
-    from euporie.apptk.lexers import Lexer
 
+    from euporie.apptk.auto_suggest import AutoSuggest
+    from euporie.apptk.key_binding.key_processor import KeyPressEvent
     from euporie.apptk.layout.containers import AnyContainer
     from euporie.apptk.layout.controls import (
         GetLinePrefixCallable,
         SearchBufferControl,
     )
     from euporie.apptk.layout.processors import Processor
+    from euporie.apptk.lexers import Lexer
     from euporie.core.border import GridStyle
 
     OptionalSearchBuffer = (

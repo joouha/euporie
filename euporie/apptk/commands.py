@@ -26,7 +26,7 @@ if TYPE_CHECKING:
     )
 
     from euporie.apptk.filters import Filter, FilterOrBool
-    from euporie.apptk.keys import AnyKeys, Keys
+    from euporie.apptk.keys import AnyKeys
 
     CommandHandlerNoArgs = Callable[
         ..., Coroutine[Any, Any, None] | NotImplementedOrNone

@@ -8,7 +8,6 @@ from functools import lru_cache, partial
 from typing import TYPE_CHECKING, ClassVar, NamedTuple, cast
 
 from euporie.apptk.application.current import get_app
-from euporie.apptk.filters import Condition, to_filter
 from euporie.apptk.formatted_text.base import to_formatted_text
 from euporie.apptk.formatted_text.utils import fragment_list_width
 from euporie.apptk.key_binding.key_bindings import KeyBindings
@@ -19,6 +18,7 @@ from euporie.apptk.utils import Event
 
 from euporie.apptk.cache import SimpleCache
 from euporie.apptk.data_structures import DiBool
+from euporie.apptk.filters import Condition, to_filter
 from euporie.apptk.layout.containers import (
     ConditionalContainer,
     DynamicContainer,
@@ -42,7 +42,6 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
     from typing import Any
 
-    from euporie.apptk.filters import FilterOrBool
     from euporie.apptk.formatted_text.base import (
         AnyFormattedText,
         OneStyleAndTextTuple,
@@ -52,9 +51,10 @@ if TYPE_CHECKING:
         KeyBindingsBase,
         NotImplementedOrNone,
     )
-    from euporie.apptk.key_binding.key_processor import KeyPressEvent
     from euporie.apptk.layout.dimension import AnyDimension
 
+    from euporie.apptk.filters import FilterOrBool
+    from euporie.apptk.key_binding.key_processor import KeyPressEvent
     from euporie.apptk.layout.containers import AnyContainer, Container, _Split
     from euporie.apptk.mouse_events import MouseEvent
     from euporie.core.border import GridStyle

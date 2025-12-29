@@ -50,21 +50,21 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Sequence
     from typing import Any
 
-    from euporie.apptk.filters import Filter, FilterOrBool
     from euporie.apptk.formatted_text.base import (
         AnyFormattedText,
         OneStyleAndTextTuple,
         StyleAndTextTuples,
     )
     from euporie.apptk.key_binding.key_bindings import NotImplementedOrNone
-    from euporie.apptk.key_binding.key_processor import KeyPressEvent
 
+    from euporie.apptk.commands import Command
+    from euporie.apptk.filters import Filter, FilterOrBool
+    from euporie.apptk.key_binding.key_processor import KeyPressEvent
     from euporie.apptk.layout.containers import AnyContainer
     from euporie.apptk.layout.controls import UIControl
     from euporie.core.app.app import BaseApp
     from euporie.core.bars.status import StatusBarFields
     from euporie.core.border import GridStyle
-    from euporie.apptk.commands import Command
 
 
 log = logging.getLogger(__name__)

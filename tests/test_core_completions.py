@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from unittest.mock import AsyncMock, Mock
 
-from euporie.apptk.completion import CompleteEvent, Completion
 from euporie.apptk.document import Document
 
+from euporie.apptk.completion import CompleteEvent, Completion
 from euporie.core.completion import KernelCompleter
 from euporie.core.kernel.base import BaseKernel
 

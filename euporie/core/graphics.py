@@ -31,9 +31,8 @@ if TYPE_CHECKING:
     from collections.abc import Callable
     from typing import Any, ClassVar
 
-    from euporie.apptk.formatted_text import StyleAndTextTuples
-
     from euporie.apptk.filters import FilterOrBool
+    from euporie.apptk.formatted_text import StyleAndTextTuples
     from euporie.apptk.layout.screen import Screen
 
 

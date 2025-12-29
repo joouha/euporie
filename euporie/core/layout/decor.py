@@ -5,10 +5,10 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-from euporie.apptk.filters import has_focus
 from euporie.apptk.layout.dimension import Dimension
 
 from euporie.apptk.cache import FastDictCache
+from euporie.apptk.filters import has_focus
 from euporie.apptk.layout.containers import (
     Container,
     to_container,
