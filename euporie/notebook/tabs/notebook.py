@@ -23,6 +23,7 @@ from euporie.apptk.layout.containers import (
 )
 from euporie.apptk.layout.margins import ScrollbarMargin
 from euporie.apptk.layout.mouse import MouseHandlerWrapper
+from euporie.apptk.layout.scroll import ScrollingContainer
 from euporie.apptk.mouse_events import MouseEventType
 from euporie.core.filters import (
     multiple_cells_selected,
@@ -32,7 +33,6 @@ from euporie.core.key_binding.registry import (
     register_bindings,
 )
 from euporie.core.layout.decor import Line, Pattern
-from euporie.core.layout.scroll import ScrollingContainer
 from euporie.core.nbformat import NOTEBOOK_EXTENSIONS, new_code_cell
 from euporie.core.style import KERNEL_STATUS_REPR
 from euporie.core.tabs.notebook import BaseNotebook
