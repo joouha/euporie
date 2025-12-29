@@ -2,19 +2,16 @@
 
 from __future__ import annotations
 
-import logging
 import re
 from typing import TYPE_CHECKING
 
-from euporie.apptk.formatted_text import ANSI as PTANSI
+from prompt_toolkit.formatted_text.ansi import ANSI as PtkANSI
 
 if TYPE_CHECKING:
     from collections.abc import Generator
 
-log = logging.getLogger(__name__)
 
-
-class ANSI(PTANSI):
+class ANSI(PtkANSI):
     """Convert ANSI text into formatted text, preserving all control sequences."""
 
     def __init__(self, value: str, tab_size: int = 8) -> None:
@@ -160,4 +157,3 @@ class ANSI(PTANSI):
                     continue
 
             formatted_text.append((style, sequence))
-            # log.debug(repr(sequence))
