@@ -77,13 +77,20 @@ def load_basic_bindings() -> KeyBindings:
     """Load basic key-bindings for text entry."""
     kb = ptk_load_basic_bindings()
     for cmd_name, keys in {
+        # Typing bindings
         "type-key": "<any>",
+        # Text surround bindings
         "complete-bracket-()": "(",
         "complete-bracket-[]": "[",
         "complete-bracket-{}": "{",
         "close-bracket-()": ")",
         "close-bracket-[]": "]",
         "close-bracket-{}": "}",
+        # Completion bindings
+        "next-completion": "c-i",
+        "previous-completion": "s-tab",
+        "cancel-completion": "escape",
+        "accept-completion": "enter",
     }.items():
         get_cmd(cmd_name).bind(kb, keys)
     return kb
