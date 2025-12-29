@@ -163,6 +163,8 @@ def load_micro_bindings() -> KeyBindings:
         "wrap-selection-``": "`",
         "wrap-selection-**": "*",
         "wrap-selection-__": "_",
+        "scroll-page-up": "pageup",
+        "scroll-page-down": "pagedown",
     }.items():
         get_cmd(cmd_name).bind(kb, keys)
     return ConditionalKeyBindings(kb, micro_mode)
@@ -898,3 +900,67 @@ def fill_suggestion(event: KeyPressEvent) -> None:
     if suggestion:
         t = re.split(r"(\S+\s+)", suggestion.text)
         b.insert_text(next(x for x in t if x))
+
+
+# Define page navigation key-bindings for buffers.
+
+
+@add_cmd(filter=buffer_has_focus, hidden=True)
+def scroll_page_down(event: KeyPressEvent) -> None:
+    """Scroll page down (prefer the cursor at the top of the page, after scrolling)."""
+    w = event.app.layout.current_window
+    b = event.app.current_buffer
+
+    if w and w.render_info:
+        # Scroll down one page.
+        line_index = b.document.cursor_position_row
+        page = w.render_info.window_height
+
+        if (
+            (screen := get_app().renderer._last_screen)
+            and (wp := screen.visible_windows_to_write_positions.get(w))
+            and (bbox := getattr(wp, "bbox", None))
+        ):
+            page -= bbox.top + bbox.bottom
+
+        line_index = max(line_index + page, w.vertical_scroll + 1)
+        w.vertical_scroll = line_index
+
+        b.cursor_position = b.document.translate_row_col_to_index(line_index, 0)
+        b.cursor_position += b.document.get_start_of_line_position(
+            after_whitespace=True
+        )
+
+
+@add_cmd(filter=buffer_has_focus, hidden=True)
+def scroll_page_up(event: KeyPressEvent) -> None:
+    """Scroll page up (prefer the cursor at the bottom of the page, after scrolling)."""
+    w = event.app.layout.current_window
+    b = event.app.current_buffer
+
+    if w and w.render_info:
+        line_index = b.document.cursor_position_row
+        page = w.render_info.window_height
+
+        if (
+            (screen := get_app().renderer._last_screen)
+            and (wp := screen.visible_windows_to_write_positions.get(w))
+            and (bbox := getattr(wp, "bbox", None))
+        ):
+            page -= bbox.top + bbox.bottom
+
+        # Put cursor at the first visible line. (But make sure that the cursor
+        # moves at least one line up.)
+        line_index = max(
+            0,
+            min(line_index - page, b.document.cursor_position_row - 1),
+        )
+
+        b.cursor_position = b.document.translate_row_col_to_index(line_index, 0)
+        b.cursor_position += b.document.get_start_of_line_position(
+            after_whitespace=True
+        )
+
+        # Set the scroll offset. We can safely set it to zero; the Window will
+        # make sure that it scrolls at least until the cursor becomes visible.
+        w.vertical_scroll = 0
