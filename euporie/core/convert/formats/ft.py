@@ -12,7 +12,7 @@ from euporie.apptk.cache import SimpleCache
 from euporie.core.convert.registry import register
 from euporie.core.ft.ansi import ANSI
 from euporie.core.ft.utils import strip_one_trailing_newline
-from euporie.core.lexers import detect_lexer
+from euporie.apptk.lexers.utils import detect_lexer
 
 if TYPE_CHECKING:
     from typing import Any

@@ -7,7 +7,7 @@ from pathlib import Path
 from pygments.lexers.python import PythonLexer
 from pygments.lexers.special import TextLexer
 
-from euporie.core.lexers import detect_lexer
+from euporie.apptk.lexers.utils import detect_lexer
 
 
 def test_detect_lexer_with_path() -> None:

@@ -8,11 +8,11 @@ from typing import TYPE_CHECKING, ClassVar
 
 from euporie.apptk.layout.dimension import Dimension
 
+from euporie.apptk.filters.modes import insert_mode, replace_mode
 from euporie.apptk.layout.containers import HSplit
-from euporie.core.filters import insert_mode, replace_mode
+from euporie.apptk.lexers.utils import detect_lexer
 from euporie.core.kernel.base import BaseKernel, MsgCallbacks
 from euporie.core.key_binding.registry import load_registered_bindings
-from euporie.core.lexers import detect_lexer
 from euporie.core.tabs.kernel import KernelTab
 from euporie.core.widgets.inputs import KernelInput
 
