@@ -37,6 +37,7 @@ from euporie.apptk.filters import (
 from euporie.apptk.filters.buffer import buffer_is_code
 from euporie.apptk.layout.containers import (
     ConditionalContainer,
+    MarginContainer,
     ScrollOffsets,
     VSplit,
     Window,
@@ -67,8 +68,7 @@ from euporie.core.key_binding.registry import (
     register_bindings,
 )
 from euporie.core.layout.processors import DiagnosticProcessor
-from euporie.core.margins import (
-    MarginContainer,
+from euporie.apptk.layout.margins import (
     NumberedMargin,
     OverflowMargin,
     ScrollbarMargin,

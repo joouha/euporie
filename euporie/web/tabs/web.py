@@ -15,7 +15,8 @@ from euporie.apptk.layout.containers import HSplit, VSplit
 from euporie.core.app.current import get_app
 from euporie.core.convert.mime import get_mime
 from euporie.core.layout.decor import FocusedStyle
-from euporie.core.margins import MarginContainer, ScrollbarMargin
+from euporie.apptk.layout.containers import MarginContainer
+from euporie.apptk.layout.margins import ScrollbarMargin
 from euporie.core.tabs.base import Tab
 from euporie.core.widgets.display import DisplayWindow
 from euporie.core.widgets.forms import Button, Text
