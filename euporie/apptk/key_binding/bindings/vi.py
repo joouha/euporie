@@ -10,7 +10,7 @@ from prompt_toolkit.key_binding.bindings.vi import (
     load_vi_bindings as load_ptk_vi_bindings,
 )
 
-from euporie.core.filters import cursor_in_leading_ws
+from euporie.apptk.filters.buffer import cursor_in_leading_ws
 
 if TYPE_CHECKING:
     from euporie.apptk.key_binding.key_bindings import (
@@ -18,6 +18,7 @@ if TYPE_CHECKING:
         KeyBindings,
         KeyBindingsBase,
     )
+
     from euporie.apptk.key_binding.key_processor import KeyPressEvent
 
 
