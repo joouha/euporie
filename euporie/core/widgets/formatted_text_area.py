@@ -15,7 +15,7 @@ from euporie.apptk.formatted_text import (
     to_formatted_text,
 )
 from euporie.apptk.layout.processors import DynamicProcessor, Processor, Transformation
-from euporie.core.margins import NumberedMargin
+from euporie.apptk.layout.margins import NumberedMargin
 
 if TYPE_CHECKING:
     from typing import Any

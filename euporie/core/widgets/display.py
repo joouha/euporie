@@ -27,7 +27,8 @@ from euporie.core.key_binding.registry import (
     load_registered_bindings,
     register_bindings,
 )
-from euporie.core.margins import MarginContainer, ScrollbarMargin
+from euporie.apptk.layout.containers import MarginContainer
+from euporie.apptk.layout.margins import ScrollbarMargin
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable

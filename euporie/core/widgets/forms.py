@@ -66,7 +66,8 @@ from euporie.core.app.current import get_app
 from euporie.core.border import InsetGrid
 from euporie.core.ft.utils import FormattedTextAlign, align
 from euporie.core.layout.mouse import MouseHandlerWrapper
-from euporie.core.margins import MarginContainer, ScrollbarMargin
+from euporie.apptk.layout.containers import MarginContainer
+from euporie.apptk.layout.margins import ScrollbarMargin
 from euporie.core.widgets.decor import Border, Shadow
 from euporie.core.widgets.layout import Box, ConditionalSplit
 

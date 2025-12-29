@@ -721,7 +721,8 @@ class ErrorDialog(Dialog):
         """Load dialog body & buttons."""
         import traceback
 
-        from euporie.core.margins import MarginContainer, ScrollbarMargin
+        from euporie.apptk.layout.containers import MarginContainer
+        from euporie.apptk.layout.margins import ScrollbarMargin
         from euporie.core.widgets.formatted_text_area import FormattedTextArea
         from euporie.core.widgets.forms import Checkbox
 
@@ -861,8 +862,9 @@ class ShortcutsDialog(Dialog):
 
     def load(self, *args: Any, **kwargs: Any) -> None:
         """Load the dialog body."""
+        from euporie.apptk.layout.containers import MarginContainer
+        from euporie.apptk.layout.margins import ScrollbarMargin
         from euporie.core.ft.utils import max_line_width
-        from euporie.core.margins import MarginContainer, ScrollbarMargin
         from euporie.core.widgets.formatted_text_area import FormattedTextArea
 
         if not self.details:

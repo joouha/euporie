@@ -7,13 +7,10 @@ import logging
 from abc import ABCMeta
 from typing import TYPE_CHECKING, cast
 
-from euporie.apptk.layout.dimension import Dimension
-from euporie.apptk.layout.margins import Margin
+from euporie.apptk.application.current import get_app
 
-from euporie.apptk.data_structures import Point
 from euporie.apptk.filters import FilterOrBool, to_filter
-from euporie.apptk.layout.containers import ScrollOffsets, Window, WindowRenderInfo
-from euporie.apptk.layout.controls import FormattedTextControl
+from euporie.apptk.layout.margins import Margin
 from euporie.apptk.layout.screen import WritePosition
 from euporie.apptk.mouse_events import (
     MouseButton,
@@ -22,23 +19,19 @@ from euporie.apptk.mouse_events import (
     RelativePosition,
 )
 from euporie.apptk.mouse_events import MouseEvent as PtkMouseEvent
-from euporie.core.app.current import get_app
 
 if TYPE_CHECKING:
     from collections.abc import Callable
     from typing import Protocol
 
     from euporie.apptk.key_binding.key_bindings import (
-        KeyBindingsBase,
         NotImplementedOrNone,
     )
-    from euporie.apptk.layout.mouse_handlers import MouseHandlers
 
+    from euporie.apptk.diagnostics import Report
     from euporie.apptk.formatted_text import StyleAndTextTuples
-    from euporie.apptk.layout.containers import Container
+    from euporie.apptk.layout.containers import Window, WindowRenderInfo
     from euporie.apptk.layout.controls import UIContent
-    from euporie.apptk.layout.screen import Screen
-    from euporie.core.diagnostics import Report
 
     class ScrollableContainer(Protocol):
         """Protocol for a scrollable container."""
@@ -58,143 +51,6 @@ class ClickableMargin(Margin, metaclass=ABCMeta):
     def set_margin_window(self, margin_window: Window) -> None:
         """Set the write position of the menu."""
         self.margin_window = margin_window
-
-
-class MarginContainer(Window):
-    """A container which renders a stand-alone margin."""
-
-    def __init__(self, margin: Margin, target: ScrollableContainer) -> None:
-        """Create a new instance."""
-        self.margin = margin
-        self.target = target
-        self.render_info: WindowRenderInfo | None = None
-        self.content = FormattedTextControl(self.create_fragments)
-        self.always_hide_cursor = to_filter(True)
-
-        if isinstance(self.margin, ClickableMargin):
-            self.margin.set_margin_window(self)
-
-    def create_fragments(self) -> StyleAndTextTuples:
-        """Generate text fragments to display."""
-        return self.margin.create_margin(
-            cast("WindowRenderInfo", self.target.render_info),  # Minor type hack
-            self.write_position.width,
-            self.write_position.height,
-        )
-
-    def reset(self) -> None:
-        """Reset the state of this container and all the children."""
-
-    def preferred_width(self, max_available_width: int) -> Dimension:
-        """Return a the desired width for this container."""
-
-        def _get_ui_content() -> UIContent:
-            render_info = self.target.render_info
-            assert render_info is not None
-            return render_info.ui_content
-
-        width = self.margin.get_width(_get_ui_content)
-        return Dimension(min=width, max=width)
-
-    def preferred_height(self, width: int, max_available_height: int) -> Dimension:
-        """Return a thedesired height for this container."""
-        return Dimension()
-
-    def write_to_screen(
-        self,
-        screen: Screen,
-        mouse_handlers: MouseHandlers,
-        write_position: WritePosition,
-        parent_style: str,
-        erase_bg: bool,
-        z_index: int | None,
-    ) -> None:
-        """Write the actual content to the screen."""
-        self.write_position = write_position
-
-        margin_content: UIContent = self.content.create_content(
-            write_position.width + 1, write_position.height
-        )
-        visible_line_to_row_col, rowcol_to_yx = self._copy_body(
-            margin_content, screen, write_position, 0, write_position.width
-        )
-
-        self.render_info = WindowRenderInfo(
-            window=self,
-            ui_content=margin_content,
-            horizontal_scroll=0,
-            vertical_scroll=0,
-            window_width=write_position.width,
-            window_height=write_position.height,
-            configured_scroll_offsets=ScrollOffsets(),
-            visible_line_to_row_col=visible_line_to_row_col,
-            rowcol_to_yx=rowcol_to_yx,
-            x_offset=write_position.xpos,
-            y_offset=write_position.ypos,
-            wrap_lines=False,
-        )
-
-        # Set mouse handlers.
-        def mouse_handler(mouse_event: PtkMouseEvent) -> NotImplementedOrNone:
-            """Turn screen coordinates into line coordinates."""
-            # Don't handle mouse events outside of the current modal part of the UI
-            if self not in get_app().layout.walk_through_modal_area():
-                return NotImplemented
-
-            # Find row/col position first.
-            yx_to_rowcol = {v: k for k, v in rowcol_to_yx.items()}
-            y = mouse_event.position.y
-            x = mouse_event.position.x
-
-            # If clicked below the content area, look for a position in the
-            # last line instead
-            max_y = write_position.ypos + len(visible_line_to_row_col) - 1
-            y = min(max_y, y)
-            result: NotImplementedOrNone = NotImplemented
-
-            while x >= 0:
-                try:
-                    row, col = yx_to_rowcol[y, x]
-                except KeyError:
-                    # Try again. (When clicking on the right side of double
-                    # width characters, or on the right side of the input.)
-                    x -= 1
-                else:
-                    # Found position, call handler of UIControl.
-                    result = self.content.mouse_handler(
-                        MouseEvent(
-                            position=Point(x=col, y=row),
-                            event_type=mouse_event.event_type,
-                            button=mouse_event.button,
-                            modifiers=mouse_event.modifiers,
-                            cell_position=getattr(mouse_event, "cell_position", None),
-                        )
-                    )
-                    break
-
-            return result
-
-        mouse_handlers.set_mouse_handler_for_range(
-            x_min=write_position.xpos,
-            x_max=write_position.xpos + write_position.width,
-            y_min=write_position.ypos,
-            y_max=write_position.ypos + write_position.height,
-            handler=mouse_handler,
-        )
-
-        screen.visible_windows_to_write_positions[self] = write_position
-
-    def is_modal(self) -> bool:
-        """When this container is modal."""
-        return False
-
-    def get_key_bindings(self) -> KeyBindingsBase | None:
-        """Return a :class:`.KeyBindings` object."""
-        return None
-
-    def get_children(self) -> list[Container]:
-        """Return the list of child :class:`.Container` objects."""
-        return []
 
 
 class ScrollbarMargin(ClickableMargin):
@@ -445,6 +301,7 @@ class ScrollbarMargin(ClickableMargin):
             # target_render_info was generated
             window = target_render_info.window
             delta = window.vertical_scroll - target_scroll
+            from euporie.apptk.layout.containers import Window
 
             if isinstance(window, Window):
                 func = window._scroll_down if delta < 0 else window._scroll_up
@@ -534,16 +391,16 @@ class NumberedMargin(Margin):
 
     def __init__(
         self,
+        relative: FilterOrBool = False,
         diagnostics: Report | Callable[[], Report] | None = None,
         show_diagnostics: FilterOrBool = False,
-        relative: FilterOrBool = False,
     ) -> None:
         """Create a new numbered margin with optional diagnostics.
 
         Args:
+            relative: Whether to show relative line numbers (distance from cursor).
             diagnostics: Diagnostic reports to display in the margin.
             show_diagnostics: Whether to show diagnostic indicators.
-            relative: Whether to show relative line numbers (distance from cursor).
         """
         self.diagnostics = diagnostics
         self.show_diagnostics = to_filter(show_diagnostics)

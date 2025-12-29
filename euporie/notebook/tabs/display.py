@@ -11,7 +11,8 @@ from euporie.apptk.layout.dimension import Dimension
 from euporie.apptk.layout.containers import VSplit
 from euporie.core.convert.datum import Datum
 from euporie.core.convert.mime import MIME_FORMATS, get_format
-from euporie.core.margins import MarginContainer, ScrollbarMargin
+from euporie.apptk.layout.containers import MarginContainer
+from euporie.apptk.layout.margins import ScrollbarMargin
 from euporie.core.tabs.base import Tab
 from euporie.core.widgets.display import Display
 

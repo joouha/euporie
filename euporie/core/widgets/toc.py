@@ -19,7 +19,8 @@ from euporie.apptk.layout.controls import BufferControl, UIContent, UIControl
 from euporie.apptk.mouse_events import MouseButton, MouseEventType
 from euporie.core.app.current import get_app
 from euporie.core.border import InsetGrid
-from euporie.core.margins import MarginContainer, ScrollbarMargin
+from euporie.apptk.layout.containers import MarginContainer
+from euporie.apptk.layout.margins import ScrollbarMargin
 from euporie.core.widgets.decor import Border
 from euporie.core.widgets.forms import Dropdown
 
