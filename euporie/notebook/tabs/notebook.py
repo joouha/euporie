@@ -29,7 +29,7 @@ from euporie.core.key_binding.registry import (
     load_registered_bindings,
     register_bindings,
 )
-from euporie.core.layout.cache import CachedContainer
+from euporie.apptk.layout.cache import CachedContainer
 from euporie.core.layout.decor import Line, Pattern
 from euporie.core.layout.mouse import MouseHandlerWrapper
 from euporie.core.layout.scroll import ScrollingContainer
