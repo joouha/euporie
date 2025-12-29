@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 
 from euporie.core.app.current import get_app
 from euporie.core.convert.registry import register
-from euporie.core.lexers import detect_lexer
+from euporie.apptk.lexers.utils import detect_lexer
 
 if TYPE_CHECKING:
     from typing import Any
