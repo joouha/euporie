@@ -9,19 +9,44 @@ from difflib import SequenceMatcher
 from functools import lru_cache, partial
 from typing import TYPE_CHECKING, NamedTuple
 
-from euporie.apptk.auto_suggest import AutoSuggest, ConditionalAutoSuggest, Suggestion
-from euporie.apptk.filters import to_filter
+from prompt_toolkit.auto_suggest import AutoSuggest, ConditionalAutoSuggest, Suggestion
 
 from euporie.apptk.cache import SimpleCache
+from euporie.apptk.filters import to_filter
 
 if TYPE_CHECKING:
     from euporie.apptk.buffer import Buffer
     from euporie.apptk.document import Document
-    from euporie.apptk.filters import Filter
     from euporie.apptk.history import History
+
+    from euporie.apptk.filters import Filter
 
 
 log = logging.getLogger(__name__)
+
+
+class ConditionalAutoSuggestAsync(ConditionalAutoSuggest):
+    """Auto suggest that can be turned on and of according to a certain condition."""
+
+    def __init__(self, auto_suggest: AutoSuggest, filter: bool | Filter) -> None:
+        """Create a new asynchronous conditional autosuggestion wrapper.
+
+        Args:
+            auto_suggest: The :class:`AutoSuggest` to use to retrieve suggestions
+            filter: The filter use to determine if autosuggestions should be retrieved
+
+        """
+        self.auto_suggest = auto_suggest
+        self.filter = to_filter(filter)
+
+    async def get_suggestion_async(
+        self, buffer: Buffer, document: Document
+    ) -> Suggestion | None:
+        """Get suggestions asynchronously if the filter allows."""
+        if self.filter():
+            return await self.auto_suggest.get_suggestion_async(buffer, document)
+
+        return None
 
 
 class HistoryPosition(NamedTuple):
@@ -30,6 +55,51 @@ class HistoryPosition(NamedTuple):
     idx: int  # Index in history
     context_start: int  # Position where context starts
     context_end: int  # Position where context ends
+
+
+class SimpleHistoryAutoSuggest(AutoSuggest):
+    """Suggest line completions from a :class:`History` object."""
+
+    def __init__(self, history: History, cache_size: int = 100_000) -> None:
+        """Set the kernel instance in initialization."""
+        self.history = history
+
+        self.cache_size = cache_size
+        self.cache_keys: deque[str] = deque()
+        self.cache: dict[str, Suggestion] = {}
+
+    def get_suggestion(self, buffer: Buffer, document: Document) -> Suggestion | None:
+        """Get a line completion suggestion."""
+        result: Suggestion | None = None
+        line = document.current_line.lstrip()
+        if line:
+            if line in self.cache:
+                result = self.cache[line]
+            else:
+                result = self.lookup_suggestion(line)
+                if result:
+                    if len(self.cache) > self.cache_size:
+                        key_to_remove = self.cache_keys.popleft()
+                        if key_to_remove in self.cache:
+                            del self.cache[key_to_remove]
+
+                    self.cache_keys.append(line)
+                    self.cache[line] = result
+        return result
+
+    def lookup_suggestion(self, line: str) -> Suggestion | None:
+        """Find the most recent matching line in the history."""
+        # Loop history, most recent item first
+        for text in self.history._loaded_strings:
+            if line in text:
+                # Loop over lines of item in reverse order
+                for hist_line in text.splitlines()[::-1]:
+                    hist_line = hist_line.strip()
+                    if hist_line.startswith(line):
+                        # Return from the match to end from the history line
+                        suggestion = hist_line[len(line) :]
+                        return Suggestion(suggestion)
+        return None
 
 
 class SmartHistoryAutoSuggest(AutoSuggest):
@@ -170,73 +240,4 @@ class SmartHistoryAutoSuggest(AutoSuggest):
 
         if best_suffix:
             return Suggestion(best_suffix)
-        return None
-
-
-class SimpleHistoryAutoSuggest(AutoSuggest):
-    """Suggest line completions from a :class:`History` object."""
-
-    def __init__(self, history: History, cache_size: int = 100_000) -> None:
-        """Set the kernel instance in initialization."""
-        self.history = history
-
-        self.cache_size = cache_size
-        self.cache_keys: deque[str] = deque()
-        self.cache: dict[str, Suggestion] = {}
-
-    def get_suggestion(self, buffer: Buffer, document: Document) -> Suggestion | None:
-        """Get a line completion suggestion."""
-        result: Suggestion | None = None
-        line = document.current_line.lstrip()
-        if line:
-            if line in self.cache:
-                result = self.cache[line]
-            else:
-                result = self.lookup_suggestion(line)
-                if result:
-                    if len(self.cache) > self.cache_size:
-                        key_to_remove = self.cache_keys.popleft()
-                        if key_to_remove in self.cache:
-                            del self.cache[key_to_remove]
-
-                    self.cache_keys.append(line)
-                    self.cache[line] = result
-        return result
-
-    def lookup_suggestion(self, line: str) -> Suggestion | None:
-        """Find the most recent matching line in the history."""
-        # Loop history, most recent item first
-        for text in self.history._loaded_strings:
-            if line in text:
-                # Loop over lines of item in reverse order
-                for hist_line in text.splitlines()[::-1]:
-                    hist_line = hist_line.strip()
-                    if hist_line.startswith(line):
-                        # Return from the match to end from the history line
-                        suggestion = hist_line[len(line) :]
-                        return Suggestion(suggestion)
-        return None
-
-
-class ConditionalAutoSuggestAsync(ConditionalAutoSuggest):
-    """Auto suggest that can be turned on and of according to a certain condition."""
-
-    def __init__(self, auto_suggest: AutoSuggest, filter: bool | Filter) -> None:
-        """Create a new asynchronous conditional autosuggestion wrapper.
-
-        Args:
-            auto_suggest: The :class:`AutoSuggest` to use to retrieve suggestions
-            filter: The filter use to determine if autosuggestions should be retrieved
-
-        """
-        self.auto_suggest = auto_suggest
-        self.filter = to_filter(filter)
-
-    async def get_suggestion_async(
-        self, buffer: Buffer, document: Document
-    ) -> Suggestion | None:
-        """Get suggestions asynchronously if the filter allows."""
-        if self.filter():
-            return await self.auto_suggest.get_suggestion_async(buffer, document)
-
         return None

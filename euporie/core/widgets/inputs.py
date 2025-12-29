@@ -69,7 +69,7 @@ from euporie.core.margins import (
     OverflowMargin,
     ScrollbarMargin,
 )
-from euporie.core.suggest import ConditionalAutoSuggestAsync
+from euporie.apptk.auto_suggest import ConditionalAutoSuggestAsync
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
