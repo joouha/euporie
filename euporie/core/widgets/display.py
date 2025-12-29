@@ -18,7 +18,7 @@ from euporie.apptk.layout.containers import ConditionalContainer, VSplit, Window
 from euporie.apptk.layout.controls import GetLinePrefixCallable, UIContent, UIControl
 from euporie.apptk.mouse_events import MouseEvent, MouseEventType
 from euporie.core.app.current import get_app
-from euporie.core.commands import add_cmd
+from euporie.apptk.commands import add_cmd
 from euporie.core.convert.datum import Datum
 from euporie.core.filters import display_has_focus, scrollable
 from euporie.core.ft.utils import wrap

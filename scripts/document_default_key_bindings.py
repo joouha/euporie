@@ -16,7 +16,7 @@ from euporie.core.border import (
     AsciiThickLine,
     DiLineStyle,
 )
-from euporie.core.commands import get_cmd
+from euporie.apptk.commands import get_cmd
 from euporie.core.ft.table import Table
 from euporie.core.ft.utils import indent
 from euporie.core.key_binding.registry import BINDINGS

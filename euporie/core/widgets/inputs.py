@@ -20,6 +20,7 @@ from euporie.apptk.widgets import TextArea
 from euporie.apptk.widgets.toolbars import SearchToolbar
 from pygments.lexers import ClassNotFound, get_lexer_by_name
 
+from euporie.apptk.commands import add_cmd
 from euporie.apptk.filters import (
     Condition,
     buffer_has_focus,
@@ -54,7 +55,6 @@ from euporie.apptk.layout.processors import (  # HighlightSearchProcessor,
     TabsProcessor,
 )
 from euporie.core.app.current import get_app
-from euporie.core.commands import add_cmd
 from euporie.core.diagnostics import Report
 from euporie.core.filters import buffer_is_code, scrollable
 from euporie.core.key_binding.registry import (

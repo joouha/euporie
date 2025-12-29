@@ -1,6 +1,6 @@
 """Commands for the notebook app."""
 
-from euporie.core.commands import add_cmd
+from euporie.apptk.commands import add_cmd
 
 
 @add_cmd(aliases=["n"], icon="", style="class:orange")

@@ -21,7 +21,7 @@ from euporie.apptk.layout.controls import (
 from euporie.apptk.layout.processors import BeforeInput, HighlightSelectionProcessor
 from euporie.core.app.current import get_app
 from euporie.core.bars import COMMAND_BAR_BUFFER
-from euporie.core.commands import add_cmd, commands, get_cmd
+from euporie.apptk.commands import add_cmd, commands, get_cmd
 from euporie.core.key_binding.registry import (
     load_registered_bindings,
     register_bindings,
@@ -35,7 +35,7 @@ if TYPE_CHECKING:
     from euporie.apptk.document import Document
     from euporie.apptk.key_binding.key_processor import KeyPressEvent
 
-    from euporie.core.commands import Command
+    from euporie.apptk.commands import Command
 
 log = logging.getLogger(__name__)
 

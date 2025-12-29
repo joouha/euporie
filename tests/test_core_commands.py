@@ -14,12 +14,12 @@ from euporie.apptk.key_binding.key_bindings import Binding
 from euporie.apptk.key_binding.key_processor import KeyPressEvent, KeyProcessor
 from euporie.apptk.keys import Keys
 
-from euporie.core.commands import Command, add_cmd, commands, get_cmd
+from euporie.apptk.commands import Command, add_cmd, commands, get_cmd
 
 if TYPE_CHECKING:
     from euporie.apptk.key_binding.key_bindings import NotImplementedOrNone
 
-    from euporie.core.commands import CommandHandler
+    from euporie.apptk.commands import CommandHandler
 
 
 @pytest.fixture

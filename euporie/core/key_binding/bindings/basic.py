@@ -9,8 +9,8 @@ from typing import TYPE_CHECKING
 from euporie.apptk.filters import (
     buffer_has_focus,
 )
-from euporie.core.commands import add_cmd
 from euporie.core.filters import (
+from euporie.apptk.commands import add_cmd
     char_after_cursor,
     cursor_at_end_of_line,
     has_matching_bracket,

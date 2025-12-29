@@ -6,7 +6,7 @@ from functools import lru_cache
 from typing import TYPE_CHECKING
 
 from euporie.apptk.key_binding import KeyBindings
-from euporie.core.commands import get_cmd
+from euporie.apptk.commands import get_cmd
 
 if TYPE_CHECKING:
     from euporie.apptk.key_binding import KeyBindingsBase

@@ -4,15 +4,16 @@ from __future__ import annotations
 
 import logging
 import weakref
+from functools import cached_property
 from inspect import isawaitable, iscoroutinefunction, signature
 from typing import TYPE_CHECKING, cast
 
-from euporie.apptk.application import get_app
+from euporie.apptk.application.current import get_app
 from euporie.apptk.key_binding.key_bindings import Binding
 
 from euporie.apptk.filters import to_filter
 from euporie.apptk.key_binding.key_processor import KeyPressEvent
-from euporie.core.key_binding.utils import parse_keys
+from euporie.apptk.key_binding.utils import format_keys, parse_keys
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Coroutine
@@ -25,11 +26,8 @@ if TYPE_CHECKING:
     )
 
     from euporie.apptk.filters import Filter, FilterOrBool
-    from euporie.apptk.keys import Keys
-    from euporie.core.widgets.menu import MenuItem
+    from euporie.apptk.keys import AnyKeys, Keys
 
-    AnyKey = tuple[Keys | str, ...] | Keys | str
-    AnyKeys = list[AnyKey] | AnyKey
     CommandHandlerNoArgs = Callable[
         ..., Coroutine[Any, Any, None] | NotImplementedOrNone
     ]
@@ -39,6 +37,9 @@ if TYPE_CHECKING:
     CommandHandler = CommandHandlerNoArgs | CommandHandlerArgs
 
 log = logging.getLogger(__name__)
+
+
+commands: dict[str, Command] = {}
 
 
 def parse_args(arg: str) -> list[Any]:
@@ -78,6 +79,7 @@ class Command:
         self,
         handler: CommandHandler,
         *,
+        keys: list[AnyKeys] | None = None,
         filter: FilterOrBool = True,
         hidden: FilterOrBool = False,
         name: str | None = None,
@@ -94,6 +96,9 @@ class Command:
         record_in_macro: FilterOrBool = True,
     ) -> None:
         """Create a new instance of a command.
+
+        Similar to a :py:`prompt_toolkit.key_binding.bindings.named_commands`, but also
+         collection of :py:class:`prompt_toolkit.key_binding.key_bindings:Bindings`.
 
         Args:
             handler: The callable to run when the command is triggers
@@ -137,14 +142,13 @@ class Command:
         self.style = style
 
         self.toggled = toggled
-        self._menu: MenuItem | None = None
 
         self.eager = to_filter(eager)
         self.is_global = to_filter(is_global)
         self.save_before = save_before
         self.record_in_macro = to_filter(record_in_macro)
 
-        self.keys: list[tuple[str | Keys, ...]] = []
+        self.bindings: list[Binding] = []
 
     def run(self, arg: str = "") -> None:
         """Run the command's handler."""
@@ -172,7 +176,7 @@ class Command:
             elif result is None:
                 app.invalidate()
 
-    @property
+    @cached_property
     def key_handler(self) -> KeyHandlerCallable:
         """Return a key handler for the command."""
         handler = self.handler
@@ -203,6 +207,11 @@ class Command:
 
             return _key_handler
 
+    def __call__(self, *args, **kwargs):
+        return self.key_handler(*args, **kwargs)
+
+    call = __call__
+
     def bind(self, key_bindings: KeyBindingsBase, keys: AnyKeys) -> None:
         """Add the current commands to a set of key bindings.
 
@@ -212,7 +221,6 @@ class Command:
 
         """
         for key in parse_keys(keys):
-            self.keys.append(key)
             key_bindings.bindings.append(
                 Binding(
                     key,
@@ -227,30 +235,19 @@ class Command:
 
     def key_str(self) -> str:
         """Return a string representing the first registered key-binding."""
-        from euporie.core.key_binding.utils import format_keys
-
-        if self.keys:
-            return format_keys([self.keys[0]])[0]
+        keys = get_app().key_processor._bindings.handler_keys.get(self.key_handler, [])
+        if keys:
+            return format_keys(keys[0])[0]
+        # if self.bindings:
+        #     return format_keys(self.bindings[0].keys)[0]
         return ""
 
-    @property
-    def menu(self) -> MenuItem:
-        """Return a menu item for the command."""
-        from euporie.core.widgets.menu import MenuItem
 
-        if self._menu is None:
-            self._menu = MenuItem.from_command(self)
-        return self._menu
-
-
-commands: dict[str, Command] = {}
-
-
-def add_cmd(**kwargs: Any) -> Callable:
+def add_cmd(*args, **kwargs: Any) -> Callable:
     """Add a command to the centralized command system."""
 
     def decorator(handler: Callable) -> Callable:
-        cmd = Command(handler, **kwargs)
+        cmd = Command(handler, *args, **kwargs)
         commands[cmd.name] = cmd
         for alias in cmd.aliases:
             commands[alias] = cmd

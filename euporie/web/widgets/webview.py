@@ -17,7 +17,7 @@ from euporie.apptk.layout.controls import UIContent, UIControl
 from euporie.apptk.mouse_events import MouseButton, MouseEvent, MouseEventType
 from euporie.core.app.current import get_app
 from euporie.core.async_utils import get_or_create_loop, run_coro_async
-from euporie.core.commands import add_cmd
+from euporie.apptk.commands import add_cmd
 from euporie.core.convert.datum import Datum
 from euporie.core.convert.mime import get_format
 from euporie.core.ft.html import HTML, Node
