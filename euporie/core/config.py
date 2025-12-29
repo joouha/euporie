@@ -27,7 +27,7 @@ from platformdirs import user_config_dir
 from upath import UPath
 
 from euporie.core import __app_name__, __copyright__
-from euporie.core.commands import add_cmd, get_cmd
+from euporie.apptk.commands import add_cmd, get_cmd
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Sequence
@@ -229,7 +229,7 @@ class Setting:
             return MenuItem(
                 self.title.capitalize(),
                 children=[
-                    cmd.menu
+                    MenuItem.from_cmd(cmd)
                     for cmd in sorted(
                         (
                             get_cmd(f"set-{self.name.replace('_', '-')}-{choice}")
@@ -241,7 +241,7 @@ class Setting:
                 description=self.help,
             )
         elif self.type in (bool, int):
-            return get_cmd(f"toggle-{self.name.replace('_', '-')}").menu
+            return MenuItem.from_cmd(f"toggle-{self.name.replace('_', '-')}")
         else:
             raise NotImplementedError
 

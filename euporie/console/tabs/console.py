@@ -20,7 +20,7 @@ from euporie.apptk.layout.containers import (
     Window,
 )
 from euporie.apptk.layout.controls import FormattedTextControl
-from euporie.core.commands import get_cmd
+from euporie.apptk.commands import get_cmd
 from euporie.core.format import LspFormatter
 from euporie.core.key_binding.registry import (
     load_registered_bindings,

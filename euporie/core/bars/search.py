@@ -19,7 +19,7 @@ from euporie.apptk.widgets import SearchToolbar as PtkSearchToolbar
 from euporie.apptk.layout.controls import BufferControl, SearchBufferControl
 from euporie.core.app.current import get_app
 from euporie.core.bars import SEARCH_BAR_BUFFER
-from euporie.core.commands import add_cmd
+from euporie.apptk.commands import add_cmd
 from euporie.core.key_binding.registry import (
     load_registered_bindings,
     register_bindings,

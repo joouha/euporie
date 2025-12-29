@@ -17,7 +17,7 @@ from euporie.apptk.layout.controls import UIContent, UIControl
 from euporie.apptk.mouse_events import MouseEvent, MouseEventType
 from euporie.core.app.current import get_app
 from euporie.core.bars.status import StatusContainer
-from euporie.core.commands import Command, add_cmd, commands
+from euporie.apptk.commands import Command, add_cmd, commands
 from euporie.core.key_binding.registry import register_bindings
 from euporie.core.layout.decor import FocusedStyle
 from euporie.core.margins import MarginContainer, ScrollbarMargin

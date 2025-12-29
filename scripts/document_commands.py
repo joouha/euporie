@@ -7,7 +7,7 @@ import subprocess
 import sys
 from textwrap import dedent, indent
 
-from euporie.core.commands import commands
+from euporie.apptk.commands import commands
 
 if sys.version_info[0] >= 3 and sys.version_info[1] >= 10:
     from importlib.metadata import entry_points

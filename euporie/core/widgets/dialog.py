@@ -43,7 +43,7 @@ from euporie.core.border import (
     LowerLeftHalfLine,
     UpperRightHalfLine,
 )
-from euporie.core.commands import add_cmd
+from euporie.apptk.commands import add_cmd
 from euporie.core.ft.utils import FormattedTextAlign, align, lex
 from euporie.core.layout.decor import FocusedStyle
 from euporie.core.widgets.decor import Border, Shadow
@@ -889,7 +889,7 @@ class ShortcutsDialog(Dialog):
 
         from euporie.apptk.data_structures import DiInt
         from euporie.core.border import InvisibleLine
-        from euporie.core.commands import get_cmd
+        from euporie.apptk.commands import get_cmd
         from euporie.core.ft.table import Table
         from euporie.core.ft.utils import FormattedTextAlign
         from euporie.core.key_binding.registry import BINDINGS

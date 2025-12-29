@@ -11,7 +11,7 @@ from euporie.apptk.layout.dimension import Dimension
 
 from euporie.apptk.layout.containers import DummyContainer, DynamicContainer, HSplit
 from euporie.core.app.current import get_app
-from euporie.core.commands import add_cmd
+from euporie.apptk.commands import add_cmd
 from euporie.core.convert.registry import find_route
 from euporie.core.filters import pager_has_focus
 from euporie.core.key_binding.registry import (

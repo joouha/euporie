@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from euporie.core.commands import get_cmd
+from euporie.apptk.commands import get_cmd
 
 
 def k(cmd: str) -> str:

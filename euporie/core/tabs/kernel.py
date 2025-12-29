@@ -19,7 +19,7 @@ from euporie.apptk.history import DummyHistory, InMemoryHistory
 
 from euporie.core.app.current import get_app
 from euporie.core.comm.registry import open_comm
-from euporie.core.commands import add_cmd
+from euporie.apptk.commands import add_cmd
 from euporie.core.completion import DeduplicateCompleter, KernelCompleter, LspCompleter
 from euporie.core.diagnostics import Report
 from euporie.core.filters import kernel_tab_has_focus

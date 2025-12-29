@@ -16,8 +16,8 @@ from euporie.apptk.key_binding.key_bindings import (
     merge_key_bindings,
 )
 
-from euporie.core.commands import add_cmd
 from euporie.core.filters import micro_mode
+from euporie.apptk.commands import add_cmd
 from euporie.core.key_binding.registry import (
     load_registered_bindings,
     register_bindings,

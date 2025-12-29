@@ -63,7 +63,7 @@ if TYPE_CHECKING:
     from euporie.core.app.app import BaseApp
     from euporie.core.bars.status import StatusBarFields
     from euporie.core.border import GridStyle
-    from euporie.core.commands import Command
+    from euporie.apptk.commands import Command
 
 
 log = logging.getLogger(__name__)
@@ -148,16 +148,18 @@ class MenuItem:
         """Prevent the inherited `__init__` method setting this property value."""
 
     @classmethod
-    def from_command(cls, command: Command) -> MenuItem:
+    def from_cmd(cls, cmd: Command | str) -> MenuItem:
         """Create a menu item from a command."""
+        if isinstance(cmd, str):
+            cmd = get_cmd(cmd)
         return cls(
-            formatted_text=command.menu_title,
-            handler=command.run,
-            shortcut=command.key_str,
-            disabled=~command.filter,
-            hidden=command.hidden,
-            toggled=command.toggled,
-            description=command.description,
+            formatted_text=cmd.menu_title,
+            handler=cmd.run,
+            shortcut=cmd.key_str,
+            disabled=~cmd.filter,
+            hidden=cmd.hidden,
+            toggled=cmd.toggled,
+            description=cmd.description,
         )
 
     @property  # type: ignore

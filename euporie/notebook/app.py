@@ -11,6 +11,7 @@ from euporie.apptk.filters import Condition
 from euporie.apptk.formatted_text.base import to_formatted_text
 from euporie.apptk.layout.dimension import Dimension
 
+from euporie.apptk.commands import get_cmd
 from euporie.apptk.layout.containers import (
     ConditionalContainer,
     DynamicContainer,
@@ -27,7 +28,6 @@ from euporie.core.bars.command import CommandBar
 from euporie.core.bars.menu import ToolbarCompletionsMenu
 from euporie.core.bars.search import SearchBar
 from euporie.core.bars.status import StatusBar
-from euporie.core.commands import get_cmd
 from euporie.core.filters import has_tabs
 from euporie.core.ft.utils import truncate
 from euporie.core.key_binding.registry import register_bindings
@@ -407,68 +407,68 @@ class NotebookApp(BaseApp):
                     MenuItem(
                         "New",
                         children=[
-                            get_cmd("new-notebook").menu,
+                            MenuItem.from_cmd("new-notebook"),
                             separator,
-                            get_cmd("new-console").menu,
-                            get_cmd("new-text-file").menu,
+                            MenuItem.from_cmd("new-console"),
+                            MenuItem.from_cmd("new-text-file"),
                         ],
                     ),
-                    get_cmd("open-file").menu,
+                    MenuItem.from_cmd("open-file"),
                     separator,
-                    get_cmd("save-file").menu,
-                    get_cmd("save-as").menu,
-                    get_cmd("close-tab").menu,
+                    MenuItem.from_cmd("save-file"),
+                    MenuItem.from_cmd("save-as"),
+                    MenuItem.from_cmd("close-tab"),
                     separator,
-                    get_cmd("quit").menu,
+                    MenuItem.from_cmd("quit"),
                 ],
                 description="File management",
             ),
             MenuItem(
                 "Edit",
                 children=[
-                    get_cmd("undelete-cells").menu,
+                    MenuItem.from_cmd("undelete-cells"),
                     separator,
-                    get_cmd("cut-cells").menu,
-                    get_cmd("copy-cells").menu,
-                    get_cmd("paste-cells").menu,
+                    MenuItem.from_cmd("cut-cells"),
+                    MenuItem.from_cmd("copy-cells"),
+                    MenuItem.from_cmd("paste-cells"),
                     separator,
-                    get_cmd("copy-outputs").menu,
-                    get_cmd("clear-cell-outputs").menu,
+                    MenuItem.from_cmd("copy-outputs"),
+                    MenuItem.from_cmd("clear-cell-outputs"),
                     separator,
-                    get_cmd("find").menu,
+                    MenuItem.from_cmd("find"),
                     separator,
-                    get_cmd("reformat-cells").menu,
-                    get_cmd("reformat-notebook").menu,
+                    MenuItem.from_cmd("reformat-cells"),
+                    MenuItem.from_cmd("reformat-notebook"),
                 ],
                 description="Make changes to the current file",
             ),
             MenuItem(
                 "Run",
                 children=[
-                    get_cmd("run-selected-cells").menu,
-                    get_cmd("run-all-cells").menu,
+                    MenuItem.from_cmd("run-selected-cells"),
+                    MenuItem.from_cmd("run-all-cells"),
                 ],
                 description="Run notebook cells",
             ),
             MenuItem(
                 "Kernel",
                 children=[
-                    get_cmd("interrupt-kernel").menu,
-                    get_cmd("restart-kernel").menu,
-                    get_cmd("change-kernel").menu,
+                    MenuItem.from_cmd("interrupt-kernel"),
+                    MenuItem.from_cmd("restart-kernel"),
+                    MenuItem.from_cmd("change-kernel"),
                 ],
                 description="Manage the current notebook's kernel",
             ),
             MenuItem(
                 "Tabs",
                 children=[
-                    get_cmd("next-tab").menu,
-                    get_cmd("previous-tab").menu,
+                    MenuItem.from_cmd("next-tab"),
+                    MenuItem.from_cmd("previous-tab"),
                     separator,
                     MenuItem(
                         "Tab mode",
                         children=[
-                            get_cmd(f"set-tab-mode-{choice}").menu
+                            MenuItem.from_cmd(f"set-tab-mode-{choice}")
                             for choice in self.config.choices.tab_mode
                         ],
                     ),
@@ -481,13 +481,13 @@ class NotebookApp(BaseApp):
                     MenuItem(
                         "UI Elements",
                         children=[
-                            get_cmd("switch-background-pattern").menu,
-                            get_cmd("toggle-show-cell-borders").menu,
-                            get_cmd("toggle-always-show-tab-bar").menu,
-                            get_cmd("toggle-show-side-bar").menu,
-                            get_cmd("toggle-show-status-bar").menu,
-                            get_cmd("toggle-show-scroll-bar").menu,
-                            get_cmd("toggle-multiplexer-passthrough").menu,
+                            MenuItem.from_cmd("switch-background-pattern"),
+                            MenuItem.from_cmd("toggle-show-cell-borders"),
+                            MenuItem.from_cmd("toggle-always-show-tab-bar"),
+                            MenuItem.from_cmd("toggle-show-side-bar"),
+                            MenuItem.from_cmd("toggle-show-status-bar"),
+                            MenuItem.from_cmd("toggle-show-scroll-bar"),
+                            MenuItem.from_cmd("toggle-multiplexer-passthrough"),
                         ],
                         description="Turn elements of euporie's interface on or off",
                     ),
@@ -501,8 +501,8 @@ class NotebookApp(BaseApp):
                         ],
                         description="Configure syntax highlighting",
                     ),
-                    get_cmd("toggle-expand").menu,
-                    get_cmd("toggle-line-numbers").menu,
+                    MenuItem.from_cmd("toggle-expand"),
+                    MenuItem.from_cmd("toggle-line-numbers"),
                     self.config.menus.set_cursor_shape,
                     separator,
                     self.config.menus.edit_mode,
@@ -510,29 +510,29 @@ class NotebookApp(BaseApp):
                     MenuItem(
                         "Code tools",
                         children=[
-                            get_cmd("toggle-enable-language-servers").menu,
+                            MenuItem.from_cmd("toggle-enable-language-servers"),
                             separator,
                             self.config.menus.autosuggest,
-                            get_cmd("toggle-autoformat").menu,
-                            get_cmd("toggle-autocomplete").menu,
-                            get_cmd("toggle-autoinspect").menu,
+                            MenuItem.from_cmd("toggle-autoformat"),
+                            MenuItem.from_cmd("toggle-autocomplete"),
+                            MenuItem.from_cmd("toggle-autoinspect"),
                         ],
                         description="Turn code assistance tools on or off",
                     ),
-                    get_cmd("toggle-run-after-external-edit").menu,
+                    MenuItem.from_cmd("toggle-run-after-external-edit"),
                 ],
                 description="Make changes to euporie's configuration",
             ),
             MenuItem(
                 "Help",
                 children=[
-                    get_cmd("show-command-palette").menu,
-                    get_cmd("keyboard-shortcuts").menu,
-                    get_cmd("view-documentation").menu,
+                    MenuItem.from_cmd("show-command-palette"),
+                    MenuItem.from_cmd("keyboard-shortcuts"),
+                    MenuItem.from_cmd("view-documentation"),
                     separator,
-                    get_cmd("view-logs").menu,
+                    MenuItem.from_cmd("view-logs"),
                     separator,
-                    get_cmd("about").menu,
+                    MenuItem.from_cmd("about"),
                 ],
                 description="Get help",
             ),

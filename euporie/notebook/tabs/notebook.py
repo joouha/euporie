@@ -15,9 +15,9 @@ from euporie.apptk.filters import (
 )
 from euporie.apptk.layout.dimension import Dimension
 
+from euporie.apptk.commands import get_cmd
 from euporie.apptk.layout.containers import ConditionalContainer, VSplit
 from euporie.apptk.mouse_events import MouseEventType
-from euporie.core.commands import get_cmd
 from euporie.core.filters import (
     insert_mode,
     multiple_cells_selected,

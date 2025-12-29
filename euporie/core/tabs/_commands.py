@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 
-from euporie.core.commands import add_cmd
+from euporie.apptk.commands import add_cmd
 from euporie.core.filters import tab_can_save, tab_has_focus
 
 log = logging.getLogger(__name__)

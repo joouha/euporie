@@ -13,7 +13,7 @@ from upath import UPath
 from euporie.apptk.layout.containers import Window, WindowAlign
 from euporie.apptk.layout.controls import FormattedTextControl
 from euporie.core.app.current import get_app
-from euporie.core.commands import add_cmd
+from euporie.apptk.commands import add_cmd
 from euporie.core.filters import tab_can_save, tab_has_focus
 from euporie.core.key_binding.registry import (
     register_bindings,

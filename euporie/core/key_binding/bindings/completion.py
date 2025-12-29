@@ -6,6 +6,7 @@ import logging
 
 from euporie.apptk.application import get_app
 from euporie.apptk.completion import Completion
+from euporie.apptk.commands import add_cmd
 from euporie.apptk.filters import (
     buffer_has_focus,
     completion_is_selected,
@@ -17,7 +18,6 @@ from euporie.apptk.key_binding.bindings.named_commands import (
     menu_complete_backward,
 )
 
-from euporie.core.commands import add_cmd
 from euporie.core.filters import cursor_in_leading_ws, insert_mode
 from euporie.core.key_binding.registry import register_bindings
 

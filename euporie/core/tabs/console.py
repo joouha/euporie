@@ -20,7 +20,7 @@ from upath import UPath
 
 from euporie.apptk.io import edit_in_editor
 from euporie.apptk.mouse_events import MouseEventType
-from euporie.core.commands import get_cmd
+from euporie.apptk.commands import get_cmd
 from euporie.core.diagnostics import Report
 from euporie.core.filters import (
     at_end_of_buffer,
