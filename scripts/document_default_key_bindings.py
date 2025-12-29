@@ -20,7 +20,7 @@ from euporie.apptk.commands import get_cmd
 from euporie.core.ft.table import Table
 from euporie.core.ft.utils import indent
 from euporie.core.key_binding.registry import BINDINGS
-from euporie.core.key_binding.utils import format_keys, parse_keys
+from euporie.apptk.key_binding.utils import format_keys, parse_keys
 
 groups = [
     "euporie.core.app.app:BaseApp",
