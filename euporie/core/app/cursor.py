@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 
 from euporie.apptk.cursor_shapes import CursorShape, CursorShapeConfig
 
-from euporie.core.filters import insert_mode, replace_mode
+from euporie.apptk.filters.modes import insert_mode, replace_mode
 
 if TYPE_CHECKING:
     from typing import Any

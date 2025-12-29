@@ -10,18 +10,15 @@ from typing import TYPE_CHECKING, ClassVar
 from uuid import uuid4
 
 from euporie.apptk.clipboard.base import ClipboardData
-from euporie.apptk.filters import (
-    Condition,
-)
 from euporie.apptk.layout.dimension import Dimension
 
 from euporie.apptk.commands import get_cmd
+from euporie.apptk.filters import Condition
+from euporie.apptk.filters.modes import insert_mode, replace_mode
 from euporie.apptk.layout.containers import ConditionalContainer, VSplit
 from euporie.apptk.mouse_events import MouseEventType
 from euporie.core.filters import (
-    insert_mode,
     multiple_cells_selected,
-    replace_mode,
 )
 from euporie.core.key_binding.registry import (
     load_registered_bindings,

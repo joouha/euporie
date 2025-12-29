@@ -17,13 +17,14 @@ from euporie.apptk.utils import get_cwidth
 
 from euporie.apptk.cache import FastDictCache, SimpleCache
 from euporie.apptk.data_structures import DiInt, Point
+from euporie.apptk.filters.environment import in_mplex
 from euporie.apptk.layout.containers import Float, Window
 from euporie.apptk.layout.controls import GetLinePrefixCallable, UIContent, UIControl
 from euporie.apptk.layout.screen import Char, WritePosition
 from euporie.core.app.current import get_app
 from euporie.core.convert.datum import Datum
 from euporie.core.convert.registry import find_route
-from euporie.core.filters import has_float, in_mplex
+from euporie.core.filters import has_float
 from euporie.core.ft.utils import _ZERO_WIDTH_FRAGMENTS
 
 if TYPE_CHECKING:

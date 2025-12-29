@@ -13,12 +13,12 @@ from euporie.apptk.filters import (
     has_completions,
     has_selection,
 )
+from euporie.apptk.filters.buffer import cursor_in_leading_ws
+from euporie.apptk.filters.modes import insert_mode
 from euporie.apptk.key_binding.bindings.named_commands import (
     menu_complete,
     menu_complete_backward,
 )
-
-from euporie.core.filters import cursor_in_leading_ws, insert_mode
 from euporie.core.key_binding.registry import register_bindings
 
 log = logging.getLogger(__name__)
