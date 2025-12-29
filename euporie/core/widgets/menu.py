@@ -175,15 +175,10 @@ class MenuItem:
     @property
     def has_toggles(self) -> bool:
         """Return true if any child items have a toggle state."""
-        toggles = False
-        for child in self.children:
-            if (
-                not toggles
-                and isinstance(child, MenuItem)
-                and child.toggled is not None
-            ):
-                toggles = True
-        return toggles
+        return any(
+            isinstance(child, MenuItem) and child.toggled is not None
+            for child in self.children
+        )
 
     @property
     def prefix(self) -> StyleAndTextTuples:
