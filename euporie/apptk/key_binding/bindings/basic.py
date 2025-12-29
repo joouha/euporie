@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import logging
 from functools import partial
 from typing import TYPE_CHECKING
 
@@ -25,9 +24,6 @@ from euporie.apptk.key_binding.utils import if_no_repeat
 if TYPE_CHECKING:
     from euporie.apptk.key_binding import KeyBindings, KeyPressEvent
 
-log = logging.getLogger(__name__)
-
-
 # Commands
 
 ## Typing keys
@@ -37,7 +33,6 @@ log = logging.getLogger(__name__)
 def type_key(event: KeyPressEvent) -> None:
     """Enter a key."""
     # Do not insert escape sequences
-    log.debug(event.data)
     if not event.data.startswith("\x1b"):
         event.current_buffer.insert_text(
             event.data * event.arg, overwrite=replace_mode()
