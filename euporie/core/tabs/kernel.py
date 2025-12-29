@@ -58,11 +58,11 @@ log = logging.getLogger(__name__)
 def autosuggest_factory(kind: str, history: History) -> AutoSuggest:
     """Generate autosuggesters."""
     if kind == "smart":
-        from euporie.core.suggest import SmartHistoryAutoSuggest
+        from euporie.apptk.auto_suggest import SmartHistoryAutoSuggest
 
         return SmartHistoryAutoSuggest(history)
     elif kind == "simple":
-        from euporie.core.suggest import SimpleHistoryAutoSuggest
+        from euporie.apptk.auto_suggest import SimpleHistoryAutoSuggest
 
         return SimpleHistoryAutoSuggest(history)
     else:
