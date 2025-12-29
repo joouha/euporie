@@ -10,26 +10,20 @@ from functools import lru_cache, partial
 from typing import TYPE_CHECKING
 from weakref import WeakKeyDictionary
 
-from euporie.apptk.auto_suggest import DummyAutoSuggest, DynamicAutoSuggest
-from euporie.apptk.completion.base import (
-    DynamicCompleter,
-    _MergedCompleter,
-)
+from euporie.apptk.completion.base import DynamicCompleter, _MergedCompleter
 from euporie.apptk.history import DummyHistory, InMemoryHistory
 
+from euporie.apptk.auto_suggest import DummyAutoSuggest, DynamicAutoSuggest
+from euporie.apptk.commands import add_cmd
+from euporie.apptk.completion.deduplicate import DeduplicateCompleter
 from euporie.core.app.current import get_app
 from euporie.core.comm.registry import open_comm
-from euporie.apptk.commands import add_cmd
-from euporie.core.completion import DeduplicateCompleter, KernelCompleter, LspCompleter
+from euporie.core.completion import KernelCompleter, LspCompleter
 from euporie.core.diagnostics import Report
 from euporie.core.filters import kernel_tab_has_focus
 from euporie.core.format import LspFormatter
 from euporie.core.history import KernelHistory
-from euporie.core.inspection import (
-    FirstInspector,
-    KernelInspector,
-    LspInspector,
-)
+from euporie.core.inspection import FirstInspector, KernelInspector, LspInspector
 from euporie.core.kernel import list_kernels
 from euporie.core.kernel.base import NoKernel
 from euporie.core.tabs.base import Tab
@@ -39,10 +33,10 @@ if TYPE_CHECKING:
     from pathlib import Path
     from typing import Any
 
-    from euporie.apptk.auto_suggest import AutoSuggest
     from euporie.apptk.completion.base import Completer
     from euporie.apptk.history import History
 
+    from euporie.apptk.auto_suggest import AutoSuggest
     from euporie.core.app.app import BaseApp
     from euporie.core.comm.base import Comm
     from euporie.core.format import Formatter
