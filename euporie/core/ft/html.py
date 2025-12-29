@@ -15,7 +15,7 @@ from math import ceil
 from operator import eq, ge, gt, le, lt
 from typing import TYPE_CHECKING, NamedTuple, cast, overload
 
-from euporie.apptk.application.current import get_app_session
+from euporie.apptk.application.current import get_app, get_app_session
 from euporie.apptk.filters.base import Condition
 from euporie.apptk.filters.utils import _always as always
 from euporie.apptk.filters.utils import _never as never
@@ -28,7 +28,6 @@ from upath import UPath
 
 from euporie.apptk.data_structures import DiBool, DiInt, DiStr, Size
 from euporie.apptk.layout.containers import WindowAlign
-from euporie.core.app.current import get_app
 from euporie.core.async_utils import get_or_create_loop, run_coro_sync
 from euporie.core.border import (
     DiLineStyle,

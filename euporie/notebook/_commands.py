@@ -39,9 +39,8 @@ def _new_text_file() -> None:
 @add_cmd(menu_title="Documentation", icon="", style="class:success")
 def _view_documentation() -> None:
     """Open the documentation in a web-view tab."""
+    from euporie.apptk.application.current import get_app
     from upath import UPath
-
-    from euporie.core.app.current import get_app
 
     get_app().open_file(UPath("https://euporie.readthedocs.io/"))
 

@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import logging
 
+from euporie.apptk.application.current import get_app
+
 from euporie.apptk.commands import add_cmd
 from euporie.core.filters import tab_can_save, tab_has_focus
 
@@ -13,8 +15,6 @@ log = logging.getLogger(__name__)
 @add_cmd(filter=tab_can_save, aliases=["w"])
 def _save_file(path: str = "") -> None:
     """Save the current file."""
-    from euporie.core.app.current import get_app
-
     if (tab := get_app().tab) is not None:
         from upath import UPath
 
@@ -27,8 +27,6 @@ def _save_file(path: str = "") -> None:
 @add_cmd(aliases=["wq", "x"])
 def _save_and_quit(path: str = "") -> None:
     """Save the current tab then quits euporie."""
-    from euporie.core.app.current import get_app
-
     app = get_app()
     if (tab := app.tab) is not None:
         from upath import UPath
@@ -50,8 +48,6 @@ def _save_as(path: str = "") -> None:
     if path:
         _save_file(path)
     else:
-        from euporie.core.app.current import get_app
-
         app = get_app()
         if dialog := app.get_dialog("save-as"):
             dialog.show(tab=app.tab)
@@ -60,8 +56,6 @@ def _save_as(path: str = "") -> None:
 @add_cmd(filter=tab_has_focus, title="Refresh the current tab")
 def _refresh_tab() -> None:
     """Reload the tab contents and reset the tab."""
-    from euporie.core.app.current import get_app
-
     if (tab := get_app().tab) is not None:
         tab.reset()
 

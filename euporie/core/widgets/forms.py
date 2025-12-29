@@ -11,6 +11,7 @@ from math import ceil, floor
 from typing import TYPE_CHECKING, cast
 from weakref import finalize
 
+from euporie.apptk.application.current import get_app
 from euporie.apptk.buffer import Buffer, ValidationState
 from euporie.apptk.document import Document
 from euporie.apptk.formatted_text.base import to_formatted_text
@@ -42,6 +43,7 @@ from euporie.apptk.layout.containers import (
     ConditionalContainer,
     DynamicContainer,
     Float,
+    MarginContainer,
     VSplit,
     Window,
     WindowAlign,
@@ -52,6 +54,7 @@ from euporie.apptk.layout.controls import (
     UIContent,
     UIControl,
 )
+from euporie.apptk.layout.margins import ScrollbarMargin
 from euporie.apptk.layout.processors import (
     AfterInput,
     BeforeInput,
@@ -62,12 +65,9 @@ from euporie.apptk.layout.processors import (
 from euporie.apptk.layout.screen import WritePosition
 from euporie.apptk.lexers import DynamicLexer, Lexer
 from euporie.apptk.mouse_events import MouseButton, MouseEvent, MouseEventType
-from euporie.core.app.current import get_app
 from euporie.core.border import InsetGrid
 from euporie.core.ft.utils import FormattedTextAlign, align
 from euporie.core.layout.mouse import MouseHandlerWrapper
-from euporie.apptk.layout.containers import MarginContainer
-from euporie.apptk.layout.margins import ScrollbarMargin
 from euporie.core.widgets.decor import Border, Shadow
 from euporie.core.widgets.layout import Box, ConditionalSplit
 

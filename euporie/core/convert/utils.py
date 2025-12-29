@@ -10,7 +10,7 @@ from math import ceil
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from euporie.core.app.current import get_app
+from euporie.apptk.application.current import get_app
 
 if TYPE_CHECKING:
     from typing import Any

@@ -6,6 +6,7 @@ import logging
 from functools import partial
 from typing import TYPE_CHECKING
 
+from euporie.apptk.application.current import get_app
 from euporie.apptk.formatted_text.base import to_formatted_text
 from euporie.apptk.formatted_text.utils import (
     fragment_list_to_text,
@@ -41,7 +42,6 @@ from euporie.apptk.layout.containers import (
 )
 from euporie.apptk.layout.controls import FormattedTextControl, UIContent
 from euporie.apptk.mouse_events import MouseEvent, MouseEventType
-from euporie.core.app.current import get_app
 from euporie.core.bars.status import StatusContainer
 from euporie.core.border import OuterHalfGrid
 from euporie.core.widgets.decor import Shadow

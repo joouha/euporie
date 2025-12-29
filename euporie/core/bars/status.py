@@ -6,6 +6,7 @@ import logging
 from typing import TYPE_CHECKING
 from weakref import WeakKeyDictionary
 
+from euporie.apptk.application.current import get_app
 from euporie.apptk.filters.utils import to_filter
 
 from euporie.apptk.cache import FastDictCache
@@ -21,7 +22,6 @@ from euporie.apptk.layout.containers import (
     to_container as ptk_to_container,
 )
 from euporie.apptk.layout.controls import FormattedTextControl
-from euporie.core.app.current import get_app
 from euporie.core.filters import has_toolbar
 
 if TYPE_CHECKING:

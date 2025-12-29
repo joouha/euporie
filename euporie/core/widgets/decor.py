@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
+from euporie.apptk.application.current import get_app
 from euporie.apptk.widgets.base import Label
 
 from euporie.apptk.data_structures import DiBool
@@ -17,7 +18,6 @@ from euporie.apptk.layout.containers import (
     VSplit,
     Window,
 )
-from euporie.core.app.current import get_app
 from euporie.core.border import ThinLine
 from euporie.core.layout.decor import DropShadow
 

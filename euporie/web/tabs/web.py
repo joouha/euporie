@@ -6,17 +6,16 @@ import asyncio
 import logging
 from typing import TYPE_CHECKING
 
+from euporie.apptk.application.current import get_app
 from euporie.apptk.layout.dimension import Dimension
 from upath import UPath
 
 from euporie.apptk.data_structures import DiBool
 from euporie.apptk.filters import Condition
-from euporie.apptk.layout.containers import HSplit, VSplit
-from euporie.core.app.current import get_app
+from euporie.apptk.layout.containers import HSplit, MarginContainer, VSplit
+from euporie.apptk.layout.margins import ScrollbarMargin
 from euporie.core.convert.mime import get_mime
 from euporie.core.layout.decor import FocusedStyle
-from euporie.apptk.layout.containers import MarginContainer
-from euporie.apptk.layout.margins import ScrollbarMargin
 from euporie.core.tabs.base import Tab
 from euporie.core.widgets.display import DisplayWindow
 from euporie.core.widgets.forms import Button, Text

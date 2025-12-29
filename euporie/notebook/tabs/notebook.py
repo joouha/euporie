@@ -15,7 +15,12 @@ from euporie.apptk.layout.dimension import Dimension
 from euporie.apptk.commands import get_cmd
 from euporie.apptk.filters import Condition
 from euporie.apptk.filters.modes import insert_mode, replace_mode
-from euporie.apptk.layout.containers import ConditionalContainer, VSplit
+from euporie.apptk.layout.containers import (
+    ConditionalContainer,
+    MarginContainer,
+    VSplit,
+)
+from euporie.apptk.layout.margins import ScrollbarMargin
 from euporie.apptk.mouse_events import MouseEventType
 from euporie.core.filters import (
     multiple_cells_selected,
@@ -28,8 +33,6 @@ from euporie.core.layout.cache import CachedContainer
 from euporie.core.layout.decor import Line, Pattern
 from euporie.core.layout.mouse import MouseHandlerWrapper
 from euporie.core.layout.scroll import ScrollingContainer
-from euporie.apptk.layout.containers import MarginContainer
-from euporie.apptk.layout.margins import ScrollbarMargin
 from euporie.core.nbformat import NOTEBOOK_EXTENSIONS, new_code_cell
 from euporie.core.style import KERNEL_STATUS_REPR
 from euporie.core.tabs.notebook import BaseNotebook

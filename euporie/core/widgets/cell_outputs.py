@@ -9,13 +9,14 @@ from functools import cache
 from pathlib import PurePath
 from typing import TYPE_CHECKING
 
+from euporie.apptk.application.current import get_app
+
 from euporie.apptk.cache import SimpleCache
 from euporie.apptk.layout.containers import (
     DynamicContainer,
     HSplit,
     to_container,
 )
-from euporie.core.app.current import get_app
 from euporie.core.convert.registry import find_route
 from euporie.core.widgets.display import Display
 from euporie.core.widgets.layout import Box

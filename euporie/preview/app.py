@@ -9,13 +9,13 @@ import sys
 from functools import partial
 from typing import TYPE_CHECKING, cast
 
+from euporie.apptk.application.current import get_app
 from euporie.apptk.output.defaults import create_output
 
 from euporie.apptk.io import PseudoTTY
 from euporie.apptk.layout.containers import DynamicContainer, FloatContainer, Window
 from euporie.apptk.output.vt100 import Vt100_Output
 from euporie.core.app.app import BaseApp
-from euporie.core.app.current import get_app
 from euporie.core.key_binding.registry import register_bindings
 from euporie.preview.tabs.notebook import PreviewNotebook
 

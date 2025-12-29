@@ -18,11 +18,11 @@ from linecache import cache as line_cache
 from pathlib import Path
 from typing import TYPE_CHECKING, cast
 
+from euporie.apptk.application.current import get_app
 from pygments import highlight
 from pygments.formatters import Terminal256Formatter
 from pygments.lexers import Python3TracebackLexer
 
-from euporie.core.app.current import get_app
 from euporie.core.kernel.base import BaseKernel, KernelInfo, MsgCallbacks
 
 if TYPE_CHECKING:

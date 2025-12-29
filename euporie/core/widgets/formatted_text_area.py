@@ -5,7 +5,6 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-from euporie.apptk.layout.margins import ConditionalMargin
 from euporie.apptk.widgets import TextArea
 
 from euporie.apptk.filters import to_filter
@@ -14,8 +13,8 @@ from euporie.apptk.formatted_text import (
     split_lines,
     to_formatted_text,
 )
+from euporie.apptk.layout.margins import ConditionalMargin, NumberedMargin
 from euporie.apptk.layout.processors import DynamicProcessor, Processor, Transformation
-from euporie.apptk.layout.margins import NumberedMargin
 
 if TYPE_CHECKING:
     from typing import Any

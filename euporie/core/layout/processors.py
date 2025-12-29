@@ -14,8 +14,8 @@ if TYPE_CHECKING:
 
     from euporie.apptk.formatted_text.base import StyleAndTextTuples
 
-    from euporie.apptk.layout.processors import TransformationInput
     from euporie.apptk.diagnostics import Report
+    from euporie.apptk.layout.processors import TransformationInput
 
 
 log = logging.getLogger(__name__)

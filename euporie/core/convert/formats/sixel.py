@@ -5,8 +5,9 @@ from __future__ import annotations
 from functools import partial
 from typing import TYPE_CHECKING
 
+from euporie.apptk.application.current import get_app
+
 from euporie.apptk.filters.environment import command_exists, have_modules
-from euporie.core.app.current import get_app
 from euporie.core.convert.formats.common import (
     chafa_convert_cmd,
     chafa_convert_py,

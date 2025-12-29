@@ -4,10 +4,9 @@ from __future__ import annotations
 
 from unittest.mock import Mock
 
-from euporie.apptk.application.current import get_app_session, set_app
+from euporie.apptk.application.current import get_app, get_app_session, set_app
 
 from euporie.core.app.app import BaseApp
-from euporie.core.app.current import get_app
 
 
 def test_get_app_with_running_session() -> None:

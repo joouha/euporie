@@ -11,9 +11,10 @@ from itertools import pairwise
 from typing import TYPE_CHECKING, Generic, TypeVar
 from weakref import ReferenceType, WeakValueDictionary, finalize, ref
 
+from euporie.apptk.application.current import get_app
+
 from euporie.apptk.data_structures import Size
 from euporie.apptk.layout.containers import WindowAlign
-from euporie.core.app.current import get_app
 from euporie.core.async_utils import get_or_create_loop, run_coro_sync
 from euporie.core.convert.registry import (
     _CONVERTOR_ROUTE_CACHE,

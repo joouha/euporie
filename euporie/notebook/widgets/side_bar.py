@@ -6,6 +6,7 @@ import logging
 from functools import partial
 from typing import TYPE_CHECKING
 
+from euporie.apptk.application.current import get_app
 from euporie.apptk.formatted_text.base import to_formatted_text
 from euporie.apptk.key_binding.key_bindings import (
     KeyBindings,
@@ -24,7 +25,6 @@ from euporie.apptk.layout.containers import (
 from euporie.apptk.layout.controls import UIContent, UIControl
 from euporie.apptk.layout.screen import WritePosition
 from euporie.apptk.mouse_events import MouseButton, MouseEventType
-from euporie.core.app.current import get_app
 from euporie.core.layout.decor import FocusedStyle, Line
 from euporie.core.widgets.forms import ToggleButton, ToggleButtons
 
@@ -236,7 +236,7 @@ class SideBar:
             on_resize: Optional callback called when the sidebar is resized.
             on_change: Optional callback called when the active panel changes.
         """
-        from euporie.core.app.current import get_app
+        from euporie.apptk.application.current import get_app
 
         self._width = width
         self.on_resize: Event[SideBar] = Event(self, on_resize)

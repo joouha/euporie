@@ -6,6 +6,7 @@ import logging
 from functools import cache
 from typing import TYPE_CHECKING
 
+from euporie.apptk.application.current import get_app
 from euporie.apptk.layout.layout import walk
 from euporie.apptk.layout.mouse_handlers import MouseEvent, MouseHandlers
 
@@ -18,7 +19,6 @@ from euporie.apptk.layout.containers import (
     to_container,
 )
 from euporie.apptk.layout.screen import Screen, WritePosition
-from euporie.core.app.current import get_app
 
 if TYPE_CHECKING:
     from collections.abc import Callable
