@@ -11,7 +11,7 @@ from euporie.apptk.layout.dimension import Dimension
 
 from euporie.apptk.layout.containers import MarginContainer, VSplit
 from euporie.apptk.layout.margins import ScrollbarMargin
-from euporie.core.layout.scroll import ScrollingContainer
+from euporie.apptk.layout.scroll import ScrollingContainer
 from euporie.core.tabs.base import Tab
 from euporie.core.widgets.tree import JsonView
 
