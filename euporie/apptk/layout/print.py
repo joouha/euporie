@@ -1,4 +1,4 @@
-"""Defines a container which displays all children at full height vertially stacked."""
+"""Defines a container which displays all children at full height vertically stacked."""
 
 from __future__ import annotations
 

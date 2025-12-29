@@ -55,6 +55,7 @@ from euporie.apptk.layout.controls import (
     UIControl,
 )
 from euporie.apptk.layout.margins import ScrollbarMargin
+from euporie.apptk.layout.mouse import MouseHandlerWrapper
 from euporie.apptk.layout.processors import (
     AfterInput,
     BeforeInput,
@@ -67,7 +68,6 @@ from euporie.apptk.lexers import DynamicLexer, Lexer
 from euporie.apptk.mouse_events import MouseButton, MouseEvent, MouseEventType
 from euporie.core.border import InsetGrid
 from euporie.core.ft.utils import FormattedTextAlign, align
-from euporie.core.layout.mouse import MouseHandlerWrapper
 from euporie.core.widgets.decor import Border, Shadow
 from euporie.core.widgets.layout import Box, ConditionalSplit
 
