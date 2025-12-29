@@ -19,7 +19,7 @@ from euporie.apptk.completion.deduplicate import DeduplicateCompleter
 from euporie.core.app.current import get_app
 from euporie.core.comm.registry import open_comm
 from euporie.core.completion import KernelCompleter, LspCompleter
-from euporie.core.diagnostics import Report
+from euporie.apptk.diagnostics import Report
 from euporie.core.filters import kernel_tab_has_focus
 from euporie.core.format import LspFormatter
 from euporie.core.history import KernelHistory

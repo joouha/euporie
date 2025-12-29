@@ -60,7 +60,7 @@ from euporie.apptk.layout.processors import (  # HighlightSearchProcessor,
 )
 from euporie.apptk.lexers import DynamicLexer, PygmentsLexer, SimpleLexer
 from euporie.core.app.current import get_app
-from euporie.core.diagnostics import Report
+from euporie.apptk.diagnostics import Report
 from euporie.core.filters import scrollable
 from euporie.core.key_binding.registry import (
     load_registered_bindings,
