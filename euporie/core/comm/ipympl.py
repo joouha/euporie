@@ -319,7 +319,7 @@ class ToolbarModel(IpyWidgetComm):
 
     def create_view(self, parent: OutputParent) -> CommView:
         """Create a new view of the toolbar ipywidget."""
-        from euporie.core.reference import FA_ICONS
+        from euporie.apptk.styles.icons import FA_ICONS
 
         buttons = {}
         children = []

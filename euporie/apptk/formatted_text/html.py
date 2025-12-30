@@ -552,12 +552,12 @@ def get_color(value: str) -> str:
                 return ""
         return "#" + "".join(hexes)
     else:
-        from euporie.core.reference import KNOWN_COLORS
+        from euporie.apptk.styles.base import KNOWN_COLORS
 
         if value == "transparent" or value in KNOWN_COLORS:
             return value
 
-        from euporie.core.reference import NAMED_COLORS
+        from euporie.apptk.styles.named_colors import NAMED_COLORS
 
         if named_color := NAMED_COLORS.get(value.lower()):
             return named_color
