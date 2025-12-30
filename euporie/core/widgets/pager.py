@@ -18,7 +18,7 @@ from euporie.core.key_binding.registry import (
     load_registered_bindings,
     register_bindings,
 )
-from euporie.core.layout.decor import Line
+from euporie.apptk.layout.decor import Line
 from euporie.core.widgets.cell_outputs import CellOutput, CellOutputDataElement
 from euporie.core.widgets.display import Display
 from euporie.core.widgets.layout import Box

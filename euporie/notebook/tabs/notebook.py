@@ -32,7 +32,7 @@ from euporie.core.key_binding.registry import (
     load_registered_bindings,
     register_bindings,
 )
-from euporie.core.layout.decor import Line, Pattern
+from euporie.apptk.layout.decor import Line, Pattern
 from euporie.core.nbformat import NOTEBOOK_EXTENSIONS, new_code_cell
 from euporie.core.style import KERNEL_STATUS_REPR
 from euporie.core.tabs.notebook import BaseNotebook

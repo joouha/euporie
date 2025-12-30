@@ -41,12 +41,12 @@ if TYPE_CHECKING:
     from euporie.apptk.layout.dimension import AnyDimension
     from euporie.apptk.layout.mouse_handlers import MouseHandlers
 
+    from euporie.apptk.color import ColorPalette
     from euporie.apptk.filters import FilterOrBool
     from euporie.apptk.formatted_text import StyleAndTextTuples
     from euporie.apptk.key_binding import KeyBindingsBase
     from euporie.apptk.layout.containers import AnyContainer
     from euporie.apptk.layout.screen import Screen, WritePosition
-    from euporie.core.style import ColorPalette
 
 
 log = logging.getLogger(__name__)

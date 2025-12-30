@@ -21,7 +21,7 @@ from euporie.apptk.layout.containers import HSplit, VSplit
 from euporie.apptk.layout.processors import BeforeInput
 from euporie.core.comm.base import Comm, CommView
 from euporie.core.kernel.jupyter import MsgCallbacks
-from euporie.core.layout.decor import FocusedStyle
+from euporie.apptk.layout.decor import FocusedStyle
 from euporie.core.widgets.decor import Border
 from euporie.core.widgets.forms import (
     BaseButton,

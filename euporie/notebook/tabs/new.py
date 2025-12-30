@@ -15,7 +15,7 @@ from euporie.apptk.data_structures import DiBool
 from euporie.apptk.layout.containers import HSplit, VSplit, Window
 from euporie.apptk.mouse_events import MouseButton, MouseEventType
 from euporie.core.bars.status import StatusContainer
-from euporie.core.layout.decor import FocusedStyle, Pattern
+from euporie.apptk.layout.decor import FocusedStyle, Pattern
 from euporie.core.tabs.base import Tab
 from euporie.core.widgets.display import Display
 from euporie.core.widgets.file_browser import FileBrowser
