@@ -17,12 +17,10 @@ from typing import TYPE_CHECKING, NamedTuple, cast, overload
 
 from euporie.apptk.application.current import get_app, get_app_session
 from euporie.apptk.filters.base import Condition
-from euporie.apptk.filters.utils import _always as always
-from euporie.apptk.filters.utils import _never as never
 from euporie.apptk.filters.utils import to_filter
-from euporie.apptk.layout.dimension import Dimension
 from euporie.apptk.utils import Event
 from fsspec.core import url_to_fs
+from prompt_toolkit.formatted_text.html import HTML as PtkHTML
 from upath import UPath
 
 from euporie.apptk.border import (
@@ -52,6 +50,7 @@ from euporie.apptk.convert.mime import get_format
 from euporie.apptk.data_structures import DiBool, DiInt, DiStr, Size
 from euporie.apptk.enums import HorizontalAlign, VerticalAlign
 from euporie.apptk.eventloop.utils import get_or_create_loop, run_coro_sync
+from euporie.apptk.formatted_text.table import Cell, Table, compute_padding
 from euporie.apptk.formatted_text.utils import (
     add_border,
     align,
@@ -70,8 +69,9 @@ from euporie.apptk.formatted_text.utils import (
     truncate,
     valign,
 )
-from euporie.apptk.layout.containers import WindowAlign
-from euporie.apptk.formatted_text.table import Cell, Table, compute_padding
+
+always = to_filter(True)
+never = to_filter(False)
 
 sub_trans = str.maketrans(
     "0123456789+-=()aeijoruvxβγρφχ",
@@ -2528,365 +2528,7 @@ _BROWSER_CSS: CssSelectors = {
             "list_style_type": "disclosure-open",
             "display": "list-item",
         },
-        # Dataframes for Jupyter
-        ((CssSelector(item="table.dataframe"),),): {
-            "border_top_width": "0 !important",
-            "border_left_width": "0 !important",
-            "border_bottom_width": "0 !important",
-            "border_right_width": "0 !important",
-            "border_collapse": "collapse",
-            "_pt_class": "dataframe",
-        },
-        (
-            (CssSelector(item="table.dataframe"), CssSelector(item="td")),
-            (CssSelector(item="table.dataframe"), CssSelector(item="th")),
-        ): {
-            "border_top_width": "0",
-            "border_left_width": "0",
-            "border_bottom_width": "0",
-            "border_right_width": "0",
-            "padding_left": "1em",
-        },
-        (
-            (
-                CssSelector(item="table.dataframe"),
-                CssSelector(item="th"),
-            ),
-        ): {
-            "_pt_class": "dataframe,th",
-        },
-        (
-            (
-                CssSelector(item="table.dataframe"),
-                CssSelector(item="th", pseudo=":first-child"),
-            ),
-            (
-                CssSelector(item=".dataframe"),
-                CssSelector(item="th", pseudo=":last-child"),
-            ),
-            (
-                CssSelector(item=".dataframe"),
-                CssSelector(item="td", pseudo=":last-child"),
-            ),
-        ): {"padding_right": "1em"},
-        ((CssSelector(item="table.dataframe"), CssSelector(item="td")),): {
-            "_pt_class": "dataframe,td"
-        },
-        (
-            (
-                CssSelector(item="table.dataframe"),
-                CssSelector(item="tr", pseudo=":nth-child(odd)"),
-                CssSelector(item="td"),
-            ),
-        ): {"_pt_class": "dataframe,row-odd,td"},
-        ## Markdown specific
-        # Set page margins only if we are rendering a markdown file
-        ((CssSelector(item="::root", attr="[_initial_format=markdown]"),),): {
-            "max_width": "100em",
-            "margin_left": "auto",
-            "margin_right": "auto",
-        },
-        ((CssSelector(item="::root", attr="[_base=.]"),),): {
-            "max_width": "unset",
-            "margin_left": "unset",
-            "margin_right": "unset",
-        },
-        (
-            (
-                CssSelector(item="::root", attr="[_initial_format=markdown]"),
-                CssSelector(item="h1"),
-            ),
-            (
-                CssSelector(item="::root", attr="[_initial_format=markdown]"),
-                CssSelector(item="h2"),
-            ),
-            (
-                CssSelector(item="::root", attr="[_initial_format=markdown]"),
-                CssSelector(item="h3"),
-            ),
-            (
-                CssSelector(item="::root", attr="[_initial_format=markdown]"),
-                CssSelector(item="h4"),
-            ),
-            (
-                CssSelector(item="::root", attr="[_initial_format=markdown]"),
-                CssSelector(item="h5"),
-            ),
-            (
-                CssSelector(item="::root", attr="[_initial_format=markdown]"),
-                CssSelector(item="h6"),
-            ),
-        ): {
-            "text_align": "center",
-        },
-        (
-            (
-                CssSelector(item="::root", attr="[_initial_format=markdown]"),
-                CssSelector(item="h1"),
-            ),
-        ): {
-            "font_weight": "bold",
-            "text_decoration": "underline",
-            "border_top_style": "double",
-            "border_right_style": "double",
-            "border_bottom_style": "double",
-            "border_left_style": "double",
-            "border_top_width": "0.34em",
-            "border_right_width": "0.34em",
-            "border_bottom_width": "0.34em",
-            "border_left_width": "0.34em",
-            "border_top_color": "ansiyellow",
-            "border_right_color": "ansiyellow",
-            "border_bottom_color": "ansiyellow",
-            "border_left_color": "ansiyellow",
-            "padding_bottom": "0",
-        },
-        (
-            (
-                CssSelector(item="::root", attr="[_initial_format=markdown]"),
-                CssSelector(item="h2"),
-            ),
-        ): {
-            "font_weight": "bold",
-            "border_top_style": "solid",
-            "border_right_style": "solid",
-            "border_bottom_style": "solid",
-            "border_left_style": "solid",
-            "border_top_width": "0.34em",
-            "border_right_width": "0.34em",
-            "border_bottom_width": "0.34em",
-            "border_left_width": "0.34em",
-            "border_top_color": "#888888",
-            "border_right_color": "#888888",
-            "border_bottom_color": "#888888",
-            "border_left_color": "#888888",
-            "padding_bottom": "0",
-        },
-        (
-            (
-                CssSelector(item="::root", attr="[_initial_format=markdown]"),
-                CssSelector(item="h3"),
-            ),
-        ): {
-            "font_weight": "bold",
-            "font_style": "italic",
-            "border_top_style": "solid",
-            "border_right_style": "solid",
-            "border_bottom_style": "solid",
-            "border_left_style": "solid",
-            "border_top_width": "0.1em",
-            "border_right_width": "0.1em",
-            "border_bottom_width": "0.1em",
-            "border_left_width": "0.1em",
-            "border_top_color": "#888888",
-            "border_right_color": "#888888",
-            "border_bottom_color": "#888888",
-            "border_left_color": "#888888",
-            "margin_left": "auto",
-            "margin_right": "auto",
-            "padding_top": "0",
-            "padding_right": "1em",
-            "padding_bottom": "0",
-            "padding_left": "1em",
-        },
-        (
-            (
-                CssSelector(item="::root", attr="[_initial_format=markdown]"),
-                CssSelector(item="h4"),
-            ),
-        ): {
-            "text_weight": "bold",
-            "text_decoration": "underline",
-            "border_bottom_color": "#888888",
-            "margin_top": "1rem",
-            "margin_bottom": "1rem",
-        },
-        (
-            (
-                CssSelector(item="::root", attr="[_initial_format=markdown]"),
-                CssSelector(item="h5"),
-            ),
-        ): {
-            "font_weight": "bold",
-            "border_bottom_color": "#888888",
-            "margin_top": "1rem",
-            "margin_bottom": "1rem",
-        },
-        (
-            (
-                CssSelector(item="::root", attr="[_initial_format=markdown]"),
-                CssSelector(item="h6"),
-            ),
-        ): {
-            "font_style": "italic",
-            "border_bottom_color": "#888888",
-            "margin_top": "1rem",
-            "margin_bottom": "1rem",
-        },
-        (
-            (
-                CssSelector(item="::root", attr="[_initial_format=markdown]"),
-                CssSelector(item="ol"),
-                CssSelector(item="li"),
-                CssSelector(item="::marker"),
-            ),
-        ): {"color": "ansicyan"},
-        (
-            (
-                CssSelector(item="::root", attr="[_initial_format=markdown]"),
-                CssSelector(item="ul"),
-                CssSelector(item="li"),
-                CssSelector(item="::marker"),
-            ),
-        ): {"color": "ansiyellow"},
-        (
-            (
-                CssSelector(item="::root", attr="[_initial_format=markdown]"),
-                CssSelector(item="blockquote"),
-            ),
-        ): {
-            "margin_top": "1em",
-            "margin_bottom": "1em",
-            "padding_left": "1em",
-            "border_left_width": "thick",
-            "border_left_style": "solid",
-            "border_left_color": "darkmagenta",
-        },
-        (
-            (
-                CssSelector(item="::root", attr="[_initial_format=markdown]"),
-                CssSelector(item=".block"),
-            ),
-        ): {"display": "block"},
-        (
-            (
-                CssSelector(item="::root", attr="[_initial_format=markdown]"),
-                CssSelector(item="td"),
-            ),
-        ): {
-            "display": "table-cell",
-            "border_top_style": "solid",
-            "border_right_style": "solid",
-            "border_bottom_style": "solid",
-            "border_left_style": "solid",
-            "border_top_width": "0.1em",
-            "border_right_width": "0.1em",
-            "border_bottom_width": "0.1em",
-            "border_left_width": "0.1em",
-            "padding_left": "1em",
-            "padding_right": "1em",
-            # "_pt_class": "markdown,table,border",
-        },
-        (
-            (
-                CssSelector(item="::root", attr="[_initial_format=markdown]"),
-                CssSelector(item="th"),
-            ),
-        ): {
-            "display": "table-cell",
-            "border_top_style": "solid",
-            "border_right_style": "solid",
-            "border_bottom_style": "solid",
-            "border_left_style": "solid",
-            "border_top_width": "0.34em",
-            "border_right_width": "0.34em",
-            "border_bottom_width": "0.34em",
-            "border_left_width": "0.34em",
-            "padding_left": "1em",
-            "padding_right": "1em",
-            "font_weight": "bold",
-            # "_pt_class": "markdown,table,border",
-        },
-        (
-            (
-                CssSelector(item="::root", attr="[_initial_format=markdown]"),
-                CssSelector(item="code"),
-            ),
-        ): {
-            "display": "inline",
-            "_pt_class": "markdown,code",
-        },
-        (
-            (CssSelector(item="::latex"),),
-            (
-                CssSelector(item="::root", attr="[_initial_format=markdown]"),
-                CssSelector(item=".math"),
-            ),
-        ): {
-            "_format": "latex",
-            "text_transform": "latex",
-            "display": "inline-block",
-            "vertical_align": "top",
-            "white_space": "pre",
-        },
-        (
-            (
-                CssSelector(item="::root", attr="[_initial_format=markdown]"),
-                CssSelector(item=".math.block"),
-            ),
-        ): {
-            "text_align": "center",
-            "display": "block",
-        },
-        (
-            (
-                CssSelector(item="::root", attr="[_initial_format=markdown]"),
-                CssSelector(item="pre"),
-                CssSelector(comb=">", item="code"),
-            ),
-        ): {
-            "display": "block",
-            "border_top_style": "solid",
-            "border_top_width": "1px",
-            "border_right_style": "solid",
-            "border_right_width": "1px",
-            "border_bottom_style": "solid",
-            "border_bottom_width": "1px",
-            "border_left_style": "solid",
-            "border_left_width": "1px",
-            "_pt_class": "markdown,code,block",
-        },
-        (
-            (
-                CssSelector(item="::root", attr="[_initial_format=markdown]"),
-                CssSelector(item="pre"),
-                CssSelector(comb=">", item="code"),
-                CssSelector(item="*"),
-            ),
-        ): {
-            "_pt_class": "markdown,code,block",
-        },
-        (
-            (
-                CssSelector(item="::root", attr="[_initial_format=markdown]"),
-                CssSelector(item="img"),
-            ),
-            (
-                CssSelector(item="::root", attr="[_initial_format=markdown]"),
-                CssSelector(item="svg"),
-            ),
-        ): {
-            "display": "inline-block",
-            "overflow_x": "hidden",
-            "overflow_y": "hidden",
-            "vertical_align": "middle",
-        },
-    },
-    get_app().config.filters.wrap_cell_outputs: {
-        ((CssSelector(item="table.dataframe"),),): {
-            "max_width": "100%",
-        },
-        (
-            (
-                CssSelector(item="::root", attr="[_initial_format=markdown]"),
-                CssSelector(item="pre"),
-                CssSelector(comb=">", item="code"),
-            ),
-        ): {
-            "max_width": "100%",
-            "overflow_x": "auto",
-        },
-    },
+    }
 }
 
 
@@ -3262,7 +2904,6 @@ class CustomHTMLParser(HTMLParser):
             dom=self.dom,
             parent=None,
             attrs=[
-                ("_initial_format", self.dom._initial_format),
                 ("_base", str(self.dom.base)),
             ],
         )
@@ -3480,7 +3121,7 @@ def parse_media_condition(condition: str, dom: HTML) -> Filter:
     return result
 
 
-class HTML:
+class HTML(PtkHTML):
     """A HTML formatted text renderer.
 
     Accepts a HTML string and renders it at a given width.
@@ -3488,7 +3129,7 @@ class HTML:
 
     def __init__(
         self,
-        markup: str,
+        value: str,
         base: Path | str | None = None,
         width: int | None = None,
         height: int | None = None,
@@ -3502,12 +3143,11 @@ class HTML:
         defer_assets: bool = False,
         on_update: Callable[[HTML], None] | None = None,
         on_change: Callable[[HTML], None] | None = None,
-        _initial_format: str = "",
     ) -> None:
         """Initialize the markdown formatter.
 
         Args:
-            markup: The markdown text to render
+            value: The markdown text to render
             base: The base url for the HTML dom
             width: The width in characters available for rendering. If :py:const:`None`
                 the terminal width will be used
@@ -3524,10 +3164,9 @@ class HTML:
             defer_assets: Whether to render the page before remote assets are loaded
             on_update: An optional callback triggered when the DOM updates
             on_change: An optional callback triggered when the DOM changes
-            _initial_format: The initial format of the data being displayed
 
         """
-        self.markup = markup.strip()
+        self.value = value.strip()
         self.base = UPath(base or ".")
         self.title = ""
 
@@ -3543,7 +3182,6 @@ class HTML:
         self.fill = fill
         self.collapse_root_margin = collapse_root_margin
         self.paste_fixed = paste_fixed
-        self._initial_format = _initial_format
 
         self.graphic_data: set[Datum] = set()
         self.mouse_handler = mouse_handler
@@ -3571,7 +3209,7 @@ class HTML:
     @cached_property
     def soup(self) -> Node:
         """Parse the markup."""
-        return self.parser.parse(self.markup)
+        return self.parser.parse(self.value)
 
     def process_dom(self) -> None:
         """Load CSS styles and image resources.
@@ -4016,6 +3654,8 @@ class HTML:
             Formatted text
 
         """
+        from euporie.apptk.layout.dimension import Dimension
+
         ft = []
 
         table_theme = element.theme
@@ -4385,7 +4025,7 @@ class HTML:
             "latex",
             fg=theme.color or None,
             bg=theme.background_color or None,
-            align=WindowAlign.CENTER,
+            align=HorizontalAlign.CENTER,
         )
         self.graphic_data.add(datum)
 
@@ -5059,6 +4699,10 @@ class HTML:
         if not self.formatted_text:
             self.render(width=None, height=None)
         return self.formatted_text
+
+    def __repr__(self) -> str:
+        """Representation of Python object."""
+        return f"HTML({self.value[:10]!r})"
 
 
 if __name__ == "__main__":

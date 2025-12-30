@@ -19,7 +19,7 @@ if TYPE_CHECKING:
     from euporie.apptk.formatted_text.base import StyleAndTextTuples
 
     from euporie.apptk.convert.datum import Datum
-    from euporie.core.ft.html import HTML
+    from euporie.apptk.formatted_text.html import HTML, CssSelectors
 
 log = logging.getLogger(__name__)
 
@@ -37,23 +37,31 @@ async def html_to_ft(
     fg: str | None = None,
     bg: str | None = None,
     extend: bool = True,
+    css: CssSelectors | None = None,
     **kwargs: Any,
 ) -> StyleAndTextTuples:
     """Convert HTML to formatted text."""
-    from euporie.core.ft.html import HTML
+    from euporie.apptk.formatted_text.html import HTML
 
     data = datum.data
     markup = data.decode() if isinstance(data, bytes) else data
+
+    css = css or {}
+    if datum.root.format == "markdown":
+        from euporie.apptk.css import MARKDOWN_CSS
+
+        css = {**MARKDOWN_CSS, **css}
+
     html = _html_cache.get(
         (datum.hash, *kwargs.items()),
         partial(
             HTML,
             markup,
             width=cols,
+            css=css,
             base=datum.path,
             collapse_root_margin=True,
             fill=extend,
-            _initial_format=datum.root.format,
         ),
     )
     return await html._render(cols, rows)

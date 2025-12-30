@@ -831,7 +831,7 @@ class Label:
         data = value() if callable(value) else value
         if self.html():
             from euporie.apptk.formatted_text.utils import to_plain_text
-            from euporie.core.ft.html import HTML
+            from euporie.apptk.formatted_text.html import HTML
 
             return HTML(to_plain_text(data), collapse_root_margin=True, fill=False)
         return data
