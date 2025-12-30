@@ -15,7 +15,7 @@ from euporie.apptk.data_structures import DiBool
 from euporie.apptk.filters import Condition
 from euporie.apptk.layout.containers import HSplit, MarginContainer, VSplit
 from euporie.apptk.layout.margins import ScrollbarMargin
-from euporie.core.layout.decor import FocusedStyle
+from euporie.apptk.layout.decor import FocusedStyle
 from euporie.core.tabs.base import Tab
 from euporie.core.widgets.display import DisplayWindow
 from euporie.core.widgets.forms import Button, Text

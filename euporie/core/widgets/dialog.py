@@ -45,7 +45,7 @@ from euporie.apptk.layout.containers import (
 from euporie.apptk.layout.controls import FormattedTextControl, UIContent, UIControl
 from euporie.apptk.layout.screen import WritePosition
 from euporie.apptk.mouse_events import MouseButton, MouseEventType
-from euporie.core.layout.decor import FocusedStyle
+from euporie.apptk.layout.decor import FocusedStyle
 from euporie.core.widgets.decor import Border, Shadow
 from euporie.core.widgets.file_browser import FileBrowser
 from euporie.core.widgets.forms import Button, LabelledWidget, Select, Text

@@ -26,7 +26,7 @@ from euporie.apptk.layout.margins import ScrollbarMargin
 from euporie.apptk.mouse_events import MouseEvent, MouseEventType
 from euporie.core.bars.status import StatusContainer
 from euporie.core.key_binding.registry import register_bindings
-from euporie.core.layout.decor import FocusedStyle
+from euporie.apptk.layout.decor import FocusedStyle
 from euporie.core.widgets.dialog import Dialog
 from euporie.core.widgets.forms import Text
 

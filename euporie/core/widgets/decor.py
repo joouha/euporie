@@ -19,7 +19,7 @@ from euporie.apptk.layout.containers import (
     VSplit,
     Window,
 )
-from euporie.core.layout.decor import DropShadow
+from euporie.apptk.layout.decor import DropShadow
 
 if TYPE_CHECKING:
     from collections.abc import Callable
