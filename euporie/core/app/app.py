@@ -575,7 +575,7 @@ class BaseApp(ConfigurableApp, Application, ABC):
         """
         from euporie.core.path import parse_path
 
-        ppath = parse_path(path)
+        ppath = parse_path(path, resolve=True)
         log.info("Opening file %s", path)
         for tab in self.tabs:
             if ppath == getattr(tab, "path", "") and (

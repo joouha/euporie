@@ -823,8 +823,12 @@ FILE_ICONS = {
 def is_dir(path: str | Path) -> bool | None:
     """Check if a path is a directory."""
     from upath import UPath
+    from upath.implementations.http import HTTPPath
 
     test_path = UPath(path)
+
+    if isinstance(test_path, HTTPPath):
+        return False
     try:
         return test_path.is_dir()
     except (ValueError, PermissionError, TypeError):
@@ -847,12 +851,14 @@ class FileBrowserControl(UIControl):
         window: Window | None = None,
         show_icons: FilterOrBool = False,
         show_hidden: FilterOrBool = False,
+        sort: FilterOrBool = True,
     ) -> None:
         """Initialize a new file browser instance."""
         from upath import UPath
 
         self.show_icons = to_filter(show_icons)
         self.show_hidden = to_filter(show_hidden)
+        self.sort = to_filter(sort)
         if path is None:
             path = UPath(".")
         self.dir = path
@@ -902,7 +908,7 @@ class FileBrowserControl(UIControl):
     @property
     def contents(self) -> list[tuple[bool, Path]]:
         """Return the contents of the current folder."""
-        return self._dir_cache[(self.dir, bool(self.show_hidden()))]
+        return self._dir_cache[(self.dir, bool(self.show_hidden()), bool(self.sort()))]
 
     @property
     def dir(self) -> Path | tuple[Path, ...]:
@@ -949,7 +955,7 @@ class FileBrowserControl(UIControl):
 
     @staticmethod
     def load_path(
-        path: Path | tuple[Path, ...], show_hidden: bool
+        path: Path | tuple[Path, ...], show_hidden: bool, sort: bool
     ) -> list[tuple[bool, Path]]:
         """Return the contents of a folder."""
         if isinstance(path, tuple):
@@ -970,7 +976,10 @@ class FileBrowserControl(UIControl):
             if child_is_dir is None:
                 child_is_dir = True
             is_dirs.append(child_is_dir)
-        return sorted(zip(is_dirs, paths), key=lambda x: (not x[0], x[1].name))
+        result = zip(is_dirs, paths)
+        if sort:
+            result = sorted(result, key=lambda x: (not x[0], x[1].name))
+        return list(result)
 
     def create_content(self, width: int, height: int) -> UIContent:
         """Generate the content for this user control."""
@@ -988,7 +997,7 @@ class FileBrowserControl(UIControl):
                 style += " class:hovered"
             if i == self.selected:
                 style += " class:selection"
-            row: StyleAndTextTuples = [(style, child.name)]
+            row: StyleAndTextTuples = [(style, child.name or str(child))]
 
             if self.show_icons():
                 icon = (
@@ -1141,6 +1150,7 @@ class FileBrowser:
         show_address_bar: FilterOrBool = True,
         show_icons: FilterOrBool = False,
         show_hidden: FilterOrBool = False,
+        sort: FilterOrBool = True,
     ) -> None:
         """Create a new instance."""
 
@@ -1162,6 +1172,7 @@ class FileBrowser:
             on_chdir=lambda x: setattr(text, "text", str(x.dir)),
             show_icons=show_icons,
             show_hidden=show_hidden,
+            sort=sort,
         )
         if on_select is not None:
             control.on_select += (
