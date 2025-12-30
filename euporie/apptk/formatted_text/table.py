@@ -9,7 +9,6 @@ from typing import TYPE_CHECKING, cast
 
 from euporie.apptk.application.current import get_app_session
 from euporie.apptk.formatted_text.base import to_formatted_text
-from euporie.apptk.layout.dimension import Dimension, to_dimension
 
 from euporie.apptk.border import (
     DiLineStyle,
@@ -1012,6 +1011,8 @@ class Table:
             background_style: The style to apply to missing cells
 
         """
+        from euporie.apptk.layout.dimension import Dimension, to_dimension
+
         self.render_count = 0
 
         self._rows = defaultdict(partial(Row, self), enumerate(rows or []))
@@ -1114,6 +1115,8 @@ class Table:
     @width.setter
     def width(self, value: AnyDimension) -> None:
         """Set the table's width."""
+        from euporie.apptk.layout.dimension import to_dimension
+
         self._width = to_dimension(value)
 
     @property
@@ -1224,6 +1227,8 @@ class Table:
         min_col_width: int = 4,
     ) -> list[int]:
         """Calculate the table's column widths."""
+        from euporie.apptk.layout.dimension import to_dimension
+
         width = self.width if width is None else to_dimension(width)
         return calculate_col_widths(
             tuple(self.cols), width, self.expand, self.render_count
@@ -1499,6 +1504,8 @@ class Table:
 
     def render(self, width: AnyDimension | None = None) -> StyleAndTextTuples:
         """Draw the table, optionally at a given character width."""
+        from euporie.apptk.layout.dimension import to_dimension
+
         self.render_count += 1
         width = self.width if width is None else to_dimension(width)
 
