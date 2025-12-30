@@ -35,7 +35,7 @@ from euporie.apptk.layout.controls import (
     UIControl,
 )
 from euporie.apptk.mouse_events import MouseButton, MouseEventType
-from euporie.core.ft.utils import truncate
+from euporie.apptk.formatted_text.utils import truncate
 from euporie.core.widgets.decor import Border
 
 if TYPE_CHECKING:

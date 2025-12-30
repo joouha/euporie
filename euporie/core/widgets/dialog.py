@@ -44,7 +44,7 @@ from euporie.apptk.layout.containers import (
 from euporie.apptk.layout.controls import FormattedTextControl, UIContent, UIControl
 from euporie.apptk.layout.screen import WritePosition
 from euporie.apptk.mouse_events import MouseButton, MouseEventType
-from euporie.core.ft.utils import FormattedTextAlign, align, lex
+from euporie.apptk.formatted_text.utils import FormattedTextAlign, align, lex
 from euporie.core.layout.decor import FocusedStyle
 from euporie.core.widgets.decor import Border, Shadow
 from euporie.core.widgets.file_browser import FileBrowser
@@ -862,7 +862,7 @@ class ShortcutsDialog(Dialog):
         """Load the dialog body."""
         from euporie.apptk.layout.containers import MarginContainer
         from euporie.apptk.layout.margins import ScrollbarMargin
-        from euporie.core.ft.utils import max_line_width
+        from euporie.apptk.formatted_text.utils import max_line_width
         from euporie.core.widgets.formatted_text_area import FormattedTextArea
 
         if not self.details:
@@ -892,7 +892,7 @@ class ShortcutsDialog(Dialog):
         from euporie.apptk.data_structures import DiInt
         from euporie.apptk.key_binding.utils import format_keys, parse_keys
         from euporie.core.ft.table import Table
-        from euporie.core.ft.utils import FormattedTextAlign
+        from euporie.apptk.formatted_text.utils import FormattedTextAlign
         from euporie.core.key_binding.registry import BINDINGS
 
         table = Table(padding=0)

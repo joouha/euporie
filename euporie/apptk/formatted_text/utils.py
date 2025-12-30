@@ -6,13 +6,12 @@ import re
 from enum import Enum
 from typing import TYPE_CHECKING, cast
 
-from euporie.apptk.formatted_text.utils import (
+from euporie.apptk.utils import get_cwidth
+from prompt_toolkit.formatted_text.utils import (
     fragment_list_to_text,
     split_lines,
     to_plain_text,
 )
-from euporie.apptk.layout.utils import explode_text_fragments
-from euporie.apptk.utils import get_cwidth
 from pygments.lexers import get_lexer_by_name
 from pygments.util import ClassNotFound
 
@@ -27,7 +26,7 @@ if TYPE_CHECKING:
         StyleAndTextTuples,
     )
 
-_ZERO_WIDTH_FRAGMENTS = ("[ZeroWidthEscape]", "[ReverseOverwrite]")
+_ZERO_WIDTH_FRAGMENTS = {"[ZeroWidthEscape]", "[ReverseOverwrite]"}
 
 
 class FormattedTextAlign(Enum):
@@ -481,6 +480,8 @@ def paste(
             line_t_width = fragment_list_width(line_t)
             ft += substring(line_b, 0, col)
             if transparent:
+                from euporie.apptk.layout.utils import explode_text_fragments
+
                 chars_t = explode_text_fragments(line_t)
                 chars_b = explode_text_fragments(
                     substring(line_b, col, col + line_t_width)

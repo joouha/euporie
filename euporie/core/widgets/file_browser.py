@@ -27,7 +27,7 @@ from euporie.apptk.layout.controls import UIContent, UIControl
 from euporie.apptk.layout.margins import ScrollbarMargin
 from euporie.apptk.layout.screen import WritePosition
 from euporie.apptk.mouse_events import MouseButton, MouseEvent, MouseEventType
-from euporie.core.ft.utils import pad
+from euporie.apptk.formatted_text.utils import pad
 from euporie.core.layout.decor import FocusedStyle
 from euporie.core.widgets.decor import Border
 from euporie.core.widgets.forms import Button, Text
