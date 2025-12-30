@@ -6,7 +6,6 @@ import logging
 from typing import TYPE_CHECKING, cast
 
 from euporie.apptk.application.current import get_app
-from euporie.apptk.formatted_text.utils import split_lines
 from euporie.apptk.utils import Event
 from upath import UPath
 
@@ -17,11 +16,11 @@ from euporie.apptk.convert.mime import get_format
 from euporie.apptk.data_structures import Point
 from euporie.apptk.eventloop.utils import get_or_create_loop, run_coro_async
 from euporie.apptk.filters import Condition
+from euporie.apptk.formatted_text.html import HTML, Node
+from euporie.apptk.formatted_text.utils import fragment_list_width, paste, split_lines
 from euporie.apptk.layout.containers import Window
 from euporie.apptk.layout.controls import UIContent, UIControl
 from euporie.apptk.mouse_events import MouseButton, MouseEvent, MouseEventType
-from euporie.apptk.formatted_text.html import HTML, Node
-from euporie.apptk.formatted_text.utils import fragment_list_width, paste
 from euporie.core.graphics import GraphicProcessor
 from euporie.core.key_binding.registry import (
     load_registered_bindings,

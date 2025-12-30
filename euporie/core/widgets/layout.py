@@ -9,7 +9,6 @@ from typing import TYPE_CHECKING, ClassVar, NamedTuple, cast
 
 from euporie.apptk.application.current import get_app
 from euporie.apptk.formatted_text.base import to_formatted_text
-from euporie.apptk.formatted_text.utils import fragment_list_width
 from euporie.apptk.key_binding.key_bindings import KeyBindings
 from euporie.apptk.layout.dimension import Dimension as D
 from euporie.apptk.layout.dimension import to_dimension
@@ -20,6 +19,7 @@ from euporie.apptk.border import OutsetGrid
 from euporie.apptk.cache import SimpleCache
 from euporie.apptk.data_structures import DiBool
 from euporie.apptk.filters import Condition, to_filter
+from euporie.apptk.formatted_text.utils import fragment_list_width, truncate
 from euporie.apptk.layout.containers import (
     ConditionalContainer,
     DynamicContainer,
@@ -35,7 +35,6 @@ from euporie.apptk.layout.controls import (
     UIControl,
 )
 from euporie.apptk.mouse_events import MouseButton, MouseEventType
-from euporie.apptk.formatted_text.utils import truncate
 from euporie.core.widgets.decor import Border
 
 if TYPE_CHECKING:

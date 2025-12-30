@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 from euporie.apptk.formatted_text.base import to_formatted_text
-from euporie.apptk.formatted_text.utils import to_plain_text
 
 from euporie.apptk.formatted_text.html import HTML
+from euporie.apptk.formatted_text.utils import to_plain_text
 
 
 def test_inline_whitespace() -> None:

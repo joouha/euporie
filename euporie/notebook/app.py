@@ -11,6 +11,7 @@ from euporie.apptk.formatted_text.base import to_formatted_text
 from euporie.apptk.layout.dimension import Dimension
 
 from euporie.apptk.filters import Condition
+from euporie.apptk.formatted_text.utils import truncate
 from euporie.apptk.layout.containers import (
     ConditionalContainer,
     DynamicContainer,
@@ -28,7 +29,6 @@ from euporie.core.bars.menu import ToolbarCompletionsMenu
 from euporie.core.bars.search import SearchBar
 from euporie.core.bars.status import StatusBar
 from euporie.core.filters import has_tabs
-from euporie.apptk.formatted_text.utils import truncate
 from euporie.core.key_binding.registry import register_bindings
 from euporie.core.widgets.dialog import (
     AboutDialog,

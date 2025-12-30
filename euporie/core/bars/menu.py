@@ -12,10 +12,10 @@ from euporie.apptk.utils import get_cwidth
 
 from euporie.apptk.data_structures import Point
 from euporie.apptk.filters import Condition, has_completions, is_done
+from euporie.apptk.formatted_text.utils import apply_style, pad, truncate
 from euporie.apptk.layout.containers import ConditionalContainer, HSplit, Window
 from euporie.apptk.layout.controls import GetLinePrefixCallable, UIContent, UIControl
 from euporie.core.filters import has_toolbar
-from euporie.apptk.formatted_text.utils import apply_style, pad, truncate
 
 if TYPE_CHECKING:
     from euporie.apptk.buffer import CompletionState

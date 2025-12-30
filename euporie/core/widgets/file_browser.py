@@ -16,6 +16,7 @@ from euporie.apptk.cache import FastDictCache
 from euporie.apptk.completion import PathCompleter
 from euporie.apptk.data_structures import DiBool, Point
 from euporie.apptk.filters import FilterOrBool
+from euporie.apptk.formatted_text.utils import pad
 from euporie.apptk.layout.containers import (
     ConditionalContainer,
     HSplit,
@@ -27,7 +28,6 @@ from euporie.apptk.layout.controls import UIContent, UIControl
 from euporie.apptk.layout.margins import ScrollbarMargin
 from euporie.apptk.layout.screen import WritePosition
 from euporie.apptk.mouse_events import MouseButton, MouseEvent, MouseEventType
-from euporie.apptk.formatted_text.utils import pad
 from euporie.core.layout.decor import FocusedStyle
 from euporie.core.widgets.decor import Border
 from euporie.core.widgets.forms import Button, Text

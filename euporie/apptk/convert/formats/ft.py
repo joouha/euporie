@@ -10,8 +10,8 @@ from euporie.apptk.cache import SimpleCache
 from euporie.apptk.convert.registry import register
 from euporie.apptk.formatted_text import to_formatted_text
 from euporie.apptk.formatted_text.ansi import ANSI
-from euporie.apptk.lexers.utils import detect_lexer
 from euporie.apptk.formatted_text.utils import strip_one_trailing_newline
+from euporie.apptk.lexers.utils import detect_lexer
 
 if TYPE_CHECKING:
     from typing import Any
