@@ -20,7 +20,7 @@ from euporie.apptk.filters import Condition
 from euporie.apptk.layout.containers import Window
 from euporie.apptk.layout.controls import UIContent, UIControl
 from euporie.apptk.mouse_events import MouseButton, MouseEvent, MouseEventType
-from euporie.core.ft.html import HTML, Node
+from euporie.apptk.formatted_text.html import HTML, Node
 from euporie.apptk.formatted_text.utils import fragment_list_width, paste
 from euporie.core.graphics import GraphicProcessor
 from euporie.core.key_binding.registry import (
@@ -140,12 +140,19 @@ class WebViewControl(UIControl):
                 path=url,
             ).convert(to="html")
         )
+
+        css = {}
+        if format_ == "markdown":
+            from euporie.apptk.css import MARKDOWN_CSS
+
+            css = {**MARKDOWN_CSS, **css}
+
         return HTML(
-            markup=markup,
+            markup,
             base=url,
             mouse_handler=self._node_mouse_handler,
             paste_fixed=False,
-            _initial_format=format_,
+            css=css,
             defer_assets=False,
             on_change=lambda dom: self.invalidate(),
         )

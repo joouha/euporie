@@ -142,6 +142,18 @@ class CellOutputDataElement(CellOutputElement):
             bg=bg_color,
         )
 
+        convert_kwargs = {"css": {}}
+
+        # Apply Jupyter notbooks specific CSS styles
+        if format_ == "html":
+            from euporie.core.css import NOTEBOOK_CSS
+
+            convert_kwargs["css"].update(NOTEBOOK_CSS)
+        elif format_ == "markdown":
+            from euporie.core.css import MARKDOWN_CSS
+
+            convert_kwargs["css"].update(MARKDOWN_CSS)
+
         self.container = Display(
             self._datum,
             focusable=False,
@@ -150,6 +162,7 @@ class CellOutputDataElement(CellOutputElement):
             always_hide_cursor=True,
             style=f"class:mime-{mime.replace('/', '-')}",
             scrollbar=False,
+            convert_kwargs=convert_kwargs,
         )
 
         # Ensure container gets invalidated if `wrap_cell_output` changes

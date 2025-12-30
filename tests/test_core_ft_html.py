@@ -1,11 +1,11 @@
-"""Test cases for :py:mod:`euporie.core.ft.html` module."""
+"""Test cases for :py:mod:`euporie.apptk.formatted_text.html` module."""
 
 from __future__ import annotations
 
 from euporie.apptk.formatted_text.base import to_formatted_text
 from euporie.apptk.formatted_text.utils import to_plain_text
 
-from euporie.core.ft.html import HTML
+from euporie.apptk.formatted_text.html import HTML
 
 
 def test_inline_whitespace() -> None:
