@@ -11,7 +11,7 @@ from PIL import Image
 
 from euporie.apptk.data_structures import Size
 from euporie.core.app.dummy import DummyApp
-from euporie.core.convert.datum import Datum
+from euporie.apptk.convert.datum import Datum
 
 
 def test_datum_new() -> None:

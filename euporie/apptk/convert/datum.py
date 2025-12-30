@@ -13,14 +13,14 @@ from weakref import ReferenceType, WeakValueDictionary, finalize, ref
 
 from euporie.apptk.application.current import get_app
 
-from euporie.apptk.data_structures import Size
-from euporie.apptk.layout.containers import WindowAlign
-from euporie.core.async_utils import get_or_create_loop, run_coro_sync
-from euporie.core.convert.registry import (
+from euporie.apptk.convert.registry import (
     _CONVERTOR_ROUTE_CACHE,
     _FILTER_CACHE,
     converters,
 )
+from euporie.apptk.data_structures import Size
+from euporie.apptk.layout.containers import WindowAlign
+from euporie.apptk.eventloop.utils import get_or_create_loop, run_coro_sync
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -30,8 +30,8 @@ if TYPE_CHECKING:
     from PIL.Image import Image as PilImage
     from rich.console import ConsoleRenderable
 
+    from euporie.apptk.color import ColorPaletteColor
     from euporie.apptk.data_structures import DiInt
-    from euporie.core.style import ColorPaletteColor
 
 
 T = TypeVar("T", bytes, str, "StyleAndTextTuples", "PilImage", "ConsoleRenderable")

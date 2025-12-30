@@ -10,7 +10,7 @@ from euporie.apptk.cache import SimpleCache
 from euporie.apptk.formatted_text import to_formatted_text
 from euporie.apptk.formatted_text.ansi import ANSI
 from euporie.apptk.lexers.utils import detect_lexer
-from euporie.core.convert.registry import register
+from euporie.apptk.convert.registry import register
 from euporie.core.ft.utils import strip_one_trailing_newline
 
 if TYPE_CHECKING:
@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 
     from euporie.apptk.formatted_text.base import StyleAndTextTuples
 
-    from euporie.core.convert.datum import Datum
+    from euporie.apptk.convert.datum import Datum
     from euporie.core.ft.html import HTML
 
 log = logging.getLogger(__name__)

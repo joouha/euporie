@@ -17,9 +17,9 @@ from euporie.apptk.filters import Condition
 from euporie.apptk.layout.containers import Window
 from euporie.apptk.layout.controls import UIContent, UIControl
 from euporie.apptk.mouse_events import MouseButton, MouseEvent, MouseEventType
-from euporie.core.convert.datum import Datum
-from euporie.core.convert.mime import get_format
 from euporie.apptk.eventloop.utils import get_or_create_loop, run_coro_async
+from euporie.apptk.convert.datum import Datum
+from euporie.apptk.convert.mime import get_format
 from euporie.core.ft.html import HTML, Node
 from euporie.core.ft.utils import fragment_list_width, paste
 from euporie.core.graphics import GraphicProcessor

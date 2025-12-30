@@ -56,7 +56,7 @@ def register(
 
 def _find_route(from_: str, to: str) -> list | None:
     """Find the shortest conversion path between two formats."""
-    from euporie.core.convert import formats  # noqa: F401
+    from euporie.apptk.convert import formats  # noqa: F401
 
     if from_ == to:
         return [from_]

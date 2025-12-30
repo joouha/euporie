@@ -9,15 +9,15 @@ from typing import TYPE_CHECKING
 from euporie.apptk.application.current import get_app
 
 from euporie.apptk.filters.environment import command_exists, have_modules
-from euporie.core.convert.formats.common import chafa_convert_cmd, chafa_convert_py
-from euporie.core.convert.formats.pil import set_background
-from euporie.core.convert.registry import register
-from euporie.core.convert.utils import call_subproc, scale_to_fit
+from euporie.apptk.convert.formats.common import chafa_convert_cmd, chafa_convert_py
+from euporie.apptk.convert.formats.pil import set_background
+from euporie.apptk.convert.registry import register
+from euporie.apptk.convert.utils import call_subproc, scale_to_fit
 
 if TYPE_CHECKING:
     from typing import Any
 
-    from euporie.core.convert.datum import Datum
+    from euporie.apptk.convert.datum import Datum
 
 log = logging.getLogger(__name__)
 
@@ -256,7 +256,7 @@ async def latex_to_ansi_py_sympy(
     from sympy.parsing.latex import parse_latex
     from sympy.parsing.latex.errors import LaTeXParsingError
 
-    from euporie.core.log import stdout_to_log
+    from euporie.apptk.logging import stdout_to_log
 
     with stdout_to_log(log):
         try:
@@ -484,7 +484,7 @@ async def png_to_ansi_py_placeholder(
     **kwargs: Any,
 ) -> str:
     """Draw placeholder ANSI text."""
-    from euporie.core.border import RoundedLine
+    from euporie.apptk.border import RoundedLine
 
     if cols is None:
         cols = 7

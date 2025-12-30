@@ -12,7 +12,7 @@ from euporie.apptk.layout.dimension import Dimension
 from euporie.apptk.commands import add_cmd
 from euporie.apptk.filters import Condition
 from euporie.apptk.layout.containers import DummyContainer, DynamicContainer, HSplit
-from euporie.core.convert.registry import find_route
+from euporie.apptk.convert.registry import find_route
 from euporie.core.filters import pager_has_focus
 from euporie.core.key_binding.registry import (
     load_registered_bindings,
@@ -60,9 +60,9 @@ class PagerOutputDataElement(CellOutputDataElement):
             metadata: Any metadata relating to the data
             parent: The parent container the output-element is attached to
         """
-        from euporie.core.convert.datum import Datum
-        from euporie.core.convert.formats import BASE64_FORMATS
-        from euporie.core.convert.mime import MIME_FORMATS
+        from euporie.apptk.convert.datum import Datum
+        from euporie.apptk.convert.formats import BASE64_FORMATS
+        from euporie.apptk.convert.mime import MIME_FORMATS
 
         # Get internal format
         format_ = "ansi"
