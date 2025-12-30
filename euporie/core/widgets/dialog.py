@@ -890,7 +890,7 @@ class ShortcutsDialog(Dialog):
         from euporie.apptk.data_structures import DiInt
         from euporie.apptk.formatted_text.utils import HorizontalAlign
         from euporie.apptk.key_binding.utils import format_keys, parse_keys
-        from euporie.core.ft.table import Table
+        from euporie.apptk.formatted_text.table import Table
         from euporie.core.key_binding.registry import BINDINGS
 
         table = Table(padding=0)

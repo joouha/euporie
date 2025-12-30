@@ -71,7 +71,7 @@ from euporie.apptk.formatted_text.utils import (
     valign,
 )
 from euporie.apptk.layout.containers import WindowAlign
-from euporie.core.ft.table import Cell, Table, compute_padding
+from euporie.apptk.formatted_text.table import Cell, Table, compute_padding
 
 sub_trans = str.maketrans(
     "0123456789+-=()aeijoruvxβγρφχ",
