@@ -463,7 +463,7 @@ class ButtonModel(IpyWidgetComm):
         """Generate the button text, optionally including an icon if specified."""
         text = self.data["state"].get("description", "")
         if icon := self.data["state"].get("icon", ""):
-            from euporie.core.reference import FA_ICONS
+            from euporie.apptk.styles.icons import FA_ICONS
 
             text = f"{FA_ICONS.get(icon, '#')} {text}"
         return text
@@ -950,7 +950,7 @@ class ToggleButtonModel(ToggleableIpyWidgetComm):
         """Generate the button text, optionally including an icon if specified."""
         text = self.data["state"].get("description", "")
         if icon := self.data["state"].get("icon", ""):
-            from euporie.core.reference import FA_ICONS
+            from euporie.apptk.styles.icons import FA_ICONS
 
             text = f"{FA_ICONS.get(icon, '#')} {text}"
         return text
@@ -1192,7 +1192,7 @@ class ToggleButtonsModel(IpyWidgetComm):
         if index < len(self.data["state"].get("icons", [])) and (
             icon := self.data["state"]["icons"][index]
         ):
-            from euporie.core.reference import FA_ICONS
+            from euporie.apptk.styles.icons import FA_ICONS
 
             label = f"{FA_ICONS.get(icon, '#')} {label}"
         return label
@@ -1422,7 +1422,7 @@ class ColorPickerModel(TextBoxIpyWidgetComm):
 
     def format_color(self) -> str:
         """Format a color as a hex code for display."""
-        from euporie.core.reference import NAMED_COLORS
+        from euporie.apptk.styles.named_colors import NAMED_COLORS
 
         # TODO - blend alpha colors with the terminal background
         value = self.value()
@@ -1436,7 +1436,7 @@ class ColorPickerModel(TextBoxIpyWidgetComm):
 
     def normalize(self, x: str) -> str | None:
         """Return the color string if it is recognised as an allowed color."""
-        from euporie.core.reference import NAMED_COLORS
+        from euporie.apptk.styles.named_colors import NAMED_COLORS
 
         if x in NAMED_COLORS or self._hex_pattern.match(x) is not None:
             return x
