@@ -51,7 +51,7 @@ class Line(Container):
 
         Args:
             char: The character to draw. If unset, the relevant character from
-                :py:class:`euporie.core.box.grid` is used
+                :py:class:`euporie.apptk.box.grid` is used
             width: The length of the line. If specified, the line will be horizontal
             height: The height of the line. If specified, the line will be vertical
             collapse: Whether to hide the line when there is not enough space
