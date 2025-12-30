@@ -6,6 +6,7 @@ import asyncio
 import inspect
 import io
 import logging
+from collections.abc import Hashable
 from hashlib import md5
 from itertools import pairwise
 from typing import TYPE_CHECKING, Generic, TypeVar
@@ -212,7 +213,15 @@ class Datum(Generic[T], metaclass=_MetaDatum):
         if not bg and hasattr(app := get_app(), "color_palette"):
             bg = self.bg or app.color_palette.bg.base_hex
 
-        if (key_conv := (to, cols, rows, fg, bg, tuple(kwargs.items()))) in self._queue:
+        key_tail = (
+            cols,
+            rows,
+            fg,
+            bg,
+            # Only attempt to use hashable kwargs in cache key
+            tuple((k, v) for k, v in kwargs.items() if isinstance(v, Hashable)),
+        )
+        if (key_conv := (to, *key_tail)) in self._queue:
             await self._queue[key_conv].wait()
         if key_conv in self._conversions:
             return self._conversions[key_conv]
@@ -233,7 +242,7 @@ class Datum(Generic[T], metaclass=_MetaDatum):
             output = None
             for route in routes:
                 for stage_a, stage_b in pairwise(route):
-                    key_stage = (stage_b, cols, rows, fg, bg, tuple(kwargs.items()))
+                    key_stage = (stage_b, *key_tail)
                     if key_stage in self._conversions:
                         output = self._conversions[key_stage]
                     else:
