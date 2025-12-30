@@ -135,6 +135,7 @@ class NewTab(Tab):
                 show_address_bar=False,
                 show_icons=self.app.config.filters.show_file_icons,
                 height=Dimension(min=3, max=10),
+                sort=False,
             ),
             title="Recent Files",
             border=RoundedLine.grid,
