@@ -7,6 +7,7 @@ from functools import lru_cache, total_ordering
 from typing import NamedTuple
 
 from euporie.apptk.cache import FastDictCache
+from euporie.apptk.data_structures import DiBool
 
 
 class GridPart(Enum):
@@ -44,22 +45,13 @@ class GridPart(Enum):
     BOTTOM_RIGHT = 15
 
 
-class DirectionFlags(NamedTuple):
-    """Flag which indicate the connection of a grid node."""
-
-    north: bool = False
-    east: bool = False
-    south: bool = False
-    west: bool = False
-
-
 class Mask:
     """A mask which allows selection of a subset of a grid.
 
     Masks can be combined to construct more complex masks.
     """
 
-    def __init__(self, mask: dict[GridPart, DirectionFlags]) -> None:
+    def __init__(self, mask: dict[GridPart, DiBool]) -> None:
         """Create a new grid mask.
 
         Args:
@@ -68,7 +60,7 @@ class Mask:
                 defined are assumed to be set entirely to :cont:`False`.
 
         """
-        self.mask = {part: mask.get(part, DirectionFlags()) for part in GridPart}
+        self.mask = {part: mask.get(part, DiBool()) for part in GridPart}
 
     def __add__(self, other: Mask) -> Mask:
         """Add two masks, combining direction flags for each :class:`GridPart`.
@@ -82,8 +74,11 @@ class Mask:
         """
         return Mask(
             {
-                key: DirectionFlags(
-                    *(self.mask[key][i] | other.mask[key][i] for i in range(4))
+                key: DiBool(
+                    top=self.mask[key].top | other.mask[key].top,
+                    right=self.mask[key].right | other.mask[key].right,
+                    bottom=self.mask[key].bottom | other.mask[key].bottom,
+                    left=self.mask[key].left | other.mask[key].left,
                 )
                 for key in GridPart
             }
@@ -95,55 +90,55 @@ class Masks:
 
     top_edge = Mask(
         {
-            GridPart.TOP_LEFT: DirectionFlags(False, True, False, False),
-            GridPart.TOP_MID: DirectionFlags(False, True, False, True),
-            GridPart.TOP_SPLIT: DirectionFlags(False, True, False, True),
-            GridPart.TOP_RIGHT: DirectionFlags(False, False, False, True),
+            GridPart.TOP_LEFT: DiBool(False, True, False, False),
+            GridPart.TOP_MID: DiBool(False, True, False, True),
+            GridPart.TOP_SPLIT: DiBool(False, True, False, True),
+            GridPart.TOP_RIGHT: DiBool(False, False, False, True),
         }
     )
 
     middle_edge = Mask(
         {
-            GridPart.SPLIT_LEFT: DirectionFlags(False, True, False, False),
-            GridPart.SPLIT_MID: DirectionFlags(False, True, False, True),
-            GridPart.SPLIT_SPLIT: DirectionFlags(False, True, False, True),
-            GridPart.SPLIT_RIGHT: DirectionFlags(False, False, False, True),
+            GridPart.SPLIT_LEFT: DiBool(False, True, False, False),
+            GridPart.SPLIT_MID: DiBool(False, True, False, True),
+            GridPart.SPLIT_SPLIT: DiBool(False, True, False, True),
+            GridPart.SPLIT_RIGHT: DiBool(False, False, False, True),
         }
     )
 
     bottom_edge = Mask(
         {
-            GridPart.BOTTOM_LEFT: DirectionFlags(False, True, False, False),
-            GridPart.BOTTOM_MID: DirectionFlags(False, True, False, True),
-            GridPart.BOTTOM_SPLIT: DirectionFlags(False, True, False, True),
-            GridPart.BOTTOM_RIGHT: DirectionFlags(False, False, False, True),
+            GridPart.BOTTOM_LEFT: DiBool(False, True, False, False),
+            GridPart.BOTTOM_MID: DiBool(False, True, False, True),
+            GridPart.BOTTOM_SPLIT: DiBool(False, True, False, True),
+            GridPart.BOTTOM_RIGHT: DiBool(False, False, False, True),
         }
     )
 
     left_edge = Mask(
         {
-            GridPart.TOP_LEFT: DirectionFlags(False, False, True, False),
-            GridPart.MID_LEFT: DirectionFlags(True, False, True, False),
-            GridPart.SPLIT_LEFT: DirectionFlags(True, False, True, False),
-            GridPart.BOTTOM_LEFT: DirectionFlags(True, False, False, False),
+            GridPart.TOP_LEFT: DiBool(False, False, True, False),
+            GridPart.MID_LEFT: DiBool(True, False, True, False),
+            GridPart.SPLIT_LEFT: DiBool(True, False, True, False),
+            GridPart.BOTTOM_LEFT: DiBool(True, False, False, False),
         }
     )
 
     center_edge = Mask(
         {
-            GridPart.TOP_SPLIT: DirectionFlags(False, False, True, False),
-            GridPart.MID_SPLIT: DirectionFlags(True, False, True, False),
-            GridPart.SPLIT_SPLIT: DirectionFlags(True, False, True, False),
-            GridPart.BOTTOM_SPLIT: DirectionFlags(True, False, False, False),
+            GridPart.TOP_SPLIT: DiBool(False, False, True, False),
+            GridPart.MID_SPLIT: DiBool(True, False, True, False),
+            GridPart.SPLIT_SPLIT: DiBool(True, False, True, False),
+            GridPart.BOTTOM_SPLIT: DiBool(True, False, False, False),
         }
     )
 
     right_edge = Mask(
         {
-            GridPart.TOP_RIGHT: DirectionFlags(False, False, True, False),
-            GridPart.MID_RIGHT: DirectionFlags(True, False, True, False),
-            GridPart.SPLIT_RIGHT: DirectionFlags(True, False, True, False),
-            GridPart.BOTTOM_RIGHT: DirectionFlags(True, False, False, False),
+            GridPart.TOP_RIGHT: DiBool(False, False, True, False),
+            GridPart.MID_RIGHT: DiBool(True, False, True, False),
+            GridPart.SPLIT_RIGHT: DiBool(True, False, True, False),
+            GridPart.BOTTOM_RIGHT: DiBool(True, False, False, False),
         }
     )
 
@@ -154,10 +149,10 @@ class Masks:
 
     corners = Mask(
         {
-            GridPart.TOP_LEFT: DirectionFlags(False, True, True, False),
-            GridPart.TOP_RIGHT: DirectionFlags(False, False, True, True),
-            GridPart.BOTTOM_LEFT: DirectionFlags(True, True, False, False),
-            GridPart.BOTTOM_RIGHT: DirectionFlags(True, False, False, True),
+            GridPart.TOP_LEFT: DiBool(False, True, True, False),
+            GridPart.TOP_RIGHT: DiBool(False, False, True, True),
+            GridPart.BOTTOM_LEFT: DiBool(True, True, False, False),
+            GridPart.BOTTOM_RIGHT: DiBool(True, False, False, True),
         }
     )
 
@@ -295,10 +290,10 @@ class GridChar(NamedTuple):
     The four compass points represent the line style joining from the given direction.
     """
 
-    north: LineStyle
-    east: LineStyle
-    south: LineStyle
-    west: LineStyle
+    top: LineStyle
+    right: LineStyle
+    bottom: LineStyle
+    left: LineStyle
 
 
 # fmt: off
