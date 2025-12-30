@@ -68,6 +68,7 @@ class DisplayControl(UIControl):
         dont_extend_width: FilterOrBool = False,
         threaded: bool = False,
         mouse_handler: Callable[[MouseEvent], NotImplementedOrNone] | None = None,
+        convert_kwargs: dict[str, Any] | None = None,
     ) -> None:
         """Create a new web-view control instance."""
         self._datum = datum
@@ -76,6 +77,7 @@ class DisplayControl(UIControl):
         self.wrap_lines = to_filter(wrap_lines)
         self.dont_extend_width = to_filter(dont_extend_width)
         self.threaded = threaded
+        self.convert_kwargs = convert_kwargs or {}
 
         self._cursor_position = Point(0, 0)
         self.loading = False
@@ -162,6 +164,7 @@ class DisplayControl(UIControl):
             extend=not self.dont_extend_width(),
             # Use as extra cache key to force re-rendering when wrap_lines changes
             wrap_lines=wrap_lines,
+            **self.convert_kwargs,
         )
         if width and height:
             key = Datum.add_size(datum, Size(height, width))
@@ -587,6 +590,7 @@ class Display:
         dont_extend_width: FilterOrBool = False,
         style: str | Callable[[], str] = "",
         mouse_handler: Callable[[MouseEvent], NotImplementedOrNone] | None = None,
+        convert_kwargs: dict[str, Any] | None = None,
     ) -> None:
         """Instantiate an Output container object.
 
@@ -604,6 +608,7 @@ class Display:
             dont_extend_width: Whether the content should fill the available width
             style: The style to apply to the output
             mouse_handler: Optional mouse handler for the display control
+            convert_kwargs: Key-word arguments to pass to :py:method:`Datum.convert`
 
         """
         self._style = style
@@ -615,6 +620,7 @@ class Display:
             wrap_lines=wrap_lines,
             dont_extend_width=dont_extend_width,
             mouse_handler=mouse_handler,
+            convert_kwargs=convert_kwargs,
         )
 
         self.window = DisplayWindow(
