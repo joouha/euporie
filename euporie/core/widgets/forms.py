@@ -15,7 +15,6 @@ from euporie.apptk.application.current import get_app
 from euporie.apptk.buffer import Buffer, ValidationState
 from euporie.apptk.document import Document
 from euporie.apptk.formatted_text.base import to_formatted_text
-from euporie.apptk.formatted_text.utils import fragment_list_len, fragment_list_width
 from euporie.apptk.key_binding.key_bindings import (
     ConditionalKeyBindings,
     KeyBindings,
@@ -31,6 +30,7 @@ from euporie.apptk.border import InsetGrid
 from euporie.apptk.cache import SimpleCache
 from euporie.apptk.completion import Completer, ConditionalCompleter, WordCompleter
 from euporie.apptk.data_structures import DiBool, DiInt, Point
+from euporie.apptk.enums import HorizontalAlign
 from euporie.apptk.filters import (
     Always,
     Condition,
@@ -39,6 +39,11 @@ from euporie.apptk.filters import (
     has_focus,
     is_true,
     to_filter,
+)
+from euporie.apptk.formatted_text.utils import (
+    align,
+    fragment_list_len,
+    fragment_list_width,
 )
 from euporie.apptk.layout.containers import (
     ConditionalContainer,
@@ -67,7 +72,6 @@ from euporie.apptk.layout.processors import (
 from euporie.apptk.layout.screen import WritePosition
 from euporie.apptk.lexers import DynamicLexer, Lexer
 from euporie.apptk.mouse_events import MouseButton, MouseEvent, MouseEventType
-from euporie.apptk.formatted_text.utils import FormattedTextAlign, align
 from euporie.core.widgets.decor import Border, Shadow
 from euporie.core.widgets.layout import Box, ConditionalSplit
 
@@ -827,7 +831,6 @@ class Label:
         data = value() if callable(value) else value
         if self.html():
             from euporie.apptk.formatted_text.utils import to_plain_text
-
             from euporie.core.ft.html import HTML
 
             return HTML(to_plain_text(data), collapse_root_margin=True, fill=False)
@@ -1443,7 +1446,7 @@ class Select(SelectableWidget):
             max_width = 1
         for i, label in enumerate(labels):
             label = to_formatted_text(label)
-            label = align(label, FormattedTextAlign.LEFT, width=max_width)
+            label = align(label, HorizontalAlign.LEFT, width=max_width)
             style = "class:selection" if self.mask[i] else ""
             if self.hovered == i and self.multiple() and self.has_focus():
                 style += " class:hovered"
@@ -1691,7 +1694,7 @@ class Dropdown(SelectableWidget):
         for i, label in enumerate(self.labels):
             # Pad each option
             formatted_label = align(
-                to_formatted_text(label), FormattedTextAlign.LEFT, width=max_width - 2
+                to_formatted_text(label), HorizontalAlign.LEFT, width=max_width - 2
             )
             item_style = "class:hovered" if i == self.hovered else ""
             handler = partial(self.mouse_handler_menu, i)

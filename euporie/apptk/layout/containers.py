@@ -21,15 +21,13 @@ from euporie.apptk.utils import get_cwidth, take_using_weights, to_str
 from prompt_toolkit.layout import containers as ptk_containers
 from prompt_toolkit.layout.containers import (
     Container,
-    HorizontalAlign,
     ScrollOffsets,
-    VerticalAlign,
-    WindowAlign,
     WindowRenderInfo,
 )
 
 from euporie.apptk.cache import SimpleCache
 from euporie.apptk.data_structures import DiInt, Point
+from euporie.apptk.enums import HorizontalAlign, VerticalAlign
 from euporie.apptk.filters import to_filter
 from euporie.apptk.layout.controls import (
     DummyControl,
@@ -73,6 +71,8 @@ if TYPE_CHECKING:
 
 
 log = logging.getLogger(__name__)
+
+WindowAlign = HorizontalAlign
 
 
 class DimensionTuple(NamedTuple):

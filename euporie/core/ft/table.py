@@ -9,7 +9,6 @@ from typing import TYPE_CHECKING, cast
 
 from euporie.apptk.application.current import get_app_session
 from euporie.apptk.formatted_text.base import to_formatted_text
-from euporie.apptk.formatted_text.utils import split_lines, to_plain_text
 from euporie.apptk.layout.dimension import Dimension, to_dimension
 
 from euporie.apptk.border import (
@@ -26,12 +25,14 @@ from euporie.apptk.data_structures import (
     DiInt,
     DiStr,
 )
+from euporie.apptk.enums import HorizontalAlign
 from euporie.apptk.formatted_text.utils import (
-    FormattedTextAlign,
     align,
     fragment_list_width,
     join_lines,
     max_line_width,
+    split_lines,
+    to_plain_text,
     wrap,
 )
 
@@ -69,7 +70,7 @@ class Cell:
         colspan: int = 1,
         rowspan: int = 1,
         width: int | None = None,
-        align: FormattedTextAlign | None = None,
+        align: HorizontalAlign | None = None,
         style: str = "",
         padding: DiInt | int = 0,
         border_line: DiLineStyle | LineStyle = ThinLine,
@@ -196,7 +197,7 @@ class SpacerCell(Cell):
         colspan: int = 1,
         rowspan: int = 1,
         width: int | None = None,
-        align: FormattedTextAlign | None = None,
+        align: HorizontalAlign | None = None,
         style: str = "",
         padding: DiInt | int | None = None,
         border_line: DiLineStyle | LineStyle = NoLine,
@@ -253,7 +254,7 @@ class _Dummy(Cell):
         colspan: int = 1,
         rowspan: int = 1,
         width: int | None = None,
-        align: FormattedTextAlign | None = None,
+        align: HorizontalAlign | None = None,
         style: str = "",
         padding: DiInt | int = 0,
         border_line: DiLineStyle | LineStyle = NoLine,
@@ -288,7 +289,7 @@ class RowCol:
         self,
         table: Table | None = None,
         cells: Sequence[Cell] | None = None,
-        align: FormattedTextAlign | None = None,
+        align: HorizontalAlign | None = None,
         style: str = "",
         padding: DiInt | int = 0,
         border_line: DiLineStyle | LineStyle = NoLine,
@@ -880,7 +881,7 @@ def get_vertical_edge(w_bl: DiLineStyle, e_bl: DiLineStyle) -> str:
 
 
 @lru_cache
-def compute_align(cell: Cell, render_count: int = 0) -> FormattedTextAlign:
+def compute_align(cell: Cell, render_count: int = 0) -> HorizontalAlign:
     """Compute the alignment of a cell."""
     if (align := cell.align) is not None:
         return align
@@ -984,7 +985,7 @@ class Table:
         cols: Sequence[Col] | None = None,
         width: AnyDimension | None = None,
         expand: bool = False,
-        align: FormattedTextAlign = FormattedTextAlign.LEFT,
+        align: HorizontalAlign = HorizontalAlign.LEFT,
         style: str = "",
         padding: DiInt | int | None = None,
         border_line: DiLineStyle | LineStyle = NoLine,
