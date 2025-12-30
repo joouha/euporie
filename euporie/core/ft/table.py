@@ -26,7 +26,7 @@ from euporie.apptk.data_structures import (
     DiInt,
     DiStr,
 )
-from euporie.core.ft.utils import (
+from euporie.apptk.formatted_text.utils import (
     FormattedTextAlign,
     align,
     fragment_list_width,

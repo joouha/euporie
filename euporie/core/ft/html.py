@@ -54,7 +54,7 @@ from euporie.apptk.data_structures import DiBool, DiInt, DiStr, Size
 from euporie.apptk.eventloop.utils import get_or_create_loop, run_coro_sync
 from euporie.apptk.layout.containers import WindowAlign
 from euporie.core.ft.table import Cell, Table, compute_padding
-from euporie.core.ft.utils import (
+from euporie.apptk.formatted_text.utils import (
     FormattedTextAlign,
     FormattedTextVerticalAlign,
     add_border,

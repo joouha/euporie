@@ -21,7 +21,7 @@ from euporie.apptk.io import PseudoTTY
 from euporie.apptk.renderer import (
     print_formatted_text as renderer_print_formatted_text,
 )
-from euporie.core.ft.utils import indent, lex, wrap
+from euporie.apptk.formatted_text.utils import indent, lex, wrap
 from euporie.core.style import LOG_STYLE, get_style_by_name
 from euporie.core.utils import dict_merge
 

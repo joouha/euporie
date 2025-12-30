@@ -11,7 +11,7 @@ from euporie.apptk.convert.registry import register
 from euporie.apptk.formatted_text import to_formatted_text
 from euporie.apptk.formatted_text.ansi import ANSI
 from euporie.apptk.lexers.utils import detect_lexer
-from euporie.core.ft.utils import strip_one_trailing_newline
+from euporie.apptk.formatted_text.utils import strip_one_trailing_newline
 
 if TYPE_CHECKING:
     from typing import Any
