@@ -59,41 +59,6 @@ MIME_STYLE = [
     ("mime-stream-stderr", "fg:ansired"),
 ]
 
-HTML_STYLE = [
-    ("html h1", "bold underline"),
-    ("html h1 border", "fg:ansiyellow nounderline"),
-    ("html h2", "bold"),
-    ("html h2 border", "fg:grey nobold"),
-    ("html h3", "bold"),
-    ("html h4", "bold italic"),
-    ("html h5", "underline"),
-    ("html h6", "italic"),
-    # ("html code", "bg:#333"),
-    # ("html kbd", "fg:#fff bg:#333"),
-    # ("html samp", "fg:#fff bg:#333"),
-    # ("html b", "bold"),
-    # ("html strong", "bold"),
-    # ("html i", "italic"),
-    # ("html em", "italic"),
-    # ("html cite", "italic"),
-    # ("html dfn", "italic"),
-    # ("html var", "italic"),
-    # ("html u", "underline"),
-    # ("html ins", "underline"),
-    # ("html s", "strike"),
-    # ("html del", "strike"),
-    # ("html mark", "fg:black bg:ansiyellow"),
-    # ("html hr", "fg:ansired"),
-    ("html ul bullet", "fg:ansiyellow"),
-    ("html ol bullet", "fg:ansicyan"),
-    ("html blockquote", "fg:ansipurple"),
-    ("html blockquote margin", "fg:grey"),
-    ("html th", "bold"),
-    ("html img", "bg:cyan fg:black"),
-    ("html img border", "fg:cyan bg:default"),
-    ("html caption", "italic"),
-]
-
 
 IPYWIDGET_STYLE = [
     ("ipywidget", "bg:default"),

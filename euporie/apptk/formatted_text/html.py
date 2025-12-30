@@ -4715,7 +4715,6 @@ if __name__ == "__main__":
     from euporie.apptk.formatted_text.utils import to_formatted_text
     from euporie.core.app.dummy import DummyApp
     from euporie.core.path import parse_path
-    from euporie.core.style import HTML_STYLE
 
     path = parse_path(sys.argv[1])
 
@@ -4731,5 +4730,4 @@ if __name__ == "__main__":
                     )._render(None, None)
                 )
             ),
-            style=Style(HTML_STYLE),
         )
