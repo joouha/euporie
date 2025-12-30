@@ -31,6 +31,7 @@ from euporie.apptk.styles import (
 from euporie.apptk.utils import Event
 
 from euporie.apptk.application.application import Application, _CombinedRegistry
+from euporie.apptk.color import ColorPalette
 from euporie.apptk.data_structures import Point
 from euporie.apptk.filters import Condition, to_filter
 from euporie.apptk.input.vt100_parser import Vt100Parser
@@ -56,7 +57,6 @@ from euporie.core.style import (
     IPYWIDGET_STYLE,
     LOG_STYLE,
     MIME_STYLE,
-    ColorPalette,
     build_style,
     get_style_by_name,
 )

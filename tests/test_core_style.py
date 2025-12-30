@@ -2,7 +2,7 @@
 
 import pytest
 
-from euporie.core.style import ColorPalette, ColorPaletteColor
+from euporie.apptk.color import ColorPalette, ColorPaletteColor
 
 # Define some test data
 test_colors = {
