@@ -19,8 +19,8 @@ from euporie.apptk.convert.registry import (
     converters,
 )
 from euporie.apptk.data_structures import Size
+from euporie.apptk.enums import HorizontalAlign
 from euporie.apptk.eventloop.utils import get_or_create_loop, run_coro_sync
-from euporie.apptk.layout.containers import WindowAlign
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -91,7 +91,7 @@ class Datum(Generic[T], metaclass=_MetaDatum):
         bg: str | ColorPaletteColor | None = None,
         path: Path | None = None,
         source: Datum | None = None,
-        align: WindowAlign = WindowAlign.LEFT,
+        align: HorizontalAlign = HorizontalAlign.LEFT,
     ) -> None:
         """Create a new instance of display data."""
         self.data: T = data
