@@ -17,7 +17,7 @@ from euporie.apptk.data_structures import (
     DiInt,
     DiStr,
 )
-from euporie.core.border import (
+from euporie.apptk.border import (
     DiLineStyle,
     GridChar,
     InvisibleLine,

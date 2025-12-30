@@ -19,7 +19,7 @@ from euporie.apptk.layout.containers import (
 from euporie.apptk.layout.controls import FormattedTextControl
 from euporie.apptk.layout.margins import ScrollbarMargin
 from euporie.apptk.layout.scroll import ScrollingContainer
-from euporie.core.border import InsetGrid
+from euporie.apptk.border import InsetGrid
 from euporie.core.layout.decor import FocusedStyle
 from euporie.core.nbformat import new_code_cell
 from euporie.core.tabs.console import BaseConsole

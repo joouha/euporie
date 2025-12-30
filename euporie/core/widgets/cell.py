@@ -32,7 +32,7 @@ from euporie.apptk.layout.containers import (
     Window,
 )
 from euporie.apptk.layout.controls import FormattedTextControl
-from euporie.core.border import NoLine, ThickLine, ThinLine
+from euporie.apptk.border import NoLine, ThickLine, ThinLine
 from euporie.core.completion import LspCompleter
 from euporie.core.filters import multiple_cells_selected
 from euporie.core.format import LspFormatter
@@ -53,7 +53,7 @@ if TYPE_CHECKING:
     from euporie.apptk.completion.base import Completer
     from euporie.apptk.formatted_text.base import StyleAndTextTuples
 
-    from euporie.core.border import GridStyle
+    from euporie.apptk.border import GridStyle
     from euporie.core.format import Formatter
     from euporie.core.inspection import Inspector
     from euporie.core.lsp import LspClient

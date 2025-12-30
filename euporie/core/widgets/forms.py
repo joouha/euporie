@@ -66,7 +66,7 @@ from euporie.apptk.layout.processors import (
 from euporie.apptk.layout.screen import WritePosition
 from euporie.apptk.lexers import DynamicLexer, Lexer
 from euporie.apptk.mouse_events import MouseButton, MouseEvent, MouseEventType
-from euporie.core.border import InsetGrid
+from euporie.apptk.border import InsetGrid
 from euporie.core.ft.utils import FormattedTextAlign, align
 from euporie.core.widgets.decor import Border, Shadow
 from euporie.core.widgets.layout import Box, ConditionalSplit
@@ -97,7 +97,7 @@ if TYPE_CHECKING:
     )
     from euporie.apptk.layout.processors import Processor
     from euporie.apptk.lexers import Lexer
-    from euporie.core.border import GridStyle
+    from euporie.apptk.border import GridStyle
 
     OptionalSearchBuffer = (
         SearchBufferControl | Callable[[], SearchBufferControl] | None

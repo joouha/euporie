@@ -28,8 +28,8 @@ from upath import UPath
 
 from euporie.apptk.data_structures import DiBool, DiInt, DiStr, Size
 from euporie.apptk.layout.containers import WindowAlign
-from euporie.core.border import (
 from euporie.apptk.eventloop.utils import get_or_create_loop, run_coro_sync
+from euporie.apptk.border import (
     DiLineStyle,
     DoubleLine,
     FullDottedLine,

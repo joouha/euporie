@@ -39,7 +39,7 @@ from euporie.apptk.layout.containers import (
 from euporie.apptk.layout.controls import FormattedTextControl, UIContent, UIControl
 from euporie.apptk.layout.screen import WritePosition
 from euporie.apptk.mouse_events import MouseButton, MouseEventType
-from euporie.core.border import (
+from euporie.apptk.border import (
     FullLine,
     LowerLeftHalfLine,
     UpperRightHalfLine,
@@ -890,7 +890,7 @@ class ShortcutsDialog(Dialog):
         from euporie.apptk.commands import get_cmd
         from euporie.apptk.data_structures import DiInt
         from euporie.apptk.key_binding.utils import format_keys, parse_keys
-        from euporie.core.border import InvisibleLine
+        from euporie.apptk.border import InvisibleLine
         from euporie.core.ft.table import Table
         from euporie.core.ft.utils import FormattedTextAlign
         from euporie.core.key_binding.registry import BINDINGS

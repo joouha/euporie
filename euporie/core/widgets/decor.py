@@ -18,7 +18,7 @@ from euporie.apptk.layout.containers import (
     VSplit,
     Window,
 )
-from euporie.core.border import ThinLine
+from euporie.apptk.border import ThinLine
 from euporie.core.layout.decor import DropShadow
 
 if TYPE_CHECKING:
@@ -28,7 +28,7 @@ if TYPE_CHECKING:
 
     from euporie.apptk.layout.containers import AnyContainer
     from euporie.apptk.mouse_events import MouseEvent
-    from euporie.core.border import GridStyle
+    from euporie.apptk.border import GridStyle
 
     MouseHandler = Callable[[MouseEvent], object]
 
