@@ -18,7 +18,7 @@ from euporie.apptk.border import (
 )
 from euporie.apptk.commands import get_cmd
 from euporie.apptk.key_binding.utils import format_keys, parse_keys
-from euporie.core.ft.table import Table
+from euporie.apptk.formatted_text.table import Table
 from euporie.apptk.formatted_text.utils import indent
 from euporie.core.key_binding.registry import BINDINGS
 
