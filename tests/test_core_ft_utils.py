@@ -5,9 +5,9 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from euporie.apptk.formatted_text.base import FormattedText as Ft
-from euporie.apptk.formatted_text.utils import to_plain_text
 
 from euporie.apptk.data_structures import DiBool
+from euporie.apptk.formatted_text.utils import to_plain_text
 from euporie.core.ft import utils
 
 if TYPE_CHECKING:

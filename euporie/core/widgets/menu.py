@@ -8,11 +8,6 @@ from typing import TYPE_CHECKING
 
 from euporie.apptk.application.current import get_app
 from euporie.apptk.formatted_text.base import to_formatted_text
-from euporie.apptk.formatted_text.utils import (
-    fragment_list_to_text,
-    fragment_list_width,
-    to_plain_text,
-)
 from euporie.apptk.key_binding.key_bindings import KeyBindings
 from euporie.apptk.layout.dimension import Dimension
 from euporie.apptk.layout.menus import (
@@ -30,6 +25,11 @@ from euporie.apptk.filters import (
     has_focus,
     is_done,
     to_filter,
+)
+from euporie.apptk.formatted_text.utils import (
+    fragment_list_to_text,
+    fragment_list_width,
+    to_plain_text,
 )
 from euporie.apptk.layout.containers import (
     ConditionalContainer,
