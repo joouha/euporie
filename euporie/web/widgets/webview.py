@@ -587,10 +587,8 @@ if __name__ == "__main__":
     from euporie.apptk.key_binding.key_bindings import KeyBindings
     from euporie.apptk.layout.layout import Layout
     from euporie.apptk.output.color_depth import ColorDepth
-    from euporie.apptk.styles.style import Style
 
     from euporie.apptk.application.application import Application
-    from euporie.core.style import HTML_STYLE
     from euporie.core.widgets.display import DisplayWindow
     from euporie.web.widgets.webview import WebViewControl
 
@@ -601,7 +599,6 @@ if __name__ == "__main__":
         layout=layout,
         key_bindings=kb,
         full_screen=True,
-        style=Style(HTML_STYLE),
         mouse_support=True,
         color_depth=ColorDepth.DEPTH_24_BIT,
     )

@@ -53,7 +53,6 @@ from euporie.core.lsp import KNOWN_LSP_SERVERS, LspClient
 from euporie.core.style import (
     DEFAULT_COLORS,
     DIAGNOSTIC_STYLE,
-    HTML_STYLE,
     IPYWIDGET_STYLE,
     LOG_STYLE,
     MIME_STYLE,
@@ -716,7 +715,6 @@ class BaseApp(ConfigurableApp, Application, ABC):
 
     base_styles = (
         Style(MIME_STYLE),
-        Style(HTML_STYLE),
         Style(LOG_STYLE),
         Style(IPYWIDGET_STYLE),
         Style(DIAGNOSTIC_STYLE),
