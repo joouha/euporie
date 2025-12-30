@@ -20,7 +20,6 @@ from euporie.apptk.filters.base import Condition
 from euporie.apptk.filters.utils import _always as always
 from euporie.apptk.filters.utils import _never as never
 from euporie.apptk.filters.utils import to_filter
-from euporie.apptk.formatted_text.utils import split_lines
 from euporie.apptk.layout.dimension import Dimension
 from euporie.apptk.utils import Event
 from fsspec.core import url_to_fs
@@ -51,12 +50,9 @@ from euporie.apptk.border import (
 from euporie.apptk.convert.datum import Datum
 from euporie.apptk.convert.mime import get_format
 from euporie.apptk.data_structures import DiBool, DiInt, DiStr, Size
+from euporie.apptk.enums import HorizontalAlign, VerticalAlign
 from euporie.apptk.eventloop.utils import get_or_create_loop, run_coro_sync
-from euporie.apptk.layout.containers import WindowAlign
-from euporie.core.ft.table import Cell, Table, compute_padding
 from euporie.apptk.formatted_text.utils import (
-    FormattedTextAlign,
-    FormattedTextVerticalAlign,
     add_border,
     align,
     apply_reverse_overwrites,
@@ -69,10 +65,13 @@ from euporie.apptk.formatted_text.utils import (
     max_line_width,
     pad,
     paste,
+    split_lines,
     strip,
     truncate,
     valign,
 )
+from euporie.apptk.layout.containers import WindowAlign
+from euporie.core.ft.table import Cell, Table, compute_padding
 
 sub_trans = str.maketrans(
     "0123456789+-=()aeijoruvxβγρφχ",
@@ -353,9 +352,9 @@ _BORDER_WIDTH_STYLES = {
 }
 
 _TEXT_ALIGNS = {
-    "left": FormattedTextAlign.LEFT,
-    "center": FormattedTextAlign.CENTER,
-    "right": FormattedTextAlign.RIGHT,
+    "left": HorizontalAlign.LEFT,
+    "center": HorizontalAlign.CENTER,
+    "right": HorizontalAlign.RIGHT,
 }
 
 _VERTICAL_ALIGNS = {
@@ -1602,18 +1601,18 @@ class Theme(Mapping):
         return DiInt(**values)
 
     @cached_property
-    def block_align(self) -> FormattedTextAlign:
+    def block_align(self) -> HorizontalAlign:
         """Determine if the left and right margins are set to auto."""
         # Temporarily use "justify_self" until flex / grid are implemented (TODO)
         if (self.theme["margin_left"] == self.theme["margin_right"] == "auto") or (
             self.d_inline_block and self.theme.get("justify_self") == "center"
         ):
-            return FormattedTextAlign.CENTER
+            return HorizontalAlign.CENTER
         elif (self.theme["margin_left"] == "auto") or (
             self.d_inline_block and self.theme.get("justify_self") == "right"
         ):
-            return FormattedTextAlign.RIGHT
-        return FormattedTextAlign.LEFT
+            return HorizontalAlign.RIGHT
+        return HorizontalAlign.LEFT
 
     @cached_property
     def border_style(self) -> DiStr:
@@ -1821,12 +1820,12 @@ class Theme(Mapping):
         return self.theme["white_space"] in {"pre", "pre-wrap", "pre-line"}
 
     @cached_property
-    def text_align(self) -> FormattedTextAlign:
+    def text_align(self) -> HorizontalAlign:
         """The text alignment direction."""
         alignment = self.theme.get(
             "justify_content", self.theme.get("text_align", "left")
         )
-        return _TEXT_ALIGNS.get(alignment, FormattedTextAlign.LEFT)
+        return _TEXT_ALIGNS.get(alignment, HorizontalAlign.LEFT)
 
     @cached_property
     def vertical_align(self) -> float:
@@ -4397,7 +4396,7 @@ class HTML:
 
         key = datum.add_size(Size(rows, cols))
         ft = [(f"[Graphic_{key}]", ""), *ft]
-        ft = valign(ft, height=rows, how=FormattedTextVerticalAlign.TOP)
+        ft = valign(ft, height=rows, how=VerticalAlign.TOP)
         return ft
 
     @overload
@@ -4918,7 +4917,7 @@ class HTML:
         # Align content
         if align_content and d_blocky:
             alignment = theme.text_align
-            if alignment != FormattedTextAlign.LEFT:
+            if alignment != HorizontalAlign.LEFT:
                 ft = align(
                     ft,
                     alignment,
@@ -5013,7 +5012,7 @@ class HTML:
         parent_style = parent_theme.style if parent_theme else ""
 
         # Render the margin
-        if (alignment := theme.block_align) != FormattedTextAlign.LEFT:
+        if (alignment := theme.block_align) != HorizontalAlign.LEFT:
             # Center block contents if margin_left and margin_right are "auto"
             ft = align(
                 ft,
@@ -5066,10 +5065,10 @@ if __name__ == "__main__":
     import sys
 
     from euporie.apptk.application.current import create_app_session, set_app
-    from euporie.apptk.formatted_text.utils import to_formatted_text
     from euporie.apptk.shortcuts.utils import print_formatted_text
     from euporie.apptk.styles.style import Style
 
+    from euporie.apptk.formatted_text.utils import to_formatted_text
     from euporie.core.app.dummy import DummyApp
     from euporie.core.path import parse_path
     from euporie.core.style import HTML_STYLE

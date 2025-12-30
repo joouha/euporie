@@ -96,17 +96,13 @@ class PreviewNotebook(BaseNotebook):
     def print_title(self) -> None:
         """Print a notebook's filename."""
         from euporie.apptk.border import DoubleLine
-        from euporie.apptk.formatted_text.utils import (
-            FormattedTextAlign,
-            add_border,
-            align,
-            wrap,
-        )
+        from euporie.apptk.enums import HorizontalAlign
+        from euporie.apptk.formatted_text.utils import add_border, align, wrap
 
         width = self.app.output.get_size().columns
         ft: StyleAndTextTuples = [("bold", str(self.path))]
         ft = wrap(ft, width - 4)
-        ft = align(ft, how=FormattedTextAlign.CENTER, width=width - 4)
+        ft = align(ft, how=HorizontalAlign.CENTER, width=width - 4)
         ft = add_border(ft, width=width, border_grid=DoubleLine.grid)
         ft.append(("", "\n"))
         self.app.print_text(ft)

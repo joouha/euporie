@@ -262,6 +262,8 @@ ignore = [
     "B027",
     # zip() without an explicit strict= parameter
     "B905",
+    # Allow enum aliases
+    "PIE796",
     # Ignore subprocess warnings
     "S603", "S607",
     # Ignore ambiguous-unicode-character-string warning

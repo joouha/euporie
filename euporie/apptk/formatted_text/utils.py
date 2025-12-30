@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import re
-from enum import Enum
 from typing import TYPE_CHECKING, cast
 
 from euporie.apptk.utils import get_cwidth
@@ -17,6 +16,7 @@ from pygments.util import ClassNotFound
 
 from euporie.apptk.border import GridStyle, ThinGrid
 from euporie.apptk.data_structures import DiBool, DiInt, DiStr
+from euporie.apptk.enums import HorizontalAlign, VerticalAlign
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -27,22 +27,6 @@ if TYPE_CHECKING:
     )
 
 _ZERO_WIDTH_FRAGMENTS = {"[ZeroWidthEscape]", "[ReverseOverwrite]"}
-
-
-class FormattedTextAlign(Enum):
-    """Alignment of formatted text."""
-
-    LEFT = "left"
-    RIGHT = "right"
-    CENTER = "center"
-
-
-class FormattedTextVerticalAlign(Enum):
-    """Vertical alignment of formatted text."""
-
-    TOP = "top"
-    MIDDLE = "middle"
-    BOTTOM = "bottom"
 
 
 def fragment_list_width(fragments: StyleAndTextTuples) -> int:
@@ -352,7 +336,7 @@ def wrap(
 
 def align(
     ft: StyleAndTextTuples,
-    how: FormattedTextAlign = FormattedTextAlign.LEFT,
+    how: HorizontalAlign = HorizontalAlign.LEFT,
     width: int | None = None,
     style: str = "",
     placeholder: str = "…",
@@ -387,12 +371,12 @@ def align(
             result += truncate(line, width, style, placeholder, ignore_whitespace)
         else:
             pad_left = pad_right = 0
-            if how == FormattedTextAlign.CENTER:
+            if how == HorizontalAlign.CENTER:
                 pad_left = (width - line_width) // 2
                 pad_right = width - line_width - pad_left
-            elif how == FormattedTextAlign.LEFT:
+            elif how == HorizontalAlign.LEFT:
                 pad_right = width - line_width
-            elif how == FormattedTextAlign.RIGHT:
+            elif how == HorizontalAlign.RIGHT:
                 pad_left = width - line_width
             if pad_left:
                 result.append((style, " " * pad_left))
@@ -406,7 +390,7 @@ def align(
 
 def valign(
     ft: StyleAndTextTuples,
-    how: FormattedTextVerticalAlign = FormattedTextVerticalAlign.MIDDLE,
+    how: VerticalAlign = VerticalAlign.MIDDLE,
     height: int | None = None,
     style: str = "",
 ) -> StyleAndTextTuples:
@@ -416,10 +400,10 @@ def valign(
     lines = list(split_lines(ft))
     width = max(fragment_list_width(line) for line in lines)
     remaining = height - len(lines)
-    if how == FormattedTextVerticalAlign.TOP:
+    if how == VerticalAlign.TOP:
         above = 0
         below = remaining
-    elif how == FormattedTextVerticalAlign.MIDDLE:
+    elif how == VerticalAlign.MIDDLE:
         above = remaining // 2
         below = remaining - above
     else:
@@ -633,7 +617,7 @@ def add_border(
     if ft:
         ft = align(
             ft,
-            FormattedTextAlign.LEFT,
+            HorizontalAlign.LEFT,
             width=inner_width,
             style=style,
         )

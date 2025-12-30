@@ -9,7 +9,6 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from euporie.apptk.application.current import get_app
-from euporie.apptk.formatted_text.utils import split_lines
 from euporie.apptk.key_binding.bindings.focus import focus_next, focus_previous
 from euporie.apptk.key_binding.key_bindings import DynamicKeyBindings, KeyBindings
 from euporie.apptk.layout.dimension import Dimension
@@ -24,6 +23,7 @@ from euporie.apptk.cache import SimpleCache
 from euporie.apptk.clipboard import ClipboardData
 from euporie.apptk.commands import add_cmd
 from euporie.apptk.completion import PathCompleter
+from euporie.apptk.enums import HorizontalAlign
 from euporie.apptk.filters import (
     Condition,
     buffer_has_focus,
@@ -32,6 +32,7 @@ from euporie.apptk.filters import (
     vi_insert_mode,
 )
 from euporie.apptk.formatted_text import AnyFormattedText, to_formatted_text
+from euporie.apptk.formatted_text.utils import align, lex, split_lines
 from euporie.apptk.layout.containers import (
     ConditionalContainer,
     DynamicContainer,
@@ -44,7 +45,6 @@ from euporie.apptk.layout.containers import (
 from euporie.apptk.layout.controls import FormattedTextControl, UIContent, UIControl
 from euporie.apptk.layout.screen import WritePosition
 from euporie.apptk.mouse_events import MouseButton, MouseEventType
-from euporie.apptk.formatted_text.utils import FormattedTextAlign, align, lex
 from euporie.core.layout.decor import FocusedStyle
 from euporie.core.widgets.decor import Border, Shadow
 from euporie.core.widgets.file_browser import FileBrowser
@@ -97,9 +97,7 @@ class DialogTitleControl(UIControl):
         def get_content() -> UIContent:
             lines = list(
                 split_lines(
-                    align(
-                        to_formatted_text(self.title), FormattedTextAlign.CENTER, width
-                    )
+                    align(to_formatted_text(self.title), HorizontalAlign.CENTER, width)
                 )
             )
             return UIContent(
@@ -860,9 +858,9 @@ class ShortcutsDialog(Dialog):
 
     def load(self, *args: Any, **kwargs: Any) -> None:
         """Load the dialog body."""
+        from euporie.apptk.formatted_text.utils import max_line_width
         from euporie.apptk.layout.containers import MarginContainer
         from euporie.apptk.layout.margins import ScrollbarMargin
-        from euporie.apptk.formatted_text.utils import max_line_width
         from euporie.core.widgets.formatted_text_area import FormattedTextArea
 
         if not self.details:
@@ -890,9 +888,9 @@ class ShortcutsDialog(Dialog):
         from euporie.apptk.border import InvisibleLine
         from euporie.apptk.commands import get_cmd
         from euporie.apptk.data_structures import DiInt
+        from euporie.apptk.formatted_text.utils import HorizontalAlign
         from euporie.apptk.key_binding.utils import format_keys, parse_keys
         from euporie.core.ft.table import Table
-        from euporie.apptk.formatted_text.utils import FormattedTextAlign
         from euporie.core.key_binding.registry import BINDINGS
 
         table = Table(padding=0)
@@ -907,7 +905,7 @@ class ShortcutsDialog(Dialog):
                 row = table.new_row()
                 row.new_cell(
                     section_title,
-                    align=FormattedTextAlign.CENTER,
+                    align=HorizontalAlign.CENTER,
                     colspan=2,
                     style="class:shortcuts.group",
                     border_visibility=True,
@@ -922,7 +920,7 @@ class ShortcutsDialog(Dialog):
                         )
                         row.new_cell(
                             "\n".join(key_strs),
-                            align=FormattedTextAlign.RIGHT,
+                            align=HorizontalAlign.RIGHT,
                             style="class:key",
                             border_visibility=False,
                             border_line=InvisibleLine,
