@@ -21,7 +21,7 @@ from euporie.apptk.formatted_text.utils import fragment_list_width, paste, split
 from euporie.apptk.layout.containers import Window
 from euporie.apptk.layout.controls import UIContent, UIControl
 from euporie.apptk.mouse_events import MouseButton, MouseEvent, MouseEventType
-from euporie.core.graphics import GraphicProcessor
+from euporie.apptk.layout.graphics import GraphicProcessor
 from euporie.core.key_binding.registry import (
     load_registered_bindings,
     register_bindings,
