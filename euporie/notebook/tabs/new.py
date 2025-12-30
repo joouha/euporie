@@ -8,13 +8,13 @@ from typing import TYPE_CHECKING
 
 from euporie.apptk.layout.dimension import Dimension
 
+from euporie.apptk.border import RoundedLine
 from euporie.apptk.commands import get_cmd
+from euporie.apptk.convert.datum import Datum
 from euporie.apptk.data_structures import DiBool
 from euporie.apptk.layout.containers import HSplit, VSplit, Window
 from euporie.apptk.mouse_events import MouseButton, MouseEventType
 from euporie.core.bars.status import StatusContainer
-from euporie.apptk.border import RoundedLine
-from euporie.apptk.convert.datum import Datum
 from euporie.core.layout.decor import FocusedStyle, Pattern
 from euporie.core.tabs.base import Tab
 from euporie.core.widgets.display import Display

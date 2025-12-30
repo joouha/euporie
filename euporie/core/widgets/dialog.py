@@ -15,6 +15,11 @@ from euporie.apptk.key_binding.key_bindings import DynamicKeyBindings, KeyBindin
 from euporie.apptk.layout.dimension import Dimension
 from euporie.apptk.widgets.base import Label
 
+from euporie.apptk.border import (
+    FullLine,
+    LowerLeftHalfLine,
+    UpperRightHalfLine,
+)
 from euporie.apptk.cache import SimpleCache
 from euporie.apptk.clipboard import ClipboardData
 from euporie.apptk.commands import add_cmd
@@ -39,11 +44,6 @@ from euporie.apptk.layout.containers import (
 from euporie.apptk.layout.controls import FormattedTextControl, UIContent, UIControl
 from euporie.apptk.layout.screen import WritePosition
 from euporie.apptk.mouse_events import MouseButton, MouseEventType
-from euporie.apptk.border import (
-    FullLine,
-    LowerLeftHalfLine,
-    UpperRightHalfLine,
-)
 from euporie.core.ft.utils import FormattedTextAlign, align, lex
 from euporie.core.layout.decor import FocusedStyle
 from euporie.core.widgets.decor import Border, Shadow
@@ -887,10 +887,10 @@ class ShortcutsDialog(Dialog):
 
         from euporie.apptk.formatted_text.base import to_formatted_text
 
+        from euporie.apptk.border import InvisibleLine
         from euporie.apptk.commands import get_cmd
         from euporie.apptk.data_structures import DiInt
         from euporie.apptk.key_binding.utils import format_keys, parse_keys
-        from euporie.apptk.border import InvisibleLine
         from euporie.core.ft.table import Table
         from euporie.core.ft.utils import FormattedTextAlign
         from euporie.core.key_binding.registry import BINDINGS

@@ -26,9 +26,6 @@ from euporie.apptk.utils import Event
 from fsspec.core import url_to_fs
 from upath import UPath
 
-from euporie.apptk.data_structures import DiBool, DiInt, DiStr, Size
-from euporie.apptk.layout.containers import WindowAlign
-from euporie.apptk.eventloop.utils import get_or_create_loop, run_coro_sync
 from euporie.apptk.border import (
     DiLineStyle,
     DoubleLine,
@@ -53,6 +50,9 @@ from euporie.apptk.border import (
 )
 from euporie.apptk.convert.datum import Datum
 from euporie.apptk.convert.mime import get_format
+from euporie.apptk.data_structures import DiBool, DiInt, DiStr, Size
+from euporie.apptk.eventloop.utils import get_or_create_loop, run_coro_sync
+from euporie.apptk.layout.containers import WindowAlign
 from euporie.core.ft.table import Cell, Table, compute_padding
 from euporie.core.ft.utils import (
     FormattedTextAlign,

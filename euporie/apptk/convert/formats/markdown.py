@@ -5,8 +5,8 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-from euporie.apptk.filters.environment import have_modules
 from euporie.apptk.convert.registry import register
+from euporie.apptk.filters.environment import have_modules
 
 if TYPE_CHECKING:
     from typing import Any

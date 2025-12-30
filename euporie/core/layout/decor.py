@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 from euporie.apptk.application.current import get_app
 from euporie.apptk.layout.dimension import Dimension
 
+from euporie.apptk.border import ThinLine
 from euporie.apptk.cache import FastDictCache
 from euporie.apptk.color import ColorPaletteColor
 from euporie.apptk.filters import has_focus
@@ -17,7 +18,6 @@ from euporie.apptk.layout.containers import (
 )
 from euporie.apptk.layout.screen import Char, Screen, WritePosition
 from euporie.apptk.mouse_events import MouseEventType
-from euporie.apptk.border import ThinLine
 
 if TYPE_CHECKING:
     from collections.abc import Callable

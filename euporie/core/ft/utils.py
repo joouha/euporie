@@ -16,8 +16,8 @@ from euporie.apptk.utils import get_cwidth
 from pygments.lexers import get_lexer_by_name
 from pygments.util import ClassNotFound
 
-from euporie.apptk.data_structures import DiBool, DiInt, DiStr
 from euporie.apptk.border import GridStyle, ThinGrid
+from euporie.apptk.data_structures import DiBool, DiInt, DiStr
 
 if TYPE_CHECKING:
     from collections.abc import Iterable

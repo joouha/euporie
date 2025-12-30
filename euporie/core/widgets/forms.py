@@ -27,6 +27,7 @@ from euporie.apptk.utils import Event
 from euporie.apptk.validation import Validator
 
 from euporie.apptk.auto_suggest import DynamicAutoSuggest
+from euporie.apptk.border import InsetGrid
 from euporie.apptk.cache import SimpleCache
 from euporie.apptk.completion import Completer, ConditionalCompleter, WordCompleter
 from euporie.apptk.data_structures import DiBool, DiInt, Point
@@ -66,7 +67,6 @@ from euporie.apptk.layout.processors import (
 from euporie.apptk.layout.screen import WritePosition
 from euporie.apptk.lexers import DynamicLexer, Lexer
 from euporie.apptk.mouse_events import MouseButton, MouseEvent, MouseEventType
-from euporie.apptk.border import InsetGrid
 from euporie.core.ft.utils import FormattedTextAlign, align
 from euporie.core.widgets.decor import Border, Shadow
 from euporie.core.widgets.layout import Box, ConditionalSplit
@@ -89,6 +89,7 @@ if TYPE_CHECKING:
     from euporie.apptk.layout.dimension import AnyDimension
 
     from euporie.apptk.auto_suggest import AutoSuggest
+    from euporie.apptk.border import GridStyle
     from euporie.apptk.key_binding.key_processor import KeyPressEvent
     from euporie.apptk.layout.containers import AnyContainer
     from euporie.apptk.layout.controls import (
@@ -97,7 +98,6 @@ if TYPE_CHECKING:
     )
     from euporie.apptk.layout.processors import Processor
     from euporie.apptk.lexers import Lexer
-    from euporie.apptk.border import GridStyle
 
     OptionalSearchBuffer = (
         SearchBufferControl | Callable[[], SearchBufferControl] | None

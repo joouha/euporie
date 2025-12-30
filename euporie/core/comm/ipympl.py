@@ -9,6 +9,8 @@ from typing import TYPE_CHECKING
 
 from euporie.apptk.filters.base import Condition
 
+from euporie.apptk.convert.datum import Datum
+from euporie.apptk.convert.mime import MIME_FORMATS
 from euporie.apptk.layout.containers import ConditionalContainer, HSplit, VSplit
 from euporie.apptk.mouse_events import (
     MouseButton,
@@ -18,8 +20,6 @@ from euporie.apptk.mouse_events import (
 )
 from euporie.core.comm.base import CommView
 from euporie.core.comm.ipywidgets import IpyWidgetComm
-from euporie.apptk.convert.datum import Datum
-from euporie.apptk.convert.mime import MIME_FORMATS
 from euporie.core.layout.decor import FocusedStyle
 from euporie.core.widgets.display import Display
 from euporie.core.widgets.forms import Button, Label, ToggleButton

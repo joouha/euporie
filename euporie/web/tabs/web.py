@@ -10,11 +10,11 @@ from euporie.apptk.application.current import get_app
 from euporie.apptk.layout.dimension import Dimension
 from upath import UPath
 
+from euporie.apptk.convert.mime import get_mime
 from euporie.apptk.data_structures import DiBool
 from euporie.apptk.filters import Condition
 from euporie.apptk.layout.containers import HSplit, MarginContainer, VSplit
 from euporie.apptk.layout.margins import ScrollbarMargin
-from euporie.apptk.convert.mime import get_mime
 from euporie.core.layout.decor import FocusedStyle
 from euporie.core.tabs.base import Tab
 from euporie.core.widgets.display import DisplayWindow
