@@ -5,14 +5,14 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from euporie.apptk.filters.environment import have_modules
-from euporie.core.convert.registry import register
+from euporie.apptk.convert.registry import register
 
 if TYPE_CHECKING:
     from typing import Any
 
     from rich.markdown import Markdown
 
-    from euporie.core.convert.datum import Datum
+    from euporie.apptk.convert.datum import Datum
 
 
 @register(

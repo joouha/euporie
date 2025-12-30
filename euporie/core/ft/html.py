@@ -51,8 +51,8 @@ from euporie.apptk.border import (
     UpperRightHalfDottedLine,
     UpperRightHalfLine,
 )
-from euporie.core.convert.datum import Datum
-from euporie.core.convert.mime import get_format
+from euporie.apptk.convert.datum import Datum
+from euporie.apptk.convert.mime import get_format
 from euporie.core.ft.table import Cell, Table, compute_padding
 from euporie.core.ft.utils import (
     FormattedTextAlign,

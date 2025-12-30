@@ -9,14 +9,14 @@ from typing import TYPE_CHECKING
 from euporie.apptk.application.current import get_app
 
 from euporie.apptk.lexers.utils import detect_lexer
-from euporie.core.convert.registry import register
+from euporie.apptk.convert.registry import register
 
 if TYPE_CHECKING:
     from typing import Any
 
     from markdown_it import MarkdownIt
 
-    from euporie.core.convert.datum import Datum
+    from euporie.apptk.convert.datum import Datum
 
 log = logging.getLogger(__name__)
 

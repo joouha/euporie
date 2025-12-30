@@ -17,7 +17,7 @@ from euporie.apptk.layout.containers import (
     HSplit,
     to_container,
 )
-from euporie.core.convert.registry import find_route
+from euporie.apptk.convert.registry import find_route
 from euporie.core.widgets.display import Display
 from euporie.core.widgets.layout import Box
 from euporie.core.widgets.tree import JsonView
@@ -102,9 +102,9 @@ class CellOutputDataElement(CellOutputElement):
             metadata: Any metadata relating to the data
             parent: The cell the output-element is attached to
         """
-        from euporie.core.convert.datum import Datum
-        from euporie.core.convert.formats import BASE64_FORMATS
-        from euporie.core.convert.mime import MIME_FORMATS
+        from euporie.apptk.convert.datum import Datum
+        from euporie.apptk.convert.formats import BASE64_FORMATS
+        from euporie.apptk.convert.mime import MIME_FORMATS
 
         self.parent = parent
 
@@ -175,7 +175,7 @@ class CellOutputDataElement(CellOutputElement):
     @data.setter
     def data(self, value: Any) -> None:
         """Set the cell output's data."""
-        from euporie.core.convert.datum import Datum
+        from euporie.apptk.convert.datum import Datum
 
         self._datum = Datum(
             value,

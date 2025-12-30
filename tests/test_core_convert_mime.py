@@ -12,7 +12,7 @@ from fsspec.implementations.http import HTTPFileSystem
 from upath import UPath
 from upath.implementations.http import HTTPPath
 
-from euporie.core.convert.mime import get_format, get_mime
+from euporie.apptk.convert.mime import get_format, get_mime
 
 if TYPE_CHECKING:
     from types import TracebackType

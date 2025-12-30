@@ -8,12 +8,12 @@ from typing import TYPE_CHECKING
 
 from euporie.apptk.application.current import get_app
 
-from euporie.core.convert.utils import call_subproc, scale_to_fit
+from euporie.apptk.convert.utils import call_subproc, scale_to_fit
 
 if TYPE_CHECKING:
     from typing import Any, Literal
 
-    from euporie.core.convert.datum import Datum
+    from euporie.apptk.convert.datum import Datum
 
 log = logging.getLogger(__name__)
 

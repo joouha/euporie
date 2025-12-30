@@ -15,7 +15,7 @@ from euporie.apptk.application.current import get_app
 if TYPE_CHECKING:
     from typing import Any
 
-    from euporie.core.convert.datum import Datum
+    from euporie.apptk.convert.datum import Datum
 
 log = logging.getLogger(__name__)
 

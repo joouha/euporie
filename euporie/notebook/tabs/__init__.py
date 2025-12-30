@@ -1,6 +1,6 @@
 """Tab for use in euporie notebook editor."""
 
-from euporie.core.convert.mime import MIME_FORMATS
+from euporie.apptk.convert.mime import MIME_FORMATS
 from euporie.core.nbformat import NOTEBOOK_EXTENSIONS
 from euporie.core.tabs import _TAB_REGISTRY, TabRegistryEntry
 

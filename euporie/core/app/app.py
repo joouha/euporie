@@ -504,7 +504,7 @@ class BaseApp(ConfigurableApp, Application, ABC):
 
     def get_file_tabs(self, path: Path) -> list[TabRegistryEntry]:
         """Return the tab to use for a file path."""
-        from euporie.core.convert.mime import get_mime
+        from euporie.apptk.convert.mime import get_mime
 
         path_mime = get_mime(path) or "text/plain"
         log.debug("File %s has mime type: %s", path, path_mime)
