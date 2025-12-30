@@ -12,11 +12,6 @@ from euporie.apptk.formatted_text.base import to_formatted_text
 from euporie.apptk.formatted_text.utils import split_lines, to_plain_text
 from euporie.apptk.layout.dimension import Dimension, to_dimension
 
-from euporie.apptk.data_structures import (
-    DiBool,
-    DiInt,
-    DiStr,
-)
 from euporie.apptk.border import (
     DiLineStyle,
     GridChar,
@@ -25,6 +20,11 @@ from euporie.apptk.border import (
     NoLine,
     ThinLine,
     get_grid_char,
+)
+from euporie.apptk.data_structures import (
+    DiBool,
+    DiInt,
+    DiStr,
 )
 from euporie.core.ft.utils import (
     FormattedTextAlign,

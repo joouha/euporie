@@ -19,8 +19,8 @@ from euporie.apptk.convert.registry import (
     converters,
 )
 from euporie.apptk.data_structures import Size
-from euporie.apptk.layout.containers import WindowAlign
 from euporie.apptk.eventloop.utils import get_or_create_loop, run_coro_sync
+from euporie.apptk.layout.containers import WindowAlign
 
 if TYPE_CHECKING:
     from pathlib import Path

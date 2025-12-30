@@ -22,6 +22,7 @@ from euporie.apptk.filters.base import Condition
 from euporie.apptk.layout.dimension import Dimension
 from euporie.apptk.utils import Event
 
+from euporie.apptk.border import NoLine, ThickLine, ThinLine
 from euporie.apptk.completion.deduplicate import DeduplicateCompleter
 from euporie.apptk.diagnostics import Report
 from euporie.apptk.layout.containers import (
@@ -32,7 +33,6 @@ from euporie.apptk.layout.containers import (
     Window,
 )
 from euporie.apptk.layout.controls import FormattedTextControl
-from euporie.apptk.border import NoLine, ThickLine, ThinLine
 from euporie.core.completion import LspCompleter
 from euporie.core.filters import multiple_cells_selected
 from euporie.core.format import LspFormatter

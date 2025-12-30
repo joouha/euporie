@@ -15,6 +15,7 @@ from euporie.apptk.utils import Event, to_str
 
 from euporie.apptk.cache import FastDictCache, SimpleCache
 from euporie.apptk.commands import add_cmd
+from euporie.apptk.convert.datum import Datum
 from euporie.apptk.data_structures import Point, Size
 from euporie.apptk.layout.containers import (
     ConditionalContainer,
@@ -25,7 +26,6 @@ from euporie.apptk.layout.containers import (
 from euporie.apptk.layout.controls import GetLinePrefixCallable, UIContent, UIControl
 from euporie.apptk.layout.margins import ScrollbarMargin
 from euporie.apptk.mouse_events import MouseEvent, MouseEventType
-from euporie.apptk.convert.datum import Datum
 from euporie.core.filters import display_has_focus, scrollable
 from euporie.core.ft.utils import wrap
 from euporie.core.graphics import GraphicProcessor

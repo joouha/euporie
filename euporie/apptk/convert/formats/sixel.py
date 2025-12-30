@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING
 
 from euporie.apptk.application.current import get_app
 
-from euporie.apptk.filters.environment import command_exists, have_modules
 from euporie.apptk.convert.formats.common import (
     chafa_convert_cmd,
     chafa_convert_py,
@@ -15,6 +14,7 @@ from euporie.apptk.convert.formats.common import (
 )
 from euporie.apptk.convert.registry import register
 from euporie.apptk.convert.utils import call_subproc
+from euporie.apptk.filters.environment import command_exists, have_modules
 
 if TYPE_CHECKING:
     from typing import Any

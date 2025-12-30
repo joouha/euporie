@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 from euporie.apptk.application.current import get_app
 from euporie.apptk.widgets.base import Label
 
+from euporie.apptk.border import ThinLine
 from euporie.apptk.data_structures import DiBool
 from euporie.apptk.filters import to_filter
 from euporie.apptk.layout.containers import (
@@ -18,7 +19,6 @@ from euporie.apptk.layout.containers import (
     VSplit,
     Window,
 )
-from euporie.apptk.border import ThinLine
 from euporie.core.layout.decor import DropShadow
 
 if TYPE_CHECKING:
@@ -26,9 +26,9 @@ if TYPE_CHECKING:
 
     from euporie.apptk.formatted_text.base import AnyFormattedText
 
+    from euporie.apptk.border import GridStyle
     from euporie.apptk.layout.containers import AnyContainer
     from euporie.apptk.mouse_events import MouseEvent
-    from euporie.apptk.border import GridStyle
 
     MouseHandler = Callable[[MouseEvent], object]
 

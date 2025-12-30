@@ -16,6 +16,7 @@ from euporie.apptk.layout.dimension import to_dimension
 from euporie.apptk.layout.utils import explode_text_fragments
 from euporie.apptk.utils import Event
 
+from euporie.apptk.border import OutsetGrid
 from euporie.apptk.cache import SimpleCache
 from euporie.apptk.data_structures import DiBool
 from euporie.apptk.filters import Condition, to_filter
@@ -34,7 +35,6 @@ from euporie.apptk.layout.controls import (
     UIControl,
 )
 from euporie.apptk.mouse_events import MouseButton, MouseEventType
-from euporie.apptk.border import OutsetGrid
 from euporie.core.ft.utils import truncate
 from euporie.core.widgets.decor import Border
 
@@ -53,11 +53,11 @@ if TYPE_CHECKING:
     )
     from euporie.apptk.layout.dimension import AnyDimension
 
+    from euporie.apptk.border import GridStyle
     from euporie.apptk.filters import FilterOrBool
     from euporie.apptk.key_binding.key_processor import KeyPressEvent
     from euporie.apptk.layout.containers import AnyContainer, Container, _Split
     from euporie.apptk.mouse_events import MouseEvent
-    from euporie.apptk.border import GridStyle
 
 log = logging.getLogger(__name__)
 

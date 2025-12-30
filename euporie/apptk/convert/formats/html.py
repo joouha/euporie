@@ -8,8 +8,8 @@ from typing import TYPE_CHECKING
 
 from euporie.apptk.application.current import get_app
 
-from euporie.apptk.lexers.utils import detect_lexer
 from euporie.apptk.convert.registry import register
+from euporie.apptk.lexers.utils import detect_lexer
 
 if TYPE_CHECKING:
     from typing import Any

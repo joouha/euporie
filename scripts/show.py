@@ -7,10 +7,10 @@ from typing import TYPE_CHECKING
 
 from euporie.apptk.application.current import set_app
 
-from euporie.apptk.layout.containers import DummyContainer
-from euporie.core.app.app import BaseApp
 from euporie.apptk.convert.datum import Datum
 from euporie.apptk.convert.mime import get_format
+from euporie.apptk.layout.containers import DummyContainer
+from euporie.core.app.app import BaseApp
 from euporie.core.path import parse_path
 
 if TYPE_CHECKING:
