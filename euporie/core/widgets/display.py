@@ -27,7 +27,7 @@ from euporie.apptk.layout.controls import GetLinePrefixCallable, UIContent, UICo
 from euporie.apptk.layout.margins import ScrollbarMargin
 from euporie.apptk.mouse_events import MouseEvent, MouseEventType
 from euporie.core.filters import display_has_focus, scrollable
-from euporie.core.graphics import GraphicProcessor
+from euporie.apptk.layout.graphics import GraphicProcessor
 from euporie.core.key_binding.registry import (
     load_registered_bindings,
     register_bindings,
