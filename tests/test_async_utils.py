@@ -1,4 +1,4 @@
-"""Unit tests for euporie.core.async_utils module."""
+"""Unit tests for euporie.apptk.eventloop.utils module."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from euporie.core import async_utils
+from euporie.apptk.eventloop import utils as async_utils
 
 if TYPE_CHECKING:
     from collections.abc import Generator

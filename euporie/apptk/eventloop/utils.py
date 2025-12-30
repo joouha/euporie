@@ -14,6 +14,8 @@ if TYPE_CHECKING:
 
     T = TypeVar("T")
 
+__all__ = ["get_or_create_loop", "run_coro_async", "run_coro_sync"]
+
 _LOOPS: dict[str, asyncio.AbstractEventLoop] = {}
 _THREADS: dict[str, threading.Thread] = {}
 
