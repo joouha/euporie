@@ -9,6 +9,7 @@ from euporie.apptk.application.current import get_app
 from euporie.apptk.layout.dimension import Dimension
 
 from euporie.apptk.cache import FastDictCache
+from euporie.apptk.color import ColorPaletteColor
 from euporie.apptk.filters import has_focus
 from euporie.apptk.layout.containers import (
     Container,
@@ -17,7 +18,6 @@ from euporie.apptk.layout.containers import (
 from euporie.apptk.layout.screen import Char, Screen, WritePosition
 from euporie.apptk.mouse_events import MouseEventType
 from euporie.core.border import ThinLine
-from euporie.core.style import ColorPaletteColor
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -27,9 +27,9 @@ if TYPE_CHECKING:
     )
     from euporie.apptk.layout.mouse_handlers import MouseHandlers
 
+    from euporie.apptk.color import ColorPalette
     from euporie.apptk.layout.containers import AnyContainer
     from euporie.apptk.mouse_events import MouseEvent
-    from euporie.core.style import ColorPalette
 
     MouseHandler = Callable[[MouseEvent], object]
 
