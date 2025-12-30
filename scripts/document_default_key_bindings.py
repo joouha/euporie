@@ -13,7 +13,7 @@ from euporie.apptk.shortcuts.utils import print_formatted_text
 
 from euporie.apptk.commands import get_cmd
 from euporie.apptk.key_binding.utils import format_keys, parse_keys
-from euporie.core.border import (
+from euporie.apptk.border import (
     AsciiLine,
     AsciiThickLine,
     DiLineStyle,

@@ -19,7 +19,7 @@ from euporie.apptk.layout.containers import HSplit, MarginContainer, VSplit, Win
 from euporie.apptk.layout.controls import BufferControl, UIContent, UIControl
 from euporie.apptk.layout.margins import ScrollbarMargin
 from euporie.apptk.mouse_events import MouseButton, MouseEventType
-from euporie.core.border import InsetGrid
+from euporie.apptk.border import InsetGrid
 from euporie.core.widgets.decor import Border
 from euporie.core.widgets.forms import Dropdown
 

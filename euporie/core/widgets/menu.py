@@ -43,7 +43,7 @@ from euporie.apptk.layout.containers import (
 from euporie.apptk.layout.controls import FormattedTextControl, UIContent
 from euporie.apptk.mouse_events import MouseEvent, MouseEventType
 from euporie.core.bars.status import StatusContainer
-from euporie.core.border import OuterHalfGrid
+from euporie.apptk.border import OuterHalfGrid
 from euporie.core.widgets.decor import Shadow
 
 if TYPE_CHECKING:
@@ -64,7 +64,7 @@ if TYPE_CHECKING:
     from euporie.apptk.layout.controls import UIControl
     from euporie.core.app.app import BaseApp
     from euporie.core.bars.status import StatusBarFields
-    from euporie.core.border import GridStyle
+    from euporie.apptk.border import GridStyle
 
 
 log = logging.getLogger(__name__)

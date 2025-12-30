@@ -95,7 +95,7 @@ class PreviewNotebook(BaseNotebook):
 
     def print_title(self) -> None:
         """Print a notebook's filename."""
-        from euporie.core.border import DoubleLine
+        from euporie.apptk.border import DoubleLine
         from euporie.core.ft.utils import (
             FormattedTextAlign,
             add_border,

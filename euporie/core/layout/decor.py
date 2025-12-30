@@ -17,7 +17,7 @@ from euporie.apptk.layout.containers import (
 )
 from euporie.apptk.layout.screen import Char, Screen, WritePosition
 from euporie.apptk.mouse_events import MouseEventType
-from euporie.core.border import ThinLine
+from euporie.apptk.border import ThinLine
 
 if TYPE_CHECKING:
     from collections.abc import Callable

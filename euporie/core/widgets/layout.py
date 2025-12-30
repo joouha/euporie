@@ -34,7 +34,7 @@ from euporie.apptk.layout.controls import (
     UIControl,
 )
 from euporie.apptk.mouse_events import MouseButton, MouseEventType
-from euporie.core.border import OutsetGrid
+from euporie.apptk.border import OutsetGrid
 from euporie.core.ft.utils import truncate
 from euporie.core.widgets.decor import Border
 
@@ -57,7 +57,7 @@ if TYPE_CHECKING:
     from euporie.apptk.key_binding.key_processor import KeyPressEvent
     from euporie.apptk.layout.containers import AnyContainer, Container, _Split
     from euporie.apptk.mouse_events import MouseEvent
-    from euporie.core.border import GridStyle
+    from euporie.apptk.border import GridStyle
 
 log = logging.getLogger(__name__)
 
