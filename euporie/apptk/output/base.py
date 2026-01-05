@@ -26,7 +26,7 @@ class Output(PtkOutput, metaclass=ABCMeta):
     def get_pixel_size(self) -> tuple[int, int]:
         """Return terminal size in pixels."""
         size = self.get_size()
-        return Size(size.x * 10, size.y * 20)
+        return Size(rows=size.rows * 20, columns=size.columns * 20)
 
     def set_pixel_size(self, px: int, py: int) -> None:
         """Set terminal pixel dimensions."""
