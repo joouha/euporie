@@ -4703,3 +4703,30 @@ class HTML(PtkHTML):
     def __repr__(self) -> str:
         """Representation of Python object."""
         return f"HTML({self.value[:10]!r})"
+
+
+if __name__ == "__main__":
+    import sys
+
+    from euporie.apptk.application.current import create_app_session, set_app
+    from euporie.apptk.shortcuts.utils import print_formatted_text
+
+    from euporie.apptk.formatted_text.utils import to_formatted_text
+    from euporie.core.app.dummy import DummyApp
+    from euporie.core.path import parse_path
+
+    path = parse_path(sys.argv[1])
+
+    with (
+        create_app_session(input=DummyApp.load_input(), output=DummyApp.load_output()),
+        set_app(DummyApp()),
+    ):
+        print_formatted_text(
+            to_formatted_text(
+                asyncio.run(
+                    HTML(
+                        path.read_text(), base=path, collapse_root_margin=False
+                    )._render(None, None)
+                )
+            ),
+        )
