@@ -362,7 +362,7 @@ class BaseApp(ConfigurableApp, Application, ABC):
         input_ = create_input(always_prefer_tty=True)
 
         if (stdin := getattr(input_, "stdin", None)) and not stdin.isatty():
-            from euporie.apptk.io import IgnoredInput
+            from euporie.apptk.input.base import IgnoredInput
 
             input_ = IgnoredInput()
 
