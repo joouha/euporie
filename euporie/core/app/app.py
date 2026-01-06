@@ -29,6 +29,7 @@ from euporie.apptk.renderer import Renderer
 from euporie.apptk.styles import (
     BaseStyle,
     ConditionalStyleTransformation,
+    DummyStyle,
     SetDefaultColorStyleTransformation,
     Style,
     SwapLightAndDarkStyleTransformation,
@@ -70,8 +71,7 @@ if TYPE_CHECKING:
     from euporie.apptk.contrib.ssh import PromptToolkitSSHSession
     from euporie.apptk.layout.layout import FocusableElement
 
-    from euporie.apptk.data_structures import Point
-    from euporie.apptk.filters import FilterOrBool
+    from euporie.apptk.filters import Filter, FilterOrBool
     from euporie.apptk.input import Input
     from euporie.apptk.layout.containers import AnyContainer
     from euporie.apptk.output import Output
@@ -204,7 +204,7 @@ class BaseApp(ConfigurableApp, Application, ABC):
         self.color_palette.add_color("bg", "#000000", "default")
         # Set up style update triggers
         self.style_invalid = False
-        self.before_render += self.do_style_update
+        self.before_render += self._do_style_update
 
         # Store LSP client instances
         self.lsp_clients: WeakValueDictionary[str, LspClient] = WeakValueDictionary()
@@ -731,13 +731,12 @@ class BaseApp(ConfigurableApp, Application, ABC):
         """Tell the application the style is out of date."""
         self.style_invalid = True
 
-    def do_style_update(self, caller: Application | None = None) -> None:
+    def _do_style_update(self, caller: Application | None = None) -> None:
         """Update the application's style when the syntax theme is changed."""
         if self.style_invalid:
             self.style_invalid = False
             self.renderer.style = self.create_merged_style()
-            # self.invalidate()
-            # self.renderer.reset()
+            # self.style = self.create_merged_style()
 
     def refresh(self) -> None:
         """Reset all tabs."""
