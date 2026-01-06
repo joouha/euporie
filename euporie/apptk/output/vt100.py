@@ -3,14 +3,14 @@
 from __future__ import annotations
 
 import logging
+import os
 from base64 import b64encode
 from functools import lru_cache
-from typing import (
-    TYPE_CHECKING,
-    TextIO,
-)
+from typing import TYPE_CHECKING, TextIO
 
 from euporie.apptk.filters.utils import to_filter
+from euporie.apptk.output.color_depth import ColorDepth
+from euporie.apptk.utils import is_dumb_terminal
 from prompt_toolkit.output.vt100 import Vt100_Output as PtkVt100_Output
 
 from euporie.apptk.filters.environment import in_screen, in_tmux
@@ -19,7 +19,6 @@ if TYPE_CHECKING:
     from collections.abc import Callable
 
     from euporie.apptk.filters.base import FilterOrBool
-    from euporie.apptk.output.color_depth import ColorDepth
 
     from euporie.apptk.data_structures import Size
 
@@ -186,3 +185,34 @@ class Vt100_Output(PtkVt100_Output):
     def ask_for_csiu_status(self) -> None:
         """Query terminal to check for CSI-u support."""
         self.write_raw("\x1b[?u")
+
+    def get_default_color_depth(self) -> ColorDepth:
+        """Return the default color depth for a vt100 terminal, according to the our term value.
+
+        We prefer 256 colors almost always, because this is what most terminals
+        support these days, and is a good default.
+
+        This override adds support for the NO_COLOR and COLORTERM environment variables.
+        """
+        if self.default_color_depth is not None:
+            return self.default_color_depth
+
+        colorterm = os.environ.get("COLORTERM", "")
+        if "truecolor" in colorterm or "24bit" in colorterm:
+            return ColorDepth.DEPTH_24_BIT
+
+        term = self.term
+
+        if term is None:
+            return ColorDepth.DEFAULT
+
+        if is_dumb_terminal(term) or os.environ.get("NO_COLOR", ""):
+            return ColorDepth.DEPTH_1_BIT
+
+        if term in ("linux", "eterm-color"):
+            return ColorDepth.DEPTH_4_BIT
+
+        if "256" in term:
+            return ColorDepth.DEPTH_8_BIT
+
+        return ColorDepth.DEFAULT
