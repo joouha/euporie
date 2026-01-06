@@ -8,7 +8,7 @@ import os
 import signal
 import sys
 from abc import ABC, abstractmethod
-from functools import partial
+from functools import cache, partial
 from pathlib import PurePath
 from typing import TYPE_CHECKING, cast, overload
 from weakref import WeakSet, WeakValueDictionary
@@ -17,6 +17,7 @@ from euporie.apptk.application.current import create_app_session, set_app
 from euporie.apptk.input.defaults import create_input
 from euporie.apptk.layout.layout import Layout
 from euporie.apptk.output.defaults import create_output
+from euporie.apptk.clipboard import DynamicClipboard
 from euporie.apptk.styles import (
     BaseStyle,
     ConditionalStyleTransformation,
@@ -137,10 +138,13 @@ class BaseApp(ConfigurableApp, Application, ABC):
 
         """
         # Initialise the application
+        _get_clipboard = cache(lambda c: c())
         super().__init__(
             **{
-                "clipboard": self.config.clipboard(),
                 "color_depth": self.config.color_depth,
+                "clipboard": DynamicClipboard(
+                    lambda: _get_clipboard(self.config.clipboard)
+                ),
                 "editing_mode": self.config.edit_mode,
                 "mouse_support": True,
                 "cursor": CursorConfig(),
