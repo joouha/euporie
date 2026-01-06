@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from abc import ABCMeta
 
+from prompt_toolkit.output.base import DummyOutput as PtkDummyOutput
 from prompt_toolkit.output.base import Output as PtkOutput
 
 from euporie.apptk.data_structures import Size
@@ -26,7 +27,7 @@ class Output(PtkOutput, metaclass=ABCMeta):
     def get_pixel_size(self) -> tuple[int, int]:
         """Return terminal size in pixels."""
         size = self.get_size()
-        return Size(rows=size.rows * 20, columns=size.columns * 20)
+        return Size(rows=size.rows * 20, columns=size.columns * 10)
 
     def set_pixel_size(self, px: int, py: int) -> None:
         """Set terminal pixel dimensions."""
@@ -83,3 +84,6 @@ class Output(PtkOutput, metaclass=ABCMeta):
 
     def ask_for_csiu_status(self) -> None:
         """Query terminal to check for CSI-u support."""
+
+
+class DummyOutput(PtkDummyOutput, Output): ...
