@@ -20,7 +20,7 @@ class Osc52Clipboard(Clipboard):
 
     def set_data(self, data: ClipboardData) -> None:
         """Set clipboard data."""
-        from euporie.output.vt100 import Vt100_Output
+        from euporie.apptk.output.vt100 import Vt100_Output
 
         output = get_app().output
         if isinstance(output, Vt100_Output):
@@ -30,7 +30,6 @@ class Osc52Clipboard(Clipboard):
 
     def get_data(self) -> ClipboardData:
         """Retrieve clipboard data."""
-        from euporie.apptk.key_binding.key_processor import KeyProcessor
         from euporie.apptk.output.vt100 import Vt100_Output
 
         # Send clipboard query
@@ -40,11 +39,10 @@ class Osc52Clipboard(Clipboard):
         if isinstance(output, Vt100_Output):
             from euporie.apptk.keys import Keys
 
-            output.get_clipboard()
+            output.ask_for_clipboard()
             output.flush()
             # Wait for terminal response
-            if isinstance(app.key_processor, KeyProcessor):
-                app.key_processor.await_key(Keys.ClipboardDataResponse)
+            app.key_processor.await_key(Keys.ClipboardDataResponse)
         return self._data
 
     def sync(self, text: str) -> None:
