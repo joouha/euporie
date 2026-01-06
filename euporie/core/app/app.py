@@ -141,10 +141,10 @@ class BaseApp(ConfigurableApp, Application, ABC):
         _get_clipboard = cache(lambda c: c())
         super().__init__(
             **{
-                "color_depth": self.config.color_depth,
                 "clipboard": DynamicClipboard(
                     lambda: _get_clipboard(self.config.clipboard)
                 ),
+                "color_depth": lambda: self.config.color_depth,
                 "editing_mode": self.config.edit_mode,
                 "mouse_support": True,
                 "cursor": CursorConfig(),
@@ -215,9 +215,6 @@ class BaseApp(ConfigurableApp, Application, ABC):
         self.config.events.log_level += lambda x: setup_logs(self.config)
         self.config.events.log_file += lambda x: setup_logs(self.config)
         self.config.events.log_config += lambda x: setup_logs(self.config)
-        self.config.events.color_depth += lambda x: setattr(
-            self, "_color_depth", self.config.color_depth
-        )
         self.config.events.clipboard += lambda x: setattr(
             self, "clipboard", self.config.clipboard
         )
@@ -683,31 +680,6 @@ class BaseApp(ConfigurableApp, Application, ABC):
             tab = self.tab
         if tab is not None:
             tab.close(cb=partial(self.cleanup_closed_tab, tab))
-
-    @property
-    def color_depth(self) -> ColorDepth:
-        """The active :class:`.ColorDepth`.
-
-        The current value is determined as follows:
-
-        - If a color depth was given explicitly to this application, use that
-          value.
-        - Otherwise, fall back to the color depth that is reported by the
-          :class:`.Output` implementation. If the :class:`.Output` class was
-          created using `output.defaults.create_output`, then this value is
-          coming from the $PROMPT_TOOLKIT_COLOR_DEPTH environment variable.
-        """
-        # Detect terminal color depth
-        if self._color_depth is None:
-            if os.environ.get("NO_COLOR", "") or os.environ.get("TERM", "") == "dumb":
-                self._color_depth = ColorDepth.DEPTH_1_BIT
-            colorterm = os.environ.get("COLORTERM", "")
-            if "truecolor" in colorterm or "24bit" in colorterm:
-                self._color_depth = ColorDepth.DEPTH_24_BIT
-            elif "256" in os.environ.get("TERM", ""):
-                self._color_depth = ColorDepth.DEPTH_8_BIT
-
-        return super().color_depth
 
     @property
     def syntax_theme(self) -> str:
