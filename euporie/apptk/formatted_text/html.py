@@ -4711,16 +4711,13 @@ if __name__ == "__main__":
     from euporie.apptk.application.current import create_app_session, set_app
     from euporie.apptk.shortcuts.utils import print_formatted_text
 
+    from euporie.apptk.application.application import Application
     from euporie.apptk.formatted_text.utils import to_formatted_text
-    from euporie.core.app.dummy import DummyApp
     from euporie.apptk.path import parse_path
 
     path = parse_path(sys.argv[1])
 
-    with (
-        create_app_session(input=DummyApp.load_input(), output=DummyApp.load_output()),
-        set_app(DummyApp()),
-    ):
+    with create_app_session(), set_app(Application()):
         print_formatted_text(
             to_formatted_text(
                 asyncio.run(

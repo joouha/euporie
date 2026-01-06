@@ -54,6 +54,7 @@ class PreviewApp(BaseApp):
         kwargs.setdefault("min_redraw_interval", 0)
         kwargs.setdefault("extend_renderer_height", True)
         kwargs.setdefault("enable_page_navigation_bindings", False)
+        kwargs.setdefault("output", self.load_output())
         # Adjust options if we are paging output
         if self.config.page:
             kwargs.setdefault("set_title", False)

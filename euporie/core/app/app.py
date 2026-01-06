@@ -307,42 +307,6 @@ class BaseApp(ConfigurableApp, Application, ABC):
         except EOFError:
             pass
 
-    @classmethod
-    def load_input(cls) -> Input:
-        """Create the input for this application to use.
-
-        Ensures the TUI app always tries to run in a TTY.
-
-        Returns:
-            A prompt-toolkit input instance
-
-        """
-        input_ = create_input(always_prefer_tty=True)
-
-        if (stdin := getattr(input_, "stdin", None)) and not stdin.isatty():
-            from euporie.apptk.input.base import IgnoredInput
-
-            input_ = IgnoredInput()
-
-        return input_
-
-    @classmethod
-    def load_output(cls) -> Output:
-        """Create the output for this application to use.
-
-        Ensures the TUI app always tries to run in a TTY.
-
-        Returns:
-            A prompt-toolkit output instance
-
-        """
-        output = create_output(always_prefer_tty=True)
-
-        if isinstance(output, Vt100_Output):
-            output.enable_passthrough = cls.config.filters.multiplexer_passthrough
-
-        return output
-
     def post_load(self) -> None:
         """Allow subclasses to define additional loading steps."""
         # Call extra callables
@@ -368,7 +332,7 @@ class BaseApp(ConfigurableApp, Application, ABC):
 
         super().launch()
         # Run the application
-        with create_app_session(input=cls.load_input(), output=cls.load_output()):
+        with create_app_session():
             # Create an instance of the app and run it
             app = cls()
             if in_main_thread():
