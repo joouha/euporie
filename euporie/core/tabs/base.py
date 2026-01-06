@@ -14,11 +14,12 @@ from upath import UPath
 from euporie.apptk.commands import add_cmd
 from euporie.apptk.layout.containers import Window, WindowAlign
 from euporie.apptk.layout.controls import FormattedTextControl
+from euporie.apptk.path import parse_path
 from euporie.core.filters import tab_can_save, tab_has_focus
 from euporie.core.key_binding.registry import (
     register_bindings,
 )
-from euporie.core.path import UntitledPath, parse_path
+from euporie.core.path import UntitledPath
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence

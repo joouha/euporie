@@ -26,7 +26,7 @@ from euporie.core.key_binding.registry import (
     load_registered_bindings,
     register_bindings,
 )
-from euporie.core.path import parse_path
+from euporie.apptk.path import parse_path
 
 if TYPE_CHECKING:
     import asyncio
