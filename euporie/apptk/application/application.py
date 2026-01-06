@@ -16,7 +16,9 @@ from prompt_toolkit.application.application import (
     _CombinedRegistry as _PtkCombinedRegistry,
 )
 
+from euporie.apptk.data_structures import Point
 from euporie.apptk.enums import EditingMode
+from euporie.apptk.filters import to_filter
 from euporie.apptk.key_binding.micro_state import MicroState
 from euporie.apptk.layout.containers import Window
 from euporie.apptk.layout.controls import UIControl
@@ -27,10 +29,6 @@ if TYPE_CHECKING:
     from euporie.apptk.cursor_shapes import AnyCursorShapeConfig
     from euporie.apptk.key_binding.key_bindings import KeyBindingsBase
     from euporie.apptk.layout.layout import Layout
-    from euporie.apptk.styles import (
-        BaseStyle,
-        StyleTransformation,
-    )
     from prompt_toolkit.application.application import ApplicationEventHandler
 
     from euporie.apptk.clipboard import Clipboard
@@ -38,7 +36,12 @@ if TYPE_CHECKING:
     from euporie.apptk.input.base import Input
     from euporie.apptk.layout.containers import Window
     from euporie.apptk.layout.controls import UIControl
+    from euporie.apptk.layout.screen import WritePosition
     from euporie.apptk.output import ColorDepth, Output
+    from euporie.apptk.styles import (
+        BaseStyle,
+        StyleTransformation,
+    )
 
 log = logging.getLogger(__name__)
 
@@ -73,7 +76,18 @@ class Application(PtkApplication, Generic[_AppResult]):
         # I/O.
         input: Input | None = None,
         output: Output | None = None,
+        title: str | None = None,
+        set_title: bool = True,
+        leave_graphics: FilterOrBool = True,
     ) -> None:
+        """Extensions to the prompt_toolkit Application class.
+
+        Args:
+            title: The title string to set in the terminal
+            set_title: Whether to set the terminal title
+            leave_graphics: A filter which determines if graphics should be cleared
+                from the display when they are no longer active
+        """
         super().__init__(
             layout=layout,
             style=style,
@@ -102,6 +116,30 @@ class Application(PtkApplication, Generic[_AppResult]):
             output=output,
         )
         self.micro_state = MicroState()
+
+        # Graphics
+        self.leave_graphics = to_filter(leave_graphics)
+
+        # Set the terminal title
+        self.set_title = to_filter(set_title)
+        if title:
+            self.title = title
+
+        # Set up a write position to limit mouse events to a particular region
+        self.mouse_limits: WritePosition | None = None
+        self.mouse_position = Point(0, 0)
+
+    @property
+    def title(self) -> str:
+        """The application's title."""
+        return self._title
+
+    @title.setter
+    def title(self, value: str) -> None:
+        """Set the terminal title."""
+        self._title = value
+        if self.set_title():
+            self.output.set_title(value)
 
 
 class _CombinedRegistry(_PtkCombinedRegistry):
