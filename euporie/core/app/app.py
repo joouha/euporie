@@ -523,7 +523,7 @@ class BaseApp(ConfigurableApp, Application, ABC):
             tab_class: The tab type to use to open the file
 
         """
-        from euporie.core.path import parse_path
+        from euporie.apptk.path import parse_path
 
         ppath = parse_path(path, resolve=True)
         log.info("Opening file %s", path)

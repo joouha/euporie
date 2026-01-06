@@ -11,7 +11,7 @@ from euporie.apptk.convert.datum import Datum
 from euporie.apptk.convert.mime import get_format
 from euporie.apptk.layout.containers import DummyContainer
 from euporie.core.app.app import BaseApp
-from euporie.core.path import parse_path
+from euporie.apptk.path import parse_path
 
 if TYPE_CHECKING:
     from collections.abc import Callable

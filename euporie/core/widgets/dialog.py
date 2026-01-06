@@ -536,7 +536,7 @@ class OpenFileDialog(FileDialog):
         """Validate the the file to open exists."""
         from upath import UPath
 
-        from euporie.core.path import parse_path
+        from euporie.apptk.path import parse_path
 
         try:
             path = self.file_browser.control.dir / buffer.text
@@ -576,7 +576,7 @@ class SaveAsDialog(FileDialog):
         """Validate the the file to open exists."""
         from upath import UPath
 
-        from euporie.core.path import parse_path
+        from euporie.apptk.path import parse_path
 
         try:
             path = self.file_browser.control.dir / buffer.text
