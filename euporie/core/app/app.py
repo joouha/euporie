@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import os
 import signal
 import sys
 from abc import ABC, abstractmethod
@@ -17,11 +16,19 @@ from euporie.apptk.application.current import create_app_session, set_app
 from euporie.apptk.input.defaults import create_input
 from euporie.apptk.layout.layout import Layout
 from euporie.apptk.output.defaults import create_output
+from euporie.apptk.utils import Event
+
+from euporie.apptk.application.application import Application, _CombinedRegistry
 from euporie.apptk.clipboard import DynamicClipboard
+from euporie.apptk.color import ColorPalette
+from euporie.apptk.filters import Condition
+from euporie.apptk.key_binding.key_processor import KeyProcessor
+from euporie.apptk.layout.containers import Float, FloatContainer, Window, to_container
+from euporie.apptk.output.vt100 import Vt100_Output
+from euporie.apptk.renderer import Renderer
 from euporie.apptk.styles import (
     BaseStyle,
     ConditionalStyleTransformation,
-    DummyStyle,
     SetDefaultColorStyleTransformation,
     Style,
     SwapLightAndDarkStyleTransformation,
@@ -29,18 +36,6 @@ from euporie.apptk.styles import (
     merge_styles,
     style_from_pygments_cls,
 )
-from euporie.apptk.utils import Event
-
-from euporie.apptk.application.application import Application, _CombinedRegistry
-from euporie.apptk.color import ColorPalette
-from euporie.apptk.data_structures import Point
-from euporie.apptk.filters import Condition, to_filter
-from euporie.apptk.input.vt100_parser import Vt100Parser
-from euporie.apptk.key_binding.key_processor import KeyProcessor
-from euporie.apptk.layout.containers import Float, FloatContainer, Window, to_container
-from euporie.apptk.output import ColorDepth
-from euporie.apptk.output.vt100 import Vt100_Output
-from euporie.apptk.renderer import Renderer
 from euporie.core.app.base import ConfigurableApp
 from euporie.core.app.cursor import CursorConfig
 from euporie.core.filters import has_toolbar
@@ -75,10 +70,10 @@ if TYPE_CHECKING:
     from euporie.apptk.contrib.ssh import PromptToolkitSSHSession
     from euporie.apptk.layout.layout import FocusableElement
 
-    from euporie.apptk.filters import Filter, FilterOrBool
+    from euporie.apptk.data_structures import Point
+    from euporie.apptk.filters import FilterOrBool
     from euporie.apptk.input import Input
     from euporie.apptk.layout.containers import AnyContainer
-    from euporie.apptk.layout.screen import WritePosition
     from euporie.apptk.output import Output
     from euporie.core.bars.command import CommandBar
     from euporie.core.bars.search import SearchBar
@@ -104,15 +99,11 @@ class BaseApp(ConfigurableApp, Application, ABC):
     """
 
     color_palette: ColorPalette
-    mouse_position: Point
 
     _config_defaults: ClassVar[dict[str, Any]] = {"log_level_stdout": "critical"}
 
     def __init__(
         self,
-        title: str | None = None,
-        set_title: bool = True,
-        leave_graphics: FilterOrBool = True,
         extend_renderer_height: FilterOrBool = False,
         extend_renderer_width: FilterOrBool = False,
         enable_page_navigation_bindings: FilterOrBool | None = True,
@@ -124,10 +115,6 @@ class BaseApp(ConfigurableApp, Application, ABC):
         instance is initiated.
 
         Args:
-            title: The title string to set in the terminal
-            set_title: Whether to set the terminal title
-            leave_graphics: A filter which determines if graphics should be cleared
-                from the display when they are no longer active
             extend_renderer_height: Whether the renderer height should be extended
                 beyond the height of the display
             extend_renderer_width: Whether the renderer width should be extended
@@ -171,7 +158,6 @@ class BaseApp(ConfigurableApp, Application, ABC):
         # Holds the index of the current tab
         self._tab_idx = 0
         # Floats at the app level
-        self.leave_graphics = to_filter(leave_graphics)
         self.graphics: WeakSet[Float] = WeakSet()
         self.dialog_classes: dict[str, type[Dialog]] = {}
         self.dialogs: dict[str, Dialog] = {}
@@ -203,9 +189,6 @@ class BaseApp(ConfigurableApp, Application, ABC):
         self.pager: Pager | None = None
         # Stores the initially focused element
         self.focused_element: FocusableElement | None = None
-        # Set the terminal title
-        self.set_title = to_filter(set_title)
-        self.title = title or self.__class__.__name__
         # Register config hooks
         self.config.events.edit_mode += lambda x: setattr(
             self, "editing_mode", self.config.edit_mode
@@ -215,16 +198,10 @@ class BaseApp(ConfigurableApp, Application, ABC):
         self.config.events.log_level += lambda x: setup_logs(self.config)
         self.config.events.log_file += lambda x: setup_logs(self.config)
         self.config.events.log_config += lambda x: setup_logs(self.config)
-        self.config.events.clipboard += lambda x: setattr(
-            self, "clipboard", self.config.clipboard
-        )
         # Set up the color palette
         self.color_palette = ColorPalette()
         self.color_palette.add_color("fg", "#ffffff", "default")
         self.color_palette.add_color("bg", "#000000", "default")
-        # Set up a write position to limit mouse events to a particular region
-        self.mouse_limits: WritePosition | None = None
-        self.mouse_position = Point(0, 0)
         # Set up style update triggers
         self.style_invalid = False
         self.before_render += self.do_style_update
@@ -236,18 +213,6 @@ class BaseApp(ConfigurableApp, Application, ABC):
         self.formatters: list[Formatter] = [
             CliFormatter(**info) for info in self.config.formatters
         ]
-
-    @property
-    def title(self) -> str:
-        """The application's title."""
-        return self._title
-
-    @title.setter
-    def title(self, value: str) -> None:
-        """Set the terminal title."""
-        self._title = value
-        if self.set_title():
-            self.output.set_title(value)
 
     def pause_rendering(self) -> None:
         """Block rendering, but allows input to be processed.
@@ -285,9 +250,7 @@ class BaseApp(ConfigurableApp, Application, ABC):
         # Open any files we need to
         self.open_files()
         # Start polling terminal style if configured
-        if self.config.terminal_polling_interval and hasattr(
-            self.input, "vt100_parser"
-        ):
+        if self.config.terminal_polling_interval:
             self.create_background_task(self._poll_terminal_colors())
 
     async def _poll_terminal_colors(self) -> None:
@@ -306,12 +269,6 @@ class BaseApp(ConfigurableApp, Application, ABC):
     ) -> _AppResult:
         """Run the application."""
         with set_app(self):
-            # Use a custom vt100 parser to allow querying the terminal
-            if parser := getattr(self.input, "vt100_parser", None):
-                setattr(  # noqa B010
-                    self.input, "vt100_parser", Vt100Parser(parser.feed_key_callback)
-                )
-
             # Load key bindings
             self.load_key_bindings()
 
@@ -382,14 +339,7 @@ class BaseApp(ConfigurableApp, Application, ABC):
         output = create_output(always_prefer_tty=True)
 
         if isinstance(output, Vt100_Output):
-            output = Vt100_Output(
-                stdout=output.stdout,
-                get_size=output._get_size,
-                term=output.term,
-                default_color_depth=output.default_color_depth,
-                enable_bell=output.enable_bell,
-                enable_passthrough=cls.config.filters.multiplexer_passthrough,
-            )
+            output.enable_passthrough = cls.config.filters.multiplexer_passthrough
 
         return output
 
@@ -821,20 +771,6 @@ class BaseApp(ConfigurableApp, Application, ABC):
         exception = context.get("exception")
         # Log observed exceptions to the log
         log.exception("An unhandled exception occurred", exc_info=exception)
-
-    # async def cancel_and_wait_for_background_tasks(self) -> "None":
-    # """Cancel background tasks, ignoring exceptions."""
-    # # try:
-    # # await super().cancel_and_wait_for_background_tasks()
-    # # except ValueError as e:
-    # # for task in self._background_tasks:
-    # # print(task)
-    # # raise e
-    #
-    # for task in self._background_tasks:
-    # print(task)
-    # print(task.get_loop())
-    # await asyncio.wait([task])
 
     # ################################# Key Bindings ##################################
 
