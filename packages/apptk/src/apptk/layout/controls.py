@@ -2,24 +2,54 @@
 
 from __future__ import annotations
 
+import logging
 from functools import cached_property
 from typing import TYPE_CHECKING
 
 from apptk.data_structures import Point
 from apptk.formatted_text.utils import _ZERO_WIDTH_FRAGMENTS
+from apptk.lexers import DynamicLexer
+from apptk.lexers.pygments import PygmentsLexer
 from apptk.utils import get_cwidth
-from prompt_toolkit.layout.controls import GetLinePrefixCallable, UIControl
+from prompt_toolkit.layout.controls import (
+    BufferControl as PtkBufferControl,
+)
+from prompt_toolkit.layout.controls import (
+    GetLinePrefixCallable,
+    UIControl,
+)
 from prompt_toolkit.layout.controls import UIContent as PtkUIContent
 
 if TYPE_CHECKING:
     from apptk.formatted_text import StyleAndTextTuples
 
 __all__ = [
+    "BufferControl",
     "DummyControl",
     "FocusableDummyControl",
     "GetLinePrefixCallable",
     "UIContent",
 ]
+
+log = logging.getLogger(__name__)
+
+
+class BufferControl(PtkBufferControl):
+    """Extended BufferControl that exposes the buffer's language."""
+
+    @property
+    def language(self) -> str | None:
+        """Return the language of the buffer based on the current lexer.
+
+        Returns:
+            The language name in lowercase, or an empty string if unknown.
+        """
+        lexer = self.lexer
+        if isinstance(lexer, DynamicLexer):
+            lexer = lexer.get_lexer()
+        if isinstance(lexer, PygmentsLexer):
+            return lexer.pygments_lexer_cls.name.lower()
+        return None
 
 
 class UIContent(PtkUIContent):

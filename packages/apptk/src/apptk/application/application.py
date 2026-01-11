@@ -155,6 +155,10 @@ class Application(PtkApplication, Generic[_AppResult]):
         if self.set_title():
             self.output.set_title(value)
 
+    def get_comment_prefix(self, language: str | None) -> str:
+        """Return the comment token for a language."""
+        return "#"
+
     async def run_async(
         self,
         pre_run: Callable[[], None] | None = None,

@@ -1778,51 +1778,10 @@ def helix_copy_selection_above(event: KeyPressEvent) -> None:
     event.app.output.bell()
 
 
-@add_cmd(
+get_cmd("helix-toggle-comments").add_keys(
     keys=["c-c"],
     filter=helix_normal_mode | helix_select_mode,
-    hidden=True,
-    name="helix-toggle-comments",
 )
-def helix_toggle_comments(event: KeyPressEvent) -> None:
-    """Comment/uncomment selections."""
-    buff = event.current_buffer
-    doc = buff.document
-    if buff.selection_state:
-        start, end = (
-            doc.translate_index_to_position(x)[0] for x in doc.selection_range()
-        )
-    else:
-        start = end = doc.cursor_position_row
-    # Toggle line comments for the range
-    lines = doc.lines
-    all_commented = all(
-        lines[i].lstrip().startswith("#")
-        for i in range(start, end + 1)
-        if lines[i].strip()
-    )
-    new_lines = list(lines)
-    for i in range(start, end + 1):
-        if all_commented:
-            # Remove comment
-            line = new_lines[i]
-            stripped = line.lstrip()
-            if stripped.startswith("# "):
-                indent_str = line[: len(line) - len(stripped)]
-                new_lines[i] = indent_str + stripped[2:]
-            elif stripped.startswith("#"):
-                indent_str = line[: len(line) - len(stripped)]
-                new_lines[i] = indent_str + stripped[1:]
-        else:
-            # Add comment
-            if new_lines[i].strip():
-                line = new_lines[i]
-                stripped = line.lstrip()
-                indent_str = line[: len(line) - len(stripped)]
-                new_lines[i] = indent_str + "# " + stripped
-    cursor_pos = buff.cursor_position
-    buff.text = "\n".join(new_lines)
-    buff.cursor_position = min(cursor_pos, len(buff.text))
 
 
 @add_cmd(
