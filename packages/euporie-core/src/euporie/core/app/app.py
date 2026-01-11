@@ -802,6 +802,28 @@ class BaseApp(ConfigurableApp, Application, ABC):
 
         return CliFormatter(command=command, languages=languages)
 
+    def get_comment_prefix(self, language: str | None) -> str:
+        """Return the comment prefix for a language.
+
+        Looks up the first comment token from the merged language configuration
+        and appends a trailing space. Falls back to ``'#'`` when the language
+        is ``None`` or not found.
+
+        Args:
+            language: The programming language name (e.g. ``"python"``),
+                or ``None``.
+
+        Returns:
+            A string suitable for prefixing comment lines.
+        """
+        if language is not None:
+            lang_info = self.languages.get(language, {})
+            tokens: list[str] = lang_info.get("comment_token", [])
+            if tokens:
+                token = tokens[0]
+                return token
+        return "#"
+
     def get_language_formatters(self, language: str) -> list[CliFormatter]:
         """Return CLI formatters for a given language.
 

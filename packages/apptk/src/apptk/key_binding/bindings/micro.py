@@ -91,7 +91,7 @@ def load_micro_bindings() -> KeyBindings:
         "micro-run-macro",
         "micro-accept-suggestion",
         "micro-fill-suggestion",
-        "micro-toggle-comment",
+        "micro-toggle-comments",
         "micro-go-to-matching-bracket",
         'micro-wrap-selection-""',
         "micro-wrap-selection-''",
@@ -313,79 +313,10 @@ def micro_go_to_end_of_paragraph() -> None:
 # Editing
 
 
-@add_cmd(
-    keys=["c-_"],
+get_cmd("micro-toggle-comments").add_keys(
+    keys=["c-_", "c-/"],
     filter=buffer_has_focus & buffer_is_code,
-    hidden=True,
 )
-def micro_toggle_comment() -> None:
-    """Comment or uncomments the current or selected lines."""
-    comment = "# "
-    buffer = get_app().current_buffer
-    document = buffer.document
-    selection_state = buffer.selection_state
-    lines = buffer.text.splitlines(keepends=False)
-
-    start, end = (
-        document.translate_index_to_position(x)[0] for x in document.selection_range()
-    )
-    cursor_in_first_line = document.cursor_position_row == start
-    # Only remove comments if all lines in the selection have a comment
-    uncommenting = all(
-        line.lstrip().startswith(comment.rstrip()) for line in lines[start : end + 1]
-    )
-    if uncommenting:
-        for i in range(start, end + 1):
-            if not lines:
-                lines = [""]
-            # Replace the first instance of the comment in each line
-            lines[i] = lines[i].replace(comment, "", 1)
-            if len(lines[i]) < len(comment):
-                # The line might be blank and have trailing whitespace removed
-                lines[i] = lines[i].replace(comment.rstrip(), "", 1)
-        # Find cursor and selection column positions
-        cur_col = document.translate_index_to_position(buffer.cursor_position)[1]
-        if selection_state is not None:
-            sel_col = document.translate_index_to_position(
-                selection_state.original_cursor_position
-            )[1]
-        # Move cursor & adjust selection
-        if cursor_in_first_line:
-            bcp = buffer.cursor_position - min(len(comment), cur_col)
-            if selection_state is not None:
-                selection_state.original_cursor_position -= len(comment) * (
-                    end - start
-                ) + min(len(comment), sel_col)
-        else:
-            if selection_state is not None:
-                selection_state.original_cursor_position -= min(len(comment), sel_col)
-            bcp = buffer.cursor_position - (
-                len(comment) * (end - start) + min(len(comment), cur_col)
-            )
-    else:
-        # Find the minimum leading whitespace in the selected lines
-        whitespace = min(
-            len(line) - len(line.lstrip()) for line in lines[start : end + 1]
-        )
-        for i in range(start, end + 1):
-            # Add a comment after the minimum leading whitespace to each line
-            line = lines[i]
-            lines[i] = line[:whitespace] + comment + line[whitespace:]
-        # Move cursor & adjust selection
-        if cursor_in_first_line:
-            bcp = buffer.cursor_position + len(comment)
-            if selection_state is not None:
-                selection_state.original_cursor_position += len(comment) * (
-                    end - start + 1
-                )
-        else:
-            if selection_state is not None:
-                selection_state.original_cursor_position += len(comment)
-            bcp = buffer.cursor_position + len(comment) * (end - start + 1)
-
-    # Set the buffer text, curor position and selection state
-    buffer.document = Document("\n".join(lines), bcp)
-    buffer.selection_state = selection_state
 
 
 def wrap_selection_cmd(left: str, right: str) -> None:
