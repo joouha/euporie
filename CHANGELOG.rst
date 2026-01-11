@@ -5,6 +5,17 @@ Changelog
 Notable changes to this project will be documented in this file.
 
 ********************
+Upcoming
+********************
+
+Changed
+=======
+
+- Use language-aware comment prefixes when toggling comments
+
+----
+
+********************
 v2.10.3 (2025-12-19)
 ********************
 

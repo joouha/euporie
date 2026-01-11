@@ -69,7 +69,11 @@ log = logging.getLogger(__name__)
 
 
 def _comment_prefix_for_language() -> str:
-    """Return a comment prefix for the current input language."""
+    """Return a comment prefix for the current input language.
+
+    Returns:
+        The comment prefix string for the current input language.
+    """
     language = ""
     app = get_app()
     tab = getattr(app, "tab", None)
