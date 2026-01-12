@@ -488,6 +488,7 @@ class MenuBar:
                 content=Shadow(body=submenu),
                 filter=Condition(lambda: len(self.selected_menu) > 0),
             ),
+            z_index=100_000,
         )
         self.app.menus["menu-2"] = Float(
             attach_to_window=to_container(submenu).get_children()[1],
@@ -499,6 +500,7 @@ class MenuBar:
                 filter=Condition(lambda: len(self.selected_menu) > 1)
                 & Condition(lambda: bool(self._get_menu(1).children)),
             ),
+            z_index=100_001,
         )
         self.app.menus["menu-3"] = Float(
             attach_to_window=to_container(submenu2).get_children()[1],
@@ -510,6 +512,7 @@ class MenuBar:
                 filter=Condition(lambda: len(self.selected_menu) > 2)
                 & Condition(lambda: bool(self._get_menu(2).children)),
             ),
+            z_index=100_002,
         )
 
     def refocus(self) -> None:
@@ -910,7 +913,6 @@ class CompletionsMenu(ConditionalContainer):
         max_height: int | None = 16,
         scroll_offset: int | Callable[[], int] = 1,
         extra_filter: FilterOrBool = True,
-        z_index: int = 10**8,
     ) -> None:
         """Create a completions menu with borders."""
         extra_filter = to_filter(extra_filter)
@@ -934,7 +936,6 @@ class CompletionsMenu(ConditionalContainer):
                             top=scroll_offset, bottom=scroll_offset
                         ),
                         dont_extend_width=True,
-                        z_index=z_index,
                     ),
                     VSplit(
                         [

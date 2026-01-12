@@ -27,7 +27,6 @@ from euporie.apptk.layout.controls import GetLinePrefixCallable, UIContent, UICo
 from euporie.apptk.layout.margins import ScrollbarMargin
 from euporie.apptk.mouse_events import MouseEvent, MouseEventType
 from euporie.core.filters import display_has_focus, scrollable
-from euporie.apptk.layout.graphics import GraphicProcessor
 from euporie.core.key_binding.registry import (
     load_registered_bindings,
     register_bindings,
@@ -84,8 +83,6 @@ class DisplayControl(UIControl):
         self.rendering = False
         self.color_palette = get_app().color_palette
         self.lines: list[StyleAndTextTuples] = []
-
-        self.graphic_processor = GraphicProcessor(control=self)
 
         self.width = 0
         self.height = 0
@@ -331,9 +328,6 @@ class DisplayControl(UIControl):
         content = self._content_cache[
             self.datum, width, height, self.loading, self.cursor_position, cp
         ]
-
-        # Check for graphics in content
-        self.graphic_processor.load(content)
 
         return content
 

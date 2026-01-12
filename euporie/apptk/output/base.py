@@ -46,6 +46,9 @@ class Output(PtkOutput, metaclass=ABCMeta):
         # If we can't get the pixel size, just guess wildly
         return Size(px // cols or 10, py // rows or 20)
 
+    def clear_graphics_kitty(self) -> None:
+        """Delete all kitty terminal graphic placements."""
+
     def enable_sgr_pixel(self) -> None:
         """Enable SGR-pixel mouse positioning."""
 

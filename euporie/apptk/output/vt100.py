@@ -116,6 +116,10 @@ class Vt100_Output(PtkVt100_Output):
         """Write raw data to output."""
         self._buffer.append(data)
 
+    def clear_graphics_kitty(self) -> None:
+        """Delete all kitty terminal graphic placements."""
+        self.write_raw("\x1b_Ga=d,d=a,q=1\x1b\\")
+
     def enable_sgr_pixel(self) -> None:
         """Enable SGR-pixel mouse positioning."""
         self.write_raw("\x1b[?1016h")

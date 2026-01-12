@@ -25,9 +25,11 @@ from prompt_toolkit.layout.containers import (
 )
 
 from euporie.apptk.cache import SimpleCache
+from euporie.apptk.convert.datum import Datum
 from euporie.apptk.data_structures import DiInt, Point
 from euporie.apptk.enums import HorizontalAlign, VerticalAlign
 from euporie.apptk.filters import to_filter
+from euporie.apptk.filters.environment import in_mplex
 from euporie.apptk.layout.controls import (
     DummyControl,
     FormattedTextControl,
@@ -36,6 +38,7 @@ from euporie.apptk.layout.controls import (
     to_formatted_text,
 )
 from euporie.apptk.layout.controls import DummyControl as PtkDummyControl
+from euporie.apptk.layout.graphics import select_graphic_control
 from euporie.apptk.layout.margins import ClickableMargin, Margin
 from euporie.apptk.layout.screen import _CHAR_CACHE, WritePosition
 from euporie.apptk.mouse_events import (
@@ -53,12 +56,14 @@ if TYPE_CHECKING:
     )
     from euporie.apptk.layout.mouse_handlers import MouseHandlers
 
+    from euporie.apptk.data_structures import Size
     from euporie.apptk.formatted_text import AnyFormattedText, StyleAndTextTuples
     from euporie.apptk.layout.containers import (
         AnyContainer,
         AnyDimension,
         Float,
     )
+    from euporie.apptk.layout.graphics import GraphicControl
     from euporie.apptk.layout.margins import Margin
     from euporie.apptk.layout.screen import Screen
 
@@ -606,6 +611,9 @@ class Window(ptk_containers.Window):
         self._margin_width_cache: SimpleCache[tuple[Margin, int], int] = SimpleCache(
             maxsize=1
         )
+        self._graphic_control_cache: SimpleCache[tuple[str, type], GraphicControl] = (
+            SimpleCache()
+        )
 
     def write_to_screen(
         self,
@@ -654,6 +662,7 @@ class Window(ptk_containers.Window):
             write_position,
             parent_style,
             erase_bg,
+            z_index,
         )
 
         if z_index is None or z_index <= 0:
@@ -670,6 +679,7 @@ class Window(ptk_containers.Window):
         write_position: WritePosition,
         parent_style: str,
         erase_bg: bool,
+        z_index: int,
     ) -> None:
         # Don't bother writing invisible windows.
         # (We save some time, but also avoid applying last-line styling.)
@@ -861,6 +871,17 @@ class Window(ptk_containers.Window):
         # Tell the screen that this user control has been painted at this
         # position.
         screen.visible_windows_to_write_positions[self] = write_position
+
+        # Add deferred write functions for any graphics in the window's content
+        self._register_graphics(
+            screen,
+            ui_content,
+            write_position,
+            parent_style,
+            self.vertical_scroll,
+            self.horizontal_scroll,
+            z_index,
+        )
 
     def _copy_body(
         self,
@@ -1159,6 +1180,211 @@ class Window(ptk_containers.Window):
                 1,
             )
             new_screen.fill_area(wp, "class:last-line", after=True)
+
+    def _draw_graphic(
+        self,
+        screen: Screen,
+        graphic_control: GraphicControl,
+        content_pos: Point,
+        size: Size,
+        write_position: WritePosition,
+        parent_style: str,
+        ui_content: UIContent,
+        vertical_scroll: int,
+        horizontal_scroll: int,
+    ) -> None:
+        """Draw a single graphic to the screen.
+
+        This method calculates the visible region of the graphic and sets
+        the appropriate bbox on the GraphicControl before rendering.
+
+        Args:
+            screen: The screen to draw to
+            graphic_control: The GraphicControl to render
+            content_pos: Position of the graphic in content coordinates
+            size: The size at which to render the graphic
+            write_position: The window's write position
+            parent_style: The inherited style
+            ui_content: The UIContent containing the graphic
+            vertical_scroll: Current vertical scroll offset
+            horizontal_scroll: Current horizontal scroll offset
+        """
+        rows, cols = size
+
+        # Get write_position from screen's visible window list, as this may have been
+        # updated (e,g. by the ScrollingContainer)
+        write_position = screen.visible_windows_to_write_positions.get(self)
+        if not write_position:
+            graphic_control.hide()
+            return
+
+        render_info = self.render_info
+        if render_info is None:
+            graphic_control.hide()
+            return
+
+        horizontal_scroll = getattr(render_info, "horizontal_scroll", 0)
+        vertical_scroll = render_info.vertical_scroll
+
+        # Calculate position in screen coordinates
+        x, y = content_pos
+        win_bbox = write_position.bbox
+
+        # Check if graphic is scrolled out of view
+        if horizontal_scroll >= x + cols or vertical_scroll >= y + rows:
+            graphic_control.hide()
+            return
+
+        # Calculate the visible region (bbox for cropping)
+        bbox = DiInt(
+            top=max(0, win_bbox.top - y + vertical_scroll),
+            right=win_bbox.right,
+            bottom=max(
+                0,
+                win_bbox.bottom - (write_position.height - y - rows) - vertical_scroll,
+            ),
+            left=win_bbox.left,
+        )
+
+        # Calculate screen position
+        xpos = write_position.xpos + x + win_bbox.left - horizontal_scroll
+        ypos = max(
+            write_position.ypos + win_bbox.top,
+            write_position.ypos
+            + y
+            + max(0, win_bbox.top - y)
+            - min(y, vertical_scroll),
+        )
+
+        # Calculate visible dimensions
+        width = max(0, cols - bbox.left - bbox.right)
+        height = max(0, rows - bbox.top - bbox.bottom)
+
+        # Skip if not visible
+        if width <= 0 or height <= 0:
+            graphic_control.hide()
+            return
+
+        # Set the bbox on the control
+        graphic_control.bbox = bbox
+
+        # Create write position for the graphic
+        graphic_wp = WritePosition(
+            xpos=xpos,
+            ypos=ypos,
+            width=width,
+            height=height,
+            bbox=DiInt(0, 0, 0, 0),  # bbox already applied to position
+        )
+
+        # Check for existing floats in the screen, and stop rendering the graphic is it
+        # overlaps an existing float
+        data_buffer = screen.data_buffer.lower
+        for y in range(ypos, ypos + height):
+            if y in data_buffer:
+                row = data_buffer[y]
+                for x in range(xpos, xpos + width):
+                    if x in row:
+                        graphic_control.hide()
+                        return
+
+        # Render the graphic content
+        graphic_content = graphic_control.create_content(width, height)
+
+        # Copy graphic content to screen
+        self._copy_body(
+            graphic_content,
+            screen,
+            graphic_wp,
+            move_x=0,
+            width=width,
+            vertical_scroll=0,
+            horizontal_scroll=0,
+            wrap_lines=False,
+            highlight_lines=False,
+            vertical_scroll_2=0,
+            always_hide_cursor=True,
+            has_focus=False,
+            align=WindowAlign.LEFT,
+            get_line_prefix=None,
+        )
+        # Force renderer to contantly refresh graphics by constantly changing the style
+        self._apply_style(
+            screen,
+            write_position,
+            f"{parent_style} class:render-{get_app().render_counter}",
+        )
+
+    def _register_graphics(
+        self,
+        screen: Screen,
+        ui_content: UIContent,
+        write_position: WritePosition,
+        parent_style: str,
+        vertical_scroll: int,
+        horizontal_scroll: int,
+        z_index: int,
+    ) -> None:
+        """Scan content for graphics and schedule their drawing.
+
+        This method finds all [Graphic_xxx] markers in the content, creates/retrieves
+        cached GraphicControls, and schedules them for deferred rendering using
+        ``screen.draw_with_z_index``.
+
+        Args:
+            screen: The screen to register graphics with
+            ui_content: The UIContent to scan for graphics
+            write_position: The window's write position
+            parent_style: The inherited style
+            vertical_scroll: Current vertical scroll offset
+            horizontal_scroll: Current horizontal scroll offset
+            z_index: The z-index of the graphic's window
+        """
+        app = get_app()
+        renderer = app.renderer
+        positions = ui_content.graphic_positions
+
+        for key, content_pos in positions.items():
+            # Get datum and size
+            sized_datum = Datum.get_size(key)
+            if sized_datum is None:
+                continue
+            datum, size = sized_datum
+
+            # Checks whether the datum has a graphical representation, and if so, create
+            # a graphic control for it and add it to the screen for deferred drawing
+            ControlClass = select_graphic_control(
+                format_=datum.format,
+                preferred=app.config.graphics,
+                graphics_sixel=renderer.graphics_sixel,
+                graphics_kitty=renderer.graphics_kitty,
+                graphics_iterm=renderer.graphics_iterm,
+                in_mplex=in_mplex(),
+            )
+            if ControlClass is None:
+                continue
+            graphic_control = self._graphic_control_cache.get(
+                (key, datum.hash, ControlClass), partial(ControlClass, datum)
+            )
+
+            screen.draw_with_z_index(
+                # Draw graphic controls last of all floats, so we can see if they are
+                # covered by any other floats (in which case we do not render them).
+                # Use a unique z-index per graphic to maintain order
+                z_index=(z_index or 1) + 10**8 + hash(key) % 10**8,
+                draw_func=partial(
+                    self._draw_graphic,
+                    screen,
+                    graphic_control,
+                    content_pos,
+                    size,
+                    write_position,
+                    parent_style,
+                    ui_content,
+                    vertical_scroll,
+                    horizontal_scroll,
+                ),
+            )
 
     def _mouse_handler(self, mouse_event: MouseEvent) -> NotImplementedOrNone:
         """Mouse handler. Called when the UI control doesn't handle this particular event.

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from functools import cache
+from functools import cache, partial
 from typing import TYPE_CHECKING
 
 from euporie.apptk.application.current import get_app
@@ -179,7 +179,6 @@ class CachedContainer(Container):
                 erase_bg=True,
                 z_index=0,
             )
-            screen.draw_all_floats()
 
             events = set()
             rowcols_to_yx = self._rowcols_to_yx
@@ -403,6 +402,14 @@ class CachedContainer(Container):
                 for window, point in self.screen.menu_positions.items()
             }
         )
+
+        # Copy deferred floats, and update any references to the CachedContainer's
+        # internal screen in any partial functions
+        for z_index, func in self.screen._draw_float_functions:
+            if isinstance(func, partial):
+                args = [screen if isinstance(arg, Screen) else arg for arg in func.args]
+                func = partial(func.func, *args, **func.keywords)
+            screen._draw_float_functions.append((z_index, func))
 
     def get_children(self) -> list[Container]:
         """Return a list of all child containers."""
