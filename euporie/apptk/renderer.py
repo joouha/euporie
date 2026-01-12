@@ -332,6 +332,8 @@ class Renderer(PtkRenderer):
         """Render the current interface to the output."""
         output = self.output
 
+        output.begin_synced_output()
+
         # Enter alternate screen.
         if self.full_screen and not self._in_alternate_screen:
             self._in_alternate_screen = True
@@ -485,6 +487,7 @@ class Renderer(PtkRenderer):
             self._last_cursor_shape = new_cursor_shape
 
         # Flush buffered output.
+        output.end_synced_output()
         output.flush()
 
         # Set visible windows in layout.

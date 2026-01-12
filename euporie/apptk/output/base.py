@@ -20,6 +20,12 @@ class Output(PtkOutput, metaclass=ABCMeta):
     :class:`~prompt_toolkit.output.win32.Win32Output`.
     """
 
+    def begin_synced_output(self) -> None:
+        """Begin updating the output."""
+
+    def end_synced_output(self) -> None:
+        """End updating the terminal output."""
+
     def mplex_passthrough(self, cmd: str) -> str:
         """Wrap an escape sequence for terminal passthrough."""
         return cmd
