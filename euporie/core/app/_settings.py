@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from pkgutil import resolve_name
 
 from euporie.apptk.output.color_depth import ColorDepth
 from pygments.styles import STYLE_MAP as pygments_styles
@@ -338,13 +339,22 @@ add_setting(
     name="graphics",
     group="euporie.core.app.app",
     flags=["--graphics"],
-    choices=["none", "sixel", "kitty", "kitty-unicode", "iterm"],
+    choices={
+        "auto": None,
+        "sixel": "euporie.apptk.layout.graphics:SixelGraphicControl",
+        "kitty": "euporie.apptk.layout.graphics:KittyGraphicControl",
+        "kitty-unicode": "euporie.apptk.layout.graphics:KittyUnicodeGraphicControl",
+        "iterm": "euporie.apptk.layout.graphics:ItermGraphicControl",
+        "none": "euporie.apptk.layout.graphics:DisabledGraphicControl",
+    },
     type_=str,
-    default=None,
+    validate=resolve_name,
+    default="auto",
     help_="The preferred graphics protocol",
     description="""
         The graphics protocol to use, if supported by the terminal.
-        If set to "none", terminal graphics will not be used.
+        If set to ``none``, terminal graphics will not be used.
+        If set to ``auto``, euporie will detect the best protocol to use automatically.
 """,
 )
 
