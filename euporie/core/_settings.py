@@ -95,15 +95,15 @@ add_setting(
 
 add_setting(
     name="clipboard",
-    group="euporie.core.clipboard",
+    group="euporie.apptk.clipboard",
     flags=["--clipboard"],
     choices={
         "external": "euporie.apptk.clipboard.pyperclip:PyperclipClipboard",
         "internal": "euporie.apptk.clipboard.in_memory:InMemoryClipboard",
         "terminal": "euporie.apptk.clipboard.osc52:Osc52Clipboard",
     },
-    type_=resolve_name,
-    schema={"type": "string"},
+    type_=str,
+    validate=resolve_name,
     default="external",
     help_="The preferred clipboard access method",
     description="""

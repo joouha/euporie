@@ -163,6 +163,7 @@ class Setting:
         help_: str = "",
         description: str = "",
         type_: Callable[[Any], Any] | None = None,
+        validate: Callable[[Any], Any] | None = None,
         title: str | None = None,
         choices: list[Any] | dict | Callable[[], list[Any] | dict] | None = None,
         action: argparse.Action | str | None = None,
@@ -184,6 +185,7 @@ class Setting:
         self.description = description
         self._choices = choices
         self.type = type_ or type(default)
+        self.validate = validate
         self.action = action or TYPE_ACTIONS.get(self.type)
         self.flags = flags or [f"--{name.replace('_', '-')}"]
         self._schema: dict[str, Any] = {
@@ -664,15 +666,17 @@ class Config:
                 # Cast value to setting type
                 if isinstance(value, list):
                     for i, item in enumerate(value[:]):
+                        if setting.validate:
+                            try:
+                                value[i] = setting.validate(item)
+                            except (ValueError, TypeError):
+                                pass
+                else:
+                    if setting.validate:
                         try:
-                            value[i] = setting.type(item)
+                            return setting.validate(value)
                         except (ValueError, TypeError):
                             pass
-                else:
-                    try:
-                        return setting.type(value)
-                    except (ValueError, TypeError):
-                        pass
                 return value
             raise exc
 
