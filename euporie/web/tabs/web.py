@@ -13,11 +13,10 @@ from upath import UPath
 from euporie.apptk.convert.mime import get_mime
 from euporie.apptk.data_structures import DiBool
 from euporie.apptk.filters import Condition
-from euporie.apptk.layout.containers import HSplit, MarginContainer, VSplit
-from euporie.apptk.layout.margins import ScrollbarMargin
+from euporie.apptk.layout.containers import HSplit, MarginContainer, VSplit, Window
 from euporie.apptk.layout.decor import FocusedStyle
+from euporie.apptk.layout.margins import ScrollbarMargin
 from euporie.core.tabs.base import Tab
-from euporie.core.widgets.display import DisplayWindow
 from euporie.core.widgets.forms import Button, Text
 from euporie.web.widgets.webview import WebViewControl
 
@@ -158,7 +157,7 @@ class WebTab(Tab):
                 ),
                 VSplit(
                     [
-                        window := DisplayWindow(self.webview),
+                        window := Window(self.webview),
                         MarginContainer(ScrollbarMargin(), target=window),
                     ]
                 ),

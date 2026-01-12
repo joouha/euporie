@@ -26,10 +26,9 @@ if TYPE_CHECKING:
     from typing import Any, Protocol, TypeVar
     from weakref import ReferenceType
 
-    from euporie.apptk.layout.containers import AnyContainer
+    from euporie.apptk.layout.containers import AnyContainer, Window
     from euporie.core.config import Setting
     from euporie.core.tabs.kernel import KernelTab
-    from euporie.core.widgets.display import DisplayWindow
 
     KTParent = TypeVar("KTParent", bound=KernelTab)
 
@@ -169,7 +168,7 @@ class CellOutputDataElement(CellOutputElement):
         self.container.control.invalidate_events.append(config.events.wrap_cell_outputs)
 
         # Reset scroll position on `wrap_cell_outputs` config change
-        def _unregister(win: ReferenceType[DisplayWindow]) -> None:
+        def _unregister(win: ReferenceType[Window]) -> None:
             config.events.wrap_cell_outputs -= _reset_scroll
 
         weak_win = weakref.ref(self.container.window, _unregister)
