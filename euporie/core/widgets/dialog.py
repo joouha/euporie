@@ -261,7 +261,7 @@ class Dialog(Float, metaclass=ABCMeta):
         )
 
         # Set the body as the float's contents
-        super().__init__(content=self.container)
+        super().__init__(content=self.container, z_index=10_000)
 
     @property
     def button_widgets(self) -> list[AnyContainer]:

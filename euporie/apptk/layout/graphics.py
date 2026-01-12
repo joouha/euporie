@@ -3,36 +3,26 @@
 from __future__ import annotations
 
 import logging
-import weakref
 from abc import ABCMeta, abstractmethod
+from functools import lru_cache
 from math import ceil, floor
 from typing import TYPE_CHECKING
 
 from euporie.apptk.application.current import get_app
-from euporie.apptk.filters.base import Condition
-from euporie.apptk.filters.utils import to_filter
 from euporie.apptk.formatted_text.base import to_formatted_text
-from euporie.apptk.layout.mouse_handlers import MouseHandlers
-from euporie.apptk.utils import get_cwidth
 
 from euporie.apptk.cache import FastDictCache, SimpleCache
 from euporie.apptk.convert.datum import Datum
 from euporie.apptk.convert.registry import find_route
 from euporie.apptk.data_structures import DiInt, Point
-from euporie.apptk.filters.environment import in_mplex
-from euporie.apptk.formatted_text.utils import _ZERO_WIDTH_FRAGMENTS, split_lines
-from euporie.apptk.layout.containers import Float, Window
+from euporie.apptk.formatted_text.utils import split_lines
 from euporie.apptk.layout.controls import GetLinePrefixCallable, UIContent, UIControl
-from euporie.apptk.layout.screen import Char, WritePosition
-from euporie.core.filters import has_float
+from euporie.apptk.layout.screen import WritePosition
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
     from typing import Any, ClassVar
 
-    from euporie.apptk.filters import FilterOrBool
     from euporie.apptk.formatted_text import StyleAndTextTuples
-    from euporie.apptk.layout.screen import Screen
 
 
 log = logging.getLogger(__name__)
@@ -142,6 +132,20 @@ class GraphicControl(UIControl, metaclass=ABCMeta):
         """Remove the displayed object entirely."""
         if not self.app.leave_graphics():
             self.hide()
+
+
+class DisabledGraphicControl(GraphicControl):
+    """A graphic control which does not display terminal graphics."""
+
+    def convert_data(self, wp: WritePosition) -> str:
+        """Convert datum to required format."""
+        return ""
+
+    def get_rendered_lines(
+        self, visible_width: int, visible_height: int, wrap_lines: bool = False
+    ) -> list[StyleAndTextTuples]:
+        """Render the output data."""
+        return []
 
 
 class SixelGraphicControl(GraphicControl):
@@ -501,7 +505,7 @@ class KittyGraphicControl(BaseKittyGraphicControl):
         self, visible_width: int, visible_height: int, wrap_lines: bool = False
     ) -> list[StyleAndTextTuples]:
         """Get rendered lines from the cache, or generate them."""
-        output = self.otuput
+        output = self.output
         bbox = self.bbox
 
         cell_size_px = self.app.output.cell_pixel_size
@@ -782,313 +786,52 @@ class KittyUnicodeGraphicControl(BaseKittyGraphicControl):
         return self._format_cache.get(key, render_lines)
 
 
-class NotVisible(Exception):
-    """Exception to signal that a graphic is not currently visible."""
+@lru_cache(maxsize=128)
+def select_graphic_control(
+    format_: str,
+    preferred: type[GraphicControl] | None = None,
+    graphics_sixel: bool = False,
+    graphics_kitty: bool = False,
+    graphics_iterm: bool = False,
+    in_mplex: bool = False,
+) -> type[GraphicControl] | None:
+    """Determine which graphic control to use.
 
+    Args:
+        format_: The format of the data to display
+        preferred: User's preferred graphic control type from config
+        graphics_sixel: Whether terminal supports sixel graphics
+        graphics_kitty: Whether terminal supports kitty graphics protocol
+        graphics_iterm: Whether terminal supports iTerm graphics protocol
+        in_mplex: Whether running inside a terminal multiplexer
 
-class GraphicWindow(Window):
-    """A window responsible for displaying terminal graphics content.
-
-    The content is displayed floating on top of a target window.
-
-    The graphic will be displayed if:
-    - a completion menu is not being shown
-    - a dialog is not being shown
-    - a menu is not being shown
-    - the output it attached to is fully in view
+    Returns:
+        The appropriate GraphicControl subclass, or None if graphics disabled
     """
+    if preferred is DisabledGraphicControl:
+        return None
 
-    content: GraphicControl
+    useable: list[type[GraphicControl]] = []
 
-    def __init__(
-        self,
-        content: GraphicControl,
-        get_position: Callable[[Screen], WritePosition],
-        filter: FilterOrBool = True,
-        *args: Any,
-        **kwargs: Any,
-    ) -> None:
-        """Initiate a new :py:class:`GraphicWindow` object.
+    # Check iTerm support
+    if graphics_iterm and find_route(format_, "base64-png"):
+        useable.append(ItermGraphicControl)
+        if preferred is ItermGraphicControl and not in_mplex:
+            return ItermGraphicControl
 
-        Args:
-            content: A control which generates the graphical content to display
-            get_position: A function which returns the position of the graphic
-            filter: A filter which determines if the graphic should be shown
-            args: Positional arguments for :py:method:`Window.__init__`
-            kwargs: Key-word arguments for :py:method:`Window.__init__`
-        """
-        super().__init__(*args, **kwargs)
-        self.content = content
-        self.get_position = get_position
-        self.filter = ~has_float & to_filter(filter)
-        self._pre_rendered = False
+    # Check Kitty support (doesn't work in mplex without passthrough)
+    if graphics_kitty and find_route(format_, "base64-png") and not in_mplex:
+        useable.append(KittyGraphicControl)
+        useable.append(KittyUnicodeGraphicControl)
+        if preferred is KittyGraphicControl:
+            return KittyGraphicControl
+        if preferred is KittyUnicodeGraphicControl:
+            return KittyUnicodeGraphicControl
 
-    def write_to_screen(
-        self,
-        screen: Screen,
-        mouse_handlers: MouseHandlers,
-        write_position: WritePosition,
-        parent_style: str,
-        erase_bg: bool,
-        z_index: int | None,
-    ) -> None:
-        """Draw the graphic window's contents to the screen if required."""
-        # Pre-convert datum for this write position so result is cached
-        if not self._pre_rendered:
-            self.content.convert_data(write_position)
-            self._pre_rendered = True
-        filter_value = self.filter()
-        if filter_value:
-            try:
-                new_write_position = self.get_position(screen)
-            except NotVisible:
-                pass
-            else:
-                # Inform the graphic control of the calculated cropping region
-                self.content.bbox = new_write_position.bbox
+    # Check Sixel support
+    if graphics_sixel and find_route(format_, "sixel"):
+        useable.append(SixelGraphicControl)
+        if preferred is SixelGraphicControl:
+            return SixelGraphicControl
 
-                # Draw the graphic content to the screen
-                if (
-                    new_write_position
-                    and new_write_position.width
-                    and new_write_position.height
-                ):
-                    # Do not pass the bbox on to the window when writing
-                    new_write_position.bbox = DiInt(0, 0, 0, 0)
-                    super().write_to_screen(
-                        screen,
-                        MouseHandlers(),  # Do not let the float add mouse events
-                        new_write_position,
-                        # Force renderer refreshes by constantly changing the style
-                        f"{parent_style} class:render-{get_app().render_counter}",
-                        erase_bg=True,
-                        z_index=z_index,
-                    )
-                    return
-
-        # Otherwise hide the content (required for kitty graphics)
-        if not get_app().leave_graphics():
-            self.content.hide()
-
-    def _fill_bg(
-        self,
-        screen: Screen,
-        # mouse_handlers: MouseHandlers,
-        write_position: WritePosition,
-        erase_bg: bool,
-    ) -> None:
-        """Erase/fill the background."""
-        char: str | None = self.char() if callable(self.char) else self.char
-        if erase_bg or char:
-            wp = write_position
-            char_obj = Char(char or " ", f"class:render-{get_app().render_counter}")
-
-            # mouse_handlers_dict = mouse_handlers.mouse_handlers
-            for y in range(wp.ypos, wp.ypos + wp.height):
-                row = screen.data_buffer[y]
-                # mouse_handler_row = mouse_handlers_dict[y]
-                for x in range(wp.xpos, wp.xpos + wp.width):
-                    row[x] = char_obj
-                    # mouse_handler_row[x] = lambda e: NotImplemented
-
-
-def select_graphic_control(format_: str) -> type[GraphicControl] | None:
-    """Determine which graphic control to use."""
-    SelectedGraphicControl: type[GraphicControl] | None = None
-    app = get_app()
-    preferred_graphics_protocol = app.config.graphics
-    useable_graphics_controls: list[type[GraphicControl]] = []
-    _in_mplex = in_mplex()
-    force_graphics = app.config.force_graphics
-
-    if preferred_graphics_protocol != "none":
-        if (app.renderer.graphics_iterm or force_graphics) and find_route(
-            format_, "base64-png"
-        ):
-            useable_graphics_controls.append(ItermGraphicControl)
-        if (
-            preferred_graphics_protocol == "iterm"
-            and ItermGraphicControl in useable_graphics_controls
-            # Iterm does not work in mplex without pass-through
-            and (not _in_mplex or (_in_mplex and force_graphics))
-        ):
-            SelectedGraphicControl = ItermGraphicControl
-        elif (
-            (app.renderer.graphics_kitty or force_graphics)
-            and find_route(format_, "base64-png")
-            # Kitty does not work in mplex without pass-through
-            and (not _in_mplex or (_in_mplex and force_graphics))
-        ):
-            useable_graphics_controls.append(KittyGraphicControl)
-            useable_graphics_controls.append(KittyUnicodeGraphicControl)
-        if (
-            preferred_graphics_protocol == "kitty"
-            and KittyGraphicControl in useable_graphics_controls
-        ):
-            SelectedGraphicControl = KittyGraphicControl
-        elif (
-            preferred_graphics_protocol == "kitty-unicode"
-            and KittyUnicodeGraphicControl in useable_graphics_controls
-        ):
-            SelectedGraphicControl = KittyUnicodeGraphicControl
-        # Tmux now supports sixels (>=3.4)
-        elif (app.renderer.graphics_sixel or force_graphics) and find_route(
-            format_, "sixel"
-        ):
-            useable_graphics_controls.append(SixelGraphicControl)
-        if (
-            preferred_graphics_protocol == "sixel"
-            and SixelGraphicControl in useable_graphics_controls
-        ):
-            SelectedGraphicControl = SixelGraphicControl
-
-        if SelectedGraphicControl is None and useable_graphics_controls:
-            SelectedGraphicControl = useable_graphics_controls[0]
-
-    return SelectedGraphicControl
-
-
-class GraphicProcessor:
-    """Class which loads and positions graphics references in a :py:class:`UIContent`."""
-
-    def __init__(self, control: UIControl) -> None:
-        """Initialize a new graphic processor."""
-        self.control = control
-
-        self.positions: dict[str, Point] = {}
-        self._position_cache: FastDictCache[tuple[UIContent], dict[str, Point]] = (
-            FastDictCache(self._load_positions, size=1_000)
-        )
-        self._float_cache: FastDictCache[tuple[str], Float | None] = FastDictCache(
-            self.get_graphic_float, size=1_000
-        )
-        self.app = get_app()
-
-    def load(self, content: UIContent) -> None:
-        """Check for graphics in lines of text."""
-        self.positions = self._position_cache[content,]
-
-    def _load_positions(self, content: UIContent) -> dict[str, Point]:
-        positions = {}
-        get_line = content.get_line
-        for y in range(content.line_count):
-            line = get_line(y)
-            x = 0
-            for style, text, *_ in line:
-                for part in style.split():
-                    if part.startswith("[Graphic_"):
-                        key = part[9:-1]
-                        positions[key] = Point(x, y)
-                        # Get graphic float for this image and update its position
-                        graphic_float = self._float_cache[key,]
-                        # Register graphic with application
-                        if graphic_float:
-                            self.app.graphics.add(graphic_float)
-                    if part in _ZERO_WIDTH_FRAGMENTS:
-                        break
-                else:
-                    x += get_cwidth(text)
-        return positions
-
-    def _get_position(
-        self, key: str, rows: int, cols: int
-    ) -> Callable[[Screen], WritePosition]:
-        """Return a function that returns the current bounded graphic position."""
-
-        def get_graphic_position(screen: Screen) -> WritePosition:
-            """Get the position and bbox of a graphic."""
-            if key not in self.positions:
-                raise NotVisible
-
-            # Find the control's window
-            window: Window | None = None
-            for _window in get_app().layout.find_all_windows():
-                if _window.content == self.control:
-                    window = _window
-                    break
-
-            if window not in screen.visible_windows:
-                raise NotVisible
-
-            render_info = window.render_info
-            if render_info is None:
-                raise NotVisible
-
-            # Hide graphic if control is not in layout
-            win_wp = screen.visible_windows_to_write_positions.get(window)
-            if win_wp is None:
-                raise NotVisible
-
-            win_bbox = win_wp.bbox
-
-            render_info = window.render_info
-            if render_info is None:
-                raise NotVisible
-
-            x, y = self.positions[key]
-            win_content_height = render_info.ui_content.line_count
-            win_content_width = win_wp.width  # TODO - get the actual content width
-
-            horizontal_scroll = getattr(render_info, "horizontal_scroll", 0)
-            vertical_scroll = render_info.vertical_scroll
-            if (
-                horizontal_scroll >= x + win_content_width
-                or vertical_scroll >= y + win_content_height
-            ):
-                raise NotVisible
-
-            bbox = DiInt(
-                top=max(0, win_bbox.top - y + vertical_scroll),
-                right=win_bbox.right,
-                bottom=max(
-                    0, win_bbox.bottom - (win_wp.height - y - rows) - vertical_scroll
-                ),
-                left=win_bbox.left,
-            )
-
-            xpos = win_wp.xpos + x + win_bbox.left
-            ypos = max(
-                win_wp.ypos + win_bbox.top,
-                win_wp.ypos + y + max(0, win_bbox.top - y) - min(y, vertical_scroll),
-            )
-            width = max(0, cols - bbox.left - bbox.right)
-            height = max(0, rows - bbox.top - bbox.bottom)
-
-            return WritePosition(
-                xpos=xpos, ypos=ypos, width=width, height=height, bbox=bbox
-            )
-
-        return get_graphic_position
-
-    def get_graphic_float(self, key: str) -> Float | None:
-        """Create a graphical float for an image."""
-        sized_datum = Datum.get_size(key)
-        if sized_datum is None:
-            log.debug("Datum not found for graphic '%s'", key)
-            return None
-
-        datum, (rows, cols) = sized_datum
-
-        GraphicControl = select_graphic_control(format_=datum.format)
-        if GraphicControl is None:
-            # log.debug("Terminal graphics not supported or format not graphical")
-            return None
-
-        bg_color = datum.bg
-        graphic_float = Float(
-            graphic_window := GraphicWindow(
-                content=(graphic_control := GraphicControl(datum)),
-                get_position=self._get_position(key, rows, cols),
-                style=f"bg:{bg_color}" if bg_color else "",
-                align=datum.align,
-            )
-        )
-        # Register graphic with application
-        (app_graphics := self.app.graphics).add(graphic_float)
-        # Hide the graphic from app if the float is deleted
-        weak_float_ref = weakref.ref(graphic_float)
-        graphic_window.filter &= Condition(lambda: weak_float_ref() in app_graphics)
-        # Hide the graphic from terminal if the float is deleted
-        weakref.finalize(graphic_float, graphic_control.close)
-
-        return graphic_float
+    return useable[0] if useable else None

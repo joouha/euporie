@@ -284,10 +284,12 @@ class Renderer(PtkRenderer):
         cpr_not_supported_callback: Callable[[], None] | None = None,
         extend_height: FilterOrBool = False,
         extend_width: FilterOrBool = False,
+        leave_graphics: FilterOrBool = False,
     ) -> None:
         """Create a new :py:class:`Renderer` instance."""
         self.extend_height = to_filter(extend_height)
         self.extend_width = to_filter(extend_width)
+        self.leave_graphics = to_filter(leave_graphics)
 
         self._extended_keys_enabled = False
         self._palette_dsr_enabled = False
@@ -375,6 +377,10 @@ class Renderer(PtkRenderer):
         if not self._palette_dsr_enabled:
             output.enable_palette_dsr()
             self._palette_dsr_enabled = True
+
+        # Clear all kitty graphic placements
+        if self.graphics_kitty and not self.leave_graphics():
+            output.clear_graphics_kitty()
 
         # Create screen and write layout to it.
         size = output.get_size()

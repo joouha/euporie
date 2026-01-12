@@ -3,15 +3,18 @@
 from __future__ import annotations
 
 import logging
+from collections import ChainMap, defaultdict
 
-from prompt_toolkit.layout import screen
+from prompt_toolkit.layout.screen import _CHAR_CACHE, Char
+from prompt_toolkit.layout.screen import Screen as PtkScreen
+from prompt_toolkit.layout.screen import WritePosition as PtkWritePosition
 
 from euporie.apptk.data_structures import DiInt
 
 log = logging.getLogger(__name__)
 
 
-class WritePosition(screen.WritePosition):
+class WritePosition(PtkWritePosition):
     """A write position which also hold bounding box information."""
 
     def __init__(
@@ -36,13 +39,77 @@ class WritePosition(screen.WritePosition):
         )
 
 
-class Screen(screen.Screen):
+class ChainBuffer(dict):
+    """Overlay screen buffers, storing writes in a separate buffer."""
+
+    def __init__(
+        self,
+        lower: defaultdict[int, dict[int, str]],
+        upper: defaultdict[int, defaultdict[int, str]],
+    ) -> None:
+        """Initialize the chain buffer with lower and upper layers.
+
+        Args:
+            lower: The lower buffer layer that receives new writes.
+            upper: The upper buffer layer containing existing data.
+        """
+        self.lower = lower
+        self.upper = upper
+
+    def __missing__(self, key: int) -> str:
+        """Return a chained mapping for the given row key.
+
+        Args:
+            key: The row index to retrieve.
+
+        Returns:
+            A ChainMap combining the lower and upper buffer rows.
+        """
+        self[key] = ChainMap(self.lower[key], self.upper[key])
+        return self[key]
+
+    def flatten(self) -> defaultdict[int, defaultdict[int, str]]:
+        """Merge the lower buffer into the upper buffer and return it.
+
+        Returns:
+            The upper buffer with all lower buffer data merged in.
+        """
+        lower = self.lower
+        upper = self.upper
+        for x, row in lower.items():
+            upper[x].update(row)
+        lower.clear()
+        return upper
+
+
+class Screen(PtkScreen):
     """Screen class which uses :py:`BoundedWritePosition`s."""
+
+    def draw_all_floats(self) -> None:
+        """Draw all float functions in order of z-index.
+
+        We first draw them to a separate screen layer, then copy that over the screen.
+        This allows floats to detect if there is anything underneath them (required for
+        automatically hiding terminal graphics which collide with floats).
+        """
+        self.data_buffer = ChainBuffer(defaultdict(dict), self.data_buffer)
+        self.zero_width_escapes = ChainBuffer(
+            defaultdict(dict), self.zero_width_escapes
+        )
+        super().draw_all_floats()
+        self.data_buffer = self.data_buffer.flatten()
+        self.zero_width_escapes = self.zero_width_escapes.flatten()
 
     def fill_area(
         self, write_position: WritePosition, style: str = "", after: bool = False
     ) -> None:
-        """Fill the content of this area, using the given `style`."""
+        """Fill the content of this area, using the given `style`.
+
+        Args:
+            write_position: The position and dimensions of the area to fill.
+            style: The style string to apply to the area.
+            after: If True, append the style; otherwise prepend it.
+        """
         if not style.strip():
             return
 
@@ -50,7 +117,7 @@ class Screen(screen.Screen):
 
         xmin = write_position.xpos + bbox.left
         xmax = write_position.xpos + write_position.width - bbox.right
-        char_cache = screen._CHAR_CACHE
+        char_cache = _CHAR_CACHE
         data_buffer = self.data_buffer
 
         if after:

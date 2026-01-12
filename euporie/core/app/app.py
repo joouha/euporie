@@ -148,6 +148,7 @@ class BaseApp(ConfigurableApp, Application, ABC):
             cpr_not_supported_callback=self.cpr_not_supported_callback,
             extend_height=extend_renderer_height,
             extend_width=extend_renderer_width,
+            leave_graphics=self.leave_graphics,
         )
         # Contains the opened tab containers
         self.tabs: list[Tab] = []
@@ -242,6 +243,7 @@ class BaseApp(ConfigurableApp, Application, ABC):
             content=Shadow(CompletionsMenu(extra_filter=~has_toolbar)),
             xcursor=True,
             ycursor=True,
+            z_index=1000,
         )
         # Load the layout
         # We delay this until we have terminal responses to allow terminal graphics
