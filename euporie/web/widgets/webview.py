@@ -488,21 +488,13 @@ class WebViewControl(UIControl):
     @add_cmd(filter=webview_has_focus)
     def _scroll_webview_left() -> None:
         """Scroll the display up one line."""
-        from euporie.core.widgets.display import DisplayWindow
-
-        window = get_app().layout.current_window
-        assert isinstance(window, DisplayWindow)
-        window._scroll_left()
+        get_app().layout.current_window._scroll_left()
 
     @staticmethod
     @add_cmd(filter=webview_has_focus)
     def _scroll_webview_right() -> None:
         """Scroll the display down one line."""
-        from euporie.core.widgets.display import DisplayWindow
-
-        window = get_app().layout.current_window
-        assert isinstance(window, DisplayWindow)
-        window._scroll_right()
+        get_app().layout.current_window._scroll_right()
 
     @staticmethod
     @add_cmd(filter=webview_has_focus)
@@ -589,12 +581,11 @@ if __name__ == "__main__":
     from euporie.apptk.output.color_depth import ColorDepth
 
     from euporie.apptk.application.application import Application
-    from euporie.core.widgets.display import DisplayWindow
     from euporie.web.widgets.webview import WebViewControl
 
     kb = KeyBindings()
     kb.add("q")(lambda event: event.app.exit())
-    layout = Layout(container=DisplayWindow(WebViewControl(UPath(sys.argv[-1]))))
+    layout = Layout(container=Window(WebViewControl(UPath(sys.argv[-1]))))
     app: Application = Application(
         layout=layout,
         key_bindings=kb,

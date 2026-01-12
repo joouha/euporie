@@ -22,7 +22,6 @@ from prompt_toolkit.layout import containers as ptk_containers
 from prompt_toolkit.layout.containers import (
     Container,
     ScrollOffsets,
-    WindowRenderInfo,
 )
 
 from euporie.apptk.cache import SimpleCache
@@ -557,6 +556,42 @@ class VSplit(ptk_containers.VSplit):
             return result
 
         return self._children_cache.get(tuple(self.children), get)
+
+
+class WindowRenderInfo(ptk_containers.WindowRenderInfo):
+    """Render information for the last render time of this control."""
+
+    def __init__(
+        self,
+        window: Window,
+        ui_content: UIContent,
+        horizontal_scroll: int,
+        vertical_scroll: int,
+        window_width: int,
+        window_height: int,
+        configured_scroll_offsets: ScrollOffsets,
+        visible_line_to_row_col: dict[int, tuple[int, int]],
+        rowcol_to_yx: dict[tuple[int, int], tuple[int, int]],
+        x_offset: int,
+        y_offset: int,
+        wrap_lines: bool,
+    ) -> None:
+        """Additionally store horizontal scroll offset."""
+        super().__init__(
+            window=window,
+            ui_content=ui_content,
+            horizontal_scroll=horizontal_scroll,
+            vertical_scroll=vertical_scroll,
+            window_width=window_width,
+            window_height=window_height,
+            configured_scroll_offsets=configured_scroll_offsets,
+            visible_line_to_row_col=visible_line_to_row_col,
+            rowcol_to_yx=rowcol_to_yx,
+            x_offset=x_offset,
+            y_offset=y_offset,
+            wrap_lines=wrap_lines,
+        )
+        self.horizontal_scroll = horizontal_scroll
 
 
 class Window(ptk_containers.Window):
@@ -1138,6 +1173,22 @@ class Window(ptk_containers.Window):
 
         return NotImplemented
 
+    def _scroll_up(self) -> NotImplementedOrNone:  # type: ignore [override]
+        """Scroll window up."""
+        info = self.render_info
+        if info is None:
+            return NotImplemented
+        if info.vertical_scroll > 0:
+            # TODO: not entirely correct yet in case of line wrapping and long lines.
+            if (
+                info.cursor_position.y
+                >= info.window_height - 1 - info.configured_scroll_offsets.bottom
+            ):
+                self.content.move_cursor_up()
+            self.vertical_scroll -= 1
+            return None
+        return NotImplemented
+
     def _scroll_down(self) -> NotImplementedOrNone:  # type: ignore [override]
         """Scroll window down."""
         info = self.render_info
@@ -1153,23 +1204,29 @@ class Window(ptk_containers.Window):
 
         return NotImplemented
 
-    def _scroll_up(self) -> NotImplementedOrNone:  # type: ignore [override]
-        """Scroll window up."""
+    def _scroll_right(self, max: int | None = None) -> NotImplementedOrNone:
+        """Scroll window right."""
         info = self.render_info
-
         if info is None:
             return NotImplemented
-
-        if info.vertical_scroll > 0:
-            # TODO: not entirely correct yet in case of line wrapping and long lines.
-            if (
-                info.cursor_position.y
-                >= info.window_height - 1 - info.configured_scroll_offsets.bottom
-            ):
-                self.content.move_cursor_up()
-            self.vertical_scroll -= 1
+        content_width = max or self.content.content_width
+        if self.horizontal_scroll < content_width - info.window_width:
+            if info.cursor_position.y <= info.configured_scroll_offsets.right:
+                self.content.move_cursor_right()
+            self.horizontal_scroll += 1
             return None
+        return NotImplemented
 
+    def _scroll_left(self) -> NotImplementedOrNone:
+        """Scroll window left."""
+        info = self.render_info
+        if info is None:
+            return NotImplemented
+        horizontal_scroll = getattr(self.render_info, "horizontal_scroll", 0)  # B009
+        if horizontal_scroll > 0:
+            self.content.move_cursor_left()
+            self.horizontal_scroll -= 1
+            return None
         return NotImplemented
 
 

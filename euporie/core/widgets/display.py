@@ -388,92 +388,6 @@ class DisplayControl(UIControl):
         """Return the Window invalidate events."""
         yield from self.invalidate_events
 
-
-class DisplayWindow(Window):
-    """A window sub-class which can scroll left and right."""
-
-    content: DisplayControl
-    vertical_scroll: int
-
-    def _write_to_screen_at_index(
-        self,
-        screen: Screen,
-        mouse_handlers: MouseHandlers,
-        write_position: WritePosition,
-        parent_style: str,
-        erase_bg: bool,
-    ) -> None:
-        """Enure the :attr:`horizontal_scroll` is recorded."""
-        super()._write_to_screen_at_index(
-            screen,
-            mouse_handlers,
-            write_position,
-            parent_style,
-            erase_bg,
-        )
-        # Set the horizontal scroll offset on the render info
-        # TODO - fix this upstream
-        if self.render_info is not None:
-            setattr(  # noqa B010
-                self.render_info, "horizontal_scroll", self.horizontal_scroll
-            )
-
-    def _scroll_up(self) -> NotImplementedOrNone:  # type: ignore [override]
-        """Scroll window up."""
-        info = self.render_info
-        if info is None:
-            return NotImplemented
-        if info.vertical_scroll > 0:
-            # TODO: not entirely correct yet in case of line wrapping and long lines.
-            if (
-                info.cursor_position.y
-                >= info.window_height - 1 - info.configured_scroll_offsets.bottom
-            ):
-                self.content.move_cursor_up()
-            self.vertical_scroll -= 1
-            return None
-        return NotImplemented
-
-    def _scroll_down(self) -> NotImplementedOrNone:  # type: ignore [override]
-        """Scroll window down."""
-        info = self.render_info
-
-        if info is None:
-            return NotImplemented
-
-        if self.vertical_scroll < info.content_height - info.window_height:
-            if info.cursor_position.y <= info.configured_scroll_offsets.top:
-                self.content.move_cursor_down()
-            self.vertical_scroll += 1
-            return None
-
-        return NotImplemented
-
-    def _scroll_right(self, max: int | None = None) -> NotImplementedOrNone:
-        """Scroll window right."""
-        info = self.render_info
-        if info is None:
-            return NotImplemented
-        content_width = max or self.content.content_width
-        if self.horizontal_scroll < content_width - info.window_width:
-            if info.cursor_position.y <= info.configured_scroll_offsets.right:
-                self.content.move_cursor_right()
-            self.horizontal_scroll += 1
-            return None
-        return NotImplemented
-
-    def _scroll_left(self) -> NotImplementedOrNone:
-        """Scroll window left."""
-        info = self.render_info
-        if info is None:
-            return NotImplemented
-        horizontal_scroll = getattr(self.render_info, "horizontal_scroll", 0)  # B009
-        if horizontal_scroll > 0:
-            self.content.move_cursor_left()
-            self.horizontal_scroll -= 1
-            return None
-        return NotImplemented
-
     # ################################### Commands ####################################
 
     @staticmethod
@@ -481,7 +395,6 @@ class DisplayWindow(Window):
     def _scroll_display_left() -> None:
         """Scroll the display up one line."""
         window = get_app().layout.current_window
-        assert isinstance(window, DisplayWindow)
         window._scroll_left()
 
     @staticmethod
@@ -489,7 +402,6 @@ class DisplayWindow(Window):
     def _scroll_display_right() -> None:
         """Scroll the display down one line."""
         window = get_app().layout.current_window
-        assert isinstance(window, DisplayWindow)
         window._scroll_right()
 
     @staticmethod
@@ -622,7 +534,7 @@ class Display:
             convert_kwargs=convert_kwargs,
         )
 
-        self.window = DisplayWindow(
+        self.window = Window(
             content=self.control,
             height=height,
             width=width,
