@@ -75,6 +75,15 @@ class Vt100_Output(PtkVt100_Output):
         )
         self.enable_passthrough = to_filter(enable_passthrough)
 
+    def begin_synced_output(self) -> None:
+        """Begin updating the output."""
+        self.write_raw("\x1b[?2026h")
+        self.flush()
+
+    def end_synced_output(self) -> None:
+        """End updating the terminal output."""
+        self.write_raw("\x1b[?2026l")
+
     def mplex_passthrough(self, cmd: str) -> str:
         """Wrap an escape sequence for terminal passthrough."""
         if self.enable_passthrough():
