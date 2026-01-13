@@ -485,7 +485,8 @@ add_setting(
     default=[],
     flags=[],
     nargs="*",
-    type_=UPath,
+    type_=str,
+    validate=UPath,
     help_="List of recently opened files",
     schema={
         "type": "array",
