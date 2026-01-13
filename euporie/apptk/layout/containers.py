@@ -1311,7 +1311,7 @@ class Window(ptk_containers.Window):
         # Force renderer to contantly refresh graphics by constantly changing the style
         self._apply_style(
             screen,
-            write_position,
+            graphic_wp,
             f"{parent_style} class:render-{get_app().render_counter}",
         )
 
