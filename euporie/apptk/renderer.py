@@ -295,7 +295,6 @@ class Renderer(PtkRenderer):
         self._palette_dsr_enabled = False
         self._sgr_pixel_enabled = False
 
-        self.colors = {}
         self.graphics_sixel = False
         self.graphics_iterm = False
         self.graphics_kitty = False

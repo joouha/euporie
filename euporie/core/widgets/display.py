@@ -38,14 +38,12 @@ if TYPE_CHECKING:
 
     from euporie.apptk.key_binding.key_bindings import NotImplementedOrNone
     from euporie.apptk.layout.dimension import AnyDimension
-    from euporie.apptk.layout.mouse_handlers import MouseHandlers
 
     from euporie.apptk.color import ColorPalette
     from euporie.apptk.filters import FilterOrBool
     from euporie.apptk.formatted_text import StyleAndTextTuples
     from euporie.apptk.key_binding import KeyBindingsBase
     from euporie.apptk.layout.containers import AnyContainer
-    from euporie.apptk.layout.screen import Screen, WritePosition
 
 
 log = logging.getLogger(__name__)
@@ -89,7 +87,6 @@ class DisplayControl(UIControl):
 
         self.key_bindings = load_registered_bindings(
             "euporie.core.widgets.display:DisplayControl",
-            config=get_app().config,
         )
         self._mouse_handler = mouse_handler
 
@@ -195,9 +192,7 @@ class DisplayControl(UIControl):
     ) -> int:
         """Get the maximum lines width for a given rendering."""
         cp = self.color_palette
-        lines = self._line_cache[
-            datum, width, height, cp.fg.base_hex, cp.bg.base_hex, wrap_lines
-        ]
+        lines = self._line_cache[datum, width, height, cp.fg.hex, cp.bg.hex, wrap_lines]
         return max(
             self._line_width_cache.get(
                 (datum, width, height, wrap_lines, i),
@@ -219,7 +214,7 @@ class DisplayControl(UIControl):
         def _render() -> None:
             cp = self.color_palette
             self.lines = self._line_cache[
-                datum, cols, rows, cp.fg.base_hex, cp.bg.base_hex, wrap_lines
+                datum, cols, rows, cp.fg.hex, cp.bg.hex, wrap_lines
             ]
             self.loading = False
             self.resizing = False
@@ -257,8 +252,8 @@ class DisplayControl(UIControl):
             self.datum,
             width,
             height,
-            cp.fg.base_hex,
-            cp.bg.base_hex,
+            cp.fg.hex,
+            cp.bg.hex,
             self.wrap_lines(),
         ]
         return len(self.lines)

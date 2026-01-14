@@ -2,7 +2,7 @@
 
 import pytest
 
-from euporie.apptk.color import ColorPalette, ColorPaletteColor
+from euporie.apptk.color import ColorPalette, Color
 
 # Define some test data
 test_colors = {
@@ -27,13 +27,13 @@ def test_color_palette_add_color() -> None:
     assert palette.colors == {}
     palette.add_color("test_color", "#123456")
     assert "test_color" in palette.colors
-    assert isinstance(palette.test_color, ColorPaletteColor)
+    assert isinstance(palette.test_color, Color)
     assert palette.test_color.base_hex == "#123456"
 
 
 def test_color_palette_access_color(color_palette: ColorPalette) -> None:
     """Test accessing a color from the ColorPalette."""
-    assert isinstance(color_palette.red, ColorPaletteColor)
+    assert isinstance(color_palette.red, Color)
     assert color_palette.red.base_hex == test_colors["red"]
 
 
@@ -49,19 +49,19 @@ def test_color_palette_color_adjustments(color_palette: ColorPalette) -> None:
 
     # Test lighter()
     lighter_red = red.lighter(0.1)
-    assert isinstance(lighter_red, ColorPaletteColor)
+    assert isinstance(lighter_red, Color)
     assert lighter_red.base_hex != red.base_hex
     assert lighter_red.brightness > red.brightness
 
     # Test darker()
     darker_red = red.darker(0.1)
-    assert isinstance(darker_red, ColorPaletteColor)
+    assert isinstance(darker_red, Color)
     assert darker_red.base_hex != red.base_hex
     assert darker_red.brightness < red.brightness
 
     # Test more()
     more_red = red.more(0.1)
-    assert isinstance(more_red, ColorPaletteColor)
+    assert isinstance(more_red, Color)
     assert more_red.base_hex != red.base_hex
     assert (
         (more_red.brightness < red.brightness)
@@ -71,7 +71,7 @@ def test_color_palette_color_adjustments(color_palette: ColorPalette) -> None:
 
     # Test less()
     less_red = red.less(0.1)
-    assert isinstance(less_red, ColorPaletteColor)
+    assert isinstance(less_red, Color)
     assert less_red.base_hex != red.base_hex
     assert (
         (less_red.brightness > red.brightness)
@@ -82,7 +82,7 @@ def test_color_palette_color_adjustments(color_palette: ColorPalette) -> None:
     # Test towards()
     blue = color_palette.blue
     blended_color = red.towards(blue, 0.5)
-    assert isinstance(blended_color, ColorPaletteColor)
+    assert isinstance(blended_color, Color)
     assert blended_color.base_hex != red.base_hex
     assert blended_color.base_hex != blue.base_hex
 

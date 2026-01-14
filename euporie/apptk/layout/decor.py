@@ -10,7 +10,7 @@ from euporie.apptk.layout.dimension import Dimension
 
 from euporie.apptk.border import ThinLine
 from euporie.apptk.cache import FastDictCache
-from euporie.apptk.color import ColorPaletteColor
+from euporie.apptk.color import Color
 from euporie.apptk.filters import has_focus
 from euporie.apptk.layout.containers import (
     Container,
@@ -359,7 +359,7 @@ class DropShadow(Container):
                         style += f" fg:{color.darker(amount)}"
                     else:
                         try:
-                            color = ColorPaletteColor(fg)
+                            color = Color(fg)
                         except ValueError:
                             pass
                         else:
@@ -370,7 +370,7 @@ class DropShadow(Container):
                         style += f" bg:{color.darker(amount)}"
                     else:
                         try:
-                            color = ColorPaletteColor(bg)
+                            color = Color(bg)
                         except ValueError:
                             pass
                         else:
