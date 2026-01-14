@@ -31,7 +31,7 @@ if TYPE_CHECKING:
     from PIL.Image import Image as PilImage
     from rich.console import ConsoleRenderable
 
-    from euporie.apptk.color import ColorPaletteColor
+    from euporie.apptk.color import Color
     from euporie.apptk.data_structures import DiInt
 
 
@@ -88,8 +88,8 @@ class Datum(Generic[T], metaclass=_MetaDatum):
         format: str,
         px: int | None = None,
         py: int | None = None,
-        fg: str | ColorPaletteColor | None = None,
-        bg: str | ColorPaletteColor | None = None,
+        fg: str | Color | None = None,
+        bg: str | Color | None = None,
         path: Path | None = None,
         source: Datum | None = None,
         align: HorizontalAlign = HorizontalAlign.LEFT,
@@ -209,9 +209,9 @@ class Datum(Generic[T], metaclass=_MetaDatum):
             return self.data
 
         if not fg and hasattr(app := get_app(), "color_palette"):
-            fg = self.fg or app.color_palette.fg.base_hex
+            fg = self.fg or app.color_palette.fg.hex
         if not bg and hasattr(app := get_app(), "color_palette"):
-            bg = self.bg or app.color_palette.bg.base_hex
+            bg = self.bg or app.color_palette.bg.hex
 
         key_tail = (
             cols,

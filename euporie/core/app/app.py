@@ -13,23 +13,25 @@ from typing import TYPE_CHECKING, cast, overload
 from weakref import WeakSet, WeakValueDictionary
 
 from euporie.apptk.application.current import create_app_session, set_app
-from euporie.apptk.input.defaults import create_input
+from euporie.apptk.clipboard.base import DynamicClipboard
 from euporie.apptk.layout.layout import Layout
-from euporie.apptk.output.defaults import create_output
 from euporie.apptk.utils import Event
 
 from euporie.apptk.application.application import Application, _CombinedRegistry
-from euporie.apptk.clipboard import DynamicClipboard
-from euporie.apptk.color import ColorPalette
+from euporie.apptk.color import Color, ColorPalette
 from euporie.apptk.filters import Condition
 from euporie.apptk.key_binding.key_processor import KeyProcessor
 from euporie.apptk.layout.containers import Float, FloatContainer, Window, to_container
-from euporie.apptk.output.vt100 import Vt100_Output
+from euporie.apptk.output.vt100 import (
+    ANSI_COLORS_TO_RGB,
+    TERMINAL_COLORS_TO_RGB,
+    Vt100_Output,
+)
 from euporie.apptk.renderer import Renderer
 from euporie.apptk.styles import (
     BaseStyle,
     ConditionalStyleTransformation,
-    DummyStyle,
+    DynamicStyleTransformation,
     SetDefaultColorStyleTransformation,
     Style,
     SwapLightAndDarkStyleTransformation,
@@ -37,6 +39,8 @@ from euporie.apptk.styles import (
     merge_styles,
     style_from_pygments_cls,
 )
+from euporie.apptk.styles.base import DynamicStyle
+from euporie.apptk.styles.style import PaletteStyle
 from euporie.core.app.base import ConfigurableApp
 from euporie.core.app.cursor import CursorConfig
 from euporie.core.filters import has_toolbar
@@ -48,7 +52,6 @@ from euporie.core.key_binding.registry import (
 from euporie.core.log import setup_logs
 from euporie.core.lsp import KNOWN_LSP_SERVERS, LspClient
 from euporie.core.style import (
-    DEFAULT_COLORS,
     DIAGNOSTIC_STYLE,
     IPYWIDGET_STYLE,
     LOG_STYLE,
@@ -68,13 +71,12 @@ if TYPE_CHECKING:
     from typing import Any, ClassVar, TypeVar
 
     # from euporie.apptk.application import _AppResult
+    from euporie.apptk.clipboard.base import Clipboard
     from euporie.apptk.contrib.ssh import PromptToolkitSSHSession
     from euporie.apptk.layout.layout import FocusableElement
 
     from euporie.apptk.filters import Filter, FilterOrBool
-    from euporie.apptk.input import Input
     from euporie.apptk.layout.containers import AnyContainer
-    from euporie.apptk.output import Output
     from euporie.core.bars.command import CommandBar
     from euporie.core.bars.search import SearchBar
     from euporie.core.config import Setting
@@ -88,6 +90,23 @@ if TYPE_CHECKING:
 
 log = logging.getLogger(__name__)
 
+BASE_STYLES = (
+    Style(MIME_STYLE),
+    Style(LOG_STYLE),
+    Style(IPYWIDGET_STYLE),
+    Style(DIAGNOSTIC_STYLE),
+)
+
+
+@cache
+def _get_clipboard(clipboard: Clipboard) -> Clipboard:
+    return clipboard()
+
+
+@cache
+def _pygments_style(theme: str) -> BaseStyle:
+    return style_from_pygments_cls(get_style_by_name(theme))
+
 
 class BaseApp(ConfigurableApp, Application, ABC):
     """All euporie apps.
@@ -97,8 +116,6 @@ class BaseApp(ConfigurableApp, Application, ABC):
     This subclasses the `euporie.apptk.application.Application` class, so application
     wide methods can be easily added.
     """
-
-    color_palette: ColorPalette
 
     _config_defaults: ClassVar[dict[str, Any]] = {"log_level_stdout": "critical"}
 
@@ -125,7 +142,7 @@ class BaseApp(ConfigurableApp, Application, ABC):
 
         """
         # Initialise the application
-        _get_clipboard = cache(lambda c: c())
+        self.color_palette = ColorPalette()
         super().__init__(
             **{
                 "clipboard": DynamicClipboard(
@@ -136,10 +153,34 @@ class BaseApp(ConfigurableApp, Application, ABC):
                 "mouse_support": True,
                 "cursor": CursorConfig(),
                 "enable_page_navigation_bindings": enable_page_navigation_bindings,
+                "style": merge_styles(
+                    [
+                        DynamicStyle(lambda: _pygments_style(self.syntax_theme)),
+                        *BASE_STYLES,
+                        PaletteStyle(self.color_palette, build_style),
+                    ]
+                ),
+                "style_transformation": merge_style_transformations(
+                    [
+                        ConditionalStyleTransformation(
+                            DynamicStyleTransformation(
+                                lambda: SetDefaultColorStyleTransformation(
+                                    fg=self.color_palette.fg.hex,
+                                    bg=self.color_palette.bg.hex,
+                                )
+                            ),
+                            Condition(lambda: self.config.color_scheme != "default"),
+                        ),
+                        ConditionalStyleTransformation(
+                            SwapLightAndDarkStyleTransformation(),
+                            Condition(lambda: self.config.color_scheme == "inverse"),
+                        ),
+                    ]
+                ),
                 **kwargs,
             }
         )
-        # Use custom renderer
+        # Use custom renderer options
         self.renderer = Renderer(
             self._merged_style,
             self.output,
@@ -194,18 +235,11 @@ class BaseApp(ConfigurableApp, Application, ABC):
         self.config.events.edit_mode += lambda x: setattr(
             self, "editing_mode", self.config.edit_mode
         )
-        self.config.events.syntax_theme += self.update_style
-        self.config.events.color_scheme += self.update_style
+        self.config.events.syntax_theme += self.update_palette
+        self.config.events.color_scheme += self.update_palette
         self.config.events.log_level += lambda x: setup_logs(self.config)
         self.config.events.log_file += lambda x: setup_logs(self.config)
         self.config.events.log_config += lambda x: setup_logs(self.config)
-        # Set up the color palette
-        self.color_palette = ColorPalette()
-        self.color_palette.add_color("fg", "#ffffff", "default")
-        self.color_palette.add_color("bg", "#000000", "default")
-        # Set up style update triggers
-        self.style_invalid = False
-        self.before_render += self._do_style_update
 
         # Store LSP client instances
         self.lsp_clients: WeakValueDictionary[str, LspClient] = WeakValueDictionary()
@@ -237,7 +271,7 @@ class BaseApp(ConfigurableApp, Application, ABC):
     def pre_run(self, app: Application | None = None) -> None:
         """Call during the 'pre-run' stage of application loading."""
         # Set the application's style
-        self.update_style()
+        self.update_palette()
         # Load completions menu.
         self.menus["completions"] = Float(
             content=Shadow(CompletionsMenu(extra_filter=~has_toolbar)),
@@ -605,115 +639,47 @@ class BaseApp(ConfigurableApp, Application, ABC):
             syntax_theme = "tango" if self.color_palette.bg.is_light else "euporie"
         return syntax_theme
 
-    base_styles = (
-        Style(MIME_STYLE),
-        Style(LOG_STYLE),
-        Style(IPYWIDGET_STYLE),
-        Style(DIAGNOSTIC_STYLE),
-    )
-
-    def create_merged_style(self) -> BaseStyle:
-        """Generate a new merged style for the application.
-
-        Using a dynamic style has serious performance issues, so instead we update
-        the style on the renderer directly when it changes in `self.update_style`
-
-        Returns:
-            Return a combined style to use for the application
-
-        """
-        # Get foreground and background colors based on the configured colour scheme
-        theme_colors: dict[str, dict[str, str]] = {
-            "default": {},
-            "light": {"fg": "#202020", "bg": "#F0F0F0"},
-            "dark": {"fg": "#F0F0F0", "bg": "#202020"},
-            "white": {"fg": "#000000", "bg": "#FFFFFF"},
-            "black": {"fg": "#FFFFFF", "bg": "#000000"},
+    def update_palette(self, setting: Setting | None = None) -> None:
+        """Set the application's color palette based on the configured theme."""
+        scheme = self.config.color_scheme
+        cp = self.color_palette
+        # ANSI terminal colors
+        cp.update(
+            {k: Color.from_rgb(*v, name=k) for k, v in ANSI_COLORS_TO_RGB.items()}
+        )
+        # Add configured color scheme's colors
+        if scheme == "default":
+            cp["fg"] = Color.from_rgb(*TERMINAL_COLORS_TO_RGB["fg"], name="default")
+            cp["bg"] = Color.from_rgb(*TERMINAL_COLORS_TO_RGB["bg"], name="default")
+        elif scheme == "light":
+            cp["fg"] = Color("#202020")
+            cp["bg"] = Color("#F0F0F0")
+        elif scheme == "dark":
+            cp["fg"] = Color("#F0F0F0")
+            cp["bg"] = Color("#202020")
+        elif scheme == "white":
+            cp["fg"] = Color("#000000")
+            cp["bg"] = Color("#FFFFFF")
+        elif scheme == "black":
+            cp["fg"] = Color("#FFFFFF")
+            cp["bg"] = Color("#000000")
+        elif scheme == "custom":
             # TODO - use config.custom_colors
-            "custom": {
-                "fg": self.config.custom_foreground_color,
-                "bg": self.config.custom_background_color,
-            },
-        }
-        base_colors: dict[str, str] = {
-            **DEFAULT_COLORS,
-            **self.renderer.colors,
-            **theme_colors.get(self.config.color_scheme, theme_colors["default"]),
-        }
-
-        # Build a color palette from the fg/bg colors
-        self.color_palette = cp = ColorPalette()
-        for name, color in base_colors.items():
-            cp.add_color(
-                name,
-                color or theme_colors["default"][name],
-                "default" if name in ("fg", "bg") else name,
-            )
-        # Add accent color
-        # self.color_palette.add_color(
-        #     "hl",
-        #     (bg := self.color_palette.bg)
-        #     .adjust(
-        #         hue=(bg.hue + (bg.hue - 0.036)) % 1,
-        #         saturation=(0.88 - bg.saturation),
-        #         brightness=0.4255 - bg.brightness,
-        #     )
-        #     .base_hex,
-        # )
-        cp.add_color(
-            "hl", base_colors.get(self.config.accent_color, self.config.accent_color)
-        )
-
-        # Build app style
-        styles: list[BaseStyle] = [
-            style_from_pygments_cls(get_style_by_name(self.syntax_theme)),
-            *self.base_styles,
-            build_style(cp),
-        ]
-
-        # Apply style transformations based on the configured color scheme
-        self.style_transformation = merge_style_transformations(
-            [
-                ConditionalStyleTransformation(
-                    SetDefaultColorStyleTransformation(
-                        fg=base_colors["fg"], bg=base_colors["bg"]
-                    ),
-                    self.config.color_scheme != "default",
-                ),
-                ConditionalStyleTransformation(
-                    SwapLightAndDarkStyleTransformation(),
-                    self.config.color_scheme == "inverse",
-                ),
-            ]
-        )
-
-        # Add user style customizations
-        if custom_style_dict := self.config.custom_styles:
-            styles.append(Style.from_dict(custom_style_dict))
-
-        return merge_styles(styles)
-
-    def update_style(self, query: Setting | None = None) -> None:
-        """Tell the application the style is out of date."""
-        self.style_invalid = True
-
-    def _do_style_update(self, caller: Application | None = None) -> None:
-        """Update the application's style when the syntax theme is changed."""
-        if self.style_invalid:
-            self.style_invalid = False
-            self.renderer.style = self.create_merged_style()
-            # self.style = self.create_merged_style()
-
-    def refresh(self) -> None:
-        """Reset all tabs."""
-        for tab in self.tabs:
-            to_container(tab).reset()
+            cp["fg"] = Color(self.config.custom_foreground_color)
+            cp["bg"] = Color(self.config.custom_background_color)
+        # Add highlight color (allowing ansicolors to be used)
+        cp["hl"] = cp.get(self.config.accent_color, self.config.accent_color)
 
     def _create_merged_style(
         self, include_default_pygments_style: Filter | None = None
     ) -> BaseStyle:
         """Block default style loading."""
-        return DummyStyle()
+        return self.style
+
+    def refresh(self) -> None:
+        """Reset all tabs."""
+        for tab in self.tabs:
+            to_container(tab).reset()
 
     def draw(self, render_as_done: bool = True) -> None:
         """Draw the app without focus, leaving the cursor below the drawn output."""

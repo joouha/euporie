@@ -7,10 +7,11 @@ from functools import cache
 from typing import TYPE_CHECKING
 
 from euporie.apptk.styles.defaults import default_ui_style
-from euporie.apptk.styles.style import Style
+from euporie.apptk.styles.style import Style, PaletteStyle
 from pygments.styles import get_style_by_name as pyg_get_style_by_name
 
-from euporie.apptk.color import ColorPalette, ColorPaletteColor
+from euporie.apptk.color import ColorPalette, Color
+from euporie.apptk.output.vt100 import ANSI_COLORS_TO_RGB, TERMINAL_COLORS_TO_RGB
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -29,31 +30,37 @@ KERNEL_STATUS_REPR = {
     "error": "☹",
 }
 
-
-DEFAULT_COLORS = {
-    "bg": "#232627",
-    "fg": "#fcfcfc",
-    "ansiblack": "#000000",
-    "ansired": "#cc0403",
-    "ansigreen": "#19cb00",
-    "ansiyellow": "#cecb00",
-    "ansiblue": "#0d73cc",
-    "ansipurple": "#9841bb",
-    "ansimagenta": "#cb1ed1",
-    "ansicyan": "#0dcdcd",
-    "ansiwhite": "#dddddd",
-    "ansibrightblack": "#767676",
-    "ansigray": "#767676",
-    "ansibrightred": "#f2201f",
-    "ansibrightgreen": "#23fd00",
-    "ansibrightyellow": "#fffd00",
-    "ansibrightblue": "#1a8fff",
-    "ansibrightpurple": "#fd28ff",
-    "ansibrightmagenta": "#fd28ff",
-    "ansibrightcyan": "#14ffff",
-    "ansibrightwhite": "#ffffff",
-}
-
+# Update default ANSI color scheme (use if we cannot query ANSI colors from terminal)
+ANSI_COLORS_TO_RGB.update(
+    {
+        "ansidefault": (0, 0, 0),
+        "ansiblack": (0, 0, 0),
+        "ansigray": (118, 118, 118),
+        "ansibrightblack": (118, 118, 118),
+        # "ansiwhite": (221, 221, 221),
+        "ansired": (204, 4, 3),
+        "ansigreen": (25, 203, 0),
+        "ansiyellow": (206, 203, 0),
+        "ansiblue": (13, 115, 204),
+        "ansimagenta": (203, 30, 209),
+        "ansicyan": (13, 205, 205),
+        "ansibrightred": (242, 32, 31),
+        "ansibrightgreen": (35, 253, 0),
+        "ansibrightyellow": (255, 253, 0),
+        "ansibrightblue": (26, 143, 255),
+        "ansibrightmagenta": (253, 40, 255),
+        "ansibrightcyan": (20, 255, 255),
+        # "ansipurple": (152, 65, 187),
+        # "ansibrightpurple": (253, 40, 255),
+        "ansiwhite": (255, 255, 255),
+    }
+)
+TERMINAL_COLORS_TO_RGB.update(
+    {
+        "bg": (35, 38, 39),
+        "fg": (252, 252, 252),
+    }
+)
 
 MIME_STYLE = [
     ("mime-stream-stderr", "fg:ansired"),
@@ -205,7 +212,7 @@ DIAGNOSTIC_STYLE = [
 def base_styles(cp: ColorPalette) -> dict[str, str]:
     """Generate base application styles."""
     return {
-        "default": f"fg:{cp.bg.base} bg:{cp.bg.base}",
+        "default": f"fg:{cp.bg} bg:{cp.bg}",
         "nbsp": "nounderline fg:default",
         "logo": "fg:#dd0000",
         "pattern": f"fg:{cp.bg.more(0.05)}",
@@ -218,7 +225,7 @@ def chrome_styles(cp: ColorPalette) -> dict[str, str]:
     """Generate chrome and UI element styles."""
     return {
         "chrome": f"fg:{cp.fg.more(0.05)} bg:{cp.bg.more(0.05)}",
-        "tab-padding": f"fg:{cp.bg.more(0.2)} bg:{cp.bg.base}",
+        "tab-padding": f"fg:{cp.bg.more(0.2)} bg:{cp.bg}",
     }
 
 
@@ -318,7 +325,7 @@ def dialog_styles(cp: ColorPalette) -> dict[str, str]:
     """Generate dialog styles."""
     return {
         "dialog dialog-title": f"bg:white fg:{cp.hl.darker(0.25)} bold reverse",
-        "dialog": f"fg:{cp.fg.base} bg:{cp.bg.darker(0.1)}",
+        "dialog": f"fg:{cp.fg} bg:{cp.bg.darker(0.1)}",
         "dialog text-area": f"bg:{cp.bg.lighter(0.05)}",
         "dialog input text text-area": f"fg:default bg:{cp.bg.less(0.1)}",
         "dialog text-area last-line": "nounderline",
@@ -360,7 +367,7 @@ def completion_styles(cp: ColorPalette) -> dict[str, str]:
     styles = {}
     for name, color_hex in completion_colors.items():
         styles[f"menu completion-{name}"] = f"fg:{color_hex}"
-        color = ColorPaletteColor(color_hex)
+        color = Color(color_hex)
         styles[f"menu completion-{name} selection"] = (
             f"bg:{color.lighter(0.75)} fg:{cp.hl} reverse"
         )
@@ -423,7 +430,7 @@ def sidebar_styles(cp: ColorPalette) -> dict[str, str]:
         "side_bar buttons": f"bg:{cp.bg.less(0.15)}",
         "side_bar buttons focused": f"fg:{cp.hl}",
         "side_bar buttons separator": f"bg:{cp.bg.less(0.15)} fg:{cp.bg.less(0.15)}",
-        "side_bar buttons selection": f"bg:{cp.fg} fg:{cp.hl} reverse",
+        "side_bar buttons selection": f"bg:{cp.fg.hex} fg:{cp.hl} reverse",
         "side_bar buttons separator selection before": (
             f"bg:{cp.bg.less(0.15)} fg:{cp.hl} reverse"
         ),
@@ -452,14 +459,12 @@ def tabbed_split_styles(cp: ColorPalette) -> dict[str, str]:
     }
 
 
-def ipywidget_styles(
-    cp: ColorPalette, style_variants: dict[str, ColorPaletteColor]
-) -> dict[str, str]:
+def ipywidget_styles(cp: ColorPalette, style_variants: ColorPalette) -> dict[str, str]:
     """Generate ipywidget styles."""
 
     def borders(
         template: str,
-        color: ColorPaletteColor | Callable[[ColorPaletteColor], ColorPaletteColor],
+        color: Color | Callable[[Color], Color],
         inset: bool = False,
     ) -> dict[str, str]:
         """Generate border style definitions for all four directions."""
@@ -506,13 +511,11 @@ def ipywidget_styles(
 
 
 def input_widget_styles(
-    cp: ColorPalette, style_variants: dict[str, ColorPaletteColor]
+    cp: ColorPalette, style_variants: dict[str, Color]
 ) -> dict[str, str]:
     """Generate input widget styles."""
 
-    def variants(
-        template: str, definition: Callable[[ColorPaletteColor], str]
-    ) -> dict[str, str]:
+    def variants(template: str, definition: Callable[[Color], str]) -> dict[str, str]:
         """Generate style definitions for all variants."""
         styles = {}
         for variant, color in style_variants.items():
@@ -521,7 +524,7 @@ def input_widget_styles(
 
     def borders(
         template: str,
-        color: ColorPaletteColor | Callable[[ColorPaletteColor], ColorPaletteColor],
+        color: Color | Callable[[Color], Color],
         inset: bool = False,
     ) -> dict[str, str]:
         """Generate border style definitions for all four directions."""
@@ -572,8 +575,8 @@ def input_widget_styles(
         # Buttons
         "input button face": f"fg:default bg:{cp.bg.more(0.05)}",
         "input button face hovered": f"fg:{cp.fg} bg:{cp.bg.more(0.2)}",
-        "input button face selection": f"bg:{cp.fg} fg:{cp.bg.more(0.05)} reverse",
-        "input button face focused": f"bg:{cp.fg} fg:{cp.bg.towards(cp.hl, 0.1)} reverse",
+        "input button face selection": f"bg:{cp.fg.hex} fg:{cp.bg.towards(cp.hl, 0.2)} reverse",
+        "input button face focused": f"bg:{cp.fg.hex} fg:{cp.bg.towards(cp.hl, 0.1)} reverse",
         **variants("input button face hovered {}", lambda c: f"bg:{cp.bg.more(0.2)}"),
         **variants(
             "input button face selection {}",
@@ -622,7 +625,7 @@ def input_widget_styles(
         "input list face row alt": f"bg:{cp.bg.lighter(0.1).more(0.01)}",
         "input list face row hovered": f"bg:{cp.bg.more(0.2)}",
         "input list face row selection": f"bg:{cp.bg.more(0.3)}",
-        "input list face row selection focused": f"bg:{cp.fg} fg:{cp.hl} reverse",
+        "input list face row selection focused": f"bg:{cp.fg.hex} fg:{cp.hl} reverse",
     }
 
 
@@ -634,21 +637,20 @@ def dataframe_styles(cp: ColorPalette) -> dict[str, str]:
     }
 
 
-def build_style(
-    cp: ColorPalette,
-    have_term_colors: bool = True,
-) -> Style:
+def build_style(cp: ColorPalette) -> Style:
     """Create an application style based on the given color palette."""
-    style_variants = {
-        "primary": cp.ansiblue,
-        "success": cp.ansigreen,
-        "info": cp.ansicyan,
-        "warning": cp.ansiyellow,
-        "danger": cp.ansired,
-        "orange": ColorPaletteColor("#ffa500"),
-        "teal": ColorPaletteColor("#008080"),
-        "purple": ColorPaletteColor("#800080"),
-    }
+    variants = ColorPalette(
+        {
+            "primary": cp.ansiblue,
+            "success": cp.ansigreen,
+            "info": cp.ansicyan,
+            "warning": cp.ansiyellow,
+            "danger": cp.ansired,
+            "orange": Color("#ffa500"),
+            "teal": Color("#008080"),
+            "purple": Color("#800080"),
+        }
+    )
 
     style_dict = {
         # The default style is merged at this point so full styles can be
@@ -673,12 +675,12 @@ def build_style(
         **shadow_styles(cp),
         **sidebar_styles(cp),
         **tabbed_split_styles(cp),
-        **ipywidget_styles(cp, style_variants),
-        **input_widget_styles(cp, style_variants),
+        **ipywidget_styles(cp, variants),
+        **input_widget_styles(cp, variants),
         **dataframe_styles(cp),
     }
 
-    return Style.from_dict(style_dict)
+    return style_dict
 
 
 @cache

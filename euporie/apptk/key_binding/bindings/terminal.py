@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 from euporie.apptk.key_binding.key_bindings import KeyBindings
 
 from euporie.apptk.key_binding.key_processor import KeyPressEvent
+from euporie.apptk.output.vt100 import ANSI_COLORS_TO_RGB, TERMINAL_COLORS_TO_RGB
 
 if TYPE_CHECKING:
     from euporie.apptk.key_binding.key_bindings import NotImplementedOrNone
@@ -28,15 +29,15 @@ _COLOR_NAMES: dict[str, str] = {
     "4;4": "ansiblue",
     "4;5": "ansipurple",
     "4;6": "ansicyan",
-    "4;7": "ansiwhite",
-    "4;8": "ansirbightblack",
-    "4;9": "ansirbightred",
-    "4;10": "ansirbightgreen",
-    "4;11": "ansirbightyellow",
-    "4;12": "ansirbightblue",
-    "4;13": "ansirbightpurple",
-    "4;14": "ansirbightcyan",
-    "4;15": "ansirbightwhite",
+    "4;7": "ansigray",
+    "4;8": "ansibightblack",
+    "4;9": "ansibightred",
+    "4;10": "ansibightgreen",
+    "4;11": "ansibightyellow",
+    "4;12": "ansibightblue",
+    "4;13": "ansibightpurple",
+    "4;14": "ansibightcyan",
+    "4;15": "ansiwhite",
 }
 
 
@@ -81,10 +82,16 @@ def load_terminal_bindings() -> KeyBindingsBase:
                 colors.get("g", "00"),
                 colors.get("b", "00"),
             )
-            app = event.app
-            app.renderer.colors[_COLOR_NAMES.get(c, c)] = f"#{r[:2]}{g[:2]}{b[:2]}"
-            app.update_style()
-            return None
+            name = _COLOR_NAMES.get(c, c)
+            rgb = (int(r[:2], 16), int(g[:2], 16), int(b[:2], 16))
+            if name in TERMINAL_COLORS_TO_RGB:
+                TERMINAL_COLORS_TO_RGB[name] = rgb
+                log.debug((name, rgb))
+                return None
+            elif name in ANSI_COLORS_TO_RGB:
+                ANSI_COLORS_TO_RGB[name] = rgb
+                log.debug((name, rgb))
+                return None
         return NotImplemented
 
     @key_bindings.add("<pixel-size-response>", is_global=True)

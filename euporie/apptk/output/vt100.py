@@ -24,6 +24,11 @@ if TYPE_CHECKING:
 
 log = logging.getLogger(__name__)
 
+TERMINAL_COLORS_TO_RGB = {
+    "fg": (255, 255, 255),
+    "bg": (0, 0, 0),
+}
+
 
 @lru_cache
 def _have_termios_tty_fcntl() -> bool:
