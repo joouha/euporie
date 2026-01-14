@@ -576,11 +576,16 @@ def input_widget_styles(
         "input button face focused": f"bg:{cp.fg} fg:{cp.bg.towards(cp.hl, 0.1)} reverse",
         **variants("input button face hovered {}", lambda c: f"bg:{cp.bg.more(0.2)}"),
         **variants(
-            "input button face selection {}", lambda c: f"fg:{cp.bg.more(0.05)} reverse"
+            "input button face selection {}",
+            lambda c: f"fg:{cp.bg.towards(cp.hl, 0.2)} reverse",
         ),
         **variants(
             "input button face focused {}",
             lambda c: f"fg:{cp.bg.towards(cp.hl, 0.1)} reverse",
+        ),
+        **variants(
+            "input button face focused selection {}",
+            lambda c: f"fg:{cp.bg.towards(cp.hl, 0.2)} reverse",
         ),
         # Input widgets
         **borders("input border {}", cp.bg),
