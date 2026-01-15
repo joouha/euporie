@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from typing import TYPE_CHECKING, Generic
 
 from euporie.apptk.key_binding.key_bindings import (
     KeyBindingsBase,
 )
+from euporie.apptk.utils import Event
 from prompt_toolkit.application.application import (
     Application as PtkApplication,
 )
@@ -15,6 +17,7 @@ from prompt_toolkit.application.application import _AppResult
 from prompt_toolkit.application.application import (
     _CombinedRegistry as _PtkCombinedRegistry,
 )
+from prompt_toolkit.application.current import set_app
 
 from euporie.apptk.data_structures import Point
 from euporie.apptk.enums import EditingMode
@@ -22,7 +25,6 @@ from euporie.apptk.filters import to_filter
 from euporie.apptk.key_binding.micro_state import MicroState
 from euporie.apptk.layout.containers import Window
 from euporie.apptk.layout.controls import UIControl
-from euporie.apptk.utils import Event
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -48,7 +50,9 @@ log = logging.getLogger(__name__)
 
 
 class Application(PtkApplication, Generic[_AppResult]):
-    def __init__(
+    """Overrides for application."""
+
+    def __init__(  # noqa: D417
         self,
         layout: Layout | None = None,
         style: BaseStyle | None = None,
@@ -74,13 +78,13 @@ class Application(PtkApplication, Generic[_AppResult]):
         on_invalidate: ApplicationEventHandler[_AppResult] | None = None,
         before_render: ApplicationEventHandler[_AppResult] | None = None,
         after_render: ApplicationEventHandler[_AppResult] | None = None,
+        on_color_change: ApplicationEventHandler[_AppResult] | None = None,
         # I/O.
         input: Input | None = None,
         output: Output | None = None,
         title: str | None = None,
         set_title: bool = True,
         leave_graphics: FilterOrBool = True,
-        on_color_change: ApplicationEventHandler[_AppResult] | None = None,
     ) -> None:
         """Extensions to the prompt_toolkit Application class.
 
@@ -117,6 +121,7 @@ class Application(PtkApplication, Generic[_AppResult]):
             input=input,
             output=output,
         )
+        # Micro editing mode state
         self.micro_state = MicroState()
 
         # Events
@@ -145,6 +150,40 @@ class Application(PtkApplication, Generic[_AppResult]):
         self._title = value
         if self.set_title():
             self.output.set_title(value)
+
+    async def run_async(
+        self,
+        pre_run: Callable[[], None] | None = None,
+        set_exception_handler: bool = True,
+        handle_sigint: bool = True,
+        slow_callback_duration: float = 0.5,
+    ) -> _AppResult:
+        """Run the application."""
+        with set_app(self):
+            # Send terminal queries
+            self.output.ask_for_colors()
+            self.output.ask_for_pixel_size()
+            self.output.ask_for_kitty_graphics_status()
+            self.output.ask_for_device_attributes()
+            self.output.ask_for_iterm_graphics_status()
+            self.output.ask_for_sgr_pixel_status()
+            self.output.ask_for_csiu_status()
+
+            # Read responses
+            kp = self.key_processor
+
+            def read_from_input() -> None:
+                kp.feed_multiple(self.input.read_keys())
+
+            with self.input.raw_mode(), self.input.attach(read_from_input):
+                # Give the terminal time to respond and allow the event loop to read
+                # the terminal responses from the input
+                await asyncio.sleep(0.1)
+            kp.process_keys()
+
+        return await super().run_async(
+            pre_run, set_exception_handler, handle_sigint, slow_callback_duration
+        )
 
 
 class _CombinedRegistry(_PtkCombinedRegistry):
