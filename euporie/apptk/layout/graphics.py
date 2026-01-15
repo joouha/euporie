@@ -36,6 +36,7 @@ class GraphicControl(UIControl, metaclass=ABCMeta):
         datum: Datum,
         scale: float = 0,
         bbox: DiInt | None = None,
+        style: str = "",
     ) -> None:
         """Initialize the graphic control."""
         self.app = get_app()
@@ -117,7 +118,6 @@ class GraphicControl(UIControl, metaclass=ABCMeta):
         key = (
             width,
             height,
-            self.app.color_palette,
             self.app.output.cell_pixel_size,
             self.bbox,
         )
@@ -248,9 +248,8 @@ class SixelGraphicControl(GraphicControl):
 
         key = (
             visible_width,
-            self.app.color_palette,
             self.app.output.cell_pixel_size,
-            self.bbox,
+            bbox,
         )
         return self._format_cache.get(key, render_lines)
 
@@ -365,7 +364,6 @@ class ItermGraphicControl(GraphicControl):
 
         key = (
             visible_width,
-            self.app.color_palette,
             self.app.output.cell_pixel_size,
             self.bbox,
         )
@@ -382,6 +380,7 @@ class BaseKittyGraphicControl(GraphicControl):
         datum: Datum,
         scale: float = 0,
         bbox: DiInt | None = None,
+        style: str = "",
     ) -> None:
         """Create a new kitty graphic instance."""
         super().__init__(datum=datum, scale=scale, bbox=bbox)
@@ -603,9 +602,8 @@ class KittyGraphicControl(BaseKittyGraphicControl):
 
         key = (
             visible_width,
-            self.app.color_palette,
             self.app.output.cell_pixel_size,
-            self.bbox,
+            bbox,
         )
         return self._format_cache.get(key, render_lines)
 
@@ -680,6 +678,7 @@ class KittyUnicodeGraphicControl(BaseKittyGraphicControl):
         datum: Datum,
         scale: float = 0,
         bbox: DiInt | None = None,
+        style: str = "",
     ) -> None:
         """Create a new kitty graphic instance."""
         super().__init__(datum, scale, bbox)
@@ -779,7 +778,6 @@ class KittyUnicodeGraphicControl(BaseKittyGraphicControl):
 
         key = (
             visible_width,
-            self.app.color_palette,
             self.app.output.cell_pixel_size,
             bbox,
         )

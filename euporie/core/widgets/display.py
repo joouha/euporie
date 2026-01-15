@@ -13,6 +13,7 @@ from euporie.apptk.filters.utils import to_filter
 from euporie.apptk.utils import Event, to_str
 
 from euporie.apptk.cache import FastDictCache, SimpleCache
+from euporie.apptk.color import Color
 from euporie.apptk.commands import add_cmd
 from euporie.apptk.convert.datum import Datum
 from euporie.apptk.data_structures import Point, Size
@@ -26,6 +27,7 @@ from euporie.apptk.layout.containers import (
 from euporie.apptk.layout.controls import GetLinePrefixCallable, UIContent, UIControl
 from euporie.apptk.layout.margins import ScrollbarMargin
 from euporie.apptk.mouse_events import MouseEvent, MouseEventType
+from euporie.apptk.output.vt100 import TERMINAL_COLORS_TO_RGB
 from euporie.core.filters import display_has_focus, scrollable
 from euporie.core.key_binding.registry import (
     load_registered_bindings,
@@ -39,7 +41,6 @@ if TYPE_CHECKING:
     from euporie.apptk.key_binding.key_bindings import NotImplementedOrNone
     from euporie.apptk.layout.dimension import AnyDimension
 
-    from euporie.apptk.color import ColorPalette
     from euporie.apptk.filters import FilterOrBool
     from euporie.apptk.formatted_text import StyleAndTextTuples
     from euporie.apptk.key_binding import KeyBindingsBase
@@ -58,6 +59,7 @@ class DisplayControl(UIControl):
     def __init__(
         self,
         datum: Datum,
+        style: str | Callable[[], str] = "",
         focusable: FilterOrBool = False,
         focus_on_click: FilterOrBool = False,
         wrap_lines: FilterOrBool = False,
@@ -68,6 +70,7 @@ class DisplayControl(UIControl):
     ) -> None:
         """Create a new web-view control instance."""
         self._datum = datum
+        self.style = style
         self.focusable = to_filter(focusable)
         self.focus_on_click = to_filter(focus_on_click)
         self.wrap_lines = to_filter(wrap_lines)
@@ -79,7 +82,6 @@ class DisplayControl(UIControl):
         self.loading = False
         self.resizing = False
         self.rendering = False
-        self.color_palette = get_app().color_palette
         self.lines: list[StyleAndTextTuples] = []
 
         self.width = 0
@@ -124,6 +126,22 @@ class DisplayControl(UIControl):
         # Signal that the control has updated
         self.rendered.fire()
         self.reset()
+
+    @property
+    def colors(self) -> str:
+        """Get foreground and background hex colors based on style."""
+        attrs = get_app().renderer._attrs_for_style[to_str(self.style)]
+        fg = (
+            Color(attrs.color)
+            if attrs.color
+            else Color.from_rgb(*TERMINAL_COLORS_TO_RGB["fg"])
+        )
+        bg = (
+            Color(attrs.bgcolor)
+            if attrs.bgcolor
+            else Color.from_rgb(*TERMINAL_COLORS_TO_RGB["bg"])
+        )
+        return fg, bg
 
     @property
     def cursor_position(self) -> Point:
@@ -191,8 +209,8 @@ class DisplayControl(UIControl):
         wrap_lines: bool = False,
     ) -> int:
         """Get the maximum lines width for a given rendering."""
-        cp = self.color_palette
-        lines = self._line_cache[datum, width, height, cp.fg.hex, cp.bg.hex, wrap_lines]
+        fg, bg = self.colors
+        lines = self._line_cache[datum, width, height, fg, bg, wrap_lines]
         return max(
             self._line_width_cache.get(
                 (datum, width, height, wrap_lines, i),
@@ -201,7 +219,7 @@ class DisplayControl(UIControl):
             for i, line in enumerate(lines)
         )
 
-    def render(self) -> None:
+    def render(self, fg: str, bg: str) -> None:
         """Render the content in a thread."""
         datum = self.datum
         wrap_lines = self.wrap_lines()
@@ -212,10 +230,7 @@ class DisplayControl(UIControl):
         )
 
         def _render() -> None:
-            cp = self.color_palette
-            self.lines = self._line_cache[
-                datum, cols, rows, cp.fg.hex, cp.bg.hex, wrap_lines
-            ]
+            self.lines = self._line_cache[datum, cols, rows, fg, bg, wrap_lines]
             self.loading = False
             self.resizing = False
             self.rendering = False
@@ -247,13 +262,13 @@ class DisplayControl(UIControl):
         max_cols, aspect = self.datum.cell_size()
         if aspect:
             height = ceil(min(width, max_cols) * aspect)
-        cp = self.color_palette
+        fg, bg = self.colors
         self.lines = self._line_cache[
             self.datum,
             width,
             height,
-            cp.fg.hex,
-            cp.bg.hex,
+            fg,
+            bg,
             self.wrap_lines(),
         ]
         return len(self.lines)
@@ -269,7 +284,8 @@ class DisplayControl(UIControl):
         height: int,
         loading: bool,
         cursor_position: Point,
-        color_palette: ColorPalette,
+        fg: tuple[int, int, int],
+        bg: tuple[int, int, int],
     ) -> UIContent:
         """Create a cacheable UIContent."""
         if self.loading:
@@ -315,13 +331,11 @@ class DisplayControl(UIControl):
             self.width = width
             self.height = height
             render = True
-        if (cp := get_app().color_palette) != self.color_palette:
-            self.color_palette = cp
-            render = True
+        fg, bg = self.colors
         if render:
-            self.render()
+            self.render(fg, bg)
         content = self._content_cache[
-            self.datum, width, height, self.loading, self.cursor_position, cp
+            self.datum, width, height, self.loading, self.cursor_position, fg, bg
         ]
 
         return content
@@ -517,6 +531,7 @@ class Display:
 
         self.control = DisplayControl(
             datum,
+            style=self.style,
             focusable=focusable,
             focus_on_click=focus_on_click,
             wrap_lines=wrap_lines,
