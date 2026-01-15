@@ -611,9 +611,9 @@ class Window(ptk_containers.Window):
         self._margin_width_cache: SimpleCache[tuple[Margin, int], int] = SimpleCache(
             maxsize=1
         )
-        self._graphic_control_cache: SimpleCache[tuple[str, type], GraphicControl] = (
-            SimpleCache()
-        )
+        self._graphic_control_cache: SimpleCache[
+            tuple[str, str, str, type[GraphicControl]], GraphicControl
+        ] = SimpleCache()
 
     def write_to_screen(
         self,
@@ -1364,7 +1364,8 @@ class Window(ptk_containers.Window):
             if ControlClass is None:
                 continue
             graphic_control = self._graphic_control_cache.get(
-                (key, datum.hash, ControlClass), partial(ControlClass, datum)
+                (key, datum.hash, parent_style, ControlClass),
+                partial(ControlClass, datum, style=parent_style),
             )
 
             screen.draw_with_z_index(

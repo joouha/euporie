@@ -14,6 +14,7 @@ from weakref import ReferenceType, WeakValueDictionary, finalize, ref
 
 from euporie.apptk.application.current import get_app
 
+from euporie.apptk.color import Color
 from euporie.apptk.convert.registry import (
     _CONVERTOR_ROUTE_CACHE,
     _FILTER_CACHE,
@@ -98,8 +99,8 @@ class Datum(Generic[T], metaclass=_MetaDatum):
         self.data: T = data
         self.format = format
         self.px, self.py = px, py
-        self.fg = str(fg) if fg is not None else None
-        self.bg = str(bg) if bg is not None else None
+        self.fg = Color(fg) if fg is not None else None
+        self.bg = Color(bg) if bg is not None else None
         self.path = path
         self.source: ReferenceType[Datum] = ref(source) if source else ref(self)
         self.align = align
@@ -208,10 +209,8 @@ class Datum(Generic[T], metaclass=_MetaDatum):
             # TODO - crop
             return self.data
 
-        if not fg and hasattr(app := get_app(), "color_palette"):
-            fg = self.fg or app.color_palette.fg.hex
-        if not bg and hasattr(app := get_app(), "color_palette"):
-            bg = self.bg or app.color_palette.bg.hex
+        fg = fg or self.fg
+        bg = bg or self.bg
 
         key_tail = (
             cols,
@@ -293,6 +292,7 @@ class Datum(Generic[T], metaclass=_MetaDatum):
                             bg=bg,
                             path=self.path,
                             source=datum,
+                            align=self.align,
                         )
                 else:
                     # If this route succeeded, stop trying routes
