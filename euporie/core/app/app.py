@@ -141,8 +141,9 @@ class BaseApp(ConfigurableApp, Application, ABC):
             kwargs: The key-word arguments for the :py:class:`Application`
 
         """
-        # Initialise the application
         self.color_palette = ColorPalette()
+
+        # Initialise the application
         super().__init__(
             **{
                 "clipboard": DynamicClipboard(
@@ -210,8 +211,6 @@ class BaseApp(ConfigurableApp, Application, ABC):
             self.dialogs.values(),
             self.menus.values(),
         )
-        # Application hooks
-        self.before_render += self._check_terminal_colors
         # Continue loading when the application has been launched
         # and an event loop has been created
         self.pre_run_callables = [self.pre_run]
@@ -251,6 +250,8 @@ class BaseApp(ConfigurableApp, Application, ABC):
         self.formatters: list[Formatter] = [
             CliFormatter(**info) for info in self.config.formatters
         ]
+
+        self.pre_run_callables.append(self.load_key_bindings)
 
     def pause_rendering(self) -> None:
         """Block rendering, but allows input to be processed.
@@ -298,54 +299,6 @@ class BaseApp(ConfigurableApp, Application, ABC):
             while self.config.terminal_polling_interval:
                 await asyncio.sleep(self.config.terminal_polling_interval)
                 output.ask_for_colors()
-
-    def _check_terminal_colors(self, app: Application | None = None) -> None:
-        cp = self.color_palette
-        if any(
-            cp[k].hex != Color.from_rgb(*v).hex
-            for k, v in TERMINAL_COLORS_TO_RGB.items()
-        ) or any(
-            cp[k].hex != Color.from_rgb(*v).hex for k, v in ANSI_COLORS_TO_RGB.items()
-        ):
-            self.update_palette()
-
-    async def run_async(
-        self,
-        pre_run: Callable[[], None] | None = None,
-        set_exception_handler: bool = True,
-        handle_sigint: bool = True,
-        slow_callback_duration: float = 0.5,
-    ) -> _AppResult:
-        """Run the application."""
-        with set_app(self):
-            # Load key bindings
-            self.load_key_bindings()
-
-            if isinstance(self.output, Vt100_Output):
-                # Send terminal queries
-                self.output.ask_for_colors()
-                self.output.ask_for_pixel_size()
-                self.output.ask_for_kitty_graphics_status()
-                self.output.ask_for_device_attributes()
-                self.output.ask_for_iterm_graphics_status()
-                self.output.ask_for_sgr_pixel_status()
-                self.output.ask_for_csiu_status()
-
-                # Read responses
-                kp = self.key_processor
-
-                def read_from_input() -> None:
-                    kp.feed_multiple(self.input.read_keys())
-
-                with self.input.raw_mode(), self.input.attach(read_from_input):
-                    # Give the terminal time to respond and allow the event loop to read
-                    # the terminal responses from the input
-                    await asyncio.sleep(0.1)
-                kp.process_keys()
-
-        return await super().run_async(
-            pre_run, set_exception_handler, handle_sigint, slow_callback_duration
-        )
 
     @classmethod
     async def interact(cls, ssh_session: PromptToolkitSSHSession) -> None:
