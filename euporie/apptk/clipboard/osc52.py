@@ -25,7 +25,6 @@ class Osc52Clipboard(Clipboard):
         output = get_app().output
         if isinstance(output, Vt100_Output):
             output.set_clipboard(data.text)
-            output.flush()
         self._data = data
 
     def get_data(self) -> ClipboardData:

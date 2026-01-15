@@ -159,6 +159,7 @@ class Vt100_Output(PtkVt100_Output):
         """Set clipboard data using OSC-52."""
         b64data = b64encode(text.encode()).decode()
         self.write_raw(f"\x1b]52;c;{b64data}\x1b\\")
+        self.flush()
 
     def ask_for_clipboard(self) -> None:
         """Get clipboard contents using OSC-52."""
