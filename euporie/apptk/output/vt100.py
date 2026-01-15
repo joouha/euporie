@@ -163,6 +163,7 @@ class Vt100_Output(PtkVt100_Output):
     def ask_for_clipboard(self) -> None:
         """Get clipboard contents using OSC-52."""
         self.write_raw("\x1b]52;c;?\x1b\\")
+        self.flush()
 
     def ask_for_colors(self) -> None:
         """Query terminal colors."""
@@ -172,10 +173,12 @@ class Vt100_Output(PtkVt100_Output):
                 + "".join(f"\x1b]4;{i};?\x1b\\" for i in range(16))
             )
         )
+        self.flush()
 
-    def request_pixel_size(self) -> None:
+    def ask_for_pixel_size(self) -> None:
         """Check the terminal's dimensions in pixels."""
         self.write_raw("\x1b[14t")
+        self.flush()
 
     def ask_for_kitty_graphics_status(self) -> None:
         """Query terminal to check for kitty graphics support."""
@@ -186,23 +189,28 @@ class Vt100_Output(PtkVt100_Output):
             )
             + "\x1b[u\x1b[2K"
         )
+        self.flush()
 
     def ask_for_device_attributes(self) -> None:
         """Query terminal for device attributes."""
         self.write_raw(self.mplex_passthrough("\x1b[c"))
+        self.flush()
 
     def ask_for_iterm_graphics_status(self) -> None:
         """Query terminal for iTerm graphics support."""
         self.write_raw(self.mplex_passthrough("\x1b[>q"))
+        self.flush()
 
     def ask_for_sgr_pixel_status(self) -> None:
         """Query terminal to check for Pixel SGR support."""
         # Enable, check, disable
         self.write_raw("\x1b[?1016h\x1b[?1016$p\x1b[?1016l")
+        self.flush()
 
     def ask_for_csiu_status(self) -> None:
         """Query terminal to check for CSI-u support."""
         self.write_raw("\x1b[?u")
+        self.flush()
 
     def get_default_color_depth(self) -> ColorDepth:
         """Return the default color depth for a vt100 terminal, according to the our term value.

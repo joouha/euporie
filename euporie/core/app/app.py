@@ -209,6 +209,8 @@ class BaseApp(ConfigurableApp, Application, ABC):
             self.dialogs.values(),
             self.menus.values(),
         )
+        # Application hooks
+        self.before_render += self._check_terminal_colors
         # Continue loading when the application has been launched
         # and an event loop has been created
         self.pre_run_callables = [self.pre_run]
@@ -296,6 +298,16 @@ class BaseApp(ConfigurableApp, Application, ABC):
                 await asyncio.sleep(self.config.terminal_polling_interval)
                 output.ask_for_colors()
 
+    def _check_terminal_colors(self, app: Application | None = None) -> None:
+        cp = self.color_palette
+        if any(
+            cp[k].hex != Color.from_rgb(*v).hex
+            for k, v in TERMINAL_COLORS_TO_RGB.items()
+        ) or any(
+            cp[k].hex != Color.from_rgb(*v).hex for k, v in ANSI_COLORS_TO_RGB.items()
+        ):
+            self.update_palette()
+
     async def run_async(
         self,
         pre_run: Callable[[], None] | None = None,
@@ -317,7 +329,6 @@ class BaseApp(ConfigurableApp, Application, ABC):
                 self.output.ask_for_iterm_graphics_status()
                 self.output.ask_for_sgr_pixel_status()
                 self.output.ask_for_csiu_status()
-                self.output.flush()
 
                 # Read responses
                 kp = self.key_processor
