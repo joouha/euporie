@@ -229,6 +229,13 @@ class Color(str):
 class ColorPalette(dict[str, Color]):
     """Define a collection of colors."""
 
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        """Ensure all values are :py:class:`Color`s."""
+        super().__init__(*args, **kwargs)
+        for k, v in self.items():
+            if not isinstance(v, Color):
+                self[k] = Color(v)
+
     def __setitem__(self, key: str, value: str | Color) -> None:
         """Set an item, automatically casting to Color."""
         if not isinstance(value, Color):
