@@ -86,9 +86,11 @@ def load_terminal_bindings() -> KeyBindingsBase:
             rgb = (int(r[:2], 16), int(g[:2], 16), int(b[:2], 16))
             if name in TERMINAL_COLORS_TO_RGB:
                 TERMINAL_COLORS_TO_RGB[name] = rgb
+                event.app.on_color_change()
                 return None
             elif name in ANSI_COLORS_TO_RGB:
                 ANSI_COLORS_TO_RGB[name] = rgb
+                event.app.on_color_change()
                 return None
         return NotImplemented
 

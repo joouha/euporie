@@ -177,6 +177,7 @@ class BaseApp(ConfigurableApp, Application, ABC):
                         ),
                     ]
                 ),
+                "on_color_change": self.update_palette,
                 **kwargs,
             }
         )
@@ -650,7 +651,7 @@ class BaseApp(ConfigurableApp, Application, ABC):
             syntax_theme = "tango" if self.color_palette.bg.is_light else "euporie"
         return syntax_theme
 
-    def update_palette(self, setting: Setting | None = None) -> None:
+    def update_palette(self, caller: Application | Setting | None = None) -> None:
         """Set the application's color palette based on the configured theme."""
         scheme = self.config.color_scheme
         cp = self.color_palette

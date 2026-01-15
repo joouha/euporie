@@ -376,6 +376,8 @@ class DisplayControl(UIControl):
     def get_invalidate_events(self) -> Iterable[Event[object]]:
         """Return the Window invalidate events."""
         yield from self.invalidate_events
+        # Re-render control on terminal color change
+        yield get_app().on_color_change
 
     # ################################### Commands ####################################
 

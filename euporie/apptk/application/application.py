@@ -22,6 +22,7 @@ from euporie.apptk.filters import to_filter
 from euporie.apptk.key_binding.micro_state import MicroState
 from euporie.apptk.layout.containers import Window
 from euporie.apptk.layout.controls import UIControl
+from euporie.apptk.utils import Event
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -79,6 +80,7 @@ class Application(PtkApplication, Generic[_AppResult]):
         title: str | None = None,
         set_title: bool = True,
         leave_graphics: FilterOrBool = True,
+        on_color_change: ApplicationEventHandler[_AppResult] | None = None,
     ) -> None:
         """Extensions to the prompt_toolkit Application class.
 
@@ -116,6 +118,9 @@ class Application(PtkApplication, Generic[_AppResult]):
             output=output,
         )
         self.micro_state = MicroState()
+
+        # Events
+        self.on_color_change = Event(self, on_color_change)
 
         # Graphics
         self.leave_graphics = to_filter(leave_graphics)
