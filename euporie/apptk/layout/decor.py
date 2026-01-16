@@ -9,7 +9,7 @@ from euporie.apptk.application.current import get_app
 from euporie.apptk.layout.dimension import Dimension
 
 from euporie.apptk.border import ThinLine
-from euporie.apptk.cache import FastDictCache
+from euporie.apptk.cache import FastDictCache, SimpleCache
 from euporie.apptk.color import Color
 from euporie.apptk.filters import has_focus
 from euporie.apptk.layout.containers import (
@@ -18,7 +18,7 @@ from euporie.apptk.layout.containers import (
 )
 from euporie.apptk.layout.screen import Char, Screen, WritePosition
 from euporie.apptk.mouse_events import MouseEventType
-from euporie.apptk.output.vt100 import TERMINAL_COLORS_TO_RGB
+from euporie.apptk.output.vt100 import ANSI_COLORS_TO_RGB, TERMINAL_COLORS_TO_RGB
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -312,6 +312,8 @@ class FocusedStyle(Container):
 class DropShadow(Container):
     """A transparent container which makes the background darker."""
 
+    _SHADOW_STYLE_CACHE = SimpleCache(maxsize=255)
+
     def __init__(self, amount: float = 0.5) -> None:
         """Create a new instance."""
         self.amount = amount
@@ -342,8 +344,34 @@ class DropShadow(Container):
         z_index: int | None,
     ) -> None:
         """Draw the wrapped container with the additional style."""
-        attr_cache = get_app().renderer._attrs_for_style
+        app = get_app()
+        attr_cache = app.renderer._attrs_for_style
         if attr_cache is not None and self.amount:
+
+            def _calculate_color(style: str) -> str:
+                """Calculate a transformed style."""
+                attrs = attr_cache[style]
+
+                color = attrs.color
+                if not color or color == "default":
+                    fg = Color.from_rgb(*TERMINAL_COLORS_TO_RGB["fg"])
+                elif color in ANSI_COLORS_TO_RGB:
+                    fg = Color.from_rgb(*ANSI_COLORS_TO_RGB[color], name=color)
+                else:
+                    fg = Color(color)
+                style += f" fg:{fg.darker(amount)}"
+
+                bgcolor = attrs.bgcolor
+                if not bgcolor or bgcolor == "default":
+                    bg = Color.from_rgb(*TERMINAL_COLORS_TO_RGB["bg"])
+                elif bgcolor in ANSI_COLORS_TO_RGB:
+                    bg = Color.from_rgb(*ANSI_COLORS_TO_RGB[bgcolor], name=bgcolor)
+                else:
+                    bg = Color(bgcolor)
+                style += f" bg:{bg.darker(amount)}"
+
+                return style
+
             ypos = write_position.ypos
             xpos = write_position.xpos
             amount = self.amount
@@ -352,21 +380,14 @@ class DropShadow(Container):
                 for x in range(xpos, xpos + write_position.width):
                     char = row[x]
                     style = char.style
-                    attrs = attr_cache[style]
 
-                    if attrs.color and attrs.color != "default":
-                        fg = Color(attrs.color).darker(amount)
-                    else:
-                        fg = Color.from_rgb(*TERMINAL_COLORS_TO_RGB["fg"])
-                    style += f" fg:{fg.darker(amount)}"
-
-                    if attrs.bgcolor and attrs.bgcolor != "default":
-                        bg = Color(attrs.bgcolor).darker(amount)
-                    else:
-                        bg = Color.from_rgb(*TERMINAL_COLORS_TO_RGB["bg"])
-                    style += f" bg:{bg.darker(amount)}"
-
-                    row[x] = Char(char=char.char, style=style)
+                    key = (app.style, amount, style)
+                    new_style = self._SHADOW_STYLE_CACHE.get(
+                        key, lambda style=style: _calculate_color(style)
+                    )
+                    # We need to copy the char rather than just update the style, as the
+                    # same char instance may be used in multiple positions on the screen
+                    row[x] = Char(char=char.char, style=new_style)
 
     def get_children(self) -> list[Container]:
         """Return an empty list of child :class:`.Container` objects."""
