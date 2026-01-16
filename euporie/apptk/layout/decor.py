@@ -18,6 +18,7 @@ from euporie.apptk.layout.containers import (
 )
 from euporie.apptk.layout.screen import Char, Screen, WritePosition
 from euporie.apptk.mouse_events import MouseEventType
+from euporie.apptk.output.vt100 import TERMINAL_COLORS_TO_RGB
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -314,7 +315,6 @@ class DropShadow(Container):
     def __init__(self, amount: float = 0.5) -> None:
         """Create a new instance."""
         self.amount = amount
-        self.renderer = get_app().renderer
 
     @property
     def cp(self) -> ColorPalette:
@@ -342,7 +342,7 @@ class DropShadow(Container):
         z_index: int | None,
     ) -> None:
         """Draw the wrapped container with the additional style."""
-        attr_cache = self.renderer._attrs_for_style
+        attr_cache = get_app().renderer._attrs_for_style
         if attr_cache is not None and self.amount:
             ypos = write_position.ypos
             xpos = write_position.xpos
@@ -354,27 +354,17 @@ class DropShadow(Container):
                     style = char.style
                     attrs = attr_cache[style]
 
-                    if not (fg := attrs.color) or fg == "default":
-                        color = self.cp.fg
-                        style += f" fg:{color.darker(amount)}"
+                    if attrs.color and attrs.color != "default":
+                        fg = Color(attrs.color).darker(amount)
                     else:
-                        try:
-                            color = Color(fg)
-                        except ValueError:
-                            pass
-                        else:
-                            style += f" fg:{color.darker(amount)}"
+                        fg = Color.from_rgb(*TERMINAL_COLORS_TO_RGB["fg"])
+                    style += f" fg:{fg.darker(amount)}"
 
-                    if not (bg := attrs.bgcolor) or bg == "default":
-                        color = self.cp.bg
-                        style += f" bg:{color.darker(amount)}"
+                    if attrs.bgcolor and attrs.bgcolor != "default":
+                        bg = Color(attrs.bgcolor).darker(amount)
                     else:
-                        try:
-                            color = Color(bg)
-                        except ValueError:
-                            pass
-                        else:
-                            style += f" bg:{color.darker(amount)}"
+                        bg = Color.from_rgb(*TERMINAL_COLORS_TO_RGB["bg"])
+                    style += f" bg:{bg.darker(amount)}"
 
                     row[x] = Char(char=char.char, style=style)
 
