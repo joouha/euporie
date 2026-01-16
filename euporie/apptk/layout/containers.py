@@ -1192,6 +1192,7 @@ class Window(ptk_containers.Window):
         ui_content: UIContent,
         vertical_scroll: int,
         horizontal_scroll: int,
+        z_index: int,
     ) -> None:
         """Draw a single graphic to the screen.
 
@@ -1208,6 +1209,7 @@ class Window(ptk_containers.Window):
             ui_content: The UIContent containing the graphic
             vertical_scroll: Current vertical scroll offset
             horizontal_scroll: Current horizontal scroll offset
+            z_index: Z-index of graphic's parent window
         """
         rows, cols = size
 
@@ -1279,14 +1281,16 @@ class Window(ptk_containers.Window):
 
         # Check for existing floats in the screen, and stop rendering the graphic is it
         # overlaps an existing float
-        data_buffer = screen.data_buffer.lower
-        for y in range(ypos, ypos + height):
-            if y in data_buffer:
-                row = data_buffer[y]
-                for x in range(xpos, xpos + width):
-                    if x in row:
-                        graphic_control.hide()
-                        return
+        for _z, data_buffer in sorted(screen.data_buffer.layers.items())[1:]:
+            if _z <= z_index:
+                continue
+            for y in range(ypos, ypos + height):
+                if y in data_buffer:
+                    row = data_buffer[y]
+                    for x in range(xpos, xpos + width):
+                        if x in row:
+                            graphic_control.hide()
+                            return
 
         # Render the graphic content
         graphic_content = graphic_control.create_content(width, height)
@@ -1355,7 +1359,9 @@ class Window(ptk_containers.Window):
             # a graphic control for it and add it to the screen for deferred drawing
             ControlClass = select_graphic_control(
                 format_=datum.format,
-                preferred=app.config.graphics,
+                ###########
+                # preferred=app.config.graphics,
+                ############
                 graphics_sixel=renderer.graphics_sixel,
                 graphics_kitty=renderer.graphics_kitty,
                 graphics_iterm=renderer.graphics_iterm,
@@ -1372,7 +1378,7 @@ class Window(ptk_containers.Window):
                 # Draw graphic controls last of all floats, so we can see if they are
                 # covered by any other floats (in which case we do not render them).
                 # Use a unique z-index per graphic to maintain order
-                z_index=(z_index or 1) + 10**8 + hash(key) % 10**8,
+                z_index=(z_index or 0) + 10**9 + hash(key) % 10**9,
                 draw_func=partial(
                     self._draw_graphic,
                     screen,
@@ -1384,6 +1390,7 @@ class Window(ptk_containers.Window):
                     ui_content,
                     vertical_scroll,
                     horizontal_scroll,
+                    z_index=z_index or 0,
                 ),
             )
 

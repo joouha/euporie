@@ -44,8 +44,7 @@ class ChainBuffer(dict):
 
     def __init__(
         self,
-        lower: defaultdict[int, dict[int, str]],
-        upper: defaultdict[int, defaultdict[int, str]],
+        base: defaultdict[int, defaultdict[int, str]],
     ) -> None:
         """Initialize the chain buffer with lower and upper layers.
 
@@ -53,8 +52,12 @@ class ChainBuffer(dict):
             lower: The lower buffer layer that receives new writes.
             upper: The upper buffer layer containing existing data.
         """
-        self.lower = lower
-        self.upper = upper
+        self.layers = {0: base}
+
+    def add_layer(self, z_index: int):
+        if z_index not in self.layers:
+            self.layers[z_index] = defaultdict(dict)
+            self.clear()
 
     def __missing__(self, key: int) -> str:
         """Return a chained mapping for the given row key.
@@ -65,7 +68,9 @@ class ChainBuffer(dict):
         Returns:
             A ChainMap combining the lower and upper buffer rows.
         """
-        self[key] = ChainMap(self.lower[key], self.upper[key])
+        self[key] = ChainMap(
+            *(layer[key] for _z, layer in sorted(self.layers.items(), reverse=True)),
+        )
         return self[key]
 
     def flatten(self) -> defaultdict[int, defaultdict[int, str]]:
@@ -74,12 +79,12 @@ class ChainBuffer(dict):
         Returns:
             The upper buffer with all lower buffer data merged in.
         """
-        lower = self.lower
-        upper = self.upper
-        for x, row in lower.items():
-            upper[x].update(row)
-        lower.clear()
-        return upper
+        base = self.layers[0]
+        for _z, layer in sorted(self.layers.items())[1:]:
+            for x, row in layer.items():
+                base[x].update(row)
+        self.layers.clear()
+        return base
 
 
 class Screen(PtkScreen):
@@ -92,11 +97,22 @@ class Screen(PtkScreen):
         This allows floats to detect if there is anything underneath them (required for
         automatically hiding terminal graphics which collide with floats).
         """
-        self.data_buffer = ChainBuffer(defaultdict(dict), self.data_buffer)
-        self.zero_width_escapes = ChainBuffer(
-            defaultdict(dict), self.zero_width_escapes
-        )
-        super().draw_all_floats()
+        self.data_buffer = ChainBuffer(self.data_buffer)
+        self.zero_width_escapes = ChainBuffer(self.zero_width_escapes)
+        while self._draw_float_functions:
+            # Sort the floats that we have so far by z_index.
+            functions = sorted(self._draw_float_functions, key=lambda item: item[0])
+            # Draw only one at a time, then sort everything again. Now floats
+            # might have been added.
+            self._draw_float_functions = functions[1:]
+
+            z_index, func = functions[0]
+            # Add a new layer for this float
+            self.data_buffer.add_layer(z_index)
+            self.zero_width_escapes.add_layer(z_index)
+            # Draw the float
+            func()
+
         self.data_buffer = self.data_buffer.flatten()
         self.zero_width_escapes = self.zero_width_escapes.flatten()
 
