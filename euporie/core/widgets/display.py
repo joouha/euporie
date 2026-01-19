@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, cast
 
 from euporie.apptk.application.current import get_app
 from euporie.apptk.filters.utils import to_filter
+from euporie.apptk.layout.dimension import Dimension, to_dimension
 from euporie.apptk.utils import Event, to_str
 
 from euporie.apptk.cache import FastDictCache, SimpleCache
@@ -20,6 +21,7 @@ from euporie.apptk.data_structures import Point, Size
 from euporie.apptk.formatted_text.utils import fragment_list_width, split_lines, wrap
 from euporie.apptk.layout.containers import (
     ConditionalContainer,
+    Container,
     MarginContainer,
     VSplit,
     Window,
@@ -40,11 +42,12 @@ if TYPE_CHECKING:
 
     from euporie.apptk.key_binding.key_bindings import NotImplementedOrNone
     from euporie.apptk.layout.dimension import AnyDimension
+    from euporie.apptk.layout.mouse_handlers import MouseHandlers
 
     from euporie.apptk.filters import FilterOrBool
     from euporie.apptk.formatted_text import StyleAndTextTuples
     from euporie.apptk.key_binding import KeyBindingsBase
-    from euporie.apptk.layout.containers import AnyContainer
+    from euporie.apptk.layout.screen import Screen, WritePosition
 
 
 log = logging.getLogger(__name__)
@@ -484,7 +487,7 @@ class DisplayControl(UIControl):
     )
 
 
-class Display:
+class Display(Container):
     """Rich output displays.
 
     A container for displaying rich output data.
@@ -528,10 +531,12 @@ class Display:
 
         """
         self._style = style
+        self._width = width
+        self._height = height
 
         self.control = DisplayControl(
             datum,
-            style=self.style,
+            style=self._get_style,
             focusable=focusable,
             focus_on_click=focus_on_click,
             wrap_lines=wrap_lines,
@@ -548,11 +553,11 @@ class Display:
             always_hide_cursor=always_hide_cursor,
             dont_extend_height=dont_extend_height,
             dont_extend_width=dont_extend_width,
-            style=self.style,
+            style=self._get_style,
             char=" ",
         )
 
-        self.container = VSplit(
+        self._container = VSplit(
             [
                 self.window,
                 ConditionalContainer(
@@ -566,12 +571,16 @@ class Display:
             ]
         )
 
-    def style(self) -> str:
-        """Use the background color of the data as the default style."""
+        # Store the parent style received during write_to_screen
+        self._parent_style = ""
+
+    def _get_style(self) -> str:
+        """Get the combined style including parent style and background color."""
         style = to_str(self._style)
         if bg := self.control.datum.bg:
             style = f"bg:{bg} {style}"
-        return style
+        # Include parent style so it's available to the control
+        return f"{self._parent_style} {style}"
 
     @property
     def datum(self) -> Any:
@@ -583,6 +592,54 @@ class Display:
         """Set the display container's data."""
         self.control.datum = value
 
-    def __pt_container__(self) -> AnyContainer:
-        """Return the content of this output."""
-        return self.container
+    def reset(self) -> None:
+        """Reset the state of this container and all the children."""
+        self._container.reset()
+
+    def preferred_width(self, max_available_width: int) -> Dimension:
+        """Return the preferred width for this container."""
+        if self._width is not None:
+            return to_dimension(self._width)
+        return self._container.preferred_width(max_available_width)
+
+    def preferred_height(self, width: int, max_available_height: int) -> Dimension:
+        """Return the preferred height for this container."""
+        if self._height is not None:
+            return to_dimension(self._height)
+        return self._container.preferred_height(width, max_available_height)
+
+    def write_to_screen(
+        self,
+        screen: Screen,
+        mouse_handlers: MouseHandlers,
+        write_position: WritePosition,
+        parent_style: str,
+        erase_bg: bool,
+        z_index: int | None,
+    ) -> None:
+        """Write the container content to the screen.
+
+        Args:
+            screen: The screen to write to.
+            mouse_handlers: The mouse handlers collection.
+            write_position: The position and dimensions to write to.
+            parent_style: Style string from the parent container.
+            erase_bg: Whether to erase the background.
+            z_index: The z-index for rendering.
+        """
+        # Store parent style so it can be used by _get_style
+        self._parent_style = parent_style
+
+        # Delegate to the internal container, passing through the parent_style
+        self._container.write_to_screen(
+            screen,
+            mouse_handlers,
+            write_position,
+            parent_style,
+            erase_bg,
+            z_index,
+        )
+
+    def get_children(self) -> list[Container]:
+        """Return the list of child containers."""
+        return [self._container]
