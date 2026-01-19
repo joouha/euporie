@@ -17,6 +17,7 @@ from euporie.apptk.key_binding.key_bindings import (
 )
 
 from euporie.apptk.filters import buffer_has_focus
+from euporie.apptk.key_binding.bindings.auto_suggest import load_auto_suggest_bindings
 from euporie.apptk.key_binding.bindings.basic import load_basic_bindings
 from euporie.apptk.key_binding.bindings.micro import load_micro_bindings
 from euporie.apptk.key_binding.bindings.mouse import load_mouse_bindings
@@ -48,6 +49,9 @@ def load_key_bindings() -> KeyBindingsBase:
             load_vi_search_bindings(),
             # Load micro bindings
             load_micro_bindings(),
+            # Auto-suggestion (need to be after vi-bindings as we override the right
+            # arrow binding if we have a suggestion)
+            load_auto_suggest_bindings(),
         ]
     )
 
