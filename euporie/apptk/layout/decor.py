@@ -122,12 +122,22 @@ class Line(Container):
 
 
 class Pattern(Container):
-    """Fill an area with a repeating background pattern."""
+    """Fill an area with a repeating background pattern.
+
+    Example pattern functions:
+
+        >>> lambda x, y: False
+        >>> lambda x, y: True
+        >>> lambda x, y: (x + y) % 2 == 0
+        >>> lambda x, y: (x + 2 * y) % 4 == 0
+        >>> lambda x, y: (x + y) % 3 == 0
+        >>> lambda x, y: ((x + y % 2 * 3) % 6) % 4 == 0
+    """
 
     def __init__(
         self,
         char: str | Callable[[], str],
-        pattern: int | Callable[[], int] = 1,
+        pattern: Callable[[int, int], bool],
         style: str = "class:pattern",
     ) -> None:
         """Initialize the :class:`Pattern`."""
@@ -173,7 +183,7 @@ class Pattern(Container):
 
         """
         bg = self.bg
-        pattern = self.pattern() if callable(self.pattern) else self.pattern
+        pattern = self.pattern
         if callable(self.char):
             char = Char(self.char(), self.style)
         else:
@@ -185,16 +195,7 @@ class Pattern(Container):
         for y in range(ypos, ypos + write_position.height):
             row = screen.data_buffer[y]
             for x in range(xpos, xpos + write_position.width):
-                if (
-                    (pattern == 1)
-                    or (pattern == 2 and (x + y) % 2 == 0)
-                    or (pattern == 3 and (x + 2 * y) % 4 == 0)
-                    or (pattern == 4 and (x + y) % 3 == 0)
-                    or (pattern == 5 and ((x + y % 2 * 3) % 6) % 4 == 0)
-                ):
-                    row[x] = char
-                else:
-                    row[x] = bg
+                row[x] = char if pattern(x, y) else bg
 
     def get_children(self) -> list:
         """Return an empty list of the container's children."""
