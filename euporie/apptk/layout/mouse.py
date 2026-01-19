@@ -40,7 +40,7 @@ class MouseHandlerWrapper(Container):
         Args:
             content: The inner container to display.
             handler: A callback function which will be invoked with the
-                MouseEvent whenever a click occurs.
+                MouseEvent whenever a mouse event occurs.
         """
         self.content = to_container(content)
         self.handler = handler
@@ -67,7 +67,7 @@ class MouseHandlerWrapper(Container):
         erase_bg: bool,
         z_index: int | None,
     ) -> None:
-        """Render the container and wrap mouse handlers to invoke the click callback."""
+        """Render the container and wrap mouse handlers to invoke the mouse callback."""
         self.content.write_to_screen(
             screen,
             mouse_handlers,
@@ -85,7 +85,7 @@ class MouseHandlerWrapper(Container):
                 try:
                     handler_result = self.handler(mouse_event)
                 except Exception:
-                    log.exception("Error in MouseHandlerWarapper click handler")
+                    log.exception("Error in MouseHandlerWarapper mouse handler")
                 else:
                     if result is NotImplemented:
                         result = handler_result
@@ -105,10 +105,10 @@ class MouseHandlerWrapper(Container):
                 ):
                     row[x] = _wrap_mouse_handler(row[x])
 
+        # Postpone wrapping mouse handlers in floats, otherwise wrap now
         if z_index is None or z_index == 0:
             _wrap_mhs()
         else:
-            # Postpone wrapping mouse handlers in floats, otherwise wrap now
             screen.draw_with_z_index(z_index=(z_index or 0) + 1, draw_func=_wrap_mhs)
 
     def get_children(self) -> list[Container]:
