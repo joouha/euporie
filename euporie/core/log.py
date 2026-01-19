@@ -15,13 +15,13 @@ from euporie.apptk.formatted_text.base import FormattedText
 from euporie.apptk.output.defaults import create_output
 from euporie.apptk.shortcuts.utils import print_formatted_text
 from euporie.apptk.styles.pygments import style_from_pygments_cls
-from euporie.apptk.styles.style import Style, merge_styles
 
 from euporie.apptk.formatted_text.utils import indent, lex, wrap
 from euporie.apptk.io import PseudoTTY
 from euporie.apptk.renderer import (
     print_formatted_text as renderer_print_formatted_text,
 )
+from euporie.apptk.styles.style import Style, merge_styles
 from euporie.core.style import LOG_STYLE, get_style_by_name
 from euporie.core.utils import dict_merge
 
@@ -31,8 +31,8 @@ if TYPE_CHECKING:
     from typing import Any, TextIO
 
     from euporie.apptk.formatted_text.base import StyleAndTextTuples
-    from euporie.apptk.styles.base import BaseStyle
 
+    from euporie.apptk.styles.base import BaseStyle
     from euporie.core.config import Config
 
 log = logging.getLogger(__name__)

@@ -19,11 +19,9 @@ from euporie.apptk.border import (
     LowerLeftHalfLine,
     UpperRightHalfLine,
 )
-from euporie.apptk.cache import SimpleCache
 from euporie.apptk.clipboard import ClipboardData
 from euporie.apptk.commands import add_cmd
 from euporie.apptk.completion import PathCompleter
-from euporie.apptk.enums import HorizontalAlign
 from euporie.apptk.filters import (
     Condition,
     buffer_has_focus,
@@ -31,8 +29,7 @@ from euporie.apptk.filters import (
     has_focus,
     vi_insert_mode,
 )
-from euporie.apptk.formatted_text import AnyFormattedText, to_formatted_text
-from euporie.apptk.formatted_text.utils import align, lex, split_lines
+from euporie.apptk.formatted_text.utils import lex
 from euporie.apptk.layout.containers import (
     ConditionalContainer,
     DynamicContainer,
@@ -43,18 +40,16 @@ from euporie.apptk.layout.containers import (
     WindowAlign,
     to_container,
 )
-from euporie.apptk.layout.controls import FormattedTextControl, UIContent, UIControl
+from euporie.apptk.layout.controls import FormattedTextControl
 from euporie.apptk.layout.decor import FocusedStyle
 from euporie.apptk.layout.mouse import MouseHandlerWrapper
-from euporie.apptk.layout.screen import WritePosition
-from euporie.apptk.mouse_events import MouseButton, MouseEventType
 from euporie.core.widgets.decor import Border, Shadow
 from euporie.core.widgets.file_browser import FileBrowser
 from euporie.core.widgets.forms import Button, LabelledWidget, Select, Text
 from euporie.core.widgets.layout import Box
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Hashable
+    from collections.abc import Callable
     from typing import Any
 
     from euporie.apptk.buffer import Buffer
@@ -62,10 +57,9 @@ if TYPE_CHECKING:
     from euporie.apptk.key_binding.key_bindings import NotImplementedOrNone
     from euporie.apptk.layout.layout import FocusableElement
 
-    from euporie.apptk.data_structures import Point
+    from euporie.apptk.formatted_text import AnyFormattedText
     from euporie.apptk.key_binding.key_processor import KeyPressEvent
     from euporie.apptk.layout.containers import AnyContainer
-    from euporie.apptk.mouse_events import MouseEvent
     from euporie.core.app.app import BaseApp
     from euporie.core.kernel.base import KernelInfo
     from euporie.core.tabs.base import Tab

@@ -101,7 +101,8 @@ class Command:
          collection of :py:class:`prompt_toolkit.key_binding.key_bindings:Bindings`.
 
         Args:
-            handler: The callable to run when the command is triggers
+            handler: The callable to run when the command is triggered
+            keys: List of key bindings to associate with the command
             filter: The condition under which the command is allowed to run
             hidden: The condition under the command is visible to the user
             name: The name of the command, for accessing the command from the registry
@@ -207,8 +208,17 @@ class Command:
 
             return _key_handler
 
-    def __call__(self, *args, **kwargs):
-        return self.key_handler(*args, **kwargs)
+    def __call__(self, event: KeyPressEvent, *args: Any) -> NotImplementedOrNone:
+        """Call the command's key handler.
+
+        Args:
+            event: The key press event that triggered the command.
+            *args: Additional arguments to pass to the handler.
+
+        Returns:
+            The result of the key handler, or NotImplemented.
+        """
+        return self.key_handler(*args)
 
     call = __call__
 
@@ -243,11 +253,45 @@ class Command:
         return ""
 
 
-def add_cmd(*args, **kwargs: Any) -> Callable:
+def add_cmd(
+    *,
+    keys: list[AnyKeys] | None = None,
+    filter: FilterOrBool = True,
+    hidden: FilterOrBool = False,
+    name: str | None = None,
+    aliases: list[str] | None = None,
+    title: str | None = None,
+    menu_title: str | None = None,
+    description: str | None = None,
+    icon: str = " ",
+    style: str = "",
+    toggled: Filter | None = None,
+    eager: FilterOrBool = False,
+    is_global: FilterOrBool = False,
+    save_before: Callable[[KeyPressEvent], bool] = (lambda event: True),
+    record_in_macro: FilterOrBool = True,
+) -> Callable:
     """Add a command to the centralized command system."""
 
     def decorator(handler: Callable) -> Callable:
-        cmd = Command(handler, *args, **kwargs)
+        cmd = Command(
+            handler,
+            keys=keys,
+            filter=filter,
+            hidden=hidden,
+            name=name,
+            aliases=aliases,
+            title=title,
+            menu_title=menu_title,
+            description=description,
+            icon=icon,
+            style=style,
+            toggled=toggled,
+            eager=eager,
+            is_global=is_global,
+            save_before=save_before,
+            record_in_macro=record_in_macro,
+        )
         commands[cmd.name] = cmd
         for alias in cmd.aliases:
             commands[alias] = cmd

@@ -25,10 +25,10 @@ from euporie.apptk.layout.containers import (
     Window,
 )
 from euporie.apptk.layout.controls import UIContent, UIControl
+from euporie.apptk.layout.decor import FocusedStyle
 from euporie.apptk.layout.margins import ScrollbarMargin
 from euporie.apptk.layout.screen import WritePosition
 from euporie.apptk.mouse_events import MouseButton, MouseEvent, MouseEventType
-from euporie.apptk.layout.decor import FocusedStyle
 from euporie.core.widgets.decor import Border
 from euporie.core.widgets.forms import Button, Text
 

@@ -27,6 +27,7 @@ if TYPE_CHECKING:
     from euporie.apptk.key_binding.key_bindings import NotImplementedOrNone
 
     from euporie.apptk.key_binding.key_processor import KeyPressEvent
+    from euporie.apptk.layout.screen import WritePosition
 
 log = logging.getLogger(__name__)
 

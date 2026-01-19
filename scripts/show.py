@@ -10,8 +10,8 @@ from euporie.apptk.application.current import set_app
 from euporie.apptk.convert.datum import Datum
 from euporie.apptk.convert.mime import get_format
 from euporie.apptk.layout.containers import DummyContainer
-from euporie.core.app.app import BaseApp
 from euporie.apptk.path import parse_path
+from euporie.core.app.app import BaseApp
 
 if TYPE_CHECKING:
     from collections.abc import Callable

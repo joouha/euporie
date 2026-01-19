@@ -46,7 +46,7 @@ if TYPE_CHECKING:
         AnyFormattedText,
         StyleAndTextTuples,
     )
-    from euporie.apptk.layout.dimension import AnyDimension
+    from euporie.apptk.layout.dimension import AnyDimension, Dimension
 
     PairT = TypeVar("PairT")
 

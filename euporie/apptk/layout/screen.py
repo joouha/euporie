@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from collections import ChainMap, defaultdict
 
-from prompt_toolkit.layout.screen import _CHAR_CACHE, Char
+from prompt_toolkit.layout.screen import _CHAR_CACHE
 from prompt_toolkit.layout.screen import Screen as PtkScreen
 from prompt_toolkit.layout.screen import WritePosition as PtkWritePosition
 
@@ -46,15 +46,19 @@ class ChainBuffer(dict):
         self,
         base: defaultdict[int, defaultdict[int, str]],
     ) -> None:
-        """Initialize the chain buffer with lower and upper layers.
+        """Initialize the chain buffer with a base layer.
 
         Args:
-            lower: The lower buffer layer that receives new writes.
-            upper: The upper buffer layer containing existing data.
+            base: The base buffer layer that receives new writes.
         """
         self.layers = {0: base}
 
-    def add_layer(self, z_index: int):
+    def add_layer(self, z_index: int) -> None:
+        """Add a new layer at the specified z-index.
+
+        Args:
+            z_index: The z-index for the new layer.
+        """
         if z_index not in self.layers:
             self.layers[z_index] = defaultdict(dict)
             self.clear()
