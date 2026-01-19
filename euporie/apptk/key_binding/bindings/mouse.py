@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-from euporie.apptk.cache import FastDictCache
+from euporie.apptk.cache import FastDictCache, SimpleCache
 from euporie.apptk.data_structures import Point
 from euporie.apptk.key_binding.bindings.mouse import (
     MOUSE_MOVE,
@@ -109,6 +109,8 @@ _MOUSE_EVENT_CACHE: FastDictCache[
     tuple[str, bool, tuple[int, int]], MouseEvent | None
 ] = FastDictCache(get_value=_parse_mouse_data)
 
+_MOUSE_LIMIT_CACHE: SimpleCache[int, WritePosition] = SimpleCache(maxsize=1)
+
 
 def load_mouse_bindings() -> KeyBindings:
     """Additional key-bindings to deal with SGR-pixel mouse positioning."""
@@ -148,14 +150,17 @@ def load_mouse_bindings() -> KeyBindings:
             app.mouse_position = Point(x=x, y=y)
 
             # Apply limits to mouse position if enabled
-            if (mouse_limits := app.mouse_limits) is not None:
+            mouse_limits = _MOUSE_LIMIT_CACHE.get(
+                app.render_counter, lambda: app.mouse_limits
+            )
+            if mouse_limits is not None:
                 x = max(
                     mouse_limits.xpos,
-                    min(x, mouse_limits.xpos + (mouse_limits.width) - 1),
+                    min(x, mouse_limits.xpos + mouse_limits.width - 1),
                 )
                 y = max(
                     mouse_limits.ypos,
-                    min(y, mouse_limits.ypos + (mouse_limits.height) - 1),
+                    min(y, mouse_limits.ypos + mouse_limits.height - 1),
                 )
 
             # Do not modify the mouse event in the cache, instead create a new instance
