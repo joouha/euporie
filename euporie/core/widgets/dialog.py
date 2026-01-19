@@ -40,12 +40,14 @@ from euporie.apptk.layout.containers import (
     HSplit,
     VSplit,
     Window,
+    WindowAlign,
     to_container,
 )
 from euporie.apptk.layout.controls import FormattedTextControl, UIContent, UIControl
+from euporie.apptk.layout.decor import FocusedStyle
+from euporie.apptk.layout.mouse import MouseHandlerWrapper
 from euporie.apptk.layout.screen import WritePosition
 from euporie.apptk.mouse_events import MouseButton, MouseEventType
-from euporie.apptk.layout.decor import FocusedStyle
 from euporie.core.widgets.decor import Border, Shadow
 from euporie.core.widgets.file_browser import FileBrowser
 from euporie.core.widgets.forms import Button, LabelledWidget, Select, Text
@@ -78,86 +80,6 @@ DialogGrid = (
     + LowerLeftHalfLine.bottom_edge
     + UpperRightHalfLine.top_edge
 )
-
-
-class DialogTitleControl(UIControl):
-    """A draggable dialog titlebar."""
-
-    def __init__(self, title: AnyFormattedText, dialog: Dialog, window: Window) -> None:
-        """Initialize a new dialog titlebar."""
-        self.title = title
-        self.dialog = dialog
-        self.window = window
-        self.drag_start: Point | None = None
-        self._content_cache: SimpleCache[Hashable, UIContent] = SimpleCache(maxsize=18)
-
-    def create_content(self, width: int, height: int | None) -> UIContent:
-        """Create the title text content."""
-
-        def get_content() -> UIContent:
-            lines = list(
-                split_lines(
-                    align(to_formatted_text(self.title), HorizontalAlign.CENTER, width)
-                )
-            )
-            return UIContent(
-                get_line=lambda i: lines[i],
-                line_count=len(lines),
-                show_cursor=False,
-            )
-
-        return self._content_cache.get((width,), get_content)
-
-    def mouse_handler(self, mouse_event: MouseEvent) -> NotImplementedOrNone:
-        """Move the dialog when the titlebar is dragged."""
-        if (info := self.window.render_info) is not None:
-            # Get the global mouse position
-            app = self.dialog.app
-            gx, gy = app.mouse_position
-            if mouse_event.button == MouseButton.LEFT:
-                if mouse_event.event_type == MouseEventType.MOUSE_DOWN:
-                    # Start the drag event
-                    self.drag_start = mouse_event.position
-                    # Send all mouse events to this position
-                    y_min, x_min = min(info._rowcol_to_yx.values())
-                    y_max, x_max = max(info._rowcol_to_yx.values())
-                    app.mouse_limits = WritePosition(
-                        xpos=x_min,
-                        ypos=y_min,
-                        width=x_max - x_min,
-                        height=y_max - y_min,
-                    )
-                    return NotImplemented
-                elif mouse_event.event_type == MouseEventType.MOUSE_MOVE:
-                    if self.drag_start is not None:
-                        # Get available space
-                        max_y, max_x = app.output.get_size()
-                        # Calculate dialog dimensions
-                        dl_width = self.dialog.content.preferred_width(max_x).preferred
-                        dl_height = self.dialog.content.preferred_height(
-                            dl_width, max_y
-                        ).preferred
-                        # Calculate new dialog position
-                        new_x = max(
-                            1, min(gx - self.drag_start.x, max_x - dl_width + 1)
-                        )
-                        new_y = max(
-                            1, min(gy - self.drag_start.y, max_y - dl_height + 1)
-                        )
-                        # Move dialog
-                        self.dialog.left = new_x - 1
-                        self.dialog.top = new_y - 1
-                        # change the mouse capture position
-                        if app.mouse_limits is not None:
-                            app.mouse_limits.xpos = new_x
-                            app.mouse_limits.ypos = new_y
-                        return None
-
-            # End the drag event
-            self.drag_start = None
-            # Stop capturing all mouse events
-            app.mouse_limits = None
-        return NotImplemented
 
 
 class Dialog(Float, metaclass=ABCMeta):
@@ -211,13 +133,17 @@ class Dialog(Float, metaclass=ABCMeta):
         self.kb = kb
         self.buttons_kb = KeyBindings()
 
-        # Create title row
-        title_window = Window(height=1, style="class:dialog,dialog-title")
-        title_window.content = DialogTitleControl(
-            lambda: self.title, self, title_window
-        )
+        # Create draggable title bar
         title_row = ConditionalContainer(
-            title_window, filter=Condition(lambda: bool(self.title))
+            MouseHandlerWrapper(
+                Label(
+                    self.title,
+                    style="class:dialog,dialog-title",
+                    align=WindowAlign.CENTER,
+                ),
+                handler=self.drag_handler,
+            ),
+            filter=Condition(lambda: bool(self.title)),
         )
 
         # Create body row with collapsible padding around the body.
