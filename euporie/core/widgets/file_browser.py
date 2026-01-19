@@ -1037,9 +1037,9 @@ class FileBrowserControl(UIControl):
                 and (info := self.window.render_info) is not None
             ):
                 rowcol_to_yx = info._rowcol_to_yx
-                abs_mouse_pos = (
-                    mouse_event.position.x + info._x_offset,
-                    mouse_event.position.y + info._y_offset - info.vertical_scroll,
+                abs_mouse_pos = Point(
+                    x=mouse_event.position.x + info._x_offset,
+                    y=mouse_event.position.y + info._y_offset - info.vertical_scroll,
                 )
                 if abs_mouse_pos == app.mouse_position:
                     row_col_vals = rowcol_to_yx.values()
