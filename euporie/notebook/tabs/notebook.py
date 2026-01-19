@@ -185,8 +185,8 @@ class Notebook(BaseNotebook):
         expand = Condition(lambda: self.app.config.expand)
 
         pattern = Pattern(
-            partial(getattr, self.app.config, "background_character"),
-            partial(getattr, self.app.config, "background_pattern"),
+            lambda: self.app.config.background_character,
+            lambda x, y: self.app.config.background_pattern(x, y),
         )
 
         return VSplit(

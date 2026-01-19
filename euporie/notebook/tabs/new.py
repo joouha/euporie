@@ -52,7 +52,7 @@ class NewTab(Tab):
         """Abstract method for loading the notebook's main container."""
         pattern = Pattern(
             lambda: self.app.config.background_character,
-            lambda: self.app.config.background_pattern,
+            lambda x, y: self.app.config.background_pattern(x, y),
         )
 
         cmds = [

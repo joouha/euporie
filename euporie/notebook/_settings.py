@@ -37,7 +37,14 @@ add_setting(
     group="euporie.notebook.app",
     flags=["--background-pattern", "--bg-pattern"],
     type_=int,
-    choices=list(range(6)),
+    choices={
+        0: lambda x, y: False,
+        1: lambda x, y: True,
+        2: lambda x, y: (x + y) % 2 == 0,
+        3: lambda x, y: (x + 2 * y) % 4 == 0,
+        4: lambda x, y: (x + y) % 3 == 0,
+        5: lambda x, y: ((x + y % 2 * 3) % 6) % 4 == 0,
+    },
     help_="The background pattern to use",
     default=2,
     schema={
