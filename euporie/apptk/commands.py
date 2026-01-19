@@ -218,7 +218,7 @@ class Command:
         Returns:
             The result of the key handler, or NotImplemented.
         """
-        return self.key_handler(*args)
+        return self.key_handler(event, *args)
 
     call = __call__
 
