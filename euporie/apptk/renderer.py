@@ -22,6 +22,7 @@ if TYPE_CHECKING:
 
     from euporie.apptk.application import Application
     from euporie.apptk.filters import FilterOrBool
+    from euporie.apptk.layout.graphics import GraphicControl
     from euporie.apptk.layout.screen import Char
     from euporie.apptk.layout.screen import Screen as PtkScreen
     from euporie.apptk.output import ColorDepth, Output
@@ -284,6 +285,9 @@ class Renderer(PtkRenderer):
         cpr_not_supported_callback: Callable[[], None] | None = None,
         extend_height: FilterOrBool = False,
         extend_width: FilterOrBool = False,
+        preferred_graphics: Callable[[], type[GraphicControl]]
+        | GraphicControl
+        | None = None,
         leave_graphics: FilterOrBool = False,
     ) -> None:
         """Create a new :py:class:`Renderer` instance."""
@@ -295,6 +299,11 @@ class Renderer(PtkRenderer):
         self._palette_dsr_enabled = False
         self._sgr_pixel_enabled = False
 
+        self.preferred_graphics = (
+            preferred_graphics
+            if callable(preferred_graphics)
+            else lambda: preferred_graphics
+        )
         self.graphics_sixel = False
         self.graphics_iterm = False
         self.graphics_kitty = False

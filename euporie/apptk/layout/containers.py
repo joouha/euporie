@@ -1357,9 +1357,7 @@ class Window(ptk_containers.Window):
             # a graphic control for it and add it to the screen for deferred drawing
             ControlClass = select_graphic_control(
                 format_=datum.format,
-                ###########
-                # preferred=app.config.graphics,
-                ############
+                preferred=renderer.preferred_graphics(),
                 graphics_sixel=renderer.graphics_sixel,
                 graphics_kitty=renderer.graphics_kitty,
                 graphics_iterm=renderer.graphics_iterm,
