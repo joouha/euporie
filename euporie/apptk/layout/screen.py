@@ -98,7 +98,6 @@ class Screen(PtkScreen):
         automatically hiding terminal graphics which collide with floats).
         """
         self.data_buffer = ChainBuffer(self.data_buffer)
-        self.zero_width_escapes = ChainBuffer(self.zero_width_escapes)
         while self._draw_float_functions:
             # Sort the floats that we have so far by z_index.
             functions = sorted(self._draw_float_functions, key=lambda item: item[0])
@@ -109,12 +108,10 @@ class Screen(PtkScreen):
             z_index, func = functions[0]
             # Add a new layer for this float
             self.data_buffer.add_layer(z_index)
-            self.zero_width_escapes.add_layer(z_index)
             # Draw the float
             func()
 
         self.data_buffer = self.data_buffer.flatten()
-        self.zero_width_escapes = self.zero_width_escapes.flatten()
 
     def fill_area(
         self, write_position: WritePosition, style: str = "", after: bool = False
